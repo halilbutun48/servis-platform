@@ -91,11 +91,15 @@ must(helpComposer, 'const workflowStyle = shouldUseWorkflowGuide({ questionType,
 must(helpComposer, "const screenLead = workflowStyle", 'workflow replies reuse workflow-aware lead');
 must(helpComposer, "screenLeadIntro = workflowStyle ? '' : ensureVisibleSentence(screenLead);", 'workflow replies suppress purpose intro');
 must(helpComposer, 'const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: firstNonEmpty(contextPriority?.activeTopic, selectedDiagnosticTheme(effectiveMessage), \'\') });', 'chat response workflow style is active-topic aware');
-must(helpComposer, 'const workflowContextSummary = uniqueStrings([', 'workflow context summary stays short on workflow replies');
+must(helpComposer, 'const workflowContextSummary = workflowVisibleFragments([', 'workflow context summary stays short on workflow replies');
 must(helpComposer, 'selectedRecordMismatchLead', 'selected record mismatch guard exists');
 must(helpComposer, 'selectedRecordMismatchLead,', 'workflow priority prefers mismatch lead');
 must(helpComposer, 'summary: workflowStyle ?', 'workflow-aware summary branch exists');
-must(helpComposer, 'contextPriority?.activeTopicLabel, contextPriority?.diagnosticPriority?.summary, contextPriority?.evidenceConfidence, contextPriority?.summaryLead, reply', 'workflow summary stays short and skips stale guide summary');
+must(helpComposer, 'contextPriority?.selectedRecordMismatchLead,', 'workflow summary keeps mismatch lead in the short branch');
+must(helpComposer, 'contextPriority?.diagnosticPriority?.summary,', 'workflow summary keeps diagnostic summary in the short branch');
+must(helpComposer, 'contextPriority?.evidenceConfidence,', 'workflow summary keeps evidence confidence in the short branch');
+must(helpComposer, 'contextPriority?.activeTopicLabel,', 'workflow summary keeps active topic label in the short branch');
+mustNot(helpComposer, 'contextPriority?.summaryLead, reply', 'workflow summary skips stale guide summary field');
 must(helpComposer, 'Şimdi: ${ensureVisibleSentence(workflowNow)} Bu programda bunun anlamı: ${programMeaning}', 'workflow replies use signal-based now lead');
 mustNot(helpComposer, 'Şimdi: ${screenLead} Bu programda bunun anlamı: ${programMeaning}', 'workflow replies do not repeat screen purpose after now lead');
 must(helpComposer, 'pathLooksLikeWorkflowSurface(sourcePath) && (selectedDiagnosticTheme(text) || isCommercialFlowContractToShiftQuestion(text))', 'workflow remap guard keeps current screen');
@@ -104,7 +108,7 @@ must(helpComposer, "if (hasSignals && roleBoundary) return 'Ekrandaki sinyale g�
 must(helpComposer, 'const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType);', 'workflow chips know workflow topics');
 must(helpComposer, 'if (hasSelectedRecord && !workflowTopic)', 'workflow chips suppress generic selected-record chips');
 must(helpComposer, 'const contextSummary = workflowStyle', 'workflow context summary branch is active');
-must(helpComposer, 'const workflowNow = normalizeVisibleReplyFragment(firstNonEmpty(', 'workflow reply opens with diagnostic summary');
+must(helpComposer, 'const workflowNow = pickWorkflowVisibleReply(', 'workflow reply opens with diagnostic summary');
 must(helpComposer, ".replace(/blokajı|blokaj/giu, (match) => String(match).toLocaleLowerCase('tr-TR').includes('ı') ? 'engeli' : 'engel')", 'plain language keeps blokaj as engeli');
 must(helpComposer, 'Sözleşme → vardiya', 'workflow vocabulary keeps contract wording');
 must(helpComposer, 'Sürücünün telefon GPS’i', 'workflow vocabulary keeps driver GPS wording');

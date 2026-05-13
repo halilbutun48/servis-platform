@@ -126,6 +126,10 @@ function normalizeSignalText(value) {
   return normalizeText(compactText(value, ''));
 }
 
+function normalizeEnumKey(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
 function scoreSignalTerms(text, terms = []) {
   const normalized = normalizeSignalText(text);
   if (!normalized) return 0;
@@ -152,6 +156,8 @@ function pickSignalNote(id) {
       return 'Rota ve durak bilgisini birlikte oku.';
     case 'shift-status':
       return 'Durum satırını ve bağlı vardiyayı birlikte kontrol et.';
+    case 'live-start':
+      return 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof akışını birlikte kontrol et.';
     case 'gps-old':
       return 'Son GPS zamanını ve konum kaynağını kontrol et.';
     case 'operation-proof':
@@ -195,7 +201,7 @@ export function buildLiveFactConfidence({
       : 'Kısmi';
   const combined = normalizeSignalText([screenType, stage, readiness, summary, evidenceText, selectedSignal].join(' '));
   let missingSignal = 'Belirgin eksik yok';
-  if (/(kvkk|yetki|rol|gizli|görünmüyor|gorunmuyor)/.test(combined)) missingSignal = 'Yetki sınırı';
+  if (/(kvkk|yetki|\brol\b|gizli|görünmüyor|gorunmuyor)/.test(combined)) missingSignal = 'Yetki sınırı';
   else if (/(gps|konum|telefon gps|son gps|offline)/.test(combined)) missingSignal = 'GPS bekleniyor';
   else if (/(hakediş|hakedis|ödeme hesabı|odeme hesabi|komisyon|csv|önizleme|onizleme|eksik bilgi)/.test(combined)) missingSignal = 'Hakediş eksik bilgi';
   else if (/(sözleşme|sozlesme|vardiya üretimi|vardiya uretimi|vardiya)/.test(combined)) missingSignal = 'Sözleşme/vardiya kontrolü';
@@ -264,31 +270,47 @@ export function buildDiagnosticPriority({
     ),
   ];
   const text = normalizeSignalText(signalTextParts.join(' '));
-  const candidates = [
-    { id: 'missing-vehicle-driver', label: 'Eksik araç/sürücü', terms: ['araç', 'sürücü', 'driver', 'vehicle', 'plaka'] },
-    { id: 'route-stop', label: 'Rota/durak eksik', terms: ['rota', 'durak', 'route', 'stop'] },
-    { id: 'shift-status', label: 'Görev/vardiya durumu uygun değil', terms: ['vardiya', 'shift', 'approved', 'active', 'durum', 'status', 'hazır değil', 'hazir degil'] },
-    { id: 'gps-old', label: 'GPS yok/eski', terms: ['gps', 'konum', 'telefon gps', 'son gps', 'offline', 'eski'] },
-    { id: 'operation-proof', label: 'OperationProof eksik', terms: ['operationproof', 'kanıt', 'kanit', 'proof'] },
-    { id: 'contract-shift', label: 'Sözleşme/vardiya üretimi yok', terms: ['sözleşme', 'sozlesme', 'vardiya üretimi', 'vardiya uretimi', 'üretildi mi', 'uretildi mi'] },
-    { id: 'payment-info', label: 'Hakediş eksik bilgi', terms: ['hakediş', 'hakedis', 'ödeme hesabı', 'odeme hesabi', 'komisyon', 'csv', 'önizleme', 'onizleme', 'eksik bilgi'] },
-    { id: 'kvkk-access', label: 'KVKK/yetki nedeniyle görünmüyor', terms: ['kvkk', 'yetki', 'rol', 'görünmüyor', 'gorunmuyor', 'gizli'] },
-    { id: 'quality-signal', label: 'Kalite sinyali', terms: ['kalite', 'quality', 'sağlayıcı', 'saglayici', 'provider', 'değerlendirme', 'degerlendirme'] },
-    { id: 'feedback-open', label: 'Geri bildirim açık', terms: ['geri bildirim', 'feedback', 'açık', 'acik', 'kritik', 'tekrarlayan'] },
-    { id: 'notification-source', label: 'Bildirim kaynağı', terms: ['bildirim', 'notification', 'olay', 'kaynak'] },
-  ];
+  const screenTypeKey = normalizeEnumKey(screenType);
+  const readyForLiveStart = screenTypeKey === 'SHIFTS' && /approved/.test(text) && /ready/.test(text) && /(araç|arac|vehicle|sürücü|surucu|driver)/.test(text);
+  const candidates = readyForLiveStart
+    ? [
+      { id: 'live-start', label: 'Canlı başlatma zamanı / GPS / OperationProof kontrolü', terms: ['canlı başlatma', 'canli baslatma', 'aktif durum', 'gps', 'operationproof', 'kanıt', 'kanit', 'başlatma zamanı', 'baslatma zamani'] },
+      { id: 'missing-vehicle-driver', label: 'Eksik araç/sürücü', terms: ['araç', 'sürücü', 'driver', 'vehicle', 'plaka'] },
+      { id: 'route-stop', label: 'Rota/durak eksik', terms: ['rota', 'durak', 'route', 'stop'] },
+      { id: 'gps-old', label: 'GPS yok/eski', terms: ['gps', 'konum', 'telefon gps', 'son gps', 'offline', 'eski'] },
+      { id: 'operation-proof', label: 'OperationProof eksik', terms: ['operationproof', 'kanıt', 'kanit', 'proof'] },
+      { id: 'contract-shift', label: 'Sözleşme/vardiya üretimi yok', terms: ['sözleşme', 'sozlesme', 'vardiya üretimi', 'vardiya uretimi', 'üretildi mi', 'uretildi mi'] },
+      { id: 'payment-info', label: 'Hakediş eksik bilgi', terms: ['hakediş', 'hakedis', 'ödeme hesabı', 'odeme hesabi', 'komisyon', 'csv', 'önizleme', 'onizleme', 'eksik bilgi'] },
+      { id: 'kvkk-access', label: 'KVKK/yetki nedeniyle görünmüyor', terms: ['kvkk', 'yetki', 'rol', 'görünmüyor', 'gorunmuyor', 'gizli'] },
+      { id: 'quality-signal', label: 'Kalite sinyali', terms: ['kalite', 'quality', 'sağlayıcı', 'saglayici', 'provider', 'değerlendirme', 'degerlendirme'] },
+      { id: 'feedback-open', label: 'Geri bildirim açık', terms: ['geri bildirim', 'feedback', 'açık', 'acik', 'kritik', 'tekrarlayan'] },
+      { id: 'notification-source', label: 'Bildirim kaynağı', terms: ['bildirim', 'notification', 'olay', 'kaynak'] },
+    ]
+    : [
+      { id: 'missing-vehicle-driver', label: 'Eksik araç/sürücü', terms: ['araç', 'sürücü', 'driver', 'vehicle', 'plaka'] },
+      { id: 'route-stop', label: 'Rota/durak eksik', terms: ['rota', 'durak', 'route', 'stop'] },
+      { id: 'shift-status', label: 'Görev/vardiya durumu uygun değil', terms: ['vardiya', 'shift', 'durum', 'status', 'hazır değil', 'hazir degil'] },
+      { id: 'gps-old', label: 'GPS yok/eski', terms: ['gps', 'konum', 'telefon gps', 'son gps', 'offline', 'eski'] },
+      { id: 'operation-proof', label: 'OperationProof eksik', terms: ['operationproof', 'kanıt', 'kanit', 'proof'] },
+      { id: 'contract-shift', label: 'Sözleşme/vardiya üretimi yok', terms: ['sözleşme', 'sozlesme', 'vardiya üretimi', 'vardiya uretimi', 'üretildi mi', 'uretildi mi'] },
+      { id: 'payment-info', label: 'Hakediş eksik bilgi', terms: ['hakediş', 'hakedis', 'ödeme hesabı', 'odeme hesabi', 'komisyon', 'csv', 'önizleme', 'onizleme', 'eksik bilgi'] },
+      { id: 'kvkk-access', label: 'KVKK/yetki nedeniyle görünmüyor', terms: ['kvkk', 'yetki', 'rol', 'görünmüyor', 'gorunmuyor', 'gizli'] },
+      { id: 'quality-signal', label: 'Kalite sinyali', terms: ['kalite', 'quality', 'sağlayıcı', 'saglayici', 'provider', 'değerlendirme', 'degerlendirme'] },
+      { id: 'feedback-open', label: 'Geri bildirim açık', terms: ['geri bildirim', 'feedback', 'açık', 'acik', 'kritik', 'tekrarlayan'] },
+      { id: 'notification-source', label: 'Bildirim kaynağı', terms: ['bildirim', 'notification', 'olay', 'kaynak'] },
+    ];
   const boostedIds = new Set(
-    screenType === 'PAYMENT_READINESS'
+    screenTypeKey === 'PAYMENT_READINESS'
       ? ['payment-info', 'contract-shift', 'shift-status', 'kvkk-access']
-      : screenType === 'TRUST_QUALITY'
+      : screenTypeKey === 'TRUST_QUALITY'
         ? ['quality-signal', 'feedback-open', 'operation-proof']
-        : screenType === 'FEEDBACK'
+        : screenTypeKey === 'FEEDBACK'
           ? ['feedback-open', 'notification-source', 'kvkk-access']
-          : screenType === 'MAP'
+          : screenTypeKey === 'MAP'
             ? ['gps-old', 'missing-vehicle-driver', 'route-stop']
-            : screenType === 'SHIFTS'
-              ? ['missing-vehicle-driver', 'route-stop', 'shift-status', 'operation-proof']
-              : screenType === 'COMMERCIAL_FLOW'
+            : screenTypeKey === 'SHIFTS'
+              ? (readyForLiveStart ? ['live-start', 'gps-old', 'missing-vehicle-driver', 'operation-proof'] : ['missing-vehicle-driver', 'route-stop', 'shift-status', 'operation-proof'])
+              : screenTypeKey === 'COMMERCIAL_FLOW'
                 ? ['payment-info', 'contract-shift', 'shift-status']
                 : [],
   );
@@ -320,39 +342,29 @@ export function buildDiagnosticPriority({
 
 export function buildActionSimulationWording({
   screenType = '',
-  stage = '',
-  readiness = '',
-  selectedRecordStatus = '',
   diagnosticPriority = null,
   roleBoundary = '',
 } = {}) {
   const topPriority = compactText(diagnosticPriority?.rows?.[0]?.value || diagnosticPriority?.rows?.[0]?.label || '', '');
-  const normalizedScreenType = normalizeSignalText(screenType);
-  let text = 'Bu durumda doğru aksiyon şu olurdu: önce en güçlü sinyali doğrula, sonra ilgili ekranı aç; gerçek write yok.';
-  if (normalizedScreenType === 'PAYMENT_READINESS' || normalizedScreenType === 'COMMERCIAL_FLOW') {
-    text = 'Bu durumda doğru aksiyon şu olurdu: hakediş önizleme, eksik bilgi, ödeme hesabı ve komisyon satırlarını kontrol et; gerçek write yok.';
+  const normalizedScreenType = normalizeEnumKey(screenType);
+  let text = 'Bu durumda doğru aksiyon şu olurdu: önce en güçlü sinyali doğrula, sonra ilgili ekranı aç.';
+  if (normalizedScreenType === 'SHIFTS') {
+    text = 'Bu durumda doğru aksiyon şu olurdu: canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve OperationProof akışını birlikte kontrol et.';
+  } else if (normalizedScreenType === 'PAYMENT_READINESS' || normalizedScreenType === 'COMMERCIAL_FLOW') {
+    text = 'Bu durumda doğru aksiyon şu olurdu: hakediş önizleme, eksik bilgi, ödeme hesabı ve komisyon satırlarını kontrol et.';
   } else if (normalizedScreenType === 'TRUST_QUALITY') {
     text = 'Bu durumda doğru aksiyon şu olurdu: kanıt, taslak skor, inceleme kararı ve denetim izini birlikte kontrol et; kesin sıralama yapma.';
   } else if (normalizedScreenType === 'FEEDBACK') {
     text = 'Bu durumda doğru aksiyon şu olurdu: açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
-  } else if (normalizedScreenType === 'MAP' || normalizedScreenType === 'SHIFTS' || normalizedScreenType === 'OPERATION_PROOF') {
-    text = 'Bu durumda doğru aksiyon şu olurdu: araç, sürücü, rota/durak ve GPS sinyalini birlikte kontrol et; sonra doğru ekranı aç.';
+  } else if (normalizedScreenType === 'MAP' || normalizedScreenType === 'OPERATION_PROOF') {
+    text = 'Bu durumda doğru aksiyon şu olurdu: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.';
   } else if (normalizedScreenType === 'KVKK' || normalizedScreenType === 'ROLE_HELP') {
     text = 'Bu durumda doğru aksiyon şu olurdu: rol ve görünürlük sınırını kontrol et; yetkisiz yönetim aksiyonu önermem.';
   } else if (topPriority) {
-    text = `Bu durumda doğru aksiyon şu olurdu: önce ${topPriority.toLocaleLowerCase('tr-TR')} kontrol edilir, sonra uygun ekran açılır; gerçek write yok.`;
+    text = `Bu durumda doğru aksiyon şu olurdu: önce ${topPriority.toLocaleLowerCase('tr-TR')} kontrol edilir, sonra uygun ekran açılır.`;
   }
   if (roleBoundary) {
     text += ' Bu rolde yönetim aksiyonu önermem.';
-  }
-  if (selectedRecordStatus && !text.includes(selectedRecordStatus)) {
-    text += ` Seçili kayıt durumu: ${selectedRecordStatus}.`;
-  }
-  if (stage && !text.includes(stage)) {
-    text += ` Aşama: ${stage}.`;
-  }
-  if (readiness && !text.includes(readiness)) {
-    text += ` Hazırlık: ${readiness}.`;
   }
   return text.trim();
 }
@@ -618,7 +630,7 @@ export function buildCommercialCoreCopilotFacts({
       { id: 'paymentPreviewMissingInfo', label: 'Eksik / kontrol gerekli', value: `${Number(paymentPreviewSummary?.missingCount || 0)} / ${Number(paymentPreviewSummary?.reviewCount || 0)}`, note: previewReason },
       { id: 'commissionStatus', label: 'Komisyon durumu', value: commissionText, note: 'Aktif ödeme kapalı; sadece hazırlık görünümü.' },
       { id: 'paymentAccountStatus', label: 'Ödeme hesabı durumu', value: accountText, note: 'Eksik bilgi veya kontrol gerekli olabilir.' },
-      { id: 'settlementStatus', label: 'Settlement durumu', value: settlementText, note: 'Aktif ödeme kapalı; settlement execute çalışmaz.' },
+      { id: 'settlementStatus', label: 'Settlement durumu', value: settlementText, note: 'Aktif ödeme kapalı; sadece kapanış hazırlığı görünür.' },
       { id: 'contractShiftGeneration', label: 'Sözleşme / vardiya', value: contractShiftText, note: 'Sözleşmeden vardiya üretimi ayrıca kontrol edilir.' },
     ],
     boundaryNotes: [csvBoundary, 'Ödeme başlatılmaz.', 'Sadece önizleme verisi indirilir.', auditSummary],
@@ -732,6 +744,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
   const stopCount = Array.isArray(shift?.stops) ? shift.stops.length : 0;
   const offerCount = Number(shift?.offers?.length || shift?.openOfferCount || 0);
   const approvedLike = ['APPROVED', 'ACCEPTED', 'ACTIVE'].includes(status);
+  const readyForLiveStart = approvedLike && hasVehicle && hasDriver && stopCount > 0;
   const missing = [];
   const blockers = [];
   pushIf(missing, !hasVehicle, 'Araç yok');
@@ -793,7 +806,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
           ? 'Durak olmadan operasyon güvenilir ilerlemez.'
           : (!hasVehicle || !hasDriver)
             ? 'Araç ve sürücü bağı tamamlanmadan operasyona geçmek risklidir.'
-            : 'Bu kayıt henüz operasyon için tam hazır görünmüyor.',
+            : 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof akışını ayrıca kontrol et.',
       purpose: 'Vardiyayı saha akışına taşımak için son hazırlık kontrolünü temsil eder.',
       whenToUse: 'Durum onaylı, araç-sürücü dolu ve duraklar hazır olduğunda anlamlıdır.',
       whatHappens: 'Kayıt operasyon veya canlı takip tarafında okunabilir hale gelir.',
@@ -820,7 +833,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
     stage: status,
     readinessScore: approvedLike && hasVehicle && hasDriver ? (stopCount > 0 ? 88 : 74) : 42,
     readiness: approvedLike && hasVehicle && hasDriver && stopCount > 0 ? 'READY' : blockers.length ? 'NOT_READY' : 'REVIEW_NEEDED',
-    summary: approvedLike ? 'Vardiya hazır' : blockers.length ? 'Vardiya blokajı' : 'Vardiya kontrol altında',
+    summary: readyForLiveStart ? 'Canlı başlatma kontrolü gerekli' : approvedLike ? 'Vardiya hazır' : blockers.length ? 'Vardiya blokajı' : 'Vardiya kontrol altında',
     blockers,
     evidence: [
       `Durum: ${status}`,
@@ -828,12 +841,13 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
       `Sürücü: ${hasDriver ? (shift?.driver?.fullName || `#${shift?.driverId}`) : 'Yok'}`,
       `Durak: ${stopCount}`,
       `Teklif: ${offerCount}`,
+      readyForLiveStart ? 'Canlı başlatma kontrolü: gerekli' : '',
     ],
     nextBestAction: blockers.length
       ? (offerCount > 0 && !approvedLike ? 'Önce teklif kararını kapat. Sonra araç ve sürücü alanlarını tekrar kontrol et.' : 'Önce araç ve sürücü bağını tamamla. Sonra durak ve sonraki adım alanlarını yeniden oku.')
-      : 'Önce seçili vardiyanın araç, sürücü ve durak alanlarını birlikte kontrol et.',
-    safestNextStep: 'En risksiz adım, seçili satırda araç ve sürücü gerçekten dolu mu onu doğrulamaktır.',
-    compareHint: 'APPROVED ile tam atama aynı şey değildir; araç veya sürücü boşsa iş saha için eksiktir.',
+      : (readyForLiveStart ? 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof akışını birlikte kontrol et.' : 'Önce seçili vardiyanın araç, sürücü ve durak alanlarını birlikte kontrol et.'),
+    safestNextStep: readyForLiveStart ? 'En risksiz adım, canlı başlatma zamanı ile GPS ve OperationProof akışını doğrulamaktır.' : 'En risksiz adım, seçili satırda araç ve sürücü gerçekten dolu mu onu doğrulamaktır.',
+    compareHint: readyForLiveStart ? 'APPROVED ile canlı başlatma aynı şey değildir; aktif durum, GPS ve OperationProof ayrıca okunur.' : 'APPROVED ile tam atama aynı şey değildir; araç veya sürücü boşsa iş saha için eksiktir.',
     counters: { visible: Number(itemCount || 0), offers: offerCount, stops: stopCount },
     selectedRecordStatus,
     copilotSignals: [
@@ -842,6 +856,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
       { id: 'shiftDriver', label: 'Sürücü', value: hasDriver ? (shift?.driver?.fullName || `#${shift?.driverId}`) : 'Yok', note: hasDriver ? 'Sürücü bağlı.' : 'Sürücü eksik.' },
       { id: 'shiftStops', label: 'Durak', value: String(stopCount), note: stopCount > 0 ? 'Durak var.' : 'Durak eksik.' },
       { id: 'shiftOffers', label: 'Açık teklif', value: String(offerCount), note: offerCount > 0 ? 'Teklif açık olabilir.' : 'Açık teklif yok.' },
+      readyForLiveStart ? { id: 'liveStartCheck', label: 'Canlı başlatma', value: 'Kontrol gerekli', note: 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof birlikte okunur.' } : null,
     ],
     boundaryNotes: [offerCount > 0 && !approvedLike ? 'Teklif/karar akışı açık olabilir.' : ''],
   });

@@ -174,7 +174,8 @@ mustNot(helpComposer, 'settlement execute', 'help composer avoids settlement exe
 mustNot(helpComposer, 'veriyi güncelledim', 'help composer avoids write claim wording');
 mustNot(helpComposer, 'ben bunu düzelttim', 'help composer avoids write claim wording');
 
-must(intentRouter, 'Bu araç neden haritada görünmüyor?', 'intent router covers room map diagnostic wording');
+must(intentRouter, "workflowQuestion ? ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']", 'intent router covers room map diagnostic wording');
+mustNot(intentRouter, "workflowQuestion ? ['Bu araç neden haritada görünmüyor?',", 'intent router removes room map self-question wording');
 must(intentRouter, 'Ne yapayım?', 'intent router covers driver next-step wording');
 must(intentRouter, 'Servisim nerede?', 'intent router covers personel live wording');
 must(intentRouter, 'Öğrencimin servisi nerede?', 'intent router covers parent live wording');
@@ -182,7 +183,7 @@ must(intentRouter, 'Bu sözleşmeden bugün vardiya üretildi mi?', 'intent rout
 must(intentRouter, 'Bu kayıt kimde?', 'intent router covers ownership wording');
 must(intentRouter, 'Bildirim kaynağı', 'intent router covers notification source wording');
 must(intentRouter, 'Yetki sınırı', 'intent router covers boundary wording');
-must(intentRouter, 'Sürücünün telefon GPS’i neden devrede?', 'intent router covers driver phone GPS wording');
+must(intentRouter, 'Sürücünün telefon GPS’i devrede mi?', 'intent router covers driver phone GPS wording');
 
 must(screenCatalog, 'Ne yapayım?', 'screen catalog covers driver next-step wording');
 must(screenCatalog, 'Servisim nerede?', 'screen catalog covers personel live wording');
@@ -190,7 +191,7 @@ must(screenCatalog, 'Öğrencimin servisi nerede?', 'screen catalog covers paren
 
 must(roomCompanyCatalog, 'Bu araç neden haritada görünmüyor?', 'room/company catalog covers room map wording');
 must(roomCompanyCatalog, 'Bu sözleşmeden bugün vardiya üretildi mi?', 'room/company catalog covers room commercial wording');
-must(roomCompanyCatalog, 'Sürücünün telefon GPS’i neden devrede?', 'room/company catalog covers driver phone GPS wording');
+must(roomCompanyCatalog, 'Sürücünün telefon GPS’i devrede mi?', 'room/company catalog covers driver phone GPS wording');
 mustNot(roomCompanyCatalog, 'label: "Agreement"', 'room/company catalog avoids visible agreement wording');
 
 must(goldenPack, 'room-map-vehicle-not-visible', 'golden pack covers room map vehicle diagnostic case');

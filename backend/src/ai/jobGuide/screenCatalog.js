@@ -627,7 +627,7 @@ const SUPER_ADMIN = [
       { key: 'SUPERADMIN_OPERATION_REASONS', title: 'Blokaj nedenini oku', action: 'Araç görünmüyor, vardiya başlamıyor veya sürücü GPS’i neden devrede sorularını sinyalle birlikte oku.', doneWhen: 'Neden farkı anlaşılır.', ifBlocked: 'Veri yoksa uydurma; eksik alanı söyle.' },
       { key: 'SUPERADMIN_OPERATION_NEXT', title: 'Güvenli sonraki adım', action: 'Gerekirse ilgili vardiya, araç, kanıt veya kalite ekranına geç.', doneWhen: 'Bir sonraki ekran belli olur.', ifBlocked: 'Yetkisiz yönetim işlemi önermeden sadece yol göster.' },
     ],
-    chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Sürücünün telefon GPS’i neden devrede?', 'Bunu kim yapabilir?'],
+    chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Sürücünün telefon GPS’i devrede mi?', 'Bunu kim yapabilir?'],
   }),
   screen(6104, '/superadmin/copilot', 'Copilot', {
     menuPurpose: 'Sistem genelinde rehber ve açıklama almak için kullanılır.',

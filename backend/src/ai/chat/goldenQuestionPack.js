@@ -357,7 +357,7 @@ export function buildGoldenQuestionPack() {
       entityType: 'screen',
       path: '/superadmin/commercial-core',
       message: 'Bu hakediş neden eksik?',
-      expectedType: 'READINESS_CHECK',
+      expectedType: 'PAYMENT_READINESS',
       expectedFirstActionKind: 'ASK',
       minConfidence: 0.6,
       screenContext: ctx('/superadmin/commercial-core', {
@@ -390,7 +390,7 @@ export function buildGoldenQuestionPack() {
       entityType: 'screen',
       path: '/superadmin/commercial-core',
       message: 'Bu hakediş neden hazır değil?',
-      expectedType: 'READINESS_CHECK',
+      expectedType: 'PAYMENT_READINESS',
       expectedFirstActionKind: 'ASK',
       minConfidence: 0.72,
       screenContext: ctx('/superadmin/commercial-core', {
@@ -410,7 +410,7 @@ export function buildGoldenQuestionPack() {
       entityType: 'screen',
       path: '/room/commercial-flow',
       message: 'Bu hakediş neden hazır değil?',
-      expectedType: 'READINESS_CHECK',
+      expectedType: 'PAYMENT_READINESS',
       expectedFirstActionKind: 'ASK',
       minConfidence: 0.72,
       screenContext: ctx('/room/commercial-flow', {

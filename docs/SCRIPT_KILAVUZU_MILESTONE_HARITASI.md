@@ -65,6 +65,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop03b` -> `node backend\scripts\cop_03b_workflow_domain_depth_check.js`
 - `check:cop03c` -> `node backend\scripts\cop_03c_live_data_action_simulation_check.js`
 - `check:cop03cfix01` -> `node backend\scripts\cop_03c_fix_01_live_workflow_answer_quality_check.js`
+- `check:cop03cfix02` -> `node backend\scripts\cop_03c_fix_02_live_answer_precision_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
 - `node backend\scripts\qlt_01_quality_provider_readiness_check.js`
 - `node backend\scripts\qlt_02_quality_draft_score_check.js`
@@ -591,6 +592,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:uxkvkk01`
   - `check:cop03c`
   - `check:cop03cfix01`
+  - `check:cop03cfix02`
   - `check:docsstate01`
 
 ### VERIFY-CHAIN-01 — product extensions canonical check chain [CHECK]

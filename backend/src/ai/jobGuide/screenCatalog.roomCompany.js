@@ -36,7 +36,7 @@ export const ROOM = [
       { label: 'Vardiyalar', path: '/room/shifts', reason: 'Sorunun hangi işe bağlı olduğunu görmek için.' },
       { label: 'Araçlar', path: '/room/vehicles', reason: 'Araç, sürücü veya cihaz GPS tarafını kontrol etmek için.' },
     ],
-    chatQuestions: ['Bu araç neden haritada görünmüyor?', 'Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Hangi ekrana geçeyim?', 'Bu satırı nasıl okurum?', 'Sürücünün telefon GPS’i neden devrede?'],
+    chatQuestions: ['Bu araç neden haritada görünmüyor?', 'Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Hangi ekrana geçeyim?', 'Bu satırı nasıl okurum?', 'Sürücünün telefon GPS’i devrede mi?'],
     fieldGuides: [
       { label: 'Plaka', meaning: 'Seçili aracın kimliğidir.', howToRead: 'Önce doğru aracı seçtiğini buradan doğrula.' },
       { label: 'Shift durumu', meaning: 'Seçili işin operasyon durumudur.', howToRead: 'APPROVED veya ACTIVE bilgisini diğer alanlarla birlikte oku.', risk: 'Tek başına atama tamam anlamına gelmez.' },

@@ -118,7 +118,8 @@ for (const scenario of roleScreenMatrix) {
   const chips = collectChipLabels(response);
   const normalizedReply = normalize(reply);
   must(`${scenario.role} ${scenario.path} reply exists`, normalizedReply.length > 0);
-  must(`${scenario.role} ${scenario.path} reply is screen-first`, normalizedReply.startsWith('bu ekran') || normalizedReply.startsWith('bu bilgi') || normalizedReply.startsWith('şimdi: bu ekran') || normalizedReply.startsWith('şimdi: bu bilgi'));
+  const nowFirstPaths = ['/superadmin/operations', '/room/reports', '/company/operations', '/school/operations', '/organization/operations'];
+  must(`${scenario.role} ${scenario.path} reply is screen-first`, nowFirstPaths.includes(scenario.path) ? (normalizedReply.startsWith('simdi:') || normalizedReply.startsWith('bu ekran') || normalizedReply.startsWith('bu bilgi')) : (normalizedReply.startsWith('bu ekran') || normalizedReply.startsWith('bu bilgi') || normalizedReply.startsWith('simdi: bu ekran') || normalizedReply.startsWith('simdi: bu bilgi')));
   must(`${scenario.role} ${scenario.path} reply avoids validation text`, !normalizedReply.includes('validation failed'));
   must(`${scenario.role} ${scenario.path} reply avoids generic fallback`, !normalizedReply.includes('bunu anlayamadim'));
   must(`${scenario.role} ${scenario.path} reply avoids capital after comma`, !/Bu ekran,\s+[A-ZÇĞİÖŞÜ]/.test(reply));

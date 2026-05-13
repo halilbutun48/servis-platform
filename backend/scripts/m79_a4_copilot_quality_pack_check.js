@@ -84,7 +84,7 @@ for (const scenario of scenarios) {
   must(`${scenario.id} quick actions exist`, Array.isArray(response.quickActions) && response.quickActions.length >= 1);
   must(`${scenario.id} suggested chips exist`, Array.isArray(response.suggestedChips) && response.suggestedChips.length >= 1);
   if (scenario.expectedFirstActionKind) must(`${scenario.id} first action kind`, String(response.quickActions[0]?.actionKind || '') === String(scenario.expectedFirstActionKind));
-  if (['NEXT_SCREEN', 'NEXT_STEP', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'READINESS_CHECK'].includes(scenario.expectedType)) {
+  if (['NEXT_SCREEN', 'NEXT_STEP', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(scenario.expectedType)) {
     must(`${scenario.id} reply is action-led`, /Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk kontrol:|İlk bakılacak yer:/.test(response.reply));
   }
 }

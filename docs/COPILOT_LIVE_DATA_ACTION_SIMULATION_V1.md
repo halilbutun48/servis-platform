@@ -42,10 +42,10 @@ Copilot gerçek aksiyon çalıştırmaz. Şu dili kullanır:
 - `Bu işlem sende görünmüyorsa yetki/rol sınırı olabilir.`
 
 Yasak örnekler:
-- `Şimdi ödeme başlat`
-- `execute`
-- `veriyi güncelledim`
-- `ben bunu düzelttim`
+- Ödeme başlatmaya yönlendirme
+- Doğrudan çalıştırma iddiası
+- Veriyi değiştirdim iddiası
+- Ben bunu düzelttim iddiası
 
 ## Workflow Aileleri
 - `Vardiya / Görev / Rota / GPS`
@@ -85,6 +85,13 @@ Yasak örnekler:
 - Yetki sınırı workflow sinyalinin önüne geçmez; yan not olarak kalır.
 - `summary` kısa konu etiketi taşır; ayrıntı `reply` içinde kalır.
 - `Soru/cevap` akışında `Şimdi / Bu programda bunun anlamı / Neden? / Öneri / Sıradaki doğru işlem` korunur.
+
+## COP-03C-FIX-02
+- Workflow soruları ekran amacıyla başlamaz; canlı sinyal öne alınır.
+- Vardiya, konum, hakediş, sözleşme ve operasyon sağlığı sorularında genel kayıt cümlesi geri planda kalır.
+- Sözleşme ile vardiya, hakediş önizleme ve Sürücünün telefon GPS’i dili korunur.
+- Workflow chip'leri bağlama göre değişir; `Bu kayıt ne durumda?` benzeri genel seçenekler otomatik öne çıkmaz.
+- Durum onaylı ve hazır kayıtlar için ilk kontrol canlı başlatma zamanı, aktif durum, GPS ve OperationProof akışıdır.
 
 ## Sözlük
 - `Sürücünün telefon GPS’i`

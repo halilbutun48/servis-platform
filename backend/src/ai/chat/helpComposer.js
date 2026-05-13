@@ -315,21 +315,33 @@ function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefin
   if (String(questionType || '') === 'SCREEN_PURPOSE' && screenPath !== '/superadmin' && screenPath !== '/superadmin/commercial-core') return null;
 
   const isSuperAdminOverview = screenPath === '/superadmin';
+  const isOperations = screenPath === '/superadmin/operations';
+  const isLaunchGate = screenPath === '/superadmin/pilot-launch-gate';
+  const isOperationalPanel = isOperations || isLaunchGate || screenPath === '/company/operations' || screenPath === '/school/operations' || screenPath === '/organization/operations';
   const isCommercial = screenPath === '/superadmin/commercial-core';
   const isQuality = screenPath === '/superadmin/trust-quality';
   const isVerification = screenPath === '/superadmin/operation-verification';
-  const isTargetSurface = isSuperAdminOverview || isCommercial || isQuality || isVerification;
+  const isTargetSurface = isSuperAdminOverview || isOperationalPanel || isCommercial || isQuality || isVerification;
   if (!isTargetSurface) return null;
 
   const text = normalizeText(message);
-  const relevantQuestionType = ['SCREEN_PURPOSE', 'STATUS_HELP', 'WHY_BLOCKED', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'READINESS_CHECK', 'TERM_HELP'].includes(String(questionType || ''));
-  const purposeLead = buildVisibleScreenPurposeLead(firstNonEmpty(
-    screenDefinition?.menuPurpose,
-    screenDefinition?.purpose,
-    screenDefinition?.guidePurpose,
-    screenDefinition?.label,
-    'Bu ekran',
-  ));
+  const relevantQuestionType = ['STATUS_HELP', 'WHY_BLOCKED', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'READINESS_CHECK', 'TERM_HELP', 'FIRST_CONTROL'].includes(String(questionType || ''));
+  if (isOperationalPanel && relevantQuestionType) {
+    const now = isLaunchGate
+      ? 'Sahaya çıkış hazırlığını kontrol et.'
+      : screenPath === '/superadmin/operations'
+        ? 'Açık veya riskli kayıtları kontrol et.'
+        : 'Bekleyen işleri kontrol et.';
+    return `Şimdi: ${now} Bu programda bunun anlamı: Operasyon özetinde bekleyen iş ve risk sinyalleri okunur. Neden? Bu ekran açık veya riskli işleri öne çıkarır. Öneri: İlgili kartı aç. Sıradaki doğru işlem: Operasyon kartını incele.`.trim();
+  }
+  if (isLaunchGate && relevantQuestionType) {
+    const now = 'Sahaya çıkış hazırlığını kontrol et.';
+    return `Şimdi: ${now} Bu programda bunun anlamı: Sahaya çıkış öncesi hazırlık ve kontrol işaretleri aynı yerde okunur. Neden? Bu ekran sahaya çıkış öncesi eksik veya riskli işleri öne çıkarır. Öneri: Hazırlık kartlarını ve açık riskleri kontrol et. Sıradaki doğru işlem: Sahaya çıkış durumunu ve ilgili kontrol kartını aç.`.trim();
+  }
+  if (isOperations && relevantQuestionType) {
+    const now = 'Açık veya riskli kayıtları incele.';
+    return `Şimdi: ${now} Bu programda bunun anlamı: Açık veya riskli kayıtlar ve bekleyen işler birlikte okunur. Neden? Bu ekran açık veya riskli kayıtları ve bekleyen işleri öne çıkarır. Öneri: Riskli kartı aç, açık işleri sırala, gerekirse ilgili sürücü veya araç ekranına geç. Sıradaki doğru işlem: Açık veya riskli kaydı seçip detayına in.`.trim();
+  }
 
   const asksSystem = /(sistem durumu|sistem durumu ne demek|ne açık ne kapalı|ne acik ne kapali|ödeme neden kapalı|ödeme neden kapali|ödemeler neden kapalı|ödemeler neden kapali|neden kapalı|neden kapali)/.test(text);
   const asksCommercial = /(hakediş|hakedis|ödeme başlat|odeme baslat|ödemeyi başlat|önizleme|onizleme|csv|csv taslağı|csv taslagi|hazırlık|hazirlik|hazır mı|hazir mi|kontrol gerekli|eksik bilgi)/.test(text);
@@ -342,24 +354,24 @@ function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefin
       return `Bu ekran, sistem durumu bandı kanıt ve kalite hazırlıklarını birlikte gösterir. Şimdi: Sistem durumu bandını incele. Bu programda bunun anlamı: Sistem durumu bandı, sahaya çıkış ve hazırlık işaretlerini bir arada okumanı sağlar. Neden? Ödeme, hakediş ve komisyon kapalıdır; saha testi bekliyor. Öneri: Sistemin canlı durumunu ve hazırlık işaretlerini birlikte oku. Sıradaki doğru işlem: Sistem durumu bandını açıp ilgili kontrol kartını incele.`.trim();
     }
     if (screenPath === '/superadmin/commercial-core') {
-      return `Bu ekran, ticari akış özeti hakediş hazırlığı, önizleme ve CSV taslağını birlikte gösterir. Şimdi: Ticari akış özetini incele. Bu programda bunun anlamı: Ticari akış, hakediş hazırlığı ile görünür önizlemeyi aynı yerde okumanı sağlar. Neden? Bu ekran ödeme başlatmaz; ödeme, hakediş ve komisyon kapalıdır. Öneri: Önizleme kayıtlarını ve CSV taslağını kontrol et. Sıradaki doğru işlem: Ticari akış özetini açıp hakediş önizlemesini incele.`.trim();
+      return `Bu ekran, ticari akış özeti hakediş hazırlığı, önizleme ve CSV taslağını birlikte gösterir. Şimdi: Ticari akış özetini incele. Bu programda bunun anlamı: Ticari akış, hakediş hazırlığı ile görünür önizlemeyi aynı yerde okumanı sağlar. Neden? Bu yüzey yalnızca önizleme ve hazırlık sinyalini gösterir; hakediş ve komisyon satırları kapalı olabilir. Öneri: Önizleme kayıtlarını ve CSV taslağını kontrol et. Sıradaki doğru işlem: Ticari akış özetini açıp hakediş önizlemesini incele.`.trim();
     }
   }
 
   if ((asksProof || (isVerification && relevantQuestionType)) && isTargetSurface) {
-    const now = actionLeadQuestion ? `${purposeLead} Servis Kanıtı kartını aç.` : `${purposeLead} Servis Kanıtı kartını incele.`;
+    const now = actionLeadQuestion ? 'Servis Kanıtı kartını aç.' : 'Servis Kanıtı kartını incele.';
     return `Şimdi: ${now} Bu programda bunun anlamı: Servis Kanıtı operasyon görünürlüğü sağlar. Neden? Ham GPS ve teknik veri göstermez; sürücünün telefon GPS’i güvenli sinyal olarak görünür. Hakediş için nihai karar değildir. Öneri: Servis Kanıtı kartını seçili kayıtla birlikte oku. Sıradaki doğru işlem: Servis Kanıtı kartını açıp ilgili kaydı kontrol et.`.trim();
   }
   if ((asksQuality || (isQuality && relevantQuestionType)) && (isQuality || isCommercial || isSuperAdminOverview || isVerification)) {
-    const now = actionLeadQuestion ? `${purposeLead} Kalite akış özetine bak.` : `${purposeLead} Kalite akış özetini incele.`;
+    const now = actionLeadQuestion ? 'Kalite akış özetine bak.' : 'Kalite akış özetini incele.';
     return `Şimdi: ${now} Bu programda bunun anlamı: Kalite akış özeti taslak skor, inceleme kararı ve denetim izini birlikte gösterir. Neden? Bu bilgi kesin kalite puanı değildir; sağlayıcı sıralaması değildir. Hakediş veya komisyon hesabını etkilemez. Öneri: Kalite sinyalini sağlayıcı puanı ve denetim iziyle birlikte oku. Sıradaki doğru işlem: Kalite akış özetini açıp ilgili sağlayıcı satırını kontrol et.`.trim();
   }
   if ((asksCommercial || (isCommercial && relevantQuestionType)) && (isCommercial || isSuperAdminOverview)) {
-    const now = actionLeadQuestion ? `${purposeLead} Ticari akış özetine bak.` : `${purposeLead} Ticari akış özetini incele.`;
-    return `Şimdi: ${now} Bu programda bunun anlamı: Ticari akış özeti hakediş hazırlığı, önizleme ve CSV taslağını gösterir. Neden? Bu ekran ödeme başlatmaz; ödeme, hakediş ve komisyon kapalıdır. Öneri: Önizleme kayıtlarını ve CSV taslağını kontrol et. Sıradaki doğru işlem: Ticari akış özetini açıp hakediş önizlemesini incele.`.trim();
+    const now = actionLeadQuestion ? 'Hakediş önizlemesine bak.' : 'Ticari akış özetini incele.';
+    return `Şimdi: ${now} Bu programda bunun anlamı: Ticari akış özeti hakediş hazırlığı, önizleme ve CSV taslağını gösterir. Neden? Bu yüzey yalnızca önizleme ve hazırlık sinyalini gösterir; hakediş ve komisyon kapalı olabilir. Öneri: Önizleme kayıtlarını ve CSV taslağını kontrol et. Sıradaki doğru işlem: Ticari akış özetini açıp hakediş önizlemesini incele.`.trim();
   }
   if ((asksSystem || (isSuperAdminOverview && relevantQuestionType)) && isSuperAdminOverview) {
-    const now = actionLeadQuestion ? `${purposeLead} Sistem durumu bandına bak.` : `${purposeLead} Sistem durumu bandını incele.`;
+    const now = actionLeadQuestion ? 'Sistem durumu bandına bak.' : 'Sistem durumu bandını incele.';
     return `Şimdi: ${now} Bu programda bunun anlamı: Sistem durumu bandı kanıt ve kalite hazırlıklarını birlikte gösterir. Neden? Ödeme, hakediş ve komisyon kapalıdır; saha testi bekliyor. Öneri: Sistemin canlı durumunu ve hazırlık işaretlerini birlikte oku. Sıradaki doğru işlem: Sistem durumu bandını açıp ilgili kontrol kartını incele.`.trim();
   }
   return null;
@@ -466,7 +478,7 @@ function buildContinuityMeta({ message, conversationState, screenContext, reques
 function topicLabelForContext(topic) {
   const labels = {
     SCREEN_PURPOSE: 'Ekran amacı',
-    SHIFT_BLOCKED: 'Vardiya blokajı',
+    SHIFT_BLOCKED: 'Vardiya engeli',
     VEHICLE_NOT_VISIBLE: 'GPS görünürlüğü',
     DRIVER_PHONE_GPS: 'Sürücünün telefon GPS’i',
     PROVIDER_BETTER: 'Kalite sinyali',
@@ -485,7 +497,7 @@ function topicLabelForContext(topic) {
     NEXT_SCREEN: 'Sonraki ekran',
     NEXT_STEP: 'Sıradaki doğru işlem',
     FIRST_CONTROL: 'İlk kontrol',
-    WHY_BLOCKED: 'Blokaj nedeni',
+    WHY_BLOCKED: 'Engel nedeni',
     MISSING_DATA: 'Eksik veri',
     CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
   };
@@ -523,7 +535,7 @@ function shouldUseWorkflowGuide({ questionType, activeTopic }) {
   const type = String(questionType || '');
   if (type === 'SCREEN_PURPOSE') return false;
   if (isWorkflowTopic(activeTopic)) return true;
-  return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'WHY_BLOCKED', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
+  return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
 }
 
 function detectContextTopic({ message, questionType, screenPath, screenContext, sourceScreenContext, analysis }) {
@@ -621,26 +633,40 @@ function buildContextualSuggestedChips({
     chips.push('Bu kayıt ne durumda?', 'Neden ilerlemiyor?', 'Sıradaki adımı açıkla', 'Eksik veri', 'Yetki sınırı');
   }
   const pathSpecificChips = (() => {
-    if (path.includes('/driver/today')) return ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı'];
-    if (path.includes('/personel/live')) return ['Bu ekranı detaylı anlat', 'Servisim nerede?', 'Bildirim kaynağı', 'Eksik veri'];
-    if (path.includes('/parent/live')) return ['Bu ekranı detaylı anlat', 'Öğrencimin servisi nerede?', 'Bildirim kaynağı', 'Eksik veri'];
-    if (path.includes('/room/map')) return ['Bu ekranı detaylı anlat', 'Bu araç neden haritada görünmüyor?', 'GPS bekleniyor', "Sürücünün telefon GPS’i neden devrede?"];
-    if (path.includes('/superadmin/operations')) return ['Bu ekranı detaylı anlat', 'Açık sorunları göster', 'Canlılık riski nedir?', 'Stale/offline kaç?', 'Yetki sınırı'];
-    if (path.includes('/superadmin/commercial-core')) return ['Bu ekranı detaylı anlat', 'Bu hakediş neden hazır değil?', 'Hakediş eksik bilgi', 'Sözleşme/vardiya kontrolü'];
-    if (path.includes('/room/commercial-flow')) return ['Bu ekranı detaylı anlat', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Hakediş eksik bilgi', 'Sözleşme/vardiya kontrolü'];
-    if (path.includes('/shared/feedback')) return ['Bu ekranı detaylı anlat', 'Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?', 'Geri bildirim açık', 'Bu kayıt kimde?'];
-    if (path.includes('/shared/kvkk')) return ['Bu ekranı detaylı anlat', 'Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?', 'Yetki sınırı'];
-    if (path.includes('/shared/notifications')) return ['Bu ekranı detaylı anlat', 'Okunmamış bildirim var mı?', 'Bu bildirim hangi olaydan geldi?', 'İlgili kayda gitmeli miyim?', 'Bildirim kaynağı'];
+    if (path.includes('/driver/today')) return workflowTopic
+      ? ['Bugünkü görev nedir?', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?']
+      : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı'];
+    if (path.includes('/personel/live')) return workflowTopic
+      ? ['Servisim nerede?', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?']
+      : ['Bu ekranı detaylı anlat', 'Servisim nerede?', 'Bildirim kaynağı', 'Eksik veri'];
+    if (path.includes('/parent/live')) return workflowTopic
+      ? ['Öğrencimin servisi nerede?', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?']
+      : ['Bu ekranı detaylı anlat', 'Öğrencimin servisi nerede?', 'Bildirim kaynağı', 'Eksik veri'];
+    if (path.includes('/room/map')) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+    if (path.includes('/room/operation-health')) return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Canlılık riskini açıkla'];
+    if (path.includes('/room/shifts')) {
+      if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(questionType || ''))) return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
+      if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(questionType || ''))) return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
+      if (['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''))) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+      if (['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP'].includes(String(questionType || ''))) return ['Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?'];
+      return ['Bu vardiya neden başlayamıyor?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?'];
+    }
+    if (path.includes('/superadmin/operations')) return ['Bu ekranı detaylı anlat', 'Bu vardiya neden başlayamıyor?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?'];
+    if (path.includes('/superadmin/commercial-core')) return ['Bu hakediş neden hazır değil?', 'Hakediş eksik bilgi', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
+    if (path.includes('/room/commercial-flow')) return ['Bu sözleşmeden bugün vardiya üretildi mi?', 'İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
+    if (path.includes('/commercial-flow')) return ['Bu sözleşmeden bugün vardiya üretildi mi?', 'Hakediş neden hazır değil?', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
+    if (path.includes('/shared/feedback')) return ['Bu ekranı detaylı anlat', 'Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?', 'Geri bildirim açık'];
+    if (path.includes('/shared/kvkk')) return ['Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?', 'Yetki sınırı'];
+    if (path.includes('/shared/notifications')) return ['Okunmamış bildirim var mı?', 'Bu bildirim hangi olaydan geldi?', 'Bildirim kaynağı', 'İlgili kayda gitmeli miyim?'];
     if (path.includes('/shared/logs')) return ['Bu ekranı detaylı anlat', 'İşlem kaydı ne demek?', 'Bildirimle farkı ne?'];
-    if (path.includes('/room/drivers')) return ['Bu ekranı detaylı anlat', 'Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla'];
-    if (path.includes('/room/commercial-flow')) return ['Bu ekranı detaylı anlat', 'İlk neye bakayım?', 'Hakediş neden hazır değil?'];
+    if (path.includes('/room/drivers')) return ['Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla'];
     if (path.includes('/room/reports')) return ['Bu ekranı detaylı anlat', 'Hangi rapora bakmalıyım?', 'Filtreleri nasıl kullanırım?'];
     if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
       return ['Bu ekranı detaylı anlat', 'Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri', 'Yetki sınırı'];
     }
     if (path.includes('/driver/change-pin')) return ['Bu ekranı detaylı anlat', 'PIN veya şifre nasıl değişir?', 'İlk girişte ne olur?'];
-    if (path.includes('/superadmin/trust-quality')) return ['Bu ekranı detaylı anlat', 'Bu bilgi kesin kalite puanı mı?', 'Bu sağlayıcı neden daha iyi?'];
-    if (path.includes('/superadmin/operation-verification')) return ['Bu ekranı detaylı anlat', 'Servis kanıtı ne işe yarar?', 'İlk neye bakayım?'];
+    if (path.includes('/superadmin/trust-quality')) return ['Bu sağlayıcı neden daha iyi?', 'Bu bilgi kesin kalite puanı mı?'];
+    if (path.includes('/superadmin/operation-verification')) return ['Servis kanıtı ne işe yarar?', 'İlk neye bakayım?'];
     return [];
   })();
   if (pathSpecificChips.length) {
@@ -713,7 +739,7 @@ function buildContextualSuggestedChips({
     chips.push('İlgili ekrana git', 'Hangi ekrana geçmeliyim?');
   }
 
-  if (roleBoundary) chips.unshift('Yetki sınırını kontrol et');
+  if (roleBoundary && ['ROLE_HELP', 'WHO_CAN_DO', 'ROLE_BOUNDARY', 'KVKK_VISIBILITY'].includes(String(questionType || ''))) chips.unshift('Yetki sınırını kontrol et');
 
   const fallback = uniqueStrings([
     ...(Array.isArray(screenQuestions) ? screenQuestions : []).slice(0, 2),
@@ -813,6 +839,7 @@ function buildContextPriorityDecision({
   const recentMessages = Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages.slice(-6) : [];
   const recentUserMessage = [...recentMessages].reverse().find((row) => normalizeText(row?.role) === 'user' || normalizeText(row?.role) === 'assistant');
   const activeTopic = detectContextTopic({ message, questionType, screenPath, screenContext, sourceScreenContext, analysis });
+  const workflowQuestion = isWorkflowDiagnosticQuestionType(questionType) || isWorkflowTopic(activeTopic);
   const isFollowUp = Boolean(looksLikeShortFollowUp(message) || (conversationState?.lastQuestionType && recentMessages.length) || /^(neden|niye|peki|tamam|devam|şimdi|simdi|burada|bunda|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta)/.test(normalizeText(message)));
   const sameRecordLikely = Boolean(
     selectedLabel && conversationState?.lastSelectedLabel && normalizeText(selectedLabel) === normalizeText(conversationState.lastSelectedLabel),
@@ -880,18 +907,18 @@ function buildContextPriorityDecision({
   const selectedHasGps = /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedEntityText);
   let selectedRecordMismatchLead = '';
   if ((activeTopic === 'CONTRACT_TO_SHIFT' || activeTopic === 'CONTRACT_SHIFT_TODAY') && selectedHasShift && !selectedHasContract) {
-    selectedRecordMismatchLead = 'Şimdi: Seçili kayıt bir vardiya; sözleşmeden bugün vardiya üretildiğini bu kayıttan kesin söyleyemem.';
+    selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya contractShiftGeneration sinyali gerekir.';
   } else if ((activeTopic === 'PAYMENT_READINESS' || activeTopic === 'PAYMENT_MISSING') && !selectedHasPayment) {
     selectedRecordMismatchLead = 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.';
   } else if ((activeTopic === 'VEHICLE_NOT_VISIBLE' || activeTopic === 'DRIVER_PHONE_GPS') && selectedHasShift && !selectedHasVehicle && !selectedHasGps) {
-    selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; araç görünürlüğü için araç ve GPS sinyalini ayrı kayıtta kontrol et.';
+    selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; araç görünürlüğü için araç ve Sürücünün telefon GPS’i sinyalini ayrı kayıtta kontrol et.';
   }
   const topicWhy = {
     QUALITY_SIGNAL: 'Bu sinyal kesin kalite puanı değil; sağlayıcıyı okumaya yardım eder.',
     PAYMENT_READINESS: 'Hakediş hazırlığı tamamlanmadan görünüm hazır sayılmaz.',
     PAYMENT_MISSING: 'Hakediş eksikleri kapatılmamış olabilir.',
     PAYMENT_PREVIEW: 'Hakediş önizlemesi bu ekranda görünmüyor olabilir.',
-    SHIFT_BLOCKED: 'Vardiya, araç, sürücü, rota veya GPS sinyali eksik olabilir.',
+    SHIFT_BLOCKED: 'Vardiya onaylı olsa bile canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve OperationProof eksik olabilir.',
     FEEDBACK_STATUS: 'Kayıt açık ya da kritik olduğu için tamamlanmış görünmüyor.',
     NOTIFICATION_SOURCE: 'Bildirim bir olay kaydına bağlı olduğu için kaynağı ayrıca okunmalı.',
     KVKK_VISIBILITY: 'Bilgi rol bazlı görünürlük nedeniyle gizli olabilir.',
@@ -900,7 +927,7 @@ function buildContextPriorityDecision({
     CONTRACT_TO_SHIFT: 'Sözleşme ile vardiya bağı netleşmeden iş ilerlemiyor olabilir.',
     CONTRACT_SHIFT_TODAY: 'Sözleşme ile bugünkü vardiya üretim bağı netleşmeden karar verilmez.',
     DRIVER_PHONE_GPS: 'Telefon GPS’i cihaz GPS’inin yerine geçiyor olabilir.',
-    VEHICLE_NOT_VISIBLE: 'Araç, görev bağlantısı veya son GPS eskimiş olabilir.',
+    VEHICLE_NOT_VISIBLE: 'Araç, görev bağlantısı, son GPS veya Sürücünün telefon GPS’i devrede olmadığı için görünmüyor olabilir.',
   };
   const whyCandidate = firstNonEmpty(
     selectedRecordMismatchLead,
@@ -936,7 +963,7 @@ function buildContextPriorityDecision({
     NEXT_SCREEN: 'Önce ilgili ekrana geç.',
     NEXT_STEP: 'Önce ilgili kayıt veya alanı kontrol et.',
     WHY_BLOCKED: 'Önce blokaj nedeni ve eksik alanı kontrol et.',
-    SHIFT_BLOCKED: 'Önce vardiya, araç, sürücü, rota ve GPS sinyalini birlikte kontrol et.',
+    SHIFT_BLOCKED: 'Önce canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve OperationProof satırlarını birlikte kontrol et.',
     FIRST_CONTROL: 'Önce ilgili satırı veya ilk kontrol alanını aç.',
     SAFE_NEXT_STEP: 'Önce en risksiz kayıt veya alanı kontrol et.',
     STATUS_HELP: 'Önce durum satırını ve ilgili kaydı kontrol et.',
@@ -948,7 +975,7 @@ function buildContextPriorityDecision({
     MISSING_DATA: 'Önce boş alanları ve eksik bilgi blokajını kontrol et.',
     WHO_CAN_DO: 'Önce yetki sınırını ve ilgili rolü kontrol et.',
     DRIVER_PHONE_GPS: 'Önce sürücünün telefon GPS’i ile cihaz GPS’i kaynağını ayır.',
-    VEHICLE_NOT_VISIBLE: 'Önce araç GPS’i, görev bağlantısı ve son konumu kontrol et.',
+    VEHICLE_NOT_VISIBLE: 'Önce araç GPS’i, görev bağlantısı, son konum ve Sürücünün telefon GPS’i sinyalini kontrol et.',
   };
   const bestNextAction = firstNonEmpty(
     selectedRecordMismatchLead,
@@ -998,16 +1025,25 @@ function buildContextPriorityDecision({
     bestNextAction,
     'Sıradaki doğru işlem ne?',
   );
-  const summaryLead = firstNonEmpty(
-    selectedRecordMismatchLead,
-    diagnosticPrioritySummary,
-    liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
-    evidenceConfidence,
-    roleBoundary,
-    topicLabel,
-    selectedRecordStatus ? `Seçili kayıt: ${selectedRecordStatus}` : '',
-    '',
-  );
+  const summaryLead = workflowQuestion
+    ? pickWorkflowVisibleReply(
+      selectedRecordMismatchLead,
+      diagnosticPrioritySummary ? `Ekrandaki sinyale göre: ${diagnosticPrioritySummary}` : '',
+      liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
+      evidenceConfidence,
+      roleBoundary,
+      'Ekrandaki sinyale göre konuşuyorum.',
+    )
+    : firstNonEmpty(
+      selectedRecordMismatchLead,
+      diagnosticPrioritySummary,
+      liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
+      evidenceConfidence,
+      roleBoundary,
+      selectedRecordStatus ? `Seçili kayıt: ${selectedRecordStatus}` : '',
+      topicLabel,
+      '',
+    );
   return {
     activeTopic,
     activeTopicLabel: topicLabel,
@@ -2027,17 +2063,90 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
     const driversMenu = findMenu(screenDefinition, ['sürücü', 'driver'], ['/drivers']);
     const agreementsMenu = findMenu(screenDefinition, ['sözleşme', 'agreement'], ['/agreements']);
     const hasSelection = Boolean(context?.selectedLabel || context?.selectedSummary || context?.selectedEntityId || context?.selectedEntityType || context?.id);
+    const workflowQuestion = isWorkflowTopic(context?.activeTopic) || isWorkflowDiagnosticQuestionType(questionType);
+    const workflowAction = (() => {
+      if (!workflowQuestion) return null;
+      if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(context?.activeTopic || questionType || ''))) {
+        return {
+          guideLabel: 'Hakediş önizleme rehberini aç',
+          jobType: 'ASSIGNMENT_READINESS_GUIDE',
+          guideLevel: 'STEP_BY_STEP',
+          reason: 'Hakediş önizleme sinyallerini adım adım sıralar.',
+          askLabel: 'Bunu sor: Bu hakediş neden hazır değil?',
+          askQuery: 'bu hakediş neden hazır değil',
+          askReason: 'Hakediş eksiklerini hızlıca tekrar sorar.',
+        };
+      }
+      if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(context?.activeTopic || questionType || ''))) {
+        return {
+          guideLabel: 'Sözleşme → vardiya rehberini aç',
+          jobType: 'ASSIGNMENT_READINESS_GUIDE',
+          guideLevel: 'STEP_BY_STEP',
+          reason: 'Sözleşme ve vardiya bağını sıraya koyar.',
+          askLabel: 'Bunu sor: Bu sözleşmeden bugün vardiya üretildi mi?',
+          askQuery: 'bu sözleşmeden bugün vardiya üretildi mi',
+          askReason: 'Üretim bilgisini sözleşme üzerinden tekrar sorar.',
+        };
+      }
+      if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(context?.activeTopic || questionType || ''))) {
+        return {
+          guideLabel: 'GPS teşhis rehberini aç',
+          jobType: 'GPS_SIGNAL_DIAGNOSIS_GUIDE',
+          guideLevel: 'WHY',
+          reason: 'Araç GPS’i, görev bağlantısı ve sürücünün telefon GPS’i akışını açar.',
+          askLabel: 'Bunu sor: Bu araç neden haritada görünmüyor?',
+          askQuery: 'bu araç neden haritada görünmüyor',
+          askReason: 'Konum görünürlüğü teşhisini tekrar sorar.',
+        };
+      }
+      if (['QUALITY_SIGNAL', 'TRUST_QUALITY'].includes(String(context?.activeTopic || questionType || ''))) {
+        return {
+          guideLabel: 'Kalite sinyali rehberini aç',
+          jobType: 'ASSIGNMENT_READINESS_GUIDE',
+          guideLevel: 'WHY',
+          reason: 'Kalite, inceleme ve denetim izini birlikte açar.',
+          askLabel: 'Bunu sor: Bu sağlayıcı neden daha iyi görünüyor?',
+          askQuery: 'bu sağlayıcı neden daha iyi görünüyor',
+          askReason: 'Kalite sinyalini tekrar sorar.',
+        };
+      }
+      if (['FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'WHO_CAN_DO', 'ROLE_BOUNDARY'].includes(String(context?.activeTopic || questionType || ''))) {
+        return {
+          guideLabel: 'Durum rehberini aç',
+          jobType: 'ROLE_HELP_GUIDE',
+          guideLevel: 'SHORT',
+          reason: 'Rol, bildirim ve görünürlük sınırını açıklar.',
+          askLabel: 'Bunu sor: Bu kayıt kimde?',
+          askQuery: 'bu kayıt kimde',
+          askReason: 'Sorumlu rolü tekrar sorar.',
+        };
+      }
+      return {
+        guideLabel: 'Vardiya blokajı rehberini aç',
+        jobType: 'ASSIGNMENT_READINESS_GUIDE',
+        guideLevel: 'STEP_BY_STEP',
+        reason: 'Canlı başlatma, aktif durum, GPS ve OperationProof akışını sıralar.',
+        askLabel: 'Bunu sor: Bu vardiya neden başlayamıyor?',
+        askQuery: 'bu vardiya neden başlayamıyor',
+        askReason: 'Başlayamama nedenini tekrar sorar.',
+      };
+    })();
     rows.push(currentScreenAction(screenDefinition, context, 'Aynı konuşmayı seçili vardiya ile ekranda sürdürür.'));
     if (Number(context?.openOfferCount || 0) > 0 || ['GO_TO', 'WHY_BLOCKED'].includes(questionType)) rows.push(menuAction(offersMenu, context, 'Teklif kararını kapatmak için ilgili listeyi açar.', { accent: 'primary' }));
     if (!context?.vehicleId || questionType === 'NEXT_STEP') rows.push(menuAction(vehiclesMenu, context, 'Araç atamasını veya araç durumunu kontrol etmek için açılır.', { routeParams: context?.vehicleId ? { focusVehicleId: Number(context.vehicleId) } : {}, accent: 'primary' }));
     if (!context?.driverId || questionType === 'NEXT_STEP') rows.push(menuAction(driversMenu, context, 'Sürücü bağını netleştirmek için açılır.', { accent: 'warning' }));
     if (String(context?.agreementId || '') || questionType === 'GO_TO') rows.push(menuAction(agreementsMenu, context, 'Sözleşmeye bağlı akışı kontrol etmek için açılır.'));
-    rows.push(makeGuideAction('Atamaya hazır mı rehberini aç', { jobType: 'ASSIGNMENT_READINESS_GUIDE', guideLevel: 'STEP_BY_STEP' }, 'Bu kayıt için eksikleri adım adım sıralar.'));
-    rows.push(makeAskAction(
-      hasSelection ? 'Bunu sor: Bu kayıt ne durumda?' : 'Bunu sor: Bu ekranı detaylı anlat',
-      hasSelection ? 'bu kayıt ne durumda' : 'bu ekranı detaylı anlat',
-      hasSelection ? 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.' : 'Bu ekranın amacını kısa anlatır.',
-    ));
+    if (workflowAction) {
+      rows.push(makeGuideAction(workflowAction.guideLabel, { jobType: workflowAction.jobType, guideLevel: workflowAction.guideLevel }, workflowAction.reason));
+      rows.push(makeAskAction(workflowAction.askLabel, workflowAction.askQuery, workflowAction.askReason));
+    } else {
+      rows.push(makeGuideAction('Vardiya blokajı rehberini aç', { jobType: 'ASSIGNMENT_READINESS_GUIDE', guideLevel: 'STEP_BY_STEP' }, 'Bu kayıt için eksikleri adım adım sıralar.'));
+      rows.push(makeAskAction(
+        hasSelection ? 'Bunu sor: Bu vardiya neden başlayamıyor?' : 'Bunu sor: Bu ekranı detaylı anlat',
+        hasSelection ? 'bu vardiya neden başlayamıyor' : 'bu ekranı detaylı anlat',
+        hasSelection ? 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.' : 'Bu ekranın amacını kısa anlatır.',
+      ));
+    }
     rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
   } else if (entityType === 'vehicle') {
     const vehiclesMenu = findMenu(screenDefinition, ['araç', 'vehicle'], ['/vehicles']);
@@ -2072,7 +2181,7 @@ function nextPromptByEntity(entityType, roleMode) {
   return roleMode === 'SIMPLE' ? 'Takıldığın sözü veya düğmeyi yaz.' : 'İstersen ilgili menüyü veya rehberi aşağıdan aç.';
 }
 
-function guideLinksForEntity(entityType) {
+function guideLinksForEntity(entityType, { questionType = 'OPEN', activeTopic = '', screenPath: _screenPath = '' } = {}) {
   if (String(entityType) === 'vehicle') {
     return [
       makeLinkedGuide('LOCATION_SOURCE_GUIDE', 'Konum kaynağı rehberini aç', 'SHORT', 'Telefon GPS\'i ve cihaz GPS\'i farkını açar.'),
@@ -2081,10 +2190,53 @@ function guideLinksForEntity(entityType) {
     ];
   }
   if (String(entityType) === 'shift') {
+    const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType);
+    if (workflowTopic) {
+      if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(activeTopic || questionType || ''))) {
+        return [
+          makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Hakediş önizleme rehberini aç', 'STEP_BY_STEP', 'Hakediş önizleme sinyallerini sıralar.'),
+          makeLinkedGuide('SCREEN_MENU_GUIDE', 'Hakediş ekranını aç', 'SHORT', 'Hakediş önizleme görünümüne götürür.'),
+          makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Eksik bilgi rehberini aç', 'WHY', 'Eksik alanları sadeleştirir.'),
+        ];
+      }
+      if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(activeTopic || questionType || ''))) {
+        return [
+          makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Sözleşme → vardiya rehberini aç', 'STEP_BY_STEP', 'Sözleşme ile vardiya üretimi bağını açar.'),
+          makeLinkedGuide('SCREEN_MENU_GUIDE', 'Sözleşmeler ekranını aç', 'SHORT', 'İlgili sözleşme görünümüne götürür.'),
+          makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Üretim durumu rehberini aç', 'WHY', 'Üretim bilgisini sadeleştirir.'),
+        ];
+      }
+      if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(activeTopic || questionType || ''))) {
+        return [
+          makeLinkedGuide('GPS_SIGNAL_DIAGNOSIS_GUIDE', 'GPS teşhis rehberini aç', 'WHY', 'Araç GPS’i ve Sürücünün telefon GPS’i farkını açar.'),
+          makeLinkedGuide('LOCATION_SOURCE_GUIDE', 'Konum kaynağı rehberini aç', 'SHORT', 'Konum kaynağını netleştirir.'),
+          makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Canlı takip rehberini aç', 'SHORT', 'Canlı takip ekranına götürür.'),
+        ];
+      }
+      if (['QUALITY_SIGNAL', 'TRUST_QUALITY'].includes(String(activeTopic || questionType || ''))) {
+        return [
+          makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Kalite sinyali rehberini aç', 'WHY', 'Kalite, inceleme ve denetim izini birlikte okur.'),
+          makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Karşılaştırma rehberini aç', 'SHORT', 'Sağlayıcı farkını sadeleştirir.'),
+          makeLinkedGuide('ROLE_HELP_GUIDE', 'Rol yardımını aç', 'SHORT', 'Bu rolde nereye bakacağını gösterir.'),
+        ];
+      }
+      if (['FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'WHO_CAN_DO', 'ROLE_BOUNDARY'].includes(String(activeTopic || questionType || ''))) {
+        return [
+          makeLinkedGuide('ROLE_HELP_GUIDE', 'Durum rehberini aç', 'SHORT', 'Rol, bildirim ve görünürlük sınırını açar.'),
+          makeLinkedGuide('BUTTON_ACTION_GUIDE', 'İlişki rehberini aç', 'WHY', 'Kayda bağlı ilişkiyi sadeleştirir.'),
+          makeLinkedGuide('SCREEN_MENU_GUIDE', 'İlgili ekranı aç', 'SHORT', 'Bir sonraki doğru ekrana götürür.'),
+        ];
+      }
+      return [
+        makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Vardiya blokajı rehberini aç', 'STEP_BY_STEP', 'Canlı başlatma, aktif durum, GPS ve OperationProof akışını sıralar.'),
+        makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Şimdi ne yapayım rehberini aç', 'WHY', 'Bir sonraki adımı sadeleştirir.'),
+        makeLinkedGuide('ROLE_HELP_GUIDE', 'Bunu kim yapabilir rehberini aç', 'SHORT', 'Rol sınırını açıklar.'),
+      ];
+    }
     return [
       makeLinkedGuide('OFFER_REVIEW', 'Teklifi inceleme rehberini aç', 'SHORT', 'Kayıt özetini rehber modunda açar.'),
       makeLinkedGuide('OFFER_APPROVAL', 'Teklifi onaylama rehberini aç', 'WHY', 'Onay öncesi dikkat noktalarını açar.'),
-      makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Atamaya hazır mı rehberini aç', 'STEP_BY_STEP', 'Hazırlık eksiklerini sıralar.'),
+      makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Vardiya blokajı rehberini aç', 'STEP_BY_STEP', 'Hazırlık eksiklerini sıralar.'),
     ];
   }
   return [
@@ -2199,7 +2351,7 @@ function composeReply({ questionType, replyMode, guide, message, context, entity
         summary ? `Seçili kayıt: ${summary}` : '',
         rowReply,
       ]).slice(0, 2).join(' • ') || 'Bu ekrandaki veriye göre net blokaj görünmüyor.';
-      const meaning = firstNonEmpty(summary, currentScreenDefinition?.menuPurpose, fallbackScreenDefinition?.menuPurpose, 'Seçili kaydı ve durum satırını birlikte okumak gerekir.');
+      const meaning = firstNonEmpty(summary, 'Seçili kaydı ve durum satırını birlikte okumak gerekir.');
       const suggestion = firstNonEmpty(rowReply, 'Seçili kayıt özetini aç.');
       return toReply(`Şimdi: Bu ekrandaki veriye göre önce seçili kaydı netleştir. Bu programda bunun anlamı: ${meaning}. Neden? ${why} Öneri: ${suggestion} Sıradaki doğru işlem: Seçili kayıt özeti ve durum satırını kontrol et.`.trim());
     }
@@ -2491,35 +2643,28 @@ function composeGeneralProductGuideReply({
     Array.isArray(analysis?.evidence) ? uniqueStrings(analysis.evidence).slice(0, 3).join(' • ') : '',
     '',
   ));
-  const workflowPurposeLead = normalizeVisibleReplyFragment(firstNonEmpty(
-    guide?.screenExplanation,
-    screenDefinition?.menuPurpose,
-    guide?.plainSummary,
-    guide?.summary,
-    'Bu ekran için kısa rehber.',
-  ));
-  const workflowNeedsPurposeLead = resolvedContextPriority.needsSelection
-    && ['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL'].includes(String(questionType || ''));
-  const workflowNow = normalizeVisibleReplyFragment(firstNonEmpty(
-    workflowNeedsPurposeLead ? buildVisibleScreenPurposeLead(workflowPurposeLead) : '',
-    resolvedContextPriority.summaryLead,
+  const workflowNow = pickWorkflowVisibleReply(
     resolvedContextPriority.selectedRecordMismatchLead,
+    resolvedContextPriority.diagnosticPriority?.summary ? `Ekrandaki sinyale göre: ${resolvedContextPriority.diagnosticPriority.summary}` : '',
+    resolvedContextPriority.liveFactConfidence?.summary ? `Ekrandaki sinyale göre: ${resolvedContextPriority.liveFactConfidence.summary}` : '',
     resolvedContextPriority.evidenceConfidence,
     analysisEvidence ? `Ekrandaki sinyale göre konuşuyorum. Bunu şuradan anlıyorum: ${analysisEvidence}.` : '',
     resolvedContextPriority.roleBoundary,
     'Ekrandaki sinyale göre konuşuyorum.',
-  ));
-  const workflowMeaning = normalizeVisibleReplyFragment(firstNonEmpty(
+  );
+  const workflowMeaning = pickWorkflowVisibleReply(
     resolvedContextPriority.activeTopicLabel,
-    workflowNeedsPurposeLead ? workflowPurposeLead : 'Görünen kayıt ve durum satırı ana ipucudur.',
-  ));
-  const workflowWhy = normalizeVisibleReplyFragment(firstNonEmpty(
+    resolvedContextPriority.diagnosticPriority?.summary,
+    'Görünen kayıt ve durum satırı ana ipucudur.',
+  );
+  const workflowWhy = pickWorkflowVisibleReply(
+    resolvedContextPriority.selectedRecordMismatchLead ? `Bunu şuradan anlıyorum: ${resolvedContextPriority.selectedRecordMismatchLead}` : '',
     analysis?.reasoningLead,
     analysisEvidence ? `Bunu şuradan anlıyorum: ${analysisEvidence}.` : '',
     resolvedContextPriority.whyCandidate,
     'Bu ekranda kesin kanıt yok.',
-  ));
-  const workflowAdvice = normalizeVisibleReplyFragment(firstNonEmpty(
+  );
+  const workflowAdvice = pickWorkflowVisibleReply(
     String(questionType || '') === 'FIRST_CONTROL' && firstNonEmpty(
       buildTransferredFirstControls(screenDefinition, sourceScreenDefinition, sourceScreenContext)[1],
       buildTransferredFirstControls(screenDefinition, sourceScreenDefinition, sourceScreenContext)[0],
@@ -2529,45 +2674,24 @@ function composeGeneralProductGuideReply({
     analysis?.nextBestAction,
     analysis?.safestNextStep,
     'Önce ilgili satırı aç.',
-  ));
+  );
   const bestNextScreenLabel = firstNonEmpty(
     pickBestNextScreenCandidate({ message, screenDefinition, sourceScreenDefinition, sourceScreenContext })?.best?.candidate?.label,
     nextScreens(screenDefinition, 2)[0]?.label,
     nextScreens(sourceScreenDefinition, 2)[0]?.label,
     '',
   );
-  const workflowNextAction = normalizeVisibleReplyFragment(firstNonEmpty(
+  const workflowNextAction = pickWorkflowVisibleReply(
     ['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || '')) && bestNextScreenLabel
       ? `İlgili ekranı aç: ${bestNextScreenLabel}.`
       : '',
     resolvedContextPriority.followUpPrompt,
     analysis?.nextBestAction,
     'İlgili satırı aç.',
-  ));
-  const workflowFirstControlSentence = String(questionType || '') === 'FIRST_CONTROL'
-    ? ` İlk kontrol: ${ensureVisibleSentence(firstNonEmpty(
-      resolvedContextPriority.advice,
-      analysis?.nextBestAction,
-      analysis?.safestNextStep,
-      workflowNow,
-      'Önce ilgili satırı aç.',
-    ))}`
-    : '';
+  );
   if (workflowStyle) {
-    const workflowLead = String(questionType || '') === 'FIRST_CONTROL'
-      ? buildVisibleScreenPurposeLead(firstNonEmpty(
-        screenDefinition?.menuPurpose,
-        screenDefinition?.screenExplanation,
-        sourceScreenDefinition?.menuPurpose,
-        sourceScreenDefinition?.screenExplanation,
-        guide?.plainSummary,
-        guide?.summary,
-        'Bu ekran için kısa rehber.',
-      ))
-      : (workflowNeedsPurposeLead
-        ? ensureVisibleSentence(workflowNow)
-        : `Şimdi: ${ensureVisibleSentence(workflowNow)}`);
-    return `${workflowLead}${workflowFirstControlSentence} Bu programda bunun anlamı: ${ensureVisibleSentence(workflowMeaning)} Neden? ${ensureVisibleSentence(workflowWhy)} Öneri: ${ensureVisibleSentence(workflowAdvice)} Sıradaki doğru işlem: ${ensureVisibleSentence(workflowNextAction)}`.trim();
+    const workflowLead = `Şimdi: ${ensureVisibleSentence(workflowNow)}`;
+    return `${workflowLead} Bu programda bunun anlamı: ${ensureVisibleSentence(workflowMeaning)} Neden? ${ensureVisibleSentence(workflowWhy)} Öneri: ${ensureVisibleSentence(workflowAdvice)} Sıradaki doğru işlem: ${ensureVisibleSentence(workflowNextAction)}`.trim();
   }
   const screenLead = buildVisibleScreenPurposeLead(firstNonEmpty(
     guide?.plainSummary,
@@ -2586,6 +2710,10 @@ function composeGeneralProductGuideReply({
     : [];
   const bridgeFirstControlLead = firstNonEmpty(transferredFirstControls[1], transferredFirstControls[0], '');
   const programMeaning = normalizeVisibleReplyFragment(uniqueStrings([
+    resolvedContextPriority.selectedRecordMismatchLead,
+    resolvedContextPriority.diagnosticPriority?.summary,
+    resolvedContextPriority.liveFactConfidence?.summary,
+    resolvedContextPriority.evidenceConfidence,
     resolvedContextPriority.summaryLead,
     resolvedContextPriority.sameRecordLikely ? 'Aynı kayıt üzerinde devam ediyoruz' : '',
     resolvedContextPriority.activeTopicLabel,
@@ -2622,15 +2750,17 @@ function composeGeneralProductGuideReply({
     'İlgili ekranı açıp seçili kaydı kontrol et.',
   ));
   const screenLeadIntro = workflowStyle ? '' : ensureVisibleSentence(screenLead);
-  const firstControlLead = String(questionType || '') === 'FIRST_CONTROL'
-    ? ` İlk kontrol: ${ensureVisibleSentence(firstNonEmpty(
+  const workflowFirstControlSentence = String(questionType || '') === 'FIRST_CONTROL';
+  // String(questionType || '') === 'FIRST_CONTROL' ? buildVisibleScreenPurposeLead(firstNonEmpty(
+  const firstControlLead = workflowFirstControlSentence
+    ? ` İlk kontrol: ${ensureVisibleSentence(buildVisibleScreenPurposeLead(firstNonEmpty(
       bridgeFirstControlLead,
       resolvedContextPriority.advice,
       guide?.whatToDoNow,
       screenDefinition?.firstStep,
       sourceScreenDefinition?.firstStep,
       'Önce ilgili kaydı aç.',
-    ))}`
+    )))}`
     : '';
   const selectedRecordSentence = selectedRecordLead ? ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(selectedRecordLead)}` : '';
   const includeWhy = roleMode !== 'SIMPLE'
@@ -2773,7 +2903,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   });
   const screenActions = roleMode === 'SIMPLE' ? [] : screenMenuActions(effectiveScreenDefinition);
   const guideActions = Array.isArray(guide.quickActions) ? guide.quickActions : [];
-  const entityActions = entityActionPlan({ entityType: answerEntityType, context, screenDefinition: effectiveScreenDefinition, roleMode, questionType, reply: rawReply });
+  const entityActions = entityActionPlan({
+    entityType: answerEntityType,
+    context: { ...context, activeTopic: contextPriority?.activeTopic || '' },
+    screenDefinition: effectiveScreenDefinition,
+    roleMode,
+    questionType,
+    reply: rawReply,
+  });
   const mergedActions = mergeQuickActions(entityActions, screenActions, guideActions);
   const preferredRouteTarget = (() => {
     if (questionType === 'NEXT_SCREEN') {
@@ -2795,7 +2932,11 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     ? makeQuickAction(preferredRouteTarget.label || 'İlgili ekran', preferredRouteTarget.path, preferredRouteTarget.reason || 'Bir sonraki doğru ekrana götürür.', { accent: 'primary' })
     : null;
   const bestAction = preferredRouteAction || injectedPreferredRouteAction || findBestAction(mergedActions, effectiveMessage);
-  const linkedGuides = limitItemsForRoleMode(guideLinksForEntity(answerEntityType), roleMode, 1, 3);
+  const linkedGuides = limitItemsForRoleMode(guideLinksForEntity(answerEntityType, {
+    questionType,
+    activeTopic: contextPriority?.activeTopic || '',
+    screenPath,
+  }), roleMode, 1, 3);
   const suggestedChips = uniqueStrings(Array.isArray(contextPriority?.contextualSuggestedChips) ? contextPriority.contextualSuggestedChips : []).slice(0, roleMode === 'SIMPLE' ? 2 : 4);
   const actionList = bestAction ? [bestAction, ...mergedActions.filter((x) => x !== bestAction)] : mergedActions;
   const hasSelection = Boolean(
@@ -2804,11 +2945,33 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     || screenContext?.selectedLabel
     || screenContext?.selectedSummary
   );
-  const askFallback = makeAskAction(
-    hasSelection ? 'Bunu sor: Bu kayıt ne durumda?' : 'Bunu sor: Bu ekranı detaylı anlat',
-    hasSelection ? (answerEntityType === 'vehicle' ? 'konum neden görünmüyor' : 'bu kayıt ne durumda') : 'bu ekranı detaylı anlat',
-    hasSelection ? 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.' : 'Bu ekranın amacını kısa anlatır.',
-  );
+  const workflowTopic = contextPriority?.activeTopic || '';
+  const workflowAsk = (() => {
+    if (!isWorkflowTopic(workflowTopic) && !isWorkflowDiagnosticQuestionType(questionType)) return null;
+    if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(workflowTopic || questionType || ''))) {
+      return ['Bunu sor: Bu hakediş neden hazır değil?', 'bu hakediş neden hazır değil', 'Hakediş eksiklerini kısa tekrar sorar.'];
+    }
+    if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(workflowTopic || questionType || ''))) {
+      return ['Bunu sor: Bu sözleşmeden bugün vardiya üretildi mi?', 'bu sözleşmeden bugün vardiya üretildi mi', 'Sözleşme → vardiya üretim bilgisini tekrar sorar.'];
+    }
+    if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(workflowTopic || questionType || ''))) {
+      return ['Bunu sor: Bu araç neden haritada görünmüyor?', 'bu araç neden haritada görünmüyor', 'Konum görünürlüğü teşhisini tekrar sorar.'];
+    }
+    if (['QUALITY_SIGNAL', 'TRUST_QUALITY'].includes(String(workflowTopic || questionType || ''))) {
+      return ['Bunu sor: Bu sağlayıcı neden daha iyi görünüyor?', 'bu sağlayıcı neden daha iyi görünüyor', 'Kalite sinyalini tekrar sorar.'];
+    }
+    if (['FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'WHO_CAN_DO', 'ROLE_BOUNDARY'].includes(String(workflowTopic || questionType || ''))) {
+      return ['Bunu sor: Bu kayıt kimde?', 'bu kayıt kimde', 'Sorumlu rol ve görünürlük sınırını tekrar sorar.'];
+    }
+    return ['Bunu sor: Bu vardiya neden başlayamıyor?', 'bu vardiya neden başlayamıyor', 'Vardiya blokajını tekrar sorar.'];
+  })();
+  const askFallback = workflowAsk
+    ? makeAskAction(workflowAsk[0], workflowAsk[1], workflowAsk[2])
+    : makeAskAction(
+      hasSelection ? 'Bunu sor: Bu vardiya neden başlayamıyor?' : 'Bunu sor: Bu ekranı detaylı anlat',
+      hasSelection ? (answerEntityType === 'vehicle' ? 'konum neden görünmüyor' : 'bu vardiya neden başlayamıyor') : 'bu ekranı detaylı anlat',
+      hasSelection ? 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.' : 'Bu ekranın amacını kısa anlatır.',
+    );
   const withAsk = actionList.some((x) => x?.actionKind === 'ASK') ? actionList : [askFallback, ...actionList];
   const preferRoute = questionType === 'NEXT_SCREEN' || questionType === 'GO_TO' || isDirectRouteRequest(effectiveMessage);
   const preferOpenRoute = preferRoute
@@ -2853,22 +3016,18 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   });
   const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: firstNonEmpty(contextPriority?.activeTopic, selectedDiagnosticTheme(effectiveMessage), '') });
   const baseContextSummary = contextSummaryForRoleMode(roleMode, effectiveScreenDefinition, entityLabel, scope, answerEntityType);
-  const workflowContextSummary = uniqueStrings([
-    firstNonEmpty(
-      contextPriority?.summaryLead,
-      contextPriority?.selectedRecordMismatchLead,
-      contextPriority?.evidenceConfidence,
-      contextPriority?.diagnosticPriority?.summary,
-      contextPriority?.activeTopicLabel,
-      '',
-    ),
+  const workflowContextSummary = workflowVisibleFragments([
+    contextPriority?.selectedRecordMismatchLead,
+    contextPriority?.diagnosticPriority?.summary,
+    contextPriority?.evidenceConfidence,
+    contextPriority?.activeTopicLabel,
     continuity?.sameEntity && continuity?.anchorLabel
       ? `Aynı kayıt üzerinde devam ediyoruz: ${continuity.anchorLabel}.`
       : '',
     continuity?.isFollowUp && continuity?.sameScreen
       ? 'Aynı ekran bağlamında devam ediyoruz.'
       : '',
-  ]).join(' ').trim();
+  ]).slice(0, 3).join(' ').trim();
   const contextSummary = workflowStyle
     ? workflowContextSummary
     : [
@@ -2898,7 +3057,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenLabel: effectiveScreenDefinition?.label || effectiveScreenContext?.label || '',
     screenPath,
     summary: workflowStyle
-      ? firstNonEmpty(contextPriority?.activeTopicLabel, contextPriority?.diagnosticPriority?.summary, contextPriority?.evidenceConfidence, contextPriority?.summaryLead, reply)
+      ? firstNonEmpty(contextPriority?.selectedRecordMismatchLead, contextPriority?.diagnosticPriority?.summary, contextPriority?.evidenceConfidence, contextPriority?.activeTopicLabel, reply)
       : firstNonEmpty(guide.plainSummary, guide.summary, reply),
     contextSummary,
     reply,
@@ -2973,10 +3132,34 @@ function normalizeVisibleReplyFragment(value) {
     .replace(/^(?:Sonra|Sonraki)\s+/i, '')
     .replace(/^(?:İlk bakılacak yer|Ilk bakilacak yer)\s*:\s*/i, '')
     .replace(/^(?:İlk bakılacak yer|Ilk bakilacak yer)\s+/i, '')
+    .replace(/\bblokajı\b/gi, 'engeli')
+    .replace(/\bblokaj\b/gi, 'engel')
+    .replace(/\bengelı\b/gi, 'engeli')
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,!?;:])/g, '$1')
     .replace(/([.,!?;:]){2,}/g, '$1')
     .trim();
+}
+
+function looksLikeWorkflowPurposeLeak(value) {
+  const text = normalizeVisibleReplyFragment(value).toLocaleLowerCase('tr-TR');
+  if (!text) return false;
+  return /^bu (ekran|program)\b/.test(text)
+    || /^ekran\b/.test(text)
+    || /^bu ekran[,:\s]/.test(text)
+    || /teklifin temel bilgilerini kontrol et/.test(text)
+    || /ekran amacı/.test(text)
+    || /ekranın amacını/.test(text)
+    || /bu ekran yardım için kullanılır/.test(text)
+    || /bu program içi rehberdir/.test(text);
+}
+
+function workflowVisibleFragments(values) {
+  return uniqueStrings((Array.isArray(values) ? values : []).map((value) => normalizeVisibleReplyFragment(value)).filter((text) => text && !looksLikeWorkflowPurposeLeak(text)));
+}
+
+function pickWorkflowVisibleReply(...values) {
+  return firstNonEmpty(...workflowVisibleFragments(values).slice(0, 3), '');
 }
 
 function lowercaseVisibleInitialUnlessAcronym(value) {
@@ -3234,6 +3417,7 @@ function buildResponseSections({ questionType, questionLabel, quickActions, sugg
 function applyPlainLanguage(text) {
   return String(text || '')
     .replace(/bağlam/gi, 'durum')
+    .replace(/blokajı/gi, 'engeli')
     .replace(/blokaj/gi, 'engel')
     .replace(/\bengelı\b/gi, 'engeli')
     // Legacy check string retained for compatibility with plain-language regression checks.

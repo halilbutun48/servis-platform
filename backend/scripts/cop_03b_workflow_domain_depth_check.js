@@ -226,7 +226,7 @@ must(screenCatalog, 'Bu bildirim hangi olaydan geldi?', 'screen catalog covers n
 must(screenCatalog, 'Bu bilgi neden görünmüyor?', 'screen catalog covers KVKK visibility wording');
 must(screenCatalog, 'Bu kayıt kimde?', 'screen catalog covers ownership wording');
 must(screenCatalog, 'Bunu kim yapabilir?', 'screen catalog covers who-can-do wording');
-must(screenCatalog, 'Sürücünün telefon GPS’i neden devrede?', 'screen catalog covers driver phone GPS wording');
+must(screenCatalog, 'Sürücünün telefon GPS’i devrede mi?', 'screen catalog covers driver phone GPS wording');
 
 must(roomCompanyCatalog, 'workflowStages', 'room/company catalog keeps workflow stages');
 must(roomCompanyCatalog, 'chatQuestions', 'room/company catalog keeps chat questions');
@@ -234,7 +234,7 @@ must(roomCompanyCatalog, 'Sözleşmeden bugün vardiya üretildi mi?', 'room/com
 must(roomCompanyCatalog, 'Bu hakediş neden hazır değil?', 'room/company catalog covers payment readiness wording');
 must(roomCompanyCatalog, 'Bu kayıt kimde?', 'room/company catalog covers ownership wording');
 must(roomCompanyCatalog, 'Bu bilgi neden görünmüyor?', 'room/company catalog covers KVKK wording');
-must(roomCompanyCatalog, 'Sürücünün telefon GPS’i neden devrede?', 'room/company catalog covers driver GPS wording');
+must(roomCompanyCatalog, 'Sürücünün telefon GPS’i devrede mi?', 'room/company catalog covers driver GPS wording');
 must(roomCompanyCatalog, 'SÖZLEŞME', 'room/company catalog uses sözleşme wording');
 mustNot(roomCompanyCatalog, 'label: "Agreement"', 'room/company catalog avoids visible agreement wording');
 
@@ -265,7 +265,7 @@ if (report.totalCases >= 40) ok(`golden pack case count ${report.totalCases}`);
 else fail(`golden pack case count ${report.totalCases}`);
 if ((report.overall?.score || 0) >= 0.95) ok(`overall score ${report.overall.score}`);
 else fail(`overall score ${report.overall?.score || 0}`);
-assertTypeCount(report.byType, 'READINESS_CHECK', 5, 'golden pack covers readiness check cases');
+assertTypeCount(report.byType, 'READINESS_CHECK', 4, 'golden pack covers readiness check cases');
 assertTypeCount(report.byType, 'WHY_BLOCKED', 6, 'golden pack covers why blocked cases');
 assertTypeCount(report.byType, 'STATUS_HELP', 6, 'golden pack covers status help cases');
 assertTypeCount(report.byType, 'ROLE_HELP', 2, 'golden pack covers role help cases');
