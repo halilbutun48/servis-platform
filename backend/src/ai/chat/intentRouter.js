@@ -125,7 +125,7 @@ const BASE_RULES = [
   { type: 'COMPARE_ITEMS', score: 8, patterns: ['kaydet ile ok yap farkı', 'kaydet ile ok yap farki', 'kaydet ile ok yap aynı mı', 'kaydet + sonraki ile seç farkı', 'kaydet + sonraki ile sec farki', 'listeyi aç ile marketi aç farkı', 'listeyi ac ile marketi ac farki'], label: 'compare' },
   { type: 'TERM_HELP', score: 7, patterns: ['ne demek', 'anlamı', 'anlami', 'bu ne demek', 'aynı şey mi', 'ayni sey mi', 'farkı ne', 'farki ne', 'sözleşme ile vardiya ilişkisi ne', 'kalite puanı kesin karar mı', 'kalite puani kesin karar mi'], label: 'term-help' },
   { type: 'WHY_BLOCKED', score: 9, patterns: ['neden kapalı', 'neden kapali', 'kapalı', 'kapali', 'devam edemiyorum', 'neden olmuyor', 'neden görünmüyor', 'neden gorunmuyor', 'neden pasif', 'neden sorunlu', 'niye sorunlu', 'sorunlu görünüyor', 'sorunlu gorunuyor', 'neden riskli', 'niye riskli', 'neden kırmızı', 'neden kirmizi', 'bu kayıt neden ilerlemiyor', 'göremiyor olabilir miyim', 'gorunmuyor olabilir miyim', 'kvkk yüzünden', 'kvkk yuzunden', 'hazır değil', 'hazir degil', 'eksik bilgi', 'hangi olaydan geldi', 'nereden geldi', 'kaynak ne', 'bu bilgi neden görünmüyor', 'bu araç neden haritada görünmüyor', 'bu sağlayıcı neden daha iyi görünüyor', 'başlayamıyor', 'baslayamiyor', 'başlamıyor', 'baslamiyor'], label: 'why-blocked' },
-  { type: 'CONTRACT_TO_SHIFT', score: 14, patterns: ['sözleşmeden bugün vardiya üretildi mi', 'sozlesmeden bugun vardiya uretildi mi', 'sözleşmeden vardiya üretildi mi', 'sozlesmeden vardiya uretildi mi', 'sözleşme vardiya üretimi', 'sozlesme vardiya uretimi', 'sözleşme → vardiya', 'sözleşme -> vardiya', 'contract to shift'], label: 'contract-to-shift' },
+    { type: 'CONTRACT_TO_SHIFT', score: 14, patterns: ['bu sözleşmeden bugün vardiya üretildi mi', 'bu sozlesmeden bugun vardiya uretildi mi', 'bu sözleşmeden vardiya üretildi mi', 'bu sozlesmeden vardiya uretildi mi', 'sözleşmeden bugün vardiya üretildi mi', 'sozlesmeden bugun vardiya uretildi mi', 'sözleşmeden vardiya üretildi mi', 'sozlesmeden vardiya uretildi mi', 'sözleşme bugün vardiya üretildi mi', 'sozlesme bugun vardiya uretildi mi', 'bugünkü vardiya bu sözleşmeden mi üretildi', 'bugunku vardiya bu sozlesmeden mi uretildi', 'sözleşme vardiya üretimi', 'sozlesme vardiya uretimi', 'sözleşme vardiya üretildi mi', 'sozlesme vardiya uretildi mi', 'sözleşme vardiya oluştu mu', 'sozlesme vardiya olustu mu', 'sözleşme vardiya oluşturuldu mu', 'sozlesme vardiya olusturuldu mu', 'sözleşme → vardiya', 'sözleşme -> vardiya', 'contract to shift'], label: 'contract-to-shift' },
   { type: 'STATUS_HELP', score: 4, patterns: ['sorumlu kim', 'kimde', 'hangi rol', 'hangi olaydan', 'bildirim kaynağı', 'bildirim kaynagi', 'bu bildirim hangi olaydan geldi'], label: 'status-ownership' },
   { type: 'BUTTON_HELP', score: 8, patterns: ['buton', 'düğme', 'dugme', 'menü', 'menu', 'kaydet', 'kaydet + sonraki', 'rehberi başlat', 'onay ver', 'önizle', 'analiz et', 'bu buton ne yapar', 'listeyi aç', 'bekleyeni aç', 'marketi aç', 'ok yap', 'büyük haritada işaretle', 'buyuk haritada isaretle', 'tüm adresleri temizle', 'tum adresleri temizle', 'tüm telefonları temizle', 'tum telefonlari temizle'], label: 'button-help' },
   { type: 'LOCATION_HELP', score: 8, patterns: ['konum', 'gps', 'telefon gps', "telefon gps'i", 'cihaz gps', 'konum kaynağı', 'konum kaynagi', 'sürücünün telefon gps’i neden devrede', 'sürücünün telefon gps i neden devrede', 'sürücünün telefon gpsi neden devrede'], label: 'location-help' },
@@ -203,7 +203,12 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   if (/(neden).*(pasif|kapalı|kapali|görünmüyor|gorunmuyor|olmuyor)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 7, 'blocked-why');
   if (/(hangi\s+alan|hangi\s+eksik|eksik\s+alan)/.test(text)) addScore(scores, signals, 'MISSING_DATA_HELP', 2, 'missing-field-detail');
   if (/(burda\s+ne\s+eksik|burada\s+ne\s+eksik|bu\s+kay[ıi]tta\s+ne\s+eksik|eksik\s+ne\s+var|hangi\s+alan\s+boş|hangi\s+alan\s+bos|eksik\s+veri|hangi\s+veri\s+eksik)/.test(normalizeText(options.originalMessage || ''))) addScore(scores, signals, 'MISSING_DATA_HELP', 15, 'original-missing-data');
-  if (/(hazır|hazir).*(mi|mı)/.test(text) && options.entityType === 'shift') addScore(scores, signals, 'READINESS_CHECK', 2, 'shift-readiness-bias');
+  if (pathHas(options.screenPath, ['/room/shifts']) && /(atamaya\s+hazır\s*m[ıi]|atamaya\s+hazir\s*mi)/.test(text)) {
+    addScore(scores, signals, 'CONTRACT_TO_SHIFT', 9, 'shift-assignment-ready-contract');
+    addScore(scores, signals, 'READINESS_CHECK', -4, 'shift-assignment-ready-readiness-downgrade');
+  } else if (/(hazır|hazir).*(mi|mı)/.test(text) && options.entityType === 'shift') {
+    addScore(scores, signals, 'READINESS_CHECK', 2, 'shift-readiness-bias');
+  }
   if (/(durum|ne\s+durumda|durumu\s+ne)/.test(text) && options.entityType === 'shift') addScore(scores, signals, 'STATUS_HELP', 1, 'shift-status-bias');
   if (/(gps|konum|telefon\s+gps)/.test(text) && options.entityType === 'vehicle') addScore(scores, signals, 'LOCATION_HELP', 2, 'vehicle-location-bias');
   if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/shifts']) && /(hakediş|hakedis|ödeme|odeme|önizleme|onizleme|csv|komisyon|ödeme hesabı|odeme hesabi|eksik bilgi|kontrol gerekli|hazır değil|hazir degil)/.test(text)) addScore(scores, signals, 'PAYMENT_READINESS', 12, 'payment-readiness-path');
@@ -212,9 +217,16 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       addScore(scores, signals, 'READINESS_CHECK', 12, 'superadmin-commercial-core-contract-shift-readiness');
       addScore(scores, signals, 'CONTRACT_TO_SHIFT', -8, 'superadmin-commercial-core-contract-shift-downgrade');
     }
-    if (pathHas(options.screenPath, ['/room/agreements']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text)) {
-      addScore(scores, signals, 'READINESS_CHECK', 12, 'room-agreements-contract-shift-readiness');
-      addScore(scores, signals, 'CONTRACT_TO_SHIFT', -8, 'room-agreements-contract-shift-downgrade');
+    if (pathHas(options.screenPath, ['/company/agreements', '/organization/agreements', '/school/agreements']) && /(sözleşme|sozlesme|contract).*(vardiya|shift).*(üretildi|uretildi|oluştu|olustu|oluşturuldu|olusturuldu|üretti|uretti)/.test(text)) {
+      addScore(scores, signals, 'CONTRACT_TO_SHIFT', 18, 'agreements-contract-shift-generation');
+      addScore(scores, signals, 'READINESS_CHECK', -10, 'agreements-contract-shift-generation-downgrade');
+    }
+    if (pathHas(options.screenPath, ['/company/agreements', '/organization/agreements', '/school/agreements']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu|oluşturuldu|olusturuldu)/.test(text)) {
+      addScore(scores, signals, 'CONTRACT_TO_SHIFT', 18, 'agreements-contract-shift-today');
+      addScore(scores, signals, 'READINESS_CHECK', -10, 'agreements-contract-shift-today-downgrade');
+    }
+    if (pathHas(options.screenPath, ['/room/agreements']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu|oluşturuldu|olusturuldu)/.test(text)) {
+      addScore(scores, signals, 'READINESS_CHECK', 14, 'room-agreements-contract-readiness');
     }
     if (pathHas(options.screenPath, ['/contracts', '/room/contracts', '/room/commercial-flow', '/commercial-flow']) && /(sözleşme|sozlesme).*(vardiya|shift)/.test(text)) addScore(scores, signals, 'CONTRACT_TO_SHIFT', 18, 'room-commercial-flow-contract-shift');
     if (pathHas(options.screenPath, ['/contracts', '/room/contracts', '/room/commercial-flow', '/commercial-flow']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text)) addScore(scores, signals, 'CONTRACT_TO_SHIFT', 4, 'room-commercial-flow-contract-shift-today');

@@ -388,7 +388,8 @@ export function normalizeEverydayQuestion(message) {
   if (/(nereye g[eé]c(e|ey)im|nereye geç(e|ey)im|nereye git(sem|meliyim|ceyim|ceğim)|hangi ekrana gideyim|hangi tarafa geceyim|hangi tarafa geçeyim|sonra nereye geceyim|sonra nereye geçeyim|sonra nereye gideyim)/.test(text)) return 'Şimdi hangi ekrana gitmeliyim?';
   if (/(niye pasif|neden pasif|basam[iı]yorum|t[ıi]klan[mıi]yor|olmadi|olmad[ıi]|olmuyor|takildi|tak[ıi]ld[ıi]|patladi|patlad[ıi]|kitlendi|ilerlemiyor|tak[ıi]l[ıi]yor)/.test(text)) return 'Bu neden olmuyor?';
   if (/(ne eksik|eksi[gğ]i ne|eksik ne var|hangi alan boş|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(text)) return 'Hazır mı?';
-  if (/(hazir mi|haz[ıi]r m[ıi]|atamaya hazir mi|atamaya haz[ıi]r m[ıi])/i.test(text)) return 'Hazır mı?';
+  if (/(atamaya hazir mi|atamaya haz[ıi]r m[ıi])/i.test(text)) return 'Atamaya hazır mı?';
+  if (/(hazir mi|haz[ıi]r m[ıi])/i.test(text)) return 'Hazır mı?';
   if (/(konum niye|konum neden|konum yok|konum gozukmuyor|konum gözükmüyor|konum görünmüyor|gps yok|gps gelmiyor|telefon gps['’]i yok|haritada niye yok)/.test(text)) return 'Konum neden görünmüyor?';
   if (/(bu rolde ne yapabilirim|ben bu rolde ne yapabilirim|burada neyi yonetebilirim|burada neyi yönetebilirim|yetkim ne|bu rolde ne yap[ıi]yoruz)/.test(text)) return 'Bu rolde ne yapabilirim?';
   if (/(bu sat[ıi]r ne diyor|bu sat[ıi]r ne demek|bu rozet ne diyor|bu rozet ne demek|bu sat[ıi]r ne anlatiyor|bu sat[ıi]r[ıi] nasil okuyayim|bu sat[ıi]r[ıi] nasıl okuyayım)/.test(text)) return 'Bu satırı nasıl okurum?';
@@ -1070,15 +1071,36 @@ function buildContextPriorityDecision({
     bestNextAction,
     'Sıradaki doğru işlem ne?',
   );
+  const contractWorkflowQuestion = ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(activeTopic || questionType || ''));
+  const contractSignalText = firstNonEmpty(
+    diagnosticPrioritySummary,
+    liveFactConfidenceSummary,
+    '',
+  );
+  const contractSignalIsPositive = Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText));
+  const contractNowLead = contractSignalIsPositive
+    ? 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.'
+    : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
+  const contractWhyLead = contractSignalIsPositive
+    ? firstNonEmpty(`Bunu şuradan anlıyorum: ${contractSignalText}.`, topicAdvice[activeTopic], 'Bu sözleşme için bugünkü üretim kaydı okunuyor.')
+    : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
   const summaryLead = workflowQuestion
-    ? pickWorkflowVisibleReply(
-      selectedRecordMismatchLead,
-      diagnosticPrioritySummary ? `Ekrandaki sinyale göre: ${diagnosticPrioritySummary}` : '',
-      liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
-      evidenceConfidence,
-      roleBoundary,
-      'Ekrandaki sinyale göre konuşuyorum.',
-    )
+    ? (contractWorkflowQuestion
+      ? pickWorkflowVisibleReply(
+        selectedRecordMismatchLead,
+        contractNowLead,
+        contractWhyLead,
+        roleBoundary,
+        'Ekrandaki sinyale göre konuşuyorum.',
+      )
+      : pickWorkflowVisibleReply(
+        selectedRecordMismatchLead,
+        diagnosticPrioritySummary ? `Ekrandaki sinyale göre: ${diagnosticPrioritySummary}` : '',
+        liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
+        evidenceConfidence,
+        roleBoundary,
+        'Ekrandaki sinyale göre konuşuyorum.',
+      ))
     : firstNonEmpty(
       selectedRecordMismatchLead,
       diagnosticPrioritySummary,
@@ -1095,6 +1117,11 @@ function buildContextPriorityDecision({
     isFollowUp,
     sameRecordLikely,
     needsSelection,
+    selectedHasContract,
+    selectedHasShift,
+    selectedHasPayment,
+    selectedHasVehicle,
+    selectedHasGps,
     roleBoundary,
     evidenceConfidence,
     selectedRecordStatus,
@@ -1165,6 +1192,7 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
   const text = normalizeText(extractUserQuestion(message));
   if (!text || !user) return screenDefinition;
   const sourcePath = String(screenDefinition?.path || screenContext?.path || '');
+  const sourceLabel = String(screenDefinition?.label || screenContext?.label || '');
   const theme = selectedDiagnosticTheme(text);
   const screens = listScreensForUser(user, screenContext)
     .map((item) => getScreenDefinitionForUser(user, { ...(screenContext || {}), path: item.path }, item.id))
@@ -1176,6 +1204,12 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
   if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(theme)) {
     const mapScreen = pickScreenByPathContains(['/map', '/live']) || pickScreenByKind(screens, 'MAP');
     if (mapScreen) return mapScreen;
+  }
+  if (
+    isCommercialFlowContractToShiftQuestion(text)
+    && (/\/(company|room|organization|school)\/(agreements|contracts)\b/.test(sourcePath) || /sözleşme|sozlesme/i.test(sourceLabel))
+  ) {
+    return screenDefinition;
   }
   if (pathLooksLikeWorkflowSurface(sourcePath) && (selectedDiagnosticTheme(text) || isCommercialFlowContractToShiftQuestion(text))) {
     return screenDefinition;
@@ -2628,13 +2662,65 @@ function composeGeneralProductGuideReply({
     Array.isArray(analysis?.evidence) ? uniqueStrings(analysis.evidence).slice(0, 3).join(' • ') : '',
     '',
   ));
+  const contractWorkflowQuestion = ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(firstNonEmpty(resolvedContextPriority.activeTopic, questionType, '')));
+  const contractSelectionMismatch = contractWorkflowQuestion && Boolean(resolvedContextPriority.selectedHasShift && !resolvedContextPriority.selectedHasContract);
+  const contractSignalText = firstNonEmpty(
+    resolvedContextPriority.diagnosticPriority?.summary,
+    resolvedContextPriority.liveFactConfidence?.summary,
+    '',
+  );
+  const contractSignalIsPositive = Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText));
+  const contractNowLead = contractSelectionMismatch
+    ? firstNonEmpty(
+      resolvedContextPriority.selectedRecordMismatchLead,
+      'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya üretim geçmişi gerekir.',
+    )
+    : contractSignalIsPositive
+      ? 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.'
+      : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
+  const contractWhyLead = contractSelectionMismatch
+    ? firstNonEmpty(
+      resolvedContextPriority.selectedRecordMismatchLead,
+      'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya üretim geçmişi gerekir.',
+    )
+    : contractSignalIsPositive
+      ? firstNonEmpty(
+        `Bunu şuradan anlıyorum: ${contractSignalText}.`,
+        'Bu sözleşme için bugünkü üretim kaydı okunuyor.',
+      )
+      : 'Bu yüzden üretim geçmişi veya bugünkü vardiyalar listesi okunmalı.';
+  const contractAdviceLead = contractSelectionMismatch
+    ? firstNonEmpty(
+      resolvedContextPriority.advice,
+      'İlgili sözleşme kaydını aç ve bugünkü vardiya üretim geçmişini kontrol et.',
+    )
+    : firstNonEmpty(
+      resolvedContextPriority.advice,
+      'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.',
+    );
+  const contractNextActionLead = contractSelectionMismatch
+    ? firstNonEmpty(
+      contractAdviceLead,
+      resolvedContextPriority.followUpPrompt,
+      'İlgili sözleşme kaydını aç ve bugünkü vardiya üretim geçmişini kontrol et.',
+    )
+    : firstNonEmpty(
+      'Bugünkü vardiyalar listesini aç.',
+      contractAdviceLead,
+      resolvedContextPriority.followUpPrompt,
+      'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.',
+    );
   const workflowNow = pickWorkflowVisibleReply(
-    resolvedContextPriority.selectedRecordMismatchLead,
-    resolvedContextPriority.diagnosticPriority?.summary ? `Ekrandaki sinyale göre: ${resolvedContextPriority.diagnosticPriority.summary}` : '',
-    resolvedContextPriority.liveFactConfidence?.summary ? `Ekrandaki sinyale göre: ${resolvedContextPriority.liveFactConfidence.summary}` : '',
-    resolvedContextPriority.evidenceConfidence,
+    contractWorkflowQuestion ? contractNowLead : resolvedContextPriority.selectedRecordMismatchLead,
+    contractWorkflowQuestion
+      ? (contractSignalIsPositive ? `Ekrandaki sinyale göre: ${contractSignalText}` : '')
+      : resolvedContextPriority.diagnosticPriority?.summary ? `Ekrandaki sinyale göre: ${resolvedContextPriority.diagnosticPriority.summary}` : '',
+    contractWorkflowQuestion
+      ? (contractSignalIsPositive ? '' : contractNowLead)
+      : resolvedContextPriority.liveFactConfidence?.summary ? `Ekrandaki sinyale göre: ${resolvedContextPriority.liveFactConfidence.summary}` : '',
+    contractWorkflowQuestion ? resolvedContextPriority.roleBoundary : resolvedContextPriority.evidenceConfidence,
     analysisEvidence ? `Ekrandaki sinyale göre konuşuyorum. Bunu şuradan anlıyorum: ${analysisEvidence}.` : '',
-    resolvedContextPriority.roleBoundary,
+    contractWorkflowQuestion ? 'Ekrandaki sinyale göre konuşuyorum.' : resolvedContextPriority.roleBoundary,
     'Ekrandaki sinyale göre konuşuyorum.',
   );
   const workflowMeaning = pickWorkflowVisibleReply(
@@ -2643,10 +2729,12 @@ function composeGeneralProductGuideReply({
     'Görünen kayıt ve durum satırı ana ipucudur.',
   );
   const workflowWhy = pickWorkflowVisibleReply(
-    resolvedContextPriority.selectedRecordMismatchLead ? `Bunu şuradan anlıyorum: ${resolvedContextPriority.selectedRecordMismatchLead}` : '',
-    analysis?.reasoningLead,
+    contractWorkflowQuestion
+      ? contractWhyLead
+      : (resolvedContextPriority.selectedRecordMismatchLead ? `Bunu şuradan anlıyorum: ${resolvedContextPriority.selectedRecordMismatchLead}` : ''),
+    contractWorkflowQuestion ? contractWhyLead : analysis?.reasoningLead,
     analysisEvidence ? `Bunu şuradan anlıyorum: ${analysisEvidence}.` : '',
-    resolvedContextPriority.whyCandidate,
+    contractWorkflowQuestion ? contractNowLead : resolvedContextPriority.whyCandidate,
     'Bu ekranda kesin kanıt yok.',
   );
   const workflowAdvice = pickWorkflowVisibleReply(
@@ -2655,10 +2743,10 @@ function composeGeneralProductGuideReply({
       buildTransferredFirstControls(screenDefinition, sourceScreenDefinition, sourceScreenContext)[0],
       '',
     ) || '',
-    resolvedContextPriority.advice,
+    contractWorkflowQuestion ? contractAdviceLead : resolvedContextPriority.advice,
     analysis?.nextBestAction,
     analysis?.safestNextStep,
-    'Önce ilgili satırı aç.',
+    contractWorkflowQuestion ? 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.' : 'Önce ilgili satırı aç.',
   );
   const bestNextScreenLabel = firstNonEmpty(
     pickBestNextScreenCandidate({ message, screenDefinition, sourceScreenDefinition, sourceScreenContext })?.best?.candidate?.label,
@@ -2667,12 +2755,14 @@ function composeGeneralProductGuideReply({
     '',
   );
   const workflowNextAction = pickWorkflowVisibleReply(
-    ['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || '')) && bestNextScreenLabel
-      ? `İlgili ekranı aç: ${bestNextScreenLabel}.`
-      : '',
-    resolvedContextPriority.followUpPrompt,
+    contractWorkflowQuestion
+      ? contractNextActionLead
+      : (['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || '')) && bestNextScreenLabel
+        ? `İlgili ekranı aç: ${bestNextScreenLabel}.`
+        : ''),
+    contractWorkflowQuestion ? contractNextActionLead : resolvedContextPriority.followUpPrompt,
     analysis?.nextBestAction,
-    'İlgili satırı aç.',
+    contractWorkflowQuestion ? 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.' : 'İlgili satırı aç.',
   );
   if (workflowStyle) {
     const workflowLead = `Şimdi: ${ensureVisibleSentence(workflowNow)}`;
@@ -2931,6 +3021,34 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     || screenContext?.selectedSummary
   );
   const workflowTopic = contextPriority?.activeTopic || '';
+  const workflowTopicKey = firstNonEmpty(workflowTopic, questionType, '');
+  const contractWorkflowQuestion = ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(workflowTopicKey || ''));
+  const contractSelectionMismatch = contractWorkflowQuestion && Boolean(contextPriority?.selectedHasShift && !contextPriority?.selectedHasContract);
+  const contractSignalText = firstNonEmpty(
+    contextPriority?.diagnosticPriority?.summary,
+    contextPriority?.liveFactConfidence?.summary,
+    '',
+  );
+  const contractSignalIsPositive = Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText));
+  const contractNowLead = contractSelectionMismatch
+    ? firstNonEmpty(
+      contextPriority?.selectedRecordMismatchLead,
+      'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya üretim geçmişi gerekir.',
+    )
+    : contractSignalIsPositive
+      ? 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.'
+      : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
+  const contractWhyLead = contractSelectionMismatch
+    ? firstNonEmpty(
+      contextPriority?.selectedRecordMismatchLead,
+      'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya üretim geçmişi gerekir.',
+    )
+    : contractSignalIsPositive
+      ? firstNonEmpty(
+        `Bunu şuradan anlıyorum: ${contractSignalText}.`,
+        'Bu sözleşme için bugünkü üretim kaydı okunuyor.',
+      )
+      : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
   const workflowAsk = (() => {
     if (!isWorkflowTopic(workflowTopic) && !isWorkflowDiagnosticQuestionType(questionType)) return null;
     const screen = String(screenPath || '').toLocaleLowerCase('tr-TR');
@@ -3027,8 +3145,19 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const baseContextSummary = contextSummaryForRoleMode(roleMode, effectiveScreenDefinition, entityLabel, scope, answerEntityType);
   const workflowContextSummary = workflowVisibleFragments([
     contextPriority?.selectedRecordMismatchLead,
-    contextPriority?.diagnosticPriority?.summary,
-    contextPriority?.evidenceConfidence,
+    contractWorkflowQuestion
+      ? firstNonEmpty(
+        contractNowLead,
+        contractWhyLead,
+        contextPriority?.whyCandidate,
+      )
+      : contextPriority?.diagnosticPriority?.summary,
+    contractWorkflowQuestion
+      ? firstNonEmpty(
+        contractSignalIsPositive ? `Ekrandaki sinyale göre: ${contractSignalText}` : contractNowLead,
+        contextPriority?.evidenceConfidence,
+      )
+      : contextPriority?.evidenceConfidence,
     contextPriority?.activeTopicLabel,
     continuity?.sameEntity && continuity?.anchorLabel
       ? `Aynı kayıt üzerinde devam ediyoruz: ${continuity.anchorLabel}.`
@@ -3066,7 +3195,13 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenLabel: effectiveScreenDefinition?.label || effectiveScreenContext?.label || '',
     screenPath,
     summary: workflowStyle
-      ? firstNonEmpty(contextPriority?.selectedRecordMismatchLead, contextPriority?.diagnosticPriority?.summary, contextPriority?.evidenceConfidence, contextPriority?.activeTopicLabel, reply)
+      ? firstNonEmpty(
+        contextPriority?.selectedRecordMismatchLead,
+        contractWorkflowQuestion ? contractNowLead : contextPriority?.diagnosticPriority?.summary,
+        contractWorkflowQuestion ? contractWhyLead : contextPriority?.evidenceConfidence,
+        contextPriority?.activeTopicLabel,
+        reply,
+      )
       : firstNonEmpty(guide.plainSummary, guide.summary, reply),
     contextSummary,
     reply,

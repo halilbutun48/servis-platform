@@ -70,6 +70,7 @@ const helpComposer = read('backend/src/ai/chat/helpComposer.js');
 const facts = read('web/src/utils/copilotFacts.js');
 
 must(pkg, '"check:cop04afix01": "node backend/scripts/cop_04a_fix_01_global_live_answer_final_polish_check.js"', 'package.json exposes check:cop04afix01');
+must(pkg, '"check:cop04afix02": "node backend/scripts/cop_04a_fix_02_contract_generation_intent_check.js"', 'package.json exposes check:cop04afix02');
 must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
 must(pkg, '"check:cop03cfix03"', 'package.json keeps check:cop03cfix03');
 must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
@@ -98,11 +99,14 @@ ordered(runner, [
   'check:cop03cfix02',
   'check:cop03cfix03',
   'check:cop04a',
+  'check:cop04afix02',
   'check:cop04afix01',
 ], 'product extensions runner order keeps cop04afix01 last');
 
 must(verifyChain, 'check:cop04afix01', 'verify chain waits for check:cop04afix01');
+must(verifyChain, 'check:cop04afix02', 'verify chain waits for check:cop04afix02');
 must(guide, 'check:cop04afix01', 'script guide exposes check:cop04afix01');
+must(guide, 'check:cop04afix02', 'script guide exposes check:cop04afix02');
 must(guide, 'check:cop04a', 'script guide keeps check:cop04a');
 must(guide, 'check:cop03cfix03', 'script guide keeps check:cop03cfix03');
 

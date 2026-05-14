@@ -68,6 +68,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop03cfix02` -> `node backend\scripts\cop_03c_fix_02_live_answer_precision_check.js`
 - `check:cop03cfix03` -> `node backend\scripts\cop_03c_fix_03_live_acceptance_polish_check.js`
 - `check:cop04a` -> `node backend\scripts\cop_04a_global_answer_quality_check.js`
+- `check:cop04afix02` -> `node backend\scripts\cop_04a_fix_02_contract_generation_intent_check.js`
 - `check:cop04afix01` -> `node backend\scripts\cop_04a_fix_01_global_live_answer_final_polish_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
@@ -600,6 +601,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:cop03cfix02`
   - `check:cop03cfix03`
   - `check:cop04a`
+  - `check:cop04afix02`
   - `check:cop04afix01`
   - `check:docsstate01`
 
