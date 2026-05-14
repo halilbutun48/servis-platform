@@ -135,7 +135,7 @@ const SHARED = [
       { key: 'SHARED_NOTIFICATION_CHECK', title: 'Bağlı kaydı aç', action: 'Gerekirse log veya ilgili kayıt ekranına geç.', doneWhen: 'İlgili ekran seçilir.', ifBlocked: 'Bildirim tek başına işlem kaydı değildir.' },
       { key: 'SHARED_NOTIFICATION_NEXT', title: 'Sonraki ekranı seç', action: 'Gerekirse loglar veya geri bildirim ekranını aç.', doneWhen: 'Doğru takip ekranı belli olur.', ifBlocked: 'Uyarı, olay ve kayıt aynı şey değildir.' },
     ],
-    chatQuestions: ['Bu bildirim hangi olaydan geldi?', 'Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Hangi ekrana gitmeliyim?'],
+    chatQuestions: ['Bu bildirim hangi olaydan geldi?', 'Bildirim kaynağı ne?', 'Bu bilgi neden görünmüyor?', 'İlgili kaydı aç'],
     simpleTerms: pickTerms(['bildirim', 'notification']),
   }),
   screen(9002, '/shared/logs', 'Loglar', {
@@ -153,7 +153,7 @@ const SHARED = [
       { key: 'SHARED_LOGS_READ', title: 'İzleri oku', action: 'Tarih, olay ve ilgili kaydı birlikte değerlendir.', doneWhen: 'Hangi olayın ne zaman olduğu anlaşılır.', ifBlocked: 'Tek kayıt ile kesin sonuca gitme.' },
       { key: 'SHARED_LOGS_NEXT', title: 'İlgili ekrana dön', action: 'Gerekirse bildirim, geri bildirim veya bağlı iş ekranına geç.', doneWhen: 'Doğru takip ekranı belli olur.', ifBlocked: 'Log ekranı kullanıcı bildirimi değildir.' },
     ],
-    chatQuestions: ['Bu kayıt kimde?', 'Bu bilgi neden görünmüyor?', 'Hangi olaydan geldi?', 'Sıradaki doğru işlem ne?'],
+    chatQuestions: ['İşlem kaydını aç', 'Bu kayıt kimde?', 'Bildirim kaydıyla farkı göster', 'Filtreleri nasıl kullanırım?'],
     simpleTerms: pickTerms(['islemKaydi']),
   }),
   screen(9003, '/shared/kvkk', 'KVKK', {
@@ -167,7 +167,7 @@ const SHARED = [
       { key: 'SHARED_KVKK_READ', title: 'Hangi bilgi kapalı ayır', action: 'Hangi alanın bu rolde kapalı kaldığını netleştir.', doneWhen: 'Açık / kapalı ayrımı netleşir.', ifBlocked: 'Gizli bilgiyi yetkisiz kullanıcıya önerme.' },
       { key: 'SHARED_KVKK_NEXT', title: 'Gerekirse ilgili kayda dön', action: 'Aynı kayıt için doğru ekranı veya sorumlu rolü bul.', doneWhen: 'Takip edilecek adım belli olur.', ifBlocked: 'KVKK ekranını canlı operasyon kararı sanma.' },
     ],
-    chatQuestions: ['Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'Bu rolde neyi görebilirim?', 'Sıradaki doğru işlem ne?'],
+    chatQuestions: ['KVKK sınırını açıkla', 'Bu rolde ne görünür?', 'Erişim neden kapalı?', 'Yetkili ekrana yönlendir'],
     simpleTerms: pickTerms(['kvkk']),
   }),
   screen(9004, '/shared/feedback', 'Geri Bildirim', {
@@ -193,7 +193,7 @@ const SHARED = [
       { key: 'SHARED_FEEDBACK_OWNER', title: 'Sorumlu rolü ayır', action: 'Hangi rolün bakması gerektiğini ve yıldız/kategori bilgisini oku.', doneWhen: 'Sorumlu ve etki netleşir.', ifBlocked: 'Yetkisiz yönetim aksiyonu önermeden sadece rolü göster.' },
       { key: 'SHARED_FEEDBACK_NEXT', title: 'Bağlı ekrana geç', action: 'Gerekirse bildirim, log veya KVKK ekranına git.', doneWhen: 'Takip edilecek ekran belli olur.', ifBlocked: 'Harita veya araç seçme ekranı sanma.' },
     ],
-    chatQuestions: ['Bu kayıt kimde?', 'Bu kayıt ne durumda?', 'Bu bilgi neden görünmüyor?', 'Sıradaki doğru işlem ne?'],
+    chatQuestions: ['Açık geri bildirimi göster', 'Sorumlu rolü göster', 'Bu kayıt ne durumda?', 'Kritik geri bildirimleri sırala'],
     simpleTerms: pickTerms(['geriBildirim', 'degerlendirme']),
   }),
 ];
@@ -248,7 +248,7 @@ const DRIVER = [
       { label: 'Harita', path: '/driver/map', reason: 'Canlı konum, ETA ve sesli destek için.' },
     ],
     dataRules: ['Bugün ekranı görev özetidir; canlı haritanın yerine geçmez.', 'Bugün boşsa sürücüye atanmış aktif vardiya olmayabilir.', 'Araç veya saat bilgisi eksikse room/company tarafında atama bağı kontrol edilmelidir.'],
-    chatQuestions: ['Ne yapayım?', 'Bugün önce neyi kontrol edeyim?', 'Bu seçili kayıtta eksik ne var?', 'Hangi ekrana geçeyim?', 'Bu buton ne yapar?'],
+    chatQuestions: ['Ne yapayım?', 'Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'],
     fieldGuides: [
       { label: 'Görev', meaning: 'Bugün yapacağın işin özet başlığıdır.' },
       { label: 'Araç', meaning: 'Göreve bağlı araç bilgisidir.', risk: 'Boşsa atama eksik olabilir.' },
@@ -382,7 +382,7 @@ const PERSONEL = [
     doneChecklist: ['Canlı durum okundu.'],
     buttonGuides: [button('Servisimi aç', 'Kendi servis detayını açar.', 'Daha fazla bilgi gerektiğinde kullan.', 'Servisim ekranı açılır.')],
     screenMenus: [{ label: 'Servisim', path: '/personel/my', purpose: 'Kendi servis detayın için açılır.' }, { label: 'Copilot', path: '/personel/copilot', purpose: 'Takıldığında yardım için açılır.' }],
-    chatQuestions: ['Servisim nerede?', 'Bu rolde ne yapabilirim?', 'Sıradaki doğru işlem ne?', 'Bildirim kaynağı ne?'],
+    chatQuestions: ['Servis durumunu göster', 'Servisim nerede?', 'Bildirim kaynağı ne?', 'Biniş değişikliği var mı?'],
   }),
   screen(4102, '/personel/my', 'Servisim', {
     menuPurpose: 'Kendi servis bilgini görmek için kullanılır.',
@@ -422,7 +422,7 @@ const PARENT = [
     doneChecklist: ['Canlı bilgi okundu.'],
     buttonGuides: [button('Yardım aç', 'Bu ekranın ne anlattığını açıklar.', 'Bilginin ne olduğunu anlamıyorsan kullan.', 'Copilot ekranı açılır.')],
     screenMenus: [{ label: 'Copilot', path: '/parent/copilot', purpose: 'Sade yardım almak için açılır.' }],
-    chatQuestions: ['Öğrencimin servisi nerede?', 'Bu bilgi neden görünmüyor?', 'Sıradaki doğru işlem ne?', 'Bildirim kaynağı ne?'],
+    chatQuestions: ['Öğrencimin servisi nerede?', 'Bu bilgi neden görünmüyor?', 'Bildirim kaynağı ne?', 'Biniş değişikliği var mı?'],
   }),
   screen(5102, '/parent/copilot', 'Copilot', {
     menuPurpose: 'Veliye canlı ekranı sade dille açıklar ve doğru yere yönlendirir.',
@@ -572,7 +572,7 @@ const SUPER_ADMIN = [
       { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', reason: 'Kalite sinyalini birlikte okumak için.' },
       { label: 'Loglar', path: '/shared/logs', reason: 'Hakediş önizleme hareketini karşılaştırmak için.' },
     ],
-    chatQuestions: ['Bu hakediş neden hazır değil?', 'Sözleşmeden bugün vardiya üretildi mi?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana gitmeliyim?'],
+    chatQuestions: ['Bu hakediş neden hazır değil?', 'Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?'],
   }),
   screen(6114, '/superadmin/regions', 'Bölgeler', {
     menuPurpose: 'Bölge, kapsam ve atama sınırlarını görmek için kullanılır.',
@@ -599,7 +599,7 @@ const SUPER_ADMIN = [
       { label: 'Denetim Paneli', path: '/superadmin/operations', reason: 'Kanıt ve GPS görünürlüğünü birlikte okumak için.' },
       { label: 'Ticari Akış', path: '/superadmin/commercial-core', reason: 'Hakediş önizleme tarafını görmek için.' },
     ],
-    chatQuestions: ['Bu sağlayıcı neden daha iyi görünüyor?', 'Bu kayıt ne durumda?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana gitmeliyim?'],
+    chatQuestions: ['Açık kalite sinyallerini göster', 'Bu sağlayıcı neden daha iyi görünüyor?', 'Risk nedenini açıkla', 'Kanıt durumunu kontrol et'],
     screenMenus: [{ label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Kalite ve güven kontrolünü role surface tarafında desteklemek için açılır.' }],
   }),
   screen(6115, '/superadmin/logexport', 'Log Dışa Aktarımı', {
@@ -627,7 +627,7 @@ const SUPER_ADMIN = [
       { key: 'SUPERADMIN_OPERATION_REASONS', title: 'Blokaj nedenini oku', action: 'Araç görünmüyor, vardiya başlamıyor veya sürücü GPS’i neden devrede sorularını sinyalle birlikte oku.', doneWhen: 'Neden farkı anlaşılır.', ifBlocked: 'Veri yoksa uydurma; eksik alanı söyle.' },
       { key: 'SUPERADMIN_OPERATION_NEXT', title: 'Güvenli sonraki adım', action: 'Gerekirse ilgili vardiya, araç, kanıt veya kalite ekranına geç.', doneWhen: 'Bir sonraki ekran belli olur.', ifBlocked: 'Yetkisiz yönetim işlemi önermeden sadece yol göster.' },
     ],
-    chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Sürücünün telefon GPS’i devrede mi?', 'Bunu kim yapabilir?'],
+    chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Bunu kim yapabilir?', 'Sürücünün telefon GPS’i devrede mi?', 'Yetkili rolü göster'],
   }),
   screen(6104, '/superadmin/copilot', 'Copilot', {
     menuPurpose: 'Sistem genelinde rehber ve açıklama almak için kullanılır.',

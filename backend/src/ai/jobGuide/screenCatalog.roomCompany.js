@@ -36,7 +36,7 @@ export const ROOM = [
       { label: 'Vardiyalar', path: '/room/shifts', reason: 'Sorunun hangi işe bağlı olduğunu görmek için.' },
       { label: 'Araçlar', path: '/room/vehicles', reason: 'Araç, sürücü veya cihaz GPS tarafını kontrol etmek için.' },
     ],
-    chatQuestions: ['Bu araç neden haritada görünmüyor?', 'Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Hangi ekrana geçeyim?', 'Bu satırı nasıl okurum?', 'Sürücünün telefon GPS’i devrede mi?'],
+    chatQuestions: ['Bu araç neden haritada görünmüyor?', 'Son GPS ne zaman geldi?', 'Sürücünün telefon GPS’i devrede mi?', 'Araç bağlantısı var mı?'],
     fieldGuides: [
       { label: 'Plaka', meaning: 'Seçili aracın kimliğidir.', howToRead: 'Önce doğru aracı seçtiğini buradan doğrula.' },
       { label: 'Shift durumu', meaning: 'Seçili işin operasyon durumudur.', howToRead: 'APPROVED veya ACTIVE bilgisini diğer alanlarla birlikte oku.', risk: 'Tek başına atama tamam anlamına gelmez.' },
@@ -109,7 +109,7 @@ export const ROOM = [
       { label: 'Araçlar', path: '/room/vehicles', reason: 'Araç veya cihaz tarafını kontrol etmek için.' },
       { label: 'Sürücüler', path: '/room/drivers', reason: 'Sürücü bağı veya sürücü uygunluğunu kontrol etmek için.' },
     ],
-    chatQuestions: ['Bu kayıt ne durumda?', 'Önce neyi kontrol edeyim?', 'Hangi ekrana geçeyim?', 'Sık hata ne?'],
+    chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et'],
   }),
   screen(1104, "/room/vehicles", "Araçlar", {
     menuPurpose: "Araç kayıtlarını, sürücü bağını ve cihaz GPS'i bilgisini yönetmek için kullanılır.",
@@ -178,7 +178,7 @@ export const ROOM = [
       { label: 'Vardiyalar', path: '/room/shifts', reason: 'Sözleşmeden etkilenmiş işi görmek için.' },
       { label: 'Teklifler', path: '/room/offers', reason: 'Sözleşme dışı karar akışını ayırmak için.' },
     ],
-    chatQuestions: ['Bu sözleşmeden bugün vardiya üretildi mi?', 'Bu kayıt kimde?', 'Hangi ekrana geçeyim?', 'Sıradaki doğru işlem ne?'],
+    chatQuestions: ['Bu sözleşmeden bugün vardiya üretildi mi?', 'İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster'],
     simpleTerms: pickTerms(["sozlesme", "teklif"]),
   }),
   screen(1107, "/room/copilot", "Copilot", {
@@ -257,6 +257,7 @@ export const ROOM = [
       { label: "Canlı Takip", path: "/room/map", why: "GPS ve son konum akışını doğrulamak için" },
       { label: "Sürücüler", path: "/room/drivers", why: "İzin, oturum ve araç bağı için" },
     ],
+    chatQuestions: ['Operasyon Sağlığı: sorun ne?', 'Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala'],
   }),
   screen(1115, "/room/commercial-flow", "Ticari Akışım", {
     menuPurpose: "Oda tarafındaki ticari kayıtları ve sonraki adımı görmek için kullanılır.",
@@ -281,7 +282,7 @@ export const ROOM = [
       { key: 'ROOM_COMMERCIAL_READY', title: 'Hazırlığı ayır', action: 'Hazır değil, eksik bilgi veya onay bekleyen alanları ayır.', doneWhen: 'Hazırlık eksikleri netleşir.', ifBlocked: 'Hazır değilse daha ileri karar verme.' },
       { key: 'ROOM_COMMERCIAL_NEXT', title: 'Sonraki ekranı seç', action: 'Gerekirse vardiya veya rapor ekranına geç.', doneWhen: 'Bir sonraki takip ekranı belli olur.', ifBlocked: 'Kabul edilmiş kayıt ile aktif operasyonu aynı sanma.' },
     ],
-    chatQuestions: ['Bu sözleşmeden bugün vardiya üretildi mi?', 'Bu hakediş neden hazır değil?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana geçeyim?', 'Bu kayıt ne durumda?'],
+    chatQuestions: ['Bu sözleşmeden bugün vardiya üretildi mi?', 'Bu hakediş neden hazır değil?', 'İlgili sözleşmeyi aç', 'Üretim durumunu açıkla'],
   }),
   screen(1116, "/room/reports", "Raporlar", {
     menuPurpose: "Oda tarafındaki iş, araç ve sonuç raporlarını görmek için kullanılır.",
@@ -302,7 +303,7 @@ export const ROOM = [
       { key: 'ROOM_REPORT_READ', title: 'Tabloyu oku', action: 'Sütunları, sayıları ve eksik görünen alanları birlikte kontrol et.', doneWhen: 'Rapor özeti anlaşılır.', ifBlocked: 'Tek sayı ile kesin karar verme.' },
       { key: 'ROOM_REPORT_NEXT', title: 'Gerekirse canlı ekrana geç', action: 'Sorun varsa ilgili vardiya veya canlı takip ekranına geç.', doneWhen: 'Takip edilecek doğru ekran belli olur.', ifBlocked: 'Rapor ile canlı durumu karıştırma.' },
     ],
-    chatQuestions: ['Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana gitmeliyim?'],
+    chatQuestions: ['Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Bildirim kaynağı ne?', 'Filtreleri nasıl kullanırım?'],
     simpleTerms: pickTerms(["rapor"]),
   }),
   screen(1111, "/shared/notifications", "Bildirimler", {
@@ -341,7 +342,7 @@ export const ROOM = [
     commonMistakes: ["Görünürlük sınırını operasyon akışı ile karıştırmak."],
     doneChecklist: ["KVKK sınırı netleşti."],
     buttonGuides: [button("Detayı aç", "KVKK sınırını açar.", "Görünürlük kontrolü gerektiğinde kullan.", "KVKK detayı görünür.")],
-    chatQuestions: ["Bu bilgi neden görünmüyor?", "Bu rolde neyi görebilirim?", "Önce neyi kontrol edeyim?"],
+    chatQuestions: ['KVKK sınırını açıkla', 'Bu rolde ne görünür?', 'Erişim neden kapalı?'],
   }),
   screen(1118, "/shared/feedback", "Geri Bildirim", {
     menuPurpose: "Bu ekran, saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Bu ekran harita/araç seçme ekranı değildir.",
@@ -361,7 +362,7 @@ export const ROOM = [
       { label: 'İlgili Ekran', meaning: 'Geri bildirimin hangi ekranla bağlantılı olduğunu gösterir.' },
       { label: 'Sorumlu Rol', meaning: 'Bu geri bildirime kimin bakması gerektiğini gösterir.' },
     ],
-    chatQuestions: ['Bu ekran ne işe yarar?', 'Önce neye bakayım?', 'Hangi kayıt kritik?', 'Sorumlu kim?'],
+    chatQuestions: ['Açık geri bildirimi göster', 'Sorumlu rolü göster', 'Kritik geri bildirimleri sırala', 'Bu kayıt ne durumda?'],
   }),
 ];
 
@@ -401,7 +402,7 @@ export const COMPANY = [
       { label: 'Vardiyalar', path: '/company/shifts', reason: 'Plan çıktıktan sonra takip ve teklif durumunu görmek için.' },
       { label: 'Sözleşmeler', path: '/company/agreements', reason: 'Sözleşmeli işlerde ayrı akışı görmek için.' },
     ],
-    chatQuestions: ['Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Guided modede sırayla ne yaparım?', 'Sonra hangi ekrana geçeyim?'],
+    chatQuestions: ['Bu ekranda önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Guided modede sırayla ne yaparım?', 'Sonra hangi ekrana geçeyim?'],
   }),
   screen(2117, "/company/operations", "Operasyon Paneli", {
     menuPurpose: "Şirket tarafındaki operasyon özetini, bekleyen işleri ve sonraki adımları görmek için kullanılır.",
@@ -456,7 +457,7 @@ export const COMPANY = [
       { label: 'Sözleşmeler', path: '/company/agreements', reason: 'Sözleşmeli akışı ayrı takip etmek için.' },
       { label: 'Konum İncele', path: '/company/georeview', reason: 'Eksik koordinat veya lokasyon sorunu varsa.' },
     ],
-    chatQuestions: ['Bu kayıt ne durumda?', 'Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Hangi ekrana geçeyim?', 'Bu satırı nasıl okurum?', 'Bu rozet ne demek?'],
+    chatQuestions: ['Bu kayıt ne durumda?', 'Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Bu satırı nasıl okurum?', 'Bu rozet ne demek?'],
     fieldGuides: [
       { label: 'Durum', meaning: 'Vardiyanın şu an hangi aşamada olduğunu gösterir.', howToRead: 'Market, bekleyen ve liste bağlamıyla birlikte oku.', risk: 'APPROVED tek başına tam atama anlamına gelmez.' },
       { label: 'Room', meaning: 'İşin bağlı olduğu oda veya sağlayıcıdır.' },

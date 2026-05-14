@@ -209,7 +209,7 @@ export function buildLiveFactConfidence({
       : 'Kısmi';
   const combined = normalizeSignalText([screenType, stage, readiness, summary, evidenceText, selectedSignal].join(' '));
   let missingSignal = 'Belirgin eksik yok';
-  if (/(kvkk|yetki|\brol\b|gizli|görünmüyor|gorunmuyor)/.test(combined)) missingSignal = 'Yetki sınırı';
+  if (/(kvkk|yetki|erişim|erisim|izin|403|401|permission denied|gizli|görünmüyor|gorunmuyor)/.test(combined)) missingSignal = 'Yetki sınırı';
   else if (/(gps|konum|telefon gps|son gps|offline)/.test(combined)) missingSignal = 'GPS bekleniyor';
   else if (screenTypeKey === 'PAYMENT_READINESS' || screenTypeKey === 'COMMERCIAL_FLOW') {
     if (Number.isFinite(missingCount)) missingSignal = missingCount > 0 ? 'Hakediş eksik bilgi' : 'Belirgin eksik yok';
@@ -313,7 +313,7 @@ export function buildDiagnosticPriority({
   const readyForLiveStart = screenTypeKey === 'SHIFTS' && /approved/.test(text) && /ready/.test(text) && /(araç|arac|vehicle|sürücü|surucu|driver)/.test(text);
   const candidates = readyForLiveStart
     ? [
-      { id: 'live-start', label: 'Canlı başlatma zamanı / GPS / operasyon kanıtı kontrolü', terms: ['canlı başlatma', 'canli baslatma', 'aktif durum', 'gps', 'operasyon kanıtı', 'operasyon kaniti', 'kanıt', 'kanit', 'başlatma zamanı', 'baslatma zamani'] },
+      { id: 'live-start', label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon kanıtı kontrolü', terms: ['canlı başlatma', 'canli baslatma', 'aktif durum', 'approved', 'onaylı', 'onayli', 'ready', 'hazır', 'hazir', 'atanmış', 'atanmis', 'gps', 'operasyon kanıtı', 'operasyon kaniti', 'kanıt', 'kanit', 'başlatma zamanı', 'baslatma zamani'] },
       { id: 'missing-vehicle-driver', label: 'Eksik araç/sürücü', terms: ['araç', 'sürücü', 'driver', 'vehicle', 'plaka'] },
       { id: 'route-stop', label: 'Rota/durak eksik', terms: ['rota', 'durak', 'route', 'stop'] },
       { id: 'gps-old', label: 'GPS yok/eski', terms: ['gps', 'konum', 'telefon gps', 'son gps', 'offline', 'eski'] },
@@ -356,7 +356,9 @@ export function buildDiagnosticPriority({
   const ranked = candidates
     .map((candidate, index) => {
       const keywordScore = scoreSignalTerms(text, candidate.terms);
-      const screenScore = boostedIds.has(candidate.id) ? 2 : 0;
+      const screenScore = readyForLiveStart
+        ? (candidate.id === 'live-start' ? 8 : candidate.id === 'missing-vehicle-driver' ? -4 : boostedIds.has(candidate.id) ? 2 : 0)
+        : (boostedIds.has(candidate.id) ? 2 : 0);
       return {
         ...candidate,
         index,

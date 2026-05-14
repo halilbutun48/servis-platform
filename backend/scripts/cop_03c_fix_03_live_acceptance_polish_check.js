@@ -110,11 +110,14 @@ mustNot(helpComposerEntityRuntime, 'Bu durumda doğru aksiyon şu olurdu:', 'ent
 mustNotRaw(helpComposerEntityRuntime, 'OperationProof', 'entity runtime avoids visible technical proof wording');
 
 must(helpComposer, 'Önerilen adım:', 'help composer uses recommendation wording');
-must(helpComposer, "if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(theme)) {", 'help composer keeps GPS map remap branch');
+must(helpComposer, "if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(theme)) {", 'help composer keeps GPS map remap branch');
 must(helpComposer, "pickScreenByKind(screens, 'MAP')", 'help composer routes GPS questions to map screen');
-must(helpComposer, 'İlgili kayıtla devam et', 'help composer keeps updated follow-up prompt');
+must(helpComposer, 'Canlı takip ekranını aç', 'help composer keeps live tracking prompt');
 must(helpComposer, 'Başlatma zamanı uygun mu?', 'help composer keeps shift action chip');
+must(helpComposer, 'Son GPS ne zaman geldi?', 'help composer keeps GPS action chip');
+must(helpComposer, "Sürücünün telefon GPS’i devrede mi?", 'help composer keeps driver phone GPS chip');
 must(helpComposer, 'GPS/operasyon kanıtını kontrol et', 'help composer keeps gps action chip');
+must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps map/live GPS route');
 must(helpComposer, 'Hakediş önizlemesini aç', 'help composer keeps payment action chip');
 must(helpComposer, 'İlgili sözleşmeyi aç', 'help composer keeps contract action chip');
 must(helpComposer, 'Bildirim kaynağını göster', 'help composer keeps notification action chip');
@@ -124,7 +127,7 @@ mustNot(helpComposer, 'Bu durumda doğru aksiyon şu olurdu:', 'help composer re
 mustNot(helpComposer, 'Bu araç neden haritada görünmüyor?', 'help composer removes room map self-question chip');
 mustNotRaw(helpComposer, 'OperationProof', 'help composer avoids visible technical proof wording');
 ordered(helpComposer, [
-  "if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(theme)) {",
+  "if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(theme)) {",
   "pickScreenByKind(screens, 'MAP')",
   'if (pathLooksLikeWorkflowSurface(sourcePath) && (selectedDiagnosticTheme(text) || isCommercialFlowContractToShiftQuestion(text))) {',
 ], 'help composer keeps GPS remap before workflow surface preserve');
@@ -143,6 +146,7 @@ must(intentRouter, 'Check-in akışını aç', 'intent router keeps check-in chi
 must(intentRouter, 'Hub akışını aç', 'intent router keeps hub chip');
 must(intentRouter, 'Okunmamış bildirimleri göster', 'intent router keeps notification list chip');
 must(intentRouter, 'İlgili kaydı aç', 'intent router keeps target-open chip');
+must(intentRouter, "pathHas(options.screenPath, ['/room/map', '/room/live', '/company/live', '/organization/live', '/school/live', '/driver/map', '/driver/live', '/vehicles'])", 'intent router keeps live map location routing');
 mustNot(intentRouter, 'Bu araç neden haritada görünmüyor?', 'intent router removes room map self-question chip');
 mustNot(intentRouter, 'Sözleşme burada ne işe yarıyor?', 'intent router removes agreement self-question chip');
 mustNot(intentRouter, 'Şimdi ne yapayım?', 'intent router removes generic fallback chip from visible workflow blocks');
@@ -154,7 +158,7 @@ must(http, 'JOB_TYPE_ENTITY_MISMATCH', 'http normalizer maps job/entity mismatch
 must(http, 'Şimdi: Bu ekranda seçili araç bilgisi net görünmüyor.', 'http normalizer exposes safe GPS fallback text');
 must(http, 'Bu rehber şu anda bu ekran için kullanılamıyor.', 'http normalizer exposes safe unsupported-job fallback text');
 
-must(facts, "label: 'Canlı başlatma zamanı / GPS / operasyon kanıtı kontrolü'", 'facts keeps live-start label');
+must(facts, "label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon kanıtı kontrolü'", 'facts keeps live-start label');
 must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'facts keeps shift recommendation text');
 must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'facts keeps map recommendation text');
 must(facts, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'facts keeps operation health lead');

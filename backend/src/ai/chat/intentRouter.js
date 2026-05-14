@@ -1,3 +1,5 @@
+import { filterWorkflowGenericChips, workflowTopicChipSet } from './answerQualityPolicy.js';
+
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
 }
@@ -221,7 +223,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     if (pathHas(options.screenPath, ['/superadmin/operations']) && /(başlayamıyor|baslayamiyor|başlamıyor|baslamiyor|sorun ne|sorunu ne|neyde sorun var|neyde sorun|operasyon sağlığı sorun ne|operasyon sagligi sorun ne)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 9, 'operations-start-blocked');
     if (pathHas(options.screenPath, ['/operation-health', '/room/operation-health']) && /(sorun ne|sorunu ne|neyde sorun var|neyde sorun|operasyon sağlığı sorun ne|operasyon sagligi sorun ne)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 12, 'operation-health-why');
     if (pathHas(options.screenPath, ['/trust-quality']) && /(sağlayıcı|saglayici|provider).*(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 5, 'trust-quality-quality-signal');
-    if (pathHas(options.screenPath, ['/room/map', '/vehicles']) && /(haritada|konum|gps)/.test(text)) {
+    if (pathHas(options.screenPath, ['/room/map', '/room/live', '/company/live', '/organization/live', '/school/live', '/driver/map', '/driver/live', '/vehicles']) && /(haritada|konum|gps)/.test(text)) {
       addScore(scores, signals, 'LOCATION_HELP', 12, 'map-vehicle-location');
       addScore(scores, signals, 'WHY_BLOCKED', -8, 'map-vehicle-not-generic-blocked');
     }
@@ -344,6 +346,10 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
 function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
   const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
+  if (workflowQuestion) {
+    const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
+    if (chips.length) return chips.slice(0, 4);
+  }
   if (pathHas(screenPath, ['/driver/today'])) {
     return workflowQuestion ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'] : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri'];
   }
@@ -416,6 +422,10 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionType = 'OPEN') {
   const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
+  if (workflowQuestion) {
+    const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
+    if (chips.length) return Array.from(new Set(chips)).slice(0, roleMode === 'SIMPLE' ? 4 : 6);
+  }
   const chips = [];
   if (pathHas(screenPath, ['/driver/today'])) {
     chips.push(...(workflowQuestion ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'] : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı']));
@@ -487,33 +497,18 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
   const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (String(entityType) === 'vehicle') {
+    if (workflowQuestion) {
+      const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
+      if (chips.length) return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
+    }
     base.push('Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç', 'İlgili aracı aç');
   } else if (String(entityType) === 'shift') {
     const hasSelection = Boolean(context?.selectedLabel || context?.selectedSummary || context?.selectedEntityId || context?.selectedEntityType || context?.id);
     const isRoomShifts = String(screenPath || '').includes('/room/shifts');
     if (workflowQuestion || isRoomShifts) {
-      if (String(questionType || '') === 'PAYMENT_READINESS' || String(questionType || '') === 'PAYMENT_MISSING') {
-        base.push('Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç');
-      } else if (String(questionType || '') === 'CONTRACT_TO_SHIFT' || String(questionType || '') === 'CONTRACT_SHIFT_TODAY') {
-        base.push('İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla');
-      } else if (String(questionType || '') === 'LOCATION_HELP' || String(screenPath || '').includes('/map')) {
-        base.push('Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç');
-      } else if (String(questionType || '') === 'WHY_BLOCKED' || String(questionType || '') === 'READINESS_CHECK' || String(questionType || '') === 'NEXT_STEP' || String(questionType || '') === 'FIRST_CONTROL' || String(questionType || '') === 'STATUS_HELP' || String(questionType || '') === 'SAFE_NEXT_STEP') {
-        base.push('Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?');
-      } else if (String(questionType || '') === 'QUALITY_SIGNAL') {
-        base.push('Kanıtı aç', 'Taslak skoru göster', 'İnceleme kararını açıkla');
-      } else if (String(questionType || '') === 'FEEDBACK_STATUS') {
-        base.push('Açık geri bildirimi göster', 'Sorumlu rolü göster', 'Geri bildirim açık');
-      } else if (String(questionType || '') === 'NOTIFICATION_SOURCE') {
-        base.push('Bildirim kaynağını göster', 'İlgili kaydı aç', 'Okunmamış bildirimleri göster');
-      } else if (String(questionType || '') === 'KVKK_VISIBILITY') {
-        base.push('Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?');
-      } else if (String(questionType || '') === 'WHO_CAN_DO') {
-        base.push('Bunu kim yapabilir?', 'Sorumlu rol kim?', 'Yetki sınırı ne?');
-      } else {
-        base.push('Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?');
-      }
-      base.push('Sıradaki doğru işlem ne?', 'Hangi ekrana geçeyim?');
+      const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
+      if (chips.length) base.push(...chips);
+      if (Number(context?.openOfferCount || 0) > 0) base.unshift('Teklif kararını göster');
     } else {
       base.push(
         hasSelection ? 'Kayıt özeti' : 'Bu ekranı detaylı anlat',
@@ -534,6 +529,6 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
     return Array.from(new Set(base.concat(['Bu rolde ne yapabilirim?']))).slice(0, 4);
   }
 
-  if (questionType !== 'ROLE_HELP') base.push('Bu rolde ne yapabilirim?');
+  if (!workflowQuestion && questionType !== 'ROLE_HELP') base.push('Bu rolde ne yapabilirim?');
   return Array.from(new Set(base)).slice(0, 6);
 }
