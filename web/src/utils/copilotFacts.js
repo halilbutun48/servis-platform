@@ -151,7 +151,7 @@ function scoreSignalTerms(text, terms = []) {
 function pickSignalNote(id) {
   switch (id) {
     case 'missing-vehicle-driver':
-      return 'Önce seçili araç ve sürücü bağını doğrula.';
+      return 'Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.';
     case 'route-stop':
       return 'Rota ve durak bilgisini birlikte oku.';
     case 'shift-status':
@@ -314,7 +314,7 @@ export function buildDiagnosticPriority({
   const candidates = readyForLiveStart
     ? [
       { id: 'live-start', label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon kanıtı kontrolü', terms: ['canlı başlatma', 'canli baslatma', 'aktif durum', 'approved', 'onaylı', 'onayli', 'ready', 'hazır', 'hazir', 'atanmış', 'atanmis', 'gps', 'operasyon kanıtı', 'operasyon kaniti', 'kanıt', 'kanit', 'başlatma zamanı', 'baslatma zamani'] },
-      { id: 'missing-vehicle-driver', label: 'Eksik araç/sürücü', terms: ['araç', 'sürücü', 'driver', 'vehicle', 'plaka'] },
+      { id: 'missing-vehicle-driver', label: 'Araç/sürücü bağı görünmüyorsa kontrol et', terms: ['araç', 'sürücü', 'driver', 'vehicle', 'plaka'] },
       { id: 'route-stop', label: 'Rota/durak eksik', terms: ['rota', 'durak', 'route', 'stop'] },
       { id: 'gps-old', label: 'GPS yok/eski', terms: ['gps', 'konum', 'telefon gps', 'son gps', 'offline', 'eski'] },
       { id: 'operation-proof', label: 'Operasyon kanıtı eksik', terms: ['operationproof', 'operasyon kanıtı', 'operasyon kaniti', 'kanıt', 'kanit', 'proof'] },
@@ -394,26 +394,26 @@ export function buildActionSimulationWording({
   const riskyDevices = Number(counterMap.riskyDevices ?? NaN);
   const staleOrOffline = Number(counterMap.staleOrOffline ?? NaN);
   const openIssues = Number(counterMap.openIssues ?? NaN);
-  let text = 'Önerilen adım: en güçlü sinyali doğrula, sonra ilgili ekranı aç.';
+  let text = 'En güçlü sinyali doğrula, sonra ilgili ekranı aç.';
   if (normalizedScreenType === 'SHIFTS') {
     text = 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.';
   } else if (normalizedScreenType === 'PAYMENT_READINESS' || normalizedScreenType === 'COMMERCIAL_FLOW') {
-    text = 'Önerilen adım: hakediş önizleme, eksik bilgi, ödeme hesabı ve komisyon satırlarını kontrol et.';
+    text = 'Hakediş önizleme, eksik bilgi, ödeme hesabı ve komisyon satırlarını kontrol et.';
   } else if (normalizedScreenType === 'TRUST_QUALITY') {
-    text = 'Önerilen adım: kanıt, taslak skor, inceleme kararı ve denetim izini birlikte kontrol et; kesin sıralama yapma.';
+    text = 'Kanıt, taslak skor, inceleme kararı ve denetim izini birlikte kontrol et; kesin sıralama yapma.';
   } else if (normalizedScreenType === 'FEEDBACK') {
-    text = 'Önerilen adım: açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
+    text = 'Açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
   } else if (normalizedScreenType === 'MAP' || normalizedScreenType === 'OPERATION_PROOF') {
     text = 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.';
   } else if (normalizedScreenType === 'KVKK' || normalizedScreenType === 'ROLE_HELP') {
-    text = 'Önerilen adım: rol ve görünürlük sınırını kontrol et; yetkisiz yönetim aksiyonu önermem.';
+    text = 'Rol ve görünürlük sınırını kontrol et; yetkisiz yönetim aksiyonu önermem.';
   } else if (normalizedScreenType === 'OPERATION_HEALTH') {
     const hasCounts = [activeDrivers, riskyDevices, staleOrOffline, openIssues].some((value) => Number.isFinite(value));
     text = hasCounts
-      ? 'Önerilen adım: riskli cihazı aç; sonra stale/offline satırını ve açık sorunları sırala, ardından ilgili sürücü veya araç ekranına geç.'
-      : 'Önerilen adım: açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını birlikte kontrol et.';
+      ? 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.'
+      : 'Açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını birlikte kontrol et.';
   } else if (topPriority) {
-    text = `Önerilen adım: ${topPriority.toLocaleLowerCase('tr-TR')} kontrol edilir, sonra uygun ekran açılır.`;
+    text = `${topPriority.toLocaleLowerCase('tr-TR')} kontrol edilir, sonra uygun ekran açılır.`;
   }
   if (roleBoundary) {
     text += ' Bu rolde yönetim aksiyonu önermem.';
@@ -612,8 +612,8 @@ export function buildOperationHealthCopilotFacts({
       copilotIssue?.title ? `Örnek sorun: ${copilotIssue.title}` : '',
     ].filter(Boolean),
     nextBestAction: counters.openIssues > 0
-      ? 'Önce riskli cihazı aç. Sonra stale/offline satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.'
-      : 'Önce aktif sürücü, riskli cihaz ve açık sorun sayısını birlikte kontrol et.',
+      ? 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.'
+      : 'Aktif sürücü, riskli cihaz, stale/offline ve açık sorun sayısını birlikte kontrol et.',
     safestNextStep: 'En risksiz adım, önce riskli cihaz ve stale/offline satırını açmaktır.',
     compareHint: 'Operasyon sağlığı canlılık ve risk okuması içindir; tek başına işlem kararı değildir.',
     counters,
@@ -706,6 +706,15 @@ export function buildCommercialCoreCopilotFacts({
     paymentPreviewSummary?.contractOrShiftSummary || lifecycle?.summary || operationProofSummary?.summaryText || 'Sözleşmeden vardiya üretimi ayrıca kontrol edilmeli.',
     'Sözleşmeden vardiya üretimi ayrıca kontrol edilmeli.',
   );
+  const missingCount = Number(paymentPreviewSummary?.missingCount || 0);
+  const reviewCount = Number(paymentPreviewSummary?.reviewCount || 0);
+  const missingInfoText = missingCount > 0 ? `${missingCount} / ${reviewCount}` : 'Belirgin eksik yok';
+  const missingInfoNote = missingCount > 0
+    ? previewReason
+    : 'Eksik bilgi 0 görünüyor; ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini kontrol et.';
+  const contractShiftNote = /üretim sinyali/i.test(contractShiftText) || /vardiya üretildi/i.test(contractShiftText)
+    ? 'Bu sözleşme için bugünkü vardiya üretim sinyali görünüyor.'
+    : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
   const csvBoundary = compactText(paymentPreviewSummary?.nonFinalText || 'Ödeme başlatılmaz. Sadece önizleme verisi indirilir.', 'Ödeme başlatılmaz. Sadece önizleme verisi indirilir.');
   const auditSummary = compactText(paymentSourcesMeta?.summary || 'Önizleme kaynakları özetleniyor.', 'Önizleme kaynakları özetleniyor.');
   return buildReadonlyCopilotFacts({
@@ -723,8 +732,12 @@ export function buildCommercialCoreCopilotFacts({
       `settlement: ${settlementText}`,
       `kaynak özeti: ${auditSummary}`,
     ],
-    nextBestAction: compactText(paymentPreviewSummary?.nextAction || 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.', 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.'),
-    safestNextStep: 'Önce hakediş önizleme kartındaki neden hazır / neden eksik satırını oku.',
+    nextBestAction: compactText(paymentPreviewSummary?.nextAction || (missingCount > 0
+      ? 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.'
+      : 'Eksik bilgi 0 görünüyor; ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini kontrol et.'), 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.'),
+    safestNextStep: missingCount > 0
+      ? 'Önce hakediş önizleme kartındaki neden hazır / neden eksik satırını oku.'
+      : 'Önce ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini birlikte kontrol et.',
     compareHint: 'Hakediş önizlemesi yalnızca kontrol içindir; ödeme başlatılmaz.',
     counters: {
       previewCount: Number(paymentPreviewSummary?.totalDraftCount || paymentBackbone?.cards?.commercialSources || 0),
@@ -735,11 +748,11 @@ export function buildCommercialCoreCopilotFacts({
     },
     copilotSignals: [
       { id: 'paymentPreviewStatus', label: 'Hakediş önizleme', value: previewStatus, note: previewReason },
-      { id: 'paymentPreviewMissingInfo', label: 'Eksik / kontrol gerekli', value: `${Number(paymentPreviewSummary?.missingCount || 0)} / ${Number(paymentPreviewSummary?.reviewCount || 0)}`, note: previewReason },
+      { id: 'paymentPreviewMissingInfo', label: 'Eksik / kontrol gerekli', value: missingInfoText, note: missingInfoNote },
       { id: 'commissionStatus', label: 'Komisyon durumu', value: commissionText, note: 'Aktif ödeme kapalı; sadece hazırlık görünümü.' },
       { id: 'paymentAccountStatus', label: 'Ödeme hesabı durumu', value: accountText, note: 'Eksik bilgi veya kontrol gerekli olabilir.' },
       { id: 'settlementStatus', label: 'Settlement durumu', value: settlementText, note: 'Aktif ödeme kapalı; sadece kapanış hazırlığı görünür.' },
-      { id: 'contractShiftGeneration', label: 'Sözleşme / vardiya', value: contractShiftText, note: 'Sözleşmeden vardiya üretimi ayrıca kontrol edilir.' },
+      { id: 'contractShiftGeneration', label: 'Sözleşme / vardiya', value: contractShiftText || contractShiftNote, note: contractShiftNote },
     ],
     boundaryNotes: [csvBoundary, 'Ödeme başlatılmaz.', 'Sadece önizleme verisi indirilir.', auditSummary],
   });
@@ -1113,6 +1126,10 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
   const isMarket = section === 'market';
   const isPending = section === 'pending';
   const isList = section === 'list';
+  const contractProductionSeen = Boolean(selectedItem?.shiftId) || /(üret|uret|vardiya|sinyal|görün|gorun)/i.test(String(selectedItem?.shiftStatus || selectedItem?.contractShiftStatus || selectedItem?.nextStep || ''));
+  const contractProductionText = contractProductionSeen
+    ? 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.'
+    : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
   const blockers = [];
   pushIf(blockers, isMarket, 'Ticari karar henüz market/pazarlık tarafında; operasyon yorumu erken olabilir.');
   pushIf(blockers, isPending, 'Pazarlık bitmiş olsa bile operasyon bağlantısı ayrıca doğrulanmalıdır.');
@@ -1167,13 +1184,20 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
       `Akış: ${selectedItem?.flowLabel || '-'}`,
       `Durum: ${status}`,
       `Sonraki adım: ${selectedItem?.nextStep || '-'}`,
+      contractProductionText,
     ],
     nextBestAction: isMarket
       ? 'Önce Marketi aç veya teklif tarafını tamamla. Sonra operasyon hazırlığına bak.'
       : isPending
-        ? 'Önce Bekleyeni aç ve bağlı vardiyayı kontrol et. Araç-sürücü ataması tamam mı bak.'
-        : 'Önce Listeyi aç ve bağlı vardiyanın hazır olup olmadığını kontrol et.',
-    safestNextStep: 'En risksiz adım, önce bu kaydın market mi kabul mü liste mi olduğuna bakmaktır.',
+        ? contractProductionSeen
+          ? 'İlgili sözleşmeyi aç ve bugünkü vardiyaları kontrol et.'
+          : 'Üretim geçmişini veya bugünkü vardiyalar listesini kontrol et.'
+        : contractProductionSeen
+          ? 'İlgili sözleşmeyi aç ve bugünkü vardiyaları kontrol et.'
+          : 'Üretim geçmişini veya bugünkü vardiyalar listesini kontrol et.',
+    safestNextStep: contractProductionSeen
+      ? 'İlgili sözleşmeyi aç ve bugünkü vardiyaları kontrol et.'
+      : 'Üretim geçmişini veya bugünkü vardiyalar listesini kontrol et.',
     compareHint: 'Marketi aç pazarlık tarafını gösterir; Listeyi aç operasyon tarafına götürür.',
     counters: { market: Number(marketCount || 0), accepted: Number(acceptedCount || 0), list: Number(listCount || 0) },
     selectedRecordStatus,
@@ -1182,7 +1206,7 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
       { id: 'flow', label: 'Akış', value: selectedItem?.flowLabel || '-', note: 'Ticari akış etiketi.' },
       { id: 'section', label: 'Bölüm', value: section, note: isList ? 'Liste tarafı.' : isPending ? 'Bekleyen tarafı.' : 'Market tarafı.' },
       { id: 'status', label: 'Durum', value: status, note: selectedItem?.nextStep || 'Durum satırı.' },
-      { id: 'linkedShift', label: 'Bağlı vardiya', value: selectedItem?.shiftId ? `#${selectedItem.shiftId}` : 'Yok', note: selectedItem?.shiftId ? 'Vardiya bağı görünüyor.' : 'Vardiya bağı görünmüyor.' },
+      { id: 'linkedShift', label: 'Bağlı vardiya', value: selectedItem?.shiftId ? `#${selectedItem.shiftId}` : 'Yok', note: contractProductionText },
     ],
     boundaryNotes: [isMarket ? 'Ticari karar henüz operasyon tarafına inmemiş olabilir.' : ''],
   });
@@ -1192,9 +1216,11 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
     ...readonlyFacts,
     reasoningLead: isMarket
       ? 'Bu kayıt hâlâ ticari pazarlık tarafında görünüyor.'
-      : isPending
-        ? 'Bu kayıt kabul edilmiş ama operasyon hazırlığı ayrıca kontrol edilmelidir.'
-        : 'Bu kayıt operasyon tarafına geçmiş görünüyor.',
+      : contractProductionSeen
+        ? contractProductionText
+        : isPending
+          ? 'Bu kayıt kabul edilmiş ama operasyon hazırlığı ayrıca kontrol edilmelidir.'
+          : 'Bu kayıt operasyon tarafına geçmiş görünüyor.',
     ...actionMatrix,
   };
 }

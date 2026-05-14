@@ -77,6 +77,7 @@ function main() {
   must(pkg, '"check:cop03cfix02"', 'package.json keeps check:cop03cfix02');
   must(pkg, '"check:cop03cfix03"', 'package.json keeps check:cop03cfix03');
   must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
+  must(pkg, '"check:cop04afix01"', 'package.json keeps check:cop04afix01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 
@@ -103,6 +104,7 @@ function main() {
     'check:cop03cfix02',
     'check:cop03cfix03',
     'check:cop04a',
+    'check:cop04afix01',
   ], 'product extensions runner order');
 
   must(guide, 'check:product-extensions', 'script guide exposes check:product-extensions');
@@ -116,6 +118,7 @@ function main() {
   must(guide, 'check:cop03cfix02', 'script guide exposes check:cop03cfix02');
   must(guide, 'check:cop03cfix03', 'script guide exposes check:cop03cfix03');
   must(guide, 'check:cop04a', 'script guide exposes check:cop04a');
+  must(guide, 'check:cop04afix01', 'script guide exposes check:cop04afix01');
   must(guide, 'check:e2esmoke01', 'script guide exposes check:e2esmoke01');
   must(guide, 'check:fieldlaunch01', 'script guide exposes check:fieldlaunch01');
   must(guide, 'VERIFY-CHAIN-01', 'script guide mentions VERIFY-CHAIN-01');

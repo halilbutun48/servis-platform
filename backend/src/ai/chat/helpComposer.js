@@ -555,6 +555,11 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   if (theme) return theme;
   if (questionType === 'SCREEN_PURPOSE') return 'SCREEN_PURPOSE';
   if (path.includes('/trust-quality') || /(kalite|saglayıcı|sağlayıcı|saglayici|provider)/.test(text)) return /(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text) ? 'QUALITY_SIGNAL' : 'TRUST_QUALITY';
+  if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text)
+    || /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)
+    || (/(sözleşme|sozlesme|contract)/.test(text) && /(vardiya|shift)/.test(text))) {
+    return /(üretildi|uretildi|oluştu|olustu|bugün|bugun)/.test(text) ? 'CONTRACT_SHIFT_TODAY' : 'CONTRACT_TO_SHIFT';
+  }
   if (path.includes('/commercial-core') || path.includes('/payment') || /(hakediş|hakedis|ödeme|odeme|settlement|komisyon|csv|önizleme|onizleme)/.test(text)) return /(hazır değil|hazir degil|hazırlık|hazirlik|eksik|kontrol gerekli)/.test(text) ? 'PAYMENT_READINESS' : 'PAYMENT_PREVIEW';
   if (path.includes('/map') || path.includes('/live') || /(gps|konum|harita|haritada)/.test(text)) {
     if (/(sürücü|surucu|telefon gps|telefon gps['’]i|telefon gps'i)/.test(text)) return 'DRIVER_PHONE_GPS';
@@ -886,8 +891,8 @@ function buildContextPriorityDecision({
     : '';
   const operationHealthAdvice = isOperationHealthSurface
     ? ([activeDriversCount, riskyDevicesCount, staleOrOfflineCount, openIssuesCount].some((value) => Number.isFinite(value))
-      ? 'Önce riskli cihazı aç. Sonra stale/offline satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.'
-      : 'Önce açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını kontrol et.')
+      ? 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.'
+      : 'Açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını kontrol et.')
     : '';
   const liveFactConfidence = structured?.liveFactConfidence && typeof structured.liveFactConfidence === 'object'
     ? structured.liveFactConfidence
@@ -913,6 +918,7 @@ function buildContextPriorityDecision({
     typeof sourceScreenContext?.actionSimulation === 'string' ? sourceScreenContext.actionSimulation : '',
     '',
   );
+  const visibleActionSimulation = normalizeVisibleSuggestionFragment(actionSimulation);
   const needsSelection = !selectedLabel && !selectedSummary && !selectedCarrySummary(screenContext) && !selectedCarrySummary(sourceScreenContext);
   const roleBoundary = buildRoleBoundaryExplanation({ userRole, questionType, message, activeTopic });
   const evidenceConfidence = buildEvidenceConfidenceWording({ analysis, screenContext, sourceScreenContext, roleBoundary, needsSelection });
@@ -942,7 +948,7 @@ function buildContextPriorityDecision({
   const selectedLooksLikeVehicle = /(araç|arac|vehicle|plaka)/.test(selectedLabelText) || /(araç|arac|vehicle|plaka)/.test(selectedSummaryText) || /(araç|arac|vehicle|plaka)/.test(selectedRecordStatusText);
   const selectedLooksLikeGps = /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedLabelText) || /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedSummaryText) || /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedRecordStatusText);
   if ((activeTopic === 'CONTRACT_TO_SHIFT' || activeTopic === 'CONTRACT_SHIFT_TODAY') && selectedLooksLikeShift && !selectedLooksLikeContract) {
-    selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya contractShiftGeneration sinyali gerekir.';
+    selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.';
   } else if ((activeTopic === 'PAYMENT_READINESS' || activeTopic === 'PAYMENT_MISSING') && !selectedLooksLikePayment && !selectedHasPayment) {
     selectedRecordMismatchLead = 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.';
   } else if ((activeTopic === 'VEHICLE_NOT_VISIBLE' || activeTopic === 'DRIVER_PHONE_GPS') && selectedLooksLikeShift && !selectedLooksLikeVehicle && !selectedLooksLikeGps) {
@@ -953,14 +959,14 @@ function buildContextPriorityDecision({
     PAYMENT_READINESS: 'Hakediş hazırlığı tamamlanmadan görünüm hazır sayılmaz.',
     PAYMENT_MISSING: 'Hakediş eksikleri kapatılmamış olabilir.',
     PAYMENT_PREVIEW: 'Hakediş önizlemesi bu ekranda görünmüyor olabilir.',
-    SHIFT_BLOCKED: 'Vardiya onaylı olsa bile canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve operasyon kanıtı eksik olabilir.',
+    SHIFT_BLOCKED: 'Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.',
     FEEDBACK_STATUS: 'Kayıt açık ya da kritik olduğu için tamamlanmış görünmüyor.',
     NOTIFICATION_SOURCE: 'Bildirim bir olay kaydına bağlı olduğu için kaynağı ayrıca okunmalı.',
     KVKK_VISIBILITY: 'Bilgi rol bazlı görünürlük nedeniyle gizli olabilir.',
     WHO_CAN_DO: 'Bu işlem rol sınırı yüzünden bu kullanıcıda görünmeyebilir.',
     MISSING_DATA: 'Boş alanlar yüzünden kayıt ilerlemiyor olabilir.',
-    CONTRACT_TO_SHIFT: 'Sözleşme ile vardiya bağı netleşmeden iş ilerlemiyor olabilir.',
-    CONTRACT_SHIFT_TODAY: 'Sözleşme ile bugünkü vardiya üretim bağı netleşmeden karar verilmez.',
+    CONTRACT_TO_SHIFT: 'Şimdi: Bu sözleşme için bugün vardiya üretim sinyali görünüyor mu, önce onu kontrol et.',
+    CONTRACT_SHIFT_TODAY: 'Şimdi: Bu sözleşme için bugün vardiya üretim sinyali görünüyor mu, önce onu kontrol et.',
     DRIVER_PHONE_GPS: 'Telefon GPS’i cihaz GPS’inin yerine geçiyor olabilir.',
     VEHICLE_NOT_VISIBLE: 'Araç, görev bağlantısı, son GPS veya Sürücünün telefon GPS’i devrede olmadığı için görünmüyor olabilir.',
     WHY_BLOCKED: operationHealthLead || 'Önce blokaj nedeni ve eksik alanı kontrol et.',
@@ -970,7 +976,7 @@ function buildContextPriorityDecision({
     operationHealthLead,
     diagnosticPrioritySummary ? `En olası neden: ${diagnosticPrioritySummary}` : '',
     liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
-    actionSimulation ? `Önerilen adım: ${actionSimulation}` : '',
+    visibleActionSimulation ? `Önerilen adım: ${visibleActionSimulation}` : '',
     topicWhy[activeTopic],
     roleBoundary,
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
@@ -994,21 +1000,21 @@ function buildContextPriorityDecision({
   );
   const topicAdvice = {
     QUALITY_SIGNAL: 'Önce kalite sinyalini sağlayıcı puanı, inceleme kararı ve denetim iziyle birlikte oku.',
-    PAYMENT_READINESS: 'Önce hakediş hazırlığı, eksik alanlar ve önizleme kayıtlarını kontrol et.',
-    PAYMENT_MISSING: 'Önce hakediş hazırlığı, eksik alanlar ve önizleme kayıtlarını kontrol et.',
+    PAYMENT_READINESS: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.',
+    PAYMENT_MISSING: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.',
     PAYMENT_PREVIEW: 'Önce hakediş önizleme kayıtlarını ve eksik bilgi satırlarını kontrol et.',
     NEXT_SCREEN: 'Önce ilgili ekrana geç.',
     NEXT_STEP: 'Önce ilgili kayıt veya alanı kontrol et.',
     WHY_BLOCKED: operationHealthAdvice || 'Önce blokaj nedeni ve eksik alanı kontrol et.',
-    SHIFT_BLOCKED: 'Önce canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve operasyon kanıtı satırlarını birlikte kontrol et.',
+    SHIFT_BLOCKED: 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.',
     FIRST_CONTROL: 'Önce ilgili satırı veya ilk kontrol alanını aç.',
     SAFE_NEXT_STEP: 'Önce en risksiz kayıt veya alanı kontrol et.',
     STATUS_HELP: 'Önce durum satırını ve ilgili kaydı kontrol et.',
     FEEDBACK_STATUS: 'Önce açık veya kritik geri bildirimi ve sorumlu rolü kontrol et.',
     NOTIFICATION_SOURCE: 'Önce bildirimin kaynağı olan olay kaydını aç.',
     KVKK_VISIBILITY: 'Önce rol ve görünürlük sınırını kontrol et.',
-    CONTRACT_TO_SHIFT: 'Önce sözleşme ve vardiya bağını kontrol et.',
-    CONTRACT_SHIFT_TODAY: 'Önce sözleşme ve bugünkü vardiya üretim bilgisini kontrol et.',
+    CONTRACT_TO_SHIFT: 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.',
+    CONTRACT_SHIFT_TODAY: 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.',
     MISSING_DATA: 'Önce boş alanları ve eksik bilgi blokajını kontrol et.',
     WHO_CAN_DO: 'Önce yetki sınırını ve ilgili rolü kontrol et.',
     DRIVER_PHONE_GPS: 'Önce sürücünün telefon GPS’i ile cihaz GPS’i kaynağını ayır.',
@@ -1017,7 +1023,7 @@ function buildContextPriorityDecision({
   const bestNextAction = firstNonEmpty(
     selectedRecordMismatchLead,
     operationHealthAdvice,
-    actionSimulation,
+    visibleActionSimulation,
     topicAdvice[activeTopic],
     analysis?.nextBestAction,
     analysis?.safestNextStep,
@@ -1029,7 +1035,7 @@ function buildContextPriorityDecision({
   const advice = firstNonEmpty(
     selectedRecordMismatchLead,
     operationHealthAdvice,
-    actionSimulation,
+    visibleActionSimulation,
     diagnosticPrioritySummary ? `Öncelik: ${diagnosticPrioritySummary}` : '',
     topicAdvice[activeTopic],
     analysis?.nextBestAction,
@@ -1060,7 +1066,7 @@ function buildContextPriorityDecision({
     needsSelection ? 'Önce ilgili satırı seç' : '',
     isFollowUp && !workflowQuestion ? 'İlgili kayıtla devam et' : '',
     roleBoundary ? 'Yetki sınırını açıkla' : '',
-    actionSimulation ? 'Bu aksiyonu simüle et' : '',
+    visibleActionSimulation,
     bestNextAction,
     'Sıradaki doğru işlem ne?',
   );
@@ -3148,6 +3154,8 @@ function normalizeVisibleSuggestionFragment(value) {
   return normalizeVisibleReplyFragment(value)
     .replace(/^(?:Önerilen adım|Öneri)\s*:\s*/i, '')
     .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
+    .replace(/^Bu aksiyonu simüle et\.?$/i, '')
+    .replace(/^Bu aksiyonu simüle et\.?\s*/i, '')
     .trim();
 }
 

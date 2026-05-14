@@ -50,6 +50,7 @@ const WORKFLOW_GENERIC_CHIP_BLOCKLIST = [
   'Kontrol listesi ver',
   'Sıralı kontrol ver',
   'Yetki sınırını kontrol et',
+  'Bu aksiyonu simüle et',
 ];
 
 export function hasExplicitRoleBoundarySignal({ questionType, activeTopic, message }) {

@@ -161,9 +161,9 @@ must(http, 'Bu rehber şu anda bu ekran için kullanılamıyor.', 'http normaliz
 must(facts, "label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon kanıtı kontrolü'", 'facts keeps live-start label');
 must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'facts keeps shift recommendation text');
 must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'facts keeps map recommendation text');
-must(facts, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'facts keeps operation health lead');
-must(facts, 'Önerilen adım: riskli cihazı aç; sonra stale/offline satırını ve açık sorunları sırala, ardından ilgili sürücü veya araç ekranına geç.', 'facts keeps operation health recommendation');
-mustNotRaw(facts, 'OperationProof', 'facts avoids visible technical proof wording');
+  must(facts, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'facts keeps operation health lead');
+  must(facts, 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.', 'facts keeps operation health recommendation');
+  mustNotRaw(facts, 'OperationProof', 'facts avoids visible technical proof wording');
 
 must(operationHealthPanel, 'buildOperationHealthCopilotFacts', 'operation health panel uses dedicated copilot facts helper');
 
