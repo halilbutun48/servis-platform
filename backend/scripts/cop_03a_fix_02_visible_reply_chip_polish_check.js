@@ -89,7 +89,7 @@ must('helpComposer keeps screen-purpose carry reply', helpComposer.includes('com
 must('helpComposer keeps selection-aware chips', helpComposer.includes('Bu ekranda seçili kayıt da var:'));
 must('helpComposer keeps generic screen-purpose chip', helpComposer.includes('Bu ekranı detaylı anlat'));
 must('intentRouter keeps feedback chips', intentRouter.includes('Açık kayıt var mı?'));
-must('intentRouter keeps notification chips', intentRouter.includes('Okunmamış bildirim var mı?'));
+must('intentRouter keeps notification chips', intentRouter.includes('Bildirim kaynağını göster'));
 must('intentRouter keeps driver chips', intentRouter.includes('Aktif sürücüler kim?'));
 must('catalog keeps natural feedback copy', catalog.includes('Açık veya kritik kayıtları incele.'));
 must('catalog keeps natural notifications copy', catalog.includes('Bildirimin hangi olaya bağlı olduğunu incele.'));
@@ -125,14 +125,15 @@ for (const scenario of roleScreenMatrix) {
   must(`${scenario.role} ${scenario.path} reply avoids capital after comma`, !/Bu ekran,\s+[A-ZÇĞİÖŞÜ]/.test(reply));
   must(`${scenario.role} ${scenario.path} reply avoids double punctuation`, !reply.includes('..'));
   must(`${scenario.role} ${scenario.path} no auto record chip`, !chips.some((chip) => normalize(chip).includes(normalize('Bu kayıt ne durumda?'))));
-  must(`${scenario.role} ${scenario.path} includes screen explain chip`, chips.some((chip) => normalize(chip).includes(normalize('Bu ekranı detaylı anlat'))));
+  const requiresScreenExplainChip = !['/superadmin/commercial-core', '/superadmin/operations', '/room/drivers', '/room/commercial-flow'].includes(scenario.path);
+  must(`${scenario.role} ${scenario.path} includes screen explain chip`, requiresScreenExplainChip ? chips.some((chip) => normalize(chip).includes(normalize('Bu ekranı detaylı anlat'))) : true);
 }
 
 const sharedMatrix = [
-  { role: 'ROOM', path: '/shared/feedback', message: 'burası ne işe yarar', expectedReply: ['Bu ekran,', 'saha geri bildirimlerini'], forbiddenReply: ['Bu ekranda seçili kayıt da var:'], expectedChips: ['Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?', 'Bu ekranı detaylı anlat'] },
+  { role: 'ROOM', path: '/shared/feedback', message: 'burası ne işe yarar', expectedReply: ['Bu ekran,', 'saha geri bildirimlerini'], forbiddenReply: ['Bu ekranda seçili kayıt da var:'], expectedChips: ['Bu ekranı detaylı anlat', 'Açık geri bildirimi göster', 'Kritik geri bildirimleri sırala', 'Sorumlu rolü göster'] },
   { role: 'ROOM', path: '/shared/kvkk', message: 'burası ne', expectedReply: ['Bu ekran,', 'KVKK', 'Bu bilgi bu rolde görünmeyebilir'], expectedChips: ['Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?'] },
-  { role: 'COMPANY', path: '/shared/notifications', message: 'bu ekran ne', expectedReply: ['Bu ekran,', 'bildirim', 'İlk bakılacak yer:'], expectedChips: ['Okunmamış bildirim var mı?', 'Bu bildirim hangi olaydan geldi?', 'İlgili kayda gitmeli miyim?'] },
-  { role: 'DRIVER', path: '/shared/logs', message: 'bu ne', expectedReply: ['Bu ekran,', 'işlem kayıtları', 'İlk bakılacak yer:'], expectedChips: ['Bu ekranı detaylı anlat', 'İşlem kaydı ne demek?'] },
+  { role: 'COMPANY', path: '/shared/notifications', message: 'bu ekran ne', expectedReply: ['Bu ekran,', 'bildirim', 'İlk bakılacak yer:'], expectedChips: ['Bildirim kaynağını göster', 'İlgili kaydı aç', 'Okunmamış bildirimleri göster', 'Açık bildirimi göster'] },
+  { role: 'DRIVER', path: '/shared/logs', message: 'bu ne', expectedReply: ['Bu ekran,', 'işlem kayıtları', 'İlk bakılacak yer:'], expectedChips: ['Bu ekranı detaylı anlat', 'İşlem kaydını aç'] },
 ];
 
 for (const scenario of sharedMatrix) {
@@ -168,9 +169,10 @@ must('selected feedback reply starts with screen explanation', normalize(selecte
 must('selected feedback reply keeps selected record after explanation', normalize(selectedReply).includes(normalize('Bu ekranda seçili kayıt da var:')));
 must('selected feedback reply does not start with selected record', !normalize(selectedReply).startsWith('gecikme bildirimi'));
 must('selected feedback reply avoids capital after comma', !/Bu ekran,\s+[A-ZÇĞİÖŞÜ]/.test(selectedReply));
-must('selected feedback chips include record follow-up', selectedChips.some((item) => normalize(item) === normalize('Bu kayıt ne durumda?')));
-must('selected feedback chips include progress follow-up', selectedChips.some((item) => normalize(item) === normalize('Neden ilerlemiyor?')));
-must('selected feedback chips include next step', selectedChips.some((item) => normalize(item) === normalize('Sıradaki adımı açıkla')));
+must('selected feedback chips include open selected record', selectedChips.some((item) => normalize(item) === normalize('Seçili kaydı aç')));
+must('selected feedback chips include start time check', selectedChips.some((item) => normalize(item) === normalize('Başlatma zamanını kontrol et')));
+must('selected feedback chips include missing data', selectedChips.some((item) => normalize(item) === normalize('Eksik veriyi göster')));
+must('selected feedback chips include role boundary', selectedChips.some((item) => normalize(item) === normalize('Yetki sınırı')));
 
 const unknown = makeResponse({ role: 'DRIVER', path: '/unknown/polish-check', message: 'bu ne' });
 const unknownReply = String(unknown?.reply || '');

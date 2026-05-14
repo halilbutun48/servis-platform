@@ -251,7 +251,7 @@ export function createSelectedRuntimeHelpers(deps = {}) {
       rows.push({
         label: 'Aksiyon simülasyonu',
         value: actionSimulation,
-        note: 'Gerçek write yok.',
+        note: 'Bu sadece rehberliktir; işlem onay olmadan yapılmaz.',
       });
     }
     const signalRows = Array.isArray(facts?.copilotSignals) ? facts.copilotSignals : [];

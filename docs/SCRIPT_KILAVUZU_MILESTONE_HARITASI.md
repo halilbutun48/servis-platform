@@ -66,6 +66,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop03c` -> `node backend\scripts\cop_03c_live_data_action_simulation_check.js`
 - `check:cop03cfix01` -> `node backend\scripts\cop_03c_fix_01_live_workflow_answer_quality_check.js`
 - `check:cop03cfix02` -> `node backend\scripts\cop_03c_fix_02_live_answer_precision_check.js`
+- `check:cop03cfix03` -> `node backend\scripts\cop_03c_fix_03_live_acceptance_polish_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
@@ -595,6 +596,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:cop03c`
   - `check:cop03cfix01`
   - `check:cop03cfix02`
+  - `check:cop03cfix03`
   - `check:docsstate01`
 
 ### E2E-SMOKE-01 — demo acceptance pack [CHECK]
@@ -615,6 +617,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:verifychain01`
   - `check:e2esmoke01`
   - `check:fieldlaunch01`
+  - `check:cop03cfix03`
 
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`

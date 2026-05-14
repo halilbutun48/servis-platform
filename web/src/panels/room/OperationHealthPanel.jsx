@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { buildOperationHealthCopilotFacts } from "../../utils/copilotFacts";
 import RoomOperationsBoard from "./roomOperationsBoard";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 
@@ -214,42 +215,13 @@ export default function OperationHealthPanel() {
   ], filterQ)), [issues, filterQ]);
   const copilotDriver = useMemo(() => filteredDrivers.find((item) => Number(item?.driverId || item?.id || 0) === Number(selectedDriverId || 0)) || filteredDrivers[0] || null, [filteredDrivers, selectedDriverId]);
   const copilotIssue = useMemo(() => filteredIssues.find((item, idx) => `${idx}:${item?.title || ''}` === String(selectedIssueKey || '')) || filteredIssues[0] || null, [filteredIssues, selectedIssueKey]);
+  const facts = useMemo(() => buildOperationHealthCopilotFacts({
+    summary,
+    copilotDriver,
+    copilotIssue,
+  }), [summary, copilotDriver, copilotIssue]);
 
   useEffect(() => {
-    const facts = {
-      screenType: 'OPERATION_HEALTH',
-      stage: String(summary?.status || 'ROOM_VIEW').toUpperCase(),
-      readiness: Number(summary?.cards?.openIssues || 0) > 0 || Number(summary?.cards?.staleOrOffline || 0) > 0 ? 'REVIEW_NEEDED' : 'READY',
-      readinessScore: Number(summary?.cards?.openIssues || 0) > 0 ? 44 : Number(summary?.cards?.staleOrOffline || 0) > 0 ? 58 : 83,
-      blockers: [
-        ...(Number(summary?.cards?.openIssues || 0) > 0 ? ['Açık sorunlar kapatılmadan saha güveni düşer.'] : []),
-        ...(Number(summary?.cards?.staleOrOffline || 0) > 0 ? ['Stale veya offline sürücü sayısı sıfır değil.'] : []),
-      ],
-      counters: {
-        activeDrivers: Number(summary?.cards?.activeDrivers || 0),
-        riskyDevices: Number(summary?.cards?.riskyDevices || 0),
-        staleOrOffline: Number(summary?.cards?.staleOrOffline || 0),
-        openIssues: Number(summary?.cards?.openIssues || 0),
-      },
-      evidence: [
-        `Aktif sürücü: ${Number(summary?.cards?.activeDrivers || 0)}`,
-        `Riskli cihaz: ${Number(summary?.cards?.riskyDevices || 0)}`,
-        `Stale/offline: ${Number(summary?.cards?.staleOrOffline || 0)}`,
-        `Açık sorun: ${Number(summary?.cards?.openIssues || 0)}`,
-        copilotDriver?.driverName ? `İlk sorunlu sürücü: ${copilotDriver.driverName}` : '',
-        copilotIssue?.title ? `İlk açık sorun: ${copilotIssue.title}` : '',
-      ].filter(Boolean),
-      reasoningLead: Number(summary?.cards?.openIssues || 0) > 0
-        ? 'Bu ekranda ana dikkat noktası açık sorun ve canlılık risklerini kapatmaktır.'
-        : 'Bu ekranda önce canlılık, sonra izin ve oturum riskleri okunmalıdır.',
-      nextBestAction: copilotIssue?.title
-        ? 'Önce en üstteki açık sorunu aç ve hangi ekrana gitmen gerektiğini netleştir.'
-        : copilotDriver?.driverName
-          ? 'Önce ilk sürücünün canlılık, izin ve oturum durumunu birlikte kontrol et.'
-          : 'Önce özet kartlardan risk alanını belirle. Sonra sürücü veya harita tarafına geç.',
-      safestNextStep: 'En risksiz adım, açık sorun sayısı ile stale/offline sayısını birlikte okuyup önce en riskli satıra inmek olur.',
-      compareHint: 'Operasyon Sağlığı sorun bulma ekranıdır; tek başına atama veya sözleşme kararı ekranı değildir.',
-    };
     setCopilotSelection({
       scopeKey: '/room/operation-health',
       entityType: 'screen',

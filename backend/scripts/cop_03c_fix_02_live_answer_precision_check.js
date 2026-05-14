@@ -98,7 +98,7 @@ must(guide, 'check:cop03cfix01', 'script guide keeps check:cop03cfix01');
 
 must(doc, 'COP-03C-FIX-02', 'live data doc keeps fix-02 heading visible');
 must(doc, 'Workflow soruları ekran amacıyla başlamaz', 'live data doc keeps workflow precision note');
-must(doc, 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof', 'live data doc keeps live-start wording');
+must(doc, 'Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı', 'live data doc keeps live-start wording');
 mustNot(doc, 'execute', 'live data doc avoids execute wording');
 mustNot(doc, 'write', 'live data doc avoids write wording');
 mustNot(doc, 'settlement execute', 'live data doc avoids settlement execute wording');
@@ -129,7 +129,7 @@ must(helpComposer, "replace(/\\bblokajı\\b/gi, 'engeli')", 'help composer fixes
 must(helpComposer, "replace(/blokajı/gi, 'engeli')", 'help composer fixes plain-language blokajı typo');
 must(helpComposer, "SHIFT_BLOCKED: 'Vardiya engeli'", 'help composer keeps correct blocked-shift label');
 must(helpComposer, "makeGuideAction('Vardiya blokajı rehberini aç'", 'help composer keeps vardiya-blockage guide label');
-must(helpComposer, "Bunu sor: Bu vardiya neden başlayamıyor?", 'help composer keeps vardiya follow-up wording');
+must(helpComposer, 'Başlatma zamanı uygun mu?', 'help composer keeps vardiya follow-up wording');
 must(helpComposer, 'Hakediş önizleme rehberini aç', 'help composer keeps workflow-specific payment guide label');
 must(helpComposer, 'Sözleşme → vardiya rehberini aç', 'help composer keeps workflow-specific contract guide label');
 must(helpComposer, 'GPS teşhis rehberini aç', 'help composer keeps workflow-specific GPS guide label');
@@ -140,12 +140,12 @@ must(helpComposer, 'Canlı takip ekranını aç', 'help composer keeps live trac
 must(helpComposer, 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.', 'help composer keeps payment mismatch guard');
 must(helpComposer, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya contractShiftGeneration sinyali gerekir.', 'help composer keeps contract-shift mismatch guard');
 must(helpComposer, "makeGuideAction('Vardiya blokajı rehberini aç', { jobType: 'ASSIGNMENT_READINESS_GUIDE'", 'help composer replaces generic readiness guide label in shift fallback');
-must(helpComposer, "Bunu sor: Bu vardiya neden başlayamıyor?", 'help composer uses vardiya follow-up in shift fallback');
+must(helpComposer, 'GPS/operasyon kanıtını kontrol et', 'help composer uses vardiya follow-up in shift fallback');
 mustNot(helpComposer, 'Bu ekran, teklifin temel bilgilerini kontrol et', 'help composer no longer leaks offer-purpose intro');
 mustNot(helpComposer, 'Atamaya hazır mı rehberini aç', 'help composer removes generic readiness guide wording');
 
 must(intentRouter, "pathHas(screenPath, ['/room/shifts'])", 'intent router adds room shifts routing');
-must(intentRouter, 'Bu vardiya neden başlayamıyor?', 'intent router keeps shift workflow chips');
+must(intentRouter, 'Başlatma zamanı uygun mu?', 'intent router keeps shift workflow chips');
 must(intentRouter, 'Araç/sürücü bağlantısını kontrol et', 'intent router keeps shift workflow chip');
 must(intentRouter, 'Rota/durak hazır mı?', 'intent router keeps shift workflow chip');
 must(intentRouter, 'GPS/kanıt akışını kontrol et', 'intent router keeps shift workflow chip');
@@ -156,7 +156,7 @@ mustNot(intentRouter, "workflowQuestion ? ['Bu araç neden haritada görünmüyo
 must(intentRouter, 'Riskli cihazı göster', 'intent router keeps operation-health chips');
 must(intentRouter, 'Stale/offline satırını aç', 'intent router keeps operation-health chips');
 must(intentRouter, 'Açık sorunları sırala', 'intent router keeps operation-health chips');
-must(intentRouter, 'Canlılık riskini açıkla', 'intent router keeps operation-health chips');
+must(intentRouter, 'Aktif sürücüleri kontrol et', 'intent router keeps operation-health chips');
 must(intentRouter, 'Bu bilgi neden görünmüyor?', 'intent router keeps KVKK workflow chips');
 
 must(screenStateAnalyzer, 'activeDrivers', 'operation health reads activeDrivers counter');
@@ -179,11 +179,11 @@ must(facts, "screenTypeKey === 'COMMERCIAL_FLOW'", 'facts uses normalized commer
 must(facts, "const normalizedScreenType = normalizeEnumKey(screenType);", 'facts uses normalized screen type in action wording');
 mustNot(facts, "normalizeSignalText(screenType) === 'shifts'", 'facts no longer uses locale-sensitive shift guard');
 must(facts, "if (/(kvkk|yetki|\\brol\\b|gizli|görünmüyor|gorunmuyor)/.test(combined))", 'facts narrows role false-positive guard');
-must(facts, "label: 'Canlı başlatma zamanı / GPS / OperationProof kontrolü'", 'facts keeps live-start diagnostic label');
+must(facts, "label: 'Canlı başlatma zamanı / GPS / operasyon kanıtı kontrolü'", 'facts keeps live-start diagnostic label');
 must(facts, "readyForLiveStart ? ['live-start', 'gps-old', 'missing-vehicle-driver', 'operation-proof']", 'facts boosts live-start priority on ready shifts');
 must(facts, 'APPROVED ile canlı başlatma aynı şey değildir', 'facts keeps live-start compare hint');
-must(facts, 'Bu durumda doğru aksiyon şu olurdu: canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve OperationProof akışını birlikte kontrol et.', 'facts keeps shift action simulation wording');
-must(facts, 'Bu durumda doğru aksiyon şu olurdu: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'facts keeps GPS action simulation wording');
+must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'facts keeps shift action simulation wording');
+must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'facts keeps GPS action simulation wording');
 mustNot(facts, 'write', 'facts avoids write wording');
 mustNot(facts, 'execute', 'facts avoids execute wording');
 mustNot(facts, 'settlement execute', 'facts avoids settlement execute wording');
@@ -195,3 +195,5 @@ mustNot(facts, 'hash', 'facts avoids hash wording');
 mustNot(facts, 'debug', 'facts avoids debug wording');
 
 console.log('=== COP-03C-FIX-02 LIVE ANSWER PRECISION CHECK PASS ===');
+
+

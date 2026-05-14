@@ -232,7 +232,7 @@ function main() {
   }
 
   const feedbackChips = buildSuggestedChips({ entityType: 'screen', questionType: 'SCREEN_PURPOSE', roleMode: 'OPERATIONS', screenPath: '/shared/feedback' });
-  assertCondition(includesAny(feedbackChips.join(' '), ['Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?']), 'feedback chips are role aware');
+    assertCondition(includesAny(feedbackChips.join(' '), ['Açık geri bildirimi göster', 'Kritik geri bildirimleri sırala', 'Sorumlu rolü göster', 'Geri bildirim açık']), 'feedback chips are role aware');
   const driversChips = buildSuggestedChips({ entityType: 'screen', questionType: 'SCREEN_PURPOSE', roleMode: 'OPERATIONS', screenPath: '/room/drivers' });
   assertCondition(includesAny(driversChips.join(' '), ['Bu ekranı detaylı anlat', 'Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla']), 'drivers chips are role aware');
   const unknownChips = buildSuggestedChips({ entityType: 'screen', questionType: 'SCREEN_PURPOSE', roleMode: 'OPERATIONS', screenPath: '/mystery/unknown' });

@@ -157,11 +157,11 @@ function pickSignalNote(id) {
     case 'shift-status':
       return 'Durum satırını ve bağlı vardiyayı birlikte kontrol et.';
     case 'live-start':
-      return 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof akışını birlikte kontrol et.';
+      return 'Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışını birlikte kontrol et.';
     case 'gps-old':
       return 'Son GPS zamanını ve konum kaynağını kontrol et.';
     case 'operation-proof':
-      return 'Kanıt kartını ve görünürlük satırını aç.';
+      return 'Operasyon kanıtı kartını ve görünürlük satırını aç.';
     case 'contract-shift':
       return 'Sözleşme ile vardiya üretimi bağını kontrol et.';
     case 'payment-info':
@@ -189,9 +189,17 @@ export function buildLiveFactConfidence({
   evidence = [],
   selectedRecordStatus = '',
   copilotSignals = [],
+  counters = {},
 } = {}) {
   const evidenceText = compactList([...compactList(blockers, 4), ...compactList(evidence, 4)], 4).join(' • ');
   const signalCount = Array.isArray(copilotSignals) ? copilotSignals.length : 0;
+  const screenTypeKey = normalizeEnumKey(screenType);
+  const counterMap = counters && typeof counters === 'object' ? counters : {};
+  const missingCount = Number(counterMap.missingCount ?? counterMap.paymentPreviewMissingInfo ?? counterMap.paymentMissingInfo ?? NaN);
+  const activeDrivers = Number(counterMap.activeDrivers ?? NaN);
+  const riskyDevices = Number(counterMap.riskyDevices ?? NaN);
+  const staleOrOffline = Number(counterMap.staleOrOffline ?? NaN);
+  const openIssues = Number(counterMap.openIssues ?? NaN);
   const screenSignal = signalCount > 0 || evidenceText ? 'Görünüyor' : 'Sınırlı';
   const selectedSignal = signalText(selectedRecordStatus || stage || readiness || 'Seçili kayıt yok');
   const workflowSignal = /READY/.test(normalizeSignalText(readiness)) || /READY/.test(normalizeSignalText(stage))
@@ -203,7 +211,17 @@ export function buildLiveFactConfidence({
   let missingSignal = 'Belirgin eksik yok';
   if (/(kvkk|yetki|\brol\b|gizli|görünmüyor|gorunmuyor)/.test(combined)) missingSignal = 'Yetki sınırı';
   else if (/(gps|konum|telefon gps|son gps|offline)/.test(combined)) missingSignal = 'GPS bekleniyor';
-  else if (/(hakediş|hakedis|ödeme hesabı|odeme hesabi|komisyon|csv|önizleme|onizleme|eksik bilgi)/.test(combined)) missingSignal = 'Hakediş eksik bilgi';
+  else if (screenTypeKey === 'PAYMENT_READINESS' || screenTypeKey === 'COMMERCIAL_FLOW') {
+    if (Number.isFinite(missingCount)) missingSignal = missingCount > 0 ? 'Hakediş eksik bilgi' : 'Belirgin eksik yok';
+    else if (/(hakediş|hakedis|ödeme hesabı|odeme hesabi|komisyon|csv|önizleme|onizleme|eksik bilgi)/.test(combined)) missingSignal = 'Hakediş eksik bilgi';
+  } else if (screenTypeKey === 'OPERATION_HEALTH') {
+    const hasCounts = [activeDrivers, riskyDevices, staleOrOffline, openIssues].some((value) => Number.isFinite(value));
+    if (hasCounts && ((Number.isFinite(activeDrivers) && activeDrivers === 0) || (Number.isFinite(riskyDevices) && riskyDevices > 0) || (Number.isFinite(staleOrOffline) && staleOrOffline > 0) || (Number.isFinite(openIssues) && openIssues > 0))) {
+      missingSignal = 'Canlılık ve cihaz riski';
+    } else if (hasCounts) {
+      missingSignal = 'Belirgin eksik yok';
+    }
+  } else if (/(hakediş|hakedis|ödeme hesabı|odeme hesabi|komisyon|csv|önizleme|onizleme|eksik bilgi)/.test(combined)) missingSignal = 'Hakediş eksik bilgi';
   else if (/(sözleşme|sozlesme|vardiya üretimi|vardiya uretimi|vardiya)/.test(combined)) missingSignal = 'Sözleşme/vardiya kontrolü';
   else if (/(geri bildirim|feedback|açık|acik|kritik|tekrarlayan)/.test(combined)) missingSignal = 'Geri bildirim açık';
   else if (/(bildirim|notification|olay kaynağı|olay kaynagi)/.test(combined)) missingSignal = 'Bildirim kaynağı';
@@ -252,6 +270,7 @@ export function buildDiagnosticPriority({
   blockers = [],
   evidence = [],
   copilotSignals = [],
+  counters = {},
 } = {}) {
   const signalTextParts = [
     screenType,
@@ -271,14 +290,34 @@ export function buildDiagnosticPriority({
   ];
   const text = normalizeSignalText(signalTextParts.join(' '));
   const screenTypeKey = normalizeEnumKey(screenType);
+  const counterMap = counters && typeof counters === 'object' ? counters : {};
+  const activeDrivers = Number(counterMap.activeDrivers ?? NaN);
+  const riskyDevices = Number(counterMap.riskyDevices ?? NaN);
+  const staleOrOffline = Number(counterMap.staleOrOffline ?? NaN);
+  const openIssues = Number(counterMap.openIssues ?? NaN);
+  if (screenTypeKey === 'OPERATION_HEALTH') {
+    const hasCounts = [activeDrivers, riskyDevices, staleOrOffline, openIssues].some((value) => Number.isFinite(value));
+    const rows = [];
+    if (Number.isFinite(activeDrivers)) rows.push(normalizeCopilotSignal({ id: 'active-drivers', label: '1. öncelik', value: activeDrivers === 0 ? 'Aktif sürücü 0' : `Aktif sürücü ${activeDrivers}`, note: activeDrivers === 0 ? 'Canlılık riski görünür.' : 'Canlı sürücü sayısı okunur.' }));
+    if (Number.isFinite(riskyDevices)) rows.push(normalizeCopilotSignal({ id: 'risky-devices', label: '2. öncelik', value: riskyDevices > 0 ? 'Riskli cihaz' : 'Riskli cihaz yok', note: riskyDevices > 0 ? 'İzin, oturum veya GPS riski var.' : 'Belirgin cihaz riski görünmüyor.' }));
+    if (Number.isFinite(staleOrOffline)) rows.push(normalizeCopilotSignal({ id: 'stale-offline', label: '3. öncelik', value: staleOrOffline > 0 ? 'Stale/offline' : 'Stale/offline yok', note: staleOrOffline > 0 ? 'Canlı konum akışı eski olabilir.' : 'Konum akışı canlı görünüyor.' }));
+    if (Number.isFinite(openIssues)) rows.push(normalizeCopilotSignal({ id: 'open-issues', label: '4. öncelik', value: openIssues > 0 ? 'Açık sorun' : 'Açık sorun yok', note: openIssues > 0 ? 'Takip edilmesi gereken durumlar var.' : 'Açık sorun görünmüyor.' }));
+    const summaryText = hasCounts
+      ? `En olası sıra: Canlılık ve cihaz riski • Riskli cihaz • Stale/offline • Açık sorun`
+      : 'Belirgin öncelik ayrımı yok';
+    return {
+      summary: summaryText,
+      rows: rows.slice(0, 4),
+    };
+  }
   const readyForLiveStart = screenTypeKey === 'SHIFTS' && /approved/.test(text) && /ready/.test(text) && /(araç|arac|vehicle|sürücü|surucu|driver)/.test(text);
   const candidates = readyForLiveStart
     ? [
-      { id: 'live-start', label: 'Canlı başlatma zamanı / GPS / OperationProof kontrolü', terms: ['canlı başlatma', 'canli baslatma', 'aktif durum', 'gps', 'operationproof', 'kanıt', 'kanit', 'başlatma zamanı', 'baslatma zamani'] },
+      { id: 'live-start', label: 'Canlı başlatma zamanı / GPS / operasyon kanıtı kontrolü', terms: ['canlı başlatma', 'canli baslatma', 'aktif durum', 'gps', 'operasyon kanıtı', 'operasyon kaniti', 'kanıt', 'kanit', 'başlatma zamanı', 'baslatma zamani'] },
       { id: 'missing-vehicle-driver', label: 'Eksik araç/sürücü', terms: ['araç', 'sürücü', 'driver', 'vehicle', 'plaka'] },
       { id: 'route-stop', label: 'Rota/durak eksik', terms: ['rota', 'durak', 'route', 'stop'] },
       { id: 'gps-old', label: 'GPS yok/eski', terms: ['gps', 'konum', 'telefon gps', 'son gps', 'offline', 'eski'] },
-      { id: 'operation-proof', label: 'OperationProof eksik', terms: ['operationproof', 'kanıt', 'kanit', 'proof'] },
+      { id: 'operation-proof', label: 'Operasyon kanıtı eksik', terms: ['operationproof', 'operasyon kanıtı', 'operasyon kaniti', 'kanıt', 'kanit', 'proof'] },
       { id: 'contract-shift', label: 'Sözleşme/vardiya üretimi yok', terms: ['sözleşme', 'sozlesme', 'vardiya üretimi', 'vardiya uretimi', 'üretildi mi', 'uretildi mi'] },
       { id: 'payment-info', label: 'Hakediş eksik bilgi', terms: ['hakediş', 'hakedis', 'ödeme hesabı', 'odeme hesabi', 'komisyon', 'csv', 'önizleme', 'onizleme', 'eksik bilgi'] },
       { id: 'kvkk-access', label: 'KVKK/yetki nedeniyle görünmüyor', terms: ['kvkk', 'yetki', 'rol', 'görünmüyor', 'gorunmuyor', 'gizli'] },
@@ -291,7 +330,7 @@ export function buildDiagnosticPriority({
       { id: 'route-stop', label: 'Rota/durak eksik', terms: ['rota', 'durak', 'route', 'stop'] },
       { id: 'shift-status', label: 'Görev/vardiya durumu uygun değil', terms: ['vardiya', 'shift', 'durum', 'status', 'hazır değil', 'hazir degil'] },
       { id: 'gps-old', label: 'GPS yok/eski', terms: ['gps', 'konum', 'telefon gps', 'son gps', 'offline', 'eski'] },
-      { id: 'operation-proof', label: 'OperationProof eksik', terms: ['operationproof', 'kanıt', 'kanit', 'proof'] },
+      { id: 'operation-proof', label: 'Operasyon kanıtı eksik', terms: ['operationproof', 'operasyon kanıtı', 'operasyon kaniti', 'kanıt', 'kanit', 'proof'] },
       { id: 'contract-shift', label: 'Sözleşme/vardiya üretimi yok', terms: ['sözleşme', 'sozlesme', 'vardiya üretimi', 'vardiya uretimi', 'üretildi mi', 'uretildi mi'] },
       { id: 'payment-info', label: 'Hakediş eksik bilgi', terms: ['hakediş', 'hakedis', 'ödeme hesabı', 'odeme hesabi', 'komisyon', 'csv', 'önizleme', 'onizleme', 'eksik bilgi'] },
       { id: 'kvkk-access', label: 'KVKK/yetki nedeniyle görünmüyor', terms: ['kvkk', 'yetki', 'rol', 'görünmüyor', 'gorunmuyor', 'gizli'] },
@@ -344,24 +383,35 @@ export function buildActionSimulationWording({
   screenType = '',
   diagnosticPriority = null,
   roleBoundary = '',
+  counters = {},
 } = {}) {
   const topPriority = compactText(diagnosticPriority?.rows?.[0]?.value || diagnosticPriority?.rows?.[0]?.label || '', '');
   const normalizedScreenType = normalizeEnumKey(screenType);
-  let text = 'Bu durumda doğru aksiyon şu olurdu: önce en güçlü sinyali doğrula, sonra ilgili ekranı aç.';
+  const counterMap = counters && typeof counters === 'object' ? counters : {};
+  const activeDrivers = Number(counterMap.activeDrivers ?? NaN);
+  const riskyDevices = Number(counterMap.riskyDevices ?? NaN);
+  const staleOrOffline = Number(counterMap.staleOrOffline ?? NaN);
+  const openIssues = Number(counterMap.openIssues ?? NaN);
+  let text = 'Önerilen adım: en güçlü sinyali doğrula, sonra ilgili ekranı aç.';
   if (normalizedScreenType === 'SHIFTS') {
-    text = 'Bu durumda doğru aksiyon şu olurdu: canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve OperationProof akışını birlikte kontrol et.';
+    text = 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.';
   } else if (normalizedScreenType === 'PAYMENT_READINESS' || normalizedScreenType === 'COMMERCIAL_FLOW') {
-    text = 'Bu durumda doğru aksiyon şu olurdu: hakediş önizleme, eksik bilgi, ödeme hesabı ve komisyon satırlarını kontrol et.';
+    text = 'Önerilen adım: hakediş önizleme, eksik bilgi, ödeme hesabı ve komisyon satırlarını kontrol et.';
   } else if (normalizedScreenType === 'TRUST_QUALITY') {
-    text = 'Bu durumda doğru aksiyon şu olurdu: kanıt, taslak skor, inceleme kararı ve denetim izini birlikte kontrol et; kesin sıralama yapma.';
+    text = 'Önerilen adım: kanıt, taslak skor, inceleme kararı ve denetim izini birlikte kontrol et; kesin sıralama yapma.';
   } else if (normalizedScreenType === 'FEEDBACK') {
-    text = 'Bu durumda doğru aksiyon şu olurdu: açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
+    text = 'Önerilen adım: açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
   } else if (normalizedScreenType === 'MAP' || normalizedScreenType === 'OPERATION_PROOF') {
-    text = 'Bu durumda doğru aksiyon şu olurdu: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.';
+    text = 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.';
   } else if (normalizedScreenType === 'KVKK' || normalizedScreenType === 'ROLE_HELP') {
-    text = 'Bu durumda doğru aksiyon şu olurdu: rol ve görünürlük sınırını kontrol et; yetkisiz yönetim aksiyonu önermem.';
+    text = 'Önerilen adım: rol ve görünürlük sınırını kontrol et; yetkisiz yönetim aksiyonu önermem.';
+  } else if (normalizedScreenType === 'OPERATION_HEALTH') {
+    const hasCounts = [activeDrivers, riskyDevices, staleOrOffline, openIssues].some((value) => Number.isFinite(value));
+    text = hasCounts
+      ? 'Önerilen adım: riskli cihazı aç; sonra stale/offline satırını ve açık sorunları sırala, ardından ilgili sürücü veya araç ekranına geç.'
+      : 'Önerilen adım: açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını birlikte kontrol et.';
   } else if (topPriority) {
-    text = `Bu durumda doğru aksiyon şu olurdu: önce ${topPriority.toLocaleLowerCase('tr-TR')} kontrol edilir, sonra uygun ekran açılır.`;
+    text = `Önerilen adım: ${topPriority.toLocaleLowerCase('tr-TR')} kontrol edilir, sonra uygun ekran açılır.`;
   }
   if (roleBoundary) {
     text += ' Bu rolde yönetim aksiyonu önermem.';
@@ -410,6 +460,7 @@ function buildReadonlyCopilotFacts({
       evidence,
       selectedRecordStatus: selectedRecordStatusText,
       copilotSignals: signals,
+      counters,
     });
   const diagnosticPriorityValue = diagnosticPriority && typeof diagnosticPriority === 'object'
     ? {
@@ -427,6 +478,7 @@ function buildReadonlyCopilotFacts({
       blockers,
       evidence,
       copilotSignals: signals,
+      counters,
     });
   const actionSimulationText = compactText(
     actionSimulation
@@ -436,6 +488,7 @@ function buildReadonlyCopilotFacts({
         readiness,
         selectedRecordStatus: selectedRecordStatusText,
         diagnosticPriority: diagnosticPriorityValue,
+        counters,
       }),
     '',
   );
@@ -500,7 +553,7 @@ export function buildOperationsCopilotFacts({
     summary: summaryText || nonFinalText,
     blockers: blockerText ? [blockerText] : [],
     evidence: [
-      `operationProof: ${statusText}`,
+      `operasyon kanıtı: ${statusText}`,
       `gpsSourceVisibility: ${gpsVisibility}`,
       `audit/notification/event: ${auditCount}/${notificationCount}/${eventCount}`,
     ],
@@ -519,6 +572,59 @@ export function buildOperationsCopilotFacts({
       { id: 'auditSummary', label: 'Denetim / bildirim / olay', value: `${auditCount} / ${notificationCount} / ${eventCount}`, note: 'Son denetim, bildirim ve olay özetleri.' },
     ],
     boundaryNotes: [nonFinalText, 'Sürücünün telefon GPS’i güvenli sinyal olarak görünür.'],
+  });
+}
+
+export function buildOperationHealthCopilotFacts({
+  summary,
+  copilotDriver,
+  copilotIssue,
+}) {
+  const counters = {
+    activeDrivers: Number(summary?.cards?.activeDrivers || 0),
+    riskyDevices: Number(summary?.cards?.riskyDevices || 0),
+    staleOrOffline: Number(summary?.cards?.staleOrOffline || 0),
+    openIssues: Number(summary?.cards?.openIssues || 0),
+  };
+  const hasSignal = [counters.activeDrivers, counters.riskyDevices, counters.staleOrOffline, counters.openIssues].some((value) => Number.isFinite(value));
+  const summaryText = hasSignal
+    ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(counters.activeDrivers) ? counters.activeDrivers : 0}, riskli cihaz ${Number.isFinite(counters.riskyDevices) ? counters.riskyDevices : 0}, stale/offline ${Number.isFinite(counters.staleOrOffline) ? counters.staleOrOffline : 0} ve açık sorun ${Number.isFinite(counters.openIssues) ? counters.openIssues : 0} görünüyor.`
+    : 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını kontrol et.';
+  return buildReadonlyCopilotFacts({
+    screenType: 'OPERATION_HEALTH',
+    stage: String(summary?.status || 'ROOM_VIEW').toUpperCase(),
+    readiness: counters.openIssues > 0 || counters.riskyDevices > 0 || counters.staleOrOffline > 0 ? 'REVIEW_NEEDED' : 'READY',
+    readinessScore: counters.openIssues > 0 ? 44 : (counters.riskyDevices > 0 || counters.staleOrOffline > 0 ? 58 : 83),
+    summary: summaryText,
+    blockers: [
+      counters.openIssues > 0 ? 'Açık sorunlar kapatılmadan saha güveni düşer.' : '',
+      counters.riskyDevices > 0 ? 'Riskli cihazlar var.' : '',
+      counters.staleOrOffline > 0 ? 'Stale veya offline kayıtlar var.' : '',
+    ].filter(Boolean),
+    evidence: [
+      `Aktif sürücü: ${counters.activeDrivers}`,
+      `Riskli cihaz: ${counters.riskyDevices}`,
+      `Stale/offline: ${counters.staleOrOffline}`,
+      `Açık sorun: ${counters.openIssues}`,
+      copilotDriver?.driverName ? `Örnek sürücü: ${copilotDriver.driverName}` : '',
+      copilotIssue?.title ? `Örnek sorun: ${copilotIssue.title}` : '',
+    ].filter(Boolean),
+    nextBestAction: counters.openIssues > 0
+      ? 'Önce riskli cihazı aç. Sonra stale/offline satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.'
+      : 'Önce aktif sürücü, riskli cihaz ve açık sorun sayısını birlikte kontrol et.',
+    safestNextStep: 'En risksiz adım, önce riskli cihaz ve stale/offline satırını açmaktır.',
+    compareHint: 'Operasyon sağlığı canlılık ve risk okuması içindir; tek başına işlem kararı değildir.',
+    counters,
+    selectedRecordStatus: `Aktif sürücü ${counters.activeDrivers} • Riskli cihaz ${counters.riskyDevices} • Stale/offline ${counters.staleOrOffline} • Açık sorun ${counters.openIssues}`,
+    copilotSignals: [
+      { id: 'activeDrivers', label: 'Aktif sürücü', value: String(counters.activeDrivers), note: 'Canlı görünen sürücü sayısı.' },
+      { id: 'riskyDevices', label: 'Riskli cihaz', value: String(counters.riskyDevices), note: 'İzin, oturum veya GPS riski taşıyan cihaz sayısı.' },
+      { id: 'staleOrOffline', label: 'Stale / Offline', value: String(counters.staleOrOffline), note: 'Canlı konum akışı zayıf olan kayıt sayısı.' },
+      { id: 'openIssues', label: 'Açık sorun', value: String(counters.openIssues), note: 'Takip edilmesi gereken sorun sayısı.' },
+      copilotDriver?.driverName ? { id: 'sampleDriver', label: 'Örnek sürücü', value: copilotDriver.driverName, note: copilotDriver?.liveState || 'Canlı durum' } : null,
+      copilotIssue?.title ? { id: 'sampleIssue', label: 'Örnek sorun', value: copilotIssue.title, note: copilotIssue?.severity || 'Önem seviyesi' } : null,
+    ].filter(Boolean),
+    boundaryNotes: ['Bu ekran operasyon sağlığı içindir.'],
   });
 }
 
@@ -806,7 +912,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
           ? 'Durak olmadan operasyon güvenilir ilerlemez.'
           : (!hasVehicle || !hasDriver)
             ? 'Araç ve sürücü bağı tamamlanmadan operasyona geçmek risklidir.'
-            : 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof akışını ayrıca kontrol et.',
+            : 'Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışını ayrıca kontrol et.',
       purpose: 'Vardiyayı saha akışına taşımak için son hazırlık kontrolünü temsil eder.',
       whenToUse: 'Durum onaylı, araç-sürücü dolu ve duraklar hazır olduğunda anlamlıdır.',
       whatHappens: 'Kayıt operasyon veya canlı takip tarafında okunabilir hale gelir.',
@@ -845,9 +951,9 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
     ],
     nextBestAction: blockers.length
       ? (offerCount > 0 && !approvedLike ? 'Önce teklif kararını kapat. Sonra araç ve sürücü alanlarını tekrar kontrol et.' : 'Önce araç ve sürücü bağını tamamla. Sonra durak ve sonraki adım alanlarını yeniden oku.')
-      : (readyForLiveStart ? 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof akışını birlikte kontrol et.' : 'Önce seçili vardiyanın araç, sürücü ve durak alanlarını birlikte kontrol et.'),
-    safestNextStep: readyForLiveStart ? 'En risksiz adım, canlı başlatma zamanı ile GPS ve OperationProof akışını doğrulamaktır.' : 'En risksiz adım, seçili satırda araç ve sürücü gerçekten dolu mu onu doğrulamaktır.',
-    compareHint: readyForLiveStart ? 'APPROVED ile canlı başlatma aynı şey değildir; aktif durum, GPS ve OperationProof ayrıca okunur.' : 'APPROVED ile tam atama aynı şey değildir; araç veya sürücü boşsa iş saha için eksiktir.',
+      : (readyForLiveStart ? 'Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışını birlikte kontrol et.' : 'Önce seçili vardiyanın araç, sürücü ve durak alanlarını birlikte kontrol et.'),
+    safestNextStep: readyForLiveStart ? 'En risksiz adım, canlı başlatma zamanı ile GPS ve operasyon kanıtı akışını doğrulamaktır.' : 'En risksiz adım, seçili satırda araç ve sürücü gerçekten dolu mu onu doğrulamaktır.',
+    compareHint: readyForLiveStart ? 'APPROVED ile canlı başlatma aynı şey değildir; aktif durum, GPS ve operasyon kanıtı ayrıca okunur.' : 'APPROVED ile tam atama aynı şey değildir; araç veya sürücü boşsa iş saha için eksiktir.',
     counters: { visible: Number(itemCount || 0), offers: offerCount, stops: stopCount },
     selectedRecordStatus,
     copilotSignals: [
@@ -856,7 +962,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
       { id: 'shiftDriver', label: 'Sürücü', value: hasDriver ? (shift?.driver?.fullName || `#${shift?.driverId}`) : 'Yok', note: hasDriver ? 'Sürücü bağlı.' : 'Sürücü eksik.' },
       { id: 'shiftStops', label: 'Durak', value: String(stopCount), note: stopCount > 0 ? 'Durak var.' : 'Durak eksik.' },
       { id: 'shiftOffers', label: 'Açık teklif', value: String(offerCount), note: offerCount > 0 ? 'Teklif açık olabilir.' : 'Açık teklif yok.' },
-      readyForLiveStart ? { id: 'liveStartCheck', label: 'Canlı başlatma', value: 'Kontrol gerekli', note: 'Canlı başlatma zamanı, aktif durum, GPS ve OperationProof birlikte okunur.' } : null,
+      readyForLiveStart ? { id: 'liveStartCheck', label: 'Canlı başlatma', value: 'Kontrol gerekli', note: 'Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı birlikte okunur.' } : null,
     ],
     boundaryNotes: [offerCount > 0 && !approvedLike ? 'Teklif/karar akışı açık olabilir.' : ''],
   });

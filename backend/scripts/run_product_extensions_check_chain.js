@@ -29,6 +29,7 @@ const steps = [
   'check:e2esmoke01',
   'check:fieldlaunch01',
   'check:cop03cfix02',
+  'check:cop03cfix03',
 ];
 
 function runStep(scriptName) {

@@ -27,7 +27,7 @@ Kayıt ilerlemiyorsa önce şu olasılıklar sıralanır:
 - rota/durak eksik
 - görev/vardiya durumu uygun değil
 - GPS yok/eski
-- OperationProof eksik
+- operasyon kanıtı eksik
 - sözleşme/vardiya üretimi yok
 - hakediş için ödeme hesabı/komisyon/eksik bilgi var
 - KVKK/yetki nedeniyle görünmüyor
@@ -36,7 +36,7 @@ Kesin veri yoksa Copilot yalnızca en olası sırayı söyler.
 
 ## Action Simulation
 Copilot gerçek aksiyon çalıştırmaz. Şu dili kullanır:
-- `Bu durumda doğru aksiyon şu olurdu:`
+- `Önce ... kontrol et; uygunsa ilgili ekrana geç.`
 - `Bu ekranda yapabileceğin işlem:`
 - `Bu işlem başka rolde yapılır:`
 - `Bu işlem sende görünmüyorsa yetki/rol sınırı olabilir.`
@@ -91,7 +91,7 @@ Yasak örnekler:
 - Vardiya, konum, hakediş, sözleşme ve operasyon sağlığı sorularında genel kayıt cümlesi geri planda kalır.
 - Sözleşme ile vardiya, hakediş önizleme ve Sürücünün telefon GPS’i dili korunur.
 - Workflow chip'leri bağlama göre değişir; `Bu kayıt ne durumda?` benzeri genel seçenekler otomatik öne çıkmaz.
-- Durum onaylı ve hazır kayıtlar için ilk kontrol canlı başlatma zamanı, aktif durum, GPS ve OperationProof akışıdır.
+- Durum onaylı ve hazır kayıtlar için ilk kontrol canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışıdır.
 
 ## Sözlük
 - `Sürücünün telefon GPS’i`

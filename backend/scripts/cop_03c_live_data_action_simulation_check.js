@@ -141,6 +141,8 @@ must(facts, 'actionSimulation', 'copilot facts keeps action simulation field');
 must(facts, 'Ekrandaki sinyal', 'copilot facts keeps screen signal wording');
 must(facts, 'Hakediş eksik bilgi', 'copilot facts keeps payment readiness scoring');
 must(facts, 'Sözleşme/vardiya kontrolü', 'copilot facts keeps contract-to-shift scoring');
+must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'copilot facts keeps shift action simulation wording');
+must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'copilot facts keeps gps action simulation wording');
 
 must(selectedRuntime, 'Seçili kayıt durumu', 'selected runtime exposes selected status row');
 must(selectedRuntime, 'Ekrandaki sinyal', 'selected runtime exposes live signal row');
@@ -156,7 +158,7 @@ must(helpComposerEntityRuntime, 'analyzerLiveFactConfidenceText', 'entity runtim
 must(helpComposerEntityRuntime, 'analyzerDiagnosticPriorityText', 'entity runtime keeps diagnostic priority helper');
 must(helpComposerEntityRuntime, 'analyzerActionSimulationText', 'entity runtime keeps action simulation helper');
 must(helpComposerEntityRuntime, 'Ekrandaki sinyale göre:', 'entity runtime keeps confidence wording');
-must(helpComposerEntityRuntime, 'Bu durumda doğru aksiyon şu olurdu:', 'entity runtime keeps action simulation wording');
+must(helpComposerEntityRuntime, 'Önerilen adım:', 'entity runtime keeps action simulation wording');
 must(helpComposerEntityRuntime, 'Bu daha çok eksik veri gibi duruyor.', 'entity runtime keeps missing data wording');
 
 must(helpComposer, 'composeGeneralProductGuideReply', 'help composer keeps general guide reply');
@@ -167,7 +169,7 @@ must(helpComposer, 'Ekrandaki sinyale göre konuşuyorum', 'help composer keeps 
 must(helpComposer, 'Bu kayıt için elimde yeterli sinyal yok; ilk kontrol', 'help composer keeps missing signal wording');
 must(helpComposer, 'Bu daha çok eksik veri gibi duruyor.', 'help composer keeps extra missing data wording');
 must(helpComposer, 'Bu yetki sınırı olabilir.', 'help composer keeps role boundary wording');
-must(helpComposer, 'Bu durumda doğru aksiyon şu olurdu:', 'help composer keeps action simulation wording');
+must(helpComposer, 'Önerilen adım:', 'help composer keeps action simulation wording');
 mustNot(helpComposer, 'Şimdi ödeme başlat', 'help composer avoids payment start wording');
 mustNot(helpComposer, 'payment execute', 'help composer avoids payment execute wording');
 mustNot(helpComposer, 'settlement execute', 'help composer avoids settlement execute wording');
@@ -177,9 +179,9 @@ mustNot(helpComposer, 'ben bunu düzelttim', 'help composer avoids write claim w
 must(intentRouter, "workflowQuestion ? ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']", 'intent router covers room map diagnostic wording');
 mustNot(intentRouter, "workflowQuestion ? ['Bu araç neden haritada görünmüyor?',", 'intent router removes room map self-question wording');
 must(intentRouter, 'Ne yapayım?', 'intent router covers driver next-step wording');
-must(intentRouter, 'Servisim nerede?', 'intent router covers personel live wording');
-must(intentRouter, 'Öğrencimin servisi nerede?', 'intent router covers parent live wording');
-must(intentRouter, 'Bu sözleşmeden bugün vardiya üretildi mi?', 'intent router covers contract-to-shift wording');
+must(intentRouter, 'Servis durumunu göster', 'intent router covers personel live wording');
+must(intentRouter, 'Servis durumunu göster', 'intent router covers parent live wording');
+must(intentRouter, 'İlgili sözleşmeyi aç', 'intent router covers contract-to-shift wording');
 must(intentRouter, 'Bu kayıt kimde?', 'intent router covers ownership wording');
 must(intentRouter, 'Bildirim kaynağı', 'intent router covers notification source wording');
 must(intentRouter, 'Yetki sınırı', 'intent router covers boundary wording');

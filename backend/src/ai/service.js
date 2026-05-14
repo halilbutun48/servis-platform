@@ -1,5 +1,7 @@
 import { buildCopilotPayload, getShiftContext, getVehicleContext } from "./tools.js";
 import { buildJobGuideResponse } from "./jobGuide/index.js";
+import { buildIfStuck, buildQuickActions } from "./jobGuide/quickActions.js";
+import { normalizeGuideLevel } from "./jobGuide/levels.js";
 import { getScreenDefinitionForUser } from "./jobGuide/screenCatalog.js";
 import { resolveChatContext } from "./chat/contextResolver.js";
 import { buildChatHelpResponse } from "./chat/helpComposer.js";
@@ -40,6 +42,58 @@ function buildScopeSummary(user, entityType, entityId) {
   const scopeBits = [room, company].filter(Boolean).join(", ");
   if (entityType === "screen") return `${role} rolü için ekran rehberi okundu${scopeBits ? ` (${scopeBits})` : ""}.`;
   return `${role} scope içinde ${entityType} #${entityId} okundu${scopeBits ? ` (${scopeBits})` : ""}.`;
+}
+
+function buildJobGuideMismatchFallback({ jobType, guideLevel, context, entityType, entityId, user }) {
+  const pathText = String(context?.path || context?.screenPath || context?.screen?.path || "").toLowerCase();
+  const isGpsSurface = /\/map\b|\/live\b/.test(pathText) || ["TELEMATICS_DEVICE_CREATE", "LOCATION_SOURCE_GUIDE", "GPS_SIGNAL_DIAGNOSIS_GUIDE"].includes(String(jobType || ""));
+  const summary = isGpsSurface
+    ? "Şimdi: Bu ekranda seçili araç bilgisi net görünmüyor. Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et."
+    : "Şimdi: Bu ekranda seçili kayıt bilgisi net görünmüyor. İlgili kaydı açıp tekrar dene.";
+  const quickActions = buildQuickActions({ jobType, context, user });
+  const ifStuck = buildIfStuck({ jobType, context, user });
+  return {
+    ok: true,
+    provider: "local-job-guide",
+    mode: "JOB_GUIDE",
+    copilotVersion: "M46.6-B",
+    generatedAt: new Date().toISOString(),
+    intent: "JOB_GUIDE",
+    intentLabel: "İş Rehberi",
+    entityType,
+    entityId: Number(entityId),
+    jobType,
+    guideLevel: normalizeGuideLevel(guideLevel),
+    scope: {
+      role: String(user?.role || ""),
+      roomId: user?.roomId ?? null,
+      companyId: user?.companyId ?? null,
+    },
+    summary,
+    jobPurpose: summary,
+    plainSummary: summary,
+    screenExplanation: summary,
+    whatToDoNow: "Son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.",
+    whatToDoNext: "Seçili araç netleşirse canlı takip ekranında yeniden kontrol et.",
+    doNotDo: "İç hata kodunu kullanıcıya gösterme.",
+    beforeYouStart: [
+      "Son GPS zamanını kontrol et.",
+      "Araç bağlantısını kontrol et.",
+      "Sürücünün telefon GPS’i durumunu kontrol et.",
+    ],
+    canProceed: false,
+    whyBlocked: [
+      "Seçili araç bilgisi net görünmüyor.",
+    ],
+    lockedActionReasons: [
+      "Seçili kayıt tipi ile rehber yüzeyi uyuşmuyor.",
+    ],
+    quickActions,
+    ifStuck,
+    copyOutputs: [
+      { label: "Kısa durum", value: summary },
+    ],
+  };
 }
 
 function unique(list) {
@@ -526,25 +580,36 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user,
 
 
   if (intent === "JOB_GUIDE") {
-    return {
-      ...buildJobGuideResponse({
-        jobType,
-        guideLevel,
-        context,
-        entityType,
-        entityId,
-        user,
-        screenContext,
-      }),
-      entityLabel: describeEntity(context),
-      providerSummary: `guideLevel=${String(guideLevel || "SHORT")}`,
-      scope: {
-        role: String(user.role || ""),
-        roomId: user.roomId ?? null,
-        companyId: user.companyId ?? null,
-        summary: buildScopeSummary(user, entityType, entityId),
-      },
-    };
+    try {
+      return {
+        ...buildJobGuideResponse({
+          jobType,
+          guideLevel,
+          context,
+          entityType,
+          entityId,
+          user,
+          screenContext,
+        }),
+        entityLabel: describeEntity(context),
+        providerSummary: `guideLevel=${String(guideLevel || "SHORT")}`,
+        scope: {
+          role: String(user.role || ""),
+          roomId: user.roomId ?? null,
+          companyId: user.companyId ?? null,
+          summary: buildScopeSummary(user, entityType, entityId),
+        },
+      };
+    } catch (err) {
+      if (String(err?.code || "") === "JOB_TYPE_ENTITY_MISMATCH" || String(err?.code || "") === "UNSUPPORTED_JOB_TYPE") {
+        return {
+          ...buildJobGuideMismatchFallback({ jobType, guideLevel, context, entityType, entityId, user }),
+          entityLabel: describeEntity(context),
+          providerSummary: `guideLevel=${String(guideLevel || "SHORT")}`,
+        };
+      }
+      throw err;
+    }
   }
 
   const base = buildCopilotPayload(intent, context);

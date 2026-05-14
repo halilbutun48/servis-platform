@@ -534,7 +534,7 @@ function isWorkflowTopic(topic) {
 function shouldUseWorkflowGuide({ questionType, activeTopic }) {
   const type = String(questionType || '');
   if (type === 'SCREEN_PURPOSE') return false;
-  if (isWorkflowTopic(activeTopic)) return true;
+  if (isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(type)) return true;
   return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
 }
 
@@ -630,18 +630,18 @@ function buildContextualSuggestedChips({
   const hasSelectedRecord = Boolean(selectedLabel || selectedSummary || sameRecordLikely);
   const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType);
   if (hasSelectedRecord && !workflowTopic) {
-    chips.push('Bu kayıt ne durumda?', 'Neden ilerlemiyor?', 'Sıradaki adımı açıkla', 'Eksik veri', 'Yetki sınırı');
+    chips.push('Seçili kaydı aç', 'Başlatma zamanını kontrol et', 'Eksik veriyi göster', 'Yetki sınırı');
   }
   const pathSpecificChips = (() => {
     if (path.includes('/driver/today')) return workflowTopic
-      ? ['Bugünkü görev nedir?', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?']
-      : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı'];
+      ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?']
+      : ['Bu ekranı detaylı anlat', 'Sıradaki adımı göster', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı'];
     if (path.includes('/personel/live')) return workflowTopic
-      ? ['Servisim nerede?', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?']
-      : ['Bu ekranı detaylı anlat', 'Servisim nerede?', 'Bildirim kaynağı', 'Eksik veri'];
+      ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?']
+      : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri'];
     if (path.includes('/parent/live')) return workflowTopic
-      ? ['Öğrencimin servisi nerede?', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?']
-      : ['Bu ekranı detaylı anlat', 'Öğrencimin servisi nerede?', 'Bildirim kaynağı', 'Eksik veri'];
+      ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?']
+      : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri'];
     if (path.includes('/room/map')) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
     if (path.includes('/room/operation-health')) return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Canlılık riskini açıkla'];
     if (path.includes('/room/shifts')) {
@@ -649,16 +649,16 @@ function buildContextualSuggestedChips({
       if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(questionType || ''))) return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
       if (['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''))) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
       if (['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP'].includes(String(questionType || ''))) return ['Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?'];
-      return ['Bu vardiya neden başlayamıyor?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?'];
+      return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
     }
-    if (path.includes('/superadmin/operations')) return ['Bu ekranı detaylı anlat', 'Bu vardiya neden başlayamıyor?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?'];
-    if (path.includes('/superadmin/commercial-core')) return ['Bu hakediş neden hazır değil?', 'Hakediş eksik bilgi', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
-    if (path.includes('/room/commercial-flow')) return ['Bu sözleşmeden bugün vardiya üretildi mi?', 'İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
-    if (path.includes('/commercial-flow')) return ['Bu sözleşmeden bugün vardiya üretildi mi?', 'Hakediş neden hazır değil?', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
-    if (path.includes('/shared/feedback')) return ['Bu ekranı detaylı anlat', 'Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?', 'Geri bildirim açık'];
+    if (path.includes('/superadmin/operations')) return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
+    if (path.includes('/superadmin/commercial-core')) return ['Hakediş önizlemesini aç', 'Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?'];
+    if (path.includes('/room/commercial-flow')) return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
+    if (path.includes('/commercial-flow')) return ['İlgili sözleşmeyi aç', 'Hakediş önizlemesini aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
+    if (path.includes('/shared/feedback')) return ['Bu ekranı detaylı anlat', 'Açık geri bildirimi göster', 'Kritik geri bildirimleri sırala', 'Sorumlu rolü göster', 'Geri bildirim açık'];
     if (path.includes('/shared/kvkk')) return ['Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?', 'Yetki sınırı'];
-    if (path.includes('/shared/notifications')) return ['Okunmamış bildirim var mı?', 'Bu bildirim hangi olaydan geldi?', 'Bildirim kaynağı', 'İlgili kayda gitmeli miyim?'];
-    if (path.includes('/shared/logs')) return ['Bu ekranı detaylı anlat', 'İşlem kaydı ne demek?', 'Bildirimle farkı ne?'];
+    if (path.includes('/shared/notifications')) return ['Bildirim kaynağını göster', 'İlgili kaydı aç', 'Okunmamış bildirimleri göster', 'Açık bildirimi göster'];
+    if (path.includes('/shared/logs')) return ['Bu ekranı detaylı anlat', 'İşlem kaydını aç', 'Bildirim kaydıyla farkı göster'];
     if (path.includes('/room/drivers')) return ['Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla'];
     if (path.includes('/room/reports')) return ['Bu ekranı detaylı anlat', 'Hangi rapora bakmalıyım?', 'Filtreleri nasıl kullanırım?'];
     if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
@@ -691,21 +691,21 @@ function buildContextualSuggestedChips({
         chips.push('Kalite sinyalini göster', 'Bu sağlayıcı neden daha iyi?', 'Bu uyarı önemli mi?');
         break;
       case 'CONTRACT_SHIFT_TODAY':
-        chips.push('Sözleşme/vardiya bağını göster', 'Bugünkü vardiya üretildi mi?', 'Bu kayıt neden ilerlemiyor?');
+        chips.push('İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla');
         break;
       case 'CONTRACT_TO_SHIFT':
-        chips.push('Sözleşme/vardiya bağını göster', 'Bugünkü vardiya üretildi mi?', 'Bu kayıt neden ilerlemiyor?');
+        chips.push('İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla');
         break;
       case 'PAYMENT_MISSING':
       case 'PAYMENT_PREVIEW':
       case 'PAYMENT_READINESS':
-        chips.push('Hakediş eksiklerini göster', 'Bu hakediş neden hazır değil?', 'Ödeme neden kapalı?');
+        chips.push('Hakediş önizlemesini aç', 'Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?');
         break;
       case 'FEEDBACK_STATUS':
-        chips.push('Açık geri bildirim var mı?', 'Sorumlu rol kim?', 'Bu kayıt hangi rolde?');
+        chips.push('Açık geri bildirimi göster', 'Sorumlu rolü göster', 'Geri bildirim açık');
         break;
       case 'NOTIFICATION_SOURCE':
-        chips.push('Bu bildirim hangi olaydan geldi?', 'İlgili kayda gitmeli miyim?', 'Okunmamış bildirim var mı?');
+        chips.push('Bildirim kaynağını göster', 'İlgili kaydı aç', 'Okunmamış bildirimleri göster');
         break;
       case 'KVKK_VISIBILITY':
         chips.push('Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?');
@@ -715,7 +715,7 @@ function buildContextualSuggestedChips({
         chips.push('Bu işlemi kim yapabilir?', 'Yetki sınırını kontrol et', 'İlgili ekrana git');
         break;
       case 'MISSING_DATA':
-        chips.push('Eksik alanları göster', 'Bu kayıt neden ilerlemiyor?', 'Önce neyi kontrol edeyim');
+        chips.push('Eksik alanları göster', 'Sıradaki adımı açıkla', 'Önce neyi kontrol edeyim');
         break;
       case 'NEXT_SCREEN':
         chips.push('Hangi ekrana gitmeliyim?', 'Şimdi hangi ekrana gitmeliyim?', 'İlgili ekrana git');
@@ -726,17 +726,19 @@ function buildContextualSuggestedChips({
         chips.push('Sıradaki adımı açıkla', 'Bu kaydı kontrol et', 'Önce neyi kontrol edeyim');
         break;
       case 'WHY_BLOCKED':
-        chips.push('Bu neden olmuyor?', 'Neden ilerlemiyor?', 'Önce neyi kontrol edeyim');
+        chips.push('Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et', 'Başlatma zamanı uygun mu?');
         break;
       default:
         chips.push('Bu ekranı detaylı anlat', 'İlk neye bakayım?', 'Burada eksik ne olabilir?');
     }
   }
 
-  if (sameRecordLikely || isFollowUp) {
-    chips.push('Aynı kayıt için devam et', 'Neden?', 'Sıradaki adımı açıkla', 'Önce neyi kontrol edeyim');
-  } else {
-    chips.push('İlgili ekrana git', 'Hangi ekrana geçmeliyim?');
+  if (!workflowTopic) {
+    if (sameRecordLikely || isFollowUp) {
+      chips.push('Sıradaki adımı açıkla', 'Önce neyi kontrol edeyim');
+    } else {
+      chips.push('İlgili ekrana git', 'Hangi ekrana geçmeliyim?');
+    }
   }
 
   if (roleBoundary && ['ROLE_HELP', 'WHO_CAN_DO', 'ROLE_BOUNDARY', 'KVKK_VISIBILITY'].includes(String(questionType || ''))) chips.unshift('Yetki sınırını kontrol et');
@@ -859,6 +861,33 @@ function buildContextPriorityDecision({
     normalizeStatusDisplayText(selectedSummary || selectedLabel),
     '',
   );
+  const selectedLabelText = normalizeText(selectedLabel);
+  const selectedSummaryText = normalizeText(selectedSummary);
+  const selectedRecordStatusText = normalizeText(selectedRecordStatus);
+  const screenPathText = normalizeText(firstNonEmpty(
+    screenPath,
+    screenContext?.path,
+    sourceScreenContext?.path,
+    screenDefinition?.path,
+    sourceScreenDefinition?.path,
+    '',
+  ));
+  const structuredCounters = structured?.counters && typeof structured.counters === 'object' ? structured.counters : null;
+  const activeDriversCount = Number(structuredCounters?.activeDrivers ?? NaN);
+  const riskyDevicesCount = Number(structuredCounters?.riskyDevices ?? NaN);
+  const staleOrOfflineCount = Number(structuredCounters?.staleOrOffline ?? NaN);
+  const openIssuesCount = Number(structuredCounters?.openIssues ?? NaN);
+  const isOperationHealthSurface = /\/room\/operation-health|\/operation-health/.test(screenPathText);
+  const operationHealthLead = isOperationHealthSurface
+    ? ([activeDriversCount, riskyDevicesCount, staleOrOfflineCount, openIssuesCount].some((value) => Number.isFinite(value))
+      ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(activeDriversCount) ? activeDriversCount : 0}, riskli cihaz ${Number.isFinite(riskyDevicesCount) ? riskyDevicesCount : 0}, stale/offline ${Number.isFinite(staleOrOfflineCount) ? staleOrOfflineCount : 0} ve açık sorun ${Number.isFinite(openIssuesCount) ? openIssuesCount : 0} görünüyor.`
+      : 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını kontrol et.')
+    : '';
+  const operationHealthAdvice = isOperationHealthSurface
+    ? ([activeDriversCount, riskyDevicesCount, staleOrOfflineCount, openIssuesCount].some((value) => Number.isFinite(value))
+      ? 'Önce riskli cihazı aç. Sonra stale/offline satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.'
+      : 'Önce açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını kontrol et.')
+    : '';
   const liveFactConfidence = structured?.liveFactConfidence && typeof structured.liveFactConfidence === 'object'
     ? structured.liveFactConfidence
     : sourceScreenContext?.structuredFacts?.liveFactConfidence && typeof sourceScreenContext.structuredFacts.liveFactConfidence === 'object'
@@ -906,11 +935,16 @@ function buildContextPriorityDecision({
   const selectedHasVehicle = /(araç|arac|vehicle|plaka)/.test(selectedEntityText);
   const selectedHasGps = /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedEntityText);
   let selectedRecordMismatchLead = '';
-  if ((activeTopic === 'CONTRACT_TO_SHIFT' || activeTopic === 'CONTRACT_SHIFT_TODAY') && selectedHasShift && !selectedHasContract) {
+  const selectedLooksLikeShift = /(vardiya|shift)/.test(selectedLabelText) || /(vardiya|shift)/.test(selectedSummaryText) || /(vardiya|shift)/.test(selectedRecordStatusText);
+  const selectedLooksLikeContract = /(sözleşme|sozlesme|contract)/.test(selectedLabelText) || /(sözleşme|sozlesme|contract)/.test(selectedSummaryText) || /(sözleşme|sozlesme|contract)/.test(selectedRecordStatusText);
+  const selectedLooksLikePayment = /(hakediş|hakedis|ödeme|odeme|komisyon|önizleme|onizleme|csv|payment)/.test(selectedLabelText) || /(hakediş|hakedis|ödeme|odeme|komisyon|önizleme|onizleme|csv|payment)/.test(selectedSummaryText) || /(hakediş|hakedis|ödeme|odeme|komisyon|önizleme|onizleme|csv|payment)/.test(selectedRecordStatusText);
+  const selectedLooksLikeVehicle = /(araç|arac|vehicle|plaka)/.test(selectedLabelText) || /(araç|arac|vehicle|plaka)/.test(selectedSummaryText) || /(araç|arac|vehicle|plaka)/.test(selectedRecordStatusText);
+  const selectedLooksLikeGps = /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedLabelText) || /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedSummaryText) || /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedRecordStatusText);
+  if ((activeTopic === 'CONTRACT_TO_SHIFT' || activeTopic === 'CONTRACT_SHIFT_TODAY') && selectedLooksLikeShift && !selectedLooksLikeContract) {
     selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya contractShiftGeneration sinyali gerekir.';
-  } else if ((activeTopic === 'PAYMENT_READINESS' || activeTopic === 'PAYMENT_MISSING') && !selectedHasPayment) {
+  } else if ((activeTopic === 'PAYMENT_READINESS' || activeTopic === 'PAYMENT_MISSING') && !selectedLooksLikePayment && !selectedHasPayment) {
     selectedRecordMismatchLead = 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.';
-  } else if ((activeTopic === 'VEHICLE_NOT_VISIBLE' || activeTopic === 'DRIVER_PHONE_GPS') && selectedHasShift && !selectedHasVehicle && !selectedHasGps) {
+  } else if ((activeTopic === 'VEHICLE_NOT_VISIBLE' || activeTopic === 'DRIVER_PHONE_GPS') && selectedLooksLikeShift && !selectedLooksLikeVehicle && !selectedLooksLikeGps) {
     selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; araç görünürlüğü için araç ve Sürücünün telefon GPS’i sinyalini ayrı kayıtta kontrol et.';
   }
   const topicWhy = {
@@ -918,7 +952,7 @@ function buildContextPriorityDecision({
     PAYMENT_READINESS: 'Hakediş hazırlığı tamamlanmadan görünüm hazır sayılmaz.',
     PAYMENT_MISSING: 'Hakediş eksikleri kapatılmamış olabilir.',
     PAYMENT_PREVIEW: 'Hakediş önizlemesi bu ekranda görünmüyor olabilir.',
-    SHIFT_BLOCKED: 'Vardiya onaylı olsa bile canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve OperationProof eksik olabilir.',
+    SHIFT_BLOCKED: 'Vardiya onaylı olsa bile canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve operasyon kanıtı eksik olabilir.',
     FEEDBACK_STATUS: 'Kayıt açık ya da kritik olduğu için tamamlanmış görünmüyor.',
     NOTIFICATION_SOURCE: 'Bildirim bir olay kaydına bağlı olduğu için kaynağı ayrıca okunmalı.',
     KVKK_VISIBILITY: 'Bilgi rol bazlı görünürlük nedeniyle gizli olabilir.',
@@ -928,12 +962,14 @@ function buildContextPriorityDecision({
     CONTRACT_SHIFT_TODAY: 'Sözleşme ile bugünkü vardiya üretim bağı netleşmeden karar verilmez.',
     DRIVER_PHONE_GPS: 'Telefon GPS’i cihaz GPS’inin yerine geçiyor olabilir.',
     VEHICLE_NOT_VISIBLE: 'Araç, görev bağlantısı, son GPS veya Sürücünün telefon GPS’i devrede olmadığı için görünmüyor olabilir.',
+    WHY_BLOCKED: operationHealthLead || 'Önce blokaj nedeni ve eksik alanı kontrol et.',
   };
   const whyCandidate = firstNonEmpty(
     selectedRecordMismatchLead,
+    operationHealthLead,
     diagnosticPrioritySummary ? `En olası neden: ${diagnosticPrioritySummary}` : '',
     liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
-    actionSimulation ? `Bu durumda doğru aksiyon şu olurdu: ${actionSimulation}` : '',
+    actionSimulation ? `Önerilen adım: ${actionSimulation}` : '',
     topicWhy[activeTopic],
     roleBoundary,
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
@@ -962,8 +998,8 @@ function buildContextPriorityDecision({
     PAYMENT_PREVIEW: 'Önce hakediş önizleme kayıtlarını ve eksik bilgi satırlarını kontrol et.',
     NEXT_SCREEN: 'Önce ilgili ekrana geç.',
     NEXT_STEP: 'Önce ilgili kayıt veya alanı kontrol et.',
-    WHY_BLOCKED: 'Önce blokaj nedeni ve eksik alanı kontrol et.',
-    SHIFT_BLOCKED: 'Önce canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve OperationProof satırlarını birlikte kontrol et.',
+    WHY_BLOCKED: operationHealthAdvice || 'Önce blokaj nedeni ve eksik alanı kontrol et.',
+    SHIFT_BLOCKED: 'Önce canlı başlatma zamanı, aktif durum, araç/sürücü bağlantısı, GPS ve operasyon kanıtı satırlarını birlikte kontrol et.',
     FIRST_CONTROL: 'Önce ilgili satırı veya ilk kontrol alanını aç.',
     SAFE_NEXT_STEP: 'Önce en risksiz kayıt veya alanı kontrol et.',
     STATUS_HELP: 'Önce durum satırını ve ilgili kaydı kontrol et.',
@@ -979,6 +1015,7 @@ function buildContextPriorityDecision({
   };
   const bestNextAction = firstNonEmpty(
     selectedRecordMismatchLead,
+    operationHealthAdvice,
     actionSimulation,
     topicAdvice[activeTopic],
     analysis?.nextBestAction,
@@ -990,6 +1027,7 @@ function buildContextPriorityDecision({
   );
   const advice = firstNonEmpty(
     selectedRecordMismatchLead,
+    operationHealthAdvice,
     actionSimulation,
     diagnosticPrioritySummary ? `Öncelik: ${diagnosticPrioritySummary}` : '',
     topicAdvice[activeTopic],
@@ -1019,7 +1057,7 @@ function buildContextPriorityDecision({
   });
   const followUpPrompt = firstNonEmpty(
     needsSelection ? 'Önce ilgili satırı seç' : '',
-    isFollowUp ? 'Aynı kayıt için devam et' : '',
+    isFollowUp && !workflowQuestion ? 'İlgili kayıtla devam et' : '',
     roleBoundary ? 'Yetki sınırını kontrol et' : '',
     actionSimulation ? 'Bu aksiyonu simüle et' : '',
     bestNextAction,
@@ -1120,15 +1158,20 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
   const text = normalizeText(extractUserQuestion(message));
   if (!text || !user) return screenDefinition;
   const sourcePath = String(screenDefinition?.path || screenContext?.path || '');
-  if (pathLooksLikeWorkflowSurface(sourcePath) && (selectedDiagnosticTheme(text) || isCommercialFlowContractToShiftQuestion(text))) {
-    return screenDefinition;
-  }
+  const theme = selectedDiagnosticTheme(text);
   const screens = listScreensForUser(user, screenContext)
     .map((item) => getScreenDefinitionForUser(user, { ...(screenContext || {}), path: item.path }, item.id))
     .filter(Boolean);
   if (!screens.length) return screenDefinition;
 
   const choose = (predicate) => screens.find(predicate) || null;
+  if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(theme)) {
+    const mapScreen = pickScreenByKind(screens, 'MAP');
+    if (mapScreen) return mapScreen;
+  }
+  if (pathLooksLikeWorkflowSurface(sourcePath) && (selectedDiagnosticTheme(text) || isCommercialFlowContractToShiftQuestion(text))) {
+    return screenDefinition;
+  }
   const explicitKind = extractMentionedScreenKind(text);
   if (explicitKind) {
     const explicitHit = pickScreenByKind(screens, explicitKind);
@@ -2072,7 +2115,7 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
           jobType: 'ASSIGNMENT_READINESS_GUIDE',
           guideLevel: 'STEP_BY_STEP',
           reason: 'Hakediş önizleme sinyallerini adım adım sıralar.',
-          askLabel: 'Bunu sor: Bu hakediş neden hazır değil?',
+          askLabel: 'Hakediş eksiklerini sor',
           askQuery: 'bu hakediş neden hazır değil',
           askReason: 'Hakediş eksiklerini hızlıca tekrar sorar.',
         };
@@ -2083,7 +2126,7 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
           jobType: 'ASSIGNMENT_READINESS_GUIDE',
           guideLevel: 'STEP_BY_STEP',
           reason: 'Sözleşme ve vardiya bağını sıraya koyar.',
-          askLabel: 'Bunu sor: Bu sözleşmeden bugün vardiya üretildi mi?',
+          askLabel: 'Üretim durumunu sor',
           askQuery: 'bu sözleşmeden bugün vardiya üretildi mi',
           askReason: 'Üretim bilgisini sözleşme üzerinden tekrar sorar.',
         };
@@ -2094,7 +2137,7 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
           jobType: 'GPS_SIGNAL_DIAGNOSIS_GUIDE',
           guideLevel: 'WHY',
           reason: 'Araç GPS’i, görev bağlantısı ve sürücünün telefon GPS’i akışını açar.',
-          askLabel: 'Bunu sor: Bu araç neden haritada görünmüyor?',
+          askLabel: 'GPS görünürlüğünü sor',
           askQuery: 'bu araç neden haritada görünmüyor',
           askReason: 'Konum görünürlüğü teşhisini tekrar sorar.',
         };
@@ -2105,7 +2148,7 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
           jobType: 'ASSIGNMENT_READINESS_GUIDE',
           guideLevel: 'WHY',
           reason: 'Kalite, inceleme ve denetim izini birlikte açar.',
-          askLabel: 'Bunu sor: Bu sağlayıcı neden daha iyi görünüyor?',
+          askLabel: 'Kalite sinyalini sor',
           askQuery: 'bu sağlayıcı neden daha iyi görünüyor',
           askReason: 'Kalite sinyalini tekrar sorar.',
         };
@@ -2116,7 +2159,7 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
           jobType: 'ROLE_HELP_GUIDE',
           guideLevel: 'SHORT',
           reason: 'Rol, bildirim ve görünürlük sınırını açıklar.',
-          askLabel: 'Bunu sor: Bu kayıt kimde?',
+          askLabel: 'Sorumlu rolü sor',
           askQuery: 'bu kayıt kimde',
           askReason: 'Sorumlu rolü tekrar sorar.',
         };
@@ -2125,8 +2168,8 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
         guideLabel: 'Vardiya blokajı rehberini aç',
         jobType: 'ASSIGNMENT_READINESS_GUIDE',
         guideLevel: 'STEP_BY_STEP',
-        reason: 'Canlı başlatma, aktif durum, GPS ve OperationProof akışını sıralar.',
-        askLabel: 'Bunu sor: Bu vardiya neden başlayamıyor?',
+        reason: 'Canlı başlatma, aktif durum, GPS ve operasyon kanıtı akışını sıralar.',
+        askLabel: 'Vardiya engelini sor',
         askQuery: 'bu vardiya neden başlayamıyor',
         askReason: 'Başlayamama nedenini tekrar sorar.',
       };
@@ -2142,9 +2185,9 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
     } else {
       rows.push(makeGuideAction('Vardiya blokajı rehberini aç', { jobType: 'ASSIGNMENT_READINESS_GUIDE', guideLevel: 'STEP_BY_STEP' }, 'Bu kayıt için eksikleri adım adım sıralar.'));
       rows.push(makeAskAction(
-        hasSelection ? 'Bunu sor: Bu vardiya neden başlayamıyor?' : 'Bunu sor: Bu ekranı detaylı anlat',
+        hasSelection ? 'Vardiya engelini sor' : 'Bu ekranı anlat',
         hasSelection ? 'bu vardiya neden başlayamıyor' : 'bu ekranı detaylı anlat',
-        hasSelection ? 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.' : 'Bu ekranın amacını kısa anlatır.',
+        hasSelection ? 'Aynı kayıt için hızlı takip sorusunu gönderir.' : 'Bu ekranın amacını kısa anlatır.',
       ));
     }
     rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
@@ -2158,14 +2201,14 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
     if (!context?.driver?.id) rows.push(menuAction(driversMenu, context, 'Sürücü bağını netleştirmek için açılır.', { accent: 'warning' }));
     rows.push(makeGuideAction('Konum kaynağı rehberini aç', { jobType: 'LOCATION_SOURCE_GUIDE', guideLevel: 'SHORT' }, 'Telefon GPS\'i ve cihaz GPS\'i farkını açar.'));
     rows.push(makeGuideAction('GPS teşhis rehberini aç', { jobType: 'GPS_SIGNAL_DIAGNOSIS_GUIDE', guideLevel: 'WHY' }, 'Konum neden görünmüyor sorusuna odaklanır.'));
-    rows.push(makeAskAction('Bunu sor: Konum neden görünmüyor?', 'konum neden görünmüyor', 'Aynı kayıt için hızlı teşhis sorusu gönderir.'));
+    rows.push(makeAskAction('GPS görünürlüğünü sor', 'konum neden görünmüyor', 'Konum görünürlüğü teşhisini gönderir.'));
     rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
   } else {
     const menus = Array.isArray(screenDefinition?.screenMenus) ? screenDefinition.screenMenus : [];
     rows.push(currentScreenAction(screenDefinition, context, roleMode === 'SIMPLE' ? 'Bu ekrana dönersin.' : 'Bu ekranı tekrar açar.'));
     for (const menu of menus.slice(0, roleMode === 'SIMPLE' ? 1 : 3)) rows.push(menuAction(menu, context, menu.purpose || 'İlgili menüye götürür.', { accent: roleMode === 'SIMPLE' && rows.length <= 1 ? 'primary' : 'neutral' }));
     if (roleMode === 'SIMPLE') {
-      rows.push(makeAskAction('Bunu sor: Şimdi ne yapayım?', 'şimdi ne yapayım', 'Daha kısa yönlendirme alırsın.'));
+      rows.push(makeAskAction('Sonraki adımı sor', 'şimdi ne yapayım', 'Daha kısa yönlendirme alırsın.'));
     } else {
       rows.push(makeGuideAction('Ekran rehberini aç', { jobType: 'SCREEN_MENU_GUIDE', guideLevel: 'SHORT' }, 'Ekranın amacını kısa anlatır.'));
       rows.push(makeGuideAction('Buton rehberini aç', { jobType: 'BUTTON_ACTION_GUIDE', guideLevel: 'WHY' }, 'Butonların ne yaptığını sade dille açıklar.'));
@@ -2228,7 +2271,7 @@ function guideLinksForEntity(entityType, { questionType = 'OPEN', activeTopic = 
         ];
       }
       return [
-        makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Vardiya blokajı rehberini aç', 'STEP_BY_STEP', 'Canlı başlatma, aktif durum, GPS ve OperationProof akışını sıralar.'),
+        makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Vardiya blokajı rehberini aç', 'STEP_BY_STEP', 'Canlı başlatma, aktif durum, GPS ve operasyon kanıtı akışını sıralar.'),
         makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Şimdi ne yapayım rehberini aç', 'WHY', 'Bir sonraki adımı sadeleştirir.'),
         makeLinkedGuide('ROLE_HELP_GUIDE', 'Bunu kim yapabilir rehberini aç', 'SHORT', 'Rol sınırını açıklar.'),
       ];
@@ -2809,7 +2852,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     const reply = 'Check-in: Kişinin araca bindiğini, indiğini veya varlığını doğrulayan kayıt. Şimdi: Önce hangi doğrulama adımında olduğunu kontrol et.';
     const quickActions = [
       makeQuickAction('Bugün', '/driver/today', 'Görev özetine dönmek için açılır.', { accent: 'primary' }),
-      makeAskAction('Bunu sor: Şimdi ne yapmalıyım?', 'şimdi ne yapmalıyım', 'Aynı ekran için kısa devam sorusunu gönderir.'),
+      makeAskAction('Sonraki adımı sor', 'şimdi ne yapmalıyım', 'Aynı ekran için kısa devam sorusunu gönderir.'),
       makeGuideAction('Rehber aç: Check-in ekranı', 'ROLE_HELP_GUIDE', 'Bu ekranın kısa rehberini açar.'),
     ];
     return {
@@ -2949,28 +2992,28 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const workflowAsk = (() => {
     if (!isWorkflowTopic(workflowTopic) && !isWorkflowDiagnosticQuestionType(questionType)) return null;
     if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(workflowTopic || questionType || ''))) {
-      return ['Bunu sor: Bu hakediş neden hazır değil?', 'bu hakediş neden hazır değil', 'Hakediş eksiklerini kısa tekrar sorar.'];
+      return ['Hakediş eksiklerini sor', 'bu hakediş neden hazır değil', 'Hakediş eksiklerini kısa tekrar sorar.'];
     }
     if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(workflowTopic || questionType || ''))) {
-      return ['Bunu sor: Bu sözleşmeden bugün vardiya üretildi mi?', 'bu sözleşmeden bugün vardiya üretildi mi', 'Sözleşme → vardiya üretim bilgisini tekrar sorar.'];
+      return ['Üretim durumunu sor', 'bu sözleşmeden bugün vardiya üretildi mi', 'Sözleşme → vardiya üretim bilgisini tekrar sorar.'];
     }
     if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(workflowTopic || questionType || ''))) {
-      return ['Bunu sor: Bu araç neden haritada görünmüyor?', 'bu araç neden haritada görünmüyor', 'Konum görünürlüğü teşhisini tekrar sorar.'];
+      return ['GPS görünürlüğünü sor', 'bu araç neden haritada görünmüyor', 'Konum görünürlüğü teşhisini tekrar sorar.'];
     }
     if (['QUALITY_SIGNAL', 'TRUST_QUALITY'].includes(String(workflowTopic || questionType || ''))) {
-      return ['Bunu sor: Bu sağlayıcı neden daha iyi görünüyor?', 'bu sağlayıcı neden daha iyi görünüyor', 'Kalite sinyalini tekrar sorar.'];
+      return ['Kalite sinyalini sor', 'bu sağlayıcı neden daha iyi görünüyor', 'Kalite sinyalini tekrar sorar.'];
     }
     if (['FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'WHO_CAN_DO', 'ROLE_BOUNDARY'].includes(String(workflowTopic || questionType || ''))) {
-      return ['Bunu sor: Bu kayıt kimde?', 'bu kayıt kimde', 'Sorumlu rol ve görünürlük sınırını tekrar sorar.'];
+      return ['Sorumlu rolü sor', 'bu kayıt kimde', 'Sorumlu rol ve görünürlük sınırını tekrar sorar.'];
     }
-    return ['Bunu sor: Bu vardiya neden başlayamıyor?', 'bu vardiya neden başlayamıyor', 'Vardiya blokajını tekrar sorar.'];
+    return ['Vardiya engelini sor', 'bu vardiya neden başlayamıyor', 'Vardiya blokajını tekrar sorar.'];
   })();
   const askFallback = workflowAsk
     ? makeAskAction(workflowAsk[0], workflowAsk[1], workflowAsk[2])
     : makeAskAction(
-      hasSelection ? 'Bunu sor: Bu vardiya neden başlayamıyor?' : 'Bunu sor: Bu ekranı detaylı anlat',
+      hasSelection ? 'Vardiya engelini sor' : 'Bu ekranı anlat',
       hasSelection ? (answerEntityType === 'vehicle' ? 'konum neden görünmüyor' : 'bu vardiya neden başlayamıyor') : 'bu ekranı detaylı anlat',
-      hasSelection ? 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.' : 'Bu ekranın amacını kısa anlatır.',
+      hasSelection ? 'Aynı kayıt için hızlı takip sorusunu gönderir.' : 'Bu ekranın amacını kısa anlatır.',
     );
   const withAsk = actionList.some((x) => x?.actionKind === 'ASK') ? actionList : [askFallback, ...actionList];
   const preferRoute = questionType === 'NEXT_SCREEN' || questionType === 'GO_TO' || isDirectRouteRequest(effectiveMessage);
@@ -3320,7 +3363,7 @@ function buildRoutePlan({ questionType, quickActions, screenDefinition, continui
   const firstControl = firstNonEmpty(...(Array.isArray(screenDefinition?.firstControls) ? screenDefinition.firstControls : []), screenDefinition?.firstStep, 'ilk kontrol alanı');
   if (firstControl) steps.push(`İçeride ilk olarak şunu kontrol et: ${firstControl}`);
   if (secondaryRoute?.label) steps.push(`Gerekirse sonra ${normalizeActionStepText(secondaryRoute.label)}`);
-  if (askAction?.askText || askAction?.label) steps.push(`Takılırsan bunu sor: ${firstNonEmpty(askAction?.askText, askAction?.label, '')}`);
+  if (askAction?.askText || askAction?.label) steps.push(`Gerekirse şunu sor: ${firstNonEmpty(askAction?.askText, askAction?.label, '')}`);
   else if (guideAction?.label) steps.push(`İstersen rehber aç: ${guideAction.label}`);
   return {
     primaryRouteLabel: firstNonEmpty(primaryRoute?.label, ''),

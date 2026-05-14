@@ -151,7 +151,7 @@ export function createEntityRuntimeHelpers({
     const changed = analysis?.changedHint ? `Not: ${analysis.changedHint}` : '';
     const confidenceLead = confidence ? `Ekrandaki sinyale göre: ${confidence}.` : '';
     const priorityLead = priority ? `En olası neden: ${priority}.` : '';
-    const simulationLead = simulation ? `Bu durumda doğru aksiyon şu olurdu: ${simulation}` : '';
+    const simulationLead = simulation ? `Önerilen adım: ${simulation}` : '';
     if (mode === 'READINESS') return `${lead} Bu kayıt şu an ${analyzerReadinessLabel(analysis)}. ${selectedStatus ? `Seçili kayıt durumu: ${selectedStatus}.` : ''} ${priorityLead || blocker || missing || disabled} ${confidenceLead || evidence} ${simulationLead || next}`.trim();
     if (mode === 'SAFE_NEXT') return `${lead} ${confidenceLead || evidence} ${simulationLead || safest || next}`.trim();
     if (mode === 'MISSING') return `${lead} ${missing || priorityLead || blocker || disabled || 'Bu daha çok eksik veri gibi duruyor.'} ${confidenceLead || evidence} ${simulationLead || next}`.trim();

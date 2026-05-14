@@ -9,6 +9,21 @@ const DEFAULT_CODE_BY_STATUS = {
   500: "INTERNAL_ERROR",
 };
 
+const PUBLIC_ERROR_ALIASES = {
+  JOB_TYPE_ENTITY_MISMATCH: {
+    code: "BAD_REQUEST",
+    message: "Şimdi: Bu ekranda seçili araç bilgisi net görünmüyor. Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et.",
+  },
+  ENTITY_MISMATCH: {
+    code: "BAD_REQUEST",
+    message: "Şimdi: Bu ekranda seçili kayıt bilgisi net görünmüyor. İlgili kaydı açıp tekrar dene.",
+  },
+  UNSUPPORTED_JOB_TYPE: {
+    code: "BAD_REQUEST",
+    message: "Bu rehber şu anda bu ekran için kullanılamıyor. İlgili ekranı açıp tekrar dene.",
+  },
+};
+
 function isPlainObject(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
@@ -44,8 +59,10 @@ export function httpError(status = 500, codeOrMessage = null, messageOrDetails =
 
 export function normalizeError(err) {
   const status = Number.isFinite(Number(err?.status)) ? Number(err.status) : 500;
-  const code = String(err?.code || DEFAULT_CODE_BY_STATUS[status] || "INTERNAL_ERROR");
-  let message = err?.message || code;
+  const rawCode = String(err?.code || DEFAULT_CODE_BY_STATUS[status] || "INTERNAL_ERROR");
+  const alias = PUBLIC_ERROR_ALIASES[rawCode];
+  const code = String(alias?.code || rawCode);
+  let message = alias?.message || err?.message || code;
   if (status >= 500 && (!message || message === code)) message = "Beklenmeyen bir hata oluştu.";
 
   const out = {
