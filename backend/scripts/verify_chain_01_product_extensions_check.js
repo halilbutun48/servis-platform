@@ -37,9 +37,14 @@ function must(text, needle, label) {
 
 function ordered(text, needles, label) {
   let last = -1;
+  const haystack = normalize(text);
   for (const needle of needles) {
-    const idx = normalize(text).indexOf(normalize(needle));
-    if (idx < 0) fail(`${label}: missing ${needle}`);
+    const target = normalize(needle);
+    const pattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^\\p{L}\\p{N}])`, 'iu');
+    const slice = haystack.slice(last + 1);
+    const match = slice.match(pattern);
+    if (!match) fail(`${label}: missing ${needle}`);
+    const idx = last + 1 + (match.index || 0);
     if (idx <= last) fail(`${label}: wrong order for ${needle}`);
     last = idx;
   }
@@ -75,6 +80,7 @@ function main() {
   must(pkg, '"check:cop03c"', 'package.json keeps check:cop03c');
   must(pkg, '"check:cop03cfix01"', 'package.json keeps check:cop03cfix01');
   must(pkg, '"check:cop03cfix02"', 'package.json keeps check:cop03cfix02');
+  must(pkg, '"check:cop04afix03"', 'package.json keeps check:cop04afix03');
   must(pkg, '"check:cop03cfix03"', 'package.json keeps check:cop03cfix03');
   must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
   must(pkg, '"check:cop04afix02"', 'package.json keeps check:cop04afix02');
@@ -103,6 +109,7 @@ function main() {
   'check:e2esmoke01',
   'check:fieldlaunch01',
   'check:cop03cfix02',
+  'check:cop04afix03',
   'check:cop03cfix03',
   'check:cop04a',
   'check:cop04afix02',
@@ -118,6 +125,7 @@ function main() {
   must(guide, 'check:cop03c', 'script guide exposes check:cop03c');
   must(guide, 'check:cop03cfix01', 'script guide exposes check:cop03cfix01');
   must(guide, 'check:cop03cfix02', 'script guide exposes check:cop03cfix02');
+  must(guide, 'check:cop04afix03', 'script guide exposes check:cop04afix03');
   must(guide, 'check:cop03cfix03', 'script guide exposes check:cop03cfix03');
   must(guide, 'check:cop04a', 'script guide exposes check:cop04a');
   must(guide, 'check:cop04afix02', 'script guide exposes check:cop04afix02');

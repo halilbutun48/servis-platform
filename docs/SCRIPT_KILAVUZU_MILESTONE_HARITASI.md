@@ -66,6 +66,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop03c` -> `node backend\scripts\cop_03c_live_data_action_simulation_check.js`
 - `check:cop03cfix01` -> `node backend\scripts\cop_03c_fix_01_live_workflow_answer_quality_check.js`
 - `check:cop03cfix02` -> `node backend\scripts\cop_03c_fix_02_live_answer_precision_check.js`
+- `check:cop04afix03` -> `node backend\scripts\cop_04a_fix_03_live_company_agreements_context_check.js`
 - `check:cop03cfix03` -> `node backend\scripts\cop_03c_fix_03_live_acceptance_polish_check.js`
 - `check:cop04a` -> `node backend\scripts\cop_04a_global_answer_quality_check.js`
 - `check:cop04afix02` -> `node backend\scripts\cop_04a_fix_02_contract_generation_intent_check.js`
@@ -599,6 +600,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:cop03c`
   - `check:cop03cfix01`
   - `check:cop03cfix02`
+  - `check:cop04afix03`
   - `check:cop03cfix03`
   - `check:cop04a`
   - `check:cop04afix02`
@@ -625,6 +627,8 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:fieldlaunch01`
   - `check:cop03cfix03`
   - `check:cop04a`
+  - `check:cop04afix02`
+  - `check:cop04afix03`
   - `check:cop04afix01`
 
 ### OP-04 — ticari/kalite readonly köprü [CHECK]

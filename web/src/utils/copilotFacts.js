@@ -310,6 +310,63 @@ export function buildDiagnosticPriority({
       rows: rows.slice(0, 4),
     };
   }
+  if (screenTypeKey === 'AGREEMENTS') {
+    const generatedShiftCount = Number(counterMap.generatedShiftCount ?? counterMap.generatedCount ?? NaN);
+    const sourceShiftId = Number(counterMap.sourceShiftId ?? NaN);
+    const lastGeneratedShiftId = Number(counterMap.lastGeneratedShiftId ?? NaN);
+    const lastGeneratedShiftStatus = normalizeSignalText(counterMap.lastGeneratedShiftStatus ?? '');
+    const personelCount = Number(counterMap.personelCount ?? NaN);
+    const stopCount = Number(counterMap.stopCount ?? NaN);
+    const hasGeneration = Number.isFinite(generatedShiftCount) && generatedShiftCount > 0;
+    const rows = [];
+    if (Number.isFinite(sourceShiftId) && sourceShiftId > 0) {
+      rows.push(normalizeCopilotSignal({
+        id: 'source-shift',
+        label: '1. öncelik',
+        value: `Kaynak vardiya #${sourceShiftId}`,
+        note: 'Sözleşmenin üretim kökü okunur.',
+      }));
+    }
+    if (Number.isFinite(generatedShiftCount)) {
+      rows.push(normalizeCopilotSignal({
+        id: 'generated-count',
+        label: '2. öncelik',
+        value: hasGeneration ? `Üretilen vardiya ${generatedShiftCount}` : 'Bugün üretim sinyali yok',
+        note: hasGeneration ? 'Bugün üretim sinyali var.' : 'Üretim geçmişi kontrol edilmeli.',
+      }));
+    }
+    if (Number.isFinite(lastGeneratedShiftId) && lastGeneratedShiftId > 0) {
+      rows.push(normalizeCopilotSignal({
+        id: 'last-generated',
+        label: '3. öncelik',
+        value: `Son üretilen vardiya #${lastGeneratedShiftId}`,
+        note: lastGeneratedShiftStatus ? `Durum: ${lastGeneratedShiftStatus}` : 'Son vardiya görünür.',
+      }));
+    }
+    if (Number.isFinite(personelCount)) {
+      rows.push(normalizeCopilotSignal({
+        id: 'personel-count',
+        label: '4. öncelik',
+        value: personelCount > 0 ? `Personel ${personelCount}` : 'Personel görünmüyor',
+        note: personelCount > 0 ? 'Vardiya personeli okunur.' : 'Personel sayısı boş olabilir.',
+      }));
+    }
+    if (Number.isFinite(stopCount)) {
+      rows.push(normalizeCopilotSignal({
+        id: 'stop-count',
+        label: '5. öncelik',
+        value: stopCount > 0 ? `Durak ${stopCount}` : 'Durak görünmüyor',
+        note: stopCount > 0 ? 'Vardiya durak sayısı okunur.' : 'Durak sayısı boş olabilir.',
+      }));
+    }
+    const summaryText = hasGeneration
+      ? `Bu sözleşme için bugün vardiya üretim sinyali görünüyor. Üretilen vardiya sayısı ${generatedShiftCount}${lastGeneratedShiftId > 0 ? ` • Son üretilen vardiya #${lastGeneratedShiftId}` : ''}`
+      : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
+    return {
+      summary: summaryText,
+      rows: rows.slice(0, 5),
+    };
+  }
   const readyForLiveStart = screenTypeKey === 'SHIFTS' && /approved/.test(text) && /ready/.test(text) && /(araç|arac|vehicle|sürücü|surucu|driver)/.test(text);
   const candidates = readyForLiveStart
     ? [
@@ -405,6 +462,8 @@ export function buildActionSimulationWording({
     text = 'Açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
   } else if (normalizedScreenType === 'MAP' || normalizedScreenType === 'OPERATION_PROOF') {
     text = 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.';
+  } else if (normalizedScreenType === 'AGREEMENTS') {
+    text = 'Üretim geçmişini aç, bugünkü vardiyalar listesini kontrol et ve son üretilen vardiyayı doğrula.';
   } else if (normalizedScreenType === 'KVKK' || normalizedScreenType === 'ROLE_HELP') {
     text = 'Rol ve görünürlük sınırını kontrol et; yetkisiz yönetim aksiyonu önermem.';
   } else if (normalizedScreenType === 'OPERATION_HEALTH') {

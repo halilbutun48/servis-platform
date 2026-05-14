@@ -34,6 +34,7 @@ import CompanyAgreementsSelectedSummarySection, {
 import CompanyAgreementsSourceShiftSection from "./companyAgreementsSourceShiftSection";
 import { consumeAgreementPrefill } from "../../utils/agreementPrefill";
 import { getAgreementOrigins } from "../../utils/agreementOriginLink";
+import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
 import { companyPath } from "../../utils/paths";
 import { AGREEMENT_STATUS_OPTIONS, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
@@ -103,6 +104,25 @@ function isActiveRouteRefreshStatus(status) {
 function moneyTry(value) {
   const n = Number(value || 0);
   return `${new Intl.NumberFormat("tr-TR").format(Number.isFinite(n) ? n : 0)} ₺`;
+}
+
+function trDateTime(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (/^\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}/.test(text)) return text.replace(/\s*[—–-]\s*/g, " - ");
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return text;
+  const parts = new Intl.DateTimeFormat("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${map.day}.${map.month}.${map.year} ${map.hour}:${map.minute}`;
 }
 const PLAN_TEMPLATES = [
   {
@@ -745,37 +765,139 @@ export default function AgreementsPanel() {
   const selectedRouteRefreshCurrentPreviewShiftId = Number(selectedAgreementOrigin?.sourceShiftId || 0);
   const selectedRouteRefreshProposedPreviewShiftId = Number((selectedRouteRefreshPending?.draftShiftIds || [])[0] || 0);
 
-  useEffect(() => {
+  const selectedAgreementCopilotContext = useMemo(() => {
     const row = selectedAgreementRow;
-    if (!row?.a) {
-      clearCopilotSelection('/company/agreements');
-      return;
-    }
+    if (!row?.a) return null;
     const { a, room } = row;
+    const bridge = selectedAgreementBridge || {};
+    const origin = selectedAgreementOrigin || {};
+    const lastShift = bridge?.lastShift || null;
     const todayTotal = Number(shiftStats?.[a.id]?.todayTotal || 0);
     const todayDone = Number(shiftStats?.[a.id]?.todayDone || 0);
     const horizonOpen = Number(shiftStats?.[a.id]?.horizonOpen || 0);
+    const statusText = agreementStatusText(a?.status);
+    const roomText = room?.name || `Oda #${a?.roomId || '-'}`;
+    const sourceShiftId = Number(origin?.sourceShiftId || 0);
+    const generatedShiftCount = Number(bridge?.generatedCount || 0);
+    const lastGeneratedShiftId = Number(lastShift?.id || 0);
+    const lastGeneratedShiftStatus = String(lastShift?.status || '').toUpperCase();
+    const lastGeneratedShiftStart = trDateTime(lastShift?.startAt || '');
+    const lastGeneratedShiftEnd = trDateTime(lastShift?.endAt || '');
+    const personelCount = Number(lastShift?.peopleCount || 0);
+    const stopCount = Number(lastShift?.stopCount || 0);
+    const selectedRecordSummary = [
+      statusText,
+      roomText,
+      ymdTR(a?.startDate),
+      ymdTR(a?.endDate),
+      sourceShiftId ? `Kaynak vardiya #${sourceShiftId}` : null,
+      generatedShiftCount > 0 ? `Üretilen vardiya: ${generatedShiftCount}` : null,
+      lastGeneratedShiftId ? `Son üretilen vardiya #${lastGeneratedShiftId}` : null,
+      lastGeneratedShiftStart && lastGeneratedShiftEnd ? `${lastGeneratedShiftStart} - ${lastGeneratedShiftEnd}` : null,
+      personelCount > 0 ? `Personel: ${personelCount}` : null,
+      stopCount > 0 ? `Durak: ${stopCount}` : null,
+    ].filter(Boolean).join(' • ');
+    const selectedRecordLabel = `Sözleşme #${a.id}`;
+    const selectedRecordType = 'agreement';
+    const selectionFacts = buildAgreementCopilotFacts(a, {
+      screenPath: '/company/agreements',
+      screenTitle: 'Sözleşmeler (Company)',
+      selectedRecordType,
+      selectedRecordLabel,
+      selectedRecordId: Number(a.id || 0),
+      selectedRecordStatus: statusText,
+      selectedRecordSummary,
+      roomName: roomText,
+      roomLabel: roomText,
+      startDate: a?.startDate,
+      endDate: a?.endDate,
+      sourceShiftId,
+      generatedShiftCount,
+      lastGeneratedShiftId,
+      lastGeneratedShiftStatus,
+      lastGeneratedShiftStart,
+      lastGeneratedShiftEnd,
+      personelCount,
+      stopCount,
+      todayGeneratedShift: generatedShiftCount > 0 || todayDone > 0,
+      generationHistory: lastShift ? [{
+        id: lastGeneratedShiftId || Number(lastShift?.id || 0),
+        status: lastGeneratedShiftStatus || String(lastShift?.status || '').toUpperCase(),
+        startAt: lastGeneratedShiftStart,
+        endAt: lastGeneratedShiftEnd,
+        personelCount,
+        stopCount,
+      }] : [],
+      productionSignal: generatedShiftCount > 0 ? `Üretilen vardiya: ${generatedShiftCount}` : 'Bugün üretim sinyali görünmüyor',
+      vehicleLabel: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'),
+      driverLabel: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'),
+      pendingCount: Number(items?.length || 0),
+      otherCount: 0,
+      extendCount: 0,
+      shiftCount: Number(todayTotal || 0) + Number(horizonOpen || 0),
+      todayDone,
+      todayTotal,
+      horizonOpen,
+    });
+    const fields = [
+      { label: 'Kaynak vardiya', value: sourceShiftId ? `#${sourceShiftId}` : '-', help: 'Bu sözleşmenin üretim kökünü gösterir.' },
+      { label: 'Üretilen vardiya', value: generatedShiftCount > 0 ? String(generatedShiftCount) : 'Yok', help: 'Bu sözleşmeden üretilen toplam vardiya sayısını gösterir.' },
+      { label: 'Son üretilen vardiya', value: lastGeneratedShiftId ? `#${lastGeneratedShiftId}` : '-', help: 'En son üretilen vardiyayı gösterir.' },
+      { label: 'Son durum', value: lastGeneratedShiftStatus || '-', help: 'Son üretilen vardiyanın durumunu gösterir.' },
+      { label: 'Son zaman', value: lastGeneratedShiftStart && lastGeneratedShiftEnd ? `${lastGeneratedShiftStart} - ${lastGeneratedShiftEnd}` : '-', help: 'Son üretilen vardiyanın saat penceresini gösterir.' },
+      { label: 'Personel', value: personelCount > 0 ? String(personelCount) : '-', help: 'Son üretilen vardiyadaki personel sayısını gösterir.' },
+      { label: 'Durak', value: stopCount > 0 ? String(stopCount) : '-', help: 'Son üretilen vardiyadaki durak sayısını gösterir.' },
+      { label: 'Araç', value: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'), help: 'Onay veya üretim sırasında seçilen aracı gösterir.' },
+      { label: 'Sürücü', value: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'), help: 'Onay veya üretim sırasında seçilen sürücüyü gösterir.' },
+      { label: 'Oda', value: roomText, help: 'Sözleşmenin bağlı olduğu operasyon odasını gösterir.' },
+      { label: 'Durum', value: statusText, help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
+      { label: 'Bugün / Ufuk', value: `${todayDone}/${todayTotal} tamamlandı • ${horizonOpen} kabul edildi`, help: 'Bugünkü ilerleme ve ufuktaki vardiya sayısını özetler.' },
+      { label: 'Tarih', value: `${ymdTR(a?.startDate)} → ${ymdTR(a?.endDate)}`, help: 'Sözleşmenin geçerli tarih aralığını gösterir.' },
+      { label: 'Saat', value: `${toHHMM(a?.startMin)} → ${toHHMM(a?.endMin)}`, help: 'Sözleşmenin çalışma saat aralığını gösterir.' },
+    ];
+    const badges = [
+      { label: 'Yön', value: String(a?.direction || '-').toUpperCase(), help: 'Sözleşmenin akış yönünü gösterir.' },
+      { label: 'Plan', value: weekMaskToText(a?.weekMask) || '-', help: 'Haftalık çalışma günlerini özetler.' },
+      { label: 'Üretim', value: generatedShiftCount > 0 ? 'Var' : 'Yok', help: 'Bugün üretim sinyali durumunu gösterir.' },
+      { label: 'Köprü', value: sourceShiftId > 0 ? 'Açık' : 'Kapalı', help: 'Kaynak vardiya köprüsünün açık olup olmadığını gösterir.' },
+    ];
+    return {
+      facts: selectionFacts,
+      label: selectedRecordLabel,
+      summary: [selectedRecordSummary, selectionFacts?.copilotSummary].filter(Boolean).join(' • '),
+      fields,
+      badges,
+      selectedRecordType,
+      selectedRecordId: Number(a.id || 0) || 0,
+      selectedRecordStatus: statusText,
+      selectedRecordSummary,
+      copilotSummary: selectionFacts?.copilotSummary || selectedRecordSummary,
+    };
+  }, [selectedAgreementRow, selectedAgreementBridge, selectedAgreementOrigin, shiftStats, items.length]);
+
+  useEffect(() => {
+    if (!selectedAgreementCopilotContext) {
+      clearCopilotSelection('/company/agreements');
+      return;
+    }
     setCopilotSelection({
       scopeKey: '/company/agreements',
-      entityType: 'agreement',
-      entityId: Number(a?.id || 2103) || 2103,
-      label: `Sözleşme #${a.id}`,
-      summary: [agreementStatusText(a?.status), room?.name || `Oda #${a?.roomId || '-'}`, ymdTR(a?.startDate), ymdTR(a?.endDate)].filter(Boolean).join(' • '),
-      fields: [
-        { label: 'Oda', value: room?.name || `#${a?.roomId || '-'}`, help: 'Sözleşmenin bağlı olduğu operasyon odasını gösterir.' },
-        { label: 'Durum', value: agreementStatusText(a?.status), help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
-        { label: 'Başlangıç', value: ymdTR(a?.startDate), help: 'Sözleşmenin başlangıç tarihini gösterir.' },
-        { label: 'Bitiş', value: ymdTR(a?.endDate), help: 'Sözleşmenin bitiş tarihini gösterir.' },
-        { label: 'Tutar', value: a?.companyOfferAmount != null ? `${new Intl.NumberFormat("tr-TR").format(Number(a.companyOfferAmount || 0))} ₺` : '-', help: 'Company teklif veya sözleşme tutarını gösterir.' },
-        { label: 'Bugün / Ufuk', value: `${todayDone}/${todayTotal} tamamlandı • ${horizonOpen} kabul edildi`, help: 'Bugünkü ilerleme ve ufuktaki vardiya sayısını özetler.' },
-      ],
-      badges: [
-        { label: 'Yön', value: String(a?.direction || '-').toUpperCase(), help: 'Sözleşmenin akış yönünü gösterir.' },
-        { label: 'Plan', value: weekMaskToText(a?.weekMask) || '-', help: 'Haftalık çalışma günlerini özetler.' },
-      ],
-      facts: { screenType: 'AGREEMENTS', stage: String(a?.status || '').toUpperCase(), nextBestAction: 'Önce durum, oda ve tarih aralığını birlikte oku. Sonra bugün/ufuk verisini kontrol et.' },
+      entityType: selectedAgreementCopilotContext.selectedRecordType,
+      entityId: Number(selectedAgreementCopilotContext.selectedRecordId || 0) || 2103,
+      label: selectedAgreementCopilotContext.label,
+      summary: selectedAgreementCopilotContext.summary,
+      fields: selectedAgreementCopilotContext.fields,
+      badges: selectedAgreementCopilotContext.badges,
+      facts: {
+        ...selectedAgreementCopilotContext.facts,
+        selectedRecordType: selectedAgreementCopilotContext.selectedRecordType,
+        selectedRecordId: selectedAgreementCopilotContext.selectedRecordId,
+        selectedRecordLabel: selectedAgreementCopilotContext.label,
+        selectedRecordStatus: selectedAgreementCopilotContext.selectedRecordStatus,
+        selectedRecordSummary: selectedAgreementCopilotContext.selectedRecordSummary,
+      },
     });
-  }, [selectedAgreementRow, shiftStats]);
+  }, [selectedAgreementCopilotContext]);
 
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
@@ -863,8 +985,8 @@ export default function AgreementsPanel() {
       {/* List */}
       <div className="tableWrap">
         <CompanyAgreementsSelectedSummarySection
-          selectedLabel={selectedAgreementRow?.a ? `Sözleşme #${selectedAgreementRow.a.id}` : ""}
-          selectedSummary={selectedAgreementRow?.a ? [agreementStatusText(selectedAgreementRow.a.status), selectedAgreementRow?.room?.name || `Oda #${selectedAgreementRow.a.roomId || '-'}`, ymdTR(selectedAgreementRow.a.startDate), ymdTR(selectedAgreementRow.a.endDate), selectedAgreementOrigin?.sourceShiftId ? `Kaynak vardiya #${selectedAgreementOrigin.sourceShiftId}` : null].filter(Boolean).join(" • ") : ""}
+          selectedLabel={selectedAgreementCopilotContext?.label || ""}
+          selectedSummary={selectedAgreementCopilotContext?.summary || ""}
           visibleCount={filteredRows.length}
           totalCount={rows.length}
           filterValue={filterQ}

@@ -37,10 +37,14 @@ function mustAll(text, needles, labelPrefix) {
 
 function ordered(text, needles, label) {
   let last = -1;
-  const norm = normalize(text);
+  const haystack = normalize(text);
   for (const needle of needles) {
-    const idx = norm.indexOf(normalize(needle));
-    if (idx < 0) throw new Error(`FAIL ${label}: missing ${needle}`);
+    const target = normalize(needle);
+    const pattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^\\p{L}\\p{N}])`, 'iu');
+    const slice = haystack.slice(last + 1);
+    const match = slice.match(pattern);
+    if (!match) throw new Error(`FAIL ${label}: missing ${needle}`);
+    const idx = last + 1 + (match.index || 0);
     if (idx <= last) throw new Error(`FAIL ${label}: wrong order for ${needle}`);
     last = idx;
   }

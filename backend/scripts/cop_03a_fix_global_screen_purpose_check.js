@@ -88,9 +88,14 @@ function runMatrixCase({ id, role, path: screenPath, message, expectedTypes, for
 
 function ordered(text, needles, label) {
   let last = -1;
+  const haystack = normalize(text);
   for (const needle of needles) {
-    const idx = normalize(text).indexOf(normalize(needle));
-    if (idx < 0) fail(`${label}: missing ${needle}`);
+    const target = normalize(needle);
+    const pattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^\\p{L}\\p{N}])`, 'iu');
+    const slice = haystack.slice(last + 1);
+    const match = slice.match(pattern);
+    if (!match) fail(`${label}: missing ${needle}`);
+    const idx = last + 1 + (match.index || 0);
     if (idx <= last) fail(`${label}: wrong order for ${needle}`);
     last = idx;
   }

@@ -34,6 +34,7 @@ Bu soru aileleri doğrudan ilgili workflow cevabına düşer:
 Workflow aileleri:
 - `Vardiya / Görev / Rota / GPS`
 - `Sözleşme → Vardiya Üretimi`
+- `Firma / Sözleşmeler` yüzeyinde `Kaynak vardiya`, `Üretilen vardiya` ve `Son üretilen vardiya` köprüsü birlikte taşınır.
 - `Ticari Akış / Hakediş Önizleme`
 - `Kalite / Güven / Değerlendirme`
 - `Geri Bildirim / Bildirim / KVKK`
