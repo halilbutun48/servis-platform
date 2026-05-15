@@ -35,6 +35,7 @@ const steps = [
   'check:cop04a',
   'check:cop04afix02',
   'check:cop04afix01',
+  'check:cop04b',
 ];
 
 function runStep(scriptName) {

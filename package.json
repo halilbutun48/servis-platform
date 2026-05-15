@@ -52,6 +52,7 @@
     "check:cop04afix03": "node backend/scripts/cop_04a_fix_03_live_company_agreements_context_check.js",
     "check:cop04afix04": "node backend/scripts/cop_04a_fix_04_quick_help_contract_answer_route_check.js",
     "check:cop04afix01": "node backend/scripts/cop_04a_fix_01_global_live_answer_final_polish_check.js",
+    "check:cop04b": "node backend/scripts/cop_04b_panel_context_audit_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",
     "check:e2esmoke01": "node backend/scripts/e2e_smoke_01_demo_acceptance_check.js",
     "check:fieldlaunch01": "node backend/scripts/field_launch_pack_01_readiness_check.js",
