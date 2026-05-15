@@ -1072,17 +1072,28 @@ function buildContextPriorityDecision({
     'Sıradaki doğru işlem ne?',
   );
   const contractWorkflowQuestion = ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(activeTopic || questionType || ''));
+  const contractProductionSignal = buildContractProductionSignalState(screenContext, sourceScreenContext);
   const contractSignalText = firstNonEmpty(
+    contractProductionSignal.hasSignal ? contractProductionSignal.summaryText : '',
     diagnosticPrioritySummary,
     liveFactConfidenceSummary,
     '',
   );
-  const contractSignalIsPositive = Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText));
+  const contractSignalIsPositive = contractProductionSignal.hasSignal
+    || (Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText)));
   const contractNowLead = contractSignalIsPositive
-    ? 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.'
+    ? firstNonEmpty(
+      contractProductionSignal.summaryText,
+      'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.',
+    )
     : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
   const contractWhyLead = contractSignalIsPositive
-    ? firstNonEmpty(`Bunu şuradan anlıyorum: ${contractSignalText}.`, topicAdvice[activeTopic], 'Bu sözleşme için bugünkü üretim kaydı okunuyor.')
+    ? firstNonEmpty(
+      contractProductionSignal.details ? `Bunu şuradan anlıyorum: ${contractProductionSignal.details}.` : '',
+      `Bunu şuradan anlıyorum: ${contractSignalText}.`,
+      topicAdvice[activeTopic],
+      'Bu sözleşme için bugünkü üretim kaydı okunuyor.',
+    )
     : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
   const summaryLead = workflowQuestion
     ? (contractWorkflowQuestion
@@ -2664,19 +2675,25 @@ function composeGeneralProductGuideReply({
   ));
   const contractWorkflowQuestion = ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(firstNonEmpty(resolvedContextPriority.activeTopic, questionType, '')));
   const contractSelectionMismatch = contractWorkflowQuestion && Boolean(resolvedContextPriority.selectedHasShift && !resolvedContextPriority.selectedHasContract);
+  const contractProductionSignal = buildContractProductionSignalState(screenContext, sourceScreenContext);
   const contractSignalText = firstNonEmpty(
+    contractProductionSignal.hasSignal ? contractProductionSignal.summaryText : '',
     resolvedContextPriority.diagnosticPriority?.summary,
     resolvedContextPriority.liveFactConfidence?.summary,
     '',
   );
-  const contractSignalIsPositive = Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText));
+  const contractSignalIsPositive = contractProductionSignal.hasSignal
+    || (Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText)));
   const contractNowLead = contractSelectionMismatch
     ? firstNonEmpty(
       resolvedContextPriority.selectedRecordMismatchLead,
       'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya üretim geçmişi gerekir.',
     )
     : contractSignalIsPositive
-      ? 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.'
+      ? firstNonEmpty(
+        contractProductionSignal.summaryText,
+        'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.',
+      )
       : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
   const contractWhyLead = contractSelectionMismatch
     ? firstNonEmpty(
@@ -2685,6 +2702,7 @@ function composeGeneralProductGuideReply({
     )
     : contractSignalIsPositive
       ? firstNonEmpty(
+        contractProductionSignal.details ? `Bunu şuradan anlıyorum: ${contractProductionSignal.details}.` : '',
         `Bunu şuradan anlıyorum: ${contractSignalText}.`,
         'Bu sözleşme için bugünkü üretim kaydı okunuyor.',
       )
@@ -3024,19 +3042,25 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const workflowTopicKey = firstNonEmpty(workflowTopic, questionType, '');
   const contractWorkflowQuestion = ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(workflowTopicKey || ''));
   const contractSelectionMismatch = contractWorkflowQuestion && Boolean(contextPriority?.selectedHasShift && !contextPriority?.selectedHasContract);
+  const contractProductionSignal = buildContractProductionSignalState(screenContext);
   const contractSignalText = firstNonEmpty(
+    contractProductionSignal.hasSignal ? contractProductionSignal.summaryText : '',
     contextPriority?.diagnosticPriority?.summary,
     contextPriority?.liveFactConfidence?.summary,
     '',
   );
-  const contractSignalIsPositive = Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText));
+  const contractSignalIsPositive = contractProductionSignal.hasSignal
+    || (Boolean(contractSignalText) && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(normalizeText(contractSignalText)));
   const contractNowLead = contractSelectionMismatch
     ? firstNonEmpty(
       contextPriority?.selectedRecordMismatchLead,
       'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya üretim geçmişi gerekir.',
     )
     : contractSignalIsPositive
-      ? 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.'
+      ? firstNonEmpty(
+        contractProductionSignal.summaryText,
+        'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.',
+      )
       : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
   const contractWhyLead = contractSelectionMismatch
     ? firstNonEmpty(
@@ -3045,6 +3069,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     )
     : contractSignalIsPositive
       ? firstNonEmpty(
+        contractProductionSignal.details ? `Bunu şuradan anlıyorum: ${contractProductionSignal.details}.` : '',
         `Bunu şuradan anlıyorum: ${contractSignalText}.`,
         'Bu sözleşme için bugünkü üretim kaydı okunuyor.',
       )
@@ -3313,6 +3338,71 @@ function workflowVisibleFragments(values) {
 
 function pickWorkflowVisibleReply(...values) {
   return firstNonEmpty(...workflowVisibleFragments(values).slice(0, 3), '');
+}
+
+function buildContractProductionSignalState(screenContext, sourceScreenContext) {
+  const primaryFacts = structuredFacts(screenContext);
+  const fallbackFacts = structuredFacts(sourceScreenContext);
+  const counters = primaryFacts?.counters && typeof primaryFacts.counters === 'object'
+    ? primaryFacts.counters
+    : fallbackFacts?.counters && typeof fallbackFacts.counters === 'object'
+      ? fallbackFacts.counters
+      : {};
+  const selectedSummary = firstNonEmpty(
+    primaryFacts?.selectedRecordSummary,
+    primaryFacts?.copilotSummary,
+    primaryFacts?.summary,
+    screenContext?.selectedSummary,
+    screenContext?.copilotSummary,
+    fallbackFacts?.selectedRecordSummary,
+    fallbackFacts?.copilotSummary,
+    fallbackFacts?.summary,
+    sourceScreenContext?.selectedSummary,
+    sourceScreenContext?.copilotSummary,
+    sourceScreenContext?.summary,
+    '',
+  );
+  const generatedShiftCount = Number(counters?.generatedShiftCount ?? counters?.generatedCount ?? NaN);
+  const sourceShiftId = Number(counters?.sourceShiftId ?? NaN);
+  const lastGeneratedShiftId = Number(counters?.lastGeneratedShiftId ?? NaN);
+  const todayGeneratedShift = Boolean(
+    counters?.todayGeneratedShift
+    ?? primaryFacts?.todayGeneratedShift
+    ?? fallbackFacts?.todayGeneratedShift
+    ?? primaryFacts?.todayGenerated
+    ?? fallbackFacts?.todayGenerated
+    ?? false,
+  );
+  const selectedSummaryText = normalizeText(selectedSummary);
+  const hasTextSignal = /(bugün üretim:\s*var|üretim sinyali var|üretilen vardiya|son üretilen vardiya|kaynak vardiya)/.test(selectedSummaryText)
+    && !/(görünmüyor|gorunmuyor|yok|eksik|kesinleştiren sinyal görünmüyor|kesinlestiren sinyal gorunmuyor)/.test(selectedSummaryText);
+  const hasCountSignal = (Number.isFinite(generatedShiftCount) && generatedShiftCount > 0)
+    || (Number.isFinite(lastGeneratedShiftId) && lastGeneratedShiftId > 0)
+    || todayGeneratedShift;
+  const details = [
+    Number.isFinite(generatedShiftCount) && generatedShiftCount > 0 ? `Üretilen vardiya sayısı ${generatedShiftCount}` : '',
+    Number.isFinite(lastGeneratedShiftId) && lastGeneratedShiftId > 0 ? `Son üretilen vardiya #${lastGeneratedShiftId}` : '',
+    todayGeneratedShift ? 'Bugün üretim: Var' : '',
+  ].filter(Boolean).join(' • ');
+  const summaryText = hasCountSignal || hasTextSignal
+    ? firstNonEmpty(
+      details ? `Bu sözleşme için bugün vardiya üretim sinyali görünüyor. ${details}` : '',
+      selectedSummary,
+      fallbackFacts?.copilotSummary,
+      primaryFacts?.copilotSummary,
+      'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.',
+    )
+    : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
+  return {
+    hasSignal: Boolean(hasCountSignal || hasTextSignal),
+    summaryText,
+    details,
+    generatedShiftCount,
+    sourceShiftId,
+    lastGeneratedShiftId,
+    todayGeneratedShift,
+    selectedSummary,
+  };
 }
 
 function lowercaseVisibleInitialUnlessAcronym(value) {

@@ -78,10 +78,50 @@ const SHORT_NEXT_STEP_PHRASES = [
   "siradaki dogru islem ne",
 ];
 
+const CONTRACT_TO_SHIFT_PHRASES = [
+  "bu sözleşmeden bugün vardiya üretildi mi",
+  "bu sozlesmeden bugun vardiya uretildi mi",
+  "bu sözleşmeden vardiya üretildi mi",
+  "bu sozlesmeden vardiya uretildi mi",
+  "sözleşmeden bugün vardiya oluştu mu",
+  "sozlesmeden bugun vardiya olustu mu",
+  "sözleşmeden vardiya oluşturuldu mu",
+  "sozlesmeden vardiya olusturuldu mu",
+  "bu sözleşme bugün vardiya üretti mi",
+  "bu sozlesme bugun vardiya uretti mi",
+  "bugünkü vardiya bu sözleşmeden mi üretildi",
+  "bugunku vardiya bu sozlesmeden mi uretildi",
+  "sözleşme vardiya üretti mi",
+  "sozlesme vardiya uretti mi",
+];
+
 function isShortNaturalScreenPrompt(message) {
   const text = normalizeLooseText(message);
   if (!text) return false;
   return matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES) || matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES) || matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES);
+}
+
+function isAgreementScreenContext(input) {
+  const contextText = normalizeLooseText([
+    input?.screenContext?.path,
+    input?.screenContext?.label,
+    input?.screenContext?.selectedSummary,
+    input?.screenContext?.selectedRecordSummary,
+    input?.screenContext?.copilotSummary,
+    input?.conversationState?.lastScreenPath,
+    input?.conversationState?.lastScreenLabel,
+  ].filter(Boolean).join(" "));
+  if (!contextText) return false;
+  return /\/company\/agreements\b/.test(contextText)
+    || /\b(sözleşme|sozlesme|agreement|agreements|contracts?)\b/.test(contextText);
+}
+
+function isContractToShiftQuestion(message) {
+  const text = normalizeLooseText(message);
+  if (!text) return false;
+  return matchesStandalonePhrase(text, CONTRACT_TO_SHIFT_PHRASES)
+    || /(?:sözleşme|sozlesme|agreement|contracts?).*(?:vardiya|shift).*(?:üret|uret|oluş|olustur)/.test(text)
+    || /(?:vardiya|shift).*(?:üret|uret|oluş|olustur).*(?:sözleşme|sozlesme|agreement|contracts?)/.test(text);
 }
 
 function normalizeLooseText(value) {
@@ -121,11 +161,12 @@ export function normalizeCopilotRequestInput(input) {
   const normalized = input && typeof input === "object" && !Array.isArray(input) ? { ...input } : {};
   normalized.message = normalizeCopilotShortPrompt(normalized.message);
   const shortNaturalPrompt = isShortNaturalScreenPrompt(normalized.message);
+  const contractToShiftPrompt = isContractToShiftQuestion(normalized.message) && isAgreementScreenContext(normalized);
 
-  if (shortNaturalPrompt && !AI_COPILOT_INTENTS.includes(String(normalized.intent || ""))) {
+  if ((shortNaturalPrompt || contractToShiftPrompt) && !AI_COPILOT_INTENTS.includes(String(normalized.intent || ""))) {
     normalized.intent = "CHAT_HELP";
   }
-  if (shortNaturalPrompt && !AI_COPILOT_ENTITY_TYPES.includes(String(normalized.entityType || ""))) {
+  if ((shortNaturalPrompt || contractToShiftPrompt) && !AI_COPILOT_ENTITY_TYPES.includes(String(normalized.entityType || ""))) {
     normalized.entityType = "screen";
   }
 

@@ -81,6 +81,7 @@ function main() {
   must(pkg, '"check:cop03cfix01"', 'package.json keeps check:cop03cfix01');
   must(pkg, '"check:cop03cfix02"', 'package.json keeps check:cop03cfix02');
   must(pkg, '"check:cop04afix03"', 'package.json keeps check:cop04afix03');
+  must(pkg, '"check:cop04afix04"', 'package.json keeps check:cop04afix04');
   must(pkg, '"check:cop03cfix03"', 'package.json keeps check:cop03cfix03');
   must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
   must(pkg, '"check:cop04afix02"', 'package.json keeps check:cop04afix02');
@@ -110,6 +111,7 @@ function main() {
   'check:fieldlaunch01',
   'check:cop03cfix02',
   'check:cop04afix03',
+  'check:cop04afix04',
   'check:cop03cfix03',
   'check:cop04a',
   'check:cop04afix02',
@@ -126,6 +128,7 @@ function main() {
   must(guide, 'check:cop03cfix01', 'script guide exposes check:cop03cfix01');
   must(guide, 'check:cop03cfix02', 'script guide exposes check:cop03cfix02');
   must(guide, 'check:cop04afix03', 'script guide exposes check:cop04afix03');
+  must(guide, 'check:cop04afix04', 'script guide exposes check:cop04afix04');
   must(guide, 'check:cop03cfix03', 'script guide exposes check:cop03cfix03');
   must(guide, 'check:cop04a', 'script guide exposes check:cop04a');
   must(guide, 'check:cop04afix02', 'script guide exposes check:cop04afix02');

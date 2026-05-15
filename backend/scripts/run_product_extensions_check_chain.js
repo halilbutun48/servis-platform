@@ -30,6 +30,7 @@ const steps = [
   'check:fieldlaunch01',
   'check:cop03cfix02',
   'check:cop04afix03',
+  'check:cop04afix04',
   'check:cop03cfix03',
   'check:cop04a',
   'check:cop04afix02',
