@@ -427,8 +427,11 @@ export function buildDiagnosticPriority({
   const prioritySummary = picked.length
     ? `En olası sıra: ${picked.map((item) => item.label).join(' • ')}`
     : 'Belirgin öncelik ayrımı yok';
+  const selectedLead = screenTypeKey === 'MAP' && selectedRecordStatus
+    ? `Seçili araç ${selectedRecordStatus}`
+    : '';
   return {
-    summary: prioritySummary,
+    summary: selectedLead ? `${selectedLead} • ${prioritySummary}` : prioritySummary,
     rows: picked.map((item, idx) => normalizeCopilotSignal({
       id: item.id,
       label: `${idx + 1}. öncelik`,
@@ -1116,6 +1119,7 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
   const actionMatrix = splitActions(actions);
   const selectedRecordStatus = [
     `Araç: ${selected?.plate || `#${selected?.id || '-'}`}`,
+    `GPS: ${gpsStatus || '-'}`,
     `Son GPS: ${gpsAge || gpsStatus || '-'}`,
     `Sıradaki durak: ${selectedNext?.name || 'Yok'}`,
     `ETA: ${etaReady ? `${Number(selectedEta)} dk` : 'Yok'}`,
@@ -1129,6 +1133,7 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
     blockers,
     evidence: [
       `Araç: ${selected?.plate || `#${selected?.id || '-'}`}`,
+      `GPS: ${gpsStatus || '-'}`,
       `Son GPS: ${gpsAge || gpsStatus || '-'}`,
       `Sıradaki durak: ${selectedNext?.name || 'Yok'}`,
       `ETA: ${etaReady ? `${Number(selectedEta)} dk` : 'Yok'}`,

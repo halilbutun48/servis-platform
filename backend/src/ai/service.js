@@ -44,12 +44,126 @@ function buildScopeSummary(user, entityType, entityId) {
   return `${role} scope içinde ${entityType} #${entityId} okundu${scopeBits ? ` (${scopeBits})` : ""}.`;
 }
 
-function buildJobGuideMismatchFallback({ jobType, guideLevel, context, entityType, entityId, user }) {
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (value == null) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function normalizeVisibleText(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeVisibleKey(value) {
+  return normalizeVisibleText(value).toLocaleLowerCase("tr-TR");
+}
+
+function selectedRows(screenContext, key) {
+  return Array.isArray(screenContext?.[key]) ? screenContext[key] : [];
+}
+
+function rowValueByLabels(rows, labels) {
+  const items = Array.isArray(rows) ? rows : [];
+  const targetLabels = (Array.isArray(labels) ? labels : []).map((item) => normalizeVisibleKey(item)).filter(Boolean);
+  if (!items.length || !targetLabels.length) return "";
+  for (const row of items) {
+    const rowLabel = normalizeVisibleKey(firstNonEmpty(row?.label, row?.key, row?.title, ""));
+    if (!rowLabel) continue;
+    if (!targetLabels.some((label) => rowLabel.includes(label))) continue;
+    return firstNonEmpty(row?.value, row?.text, row?.status, row?.summary, "");
+  }
+  return "";
+}
+
+function extractPlateFromVisibleText(value) {
+  const text = normalizeVisibleText(value);
+  if (!text) return "";
+  const explicit = text.match(/\b(?:Araç|Vehicle)\s*([A-Z0-9-]{5,})\b/i);
+  if (explicit?.[1]) return explicit[1];
+  if (/^[A-Z0-9-]{5,}$/i.test(text)) return text;
+  return "";
+}
+
+function buildLiveSelectionSnapshot(screenContext) {
+  const facts = screenContext?.structuredFacts && typeof screenContext.structuredFacts === "object" ? screenContext.structuredFacts : null;
+  const fields = selectedRows(screenContext, "selectedFields");
+  const badges = selectedRows(screenContext, "selectedBadges");
+  const selectedSummary = firstNonEmpty(
+    screenContext?.selectedSummary,
+    screenContext?.selectedLabel,
+    screenContext?.selectedRecordStatus,
+    facts?.selectedRecordSummary,
+    facts?.selectedRecordStatus,
+    facts?.copilotSummary,
+    facts?.summary,
+    "",
+  );
+  const vehiclePlate = firstNonEmpty(
+    rowValueByLabels(fields, ["Araç", "Vehicle", "Plaka"]),
+    rowValueByLabels(badges, ["Araç", "Vehicle", "Plaka"]),
+    extractPlateFromVisibleText(selectedSummary),
+    extractPlateFromVisibleText(screenContext?.selectedLabel),
+    extractPlateFromVisibleText(facts?.selectedRecordLabel),
+    "",
+  );
+  const gpsStatus = firstNonEmpty(
+    rowValueByLabels(fields, ["GPS", "Canlılık", "Live"]),
+    rowValueByLabels(badges, ["GPS", "Canlılık", "Live"]),
+    rowValueByLabels(fields, ["Durum"]),
+    rowValueByLabels(badges, ["Durum"]),
+    "",
+  );
+  const lastGps = firstNonEmpty(rowValueByLabels(fields, ["Son GPS", "Last GPS"]), "");
+  const nextStop = firstNonEmpty(rowValueByLabels(fields, ["Sıradaki Durak", "Sıradaki durak", "Next Stop"]), "");
+  const totalStops = firstNonEmpty(rowValueByLabels(fields, ["Toplam Durak", "Toplam durak", "Durak Sayısı", "Durak sayısı"]), "");
+  const eta = firstNonEmpty(rowValueByLabels(fields, ["ETA"]), "");
+  const hasSelection = Boolean(vehiclePlate || selectedSummary || gpsStatus || lastGps || nextStop || totalStops || eta);
+  const mainLead = vehiclePlate
+    ? `Seçili araç ${vehiclePlate} görünüyor.`
+    : selectedSummary
+      ? `Seçili kayıt ${selectedSummary} görünüyor.`
+      : "Bu ekranda seçili araç bilgisi net görünmüyor.";
+  const detailBits = [];
+  if (gpsStatus) detailBits.push(`GPS sinyali ${gpsStatus} durumda.`);
+  if (lastGps) detailBits.push(`Son GPS ${lastGps} önce gelmiş.`);
+  if (nextStop) detailBits.push(`Sıradaki durak ${nextStop}${totalStops ? `, toplam durak ${totalStops}` : ""} görünüyor.`);
+  if (eta) detailBits.push(`ETA ${eta}.`);
+  const recommendation = "Araç haritada güvenilir görünmüyorsa önce son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.";
+  const summary = hasSelection && (vehiclePlate || gpsStatus || lastGps || nextStop || eta || totalStops)
+    ? `Şimdi: ${[mainLead, ...detailBits, recommendation].join(" ")}`
+    : `Şimdi: ${mainLead} Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et.`;
+  return {
+    hasSelection,
+    vehiclePlate,
+    gpsStatus,
+    lastGps,
+    nextStop,
+    totalStops,
+    eta,
+    selectedSummary,
+    summary,
+  };
+}
+
+function buildJobGuideMismatchFallback({ jobType, guideLevel, context, screenContext, entityType, entityId, user }) {
   const pathText = String(context?.path || context?.screenPath || context?.screen?.path || "").toLowerCase();
+  const liveSnapshot = buildLiveSelectionSnapshot(screenContext);
   const isGpsSurface = /\/map\b|\/live\b/.test(pathText) || ["TELEMATICS_DEVICE_CREATE", "LOCATION_SOURCE_GUIDE", "GPS_SIGNAL_DIAGNOSIS_GUIDE"].includes(String(jobType || ""));
   const summary = isGpsSurface
-    ? "Şimdi: Bu ekranda seçili araç bilgisi net görünmüyor. Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et."
-    : "Şimdi: Bu ekranda seçili kayıt bilgisi net görünmüyor. İlgili kaydı açıp tekrar dene.";
+    ? (liveSnapshot.hasSelection
+      ? liveSnapshot.summary
+      : "Şimdi: Bu ekranda seçili araç bilgisi net görünmüyor. Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et.")
+    : (liveSnapshot.hasSelection
+      ? `Şimdi: Seçili kayıt ${liveSnapshot.selectedSummary || "görünüyor"}. İlgili kaydı açıp tekrar dene.`
+      : "Şimdi: Bu ekranda seçili kayıt bilgisi net görünmüyor. İlgili kaydı açıp tekrar dene.");
   const quickActions = buildQuickActions({ jobType, context, user });
   const ifStuck = buildIfStuck({ jobType, context, user });
   return {
@@ -73,20 +187,43 @@ function buildJobGuideMismatchFallback({ jobType, guideLevel, context, entityTyp
     jobPurpose: summary,
     plainSummary: summary,
     screenExplanation: summary,
-    whatToDoNow: "Son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.",
-    whatToDoNext: "Seçili araç netleşirse canlı takip ekranında yeniden kontrol et.",
+    whatToDoNow: isGpsSurface
+      ? "Son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et."
+      : "İlgili kaydı açıp seçili alanları tekrar kontrol et.",
+    whatToDoNext: isGpsSurface
+      ? "Seçili araç netleşirse canlı takip ekranında yeniden kontrol et."
+      : "İlgili kayıt netleşirse aynı ekranda yeniden oku.",
     doNotDo: "İç hata kodunu kullanıcıya gösterme.",
-    beforeYouStart: [
-      "Son GPS zamanını kontrol et.",
-      "Araç bağlantısını kontrol et.",
-      "Sürücünün telefon GPS’i durumunu kontrol et.",
-    ],
+    beforeYouStart: isGpsSurface
+      ? [
+        "Son GPS zamanını kontrol et.",
+        "Araç bağlantısını kontrol et.",
+        "Sürücünün telefon GPS’i durumunu kontrol et.",
+      ]
+      : [
+        "Seçili kaydı ve alanları tekrar kontrol et.",
+        "Eksik alan varsa önce onları tamamla.",
+      ],
     canProceed: false,
-    whyBlocked: [
-      "Seçili araç bilgisi net görünmüyor.",
-    ],
+    whyBlocked: isGpsSurface
+      ? (
+        liveSnapshot.hasSelection
+          ? [
+            liveSnapshot.vehiclePlate ? `Seçili araç ${liveSnapshot.vehiclePlate} için canlı sinyal ve bağlantı birlikte okunmalı.` : "Seçili kayıt için canlı sinyal ve bağlantı birlikte okunmalı.",
+          ]
+          : [
+            "Seçili araç bilgisi net görünmüyor.",
+          ]
+      )
+      : (
+        liveSnapshot.hasSelection
+          ? ["Seçili kayıt bilgisi var; ilgili kaydı açıp tekrar dene."]
+          : ["Seçili kayıt bilgisi net görünmüyor."]
+      ),
     lockedActionReasons: [
-      "Seçili kayıt tipi ile rehber yüzeyi uyuşmuyor.",
+      isGpsSurface
+        ? "Araç görünürlüğü için araç ve GPS sinyali birlikte okunur."
+        : "Seçili kayıt tipi ile rehber yüzeyi uyuşmuyor.",
     ],
     quickActions,
     ifStuck,
@@ -603,7 +740,7 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user,
     } catch (err) {
       if (String(err?.code || "") === "JOB_TYPE_ENTITY_MISMATCH" || String(err?.code || "") === "UNSUPPORTED_JOB_TYPE") {
         return {
-          ...buildJobGuideMismatchFallback({ jobType, guideLevel, context, entityType, entityId, user }),
+          ...buildJobGuideMismatchFallback({ jobType, guideLevel, context, screenContext, entityType, entityId, user }),
           entityLabel: describeEntity(context),
           providerSummary: `guideLevel=${String(guideLevel || "SHORT")}`,
         };

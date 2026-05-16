@@ -73,6 +73,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop04afix02` -> `node backend\scripts\cop_04a_fix_02_contract_generation_intent_check.js`
 - `check:cop04afix01` -> `node backend\scripts\cop_04a_fix_01_global_live_answer_final_polish_check.js`
 - `check:cop04b` -> `node backend\scripts\cop_04b_panel_context_audit_check.js`
+- `check:cop04bfix01` -> `node backend\scripts\cop_04b_fix_01_superadmin_room_live_context_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`

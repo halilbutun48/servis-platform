@@ -144,6 +144,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `COP-04B-FIX-03` Personel / Veli / Sürücü mobile-web live context parity.
 - `COP-04B-FIX-04` chip and answer premium polish.
 
+## COP-04B-FIX-01 acceptance note
+- Room / Canlı Takip selected araç, GPS, son GPS, durak ve ETA bilgisi varsa Copilot bunları cevapta kullanır.
+- `Bu araç neden haritada görünmüyor?` sorusu selected context varsa `seçili araç bilgisi net görünmüyor` fallback'ine düşmez.
+- Super Admin / Canlı İzleme yüzeyinde selected araç veya live facts varsa generic fallback yerine selected live sinyal kullanılır.
+- Generic fallback yalnızca seçim gerçekten yoksa geçerlidir.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

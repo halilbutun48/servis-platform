@@ -1066,9 +1066,9 @@ function buildContextPriorityDecision({
   const followUpPrompt = firstNonEmpty(
     needsSelection ? 'Önce ilgili satırı seç' : '',
     isFollowUp && !workflowQuestion ? 'İlgili kayıtla devam et' : '',
-    roleBoundary ? 'Yetki sınırını açıkla' : '',
     visibleActionSimulation,
     bestNextAction,
+    roleBoundary ? 'Yetki sınırını açıkla' : '',
     'Sıradaki doğru işlem ne?',
   );
   const contractWorkflowQuestion = ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(activeTopic || questionType || ''));
