@@ -764,6 +764,10 @@ export function buildCommercialCoreCopilotFacts({
     paymentPreviewSummary?.paymentAccountStatus || accountStatus?.summaryText || accountStatus?.summary || settings?.globalRule?.paymentMode || 'Eksik bilgi',
     'Eksik bilgi',
   );
+  const serviceProofText = compactText(
+    operationProofSummary?.summaryText || operationProofSummary?.statusText || operationProofSummary?.title || 'Servis kanıtı kontrol gerekli',
+    'Servis kanıtı kontrol gerekli',
+  );
   const contractShiftText = compactText(
     paymentPreviewSummary?.contractOrShiftSummary || lifecycle?.summary || operationProofSummary?.summaryText || 'Sözleşmeden vardiya üretimi ayrıca kontrol edilmeli.',
     'Sözleşmeden vardiya üretimi ayrıca kontrol edilmeli.',
@@ -786,10 +790,12 @@ export function buildCommercialCoreCopilotFacts({
     readinessScore: /READY|PREVIEW_READY|EVIDENCE_READY/.test(previewStatus.toUpperCase()) ? 80 : /NEEDS_REVIEW|PARTIAL/.test(previewStatus.toUpperCase()) ? 56 : 40,
     summary: `${previewTitle} • ${previewStatus}`,
     blockers: [previewReason, csvBoundary],
+    selectedRecordStatus: compactText(`${previewStatus} • Eksik bilgi ${missingCount} • Ödeme hesabı: ${accountText} • ${csvBoundary} • Servis kanıtı: ${serviceProofText}`, previewStatus),
     evidence: [
       `hakediş önizleme: ${previewStatus}`,
       `komisyon: ${commissionText}`,
       `ödeme hesabı: ${accountText}`,
+      `servis kanıtı: ${serviceProofText}`,
       `sözleşme / vardiya: ${contractShiftText}`,
       `settlement: ${settlementText}`,
       `kaynak özeti: ${auditSummary}`,
@@ -813,10 +819,11 @@ export function buildCommercialCoreCopilotFacts({
       { id: 'paymentPreviewMissingInfo', label: 'Eksik / kontrol gerekli', value: missingInfoText, note: missingInfoNote },
       { id: 'commissionStatus', label: 'Komisyon durumu', value: commissionText, note: 'Aktif ödeme kapalı; sadece hazırlık görünümü.' },
       { id: 'paymentAccountStatus', label: 'Ödeme hesabı durumu', value: accountText, note: 'Eksik bilgi veya kontrol gerekli olabilir.' },
+      { id: 'serviceProofStatus', label: 'Servis kanıtı', value: serviceProofText, note: 'Readonly önizleme ve kanıt durumu birlikte okunur.' },
       { id: 'settlementStatus', label: 'Settlement durumu', value: settlementText, note: 'Aktif ödeme kapalı; sadece kapanış hazırlığı görünür.' },
       { id: 'contractShiftGeneration', label: 'Sözleşme / vardiya', value: contractShiftText || contractShiftNote, note: contractShiftNote },
     ],
-    boundaryNotes: [csvBoundary, 'Ödeme başlatılmaz.', 'Sadece önizleme verisi indirilir.', auditSummary],
+    boundaryNotes: [csvBoundary, 'Ödeme başlatılmaz.', 'Sadece önizleme verisi indirilir.', auditSummary, `Servis kanıtı: ${serviceProofText}`],
   });
 }
 

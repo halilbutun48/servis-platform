@@ -882,7 +882,7 @@ export default function AgreementsPanel() {
     }
     setCopilotSelection({
       scopeKey: '/company/agreements',
-      entityType: selectedAgreementCopilotContext.selectedRecordType,
+      entityType: 'screen',
       entityId: Number(selectedAgreementCopilotContext.selectedRecordId || 0) || 2103,
       label: selectedAgreementCopilotContext.label,
       summary: selectedAgreementCopilotContext.summary,

@@ -150,6 +150,13 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Super Admin / Canlı İzleme yüzeyinde selected araç veya live facts varsa generic fallback yerine selected live sinyal kullanılır.
 - Generic fallback yalnızca seçim gerçekten yoksa geçerlidir.
 
+## COP-04B-FIX-02 acceptance note
+- Company / Sözleşmeler, Company / Vardiyalar ve Super Admin / Ticari Akış yüzeylerinde commercial / readiness context selected facts ile birlikte okunur.
+- `Bu hakediş neden hazır değil?` sorusu `Eksik bilgi: 0` ile çelişmez; readonly hakediş önizlemesi ve ödeme hesabı / komisyon / hizmet-onay sinyali birlikte yorumlanır.
+- `Bu sözleşmeden bugün vardiya üretildi mi?` sorusu sözleşme → vardiya üretim sinyalini korur ve `Bunu anlayamadım` fallback'ine düşmez.
+- `Ödeme başlatılmaz.` sınırı korunur; aktif ödeme veya settlement execute dili görünmez.
+- Generic ekran rehberi bu workflow sorularında ilk davranış değildir.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

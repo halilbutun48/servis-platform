@@ -348,6 +348,9 @@ function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefin
   const asksCommercial = /(hakediş|hakedis|ödeme başlat|odeme baslat|ödemeyi başlat|önizleme|onizleme|csv|csv taslağı|csv taslagi|hazırlık|hazirlik|hazır mı|hazir mi|kontrol gerekli|eksik bilgi)/.test(text);
   const asksQuality = /(kalite puanı|kalite puani|taslak skor|inceleme kararı|inceleme karari|denetim izi|sağlayıcı sıralaması|saglayici siralamasi|kesin puan|kesin mi|tekrar kontrol gerekli|şimdilik dikkate alınmadı|simdilik dikkate alinmadi)/.test(text);
   const asksProof = /(servis kanıtı|servis kaniti|hizmet kanıtı|hizmet kaniti|operatör notu|operatör not|operatör notu|sürücünün telefon gps['’]i|sürücünün telefon gps'i|telefon gps|araç gps|arac gps|biniş kaydı|binis kaydı|binis kaydi|kanıt ne işe yarar|kanıt ne ise yarar)/.test(text);
+  const asksContractOrReadinessWorkflow = ['PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(questionType || ''))
+    || /((sözleşme|sozlesme|sözleşmeden|sozlesmeden).*(vardiya|shift).*(üret|uret|oluş|olustur|oluştur|bugün|bugun))|((hakediş|hakedis|ödeme|odeme).*(hazır değil|hazir degil|hazır mı|hazir mi|eksik bilgi|ödeme hesabı|odeme hesabi|komisyon|önizleme|onizleme|csv))/i.test(text);
+  if (asksContractOrReadinessWorkflow) return null;
     const actionLeadQuestion = ['NEXT_SCREEN', 'NEXT_STEP', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT'].includes(String(questionType || ''));
 
   if (String(questionType || '') === 'SCREEN_PURPOSE') {
