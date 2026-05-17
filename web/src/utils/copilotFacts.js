@@ -47,6 +47,15 @@ function compactText(value, fallback = '') {
   return text || String(fallback || '').trim();
 }
 
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (value == null) continue;
+    const text = compactText(value, '');
+    if (text) return text;
+  }
+  return '';
+}
+
 function compactList(items = [], limit = 6) {
   const seen = new Set();
   const out = [];
@@ -1195,6 +1204,12 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
     ],
     boundaryNotes: [!gpsFresh ? 'GPS kaynağı eski olabilir.' : ''],
   });
+  const contextSummary = firstNonEmpty(
+    readonlyFacts.copilotSummary,
+    readonlyFacts.summary,
+    selectedRecordStatus,
+    '',
+  );
   return {
     hasSelectedVehicle,
     hasShift,
@@ -1206,6 +1221,9 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
     missing,
     blockers,
     ...readonlyFacts,
+    selectedRecordSummary: selectedRecordStatus,
+    helpContextSummary: contextSummary,
+    contextSummary,
     reasoningLead: !hasSelectedVehicle
       ? 'Bu haritada önce seçili araç oluşmadan sonraki ekran kararı vermek erken olur.'
       : blockers.length

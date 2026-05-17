@@ -105,6 +105,8 @@ function isAgreementScreenContext(input) {
   const contextText = normalizeLooseText([
     input?.screenContext?.path,
     input?.screenContext?.label,
+    input?.screenContext?.helpContextSummary,
+    input?.screenContext?.contextSummary,
     input?.screenContext?.selectedSummary,
     input?.screenContext?.selectedRecordSummary,
     input?.screenContext?.copilotSummary,

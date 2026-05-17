@@ -314,10 +314,14 @@ export default function RoomMapPanel() {
       entityId: Number(selectedShift?.id || selected?.id || 0) || null,
       label: selectedShift?.id
         ? `Vardiya #${selectedShift.id}`
-        : selected?.plate
-          ? `Araç ${selected.plate}`
-          : `Araç #${selected?.id || "-"}`,
-      summary: copilotSummary || "",
+          : selected?.plate
+            ? `Araç ${selected.plate}`
+            : `Araç #${selected?.id || "-"}`,
+      summary: facts?.helpContextSummary || facts?.contextSummary || facts?.copilotSummary || copilotSummary || "",
+      helpContextSummary: facts?.helpContextSummary || facts?.copilotSummary || copilotSummary || "",
+      contextSummary: facts?.contextSummary || facts?.copilotSummary || copilotSummary || "",
+      selectedRecordSummary: facts?.selectedRecordSummary || facts?.selectedRecordStatus || copilotSummary || "",
+      selectedRecordStatus: facts?.selectedRecordStatus || "",
       fields: [
         { label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Seçili aracın plakasını veya kayıt numarasını gösterir.' },
         { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },

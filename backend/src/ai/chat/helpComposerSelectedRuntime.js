@@ -111,7 +111,11 @@ export function createSelectedRuntimeHelpers(deps = {}) {
     const badges = selectedBadgeRows(screenContext).map((row) => mergeBadgeWithGuide(row, screenDefinition));
     const label = firstNonEmpty(screenContext?.selectedLabel, 'Seçili kayıt');
     if (!label || (!fields.length && !badges.length)) return '';
-    const fieldText = fields.slice(0, 6).map((row) => `${row.label}: ${row.value}`).join(' • ');
+    const fieldText = fields.slice(0, 6).map((row) => (
+      /^Eksik bilgi$/i.test(row.label) && /^0$/.test(String(row.value || '').trim())
+        ? `${row.label} ${row.value} görünüyor`
+        : `${row.label}: ${row.value}`
+    )).join(' • ');
     const badgeText = badges.slice(0, 4).map((row) => `${row.label}: ${row.value}`).join(' • ');
     const missing = fields.filter((row) => isBlankishValue(row.value)).map((row) => row.label).slice(0, 4);
     const rowHint = firstNonEmpty(screenDefinition?.rowReadHint, '');
@@ -211,6 +215,22 @@ export function createSelectedRuntimeHelpers(deps = {}) {
   function selectedSignalRows(screenContext) {
     const facts = structuredFacts(screenContext);
     const rows = [];
+    const directFields = selectedFieldRows(screenContext);
+    if (directFields.length) {
+      rows.push(...directFields.slice(0, 6).map((row) => ({
+        label: firstNonEmpty(row?.label, row?.key, 'Alan'),
+        value: firstNonEmpty(row?.value, row?.text, '-'),
+        note: firstNonEmpty(row?.help, row?.meaning, row?.purpose, ''),
+      })));
+    }
+    const directBadges = selectedBadgeRows(screenContext);
+    if (directBadges.length) {
+      rows.push(...directBadges.slice(0, 4).map((row) => ({
+        label: firstNonEmpty(row?.label, row?.key, 'Rozet'),
+        value: firstNonEmpty(row?.value, row?.text, '-'),
+        note: firstNonEmpty(row?.help, row?.meaning, row?.purpose, ''),
+      })));
+    }
     const selectedRecordStatus = firstNonEmpty(facts?.selectedRecordStatus, '');
     if (selectedRecordStatus) {
       rows.push({

@@ -170,6 +170,14 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `Önerilen adım` gibi mekanik anlatım son kullanıcı cevabında görünmez.
 - Premium polish, selected/context parity davranışlarını bozmaz; yalnız görünür dil ve chip önceliğini iyileştirir.
 
+## COP-04B-FIX-05 acceptance note
+- COP-04B-FIX-05 canlı Room selected vehicle route hardening.
+- selected vehicle answer route.
+- Room / Canlı Takip serbest chat yolunda selected vehicle summary help header'dan gelse bile plaka, GPS, son GPS, sıradaki durak ve ETA bilgisi cevapta kullanılır.
+- `Bu araç neden haritada görünmüyor?` sorusu header/context içinde seçili araç sinyali varsa `seçili araç bilgisi net görünmüyor` fallback'ine düşmez.
+- Selected vehicle yoksa sadece güvenli fallback geçerlidir; teknik hata veya iç kod görünmez.
+- Bu hardening, copied summary alias'larını request ve answer route boyunca taşımayı kabul kriteri olarak tanımlar.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

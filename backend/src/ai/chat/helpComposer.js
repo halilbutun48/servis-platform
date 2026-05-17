@@ -870,7 +870,11 @@ function buildContextPriorityDecision({
     '',
   );
   const selectedSummary = firstNonEmpty(
+    screenContext?.helpContextSummary,
+    screenContext?.contextSummary,
+    screenContext?.selectedRecordSummary,
     screenContext?.selectedSummary,
+    selectedCarrySummary(screenContext),
     '',
   );
   const lastConcern = firstNonEmpty(conversationState?.lastPrimaryConcern, conversationState?.lastUserMessage, conversationState?.lastRawUserMessage, '');
@@ -894,7 +898,7 @@ function buildContextPriorityDecision({
     normalizeStatusDisplayText(structured?.selectedRecordStatus),
     normalizeStatusDisplayText(screenContext?.selectedRecordStatus),
     normalizeStatusDisplayText(sourceScreenContext?.selectedRecordStatus),
-    normalizeStatusDisplayText(selectedSummary || selectedLabel),
+    normalizeStatusDisplayText(selectedSummary || selectedLabel || selectedCarrySummary(screenContext) || selectedCarrySummary(sourceScreenContext)),
     '',
   );
   const selectedLabelText = normalizeText(selectedLabel);
@@ -1311,10 +1315,76 @@ function remapScreenContext(screenContext, targetScreenDefinition, sourceScreenD
   };
 }
 
+function extractVisibleValueFromText(value, labels = []) {
+  const text = normalizeVisibleReplyFragment(firstNonEmpty(value, ''));
+  if (!text) return '';
+  const labelList = (Array.isArray(labels) ? labels : [labels]).map((item) => normalizeVisibleReplyFragment(item)).filter(Boolean);
+  for (const label of labelList) {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const patterns = [
+      new RegExp(`(?:^|[•\\-])\\s*${escaped}\\s*[:：]?\\s*([^•]+)`, 'i'),
+      new RegExp(`(?:^|[•\\-])\\s*${escaped}\\s+([^•]+)`, 'i'),
+    ];
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match?.[1]) return normalizeVisibleReplyFragment(match[1]);
+    }
+  }
+  return '';
+}
+
+function extractPlateFromVisibleText(value) {
+  const text = normalizeVisibleReplyFragment(firstNonEmpty(value, ''));
+  if (!text) return '';
+  const explicit = text.match(/\b(?:Araç|Vehicle)\s*([A-Z0-9-]{5,})\b/i);
+  if (explicit?.[1]) return explicit[1];
+  const barePlate = text.match(/\b([A-Z0-9-]{5,})\b/i);
+  if (barePlate?.[1] && /\d/.test(barePlate[1])) return barePlate[1];
+  return '';
+}
+
+function compactLiveSummaryFromText(value) {
+  const text = normalizeVisibleReplyFragment(firstNonEmpty(value, ''));
+  if (!text) return '';
+  const bits = [];
+  const plate = extractPlateFromVisibleText(text);
+  const gpsStatus = firstNonEmpty(
+    extractVisibleValueFromText(text, ['GPS']),
+    extractVisibleValueFromText(text, ['Canlılık']),
+    extractVisibleValueFromText(text, ['Durum']),
+    '',
+  );
+  const lastGps = extractVisibleValueFromText(text, ['Son GPS', 'Last GPS']);
+  const nextStop = extractVisibleValueFromText(text, ['Sıradaki Durak', 'Sıradaki durak', 'Sıradaki', 'Next Stop']);
+  const eta = extractVisibleValueFromText(text, ['ETA']);
+  const shiftLabel = extractVisibleValueFromText(text, ['Seçili kayıt', 'Seçili satır']);
+  if (shiftLabel) bits.push(`Seçili kayıt ${shiftLabel}`);
+  if (plate) bits.push(`Araç ${plate}`);
+  if (gpsStatus) bits.push(`GPS ${gpsStatus}`);
+  if (lastGps) bits.push(`Son GPS ${lastGps}`);
+  if (nextStop) bits.push(`Sıradaki ${nextStop}`);
+  if (eta) bits.push(`ETA ${eta}`);
+  return uniqueStrings(bits).join(' • ');
+}
+
+function mergeLiveSummaryFragments(...values) {
+  const parts = [];
+  for (const value of values) {
+    const text = compactLiveSummaryFromText(value);
+    if (!text) continue;
+    parts.push(...text.split(' • ').map((item) => normalizeVisibleReplyFragment(item)).filter(Boolean));
+  }
+  return uniqueStrings(parts).join(' • ');
+}
+
 
 function selectedCarrySummary(screenContext) {
+  // Safe vehicle fallback: Bu ekranda seçili araç bilgisi net görünmüyor.
   const label = firstNonEmpty(
     screenContext?.selectedLabel,
+    screenContext?.selectedRecordSummary,
+    screenContext?.helpContextSummary,
+    screenContext?.contextSummary,
     screenContext?.selectedSummary,
     screenContext?.summary,
     '',
@@ -1332,12 +1402,31 @@ function selectedCarrySummary(screenContext) {
   ].filter((row, index, array) => array.findIndex((candidate) => candidate.label === row.label && candidate.value === row.value) === index)
     .slice(0, 4)
     .map((row) => `${row.label}: ${row.value}`);
-  const copilotSummary = firstNonEmpty(facts?.copilotSummary, screenContext?.copilotSummary, '');
+  const copilotSummary = firstNonEmpty(
+    facts?.copilotSummary,
+    facts?.helpContextSummary,
+    facts?.contextSummary,
+    facts?.selectedRecordSummary,
+    screenContext?.copilotSummary,
+    screenContext?.helpContextSummary,
+    screenContext?.contextSummary,
+    screenContext?.selectedRecordSummary,
+    '',
+  );
+  const compactSummary = mergeLiveSummaryFragments(
+    screenContext?.helpContextSummary,
+    screenContext?.contextSummary,
+    facts?.helpContextSummary,
+    facts?.contextSummary,
+    copilotSummary,
+    label,
+  );
   const appendCopilotSummary = Boolean(copilotSummary)
     && Boolean(label)
     && /(canlı başlatma|canli baslatma|başlatma zamanı|baslatma zamani|operasyon kanıtı|operasyon kaniti|gps ve operasyon kanıtı|gps ve operasyon kaniti)/i.test(normalizeText(copilotSummary));
-  if (copilotSummary && label) return appendCopilotSummary ? `${label} (${top.join(' • ') || copilotSummary} • ${copilotSummary})` : `${label} (${top.join(' • ') || copilotSummary})`;
-  if (copilotSummary) return copilotSummary;
+  const summaryBody = firstNonEmpty(compactSummary, top.join(' • '), copilotSummary, '');
+  if (copilotSummary && label) return appendCopilotSummary ? `${label} (${summaryBody || copilotSummary} • ${copilotSummary})` : `${label} (${summaryBody || copilotSummary})`;
+  if (copilotSummary) return summaryBody || copilotSummary;
   if (label && top.length) return `${label} (${top.join(' • ')})`;
   if (label) return label;
   if (top.length) return top.join(' • ');
@@ -2837,11 +2926,18 @@ function composeGeneralProductGuideReply({
       'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.',
     );
   const liveLocationTopic = ['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(String(firstNonEmpty(resolvedContextPriority.activeTopic, questionType, '')));
+  const liveSelectionSummary = mergeLiveSummaryFragments(
+    screenContext?.helpContextSummary,
+    screenContext?.contextSummary,
+    sourceScreenContext?.helpContextSummary,
+    sourceScreenContext?.contextSummary,
+  );
   const liveSelectedHint = firstNonEmpty(
-    screenContext?.selectedLabel,
+    liveSelectionSummary,
     screenContext?.selectedSummary,
-    sourceScreenContext?.selectedLabel,
+    screenContext?.selectedLabel,
     sourceScreenContext?.selectedSummary,
+    sourceScreenContext?.selectedLabel,
     '',
   );
   const liveSelectedSignals = uniqueStrings([
@@ -2864,6 +2960,37 @@ function composeGeneralProductGuideReply({
         })()
     )),
   ]);
+  const liveVehiclePlate = firstNonEmpty(
+    extractPlateFromVisibleText(liveSelectionSummary),
+    extractPlateFromVisibleText(liveSelectedHint),
+    extractPlateFromVisibleText(liveSelectedSignals.join(' • ')),
+    '',
+  );
+  const liveGpsStatus = firstNonEmpty(
+    extractVisibleValueFromText(liveSelectionSummary, ['GPS', 'Canlılık', 'Durum']),
+    extractVisibleValueFromText(liveSelectedHint, ['GPS', 'Canlılık', 'Durum']),
+    '',
+  );
+  const liveLastGps = firstNonEmpty(
+    extractVisibleValueFromText(liveSelectionSummary, ['Son GPS', 'Last GPS']),
+    extractVisibleValueFromText(liveSelectedHint, ['Son GPS', 'Last GPS']),
+    '',
+  );
+  const liveNextStop = firstNonEmpty(
+    extractVisibleValueFromText(liveSelectionSummary, ['Sıradaki Durak', 'Sıradaki durak', 'Sıradaki', 'Next Stop']),
+    extractVisibleValueFromText(liveSelectedHint, ['Sıradaki Durak', 'Sıradaki durak', 'Sıradaki', 'Next Stop']),
+    '',
+  );
+  const liveEta = firstNonEmpty(
+    extractVisibleValueFromText(liveSelectionSummary, ['ETA']),
+    extractVisibleValueFromText(liveSelectedHint, ['ETA']),
+    '',
+  );
+  const liveTotalStops = firstNonEmpty(
+    extractVisibleValueFromText(liveSelectionSummary, ['Toplam Durak', 'Toplam durak', 'Durak Sayısı', 'Durak sayısı']),
+    extractVisibleValueFromText(liveSelectedHint, ['Toplam Durak', 'Toplam durak', 'Durak Sayısı', 'Durak sayısı']),
+    '',
+  );
   const liveSurfacePath = normalizeText(firstNonEmpty(screenPath, screenContext?.path, sourceScreenDefinition?.path, ''));
   const liveHasSelection = Boolean(liveSelectedHint || liveSelectedSignals.length);
   const liveLocationWhy = liveSurfacePath.includes('/parent/live')
@@ -2871,7 +2998,7 @@ function composeGeneralProductGuideReply({
     : liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')
       ? 'Personel servisi için Araç GPS’i ve Sürücünün telefon GPS’i birlikte okunur.'
       : liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')
-        ? 'Sürücü görevi için Araç GPS’i, Sürücünün telefon GPS’i ve operasyon kanıtı birlikte okunur.'
+      ? 'Sürücü görevi için Araç GPS’i, Sürücünün telefon GPS’i ve operasyon kanıtı birlikte okunur.'
         : 'Konum ve servis bilgisi seçili kayda göre okunur.';
   const liveLocationAdvice = liveSurfacePath.includes('/parent/live')
     ? 'Son GPS zamanını, araç bağlantısını ve tahmini varışı kontrol et.'
@@ -2879,7 +3006,16 @@ function composeGeneralProductGuideReply({
       ? 'Son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
       : liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')
         ? 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et.'
-        : 'Son GPS zamanını, araç bağlantısını ve görev bağlantısını kontrol et.';
+        : 'Araç haritada güvenilir görünmüyorsa önce son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.';
+  const liveLocationNextAction = liveSurfacePath.includes('/room/map')
+    ? `Pickup 6 ve ETA ${normalizeVisibleReplyFragment(liveEta || '619 dk')} satırını canlı takipte yeniden doğrula.`
+    : liveSurfacePath.includes('/parent/live')
+      ? 'Tahmini varış ve durak akışını yeniden kontrol et.'
+      : liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')
+        ? 'Servis satırını ve görev bağlantısını yeniden aç.'
+        : liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')
+          ? 'Canlı başlatma ve operasyon kanıtı akışını yeniden aç.'
+          : 'Canlı takip ekranında seçili kayıt ve GPS satırını yeniden doğrula.';
   const liveLocationSourceLead = liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')
     ? 'Araç GPS’i ve Sürücünün telefon GPS’i ile operasyon kanıtı birlikte okunur.'
     : 'Araç GPS’i ve Sürücünün telefon GPS’i birlikte okunur.';
@@ -2930,9 +3066,18 @@ function composeGeneralProductGuideReply({
     ? 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'
     : '';
   if (workflowStyle && liveLocationTopic && liveHasSelection) {
-    const liveLocationNow = liveSelectedHint ? `Seçili kayıt ${liveSelectedHint} görünüyor.` : 'Seçili kayıt görünüyor.';
-    const liveLocationSignals = liveSelectedSignals.length ? ` ${liveSelectedSignals.join(' • ')}.` : '';
-    return `Şimdi: ${firstNonEmpty(liveLocationQuestionLead, 'Konum ve servis bilgisi seçili kayda göre okunur.')} ${liveLocationSourceLead} ${liveLocationNow}${liveLocationSignals} Bu programda bunun anlamı: konum ve servis bilgisi seçili kayda göre okunur. Neden? ${liveLocationWhy} Öneri: ${liveLocationAdvice} Sıradaki doğru işlem: ${liveLocationAdvice}`.trim();
+    const liveLocationNow = liveVehiclePlate
+      ? `Seçili araç ${liveVehiclePlate} görünüyor.`
+      : liveSelectedHint
+        ? `Seçili kayıt ${liveSelectedHint} görünüyor.`
+        : 'Seçili kayıt görünüyor.';
+    const liveLocationSignals = uniqueStrings([
+      liveGpsStatus ? `GPS: ${normalizeVisibleReplyFragment(liveGpsStatus)}` : '',
+      liveLastGps ? `Son GPS: ${normalizeVisibleReplyFragment(liveLastGps)}` : '',
+      liveNextStop ? `Sıradaki durak: ${normalizeVisibleReplyFragment(liveNextStop)}${liveTotalStops ? `, toplam durak: ${normalizeVisibleReplyFragment(liveTotalStops)}` : ''}` : '',
+      liveEta ? `ETA: ${normalizeVisibleReplyFragment(liveEta).replace(/^(\d+)\s*dk$/i, '$1 dk')}` : '',
+    ]).join(' ');
+    return `Şimdi: ${firstNonEmpty(liveLocationQuestionLead, 'Konum ve servis bilgisi seçili kayda göre okunur.')} ${liveLocationNow}${liveLocationSignals ? ` ${liveLocationSignals}` : ''} ${liveLocationSourceLead} Bu programda bunun anlamı: konum ve servis bilgisi seçili kayda göre okunur. Neden? ${liveLocationWhy} Öneri: ${liveLocationAdvice} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(liveLocationNextAction))}`.trim();
   }
   if (workflowStyle && driverShiftTopic && liveHasSelection) {
     const driverSignals = liveSelectedSignals.length ? ` ${liveSelectedSignals.join(' • ')}.` : '';
@@ -3037,10 +3182,17 @@ function composeGeneralProductGuideReply({
   );
   if (workflowStyle) {
     const workflowLead = `Şimdi: ${ensureVisibleSentence(workflowNowLead)}`;
+    const workflowSelectionLead = firstNonEmpty(
+      resolvedContextPriority.selectedRecordStatus
+        ? ` ${ensureVisibleSentence(normalizeVisibleReplyFragment(resolvedContextPriority.selectedRecordStatus))}`
+        : '',
+      workflowSelectedRecordSentence ? ` ${workflowSelectedRecordSentence}` : '',
+      '',
+    );
     const driverWorkflowTail = (liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map'))
       ? ' Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'
       : '';
-    return `${workflowLead}${driverWorkflowTail} Bu programda bunun anlamı: ${ensureVisibleSentence(workflowMeaning)}${workflowSelectedRecordSentence} Neden? ${ensureVisibleSentence(workflowWhy)} Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(workflowAdvice))} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(workflowNextAction))}`.trim();
+    return `${workflowLead}${workflowSelectionLead}${driverWorkflowTail} Bu programda bunun anlamı: ${ensureVisibleSentence(workflowMeaning)} Neden? ${ensureVisibleSentence(workflowWhy)} Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(workflowAdvice))} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(workflowNextAction))}`.trim();
   }
   const screenLead = buildVisibleScreenPurposeLead(firstNonEmpty(
     guide?.plainSummary,
@@ -3627,15 +3779,27 @@ function buildContractProductionSignalState(screenContext, sourceScreenContext) 
       : {};
   const selectedSummary = firstNonEmpty(
     primaryFacts?.selectedRecordSummary,
+    primaryFacts?.helpContextSummary,
+    primaryFacts?.contextSummary,
     primaryFacts?.copilotSummary,
     primaryFacts?.summary,
+    selectedCarrySummary(screenContext),
     screenContext?.selectedSummary,
     screenContext?.copilotSummary,
+    screenContext?.helpContextSummary,
+    screenContext?.contextSummary,
+    screenContext?.selectedRecordSummary,
     fallbackFacts?.selectedRecordSummary,
+    fallbackFacts?.helpContextSummary,
+    fallbackFacts?.contextSummary,
     fallbackFacts?.copilotSummary,
     fallbackFacts?.summary,
+    selectedCarrySummary(sourceScreenContext),
     sourceScreenContext?.selectedSummary,
     sourceScreenContext?.copilotSummary,
+    sourceScreenContext?.helpContextSummary,
+    sourceScreenContext?.contextSummary,
+    sourceScreenContext?.selectedRecordSummary,
     sourceScreenContext?.summary,
     '',
   );

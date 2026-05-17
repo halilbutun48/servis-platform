@@ -62,6 +62,10 @@ function normalizeVisibleText(value) {
     .trim();
 }
 
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function normalizeVisibleKey(value) {
   return normalizeVisibleText(value).toLocaleLowerCase("tr-TR");
 }
@@ -92,14 +96,37 @@ function extractPlateFromVisibleText(value) {
   return "";
 }
 
+function extractVisibleValueFromText(value, labels = []) {
+  const text = normalizeVisibleText(value);
+  if (!text) return "";
+  const labelList = (Array.isArray(labels) ? labels : [labels]).map((item) => normalizeVisibleText(item)).filter(Boolean);
+  for (const label of labelList) {
+    const escaped = escapeRegExp(label);
+    const patterns = [
+      new RegExp(`(?:^|[•\\-])\\s*${escaped}\\s*[:：]?\\s*([^•]+)`, "i"),
+      new RegExp(`(?:^|[•\\-])\\s*${escaped}\\s+([^•]+)`, "i"),
+    ];
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match?.[1]) return normalizeVisibleText(match[1]);
+    }
+  }
+  return "";
+}
+
 function buildLiveSelectionSnapshot(screenContext) {
   const facts = screenContext?.structuredFacts && typeof screenContext.structuredFacts === "object" ? screenContext.structuredFacts : null;
   const fields = selectedRows(screenContext, "selectedFields");
   const badges = selectedRows(screenContext, "selectedBadges");
   const selectedSummary = firstNonEmpty(
+    screenContext?.helpContextSummary,
+    screenContext?.contextSummary,
+    screenContext?.selectedRecordSummary,
     screenContext?.selectedSummary,
     screenContext?.selectedLabel,
     screenContext?.selectedRecordStatus,
+    facts?.helpContextSummary,
+    facts?.contextSummary,
     facts?.selectedRecordSummary,
     facts?.selectedRecordStatus,
     facts?.copilotSummary,
@@ -111,6 +138,8 @@ function buildLiveSelectionSnapshot(screenContext) {
     rowValueByLabels(badges, ["Araç", "Vehicle", "Plaka"]),
     extractPlateFromVisibleText(selectedSummary),
     extractPlateFromVisibleText(screenContext?.selectedLabel),
+    extractPlateFromVisibleText(screenContext?.helpContextSummary),
+    extractPlateFromVisibleText(screenContext?.contextSummary),
     extractPlateFromVisibleText(facts?.selectedRecordLabel),
     "",
   );
@@ -119,12 +148,13 @@ function buildLiveSelectionSnapshot(screenContext) {
     rowValueByLabels(badges, ["GPS", "Canlılık", "Live"]),
     rowValueByLabels(fields, ["Durum"]),
     rowValueByLabels(badges, ["Durum"]),
+    extractVisibleValueFromText(selectedSummary, ["GPS", "Canlılık", "Live", "Durum"]),
     "",
   );
-  const lastGps = firstNonEmpty(rowValueByLabels(fields, ["Son GPS", "Last GPS"]), "");
-  const nextStop = firstNonEmpty(rowValueByLabels(fields, ["Sıradaki Durak", "Sıradaki durak", "Next Stop"]), "");
-  const totalStops = firstNonEmpty(rowValueByLabels(fields, ["Toplam Durak", "Toplam durak", "Durak Sayısı", "Durak sayısı"]), "");
-  const eta = firstNonEmpty(rowValueByLabels(fields, ["ETA"]), "");
+  const lastGps = firstNonEmpty(rowValueByLabels(fields, ["Son GPS", "Last GPS"]), extractVisibleValueFromText(selectedSummary, ["Son GPS", "Last GPS"]), "");
+  const nextStop = firstNonEmpty(rowValueByLabels(fields, ["Sıradaki Durak", "Sıradaki durak", "Next Stop"]), extractVisibleValueFromText(selectedSummary, ["Sıradaki Durak", "Sıradaki durak", "Next Stop", "Sıradaki"]), "");
+  const totalStops = firstNonEmpty(rowValueByLabels(fields, ["Toplam Durak", "Toplam durak", "Durak Sayısı", "Durak sayısı"]), extractVisibleValueFromText(selectedSummary, ["Toplam Durak", "Toplam durak", "Durak Sayısı", "Durak sayısı"]), "");
+  const eta = firstNonEmpty(rowValueByLabels(fields, ["ETA"]), extractVisibleValueFromText(selectedSummary, ["ETA"]), "");
   const hasSelection = Boolean(vehiclePlate || selectedSummary || gpsStatus || lastGps || nextStop || totalStops || eta);
   const mainLead = vehiclePlate
     ? `Seçili araç ${vehiclePlate} görünüyor.`
