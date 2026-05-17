@@ -47,6 +47,10 @@ const WORKFLOW_GENERIC_CHIP_BLOCKLIST = [
   'İlk neye bakayım?',
   'Burada eksik ne olabilir?',
   'Önce neyi kontrol edeyim',
+  'Devamını anlat',
+  'Devamını açıkla',
+  'Daha fazla anlat',
+  'Daha fazla açıkla',
   'Kontrol listesi ver',
   'Sıralı kontrol ver',
   'Yetki sınırını kontrol et',
@@ -70,10 +74,10 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (path.includes('/driver/today')) {
-    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (path.includes('/driver/route')) {
-    return ['Başlatma zamanı uygun mu?', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (path.includes('/driver/map')) {
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
@@ -151,7 +155,7 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   switch (topic) {
     case 'SHIFT_BLOCKED':
     case 'WHY_BLOCKED':
-      return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+      return ['Başlatma zamanı uygun mu?', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
     case 'VEHICLE_NOT_VISIBLE':
     case 'DRIVER_PHONE_GPS':
       return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];

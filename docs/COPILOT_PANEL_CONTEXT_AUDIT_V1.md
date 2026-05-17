@@ -163,6 +163,13 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Mobile tarafında Copilot bridge görünmeyen yüzeyler için bu audit yalnız mevcut repo kanıtını korur; ürün davranışı değiştirmez.
 - `Operasyon kanıtı` ve `başlatma kanıtı` gibi Türkçe görünür dil korunur; teknik iç kodlar görünmez.
 
+## COP-04B-FIX-04 acceptance note
+- Cevaplar daha kısa, doğal ve aksiyon odaklı kalır; aynı aksiyon `Öneri` ve `Sıradaki doğru işlem` altında tekrar etmez.
+- Workflow sorularında generic chips yerine konuya özel chipler öne çıkar.
+- Chip policy, workflow sorularında domain-specific chips'i generic seçeneklerin önüne alır.
+- `Önerilen adım` gibi mekanik anlatım son kullanıcı cevabında görünmez.
+- Premium polish, selected/context parity davranışlarını bozmaz; yalnız görünür dil ve chip önceliğini iyileştirir.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

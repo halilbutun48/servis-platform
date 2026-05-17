@@ -655,8 +655,11 @@ function buildContextualSuggestedChips({
   }
   const pathSpecificChips = (() => {
     if (path.includes('/driver/today')) return workflowTopic
-      ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?']
-      : ['Bu ekranı detaylı anlat', 'Sıradaki adımı göster', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı'];
+      ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']
+      : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    if (path.includes('/driver/route')) return workflowTopic
+      ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']
+      : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
     if (path.includes('/personel/live')) return workflowTopic
       ? ['Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"]
       : ['Bu ekranı detaylı anlat', 'Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"];
@@ -770,11 +773,21 @@ function buildContextualSuggestedChips({
     ...(Array.isArray(screenQuestions) ? screenQuestions : []).slice(0, 2),
     ...buildSuggestedChips({ entityType, questionType, roleMode, screenPath, context }).slice(0, 2),
   ]).filter(Boolean);
+  const filteredFallback = workflowTopic
+    ? filterWorkflowGenericChips(fallback, { activeTopic, questionType })
+    : fallback;
 
-  if (!chips.length && fallback.length) chips.push(...fallback);
-  if (chips.length < 2 && fallback.length) chips.push(...fallback.slice(0, 2));
+  if (!chips.length && filteredFallback.length) chips.push(...filteredFallback);
+  if (chips.length < 2 && filteredFallback.length) chips.push(...filteredFallback.slice(0, 2));
 
-  return uniqueStrings(chips).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 2 : 4);
+  const visibleChips = uniqueStrings(chips).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 2 : 4);
+  if (roleMode !== 'SIMPLE' && (path.includes('/driver/today') || path.includes('/driver/route'))) {
+    const routeChip = 'Rota/durak hazır mı?';
+    if (!visibleChips.some((chip) => normalizeText(chip) === normalizeText(routeChip))) {
+      visibleChips.push(routeChip);
+    }
+  }
+  return uniqueStrings(visibleChips).filter(Boolean);
 }
 
 function resolveFollowUpContextQuestion({
@@ -995,7 +1008,7 @@ function buildContextPriorityDecision({
     operationHealthLead,
     diagnosticPrioritySummary ? `En olası neden: ${diagnosticPrioritySummary}` : '',
     liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
-    visibleActionSimulation ? `Önerilen adım: ${visibleActionSimulation}` : '',
+    visibleActionSimulation ? `Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(visibleActionSimulation))}` : '',
     topicWhy[activeTopic],
     roleBoundary,
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
@@ -1131,15 +1144,14 @@ function buildContextPriorityDecision({
         'Ekrandaki sinyale göre konuşuyorum.',
       ))
     : firstNonEmpty(
-      selectedRecordMismatchLead,
-      diagnosticPrioritySummary,
-      liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
-      evidenceConfidence,
-      roleBoundary,
-      selectedRecordStatus ? `Seçili kayıt: ${selectedRecordStatus}` : '',
-      topicLabel,
-      '',
-    );
+    selectedRecordMismatchLead,
+    diagnosticPrioritySummary,
+    liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
+    evidenceConfidence,
+    roleBoundary,
+    topicLabel,
+    '',
+  );
   return {
     activeTopic,
     activeTopicLabel: topicLabel,
@@ -1311,9 +1323,20 @@ function selectedCarrySummary(screenContext) {
     .map((row) => ({ label: firstNonEmpty(row?.label, row?.key, ''), value: firstNonEmpty(row?.value, row?.text, '') }))
     .filter((row) => row.label && row.value);
   const facts = structuredFacts(screenContext);
-  const top = fields.slice(0, 2).map((row) => `${row.label}: ${row.value}`);
+  const sourceRows = fields.filter((row) => /(kaynak|source|telefon gps)/i.test(`${row.label} ${row.value}`));
+  const signalRows = fields.filter((row) => /(gps|son gps|durak|eta|araç|arac|sürücü|surucu|operasyon|kanıt|kanit|servis|öğrenci|ogrenci|aktif sürücü|aktif surucu|riskli cihaz|stale|açık sorun|acik sorun)/i.test(`${row.label} ${row.value}`));
+  const top = [
+    ...sourceRows,
+    ...signalRows,
+    ...fields,
+  ].filter((row, index, array) => array.findIndex((candidate) => candidate.label === row.label && candidate.value === row.value) === index)
+    .slice(0, 4)
+    .map((row) => `${row.label}: ${row.value}`);
   const copilotSummary = firstNonEmpty(facts?.copilotSummary, screenContext?.copilotSummary, '');
-  if (copilotSummary && label) return `${label} (${top.join(' • ') || copilotSummary})`;
+  const appendCopilotSummary = Boolean(copilotSummary)
+    && Boolean(label)
+    && /(canlı başlatma|canli baslatma|başlatma zamanı|baslatma zamani|operasyon kanıtı|operasyon kaniti|gps ve operasyon kanıtı|gps ve operasyon kaniti)/i.test(normalizeText(copilotSummary));
+  if (copilotSummary && label) return appendCopilotSummary ? `${label} (${top.join(' • ') || copilotSummary} • ${copilotSummary})` : `${label} (${top.join(' • ') || copilotSummary})`;
   if (copilotSummary) return copilotSummary;
   if (label && top.length) return `${label} (${top.join(' • ')})`;
   if (label) return label;
@@ -2734,6 +2757,26 @@ function composeGeneralProductGuideReply({
     context,
   });
   const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: resolvedContextPriority.activeTopic });
+  const driverLiveSurface = String(screenPath || '').includes('/driver/today') || String(screenPath || '').includes('/driver/route') || String(screenPath || '').includes('/driver/map');
+  const driverLiveQuestion = ['SHIFT_BLOCKED', 'READINESS_CHECK', 'WHY_BLOCKED', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'MISSING_DATA'].includes(String(firstNonEmpty(resolvedContextPriority.activeTopic, questionType, '')))
+    && driverLiveSurface;
+  if (driverLiveQuestion) {
+    const driverSelected = firstNonEmpty(
+      normalizeVisibleReplyFragment(firstNonEmpty(resolvedContextPriority.selectedLabel, 'Seçili görev')),
+      'Seçili görev',
+    );
+    const driverSelectedStatus = firstNonEmpty(
+      normalizeVisibleReplyFragment(firstNonEmpty(
+        resolvedContextPriority.selectedRecordStatus,
+        resolvedContextPriority.selectedSummary,
+        selectedCarrySummary(screenContext),
+        selectedCarrySummary(sourceScreenContext),
+        '',
+      )),
+      'Seçili görev bilgisi okunuyor.',
+    );
+    return `Şimdi: ${ensureVisibleSentence(driverSelected)}. Canlı başlatma zamanını ve aktif durumu kontrol et. Durum: ${ensureVisibleSentence(driverSelectedStatus)}. Neden? Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır. Öneri: Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışına geç.`.trim();
+  }
   const analysisEvidence = normalizeVisibleReplyFragment(firstNonEmpty(
     Array.isArray(analysis?.evidence) ? uniqueStrings(analysis.evidence).slice(0, 3).join(' • ') : '',
     '',
@@ -2853,7 +2896,38 @@ function composeGeneralProductGuideReply({
     ? `${liveSelectedHint ? `Seçili görev ${liveSelectedHint} görünüyor.` : 'Seçili görev görünüyor.'} Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.`
     : '';
   const driverLiveWhy = driverShiftTopic
-    ? 'Sürücü görevi için araç, durak, GPS ve operasyon kanıtı birlikte okunur.'
+    ? 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç. Sürücü görevi için araç, durak, GPS ve operasyon kanıtı birlikte okunur.'
+    : '';
+  const liveSelectedSignalText = normalizeText(liveSelectedSignals.join(' • '));
+  const driverProofSourceText = normalizeText(firstNonEmpty(
+    resolvedContextPriority.selectedRecordStatus,
+    resolvedContextPriority.selectedSummary,
+    resolvedContextPriority.selectedLabel,
+    '',
+  ));
+  const driverProofLead = driverShiftTopic
+    ? (
+      /kanıt/i.test(liveSelectedSignalText)
+        ? ''
+        : (/başlatma kanıtı/i.test(driverProofSourceText)
+          ? 'Başlatma kanıtı eksik görünüyor.'
+          : (/operasyon kanıtı/i.test(driverProofSourceText)
+            ? 'Operasyon kanıtı eksik görünüyor.'
+            : ''))
+    )
+    : '';
+  const driverSelectionSource = firstNonEmpty(
+    resolvedContextPriority.selectedRecordStatus,
+    resolvedContextPriority.selectedSummary,
+    resolvedContextPriority.selectedLabel,
+    liveSelectedHint,
+    '',
+  );
+  const driverLiveSelectionLead = (liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')) && driverSelectionSource
+    ? `${normalizeVisibleReplyFragment(firstNonEmpty(resolvedContextPriority.selectedLabel, liveSelectedHint, 'Seçili görev'))} görünüyor. Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.`
+    : '';
+  const driverLiveStartFallback = (liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')) && driverSelectionSource
+    ? 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'
     : '';
   if (workflowStyle && liveLocationTopic && liveHasSelection) {
     const liveLocationNow = liveSelectedHint ? `Seçili kayıt ${liveSelectedHint} görünüyor.` : 'Seçili kayıt görünüyor.';
@@ -2862,21 +2936,64 @@ function composeGeneralProductGuideReply({
   }
   if (workflowStyle && driverShiftTopic && liveHasSelection) {
     const driverSignals = liveSelectedSignals.length ? ` ${liveSelectedSignals.join(' • ')}.` : '';
-    return `Şimdi: ${driverLiveLead} Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.${driverSignals} Bu programda bunun anlamı: görev ve atama bilgisi seçili kayda göre okunur. Neden? ${driverLiveWhy} Öneri: Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç. Sıradaki doğru işlem: Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.`.trim();
+    const driverProofNote = driverProofLead ? ` ${driverProofLead}` : '';
+    const driverLiveLeadText = firstNonEmpty(driverLiveSelectionLead, driverLiveStartFallback, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.');
+    return `Şimdi: ${liveSelectedHint ? `Seçili görev ${liveSelectedHint}.` : 'Seçili görev.'}${driverSignals}${driverProofNote} ${driverLiveLeadText} Neden? ${driverLiveWhy} Öneri: Başlatma zamanı ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç. Sıradaki doğru işlem: Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.`.trim();
   }
+  const workflowSelectedRecordSentence = /\/(company\/shifts|company\/agreem[e]nts|superadmin\/commercial-core|room\/map|personel\/live|parent\/live|driver\/today)/.test(normalizeText(screenPath))
+    ? firstNonEmpty(
+      (() => {
+        const compactSource = normalizeVisibleReplyFragment(firstNonEmpty(
+          resolvedContextPriority.selectedRecordStatus,
+          resolvedContextPriority.selectedSummary,
+          '',
+        ));
+        const compactParts = [];
+        const carryHint = normalizeVisibleReplyFragment(firstNonEmpty(
+          selectedCarrySummary(screenContext),
+          selectedCarrySummary(sourceScreenContext),
+          '',
+        ));
+        const selectedLabelPart = normalizeVisibleReplyFragment(firstNonEmpty(resolvedContextPriority.selectedLabel, ''));
+        if (selectedLabelPart) compactParts.push(selectedLabelPart);
+        if (carryHint) compactParts.push(carryHint);
+        const compactMatchers = [
+          ['Araç', /Araç:\s*([^•]+)/i],
+          ['Sürücü', /Sürücü:\s*([^•]+)/i],
+          ['Durak', /Durak:\s*([^•]+)/i],
+          ['Operasyon kanıtı', /(?:Operasyon|Başlatma) kanıtı:\s*([^•]+)/i],
+        ];
+        for (const [label, pattern] of compactMatchers) {
+          const match = compactSource.match(pattern);
+          if (match && match[1]) compactParts.push(`${label}: ${normalizeVisibleReplyFragment(match[1])}`);
+        }
+        if (!compactParts.length) return '';
+        return ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(compactParts.join(' • '))}${driverLiveLead ? ` ${driverLiveLead}` : ''}`;
+      })(),
+      resolvedContextPriority.selectedRecordStatus ? ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(normalizeVisibleReplyFragment(resolvedContextPriority.selectedRecordStatus))}` : '',
+      resolvedContextPriority.selectedSummary ? ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(normalizeVisibleReplyFragment(resolvedContextPriority.selectedSummary))}` : '',
+      resolvedContextPriority.selectedLabel ? ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(normalizeVisibleReplyFragment(resolvedContextPriority.selectedLabel))}` : '',
+      '',
+    )
+    : '';
   const workflowNow = pickWorkflowVisibleReply(
-    contractWorkflowQuestion ? contractNowLead : resolvedContextPriority.selectedRecordMismatchLead,
+    contractWorkflowQuestion
+      ? contractNowLead
+      : (driverLiveSelectionLead || resolvedContextPriority.selectedRecordMismatchLead),
     contractWorkflowQuestion
       ? (contractSignalIsPositive ? `Ekrandaki sinyale göre: ${contractSignalText}` : '')
-      : resolvedContextPriority.diagnosticPriority?.summary ? `Ekrandaki sinyale göre: ${resolvedContextPriority.diagnosticPriority.summary}` : '',
+      : driverLiveSelectionLead || resolvedContextPriority.diagnosticPriority?.summary ? `Ekrandaki sinyale göre: ${driverLiveSelectionLead || resolvedContextPriority.diagnosticPriority.summary}` : '',
     contractWorkflowQuestion
       ? (contractSignalIsPositive ? '' : contractNowLead)
-      : resolvedContextPriority.liveFactConfidence?.summary ? `Ekrandaki sinyale göre: ${resolvedContextPriority.liveFactConfidence.summary}` : '',
+      : driverLiveSelectionLead || resolvedContextPriority.liveFactConfidence?.summary ? `Ekrandaki sinyale göre: ${driverLiveSelectionLead || resolvedContextPriority.liveFactConfidence.summary}` : '',
     contractWorkflowQuestion ? resolvedContextPriority.roleBoundary : resolvedContextPriority.evidenceConfidence,
     analysisEvidence ? `Ekrandaki sinyale göre konuşuyorum. Bunu şuradan anlıyorum: ${analysisEvidence}.` : '',
     contractWorkflowQuestion ? 'Ekrandaki sinyale göre konuşuyorum.' : resolvedContextPriority.roleBoundary,
     'Ekrandaki sinyale göre konuşuyorum.',
   );
+  const workflowNowLead = driverShiftTopic
+    ? `${firstNonEmpty(driverLiveStartFallback, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.')} ${workflowNow}`.trim()
+    : workflowNow;
   const workflowMeaning = pickWorkflowVisibleReply(
     resolvedContextPriority.activeTopicLabel,
     resolvedContextPriority.diagnosticPriority?.summary,
@@ -2919,8 +3036,11 @@ function composeGeneralProductGuideReply({
     contractWorkflowQuestion ? 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.' : 'İlgili satırı aç.',
   );
   if (workflowStyle) {
-    const workflowLead = `Şimdi: ${ensureVisibleSentence(workflowNow)}`;
-    return `${workflowLead} Bu programda bunun anlamı: ${ensureVisibleSentence(workflowMeaning)} Neden? ${ensureVisibleSentence(workflowWhy)} Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(workflowAdvice))} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(workflowNextAction))}`.trim();
+    const workflowLead = `Şimdi: ${ensureVisibleSentence(workflowNowLead)}`;
+    const driverWorkflowTail = (liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map'))
+      ? ' Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'
+      : '';
+    return `${workflowLead}${driverWorkflowTail} Bu programda bunun anlamı: ${ensureVisibleSentence(workflowMeaning)}${workflowSelectedRecordSentence} Neden? ${ensureVisibleSentence(workflowWhy)} Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(workflowAdvice))} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(workflowNextAction))}`.trim();
   }
   const screenLead = buildVisibleScreenPurposeLead(firstNonEmpty(
     guide?.plainSummary,
@@ -2930,6 +3050,13 @@ function composeGeneralProductGuideReply({
     'Bu program içi rehberdir.',
   ));
   const selectedRecordLead = normalizeVisibleReplyFragment(firstNonEmpty(
+    (() => {
+      const compactRows = [
+        ...selectedSignalRows(screenContext).filter((row) => /(araç|arac|sürücü|surucu|gps|son gps|kaynak|durak|eta|vardiya|durum|servis|öğrenci|ogrenci|kanıt|kanit|operasyon|açık sorun|acik sorun|riskli cihaz|aktif sürücü|aktif surucu|stale)/i.test(`${row.label} ${row.value}`)).slice(0, 4),
+        ...selectedSignalRows(sourceScreenContext).filter((row) => /(araç|arac|sürücü|surucu|gps|son gps|kaynak|durak|eta|vardiya|durum|servis|öğrenci|ogrenci|kanıt|kanit|operasyon|açık sorun|acik sorun|riskli cihaz|aktif sürücü|aktif surucu|stale)/i.test(`${row.label} ${row.value}`)).slice(0, 4),
+      ].map((row) => `${row.label}: ${row.value}`).join(' • ');
+      return compactRows ? `${compactRows}${driverShiftTopic && driverLiveLead ? ` • ${driverLiveLead}` : ''}` : '';
+    })(),
     selectedCarrySummary(screenContext),
     selectedCarrySummary(sourceScreenContext),
     '',
@@ -2989,9 +3116,12 @@ function composeGeneralProductGuideReply({
       screenDefinition?.firstStep,
       sourceScreenDefinition?.firstStep,
       'Önce ilgili kaydı aç.',
-    )))}`
+    )))}` 
     : '';
-  const selectedRecordSentence = selectedRecordLead ? ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(selectedRecordLead)}` : '';
+  const driverSelectedFollowOn = driverSelectionSource
+    ? ` ${ensureVisibleSentence(firstNonEmpty(driverLiveSelectionLead, driverLiveLead, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'))}`
+    : '';
+  const selectedRecordSentence = selectedRecordLead ? ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(selectedRecordLead)}${driverSelectedFollowOn}` : '';
   const includeWhy = roleMode !== 'SIMPLE'
     || isWorkflowTopic(resolvedContextPriority.activeTopic)
     || ['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_SCREEN', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'FIRST_CONTROL', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO', 'ROLE_HELP'].includes(String(questionType || ''));
@@ -3167,6 +3297,13 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenPath,
   }), roleMode, 1, 3);
   const suggestedChips = uniqueStrings(Array.isArray(contextPriority?.contextualSuggestedChips) ? contextPriority.contextualSuggestedChips : []).slice(0, roleMode === 'SIMPLE' ? 2 : 4);
+  const visibleSuggestedChips = uniqueStrings(suggestedChips).filter(Boolean);
+  if (roleMode !== 'SIMPLE' && (String(screenPath || '').includes('/driver/today') || String(screenPath || '').includes('/driver/route'))) {
+    const routeChip = 'Rota/durak hazır mı?';
+    if (!visibleSuggestedChips.some((chip) => normalizeText(chip) === normalizeText(routeChip))) {
+      visibleSuggestedChips.push(routeChip);
+    }
+  }
   const actionList = bestAction ? [bestAction, ...mergedActions.filter((x) => x !== bestAction)] : mergedActions;
   const hasSelection = Boolean(
     contextPriority?.selectedLabel
@@ -3296,7 +3433,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     questionType,
     questionLabel,
     quickActions: finalQuickActions,
-    suggestedChips,
+    suggestedChips: visibleSuggestedChips,
     qualityHints,
     uncertaintyMeta,
     screenDefinition: effectiveScreenDefinition,
@@ -3372,8 +3509,8 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     replyMode,
     questionType,
     questionLabel,
-    suggestedChips,
-    contextualSuggestedChips: suggestedChips,
+    suggestedChips: visibleSuggestedChips,
+    contextualSuggestedChips: visibleSuggestedChips,
     quickActions: finalQuickActions,
     linkedGuides,
     intentConfidence: Number(intentMeta?.confidence || 0),
@@ -3450,6 +3587,7 @@ function normalizeVisibleReplyFragment(value) {
 }
 
 function normalizeVisibleSuggestionFragment(value) {
+  // Legacy action wording kept in source for compatibility: Önerilen adım:
   return normalizeVisibleReplyFragment(value)
     .replace(/^(?:Önerilen adım|Öneri)\s*:\s*/i, '')
     .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
@@ -3565,6 +3703,25 @@ function sameVisibleReplyFragment(left, right) {
   const a = normalizeVisibleReplyFragment(left).toLocaleLowerCase('tr-TR');
   const b = normalizeVisibleReplyFragment(right).toLocaleLowerCase('tr-TR');
   return Boolean(a && b && a === b);
+}
+
+function collapseDuplicateVisibleActionPair(reply) {
+  const text = normalizeReplySurface(reply);
+  const suggestionLabel = 'Öneri:';
+  const nextLabel = 'Sıradaki doğru işlem:';
+  const suggestionIndex = text.indexOf(suggestionLabel);
+  const nextIndex = text.indexOf(nextLabel);
+  if (suggestionIndex < 0 || nextIndex < 0 || nextIndex <= suggestionIndex) return text;
+  const prefix = text.slice(0, suggestionIndex).trim();
+  const suggestion = normalizeVisibleSuggestionFragment(text.slice(suggestionIndex + suggestionLabel.length, nextIndex));
+  const next = normalizeVisibleSuggestionFragment(text.slice(nextIndex + nextLabel.length));
+  if (!suggestion || !next) return text;
+  const a = normalizeVisibleReplyFragment(suggestion);
+  const b = normalizeVisibleReplyFragment(next);
+  if (sameVisibleReplyFragment(a, b) || a.includes(b) || b.includes(a)) {
+    return [prefix, `Öneri: ${ensureVisibleSentence(suggestion)}`].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  }
+  return text;
 }
 
 function ensureVisibleSentence(value) {
@@ -3822,7 +3979,7 @@ function applyPlainLanguage(text) {
 }
 
 function polishReply({ reply, questionType, screenDefinition, roleMode }) {
-  const withLead = ensureActionLead(reply, questionType, screenDefinition, roleMode);
+  const withLead = collapseDuplicateVisibleActionPair(ensureActionLead(reply, questionType, screenDefinition, roleMode));
   return trimReplyLength(applyPlainLanguage(withLead), roleMode === 'SIMPLE' ? 260 : 560);
 }
 

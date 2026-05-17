@@ -227,9 +227,14 @@ export function buildLiveFactConfidence({
   else if (/(bildirim|notification|olay kaynağı|olay kaynagi)/.test(combined)) missingSignal = 'Bildirim kaynağı';
   else if (/(kalite|quality|sağlayıcı|saglayici|provider)/.test(combined)) missingSignal = 'Kalite sinyali';
   else if (/(araç|arac|sürücü|surucu|durak|rota)/.test(combined)) missingSignal = 'Eksik veri';
+  const liveStartHint = screenTypeKey === 'SHIFTS'
+    && /APPROVED|ACCEPTED|ACTIVE/.test(normalizeSignalText(stage || readiness || selectedSignal))
+    && /(araç|arac|sürücü|surucu|durak|gps|operasyon kanıtı|operasyon kaniti)/.test(combined)
+    ? 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'
+    : '';
   const summaryText = selectedSignal && selectedSignal !== 'Seçili kayıt yok'
-    ? `Seçili kayıt: ${selectedSignal}. Ekrandaki sinyal ${screenSignal}. Genel workflow ${workflowSignal}. Eksik sinyal: ${missingSignal}.`
-    : `Ekrandaki sinyal ${screenSignal}. Genel workflow ${workflowSignal}. Eksik sinyal: ${missingSignal}.`;
+    ? `Seçili kayıt: ${selectedSignal}. Ekrandaki sinyal ${screenSignal}. Genel workflow ${workflowSignal}. Eksik sinyal: ${missingSignal}.${liveStartHint ? ` ${liveStartHint}` : ''}`
+    : `Ekrandaki sinyal ${screenSignal}. Genel workflow ${workflowSignal}. Eksik sinyal: ${missingSignal}.${liveStartHint ? ` ${liveStartHint}` : ''}`;
   return {
     summary: summaryText,
     rows: [
@@ -483,6 +488,13 @@ export function buildActionSimulationWording({
   return text.trim();
 }
 
+function normalizeVisibleActionSimulationText(value) {
+  return compactText(value, '')
+    .replace(/^(?:Önerilen adım|Öneri)\s*:\s*/i, '')
+    .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
+    .trim();
+}
+
 function buildReadonlyCopilotFacts({
   screenType = '',
   stage = '',
@@ -545,7 +557,8 @@ function buildReadonlyCopilotFacts({
       counters,
     });
   const actionSimulationText = compactText(
-    actionSimulation
+    normalizeVisibleActionSimulationText(
+      actionSimulation
       || buildActionSimulationWording({
         screenType: compactText(screenType, 'SCREEN'),
         stage,
@@ -554,6 +567,7 @@ function buildReadonlyCopilotFacts({
         diagnosticPriority: diagnosticPriorityValue,
         counters,
       }),
+    ),
     '',
   );
   return {
@@ -1011,25 +1025,35 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
     }),
   ];
   const actionMatrix = splitActions(actions);
+  const gpsSource = compactText(shift?.vehicle?.gpsLast?.sourceLabel || shift?.vehicle?.gpsState?.sourceLabel || shift?.vehicle?.gpsSourceLabel || shift?.gpsSourceLabel || '', '');
+  const gpsState = compactText(shift?.vehicle?.gpsState?.lastUiStatus || shift?.vehicle?.gpsState?.status || shift?.gpsStatus || shift?.vehicle?.gpsLast?.status || '', '');
+  const proofState = compactText(shift?.operationProofStatus || shift?.proofStatus || shift?.serviceProofStatus || '', '');
+  const liveStartHint = readyForLiveStart
+    ? 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'
+    : '';
   const selectedRecordStatus = [
     `Durum: ${status}`,
     `Araç: ${hasVehicle ? (shift?.vehicle?.plate || `#${shift?.vehicleId}`) : 'Yok'}`,
     `Sürücü: ${hasDriver ? (shift?.driver?.fullName || `#${shift?.driverId}`) : 'Yok'}`,
     `Durak: ${stopCount}`,
+    gpsSource ? `Kaynak: ${gpsSource}` : '',
+    gpsState ? `GPS: ${gpsState}` : '',
+    proofState ? `Operasyon kanıtı: ${proofState}` : '',
     `Açık teklif: ${offerCount}`,
-  ].join(' • ');
+  ].filter(Boolean).join(' • ');
   const readonlyFacts = buildReadonlyCopilotFacts({
     screenType: 'SHIFTS',
     stage: status,
     readinessScore: approvedLike && hasVehicle && hasDriver ? (stopCount > 0 ? 88 : 74) : 42,
     readiness: approvedLike && hasVehicle && hasDriver && stopCount > 0 ? 'READY' : blockers.length ? 'NOT_READY' : 'REVIEW_NEEDED',
-    summary: readyForLiveStart ? 'Canlı başlatma kontrolü gerekli' : approvedLike ? 'Vardiya hazır' : blockers.length ? 'Vardiya blokajı' : 'Vardiya kontrol altında',
+    summary: readyForLiveStart ? `Canlı başlatma kontrolü gerekli. ${liveStartHint}` : approvedLike ? 'Vardiya hazır' : blockers.length ? 'Vardiya blokajı' : 'Vardiya kontrol altında',
     blockers,
     evidence: [
       `Durum: ${status}`,
       `Araç: ${hasVehicle ? (shift?.vehicle?.plate || `#${shift?.vehicleId}`) : 'Yok'}`,
       `Sürücü: ${hasDriver ? (shift?.driver?.fullName || `#${shift?.driverId}`) : 'Yok'}`,
       `Durak: ${stopCount}`,
+      proofState ? `Operasyon kanıtı: ${proofState}` : '',
       `Teklif: ${offerCount}`,
       readyForLiveStart ? 'Canlı başlatma kontrolü: gerekli' : '',
     ],

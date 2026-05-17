@@ -248,9 +248,13 @@ export function createSelectedRuntimeHelpers(deps = {}) {
       '',
     );
     if (actionSimulation) {
+      const visibleActionSimulation = String(actionSimulation)
+        .replace(/^(?:Önerilen adım|Öneri)\s*:\s*/i, '')
+        .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
+        .trim();
       rows.push({
         label: 'Aksiyon simülasyonu',
-        value: actionSimulation,
+        value: visibleActionSimulation || String(actionSimulation),
         note: 'Bu sadece rehberliktir; işlem onay olmadan yapılmaz.',
       });
     }

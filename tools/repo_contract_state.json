@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  5,
-    "currentWarningHotFileCount":  3,
+    "currentWarningHotFileCount":  4,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -140,14 +140,18 @@
                                                   "acceptance-sensitive dosyalar explicit gerekce olmadan acilmaz"
                                               ],
                                "classifications":  {
-                                                       "backend/src/ai/chat/helpComposer.js":  {
-                                                                                                   "class":  "justified-exception",
-                                                                                                   "note":  "accepted center; dar ve davranis-guvenli lokal duzeltme disinda zorlanmaz"
-                                                                                               },
-                                                       "backend/prisma/schema.prisma":  {
-                                                                                            "class":  "justified-exception",
-                                                                                            "note":  "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
-                                                                                        },
+                                                         "backend/src/ai/chat/helpComposer.js":  {
+                                                                                                     "class":  "justified-exception",
+                                                                                                     "note":  "accepted center; dar ve davranis-guvenli lokal duzeltme disinda zorlanmaz"
+                                                                                                 },
+                                                         "backend/src/ai/chat/screenStateAnalyzer.js":  {
+                                                                                                     "class":  "safe-candidate-review",
+                                                                                                     "note":  "operation-health hot path; kontrollu cleanup adayi"
+                                                                                                 },
+                                                         "backend/prisma/schema.prisma":  {
+                                                                                              "class":  "justified-exception",
+                                                                                              "note":  "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
+                                                                                          },
                                                        "web/src/panels/superadmin/CommercialCorePanel.jsx":  {
                                                                                                         "class":  "safe-candidate-review",
                                                                                                         "note":  "payment preview bridge; kontrollu iyilestirme adayi"

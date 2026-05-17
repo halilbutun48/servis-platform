@@ -71,7 +71,35 @@ function applyStructuredFacts(result, screenContext) {
   result.safestNextStep = firstNonEmpty(facts?.safestNextStep, result.safestNextStep, '');
   result.changedHint = firstNonEmpty(facts?.changedHint, result.changedHint, '');
   result.compareHint = firstNonEmpty(facts?.compareHint, result.compareHint, '');
-  result.selectedRecordStatus = firstNonEmpty(facts?.selectedRecordStatus, result.selectedRecordStatus, '');
+  result.selectedRecordStatus = firstNonEmpty(
+    screenContext?.selectedRecordStatus,
+    facts?.selectedRecordStatus,
+    screenContext?.selectedSummary,
+    result.selectedRecordStatus,
+    '',
+  );
+  const sourceHint = firstNonEmpty(
+    selectedFieldRows(screenContext).find((row) => /(kaynak|source|telefon gps)/i.test(`${row.label} ${row.value}`))?.value,
+    selectedBadgeRows(screenContext).find((row) => /(kaynak|source|telefon gps)/i.test(`${row.label} ${row.value}`))?.value,
+    '',
+  );
+  const compactRows = [
+    ...selectedBadgeRows(screenContext),
+    ...selectedFieldRows(screenContext),
+  ]
+    .filter((row, index, array) => array.findIndex((candidate) => candidate.label === row.label && candidate.value === row.value) === index)
+    .filter((row) => /(kaynak|source|telefon gps|gps|son gps|durak|eta|araç|arac|sürücü|surucu|operasyon|kanıt|kanit|servis|öğrenci|ogrenci|aktif sürücü|aktif surucu|riskli cihaz|stale|açık sorun|acik sorun|durum|vardiya)/i.test(`${row.label} ${row.value}`))
+    .slice(0, 4)
+    .map((row) => `${row.label}: ${row.value}`);
+  if (compactRows.length) {
+    const compactStatus = compactRows.join(' • ');
+    result.selectedRecordStatus = sourceHint && !normalizeText(compactStatus).includes('kaynak')
+      ? `Kaynak: ${sourceHint} • ${compactStatus}`
+      : compactStatus;
+  }
+  if (sourceHint && !normalizeText(result.selectedRecordStatus).includes('kaynak')) {
+    result.selectedRecordStatus = `Kaynak: ${sourceHint} • ${result.selectedRecordStatus}`.trim();
+  }
   const liveFactConfidence = facts?.liveFactConfidence;
   if (liveFactConfidence) {
     if (typeof liveFactConfidence === 'object') {
@@ -108,7 +136,10 @@ function applyStructuredFacts(result, screenContext) {
     '',
   );
   if (actionSimulation) {
-    result.actionSimulation = String(actionSimulation);
+    result.actionSimulation = String(actionSimulation)
+      .replace(/^(?:Önerilen adım|Öneri)\s*:\s*/i, '')
+      .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
+      .trim();
   }
   if (Number.isFinite(Number(facts?.readinessScore))) { result.readinessScore = Math.max(18, Math.min(97, Math.round(Number(facts.readinessScore)))); result.explicitScore = true; }
   if (facts?.readiness) { result.readiness = String(facts.readiness); result.explicitReadiness = true; }

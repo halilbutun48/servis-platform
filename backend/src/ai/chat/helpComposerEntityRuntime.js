@@ -152,14 +152,19 @@ export function createEntityRuntimeHelpers({
     const confidenceLead = confidence ? `Ekrandaki sinyale göre: ${confidence}.` : '';
     const priorityLead = priority ? `En olası neden: ${priority}.` : '';
     const simulationLead = simulation ? `Önerilen adım: ${simulation}` : '';
-    if (mode === 'READINESS') return `${lead} Bu kayıt şu an ${analyzerReadinessLabel(analysis)}. ${selectedStatus ? `Seçili kayıt durumu: ${selectedStatus}.` : ''} ${priorityLead || blocker || missing || disabled} ${confidenceLead || evidence} ${simulationLead || next}`.trim();
-    if (mode === 'SAFE_NEXT') return `${lead} ${confidenceLead || evidence} ${simulationLead || safest || next}`.trim();
-    if (mode === 'MISSING') return `${lead} ${missing || priorityLead || blocker || disabled || 'Bu daha çok eksik veri gibi duruyor.'} ${confidenceLead || evidence} ${simulationLead || next}`.trim();
+    const visibleSimulation = String(simulation || '')
+      .replace(/^(?:Önerilen adım|Öneri)\s*:\s*/i, '')
+      .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
+      .trim();
+    const visibleSimulationLead = visibleSimulation ? `Öneri: ${visibleSimulation}` : '';
+    if (mode === 'READINESS') return `${selectedStatus ? `Seçili kayıt durumu: ${selectedStatus}. ` : ''}${lead} Bu kayıt şu an ${analyzerReadinessLabel(analysis)}. ${priorityLead || blocker || missing || disabled} ${confidenceLead || evidence} ${visibleSimulationLead || simulationLead || next}`.trim();
+    if (mode === 'SAFE_NEXT') return `${lead} ${confidenceLead || evidence} ${visibleSimulationLead || simulationLead || safest || next}`.trim();
+    if (mode === 'MISSING') return `${lead} ${missing || priorityLead || blocker || disabled || 'Bu daha çok eksik veri gibi duruyor.'} ${confidenceLead || evidence} ${visibleSimulationLead || simulationLead || next}`.trim();
     if (mode === 'CHANGED') return `${lead} ${changed || 'Ekranda gerçekten neyin değiştiğini anlamak için aynı satırın durum, rozet ve sonraki adım alanlarını birlikte karşılaştır.'} ${confidenceLead || evidence}`.trim();
     if (mode === 'COMPARE') return `${analysis?.compareHint || lead} ${confidenceLead || evidence}`.trim();
     if (mode === 'EVIDENCE') return `${confidenceLead || evidence || 'Bu yorum seçili alan, rozet ve ekrandaki görünen ipuçlarına dayanıyor.'} ${disabled}`.trim();
-    if (mode === 'SHORT') return `${lead} ${priorityLead || blocker || missing || disabled || ''} ${simulationLead || next}`.trim();
-    return `${lead} ${priorityLead || blocker} ${missing} ${disabled} ${confidenceLead || evidence} ${simulationLead || next}`.trim();
+    if (mode === 'SHORT') return `${lead} ${priorityLead || blocker || missing || disabled || ''} ${visibleSimulationLead || simulationLead || next}`.trim();
+    return `${lead} ${priorityLead || blocker} ${missing} ${disabled} ${confidenceLead || evidence} ${visibleSimulationLead || simulationLead || next}`.trim();
   }
 
   function composeScreenLocationReply({ guide, screenDefinition }) {

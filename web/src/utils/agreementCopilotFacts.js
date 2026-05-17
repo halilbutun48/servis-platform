@@ -247,7 +247,10 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     compareHint: "Sözleşme onayı, üretim köprüsü ve bugünkü vardiya aynı şey değildir; köprü sinyali ayrı okunur.",
     liveFactConfidence,
     diagnosticPriority,
-    actionSimulation,
+    actionSimulation: String(actionSimulation || '')
+      .replace(/^(?:Önerilen adım|Öneri)\s*:\s*/i, '')
+      .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
+      .trim(),
     copilotSignals: signals,
     copilotSummary: `${productionSummary} • ${todayProductionSummary} • ${buildCopilotSignalSummary(signals, 4)}`,
     copilotBoundary: [
