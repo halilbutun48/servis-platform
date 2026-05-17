@@ -178,6 +178,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Selected vehicle yoksa sadece güvenli fallback geçerlidir; teknik hata veya iç kod görünmez.
 - Bu hardening, copied summary alias'larını request ve answer route boyunca taşımayı kabul kriteri olarak tanımlar.
 
+## COP-04B-FIX-06 acceptance note
+- Free-chat submit request de aynı live selected context'i taşır; header quick answer ile free chat aynı selected signal setini kullanır.
+- Room / Canlı Takip sorularında `entityType: screen` free-chat akışında da korunur; selected vehicle summary help header'dan backend'e taşınır.
+- `selectedRecord` null olsa bile `helpContextSummary` / `contextSummary` / `liveFacts` içindeki araç sinyali cevapta kullanılır.
+- `Bu ekranda seçili araç bilgisi net görünmüyor` fallback'i yalnızca gerçekten seçili araç ve canlı sinyal yoksa geçerlidir.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

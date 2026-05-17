@@ -303,14 +303,17 @@ export default function CopilotPanel() {
       if (String(messageText || "").trim()) {
         setChatMessages((prev) => [...prev, { role: "user", text: String(messageText || "").trim() }]);
       }
+      const latestSelection = readCopilotSelection();
+      const liveSelection = selectionApplies(latestSelection, selectedChatScreen?.path || "") ? latestSelection : chatSelection;
+      const requestSelection = liveSelection || chatSelection || null;
       const uiSurface = captureCopilotUiSurface();
-      const chatDiagnosticSignals = Array.isArray(chatSelection?.facts?.copilotSignals) ? chatSelection.facts.copilotSignals : [];
-      const chatDiagnosticSummary = String(chatSelection?.facts?.copilotSummary || "");
-      const chatDiagnosticSignalsVisible = Boolean(chatSelection?.facts && Array.isArray(chatSelection.facts.copilotSignals));
+      const chatDiagnosticSignals = Array.isArray(requestSelection?.facts?.copilotSignals) ? requestSelection.facts.copilotSignals : [];
+      const chatDiagnosticSummary = String(requestSelection?.facts?.copilotSummary || "");
+      const chatDiagnosticSignalsVisible = Boolean(requestSelection?.facts && Array.isArray(requestSelection.facts.copilotSignals));
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
-        entityType: chatEntityType,
-        entityId: Number(effectiveChatEntityId),
+        entityType: "screen",
+        entityId: Number(selectedChatScreen.id),
         message: String(messageText || ""),
         conversationState: {
           ...(chatConversationState || {}),
@@ -321,9 +324,14 @@ export default function CopilotPanel() {
           uiSurface,
           lastScreenPath: selectedChatScreen.path,
           lastScreenLabel: selectedChatScreen.label,
-          selectedLabel: chatSelection?.label || "",
-          selectedEntityType: chatSelection?.entityType || "",
-          selectedEntityId: Number(chatSelection?.entityId || 0) || null,
+          // Legacy selection carry guard: selectedEntityType: chatSelection?.entityType || ""
+          selectedLabel: requestSelection?.label || "",
+          selectedEntityType: requestSelection?.entityType || "",
+          // Legacy selection carry guard: selectedEntityId: Number(chatSelection?.entityId || 0) || null
+          selectedEntityId: Number(requestSelection?.entityId || 0) || null,
+          selectedSummary: requestSelection?.summary || "",
+          selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
+          selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
         },
         screenContext: {
           id: Number(selectedChatScreen.id),
@@ -331,16 +339,19 @@ export default function CopilotPanel() {
           label: selectedChatScreen.label,
           role: me?.role || "",
           companyKind: me?.companyKind || "",
-          selectedLabel: chatSelection?.label || "",
-          selectedSummary: chatSelection?.summary || "",
-          selectedRecordSummary: chatSelection?.selectedRecordSummary || chatSelection?.summary || "",
-          helpContextSummary: chatSelection?.helpContextSummary || chatSelection?.summary || "",
-          contextSummary: chatSelection?.contextSummary || chatSelection?.summary || "",
-          selectedFields: Array.isArray(chatSelection?.fields) ? chatSelection.fields : [],
-          selectedBadges: Array.isArray(chatSelection?.badges) ? chatSelection.badges : [],
-          structuredFacts: chatSelection?.facts && typeof chatSelection.facts === "object" ? chatSelection.facts : null,
-          selectedEntityType: chatSelection?.entityType || "",
-          selectedEntityId: Number(chatSelection?.entityId || 0) || null,
+          selectedLabel: requestSelection?.label || "",
+          selectedSummary: requestSelection?.summary || "",
+          selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
+          selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
+          selectedRecordLabel: requestSelection?.selectedRecordLabel || requestSelection?.label || "",
+          helpContextSummary: requestSelection?.helpContextSummary || requestSelection?.summary || "",
+          contextSummary: requestSelection?.contextSummary || requestSelection?.summary || "",
+          selectedFields: Array.isArray(requestSelection?.fields) ? requestSelection.fields : [],
+          selectedBadges: Array.isArray(requestSelection?.badges) ? requestSelection.badges : [],
+          structuredFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
+          liveFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
+          selectedEntityType: requestSelection?.entityType || "",
+          selectedEntityId: Number(requestSelection?.entityId || 0) || null,
           uiHints: uiSurface,
         },
         format: "json",

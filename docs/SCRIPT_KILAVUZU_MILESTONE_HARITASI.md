@@ -78,6 +78,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop04bfix03` -> `node backend\scripts\cop_04b_fix_03_personel_parent_driver_context_check.js`
 - `check:cop04bfix04` -> `node backend\scripts\cop_04b_fix_04_chip_answer_premium_polish_check.js`
 - `check:cop04bfix05` -> `node backend\scripts\cop_04b_fix_05_live_room_selected_vehicle_route_check.js`
+- `check:cop04bfix06` -> `node backend\scripts\cop_04b_fix_06_free_chat_context_bridge_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
@@ -647,6 +648,8 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:cop04bfix03`
 - `check:cop04bfix04`
 - `check:cop04bfix05`
+- `check:cop04bfix06`
+  - Not: free-chat submit request ile Room / Canlı Takip selected signal seti de taşınır; header quick answer ve free chat aynı live context'i kullanır.
 
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`

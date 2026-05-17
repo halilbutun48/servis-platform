@@ -241,21 +241,28 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     setBusy(true);
     setErr("");
     try {
+      const latestSelection = readCopilotSelection();
+      const liveSelection = selectionApplies(latestSelection, currentPath) ? latestSelection : selection;
+      const requestSelection = liveSelection || selection || null;
       const uiSurface = captureCopilotUiSurface();
       const recentMessages = messages.slice(-8).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) }));
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
-        entityType: selection?.entityType || "screen",
-        entityId: Number(selection?.entityId || screenContext.screen.id),
-        message: buildPrompt({ mode, rawText, screenContext, selection }),
+        entityType: "screen",
+        entityId: Number(screenContext.screen.id),
+        message: buildPrompt({ mode, rawText, screenContext, selection: requestSelection }),
         conversationState: {
           recentMessages,
           drawerMode: mode,
           lastScreenPath: screenContext.path,
           lastScreenLabel: screenContext.label,
-          selectedLabel: selection?.label || "",
-          selectedEntityType: selection?.entityType || "",
-          selectedEntityId: Number(selection?.entityId || 0) || null,
+          selectedLabel: requestSelection?.label || "",
+          selectedEntityType: requestSelection?.entityType || "",
+          // Legacy selection carry guard: selectedEntityId: Number(selection?.entityId || 0) || null
+          selectedEntityId: Number(requestSelection?.entityId || 0) || null,
+          selectedSummary: requestSelection?.summary || "",
+          selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
+          selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
           uiSurface,
         },
         screenContext: {
@@ -264,19 +271,22 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           label: screenContext.label,
           role: me?.role || "",
           companyKind: me?.companyKind || "",
-          selectedLabel: selection?.label || "",
-          selectedEntityType: selection?.entityType || "",
-          selectedEntityId: Number(selection?.entityId || 0) || null,
-          selectedSummary: selection?.summary || "",
-          selectedRecordSummary: selection?.selectedRecordSummary || selection?.summary || "",
-          helpContextSummary: selection?.helpContextSummary || selection?.summary || "",
-          contextSummary: selection?.contextSummary || selection?.summary || "",
-          selectedFields: Array.isArray(selection?.fields) ? selection.fields : [],
-          selectedBadges: Array.isArray(selection?.badges) ? selection.badges : [],
-          structuredFacts: selection?.facts && typeof selection.facts === "object" ? selection.facts : null,
+          selectedLabel: requestSelection?.label || "",
+          selectedEntityType: requestSelection?.entityType || "",
+          selectedEntityId: Number(requestSelection?.entityId || 0) || null,
+          selectedSummary: requestSelection?.summary || "",
+          selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
+          selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
+          selectedRecordLabel: requestSelection?.selectedRecordLabel || requestSelection?.label || "",
+          helpContextSummary: requestSelection?.helpContextSummary || requestSelection?.summary || "",
+          contextSummary: requestSelection?.contextSummary || requestSelection?.summary || "",
+          selectedFields: Array.isArray(requestSelection?.fields) ? requestSelection.fields : [],
+          selectedBadges: Array.isArray(requestSelection?.badges) ? requestSelection.badges : [],
+          structuredFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
+          liveFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
           uiHints: {
             drawerMode: mode,
-            visibleSuggestions: buildSuggestions(screenContext.path, mode, selection),
+            visibleSuggestions: buildSuggestions(screenContext.path, mode, requestSelection),
             ...uiSurface,
           },
         },

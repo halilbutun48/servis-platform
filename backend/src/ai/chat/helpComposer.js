@@ -1589,7 +1589,7 @@ const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFiel
 });
 
 function structuredFacts(screenContext) {
-  const facts = screenContext?.structuredFacts;
+  const facts = screenContext?.structuredFacts || screenContext?.liveFacts;
   return facts && typeof facts === 'object' ? facts : null;
 }
 

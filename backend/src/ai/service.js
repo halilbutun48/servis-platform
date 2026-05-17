@@ -115,7 +115,11 @@ function extractVisibleValueFromText(value, labels = []) {
 }
 
 function buildLiveSelectionSnapshot(screenContext) {
-  const facts = screenContext?.structuredFacts && typeof screenContext.structuredFacts === "object" ? screenContext.structuredFacts : null;
+  const facts = screenContext?.structuredFacts && typeof screenContext.structuredFacts === "object"
+    ? screenContext.structuredFacts
+    : screenContext?.liveFacts && typeof screenContext.liveFacts === "object"
+      ? screenContext.liveFacts
+      : null;
   const fields = selectedRows(screenContext, "selectedFields");
   const badges = selectedRows(screenContext, "selectedBadges");
   const selectedSummary = firstNonEmpty(
