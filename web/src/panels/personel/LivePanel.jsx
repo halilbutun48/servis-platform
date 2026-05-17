@@ -6,6 +6,8 @@ import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import StopTimeline from "../../components/StopTimeline";
 import { pickNextStopByRemainingKmOrEta } from "../../components/stopTimelineUtils";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildMapFacts } from "../../utils/copilotFacts";
 import { ageSecFromAt, uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { displayStatusLabel } from "../../utils/displayStatus";
 
@@ -287,6 +289,68 @@ export default function PersonelLivePanel() {
   const routeQualityText = etaQualityText(eta);
   const routeQualityTone = etaQualityTone(eta);
   const nextActionTextValue = nextActionText(eta);
+  const gpsSourceLabel = vehicle?.gpsState?.lastSource || vehicle?.gpsState?.sourceLabel || vehicle?.gpsLast?.sourceLabel || (vehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
+  const copilotFacts = useMemo(() => buildMapFacts({
+    selected: vehicle,
+    selectedShift: myShift,
+    selectedNext: nextStop,
+    selectedEta: nextEtaMin,
+    selectedStats: { total: totalStops, remaining: remainingStopsCount, completed: reachedCount },
+    gpsStatus: displayStatusLabel(ui || '-'),
+    gpsAge: gpsAgeLabel(vehicle),
+    vehicleCount: vehicles.length,
+  }), [vehicle, myShift, nextStop, nextEtaMin, totalStops, remainingStopsCount, reachedCount, ui, vehicles.length]);
+  const copilotSelection = useMemo(() => {
+    if (!vehicle && !myShift) return null;
+    const serviceLabel = vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : `Shift #${myShift?.id || '-'}`);
+    const parts = [
+      `Shift #${myShift?.id || '-'}`,
+      displayStatusLabel(String(myShift?.status || '-').toUpperCase()),
+      vehicle?.plate ? `Araç ${vehicle.plate}` : null,
+      `Son GPS ${gpsAgeLabel(vehicle)}`,
+      nextStop?.name ? `Sıradaki ${nextStop.name}` : null,
+      nextEtaMin != null ? `ETA ${nextEtaMin} dk` : null,
+      remainingStopsCount ? `Kalan durak ${remainingStopsCount}` : null,
+    ].filter(Boolean);
+    return {
+      scopeKey: "/personel/live",
+      entityType: vehicle?.id ? "vehicle" : "shift",
+      entityId: Number(vehicle?.id || myShift?.id || 0) || null,
+      label: vehicle?.plate ? `Bugünkü servis • ${vehicle.plate}` : `Shift #${myShift?.id || "-"}`,
+      summary: parts.join(" • "),
+      fields: [
+        { label: 'Servis', value: serviceLabel, help: 'Sana bağlı bugünkü servis veya vardiya etiketini gösterir.' },
+        { label: 'Araç', value: vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : '-'), help: 'Seçili aracın plakasını gösterir.' },
+        { label: 'Sürücü', value: myShift?.driver?.fullName || (myShift?.driverId ? `#${myShift.driverId}` : '-'), help: 'Bağlı sürücü adını gösterir.' },
+        { label: 'Son GPS', value: gpsAgeLabel(vehicle), help: 'Son canlı konumun ne kadar önce geldiğini gösterir.' },
+        { label: 'GPS durumu', value: displayStatusLabel(ui || '-'), help: 'Araç GPS sinyalinin canlı mı eski mi olduğunu gösterir.' },
+        { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını Türkçe ve güvenli olarak gösterir.' },
+        { label: 'Sıradaki durak', value: nextStop?.name || '-', help: 'Bir sonraki durak adını gösterir.' },
+        { label: 'ETA', value: nextEtaMin != null ? `${nextEtaMin} dk` : '-', help: 'Sıradaki durağa kalan tahmini süreyi gösterir.' },
+        { label: 'Servis durumu', value: displayStatusLabel(String(myShift?.status || '-').toUpperCase()), help: 'Vardiya veya servis durumunu gösterir.' },
+      ],
+      badges: [
+        { label: 'Araç GPS’i', value: displayStatusLabel(ui || '-'), help: 'Araç GPS sinyalinin görünürlüğünü gösterir.' },
+        { label: 'Sürücünün telefon GPS’i', value: gpsSourceLabel, help: 'Sürücünün telefon GPS’i veya konum kaynağı metnini gösterir.' },
+      ],
+      facts: {
+        ...copilotFacts,
+        selectedRecordType: vehicle?.id ? 'vehicle' : 'shift',
+        selectedRecordId: Number(vehicle?.id || myShift?.id || 0) || 0,
+        selectedRecordLabel: vehicle?.plate || `Shift #${myShift?.id || '-'}`,
+        selectedRecordStatus: copilotFacts?.selectedRecordStatus || '',
+      },
+    };
+  }, [vehicle, myShift, nextStop, nextEtaMin, remainingStopsCount, ui, gpsSourceLabel, copilotFacts]);
+
+  useEffect(() => {
+    if (!copilotSelection) {
+      clearCopilotSelection('/personel/live');
+      return undefined;
+    }
+    setCopilotSelection(copilotSelection);
+    return () => clearCopilotSelection('/personel/live');
+  }, [copilotSelection]);
 
   const recommended = useMemo(() => {
     if (!myPos || !Number.isFinite(myPos.lat) || !Number.isFinite(myPos.lng)) return null;
@@ -517,6 +581,5 @@ export default function PersonelLivePanel() {
     </div>
   );
 }
-
 
 

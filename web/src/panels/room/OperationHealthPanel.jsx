@@ -243,7 +243,7 @@ export default function OperationHealthPanel() {
       facts,
     });
     return () => clearCopilotSelection('/room/operation-health');
-  }, [summary, copilotDriver, copilotIssue]);
+  }, [summary, copilotDriver, copilotIssue, facts]);
 
   const cards = useMemo(() => {
     const c = summary?.cards || {};

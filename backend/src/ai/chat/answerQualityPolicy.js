@@ -50,6 +50,7 @@ const WORKFLOW_GENERIC_CHIP_BLOCKLIST = [
   'Kontrol listesi ver',
   'Sıralı kontrol ver',
   'Yetki sınırını kontrol et',
+  'İlgili durumu sor',
   'Bu aksiyonu simüle et',
 ];
 
@@ -69,10 +70,22 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (path.includes('/driver/today')) {
-    return ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
-  if (path.includes('/personel/live') || path.includes('/parent/live')) {
-    return ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'];
+  if (path.includes('/driver/route')) {
+    return ['Başlatma zamanı uygun mu?', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+  }
+  if (path.includes('/driver/map')) {
+    return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+  }
+  if (path.includes('/personel/my')) {
+    return ['Servis nerede?', 'Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?'];
+  }
+  if (path.includes('/personel/live')) {
+    return ['Bu ekranı detaylı anlat', 'Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"];
+  }
+  if (path.includes('/parent/live')) {
+    return ['Bu ekranı detaylı anlat', 'Servis nerede?', 'Son GPS ne zaman geldi?', 'Tahmini varış ne?', 'Araç bağlantısı var mı?'];
   }
   if (path.includes('/room/map') || path.includes('/room/live') || path.includes('/company/map') || path.includes('/company/live') || path.includes('/organization/map') || path.includes('/organization/live') || path.includes('/school/map') || path.includes('/school/live') || path.includes('/driver/map') || path.includes('/driver/live')) {
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];

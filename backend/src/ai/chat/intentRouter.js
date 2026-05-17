@@ -155,6 +155,7 @@ const INTENT_PRIORITY = [
   'CONTRACT_TO_SHIFT',
   'PAYMENT_READINESS',
   'READINESS_CHECK',
+  'SHIFT_BLOCKED',
   'SAFE_NEXT_STEP',
   'WHAT_CHANGED',
   'FIELD_HELP',
@@ -240,8 +241,29 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       addScore(scores, signals, 'WHY_BLOCKED', -8, 'map-vehicle-not-generic-blocked');
     }
     if (pathHas(options.screenPath, ['/personel/live', '/parent/live']) && /(servisim nerede|servisi nerede|öğrencimin servisi nerede|ogrencimin servisi nerede|çocuğumun servisi nerede|cocugumun servisi nerede|canlı servis nerede|canli servis nerede)/.test(text)) {
-      addScore(scores, signals, 'LOCATION_HELP', 10, 'live-service-location');
+      addScore(scores, signals, 'LOCATION_HELP', 18, 'live-service-location');
+      addScore(scores, signals, 'WHY_BLOCKED', -8, 'live-service-location-not-why-blocked');
       addScore(scores, signals, 'STATUS_HELP', -3, 'live-service-location-not-status');
+    }
+    if (pathHas(options.screenPath, ['/personel/my', '/personel/live']) && /(servis|servisim|araç|arac|gps|konum|durak|eta).*(görünmüyor|gorunmuyor|nerede|yok|ne zaman|geliyor|bekliyor)/.test(text)) {
+      addScore(scores, signals, 'LOCATION_HELP', 18, 'personel-service-visibility');
+      addScore(scores, signals, 'WHY_BLOCKED', -10, 'personel-service-visibility-not-why-blocked');
+      addScore(scores, signals, 'STATUS_HELP', -2, 'personel-service-visibility-not-status');
+    }
+    if (pathHas(options.screenPath, ['/parent/live']) && /(servis|öğrencimin servisi|ogrencimin servisi|çocuğumun servisi|cocugumun servisi|araç|arac|gps|konum|durak|eta).*(görünmüyor|gorunmuyor|nerede|yok|ne zaman|geliyor|bekliyor)/.test(text)) {
+      addScore(scores, signals, 'LOCATION_HELP', 18, 'parent-service-visibility');
+      addScore(scores, signals, 'WHY_BLOCKED', -10, 'parent-service-visibility-not-why-blocked');
+      addScore(scores, signals, 'STATUS_HELP', -2, 'parent-service-visibility-not-status');
+    }
+    if (pathHas(options.screenPath, ['/driver/today', '/driver/route']) && /(görev|gorev|rota|durak|başlatma|baslatma|kanıt|kanit|operasyon|gps|konum).*(başlamıyor|baslamiyor|başlayamıyor|baslayamiyor|görünmüyor|gorunmuyor|yok|bekliyor|eksik|ne eksik|neden)/.test(text)) {
+      addScore(scores, signals, 'SHIFT_BLOCKED', 18, 'driver-task-blocked');
+      addScore(scores, signals, 'WHY_BLOCKED', -10, 'driver-task-blocked-not-why-blocked');
+      addScore(scores, signals, 'SCREEN_PURPOSE', -4, 'driver-task-blocked-not-purpose');
+    }
+    if (pathHas(options.screenPath, ['/driver/map']) && /(haritada|konum|gps|araç|arac|rota|durak).*(görünmüyor|gorunmuyor|nerede|yok|bekliyor|gecik|gecikiyor|eski|stale)/.test(text)) {
+      addScore(scores, signals, 'LOCATION_HELP', 18, 'driver-map-location');
+      addScore(scores, signals, 'WHY_BLOCKED', -8, 'driver-map-location-not-why-blocked');
+      addScore(scores, signals, 'WHY_BLOCKED', -4, 'driver-map-location-not-blocked');
     }
     if (pathHas(options.screenPath, ['/shared/feedback']) && /(geri bildirim|feedback).*(açık|acik|kritik|çözüldü|cozuldu|kapandı|kapandi|sorumlu|yıldız|yildiz)/.test(text)) addScore(scores, signals, 'STATUS_HELP', 5, 'feedback-status');
     if (pathHas(options.screenPath, ['/shared/notifications']) && /(hangi olaydan|nereden geldi|kaynak|neden geldi|bu bildirim)/.test(text)) addScore(scores, signals, 'STATUS_HELP', 5, 'notification-source');
@@ -252,7 +274,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     addScore(scores, signals, 'WHY_BLOCKED', -2, 'vehicle-location-not-generic-blocked');
   }
   if (pathHas(options.screenPath, ['/operation-health', '/observability', '/trust-quality']) && /(sorun ne|sorunu ne|ne sorun|problem ne|neden|niye).*(sorunlu|riskli|uyarı|uyari|kırmızı|kirmizi|zayıf|zayif|gecik|gecikme|yok)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 6, 'health-risk-why');
-  if (pathHas(options.screenPath, ['/personel/my', '/personel/live', '/parent/live', '/driver/route', '/driver/today']) && /(şimdi|simdi|bundan sonra|sonra).*(ne yap|nereye|neye bak)/.test(text)) {
+  if (pathHas(options.screenPath, ['/personel/my', '/personel/live', '/parent/live', '/driver/route', '/driver/today', '/driver/map']) && /(şimdi|simdi|bundan sonra|sonra).*(ne yap|nereye|neye bak)/.test(text)) {
     addScore(scores, signals, 'NEXT_STEP', 5, 'simple-flow-next-step');
     addScore(scores, signals, 'SCREEN_PURPOSE', -2, 'simple-flow-not-purpose');
   }
@@ -356,7 +378,7 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
 }
 
 function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -432,7 +454,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
 }
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -506,7 +528,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
 
 export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPEN', roleMode = 'OPERATIONS', screenPath = '', context = null }) {
   const base = [];
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (String(entityType) === 'vehicle') {
     if (workflowQuestion) {

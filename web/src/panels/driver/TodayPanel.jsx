@@ -3,6 +3,8 @@ import { api } from "../../api";
 import { enqueueRequest, flushQueue, getQueue, isOnline, queueSize } from "../../utils/offlineQueue";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildShiftFacts } from "../../utils/copilotFacts";
 
 import QueueDetailTable from "../../components/QueueDetailTable";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -22,6 +24,19 @@ function fmt(dt) {
   }
 }
 
+function gpsAgeText(gpsLast) {
+  const at = gpsLast?.at || gpsLast?.ts || gpsLast?.createdAt || gpsLast?.updatedAt || null;
+  if (!at) return "GPS bekleniyor";
+  const time = new Date(at).getTime();
+  if (!Number.isFinite(time)) return "GPS bekleniyor";
+  const diffSec = Math.max(0, Math.round((Date.now() - time) / 1000));
+  if (diffSec < 60) return `${diffSec} sn`;
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} dk`;
+  const diffHour = Math.round(diffMin / 60);
+  return `${diffHour} sa`;
+}
+
 export default function DriverTodayPanel() {
   const { token } = useSession();
   const [data, setData] = useState(null);
@@ -39,6 +54,8 @@ export default function DriverTodayPanel() {
   const active = data?.active || null;
   const today = data?.today || [];
   const tomorrow = data?.tomorrow || [];
+  const selectedShift = active || today[0] || tomorrow[0] || null;
+  const selectedVehicle = selectedShift?.vehicle || null;
 
   const hasAny = (today?.length || 0) + (tomorrow?.length || 0) > 0;
 
@@ -46,6 +63,102 @@ export default function DriverTodayPanel() {
     if (!active) return "Aktif görev yok";
     return `Shift #${active.id} - ${displayStatusLabel(active.status)}`;
   }, [active]);
+
+  const copilotFacts = useMemo(() => buildShiftFacts({
+    shift: selectedShift,
+    itemCount: today.length + tomorrow.length,
+  }), [selectedShift, today.length, tomorrow.length]);
+
+  const copilotSelection = useMemo(() => {
+    if (!selectedShift) return null;
+    const gpsStateLabel = displayStatusLabel(String(selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus || selectedVehicle?.gpsLast?.status || (selectedShift ? "GPS bekleniyor" : "-")).toUpperCase());
+    const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel || (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
+    const gpsAge = gpsAgeText(selectedVehicle?.gpsLast || selectedShift?.vehicle?.gpsLast || selectedShift?.gpsLast);
+    const routeProofText = String(selectedShift?.operationProofStatus || selectedShift?.proofStatus || selectedShift?.serviceProofStatus || selectedShift?.vehicle?.operationProofStatus || selectedShift?.vehicle?.proofStatus || "").trim() || "Belirgin değil";
+    return {
+      scopeKey: "/driver/today",
+      entityType: "shift",
+      entityId: Number(selectedShift?.id || 0) || 0,
+      label: `Vardiya #${selectedShift?.id || "-"}`,
+      summary: [
+        `Vardiya #${selectedShift?.id || "-"}`,
+        `Durum: ${displayStatusLabel(String(selectedShift?.status || "-").toUpperCase())}`,
+        `Araç: ${selectedVehicle?.plate || selectedShift?.vehicle?.plate || "-"}`,
+        `Son GPS: ${gpsAge}`,
+        `Sıradaki durak: ${selectedShift?.nextStop?.name || selectedShift?.route?.nextStop?.name || selectedShift?.stops?.find?.((s) => !["REACHED", "DONE", "COMPLETED", "SKIPPED"].includes(String(s?.status || s?.state || "").toUpperCase()))?.name || "-"}`,
+      ].join(" • "),
+      selectedRecordType: "shift",
+      selectedRecordId: Number(selectedShift?.id || 0) || 0,
+      selectedRecordLabel: `Vardiya #${selectedShift?.id || "-"}`,
+      selectedRecordStatus: [
+        `Durum: ${displayStatusLabel(String(selectedShift?.status || "-").toUpperCase())}`,
+        `Araç: ${selectedVehicle?.plate || selectedShift?.vehicle?.plate || "Yok"}`,
+        `Sürücü: ${selectedShift?.driver?.fullName || selectedShift?.driver?.name || "Yok"}`,
+        `Durak: ${Array.isArray(selectedShift?.stops) ? selectedShift.stops.length : Number(selectedShift?.stopCount || 0)}`,
+        `Son GPS: ${gpsAge}`,
+        `GPS durumu: ${gpsStateLabel}`,
+        `Kaynak: ${gpsSourceLabel}`,
+        `Operasyon kanıtı: ${routeProofText}`,
+      ].join(" • "),
+      selectedRecordSummary: [
+        `Vardiya #${selectedShift?.id || "-"}`,
+        displayStatusLabel(String(selectedShift?.status || "-").toUpperCase()),
+        selectedVehicle?.plate || selectedShift?.vehicle?.plate || "-",
+        `Son GPS ${gpsAge}`,
+      ].join(" • "),
+      selectedFields: [
+        { label: "Vardiya", value: `#${selectedShift?.id || "-"}` },
+        { label: "Durum", value: displayStatusLabel(String(selectedShift?.status || "-").toUpperCase()) },
+        { label: "Araç", value: selectedVehicle?.plate || selectedShift?.vehicle?.plate || "-" },
+        { label: "Sürücü", value: selectedShift?.driver?.fullName || selectedShift?.driver?.name || "-" },
+        { label: "Durak", value: String(Array.isArray(selectedShift?.stops) ? selectedShift.stops.length : Number(selectedShift?.stopCount || 0)) },
+        { label: "Son GPS", value: gpsAge },
+        { label: "GPS durumu", value: gpsStateLabel },
+        { label: "Kaynak", value: gpsSourceLabel },
+        { label: "Operasyon kanıtı", value: routeProofText },
+      ],
+      fields: [
+        { label: "Vardiya", value: `#${selectedShift?.id || "-"}` },
+        { label: "Durum", value: displayStatusLabel(String(selectedShift?.status || "-").toUpperCase()) },
+        { label: "Araç", value: selectedVehicle?.plate || selectedShift?.vehicle?.plate || "-" },
+        { label: "Sürücü", value: selectedShift?.driver?.fullName || selectedShift?.driver?.name || "-" },
+        { label: "Durak", value: String(Array.isArray(selectedShift?.stops) ? selectedShift.stops.length : Number(selectedShift?.stopCount || 0)) },
+        { label: "Son GPS", value: gpsAge },
+        { label: "GPS durumu", value: gpsStateLabel },
+        { label: "Kaynak", value: gpsSourceLabel },
+        { label: "Operasyon kanıtı", value: routeProofText },
+      ],
+      selectedBadges: [
+        { label: "Araç GPS’i", value: gpsStateLabel },
+        { label: "Sürücünün telefon GPS’i", value: gpsSourceLabel },
+      ],
+      badges: [
+        { label: "Araç GPS’i", value: gpsStateLabel },
+        { label: "Sürücünün telefon GPS’i", value: gpsSourceLabel },
+      ],
+      structuredFacts: {
+        ...copilotFacts,
+        selectedShiftId: Number(selectedShift?.id || 0) || 0,
+        selectedVehiclePlate: selectedVehicle?.plate || selectedShift?.vehicle?.plate || "",
+        gpsAge,
+        gpsSourceLabel,
+        routeProofText,
+      },
+      facts: copilotFacts,
+      uiHints: {
+        surface: "driver-today",
+      },
+    };
+  }, [copilotFacts, selectedShift, selectedVehicle]);
+
+  useEffect(() => {
+    if (!selectedShift) {
+      clearCopilotSelection("/driver/today");
+      return undefined;
+    }
+    setCopilotSelection(copilotSelection);
+    return () => clearCopilotSelection("/driver/today");
+  }, [copilotSelection, selectedShift]);
 
   async function load() {
     setErr("");

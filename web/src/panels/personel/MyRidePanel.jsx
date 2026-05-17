@@ -3,7 +3,10 @@ import { api, reportNoShow } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildMapFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { ageSecFromAt } from "../../utils/uiStatus";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 
 function fmtTR(iso) {
@@ -69,6 +72,15 @@ function routeQualityTone(eta) {
   if (["OFFLINE_GPS", "STALE_GPS", "SKIP_PRESENT", "DONE_WITH_SKIPS"].includes(q)) return "WARN";
   if (q === "DONE") return "OK";
   return "LIVE";
+}
+
+function gpsAgeLabel(gpsLast) {
+  const at = gpsLast?.at;
+  const age = ageSecFromAt(at);
+  if (age == null) return "Konum gelmedi";
+  if (age < 60) return `${age}s`;
+  if (age < 3600) return `${Math.floor(age / 60)}dk`;
+  return `${Math.floor(age / 3600)}sa`;
 }
 
 function openStopNavigation(stop, myPos) {
@@ -243,6 +255,67 @@ export default function MyRidePanel() {
   const remainingStopsCount = useMemo(() => stops.filter((s) => !isReachedStop(s)).length, [stops]);
   const routeEtaMin = Number.isFinite(Number(eta?.remainingRouteEtaMin)) ? Number(eta.remainingRouteEtaMin) : null;
   const routeKm = Number.isFinite(Number(eta?.remainingRouteKm)) ? Number(eta.remainingRouteKm) : null;
+  const gpsSourceLabel = vehicle?.gpsState?.lastSource || vehicle?.gpsState?.sourceLabel || vehicle?.gpsLast?.sourceLabel || (vehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
+  const copilotFacts = useMemo(() => buildMapFacts({
+    selected: vehicle,
+    selectedShift: myShift,
+    selectedNext: selectedStop || nearestStop,
+    selectedEta: routeEtaMin != null ? routeEtaMin : selectedStop?.etaMin ?? null,
+    selectedStats: { total: stops.length, remaining: remainingStopsCount, completed: Math.max(0, stops.length - remainingStopsCount) },
+    gpsStatus: displayStatusLabel(String(vehicle?.gpsState?.lastUiStatus || (vehicle ? 'LIVE' : '-')).toUpperCase()),
+    gpsAge: gpsAgeLabel(vehicle?.gpsLast),
+    vehicleCount: vehicle ? 1 : 0,
+  }), [vehicle, myShift, selectedStop, nearestStop, routeEtaMin, stops.length, remainingStopsCount]);
+  const copilotSelection = useMemo(() => {
+    if (!myShift && !vehicle) return null;
+    const selectedNext = selectedStop || nearestStop || null;
+    return {
+      scopeKey: '/personel/my',
+      entityType: vehicle?.id ? 'vehicle' : 'shift',
+      entityId: Number(vehicle?.id || myShift?.id || 0) || null,
+      label: vehicle?.plate ? `Bugünkü servis • ${vehicle.plate}` : `Shift #${myShift?.id || '-'}`,
+      summary: [
+        `Shift #${myShift?.id || '-'}`,
+        displayStatusLabel(String(myShift?.status || '').toUpperCase()) || '-',
+        vehicle?.plate ? `Araç ${vehicle.plate}` : null,
+        `Son GPS ${gpsAgeLabel(vehicle?.gpsLast)}`,
+        selectedNext?.name ? `Sıradaki durak ${selectedNext.name}` : null,
+        routeEtaMin != null ? `ETA ${routeEtaMin} dk` : null,
+      ].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Servis', value: vehicle?.plate || `Shift #${myShift?.id || '-'}`, help: 'Bugünkü servis veya vardiya etiketini gösterir.' },
+        { label: 'Araç', value: vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : '-'), help: 'Bağlı araç plakasını gösterir.' },
+        { label: 'Sürücü', value: myShift?.driver?.fullName || (myShift?.driverId ? `#${myShift.driverId}` : '-'), help: 'Bağlı sürücü adını gösterir.' },
+        { label: 'Son GPS', value: gpsAgeLabel(vehicle?.gpsLast), help: 'Konumun ne kadar önce geldiğini gösterir.' },
+        { label: 'GPS durumu', value: displayStatusLabel(String(vehicle?.gpsState?.lastUiStatus || (vehicle ? 'LIVE' : '-')).toUpperCase()), help: 'Araç GPS sinyal durumunu gösterir.' },
+        { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını Türkçe ve güvenli biçimde gösterir.' },
+        { label: 'Sıradaki durak', value: selectedNext?.name || '-', help: 'Sıradaki veya seçili durağı gösterir.' },
+        { label: 'Seçili durak', value: selectedStop?.name || '-', help: 'Elle seçilen durağı gösterir.' },
+        { label: 'ETA', value: routeEtaMin != null ? `${routeEtaMin} dk` : '-', help: 'Kalan rota ETA bilgisini gösterir.' },
+        { label: 'Servis durumu', value: displayStatusLabel(String(myShift?.status || '').toUpperCase()), help: 'Servis veya vardiya durumunu gösterir.' },
+      ],
+      badges: [
+        { label: 'Araç GPS’i', value: displayStatusLabel(String(vehicle?.gpsState?.lastUiStatus || (vehicle ? 'LIVE' : '-')).toUpperCase()), help: 'Araç GPS sinyalinin canlı mı eski mi olduğunu gösterir.' },
+        { label: 'Sürücünün telefon GPS’i', value: gpsSourceLabel, help: 'Sürücünün telefon GPS’i veya kaynak etiketini gösterir.' },
+      ],
+      facts: {
+        ...copilotFacts,
+        selectedRecordType: vehicle?.id ? 'vehicle' : 'shift',
+        selectedRecordId: Number(vehicle?.id || myShift?.id || 0) || 0,
+        selectedRecordLabel: vehicle?.plate || `Shift #${myShift?.id || '-'}`,
+        selectedRecordStatus: copilotFacts?.selectedRecordStatus || '',
+      },
+    };
+  }, [myShift, vehicle, selectedStop, nearestStop, routeEtaMin, copilotFacts, gpsSourceLabel]);
+
+  useEffect(() => {
+    if (!copilotSelection) {
+      clearCopilotSelection('/personel/my');
+      return undefined;
+    }
+    setCopilotSelection(copilotSelection);
+    return () => clearCopilotSelection('/personel/my');
+  }, [copilotSelection]);
 
   return (
     <div>

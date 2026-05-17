@@ -5,6 +5,8 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import { navigate } from "../../router";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildMapFacts } from "../../utils/copilotFacts";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 
 function etaText(v) {
@@ -265,6 +267,7 @@ export default function ParentLivePanel() {
   const allStops = useMemo(() => dedupeStops(selectedVehicle?.stops || []), [selectedVehicle]);
   const childStop = useMemo(() => selectedVehicle?.childStop || null, [selectedVehicle]);
   const childStopPoint = useMemo(() => stopCoord(childStop), [childStop]);
+  const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsLast?.sourceLabel || selectedVehicle?.gpsLast?.source || (selectedVehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
 
   const nearestStops = useMemo(() => {
     if (!myPos) return [];
@@ -319,6 +322,70 @@ export default function ParentLivePanel() {
       infoCard("Kalan durak", numText(selectedVehicle?.remainingStopsToChild), selectedVehicle?.childStopReached ? "Çocuğun durağına ulaşıldı." : "Çocuğun durağına kadar kalan durak sayısı."),
     ];
   }, [selectedVehicle]);
+
+  const copilotFacts = useMemo(() => buildMapFacts({
+    selected: selectedVehicle,
+    selectedShift: selectedVehicle?.shift || null,
+    selectedNext: nearestStop || childStop,
+    selectedEta: selectedVehicle?.etaToChildMin,
+    selectedStats: {
+      total: allStops.length,
+      remaining: Number(selectedVehicle?.remainingStopsTotal || selectedVehicle?.remainingStopsToChild || 0),
+      completed: Math.max(0, allStops.length - Number(selectedVehicle?.remainingStopsTotal || selectedVehicle?.remainingStopsToChild || 0)),
+    },
+    gpsStatus: hasVehiclePoint(selectedVehicle) ? 'LIVE' : 'GPS bekleniyor',
+    gpsAge: gpsAgeText(selectedVehicle?.gpsLast),
+    vehicleCount: vehicles.length,
+  }), [selectedVehicle, nearestStop, childStop, allStops.length, vehicles.length]);
+
+  const copilotSelection = useMemo(() => {
+    if (!selectedVehicle) return null;
+    const selectedNext = nearestStop || childStop || null;
+    return {
+      scopeKey: '/parent/live',
+      entityType: 'vehicle',
+      entityId: Number(selectedVehicle?.id || 0) || null,
+      label: `Öğrencimin servisi • ${selectedVehicle?.plate || `#${selectedVehicle?.id || '-'}`}`,
+      summary: [
+        selected?.fullName ? `Öğrenci ${selected.fullName}` : null,
+        selectedVehicle?.plate ? `Araç ${selectedVehicle.plate}` : null,
+        `Son GPS ${gpsAgeText(selectedVehicle?.gpsLast)}`,
+        selectedNext?.name ? `Sıradaki durak ${selectedNext.name}` : null,
+        `ETA ${etaText(selectedVehicle)}`,
+      ].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Öğrenci', value: selected?.fullName || `#${selected?.id || '-'}`, help: 'Seçili öğrencinin güvenli etiketini gösterir.' },
+        { label: 'Araç', value: selectedVehicle?.plate || `#${selectedVehicle?.id || '-'}`, help: 'Seçili servis aracının plakasını gösterir.' },
+        { label: 'Son GPS', value: gpsAgeText(selectedVehicle?.gpsLast), help: 'Son canlı konumun ne kadar önce geldiğini gösterir.' },
+        { label: 'GPS durumu', value: hasVehiclePoint(selectedVehicle) ? 'Canlı' : 'GPS bekleniyor', help: 'Araç GPS akışının canlı mı beklemede mi olduğunu gösterir.' },
+        { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını güvenli şekilde gösterir.' },
+        { label: 'Çocuğun durağı', value: childStop ? stopTitle(childStop) : 'Atanmış durak bulunamadı', help: 'Öğrenciye bağlı güvenli durak bilgisini gösterir.' },
+        { label: 'Sıradaki durak', value: selectedNext?.name || '-', help: 'Bir sonraki durak adını gösterir.' },
+        { label: 'ETA', value: etaText(selectedVehicle), help: 'Araçtan öğrencinin durağına tahmini süreyi gösterir.' },
+        { label: 'Servis durumu', value: selectedVehicle?.serviceStatus || selectedVehicle?.status || 'Yolda', help: 'Servisin görünür durumunu gösterir.' },
+      ],
+      badges: [
+        { label: 'Araç GPS’i', value: hasVehiclePoint(selectedVehicle) ? 'Canlı' : 'GPS bekleniyor', help: 'Araç GPS sinyalinin görünürlüğünü gösterir.' },
+        { label: 'Sürücünün telefon GPS’i', value: gpsSourceLabel, help: 'Sürücünün telefon GPS’i veya kaynak etiketini gösterir.' },
+      ],
+      facts: {
+        ...copilotFacts,
+        selectedRecordType: 'studentService',
+        selectedRecordId: Number(selectedVehicle?.id || selected?.id || 0) || 0,
+        selectedRecordLabel: selectedVehicle?.plate || `Öğrenci servisi`,
+        selectedRecordStatus: copilotFacts?.selectedRecordStatus || '',
+      },
+    };
+  }, [selectedVehicle, selected, nearestStop, childStop, copilotFacts, gpsSourceLabel]);
+
+  useEffect(() => {
+    if (!copilotSelection) {
+      clearCopilotSelection('/parent/live');
+      return undefined;
+    }
+    setCopilotSelection(copilotSelection);
+    return () => clearCopilotSelection('/parent/live');
+  }, [copilotSelection]);
 
   async function handleNoShow() {
     if (!childId || noShowBusy) return;

@@ -70,6 +70,7 @@ const WORKFLOW_SURFACE_HINTS = [
   '/shifts',
   '/map',
   '/live',
+  '/personel/my',
   '/contracts',
   '/commercial-flow',
   '/operation-health',
@@ -160,6 +161,8 @@ function selectedDiagnosticTheme(message) {
   if (!text) return '';
   if (/(vardiya).*(başlayamıyor|baslayamiyor|başlamıyor|baslamiyor|başlatamıyor|baslatamiyor)/.test(text)) return 'SHIFT_BLOCKED';
   if (/(araç|arac).*(harita|haritada).*(görünmüyor|gorunmuyor|yok)/.test(text) || /(haritada).*(görünmüyor|gorunmuyor).*(araç|arac)/.test(text)) return 'VEHICLE_NOT_VISIBLE';
+  if (/(servis|servisim|öğrencimin servisi|ogrencimin servisi|çocuğumun servisi|cocugumun servisi).*(görünmüyor|gorunmuyor|yok|nerede|neden görünmüyor|neden gorunmuyor|ne zaman|geliyor)/.test(text)) return 'LOCATION_HELP';
+  if (/(görev|gorev|rota|sonraki durak|durak).*(başlamıyor|baslamiyor|başlayamıyor|baslayamiyor|görünmüyor|gorunmuyor|bekliyor|yok)/.test(text)) return 'SHIFT_BLOCKED';
   if (/(sürücünün|surucunun).*(telefon gps|telefon gps['’]i|telefon gps’i).*(neden).*(devrede|aktif|açık|acik)/.test(text) || /(telefon gps|cihaz gps).*(neden).*(devrede|aktif|açık|acik)/.test(text)) return 'DRIVER_PHONE_GPS';
   if (/(sağlayıcı|saglayici|provider).*(neden).*(daha iyi|daha güçlü|daha guclu)/.test(text) || /(daha iyi|daha güçlü|daha guclu).*(sağlayıcı|saglayici|provider)/.test(text)) return 'QUALITY_SIGNAL';
   if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text) || /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)) return 'CONTRACT_SHIFT_TODAY';
@@ -597,7 +600,9 @@ function buildRoleBoundaryExplanation({ userRole, questionType, message, activeT
   return 'Bu bilgi görünürlük sınırına takılıyor olabilir.';
 }
 
-function buildEvidenceConfidenceWording({ analysis, screenContext, sourceScreenContext, roleBoundary, needsSelection }) {
+function buildEvidenceConfidenceWording({ analysis, screenContext, sourceScreenContext, roleBoundary, needsSelection, screenPath = '', userRole = '' }) {
+  const path = normalizeText(screenPath);
+  const role = normalizeText(userRole);
   const hasSignals = Boolean(
     (Array.isArray(analysis?.evidence) && analysis.evidence.length)
     || selectedCarrySummary(screenContext)
@@ -609,10 +614,18 @@ function buildEvidenceConfidenceWording({ analysis, screenContext, sourceScreenC
     || analysis?.diagnosticPriority?.summary
     || analysis?.actionSimulation
   );
-  if (needsSelection) return 'Bu kayıt için elimde yeterli sinyal yok; ilk kontrol seçili satırı doğrulamaktır.';
+  if (needsSelection) {
+    if (role === 'personel' || path.includes('/personel/live') || path.includes('/personel/my')) return 'Bu ekranda seçili servis bilgisi net görünmüyor; önce bugünkü servis satırını seç.';
+    if (role === 'parent' || path.includes('/parent/live')) return 'Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor; önce öğrencinin servis satırını seç.';
+    if (role === 'driver' || path.includes('/driver/today') || path.includes('/driver/route') || path.includes('/driver/map')) return 'Bu ekranda bugünkü göreve ait seçili bilgi net görünmüyor; önce vardiya veya araç satırını seç.';
+    return 'Bu kayıt için elimde yeterli sinyal yok; ilk kontrol seçili satırı doğrulamaktır.';
+  }
   if (hasSignals && roleBoundary) return 'Ekrandaki sinyale göre konuşuyorum; bu bilgi ayrıca yetki sınırına takılıyor olabilir.';
   if (hasSignals) return 'Ekrandaki sinyale göre konuşuyorum; canlı veri değil, ekrandaki özet üzerinden söylüyorum.';
   if (roleBoundary) return 'Bu yetki sınırı olabilir. Bu rolde bu bilgi görünmeyebilir.';
+  if (role === 'personel' || path.includes('/personel/live') || path.includes('/personel/my')) return 'Bu ekranda seçili servis bilgisi net görünmüyor; önce bugünkü servis satırını seç.';
+  if (role === 'parent' || path.includes('/parent/live')) return 'Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor; önce öğrencinin servis satırını seç.';
+  if (role === 'driver' || path.includes('/driver/today') || path.includes('/driver/route') || path.includes('/driver/map')) return 'Bu ekranda bugünkü göreve ait seçili bilgi net görünmüyor; önce vardiya veya araç satırını seç.';
   return 'Bu daha çok eksik veri gibi duruyor. İlk kontrol seçili satırı doğrulamaktır.';
 }
 
@@ -645,11 +658,11 @@ function buildContextualSuggestedChips({
       ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?']
       : ['Bu ekranı detaylı anlat', 'Sıradaki adımı göster', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı'];
     if (path.includes('/personel/live')) return workflowTopic
-      ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?']
-      : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri'];
+      ? ['Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"]
+      : ['Bu ekranı detaylı anlat', 'Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"];
     if (path.includes('/parent/live')) return workflowTopic
-      ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?']
-      : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri'];
+      ? ['Servis nerede?', 'Son GPS ne zaman geldi?', 'Tahmini varış ne?', 'Araç bağlantısı var mı?']
+      : ['Bu ekranı detaylı anlat', 'Servis nerede?', 'Son GPS ne zaman geldi?', 'Tahmini varış ne?', 'Araç bağlantısı var mı?'];
     if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
     if (path.includes('/room/operation-health')) return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Canlılık riskini açıkla'];
     if (path.includes('/room/shifts')) {
@@ -925,7 +938,7 @@ function buildContextPriorityDecision({
   const visibleActionSimulation = normalizeVisibleSuggestionFragment(actionSimulation);
   const needsSelection = !selectedLabel && !selectedSummary && !selectedCarrySummary(screenContext) && !selectedCarrySummary(sourceScreenContext);
   const roleBoundary = buildRoleBoundaryExplanation({ userRole, questionType, message, activeTopic });
-  const evidenceConfidence = buildEvidenceConfidenceWording({ analysis, screenContext, sourceScreenContext, roleBoundary, needsSelection });
+  const evidenceConfidence = buildEvidenceConfidenceWording({ analysis, screenContext, sourceScreenContext, roleBoundary, needsSelection, screenPath, userRole });
   const signalRows = uniqueStrings([
     ...selectedSignalRows(screenContext).slice(0, 2).map((row) => `${row.label}: ${row.value}`),
     ...selectedSignalRows(sourceScreenContext).slice(0, 2).map((row) => `${row.label}: ${row.value}`),
@@ -951,11 +964,13 @@ function buildContextPriorityDecision({
   const selectedLooksLikePayment = /(hakediş|hakedis|ödeme|odeme|komisyon|önizleme|onizleme|csv|payment)/.test(selectedLabelText) || /(hakediş|hakedis|ödeme|odeme|komisyon|önizleme|onizleme|csv|payment)/.test(selectedSummaryText) || /(hakediş|hakedis|ödeme|odeme|komisyon|önizleme|onizleme|csv|payment)/.test(selectedRecordStatusText);
   const selectedLooksLikeVehicle = /(araç|arac|vehicle|plaka)/.test(selectedLabelText) || /(araç|arac|vehicle|plaka)/.test(selectedSummaryText) || /(araç|arac|vehicle|plaka)/.test(selectedRecordStatusText);
   const selectedLooksLikeGps = /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedLabelText) || /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedSummaryText) || /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedRecordStatusText);
+  const selectedCommercialSignals = selectedHasContract || selectedHasPayment;
+  const selectedLiveSignals = selectedHasVehicle || selectedHasGps;
   if ((activeTopic === 'CONTRACT_TO_SHIFT' || activeTopic === 'CONTRACT_SHIFT_TODAY') && selectedLooksLikeShift && !selectedLooksLikeContract) {
     selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.';
-  } else if ((activeTopic === 'PAYMENT_READINESS' || activeTopic === 'PAYMENT_MISSING') && !selectedLooksLikePayment && !selectedHasPayment) {
+  } else if ((activeTopic === 'PAYMENT_READINESS' || activeTopic === 'PAYMENT_MISSING') && !selectedLooksLikePayment && !selectedCommercialSignals) {
     selectedRecordMismatchLead = 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.';
-  } else if ((activeTopic === 'VEHICLE_NOT_VISIBLE' || activeTopic === 'DRIVER_PHONE_GPS') && selectedLooksLikeShift && !selectedLooksLikeVehicle && !selectedLooksLikeGps) {
+  } else if ((activeTopic === 'VEHICLE_NOT_VISIBLE' || activeTopic === 'DRIVER_PHONE_GPS' || activeTopic === 'LOCATION_HELP') && selectedLooksLikeShift && !selectedLiveSignals && !selectedLooksLikeVehicle && !selectedLooksLikeGps) {
     selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; araç görünürlüğü için araç ve Sürücünün telefon GPS’i sinyalini ayrı kayıtta kontrol et.';
   }
   const topicWhy = {
@@ -1216,6 +1231,8 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
   const choose = (predicate) => screens.find(predicate) || null;
   const pickScreenByPathContains = (parts = []) => choose((row) => parts.some((part) => String(row?.path || '').includes(String(part || ''))));
   if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(theme)) {
+    const preserveLiveSurface = pathLooksLikeWorkflowSurface(sourcePath) && (/\/personel\/live|\/personel\/my|\/parent\/live|\/driver\/today|\/driver\/route|\/driver\/map/.test(sourcePath) || /\/room\/map|\/room\/live|\/company\/map|\/company\/live|\/organization\/map|\/organization\/live|\/school\/map|\/school\/live/.test(sourcePath));
+    if (preserveLiveSurface) return screenDefinition;
     const mapScreen = pickScreenByPathContains(['/map', '/live']) || pickScreenByKind(screens, 'MAP');
     if (mapScreen) return mapScreen;
   }
@@ -1284,13 +1301,18 @@ function remapScreenContext(screenContext, targetScreenDefinition, sourceScreenD
 
 
 function selectedCarrySummary(screenContext) {
-  const label = firstNonEmpty(screenContext?.selectedLabel, screenContext?.selectedSummary, '');
+  const label = firstNonEmpty(
+    screenContext?.selectedLabel,
+    screenContext?.selectedSummary,
+    screenContext?.summary,
+    '',
+  );
   const fields = (Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [])
     .map((row) => ({ label: firstNonEmpty(row?.label, row?.key, ''), value: firstNonEmpty(row?.value, row?.text, '') }))
     .filter((row) => row.label && row.value);
   const facts = structuredFacts(screenContext);
   const top = fields.slice(0, 2).map((row) => `${row.label}: ${row.value}`);
-  const copilotSummary = firstNonEmpty(facts?.copilotSummary, '');
+  const copilotSummary = firstNonEmpty(facts?.copilotSummary, screenContext?.copilotSummary, '');
   if (copilotSummary && label) return `${label} (${top.join(' • ') || copilotSummary})`;
   if (copilotSummary) return copilotSummary;
   if (label && top.length) return `${label} (${top.join(' • ')})`;
@@ -2195,6 +2217,17 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
     rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
   } else {
     const menus = Array.isArray(screenDefinition?.screenMenus) ? screenDefinition.screenMenus : [];
+    const screenPath = normalizeText(screenDefinition?.path || context?.path || '');
+    const driverDiagnosticSurface = roleMode === 'SIMPLE'
+      && screenPath.startsWith('/driver/')
+      && ['WHY_BLOCKED', 'SHIFT_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'MISSING_DATA', 'SAFE_NEXT_STEP'].includes(String(questionType || ''));
+    if (driverDiagnosticSurface) {
+      rows.push(makeAskAction(
+        'Başlatma durumunu sor',
+        'bu vardiya neden başlayamıyor',
+        'Başlamama nedenini tekrar sorar.',
+      ));
+    }
     rows.push(currentScreenAction(screenDefinition, context, roleMode === 'SIMPLE' ? 'Bu ekrana dönersin.' : 'Bu ekranı tekrar açar.'));
     for (const menu of menus.slice(0, roleMode === 'SIMPLE' ? 1 : 3)) rows.push(menuAction(menu, context, menu.purpose || 'İlgili menüye götürür.', { accent: roleMode === 'SIMPLE' && rows.length <= 1 ? 'primary' : 'neutral' }));
     if (roleMode === 'SIMPLE') {
@@ -2593,6 +2626,35 @@ if (questionType === 'READINESS_CHECK') {
     return toReply(`${vehicleSourceText(context)} ${vehicleNextStep(context)}`);
   }
   if (questionType === 'LOCATION_HELP') {
+    const normalizedPath = normalizeText(screenPath);
+    const selectedHint = firstNonEmpty(selectedCarrySummary(screenContext), selectedCarrySummary(sourceScreenContext), '');
+    const selectedSignals = uniqueStrings([
+      ...selectedSignalRows(screenContext).slice(0, 3).map((row) => `${row.label}: ${row.value}`),
+      ...selectedSignalRows(sourceScreenContext).slice(0, 3).map((row) => `${row.label}: ${row.value}`),
+    ]);
+    if (selectedHint || selectedSignals.length) {
+      const nextStep = normalizedPath.includes('/personel/live') || normalizedPath.includes('/personel/my')
+        ? 'Son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
+        : normalizedPath.includes('/parent/live')
+          ? 'Son GPS zamanını, araç bağlantısını ve tahmini varışı kontrol et.'
+          : normalizedPath.includes('/driver/today') || normalizedPath.includes('/driver/route') || normalizedPath.includes('/driver/map')
+            ? 'Başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışını kontrol et.'
+            : 'Son GPS zamanını, araç bağlantısını ve görev bağlantısını kontrol et.';
+      const why = normalizedPath.includes('/parent/live')
+        ? 'Öğrencinin servisi canlı takip altında okunur.'
+        : normalizedPath.includes('/personel/live') || normalizedPath.includes('/personel/my')
+          ? 'Personel servisi için araç ve GPS sinyali birlikte okunur.'
+          : normalizedPath.includes('/driver/')
+            ? 'Sürücü görevi için GPS ve operasyon kanıtı birlikte okunur.'
+            : 'Seçili kaydın canlı sinyali önce okunur.';
+      return toReply([
+        `Şimdi: ${selectedHint || 'Seçili kayıt görünüyor.'}${selectedSignals.length ? ` ${selectedSignals.join(' • ')}.` : ''}`,
+        'Bu programda bunun anlamı: konum ve servis bilgisi seçili kayda göre okunur.',
+        `Neden? ${why}`,
+        `Öneri: ${nextStep}`,
+        `Sıradaki doğru işlem: ${nextStep}`,
+      ].join(' '));
+    }
     return toReply(composeScreenLocationReply({ guide, screenDefinition }));
   }
   if (questionType === 'NEXT_STEP' && entityType === 'shift') {
@@ -2731,6 +2793,77 @@ function composeGeneralProductGuideReply({
       resolvedContextPriority.followUpPrompt,
       'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.',
     );
+  const liveLocationTopic = ['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(String(firstNonEmpty(resolvedContextPriority.activeTopic, questionType, '')));
+  const liveSelectedHint = firstNonEmpty(
+    screenContext?.selectedLabel,
+    screenContext?.selectedSummary,
+    sourceScreenContext?.selectedLabel,
+    sourceScreenContext?.selectedSummary,
+    '',
+  );
+  const liveSelectedSignals = uniqueStrings([
+    ...selectedSignalRows(screenContext).slice(0, 3).map((row) => (
+      typeof row === 'string'
+        ? normalizeVisibleReplyFragment(row)
+        : (() => {
+          const label = normalizeVisibleReplyFragment(firstNonEmpty(row?.label, row?.key, row?.title, ''));
+          const value = normalizeVisibleReplyFragment(firstNonEmpty(row?.value, row?.text, row?.status, row?.summary, ''));
+          return label && value && value !== '-' ? `${label}: ${value}` : firstNonEmpty(label, value, '');
+        })()
+    )),
+    ...selectedSignalRows(sourceScreenContext).slice(0, 3).map((row) => (
+      typeof row === 'string'
+        ? normalizeVisibleReplyFragment(row)
+        : (() => {
+          const label = normalizeVisibleReplyFragment(firstNonEmpty(row?.label, row?.key, row?.title, ''));
+          const value = normalizeVisibleReplyFragment(firstNonEmpty(row?.value, row?.text, row?.status, row?.summary, ''));
+          return label && value && value !== '-' ? `${label}: ${value}` : firstNonEmpty(label, value, '');
+        })()
+    )),
+  ]);
+  const liveSurfacePath = normalizeText(firstNonEmpty(screenPath, screenContext?.path, sourceScreenDefinition?.path, ''));
+  const liveHasSelection = Boolean(liveSelectedHint || liveSelectedSignals.length);
+  const liveLocationWhy = liveSurfacePath.includes('/parent/live')
+    ? 'Öğrencinin servisi için Araç GPS’i ve Sürücünün telefon GPS’i birlikte okunur.'
+    : liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')
+      ? 'Personel servisi için Araç GPS’i ve Sürücünün telefon GPS’i birlikte okunur.'
+      : liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')
+        ? 'Sürücü görevi için Araç GPS’i, Sürücünün telefon GPS’i ve operasyon kanıtı birlikte okunur.'
+        : 'Konum ve servis bilgisi seçili kayda göre okunur.';
+  const liveLocationAdvice = liveSurfacePath.includes('/parent/live')
+    ? 'Son GPS zamanını, araç bağlantısını ve tahmini varışı kontrol et.'
+    : liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')
+      ? 'Son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
+      : liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')
+        ? 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et.'
+        : 'Son GPS zamanını, araç bağlantısını ve görev bağlantısını kontrol et.';
+  const liveLocationSourceLead = liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')
+    ? 'Araç GPS’i ve Sürücünün telefon GPS’i ile operasyon kanıtı birlikte okunur.'
+    : 'Araç GPS’i ve Sürücünün telefon GPS’i birlikte okunur.';
+  const liveLocationQuestionLead = liveSurfacePath.includes('/parent/live')
+    ? 'Servis nerede? sorusunun cevabı seçili servisle okunur.'
+    : liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')
+      ? 'Araç nerede? sorusunun cevabı seçili servisle okunur.'
+      : liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')
+        ? 'Görev nerede? sorusunun cevabı seçili görevle okunur.'
+        : '';
+  const driverShiftTopic = ['SHIFT_BLOCKED', 'READINESS_CHECK', 'WHY_BLOCKED', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'MISSING_DATA'].includes(String(firstNonEmpty(resolvedContextPriority.activeTopic, questionType, '')))
+    && (liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map'));
+  const driverLiveLead = driverShiftTopic
+    ? `${liveSelectedHint ? `Seçili görev ${liveSelectedHint} görünüyor.` : 'Seçili görev görünüyor.'} Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.`
+    : '';
+  const driverLiveWhy = driverShiftTopic
+    ? 'Sürücü görevi için araç, durak, GPS ve operasyon kanıtı birlikte okunur.'
+    : '';
+  if (workflowStyle && liveLocationTopic && liveHasSelection) {
+    const liveLocationNow = liveSelectedHint ? `Seçili kayıt ${liveSelectedHint} görünüyor.` : 'Seçili kayıt görünüyor.';
+    const liveLocationSignals = liveSelectedSignals.length ? ` ${liveSelectedSignals.join(' • ')}.` : '';
+    return `Şimdi: ${firstNonEmpty(liveLocationQuestionLead, 'Konum ve servis bilgisi seçili kayda göre okunur.')} ${liveLocationSourceLead} ${liveLocationNow}${liveLocationSignals} Bu programda bunun anlamı: konum ve servis bilgisi seçili kayda göre okunur. Neden? ${liveLocationWhy} Öneri: ${liveLocationAdvice} Sıradaki doğru işlem: ${liveLocationAdvice}`.trim();
+  }
+  if (workflowStyle && driverShiftTopic && liveHasSelection) {
+    const driverSignals = liveSelectedSignals.length ? ` ${liveSelectedSignals.join(' • ')}.` : '';
+    return `Şimdi: ${driverLiveLead} Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.${driverSignals} Bu programda bunun anlamı: görev ve atama bilgisi seçili kayda göre okunur. Neden? ${driverLiveWhy} Öneri: Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç. Sıradaki doğru işlem: Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.`.trim();
+  }
   const workflowNow = pickWorkflowVisibleReply(
     contractWorkflowQuestion ? contractNowLead : resolvedContextPriority.selectedRecordMismatchLead,
     contractWorkflowQuestion
@@ -3132,8 +3265,11 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const preferOpenRoute = preferRoute
     || (questionType === 'ROLE_HELP' && String(contextPriority?.activeTopic || '') !== 'FEEDBACK_STATUS')
     || (roleMode === 'SIMPLE' && ['NEXT_STEP', 'FIRST_CONTROL'].includes(String(questionType || '')));
+  const simplePreferAsk = roleMode === 'SIMPLE' && ['WHY_BLOCKED', 'SHIFT_BLOCKED', 'READINESS_CHECK', 'FIRST_CONTROL', 'MISSING_DATA', 'SAFE_NEXT_STEP'].includes(String(questionType || ''));
   const actionPriority = roleMode === 'SIMPLE'
-    ? { OPEN_ROUTE: 0, ASK: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 }
+    ? (simplePreferAsk
+      ? { ASK: 0, OPEN_ROUTE: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 }
+      : { OPEN_ROUTE: 0, ASK: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 })
     : preferOpenRoute
       ? { OPEN_ROUTE: 0, ASK: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 }
       : { ASK: 0, OPEN_GUIDE: 1, OPEN_ROUTE: 2, COPY_TEXT: 3 };

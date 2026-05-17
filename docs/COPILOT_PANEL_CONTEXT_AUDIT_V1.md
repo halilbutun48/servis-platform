@@ -157,6 +157,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `Ödeme başlatılmaz.` sınırı korunur; aktif ödeme veya settlement execute dili görünmez.
 - Generic ekran rehberi bu workflow sorularında ilk davranış değildir.
 
+## COP-04B-FIX-03 acceptance note
+- Personel / Veli / Sürücü web surfaces selected live context parity standardını taşır; servis, araç, GPS, ETA ve görev bilgisi cevapta kullanılır.
+- Seçili servis veya görev varsa `seçili ... net görünmüyor` fallback'i kullanılmaz.
+- Mobile tarafında Copilot bridge görünmeyen yüzeyler için bu audit yalnız mevcut repo kanıtını korur; ürün davranışı değiştirmez.
+- `Operasyon kanıtı` ve `başlatma kanıtı` gibi Türkçe görünür dil korunur; teknik iç kodlar görünmez.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

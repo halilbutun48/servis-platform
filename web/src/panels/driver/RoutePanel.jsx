@@ -8,6 +8,8 @@ import { useAutoReload } from "../../live/useAutoReload";
 import { useSession } from "../../state/session";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats, isReachedStop } from "../../utils/navigation";
 import { nowIsoTR } from "../../utils/time";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildMapFacts } from "../../utils/copilotFacts";
 
 function getQueryParam(name) {
   try {
@@ -56,6 +58,122 @@ export default function RoutePanel() {
   }, [shift, progress, orderedStops]);
 
   const routeSummary = useMemo(() => routeStats(orderedStops), [orderedStops]);
+  const selectedVehicle = data?.vehicle || null;
+  const vehicleCount = selectedVehicle ? 1 : 0;
+  const gpsAge = useMemo(() => gpsAgeText(data?.last || selectedVehicle?.gpsLast), [data?.last, selectedVehicle?.gpsLast]);
+  const gpsStatusText = String(selectedVehicle?.gpsState?.lastUiStatus || data?.last?.status || data?.liveLocation?.routeProgressState || data?.liveLocation?.officialSource || (selectedVehicle ? "LIVE" : "-")).toUpperCase();
+  const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel || (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
+  const routeProofText = String(data?.operationProofStatus || selectedVehicle?.operationProofStatus || selectedVehicle?.proofStatus || data?.liveLocation?.operationProofStatus || "").trim() || "Belirgin değil";
+  const routeEta = Number.isFinite(Number(nextStop?.etaMin))
+    ? Number(nextStop.etaMin)
+    : Number.isFinite(Number(selectedVehicle?.etaMin))
+      ? Number(selectedVehicle.etaMin)
+      : Number.isFinite(Number(selectedVehicle?.eta))
+        ? Number(selectedVehicle.eta)
+        : null;
+  const copilotFacts = useMemo(() => buildMapFacts({
+    selected: selectedVehicle,
+    selectedShift: shift,
+    selectedNext: nextStop,
+    selectedEta: routeEta,
+    selectedStats: routeSummary,
+    gpsStatus: gpsStatusText,
+    gpsAge,
+    vehicleCount,
+  }), [selectedVehicle, shift, nextStop, routeEta, routeSummary, gpsStatusText, gpsAge, vehicleCount]);
+  const selectedStop = useMemo(
+    () => orderedStops.find((stop) => Number(stop?.id || 0) === Number(selectedStopId || 0)) || null,
+    [orderedStops, selectedStopId]
+  );
+  const copilotSelection = useMemo(() => {
+    const routeLabel = shift?.id ? `Vardiya #${shift.id}` : "Bugünkü rota";
+    return {
+      scopeKey: "/driver/route",
+      entityType: "shift",
+      entityId: Number(shift?.id || 0) || 0,
+      label: `${routeLabel} • Rota`,
+      summary: [
+        routeLabel,
+        `Araç: ${selectedVehicle?.plate || data?.vehicle?.plate || "-"}`,
+        `Son GPS: ${gpsAge}`,
+        `Sıradaki durak: ${nextStop?.name || "-"}`,
+        `ETA: ${Number.isFinite(routeEta) ? `${routeEta} dk` : "-"}`,
+      ].join(" • "),
+      selectedRecordType: "shift",
+      selectedRecordId: Number(shift?.id || 0) || 0,
+      selectedRecordLabel: routeLabel,
+      selectedRecordStatus: [
+        `Durum: ${String(shift?.status || "-").toUpperCase()}`,
+        `Araç: ${selectedVehicle?.plate || data?.vehicle?.plate || "Yok"}`,
+        `Son GPS: ${gpsAge}`,
+        `GPS durumu: ${gpsStatusText}`,
+        `Kaynak: ${gpsSourceLabel}`,
+        `Sıradaki durak: ${nextStop?.name || "Yok"}`,
+        `Toplam durak: ${routeSummary.total}`,
+        `Kalan durak: ${routeSummary.remaining}`,
+        `Operasyon kanıtı: ${routeProofText}`,
+      ].join(" • "),
+      selectedRecordSummary: [
+        routeLabel,
+        String(shift?.status || "-").toUpperCase(),
+        selectedVehicle?.plate || data?.vehicle?.plate || "-",
+        `Son GPS ${gpsAge}`,
+      ].join(" • "),
+      selectedFields: [
+        { label: "Vardiya", value: routeLabel },
+        { label: "Durum", value: String(shift?.status || "-").toUpperCase() },
+        { label: "Araç", value: selectedVehicle?.plate || data?.vehicle?.plate || "-" },
+        { label: "Son GPS", value: gpsAge },
+        { label: "GPS durumu", value: gpsStatusText },
+        { label: "Kaynak", value: gpsSourceLabel },
+        { label: "Sıradaki durak", value: nextStop?.name || "-" },
+        { label: "Toplam durak", value: String(routeSummary.total) },
+        { label: "Kalan durak", value: String(routeSummary.remaining) },
+        { label: "ETA", value: Number.isFinite(routeEta) ? `${routeEta} dk` : "-" },
+        { label: "Operasyon kanıtı", value: routeProofText },
+      ],
+      fields: [
+        { label: "Vardiya", value: routeLabel },
+        { label: "Durum", value: String(shift?.status || "-").toUpperCase() },
+        { label: "Araç", value: selectedVehicle?.plate || data?.vehicle?.plate || "-" },
+        { label: "Son GPS", value: gpsAge },
+        { label: "GPS durumu", value: gpsStatusText },
+        { label: "Kaynak", value: gpsSourceLabel },
+        { label: "Sıradaki durak", value: nextStop?.name || "-" },
+        { label: "Seçili durak", value: selectedStop?.name || "-" },
+        { label: "ETA", value: Number.isFinite(routeEta) ? `${routeEta} dk` : "-" },
+        { label: "Operasyon kanıtı", value: routeProofText },
+      ],
+      selectedBadges: [
+        { label: "Araç GPS’i", value: gpsStatusText },
+        { label: "Sürücünün telefon GPS’i", value: gpsSourceLabel },
+      ],
+      badges: [
+        { label: "Araç GPS’i", value: gpsStatusText },
+        { label: "Sürücünün telefon GPS’i", value: gpsSourceLabel },
+      ],
+      structuredFacts: {
+        ...copilotFacts,
+        routeEta,
+        gpsAge,
+        gpsSourceLabel,
+        routeProofText,
+      },
+      facts: copilotFacts,
+      uiHints: {
+        surface: "driver-route",
+      },
+    };
+  }, [shift, selectedVehicle, nextStop, routeEta, routeSummary, gpsAge, gpsStatusText, gpsSourceLabel, routeProofText, copilotFacts, data?.vehicle?.plate]);
+
+  useEffect(() => {
+    if (!shift && !selectedVehicle) {
+      clearCopilotSelection("/driver/route");
+      return undefined;
+    }
+    setCopilotSelection(copilotSelection);
+    return () => clearCopilotSelection("/driver/route");
+  }, [copilotSelection, shift, selectedVehicle]);
 
   const lastReachedStop = useMemo(() => {
     const ord = Number(progress?.lastReachedOrder || 0);
@@ -75,12 +193,25 @@ export default function RoutePanel() {
   shiftIdRef.current = shift?.id || null;
   nextStopIdRef.current = nextStop?.id || null;
 
-  function focusStop(stop) {
-    const lat = Number(stop?.lat);
-    const lng = Number(stop?.lng);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat, lng, zoom: 17 } }));
-  }
+function focusStop(stop) {
+  const lat = Number(stop?.lat);
+  const lng = Number(stop?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat, lng, zoom: 17 } }));
+}
+
+function gpsAgeText(gpsLast) {
+  const at = gpsLast?.at || gpsLast?.ts || gpsLast?.createdAt || gpsLast?.updatedAt || null;
+  if (!at) return "GPS bekleniyor";
+  const time = new Date(at).getTime();
+  if (!Number.isFinite(time)) return "GPS bekleniyor";
+  const diffSec = Math.max(0, Math.round((Date.now() - time) / 1000));
+  if (diffSec < 60) return `${diffSec} sn`;
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} dk`;
+  const diffHour = Math.round(diffMin / 60);
+  return `${diffHour} sa`;
+}
 
   function showToast(msg) {
     if (!msg) return;
