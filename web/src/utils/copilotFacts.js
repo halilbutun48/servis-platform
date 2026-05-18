@@ -1493,3 +1493,154 @@ export function buildServiceEvaluationFacts({ item, summary }) {
     ],
   };
 }
+
+function selectionStarterText(selection = null) {
+  if (!selection || typeof selection !== 'object') return '';
+  const rows = [
+    selection.label,
+    selection.summary,
+    selection.selectedLabel,
+    selection.selectedSummary,
+    selection.selectedRecordLabel,
+    selection.selectedRecordSummary,
+    selection.selectedRecordStatus,
+    selection.helpContextSummary,
+    selection.contextSummary,
+    selection.copilotSummary,
+    selection?.facts?.summary,
+    selection?.facts?.copilotSummary,
+    selection?.facts?.helpContextSummary,
+    selection?.facts?.contextSummary,
+    selection?.selectedRecord?.label,
+    selection?.selectedRecord?.summary,
+    selection?.selectedRecord?.status,
+    selection?.selectedRecord?.vehiclePlate,
+    selection?.selectedRecord?.plate,
+    selection?.selectedRecord?.gpsStatus,
+    selection?.selectedRecord?.gpsState,
+    selection?.selectedRecord?.lastGps,
+    selection?.selectedRecord?.eta,
+    selection?.selectedRecord?.nextStop,
+    selection?.selectedRecord?.serviceStatus,
+    selection?.selectedRecord?.operationProofStatus,
+    ...(Array.isArray(selection.fields)
+      ? selection.fields.map((field) => `${field?.label || ''}: ${field?.value || ''}`)
+      : []),
+    ...(Array.isArray(selection.badges)
+      ? selection.badges.map((badge) => `${badge?.label || ''}: ${badge?.value || ''}`)
+      : []),
+    ...(Array.isArray(selection.selectedFields)
+      ? selection.selectedFields.map((field) => `${field?.label || ''}: ${field?.value || ''}`)
+      : []),
+    ...(Array.isArray(selection.selectedBadges)
+      ? selection.selectedBadges.map((badge) => `${badge?.label || ''}: ${badge?.value || ''}`)
+      : []),
+  ];
+  return compactList(rows, 24).join(' • ');
+}
+
+function includesAny(text, terms = []) {
+  const haystack = normalizeText(text);
+  if (!haystack) return false;
+  return (Array.isArray(terms) ? terms : []).some((term) => {
+    const needle = normalizeText(term);
+    return needle && haystack.includes(needle);
+  });
+}
+
+function pushUniqueChip(rows, value) {
+  const text = compactText(value, '');
+  if (!text) return;
+  if (rows.some((item) => normalizeText(item) === normalizeText(text))) return;
+  rows.push(text);
+}
+
+function finalizeStarterChips(primary = [], fallback = []) {
+  const rows = [];
+  for (const value of Array.isArray(primary) ? primary : []) pushUniqueChip(rows, value);
+  if (rows.length) return rows.slice(0, 4);
+  for (const value of Array.isArray(fallback) ? fallback : []) pushUniqueChip(rows, value);
+  return rows.slice(0, 3);
+}
+
+export function buildCopilotStarterChips({
+  screenPath = '',
+  selection = null,
+} = {}) {
+  const path = compactText(screenPath, '').split('?')[0];
+  const selectionText = selectionStarterText(selection);
+  const fallback = ['Bu ekranda neye bakmalıyım?', 'Riskleri sırala', 'Sıradaki doğru işlem ne?'];
+
+  const isRoomMap = path.includes('/room/map') || path.includes('/company/map') || path.includes('/school/map') || path.includes('/organization/map');
+  const isRoomOperationHealth = path.includes('/room/operation-health');
+  const isSuperAdminOps = path.includes('/superadmin/observability') || path.includes('/superadmin/operations');
+  const isAgreementSurface = path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements');
+  const isCommercialSurface = path.includes('/company/commercial-flow') || path.includes('/superadmin/commercial-core') || path.includes('/room/commercial-flow');
+  const isPersonelLive = path.includes('/personel/live') || path.includes('/personel/my');
+  const isParentLive = path.includes('/parent/live');
+  const isDriverToday = path.includes('/driver/today');
+  const isDriverRouteOrMap = path.includes('/driver/route') || path.includes('/driver/map');
+
+  const hasVehicleSignal = includesAny(selectionText, [
+    'araç',
+    'vehicle',
+    'plaka',
+    'gps',
+    'son gps',
+    'eta',
+    'durak',
+    'rota',
+    'canlı takip',
+    'canlı konum',
+  ]) || Boolean(selection?.selectedRecord?.vehiclePlate || selection?.selectedRecord?.plate || selection?.selectedRecordType === 'vehicle' || selection?.entityType === 'vehicle');
+  const hasServiceSignal = includesAny(selectionText, [
+    'servis',
+    'bugünkü servis',
+    'öğrenci servisi',
+    'öğrencinin servisi',
+    'myride',
+    'yolculuk',
+  ]) || Boolean(['serviceride', 'studentservice', 'studentride', 'rideservice'].includes(normalizeText(selection?.selectedRecordType || selection?.entityType || '')));
+  const hasNoLiveVehicle = Boolean(
+    selection?.facts?.noLiveVehicle
+    || selection?.facts?.liveVehicleVisible === false
+    || Number(selection?.facts?.vehicleCount || selection?.vehicleCount || NaN) === 0
+    || includesAny(selectionText, ['canlı araç görünmüyor', 'araç yok', 'araç: 0', 'canlı araç yok']),
+  );
+
+  let chips = [];
+  if (isRoomMap) {
+    chips = ['Bu araç neden görünmüyor?', 'Son GPS ne zaman geldi?', 'Sürücünün telefon GPS’i devrede mi?', 'Araç bağlantısı var mı?'];
+  } else if (isRoomOperationHealth) {
+    chips = ['Riskli cihazları göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücü durumunu sor'];
+  } else if (isSuperAdminOps) {
+    chips = ['Riskleri sırala', 'GPS görünürlüğünü kontrol et', 'Açık sorunları göster', 'Sıradaki doğru işlem ne?'];
+  } else if (isAgreementSurface) {
+    chips = ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
+  } else if (isCommercialSurface) {
+    chips = ['Bu hakediş neden hazır değil?', 'Ödeme hesabı eksik mi?', 'Komisyon durumu ne?', 'Hakediş önizlemesini açıkla'];
+  } else if (isPersonelLive) {
+    chips = hasServiceSignal || hasVehicleSignal || selectionText
+      ? ['Servis neden görünmüyor?', 'Son GPS ne zaman geldi?', 'Araç nerede?', 'Sürücünün telefon GPS’i devrede mi?']
+      : ['Servis saati uygun mu?', 'Araç ataması var mı?', 'Canlı konum neden yok?'];
+  } else if (isParentLive) {
+    if (hasNoLiveVehicle || (!hasVehicleSignal && !hasServiceSignal && !selectionText)) {
+      chips = ['Servis saati uygun mu?', 'Araç ataması var mı?', 'Canlı konum neden yok?', 'Bildirimleri kontrol et'];
+    } else if (hasVehicleSignal || hasServiceSignal || selectionText) {
+      chips = ['Servis neden görünmüyor?', 'ETA nedir?', 'Son GPS ne zaman geldi?', 'Araç bağlantısı var mı?'];
+    }
+  } else if (isDriverToday) {
+    chips = ['Görev neden başlamıyor?', 'Başlatma zamanı uygun mu?', 'Araç ve rota hazır mı?', 'GPS ve başlatma kanıtını kontrol et'];
+  } else if (isDriverRouteOrMap) {
+    chips = ['Sıradaki durak ne?', 'Rota neden görünmüyor?', 'GPS durumu ne?', 'Başlatma adımı ne?'];
+  }
+
+  if (!chips.length) {
+    chips = fallback;
+  } else {
+    chips = finalizeStarterChips(chips, fallback);
+  }
+
+  if (!chips.length) chips = fallback.slice(0, 3);
+  return chips.slice(0, 4);
+}

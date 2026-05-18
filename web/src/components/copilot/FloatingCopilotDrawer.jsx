@@ -4,6 +4,7 @@ import { getPath, navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { companyPath, normalizeCompanyPath } from "../../utils/paths";
+import { buildCopilotStarterChips } from "../../utils/copilotFacts";
 import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
 import { captureCopilotUiSurface } from "./uiSurface";
 
@@ -43,36 +44,14 @@ function modeMeta(mode) {
   return { label: "Adım adım", instruction: "Hiç bilmeyen biri için çok sade Türkçe ile adım adım anlat. Teknik jargonu azalt." };
 }
 
-function uniqueStrings(list) {
-  const seen = new Set();
-  const out = [];
-  for (const item of Array.isArray(list) ? list : []) {
-    const val = String(item || "").trim();
-    if (!val) continue;
-    const key = val.toLocaleLowerCase("tr-TR");
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(val);
-  }
-  return out;
-}
-
-function buildSuggestions(path, mode, selection) {
-  const p = String(path || "").split("?")[0];
-  const common = mode === "DIAGNOSE"
-    ? ["Neden devam edemiyorum?", "En sık hata ne?", "Önce neyi kontrol etmeliyim?"]
-    : mode === "SHORT"
-      ? ["Bu ekran ne için var?", "Şimdi ne yapayım?", "Kısa özet ver"]
-      : ["Bu ekranda sırayla ne yaparım?", "İlk adım ne olmalı?", "Burada hangi sırayla ilerlerim?"];
-  const pathExtra = [];
-  if (p.includes("/room/map") || p.includes("/company/map") || p.includes("/school/map") || p.includes("/organization/map")) pathExtra.push("Seçili araç ne durumda?", "GPS neden eski görünüyor?", "Buradan sonra hangi ekrana geçeyim?");
-  else if (p.includes("/shifts")) pathExtra.push("Bu kayıtta önce neye bakayım?", "Bu iş neden ilerlemiyor?", "Kontrol listesi ver");
-  else if (p.includes("/commercial-flow")) pathExtra.push("Bu kayıt hangi aşamada?", "Bu satırı nasıl okurum?", "Bu rozet ne demek?", "Buradan sonra hangi ekrana gitmeliyim?");
-  else if (p.includes("/service-evaluation")) pathExtra.push("Değerlendirme ne zaman açılır?", "Bu hizmette sonraki adım ne?", "Bu satırı nasıl okurum?", "Bu rozet ne demek?");
-  else if (p.includes("/georeview")) pathExtra.push("Konum nasıl düzeltilir?", "Kaydet + Sonraki ne yapar?", "Planlama akışına nasıl dönerim?", "Bu satırı nasıl okurum?");
-  if (selection?.label) pathExtra.unshift(`Seçili kayıt ne durumda?`);
-  if ((selection?.fields?.length || selection?.badges?.length) && !p.includes("/map")) pathExtra.push("Bu satırı nasıl okurum?", "Bu sütun ne demek?", "Bu rozet ne demek?");
-  return uniqueStrings([...common, ...pathExtra]).slice(0, 4);
+function buildSuggestions(path, _mode, selection, screenContext, me) {
+  return buildCopilotStarterChips({
+    screenPath: path,
+    selection,
+    screenContext,
+    role: me?.role || "",
+    companyKind: me?.companyKind || "",
+  }).slice(0, 4);
 }
 
 function buildPrompt({ mode, rawText, screenContext, selection }) {
@@ -197,7 +176,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const scrollRef = useRef(null);
   const lastPathRef = useRef(currentPath);
   const screenContext = useMemo(() => resolveCopilotScreenContext(currentPath, me), [currentPath, me]);
-  const suggestions = useMemo(() => buildSuggestions(currentPath, mode, selection), [currentPath, mode, selection]);
+  const suggestions = useMemo(() => buildSuggestions(currentPath, mode, selection, screenContext, me), [currentPath, mode, selection, screenContext, me]);
   const isCopilotPage = /\/copilot$/.test(currentPath);
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;
 
@@ -215,14 +194,6 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     setSelection(selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
     return () => window.removeEventListener(evt, onSelection);
   }, [currentPath]);
-
-  const askRef = useRef(ask);
-  askRef.current = ask;
-
-  useEffect(() => {
-    if (!open || !token || isCopilotPage) return;
-    if (!messages.length) askRef.current("");
-  }, [open, token, isCopilotPage, messages.length]);
 
   useEffect(() => {
     if (!open || !token || isCopilotPage) return;
@@ -286,7 +257,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           liveFacts: requestSelection?.facts && typeof requestSelection.facts === "object" ? requestSelection.facts : null,
           uiHints: {
             drawerMode: mode,
-            visibleSuggestions: buildSuggestions(screenContext.path, mode, requestSelection),
+            visibleSuggestions: buildSuggestions(screenContext.path, mode, requestSelection, screenContext, me),
             ...uiSurface,
           },
         },
@@ -415,10 +386,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         <button type="button" className="btn sm copilotToolBtn" onClick={() => setShowSuggestions((p) => !p)}>{showSuggestions ? "Önerileri gizle" : `Öneriler (${suggestions.length})`}</button>
       </div>
 
-      {showSuggestions ? <div className="copilotSuggestionWrap">{suggestions.map((chip) => <button key={chip} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div> : null}
+      {showSuggestions && messages.length > 0 ? <div className="copilotSuggestionWrap">{suggestions.map((chip) => <button key={chip} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div> : null}
 
       <div className="copilotChatSurface" ref={scrollRef}>
-        {messages.length === 0 ? <div className="copilotEmptyState"><div className="copilotEmptyTitle">Bulunduğun ekranda soru sorabilirsin.</div><div className="copilotEmptyText">Yazı alanı altta. Hazır öneriler istersen açılır. Seçili kayıt varsa onu da konuşmaya katmaya çalışırım.</div></div> : null}
+        {messages.length === 0 ? <div className="copilotEmptyState"><div className="copilotEmptyTitle">Bulunduğun ekranda soru sorabilirsin.</div><div className="copilotEmptyText">Yazı alanı altta. Hazır öneriler istersen açılır. Seçili kayıt varsa onu da konuşmaya katmaya çalışırım.</div><div className="copilotSuggestionWrap">{suggestions.map((chip) => <button key={chip} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div></div> : null}
         {messages.map((m, idx) => <div key={`${m.role}-${idx}`} className={m.role === "user" ? "copilotMsg user" : "copilotMsg assistant"}>
           <div className="copilotMsgHead">{m.role === "user" ? "Sen" : "Copilot"}</div>
           <div className="copilotMsgText">{m.text}</div>

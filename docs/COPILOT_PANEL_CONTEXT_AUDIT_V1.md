@@ -198,6 +198,11 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `selectedRecord` null olsa bile `helpContextSummary` / `contextSummary` içindeki çocuk, okul, bölge, araç yok ve aktif vardiya saat aralığı sinyalleri cevapta kullanılır.
 - Parent live selected service varsa plaka, GPS, son GPS, ETA ve sıradaki durak korunur.
 
+## UX-COPILOT-SMART-CHIPS-01 starter chip polish
+- Sağ alt Copilot drawer açıldığında veya sohbet boşken screen-specific starter chips öne çıkar.
+- Global fallback chips yalnızca context belirsiz olduğunda görünür ve screen-specific chips onları geri iter.
+- Drawer chip yüzeyi readonly öneri olarak kalır; otomatik aksiyon, dispatcher veya workflow execute yoktur.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

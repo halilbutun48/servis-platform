@@ -95,6 +95,7 @@ function main() {
   must(pkg, '"check:cop04bfix06"', 'package.json keeps check:cop04bfix06');
   must(pkg, '"check:cop04bfix07"', 'package.json keeps check:cop04bfix07');
   must(pkg, '"check:cop04bfix08"', 'package.json keeps check:cop04bfix08');
+  must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 
@@ -134,6 +135,7 @@ function main() {
     'check:cop04bfix06',
     'check:cop04bfix07',
     'check:cop04bfix08',
+    'check:uxcopilotsmartchips01',
 ], 'product extensions runner order');
 
   must(guide, 'check:product-extensions', 'script guide exposes check:product-extensions');
@@ -160,6 +162,7 @@ function main() {
   must(guide, 'check:cop04bfix06', 'script guide exposes check:cop04bfix06');
   must(guide, 'check:cop04bfix07', 'script guide exposes check:cop04bfix07');
   must(guide, 'check:cop04bfix08', 'script guide exposes check:cop04bfix08');
+  must(guide, 'check:uxcopilotsmartchips01', 'script guide exposes check:uxcopilotsmartchips01');
   must(guide, 'check:e2esmoke01', 'script guide exposes check:e2esmoke01');
   must(guide, 'check:fieldlaunch01', 'script guide exposes check:fieldlaunch01');
   must(guide, 'VERIFY-CHAIN-01', 'script guide mentions VERIFY-CHAIN-01');
