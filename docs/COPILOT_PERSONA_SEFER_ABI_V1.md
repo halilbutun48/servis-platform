@@ -26,6 +26,20 @@ Kapsam: Web Copilot ve sürücü sesli yardımcı için ortak marka sesi ve gör
 - Operasyon odaklı.
 - Gereksiz teknik ayrıntıdan uzak.
 
+## Görünür label standardı
+- Sağ alt drawer başlığı: `Sefer Abi’ye Sor`
+- Sol menü kısa label: `Sefer Abi`
+- Terminal milestone geldiğinde sol menü label: `Sefer Abi Terminali`
+- Drawer alt satırı: `Operasyon yardımcısı`
+- Kısa açıklama: `Bulunduğun ekrandan ayrılmadan kısa destek verir.`
+
+## Sesli okuma standardı
+- Hedef ton tok, sakin ve güven veren olmalıdır.
+- Browser TTS için `lang: tr-TR`, `pitch: 0.82`, `rate: 0.92`, `volume: 1` hedeflenir.
+- Türkçe voice varsa öncelikle tercih edilir.
+- Voice seçimi mümkün değilse pitch/rate ile daha tok ve sakin bir okuma hedeflenir.
+- Browser TTS sınırlamaları nedeniyle kesin ses rengi garanti edilmez; hata üretmeden fallback çalışır.
+
 ## Yasaklı hitaplar / yasaklı teknik kelimeler
 Görünür kullanıcı metninde şu hitaplar kullanılmaz:
 - `abi`
@@ -74,6 +88,7 @@ Görünür kullanıcı metninde şu teknik kelimeler kullanılmaz:
 - `VOICE-PERSONA-01` ayrı bir milestone olacak.
 - Bu milestone mobil canlı kabul iddiası taşımaz.
 - Mobil canlı davranış daha sonra ayrı doğrulanır.
+- Sürücü sesli yardımcı ile web Copilot aynı marka sesi ailesindedir; fakat mobil canlı kabul bu milestone’da doğrulanmış sayılmaz.
 
 ## Kapsam dışı not
 - Proactive AI dispatcher bu milestone kapsamı dışındadır.

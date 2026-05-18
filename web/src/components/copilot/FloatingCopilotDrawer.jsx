@@ -137,6 +137,29 @@ function samePrompt(a, b) {
   return String(a || "").trim().toLocaleLowerCase("tr-TR") === String(b || "").trim().toLocaleLowerCase("tr-TR");
 }
 
+function pickPreferredSpeechVoice(synth, lang = "tr-TR") {
+  try {
+    const voices = typeof synth?.getVoices === "function" ? synth.getVoices() : [];
+    if (!Array.isArray(voices) || !voices.length) return null;
+    const normalizedLang = String(lang || "").toLocaleLowerCase("tr-TR");
+    const scored = voices
+      .map((voice) => {
+        const name = String(voice?.name || "").toLocaleLowerCase("tr-TR");
+        const voiceLang = String(voice?.lang || "").toLocaleLowerCase("tr-TR");
+        let score = 0;
+        if (voiceLang.startsWith("tr")) score += 100;
+        if (voiceLang === normalizedLang) score += 25;
+        if (/erkek|male|bariton|deep|low|tok|tenor/u.test(name)) score += 12;
+        if (/tr|turk|türk/u.test(name)) score += 8;
+        return { voice, score };
+      })
+      .sort((a, b) => b.score - a.score || String(a.voice?.name || "").localeCompare(String(b.voice?.name || ""), "tr"));
+    return scored[0]?.voice || null;
+  } catch {
+    return null;
+  }
+}
+
 function filterMessageActions(actions, suggestions, followUpPrompt) {
   const rows = Array.isArray(actions) ? actions : [];
   const visible = [];
@@ -353,7 +376,23 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
 
   function speak(text, idx) {
     const t = String(text || "").trim(); if (!t) return;
-    try { const synth = window.speechSynthesis; if (!synth) return; synth.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "tr-TR"; u.rate = 0.95; u.onend = () => setReadingIndex(-1); setReadingIndex(idx); synth.speak(u); } catch { /* no-op: speech synthesis may fail */ }
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(t);
+      const voiceConfig = COPILOT_PERSONA.voiceReadoutConfig || {};
+      u.lang = voiceConfig.lang || "tr-TR";
+      u.pitch = Number.isFinite(voiceConfig.pitch) ? voiceConfig.pitch : 0.82;
+      u.rate = Number.isFinite(voiceConfig.rate) ? voiceConfig.rate : 0.92;
+      u.volume = Number.isFinite(voiceConfig.volume) ? voiceConfig.volume : 1;
+      const voice = pickPreferredSpeechVoice(synth, u.lang);
+      if (voice) u.voice = voice;
+      u.onend = () => setReadingIndex(-1);
+      u.onerror = () => setReadingIndex(-1);
+      setReadingIndex(idx);
+      synth.speak(u);
+    } catch { /* no-op: speech synthesis may fail */ }
   }
 
   if (!token || !me || isCopilotPage) return null;

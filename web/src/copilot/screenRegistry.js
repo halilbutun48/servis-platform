@@ -1,4 +1,7 @@
 import { companyBase } from "../utils/paths";
+import { COPILOT_PERSONA } from "../utils/copilotFacts";
+
+const COPILOT_MENU_LABEL = COPILOT_PERSONA.menuLabel || "Sefer Abi";
 
 export function normalizeGuideRoleKey(me) {
   const role = String(me?.role || "");
@@ -26,7 +29,7 @@ const REGISTRY = {
     { id: 1104, path: "/room/vehicles", label: "Araçlar" },
     { id: 1105, path: "/room/drivers", label: "Sürücüler" },
     { id: 1106, path: "/room/agreements", label: "Sözleşmeler" },
-    { id: 1107, path: "/room/copilot", label: "Copilot" },
+    { id: 1107, path: "/room/copilot", label: COPILOT_MENU_LABEL },
     { id: 1108, path: "/room/hub", label: "Hub" },
     { id: 1109, path: "/room/checkin", label: "Check-in" },
     { id: 1114, path: "/room/operation-health", label: "Operasyon Sağlığı" },
@@ -40,7 +43,7 @@ const REGISTRY = {
     { id: 2102, path: "/company/shifts", label: "Vardiyalar" },
     { id: 2103, path: "/company/agreements", label: "Sözleşmeler" },
     { id: 2104, path: "/company/access-links", label: "Personel Link" },
-    { id: 2105, path: "/company/copilot", label: "Copilot" },
+    { id: 2105, path: "/company/copilot", label: COPILOT_MENU_LABEL },
     { id: 2106, path: "/company/hub", label: "Hub" },
     { id: 2107, path: "/company/checkin", label: "Check-in" },
     { id: 2109, path: "/company/georeview", label: "Personel Konum Seçici" },
@@ -56,7 +59,7 @@ const REGISTRY = {
     { id: 2202, path: "/school/shifts", label: "Vardiyalar" },
     { id: 2203, path: "/school/agreements", label: "Sözleşmeler" },
     { id: 2204, path: "/school/access-links", label: "Öğrenci Link" },
-    { id: 2205, path: "/school/copilot", label: "Copilot" },
+    { id: 2205, path: "/school/copilot", label: COPILOT_MENU_LABEL },
     { id: 2206, path: "/school/hub", label: "Hub" },
     { id: 2207, path: "/school/checkin", label: "Check-in" },
     { id: 2209, path: "/school/georeview", label: "Öğrenci Konum Seçici" },
@@ -74,7 +77,7 @@ const REGISTRY = {
     { id: 2303, path: "/organization/shifts", label: "Vardiyalar" },
     { id: 2304, path: "/organization/agreements", label: "Sözleşmeler" },
     { id: 2305, path: "/organization/access-links", label: "Personel Link" },
-    { id: 2306, path: "/organization/copilot", label: "Copilot" },
+    { id: 2306, path: "/organization/copilot", label: COPILOT_MENU_LABEL },
     { id: 2307, path: "/organization/hub", label: "Hub" },
     { id: 2308, path: "/organization/checkin", label: "Check-in" },
     { id: 2310, path: "/organization/georeview", label: "Lokasyon İncele" },
@@ -89,19 +92,19 @@ const REGISTRY = {
     { id: 3102, path: "/driver/route", label: "Rota" },
     { id: 3103, path: "/driver/map", label: "Harita" },
     { id: 3104, path: "/driver/checkin", label: "Check-in" },
-    { id: 3105, path: "/driver/copilot", label: "Copilot" },
+    { id: 3105, path: "/driver/copilot", label: COPILOT_MENU_LABEL },
     { id: 3106, path: "/driver/change-pin", label: "PIN Değiştir" },
     ...SHARED,
   ],
   PERSONEL: [
     { id: 4101, path: "/personel/live", label: "Canlı" },
     { id: 4102, path: "/personel/my", label: "Servisim" },
-    { id: 4103, path: "/personel/copilot", label: "Copilot" },
+    { id: 4103, path: "/personel/copilot", label: COPILOT_MENU_LABEL },
     ...SHARED,
   ],
   PARENT: [
     { id: 5101, path: "/parent/live", label: "Canlı" },
-    { id: 5102, path: "/parent/copilot", label: "Copilot" },
+    { id: 5102, path: "/parent/copilot", label: COPILOT_MENU_LABEL },
     ...SHARED,
   ],
   SUPER_ADMIN: [
@@ -119,7 +122,7 @@ const REGISTRY = {
     { id: 6111, path: "/superadmin/ssot-alignment", label: "Sistem Standartları" },
     { id: 6112, path: "/superadmin/commercial-core", label: "Ticari Akış" },
     { id: 6113, path: "/superadmin/trust-quality", label: "Güven ve Kalite" },
-    { id: 6114, path: "/superadmin/copilot", label: "Copilot" },
+    { id: 6114, path: "/superadmin/copilot", label: COPILOT_MENU_LABEL },
     { id: 6115, path: "/superadmin/logexport", label: "Log Dışa Aktarımı" },
     { id: 6116, path: "/superadmin/natural-copilot", label: "Natural Copilot" },
     ...SHARED,
@@ -158,7 +161,7 @@ export function getCopilotMenuEntry(me) {
                 : roleKey === "PARENT"
                   ? "/parent/copilot"
                   : "/superadmin/copilot";
-  return rows.find((x) => x.path.endsWith('/copilot')) || { id: 0, path: fallbackPath, label: 'Copilot' };
+  return rows.find((x) => x.path.endsWith('/copilot')) || { id: 0, path: fallbackPath, label: COPILOT_MENU_LABEL };
 }
 
 export function resolveRuntimeScopeKey(currentPath, fallbackPath) {

@@ -112,6 +112,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 ### UX-COPILOT-PERSONA-01 [CHECK]
 - `check:uxcopilotpersona01` Sefer Abi persona, tone, label ve brand voice standardını doğrular.
 - Drawer ve panel helper dili `Sefer Abi · Operasyon yardımcısı` standardına bağlanır.
+- UX-COPILOT-PERSONA-01-FIX-01 ile drawer başlığı `Sefer Abi’ye Sor`, sol menü label `Sefer Abi` ve sesli okuma tonu daha tok/sakin standarda çekilir.
 - VOICE-PERSONA-01 ayrı bir milestone olarak bırakılır; bu check mobil canlı kabul iddiası taşımaz.
 
 ## 5) Faz haritası

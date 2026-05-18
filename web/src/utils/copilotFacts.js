@@ -94,7 +94,8 @@ function normalizeStatusDisplayText(value) {
 export const COPILOT_PERSONA = Object.freeze({
   assistantDisplayName: 'Sefer Abi',
   assistantSubtitle: 'Operasyon yardımcısı',
-  drawerTitle: 'Hızlı Yardım',
+  menuLabel: 'Sefer Abi',
+  drawerTitle: 'Sefer Abi’ye Sor',
   emptyStateLead: 'Bulunduğun ekranda soru sorabilirsin.',
   emptyStateBody: 'Yazı alanı altta. Hazır öneriler istersen açılır. Seçili kayıt varsa onu da konuşmaya katmaya çalışırım.',
   toneLead: 'Sefer Abi aynı sahayı bilen sakin ve net yardım tonunu taşır.',
@@ -105,6 +106,12 @@ export const COPILOT_PERSONA = Object.freeze({
     'Teknik iç kodları görünür metne taşımaz.',
   ],
   voiceFamilyNote: 'Web Copilot ve sürücü sesli yardımcı aynı marka sesi ailesindedir.',
+  voiceReadoutConfig: Object.freeze({
+    lang: 'tr-TR',
+    pitch: 0.82,
+    rate: 0.92,
+    volume: 1,
+  }),
   mobileAcceptanceNote: 'Mobil canlı kabul bu milestone içinde değildir; sonraki adımda ayrı değerlendirilir.',
   dispatcherNote: 'Proactive AI dispatcher bu milestone kapsamı dışındadır.',
 });

@@ -210,6 +210,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `VOICE-PERSONA-01` ayrı bir milestone olarak bırakılır; bu audit mobil canlı kabul iddiası taşımaz.
 - Proactive AI dispatcher bu çerçevenin dışındadır.
 
+## UX-COPILOT-PERSONA-01-FIX-01 visible label and voice polish
+- Sağ alt drawer görünür başlığı `Sefer Abi’ye Sor` standardına bağlanır.
+- Sol menü kısa label `Sefer Abi` standardını korur; terminal milestone geldiğinde `Sefer Abi Terminali` ayrı değerlendirilir.
+- Sesli okuma tonu tok, sakin ve güven veren biçimde; `tr-TR`, daha düşük pitch ve biraz daha yavaş tempo hedefiyle kalır.
+- Browser TTS ses rengi cihaz ve tarayıcıya göre değişebileceği için kesin timbre garantisi verilmez; fallback hata üretmeden çalışır.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

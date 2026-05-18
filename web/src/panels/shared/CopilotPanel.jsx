@@ -572,7 +572,7 @@ export default function CopilotPanel() {
           {COPILOT_PERSONA.assistantDisplayName} · {COPILOT_PERSONA.assistantSubtitle}
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
-          Bu sayfa detaylı inceleme içindir. Kullanıcı önce sorusunu yazar; gerekirse bağlam ve gelişmiş ayarlar sonradan açılır. Köşedeki Hızlı Yardım ise bulunduğun ekrandan ayrılmadan kısa destek verir.
+          Bu sayfa detaylı inceleme içindir. Kullanıcı önce sorusunu yazar; gerekirse bağlam ve gelişmiş ayarlar sonradan açılır. Köşedeki Sefer Abi’ye Sor ise bulunduğun ekrandan ayrılmadan kısa destek verir.
         </div>
       </div>
 

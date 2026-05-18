@@ -75,7 +75,7 @@ export default function NavDock({ role, path, me }) {
     const copilotEntry = getCopilotMenuEntry({ role, companyKind: me?.companyKind });
     const feedbackEntry = { label: "Geri Bildirim", path: "/shared/feedback" };
     const copilotSection = {
-      title: "Copilot",
+      title: copilotEntry.label || "Sefer Abi",
       items: [{ label: copilotEntry.label, path: copilotEntry.path }],
     };
 
