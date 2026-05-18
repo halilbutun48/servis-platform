@@ -110,7 +110,7 @@ must(helpComposer, 'pathLooksLikeWorkflowSurface(sourcePath) && (selectedDiagnos
 must(helpComposer, 'if (/(sorun ne|sorunu ne|ne sorun|problem ne)/.test(text)) return \'WHY_BLOCKED\';', 'operation health question routes to WHY_BLOCKED');
 must(helpComposer, "if (hasSignals && roleBoundary) return 'Ekrandaki sinyale göre konuşuyorum; bu bilgi ayrıca yetki sınırına takılıyor olabilir.';", 'workflow signal keeps role boundary secondary');
 must(helpComposer, 'const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType);', 'workflow chips know workflow topics');
-must(helpComposer, 'if (hasSelectedRecord && !workflowTopic)', 'workflow chips suppress generic selected-record chips');
+must(helpComposer, 'if (hasSelectedRecord && !workflowTopic && !path.includes(\'/parent/live\'))', 'workflow chips suppress generic selected-record chips');
 must(helpComposer, 'const contextSummary = workflowStyle', 'workflow context summary branch is active');
 must(helpComposer, 'const workflowNow = pickWorkflowVisibleReply(', 'workflow reply opens with diagnostic summary');
 must(helpComposer, ".replace(/blokajı|blokaj/giu, (match) => String(match).toLocaleLowerCase('tr-TR').includes('ı') ? 'engeli' : 'engel')", 'plain language keeps blokaj as engeli');

@@ -164,7 +164,7 @@ export default function RoutePanel() {
         surface: "driver-route",
       },
     };
-  }, [shift, selectedVehicle, nextStop, routeEta, routeSummary, gpsAge, gpsStatusText, gpsSourceLabel, routeProofText, copilotFacts, data?.vehicle?.plate]);
+  }, [shift, selectedVehicle, nextStop, selectedStop?.name, routeEta, routeSummary, gpsAge, gpsStatusText, gpsSourceLabel, routeProofText, copilotFacts, data?.vehicle?.plate]);
 
   useEffect(() => {
     if (!shift && !selectedVehicle) {

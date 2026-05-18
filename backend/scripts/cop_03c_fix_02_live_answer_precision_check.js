@@ -120,7 +120,7 @@ must(helpComposer, 'const workflowAction = workflowQuestion ? workflowActionSpec
 must(helpComposer, 'workflowAsk = (() => {', 'help composer keeps workflow ask gate');
 must(helpComposer, 'if (workflowAction) {', 'help composer keeps workflow-specific shift branch');
 must(helpComposer, 'const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType);', 'help composer distinguishes workflow topics');
-must(helpComposer, 'if (hasSelectedRecord && !workflowTopic) {', 'help composer keeps generic selected-record chips out of workflow questions');
+must(helpComposer, 'if (hasSelectedRecord && !workflowTopic && !path.includes(\'/parent/live\')) {', 'help composer keeps generic selected-record chips out of workflow questions');
 must(helpComposer, "if (roleBoundary && ['ROLE_HELP', 'WHO_CAN_DO', 'ROLE_BOUNDARY', 'KVKK_VISIBILITY'].includes(String(questionType || ''))) chips.unshift('Yetki sınırını açıkla');", 'help composer narrows role-boundary chip injection');
 must(helpComposer, "const relevantQuestionType = ['STATUS_HELP', 'WHY_BLOCKED', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'READINESS_CHECK', 'TERM_HELP', 'FIRST_CONTROL'].includes", 'help composer keeps workflow-only operational questions');
 must(helpComposer, "const workflowNow = pickWorkflowVisibleReply(", 'help composer workflow now uses filtered fragments');
