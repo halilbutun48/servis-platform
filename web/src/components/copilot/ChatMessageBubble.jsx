@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import ChatQuickActions from "./ChatQuickActions";
 import ChatDiagnosticSignals from "./ChatDiagnosticSignals";
+import { COPILOT_PERSONA } from "../../utils/copilotFacts";
 
 const FEEDBACK_KEY = "vardis:copilot:chat-feedback";
 const FEEDBACK_LOG_KEY = "vardis:copilot:chat-feedback-log";
@@ -71,6 +72,7 @@ function SectionCard({ section }) {
 
 export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onCopy }) {
   const role = String(message?.role || "assistant");
+  const assistantName = COPILOT_PERSONA.assistantDisplayName;
   const isSimpleMode = String(message?.roleMode || "") === "SIMPLE";
   const messageId = useMemo(() => feedbackId(message), [message]);
   const [feedback, setFeedback] = useState(() => safeReadFeedback()[messageId] || "");
@@ -103,7 +105,7 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
     <div style={{ display: "grid", gap: 6 }}>
       <div style={{ maxWidth: role === "user" ? "60%" : "78%", borderRadius: 16, padding: 12, ...bubbleStyle(role) }}>
         <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6, fontWeight: 700 }}>
-          {role === "user" ? "Sen" : "Copilot"}
+          {role === "user" ? "Sen" : assistantName}
         </div>
 
         {role !== "user" && (message?.questionLabel || message?.uncertaintyMeta?.label || message?.routePlan?.primaryRouteLabel || message?.continuity?.sameEntity || message?.continuity?.isFollowUp) ? (

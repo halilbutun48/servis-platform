@@ -62,6 +62,7 @@
     "check:cop04bfix07": "node backend/scripts/cop_04b_fix_07_personel_live_copilot_context_check.js",
     "check:cop04bfix08": "node backend/scripts/cop_04b_fix_08_parent_live_context_check.js",
     "check:uxcopilotsmartchips01": "node backend/scripts/ux_copilot_smart_chips_01_check.js",
+    "check:uxcopilotpersona01": "node backend/scripts/ux_copilot_persona_01_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",
     "check:e2esmoke01": "node backend/scripts/e2e_smoke_01_demo_acceptance_check.js",
     "check:fieldlaunch01": "node backend/scripts/field_launch_pack_01_readiness_check.js",

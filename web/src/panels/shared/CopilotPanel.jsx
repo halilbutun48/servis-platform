@@ -22,6 +22,7 @@ import CopilotAdvancedResultCard from "../../components/copilot/CopilotAdvancedR
 import SuggestedChips from "../../components/copilot/SuggestedChips";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
+import { COPILOT_PERSONA } from "../../utils/copilotFacts";
 import { nowIsoTR } from "../../utils/time";
 import { getCopilotScreenOptions } from "../../copilot/screenRegistry";
 import {
@@ -567,6 +568,9 @@ export default function CopilotPanel() {
     <div className="wrap wrap--fluid" style={{ display: "grid", gap: 12 }}>
       <div className="card">
         <div className="title">Operasyon Copilot</div>
+        <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
+          {COPILOT_PERSONA.assistantDisplayName} · {COPILOT_PERSONA.assistantSubtitle}
+        </div>
         <div className="muted" style={{ marginTop: 6 }}>
           Bu sayfa detaylı inceleme içindir. Kullanıcı önce sorusunu yazar; gerekirse bağlam ve gelişmiş ayarlar sonradan açılır. Köşedeki Hızlı Yardım ise bulunduğun ekrandan ayrılmadan kısa destek verir.
         </div>

@@ -4,7 +4,7 @@ import { getPath, navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { companyPath, normalizeCompanyPath } from "../../utils/paths";
-import { buildCopilotStarterChips } from "../../utils/copilotFacts";
+import { buildCopilotStarterChips, COPILOT_PERSONA } from "../../utils/copilotFacts";
 import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
 import { captureCopilotUiSurface } from "./uiSurface";
 
@@ -366,8 +366,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     <aside className="copilotDrawer" style={{ width: dims.width, height: dims.height }}>
       <div className="copilotDrawerHeader">
         <div>
-          <div className="copilotDrawerTitle">Hızlı Yardım</div>
-          <div className="copilotDrawerContext">Bulunduğun ekrandan ayrılmadan kısa destek verir.</div>
+          <div className="copilotDrawerTitle">{COPILOT_PERSONA.drawerTitle}</div>
+          <div className="copilotDrawerContext">{`${COPILOT_PERSONA.assistantDisplayName} · ${COPILOT_PERSONA.assistantSubtitle}`}</div>
+          <div className="copilotDrawerContext">Bulunduğun ekranda kısa destek verir.</div>
           <div className="copilotDrawerContext">Şu an: {screenContext.label}</div>
           {selection?.label ? <div className="copilotDrawerContext">Seçili kayıt: <b>{selection.label}</b>{selection?.summary && selection.summary !== selection.label ? ` • ${selection.summary}` : ""}</div> : null}
         </div>
@@ -389,9 +390,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       {showSuggestions && messages.length > 0 ? <div className="copilotSuggestionWrap">{suggestions.map((chip) => <button key={chip} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div> : null}
 
       <div className="copilotChatSurface" ref={scrollRef}>
-        {messages.length === 0 ? <div className="copilotEmptyState"><div className="copilotEmptyTitle">Bulunduğun ekranda soru sorabilirsin.</div><div className="copilotEmptyText">Yazı alanı altta. Hazır öneriler istersen açılır. Seçili kayıt varsa onu da konuşmaya katmaya çalışırım.</div><div className="copilotSuggestionWrap">{suggestions.map((chip) => <button key={chip} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div></div> : null}
+        {messages.length === 0 ? <div className="copilotEmptyState"><div className="copilotEmptyTitle">{COPILOT_PERSONA.emptyStateLead}</div><div className="copilotEmptyText">{COPILOT_PERSONA.emptyStateBody}</div><div className="copilotSuggestionWrap">{suggestions.map((chip) => <button key={chip} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div></div> : null}
         {messages.map((m, idx) => <div key={`${m.role}-${idx}`} className={m.role === "user" ? "copilotMsg user" : "copilotMsg assistant"}>
-          <div className="copilotMsgHead">{m.role === "user" ? "Sen" : "Copilot"}</div>
+          <div className="copilotMsgHead">{m.role === "user" ? "Sen" : COPILOT_PERSONA.assistantDisplayName}</div>
           <div className="copilotMsgText">{m.text}</div>
           {m.role === "assistant" && !m.system ? <div className="copilotMsgActions">
             <button type="button" className="btn sm copilotToolBtn" onClick={() => speak(m.text, idx)}>{readingIndex === idx ? "Okuyor..." : "Sesli oku"}</button>

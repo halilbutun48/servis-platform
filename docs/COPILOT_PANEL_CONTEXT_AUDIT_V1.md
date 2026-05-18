@@ -203,6 +203,13 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Global fallback chips yalnızca context belirsiz olduğunda görünür ve screen-specific chips onları geri iter.
 - Drawer chip yüzeyi readonly öneri olarak kalır; otomatik aksiyon, dispatcher veya workflow execute yoktur.
 
+## UX-COPILOT-PERSONA-01 brand voice note
+- `Sefer Abi` marka adı olarak görünür, ama kullanıcıya `abi`, `kardeşim`, `kaptanım`, `reis` gibi hitaplar kullanılmaz.
+- Ton sakin, net, kurumsal, sahayı bilen ve kısa olmalıdır.
+- Web Copilot ve sürücü sesli yardımcı aynı marka sesi ailesinde düşünülür.
+- `VOICE-PERSONA-01` ayrı bir milestone olarak bırakılır; bu audit mobil canlı kabul iddiası taşımaz.
+- Proactive AI dispatcher bu çerçevenin dışındadır.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

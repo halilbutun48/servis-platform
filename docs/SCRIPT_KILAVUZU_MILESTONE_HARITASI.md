@@ -82,6 +82,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop04bfix07` -> `node backend\scripts\cop_04b_fix_07_personel_live_copilot_context_check.js`
 - `check:cop04bfix08` -> `node backend\scripts\cop_04b_fix_08_parent_live_context_check.js`
 - `check:uxcopilotsmartchips01` -> `node backend\scripts\ux_copilot_smart_chips_01_check.js`
+- `check:uxcopilotpersona01` -> `node backend\scripts\ux_copilot_persona_01_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
@@ -107,6 +108,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcopilotsmartchips01` drawer starter chips parity check.
 - Bu milestone, floating Copilot drawer ilk açılışta ekran/rol/context bazlı akıllı başlangıç çiplerini doğrular.
 - Generic fallback chips yalnızca context belirsizse görünür; screen-specific starter chips önceliklidir.
+
+### UX-COPILOT-PERSONA-01 [CHECK]
+- `check:uxcopilotpersona01` Sefer Abi persona, tone, label ve brand voice standardını doğrular.
+- Drawer ve panel helper dili `Sefer Abi · Operasyon yardımcısı` standardına bağlanır.
+- VOICE-PERSONA-01 ayrı bir milestone olarak bırakılır; bu check mobil canlı kabul iddiası taşımaz.
 
 ## 5) Faz haritası
 ### Faz A — M0→M41 çekirdek temel hat [HISTORICAL]

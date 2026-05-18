@@ -45,6 +45,7 @@ const steps = [
   'check:cop04bfix07',
   'check:cop04bfix08',
   'check:uxcopilotsmartchips01',
+  'check:uxcopilotpersona01',
 ];
 
 function runStep(scriptName) {
