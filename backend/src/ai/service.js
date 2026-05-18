@@ -159,23 +159,48 @@ function buildLiveSelectionSnapshot(screenContext) {
   const nextStop = firstNonEmpty(rowValueByLabels(fields, ["Sıradaki Durak", "Sıradaki durak", "Next Stop"]), extractVisibleValueFromText(selectedSummary, ["Sıradaki Durak", "Sıradaki durak", "Next Stop", "Sıradaki"]), "");
   const totalStops = firstNonEmpty(rowValueByLabels(fields, ["Toplam Durak", "Toplam durak", "Durak Sayısı", "Durak sayısı"]), extractVisibleValueFromText(selectedSummary, ["Toplam Durak", "Toplam durak", "Durak Sayısı", "Durak sayısı"]), "");
   const eta = firstNonEmpty(rowValueByLabels(fields, ["ETA"]), extractVisibleValueFromText(selectedSummary, ["ETA"]), "");
-  const hasSelection = Boolean(vehiclePlate || selectedSummary || gpsStatus || lastGps || nextStop || totalStops || eta);
-  const mainLead = vehiclePlate
-    ? `Seçili araç ${vehiclePlate} görünüyor.`
-    : selectedSummary
-      ? `Seçili kayıt ${selectedSummary} görünüyor.`
-      : "Bu ekranda seçili araç bilgisi net görünmüyor.";
+  const noLiveVehicleText = normalizeVisibleText([
+    screenContext?.selectedSummary,
+    screenContext?.selectedRecordSummary,
+    screenContext?.helpContextSummary,
+    screenContext?.contextSummary,
+    screenContext?.selectedRecordStatus,
+    facts?.selectedSummary,
+    facts?.selectedRecordSummary,
+    facts?.helpContextSummary,
+    facts?.contextSummary,
+    facts?.selectedRecordStatus,
+    facts?.summary,
+    facts?.copilotSummary,
+  ].filter(Boolean).join(" • "));
+  const noLiveVehicle = String(screenContext?.path || "").includes("/parent/live")
+    && (
+      facts?.noLiveVehicle === true
+      || facts?.liveVehicleVisible === false
+      || /canlı araç görünmüyor|canli araç görünmüyor|canli arac gorunmuyor|araç yok|arac yok|araç:\s*0|arac:\s*0|canlı konum görünmüyor|canli konum görünmüyor|aktif vardiya saat aralığı|araç ataması varsa görünür|arac ataması varsa görünür/i.test(noLiveVehicleText)
+    );
+  const hasSelection = !noLiveVehicle && Boolean(vehiclePlate || selectedSummary || gpsStatus || lastGps || nextStop || totalStops || eta);
+  const mainLead = noLiveVehicle
+    ? "Şu an bu çocuk için canlı araç görünmüyor."
+    : vehiclePlate
+      ? `Seçili araç ${vehiclePlate} görünüyor.`
+      : selectedSummary
+        ? `Seçili kayıt ${selectedSummary} görünüyor.`
+        : "Bu ekranda seçili araç bilgisi net görünmüyor.";
   const detailBits = [];
   if (gpsStatus) detailBits.push(`GPS sinyali ${gpsStatus} durumda.`);
   if (lastGps) detailBits.push(`Son GPS ${lastGps} önce gelmiş.`);
   if (nextStop) detailBits.push(`Sıradaki durak ${nextStop}${totalStops ? `, toplam durak ${totalStops}` : ""} görünüyor.`);
   if (eta) detailBits.push(`ETA ${eta}.`);
   const recommendation = "Araç haritada güvenilir görünmüyorsa önce son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.";
-  const summary = hasSelection && (vehiclePlate || gpsStatus || lastGps || nextStop || eta || totalStops)
+  const summary = noLiveVehicle
+    ? "Şimdi: Bu çocuk için canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür. Önce aktif servis saati, araç ataması ve canlı konum durumunu kontrol et."
+    : hasSelection && (vehiclePlate || gpsStatus || lastGps || nextStop || eta || totalStops)
     ? `Şimdi: ${[mainLead, ...detailBits, recommendation].join(" ")}`
     : `Şimdi: ${mainLead} Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et.`;
   return {
     hasSelection,
+    noLiveVehicle,
     vehiclePlate,
     gpsStatus,
     lastGps,
@@ -192,9 +217,11 @@ function buildJobGuideMismatchFallback({ jobType, guideLevel, context, screenCon
   const liveSnapshot = buildLiveSelectionSnapshot(screenContext);
   const isGpsSurface = /\/map\b|\/live\b/.test(pathText) || ["TELEMATICS_DEVICE_CREATE", "LOCATION_SOURCE_GUIDE", "GPS_SIGNAL_DIAGNOSIS_GUIDE"].includes(String(jobType || ""));
   const summary = isGpsSurface
-    ? (liveSnapshot.hasSelection
+    ? (liveSnapshot.noLiveVehicle
       ? liveSnapshot.summary
-      : "Şimdi: Bu ekranda seçili araç bilgisi net görünmüyor. Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et.")
+      : (liveSnapshot.hasSelection
+      ? liveSnapshot.summary
+      : "Şimdi: Bu ekranda seçili araç bilgisi net görünmüyor. Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et."))
     : (liveSnapshot.hasSelection
       ? `Şimdi: Seçili kayıt ${liveSnapshot.selectedSummary || "görünüyor"}. İlgili kaydı açıp tekrar dene.`
       : "Şimdi: Bu ekranda seçili kayıt bilgisi net görünmüyor. İlgili kaydı açıp tekrar dene.");

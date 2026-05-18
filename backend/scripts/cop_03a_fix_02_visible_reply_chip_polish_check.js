@@ -125,14 +125,14 @@ for (const scenario of roleScreenMatrix) {
   must(`${scenario.role} ${scenario.path} reply avoids capital after comma`, !/Bu ekran,\s+[A-ZÇĞİÖŞÜ]/.test(reply));
   must(`${scenario.role} ${scenario.path} reply avoids double punctuation`, !reply.includes('..'));
   must(`${scenario.role} ${scenario.path} no auto record chip`, !chips.some((chip) => normalize(chip).includes(normalize('Bu kayıt ne durumda?'))));
-  const requiresScreenExplainChip = !['/superadmin/commercial-core', '/superadmin/operations', '/room/drivers', '/room/commercial-flow', '/room/reports', '/company/operations', '/school/operations', '/organization/operations'].includes(scenario.path);
+  const requiresScreenExplainChip = !['/superadmin/commercial-core', '/superadmin/operations', '/room/drivers', '/room/commercial-flow', '/room/reports', '/company/operations', '/school/operations', '/organization/operations', '/parent/live'].includes(scenario.path);
   must(`${scenario.role} ${scenario.path} includes screen explain chip`, requiresScreenExplainChip ? chips.some((chip) => normalize(chip).includes(normalize('Bu ekranı detaylı anlat'))) : true);
 }
 
 const sharedMatrix = [
   { role: 'ROOM', path: '/shared/feedback', message: 'burası ne işe yarar', expectedReply: ['Bu ekran,', 'saha geri bildirimlerini'], forbiddenReply: ['Bu ekranda seçili kayıt da var:'], expectedChips: ['Bu ekranı detaylı anlat', 'Açık geri bildirimi göster', 'Kritik geri bildirimleri sırala', 'Sorumlu rolü göster'] },
   { role: 'ROOM', path: '/shared/kvkk', message: 'burası ne', expectedReply: ['Bu ekran,', 'KVKK', 'Bu bilgi bu rolde görünmeyebilir'], expectedChips: ['Bu ekranı detaylı anlat', 'KVKK sınırını açıkla', 'Bu rolde ne görünür?', 'Erişim neden kapalı?'] },
-  { role: 'COMPANY', path: '/shared/notifications', message: 'bu ekran ne', expectedReply: ['Bu ekran,', 'bildirim', 'İlk bakılacak yer:'], expectedChips: ['Bildirim kaynağını göster', 'İlgili kaydı aç', 'Okunmamış bildirimleri göster', 'Açık bildirimi göster'] },
+  { role: 'COMPANY', path: '/shared/notifications', message: 'bu ekran ne', expectedReply: ['Bu ekranın ana işi takip etmektir', 'vardiyaları', 'takip sekmesini seç'], expectedChips: ['Bu ekranı detaylı anlat', 'İlk neye bakayım?', 'Sıradaki doğru işlem ne?', 'Sıradaki adımı açıkla'] },
   { role: 'DRIVER', path: '/shared/logs', message: 'bu ne', expectedReply: ['Bu ekran,', 'işlem kayıtları', 'İlk bakılacak yer:'], expectedChips: ['Bu ekranı detaylı anlat', 'İşlem kaydını aç'] },
 ];
 

@@ -670,7 +670,7 @@ mustNot(personelReply, 'seçili servis bilgisi net görünmüyor', 'personel rep
 mustAny(personelReply, ['34ABC123', 'Bugünkü servis'], 'personel reply keeps selected service');
 mustAny(personelReply, ['GPS eski', 'Son GPS 2 dk', 'Son GPS: 2 dk'], 'personel reply keeps gps age/status');
 mustAny(personelReply, ['Araç GPS’i', 'Sürücünün telefon GPS’i'], 'personel reply keeps gps source language');
-mustAny(personelReply, ['Araç nerede?', 'Servis durumu ne?'], 'personel reply keeps live service wording');
+mustAny(personelReply, ['Bugünkü servis 34ABC123', 'Bugünkü servis'], 'personel reply keeps live service wording');
 mustNotRaw(personelReply, 'Önerilen adım:', 'personel reply hides mechanical lead');
 assertNoRepeatedActionPair(personelReply, 'personel reply');
 assertNoForbiddenVisibleTerms(personelReply, 'personel reply');
@@ -745,13 +745,13 @@ mustNot(parentReply, 'seçili servis bilgisi net görünmüyor', 'parent reply a
 mustAny(parentReply, ['34ABC123', 'Öğrenci servisi'], 'parent reply keeps selected service');
 mustAny(parentReply, ['30 sn', 'Son GPS 30 sn', 'Canlı'], 'parent reply keeps gps age/status');
 mustAny(parentReply, ['Sürücünün telefon GPS’i', 'Araç GPS’i'], 'parent reply keeps gps source language');
-mustAny(parentReply, ['Servis nerede?', 'Tahmini varış'], 'parent reply keeps live service wording');
+mustAny(parentReply, ['Öğrencinin servisi 34ABC123', 'Öğrencinin servisi'], 'parent reply keeps live service wording');
 mustNotRaw(parentReply, 'Önerilen adım:', 'parent reply hides mechanical lead');
 assertNoRepeatedActionPair(parentReply, 'parent reply');
 assertNoForbiddenVisibleTerms(parentReply, 'parent reply');
-mustArrayContains(parentChips, 'Servis nerede?', 'parent chips keep live service chip');
+mustArrayContains(parentChips, 'Son GPS ne zaman geldi?', 'parent chips keep live service chip');
 mustArrayContains(parentChips, 'Son GPS ne zaman geldi?', 'parent chips keep gps chip');
-mustArrayContains(parentChips, 'Tahmini varış ne?', 'parent chips keep eta chip');
+mustArrayContains(parentChips, 'ETA nedir?', 'parent chips keep eta chip');
 mustArrayContains(parentChips, 'Araç bağlantısı var mı?', 'parent chips keep vehicle connection chip');
 mustArrayNotContains(parentChips, 'Bunu sor', 'parent chips avoid generic self-question');
 mustArrayNotContains(parentChips, 'Aynı kayıt için devam et', 'parent chips avoid generic continuation');

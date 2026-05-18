@@ -79,6 +79,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop04bfix04` -> `node backend\scripts\cop_04b_fix_04_chip_answer_premium_polish_check.js`
 - `check:cop04bfix05` -> `node backend\scripts\cop_04b_fix_05_live_room_selected_vehicle_route_check.js`
 - `check:cop04bfix06` -> `node backend\scripts\cop_04b_fix_06_free_chat_context_bridge_check.js`
+- `check:cop04bfix07` -> `node backend\scripts\cop_04b_fix_07_personel_live_copilot_context_check.js`
+- `check:cop04bfix08` -> `node backend\scripts\cop_04b_fix_08_parent_live_context_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
@@ -614,10 +616,13 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:cop04a`
   - `check:cop04afix02`
   - `check:cop04afix01`
-  - `check:cop04b`
+- `check:cop04b`
 - `check:cop04bfix03`
 - `check:cop04bfix04`
 - `check:cop04bfix05`
+- `check:cop04bfix06`
+- `check:cop04bfix07`
+- `check:cop04bfix08`
   - `check:docsstate01`
 
 ### E2E-SMOKE-01 — demo acceptance pack [CHECK]
@@ -649,6 +654,9 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:cop04bfix04`
 - `check:cop04bfix05`
 - `check:cop04bfix06`
+- `check:cop04bfix07`
+- `check:cop04bfix08`
+  - Not: Personel / Canlı Harita free-chat submit request selected service context'i de taşır; header quick answer ve free chat aynı live context'i kullanır, visible `FORBIDDEN` dönmez.
   - Not: free-chat submit request ile Room / Canlı Takip selected signal seti de taşınır; header quick answer ve free chat aynı live context'i kullanır.
 
 ### OP-04 — ticari/kalite readonly köprü [CHECK]

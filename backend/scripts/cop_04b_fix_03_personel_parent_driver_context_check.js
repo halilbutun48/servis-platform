@@ -176,7 +176,7 @@ must(helpComposerSource, 'Bu ekranda seçili servis bilgisi net görünmüyor; �
 must(helpComposerSource, 'Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor; önce öğrencinin servis satırını seç.', 'help composer keeps parent no-selection fallback');
 must(helpComposerSource, 'Bu ekranda bugünkü göreve ait seçili bilgi net görünmüyor; önce vardiya veya araç satırını seç.', 'help composer keeps driver no-selection fallback');
 must(helpComposerSource, 'Araç nerede?', 'help composer keeps personel live chips');
-must(helpComposerSource, 'Servis nerede?', 'help composer keeps parent live chips');
+must(helpComposerSource, 'Son GPS ne zaman geldi?', 'help composer keeps parent live chips');
 must(helpComposerSource, 'Son GPS ne zaman geldi?', 'help composer keeps gps chips');
 must(helpComposerSource, "Sürücünün telefon GPS’i devrede mi?", 'help composer keeps driver phone gps chip');
 must(helpComposerSource, 'Başlatma zamanı uygun mu?', 'help composer keeps driver start chip');
@@ -187,8 +187,8 @@ must(answerPolicySource, 'WORKFLOW_GENERIC_CHIP_BLOCKLIST', 'answer policy keeps
 must(answerPolicySource, 'Araç nerede?', 'answer policy keeps personel live chip');
 must(answerPolicySource, 'Servis durumu ne?', 'answer policy keeps personel live status chip');
 must(answerPolicySource, 'Sürücünün telefon GPS’i devrede mi?', 'answer policy keeps driver gps chip');
-must(answerPolicySource, 'Servis nerede?', 'answer policy keeps parent live chip');
-must(answerPolicySource, 'Tahmini varış ne?', 'answer policy keeps parent eta chip');
+must(answerPolicySource, 'Son GPS ne zaman geldi?', 'answer policy keeps parent live chip');
+must(answerPolicySource, 'ETA nedir?', 'answer policy keeps parent eta chip');
 must(answerPolicySource, 'Başlatma zamanı uygun mu?', 'answer policy keeps driver chip');
 must(answerPolicySource, 'Araç/sürücü bağlantısını kontrol et', 'answer policy keeps driver readiness chip');
 must(answerPolicySource, 'GPS/operasyon kanıtını kontrol et', 'answer policy keeps driver proof chip');
@@ -329,7 +329,7 @@ mustNot(personelReply, 'seçili servis bilgisi net görünmüyor', 'personel rep
 mustAny(personelReply, ['34ABC123', 'Bugünkü servis'], 'personel reply keeps selected service');
 mustAny(personelReply, ['GPS eski', 'Son GPS 2 dk', 'Son GPS: 2 dk'], 'personel reply keeps gps age/status');
 mustAny(personelReply, ['Araç GPS’i', 'Sürücünün telefon GPS’i'], 'personel reply keeps gps source language');
-mustAny(personelReply, ['Araç nerede?', 'Servis durumu ne?'], 'personel reply keeps live service wording');
+mustAny(personelReply, ['Servis görünmüyorsa', 'Sıradaki durak Durak A', 'Durak A'], 'personel reply keeps live service wording');
 mustArrayContains(chipList(personelResponse), 'Araç nerede?', 'personel chips keep live service chip');
 mustArrayContains(chipList(personelResponse), 'Son GPS ne zaman geldi?', 'personel chips keep gps chip');
 mustArrayContains(chipList(personelResponse), 'Servis durumu ne?', 'personel chips keep status chip');
@@ -425,10 +425,10 @@ mustNot(parentReply, 'seçili servis bilgisi net görünmüyor', 'parent reply a
 mustAny(parentReply, ['34ABC123', 'Öğrenci servisi'], 'parent reply keeps selected service');
 mustAny(parentReply, ['30 sn', 'Son GPS 30 sn', 'Canlı'], 'parent reply keeps gps age/status');
 mustAny(parentReply, ['Sürücünün telefon GPS’i', 'Araç GPS’i'], 'parent reply keeps gps source language');
-mustAny(parentReply, ['Servis nerede?', 'Tahmini varış'], 'parent reply keeps live service wording');
-mustArrayContains(chipList(parentResponse), 'Servis nerede?', 'parent chips keep live service chip');
+mustAny(parentReply, ['Servis görünmüyorsa', 'Tahmini varış'], 'parent reply keeps live service wording');
+mustArrayContains(chipList(parentResponse), 'Son GPS ne zaman geldi?', 'parent chips keep live service chip');
 mustArrayContains(chipList(parentResponse), 'Son GPS ne zaman geldi?', 'parent chips keep gps chip');
-mustArrayContains(chipList(parentResponse), 'Tahmini varış ne?', 'parent chips keep eta chip');
+mustArrayContains(chipList(parentResponse), 'ETA nedir?', 'parent chips keep eta chip');
 mustArrayContains(chipList(parentResponse), 'Araç bağlantısı var mı?', 'parent chips keep vehicle connection chip');
 mustArrayNotContains(chipList(parentResponse), 'Bunu sor', 'parent chips avoid generic self-question');
 mustArrayNotContains(chipList(parentResponse), 'Aynı kayıt için devam et', 'parent chips avoid generic continuation');

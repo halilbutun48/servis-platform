@@ -6,7 +6,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import { navigate } from "../../router";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
-import { buildMapFacts } from "../../utils/copilotFacts";
+import { buildMapFacts, buildParentLiveNoVehicleFacts } from "../../utils/copilotFacts";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 
 function etaText(v) {
@@ -338,8 +338,43 @@ export default function ParentLivePanel() {
     vehicleCount: vehicles.length,
   }), [selectedVehicle, nearestStop, childStop, allStops.length, vehicles.length]);
 
+  const parentLiveNoVehicleFacts = useMemo(() => {
+    if (selectedVehicle || !selected) return null;
+    return buildParentLiveNoVehicleFacts({
+      selected,
+      schoolName: selected?.company?.name || "",
+      regionLabel: regionText(selected?.company || null),
+      vehicleCount: vehicles.length,
+      reasonText: "Bu çocuk için şu an canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür.",
+      headerText: "Şu an: Canlı Takip",
+    });
+  }, [selectedVehicle, selected, vehicles.length]);
+
   const copilotSelection = useMemo(() => {
-    if (!selectedVehicle) return null;
+    if (!selectedVehicle) {
+      if (!parentLiveNoVehicleFacts) return null;
+      const childLabel = selected?.fullName || `#${selected?.id || '-'}`;
+      return {
+        scopeKey: '/parent/live',
+        entityType: 'screen',
+        entityId: Number(selected?.id || 0) || null,
+        label: `Veli • Canlı Takip • ${childLabel}`,
+        summary: parentLiveNoVehicleFacts.summary,
+        fields: parentLiveNoVehicleFacts.fields,
+        badges: parentLiveNoVehicleFacts.badges,
+        facts: parentLiveNoVehicleFacts.facts,
+        selectedRecordType: parentLiveNoVehicleFacts.selectedRecordType,
+        selectedRecordId: parentLiveNoVehicleFacts.selectedRecordId,
+        selectedRecordLabel: parentLiveNoVehicleFacts.selectedRecordLabel,
+        selectedRecordStatus: parentLiveNoVehicleFacts.selectedRecordStatus,
+        selectedRecordSummary: parentLiveNoVehicleFacts.selectedRecordSummary,
+        selectedSummary: parentLiveNoVehicleFacts.selectedSummary,
+        selectedLabel: `Veli • Canlı Takip • ${childLabel}`,
+        helpContextSummary: parentLiveNoVehicleFacts.helpContextSummary,
+        contextSummary: parentLiveNoVehicleFacts.contextSummary,
+        copilotSummary: parentLiveNoVehicleFacts.copilotSummary,
+      };
+    }
     const selectedNext = nearestStop || childStop || null;
     return {
       scopeKey: '/parent/live',
@@ -376,7 +411,7 @@ export default function ParentLivePanel() {
         selectedRecordStatus: copilotFacts?.selectedRecordStatus || '',
       },
     };
-  }, [selectedVehicle, selected, nearestStop, childStop, copilotFacts, gpsSourceLabel]);
+  }, [selectedVehicle, selected, nearestStop, childStop, copilotFacts, gpsSourceLabel, parentLiveNoVehicleFacts]);
 
   useEffect(() => {
     if (!copilotSelection) {

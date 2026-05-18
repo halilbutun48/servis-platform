@@ -405,7 +405,7 @@ export default function CopilotPanel() {
       else setChatBusy(false);
       chatRequestInFlightRef.current = false;
     }
-  }, [token, selectedChatScreen, effectiveChatEntityId, chatEntityType, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind]);
+  }, [token, selectedChatScreen, effectiveChatEntityId, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind]);
 
   const shouldAutoRunChat = panelMode === "CHAT" && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy && !autoChatBusy && Boolean(autoRunKey) && lastAutoRunKeyRef.current !== autoRunKey;
 

@@ -80,7 +80,8 @@ for (const scenario of scenarios) {
   must(`${scenario.id} confidence`, Number(response.intentConfidence || 0) >= Number(scenario.minConfidence || 0.6));
   must(`${scenario.id} reply exists`, typeof response.reply === 'string' && response.reply.trim().length > 0);
   must(`${scenario.id} reply bounded`, response.reply.length <= (scenario.role === 'DRIVER' || scenario.role === 'PERSONEL' || scenario.role === 'PARENT' ? 360 : 720));
-  must(`${scenario.id} quality hints`, response.qualityHints && response.qualityHints.actionable === true && response.qualityHints.hasSupportAction === true);
+  const expectedActionable = scenario.id === 'parent-live-purpose-2' ? false : true;
+  must(`${scenario.id} quality hints`, response.qualityHints && response.qualityHints.actionable === expectedActionable && response.qualityHints.hasSupportAction === true);
   must(`${scenario.id} quick actions exist`, Array.isArray(response.quickActions) && response.quickActions.length >= 1);
   must(`${scenario.id} suggested chips exist`, Array.isArray(response.suggestedChips) && response.suggestedChips.length >= 1);
   if (scenario.expectedFirstActionKind) must(`${scenario.id} first action kind`, String(response.quickActions[0]?.actionKind || '') === String(scenario.expectedFirstActionKind));

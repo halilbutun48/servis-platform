@@ -1233,6 +1233,75 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
   };
 }
 
+export function buildParentLiveNoVehicleFacts({
+  selected,
+  schoolName = '',
+  regionLabel = '',
+  vehicleCount = 0,
+  reasonText = 'Bu çocuk için şu an canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür.',
+  headerText = 'Şu an: Canlı',
+} = {}) {
+  const childLabel = firstNonEmpty(selected?.fullName, selected?.name, `#${selected?.id || '-'}`);
+  const school = firstNonEmpty(schoolName, selected?.company?.name, 'DemoOkul');
+  const region = firstNonEmpty(regionLabel, selected?.company ? '' : '#1');
+  const summary = [
+    headerText,
+    `Çocuk: ${childLabel}`,
+    'Araç: 0',
+    `Okul/Şirket: ${school}`,
+    `Bölge: ${region}`,
+    reasonText,
+  ].filter(Boolean).join(' • ');
+  const selectedRecordStatus = [
+    `Çocuk: ${childLabel}`,
+    'Araç: 0',
+    `Okul/Şirket: ${school}`,
+    `Bölge: ${region}`,
+    'Canlı araç görünmüyor',
+  ].join(' • ');
+  return {
+    selectedRecordType: 'studentService',
+    selectedRecordId: Number(selected?.id || 0) || 0,
+    selectedRecordLabel: `Bugünkü servis • ${childLabel}`,
+    selectedRecordStatus,
+    selectedRecordSummary: summary,
+    selectedSummary: summary,
+    helpContextSummary: summary,
+    contextSummary: summary,
+    copilotSummary: summary,
+    summary,
+    fields: [
+      { label: 'Çocuk', value: childLabel, help: 'Seçili öğrenciyi güvenli şekilde gösterir.' },
+      { label: 'Araç', value: '0', help: 'Canlı araç olmadığını gösterir.' },
+      { label: 'Okul/Şirket', value: school, help: 'Bağlı kurum bilgisini gösterir.' },
+      { label: 'Bölge', value: region, help: 'Bağlı bölge bilgisini gösterir.' },
+      { label: 'Canlı araç', value: 'Görünmüyor', help: reasonText },
+      { label: 'Canlı konum', value: 'Yok', help: 'Canlı konum henüz görünmüyor.' },
+    ],
+    badges: [
+      { label: 'Canlı araç', value: 'Yok', help: 'Bu çocuk için canlı araç görünmüyor.' },
+      { label: 'Araç ataması', value: 'Gerekli', help: 'Araç ataması gerekiyorsa canlı görünürlük oluşur.' },
+      { label: 'Servis saati', value: 'Aktif vardiya gerekli', help: 'Canlı konum için aktif vardiya saat aralığı gerekir.' },
+    ],
+    facts: {
+      selectedRecordType: 'studentService',
+      selectedRecordId: Number(selected?.id || 0) || 0,
+      selectedRecordLabel: `Bugünkü servis • ${childLabel}`,
+      selectedRecordStatus,
+      vehicleCount: Number(vehicleCount || 0),
+      liveVehicleVisible: false,
+      noLiveVehicle: true,
+      childLabel,
+      schoolName: school,
+      regionLabel: region,
+      helpContextSummary: summary,
+      contextSummary: summary,
+      selectedRecordSummary: summary,
+      copilotSummary: summary,
+    },
+  };
+}
+
 export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, acceptedCount = 0, listCount = 0 }) {
   const status = String(selectedItem?.statusLabel || '-').toUpperCase();
   const section = String(selectedItem?.section || 'market');

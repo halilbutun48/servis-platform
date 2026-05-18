@@ -184,6 +184,20 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `selectedRecord` null olsa bile `helpContextSummary` / `contextSummary` / `liveFacts` içindeki araç sinyali cevapta kullanılır.
 - `Bu ekranda seçili araç bilgisi net görünmüyor` fallback'i yalnızca gerçekten seçili araç ve canlı sinyal yoksa geçerlidir.
 
+## COP-04B-FIX-07 acceptance note
+- COP-04B-FIX-07 personel live copilot forbidden/context fix.
+- Personel / Canlı Harita / Personel / Canlı Takip free-chat submit request de header/quick answer ile aynı selected service context'i taşır.
+- FORBIDDEN normalization: `FORBIDDEN` user-visible olmaz; erişim gerçekten yoksa sade Türkçe güvenli mesaj dönülür.
+- `selectedRecord` null olsa bile `helpContextSummary` / `contextSummary` / `liveFacts` içindeki servis, araç, GPS, ETA ve durak sinyalleri cevapta kullanılır.
+- `Bu ekranda seçili servis bilgisi net görünmüyor` fallback'i yalnızca gerçekten canlı servis sinyali yoksa geçerlidir.
+
+## COP-04B-FIX-08 acceptance note
+- COP-04B-FIX-08 Parent live screen context/no-live-vehicle fallback.
+- Veli / Canlı Takip free-chat submit request ve quick/header answer aynı parent live context’i taşır.
+- Canlı araç yoksa `Bu ekran, saha geri bildirimlerini...` gibi feedback açıklaması dönmez; güvenli no-live fallback kullanılır.
+- `selectedRecord` null olsa bile `helpContextSummary` / `contextSummary` içindeki çocuk, okul, bölge, araç yok ve aktif vardiya saat aralığı sinyalleri cevapta kullanılır.
+- Parent live selected service varsa plaka, GPS, son GPS, ETA ve sıradaki durak korunur.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`
