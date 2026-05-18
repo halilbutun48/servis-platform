@@ -33,7 +33,10 @@ function pickSelectedEntity(screenContext, conversationState) {
 
 export async function resolveChatContext({ entityType, entityId, user, screenContext, conversationState }) {
   const screenDefinition = getScreenDefinitionForUser(user, screenContext || {}, Number(screenContext?.id || 0));
-  const selected = entityType === 'screen' ? pickSelectedEntity(screenContext, conversationState) : null;
+  const simpleScreenRole = entityType === 'screen' && ['DRIVER', 'PERSONEL', 'PARENT'].includes(String(user?.role || ''));
+  const selectedEntityType = String(screenContext?.selectedEntityType || conversationState?.selectedEntityType || '').trim();
+  const selectedEntityId = Number(screenContext?.selectedEntityId || conversationState?.selectedEntityId || 0);
+  const selected = entityType === 'screen' && !simpleScreenRole ? pickSelectedEntity(screenContext, conversationState) : null;
   const resolvedEntityType = selected?.entityType || entityType;
   const resolvedEntityId = selected?.entityId || entityId;
 
@@ -72,7 +75,7 @@ export async function resolveChatContext({ entityType, entityId, user, screenCon
     sourceEntityId: entityId,
     resolvedEntityType,
     resolvedEntityId,
-    selectedEntityType: selected?.entityType || '',
-    selectedEntityId: selected?.entityId || null,
+    selectedEntityType,
+    selectedEntityId: selectedEntityId || null,
   };
 }

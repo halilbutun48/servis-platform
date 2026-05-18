@@ -10,6 +10,10 @@ const DEFAULT_CODE_BY_STATUS = {
 };
 
 const PUBLIC_ERROR_ALIASES = {
+  FORBIDDEN: {
+    code: "BAD_REQUEST",
+    message: "Bu işlem için bu rolde erişim görünmüyor.",
+  },
   JOB_TYPE_ENTITY_MISMATCH: {
     code: "BAD_REQUEST",
     message: "Şimdi: Bu ekranda seçili araç bilgisi net görünmüyor. Araç haritada görünmüyorsa önce son GPS zamanı, araç bağlantısı, görev bağlantısı ve Sürücünün telefon GPS’i durumunu kontrol et.",

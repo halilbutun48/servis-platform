@@ -10,6 +10,23 @@ export function firstValidationMessage(details) {
   return "";
 }
 
+function normalizeVisibleApiErrorMessage(value, fallbackMessage = "İşlem başarısız") {
+  const text = String(value || "").trim();
+  if (!text) return fallbackMessage;
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (/^(?:FORBIDDEN|Forbidden|HTTP 403 Forbidden|403 Forbidden)$/i.test(clean)) {
+    return "Bu işlem için bu rolde erişim görünmüyor.";
+  }
+  return clean;
+}
+
+function normalizeVisibleApiErrorCode(value) {
+  const code = String(value || "").trim();
+  if (!code) return "";
+  if (/^(?:FORBIDDEN|Forbidden)$/i.test(code)) return "BAD_REQUEST";
+  return code;
+}
+
 export function makeHttpError(status, payloadOrText) {
   const isObj = payloadOrText && typeof payloadOrText === "object";
   const normalizedError = isObj && payloadOrText.error && typeof payloadOrText.error === "object" ? payloadOrText.error : null;
@@ -22,12 +39,13 @@ export function makeHttpError(status, payloadOrText) {
       firstValidationMessage(payloadOrText.error) ||
       ""
     : String(payloadOrText || "");
+  const visibleMessage = normalizeVisibleApiErrorMessage(baseMessage, `HTTP ${status}`);
 
-  const err = new Error(baseMessage || `HTTP ${status}`);
+  const err = new Error(visibleMessage || `HTTP ${status}`);
   err.status = status;
-  err.code = normalizedError?.code || payloadOrText?.code || undefined;
+  err.code = normalizeVisibleApiErrorCode(normalizedError?.code || payloadOrText?.code || undefined) || undefined;
   if (isObj) err.payload = payloadOrText;
-  else err.text = baseMessage;
+  else err.text = visibleMessage;
   return err;
 }
 
@@ -42,11 +60,12 @@ export function getApiErrorInfo(error, fallbackMessage = "İşlem başarısız")
     firstValidationMessage(details) ||
     error?.message ||
     fallbackMessage;
+  const visibleMessage = normalizeVisibleApiErrorMessage(message, fallbackMessage);
 
   return {
     status: Number(error?.status || payload?.status || 0) || 0,
-    code: normalized?.code || payload?.code || error?.code || "",
-    message: String(message || fallbackMessage),
+    code: normalizeVisibleApiErrorCode(normalized?.code || payload?.code || error?.code || ""),
+    message: String(visibleMessage || fallbackMessage),
     details,
     payload,
   };
