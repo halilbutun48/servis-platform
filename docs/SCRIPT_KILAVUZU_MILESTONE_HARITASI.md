@@ -84,6 +84,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcopilotsmartchips01` -> `node backend\scripts\ux_copilot_smart_chips_01_check.js`
 - `check:uxcopilotpersona01` -> `node backend\scripts\ux_copilot_persona_01_check.js`
 - `check:uxcopilotterminal01` -> `node backend\scripts\ux_copilot_terminal_01_check.js`
+- `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
@@ -122,6 +123,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Yeni terminal component veya yeni route eklemez; mevcut CopilotPanel terminal shell olarak kullanılır.
 - Sağ alttaki `Sefer Abi’ye Sor` quick-help drawer ayrıdır; terminal yalnızca geniş analiz yüzeyidir.
 - Terminal starter chips readonly analiz sorularını öne çıkarır.
+
+### UX-NAV-01 [CHECK]
+- `check:uxnav01` NavDock premium visual polish check.
+- Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` drawer bozulmaz.
+- Menü kartları, aktif durum, badge hizası ve focus/hover affordance'ları daha premium görünür; route ve davranış değişmez.
 
 ## 5) Faz haritası
 ### Faz A — M0→M41 çekirdek temel hat [HISTORICAL]

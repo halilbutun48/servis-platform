@@ -186,16 +186,135 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; min-height: 100dvh; }
 @media (max-width: 900px){ .shell { grid-template-columns: 1fr; } .navDock { position: sticky; top: 0; z-index: 10; } }
 
-.navDock { background: #0a1020; border-right: 1px solid #22314f; padding: 14px; }
-.navSection { margin-bottom: 12px; }
-.navSectionTitle { font-size: 12px; color: #98a2b3; font-weight: 700; margin: 2px 0 8px; }
-.navToggle { width: 100%; text-align: left; min-height: 44px; }
-.navDockTitle { font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #a9b7d6; margin-bottom: 10px; }
-.navDockItems { display: flex; flex-direction: column; gap: 8px; }
-.navItem { width: 100%; display:flex; align-items:center; justify-content:space-between; background: #0c1322; border: 1px solid #22314f; border-radius: 8px; }
-.navItem.active { border-color:#3a66ff; box-shadow: 0 0 0 2px rgba(58,102,255,.15) inset; }
-.navLabel { font-weight: 600; }
-.navBadge { font-size: 12px; padding: 2px 8px; border: 1px solid #31466f; border-radius: 999px; color: #a9b7d6; }
+.navDock {
+  --nav-item-height: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background:
+    radial-gradient(900px circle at top left, rgba(58, 102, 255, .12), transparent 30%),
+    linear-gradient(180deg, #0a1020 0%, #090f1b 100%);
+  border-right: 1px solid rgba(58, 102, 255, .18);
+  padding: 14px;
+}
+.navDockBrand,
+.navDockTitle,
+.navSection,
+.navAdvanced {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(58, 102, 255, .14);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(12, 18, 34, .92) 0%, rgba(10, 15, 28, .96) 100%);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, .18);
+}
+.navDockBrand {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+.navSection {
+  margin-bottom: 0;
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+  justify-items: stretch;
+}
+.navSectionTitle {
+  margin: 0;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(58, 102, 255, .16);
+  background: rgba(58, 102, 255, .08);
+  color: #dbe4ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.navToggle {
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+  padding: 0 2px 2px;
+  border: 0;
+  background: transparent;
+  color: #dbe4ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.navDockTitle {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  margin-bottom: 0;
+  font-weight: 800;
+  color: #a9b7d6;
+  line-height: 1.15;
+}
+.navDockItems {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  align-items: stretch;
+}
+.navItem {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--nav-item-height);
+  height: var(--nav-item-height);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(14, 21, 36, .96) 0%, rgba(10, 16, 29, .96) 100%);
+  border: 1px solid rgba(58, 102, 255, .12);
+  border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 10px 20px rgba(2, 6, 23, .14);
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.navItem:hover {
+  transform: translateY(-1px);
+  border-color: rgba(110, 149, 255, .42);
+  background: linear-gradient(180deg, rgba(20, 30, 51, .98) 0%, rgba(13, 20, 35, .98) 100%);
+}
+.navItem.active {
+  border-color: #5b80ff;
+  box-shadow: 0 0 0 1px rgba(91, 128, 255, .25) inset, 0 14px 28px rgba(20, 37, 80, .22);
+  background: linear-gradient(180deg, rgba(23, 36, 64, .98) 0%, rgba(13, 20, 35, .98) 100%);
+}
+.navItem:focus-visible,
+.navToggle:focus-visible {
+  outline: 2px solid rgba(109, 146, 255, .9);
+  outline-offset: 2px;
+}
+.navLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #edf4ff;
+}
+.navBadge {
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 2px 8px;
+  border: 1px solid rgba(96, 125, 255, .28);
+  border-radius: 999px;
+  background: rgba(58, 102, 255, .14);
+  color: #dbe4ff;
+}
 
 .shellMain { display:flex; flex-direction:column; }
 .shellTop { display:flex; align-items:center; justify-content:space-between; padding: calc(12px + env(safe-area-inset-top)) 16px 12px; border-bottom: 1px solid #22314f; background: rgba(11,15,23,.75); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 5; gap: 12px; }
@@ -209,9 +328,15 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .shellTopMeta { min-width: 0; }
 .shellTopLogout { flex-shrink: 0; }
 
-.navDockBrand { margin-bottom: 12px; }
-.navDockBrandName { font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.8; }
-.navDockRole { font-size: 18px; font-weight: 700; margin-top: 2px; }
+.navDockBrandName { font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.8; line-height: 1.15; }
+.navDockRole { font-size: 18px; font-weight: 700; margin-top: 2px; line-height: 1.15; color: #f5f8ff; }
+.navAdvanced {
+  margin: 0;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
 
 .panelChromeHead {
   display: flex;
@@ -612,19 +737,6 @@ button, input, select, textarea, .btn, .secondary, .navItem {
     border-right: 0;
     border-bottom: 1px solid #22314f;
     padding: 10px 12px;
-    overflow-x: auto;
-  }
-  .navDockItems {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 2px;
-  }
-  .navItem {
-    width: auto;
-    flex: 0 0 auto;
-    white-space: nowrap;
   }
   .shellTop {
     flex-direction: column;
@@ -657,7 +769,7 @@ button, input, select, textarea, .btn, .secondary, .navItem {
 @media (min-width: 641px) and (max-width: 900px) {
   .shellTop { padding: calc(11px + env(safe-area-inset-top)) 14px 11px; }
   .navDock { padding: 12px 14px; }
-  .navDockTitle { margin-bottom: 8px; }
+  .navDockTitle { margin-bottom: 0; }
   .navDockBrandName { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
   .navDockRole { font-size: 17px; font-weight: 700; margin-top: 2px; }
   .panelTitle { font-size: 20px; }
@@ -691,29 +803,14 @@ button, input, select, textarea, .btn, .secondary, .navItem {
 
   .navDock {
     padding: 8px 10px;
-    overflow-x: auto;
   }
   .navDockBrand { display: none; }
-  .navDockTitle { margin-bottom: 8px; }
+  .navDockTitle { margin-bottom: 0; }
   .navDockBrandName { display: none; }
   .navDockRole { font-size: 16px; font-weight: 800; margin-top: 0; text-transform: none; letter-spacing: 0; }
-  .navSection { margin-bottom: 8px; }
+  .navSection { margin-bottom: 0; }
   .navSectionTitle { display: none; }
-  .navDockItems {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 8px;
-    padding-bottom: 4px;
-  }
-  .navItem {
-    width: auto;
-    flex: 0 0 auto;
-    white-space: nowrap;
-    border-radius: 999px;
-    padding: 0 14px;
-  }
+  .navDockItems { gap: 8px; }
   .navLabel { font-size: 13px; }
   .navBadge { font-size: 11px; padding: 2px 7px; }
 

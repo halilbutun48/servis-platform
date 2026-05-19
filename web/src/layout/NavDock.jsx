@@ -24,6 +24,8 @@ function Item({ label, path, active, badge }) {
       type="button"
       className={active ? "navItem active" : "navItem"}
       onClick={() => navigate(path)}
+      aria-current={active ? "page" : undefined}
+      aria-label={label}
       title={label}
     >
       <span className="navLabel">{label}</span>
@@ -49,6 +51,7 @@ function Section({ title, items, path }) {
 
 export default function NavDock({ role, path, me }) {
   const LS_ADV = "psv1:nav:advanced";
+  const advancedTitle = "SİSTEM";
   const [showAdvanced, setShowAdvanced] = useState(() => {
     try {
       return localStorage.getItem(LS_ADV) === "1";
@@ -70,67 +73,115 @@ export default function NavDock({ role, path, me }) {
   const cfg = useMemo(() => {
     const sections = [];
     const advanced = [];
+    const dailyFlowTitle = "GÜNLÜK AKIŞ";
+    const planningTitle = "PLANLAMA VE SÖZLEŞME";
+    const operationsTitle = "OPERASYON KONTROL";
+    const seferAbiTitle = "SEFER ABİ";
 
     const base = role === "COMPANY" ? companyBase(me) : "";
+    const kind = String(me?.companyKind || "").toUpperCase();
+    const isSchool = kind === "SCHOOL";
+    const isOrganization = kind === "ORGANIZATION";
+    const isCompany = !isSchool && !isOrganization;
+    const companyOpsLabel = isCompany
+      ? "Operasyon Paneli"
+      : isSchool
+        ? "Okul Operasyon Paneli"
+        : "Organizasyon Operasyon Paneli";
+    const companyPlanningHomeLabel = isSchool
+      ? "Okul Merkezi"
+      : isOrganization
+        ? "Gezi / Planlama Merkezi"
+        : "Planlama Merkezi";
+    const companyPeopleTitle = isSchool
+      ? "ÖĞRENCİ VE VELİ"
+      : isOrganization
+        ? "KATILIMCI VE LOKASYON"
+        : "PERSONEL";
+    const companyPeopleLinkLabel = isSchool ? "Öğrenci Link" : "Personel Link";
+    const companyPeopleAccessLabel = isSchool ? "Veli Erişimi" : "Personel Erişimi";
+    const companyPeopleGeoLabel = isSchool
+      ? "Öğrenci Konum Seçici"
+      : isOrganization
+        ? "Lokasyon İncele"
+        : "Personel Konum Seçici";
     const copilotEntry = getCopilotMenuEntry({ role, companyKind: me?.companyKind });
     const feedbackEntry = { label: "Geri Bildirim", path: "/shared/feedback" };
     const copilotSection = {
-      title: copilotEntry.label || "Sefer Abi",
-      items: [{ label: copilotEntry.label, path: copilotEntry.path }],
+      title: seferAbiTitle,
+      items: [{ label: copilotEntry.label || "Sefer Abi Terminali", path: copilotEntry.path }],
     };
 
     if (role === "ROOM") {
       sections.push({
-        title: "Ana",
+        title: dailyFlowTitle,
         items: [
           { label: "Canlı Takip", path: "/room/map" },
-          { label: "Ticari Akışım", path: "/room/commercial-flow", badge: "Yeni" },
-          { label: "Teklifler", path: "/room/offers" },
-          { label: "Vardiyalar", path: "/room/shifts" },
+          { label: "Ticari Akışım", path: "/room/commercial-flow" },
         ],
       });
       sections.push({
-        title: "Operasyon",
+        title: planningTitle,
         items: [
-          { label: "Operasyon Sağlığı", path: "/room/operation-health", badge: "Yeni" },
+          { label: "Teklifler", path: "/room/offers" },
+          { label: "Vardiyalar", path: "/room/shifts" },
+          { label: "Sözleşmeler", path: "/room/agreements" },
+        ],
+      });
+      sections.push({
+        title: operationsTitle,
+        items: [
+          { label: "Operasyon Sağlığı", path: "/room/operation-health" },
           { label: "Araçlar", path: "/room/vehicles" },
           { label: "Sürücüler", path: "/room/drivers" },
           { label: "Raporlar", path: "/room/reports" },
         ],
       });
-      // Sözleşmeler: Gelişmiş altında
-      advanced.push({ label: "Sözleşmeler", path: "/room/agreements" });
       advanced.push({ label: "Hub", path: "/room/hub" });
       advanced.push({ label: "Check-in", path: "/room/checkin" });
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
+      advanced.push(feedbackEntry);
     } else if (role === "COMPANY") {
       sections.push({
-        title: "Ana",
+        title: "GÜNLÜK TAKİP",
         items: [
           { label: "Harita", path: base + "/map" },
-          { label: me?.companyKind === "SCHOOL" ? "Okul Operasyon Paneli" : me?.companyKind === "ORGANIZATION" ? "Organizasyon Operasyon Paneli" : "Operasyon Paneli", path: base + "/operations", badge: "Yeni" },
-          { label: "Ticari Akışım", path: base + "/commercial-flow", badge: "Yeni" },
-          { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : "Planlama Merkezi", path: base },
-          { label: "Vardiyalar", path: base + "/shifts" },
-          { label: "Raporlar", path: base + "/reports" },
-          { label: "Hizmet Değerlendirme", path: base + "/service-evaluation", badge: "Yeni" },
+          { label: companyOpsLabel, path: base + "/operations" },
         ],
       });
-      // Sözleşmeler: Gelişmiş altında
-      advanced.push({ label: "Sözleşmeler", path: base + "/agreements" });
+      sections.push({
+        title: "PLANLAMA VE SÖZLEŞME",
+        items: [
+          { label: companyPlanningHomeLabel, path: base },
+          ...(isOrganization ? [{ label: "Yer Planları", path: base + "/plans" }] : []),
+          { label: "Vardiyalar", path: base + "/shifts" },
+          { label: "Sözleşmeler", path: base + "/agreements" },
+        ],
+      });
+      sections.push({
+        title: "TİCARİ VE KALİTE",
+        items: [
+          { label: "Ticari Akış", path: base + "/commercial-flow" },
+          { label: "Hizmet Değerlendirme", path: base + "/service-evaluation" },
+          { label: "Raporlar", path: base + "/reports" },
+        ],
+      });
+      sections.push({
+        title: companyPeopleTitle,
+        items: [
+          { label: companyPeopleLinkLabel, path: base + "/access-links" },
+          { label: companyPeopleAccessLabel, path: base + "/personel-access" },
+          { label: companyPeopleGeoLabel, path: base + "/georeview" },
+          { label: "Check-in", path: base + "/checkin" },
+        ],
+      });
       advanced.push({ label: "Hub", path: base + "/hub" });
-      advanced.push({ label: "Check-in", path: base + "/checkin" });
-      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Link" : "Personel Link", path: base + "/access-links" });
-      advanced.push({ label: "Personel Erişimi", path: base + "/personel-access" });
-      if (me?.companyKind === "SCHOOL") {
-        advanced.push({ label: "Veli Erişimi", path: "/school/parents" });
-      }
-      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum Seçici" : me?.companyKind === "ORGANIZATION" ? "Lokasyon Konum Seçici" : "Personel Konum Seçici", path: base + "/georeview" });
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
+      advanced.push({ label: "Geri Bildirim", path: "/shared/feedback" });
     } else if (role === "DRIVER") {
       sections.push({
         title: "",
@@ -180,9 +231,9 @@ export default function NavDock({ role, path, me }) {
         items: [
           { label: "İşlem Kayıtları", path: "/superadmin/audit" },
           { label: "Canlı İzleme", path: "/superadmin/observability" },
-          { label: "Denetim Paneli", path: "/superadmin/operations", badge: "Yeni" },
+          { label: "Denetim Paneli", path: "/superadmin/operations" },
           { label: "Kabul Merkezi", path: "/superadmin/acceptance" },
-          { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification", badge: "Yeni" },
+          { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification" },
           { label: "Sahaya Çıkış Kontrolü", path: "/superadmin/pilot-launch-gate" },
         ],
       });
@@ -198,15 +249,13 @@ export default function NavDock({ role, path, me }) {
       });
     }
 
-    advanced.push(feedbackEntry);
-
     return { sections, advanced, copilotSection };
   }, [role, me]);
 
   const hasAdvanced = cfg.advanced.length > 0;
 
   return (
-    <div className="navDock">
+    <div className="navDock" role="navigation" aria-label="Sol menü">
       <div className="navDockBrand"><BrandMark compact subtitle="Operasyon menüsü" /></div>
       <div className="navDockTitle">
         <div className="navDockBrandName">{BRAND_NAME}</div>
@@ -222,7 +271,7 @@ export default function NavDock({ role, path, me }) {
       {hasAdvanced ? (
         <div className="navAdvanced">
           <button type="button" className="navToggle" onClick={toggleAdvanced}>
-            {showAdvanced ? "Gelişmiş ▾" : "Gelişmiş ▸"}
+            {showAdvanced ? `${advancedTitle} ▾` : `${advancedTitle} ▸`}
           </button>
           {showAdvanced ? <Section title={null} items={cfg.advanced} path={path} /> : null}
         </div>

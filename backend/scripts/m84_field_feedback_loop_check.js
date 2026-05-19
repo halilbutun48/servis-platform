@@ -105,7 +105,7 @@ mustInclude(feedbackEntry, "/api/pilot-launch-gate/field-feedback-loop/records",
 mustInclude(feedbackEntry, "Geri Bildirim", "shared feedback section renders friendly title");
 mustInclude(feedbackEntry, "★", "shared feedback section renders star rating");
 mustInclude(feedbackPanel, "FeedbackLoopSection", "shared feedback panel uses reusable section");
-mustInclude(navDock, "Gelişmiş", "navdock exposes advanced feedback group");
+mustInclude(navDock, 'advancedTitle = "SİSTEM"', "navdock exposes advanced feedback group");
 mustInclude(navDock, "advanced.push(feedbackEntry)", "navdock exposes feedback under advanced");
 mustInclude(navDock, "Geri Bildirim", "navdock exposes feedback submenu");
 mustInclude(navDock, "/shared/feedback", "navdock feedback submenu points to shared feedback");

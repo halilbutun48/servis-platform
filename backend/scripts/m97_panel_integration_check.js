@@ -57,7 +57,7 @@ must(has(app, 'path === "/organization/checkin"'), "app keeps organization check
 must(has(app, 'path === "/driver/checkin"'), "app keeps driver check-in route");
 
 must(has(navDock, 'advanced.push({ label: "Check-in", path: "/room/checkin" });'), "nav dock keeps room check-in under advanced");
-must(has(navDock, 'advanced.push({ label: "Check-in", path: base + "/checkin" });'), "nav dock keeps company/school/organization check-in under advanced");
+must(has(navDock, '{ label: "Check-in", path: base + "/checkin" }'), "nav dock keeps company/school/organization check-in visible");
 
 must(has(quickBar, '{ label: "Check-in", path: "/room/checkin" }'), "tablet quick bar keeps room check-in shortcut");
 

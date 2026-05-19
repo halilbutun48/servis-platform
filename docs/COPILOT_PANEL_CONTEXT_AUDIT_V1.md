@@ -222,6 +222,11 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Sağ alttaki `Sefer Abi’ye Sor` drawer quick-help yüzeyi olarak korunur.
 - Terminal starter chips readonly analiz soruları sunar; otomatik aksiyon veya dispatcher yoktur.
 
+## UX-NAV-01 premium NavDock polish
+- Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` quick-help drawer değişmez.
+- NavDock kartları, aktif durum vurgusu, badge hizası ve focus/hover affordance'ları daha premium ve okunur hale getirilir.
+- Bu polish görünüm standardını iyileştirir; route, component yapısı ve product/business flow değişmez.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

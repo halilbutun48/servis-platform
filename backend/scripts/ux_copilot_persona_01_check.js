@@ -156,7 +156,7 @@ must(panelSource, 'COPILOT_TERMINAL.title', 'panel uses terminal title');
 must(panelSource, 'COPILOT_TERMINAL.subtitle', 'panel uses terminal subtitle');
 must(panelSource, 'COPILOT_TERMINAL.readonlyBoundary', 'panel uses terminal readonly boundary');
 must(panelSource, 'COPILOT_TERMINAL.drawerSeparationNote', 'panel uses terminal drawer separation note');
-must(navDockSource, 'copilotEntry.label || "Sefer Abi"', 'nav dock uses Sefer Abi as copilot section title');
+must(navDockSource, 'copilotEntry.label || "Sefer Abi Terminali"', 'nav dock uses Sefer Abi Terminali as copilot section title');
 mustNot(navDockSource, 'title: "Copilot"', 'nav dock no longer exposes Copilot section title');
 must(bubbleSource, 'COPILOT_PERSONA.assistantDisplayName', 'bubble uses persona assistant name');
 must(helperSource, 'export const COPILOT_PERSONA', 'copilot facts exports persona constant');
