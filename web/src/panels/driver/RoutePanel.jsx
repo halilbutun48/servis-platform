@@ -4,6 +4,7 @@ import { enqueueRequest, flushQueue, getQueue, isOnline, queueSize } from "../..
 import MapView from "../../components/map/MapView";
 import QueueDetailTable from "../../components/QueueDetailTable";
 import StopTimeline from "../../components/StopTimeline";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import { useAutoReload } from "../../live/useAutoReload";
 import { useSession } from "../../state/session";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats, isReachedStop } from "../../utils/navigation";
@@ -42,7 +43,6 @@ export default function RoutePanel() {
   const [online, setOnline] = useState(isOnline());
   const [qLen, setQLen] = useState(queueSize());
   const [flushing, setFlushing] = useState(false);
-  const [showQueue, setShowQueue] = useState(false);
   const wasOnlineRef = useRef(online);
   const flushBusyRef = useRef(false);
   const loadRef = useRef(null);
@@ -58,7 +58,6 @@ export default function RoutePanel() {
   const nextStop = data?.nextStop || null;
   const progress = data?.progress || null;
   const paused = !!progress?.pausedAt;
-  const [showStops, setShowStops] = useState(false);
   const [selectedStopId, setSelectedStopId] = useState(null);
 
   const pct = useMemo(() => {
@@ -531,11 +530,6 @@ async function undoLast() {
             ) : qLen ? (
               <span className="pill" style={{ fontWeight: 900 }} data-status="APPROVED">KUYRUK: {qLen}</span>
             ) : null}
-            {qLen ? (
-              <button type="button" onClick={() => setShowQueue((p) => !p)} style={{ fontWeight: 900 }}>
-                {showQueue ? "Kuyruk Detayını Kapat" : "Kuyruk Detayı"}
-              </button>
-            ) : null}
             {online && qLen ? (
               <button type="button" disabled={busy || flushing} onClick={flushNow} style={{ fontWeight: 900 }}>
                 {flushing ? "..." : `Kuyruğu Gönder (${qLen})`}
@@ -543,14 +537,22 @@ async function undoLast() {
             ) : null}
           </div>
         </div>
-        {showQueue ? (
-          <div className="card" style={{ marginTop: 10 }}>
+        {qLen ? (
+          <div style={{ marginTop: 10 }}>
+            <CollapsibleSection
+              title="Kuyruk Detayı"
+              subtitle="Offline kuyruktaki bekleyen istekler. Sadece ikinci katmanı aç."
+              badge={qLen}
+              defaultOpen={false}
+              compact
+            >
             <QueueDetailTable
               items={getQueue().map((x) => ({
                 ...x,
                 type: x.label || x.type || "-",
               }))}
             />
+            </CollapsibleSection>
           </div>
         ) : null}
         <div className="muted">
@@ -698,16 +700,14 @@ async function undoLast() {
         />
       </div>
 
-      <div className="card">
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <h3>Duraklar (rota sırası / mesafe / ETA)</h3>
-          <button type="button" onClick={() => setShowStops((p) => !p)}>
-            {showStops ? "Gizle" : "Göster"}
-          </button>
-        </div>
-
-        {showStops ? (
-          <table className="tbl" style={{ marginTop: 10 }}>
+      <CollapsibleSection
+        title="Duraklar (rota sırası / mesafe / ETA)"
+        subtitle="Rota satırları ikinci katmanda; ana özet ve sonraki durak üstte açık kalır."
+        badge={orderedStops.length}
+        defaultOpen={false}
+      >
+        <div className="card">
+          <table className="tbl">
             <thead>
               <tr>
                 <th>Order</th>
@@ -740,12 +740,8 @@ async function undoLast() {
               })}
             </tbody>
           </table>
-        ) : (
-          <div className="muted" style={{ marginTop: 8 }}>
-            Detayl? listeyi sadece gerekirse a?.
-          </div>
-        )}
-      </div>
+        </div>
+      </CollapsibleSection>
     </div>
   );
 }

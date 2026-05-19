@@ -50,6 +50,7 @@ const steps = [
   'check:etasanity01',
   'check:etaosrm01',
   'check:etaosrm02',
+  'check:uxcollapsiblepanels01',
   'check:uxnav01',
   'check:uxdensity01',
   'check:livetrackingfinal01',

@@ -24,6 +24,7 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import CompanyAgreementsOverviewSection from "./companyAgreementsOverviewSection";
 import CompanyAgreementsRouteRefreshPendingSection from "./companyAgreementsRouteRefreshPendingSection";
 import CompanyAgreementsSelectedSummarySection, {
@@ -954,14 +955,22 @@ export default function AgreementsPanel() {
       ) : null}
 
       {selectedAgreementRow?.a ? (
-        <AgreementOpsBridgeCard
-          agreement={selectedAgreementRow.a}
-          room={selectedAgreementRow.room}
-          bridge={selectedAgreementBridge}
-          onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
-          onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
-          emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
-        />
+        <CollapsibleSection
+          title="Operasyon bağlantısı"
+          subtitle="Seçili sözleşmenin ürettiği vardiya ve önizleme bağlantısı ikinci katmanda."
+          badge={selectedAgreementRow.a?.id ? `#${selectedAgreementRow.a.id}` : "Seçili"}
+          defaultOpen={false}
+          compact
+        >
+          <AgreementOpsBridgeCard
+            agreement={selectedAgreementRow.a}
+            room={selectedAgreementRow.room}
+            bridge={selectedAgreementBridge}
+            onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
+            onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
+            emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
+          />
+        </CollapsibleSection>
       ) : null}
 
       <div className="card">

@@ -257,6 +257,11 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Büyük ekranlarda bilgi yoğunluğu artar; küçük ekranlarda taşma ve çakışma kontrol altında kalır.
 - Behavior unchanged; only visible density, spacing and dashboard polish changes.
 
+## UX-COLLAPSIBLE-PANELS-01 long panel summary-first standard
+- Uzun panellerde kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; ikincil detaylar collapsible/accordion altında toplanır.
+- `Room / Operasyon Sağlığı`, `Driver / Bugün`, `Driver / Rota`, `Parent / Canlı Takip` ve `Company / Sözleşmeler` bu standart için ilk patch yüzeyleri olarak daraltılır.
+- `Sefer Abi Terminali` ve sağ alttaki `Sefer Abi’ye Sor` kasıtlı olarak korunur; terminal/assistant boundary bozulmaz.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

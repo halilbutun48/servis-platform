@@ -7,6 +7,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildShiftFacts } from "../../utils/copilotFacts";
 
 import QueueDetailTable from "../../components/QueueDetailTable";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import { useAutoReload } from "../../live/useAutoReload";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
@@ -37,7 +38,6 @@ export default function DriverTodayPanel() {
   const [online, setOnline] = useState(isOnline());
   const [qLen, setQLen] = useState(queueSize());
   const [flushing, setFlushing] = useState(false);
-  const [showQueue, setShowQueue] = useState(false);
   const wasOnlineRef = useRef(online);
   const flushBusyRef = useRef(false);
   const loadRef = useRef(null);
@@ -297,30 +297,29 @@ useEffect(() => {
       </span>
     ) : null}
   </div>
-
-  <div className="row" style={{ gap: 8, alignItems: "center" }}>
-    {qLen ? (
-      <button type="button" onClick={() => setShowQueue((p) => !p)} style={{ fontWeight: 900 }}>
-        {showQueue ? "Kuyruk Detayı Kapat" : "Kuyruk Detayı"}
-      </button>
-    ) : null}
-
-    {online && qLen ? (
-      <button type="button" disabled={flushing} onClick={flushNow} style={{ fontWeight: 900 }}>
-        {flushing ? "..." : `Kuyruğu Gönder (${qLen})`}
-      </button>
-    ) : null}
-  </div>
 </div>
 
-{showQueue ? (
-  <div className="card" style={{ marginTop: 10 }}>
-    <QueueDetailTable
-      items={getQueue().map((x) => ({
-        ...x,
-        type: x.label || x.type || "-",
-      }))}
-    />
+{qLen ? (
+  <div style={{ marginTop: 10 }}>
+    <CollapsibleSection
+      title="Kuyruk Detayı"
+      subtitle="Offline kuyruktaki bekleyen istekler. Sadece ikinci katmanı aç."
+      badge={qLen}
+      defaultOpen={false}
+      compact
+      rightAction={online && qLen ? (
+        <button type="button" disabled={flushing} onClick={flushNow} style={{ fontWeight: 900 }}>
+          {flushing ? "..." : `Kuyruğu Gönder (${qLen})`}
+        </button>
+      ) : null}
+    >
+      <QueueDetailTable
+        items={getQueue().map((x) => ({
+          ...x,
+          type: x.label || x.type || "-",
+        }))}
+      />
+    </CollapsibleSection>
   </div>
 ) : null}
       </div>
@@ -369,23 +368,29 @@ useEffect(() => {
           </div>
 
           {tomorrow?.length ? (
-            <div className="card" style={{ overflowX: "auto" }}>
-              <h3>Yarın</h3>
-              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Durum</th>
-                    <th>Başlangıç</th>
-                    <th>Bitiş</th>
-                    <th>Aksiyon</th>
-                  </tr>
-                </thead>
-                <tbody>{tomorrow.map((s) => <ShiftRow key={s.id} s={s} />)}</tbody>
-              </table>
-              <div className="muted" style={{ marginTop: 8 }}>
-                Not: Yarındaki vardiyalar şimdilik sadece bilgi amaçlıdır; başlayınca otomatik aktif olur.
-              </div>
+            <div style={{ marginTop: 12 }}>
+              <CollapsibleSection
+                title="Yarın"
+                subtitle="Yarındaki vardiyalar bilgi amaçlıdır; başlayınca otomatik aktif olur."
+                badge={tomorrow.length}
+                defaultOpen={false}
+                compact
+              >
+                <div className="card" style={{ overflowX: "auto" }}>
+                  <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Durum</th>
+                        <th>Başlangıç</th>
+                        <th>Bitiş</th>
+                        <th>Aksiyon</th>
+                      </tr>
+                    </thead>
+                    <tbody>{tomorrow.map((s) => <ShiftRow key={s.id} s={s} />)}</tbody>
+                  </table>
+                </div>
+              </CollapsibleSection>
             </div>
           ) : null}
         </>

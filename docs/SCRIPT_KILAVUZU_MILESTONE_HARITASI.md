@@ -86,6 +86,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcopilotterminal01` -> `node backend\scripts\ux_copilot_terminal_01_check.js`
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
+- `check:uxcollapsiblepanels01` -> `node backend\scripts\ux_collapsible_panels_01_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
@@ -161,6 +162,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxdensity01` panel/card density ve premium dashboard polish check.
 - Ortak kart, başlık, badge, chip, buton ve tablo yoğunluğu daha tutarlı hale gelir; ürün davranışı değişmez.
 - NavDock role/kind IA, `Sefer Abi Terminali` ve `Sefer Abi’ye Sor` standardı korunur.
+
+### UX-COLLAPSIBLE-PANELS-01 [CHECK]
+- `check:uxcollapsiblepanels01` uzun paneller için summary-first + collapsible secondary details standardını doğrular.
+- Kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; ikincil bilgiler accordion altında toplanır.
+- `Sefer Abi Terminali`, sağ alttaki `Sefer Abi’ye Sor`, NavDock role/kind standardı ve ETA final zinciri korunur.
 
 ## 5) Faz haritası
 ### Faz A — M0→M41 çekirdek temel hat [HISTORICAL]
