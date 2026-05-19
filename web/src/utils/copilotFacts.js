@@ -95,6 +95,7 @@ export const COPILOT_PERSONA = Object.freeze({
   assistantDisplayName: 'Sefer Abi',
   assistantSubtitle: 'Operasyon yardımcısı',
   menuLabel: 'Sefer Abi',
+  terminalLabel: 'Sefer Abi Terminali',
   drawerTitle: 'Sefer Abi’ye Sor',
   emptyStateLead: 'Bulunduğun ekranda soru sorabilirsin.',
   emptyStateBody: 'Yazı alanı altta. Hazır öneriler istersen açılır. Seçili kayıt varsa onu da konuşmaya katmaya çalışırım.',
@@ -114,6 +115,19 @@ export const COPILOT_PERSONA = Object.freeze({
   }),
   mobileAcceptanceNote: 'Mobil canlı kabul bu milestone içinde değildir; sonraki adımda ayrı değerlendirilir.',
   dispatcherNote: 'Proactive AI dispatcher bu milestone kapsamı dışındadır.',
+});
+
+export const COPILOT_TERMINAL = Object.freeze({
+  title: 'Sefer Abi Terminali',
+  subtitle: 'Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan readonly analiz alanı.',
+  readonlyBoundary: 'Bu ekran işlem başlatmaz; yalnızca görünür sinyalleri yorumlar.',
+  drawerSeparationNote: 'Sağ alttaki Sefer Abi’ye Sor hızlı destek içindir; terminal daha derin analiz yüzeyidir.',
+  starterChips: Object.freeze([
+    'Bugünkü operasyon risklerini özetle',
+    'Ticari akışta eksik var mı?',
+    'Kalite sinyallerini açıkla',
+    'Sıradaki doğru kontrol ne?',
+  ]),
 });
 
 export function normalizeCopilotSignal(signal, fallbackId = '') {

@@ -1,7 +1,7 @@
 import { companyBase } from "../utils/paths";
 import { COPILOT_PERSONA } from "../utils/copilotFacts";
 
-const COPILOT_MENU_LABEL = COPILOT_PERSONA.menuLabel || "Sefer Abi";
+const COPILOT_MENU_LABEL = COPILOT_PERSONA.terminalLabel || COPILOT_PERSONA.menuLabel || "Sefer Abi Terminali";
 
 export function normalizeGuideRoleKey(me) {
   const role = String(me?.role || "");

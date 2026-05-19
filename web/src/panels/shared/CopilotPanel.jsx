@@ -22,7 +22,7 @@ import CopilotAdvancedResultCard from "../../components/copilot/CopilotAdvancedR
 import SuggestedChips from "../../components/copilot/SuggestedChips";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
-import { COPILOT_PERSONA } from "../../utils/copilotFacts";
+import { COPILOT_PERSONA, COPILOT_TERMINAL } from "../../utils/copilotFacts";
 import { nowIsoTR } from "../../utils/time";
 import { getCopilotScreenOptions } from "../../copilot/screenRegistry";
 import {
@@ -567,12 +567,18 @@ export default function CopilotPanel() {
   return (
     <div className="wrap wrap--fluid" style={{ display: "grid", gap: 12 }}>
       <div className="card">
-        <div className="title">Operasyon Copilot</div>
+        <div className="title">{COPILOT_TERMINAL.title}</div>
         <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
           {COPILOT_PERSONA.assistantDisplayName} · {COPILOT_PERSONA.assistantSubtitle}
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
-          Bu sayfa detaylı inceleme içindir. Kullanıcı önce sorusunu yazar; gerekirse bağlam ve gelişmiş ayarlar sonradan açılır. Köşedeki Sefer Abi’ye Sor ise bulunduğun ekrandan ayrılmadan kısa destek verir.
+          {COPILOT_TERMINAL.subtitle}
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          {COPILOT_TERMINAL.readonlyBoundary}
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          {COPILOT_TERMINAL.drawerSeparationNote}
         </div>
       </div>
 
@@ -615,6 +621,14 @@ export default function CopilotPanel() {
             <div className="muted">
               Sohbet modu önce soruyu alır. Bağlam mümkünse otomatik okunur; gerekirse aşağıdaki düğmeyle gelişmiş ayarlardan değiştirirsin.
             </div>
+
+            {!chatMessages.length ? (
+              <div className="card" style={{ display: "grid", gap: 8 }}>
+                <div style={{ fontWeight: 800 }}>Terminal başlangıç soruları</div>
+                <div className="muted">Readonly analiz için kısa bir başlangıç seçebilirsin.</div>
+                <SuggestedChips items={COPILOT_TERMINAL.starterChips} busy={chatBusy || autoChatBusy} onPick={runChat} />
+              </div>
+            ) : null}
 
             <div className="card" style={{ padding: 12, display: "flex", gap: 12, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
               <div className="muted" style={{ display: "grid", gap: 4 }}>

@@ -152,7 +152,10 @@ must(drawerSource, 'u.volume = Number.isFinite(voiceConfig.volume) ? voiceConfig
 must(drawerSource, 'u.lang = voiceConfig.lang || "tr-TR"', 'drawer keeps tr-TR language');
 must(panelSource, 'COPILOT_PERSONA.assistantDisplayName', 'panel uses persona assistant name');
 must(panelSource, 'COPILOT_PERSONA.assistantSubtitle', 'panel uses persona assistant subtitle');
-must(panelSource, 'Köşedeki Sefer Abi’ye Sor ise bulunduğun ekrandan ayrılmadan kısa destek verir.', 'panel helper uses updated drawer label');
+must(panelSource, 'COPILOT_TERMINAL.title', 'panel uses terminal title');
+must(panelSource, 'COPILOT_TERMINAL.subtitle', 'panel uses terminal subtitle');
+must(panelSource, 'COPILOT_TERMINAL.readonlyBoundary', 'panel uses terminal readonly boundary');
+must(panelSource, 'COPILOT_TERMINAL.drawerSeparationNote', 'panel uses terminal drawer separation note');
 must(navDockSource, 'copilotEntry.label || "Sefer Abi"', 'nav dock uses Sefer Abi as copilot section title');
 mustNot(navDockSource, 'title: "Copilot"', 'nav dock no longer exposes Copilot section title');
 must(bubbleSource, 'COPILOT_PERSONA.assistantDisplayName', 'bubble uses persona assistant name');

@@ -212,9 +212,15 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 
 ## UX-COPILOT-PERSONA-01-FIX-01 visible label and voice polish
 - Sağ alt drawer görünür başlığı `Sefer Abi’ye Sor` standardına bağlanır.
-- Sol menü kısa label `Sefer Abi` standardını korur; terminal milestone geldiğinde `Sefer Abi Terminali` ayrı değerlendirilir.
+- Sol menü kısa label `Sefer Abi Terminali` standardına bağlanır.
 - Sesli okuma tonu tok, sakin ve güven veren biçimde; `tr-TR`, daha düşük pitch ve biraz daha yavaş tempo hedefiyle kalır.
 - Browser TTS ses rengi cihaz ve tarayıcıya göre değişebileceği için kesin timbre garantisi verilmez; fallback hata üretmeden çalışır.
+
+## UX-COPILOT-TERMINAL-01 existing CopilotPanel terminal label/readiness polish
+- Mevcut CopilotPanel derin analiz yüzeyi terminal shell olarak kullanılır; yeni terminal component veya yeni route eklenmez.
+- Sol menüdeki terminal label `Sefer Abi Terminali` görünür standardına bağlanır.
+- Sağ alttaki `Sefer Abi’ye Sor` drawer quick-help yüzeyi olarak korunur.
+- Terminal starter chips readonly analiz soruları sunar; otomatik aksiyon veya dispatcher yoktur.
 
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`

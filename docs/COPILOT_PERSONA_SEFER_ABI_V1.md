@@ -28,8 +28,10 @@ Kapsam: Web Copilot ve sürücü sesli yardımcı için ortak marka sesi ve gör
 
 ## Görünür label standardı
 - Sağ alt drawer başlığı: `Sefer Abi’ye Sor`
-- Sol menü kısa label: `Sefer Abi`
-- Terminal milestone geldiğinde sol menü label: `Sefer Abi Terminali`
+- Sol menü kısa label: `Sefer Abi Terminali`
+- Terminal başlığı: `Sefer Abi Terminali`
+- Terminal alt açıklama: `Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan readonly analiz alanı.`
+- Terminal readonly sınırı: `Bu ekran işlem başlatmaz; yalnızca görünür sinyalleri yorumlar.`
 - Drawer alt satırı: `Operasyon yardımcısı`
 - Kısa açıklama: `Bulunduğun ekrandan ayrılmadan kısa destek verir.`
 
@@ -89,6 +91,11 @@ Görünür kullanıcı metninde şu teknik kelimeler kullanılmaz:
 - Bu milestone mobil canlı kabul iddiası taşımaz.
 - Mobil canlı davranış daha sonra ayrı doğrulanır.
 - Sürücü sesli yardımcı ile web Copilot aynı marka sesi ailesindedir; fakat mobil canlı kabul bu milestone’da doğrulanmış sayılmaz.
+
+## Terminal ayrımı
+- Sağ alt `Sefer Abi’ye Sor` drawer hızlı destek içindir.
+- Sol menüdeki `Sefer Abi Terminali` mevcut CopilotPanel derin analiz yüzeyidir.
+- Bu milestone yeni terminal component yazmaz; mevcut panel label ve copy standardına hizalanır.
 
 ## Kapsam dışı not
 - Proactive AI dispatcher bu milestone kapsamı dışındadır.
