@@ -1,3 +1,12 @@
+import {
+  getEtaDisplay,
+  getGpsAgeText,
+  getGpsReliabilityLabel,
+  getLiveTrackingSummary,
+  isEtaSuspicious,
+  normalizeGpsFreshness,
+} from "./etaSanity.js";
+
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
 }
@@ -1135,9 +1144,31 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
 
 export function buildMapFacts({ selected, selectedShift, selectedNext, selectedEta, selectedStats, gpsStatus, gpsAge, vehicleCount = 0 }) {
   const status = String(selectedShift?.status || '-').toUpperCase();
-  const etaReady = Number.isFinite(Number(selectedEta));
+  const gpsInput = {
+    gpsStatus,
+    gpsAge,
+    gpsLast: selected?.gpsLast,
+    gpsState: selected?.gpsState,
+    status: gpsStatus,
+  };
+  const gpsFreshness = normalizeGpsFreshness(gpsInput);
+  const gpsFresh = gpsFreshness.isFresh;
   const nextReady = Boolean(selectedNext?.name);
-  const gpsFresh = !/eski|stale|unknown|bilinmiyor|offline/i.test(String(gpsAge || '') + ' ' + String(gpsStatus || ''));
+  const etaReady = Number.isFinite(Number(selectedEta)) && gpsFresh;
+  const gpsLabel = getGpsReliabilityLabel(gpsInput);
+  const gpsAgeValue = getGpsAgeText(gpsInput);
+  const etaValue = getEtaDisplay({
+    ...gpsInput,
+    etaMinutes: selectedEta,
+    selectedEta,
+    nextStopName: selectedNext?.name,
+  });
+  const liveSummary = getLiveTrackingSummary({
+    ...gpsInput,
+    etaMinutes: selectedEta,
+    selectedEta,
+    nextStopName: selectedNext?.name,
+  });
   const hasShift = Boolean(selectedShift?.id);
   const hasSelectedVehicle = Boolean(selected?.id || selected?.plate);
   const totalStops = Number(selectedStats?.total || 0);
@@ -1147,7 +1178,7 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
   pushIf(missing, !nextReady, 'Sıradaki durak yok');
   pushIf(missing, !etaReady, 'ETA yok');
   pushIf(blockers, !hasSelectedVehicle, "Önce marker'dan araç seçilmeden bu kaydı başka ekranla karşılaştırmak erken olur.");
-  pushIf(blockers, !gpsFresh, 'Son GPS eski görünüyor; canlı karar vermeden önce veri akışı doğrulanmalı.');
+  pushIf(blockers, !gpsFresh, 'Son GPS güncel görünmüyor; canlı karar vermeden önce veri akışı doğrulanmalı.');
   pushIf(blockers, hasSelectedVehicle && !hasShift, 'Araç seçili olsa bile bağlı aktif vardiya görünmüyor.');
   const actions = [
     actionRule({
@@ -1198,24 +1229,24 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
   const actionMatrix = splitActions(actions);
   const selectedRecordStatus = [
     `Araç: ${selected?.plate || `#${selected?.id || '-'}`}`,
-    `GPS: ${gpsStatus || '-'}`,
-    `Son GPS: ${gpsAge || gpsStatus || '-'}`,
+    `GPS: ${gpsLabel}`,
+    `Son GPS: ${gpsAgeValue}`,
     `Sıradaki durak: ${selectedNext?.name || 'Yok'}`,
-    `ETA: ${etaReady ? `${Number(selectedEta)} dk` : 'Yok'}`,
+    `ETA: ${etaValue}`,
   ].join(' • ');
   const readonlyFacts = buildReadonlyCopilotFacts({
     screenType: 'MAP',
     stage: status,
     readinessScore: hasSelectedVehicle && gpsFresh && nextReady ? 84 : 46,
     readiness: hasSelectedVehicle && gpsFresh && nextReady ? 'READY' : blockers.length ? 'NOT_READY' : 'REVIEW_NEEDED',
-    summary: hasSelectedVehicle ? 'Canlı takip' : 'Araç seçimi gerekiyor',
+    summary: hasSelectedVehicle ? liveSummary : 'Araç seçimi gerekiyor',
     blockers,
     evidence: [
       `Araç: ${selected?.plate || `#${selected?.id || '-'}`}`,
-      `GPS: ${gpsStatus || '-'}`,
-      `Son GPS: ${gpsAge || gpsStatus || '-'}`,
+      `GPS: ${gpsLabel}`,
+      `Son GPS: ${gpsAgeValue}`,
       `Sıradaki durak: ${selectedNext?.name || 'Yok'}`,
-      `ETA: ${etaReady ? `${Number(selectedEta)} dk` : 'Yok'}`,
+      `ETA: ${etaValue}`,
       `Kalan durak: ${Number(selectedStats?.remaining || 0)}`,
     ],
     nextBestAction: !hasSelectedVehicle
@@ -1236,12 +1267,12 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
     selectedRecordStatus,
     copilotSignals: [
       { id: 'selectedVehicle', label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, note: hasSelectedVehicle ? 'Seçili araç var.' : 'Araç seçili değil.' },
-      { id: 'gpsAge', label: 'Son GPS', value: gpsAge || gpsStatus || '-', note: gpsFresh ? 'GPS güncel görünüyor.' : 'GPS eski olabilir.' },
+      { id: 'gpsAge', label: 'Son GPS', value: gpsAgeValue, note: gpsFresh ? 'GPS canlı görünüyor.' : gpsFreshness.isOffline ? 'GPS çevrim dışı.' : 'GPS güncel değil.' },
       { id: 'nextStop', label: 'Sıradaki durak', value: selectedNext?.name || 'Yok', note: nextReady ? 'Sıradaki durak var.' : 'Sıradaki durak yok.' },
-      { id: 'eta', label: 'ETA', value: etaReady ? `${Number(selectedEta)} dk` : 'Yok', note: etaReady ? 'ETA okunuyor.' : 'ETA görünmüyor.' },
+      { id: 'eta', label: 'ETA', value: etaValue, note: etaReady ? (isEtaSuspicious(selectedEta, gpsInput) ? 'ETA olağan dışı yüksek.' : 'ETA okunuyor.') : 'ETA güvenilir değil.' },
       { id: 'shiftLink', label: 'Bağlı vardiya', value: hasShift ? 'Var' : 'Yok', note: hasShift ? 'Vardiya bağı görünüyor.' : 'Vardiya bağı görünmüyor.' },
     ],
-    boundaryNotes: [!gpsFresh ? 'GPS kaynağı eski olabilir.' : ''],
+    boundaryNotes: [!gpsFresh ? 'GPS kaynağı güncel olmayabilir.' : ''],
   });
   const contextSummary = firstNonEmpty(
     readonlyFacts.copilotSummary,

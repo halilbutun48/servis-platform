@@ -9,6 +9,7 @@ import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
+import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
 import { getPath } from "../../router";
 import { getCompanyMapShifts, getCompanyVehicles } from "../../utils/companyDataHub";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
@@ -32,13 +33,16 @@ function ageSecFromAt(iso) {
 }
 
 function gpsAgeLabel(vehicle) {
-  const sec = ageSecFromAt(gpsAtIso(vehicle));
-  if (sec == null) return "-";
-  if (sec < 60) return `${sec}s`;
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min}dk`;
-  const h = Math.round(min / 60);
-  return `${h}sa`;
+  return getGpsAgeText(vehicle);
+}
+
+function etaDisplayText(vehicle, etaMinutes, nextStop) {
+  return getEtaDisplay({
+    etaMinutes,
+    gpsStatus: vehicle?.gpsState?.lastUiStatus || vehicle?.gpsState?.lastStatus || vehicle?.gpsLast?.status || vehicle?.gpsLast?.state || (hasGpsFix(vehicle) ? "LIVE" : "UNKNOWN"),
+    gpsAge: vehicle?.gpsLast,
+    nextStopName: nextStop?.name,
+  });
 }
 
 function hasGpsFix(vehicle) {
@@ -411,7 +415,7 @@ export default function CompanyMapPanel() {
         { label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Seçili aracın plakasını veya kayıt numarasını gösterir.' },
         { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
         { label: 'Sıradaki Durak', value: selectedNext?.name || '-', help: 'Araç şu anda hangi durağa doğru gidiyor bilgisini gösterir.' },
-        { label: 'ETA', value: selectedEta != null ? `${selectedEta}dk` : '-', help: 'Sıradaki durağa tahmini kalan süreyi gösterir.' },
+        { label: 'ETA', value: etaDisplayText(selected, selectedEta, selectedNext), help: 'Sıradaki durağa tahmini kalan süreyi güvenli biçimde gösterir.' },
         { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'Seçili vardiyadaki toplam durak sayısını gösterir.' },
         { label: 'Kalan', value: `${selectedStats?.remaining ?? 0}`, help: 'Henüz tamamlanmamış durak sayısını gösterir.' },
       ],
@@ -588,7 +592,7 @@ export default function CompanyMapPanel() {
                     >
                       İlerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
                       {c.nextStop?.name ? ` • Sıradaki: ${c.nextStop.name}` : ""}
-                      {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${c.nextEtaMin}dk` : ""}
+                      {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${etaDisplayText(selected, c.nextEtaMin, c.nextStop)}` : ""}
                     </span>
                   </span>
 
@@ -667,7 +671,7 @@ export default function CompanyMapPanel() {
                       </button>
 
                       {selectedEta != null ? (
-                        <span className="pill">ETA: {selectedEta}dk</span>
+                        <span className="pill">ETA: {etaDisplayText(selected, selectedEta, selectedNext)}</span>
                       ) : null}
 
                       <button

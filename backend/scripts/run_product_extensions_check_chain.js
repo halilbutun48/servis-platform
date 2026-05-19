@@ -47,6 +47,7 @@ const steps = [
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
   'check:uxcopilotterminal01',
+  'check:etasanity01',
   'check:uxnav01',
   'check:uxdensity01',
 ];

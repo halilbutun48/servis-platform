@@ -1,3 +1,5 @@
+import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from './etaSanity.js';
+
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
 }
@@ -605,13 +607,18 @@ function analyzeMap(screenContext, screenDefinition, conversationState) {
   const nextStop = findValue(fields, ['sıradaki durak', 'siradaki durak', 'sonraki durak']);
   const remaining = findValue(fields, ['kalan']);
   const totalStops = findValue(fields, ['toplam durak']);
+  const gpsFreshness = normalizeGpsFreshness({ gpsStatus: gps, gpsAge: gps, gpsLast: gps });
+  const gpsLabel = getGpsReliabilityLabel({ gpsStatus: gps, gpsAge: gps, gpsLast: gps });
+  const gpsAgeText = getGpsAgeText({ gpsAge: gps, gpsLast: gps });
+  const etaText = getEtaDisplay({ etaMinutes: eta, gpsStatus: gps, gpsAge: gps, gpsLast: gps, nextStopName: nextStop });
   if (!result.selectedLabel) result.blockers.push('Önce araç veya vardiya seçilmeden üst kart ve Copilot bağlamı eksik kalır.');
   if (hasBlankish(nextStop)) result.missingData.push('Sıradaki durak boş görünüyor.');
   if (hasBlankish(eta) && !hasBlankish(nextStop)) result.missingData.push('ETA boş veya güncel değil görünüyor.');
-  if (hasOldGps(gps) || badgeHas(badges, ['stale', 'old'])) result.blockers.push('Son GPS eski görünüyor; bu ekrana bakarak tek başına canlı karar vermek riskli.');
-  if (gps) result.evidence.push(`Son GPS: ${gps}`);
-  if (eta) result.evidence.push(`ETA: ${eta}`);
-  if (nextStop) result.evidence.push(`Sıradaki durak: ${nextStop}`);
+  if (hasOldGps(gps) || badgeHas(badges, ['stale', 'old'])) result.blockers.push('Son GPS güncel görünmüyor; bu ekrana bakarak tek başına canlı karar vermek riskli.');
+  if (gps) result.evidence.push(`GPS: ${gpsLabel}`);
+  if (gps) result.evidence.push(`Son GPS: ${gpsAgeText}`);
+  if (eta) result.evidence.push(`ETA: ${etaText}`);
+  if (nextStop) result.evidence.push(`${gpsFreshness.isFresh ? 'Sıradaki durak' : 'Son bilinen sıradaki durak'}: ${nextStop}`);
   if (remaining) result.evidence.push(`Kalan: ${remaining}`);
   if (totalStops) result.evidence.push(`Toplam durak: ${totalStops}`);
   result.reasoningLead = result.blockers.length ? 'Bu haritadaki ana sorun canlılığın zayıf veya eksik görünmesi.' : 'Bu haritada önce canlılık, sonra sıradaki durak ve ETA birlikte okunmalı.';
@@ -938,14 +945,19 @@ function analyzeDriver(screenContext, screenDefinition) {
   const eta = findValue(fields, ['eta']);
   const gps = findValue(fields, ['gps', 'son gps']);
   const task = findValue(fields, ['görev', 'gorev', 'iş', 'is']);
+  const gpsFreshness = normalizeGpsFreshness({ gpsStatus: gps, gpsAge: gps, gpsLast: gps });
+  const gpsLabel = getGpsReliabilityLabel({ gpsStatus: gps, gpsAge: gps, gpsLast: gps });
+  const gpsAgeText = getGpsAgeText({ gpsAge: gps, gpsLast: gps });
+  const etaText = getEtaDisplay({ etaMinutes: eta, gpsStatus: gps, gpsAge: gps, gpsLast: gps, nextStopName: nextStop });
   if (!result.selectedLabel && !task) result.blockers.push('Aktif görev veya seçili kayıt görünmüyor.');
   if (hasBlankish(nextStop)) result.missingData.push('Sıradaki durak görünmüyor.');
   if (hasBlankish(eta) && !hasBlankish(nextStop)) result.missingData.push('ETA güncel görünmüyor.');
   if (hasOldGps(gps) || badgeHas(badges, ['stale'])) result.blockers.push('Konum akışı eski görünüyor.');
   if (task) result.evidence.push(`Görev: ${task}`);
-  if (nextStop) result.evidence.push(`Sıradaki durak: ${nextStop}`);
-  if (eta) result.evidence.push(`ETA: ${eta}`);
-  if (gps) result.evidence.push(`GPS: ${gps}`);
+  if (nextStop) result.evidence.push(`${gpsFreshness.isFresh ? 'Sıradaki durak' : 'Son bilinen sıradaki durak'}: ${nextStop}`);
+  if (eta) result.evidence.push(`ETA: ${etaText}`);
+  if (gps) result.evidence.push(`GPS: ${gpsLabel}`);
+  if (gps) result.evidence.push(`Son GPS: ${gpsAgeText}`);
   result.reasoningLead = result.blockers.length ? 'Sürücü tarafında ana risk canlı konum zincirinin zayıflaması.' : 'Sürücü ekranında önce aktif görev, sonra sıradaki durak ve ETA okunmalı.';
   result.nextBestAction = result.blockers.length ? 'Önce konum akışı sürüyor mu kontrol et. Sonra bugünkü iş ekranına dönüp sıradaki durağı tekrar doğrula.' : 'Önce sıradaki durağı ve ETA bilgisini kontrol et. Sonra navigasyon veya görev akışına devam et.';
   result.safestNextStep = 'En risksiz adım, aktif görev açık mı ve sıradaki durak dolu mu bunu doğrulamaktır.';

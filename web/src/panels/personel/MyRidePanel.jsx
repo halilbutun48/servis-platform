@@ -6,8 +6,8 @@ import { navigate } from "../../router";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
-import { ageSecFromAt } from "../../utils/uiStatus";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
+import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -75,12 +75,16 @@ function routeQualityTone(eta) {
 }
 
 function gpsAgeLabel(gpsLast) {
-  const at = gpsLast?.at;
-  const age = ageSecFromAt(at);
-  if (age == null) return "Konum gelmedi";
-  if (age < 60) return `${age}s`;
-  if (age < 3600) return `${Math.floor(age / 60)}dk`;
-  return `${Math.floor(age / 3600)}sa`;
+  return getGpsAgeText(gpsLast);
+}
+
+function etaDisplayText(vehicle, etaMinutes, nextStop) {
+  return getEtaDisplay({
+    etaMinutes,
+    gpsStatus: vehicle?.gpsState?.lastUiStatus || vehicle?.gpsState?.lastStatus || vehicle?.gpsLast?.status || vehicle?.gpsLast?.state || "UNKNOWN",
+    gpsAge: vehicle?.gpsLast,
+    nextStopName: nextStop?.name,
+  });
 }
 
 function openStopNavigation(stop, myPos) {
@@ -256,16 +260,17 @@ export default function MyRidePanel() {
   const routeEtaMin = Number.isFinite(Number(eta?.remainingRouteEtaMin)) ? Number(eta.remainingRouteEtaMin) : null;
   const routeKm = Number.isFinite(Number(eta?.remainingRouteKm)) ? Number(eta.remainingRouteKm) : null;
   const gpsSourceLabel = vehicle?.gpsState?.lastSource || vehicle?.gpsState?.sourceLabel || vehicle?.gpsLast?.sourceLabel || (vehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
+  const gpsStatusText = getGpsReliabilityLabel(vehicle?.gpsState?.lastUiStatus || (vehicle ? 'LIVE' : '-'));
   const copilotFacts = useMemo(() => buildMapFacts({
     selected: vehicle,
     selectedShift: myShift,
     selectedNext: selectedStop || nearestStop,
     selectedEta: routeEtaMin != null ? routeEtaMin : selectedStop?.etaMin ?? null,
     selectedStats: { total: stops.length, remaining: remainingStopsCount, completed: Math.max(0, stops.length - remainingStopsCount) },
-    gpsStatus: displayStatusLabel(String(vehicle?.gpsState?.lastUiStatus || (vehicle ? 'LIVE' : '-')).toUpperCase()),
+    gpsStatus: gpsStatusText,
     gpsAge: gpsAgeLabel(vehicle?.gpsLast),
     vehicleCount: vehicle ? 1 : 0,
-  }), [vehicle, myShift, selectedStop, nearestStop, routeEtaMin, stops.length, remainingStopsCount]);
+  }), [vehicle, myShift, selectedStop, nearestStop, routeEtaMin, stops.length, remainingStopsCount, gpsStatusText]);
   const copilotSelection = useMemo(() => {
     if (!myShift && !vehicle) return null;
     const selectedNext = selectedStop || nearestStop || null;
@@ -280,22 +285,22 @@ export default function MyRidePanel() {
         vehicle?.plate ? `Araç ${vehicle.plate}` : null,
         `Son GPS ${gpsAgeLabel(vehicle?.gpsLast)}`,
         selectedNext?.name ? `Sıradaki durak ${selectedNext.name}` : null,
-        routeEtaMin != null ? `ETA ${routeEtaMin} dk` : null,
+        routeEtaMin != null ? `ETA ${etaDisplayText(vehicle, routeEtaMin, selectedNext)}` : null,
       ].filter(Boolean).join(' • '),
       fields: [
         { label: 'Servis', value: vehicle?.plate || `Shift #${myShift?.id || '-'}`, help: 'Bugünkü servis veya vardiya etiketini gösterir.' },
         { label: 'Araç', value: vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : '-'), help: 'Bağlı araç plakasını gösterir.' },
         { label: 'Sürücü', value: myShift?.driver?.fullName || (myShift?.driverId ? `#${myShift.driverId}` : '-'), help: 'Bağlı sürücü adını gösterir.' },
         { label: 'Son GPS', value: gpsAgeLabel(vehicle?.gpsLast), help: 'Konumun ne kadar önce geldiğini gösterir.' },
-        { label: 'GPS durumu', value: displayStatusLabel(String(vehicle?.gpsState?.lastUiStatus || (vehicle ? 'LIVE' : '-')).toUpperCase()), help: 'Araç GPS sinyal durumunu gösterir.' },
+        { label: 'GPS durumu', value: gpsStatusText, help: 'Araç GPS sinyal durumunu gösterir.' },
         { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını Türkçe ve güvenli biçimde gösterir.' },
         { label: 'Sıradaki durak', value: selectedNext?.name || '-', help: 'Sıradaki veya seçili durağı gösterir.' },
         { label: 'Seçili durak', value: selectedStop?.name || '-', help: 'Elle seçilen durağı gösterir.' },
-        { label: 'ETA', value: routeEtaMin != null ? `${routeEtaMin} dk` : '-', help: 'Kalan rota ETA bilgisini gösterir.' },
+        { label: 'ETA', value: routeEtaMin != null ? etaDisplayText(vehicle, routeEtaMin, selectedNext) : '-', help: 'Kalan rota ETA bilgisini güvenli biçimde gösterir.' },
         { label: 'Servis durumu', value: displayStatusLabel(String(myShift?.status || '').toUpperCase()), help: 'Servis veya vardiya durumunu gösterir.' },
       ],
       badges: [
-        { label: 'Araç GPS’i', value: displayStatusLabel(String(vehicle?.gpsState?.lastUiStatus || (vehicle ? 'LIVE' : '-')).toUpperCase()), help: 'Araç GPS sinyalinin canlı mı eski mi olduğunu gösterir.' },
+        { label: 'Araç GPS’i', value: gpsStatusText, help: 'Araç GPS sinyalinin canlı mı eski mi olduğunu gösterir.' },
         { label: 'Sürücünün telefon GPS’i', value: gpsSourceLabel, help: 'Sürücünün telefon GPS’i veya kaynak etiketini gösterir.' },
       ],
       facts: {
@@ -306,7 +311,7 @@ export default function MyRidePanel() {
         selectedRecordStatus: copilotFacts?.selectedRecordStatus || '',
       },
     };
-  }, [myShift, vehicle, selectedStop, nearestStop, routeEtaMin, copilotFacts, gpsSourceLabel]);
+  }, [myShift, vehicle, selectedStop, nearestStop, routeEtaMin, copilotFacts, gpsSourceLabel, gpsStatusText]);
 
   useEffect(() => {
     if (!copilotSelection) {
@@ -347,7 +352,7 @@ export default function MyRidePanel() {
               <div style={{ fontWeight: 700, marginTop: 4 }}>{nearestStop.name}</div>
               <div className="muted" style={{ marginTop: 6 }}>
                 {Number.isFinite(Number(nearestStop.distanceM)) ? <>Bana uzaklık: <b>{(Number(nearestStop.distanceM) / 1000).toFixed(2)} km</b></> : "Konum alınınca uzaklık hesaplanır."}
-                {Number.isFinite(Number(nearestStop.etaMin)) ? <> • Araç ETA: <b>{Math.round(Number(nearestStop.etaMin))} dk</b></> : null}
+                {Number.isFinite(Number(nearestStop.etaMin)) ? <> • Araç ETA: <b>{etaDisplayText(vehicle, Number(nearestStop.etaMin), nearestStop)}</b></> : null}
               </div>
               <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
                 <button type="button" disabled={busy} onClick={() => setSelectedStopId(nearestStop.id)}>En yakın durağı seç</button>
@@ -372,7 +377,7 @@ export default function MyRidePanel() {
               <div className="muted">Başlangıç: {fmtTR(myShift.startAt)} • Bitiş: {fmtTR(myShift.endAt)}</div>
               <div className="muted" style={{ marginTop: 6 }}>
                 Kalan durak: <b>{remainingStopsCount}</b>
-                {routeEtaMin != null ? <> • Rota ETA: <b>{routeEtaMin} dk</b></> : null}
+                {routeEtaMin != null ? <> • Rota ETA: <b>{etaDisplayText(vehicle, routeEtaMin, selectedStop || nearestStop)}</b></> : null}
                 {routeKm != null ? <> • Rota km: <b>{routeKm.toFixed(1)} km</b></> : null}
               </div>
               {eta ? (

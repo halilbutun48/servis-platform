@@ -7,6 +7,7 @@ import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLink
 import { analyzeScreenState } from './screenStateAnalyzer.js';
 import { createSelectedRuntimeHelpers } from './helpComposerSelectedRuntime.js';
 import { createEntityRuntimeHelpers } from './helpComposerEntityRuntime.js';
+import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from './etaSanity.js';
 
 function pickTerms(simpleTerms, limit = 3) {
   return (Array.isArray(simpleTerms) ? simpleTerms : []).slice(0, limit).map((row) => `${row.term}: ${row.meaning}`);
@@ -3200,11 +3201,22 @@ function composeGeneralProductGuideReply({
           : liveSelectedHint
             ? `Seçili kayıt ${liveSelectedHint} görünüyor.`
             : 'Seçili kayıt görünüyor.';
+    const liveFreshness = normalizeGpsFreshness({ gpsStatus: liveGpsStatus, gpsAge: liveLastGps, gpsLast: liveLastGps });
+    const liveGpsLabel = getGpsReliabilityLabel({ gpsStatus: liveGpsStatus, gpsAge: liveLastGps, gpsLast: liveLastGps });
+    const liveGpsAge = getGpsAgeText({ gpsAge: liveLastGps, gpsLast: liveLastGps });
+    const liveEtaText = getEtaDisplay({
+      etaMinutes: liveEta,
+      gpsStatus: liveGpsStatus,
+      gpsAge: liveLastGps,
+      gpsLast: liveLastGps,
+      nextStopName: liveNextStop,
+    });
+    const liveNextLabel = liveFreshness.isFresh ? 'Sıradaki durak' : 'Son bilinen sıradaki durak';
     const liveLocationSignals = uniqueStrings([
-      liveGpsStatus ? `GPS ${normalizeVisibleReplyFragment(liveGpsStatus)}` : '',
-      liveLastGps ? `Son GPS ${normalizeVisibleReplyFragment(liveLastGps)}` : '',
-      liveNextStop ? `Sıradaki durak ${normalizeVisibleReplyFragment(liveNextStop)}${liveTotalStops ? `, toplam durak ${normalizeVisibleReplyFragment(liveTotalStops)}` : ''}` : '',
-      liveEta ? `ETA ${normalizeVisibleReplyFragment(liveEta).replace(/^(\d+)\s*dk$/i, '$1 dk')}` : '',
+      liveGpsStatus ? `GPS ${liveGpsLabel}` : '',
+      liveLastGps ? `Son GPS ${liveGpsAge}` : '',
+      liveNextStop ? `${liveNextLabel} ${normalizeVisibleReplyFragment(liveNextStop)}${liveTotalStops ? `, toplam durak ${normalizeVisibleReplyFragment(liveTotalStops)}` : ''}` : '',
+      liveEta ? `ETA ${liveEtaText}` : '',
     ]).join('; ');
     const liveLocationAdviceShort = liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')
       ? 'Servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'

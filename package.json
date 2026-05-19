@@ -64,6 +64,7 @@
     "check:uxcopilotsmartchips01": "node backend/scripts/ux_copilot_smart_chips_01_check.js",
     "check:uxcopilotpersona01": "node backend/scripts/ux_copilot_persona_01_check.js",
     "check:uxcopilotterminal01": "node backend/scripts/ux_copilot_terminal_01_check.js",
+    "check:etasanity01": "node backend/scripts/eta_sanity_01_live_tracking_check.js",
     "check:uxnav01": "node backend/scripts/ux_nav_01_premium_navdock_check.js",
     "check:uxdensity01": "node backend/scripts/ux_density_01_panel_card_density_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",

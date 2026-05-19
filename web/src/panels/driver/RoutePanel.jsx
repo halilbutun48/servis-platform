@@ -10,6 +10,7 @@ import { openNextStopNavigation, openFullRouteNavigation, routeStats, isReachedS
 import { nowIsoTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
+import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 
 function getQueryParam(name) {
   try {
@@ -61,7 +62,7 @@ export default function RoutePanel() {
   const selectedVehicle = data?.vehicle || null;
   const vehicleCount = selectedVehicle ? 1 : 0;
   const gpsAge = useMemo(() => gpsAgeText(data?.last || selectedVehicle?.gpsLast), [data?.last, selectedVehicle?.gpsLast]);
-  const gpsStatusText = String(selectedVehicle?.gpsState?.lastUiStatus || data?.last?.status || data?.liveLocation?.routeProgressState || data?.liveLocation?.officialSource || (selectedVehicle ? "LIVE" : "-")).toUpperCase();
+  const gpsStatusText = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || data?.last?.status || data?.liveLocation?.routeProgressState || data?.liveLocation?.officialSource || (selectedVehicle ? "LIVE" : "-"));
   const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel || (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
   const routeProofText = String(data?.operationProofStatus || selectedVehicle?.operationProofStatus || selectedVehicle?.proofStatus || data?.liveLocation?.operationProofStatus || "").trim() || "Belirgin değil";
   const routeEta = Number.isFinite(Number(nextStop?.etaMin))
@@ -71,6 +72,12 @@ export default function RoutePanel() {
       : Number.isFinite(Number(selectedVehicle?.eta))
         ? Number(selectedVehicle.eta)
         : null;
+  const routeEtaText = getEtaDisplay({
+    etaMinutes: routeEta,
+    gpsStatus: gpsStatusText,
+    gpsAge: selectedVehicle?.gpsLast,
+    nextStopName: nextStop?.name,
+  });
   const copilotFacts = useMemo(() => buildMapFacts({
     selected: selectedVehicle,
     selectedShift: shift,
@@ -97,7 +104,7 @@ export default function RoutePanel() {
         `Araç: ${selectedVehicle?.plate || data?.vehicle?.plate || "-"}`,
         `Son GPS: ${gpsAge}`,
         `Sıradaki durak: ${nextStop?.name || "-"}`,
-        `ETA: ${Number.isFinite(routeEta) ? `${routeEta} dk` : "-"}`,
+        `ETA: ${routeEtaText}`,
       ].join(" • "),
       selectedRecordType: "shift",
       selectedRecordId: Number(shift?.id || 0) || 0,
@@ -129,7 +136,7 @@ export default function RoutePanel() {
         { label: "Sıradaki durak", value: nextStop?.name || "-" },
         { label: "Toplam durak", value: String(routeSummary.total) },
         { label: "Kalan durak", value: String(routeSummary.remaining) },
-        { label: "ETA", value: Number.isFinite(routeEta) ? `${routeEta} dk` : "-" },
+        { label: "ETA", value: routeEtaText },
         { label: "Operasyon kanıtı", value: routeProofText },
       ],
       fields: [
@@ -141,7 +148,7 @@ export default function RoutePanel() {
         { label: "Kaynak", value: gpsSourceLabel },
         { label: "Sıradaki durak", value: nextStop?.name || "-" },
         { label: "Seçili durak", value: selectedStop?.name || "-" },
-        { label: "ETA", value: Number.isFinite(routeEta) ? `${routeEta} dk` : "-" },
+        { label: "ETA", value: routeEtaText },
         { label: "Operasyon kanıtı", value: routeProofText },
       ],
       selectedBadges: [
@@ -164,7 +171,7 @@ export default function RoutePanel() {
         surface: "driver-route",
       },
     };
-  }, [shift, selectedVehicle, nextStop, selectedStop?.name, routeEta, routeSummary, gpsAge, gpsStatusText, gpsSourceLabel, routeProofText, copilotFacts, data?.vehicle?.plate]);
+  }, [shift, selectedVehicle, nextStop, selectedStop?.name, routeEta, routeEtaText, routeSummary, gpsAge, gpsStatusText, gpsSourceLabel, routeProofText, copilotFacts, data?.vehicle?.plate]);
 
   useEffect(() => {
     if (!shift && !selectedVehicle) {
@@ -201,16 +208,7 @@ function focusStop(stop) {
 }
 
 function gpsAgeText(gpsLast) {
-  const at = gpsLast?.at || gpsLast?.ts || gpsLast?.createdAt || gpsLast?.updatedAt || null;
-  if (!at) return "GPS bekleniyor";
-  const time = new Date(at).getTime();
-  if (!Number.isFinite(time)) return "GPS bekleniyor";
-  const diffSec = Math.max(0, Math.round((Date.now() - time) / 1000));
-  if (diffSec < 60) return `${diffSec} sn`;
-  const diffMin = Math.round(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} dk`;
-  const diffHour = Math.round(diffMin / 60);
-  return `${diffHour} sa`;
+  return getGpsAgeText(gpsLast);
 }
 
   function showToast(msg) {

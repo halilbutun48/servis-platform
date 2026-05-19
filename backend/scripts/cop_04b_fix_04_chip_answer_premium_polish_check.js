@@ -283,7 +283,7 @@ const roomMapReply = replyText(roomMapResponse);
 const roomMapChips = chipList(roomMapResponse);
 mustNot(roomMapReply, 'seçili araç bilgisi net görünmüyor', 'room map reply avoids generic no-selection fallback');
 mustAny(roomMapReply, ['34ABC123', 'Seçili araç 34ABC123 görünüyor.'], 'room map reply keeps selected vehicle');
-mustAny(roomMapReply, ['GPS: Zayıf / STALE', 'Son GPS: 47s', 'GPS zayıf / stale'], 'room map reply keeps gps state');
+mustAny(roomMapReply, ['GPS: Güncel değil', 'GPS: Canlı', 'GPS: Çevrim dışı', 'GPS: Bekleniyor', 'GPS güncel değil', 'GPS canlı', 'GPS çevrim dışı'], 'room map reply keeps gps state');
 mustAny(roomMapReply, ['Sürücünün telefon GPS’i', 'Araç bağlantısı', 'görev bağlantısı'], 'room map reply keeps gps source language');
 mustAny(roomMapReply, ['Pickup 6', 'toplam durak 6'], 'room map reply keeps next stop and stop count');
 mustNotRaw(roomMapReply, 'Önerilen adım:', 'room map reply hides mechanical action wording');

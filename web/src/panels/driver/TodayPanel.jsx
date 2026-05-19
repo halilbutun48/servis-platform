@@ -9,6 +9,7 @@ import { buildShiftFacts } from "../../utils/copilotFacts";
 import QueueDetailTable from "../../components/QueueDetailTable";
 import { useAutoReload } from "../../live/useAutoReload";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 function fmt(dt) {
   try {
     const d = new Date(dt);
@@ -25,16 +26,7 @@ function fmt(dt) {
 }
 
 function gpsAgeText(gpsLast) {
-  const at = gpsLast?.at || gpsLast?.ts || gpsLast?.createdAt || gpsLast?.updatedAt || null;
-  if (!at) return "GPS bekleniyor";
-  const time = new Date(at).getTime();
-  if (!Number.isFinite(time)) return "GPS bekleniyor";
-  const diffSec = Math.max(0, Math.round((Date.now() - time) / 1000));
-  if (diffSec < 60) return `${diffSec} sn`;
-  const diffMin = Math.round(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} dk`;
-  const diffHour = Math.round(diffMin / 60);
-  return `${diffHour} sa`;
+  return getGpsAgeText(gpsLast);
 }
 
 export default function DriverTodayPanel() {
@@ -71,7 +63,7 @@ export default function DriverTodayPanel() {
 
   const copilotSelection = useMemo(() => {
     if (!selectedShift) return null;
-    const gpsStateLabel = displayStatusLabel(String(selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus || selectedVehicle?.gpsLast?.status || (selectedShift ? "GPS bekleniyor" : "-")).toUpperCase());
+    const gpsStateLabel = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus || selectedVehicle?.gpsLast?.status || (selectedShift ? "GPS bekleniyor" : "-"));
     const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel || (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
     const gpsAge = gpsAgeText(selectedVehicle?.gpsLast || selectedShift?.vehicle?.gpsLast || selectedShift?.gpsLast);
     const routeProofText = String(selectedShift?.operationProofStatus || selectedShift?.proofStatus || selectedShift?.serviceProofStatus || selectedShift?.vehicle?.operationProofStatus || selectedShift?.vehicle?.proofStatus || "").trim() || "Belirgin değil";

@@ -8,8 +8,9 @@ import StopTimeline from "../../components/StopTimeline";
 import { pickNextStopByRemainingKmOrEta } from "../../components/stopTimelineUtils";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
-import { ageSecFromAt, uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
+import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 
 function haversineMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000;
@@ -33,11 +34,16 @@ function gpsAtIso(v) {
 }
 
 function gpsAgeLabel(v) {
-  const age = ageSecFromAt(gpsAtIso(v));
-  if (age == null) return "-";
-  if (age < 60) return `${age}s`;
-  if (age < 3600) return `${Math.floor(age / 60)}dk`;
-  return `${Math.floor(age / 3600)}sa`;
+  return getGpsAgeText(v);
+}
+
+function etaDisplayText(vehicle, etaMinutes, nextStop) {
+  return getEtaDisplay({
+    etaMinutes,
+    gpsStatus: vehicle ? uiStatusFromVehicle(vehicle) : "UNKNOWN",
+    gpsAge: vehicle?.gpsLast,
+    nextStopName: nextStop?.name,
+  });
 }
 
 function fmtTR(iso) {
@@ -290,16 +296,17 @@ export default function PersonelLivePanel() {
   const routeQualityTone = etaQualityTone(eta);
   const nextActionTextValue = nextActionText(eta);
   const gpsSourceLabel = vehicle?.gpsState?.lastSource || vehicle?.gpsState?.sourceLabel || vehicle?.gpsLast?.sourceLabel || (vehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
+  const gpsStatusText = getGpsReliabilityLabel(ui);
   const copilotFacts = useMemo(() => buildMapFacts({
     selected: vehicle,
     selectedShift: myShift,
     selectedNext: nextStop,
     selectedEta: nextEtaMin,
     selectedStats: { total: totalStops, remaining: remainingStopsCount, completed: reachedCount },
-    gpsStatus: displayStatusLabel(ui || '-'),
+    gpsStatus: gpsStatusText,
     gpsAge: gpsAgeLabel(vehicle),
     vehicleCount: vehicles.length,
-  }), [vehicle, myShift, nextStop, nextEtaMin, totalStops, remainingStopsCount, reachedCount, ui, vehicles.length]);
+  }), [vehicle, myShift, nextStop, nextEtaMin, totalStops, remainingStopsCount, reachedCount, gpsStatusText, vehicles.length]);
   const copilotSelection = useMemo(() => {
     if (!vehicle && !myShift) return null;
     const serviceLabel = vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : `Shift #${myShift?.id || '-'}`);
@@ -309,7 +316,7 @@ export default function PersonelLivePanel() {
       vehicle?.plate ? `Araç ${vehicle.plate}` : null,
       `Son GPS ${gpsAgeLabel(vehicle)}`,
       nextStop?.name ? `Sıradaki ${nextStop.name}` : null,
-      nextEtaMin != null ? `ETA ${nextEtaMin} dk` : null,
+      nextEtaMin != null ? `ETA ${etaDisplayText(vehicle, nextEtaMin, nextStop)}` : null,
       remainingStopsCount ? `Kalan durak ${remainingStopsCount}` : null,
     ].filter(Boolean);
     return {
@@ -323,14 +330,14 @@ export default function PersonelLivePanel() {
         { label: 'Araç', value: vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : '-'), help: 'Seçili aracın plakasını gösterir.' },
         { label: 'Sürücü', value: myShift?.driver?.fullName || (myShift?.driverId ? `#${myShift.driverId}` : '-'), help: 'Bağlı sürücü adını gösterir.' },
         { label: 'Son GPS', value: gpsAgeLabel(vehicle), help: 'Son canlı konumun ne kadar önce geldiğini gösterir.' },
-        { label: 'GPS durumu', value: displayStatusLabel(ui || '-'), help: 'Araç GPS sinyalinin canlı mı eski mi olduğunu gösterir.' },
+        { label: 'GPS durumu', value: gpsStatusText, help: 'Araç GPS sinyalinin canlı mı eski mi olduğunu gösterir.' },
         { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını Türkçe ve güvenli olarak gösterir.' },
         { label: 'Sıradaki durak', value: nextStop?.name || '-', help: 'Bir sonraki durak adını gösterir.' },
-        { label: 'ETA', value: nextEtaMin != null ? `${nextEtaMin} dk` : '-', help: 'Sıradaki durağa kalan tahmini süreyi gösterir.' },
+        { label: 'ETA', value: nextEtaMin != null ? etaDisplayText(vehicle, nextEtaMin, nextStop) : '-', help: 'Sıradaki durağa kalan tahmini süreyi güvenli biçimde gösterir.' },
         { label: 'Servis durumu', value: displayStatusLabel(String(myShift?.status || '-').toUpperCase()), help: 'Vardiya veya servis durumunu gösterir.' },
       ],
       badges: [
-        { label: 'Araç GPS’i', value: displayStatusLabel(ui || '-'), help: 'Araç GPS sinyalinin görünürlüğünü gösterir.' },
+        { label: 'Araç GPS’i', value: gpsStatusText, help: 'Araç GPS sinyalinin görünürlüğünü gösterir.' },
         { label: 'Sürücünün telefon GPS’i', value: gpsSourceLabel, help: 'Sürücünün telefon GPS’i veya konum kaynağı metnini gösterir.' },
       ],
       facts: {
@@ -341,7 +348,7 @@ export default function PersonelLivePanel() {
         selectedRecordStatus: copilotFacts?.selectedRecordStatus || '',
       },
     };
-  }, [vehicle, myShift, nextStop, nextEtaMin, remainingStopsCount, ui, gpsSourceLabel, copilotFacts]);
+  }, [vehicle, myShift, nextStop, nextEtaMin, remainingStopsCount, gpsSourceLabel, gpsStatusText, copilotFacts]);
 
   useEffect(() => {
     if (!copilotSelection) {
@@ -434,7 +441,7 @@ export default function PersonelLivePanel() {
                   <div className="muted">
                     İlerleme: {pct}% (reached:{reachedCount}/{totalStops})
                     {nextStop?.name ? ` • Sıradaki: ${nextStop.name}` : ""}
-                    {nextStop?.name && nextEtaMin != null ? ` • ETA: ${nextEtaMin}dk` : ""}{remainingStopsCount ? ` • Kalan durak: ${remainingStopsCount}` : ""}
+                    {nextStop?.name && nextEtaMin != null ? ` • ETA: ${etaDisplayText(vehicle, nextEtaMin, nextStop)}` : ""}{remainingStopsCount ? ` • Kalan durak: ${remainingStopsCount}` : ""}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
@@ -492,7 +499,7 @@ export default function PersonelLivePanel() {
                   </button>
                   {nextEtaMin != null ? (
                     <span className="muted">
-                      ETA: <b>{nextEtaMin}dk</b>
+                      ETA: <b>{nextEtaMin != null ? etaDisplayText(vehicle, nextEtaMin, nextStop) : "-"}</b>
                     </span>
                   ) : null}
                   {toNum(nextStop?.remainingKm) != null ? (
@@ -502,7 +509,7 @@ export default function PersonelLivePanel() {
                   ) : null}
                   {remainingRouteEtaMin != null ? (
                     <span className="muted">
-                      Rota ETA: <b>{remainingRouteEtaMin}dk</b>
+                      Rota ETA: <b>{remainingRouteEtaMin != null ? etaDisplayText(vehicle, remainingRouteEtaMin, nextStop) : "-"}</b>
                     </span>
                   ) : null}
                   {remainingRouteKm != null ? (
@@ -581,5 +588,3 @@ export default function PersonelLivePanel() {
     </div>
   );
 }
-
-

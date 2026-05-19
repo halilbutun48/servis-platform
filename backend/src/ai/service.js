@@ -5,6 +5,7 @@ import { normalizeGuideLevel } from "./jobGuide/levels.js";
 import { getScreenDefinitionForUser } from "./jobGuide/screenCatalog.js";
 import { resolveChatContext } from "./chat/contextResolver.js";
 import { buildChatHelpResponse } from "./chat/helpComposer.js";
+import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from "./chat/etaSanity.js";
 
 function intentLabel(intent) {
   const map = {
@@ -179,6 +180,17 @@ function buildLiveSelectionSnapshot(screenContext) {
       || facts?.liveVehicleVisible === false
       || /canlı araç görünmüyor|canli araç görünmüyor|canli arac gorunmuyor|araç yok|arac yok|araç:\s*0|arac:\s*0|canlı konum görünmüyor|canli konum görünmüyor|aktif vardiya saat aralığı|araç ataması varsa görünür|arac ataması varsa görünür/i.test(noLiveVehicleText)
     );
+  const gpsFreshness = normalizeGpsFreshness({ gpsStatus, gpsAge: lastGps, gpsLast: lastGps, etaMinutes: eta });
+  const gpsStatusLabel = getGpsReliabilityLabel({ gpsStatus, gpsAge: lastGps, gpsLast: lastGps });
+  const lastGpsLabel = getGpsAgeText({ gpsAge: lastGps, gpsLast: lastGps });
+  const etaLabel = getEtaDisplay({
+    gpsStatus,
+    gpsAge: lastGps,
+    gpsLast: lastGps,
+    etaMinutes: eta,
+    nextStopName: nextStop,
+  });
+  const nextStopLabel = gpsFreshness.isFresh ? "Sıradaki durak" : "Son bilinen sıradaki durak";
   const hasSelection = !noLiveVehicle && Boolean(vehiclePlate || selectedSummary || gpsStatus || lastGps || nextStop || totalStops || eta);
   const mainLead = noLiveVehicle
     ? "Şu an bu çocuk için canlı araç görünmüyor."
@@ -188,10 +200,10 @@ function buildLiveSelectionSnapshot(screenContext) {
         ? `Seçili kayıt ${selectedSummary} görünüyor.`
         : "Bu ekranda seçili araç bilgisi net görünmüyor.";
   const detailBits = [];
-  if (gpsStatus) detailBits.push(`GPS sinyali ${gpsStatus} durumda.`);
-  if (lastGps) detailBits.push(`Son GPS ${lastGps} önce gelmiş.`);
-  if (nextStop) detailBits.push(`Sıradaki durak ${nextStop}${totalStops ? `, toplam durak ${totalStops}` : ""} görünüyor.`);
-  if (eta) detailBits.push(`ETA ${eta}.`);
+  if (gpsStatus) detailBits.push(`GPS ${gpsStatusLabel}.`);
+  if (lastGps) detailBits.push(`Son GPS ${lastGpsLabel}.`);
+  if (nextStop) detailBits.push(`${nextStopLabel} ${nextStop}${totalStops ? `, toplam durak ${totalStops}` : ""} görünüyor.`);
+  if (eta) detailBits.push(`ETA ${etaLabel}.`);
   const recommendation = "Araç haritada güvenilir görünmüyorsa önce son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.";
   const summary = noLiveVehicle
     ? "Şimdi: Bu çocuk için canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür. Önce aktif servis saati, araç ataması ve canlı konum durumunu kontrol et."

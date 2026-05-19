@@ -274,8 +274,8 @@ const roomMapHelp = buildChatHelpResponse({
 const roomMapReply = String(roomMapHelp?.reply || roomMapHelp?.summary || '');
 mustNot(roomMapReply, 'seçili araç bilgisi net görünmüyor', 'room map reply avoids generic no-selection fallback');
 mustAny(roomMapReply, ['34ABC123', 'Seçili araç 34ABC123 görünüyor.'], 'room map reply keeps selected vehicle plate');
-mustAny(roomMapReply, ['GPS: Zayıf / STALE', 'Son GPS: 47s', 'GPS zayıf / stale'], 'room map reply keeps gps state');
-mustAny(roomMapReply, ['Son GPS: 47s', 'Son GPS 47s', 'Son GPS 47 saniye önce'], 'room map reply keeps last gps age');
+mustAny(roomMapReply, ['GPS: Güncel değil', 'GPS: Canlı', 'GPS: Çevrim dışı', 'GPS: Bekleniyor', 'GPS güncel değil', 'GPS canlı', 'GPS çevrim dışı'], 'room map reply keeps gps state');
+mustAny(roomMapReply, ['Son GPS: 47 sn önce', 'Son GPS 47 sn önce', 'Son GPS: 47 dk önce', 'Son GPS 47s', 'Son GPS 47 saniye önce'], 'room map reply keeps last gps age');
 mustAny(roomMapReply, ['Pickup 6', 'toplam durak 6'], 'room map reply keeps next stop and stop count');
 mustAny(roomMapReply, ["Sürücünün telefon GPS’i", "Sürücünün telefon GPS’i durumunu kontrol et"], 'room map reply keeps driver phone gps wording');
 mustNot(roomMapReply, 'Yetki sınırını açıkla', 'room map reply avoids permission boundary fallback');
@@ -301,7 +301,7 @@ const roomMapMismatch = await runCopilotFoundation({
 const roomMapMismatchText = String(roomMapMismatch?.plainSummary || roomMapMismatch?.screenExplanation || roomMapMismatch?.jobPurpose || '');
 mustNot(roomMapMismatchText, 'Bunu anlayamadım', 'room map mismatch fallback avoids unknown wording');
 mustAny(roomMapMismatchText, ['34ABC123', 'Seçili araç 34ABC123 görünüyor.'], 'room map mismatch keeps selected vehicle');
-mustAny(roomMapMismatchText, ['Son GPS 47s önce gelmiş', 'Son GPS 47 saniye önce gelmiş'], 'room map mismatch keeps last gps');
+mustAny(roomMapMismatchText, ['Son GPS 47 sn önce', 'Son GPS 47 sn önce gelmiş', 'Son GPS 47 saniye önce gelmiş'], 'room map mismatch keeps last gps');
 mustAny(roomMapMismatchText, ["Sürücünün telefon GPS’i", 'araç bağlantısı', 'görev bağlantısı'], 'room map mismatch keeps gps recommendation');
 
 const roomMapNoSelection = await runCopilotFoundation({

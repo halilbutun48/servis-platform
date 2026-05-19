@@ -125,6 +125,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Sağ alttaki `Sefer Abi’ye Sor` quick-help drawer ayrıdır; terminal yalnızca geniş analiz yüzeyidir.
 - Terminal starter chips readonly analiz sorularını öne çıkarır.
 
+### ETA-SANITY-01 [CHECK]
+- `check:etasanity01` canlı takipte GPS stale/offline/unknown durumunda ETA’yı güvenli ve kesin olmayan ifadelerle gösterir.
+- Room, Company, Parent, Personel ve Driver canlı yüzeyleri ile Copilot yardım metinleri aynı güvenli ETA / GPS mantığına bağlanır.
+- 619 dk gibi ham ve güvenilir görünen ETA gösterimleri yerine `ETA güncel değil`, `ETA hesaplanamıyor` veya `ETA olağan dışı yüksek` gibi güvenli ifadeler kullanılır.
+
 ### UX-NAV-01 [CHECK]
 - `check:uxnav01` NavDock premium visual polish check.
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` drawer bozulmaz.

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import MapView from "../../components/map/MapView";
+import { getEtaDisplay } from "../../utils/etaSanity";
 
 function readTokenFromHash() {
   const hash = String(window.location.hash || "");
@@ -302,7 +303,12 @@ export default function PassengerLivePanel() {
               </div>
               {isLive ? (
                 <div className="muted">
-                  Araçtan durağa ETA: <b>{data?.etaMin != null ? `${data.etaMin} dk` : "-"}</b>
+                  Araçtan durağa ETA: <b>{getEtaDisplay({
+                    etaMinutes: data?.etaMin,
+                    gpsStatus: data?.vehicle?.gpsState?.lastUiStatus || data?.vehicle?.gpsState?.lastStatus || data?.status || (data ? "LIVE" : "UNKNOWN"),
+                    gpsAge: data?.vehicle?.gpsLast || data?.gpsLast,
+                    nextStopName: data?.nextStop?.name,
+                  })}</b>
                   {" • "}
                   Araçtan durağa mesafe: <b>{data?.etaKm != null ? `${data.etaKm} km` : "-"}</b>
                 </div>

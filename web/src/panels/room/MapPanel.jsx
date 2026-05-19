@@ -9,6 +9,7 @@ import { ageSecFromAt, pillKeyFromUi, uiStatusFromVehicle } from "../../utils/ui
 import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
+import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
 
@@ -28,11 +29,7 @@ function gpsAtIso(v) {
 }
 
 function gpsAgeLabel(v) {
-  const age = ageSecFromAt(gpsAtIso(v));
-  if (age == null) return "-";
-  if (age < 60) return `${age}s`;
-  if (age < 3600) return `${Math.floor(age / 60)}dk`;
-  return `${Math.floor(age / 3600)}sa`;
+  return getGpsAgeText(v);
 }
 
 function gpsCoord(v) {
@@ -76,6 +73,15 @@ function etaMinGuess(vehicle, stop) {
   }
 
   return null;
+}
+
+function etaDisplayText(vehicle, etaMinutes, nextStop) {
+  return getEtaDisplay({
+    etaMinutes,
+    gpsStatus: vehicle?.gpsState?.lastUiStatus || vehicle?.gpsState?.lastStatus || vehicle?.gpsLast?.status || vehicle?.gpsLast?.state || (hasGpsFix(vehicle) ? "LIVE" : "UNKNOWN"),
+    gpsAge: vehicle?.gpsLast,
+    nextStopName: nextStop?.name,
+  });
 }
 
 function derivedLastReachedOrder(stops) {
@@ -326,7 +332,7 @@ export default function RoomMapPanel() {
         { label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Seçili aracın plakasını veya kayıt numarasını gösterir.' },
         { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
         { label: 'Sıradaki Durak', value: selectedNext?.name || '-', help: 'Araç şu anda hangi durağa doğru gidiyor bilgisini gösterir.' },
-        { label: 'ETA', value: selectedEta != null ? `${selectedEta}dk` : '-', help: 'Sıradaki durağa tahmini kalan süreyi gösterir.' },
+      { label: 'ETA', value: etaDisplayText(selected, selectedEta, selectedNext), help: 'Sıradaki durağa tahmini kalan süreyi güvenli biçimde gösterir.' },
         { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'Seçili vardiyadaki toplam durak sayısını gösterir.' },
         { label: 'Kalan', value: `${selectedStats?.remaining ?? 0}`, help: 'Henüz tamamlanmamış durak sayısını gösterir.' },
       ],
@@ -501,7 +507,7 @@ export default function RoomMapPanel() {
                     >
                       İlerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
                       {c.nextStop?.name ? ` • Sıradaki: ${c.nextStop.name}` : ""}
-                      {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${c.nextEtaMin}dk` : ""}
+                      {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${etaDisplayText(selected, c.nextEtaMin, c.nextStop)}` : ""}
                     </span>
                   </span>
 
@@ -584,7 +590,7 @@ export default function RoomMapPanel() {
                       </button>
 
                       {selectedEta != null ? (
-                        <span className="pill">ETA: {selectedEta}dk</span>
+                        <span className="pill">ETA: {etaDisplayText(selected, selectedEta, selectedNext)}</span>
                       ) : null}
 
                       <button

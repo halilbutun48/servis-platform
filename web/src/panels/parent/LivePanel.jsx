@@ -8,12 +8,15 @@ import { navigate } from "../../router";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts, buildParentLiveNoVehicleFacts } from "../../utils/copilotFacts";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
+import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
 
 function etaText(v) {
-  const m = v?.etaToChildMin;
-  if (typeof m !== "number" || !Number.isFinite(m)) return "—";
-  if (m <= 1) return "1 dk";
-  return `${m} dk`;
+  return getEtaDisplay({
+    etaMinutes: v?.etaToChildMin,
+    gpsStatus: v?.gpsState?.lastUiStatus || v?.gpsState?.lastStatus || (hasVehiclePoint(v) ? "LIVE" : "UNKNOWN"),
+    gpsAge: v?.gpsLast,
+    nextStopName: v?.nextStop?.name,
+  });
 }
 
 function stopTitle(s) {
@@ -135,17 +138,7 @@ function timeRangeText(windowObj) {
 }
 
 function gpsAgeText(gpsLast) {
-  const raw = gpsLast?.at;
-  if (!raw) return "Konum gelmedi";
-  const at = new Date(raw).getTime();
-  if (!Number.isFinite(at)) return "Konum gelmedi";
-  const diffSec = Math.max(0, Math.round((Date.now() - at) / 1000));
-  if (diffSec < 15) return "Az önce";
-  if (diffSec < 60) return `${diffSec} sn önce`;
-  const min = Math.round(diffSec / 60);
-  if (min < 60) return `${min} dk önce`;
-  const hour = Math.round(min / 60);
-  return `${hour} sa önce`;
+  return getGpsAgeText(gpsLast);
 }
 
 function hasVehiclePoint(vehicle) {
