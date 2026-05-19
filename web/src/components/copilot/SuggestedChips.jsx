@@ -1,9 +1,9 @@
 export default function SuggestedChips({ items = [], busy = false, onPick }) {
   if (!Array.isArray(items) || !items.length) return null;
   return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
       {items.map((item, i) => (
-        <button key={`${item}:${i}`} type="button" onClick={() => onPick?.(item)} disabled={busy}>
+        <button key={`${item}:${i}`} type="button" className="copilotChip" onClick={() => onPick?.(item)} disabled={busy}>
           {item}
         </button>
       ))}

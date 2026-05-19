@@ -37,7 +37,7 @@ export default function ChatQuickActions({ actions = [], linkedGuides = [], onOp
         {visibleActions.length ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {visibleActions.map((action, i) => (
-              <button key={`${actionText(action, i)}:${i}`} type="button" onClick={() => runAction(action)} title={action?.reason || ""} style={tone(action?.accent)}>
+              <button key={`${actionText(action, i)}:${i}`} type="button" className="btn sm copilotToolBtn" onClick={() => runAction(action)} title={action?.reason || ""} style={tone(action?.accent)}>
                 {actionText(action, i)}
               </button>
             ))}
@@ -46,7 +46,7 @@ export default function ChatQuickActions({ actions = [], linkedGuides = [], onOp
         {hasGuides ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {linkedGuides.slice(0, 2).map((guide, i) => (
-              <button key={`${guide?.jobType || "guide"}:${i}`} type="button" onClick={() => onGuide?.(guide)} title={guide?.reason || ""}>
+              <button key={`${guide?.jobType || "guide"}:${i}`} type="button" className="btn sm copilotToolBtn" onClick={() => onGuide?.(guide)} title={guide?.reason || ""}>
                 {guide?.label || guide?.jobType || "Rehbere geç"}
               </button>
             ))}

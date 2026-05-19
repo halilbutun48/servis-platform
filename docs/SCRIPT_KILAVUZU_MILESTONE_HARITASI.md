@@ -85,6 +85,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcopilotpersona01` -> `node backend\scripts\ux_copilot_persona_01_check.js`
 - `check:uxcopilotterminal01` -> `node backend\scripts\ux_copilot_terminal_01_check.js`
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
+- `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
@@ -128,6 +129,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxnav01` NavDock premium visual polish check.
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` drawer bozulmaz.
 - Menü kartları, aktif durum, badge hizası ve focus/hover affordance'ları daha premium görünür; route ve davranış değişmez.
+
+### UX-DENSITY-01 [CHECK]
+- `check:uxdensity01` panel/card density ve premium dashboard polish check.
+- Ortak kart, başlık, badge, chip, buton ve tablo yoğunluğu daha tutarlı hale gelir; ürün davranışı değişmez.
+- NavDock role/kind IA, `Sefer Abi Terminali` ve `Sefer Abi’ye Sor` standardı korunur.
 
 ## 5) Faz haritası
 ### Faz A — M0→M41 çekirdek temel hat [HISTORICAL]

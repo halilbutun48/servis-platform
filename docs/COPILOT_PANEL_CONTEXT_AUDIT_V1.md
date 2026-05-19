@@ -227,6 +227,11 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - NavDock kartları, aktif durum vurgusu, badge hizası ve focus/hover affordance'ları daha premium ve okunur hale getirilir.
 - Bu polish görünüm standardını iyileştirir; route, component yapısı ve product/business flow değişmez.
 
+## UX-DENSITY-01 panel/card density polish
+- Ortak card, panel header, badge, chip, button ve table yoğunluğu daha kompakt ve premium hale getirilir.
+- Büyük ekranlarda bilgi yoğunluğu artar; küçük ekranlarda taşma ve çakışma kontrol altında kalır.
+- Behavior unchanged; only visible density, spacing and dashboard polish changes.
+
 ## Known live findings referenced in this audit
 - `Firma / Sözleşmeler`
 - `Oda / Canlı Takip`

@@ -170,10 +170,10 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
 
       {role !== "user" ? (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <button type="button" onClick={() => handleFeedback("useful")} style={{ fontSize: 12 }}>
+          <button type="button" className="btn sm copilotToolBtn" onClick={() => handleFeedback("useful")} style={{ fontSize: 12 }}>
             {feedback === "useful" ? "İşe yaradı ✓" : "İşe yaradı"}
           </button>
-          <button type="button" onClick={() => handleFeedback("needs-work")} style={{ fontSize: 12 }}>
+          <button type="button" className="btn sm copilotToolBtn" onClick={() => handleFeedback("needs-work")} style={{ fontSize: 12 }}>
             {feedback === "needs-work" ? "Eksik kaldı ✓" : "Eksik kaldı"}
           </button>
         </div>

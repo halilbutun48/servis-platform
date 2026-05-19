@@ -25,7 +25,7 @@ export default function ChatInputBox({ busy = false, sending = false, onSend }) 
         }}
       />
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button type="button" onClick={submit} disabled={busy || !String(value || '').trim()}>
+        <button type="button" className="btn sm copilotToolBtn" onClick={submit} disabled={busy || !String(value || '').trim()}>
           {sending ? 'Gönderiliyor...' : 'Gönder'}
         </button>
         <span className="muted">Enter gönderir. Shift+Enter yeni satır açar.</span>

@@ -565,7 +565,7 @@ export default function CopilotPanel() {
   }
 
   return (
-    <div className="wrap wrap--fluid" style={{ display: "grid", gap: 12 }}>
+    <div className="wrap wrap--fluid" style={{ display: "grid", gap: 10 }}>
       <div className="card">
         <div className="title">{COPILOT_TERMINAL.title}</div>
         <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
@@ -602,7 +602,7 @@ export default function CopilotPanel() {
         </div>
       ) : null}
 
-      <div className="card" style={{ display: "grid", gap: 12 }}>
+      <div className="card" style={{ display: "grid", gap: 10 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {PANEL_MODES.map((x) => (
             <button
@@ -617,7 +617,7 @@ export default function CopilotPanel() {
         </div>
 
         {panelMode === "CHAT" ? (
-          <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 10 }}>
             <div className="muted">
               Sohbet modu önce soruyu alır. Bağlam mümkünse otomatik okunur; gerekirse aşağıdaki düğmeyle gelişmiş ayarlardan değiştirirsin.
             </div>
@@ -630,7 +630,7 @@ export default function CopilotPanel() {
               </div>
             ) : null}
 
-            <div className="card" style={{ padding: 12, display: "flex", gap: 12, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
+            <div className="card" style={{ padding: 12, display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
               <div className="muted" style={{ display: "grid", gap: 4 }}>
                 <div><b>Bağlam:</b> {selectedChatScreen ? screenOptionLabel(selectedChatScreen) : "-"}{selectedChatItem && chatEntityType !== "screen" ? ` • ${optionLabel(chatEntityType, selectedChatItem)}` : ""}</div>
                 <div>Mevcut ekran ve seçili kayıt otomatik okunur. Gerekirse gelişmiş sekmesinden değiştir.</div>
@@ -665,7 +665,7 @@ export default function CopilotPanel() {
           </div>
         ) : (
 
-        <form onSubmit={onRun} style={{ display: "grid", gap: 12 }}>
+        <form onSubmit={onRun} style={{ display: "grid", gap: 10 }}>
           {panelMode === "ADVANCED" ? (
             <div className="card" style={{ display: "grid", gap: 8 }}>
               <div className="title" style={{ fontSize: 16 }}>Sohbet bağlamı</div>
@@ -811,7 +811,7 @@ export default function CopilotPanel() {
       </div>
 
       {result?.mode === "JOB_GUIDE" ? (
-        <div className="card" style={{ display: "grid", gap: 12 }}>
+        <div className="card" style={{ display: "grid", gap: 10 }}>
           <div>
             <div className="title">Rehber Sonucu</div>
             <div className="muted" style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
