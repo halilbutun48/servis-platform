@@ -227,6 +227,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `Son bilinen durak` ve `Sıradaki durak` ayrımı canlılık durumuna göre korunur; Copilot aynı güvenli dili tekrarlar.
 - 619 dk gibi ham ETA değerleri kullanıcıya güvenilir gerçekmiş gibi basılmaz; güvenilirlik önce gelir.
 
+## ETA-OSRM-01 readonly OSRM ETA helper note
+- Merkezi readonly OSRM ETA helper, canlı ETA için güvenli tek çıktı formatı sağlar.
+- OSRM timeout veya OSRM_URL eksikliği durumunda fallback çalışır; ekran kırılmaz ve kesin ETA dili korunmaz.
+- Bu helper, ETA-SANITY-01 güvenli görünürlük katmanını bozmaz; tersine canlı güvenilirlik kararını tek yerde toplar.
+- /api/eta entegrasyonu bu aşamada ertelenmiştir; helper ve check altyapısı bağımsız olarak hazır tutulur.
+
 ## UX-NAV-01 premium NavDock polish
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` quick-help drawer değişmez.
 - NavDock kartları, aktif durum vurgusu, badge hizası ve focus/hover affordance'ları daha premium ve okunur hale getirilir.

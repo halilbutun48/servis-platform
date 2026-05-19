@@ -130,6 +130,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Room, Company, Parent, Personel ve Driver canlı yüzeyleri ile Copilot yardım metinleri aynı güvenli ETA / GPS mantığına bağlanır.
 - 619 dk gibi ham ve güvenilir görünen ETA gösterimleri yerine `ETA güncel değil`, `ETA hesaplanamıyor` veya `ETA olağan dışı yüksek` gibi güvenli ifadeler kullanılır.
 
+### ETA-OSRM-01 [CHECK]
+- `check:etaosrm01` merkezi readonly OSRM ETA helper ve güvenli fallback katmanını doğrular.
+- OSRM varsa canlı ETA kaynağı helper üzerinden okunur; OSRM yoksa ya da timeout olursa ekran kırılmaz.
+- GPS stale/offline/unknown durumunda ETA kesin gösterim olarak kabul edilmez; ETA-SANITY güvenli görünürlük kuralı korunur.
+- Bu adım canlı ETA helperını OSRM'e hazırlayan dar ve readonly basamaktır; `/api/eta` entegrasyonu bu milestone'da ertelenmiştir.
+
 ### UX-NAV-01 [CHECK]
 - `check:uxnav01` NavDock premium visual polish check.
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` drawer bozulmaz.
