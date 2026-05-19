@@ -23,6 +23,15 @@ function getQueryParam(name) {
   }
 }
 
+function etaDisplayText(vehicle, etaMinutes, nextStop) {
+  return getEtaDisplay({
+    etaMinutes,
+    gpsStatus: vehicle?.gpsState?.lastUiStatus || vehicle?.gpsState?.lastStatus || vehicle?.gpsLast?.status || vehicle?.gpsLast?.state || "UNKNOWN",
+    gpsAge: vehicle?.gpsLast,
+    nextStopName: nextStop?.name,
+  });
+}
+
 export default function RoutePanel() {
   const { token } = useSession();
   const [data, setData] = useState(null);
@@ -705,7 +714,7 @@ async function undoLast() {
                 <th>Ad</th>
                 <th>Durum</th>
                 <th>Km</th>
-                <th>ETA (dk)</th>
+                <th>ETA</th>
                 <th></th>
               </tr>
             </thead>
@@ -713,6 +722,9 @@ async function undoLast() {
               {orderedStops.map((s) => {
                 const reachedState = isReachedStop(s);
                 const isNext = nextStop?.id != null && String(nextStop.id) === String(s.id);
+                const stopEtaText = Number.isFinite(Number(s?.etaMin))
+                  ? etaDisplayText(selectedVehicle, Number(s.etaMin), s)
+                  : "-";
                 return (
                   <tr key={s.id}>
                     <td>{s.order}</td>
@@ -721,7 +733,7 @@ async function undoLast() {
                       {isNext ? <span className="pill" data-status="NEXT">NEXT</span> : reachedState ? <span className="pill" data-status="OK">OK</span> : <span className="pill" data-status="REQUESTED">BEKLİYOR</span>}
                     </td>
                     <td>{s.remainingKm}</td>
-                    <td>{s.etaMin}</td>
+                    <td>{stopEtaText}</td>
                     <td><button type="button" onClick={() => openNextStopNavigation(s, { gpsLast: data?.last })}>Nav</button></td>
                   </tr>
                 );

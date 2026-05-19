@@ -407,18 +407,21 @@ export default function MyRidePanel() {
         <div className="muted" style={{ marginBottom: 8 }}>Kendi konumuna göre en yakın durağı bul ve istersen doğrudan navigasyon aç.</div>
         <table className="tbl">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Durak</th>
-              <th>Durum</th>
-              <th>Bana Uzaklık</th>
-              <th>Araç ETA(dk)</th>
-              <th>İşlem</th>
-            </tr>
+              <tr>
+                <th>#</th>
+                <th>Durak</th>
+                <th>Durum</th>
+                <th>Bana Uzaklık</th>
+                <th>Araç ETA</th>
+                <th>İşlem</th>
+              </tr>
           </thead>
           <tbody>
             {stops.length ? stops.map((s) => {
               const active = selectedStop && String(selectedStop.id) === String(s.id);
+              const stopEtaText = Number.isFinite(Number(s?.etaMin))
+                ? etaDisplayText(vehicle, Number(s.etaMin), s)
+                : "-";
               return (
                 <tr key={String(s.id)} style={active ? { background: "rgba(59,130,246,.10)", outline: "1px solid rgba(59,130,246,.35)" } : undefined}>
                   <td>{s.order}</td>
@@ -428,7 +431,7 @@ export default function MyRidePanel() {
                   </td>
                   <td><span className="pill" data-status={String(s.status || "PENDING").toUpperCase()}>{displayStatusLabel(String(s.status || "PENDING").toUpperCase())}</span></td>
                   <td>{Number.isFinite(Number(s.distanceM)) ? `${(Number(s.distanceM) / 1000).toFixed(2)} km` : "-"}</td>
-                  <td>{Number.isFinite(Number(s.etaMin)) ? Math.round(Number(s.etaMin)) : "-"}</td>
+                  <td>{stopEtaText}</td>
                   <td>
                     <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
                       <button type="button" disabled={busy} onClick={() => setSelectedStopId(s.id)}>Seç</button>

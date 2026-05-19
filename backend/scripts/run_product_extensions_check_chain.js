@@ -53,6 +53,7 @@ const steps = [
   'check:uxnav01',
   'check:uxdensity01',
   'check:livetrackingfinal01',
+  'check:driverflowfinal01',
 ];
 
 function runStep(scriptName) {

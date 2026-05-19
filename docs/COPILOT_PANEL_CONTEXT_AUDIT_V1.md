@@ -242,6 +242,11 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `bus.svg` marker standardı, ETA-SANITY güvenli wording ve `/api/eta` bridge contract'ı aynı kabul yüzeyinde korunur.
 - Bu gate, exact ETA veya teknik hata görünürlüğünü artırmaz; acceptance-only bir son kontrol kapısıdır.
 
+## DRIVER-FLOW-FINAL-01 acceptance smoke note
+- Driver / Bugün / Rota / Harita / Check-in final acceptance aynı güvenli ETA / GPS wording ile doğrulanır.
+- Sürücü yardım cevapları görev, rota ve GPS bekleme durumlarında teknik jargon üretmeden kısa ve pratik kalır.
+- Bu not ürün davranışı değiştirmez; yalnızca final kabul kapsamını görünür kılar.
+
 ## UX-NAV-01 premium NavDock polish
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` quick-help drawer değişmez.
 - NavDock kartları, aktif durum vurgusu, badge hizası ve focus/hover affordance'ları daha premium ve okunur hale getirilir.

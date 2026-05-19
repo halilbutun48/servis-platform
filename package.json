@@ -68,6 +68,7 @@
     "check:etaosrm01": "node backend/scripts/eta_osrm_01_route_eta_service_check.js",
     "check:etaosrm02": "node backend/scripts/eta_osrm_02_api_eta_bridge_check.js",
     "check:livetrackingfinal01": "node backend/scripts/live_tracking_final_01_acceptance_check.js",
+    "check:driverflowfinal01": "node backend/scripts/driver_flow_final_01_acceptance_check.js",
     "check:uxnav01": "node backend/scripts/ux_nav_01_premium_navdock_check.js",
     "check:uxdensity01": "node backend/scripts/ux_density_01_panel_card_density_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",

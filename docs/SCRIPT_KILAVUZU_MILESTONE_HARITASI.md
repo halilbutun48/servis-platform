@@ -146,6 +146,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `/api/eta` bridge, ETA-SANITY güvenli wording ve `bus.svg` marker standardı bozulmadan kalır; yeni endpoint veya business flow açılmaz.
 - Bu gate acceptance-smoke son kapısıdır; exact ETA, stale/offline GPS ve teknik hata dilini görünür kabul metni haline getirmez.
 
+### DRIVER-FLOW-FINAL-01 [CHECK]
+- `check:driverflowfinal01` Driver / Bugün / Rota / Harita / Check-in final kabul kapısıdır.
+- Bugünkü görev, rota sırası, güvenli ETA/GPS dili ve check-in görünürlüğü aynı kabul hattında doğrulanır.
+- `bus.svg` marker standardı, `Sefer Abi Terminali` ve `Sefer Abi’ye Sor` düzeni bozulmadan kalır; yeni endpoint veya route/shift logic açılmaz.
+- Driver cevapları görev başlatma, rota görünmeme ve GPS bekleme durumlarında teknik jargon üretmeden güvenli yönlendirme yapar.
+
 ### UX-NAV-01 [CHECK]
 - `check:uxnav01` NavDock premium visual polish check.
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` drawer bozulmaz.

@@ -102,6 +102,7 @@ function main() {
   must(pkg, '"check:etaosrm01"', 'package.json keeps check:etaosrm01');
   must(pkg, '"check:etaosrm02"', 'package.json keeps check:etaosrm02');
   must(pkg, '"check:livetrackingfinal01"', 'package.json keeps check:livetrackingfinal01');
+  must(pkg, '"check:driverflowfinal01"', 'package.json keeps check:driverflowfinal01');
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
@@ -149,9 +150,10 @@ function main() {
     'check:etasanity01',
     'check:etaosrm01',
     'check:etaosrm02',
+    'check:livetrackingfinal01',
+    'check:driverflowfinal01',
     'check:uxnav01',
     'check:uxdensity01',
-    'check:livetrackingfinal01',
 ], 'product extensions runner order');
 
   must(guide, 'check:product-extensions', 'script guide exposes check:product-extensions');
@@ -185,6 +187,7 @@ function main() {
   must(guide, 'check:etaosrm01', 'script guide exposes check:etaosrm01');
   must(guide, 'check:etaosrm02', 'script guide exposes check:etaosrm02');
   must(guide, 'check:livetrackingfinal01', 'script guide exposes check:livetrackingfinal01');
+  must(guide, 'check:driverflowfinal01', 'script guide exposes check:driverflowfinal01');
   must(guide, 'check:uxnav01', 'script guide exposes check:uxnav01');
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
   must(guide, 'UX-COPILOT-TERMINAL-01', 'script guide mentions UX-COPILOT-TERMINAL-01');
@@ -193,6 +196,7 @@ function main() {
   must(guide, 'ETA-OSRM-01', 'script guide mentions ETA-OSRM-01');
   must(guide, 'ETA-OSRM-02', 'script guide mentions ETA-OSRM-02');
   must(guide, 'LIVE-TRACKING-FINAL-01', 'script guide mentions LIVE-TRACKING-FINAL-01');
+  must(guide, 'DRIVER-FLOW-FINAL-01', 'script guide mentions DRIVER-FLOW-FINAL-01');
   must(guide, 'UX-NAV-01', 'script guide mentions UX-NAV-01');
   must(guide, 'UX-DENSITY-01', 'script guide mentions UX-DENSITY-01');
   must(guide, 'check:e2esmoke01', 'script guide exposes check:e2esmoke01');
