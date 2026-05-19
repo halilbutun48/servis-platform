@@ -267,7 +267,7 @@
   font-weight: 850;
   font-size: 12px;
   letter-spacing:.3px;
-  color:#0f172a;
+  color: var(--vmc-accent);
   background: rgba(2,6,23,.04);
   border: 1px solid rgba(2,6,23,.08);
 }
@@ -284,8 +284,8 @@
   position:absolute;
   left: 0;
   top: 30px;
-  width: 60px;
-  height: 66px;
+  width: 78px;
+  height: 84px;
   display:flex;
   align-items:flex-start;
   justify-content:center;
@@ -328,9 +328,9 @@
 /* main pin */
 .vmc-pin{
   position:absolute;
-  top: 10px;
-  width: 48px;
-  height: 48px;
+  top: 6px;
+  width: 66px;
+  height: 66px;
   border-radius:999px;
   background:#fff;
   border:2px solid var(--vmc-accent);
@@ -338,50 +338,46 @@
   display:flex;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
+  overflow: hidden;
 }
 
-/* heading arrow (arkada) */
-.vmc-nav{
+.vmc-pin::before{
+  content:"";
   position:absolute;
-  inset: -6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transform-origin: 50% 50%;
+  inset: 4px;
+  border-radius:999px;
+  background: var(--vmc-accent);
+  opacity: .92;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,.20),
+    0 0 0 1px rgba(15,23,42,.10);
   pointer-events:none;
-  z-index: 1;
-  opacity: .90;
-}
-
-.vmc-navSvg{
-  width: 54px;
-  height: 54px;
-  filter: drop-shadow(0 2px 10px rgba(15,23,42,.20));
 }
 
 /* bus svg (ustte) */
 .vmc-busSvg{
   position: relative;
   z-index: 2;
-  width: 34px;
-  height: 34px;
-  transform: translateY(1px);
+  width: 56px;
+  height: 56px;
+  transform: translateY(0);
+  object-fit: contain;
+  mix-blend-mode: multiply;
   filter: drop-shadow(0 2px 8px rgba(15,23,42,.18));
 }
 
 /* tip */
 .vmc-tip{
   position:absolute;
-  top: 52px;
-  width: 14px;
-  height: 14px;
+  top: 55px;
+  width: 8px;
+  height: 8px;
   background:#fff;
-  border-left: 2px solid var(--vmc-accent);
-  border-bottom: 2px solid var(--vmc-accent);
+  border-left: 1.25px solid var(--vmc-accent);
+  border-bottom: 1.25px solid var(--vmc-accent);
   transform: rotate(-45deg);
   border-radius: 0 0 0 3px;
-  box-shadow: 0 10px 18px rgba(15,23,42,.12);
+  box-shadow: 0 7px 12px rgba(15,23,42,.09);
 }
 
 /* =========================
