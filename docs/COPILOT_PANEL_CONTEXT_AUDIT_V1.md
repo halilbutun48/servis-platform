@@ -237,6 +237,11 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - GPS stale/offline/unknown durumunda exact ETA dili üretilmez; yardımcı metadata alanları güvenli fallback'i taşır.
 - Bu bridge, ETA-SANITY-01 görünürlük dilini bozmaz; sadece route seviyesinde readonly ETA kararını netleştirir.
 
+## LIVE-TRACKING-FINAL-01 acceptance smoke note
+- Room, Company, Driver, Parent, Personel ve Public canlı yüzeylerinde GPS, ETA ve marker davranışı final kabul gate'i olarak birlikte doğrulanır.
+- `bus.svg` marker standardı, ETA-SANITY güvenli wording ve `/api/eta` bridge contract'ı aynı kabul yüzeyinde korunur.
+- Bu gate, exact ETA veya teknik hata görünürlüğünü artırmaz; acceptance-only bir son kontrol kapısıdır.
+
 ## UX-NAV-01 premium NavDock polish
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` quick-help drawer değişmez.
 - NavDock kartları, aktif durum vurgusu, badge hizası ve focus/hover affordance'ları daha premium ve okunur hale getirilir.

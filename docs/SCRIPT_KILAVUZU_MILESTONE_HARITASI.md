@@ -141,6 +141,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Route contract geriye uyumlu kalır; ek güvenli metadata alanları varsa onları taşır.
 - GPS stale/offline/unknown durumunda exact ETA dili kullanılmaz; helper fallback ve ETA-SANITY dili korunur.
 
+### LIVE-TRACKING-FINAL-01 [CHECK]
+- `check:livetrackingfinal01` Room / Company / Driver / Parent / Personel / Public canlı yüzeylerinde GPS, ETA ve marker görünürlüğünü final kabul kapısı olarak birlikte doğrular.
+- `/api/eta` bridge, ETA-SANITY güvenli wording ve `bus.svg` marker standardı bozulmadan kalır; yeni endpoint veya business flow açılmaz.
+- Bu gate acceptance-smoke son kapısıdır; exact ETA, stale/offline GPS ve teknik hata dilini görünür kabul metni haline getirmez.
+
 ### UX-NAV-01 [CHECK]
 - `check:uxnav01` NavDock premium visual polish check.
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` drawer bozulmaz.

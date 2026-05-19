@@ -8,7 +8,7 @@ function compactText(value) {
 }
 
 function normalizeText(value) {
-  return compactText(value).toLocaleLowerCase("tr-TR");
+  return compactText(value).toLowerCase();
 }
 
 function firstNonEmpty(...values) {

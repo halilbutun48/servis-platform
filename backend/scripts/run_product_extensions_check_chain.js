@@ -52,6 +52,7 @@ const steps = [
   'check:etaosrm02',
   'check:uxnav01',
   'check:uxdensity01',
+  'check:livetrackingfinal01',
 ];
 
 function runStep(scriptName) {
