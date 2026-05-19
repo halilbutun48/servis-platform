@@ -5,6 +5,7 @@ import { isoOffsetTR } from "../time/tr.js";
 import { authRequired } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
+import { getNextStopEta } from "../services/routeEtaService.js";
 
 export const etaRouter = express.Router();
 
@@ -209,6 +210,19 @@ async function computeEta(vehicleId, shiftId) {
   const counts = countStopsByState(allStops);
   const progress = deriveRouteProgress({ hasShift: !!chosenShiftId, counts, gpsStatus: status });
   const next = deriveNextAction({ progress, nextStop, skippedStopsCount: counts.skippedStopsCount });
+  const etaBridge = nextStop
+    ? await getNextStopEta({
+        vehicle: { gpsLast: last, speedKmh },
+        nextStop: { lat: nextStop.lat, lng: nextStop.lng, name: nextStop.name, order: nextStop.order },
+        gpsFreshness: { status, ageSec, gpsLast: last },
+        requestId: `eta:${vehicleId}:${shiftId ?? "auto"}`,
+        timeoutMs: 2000,
+      })
+    : null;
+  const etaSource = etaBridge?.source ?? "UNAVAILABLE";
+  const etaReliability = etaBridge?.reliability ?? (status === "OFFLINE" ? "offline" : status === "STALE" ? "stale" : status === "LIVE" ? "fresh" : "unknown");
+  const etaDisplayMode = etaBridge?.displayMode ?? (nextStop ? (status === "LIVE" ? "exact" : status === "STALE" || status === "OFFLINE" ? "not-current" : "unavailable") : "unavailable");
+  const etaReason = etaBridge?.reason ?? (nextStop ? `GPS_${String(status || "UNKNOWN").toUpperCase()}` : "NO_NEXT_STOP");
 
   const resolvedPayload = resolvedStop
     ? {
@@ -232,12 +246,28 @@ async function computeEta(vehicleId, shiftId) {
     routeProgressState: progress.routeProgressState,
     progressLabel: progress.progressLabel,
     gpsFreshness: status,
+    etaSource: etaSource,
+    etaReliability: etaReliability,
+    etaDisplayMode: etaDisplayMode,
+    etaReason: etaReason,
     totalStopsCount: counts.totalStopsCount,
     reachedStopsCount: counts.reachedStopsCount,
     skippedStopsCount: counts.skippedStopsCount,
     remainingStopsCount: counts.pendingStopsCount,
     remainingRouteKm: tail?.remainingRouteKm ?? 0,
     remainingRouteEtaMin: tail?.remainingRouteEtaMin ?? 0,
+    etaRoute: etaBridge
+      ? {
+          ok: etaBridge.ok,
+          source: etaBridge.source,
+          etaMinutes: etaBridge.etaMinutes,
+          distanceMeters: etaBridge.distanceMeters,
+          durationSeconds: etaBridge.durationSeconds,
+          reliability: etaBridge.reliability,
+          displayMode: etaBridge.displayMode,
+          reason: etaBridge.reason,
+        }
+      : null,
     nextStop: nextStop
       ? {
           id: nextStop.id,
@@ -245,6 +275,11 @@ async function computeEta(vehicleId, shiftId) {
           order: nextStop.order,
           lat: nextStop.lat,
           lng: nextStop.lng,
+          etaMin: etaBridge?.etaMinutes ?? null,
+          etaSource: etaSource,
+          etaReliability: etaReliability,
+          etaDisplayMode: etaDisplayMode,
+          etaReason: etaReason,
         }
       : null,
     lastResolvedStop: resolvedPayload,

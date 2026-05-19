@@ -231,7 +231,11 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Merkezi readonly OSRM ETA helper, canlı ETA için güvenli tek çıktı formatı sağlar.
 - OSRM timeout veya OSRM_URL eksikliği durumunda fallback çalışır; ekran kırılmaz ve kesin ETA dili korunmaz.
 - Bu helper, ETA-SANITY-01 güvenli görünürlük katmanını bozmaz; tersine canlı güvenilirlik kararını tek yerde toplar.
-- /api/eta entegrasyonu bu aşamada ertelenmiştir; helper ve check altyapısı bağımsız olarak hazır tutulur.
+
+## ETA-OSRM-02 /api/eta routeEtaService bridge note
+- `/api/eta` route'u merkezi readonly helper ile güvenli biçimde bağlanır; mevcut route contract geriye uyumlu kalır.
+- GPS stale/offline/unknown durumunda exact ETA dili üretilmez; yardımcı metadata alanları güvenli fallback'i taşır.
+- Bu bridge, ETA-SANITY-01 görünürlük dilini bozmaz; sadece route seviyesinde readonly ETA kararını netleştirir.
 
 ## UX-NAV-01 premium NavDock polish
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` quick-help drawer değişmez.

@@ -134,7 +134,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:etaosrm01` merkezi readonly OSRM ETA helper ve güvenli fallback katmanını doğrular.
 - OSRM varsa canlı ETA kaynağı helper üzerinden okunur; OSRM yoksa ya da timeout olursa ekran kırılmaz.
 - GPS stale/offline/unknown durumunda ETA kesin gösterim olarak kabul edilmez; ETA-SANITY güvenli görünürlük kuralı korunur.
-- Bu adım canlı ETA helperını OSRM'e hazırlayan dar ve readonly basamaktır; `/api/eta` entegrasyonu bu milestone'da ertelenmiştir.
+- Bu adım canlı ETA helperını OSRM'e hazırlayan dar ve readonly basamaktır.
+
+### ETA-OSRM-02 [CHECK]
+- `check:etaosrm02` `/api/eta` route bridge katmanını merkezi readonly helper ile doğrular.
+- Route contract geriye uyumlu kalır; ek güvenli metadata alanları varsa onları taşır.
+- GPS stale/offline/unknown durumunda exact ETA dili kullanılmaz; helper fallback ve ETA-SANITY dili korunur.
 
 ### UX-NAV-01 [CHECK]
 - `check:uxnav01` NavDock premium visual polish check.
