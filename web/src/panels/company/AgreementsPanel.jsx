@@ -25,6 +25,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
 import CollapsibleSection from "../../components/CollapsibleSection";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CompanyAgreementsOverviewSection from "./companyAgreementsOverviewSection";
 import CompanyAgreementsRouteRefreshPendingSection from "./companyAgreementsRouteRefreshPendingSection";
 import CompanyAgreementsSelectedSummarySection, {
@@ -164,6 +165,13 @@ const PLAN_TEMPLATES = [
   },
 ];
 
+const AGREEMENTS_VIEW_TABS = [
+  { key: "summary", label: "Özet" },
+  { key: "bridge", label: "Bağlantı" },
+  { key: "wizard", label: "Yazım" },
+  { key: "list", label: "Liste" },
+];
+
 export default function AgreementsPanel() {
   const { token, me } = useSession();
 
@@ -196,6 +204,7 @@ export default function AgreementsPanel() {
   const [guidedOpen, setGuidedOpen] = useState(false);
   const [routeRefreshLaunch, setRouteRefreshLaunch] = useState(null);
   const [routeRefreshNonce, setRouteRefreshNonce] = useState(0);
+  const [viewMode, setViewMode] = useState("summary");
 
   const [templateKey, _setTemplateKey] = useState("MORNING");
   const [roomId, _setRoomId] = useState("");
@@ -918,195 +927,238 @@ export default function AgreementsPanel() {
 
       {err ? <div className="muted" style={{ color: "crimson" }}>{String(err)}</div> : null}
 
-      {selectedAgreementRow?.a && selectedAgreementOrigin ? (
-        <CompanyAgreementsSourceShiftSection
-          origin={selectedAgreementOrigin}
-          canShowRouteRefreshActions={canRouteRefresh(selectedAgreementRow?.a, selectedAgreementOrigin)}
-          previewShiftId={selectedAgreementPreviewShiftId}
-          routeRefreshActionDisabled={busy || Boolean(selectedRouteRefreshPending)}
-          routeRefreshActionLabel={selectedRouteRefreshCountered ? "Karşı Teklif Geldi" : selectedRouteRefreshPending ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
-          onOpenSourceShift={() => openAgreementShift(selectedAgreementOrigin.sourceShiftId, false)}
-          onOpenPreview={() => openAgreementShift(selectedAgreementPreviewShiftId, true)}
-          onStartRouteRefresh={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}
-        />
+      <PanelSegmentTabs
+        ariaLabel="Sözleşme görünümü"
+        tabs={AGREEMENTS_VIEW_TABS}
+        value={viewMode}
+        onChange={setViewMode}
+      />
+
+      {viewMode === "summary" ? (
+        <>
+          {selectedAgreementRow?.a && selectedAgreementOrigin ? (
+            <CompanyAgreementsSourceShiftSection
+              origin={selectedAgreementOrigin}
+              canShowRouteRefreshActions={canRouteRefresh(selectedAgreementRow?.a, selectedAgreementOrigin)}
+              previewShiftId={selectedAgreementPreviewShiftId}
+              routeRefreshActionDisabled={busy || Boolean(selectedRouteRefreshPending)}
+              routeRefreshActionLabel={selectedRouteRefreshCountered ? "Karşı Teklif Geldi" : selectedRouteRefreshPending ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
+              onOpenSourceShift={() => openAgreementShift(selectedAgreementOrigin.sourceShiftId, false)}
+              onOpenPreview={() => openAgreementShift(selectedAgreementPreviewShiftId, true)}
+              onStartRouteRefresh={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}
+            />
+          ) : null}
+
+          {selectedRouteRefreshPending ? (
+            <CompanyAgreementsRouteRefreshPendingSection
+              title={selectedRouteRefreshCountered ? "Rota güncelleme karşı teklifi" : "Bekleyen rota güncelleme teklifi"}
+              summaryText={selectedRouteRefreshSummaryText}
+              companyOfferNote={selectedRouteRefreshPending.companyOfferNote || ""}
+              roomCounterText={selectedRouteRefreshRoomCounterText}
+              currentRouteText={selectedRouteRefreshCurrentText}
+              proposedRouteText={selectedRouteRefreshProposedText}
+              diffText={selectedRouteRefreshDiffText}
+              priceImpactText={selectedRouteRefreshPriceImpactText}
+              previewError={routeRefreshPreviewSummary.err}
+              previewLoading={routeRefreshPreviewSummary.loading}
+              currentPreviewShiftId={selectedRouteRefreshCurrentPreviewShiftId}
+              proposedPreviewShiftId={selectedRouteRefreshProposedPreviewShiftId}
+              showCounterActions={selectedRouteRefreshCountered}
+              busy={busy}
+              onOpenCurrentPreview={() => openAgreementShift(selectedRouteRefreshCurrentPreviewShiftId, true)}
+              onOpenProposedPreview={() => openAgreementShift(selectedRouteRefreshProposedPreviewShiftId, true)}
+              onAcceptCounter={() => acceptRouteRefreshCounter(selectedRouteRefreshPending.id)}
+              onRejectCounter={() => rejectRouteRefreshCounter(selectedRouteRefreshPending.id)}
+            />
+          ) : null}
+        </>
       ) : null}
 
-      {selectedRouteRefreshPending ? (
-        <CompanyAgreementsRouteRefreshPendingSection
-          title={selectedRouteRefreshCountered ? "Rota güncelleme karşı teklifi" : "Bekleyen rota güncelleme teklifi"}
-          summaryText={selectedRouteRefreshSummaryText}
-          companyOfferNote={selectedRouteRefreshPending.companyOfferNote || ""}
-          roomCounterText={selectedRouteRefreshRoomCounterText}
-          currentRouteText={selectedRouteRefreshCurrentText}
-          proposedRouteText={selectedRouteRefreshProposedText}
-          diffText={selectedRouteRefreshDiffText}
-          priceImpactText={selectedRouteRefreshPriceImpactText}
-          previewError={routeRefreshPreviewSummary.err}
-          previewLoading={routeRefreshPreviewSummary.loading}
-          currentPreviewShiftId={selectedRouteRefreshCurrentPreviewShiftId}
-          proposedPreviewShiftId={selectedRouteRefreshProposedPreviewShiftId}
-          showCounterActions={selectedRouteRefreshCountered}
-          busy={busy}
-          onOpenCurrentPreview={() => openAgreementShift(selectedRouteRefreshCurrentPreviewShiftId, true)}
-          onOpenProposedPreview={() => openAgreementShift(selectedRouteRefreshProposedPreviewShiftId, true)}
-          onAcceptCounter={() => acceptRouteRefreshCounter(selectedRouteRefreshPending.id)}
-          onRejectCounter={() => rejectRouteRefreshCounter(selectedRouteRefreshPending.id)}
-        />
+      {viewMode === "bridge" ? (
+        <>
+          {selectedAgreementRow?.a ? (
+            <CollapsibleSection
+              title="Operasyon bağlantısı"
+              subtitle="Seçili sözleşmenin ürettiği vardiya ve önizleme bağlantısı ikinci katmanda."
+              badge={selectedAgreementRow.a?.id ? `#${selectedAgreementRow.a.id}` : "Seçili"}
+              defaultOpen={false}
+              compact
+            >
+              <AgreementOpsBridgeCard
+                agreement={selectedAgreementRow.a}
+                room={selectedAgreementRow.room}
+                bridge={selectedAgreementBridge}
+                onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
+                onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
+                emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
+              />
+            </CollapsibleSection>
+          ) : null}
+
+          {selectedRouteRefreshPending ? (
+            <CompanyAgreementsRouteRefreshPendingSection
+              title={selectedRouteRefreshCountered ? "Rota güncelleme karşı teklifi" : "Bekleyen rota güncelleme teklifi"}
+              summaryText={selectedRouteRefreshSummaryText}
+              companyOfferNote={selectedRouteRefreshPending.companyOfferNote || ""}
+              roomCounterText={selectedRouteRefreshRoomCounterText}
+              currentRouteText={selectedRouteRefreshCurrentText}
+              proposedRouteText={selectedRouteRefreshProposedText}
+              diffText={selectedRouteRefreshDiffText}
+              priceImpactText={selectedRouteRefreshPriceImpactText}
+              previewError={routeRefreshPreviewSummary.err}
+              previewLoading={routeRefreshPreviewSummary.loading}
+              currentPreviewShiftId={selectedRouteRefreshCurrentPreviewShiftId}
+              proposedPreviewShiftId={selectedRouteRefreshProposedPreviewShiftId}
+              showCounterActions={selectedRouteRefreshCountered}
+              busy={busy}
+              onOpenCurrentPreview={() => openAgreementShift(selectedRouteRefreshCurrentPreviewShiftId, true)}
+              onOpenProposedPreview={() => openAgreementShift(selectedRouteRefreshProposedPreviewShiftId, true)}
+              onAcceptCounter={() => acceptRouteRefreshCounter(selectedRouteRefreshPending.id)}
+              onRejectCounter={() => rejectRouteRefreshCounter(selectedRouteRefreshPending.id)}
+            />
+          ) : null}
+        </>
       ) : null}
 
-      {selectedAgreementRow?.a ? (
-        <CollapsibleSection
-          title="Operasyon bağlantısı"
-          subtitle="Seçili sözleşmenin ürettiği vardiya ve önizleme bağlantısı ikinci katmanda."
-          badge={selectedAgreementRow.a?.id ? `#${selectedAgreementRow.a.id}` : "Seçili"}
-          defaultOpen={false}
-          compact
-        >
-          <AgreementOpsBridgeCard
-            agreement={selectedAgreementRow.a}
-            room={selectedAgreementRow.room}
-            bridge={selectedAgreementBridge}
-            onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
-            onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
-            emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
+      {viewMode === "wizard" ? (
+        <>
+          <div className="card">
+            <div style={{ fontWeight: 900 }}>Sözleşme oluşturma kuralı</div>
+            <div className="muted" style={{ marginTop: 4 }}>
+              Company tarafında sözleşme artık doğrudan bu ekrandan açılmaz. Önce bir vardiya oluştur, ardından ilgili vardiyada <b>Sözleşmeye Dönüştür</b> aksiyonunu kullan.
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <AgreementWizard
+                rooms={null}
+                roomsSupported={roomsSupported}
+                onReloadRooms={null}
+                renderTrigger={() => null}
+                onCreated={handleWizardCreated}
+                launchPrefill={wizardPrefill}
+                autoOpenNonce={wizardPrefillNonce}
+              />
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {viewMode === "list" ? (
+        <div className="tableWrap">
+          <CompanyAgreementsSelectedSummarySection
+            selectedLabel={selectedAgreementCopilotContext?.label || ""}
+            selectedSummary={selectedAgreementCopilotContext?.summary || ""}
+            visibleCount={filteredRows.length}
+            totalCount={rows.length}
+            filterValue={filterQ}
+            onClearFilter={() => setFilterQ("")}
           />
-        </CollapsibleSection>
-      ) : null}
-
-      <div className="card">
-        <div style={{ fontWeight: 900 }}>Sözleşme oluşturma kuralı</div>
-        <div className="muted" style={{ marginTop: 4 }}>
-          Company tarafında sözleşme artık doğrudan bu ekrandan açılmaz. Önce bir vardiya oluştur, ardından ilgili vardiyada <b>Sözleşmeye Dönüştür</b> aksiyonunu kullan.
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <AgreementWizard
-            rooms={null}
-            roomsSupported={roomsSupported}
-            onReloadRooms={null}
-            renderTrigger={() => null}
-            onCreated={handleWizardCreated}
-            launchPrefill={wizardPrefill}
-            autoOpenNonce={wizardPrefillNonce}
-          />
-        </div>
-      </div>
-
-      {/* List */}
-      <div className="tableWrap">
-        <CompanyAgreementsSelectedSummarySection
-          selectedLabel={selectedAgreementCopilotContext?.label || ""}
-          selectedSummary={selectedAgreementCopilotContext?.summary || ""}
-          visibleCount={filteredRows.length}
-          totalCount={rows.length}
-          filterValue={filterQ}
-          onClearFilter={() => setFilterQ("")}
-        />
-        <table className="tbl" style={{ minWidth: 980, marginTop: 10 }}>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Durum</th>
-              <th>Oda</th>
-              <th>Tarih</th>
-              <th>Günler</th>
-              <th>Saat</th>
-              <th>Dir/Pat</th>
-              <th>Şirket Teklifi</th>
-              <th>Oda Karşı Teklifi</th>
-              <th>Vardiyalar</th>
-              <th>Aksiyonlar</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRows.map(({ a, room }) => (
-              <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
-                <td className="muted">
-                  <div>#{a.id}</div>
-                  {agreementOrigins?.[String(a.id)]?.sourceShiftId ? (
-                    <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>Kaynak vardiya #{agreementOrigins[String(a.id)].sourceShiftId}</div>
-                  ) : null}
-                  <CommercialReadonlySummary item={a.commercialBackbone} compact />
-                </td>
-                <td><CompanyAgreementStatusPill status={a.status} /><CompanyAgreementExtendPill extendStatus={a.extendStatus} requestedEndDate={a.extendRequestedEndDate} /></td>
-                <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
-                <td className="muted">
-                  {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
-                </td>
-                <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
-                <td className="muted">
-                  {toHHMM(a.startMin)} → {toHHMM(a.endMin)}
-                </td>
-                <td className="muted">{a.direction}/{a.pattern}</td>
-                <td className="muted" title={a.companyOfferNote ? `📝 ${a.companyOfferNote}` : ""}>
-                  {a.companyOfferAmount != null ? `₺${a.companyOfferAmount}` : "-"}
-                  {a.companyOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
-                </td>
-                <td className="muted" title={a.roomOfferNote ? `📝 ${a.roomOfferNote}` : ""}>
-                  {a.roomOfferAmount != null ? `₺${a.roomOfferAmount}` : "-"}
-                  {a.roomOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
-                </td>
-                <td><CompanyAgreementShiftSummary st={shiftStats?.[a.id]} /></td>
-                <td>
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                    {String(a.status || "").toUpperCase() === "COUNTERED" ? (
-                      <>
-                        <button type="button" disabled={busy} onClick={() => acceptCounter(a.id)}>
-                          Kabul Et
-                        </button>
-                        <button type="button" className="btn" disabled={busy} onClick={() => askCompanyCounter(a)}>
-                          Yeni Teklif Gönder
-                        </button>
-                        <button type="button" className="btn" disabled={busy} onClick={() => rejectCounter(a.id)}>
-                          Reddet
-                        </button>
-                      </>
-                    ) : null}
-                    {canRouteRefresh(a, agreementOrigins?.[String(a.id)]) ? (
-                      <>
-                        <button type="button" className="btn" disabled={!agreementPreviewShiftId(a.id)} onClick={() => openAgreementShift(agreementPreviewShiftId(a.id), true)}>
-                          Rota Önizleme
-                        </button>
-                        <button type="button" className="btn" disabled={busy || hasPendingRouteRefresh(a.id)} onClick={() => startRouteRefresh(a, room)}>
-                          {routeRefreshActionLabel(a.id)}
-                        </button>
-                      </>
-                    ) : null}
-                    <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE" || a.status === "REJECTED"} onClick={() => cancelAgreement(a.id)}>
-                      İptal Et
-                    </button>
-
-                    {String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED" ? (
-                      <>
-                        <button type="button" disabled={busy} onClick={() => acceptExtendCounter(a.id)}>
-                          Uzatma Karşı Teklifini Kabul Et
-                        </button>
-                        <button type="button" className="btn" disabled={busy} onClick={() => rejectExtendCounter(a.id)}>
-                          Uzatma Karşı Teklifini Reddet
-                        </button>
-                      </>
-                    ) : null}
-
-                    <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 7)}>
-                      Uzat +7g
-                    </button>
-                    <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 30)}>
-                      Uzat +30g
-                    </button>
-                    <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => askExtend(a)}>
-                      Tarih...
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!filteredRows.length ? (
+          <table className="tbl" style={{ minWidth: 980, marginTop: 10 }}>
+            <thead>
               <tr>
-                <td colSpan={11} className="muted">{rows.length ? 'Filtreye uyan sözleşme yok.' : 'Kayıt yok.'}</td>
+                <th>ID</th>
+                <th>Durum</th>
+                <th>Oda</th>
+                <th>Tarih</th>
+                <th>Günler</th>
+                <th>Saat</th>
+                <th>Dir/Pat</th>
+                <th>Şirket Teklifi</th>
+                <th>Oda Karşı Teklifi</th>
+                <th>Vardiyalar</th>
+                <th>Aksiyonlar</th>
               </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filteredRows.map(({ a, room }) => (
+                <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
+                  <td className="muted">
+                    <div>#{a.id}</div>
+                    {agreementOrigins?.[String(a.id)]?.sourceShiftId ? (
+                      <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>Kaynak vardiya #{agreementOrigins[String(a.id)].sourceShiftId}</div>
+                    ) : null}
+                    <CommercialReadonlySummary item={a.commercialBackbone} compact />
+                  </td>
+                  <td><CompanyAgreementStatusPill status={a.status} /><CompanyAgreementExtendPill extendStatus={a.extendStatus} requestedEndDate={a.extendRequestedEndDate} /></td>
+                  <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
+                  <td className="muted">
+                    {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
+                  </td>
+                  <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
+                  <td className="muted">
+                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)}
+                  </td>
+                  <td className="muted">{a.direction}/{a.pattern}</td>
+                  <td className="muted" title={a.companyOfferNote ? `📝 ${a.companyOfferNote}` : ""}>
+                    {a.companyOfferAmount != null ? `₺${a.companyOfferAmount}` : "-"}
+                    {a.companyOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
+                  </td>
+                  <td className="muted" title={a.roomOfferNote ? `📝 ${a.roomOfferNote}` : ""}>
+                    {a.roomOfferAmount != null ? `₺${a.roomOfferAmount}` : "-"}
+                    {a.roomOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
+                  </td>
+                  <td><CompanyAgreementShiftSummary st={shiftStats?.[a.id]} /></td>
+                  <td>
+                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                      {String(a.status || "").toUpperCase() === "COUNTERED" ? (
+                        <>
+                          <button type="button" disabled={busy} onClick={() => acceptCounter(a.id)}>
+                            Kabul Et
+                          </button>
+                          <button type="button" className="btn" disabled={busy} onClick={() => askCompanyCounter(a)}>
+                            Yeni Teklif Gönder
+                          </button>
+                          <button type="button" className="btn" disabled={busy} onClick={() => rejectCounter(a.id)}>
+                            Reddet
+                          </button>
+                        </>
+                      ) : null}
+                      {canRouteRefresh(a, agreementOrigins?.[String(a.id)]) ? (
+                        <>
+                          <button type="button" className="btn" disabled={!agreementPreviewShiftId(a.id)} onClick={() => openAgreementShift(agreementPreviewShiftId(a.id), true)}>
+                            Rota Önizleme
+                          </button>
+                          <button type="button" className="btn" disabled={busy || hasPendingRouteRefresh(a.id)} onClick={() => startRouteRefresh(a, room)}>
+                            {routeRefreshActionLabel(a.id)}
+                          </button>
+                        </>
+                      ) : null}
+                      <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE" || a.status === "REJECTED"} onClick={() => cancelAgreement(a.id)}>
+                        İptal Et
+                      </button>
+
+                      {String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED" ? (
+                        <>
+                          <button type="button" disabled={busy} onClick={() => acceptExtendCounter(a.id)}>
+                            Uzatma Karşı Teklifini Kabul Et
+                          </button>
+                          <button type="button" className="btn" disabled={busy} onClick={() => rejectExtendCounter(a.id)}>
+                            Uzatma Karşı Teklifini Reddet
+                          </button>
+                        </>
+                      ) : null}
+
+                      <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 7)}>
+                        Uzat +7g
+                      </button>
+                      <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 30)}>
+                        Uzat +30g
+                      </button>
+                      <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => askExtend(a)}>
+                        Tarih...
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!filteredRows.length ? (
+                <tr>
+                  <td colSpan={11} className="muted">{rows.length ? 'Filtreye uyan sözleşme yok.' : 'Kayıt yok.'}</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
 
       <GuidedPlanModal
         open={guidedOpen}

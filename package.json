@@ -70,6 +70,8 @@
     "check:livetrackingfinal01": "node backend/scripts/live_tracking_final_01_acceptance_check.js",
     "check:driverflowfinal01": "node backend/scripts/driver_flow_final_01_acceptance_check.js",
     "check:uxcollapsiblepanels01": "node backend/scripts/ux_collapsible_panels_01_check.js",
+    "check:uxpanelstructure02": "node backend/scripts/ux_panel_structure_02_check.js",
+    "check:uxpanelinventory02a": "node backend/scripts/ux_panel_inventory_02a_check.js",
     "check:uxnav01": "node backend/scripts/ux_nav_01_premium_navdock_check.js",
     "check:uxdensity01": "node backend/scripts/ux_density_01_panel_card_density_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",

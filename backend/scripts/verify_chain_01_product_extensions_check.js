@@ -104,6 +104,8 @@ function main() {
   must(pkg, '"check:livetrackingfinal01"', 'package.json keeps check:livetrackingfinal01');
   must(pkg, '"check:driverflowfinal01"', 'package.json keeps check:driverflowfinal01');
   must(pkg, '"check:uxcollapsiblepanels01"', 'package.json keeps check:uxcollapsiblepanels01');
+  must(pkg, '"check:uxpanelstructure02"', 'package.json keeps check:uxpanelstructure02');
+  must(pkg, '"check:uxpanelinventory02a"', 'package.json keeps check:uxpanelinventory02a');
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
@@ -152,6 +154,8 @@ function main() {
     'check:etaosrm01',
     'check:etaosrm02',
     'check:uxcollapsiblepanels01',
+    'check:uxpanelstructure02',
+    'check:uxpanelinventory02a',
     'check:livetrackingfinal01',
     'check:driverflowfinal01',
     'check:uxnav01',
@@ -191,6 +195,8 @@ function main() {
   must(guide, 'check:livetrackingfinal01', 'script guide exposes check:livetrackingfinal01');
   must(guide, 'check:driverflowfinal01', 'script guide exposes check:driverflowfinal01');
   must(guide, 'check:uxcollapsiblepanels01', 'script guide exposes check:uxcollapsiblepanels01');
+  must(guide, 'check:uxpanelstructure02', 'script guide exposes check:uxpanelstructure02');
+  must(guide, 'check:uxpanelinventory02a', 'script guide exposes check:uxpanelinventory02a');
   must(guide, 'check:uxnav01', 'script guide exposes check:uxnav01');
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
   must(guide, 'UX-COPILOT-TERMINAL-01', 'script guide mentions UX-COPILOT-TERMINAL-01');
@@ -201,6 +207,8 @@ function main() {
   must(guide, 'LIVE-TRACKING-FINAL-01', 'script guide mentions LIVE-TRACKING-FINAL-01');
   must(guide, 'DRIVER-FLOW-FINAL-01', 'script guide mentions DRIVER-FLOW-FINAL-01');
   must(guide, 'UX-COLLAPSIBLE-PANELS-01', 'script guide mentions UX-COLLAPSIBLE-PANELS-01');
+  must(guide, 'UX-PANEL-STRUCTURE-02', 'script guide mentions UX-PANEL-STRUCTURE-02');
+  must(guide, 'UX-PANEL-INVENTORY-02A', 'script guide mentions UX-PANEL-INVENTORY-02A');
   must(guide, 'UX-NAV-01', 'script guide mentions UX-NAV-01');
   must(guide, 'UX-DENSITY-01', 'script guide mentions UX-DENSITY-01');
   must(guide, 'check:e2esmoke01', 'script guide exposes check:e2esmoke01');

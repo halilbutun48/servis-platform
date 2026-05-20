@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 
 function Card({ title, children }) {
   return (
@@ -11,16 +12,6 @@ function Card({ title, children }) {
       {children}
     </div>
   );
-}
-
-function pillStyle(active) {
-  return {
-    padding: "8px 12px",
-    borderRadius: 999,
-    border: active ? "1px solid rgba(255,255,255,0.22)" : "1px solid rgba(255,255,255,0.08)",
-    background: active ? "rgba(255,255,255,0.08)" : "transparent",
-    cursor: "pointer",
-  };
 }
 
 function inputStyle() {
@@ -229,12 +220,17 @@ export default function OperationVerificationPanel() {
       </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
-      <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {(manifest?.roles || []).map((role) => (
-          <button key={role.id} type="button" style={pillStyle(selectedRole === role.id)} onClick={() => setSelectedRole(role.id)}>
-            {role.label}
-          </button>
-        ))}
+      <div style={{ marginTop: 14 }}>
+        <PanelSegmentTabs
+          ariaLabel="Rol yüzeyleri"
+          compact
+          tabs={(manifest?.roles || []).map((role) => ({
+            key: role.id,
+            label: role.label,
+          }))}
+          value={selectedRole}
+          onChange={setSelectedRole}
+        />
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>

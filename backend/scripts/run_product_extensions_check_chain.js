@@ -51,6 +51,8 @@ const steps = [
   'check:etaosrm01',
   'check:etaosrm02',
   'check:uxcollapsiblepanels01',
+  'check:uxpanelstructure02',
+  'check:uxpanelinventory02a',
   'check:uxnav01',
   'check:uxdensity01',
   'check:livetrackingfinal01',

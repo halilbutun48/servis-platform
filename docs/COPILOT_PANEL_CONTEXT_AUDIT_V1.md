@@ -257,6 +257,11 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Büyük ekranlarda bilgi yoğunluğu artar; küçük ekranlarda taşma ve çakışma kontrol altında kalır.
 - Behavior unchanged; only visible density, spacing and dashboard polish changes.
 
+## UX-PANEL-STRUCTURE-02 summary-first plus segmented tabs
+- Uzun panellerde kritik özet ve birincil aksiyonlar açık kalır; eş düzey alt modlar tab / segmented button ile ayrılır.
+- Secondary detaylar accordion altında tutulur; sayfa ilk açılışta daha kısa ve okunur hissi verir.
+- Bu dalga, `Room / Araçlar`, `Room / Sürücüler`, `Room / Ticari Akışım`, `Company / Sözleşmeler`, `Company / Ticari Akış`, `Super Admin / Operasyon Doğrulama`, `Parent / Canlı Takip` ve `Personel / Canlı Takip` yüzeylerini kapsar.
+
 ## UX-COLLAPSIBLE-PANELS-01 long panel summary-first standard
 - Uzun panellerde kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; ikincil detaylar collapsible/accordion altında toplanır.
 - `Room / Operasyon Sağlığı`, `Driver / Bugün`, `Driver / Rota`, `Parent / Canlı Takip` ve `Company / Sözleşmeler` bu standart için ilk patch yüzeyleri olarak daraltılır.

@@ -381,6 +381,86 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .panelChrome { display: grid; gap: 10px; min-width: 0; }
 .panelChromeCard { border-radius: var(--ui-surface-radius-lg); }
 
+.panelSegmentTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(58, 102, 255, .16);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(12, 18, 34, .92) 0%, rgba(10, 15, 28, .96) 100%);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, .18);
+  min-width: 0;
+}
+.panelSegmentTabs--compact {
+  gap: 6px;
+  padding: 6px;
+}
+.panelSegmentTab {
+  min-width: 0;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(58, 102, 255, .12);
+  background: linear-gradient(180deg, rgba(14, 21, 36, .96) 0%, rgba(10, 16, 29, .96) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 10px 20px rgba(2, 6, 23, .12);
+  color: #edf4ff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: .02em;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.panelSegmentTab:hover {
+  transform: translateY(-1px);
+  border-color: rgba(110, 149, 255, .42);
+  background: linear-gradient(180deg, rgba(20, 30, 51, .98) 0%, rgba(13, 20, 35, .98) 100%);
+}
+.panelSegmentTab.active {
+  border-color: #5b80ff;
+  box-shadow: 0 0 0 1px rgba(91, 128, 255, .25) inset, 0 14px 28px rgba(20, 37, 80, .22);
+  background: linear-gradient(180deg, rgba(23, 36, 64, .98) 0%, rgba(13, 20, 35, .98) 100%);
+}
+.panelSegmentTab:focus-visible {
+  outline: 2px solid rgba(109, 146, 255, .9);
+  outline-offset: 2px;
+}
+.panelSegmentTabLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panelSegmentTabBadge {
+  flex-shrink: 0;
+  min-width: 24px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(96, 125, 255, .28);
+  background: rgba(58, 102, 255, .14);
+  color: #dbe4ff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+@media (max-width: 900px) {
+  .panelSegmentTabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .panelSegmentTab {
+    flex: 0 0 auto;
+  }
+}
+
 .quality-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
 .quality-summary-grid > * { min-width: 0; }
 .quality-detail-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr); gap: 12px; align-items: start; }

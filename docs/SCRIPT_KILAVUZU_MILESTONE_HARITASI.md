@@ -163,6 +163,16 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Ortak kart, başlık, badge, chip, buton ve tablo yoğunluğu daha tutarlı hale gelir; ürün davranışı değişmez.
 - NavDock role/kind IA, `Sefer Abi Terminali` ve `Sefer Abi’ye Sor` standardı korunur.
 
+### UX-PANEL-STRUCTURE-02 [CHECK]
+- `check:uxpanelstructure02` uzun paneller için summary-first + tab/segmented + accordion bölümlenme standardını doğrular.
+- Kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; eş düzey alt modlar tab/segmented button olarak ayrılır, ikincil detaylar collapsible kalır.
+- `Room / Araçlar`, `Room / Sürücüler`, `Room / Ticari Akışım`, `Company / Sözleşmeler`, `Company / Ticari Akış`, `Super Admin / Operasyon Doğrulama`, `Parent / Canlı Takip` ve `Personel / Canlı Takip` ilk hedef yüzeylerdir.
+
+### UX-PANEL-INVENTORY-02A [CHECK]
+- `check:uxpanelinventory02a` tüm web panel envanterini çıkarır; route/kind listesi, uzun panel riski ve P0/P1/P2 önceliklerini belgeye bağlar.
+- Panel / ekran aileleri, route-menu bağlantıları ve `PanelChrome` / container standardı taranır; ürün davranışı değişmez.
+- Bu envanter, sonraki panel bölme kararları için ilk 5 düzeltilecek alanı ve sonraya bırakılacak yüzeyleri görünür kılar.
+
 ### UX-COLLAPSIBLE-PANELS-01 [CHECK]
 - `check:uxcollapsiblepanels01` uzun paneller için summary-first + collapsible secondary details standardını doğrular.
 - Kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; ikincil bilgiler accordion altında toplanır.

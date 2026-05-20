@@ -11,6 +11,7 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 
 function haversineMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000;
@@ -152,6 +153,11 @@ function etaMinGuess(vehicle, stop) {
   return null;
 }
 
+const PERSONEL_LIVE_TABS = [
+  { key: "timeline", label: "Duraklar" },
+  { key: "map", label: "Harita" },
+];
+
 export default function PersonelLivePanel() {
   const { token } = useSession();
 
@@ -161,6 +167,7 @@ export default function PersonelLivePanel() {
   const [myPos, setMyPos] = useState(null);
   const [geoErr, setGeoErr] = useState("");
   const [selectedStopId, setSelectedStopId] = useState(null);
+  const [viewMode, setViewMode] = useState("timeline");
 
   async function loadMyShift() {
     setErr("");
@@ -555,34 +562,46 @@ export default function PersonelLivePanel() {
 
             {!recommended && geoErr ? <div className="muted" style={{ marginTop: 8 }}>Konum alınamadı: {geoErr}</div> : null}
 
-            <div style={{ marginTop: 10 }}>
-              <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
-              <StopTimeline
-                stops={stops}
-                nextStopId={nextStopId}
-                selectedStopId={selectedStopId}
-                compact
-                onSelect={(s) => {
-                  setSelectedStopId(s?.id ?? null);
-                  focusStop(s);
-                }}
-              />
-            </div>
-          </div>
+            <PanelSegmentTabs
+              ariaLabel="Personel canlı takip bölümleri"
+              tabs={PERSONEL_LIVE_TABS}
+              value={viewMode}
+              onChange={setViewMode}
+              compact
+            />
 
-          <div className="card" style={{ marginBottom: 10 }}>
-            <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
-            <div className="muted" style={{ fontSize: 12 }}>Seçili araç + (varsa) duraklar</div>
-          </div>
+            {viewMode === "timeline" ? (
+              <div style={{ marginTop: 10 }}>
+                <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
+                <StopTimeline
+                  stops={stops}
+                  nextStopId={nextStopId}
+                  selectedStopId={selectedStopId}
+                  compact
+                  onSelect={(s) => {
+                    setSelectedStopId(s?.id ?? null);
+                    focusStop(s);
+                  }}
+                />
+              </div>
+            ) : (
+              <div style={{ marginTop: 12 }}>
+                <div className="card" style={{ marginBottom: 10 }}>
+                  <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
+                  <div className="muted" style={{ fontSize: 12 }}>Seçili araç + (varsa) duraklar</div>
+                </div>
 
-          <MapView
-            vehicles={vehicles}
-            stops={stops}
-            selectedVehicleId={vehicle?.id ?? null}
-            onSelectVehicle={() => {}}
-            fitKey={`personel-live:${vehicle?.id ?? "none"}:${stops.length}:${gpsAtIso(vehicle) || ""}`}
-            height="var(--mapH)"
-          />
+                <MapView
+                  vehicles={vehicles}
+                  stops={stops}
+                  selectedVehicleId={vehicle?.id ?? null}
+                  onSelectVehicle={() => {}}
+                  fitKey={`personel-live:${vehicle?.id ?? "none"}:${stops.length}:${gpsAtIso(vehicle) || ""}`}
+                  height="var(--mapH)"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

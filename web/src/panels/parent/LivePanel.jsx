@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import CollapsibleSection from "../../components/CollapsibleSection";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { navigate } from "../../router";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts, buildParentLiveNoVehicleFacts } from "../../utils/copilotFacts";
@@ -150,6 +151,11 @@ function infoCard(title, value, muted) {
   return { title, value, muted };
 }
 
+const PARENT_LIVE_TABS = [
+  { key: "stops", label: "Duraklar" },
+  { key: "map", label: "Harita" },
+];
+
 export default function ParentLivePanel() {
   const { token } = useSession();
 
@@ -164,6 +170,7 @@ export default function ParentLivePanel() {
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [noShowBusy, setNoShowBusy] = useState(false);
   const [noShowMsg, setNoShowMsg] = useState("");
+  const [viewMode, setViewMode] = useState("stops");
   const lastRequestedChildRef = useRef("");
 
   const loadChildren = useCallback(async () => {
@@ -529,63 +536,80 @@ export default function ParentLivePanel() {
               </div>
             </div>
 
-            {nearbyStops.length ? (
-              <CollapsibleSection
-                title="Size en yakın duraklar"
-                subtitle="İlk 3 durak mesafeye göre sıralanır."
-                badge={nearbyStops.length}
-                defaultOpen={false}
-                compact
-              >
-                <div className="card" style={{ padding: 12 }}>
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {nearbyStops.map((stop, idx) => (
-                      <div key={`${stopUniqueKey(stop, idx)}:near`} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, background: sameStop(stop, childStop) ? "rgba(16,185,129,.10)" : "rgba(255,255,255,.03)" }}>
-                        <div><b>{stopTitle(stop)}</b></div>
-                        <div className="muted">Mesafe: <b>{distanceText(stop.__distanceM)}</b></div>
-                        <div className="muted">Yürüyüş: <b>{walkMinutesText(stop.__distanceM)}</b></div>
-                        {sameStop(stop, childStop) ? <div className="muted">• Çocuğun durağı</div> : null}
+            <PanelSegmentTabs
+              ariaLabel="Parent canlı takip bölümleri"
+              tabs={PARENT_LIVE_TABS}
+              value={viewMode}
+              onChange={setViewMode}
+              compact
+            />
+
+            {viewMode === "stops" ? (
+              <>
+                {nearbyStops.length ? (
+                  <CollapsibleSection
+                    title="Size en yakın duraklar"
+                    subtitle="İlk 3 durak mesafeye göre sıralanır."
+                    badge={nearbyStops.length}
+                    defaultOpen={false}
+                    compact
+                  >
+                    <div className="card" style={{ padding: 12 }}>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {nearbyStops.map((stop, idx) => (
+                          <div key={`${stopUniqueKey(stop, idx)}:near`} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, background: sameStop(stop, childStop) ? "rgba(16,185,129,.10)" : "rgba(255,255,255,.03)" }}>
+                            <div><b>{stopTitle(stop)}</b></div>
+                            <div className="muted">Mesafe: <b>{distanceText(stop.__distanceM)}</b></div>
+                            <div className="muted">Yürüyüş: <b>{walkMinutesText(stop.__distanceM)}</b></div>
+                            {sameStop(stop, childStop) ? <div className="muted">• Çocuğun durağı</div> : null}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </CollapsibleSection>
-            ) : null}
+                    </div>
+                  </CollapsibleSection>
+                ) : null}
 
-            {allStops.length ? (
-              <CollapsibleSection
-                title="Shift durakları"
-                subtitle="Çocuğun durağı yeşil, size en yakın durak mavi vurgulanır. Tüm koordinatlı shift durakları listelenir."
-                badge={allStops.length}
-                defaultOpen={false}
-                compact
-              >
-                <div className="card" style={{ padding: 12 }}>
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {allStops.map((stop, idx) => {
-                      const isChild = sameStop(stop, childStop);
-                      const isNearest = nearestStop && sameStop(stop, nearestStop);
-                      const navUrl = buildWalkNavUrl(stop, myPos);
-                      const distanceMeters = myPos ? haversineMeters(Number(myPos.lat), Number(myPos.lng), Number(stopCoord(stop)?.lat), Number(stopCoord(stop)?.lng)) : null;
-                      return (
-                        <div key={stopUniqueKey(stop, idx)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, background: isChild ? "rgba(16,185,129,.10)" : isNearest ? "rgba(59,130,246,.10)" : "rgba(255,255,255,.03)" }}>
-                          <div><b>{stopTitle(stop)}</b></div>
-                          {isChild ? <div className="muted">• Çocuğun durağı</div> : null}
-                          {isNearest ? <div className="muted">• Size en yakın</div> : null}
-                          <div className="muted">Durum: <b>{stopStateText(stop?.state)}</b></div>
-                          {Number.isFinite(Number(distanceMeters)) ? <div className="muted">• Mesafe: <b>{distanceText(distanceMeters)}</b></div> : null}
-                          {navUrl ? <button type="button" className="btn" onClick={() => window.open(navUrl, "_blank", "noopener,noreferrer")}>Git</button> : null}
-                        </div>
-                      );
-                    })}
-                  </div>
+                {allStops.length ? (
+                  <CollapsibleSection
+                    title="Shift durakları"
+                    subtitle="Çocuğun durağı yeşil, size en yakın durak mavi vurgulanır. Tüm koordinatlı shift durakları listelenir."
+                    badge={allStops.length}
+                    defaultOpen={false}
+                    compact
+                  >
+                    <div className="card" style={{ padding: 12 }}>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {allStops.map((stop, idx) => {
+                          const isChild = sameStop(stop, childStop);
+                          const isNearest = nearestStop && sameStop(stop, nearestStop);
+                          const navUrl = buildWalkNavUrl(stop, myPos);
+                          const distanceMeters = myPos ? haversineMeters(Number(myPos.lat), Number(myPos.lng), Number(stopCoord(stop)?.lat), Number(stopCoord(stop)?.lng)) : null;
+                          return (
+                            <div key={stopUniqueKey(stop, idx)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, background: isChild ? "rgba(16,185,129,.10)" : isNearest ? "rgba(59,130,246,.10)" : "rgba(255,255,255,.03)" }}>
+                              <div><b>{stopTitle(stop)}</b></div>
+                              {isChild ? <div className="muted">• Çocuğun durağı</div> : null}
+                              {isNearest ? <div className="muted">• Size en yakın</div> : null}
+                              <div className="muted">Durum: <b>{stopStateText(stop?.state)}</b></div>
+                              {Number.isFinite(Number(distanceMeters)) ? <div className="muted">• Mesafe: <b>{distanceText(distanceMeters)}</b></div> : null}
+                              {navUrl ? <button type="button" className="btn" onClick={() => window.open(navUrl, "_blank", "noopener,noreferrer")}>Git</button> : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </CollapsibleSection>
+                ) : null}
+              </>
+            ) : (
+              <div style={{ marginTop: 12 }}>
+                <div className="card" style={{ marginBottom: 10 }}>
+                  <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
+                  <div className="muted" style={{ fontSize: 12 }}>Seçili araç + (varsa) duraklar</div>
                 </div>
-              </CollapsibleSection>
-            ) : null}
 
-            <div style={{ marginTop: 12 }}>
-              <MapView vehicles={vehicles} stops={mapStops} selectedVehicleId={selectedVehicle?.id ?? null} />
-            </div>
+                <MapView vehicles={vehicles} stops={mapStops} selectedVehicleId={selectedVehicle?.id ?? null} />
+              </div>
+            )}
           </>
         ) : null}
       </div>
