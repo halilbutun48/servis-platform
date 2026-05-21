@@ -6,13 +6,13 @@ export { GuidedDestinationRowCard, GuidedOrganizationPlanCard } from "./guidedPl
 export function GuidedOrganizationReadinessCard({ orgDraftCompletion, orgEstimatedPax }) {
   return (
     <div className="card" style={{ border: orgDraftCompletion.ready ? "1px solid #2a7" : "1px solid #b85" }}>
-      <div style={{ fontWeight: 800 }}>{orgDraftCompletion.ready ? "✅ Markete gönderime hazır" : "⚠ Plan henüz tam değil"}</div>
+      <div style={{ fontWeight: 800 }}>{orgDraftCompletion.ready ? "✅ Kurum planı markete gönderime hazır" : "⚠ Kurum planı henüz tam değil"}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {orgDraftCompletion.ready
-          ? `Tahmini kişi: ${Number(orgEstimatedPax || 0) || 0} • Tüm yerler koordinatlı • Taslak shift'lerde ${orgDraftCompletion.expectedStops} ziyaret noktası hazır.`
+          ? `Tahmini kişi: ${Number(orgEstimatedPax || 0) || 0} • Tüm konumlar koordinatlı • Taslak shift'lerde ${orgDraftCompletion.expectedStops} ziyaret noktası hazır.`
           : orgDraftCompletion.reasons.join(" • ")}
       </div>
-      <div className="muted" style={{ marginTop: 6 }}>Not: Organization işlerinde plan tam oluşmadan markete düşmez.</div>
+      <div className="muted" style={{ marginTop: 6 }}>Not: Kurum işlerinde plan tam oluşmadan markete düşmez.</div>
     </div>
   );
 }
@@ -20,7 +20,7 @@ export function GuidedOrganizationReadinessCard({ orgDraftCompletion, orgEstimat
 export function GuidedCompanyGeoGateCard({ companyGeoGate }) {
   return (
     <div className="card" style={{ border: companyGeoGate.blocking ? "1px solid #b85" : "1px solid #2a7" }}>
-      <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Company planı henüz tam değil" : "✅ Company planı koordinat olarak hazır"}</div>
+      <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Şirket konumu henüz tam değil" : "✅ Şirket konumu koordinat olarak hazır"}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {companyGeoGate.blocking
           ? `Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift doğrulanamaz.`
@@ -144,7 +144,7 @@ export function GuidedRoomSelectionCard({ room, score, selected, onToggle }) {
         />
         <span style={{ display: "grid", gap: 4 }}>
           <span className="muted"><b>{room.name}</b> #{room.id}</span>
-          <span className="muted">{room?.hubLat != null && room?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik • teklif engeli değil"}</span>
+          <span className="muted">{room?.hubLat != null && room?.hubLng != null ? "Toplanma Konumu hazır" : "Toplanma Konumu eksik • teklif engeli değil"}</span>
         </span>
       </span>
       <ProviderScoreBadge score={score} prominent showLabel />
@@ -269,7 +269,7 @@ export function GuidedBulkOffersCard({
                   <label className="muted">Room ara</label>
                   <input value={roomQ} onChange={(e) => setRoomQ(e.target.value)} placeholder="name contains" disabled={busy} />
                   <div className="muted" style={{ marginTop: 8 }}>Toplam room: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
-                  <div className="muted" style={{ marginTop: 6 }}>Hub konumu eksik room'lar da listelenir; hub eksikliği teklif engeli değildir.</div>
+                  <div className="muted" style={{ marginTop: 6 }}>Toplanma Konumu eksik room'lar da listelenir; konum eksikliği teklif engeli değildir.</div>
                 </div>
                 <div>
                   <label className="muted">Tutar (₺) (isteğe bağlı)</label>

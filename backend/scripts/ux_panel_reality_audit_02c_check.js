@@ -45,6 +45,10 @@ function mustContains(text, needle, label) {
   must(normalize(text).includes(normalize(needle)), label);
 }
 
+function mustNotContains(text, needle, label) {
+  must(!normalize(text).includes(normalize(needle)), label);
+}
+
 function countRows(text, marker) {
   return (String(text || "").match(new RegExp(`^\\|\\s*\\\`${marker}`, "mg")) || []).length;
 }
@@ -121,7 +125,20 @@ function main() {
   ];
   for (const rel of realityTabs) {
     const text = read(rel);
-    mustContains(text, "PanelSegmentTabs", `${rel} uses PanelSegmentTabs`);
+    if (rel.endsWith("CompanyShiftsPanelIntro.jsx")) {
+      mustNotContains(text, "PanelSegmentTabs", `${rel} is summary-only and no longer uses PanelSegmentTabs`);
+      mustContains(text, "trackCounts", `${rel} keeps summary counts`);
+    } else if (rel === "web/src/panels/company/CommercialFlowPanel.jsx") {
+      mustNotContains(text, "PanelSegmentTabs", `${rel} is now single-page and no longer uses PanelSegmentTabs`);
+      mustNotContains(text, 'viewMode === "summary"', `${rel} removes summary tab rendering`);
+      mustNotContains(text, 'viewMode === "list"', `${rel} removes list tab rendering`);
+      mustNotContains(text, 'viewMode === "selected"', `${rel} removes selected tab rendering`);
+      mustContains(text, "Ticari Akış Listesi", `${rel} keeps list panel title`);
+      mustContains(text, "Seçili kayıt", `${rel} keeps selected record panel`);
+      mustContains(text, "companyCommercialFlowSplit", `${rel} keeps split layout`);
+    } else {
+      mustContains(text, "PanelSegmentTabs", `${rel} uses PanelSegmentTabs`);
+    }
   }
 
   const shiftsPanel = read("web/src/panels/company/ShiftsPanel.jsx");
@@ -139,13 +156,19 @@ function main() {
   mustContains(roomMap, "scrollIntoView", "Room MapPanel keeps focus/scroll behavior");
 
   const trackView = read("web/src/panels/company/CompanyShiftsPanelTrackView.jsx");
-  mustContains(trackView, "scrollIntoView", "CompanyShiftsPanelTrackView keeps list focus behavior");
+  mustContains(trackView, "PanelSegmentTabs", "CompanyShiftsPanelTrackView keeps functional tab renderer");
+  mustContains(trackView, "trackCounts", "CompanyShiftsPanelTrackView keeps tab counts");
   mustContains(trackView, "CompanyMarketSection", "CompanyShiftsPanelTrackView composes market section");
   mustContains(trackView, "CompanyPendingSection", "CompanyShiftsPanelTrackView composes pending section");
-  mustContains(trackView, "CompanyFinalListSection", "CompanyShiftsPanelTrackView composes final list section");
+  mustContains(trackView, "CompanyContractSection", "CompanyShiftsPanelTrackView composes contract section");
+  mustContains(trackView, "CompanyOtherSection", "CompanyShiftsPanelTrackView composes other section");
 
   const intro = read("web/src/panels/company/CompanyShiftsPanelIntro.jsx");
-  mustContains(intro, "mainTab === \"create\"", "CompanyShiftsPanelIntro keeps create branch");
+  mustContains(intro, "Shifts (COMPANY)", "CompanyShiftsPanelIntro keeps summary title");
+  mustContains(intro, "trackCounts", "CompanyShiftsPanelIntro keeps summary counts");
+  mustNotContains(intro, "PanelSegmentTabs", "CompanyShiftsPanelIntro no longer uses PanelSegmentTabs");
+  mustNotContains(intro, "mainTab === \"create\"", "CompanyShiftsPanelIntro removes create branch");
+  mustNotContains(intro, "Planlama Merkezi", "CompanyShiftsPanelIntro removes planning center wording");
 
   const pkg = read("package.json");
   mustContains(pkg, '"check:uxpanelreality02c"', "package.json exposes check:uxpanelreality02c");

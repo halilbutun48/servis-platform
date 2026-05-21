@@ -134,15 +134,15 @@ export default function HubPanel() {
   return (
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
       <PanelChrome
-        title="Room Hub"
-        subtitle="Operasyon merkezi/garaj hub'ı (opsiyonel). Company için zorunlu değildir."
+        title="Oda Konumu"
+        subtitle="Operasyon merkezi/garaj için konum belirle. Company için zorunlu değildir."
         actions={<button type="button" className="btn sm ghost" onClick={load} disabled={busy}>Yenile</button>}
       />
 
       <div className="toolbar" style={{ gap: 8, flexWrap: "wrap" }}>
         {roomName ? <span className="pill" data-status="ROLE">Room: {roomName}</span> : null}
         {roomId ? <span className="pill" data-status="COUNT">Room ID: {roomId}</span> : null}
-        <span className="pill" data-status="ROLE">Hub: {lat && lng ? `${lat}, ${lng}` : "-"}</span>
+        <span className="pill" data-status="ROLE">Oda Konumu: {lat && lng ? `${lat}, ${lng}` : "-"}</span>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -151,7 +151,7 @@ export default function HubPanel() {
       <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 360px) minmax(0, 1fr)", alignItems: "start" }}>
         <PanelChrome
           title="Adres ve Koordinat"
-          subtitle="Hub koordinatını elle, konumla ya da harita üstünden seç."
+          subtitle="Oda konumu koordinatını elle, konumla ya da harita üstünden seç."
         >
           <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
             <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
@@ -166,11 +166,11 @@ export default function HubPanel() {
 
             <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", minWidth: 0 }}>
               <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                <div className="panelMeta">Hub Lat</div>
+                <div className="panelMeta">Oda Konumu Lat</div>
                 <input type="number" step="0.000001" value={lat} onChange={(e) => setLat(e.target.value)} disabled={busy} />
               </div>
               <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                <div className="panelMeta">Hub Lng</div>
+                <div className="panelMeta">Oda Konumu Lng</div>
                 <input type="number" step="0.000001" value={lng} onChange={(e) => setLng(e.target.value)} disabled={busy} />
               </div>
             </div>
@@ -197,7 +197,7 @@ export default function HubPanel() {
             lat={lat}
             lng={lng}
             busy={busy}
-            subjectLabel="Room Hub"
+            subjectLabel="Oda Konumu"
             previewHeight={580}
             onPick={(nextLat, nextLng) => {
               setLat(String(nextLat));

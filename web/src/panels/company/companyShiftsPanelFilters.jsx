@@ -41,7 +41,7 @@ export function CompanyMarketFilters({ marketQ, onChangeMarketQ, marketFocusIds,
   );
 }
 
-export function CompanyPendingFilters({ pendingQ, onChangePendingQ, pendingFocusIds, onClearFocus, pendingOnlyRoomOffer, onChangePendingOnlyRoomOffer, onlyAgreement, onChangeOnlyAgreement, busy }) {
+export function CompanyPendingFilters({ pendingQ, onChangePendingQ, pendingFocusIds, onClearFocus, pendingOnlyRoomOffer, onChangePendingOnlyRoomOffer, busy }) {
   return (
     <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
       <div />
@@ -57,36 +57,30 @@ export function CompanyPendingFilters({ pendingQ, onChangePendingQ, pendingFocus
           <input type="checkbox" checked={pendingOnlyRoomOffer} onChange={(e) => onChangePendingOnlyRoomOffer(e.target.checked)} />
           Sadece oda teklifi olanlar
         </label>
-        <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input type="checkbox" checked={onlyAgreement} onChange={(e) => onChangeOnlyAgreement(e.target.checked)} />
-          Sadece sözleşmeli vardiyalar
-        </label>
-        <button type="button" onClick={() => { onChangePendingQ(""); onChangePendingOnlyRoomOffer(false); onChangeOnlyAgreement(false); }}>Temizle</button>
+        <button type="button" onClick={() => { onChangePendingQ(""); onChangePendingOnlyRoomOffer(false); }}>Temizle</button>
       </div>
     </div>
   );
 }
 
-export function CompanyFinalListFilters({ finalStatus, onChangeFinalStatus, finalQ, onChangeFinalQ, onlyAgreement, onChangeOnlyAgreement, onClearFilters }) {
+export function CompanyStatusFilters({ status, onChangeStatus, q, onChangeQ, onClearFilters, searchPlaceholder = "Ara" }) {
   return (
     <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
       <div />
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <select value={finalStatus} onChange={(e) => onChangeFinalStatus(e.target.value)}>
+        <select value={status} onChange={(e) => onChangeStatus(e.target.value)}>
           <option value="ALL">Hepsi</option>
-          <option value="OPEN">Açık (kabul edildi + aktif)</option>
-          <option value="APPROVED">Kabul Edildi</option>
           <option value="ACTIVE">Aktif</option>
           <option value="DONE">Tamamlandı</option>
           <option value="REJECTED">Reddedildi</option>
         </select>
-        <input placeholder="Ara (id / durum / plaka / sürücü / not)" value={finalQ} onChange={(e) => onChangeFinalQ(e.target.value)} style={{ minWidth: 240 }} />
-        <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input type="checkbox" checked={onlyAgreement} onChange={(e) => onChangeOnlyAgreement(e.target.checked)} />
-          Sadece sözleşmeli vardiyalar
-        </label>
+        <input placeholder={searchPlaceholder} value={q} onChange={(e) => onChangeQ(e.target.value)} style={{ minWidth: 240 }} />
         <button type="button" onClick={onClearFilters}>Temizle</button>
       </div>
     </div>
   );
+}
+
+export function CompanyFinalListFilters(props) {
+  return CompanyStatusFilters(props);
 }

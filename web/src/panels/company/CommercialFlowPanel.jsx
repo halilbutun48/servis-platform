@@ -5,10 +5,10 @@ import { useSession } from "../../state/session";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
-import { getCompanyCommercialFlowSummary } from "../../utils/companyDataHub";
+import { getCompanyAgreements, getCompanyCommercialFlowSummary, getCompanyShifts } from "../../utils/companyDataHub";
 import PanelChrome from "../../components/PanelChrome";
-import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
+import { buildAgreementConversionByShift } from "./companyShiftsPanelStateHelpers";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -51,20 +51,41 @@ function StatusBadge({ value }) {
   return <span style={statusBadgeInlineStyle(value)}>{displayStatusLabel(value)}</span>;
 }
 
-const FLOW_VIEW_TABS = [
-  { key: "summary", label: "Özet" },
-  { key: "list", label: "Liste" },
-  { key: "selected", label: "Seçili Kayıt" },
-];
+function resolveCommercialFlowTarget(item, agreementByShiftId) {
+  const section = String(item?.section || "").trim();
+  if (section === "pending") {
+    return { section: "pending", label: "Bekleyen", buttonLabel: "Bekleyeni aç", summaryLabel: "Bekleyen akışı" };
+  }
+  if (section === "market") {
+    return { section: "market", label: "Market", buttonLabel: "Marketi aç", summaryLabel: "Market akışı" };
+  }
+  const lookupAgreementId = Number(agreementByShiftId?.get(String(item?.shiftId || 0)) || 0);
+  const agreementId = Number(item?.agreementId || lookupAgreementId || 0);
+  if (agreementId > 0) {
+    return {
+      section: "contract",
+      label: "Sözleşmeden Üretilen",
+      buttonLabel: "Sözleşmeden Üretilen'e git",
+      summaryLabel: "Sözleşmeden Üretilen",
+    };
+  }
+  return {
+    section: "other",
+    label: "Diğer Vardiyalar",
+    buttonLabel: "Diğer Vardiyalar'a git",
+    summaryLabel: "Diğer Vardiyalar",
+  };
+}
 
 export default function CompanyCommercialFlowPanel() {
   const { token } = useSession();
   const [summary, setSummary] = useState(null);
+  const [shiftRows, setShiftRows] = useState([]);
+  const [agreementRows, setAgreementRows] = useState([]);
   const [err, setErr] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [flowFilter, setFlowFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [viewMode, setViewMode] = useState("summary");
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +102,51 @@ export default function CompanyCommercialFlowPanel() {
         }
       })();
     }, 320);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [token]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      (async () => {
+        try {
+          const resp = await getCompanyShifts(token, { signal: controller.signal, take: 64, ttlMs: 20000 });
+          if (cancelled) return;
+          const list = Array.isArray(resp) ? resp : Array.isArray(resp?.items) ? resp.items : [];
+          setShiftRows(list);
+        } catch (e) {
+          if (cancelled || e?.name === "AbortError") return;
+        }
+      })();
+    }, 360);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [token]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      (async () => {
+        try {
+          const resp = await getCompanyAgreements(token, { signal: controller.signal, take: 64, ttlMs: 20000 });
+          if (cancelled) return;
+          const list = Array.isArray(resp?.items) ? resp.items : [];
+          setAgreementRows(list);
+        } catch (e) {
+          if (cancelled || e?.name === "AbortError") return;
+          setAgreementRows([]);
+        }
+      })();
+    }, 340);
     return () => {
       cancelled = true;
       controller.abort();
@@ -131,14 +197,32 @@ export default function CompanyCommercialFlowPanel() {
 
   const effectiveSelectedId = useMemo(() => {
     const rawSelectedId = String(selectedId || "");
-    if (!rawSelectedId) return "";
-    return filteredFlowItems.some((item) => String(item.id) === rawSelectedId) ? rawSelectedId : "";
+    if (rawSelectedId && filteredFlowItems.some((item) => String(item.id) === rawSelectedId)) {
+      return rawSelectedId;
+    }
+    return String(filteredFlowItems[0]?.id || "");
   }, [filteredFlowItems, selectedId]);
 
   const selectedItem = useMemo(
-    () => flowItems.find((item) => String(item.id) === effectiveSelectedId) || null,
-    [flowItems, effectiveSelectedId]
+    () => filteredFlowItems.find((item) => String(item.id) === effectiveSelectedId) || flowItems.find((item) => String(item.id) === effectiveSelectedId) || null,
+    [filteredFlowItems, flowItems, effectiveSelectedId]
   );
+  const agreementByShiftId = useMemo(() => {
+    const map = new Map();
+    const agreementShiftMap = buildAgreementConversionByShift(agreementRows);
+    for (const [shiftId, item] of Object.entries(agreementShiftMap || {})) {
+      const agreementId = Number(item?.agreementId || 0);
+      const sid = Number(shiftId || 0);
+      if (sid > 0 && agreementId > 0) map.set(String(sid), agreementId);
+    }
+    for (const shift of Array.isArray(shiftRows) ? shiftRows : []) {
+      const shiftId = Number(shift?.id || shift?.shiftId || 0);
+      const agreementId = Number(shift?.agreementId || 0);
+      if (shiftId > 0 && agreementId > 0) map.set(String(shiftId), agreementId);
+    }
+    return map;
+  }, [agreementRows, shiftRows]);
+  const selectedTarget = useMemo(() => resolveCommercialFlowTarget(selectedItem, agreementByShiftId), [selectedItem, agreementByShiftId]);
 
   const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/commercial-flow"), []);
 
@@ -154,11 +238,11 @@ export default function CompanyCommercialFlowPanel() {
       listCount: finalItems.length,
     });
 
-    setCopilotSelection({
-      scopeKey: copilotScopeKey,
-      entityType: selectedItem?.shiftId ? 'shift' : 'screen',
-      entityId: Number(selectedItem?.shiftId || 2115) || 2115,
-      label: `${selectedItem?.counterparty || 'Kayıt'} • ${selectedItem?.flowLabel || '-'}`,
+      setCopilotSelection({
+        scopeKey: copilotScopeKey,
+        entityType: selectedItem?.shiftId ? 'shift' : 'screen',
+        entityId: Number(selectedItem?.shiftId || 2115) || 2115,
+        label: `${selectedItem?.counterparty || 'Kayıt'} • ${selectedItem?.flowLabel || '-'}`,
       summary: [selectedItem?.statusLabel || null, selectedItem?.nextStep || null].filter(Boolean).join(' • '),
       fields: [
         { label: 'Karşı Taraf', value: selectedItem?.counterparty || '-', help: 'Bu kaydın karşı tarafındaki oda veya operasyon birimini gösterir.' },
@@ -170,11 +254,11 @@ export default function CompanyCommercialFlowPanel() {
       facts,
       badges: [
         { label: 'Durum', value: selectedItem?.statusLabel || '-', help: 'Durum rozeti kaydın anlık ticari statüsünü gösterir.' },
-        { label: 'Bölüm', value: selectedItem?.section === 'list' ? 'Liste' : selectedItem?.section === 'pending' ? 'Bekleyen' : 'Market', help: 'Kayıdın hangi alt görünümde açılacağını gösterir.' },
+        { label: 'Bölüm', value: selectedTarget?.summaryLabel || '-', help: 'Kayıdın hangi alt görünümde açılacağını gösterir.' },
       ],
     });
     return () => clearCopilotSelection(copilotScopeKey);
-  }, [selectedItem, marketOffers.length, acceptedOffers.length, finalItems.length, copilotScopeKey]);
+  }, [selectedItem, selectedTarget, marketOffers.length, acceptedOffers.length, finalItems.length, copilotScopeKey]);
 
   function openShifts(section, shiftId) {
     navigate("/company/shifts");
@@ -200,128 +284,93 @@ export default function CompanyCommercialFlowPanel() {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         {cards.map((card) => <MetricCard key={card.title} {...card} />)}
       </div>
+      <div className="companyCommercialFlowLayout">
+        <div className="companyCommercialFlowSplit">
+          <div className="card" style={{ marginBottom: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+              <div>
+                <div className="panelSectionTitle">Ticari Akış Listesi</div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>Market, bekleyen ve operasyona inen kayıtların tek kanonik özeti</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <select value={flowFilter} onChange={(e) => setFlowFilter(e.target.value)} aria-label="Akış filtresi" title="Akış filtresi">
+                  {flowOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm akışlar" : value}</option>)}
+                </select>
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Durum filtresi" title="Durum filtresi">
+                  {statusOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm durumlar" : displayStatusLabel(value)}</option>)}
+                </select>
+              </div>
+            </div>
 
-      <PanelSegmentTabs
-        ariaLabel="Ticari akış görünümü"
-        tabs={FLOW_VIEW_TABS}
-        value={viewMode}
-        onChange={setViewMode}
-      />
-
-      {viewMode === "summary" ? (
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
-            <div className="panelSectionTitle">Hızlı özet</div>
-            <div className="panelMeta" style={{ marginTop: 4 }}>Market, bekleyen ve operasyona inen kayıtların üst görünümü. Tablo ve filtreler ayrı bölümde.</div>
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button type="button" onClick={() => navigate("/company/planning")}>Planlama Merkezi'ni aç</button>
-              <button type="button" onClick={() => openShifts("market")}>Marketi aç</button>
-              <button type="button" onClick={() => navigate("/company/service-evaluation")}>Hizmet Değerlendirme</button>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left" }}>
+                    <th>Karşı Taraf</th>
+                    <th>Akış</th>
+                    <th>Tutar</th>
+                    <th>Durum</th>
+                    <th>Son Güncelleme</th>
+                    <th>Sonraki Adım</th>
+                    <th>Aksiyon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredFlowItems.length ? filteredFlowItems.map((item) => (
+                    <tr key={item.id} onClick={() => setSelectedId(item.id)} style={{ cursor: "pointer", background: String(effectiveSelectedId || "") === String(item.id) ? "rgba(61, 122, 255, 0.10)" : "transparent" }}>
+                      <td>{item.counterparty}</td>
+                      <td>{item.flowLabel}</td>
+                      <td>{item.amountLabel}</td>
+                      <td><StatusBadge value={item.statusLabel} /></td>
+                      <td>{fmtTR(item.updatedAt)}</td>
+                      <td>{item.nextStep}</td>
+                      <td>
+                        <button type="button" onClick={() => { setSelectedId(item.id); const target = resolveCommercialFlowTarget(item, agreementByShiftId); openShifts(target.section, item.shiftId); }}>
+                          {resolveCommercialFlowTarget(item, agreementByShiftId).buttonLabel}
+                        </button>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={7} className="panelMeta" style={{ padding: "8px 0" }}>
+                        Bu filtrede firma kapsamına düşen ticari kayıt yok. Kural: pazarlık Market'te, operasyon hazırlığı Bekleyen Taleplerde, onaylı işler Liste'de.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {selectedItem ? (
-            <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
-              <div className="panelSectionTitle">Seçili kayıt</div>
-              <div className="panelMeta" style={{ marginTop: 4 }}>{selectedItem.counterparty || "-"}</div>
-              <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+          <div className="card" style={{ marginBottom: 0 }}>
+            <div className="panelSectionTitle">Seçili kayıt</div>
+            <div className="panelMeta" style={{ marginTop: 4 }}>
+              {selectedItem ? selectedItem.counterparty || "-" : "Listeden bir satır seç."}
+            </div>
+            {selectedItem ? (
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div>Akış: <b>{selectedItem.flowLabel || "-"}</b></div>
                 <div>Durum: <b><StatusBadge value={selectedItem.statusLabel} /></b></div>
                 <div>Tutar: <b>{selectedItem.amountLabel || "-"}</b></div>
                 <div>Sonraki adım: <b>{selectedItem.nextStep || "-"}</b></div>
                 <div>Son güncelleme: <b>{fmtTR(selectedItem.updatedAt)}</b></div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>
+                  Bağlı bölüm: <b>{selectedTarget?.label || "-"}</b>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => openShifts(selectedTarget?.section || selectedItem.section || "market", selectedItem.shiftId)}>
+                    {selectedTarget?.buttonLabel || "Bağlı bölüme git"}
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="panelMeta" style={{ padding: "4px 2px" }}>
-              Bir satır seçildiğinde sağlam özet burada görünür.
-            </div>
-          )}
-        </div>
-      ) : null}
-
-      {viewMode === "list" ? (
-        <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
-            <div>
-              <div className="panelSectionTitle">Ticari Akış Listesi</div>
-              <div className="panelMeta" style={{ marginTop: 4 }}>Market, bekleyen ve operasyona inen kayıtların tek kanonik özeti</div>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <select value={flowFilter} onChange={(e) => setFlowFilter(e.target.value)} aria-label="Akış filtresi" title="Akış filtresi">
-                {flowOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm akışlar" : value}</option>)}
-              </select>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Durum filtresi" title="Durum filtresi">
-                {statusOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm durumlar" : displayStatusLabel(value)}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left" }}>
-                  <th>Karşı Taraf</th>
-                  <th>Akış</th>
-                  <th>Tutar</th>
-                  <th>Durum</th>
-                  <th>Son Güncelleme</th>
-                  <th>Sonraki Adım</th>
-                  <th>Aksiyon</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredFlowItems.length ? filteredFlowItems.map((item) => (
-                  <tr key={item.id} onClick={() => setSelectedId(item.id)} style={{ cursor: 'pointer', background: String(effectiveSelectedId || '') === String(item.id) ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
-                    <td>{item.counterparty}</td>
-                    <td>{item.flowLabel}</td>
-                    <td>{item.amountLabel}</td>
-                    <td><StatusBadge value={item.statusLabel} /></td>
-                    <td>{fmtTR(item.updatedAt)}</td>
-                    <td>{item.nextStep}</td>
-                    <td>
-                      <button type="button" onClick={() => { setSelectedId(item.id); openShifts(item.section || "market", item.shiftId); }}>
-                        {item.section === "list" ? "Listeyi aç" : item.section === "pending" ? "Bekleyeni aç" : "Marketi aç"}
-                      </button>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={7} className="panelMeta" style={{ padding: "8px 0" }}>
-                      Bu filtrede firma kapsamına düşen ticari kayıt yok. Kural: pazarlık Market'te, operasyon hazırlığı Bekleyen Taleplerde, onaylı işler Liste'de.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            ) : (
+              <div className="panelMeta" style={{ marginTop: 8 }}>
+                Filtre sonucu boşsa seçili kayıt paneli de boş kalır.
+              </div>
+            )}
           </div>
         </div>
-      ) : null}
-
-      {viewMode === "selected" ? (
-        <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
-          <div className="panelSectionTitle">Seçili kayıt detayları</div>
-          <div className="panelMeta" style={{ marginTop: 4 }}>Tablodaki satır seçimi bu kartta daha okunur bir özet verir.</div>
-          {selectedItem ? (
-            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              <div><b>{selectedItem.counterparty || "-"}</b></div>
-              <div className="panelMeta">Akış: {selectedItem.flowLabel || "-"}</div>
-              <div className="panelMeta">Durum: <StatusBadge value={selectedItem.statusLabel} /></div>
-              <div className="panelMeta">Tutar: {selectedItem.amountLabel || "-"}</div>
-              <div className="panelMeta">Son Güncelleme: {fmtTR(selectedItem.updatedAt)}</div>
-              <div className="panelMeta">Sonraki Adım: {selectedItem.nextStep || "-"}</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => openShifts(selectedItem.section || "market", selectedItem.shiftId)}>
-                  {selectedItem.section === "list" ? "Listeyi aç" : selectedItem.section === "pending" ? "Bekleyeni aç" : "Marketi aç"}
-                </button>
-                <button type="button" className="btn" onClick={() => setViewMode("list")}>Tabloya dön</button>
-              </div>
-            </div>
-          ) : (
-            <div className="panelMeta" style={{ marginTop: 8 }}>Seçili kayıt yok. Listeden bir satır seç.</div>
-          )}
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }

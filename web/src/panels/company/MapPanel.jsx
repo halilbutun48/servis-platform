@@ -468,7 +468,7 @@ export default function CompanyMapPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title={`${scopeKey === "/school/map" ? "Okul" : scopeKey === "/organization/map" ? "Organizasyon" : "Company"} • Canlı Harita`}
+        title={`${scopeKey === "/school/map" ? "Okul" : scopeKey === "/organization/map" ? "Kurum" : "Company"} • Canlı Harita`}
         subtitle="Tek panel: canlı liste + seçili araç + duraklar + harita"
         actions={
           <div className="toolbar" style={{ justifyContent: "flex-end" }}>

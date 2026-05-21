@@ -112,9 +112,9 @@ export function buildShiftPeopleTabActions(ctx) {
       setPLat(String(r?.lat ?? ""));
       setPLng(String(r?.lng ?? ""));
       if (typeof r?.lat === "number" && typeof r?.lng === "number") {
-        setInfo(`Hub konumu bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
+        setInfo(`Toplanma konumu bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
       } else {
-        setInfo("Hub konumu bulundu. Lat/Lng alanlarını kontrol et.");
+        setInfo("Toplanma konumu bulundu. Lat/Lng alanlarını kontrol et.");
       }
     } catch (e) {
       const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
@@ -136,7 +136,7 @@ export function buildShiftPeopleTabActions(ctx) {
     const lat = ctx.normalizeCoord(ctx.hubLat, "lat");
     const lng = ctx.normalizeCoord(ctx.hubLng, "lng");
     if (lat == null || lng == null) {
-      setErr("Hub Lat/Lng zorunlu. (Adresten Bul ile doldurabilirsin)");
+      setErr("Toplanma Konumu Lat/Lng zorunlu. (Adresten Bul ile doldurabilirsin)");
       return;
     }
 
@@ -163,7 +163,7 @@ export function buildShiftPeopleTabActions(ctx) {
       const withHub = withHubStop(baseStops, { ...(selectedShift || {}), hubLat: lat, hubLng: lng, direction: dir });
       setDraftStops(withHub);
 
-      setInfo(`Hub kaydedildi. Liste pozisyonu: ${ctx.hubPosLabel}`);
+      setInfo(`Toplanma konumu kaydedildi. Liste pozisyonu: ${ctx.hubPosLabel}`);
     } catch (e) {
       setErr(String(e?.payload?.message || e?.payload?.error || e?.message || e));
     } finally {
@@ -183,7 +183,7 @@ export function buildShiftPeopleTabActions(ctx) {
       setPLat("");
       setPLng("");
       setDraftStops(stripHubStop(ctx.draftStops));
-      setInfo("Hub temizlendi.");
+      setInfo("Toplanma konumu temizlendi.");
     } catch (e) {
       setErr(String(e?.payload?.message || e?.payload?.error || e?.message || e));
     } finally {

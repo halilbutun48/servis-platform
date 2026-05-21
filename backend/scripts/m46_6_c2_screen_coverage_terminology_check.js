@@ -19,7 +19,7 @@ async function main() {
       entityType: 'screen',
       entityId: 2106,
       message: 'hub ne demek',
-      screenContext: { id: 2106, path: '/company/hub', label: 'Hub' },
+      screenContext: { id: 2106, path: '/company/hub', label: 'Şirket Konumu' },
     },
   });
   must('hub chat ok', hubChat.ok && hubChat.json?.mode === 'CHAT_HELP');

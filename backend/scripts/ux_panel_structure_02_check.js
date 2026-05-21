@@ -45,6 +45,10 @@ function mustContains(text, needle, label) {
   must(normalize(text).includes(normalize(needle)), label);
 }
 
+function mustNotContains(text, needle, label) {
+  must(!normalize(text).includes(normalize(needle)), label);
+}
+
 function panelUsesTabs(text) {
   const normalized = normalize(text);
   return normalized.includes("panelsegmenttabs") || normalized.includes("role=\"tablist\"") || normalized.includes("aria-selected");
@@ -132,10 +136,15 @@ function main() {
   mustContains(agreements, "AgreementWizard", "Company / Sözleşmeler keeps wizard mode visible");
   mustContains(agreements, "CollapsibleSection", "Company / Sözleşmeler keeps secondary bridge collapsed");
 
-  mustContains(companyCommercialFlow, "FLOW_VIEW_TABS", "Company / Ticari Akış exposes segmented views");
+  mustNotContains(companyCommercialFlow, "PanelSegmentTabs", "Company / Ticari Akış no longer uses segmented tabs");
+  mustNotContains(companyCommercialFlow, "FLOW_VIEW_TABS", "Company / Ticari Akış removes segmented view config");
+  mustNotContains(companyCommercialFlow, 'viewMode === "summary"', "Company / Ticari Akış removes summary render");
+  mustNotContains(companyCommercialFlow, 'viewMode === "list"', "Company / Ticari Akış removes list render");
+  mustNotContains(companyCommercialFlow, 'viewMode === "selected"', "Company / Ticari Akış removes selected render");
   mustContains(companyCommercialFlow, "MetricCard", "Company / Ticari Akış keeps summary cards visible");
   mustContains(companyCommercialFlow, "Ticari Akış Listesi", "Company / Ticari Akış keeps list view visible");
   mustContains(companyCommercialFlow, "Seçili kayıt", "Company / Ticari Akış keeps selected summary visible");
+  mustContains(companyCommercialFlow, "companyCommercialFlowSplit", "Company / Ticari Akış keeps single-page split layout");
   mustContains(companyCommercialFlow, "<table", "Company / Ticari Akış keeps table visible");
 
   mustContains(superadminVerification, "PanelSegmentTabs", "Super Admin / Operasyon Doğrulama uses segmented roles");

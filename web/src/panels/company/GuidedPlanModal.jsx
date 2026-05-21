@@ -96,7 +96,7 @@ export default function GuidedPlanModal({
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
 
-  // Step-0: hub
+  // Step-0: konum
   const [hubLat, setHubLat] = useState("");
   const [hubLng, setHubLng] = useState("");
   const [addr, setAddr] = useState("");
@@ -419,18 +419,18 @@ export default function GuidedPlanModal({
     const lat = hubLat === "" ? null : Number(hubLat);
     const lng = hubLng === "" ? null : Number(hubLng);
     if ((lat == null) !== (lng == null)) {
-      setErr("Hub lat/lng birlikte olmalı.");
+      setErr("Konum lat/lng birlikte olmalı.");
       return;
     }
     if (lat != null && lng != null && (lat === 0 || lng === 0)) {
-      setErr("Hub 0,0 olamaz.");
+      setErr("Konum 0,0 olamaz.");
       return;
     }
 
     setBusy(true);
     try {
       await saveGuidedCompanyHub({ token, hubLat: lat, hubLng: lng });
-      setInfo(organization ? "? Toplanma noktas? kaydedildi." : "? Şirket konumu kaydedildi.");
+      setInfo(organization ? "Toplanma konumu kaydedildi." : "Şirket konumu kaydedildi.");
       setStep(1);
     } catch (e) {
       setErr(getApiErrorMessage(e));
@@ -461,7 +461,7 @@ export default function GuidedPlanModal({
         setHubLng(String(lng));
         setInfo(
           organization
-            ? "• Toplanma noktası konumu alındı. Kaydetmek için 'İleri'ye bas."
+            ? "• Toplanma konumu alındı. Kaydetmek için 'İleri'ye bas."
             : "• Konum alındı. Kaydetmek için 'İleri'ye bas."
         );
       },
@@ -508,11 +508,11 @@ export default function GuidedPlanModal({
     const lat = hubLat === "" ? null : Number(hubLat);
     const lng = hubLng === "" ? null : Number(hubLng);
     if ((lat == null) !== (lng == null)) {
-      setErr("Hub lat/lng birlikte olmalı.");
+      setErr("Konum lat/lng birlikte olmalı.");
       return;
     }
     if (lat != null && lng != null && (lat === 0 || lng === 0)) {
-      setErr("Hub 0,0 olamaz.");
+      setErr("Konum 0,0 olamaz.");
       return;
     }
 
@@ -536,11 +536,11 @@ export default function GuidedPlanModal({
         return;
       }
       if (!orgFilledDestinations.length) {
-        setErr("En az 1 gidilecek yer ekle.");
+        setErr("En az 1 gidilecek konum ekle.");
         return;
       }
       if (!orgDestinationAudit.ok) {
-        setErr(`Koordinat? eksik yerler var: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}. Adresten bul, manuel lat/lng gir veya haritadan seç.`);
+        setErr(`Koordinatı eksik konumlar var: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}. Adresten bul, manuel lat/lng gir veya haritadan seç.`);
         return;
       }
     }
@@ -806,7 +806,7 @@ async function sendBulkOffers() {
         </div>
       ) : null}
 
-      {/* Step-0: Hub */}
+      {/* Step-0: Konum */}
       {step === 0 ? (
         <GuidedHubStep
           organization={organization}

@@ -77,8 +77,8 @@ if (includesText(agreements, "}, [token, take, statusFilter]);")) ok("Agreements
 const agreementUseEffects = count(agreements, /useEffect\s*\(/g);
 if (agreementUseEffects <= 9) ok(`AgreementsPanel useEffect count within current review snapshot ${agreementUseEffects}`); else fail(`AgreementsPanel useEffect count within current review snapshot <=9 (actual ${agreementUseEffects})`);
 
-if (includesText(shifts, "commercialSummaryCacheRef") && includesText(shifts, "commercialSummaryPromiseRef")) ok("ShiftsPanel keeps summary cache refs"); else fail("ShiftsPanel keeps summary cache refs");
-if (includesText(shifts, "async function loadCommercialSummary")) ok("ShiftsPanel uses dedicated commercial summary loader"); else fail("ShiftsPanel uses dedicated commercial summary loader");
+if (!includesText(shifts, "commercialSummaryCacheRef") && !includesText(shifts, "commercialSummaryPromiseRef")) ok("ShiftsPanel no longer keeps summary cache refs"); else fail("ShiftsPanel no longer keeps summary cache refs");
+if (!includesText(shifts, "async function loadCommercialSummary")) ok("ShiftsPanel no longer uses dedicated commercial summary loader"); else fail("ShiftsPanel no longer uses dedicated commercial summary loader");
 if (includesText(shifts, "company:autoOfferShiftId") && includesText(shifts, "company:autoOffersListShiftId")) ok("ShiftsPanel keeps unified post-wizard offer intents"); else fail("ShiftsPanel keeps unified post-wizard offer intents");
 if (includesText(shifts, "localStorage.setItem(LS_LAST_ROOM")) ok("ShiftsPanel keeps merged room persist flow"); else fail("ShiftsPanel keeps merged room persist flow");
 const shiftsUseEffects = count(shifts, /useEffect\s*\(/g);

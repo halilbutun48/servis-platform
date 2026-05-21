@@ -309,7 +309,7 @@ export function withHubStop(stops, shift) {
 
   const hub = {
     id: "hub",
-    title: "Hub",
+    title: "Toplanma Konumu",
     lat: hubLat,
     lng: hubLng,
     count: null,

@@ -268,14 +268,9 @@ export default function OperationHealthPanel() {
       badge: summary?.cards?.activeDrivers ?? "-",
     },
     {
-      key: "drivers",
-      label: "Sorunlu Sürücüler",
-      badge: `${filteredDrivers.length}/${drivers.length}`,
-    },
-    {
-      key: "issues",
-      label: "Açık Sorunlar",
-      badge: filteredIssues.length,
+      key: "problems",
+      label: "Sürücü & Sorunlar",
+      badge: `${filteredDrivers.length + filteredIssues.length}`,
     },
   ], [summary, filteredDrivers.length, drivers.length, filteredIssues.length]);
 
@@ -350,98 +345,96 @@ export default function OperationHealthPanel() {
         </section>
       ) : null}
 
-      {activeTab === "drivers" ? (
-        <section role="tabpanel" aria-label="Sorunlu Sürücüler" style={{ marginTop: 14 }}>
-          <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>Sorunlu Sürücüler / Canlılık Listesi</div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Canlılık, izin ve oturum riskleri. Ana filtreler açık; detay tablo bu sekmede toplanır.
-                </div>
-              </div>
-              <div className="muted">Filtreye uyan: {filteredDrivers.length}</div>
-            </div>
-            <div style={{ overflowX: "auto", marginTop: 14 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ textAlign: "left" }}>
-                    <th>Sürücü</th>
-                    <th>Araç</th>
-                    <th>Durum</th>
-                    <th>GPS Skoru</th>
-                    <th>Son Konum</th>
-                    <th>İzin</th>
-                    <th>Oturum</th>
-                    <th>Özet</th>
-                  </tr>
-                  <tr>
-                    <th></th>
-                    <th></th>
-                    <th>
-                      <select value={driverStatusFilter} onChange={(e) => setDriverStatusFilter(e.target.value)}>
-                        <option value="">Tüm durumlar</option>
-                        {statusOptions.map((status) => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                    </th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDrivers.length ? filteredDrivers.map((item) => (
-                    <DriverRow key={item.id} item={item} selected={Number(selectedDriverId || 0) === Number(item?.driverId || item?.id || 0)} onSelect={(row) => setSelectedDriverId(Number(row?.driverId || row?.id || 0))} />
-                  )) : (
-                    <tr>
-                      <td colSpan={8} className="muted" style={{ paddingTop: 12 }}>Filtreye uyan sorunlu sürücü yok.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {activeTab === "issues" ? (
-        <section role="tabpanel" aria-label="Açık Sorunlar" style={{ marginTop: 14 }}>
-          <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>Açık Sorunlar</div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Takip edilmesi gereken tanı ve rehber önerileri.
-                </div>
-              </div>
-              <div className="muted">Filtreye uyan: {filteredIssues.length}</div>
-            </div>
-            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-              {filteredIssues.length ? filteredIssues.map((issue, idx) => {
-                const issueKey = `${idx}:${issue?.title || ''}`;
-                const isSelected = String(selectedIssueKey || '') === issueKey;
-                return (
-                  <div key={issueKey} onClick={() => setSelectedIssueKey(issueKey)} style={{ padding: 12, borderRadius: 12, background: isSelected ? 'rgba(61, 122, 255, 0.10)' : 'rgba(255,255,255,0.03)', outline: isSelected ? '1px solid rgba(59,130,246,.35)' : undefined, cursor: 'pointer' }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                      <div style={{ fontWeight: 700 }}>{issue.title}</div>
-                      <StatusBadge kind="severity" value={issue.severity} />
-                    </div>
-                    <div className="muted" style={{ marginTop: 8 }}>{issue.detail}</div>
-                    <div style={{ marginTop: 10 }}>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); openRoomCopilotWithHint(buildGuideHint(issue.title, issue.detail, { severity: issue.severity, suggestedRouteKey: issueRouteKey(issue) })); }}
-                      >
-                        Rehberde ne yapacağımı göster
-                      </button>
-                    </div>
+      {activeTab === "problems" ? (
+        <section role="tabpanel" aria-label="Sürücü ve sorunlar" style={{ marginTop: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.55fr) minmax(320px, 1fr)", gap: 14, alignItems: "start" }}>
+            <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 16 }}>Sorunlu Sürücüler / Canlılık Listesi</div>
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Canlılık, izin ve oturum riskleri. Ana filtreler açık; detay tablo bu görünümde toplanır.
                   </div>
-                );
-              }) : <div className="muted">{issues.length ? 'Filtreye uyan açık sorun yok.' : 'Açık sorun yok.'}</div>}
+                </div>
+                <div className="muted">Filtreye uyan: {filteredDrivers.length}</div>
+              </div>
+              <div style={{ overflowX: "auto", marginTop: 14 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ textAlign: "left" }}>
+                      <th>Sürücü</th>
+                      <th>Araç</th>
+                      <th>Durum</th>
+                      <th>GPS Skoru</th>
+                      <th>Son Konum</th>
+                      <th>İzin</th>
+                      <th>Oturum</th>
+                      <th>Özet</th>
+                    </tr>
+                    <tr>
+                      <th></th>
+                      <th></th>
+                      <th>
+                        <select value={driverStatusFilter} onChange={(e) => setDriverStatusFilter(e.target.value)}>
+                          <option value="">Tüm durumlar</option>
+                          {statusOptions.map((status) => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
+                        </select>
+                      </th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredDrivers.length ? filteredDrivers.map((item) => (
+                      <DriverRow key={item.id} item={item} selected={Number(selectedDriverId || 0) === Number(item?.driverId || item?.id || 0)} onSelect={(row) => setSelectedDriverId(Number(row?.driverId || row?.id || 0))} />
+                    )) : (
+                      <tr>
+                        <td colSpan={8} className="muted" style={{ paddingTop: 12 }}>Filtreye uyan sorunlu sürücü yok.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 16 }}>Açık Sorunlar</div>
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Takip edilmesi gereken tanı ve rehber önerileri.
+                  </div>
+                </div>
+                <div className="muted">Filtreye uyan: {filteredIssues.length}</div>
+              </div>
+              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                {filteredIssues.length ? filteredIssues.map((issue, idx) => {
+                  const issueKey = `${idx}:${issue?.title || ''}`;
+                  const isSelected = String(selectedIssueKey || '') === issueKey;
+                  return (
+                    <div key={issueKey} onClick={() => setSelectedIssueKey(issueKey)} style={{ padding: 12, borderRadius: 12, background: isSelected ? 'rgba(61, 122, 255, 0.10)' : 'rgba(255,255,255,0.03)', outline: isSelected ? '1px solid rgba(59,130,246,.35)' : undefined, cursor: 'pointer' }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                        <div style={{ fontWeight: 700 }}>{issue.title}</div>
+                        <StatusBadge kind="severity" value={issue.severity} />
+                      </div>
+                      <div className="muted" style={{ marginTop: 8 }}>{issue.detail}</div>
+                      <div style={{ marginTop: 10 }}>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openRoomCopilotWithHint(buildGuideHint(issue.title, issue.detail, { severity: issue.severity, suggestedRouteKey: issueRouteKey(issue) })); }}
+                        >
+                          Rehberde ne yapacağımı göster
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }) : <div className="muted">{issues.length ? 'Filtreye uyan açık sorun yok.' : 'Açık sorun yok.'}</div>}
+              </div>
             </div>
           </div>
         </section>

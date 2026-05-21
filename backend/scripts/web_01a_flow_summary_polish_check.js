@@ -103,15 +103,15 @@ function main() {
   include(trust, "quality-summary-grid", "TrustQualityPanel quality summary grid missing");
   include(trust, "quality-detail-layout", "TrustQualityPanel quality detail layout missing");
 
-  include(service, "FlowSummaryStrip", "ServiceEvaluationPanel missing FlowSummaryStrip import or usage");
-  include(service, "Değerlendirme akışı", "ServiceEvaluationPanel flow title missing");
-  include(service, "Bu alan kalite değerlendirmesine yardımcı olur; ödeme veya komisyon başlatmaz.", "ServiceEvaluationPanel flow description missing");
-  include(service, "Kanıt", "ServiceEvaluationPanel step marker missing");
-  include(service, "Taslak", "ServiceEvaluationPanel step marker missing");
-  include(service, "İnceleme", "ServiceEvaluationPanel step marker missing");
-  include(service, "Geçmiş", "ServiceEvaluationPanel step marker missing");
-  include(service, "quality-summary-grid", "ServiceEvaluationPanel quality summary grid missing");
-  include(service, "quality-detail-layout", "ServiceEvaluationPanel quality detail layout missing");
+  include(service, "PanelSegmentTabs", "ServiceEvaluationPanel missing PanelSegmentTabs import or usage");
+  include(service, "Özet", "ServiceEvaluationPanel tab marker missing");
+  include(service, "Kanıt / Hazırlık", "ServiceEvaluationPanel tab marker missing");
+  include(service, "Taslak Skor", "ServiceEvaluationPanel tab marker missing");
+  include(service, "İnceleme Kararı", "ServiceEvaluationPanel tab marker missing");
+  include(service, "Geçmiş", "ServiceEvaluationPanel tab marker missing");
+  include(service, "Değerlendirme Alanları", "ServiceEvaluationPanel tab marker missing");
+  include(service, "Değerlendirme bekleyen hizmet var", "ServiceEvaluationPanel pending info band missing");
+  include(service, "role=\"tabpanel\"", "ServiceEvaluationPanel tabpanel semantics missing");
   ordered(
     service,
     [

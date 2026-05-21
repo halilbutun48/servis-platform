@@ -4,6 +4,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
 import HubMapPicker from "../../components/geo/HubMapPicker";
+import { hubLabel } from "../../utils/labels";
 
 function sanitizeAddress(input) {
   let s = String(input ?? "").trim();
@@ -16,7 +17,14 @@ function sanitizeAddress(input) {
 }
 
 export default function HubPanel() {
-  const { token } = useSession();
+  const { token, me } = useSession();
+  const scopeLabel = hubLabel(me);
+  const scopeHint =
+    me?.companyKind === "SCHOOL"
+      ? "Okul servislerinin kullandığı konum."
+      : me?.companyKind === "ORGANIZATION"
+      ? "Toplanma alanının merkez konumu."
+      : "Şirket tesisi/merkez konumu.";
   const [addr, setAddr] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
@@ -120,13 +128,13 @@ export default function HubPanel() {
   return (
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
       <PanelChrome
-        title="Company Hub"
-        subtitle="Şirket tesisi/merkezi (hub) koordinatı. INBOUND/OUTBOUND rota merkezinde kullanılır."
+        title={scopeLabel}
+        subtitle={`${scopeLabel} bilgisi. ${scopeHint}`}
         actions={<button type="button" className="btn sm ghost" onClick={load} disabled={busy}>Yenile</button>}
       />
 
       <div className="toolbar" style={{ gap: 8, flexWrap: "wrap" }}>
-        <span className="pill" data-status="ROLE">Company Hub</span>
+        <span className="pill" data-status="ROLE">{scopeLabel}</span>
         <span className="pill" data-status="COUNT">Lat: {lat || "-"}</span>
         <span className="pill" data-status="COUNT">Lng: {lng || "-"}</span>
       </div>
@@ -137,7 +145,7 @@ export default function HubPanel() {
       <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 360px) minmax(0, 1fr)", alignItems: "start" }}>
         <PanelChrome
           title="Adres ve Koordinat"
-          subtitle="Hub koordinatını elle, konumla ya da harita üstünden seç."
+          subtitle="Şirket konumunu elle, konumla ya da harita üstünden seç."
         >
           <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
             <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
@@ -152,11 +160,11 @@ export default function HubPanel() {
 
             <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", minWidth: 0 }}>
               <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                <div className="panelMeta">Hub Lat</div>
+                <div className="panelMeta">{scopeLabel} Lat</div>
                 <input type="number" step="0.000001" value={lat} onChange={(e) => setLat(e.target.value)} disabled={busy} />
               </div>
               <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                <div className="panelMeta">Hub Lng</div>
+                <div className="panelMeta">{scopeLabel} Lng</div>
                 <input type="number" step="0.000001" value={lng} onChange={(e) => setLng(e.target.value)} disabled={busy} />
               </div>
             </div>
@@ -183,7 +191,7 @@ export default function HubPanel() {
             lat={lat}
             lng={lng}
             busy={busy}
-            subjectLabel="Company Hub"
+            subjectLabel={scopeLabel}
             previewHeight={580}
             onPick={(nextLat, nextLng) => {
               setLat(String(nextLat));

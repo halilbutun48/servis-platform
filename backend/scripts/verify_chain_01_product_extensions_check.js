@@ -64,6 +64,8 @@ function main() {
   must(pkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', 'package.json keeps verify:final product extension step');
   must(pkg, '"check:web01a"', 'package.json keeps check:web01a');
   must(pkg, '"check:web01b"', 'package.json keeps check:web01b');
+  must(pkg, '"check:uxsuperadminoverviewcleanup01"', 'package.json exposes check:uxsuperadminoverviewcleanup01');
+  must(pkg, '"check:uxsuperadminlivemonitoring01"', 'package.json exposes check:uxsuperadminlivemonitoring01');
   must(pkg, '"check:paysafe01"', 'package.json keeps check:paysafe01');
   must(pkg, '"check:pay01e"', 'package.json keeps check:pay01e');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
@@ -98,6 +100,7 @@ function main() {
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
   must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotpersona01');
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');
+  must(pkg, '"check:uxseferabilauncher01"', 'package.json exposes check:uxseferabilauncher01');
   must(pkg, '"check:etasanity01"', 'package.json keeps check:etasanity01');
   must(pkg, '"check:etaosrm01"', 'package.json keeps check:etaosrm01');
   must(pkg, '"check:etaosrm02"', 'package.json keeps check:etaosrm02');
@@ -109,7 +112,14 @@ function main() {
   must(pkg, '"check:uxpanelstructure02b"', 'package.json keeps check:uxpanelstructure02b');
   must(pkg, '"check:uxroomvehiclestelematicsfix"', 'package.json exposes check:uxroomvehiclestelematicsfix');
   must(pkg, '"check:uxroomopspaneltabs01"', 'package.json exposes check:uxroomopspaneltabs01');
+  must(pkg, '"check:uxroomopsrelationshippolish01"', 'package.json exposes check:uxroomopsrelationshippolish01');
   must(pkg, '"check:uxroomshiftstabs01"', 'package.json exposes check:uxroomshiftstabs01');
+  must(pkg, '"check:uxschoolorganizationpanels01"', 'package.json exposes check:uxschoolorganizationpanels01');
+  must(pkg, '"check:uxcompanyshiftstabs01"', 'package.json exposes check:uxcompanyshiftstabs01');
+  must(pkg, '"check:uxcompanyopspaneltabs01"', 'package.json exposes check:uxcompanyopspaneltabs01');
+  must(pkg, '"check:uxcompanyqualitytabs01"', 'package.json exposes check:uxcompanyqualitytabs01');
+  must(pkg, '"check:uxcompanypanelsfinalpolish01"', 'package.json exposes check:uxcompanypanelsfinalpolish01');
+  must(pkg, '"check:uxcompanypanelssmoke01"', 'package.json exposes check:uxcompanypanelssmoke01');
   must(pkg, '"check:uxpaneltabsfix01"', 'package.json keeps check:uxpaneltabsfix01');
   must(pkg, '"check:uxlivemaptabsfix01"', 'package.json exposes check:uxlivemaptabsfix01');
   must(pkg, '"check:uxlivemaptabssimplify01"', 'package.json exposes check:uxlivemaptabssimplify01');
@@ -131,6 +141,8 @@ function main() {
     'check:paysafe01',
     'check:web01a',
     'check:web01b',
+    'check:uxsuperadminoverviewcleanup01',
+    'check:uxsuperadminlivemonitoring01',
     'check:cop01e',
     'check:cop02a',
     'check:cop02b',
@@ -172,7 +184,13 @@ function main() {
     'check:uxpanelstructure02b',
     'check:uxroomvehiclestelematicsfix',
     'check:uxroomopspaneltabs01',
+    'check:uxroomopsrelationshippolish01',
     'check:uxroomshiftstabs01',
+    'check:uxschoolorganizationpanels01',
+    'check:uxcompanyshiftstabs01',
+    'check:uxcompanyopspaneltabs01',
+    'check:uxcompanypanelsfinalpolish01',
+    'check:uxcompanypanelssmoke01',
     'check:uxpaneltabsfix01',
     'check:uxlivemaptabsfix01',
     'check:uxlivemaptabssimplify01',
@@ -214,6 +232,12 @@ function main() {
   must(guide, 'check:uxcopilotsmartchips01', 'script guide exposes check:uxcopilotsmartchips01');
   must(guide, 'check:uxcopilotpersona01', 'script guide exposes check:uxcopilotpersona01');
   must(guide, 'check:uxcopilotterminal01', 'script guide exposes check:uxcopilotterminal01');
+  must(guide, 'UX-SEFER-ABI-LAUNCHER-01', 'script guide mentions UX-SEFER-ABI-LAUNCHER-01');
+  must(guide, 'check:uxseferabilauncher01', 'script guide exposes check:uxseferabilauncher01');
+  must(guide, 'UX-SUPERADMIN-OVERVIEW-CLEANUP-01', 'script guide mentions UX-SUPERADMIN-OVERVIEW-CLEANUP-01');
+  must(guide, 'check:uxsuperadminoverviewcleanup01', 'script guide exposes check:uxsuperadminoverviewcleanup01');
+  must(guide, 'UX-SUPERADMIN-LIVE-MONITORING-01', 'script guide mentions UX-SUPERADMIN-LIVE-MONITORING-01');
+  must(guide, 'check:uxsuperadminlivemonitoring01', 'script guide exposes check:uxsuperadminlivemonitoring01');
   must(guide, 'check:etasanity01', 'script guide exposes check:etasanity01');
   must(guide, 'check:etaosrm01', 'script guide exposes check:etaosrm01');
   must(guide, 'check:etaosrm02', 'script guide exposes check:etaosrm02');
@@ -226,8 +250,21 @@ function main() {
   must(guide, 'check:uxroomvehiclestelematicsfix', 'script guide exposes check:uxroomvehiclestelematicsfix');
   must(guide, 'UX-ROOM-OPS-PANEL-TABS-01', 'script guide mentions UX-ROOM-OPS-PANEL-TABS-01');
   must(guide, 'check:uxroomopspaneltabs01', 'script guide exposes check:uxroomopspaneltabs01');
+  must(guide, 'UX-ROOM-OPS-RELATIONSHIP-POLISH-01', 'script guide mentions UX-ROOM-OPS-RELATIONSHIP-POLISH-01');
+  must(guide, 'check:uxroomopsrelationshippolish01', 'script guide exposes check:uxroomopsrelationshippolish01');
   must(guide, 'UX-ROOM-SHIFTS-TABS-01', 'script guide mentions UX-ROOM-SHIFTS-TABS-01');
   must(guide, 'check:uxroomshiftstabs01', 'script guide exposes check:uxroomshiftstabs01');
+  must(guide, 'UX-SCHOOL-ORGANIZATION-PANELS-01', 'script guide mentions UX-SCHOOL-ORGANIZATION-PANELS-01');
+  must(guide, 'check:uxschoolorganizationpanels01', 'script guide exposes check:uxschoolorganizationpanels01');
+  must(guide, 'UX-COMPANY-SHIFTS-TABS-01', 'script guide mentions UX-COMPANY-SHIFTS-TABS-01');
+  must(guide, 'check:uxcompanyshiftstabs01', 'script guide exposes check:uxcompanyshiftstabs01');
+  must(guide, 'UX-COMPANY-OPS-PANEL-TABS-01', 'script guide mentions UX-COMPANY-OPS-PANEL-TABS-01');
+  must(guide, 'check:uxcompanyopspaneltabs01', 'script guide exposes check:uxcompanyopspaneltabs01');
+  must(guide, 'UX-COMPANY-QUALITY-PANEL-TABS-01', 'script guide mentions UX-COMPANY-QUALITY-PANEL-TABS-01');
+  must(guide, 'check:uxcompanyqualitytabs01', 'script guide exposes check:uxcompanyqualitytabs01');
+  must(guide, 'UX-COMPANY-PANELS-FINAL-POLISH-01', 'script guide mentions UX-COMPANY-PANELS-FINAL-POLISH-01');
+  must(guide, 'check:uxcompanypanelsfinalpolish01', 'script guide exposes check:uxcompanypanelsfinalpolish01');
+  must(guide, 'check:uxcompanypanelssmoke01', 'script guide exposes check:uxcompanypanelssmoke01');
   must(guide, 'check:uxpaneltabsfix01', 'script guide exposes check:uxpaneltabsfix01');
   must(guide, 'check:uxlivemaptabsfix01', 'script guide exposes check:uxlivemaptabsfix01');
   must(guide, 'UX-LIVE-MAP-TABS-SIMPLIFY-01', 'script guide mentions UX-LIVE-MAP-TABS-SIMPLIFY-01');

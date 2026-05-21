@@ -82,7 +82,7 @@ if (includesText(map, "refreshTimersRef")) ok("MapPanel stores refresh timers in
 if (!includesText(map, "reloadVehiclesTimer") && !includesText(map, "reloadShiftsTimer")) ok("MapPanel legacy reload timer names removed"); else fail("MapPanel legacy reload timer names removed");
 
 if (includesText(shifts, 'useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: false }) : Promise.resolve()), true, 650);')) ok("ShiftsPanel rooms auto reload no longer forces reference refresh"); else fail("ShiftsPanel rooms auto reload no longer forces reference refresh");
-if (includesText(shifts, "loadCommercialSummary(") || includesText(shifts, "ttlMs: 15000") || includesText(shifts, "ttlMs: 30000")) ok("ShiftsPanel commercial summary path remains narrowed"); else fail("ShiftsPanel commercial summary path remains narrowed");
+if (!includesText(shifts, "loadCommercialSummary(") && !includesText(shifts, "ttlMs: 15000") && !includesText(shifts, "ttlMs: 30000")) ok("ShiftsPanel commercial summary path remains narrowed"); else fail("ShiftsPanel commercial summary path remains narrowed");
 
 console.log("INFO checking scale readiness baseline markers directly");
 const scaleText = "";
@@ -91,4 +91,3 @@ if (!scaleText.includes("GeoReviewPanel.jsx:205 -> /api/company/personels?${qs.t
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("M80.1 HOT PANEL DARALTMA CHECK PASS");
-

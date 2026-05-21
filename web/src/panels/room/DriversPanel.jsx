@@ -1,6 +1,7 @@
 // web/src/panels/room/DriversPanel.jsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
@@ -19,7 +20,7 @@ const TABS = [
   { key: "status", label: "Durum" },
   { key: "manage", label: "Yönetim" },
   { key: "shifts", label: "Vardiyalar" },
-  { key: "link", label: "Bağlantı" },
+  { key: "link", label: "Bağlı Araç" },
 ];
 
 function fmtTR(dt) {
@@ -127,9 +128,7 @@ export default function DriversPanel() {
     backupDriverId: "",
   });
 
-  // Link tab (driver -> vehicle selection)
   const [focusDriverId, setFocusDriverId] = useState(0);
-  const [selVehicleId, setSelVehicleId] = useState("");
 
   function clearStatusColumnFilters() {
     setStatusColFilter({
@@ -470,79 +469,6 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
     }
   }
 
-  // Bind / Unbind uses vehicle endpoint
-  async function bindDriverToVehicle(driverId, vehicleId) {
-    const bv = boundVehicleByDriverId.get(Number(driverId)) ?? null;
-    const target = vehicles.find((x) => Number(x.id) === Number(vehicleId));
-
-    if (!target) {
-      setErr("Seçilen araç bulunamadı");
-      return;
-    }
-    if (target.archivedAt) {
-      setErr("Arşivli araçta işlem yapılamaz");
-      return;
-    }
-
-    // if target vehicle already has a different driver, overwrite warning
-    const existingDriverId = target.driverId ?? target.driver?.id ?? null;
-    if (existingDriverId && Number(existingDriverId) !== Number(driverId)) {
-      const ok = window.confirm(`Bu araç zaten başka sürücüye bağlı (#${existingDriverId}). Üzerine yazılsın mı?`);
-      if (!ok) return;
-    }
-
-    setBusy(true);
-    setErr("");
-    try {
-      // If driver currently bound to a different vehicle, detach first
-      if (bv && Number(bv.id) !== Number(vehicleId)) {
-        await api(`/api/vehicles/${bv.id}/bind-driver`, {
-          method: "PUT",
-          token,
-          body: { driverId: null },
-        });
-      }
-
-      await api(`/api/vehicles/${vehicleId}/bind-driver`, {
-        method: "PUT",
-        token,
-        body: { driverId: Number(driverId) },
-      });
-
-      showToast("Bağlandı");
-      await load();
-    } catch (e) {
-      setErr(getErrMsg(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function unbindDriver(driverId) {
-    const bv = boundVehicleByDriverId.get(Number(driverId)) ?? null;
-    if (!bv) {
-      setErr("Bu sürücünün bağlı aracı yok");
-      return;
-    }
-
-    setBusy(true);
-    setErr("");
-    try {
-      await api(`/api/vehicles/${bv.id}/bind-driver`, {
-        method: "PUT",
-        token,
-        body: { driverId: null },
-      });
-
-      showToast("Bağlantı kaldırıldı", "warn");
-      await load();
-    } catch (e) {
-      setErr(getErrMsg(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const focusDriver = useMemo(
     () => drivers.find((x) => Number(x.id) === Number(focusDriverId)) ?? null,
     [drivers, focusDriverId]
@@ -568,7 +494,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         { label: 'Bölge', value: formatRegionOwnership(focusDriver?.regionOwnership), help: 'Sürücünün bağlı olduğu il / ilçe bilgisini gösterir.' },
         { label: 'Bağlı Araç', value: boundVehicle?.plate || '-', help: 'Sürücüye bağlı aracı gösterir.' },
         { label: 'Atama', value: ops?.assignmentState || '-', help: 'Sürücünün atama durumunu gösterir.' },
-        { label: 'Bağlantı', value: ops?.connectionState || '-', help: 'Sürücünün bağlantı durumunu gösterir.' },
+        { label: 'Eşleşme', value: ops?.connectionState || '-', help: 'Sürücünün araç eşleşme durumunu gösterir.' },
       ],
       badges: [
         { label: 'GPS', value: ops?.gpsUiState || '-', help: 'GPS görünürlüğünü gösterir.' },
@@ -647,7 +573,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           <div className="panelMeta" style={{ marginTop: 6 }}>Canlı: {driverSummary.live} • Bağlı: {driverSummary.bound}</div>
         </div>
         <div className="card">
-          <div className="muted">Bağlantı / GPS</div>
+          <div className="muted">Eşleşme / GPS</div>
           <div style={{ fontWeight: 800, marginTop: 4 }}>{focusOps?.connectionLabel || "Bekleniyor"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>GPS: {focusOps?.gpsLabel || "-"}</div>
         </div>
@@ -692,7 +618,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
 
           <div>
-            <label className="muted">Bağlantı</label>
+            <label className="muted">Eşleşme</label>
             <select value={boundFilter} onChange={(e) => setBoundFilter(e.target.value)} disabled={busy}>
               <option value="ALL">Hepsi</option>
               <option value="BOUND">Bağlı</option>
@@ -865,7 +791,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                               setTab("link");
                             }}
                           >
-                            Bağlantı
+                            Bağlı Araç
                           </button>
                         </td>
                       </tr>
@@ -875,7 +801,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
               </table>
 
               <div className="muted" style={{ marginTop: 8 }}>
-                Not: Bağlantı ve görev bilgisi sürücü özetinden, GPS bilgisi ise araç telematiğinden türetilir.
+                Not: Eşleşme ve görev bilgisi sürücü özetinden, GPS bilgisi ise araç telematiğinden türetilir.
               </div>
             </div>
           </div>
@@ -896,35 +822,23 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         />
       ) : null}
 
-      {/* BAĞLANTI */}
+      {/* BAĞLI ARAÇ */}
       {tab === "link" ? (
         <CollapsibleSection
-          title="Bağlantı detayları"
-          subtitle="Sürücü ↔ araç eşleme ve vardiya bağlamı."
+          title="Bağlı araç özeti"
+          subtitle="Sürücü için bağlı araç yalnızca okunur; yönetim Araçlar ekranında yapılır."
           badge={focusDriverId ? `#${focusDriverId}` : "0"}
           defaultOpen={false}
         >
         <div className="card">
-          <h3>Bağlantı (Sürücü ↔ Araç)</h3>
+          <h3>Bağlı Araç (Sürücü ↔ Araç)</h3>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
             <div>
-              <label className="muted">Sürücü</label>
-              <select
-                value={String(focusDriverId || "")}
-                onChange={(e) => setFocusDriverId(Number(e.target.value || 0))}
-                disabled={busy}
-                style={{ width: "100%" }}
-              >
-                {drivers.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.fullName} (#{d.id})
-                  </option>
-                ))}
-              </select>
-
+              <div className="muted">Seçili sürücü</div>
+              <div style={{ fontWeight: 900, marginTop: 6 }}>{focusDriver?.fullName || "-"}</div>
               <div className="muted" style={{ marginTop: 10 }}>
-                Mevcut araç: <b>{focusVehicle?.plate || "-"}</b>{" "}
+                Bağlı araç: <b>{focusVehicle?.plate || "-"}</b>{" "}
                 {focusStat ? (
                   <span className="pill" data-status={focusStat.pillKey} style={{ marginLeft: 8 }}>
                     {focusStat.ui}
@@ -932,51 +846,16 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                 ) : null}
               </div>
 
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" disabled={busy || !focusDriverId || !focusVehicle} onClick={() => unbindDriver(focusDriverId)}>
-                  Ayır
-                </button>
-              </div>
-
               <div className="muted" style={{ marginTop: 10 }}>
                 Current: {focusCurNext.current ? `${focusCurNext.current.company?.name || "-"} • ${fmtTR(focusCurNext.current.startAt)}–${fmtTR(focusCurNext.current.endAt)}` : "-"}
                 <br />
                 Next: {focusCurNext.next ? `${focusCurNext.next.company?.name || "-"} • ${fmtTR(focusCurNext.next.startAt)}–${fmtTR(focusCurNext.next.endAt)}` : "-"}
               </div>
-            </div>
-
-            <div className="card" style={{ margin: 0 }}>
-              <h3 style={{ marginTop: 0 }}>Yeni Araç Seç</h3>
-
-              <label className="muted">Araç</label>
-              <select
-                value={selVehicleId}
-                onChange={(e) => setSelVehicleId(e.target.value)}
-                disabled={busy}
-                style={{ width: "100%" }}
-              >
-                <option value="">— araç seç —</option>
-                {vehicles
-                  .filter((v) => !v.archivedAt)
-                  .map((v) => (
-                    <option key={v.id} value={String(v.id)}>
-                      {v.plate} (#{v.id}) {v.driverId ? `• bağlı (#${v.driverId})` : ""}
-                    </option>
-                  ))}
-              </select>
 
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  disabled={busy || !focusDriverId || !selVehicleId}
-                  onClick={() => bindDriverToVehicle(focusDriverId, Number(selVehicleId))}
-                >
-                  Bağla
+                <button type="button" className="btn" onClick={() => navigate("/room/vehicles")}>
+                  Araç bağlantısını Araçlar ekranında yönet
                 </button>
-              </div>
-
-              <div className="muted" style={{ marginTop: 10 }}>
-                Not: Seçtiğin araç başka sürücüye bağlıysa uyarı verip üzerine yazdırır.
               </div>
             </div>
           </div>

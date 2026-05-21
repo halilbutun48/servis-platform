@@ -247,12 +247,18 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     if (tab === "manage") load({ includeArchived: showArchived });
   }, [showArchived, tab]); // eslint-disable-line
 
-  // ✅ Mini polish: Link tabına girince (ve link tabındayken araç değişince) driver seçimini temizle
+  // ✅ Mini polish: Link tabına girince seçili aracın mevcut sürücüsünü önceden doldur
   useEffect(() => {
     if (tab !== "link") return;
     if (!focusVehicleId) return;
-    setBindSel((p) => ({ ...p, [focusVehicleId]: "" }));
-  }, [tab, focusVehicleId]);
+    const currentVehicle = items.find((x) => Number(x?.id) === Number(focusVehicleId)) || null;
+    const nextDriverId = Number(currentVehicle?.driver?.id || currentVehicle?.driverId || 0);
+    setBindSel((p) => {
+      const nextValue = nextDriverId ? String(nextDriverId) : "";
+      if (String(p?.[focusVehicleId] || "") === nextValue) return p;
+      return { ...p, [focusVehicleId]: nextValue };
+    });
+  }, [tab, focusVehicleId, items]);
 
 
   async function createVehicle(e) {
@@ -378,7 +384,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     setCopilotSelection(buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, focusHasDriver, ui }));
   }, [focusVehicle, focusDriverLabel, focusHasDriver]);
 
-  const selectedDriverId = Number(bindSel?.[focusVehicleId] || 0);
+  const selectedDriverId = Number(bindSel?.[focusVehicleId] || focusDriverId || 0);
   const selectedBound = selectedDriverId ? driverBoundMap.get(selectedDriverId) : null;
   const selectedBoundOther =
     selectedBound && Number(selectedBound.vehicleId) !== Number(focusVehicleId);
@@ -967,7 +973,7 @@ async function checkAvailabilityAll(onlySelected = false) {
       {/* BAĞLANTI */}
       {tab === "link" ? (
         <CollapsibleSection
-          title="Bağlantı detayları"
+          title="Araç bağlantısı detayları"
           subtitle="Sürücü eşleme, transfer ve ayırma akışı."
           badge={focusHasDriver ? "aktif" : "boş"}
           defaultOpen

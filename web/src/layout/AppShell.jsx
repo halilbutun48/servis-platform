@@ -28,10 +28,10 @@ export default function AppShell({ path, children }) {
           <div className="shellTopMeta">
             <div className="title">{BRAND_NAME}</div>
             <div className="muted">
-              {isSchool ? "Okul operasyonu" : isOrganization ? "Organizasyon operasyonu" : "Personel servis operasyonu"}
+              {isSchool ? "Okul operasyonu" : isOrganization ? "Kurum operasyonu" : "Personel servis operasyonu"}
             </div>
             <div className="muted">
-              {me?.email || "-"} • {isSchool ? "SCHOOL" : isOrganization ? "ORGANIZATION" : role}
+              {me?.email || "-"} • {isSchool ? "OKUL" : isOrganization ? "KURUM" : role}
             </div>
           </div>
           <button className="btn sm shellTopLogout" onClick={logout}>

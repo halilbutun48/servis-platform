@@ -51,7 +51,7 @@ export default function AgreementOpsBridgeCard({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
         <div><div className="muted">Araç</div><div style={{ fontWeight: 800 }}>{vehicleLabel}</div></div>
         <div><div className="muted">Sürücü</div><div style={{ fontWeight: 800 }}>{driverLabel}</div></div>
-        <div><div className="muted">Hub</div><div style={{ fontWeight: 800 }}>{hubText}</div></div>
+        <div><div className="muted">Toplanma Konumu</div><div style={{ fontWeight: 800 }}>{hubText}</div></div>
         <div><div className="muted">Plan</div><div style={{ fontWeight: 800 }}>{weekMaskToText(agreement?.weekMask) || "-"}</div></div>
       </div>
 

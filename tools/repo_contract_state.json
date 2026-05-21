@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  6,
-    "currentWarningHotFileCount":  7,
+    "currentWarningHotFileCount":  6,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -164,10 +164,6 @@
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "room agreement bridge panel; controlled cleanup adayi"
                                                                                                  },
-                                                       "web/src/panels/room/DriversPanel.jsx":  {
-                                                                                                   "class":  "safe-candidate-review",
-                                                                                                   "note":  "driver roster hot path; controlled cleanup adayi"
-                                                                                               },
                                                        "web/src/panels/room/VehiclesPanel.jsx":  {
                                                                                                    "class":  "safe-candidate-review",
                                                                                                    "note":  "vehicle roster hot path; controlled cleanup adayi"

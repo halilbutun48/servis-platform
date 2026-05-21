@@ -1,6 +1,6 @@
 import { CompanyFinalListRow, CompanyMarketRow, CompanyPendingRow } from "./companyShiftsPanelRows";
 import { CompanyDriverDetailGrid, CompanyOfferDecisionCard, CompanyOfferRoomCard, CompanyVehicleDetailGrid, OfferSignalPill } from "./companyShiftsPanelCards";
-import { CompanyAccordionHeader, CompanyFinalListFilters, CompanyMarketFilters, CompanyPendingFilters } from "./companyShiftsPanelFilters";
+import { CompanyAccordionHeader, CompanyMarketFilters, CompanyPendingFilters, CompanyStatusFilters } from "./companyShiftsPanelFilters";
 
 export { AgreementBadge } from "./companyShiftsPanelRows";
 
@@ -198,7 +198,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
             checked={offerModal.onlyHub}
             onChange={(e) => onChange({ onlyHub: e.target.checked })}
           />
-          Sadece hub’lı
+          Sadece konumlu
         </label>
       </div>
 
@@ -253,7 +253,6 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
 
 
 export function CompanyMarketSection({
-  trackTab,
   sectionRef,
   accOpen,
   onSetOpen,
@@ -273,7 +272,7 @@ export function CompanyMarketSection({
   computePackageShiftIds,
 }) {
   return (
-    <div className="card" ref={sectionRef} style={{ display: trackTab === "market" ? "block" : "none" }}>
+    <div className="card" ref={sectionRef} role="tabpanel" aria-label="Market">
       <CompanyAccordionHeader
         title="Market Shifts"
         count={marketItems.length}
@@ -328,7 +327,6 @@ export function CompanyMarketSection({
 }
 
 export function CompanyPendingSection({
-  trackTab,
   sectionRef,
   accOpen,
   onSetOpen,
@@ -340,8 +338,6 @@ export function CompanyPendingSection({
   onClearFocus,
   pendingOnlyRoomOffer,
   onChangePendingOnlyRoomOffer,
-  onlyAgreement,
-  onChangeOnlyAgreement,
   busy,
   copilotShiftId,
   onFocusShift,
@@ -358,11 +354,11 @@ export function CompanyPendingSection({
   onConvertShiftToAgreement,
 }) {
   return (
-    <div className="card" ref={sectionRef} style={{ display: trackTab === "pending" ? "block" : "none" }}>
+    <div className="card" ref={sectionRef} role="tabpanel" aria-label="Bekleyen">
       <CompanyAccordionHeader
         title="Bekleyen Talepler"
         count={pendingItems.length}
-        description="Pazarlık/karar tamamlanmadan “Liste”ye düşmez."
+        description="Pazarlık / karar tamamlanmadan diğer tablara düşmez."
         accOpen={accOpen}
         onOpen={() => onSetOpen(true)}
         onClose={() => onSetOpen(false)}
@@ -378,8 +374,6 @@ export function CompanyPendingSection({
             onClearFocus={onClearFocus}
             pendingOnlyRoomOffer={pendingOnlyRoomOffer}
             onChangePendingOnlyRoomOffer={onChangePendingOnlyRoomOffer}
-            onlyAgreement={onlyAgreement}
-            onChangeOnlyAgreement={onChangeOnlyAgreement}
             busy={busy}
           />
 
@@ -422,19 +416,18 @@ export function CompanyPendingSection({
   );
 }
 
-export function CompanyFinalListSection({
-  trackTab,
+function CompanyStatusListSection({
   sectionRef,
   accOpen,
   onSetOpen,
   onToggle,
-  finalItems,
-  finalStatus,
-  onChangeFinalStatus,
-  finalQ,
-  onChangeFinalQ,
-  onlyAgreement,
-  onChangeOnlyAgreement,
+  title,
+  description,
+  items,
+  status,
+  onChangeStatus,
+  q,
+  onChangeQ,
   onClearFilters,
   busy,
   copilotShiftId,
@@ -450,13 +443,15 @@ export function CompanyFinalListSection({
   onOpenPreview,
   onOpenOpsEvents,
   onConvertShiftToAgreement,
+  emptyLabel,
+  searchPlaceholder,
 }) {
   return (
-    <div className="card" ref={sectionRef} style={{ display: trackTab === "list" ? "block" : "none" }}>
+    <div className="card" ref={sectionRef} role="tabpanel" aria-label={title}>
       <CompanyAccordionHeader
-        title="Liste"
-        count={finalItems.length}
-        description="Burada yalnız kabul edilen / aktif / tamamlanan / reddedilen vardiyalar görünür."
+        title={title}
+        count={items.length}
+        description={description}
         accOpen={accOpen}
         onOpen={() => onSetOpen(true)}
         onClose={() => onSetOpen(false)}
@@ -465,17 +460,16 @@ export function CompanyFinalListSection({
 
       {accOpen ? (
         <div style={{ marginTop: 10 }}>
-          <CompanyFinalListFilters
-            finalStatus={finalStatus}
-            onChangeFinalStatus={onChangeFinalStatus}
-            finalQ={finalQ}
-            onChangeFinalQ={onChangeFinalQ}
-            onlyAgreement={onlyAgreement}
-            onChangeOnlyAgreement={onChangeOnlyAgreement}
+          <CompanyStatusFilters
+            status={status}
+            onChangeStatus={onChangeStatus}
+            q={q}
+            onChangeQ={onChangeQ}
             onClearFilters={onClearFilters}
+            searchPlaceholder={searchPlaceholder}
           />
 
-          {finalItems.length ? (
+          {items.length ? (
             <table className="tbl" style={{ marginTop: 10 }}>
               <thead>
                 <tr>
@@ -483,7 +477,7 @@ export function CompanyFinalListSection({
                 </tr>
               </thead>
               <tbody>
-                {finalItems.map((shift) => (
+                {items.map((shift) => (
                   <CompanyFinalListRow
                     key={shift.id}
                     shift={shift}
@@ -506,10 +500,134 @@ export function CompanyFinalListSection({
               </tbody>
             </table>
           ) : (
-            <div className="muted">Henüz “Liste”ye düşen kayıt yok.</div>
+            <div className="muted">{emptyLabel}</div>
           )}
         </div>
       ) : null}
     </div>
   );
+}
+
+export function CompanyContractSection({
+  sectionRef,
+  accOpen,
+  onSetOpen,
+  onToggle,
+  contractItems,
+  contractStatus,
+  onChangeContractStatus,
+  contractQ,
+  onChangeContractQ,
+  onClearFilters,
+  busy,
+  copilotShiftId,
+  onFocusShift,
+  roomsById,
+  agreementConversionByShift,
+  renderRoomOfferSummary,
+  renderCompanyOfferSummary,
+  fmtTR,
+  onOpenVehicleDetail,
+  onOpenDriverDetail,
+  onOpenExtendModal,
+  onOpenPreview,
+  onOpenOpsEvents,
+  onConvertShiftToAgreement,
+}) {
+  return (
+    <CompanyStatusListSection
+      sectionRef={sectionRef}
+      accOpen={accOpen}
+      onSetOpen={onSetOpen}
+      onToggle={onToggle}
+      title="Sözleşmeden Üretilen"
+      description="Agreement / contract bağlantılı vardiyalar."
+      items={contractItems}
+      status={contractStatus}
+      onChangeStatus={onChangeContractStatus}
+      q={contractQ}
+      onChangeQ={onChangeContractQ}
+      onClearFilters={onClearFilters}
+      busy={busy}
+      copilotShiftId={copilotShiftId}
+      onFocusShift={onFocusShift}
+      roomsById={roomsById}
+      agreementConversionByShift={agreementConversionByShift}
+      renderRoomOfferSummary={renderRoomOfferSummary}
+      renderCompanyOfferSummary={renderCompanyOfferSummary}
+      fmtTR={fmtTR}
+      onOpenVehicleDetail={onOpenVehicleDetail}
+      onOpenDriverDetail={onOpenDriverDetail}
+      onOpenExtendModal={onOpenExtendModal}
+      onOpenPreview={onOpenPreview}
+      onOpenOpsEvents={onOpenOpsEvents}
+      onConvertShiftToAgreement={onConvertShiftToAgreement}
+      emptyLabel="Sözleşmeden üretilen vardiya yok."
+      searchPlaceholder="Ara (id / durum / plaka / sürücü / not)"
+    />
+  );
+}
+
+export function CompanyOtherSection({
+  sectionRef,
+  accOpen,
+  onSetOpen,
+  onToggle,
+  otherItems,
+  otherStatus,
+  onChangeOtherStatus,
+  otherQ,
+  onChangeOtherQ,
+  onClearFilters,
+  busy,
+  copilotShiftId,
+  onFocusShift,
+  roomsById,
+  agreementConversionByShift,
+  renderRoomOfferSummary,
+  renderCompanyOfferSummary,
+  fmtTR,
+  onOpenVehicleDetail,
+  onOpenDriverDetail,
+  onOpenExtendModal,
+  onOpenPreview,
+  onOpenOpsEvents,
+  onConvertShiftToAgreement,
+}) {
+  return (
+    <CompanyStatusListSection
+      sectionRef={sectionRef}
+      accOpen={accOpen}
+      onSetOpen={onSetOpen}
+      onToggle={onToggle}
+      title="Diğer Vardiyalar"
+      description="Sözleşmeye bağlı olmayan manuel / guided / normal vardiyalar."
+      items={otherItems}
+      status={otherStatus}
+      onChangeStatus={onChangeOtherStatus}
+      q={otherQ}
+      onChangeQ={onChangeOtherQ}
+      onClearFilters={onClearFilters}
+      busy={busy}
+      copilotShiftId={copilotShiftId}
+      onFocusShift={onFocusShift}
+      roomsById={roomsById}
+      agreementConversionByShift={agreementConversionByShift}
+      renderRoomOfferSummary={renderRoomOfferSummary}
+      renderCompanyOfferSummary={renderCompanyOfferSummary}
+      fmtTR={fmtTR}
+      onOpenVehicleDetail={onOpenVehicleDetail}
+      onOpenDriverDetail={onOpenDriverDetail}
+      onOpenExtendModal={onOpenExtendModal}
+      onOpenPreview={onOpenPreview}
+      onOpenOpsEvents={onOpenOpsEvents}
+      onConvertShiftToAgreement={onConvertShiftToAgreement}
+      emptyLabel="Diğer vardiya yok."
+      searchPlaceholder="Ara (id / durum / plaka / sürücü / not)"
+    />
+  );
+}
+
+export function CompanyFinalListSection(props) {
+  return CompanyOtherSection(props);
 }

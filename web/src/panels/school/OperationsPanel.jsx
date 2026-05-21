@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import PanelChrome from "../../components/PanelChrome";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import { displayStatusLabel } from "../../utils/displayStatus";
@@ -59,6 +60,7 @@ export default function SchoolOperationsPanel() {
   const [notifications, setNotifications] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [activeTab, setActiveTab] = useState("summary");
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -110,6 +112,7 @@ export default function SchoolOperationsPanel() {
         inviteStatus: latestInvite?.status || "-",
         inviteCount: siblingInviteCount,
         expiresAt: latestInvite?.expiresAt || null,
+        boardingStatus: student.geoStatus || student.status || "-",
         note: [student.status, student.geoStatus].filter(Boolean).join(" • ") || "-",
       };
     }),
@@ -141,6 +144,24 @@ export default function SchoolOperationsPanel() {
     [riskRequestRows]
   );
 
+  const tabItems = useMemo(() => ([
+    { key: "summary", label: "Özet" },
+    { key: "students", label: "Öğrenci Servisleri", badge: studentRows.length },
+    { key: "parent", label: "Veli & Bildirimler", badge: inviteRows.length + parentNotificationRows.length },
+    { key: "exceptions", label: "İstisnalar / Günlük Değişiklikler", badge: noBoardRows.length + diffStopRows.length + riskRequestRows.length },
+    { key: "proof", label: "Kanıt / Check-in" },
+    { key: "history", label: "Geçmiş", badge: notifRows.length + requestRows.length },
+  ]), [
+    diffStopRows.length,
+    inviteRows.length,
+    noBoardRows.length,
+    notifRows.length,
+    parentNotificationRows.length,
+    requestRows.length,
+    riskRequestRows.length,
+    studentRows.length,
+  ]);
+
   if (me?.companyKind !== "SCHOOL") {
     return <div className="card err">Bu panel yalnızca SCHOOL scope için görünür.</div>;
   }
@@ -149,23 +170,18 @@ export default function SchoolOperationsPanel() {
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
         title="Okul Operasyon Paneli"
-        subtitle="Öğrenci servis atamaları, veli bağlantıları ve biniş değişikliği özetini tek yerde okur."
+        subtitle="Öğrenci servisleri, veli bağlantıları ve günlük istisnaları summary-first biçimde okur."
         actions={(
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className="btn sm" onClick={load} disabled={busy}>{busy ? "..." : "Yenile"}</button>
             <button className="btn sm" onClick={() => navigate("/school/parents")}>Veli Erişimi</button>
-            <button className="btn sm" onClick={() => navigate("/school/checkin")}>Check-in</button>
-            <button className="btn sm" onClick={() => navigate("/shared/notifications")}>Bildirimler</button>
+            <button className="btn sm" onClick={() => setActiveTab("proof")}>Check-in</button>
+            <button className="btn sm" onClick={() => setActiveTab("parent")}>Bildirimler</button>
           </div>
         )}
       />
 
       {err ? <div className="card err">{err}</div> : null}
-
-      <OperationProofMiniCard
-        manualNoteScopeType="SERVICE"
-        manualNoteScopeId="school-operations"
-      />
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Öğrenci servis atamaları" value={metricValue(students.length)} note="Öğrenci envanteri" />
@@ -176,136 +192,255 @@ export default function SchoolOperationsPanel() {
         <MiniStat title="Veli bildirim geçmişi" value={metricValue(parentNotificationRows.length)} note="Son kayıtlar" />
       </div>
 
-      <SectionCard title="Öğrenci servis atamaları" subtitle="Öğrenci listesi ve son erişim / bağlantı özeti">
-        <div style={{ overflowX: "auto" }}>
-          <table className="tbl" style={{ whiteSpace: "nowrap" }}>
-            <thead>
-              <tr>
-                <th>Öğrenci</th>
-                <th>Veli bağlantısı</th>
-                <th>Durum</th>
-                <th>Bitiş</th>
-                <th>Not</th>
-              </tr>
-            </thead>
-            <tbody>
-              {studentRows.length ? studentRows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.name}</td>
-                  <td>{row.inviteCount} bağlantı</td>
-                  <td>{displayStatusLabel(row.inviteStatus)}</td>
-                  <td>{fmtTR(row.expiresAt)}</td>
-                  <td>{row.note}</td>
-                </tr>
-              )) : <tr><td colSpan={5} className="muted">Öğrenci kaydı bulunamadı.</td></tr>}
-            </tbody>
-          </table>
+      <PanelSegmentTabs
+        ariaLabel="Okul Operasyon Paneli bölümleri"
+        tabs={tabItems}
+        value={activeTab}
+        onChange={setActiveTab}
+      />
+
+      {activeTab === "summary" ? (
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+          <SectionCard title="Sıradaki doğru kontrol" subtitle="Önce en sıcak sinyali okur, sonra ilgili sekmeye geçersin">
+            <div style={{ display: "grid", gap: 8 }}>
+              <div className="card" style={{ padding: 10, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700 }}>Bugün binmeyecek öğrenciler</div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>{noBoardRows[0]?.title || "Kayıt yok"}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{noBoardRows[0]?.message || "Canlı sinyal bekleniyor."}</div>
+              </div>
+              <div className="card" style={{ padding: 10, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700 }}>Farklı duraktan binecek öğrenciler</div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>{diffStopRows[0]?.title || "Kayıt yok"}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{diffStopRows[0]?.message || "Durak farkı bildirimi yok."}</div>
+              </div>
+              <div className="card" style={{ padding: 10, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700 }}>Son bildirim</div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>{parentNotificationRows[0]?.title || "Kayıt yok"}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{parentNotificationRows[0]?.message || "Bildirim akışı bekleniyor."}</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" className="btn sm" onClick={() => setActiveTab("students")}>Öğrenci Servisleri</button>
+                <button type="button" className="btn sm" onClick={() => setActiveTab("parent")}>Veli & Bildirimler</button>
+                <button type="button" className="btn sm" onClick={() => setActiveTab("exceptions")}>İstisnalar</button>
+                <button type="button" className="btn sm" onClick={() => setActiveTab("proof")}>Kanıt / Check-in</button>
+              </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Canlı bağlam" subtitle="Seçili kayıt yoksa en güncel özet görünür">
+            <div style={{ display: "grid", gap: 8 }}>
+              <div className="card" style={{ padding: 10, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700 }}>Öğrenci</div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>{studentRows[0]?.name || "Kayıt yok"}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{studentRows[0]?.note || "Öğrenci bağlamı bekleniyor."}</div>
+              </div>
+              <div className="card" style={{ padding: 10, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700 }}>Veli bağlantısı</div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>{inviteRows[0]?.child || "Kayıt yok"}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{inviteRows[0]?.status ? displayStatusLabel(inviteRows[0].status) : "Bağlantı bekleniyor."}</div>
+              </div>
+              <div className="card" style={{ padding: 10, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700 }}>Operasyon isteği</div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>{requestRows[0]?.personel || "Kayıt yok"}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{requestRows[0]?.detail || "İstek akışı bekleniyor."}</div>
+              </div>
+            </div>
+          </SectionCard>
         </div>
-      </SectionCard>
+      ) : null}
 
-      <SectionCard title="Veli bağlantıları" subtitle="Geçerli ve geçmiş erişim kayıtları">
-        <div style={{ overflowX: "auto" }}>
-          <table className="tbl" style={{ whiteSpace: "nowrap" }}>
-            <thead>
-              <tr>
-                <th>Öğrenci</th>
-                <th>Durum</th>
-                <th>Oluşturma</th>
-                <th>Bitiş</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inviteRows.length ? inviteRows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.child}</td>
-                  <td>{displayStatusLabel(row.status)}</td>
-                  <td>{fmtTR(row.createdAt)}</td>
-                  <td>{fmtTR(row.expiresAt)}</td>
+      {activeTab === "students" ? (
+        <SectionCard title="Öğrenci servisleri" subtitle="Öğrenci servis atamaları ve kısa biniş özeti">
+          <div style={{ overflowX: "auto" }}>
+            <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+              <thead>
+                <tr>
+                  <th>Öğrenci</th>
+                  <th>Veli bağlantısı</th>
+                  <th>Durum</th>
+                  <th>Biniş</th>
+                  <th>Not</th>
                 </tr>
-              )) : <tr><td colSpan={4} className="muted">Henüz veli bağlantısı yok.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-        <SectionCard title="Bugün binmeyecek öğrenciler" subtitle="Bugün servise binmeyeceği bildirilen kayıtlar">
-          <div style={{ display: "grid", gap: 8 }}>
-            {noBoardRows.length ? noBoardRows.slice(0, 5).map((row) => (
-              <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
-                <div style={{ fontWeight: 700 }}>{row.title}</div>
-                <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
-              </div>
-            )) : <div className="muted">Bugün binmeyeceğini bildiren öğrenci kaydı yok.</div>}
+              </thead>
+              <tbody>
+                {studentRows.length ? studentRows.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.name}</td>
+                    <td>{row.inviteCount} bağlantı</td>
+                    <td>{displayStatusLabel(row.inviteStatus)}</td>
+                    <td>{displayStatusLabel(row.boardingStatus)}</td>
+                    <td>{row.note}</td>
+                  </tr>
+                )) : <tr><td colSpan={5} className="muted">Öğrenci kaydı bulunamadı.</td></tr>}
+              </tbody>
+            </table>
           </div>
         </SectionCard>
+      ) : null}
 
-        <SectionCard title="Farklı duraktan binecek öğrenciler" subtitle="Onaylı veya bekleyen durak değişikliği sinyalleri">
-          <div style={{ display: "grid", gap: 8 }}>
-            {diffStopRows.length ? diffStopRows.slice(0, 5).map((row) => (
-              <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
-                <div style={{ fontWeight: 700 }}>{row.title}</div>
-                <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
-              </div>
-            )) : <div className="muted">Farklı durak kaydı yok.</div>}
-          </div>
-        </SectionCard>
+      {activeTab === "parent" ? (
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+          <SectionCard title="Veli bağlantıları" subtitle="Geçerli ve geçmiş erişim kayıtları">
+            <div style={{ overflowX: "auto" }}>
+              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+                <thead>
+                  <tr>
+                    <th>Öğrenci</th>
+                    <th>Durum</th>
+                    <th>Oluşturma</th>
+                    <th>Bitiş</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inviteRows.length ? inviteRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.child}</td>
+                      <td>{displayStatusLabel(row.status)}</td>
+                      <td>{fmtTR(row.createdAt)}</td>
+                      <td>{fmtTR(row.expiresAt)}</td>
+                    </tr>
+                  )) : <tr><td colSpan={4} className="muted">Henüz veli bağlantısı yok.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
 
-        <SectionCard title="Servise bindi / okula ulaştı" subtitle="Canlı durum bildirimleri">
-          <div style={{ display: "grid", gap: 8 }}>
-            {boardedRows.length ? boardedRows.slice(0, 5).map((row) => (
-              <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
-                <div style={{ fontWeight: 700 }}>{row.title}</div>
-                <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
-              </div>
-            )) : <div className="muted">Servise bindi / okula ulaştı kaydı yok.</div>}
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Veli bildirim geçmişi" subtitle="Son bildirimler ve kayıt akışı">
-          <div style={{ display: "grid", gap: 8 }}>
-            {parentNotificationRows.length ? parentNotificationRows.map((row) => (
-              <div key={row.id} className="card" style={{ padding: 10, borderRadius: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                  <div style={{ fontWeight: 700 }}>{row.title}</div>
-                  <span className="pill" data-status={row.kind || "COUNT"}>{row.kind || "-"}</span>
+          <SectionCard title="Bildirim özeti" subtitle="Son veli bildirimleri ve canlı servis sinyalleri">
+            <div style={{ display: "grid", gap: 8 }}>
+              {parentNotificationRows.slice(0, 3).length ? parentNotificationRows.slice(0, 3).map((row) => (
+                <div key={row.id} className="card" style={{ padding: 10, borderRadius: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ fontWeight: 700 }}>{row.title}</div>
+                    <span className="pill" data-status={row.kind || "COUNT"}>{row.kind || "-"}</span>
+                  </div>
+                  <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
+                  <div className="panelMeta" style={{ marginTop: 4 }}>{fmtTR(row.at)}</div>
                 </div>
-                <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
-                <div className="panelMeta" style={{ marginTop: 4 }}>{fmtTR(row.at)}</div>
-              </div>
-            )) : <div className="muted">Veli bildirim geçmişi boş görünüyor.</div>}
-          </div>
-        </SectionCard>
-      </div>
+              )) : <div className="muted">Son veli bildirimi yok.</div>}
 
-      <SectionCard title="Riskli / onay bekleyen istekler" subtitle="Konumlu veya açık biniş değişikliği kayıtları">
-        <div style={{ overflowX: "auto" }}>
-          <table className="tbl" style={{ whiteSpace: "nowrap" }}>
-            <thead>
-              <tr>
-                <th>Kişi</th>
-                <th>Shift</th>
-                <th>Durum</th>
-                <th>Tür</th>
-                <th>Karar</th>
-                <th>Zaman</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requestRows.length ? requestRows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.personel}</td>
-                  <td>#{row.shift}</td>
-                  <td>{displayStatusLabel(row.status)}</td>
-                  <td>{row.kind}</td>
-                  <td>{row.decision}</td>
-                  <td>{fmtTR(row.createdAt)}</td>
-                </tr>
-              )) : <tr><td colSpan={6} className="muted">Riskli istek yok.</td></tr>}
-            </tbody>
-          </table>
+              <div style={{ marginTop: 6, fontWeight: 700 }}>Servise bindi / okula ulaştı</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {boardedRows.length ? boardedRows.slice(0, 4).map((row) => (
+                  <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
+                    <div style={{ fontWeight: 700 }}>{row.title}</div>
+                    <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
+                  </div>
+                )) : <div className="muted">Servise bindi / okula ulaştı kaydı yok.</div>}
+              </div>
+            </div>
+          </SectionCard>
         </div>
-      </SectionCard>
+      ) : null}
+
+      {activeTab === "exceptions" ? (
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          <SectionCard title="Bugün binmeyecek öğrenciler" subtitle="Bugün servise binmeyeceği bildirilen kayıtlar">
+            <div style={{ display: "grid", gap: 8 }}>
+              {noBoardRows.length ? noBoardRows.slice(0, 5).map((row) => (
+                <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
+                  <div style={{ fontWeight: 700 }}>{row.title}</div>
+                  <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
+                </div>
+              )) : <div className="muted">Bugün binmeyeceğini bildiren öğrenci kaydı yok.</div>}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Farklı duraktan binecek öğrenciler" subtitle="Onaylı veya bekleyen durak değişikliği sinyalleri">
+            <div style={{ display: "grid", gap: 8 }}>
+              {diffStopRows.length ? diffStopRows.slice(0, 5).map((row) => (
+                <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
+                  <div style={{ fontWeight: 700 }}>{row.title}</div>
+                  <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
+                </div>
+              )) : <div className="muted">Farklı durak kaydı yok.</div>}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Riskli / onay bekleyen istekler" subtitle="Konumlu veya açık biniş değişikliği kayıtları">
+            <div style={{ overflowX: "auto" }}>
+              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+                <thead>
+                  <tr>
+                    <th>Kişi</th>
+                    <th>Shift</th>
+                    <th>Durum</th>
+                    <th>Tür</th>
+                    <th>Karar</th>
+                    <th>Zaman</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requestRows.length ? requestRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.personel}</td>
+                      <td>#{row.shift}</td>
+                      <td>{displayStatusLabel(row.status)}</td>
+                      <td>{row.kind}</td>
+                      <td>{row.decision}</td>
+                      <td>{fmtTR(row.createdAt)}</td>
+                    </tr>
+                  )) : <tr><td colSpan={6} className="muted">Riskli istek yok.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        </div>
+      ) : null}
+
+      {activeTab === "proof" ? (
+        <OperationProofMiniCard
+          manualNoteScopeType="SERVICE"
+          manualNoteScopeId="school-operations"
+        />
+      ) : null}
+
+      {activeTab === "history" ? (
+        <div style={{ display: "grid", gap: 12 }}>
+          <SectionCard title="Geçmiş servis hareketleri" subtitle="Son veli bildirimleri ve sinyal akışı">
+            <div style={{ display: "grid", gap: 8 }}>
+              {notifRows.length ? notifRows.slice(0, 10).map((row) => (
+                <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ fontWeight: 700 }}>{row.title}</div>
+                    <span className="pill" data-status={row.kind || "COUNT"}>{row.kind || "-"}</span>
+                  </div>
+                  <div className="panelMeta" style={{ marginTop: 4 }}>{row.message || "—"}</div>
+                  <div className="panelMeta" style={{ marginTop: 4 }}>{fmtTR(row.at)}</div>
+                </div>
+              )) : <div className="muted">Geçmiş servis hareketi yok.</div>}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Geçmiş günlük değişiklikler" subtitle="Karar bekleyen veya sonuçlanan operasyon istekleri">
+            <div style={{ overflowX: "auto" }}>
+              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+                <thead>
+                  <tr>
+                    <th>Kişi</th>
+                    <th>Shift</th>
+                    <th>Durum</th>
+                    <th>Tür</th>
+                    <th>Karar</th>
+                    <th>Zaman</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requestRows.length ? requestRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.personel}</td>
+                      <td>#{row.shift}</td>
+                      <td>{displayStatusLabel(row.status)}</td>
+                      <td>{row.kind}</td>
+                      <td>{row.decision}</td>
+                      <td>{fmtTR(row.createdAt)}</td>
+                    </tr>
+                  )) : <tr><td colSpan={6} className="muted">Geçmiş günlük değişiklik yok.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        </div>
+      ) : null}
     </div>
   );
 }

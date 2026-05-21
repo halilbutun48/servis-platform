@@ -55,7 +55,7 @@ export function MapPointPickerModal({
     <Modal open={open} onClose={onClose}>
       <div style={{ display: "grid", gap: 10 }}>
         <div style={{ fontWeight: 800 }}>Haritadan nokta seç</div>
-        <div className="muted">Haritada bir noktaya tıkla. Seçilen koordinat ilgili yer kartına yazılır.</div>
+        <div className="muted">Haritada bir noktaya tıkla. Seçilen koordinat ilgili konum kartına yazılır.</div>
         <div style={{ height: 360, width: "100%", border: "1px solid #223", borderRadius: 12, overflow: "hidden" }}>
           {Array.isArray(mapPickPoint) ? (
             <MapContainer center={mapPickPoint} zoom={13} style={{ height: "100%", width: "100%" }} scrollWheelZoom>

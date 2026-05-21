@@ -81,7 +81,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const [selectedShiftId, setSelectedShiftId] = useState("");
   const [maxWalkM, setMaxWalkM] = useState(me?.companyKind === "SCHOOL" ? 50 : 250);
 
-  // M51.B: Shift Hub (Toplanma/Dağıtım)
+  // M51.B: Shift Toplanma Konumu (Toplanma/Dağıtım)
   const [hubDirection, setHubDirection] = useState("INBOUND");
   const [hubAddress, setHubAddress] = useState("");
   const [hubLat, setHubLat] = useState("");
@@ -286,7 +286,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     });
   }, [onSummaryChange, selectedShiftId, geoStats, stopSummary]);
 
-  // M51.B: selected shift değişince hub formunu doldur
+  // M51.B: selected shift değişince toplanma konumu formunu doldur
   useEffect(() => {
     if (!selectedShift) return;
     const dir = String(selectedShift?.direction || "INBOUND").toUpperCase();
@@ -317,9 +317,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       setHubLat(String(r?.lat ?? ""));
       setHubLng(String(r?.lng ?? ""));
       if (typeof r?.lat === "number" && typeof r?.lng === "number") {
-        setInfo(`Hub konumu bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
+        setInfo(`Toplanma konumu bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
       } else {
-        setInfo("Hub konumu bulundu. Lat/Lng alanlarını kontrol et.");
+        setInfo("Toplanma konumu bulundu. Lat/Lng alanlarını kontrol et.");
       }
     } catch (e) {
       const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
@@ -341,7 +341,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const lat = normalizeCoord(hubLat, "lat");
     const lng = normalizeCoord(hubLng, "lng");
     if (lat == null || lng == null) {
-      setErr("Hub Lat/Lng zorunlu. (Adresten Bul ile doldurabilirsin)");
+      setErr("Toplanma Konumu Lat/Lng zorunlu. (Adresten Bul ile doldurabilirsin)");
       return;
     }
 
@@ -363,12 +363,12 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         },
       }));
 
-      // Draft durak listesine hub'ı ekle (OUTBOUND: başa, INBOUND: sona)
+      // Draft durak listesine toplanma konumunu ekle (OUTBOUND: başa, INBOUND: sona)
       const baseStops = stripHubStop(draftStops);
       const withHub = withHubStop(baseStops, { ...(selectedShift || {}), hubLat: lat, hubLng: lng, direction: dir });
       setDraftStops(withHub);
 
-      setInfo(`Hub kaydedildi. Liste pozisyonu: ${hubPosLabel}`);
+      setInfo(`Toplanma konumu kaydedildi. Liste pozisyonu: ${hubPosLabel}`);
     } catch (e) {
       setErr(String(e?.payload?.message || e?.payload?.error || e?.message || e));
     } finally {
@@ -388,7 +388,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       setHubLat("");
       setHubLng("");
       setDraftStops(stripHubStop(draftStops));
-      setInfo("Hub temizlendi.");
+      setInfo("Toplanma konumu temizlendi.");
     } catch (e) {
       setErr(String(e?.payload?.message || e?.payload?.error || e?.message || e));
     } finally {

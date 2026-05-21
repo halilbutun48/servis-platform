@@ -99,7 +99,8 @@ function main() {
   mustContains(roomDrivers, "PanelSegmentTabs", "Room / Sürücüler keeps segmented tabs");
   mustContains(roomDrivers, "CollapsibleSection", "Room / Sürücüler keeps secondary collapsible details");
   mustContains(roomDrivers, "Yönetim detayları", "Room / Sürücüler keeps management details collapsed");
-  mustContains(roomDrivers, "Bağlantı detayları", "Room / Sürücüler keeps connection details collapsed");
+  mustContains(roomDrivers, "Bağlı araç özeti", "Room / Sürücüler keeps linked vehicle summary visible");
+  mustContains(roomDrivers, "Araç bağlantısını Araçlar ekranında yönet", "Room / Sürücüler routes connection management away from driver screen");
 
   mustContains(roomMap, "PanelSegmentTabs", "Room / Map keeps segmented tabs");
   mustContains(roomMap, 'const [mapTab, setMapTab] = useState("map")', "Room / Map defaults to Harita tab");
@@ -117,7 +118,11 @@ function main() {
 
   mustContains(companyShifts, "mainTab", "Company / Shifts keeps main tab state");
   mustContains(companyShifts, "trackTab", "Company / Shifts keeps track tab state");
-  mustContains(companyShiftsIntro, "PanelSegmentTabs", "Company / Shifts intro uses segmented tabs");
+  mustContains(companyShiftsIntro, "Shifts (COMPANY)", "Company / Shifts intro keeps summary title");
+  mustContains(companyShiftsIntro, "trackCounts", "Company / Shifts intro keeps summary counts");
+  mustNotContains(companyShiftsIntro, "PanelSegmentTabs", "Company / Shifts intro is summary-only");
+  mustNotContains(companyShiftsIntro, "mainTab === \"create\"", "Company / Shifts intro removes create branch");
+  mustNotContains(companyShiftsIntro, "Planlama Merkezi", "Company / Shifts intro removes planning center wording");
   mustContains(companyShiftsTrack, "PanelSegmentTabs", "Company / Shifts track view uses segmented tabs");
 
   const pkg = read("package.json");

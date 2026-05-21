@@ -2,7 +2,7 @@ export const AGREEMENT_WIZARD_PACKS = [
   {
     key: "WK_MORNING",
     title: "Hafta içi • Sabah",
-    desc: "07:00 → 09:00 (Toplama → Hub)",
+    desc: "07:00 → 09:00 (Toplama → Toplanma Konumu)",
     weekMask: 62,
     durationDays: 30,
     items: [{ label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
@@ -10,7 +10,7 @@ export const AGREEMENT_WIZARD_PACKS = [
   {
     key: "WK_EVENING",
     title: "Hafta içi • Akşam",
-    desc: "17:00 → 19:00 (Hub → Dağıtım)",
+    desc: "17:00 → 19:00 (Toplanma Konumu → Dağıtım)",
     weekMask: 62,
     durationDays: 30,
     items: [{ label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" }],

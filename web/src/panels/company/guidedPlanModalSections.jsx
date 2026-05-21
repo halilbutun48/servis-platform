@@ -27,8 +27,8 @@ export function GuidedHubStep({
     <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
       <div className="muted">
         {organization
-          ? "1. adımda gezi için toplanma noktasını ayarla. Bu nokta turun başlangıç merkezi olur."
-          : "1. adımda Company kendi lokasyonunu (hub) ayarlar."}
+          ? "1. adımda gezi için toplanma konumunu ayarla. Bu nokta turun başlangıç merkezi olur."
+          : "1. adımda şirket kendi konumunu ayarlar."}
       </div>
 
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -36,7 +36,7 @@ export function GuidedHubStep({
         <input
           value={addr}
           onChange={(e) => setAddr(e.target.value)}
-          placeholder={organization ? "Toplanma noktası adresi (örn. Denizli Forum önü)" : "Adresten konum al (örn. Ankara Çankaya ...)"}
+          placeholder={organization ? "Toplanma konumu adresi (örn. Denizli Forum önü)" : "Adresten konum al (örn. Ankara Çankaya ...)"}
           style={{ flex: 1, minWidth: 260 }}
           disabled={busy}
         />
@@ -45,20 +45,20 @@ export function GuidedHubStep({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <label className="muted">{organization ? "Toplanma lat" : "Hub lat"}</label>
+          <label className="muted">{organization ? "Toplanma Konumu Lat" : "Şirket Konumu Lat"}</label>
           <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
         </div>
         <div>
-          <label className="muted">{organization ? "Toplanma lng" : "Hub lng"}</label>
+          <label className="muted">{organization ? "Toplanma Konumu Lng" : "Şirket Konumu Lng"}</label>
           <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} disabled={busy} />
         </div>
       </div>
 
-      {!hubLoaded ? <div className="muted">Hub okunuyor...</div> : null}
+      {!hubLoaded ? <div className="muted">{organization ? "Toplanma Konumu okunuyor..." : "Şirket Konumu okunuyor..."}</div> : null}
 
       <div className="row" style={{ justifyContent: "flex-end" }}>
         <button type="button" onClick={saveHub} disabled={busy}>
-          {organization ? "Toplanma noktasını kaydet" : "İleri"}
+          {organization ? "Toplanma konumunu kaydet" : "İleri"}
         </button>
       </div>
     </div>

@@ -151,7 +151,7 @@ export default function HubMapPicker({
   onPick,
   busy = false,
   title = "Büyük Haritada İşaretle",
-  subjectLabel = "Hub",
+  subjectLabel = "Toplanma Konumu",
   previewHeight = 290,
 }) {
   const latNum = toNum(lat);

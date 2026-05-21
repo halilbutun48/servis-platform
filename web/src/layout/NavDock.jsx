@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
+import { hubLabelForKind } from "../utils/labels";
 import { getCopilotMenuEntry } from "../copilot/screenRegistry";
 import BrandMark from "../components/BrandMark";
 import { BRAND_NAME } from "../config/brand.js";
@@ -13,7 +14,7 @@ function roleTitle(role, me) {
   if (role === "PERSONEL") return "Personel";
   if (role === "PARENT") return "Veli";
   if (role === "COMPANY" && me?.companyKind === "SCHOOL") return "Okul";
-  if (role === "COMPANY" && me?.companyKind === "ORGANIZATION") return "Organizasyon";
+  if (role === "COMPANY" && me?.companyKind === "ORGANIZATION") return "Kurum";
   if (role === "COMPANY") return "Şirket";
   return role || "-";
 }
@@ -87,7 +88,7 @@ export default function NavDock({ role, path, me }) {
       ? "Operasyon Paneli"
       : isSchool
         ? "Okul Operasyon Paneli"
-        : "Organizasyon Operasyon Paneli";
+        : "Kurum Operasyon Paneli";
     const companyPlanningHomeLabel = isSchool
       ? "Okul Merkezi"
       : isOrganization
@@ -96,15 +97,16 @@ export default function NavDock({ role, path, me }) {
     const companyPeopleTitle = isSchool
       ? "ÖĞRENCİ VE VELİ"
       : isOrganization
-        ? "KATILIMCI VE LOKASYON"
+        ? "KATILIMCI VE KONUM"
         : "PERSONEL";
     const companyPeopleLinkLabel = isSchool ? "Öğrenci Link" : "Personel Link";
     const companyPeopleAccessLabel = isSchool ? "Veli Erişimi" : "Personel Erişimi";
     const companyPeopleGeoLabel = isSchool
       ? "Öğrenci Konum Seçici"
       : isOrganization
-        ? "Lokasyon İncele"
+        ? "Konum İncele"
         : "Personel Konum Seçici";
+    const companyHubLabel = hubLabelForKind(me?.companyKind);
     const copilotEntry = getCopilotMenuEntry({ role, companyKind: me?.companyKind });
     const feedbackEntry = { label: "Geri Bildirim", path: "/shared/feedback" };
     const copilotSection = {
@@ -137,7 +139,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Raporlar", path: "/room/reports" },
         ],
       });
-      advanced.push({ label: "Hub", path: "/room/hub" });
+      advanced.push({ label: "Oda Konumu", path: "/room/hub" });
       advanced.push({ label: "Check-in", path: "/room/checkin" });
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
@@ -155,7 +157,7 @@ export default function NavDock({ role, path, me }) {
         title: "PLANLAMA VE SÖZLEŞME",
         items: [
           { label: companyPlanningHomeLabel, path: base },
-          ...(isOrganization ? [{ label: "Yer Planları", path: base + "/plans" }] : []),
+          ...(isOrganization ? [{ label: "Kurum Planları", path: base + "/plans" }] : []),
           { label: "Vardiyalar", path: base + "/shifts" },
           { label: "Sözleşmeler", path: base + "/agreements" },
         ],
@@ -177,7 +179,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Check-in", path: base + "/checkin" },
         ],
       });
-      advanced.push({ label: "Hub", path: base + "/hub" });
+      advanced.push({ label: companyHubLabel, path: base + "/hub" });
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });

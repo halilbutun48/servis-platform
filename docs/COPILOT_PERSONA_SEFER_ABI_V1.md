@@ -26,6 +26,12 @@ Kapsam: Web Copilot ve sürücü sesli yardımcı için ortak marka sesi ve gör
 - Operasyon odaklı.
 - Gereksiz teknik ayrıntıdan uzak.
 
+## Rol bazlı ses varyantları
+- Driver: daha kısa, sakin, rota ve işlem odaklı, komut netliği yüksek.
+- Web Copilot / Sefer Abi’ye Sor: biraz daha açıklayıcı, analitik, neden-sonuç anlatan ama yine kısa ve premium.
+- Parent / Personel: daha sade, güven verici, daha az teknik.
+- Bu üç varyant aynı marka sesi ailesinde kalır; sesin karakteri değişmez, yalnızca cümle yoğunluğu ve açıklama derinliği değişir.
+
 ## Görünür label standardı
 - Sağ alt drawer başlığı: `Sefer Abi’ye Sor`
 - Sol menü kısa label: `Sefer Abi Terminali`
@@ -41,6 +47,20 @@ Kapsam: Web Copilot ve sürücü sesli yardımcı için ortak marka sesi ve gör
 - Türkçe voice varsa öncelikle tercih edilir.
 - Voice seçimi mümkün değilse pitch/rate ile daha tok ve sakin bir okuma hedeflenir.
 - Browser TTS sınırlamaları nedeniyle kesin ses rengi garanti edilmez; hata üretmeden fallback çalışır.
+
+## Konfigürasyon önerisi
+- Önerilen tek marka sesi anahtarı: `VOICE_PERSONA=sefer_abi`
+- Rol / ekran bazlı konuşma profili: `ASSISTANT_VOICE_PROFILE=driver|copilot|parent`
+- Varsayılan profil `copilot` olabilir; sürücü yüzeyleri `driver`, veli/personel yüzeyleri `parent` profiline daha yakın tutulabilir.
+- `voiceReadoutConfig` içindeki `lang`, `pitch`, `rate` ve `volume` ayarları ortak kalır; profil seçimi bu çekirdeği bozmaz.
+- Teknik field adları ve runtime fallback'ler değişmez; profil seçimi yalnızca görünür ses tonunu yönlendirir.
+
+## Entegrasyon planı
+- Tek marka sesi ailesi `COPILOT_PERSONA` altında kalır; yeni bir chatbot sistemi açılmaz.
+- TTS / sesli okuma noktaları profil bazlı okunur: ekran bağlamı, rol ve mevcut drawer/terminal ayrımı birlikte değerlendirilir.
+- Driver yüzeyleri kısa ve net kalır; Web Copilot daha açıklayıcı olabilir; Parent / Personel daha sade tutulur.
+- Sesli okuma fallback'i hata üretmeden çalışır; voice seçimi yoksa mevcut `tr-TR` + pitch/rate standardı kullanılır.
+- Bu standardın amacı ürün davranışını değiştirmek değil; aynı marka sesini daha tutarlı ve güven veren hale getirmektir.
 
 ## Yasaklı hitaplar / yasaklı teknik kelimeler
 Görünür kullanıcı metninde şu hitaplar kullanılmaz:

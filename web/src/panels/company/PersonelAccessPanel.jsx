@@ -150,7 +150,7 @@ export default function PersonelAccessPanel() {
         title="Personel erişimi"
         subtitle={
           isOrganization
-            ? "Organizasyon personeline 7 gün geçerli kullanıcı kodu ve geçici PIN verin."
+            ? "Kurum personeline 7 gün geçerli kullanıcı kodu ve geçici PIN verin."
             : "Personele 7 gün geçerli kullanıcı kodu ve geçici PIN verin."
         }
         actions={(

@@ -167,7 +167,7 @@ function main() {
   must(navDockSource, 'PLANLAMA VE SÖZLEŞME', 'NavDock keeps planning and contract group');
   must(navDockSource, 'TİCARİ VE KALİTE', 'NavDock keeps commercial and quality group');
   must(navDockSource, 'ÖĞRENCİ VE VELİ', 'NavDock keeps school people group');
-  must(navDockSource, 'KATILIMCI VE LOKASYON', 'NavDock keeps organization people group');
+  must(navDockSource, 'KATILIMCI VE KONUM', 'NavDock keeps organization people group');
   must(navDockSource, 'PERSONEL', 'NavDock keeps company people group');
   must(navDockSource, 'SEFER ABİ', 'NavDock keeps Sefer Abi group');
   must(navDockSource, 'Sefer Abi Terminali', 'NavDock keeps terminal label');

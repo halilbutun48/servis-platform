@@ -1646,6 +1646,8 @@ export function buildCopilotStarterChips({
   const isSuperAdminOps = path.includes('/superadmin/observability') || path.includes('/superadmin/operations');
   const isAgreementSurface = path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements');
   const isCommercialSurface = path.includes('/company/commercial-flow') || path.includes('/superadmin/commercial-core') || path.includes('/room/commercial-flow');
+  const isCompanyShifts = path.includes('/company/shifts') || path.includes('/school/shifts') || path.includes('/organization/shifts');
+  const isCompanyQuality = path.includes('/company/service-evaluation') || path.includes('/school/service-evaluation') || path.includes('/organization/service-evaluation');
   const isPersonelLive = path.includes('/personel/live') || path.includes('/personel/my');
   const isParentLive = path.includes('/parent/live');
   const isDriverToday = path.includes('/driver/today');
@@ -1689,6 +1691,10 @@ export function buildCopilotStarterChips({
     chips = ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {
     chips = ['Bu hakediş neden hazır değil?', 'Ödeme hesabı eksik mi?', 'Komisyon durumu ne?', 'Hakediş önizlemesini açıkla'];
+  } else if (isCompanyShifts) {
+    chips = ['Bu vardiya neden başlayamıyor?', 'Atama eksik mi?', 'Sıradaki doğru işlem ne?', 'Sözleşmeye bağlı mı?'];
+  } else if (isCompanyQuality) {
+    chips = ['Değerlendirme bekleyen var mı?', 'Kanıt eksikleri neler?', 'İnceleme kararı ne?', 'Sıradaki işlem ne?'];
   } else if (isPersonelLive) {
     chips = hasServiceSignal || hasVehicleSignal || selectionText
       ? ['Servis neden görünmüyor?', 'Son GPS ne zaman geldi?', 'Araç nerede?', 'Sürücünün telefon GPS’i devrede mi?']

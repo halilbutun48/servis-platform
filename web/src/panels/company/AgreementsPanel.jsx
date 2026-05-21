@@ -166,10 +166,9 @@ const PLAN_TEMPLATES = [
 ];
 
 const AGREEMENTS_VIEW_TABS = [
-  { key: "summary", label: "Özet" },
+  { key: "list", label: "Liste" },
   { key: "bridge", label: "Bağlantı" },
   { key: "wizard", label: "Yazım" },
-  { key: "list", label: "Liste" },
 ];
 
 export default function AgreementsPanel() {
@@ -204,7 +203,7 @@ export default function AgreementsPanel() {
   const [guidedOpen, setGuidedOpen] = useState(false);
   const [routeRefreshLaunch, setRouteRefreshLaunch] = useState(null);
   const [routeRefreshNonce, setRouteRefreshNonce] = useState(0);
-  const [viewMode, setViewMode] = useState("summary");
+  const [viewMode, setViewMode] = useState("list");
 
   const [templateKey, _setTemplateKey] = useState("MORNING");
   const [roomId, _setRoomId] = useState("");
@@ -934,7 +933,7 @@ export default function AgreementsPanel() {
         onChange={setViewMode}
       />
 
-      {viewMode === "summary" ? (
+      {viewMode === "bridge" ? (
         <>
           {selectedAgreementRow?.a && selectedAgreementOrigin ? (
             <CompanyAgreementsSourceShiftSection
@@ -949,33 +948,6 @@ export default function AgreementsPanel() {
             />
           ) : null}
 
-          {selectedRouteRefreshPending ? (
-            <CompanyAgreementsRouteRefreshPendingSection
-              title={selectedRouteRefreshCountered ? "Rota güncelleme karşı teklifi" : "Bekleyen rota güncelleme teklifi"}
-              summaryText={selectedRouteRefreshSummaryText}
-              companyOfferNote={selectedRouteRefreshPending.companyOfferNote || ""}
-              roomCounterText={selectedRouteRefreshRoomCounterText}
-              currentRouteText={selectedRouteRefreshCurrentText}
-              proposedRouteText={selectedRouteRefreshProposedText}
-              diffText={selectedRouteRefreshDiffText}
-              priceImpactText={selectedRouteRefreshPriceImpactText}
-              previewError={routeRefreshPreviewSummary.err}
-              previewLoading={routeRefreshPreviewSummary.loading}
-              currentPreviewShiftId={selectedRouteRefreshCurrentPreviewShiftId}
-              proposedPreviewShiftId={selectedRouteRefreshProposedPreviewShiftId}
-              showCounterActions={selectedRouteRefreshCountered}
-              busy={busy}
-              onOpenCurrentPreview={() => openAgreementShift(selectedRouteRefreshCurrentPreviewShiftId, true)}
-              onOpenProposedPreview={() => openAgreementShift(selectedRouteRefreshProposedPreviewShiftId, true)}
-              onAcceptCounter={() => acceptRouteRefreshCounter(selectedRouteRefreshPending.id)}
-              onRejectCounter={() => rejectRouteRefreshCounter(selectedRouteRefreshPending.id)}
-            />
-          ) : null}
-        </>
-      ) : null}
-
-      {viewMode === "bridge" ? (
-        <>
           {selectedAgreementRow?.a ? (
             <CollapsibleSection
               title="Operasyon bağlantısı"

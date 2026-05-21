@@ -10,12 +10,23 @@ export function isOrganization(me) {
 
 export function personLabel(me) {
   if (isSchool(me)) return "Öğrenci";
-  if (isOrganization(me)) return "Lokasyon";
+  if (isOrganization(me)) return "Konum";
   return "Personel";
 }
 
 export function peopleLabel(me) {
   if (isSchool(me)) return "Öğrenciler";
-  if (isOrganization(me)) return "Lokasyonlar";
+  if (isOrganization(me)) return "Konumlar";
   return "Personel";
+}
+
+export function hubLabelForKind(kind) {
+  const normalized = String(kind || "").toUpperCase();
+  if (normalized === "SCHOOL") return "Okul Konumu";
+  if (normalized === "ORGANIZATION") return "Toplanma Konumu";
+  return "Şirket Konumu";
+}
+
+export function hubLabel(me) {
+  return hubLabelForKind(me?.companyKind);
 }

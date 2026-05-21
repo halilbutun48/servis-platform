@@ -16,7 +16,7 @@ export function GuidedDestinationRowCard({
   return (
     <div className="card" style={{ padding: 10, border: "1px solid #223" }}>
       <div className="row" style={{ gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-        <div style={{ fontWeight: 700 }}>Yer {idx + 1}</div>
+        <div style={{ fontWeight: 700 }}>Konum {idx + 1}</div>
         <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
           <button type="button" className="btn sm" onClick={() => moveDestination(idx, -1)} disabled={busy || idx === 0}>Yukarı</button>
           <button type="button" className="btn sm" onClick={() => moveDestination(idx, 1)} disabled={busy || idx === total - 1}>Aşağı</button>
@@ -26,7 +26,7 @@ export function GuidedDestinationRowCard({
 
       <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <label className="muted">Yer adı</label>
+          <label className="muted">Konum adı</label>
           <input
             value={dest?.title || ""}
             onChange={(e) => setDestinationField(idx, "title", e.target.value)}
@@ -109,9 +109,9 @@ export function GuidedOrganizationPlanCard({
 }) {
   return (
     <div className="card">
-      <div style={{ fontWeight: 800 }}>Organizasyon detayları</div>
+      <div style={{ fontWeight: 800 }}>Kurum detayları</div>
       <div className="muted" style={{ marginTop: 4 }}>
-        Gezi planını burada kurarsın. Tahmini kişi sayısı, toplanma noktası, gidilecek yerler ve dönüş tipi aynı yerde kalır.
+        Gezi planını burada kurarsın. Tahmini kişi sayısı, toplanma konumu, gidilecek konumlar ve dönüş tipi aynı ekranda kalır.
       </div>
 
       <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -125,7 +125,7 @@ export function GuidedOrganizationPlanCard({
           />
         </div>
         <div>
-          <label className="muted">Toplanma noktası adı</label>
+          <label className="muted">Toplanma Konumu adı</label>
           <input
             value={orgGatheringName}
             onChange={(e) => setOrgGatheringName(e.target.value)}
@@ -136,9 +136,9 @@ export function GuidedOrganizationPlanCard({
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <div style={{ fontWeight: 700 }}>Gidilecek yerler</div>
+        <div style={{ fontWeight: 700 }}>Gidilecek konumlar</div>
         <div className="muted" style={{ marginTop: 4 }}>
-          Her yer ayrı satır olsun. Böylece tek tek düzeltmek, bulmak ve sırayı değiştirmek kolay olur.
+          Her konum ayrı satır olsun. Böylece tek tek düzeltmek, bulmak ve sırayı değiştirmek kolay olur.
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
           Hazır konum: <b>{orgDestinationAudit.ready}</b> / {orgDestinationAudit.total || 0}
@@ -163,7 +163,7 @@ export function GuidedOrganizationPlanCard({
           ))}
         </div>
         <div className="row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
-          <button type="button" className="btn" onClick={addDestination} disabled={busy}>+ Yer ekle</button>
+          <button type="button" className="btn" onClick={addDestination} disabled={busy}>+ Konum ekle</button>
         </div>
       </div>
 

@@ -7,13 +7,13 @@ export const TEMPLATE_PACKS = [
   {
     key: "WK_MORNING",
     title: "Hafta içi • Sabah",
-    desc: "07:00 → 09:00 (Toplama → Hub)",
+    desc: "07:00 → 09:00 (Toplama → Toplanma Konumu)",
     items: [{ label: "Sabah", startHHMM: "07:00", endHHMM: "09:00", direction: "INBOUND", pattern: "ONE_WAY" }],
   },
   {
     key: "WK_EVENING",
     title: "Hafta içi • Akşam",
-    desc: "17:00 → 19:00 (Hub → Dağıtım)",
+    desc: "17:00 → 19:00 (Toplanma Konumu → Dağıtım)",
     items: [{ label: "Akşam", startHHMM: "17:00", endHHMM: "19:00", direction: "OUTBOUND", pattern: "ONE_WAY" }],
   },
   {
@@ -397,8 +397,8 @@ export default function ShiftTemplatesPanel({
                       <div>
                         <div className="muted">Direction</div>
                         <select value={c1Direction} onChange={(e) => setC1Direction(e.target.value)}>
-                          <option value="INBOUND">INBOUND (Toplama → Hub)</option>
-                          <option value="OUTBOUND">OUTBOUND (Hub → Dağıtım)</option>
+                          <option value="INBOUND">INBOUND (Toplama → Toplanma Konumu)</option>
+                          <option value="OUTBOUND">OUTBOUND (Toplanma Konumu → Dağıtım)</option>
                         </select>
                       </div>
                     </div>
@@ -433,12 +433,12 @@ export default function ShiftTemplatesPanel({
                           <input value={c2Label} onChange={(e) => setC2Label(e.target.value)} placeholder="örn. Akşam" />
                         </div>
                         <div>
-                          <div className="muted">Direction</div>
-                          <select value={c2Direction} onChange={(e) => setC2Direction(e.target.value)}>
-                            <option value="INBOUND">INBOUND (Toplama → Hub)</option>
-                            <option value="OUTBOUND">OUTBOUND (Hub → Dağıtım)</option>
-                          </select>
-                        </div>
+                        <div className="muted">Direction</div>
+                        <select value={c2Direction} onChange={(e) => setC2Direction(e.target.value)}>
+                            <option value="INBOUND">INBOUND (Toplama → Toplanma Konumu)</option>
+                            <option value="OUTBOUND">OUTBOUND (Toplanma Konumu → Dağıtım)</option>
+                        </select>
+                      </div>
                       </div>
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
@@ -581,7 +581,6 @@ export default function ShiftTemplatesPanel({
     </>
   );
 }
-
 
 
 

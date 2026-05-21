@@ -265,3 +265,67 @@ Aynı kaydın eş düzey alt modları accordion içine atılmamalı:
 - `check:uxroomshiftstabs01` Room / Vardiyalar ekranını üç gerçek taba böler: Bekleyen Talepler, Sözleşmeden Üretilen ve Diğer Vardiyalar.
 - Üst KPI bandı açık kalır; Bekleyen Talepler ile Tüm Vardiyalar gibi tek uzun akış yerine seçili tabın içeriği tek başına render edilir.
 - Bu düzenleme UX-PANEL-STRUCTURE-02, UX-PANEL-STRUCTURE-02B, UX-ROOM-OPS-PANEL-TABS-01 ve UX-PANEL-REALITY-CLEANUP-02D zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-COMPANY-OPS-PANEL-TABS-01
+
+- `check:uxcompanyopspaneltabs01` Company / Operasyon Paneli'ni gerçek tab yapısına taşır; Özet, Servis Kümesi, Personel, Servis Zamanları, İstisnalar / Değişiklikler ve Bildirimler aynı anda alt alta görünmez.
+- Üst KPI / durum bandı ve bildirim yönlendirme bandı açık kalır; bildirim CTA'sı ilgili taba geçirir ve detaylar yalnızca Bildirimler sekmesinde render edilir.
+- İstisnalar / Değişiklikler tabı, eksik değişiklikleri, bugün servis kullanmayacak personelleri ve farklı duraktan binecek personelleri tek bölümde toplar.
+- Bu düzeltme UX-COLLAPSIBLE-PANELS-01, UX-PANEL-STRUCTURE-02, UX-PANEL-STRUCTURE-02B ve UX-PANEL-REALITY-CLEANUP-02D zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-COMPANY-SHIFTS-TABS-01
+
+- `check:uxcompanyshiftstabs01` Company / Vardiyalar ekranını track-only yapıda dört gerçek taba böler; Market, Bekleyen, Sözleşmeden Üretilen ve Diğer Vardiyalar aynı anda alt alta görünmez.
+- `Oluşturma`, `Liste` ve `Planlama Merkezi` tekrarları bu ekrandan kaldırılır; üstte yalnızca takip özet bandı ve kompakt filtre kalır.
+- Bu düzeltme UX-ROOM-SHIFTS-TABS-01, UX-COMPANY-OPS-PANEL-TABS-01, UX-PANEL-STRUCTURE-02B ve UX-PANEL-REALITY-CLEANUP-02D zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-COMPANY-QUALITY-PANEL-TABS-01
+
+- `check:uxcompanyqualitytabs01` Company / Hizmet Değerlendirme ekranını summary-first + functional tab standardına taşır; Özet, Kanıt / Hazırlık, Taslak Skor, İnceleme Kararı, Geçmiş ve Değerlendirme Alanları aynı anda alt alta görünmez.
+- Üst KPI / durum bandı ve değerlendirme bekleyen bilgi bandı açık kalır; CTA ilgili taba geçirir ve detaylar yalnız seçili sekmede render edilir.
+- Bu düzenleme UX-COMPANY-OPS-PANEL-TABS-01, UX-COMPANY-SHIFTS-TABS-01, UX-ROOM-SHIFTS-TABS-01, UX-PANEL-REALITY-CLEANUP-02D ve UX-PANEL-STRUCTURE-02B zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SEFER-ABI-LAUNCHER-01
+
+- `check:uxseferabilauncher01` sağ alttaki Sefer Abi’ye Sor launcher’ını marka/persona odaklı kompakt karta çevirir; kapalı halde yalnız launcher görünür, chat içeriği görünmez.
+- Drawer açıldığında mevcut 3 kademe boyut korunur; varsayılan açılış küçük/orta çizgide kalır ve büyük boyut launcher’dan tetiklenmiş olsa bile ilk durumda agresif açılmaz.
+- Bu düzenleme UX-COPILOT-PERSONA-01, UX-COPILOT-TERMINAL-01, UX-COPILOT-SMART-CHIPS-01 ve UX-NAV-01 zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-COMPANY-PANELS-FINAL-POLISH-01
+
+- `check:uxcompanypanelsfinalpolish01` Company / Vardiyalar, Sözleşmeler ve Ticari Akış yüzeylerini son gerçeklik düzeltmesiyle hizalar.
+- `Company / Vardiyalar` default olarak `Diğer Vardiyalar` tabını açar; ana vardiya alanı kapalı başlamaz ve create / list / planning-center tekrarları görünmez.
+- `Company / Vardiyalar` içindeki Market, Bekleyen, Sözleşmeden Üretilen ve Diğer Vardiyalar accordion başlıkları varsayılan açık gelir; takip yüzeyi ilk bakışta kapalı blok bırakmaz.
+- `Company / Sözleşmeler` default `Liste` ile açılır; boş ya da anlamsız özet yüzeyi kaldırılır ve operasyon bağlantısı artık ayrı summary shell yerine ilgili iş tablarında taşınır.
+- `Company / Ticari Akış` tek sayfa split layout’a döner; Özet / Liste / Seçili Kayıt tabları kaldırılır, liste ve seçili kayıt aynı viewport içinde tek kaynaklı render edilir.
+- `Company / Ticari Akış` satır aksiyonları artık agreement-bağlı final kayıtları `Sözleşmeden Üretilen` veya `Diğer Vardiyalar` yüzeyine yönlendirir; misleading `Listeyi aç` dili kaldırılır.
+- Bu final polish, UX-COMPANY-SHIFTS-TABS-01, UX-COMPANY-OPS-PANEL-TABS-01, UX-COMPANY-QUALITY-PANEL-TABS-01, UX-ROOM-SHIFTS-TABS-01 ve UX-PANEL-REALITY-CLEANUP-02D zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SCHOOL-ORGANIZATION-PANELS-01
+
+- `check:uxschoolorganizationpanels01` School / Okul Operasyon Paneli'ni summary-first + functional tab standardına taşır; `Özet`, `Öğrenci Servisleri`, `Veli & Bildirimler`, `İstisnalar / Günlük Değişiklikler`, `Kanıt / Check-in` ve `Geçmiş` aynı anda alt alta görünmez.
+- `School / Vardiyalar` başlığı role-aware hale gelir; `Okul Vardiyaları` ve `Kurum Vardiyaları` label'ları School / Organization scope'a sızmadan doğru bağlamı gösterir.
+- Organization yüzeylerinde görünen `Lokasyon` kopyası `Konum` standardına çekilir; `Kurum Merkezi`, `Toplanma Konumu` ve ilgili plan/özet label'ları yanlış role metni üretmez.
+- Bu not, UX-ROOM-OPS-RELATIONSHIP-POLISH-01, UX-COMPANY-PANELS-FINAL-POLISH-01, UX-ROOM-SHIFTS-TABS-01 ve UX-COMPANY-SHIFTS-TABS-01 zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-ROOM-OPS-RELATIONSHIP-POLISH-01
+
+- `check:uxroomopsrelationshippolish01` `Room / Operasyon Sağlığı` içindeki `Sorunlu Sürücüler` ve `Açık Sorunlar` görünümünü tek sorun bağlamında toplar; ekran iki ayrı sorun sekmesine bölünmez.
+- `Room / Araçlar` bağlantı yönetiminin tek sahibi olur; seçili araç mevcut bağlı sürücüyü önceden doldurur ve bağlantı akışı güvenli okunur / bağlanır modelini korur.
+- `Room / Sürücüler` duplicate bağlantı formunu kaldırır; bağlı araç yalnızca readonly özet ve araçlar ekranına yönlendiren CTA olarak görünür.
+- Visible `Hub` copy, role / ekran bağlamına göre `Oda Konumu` ve `Toplanma Konumu` gibi Türkçe label'lara çevrilir; teknik field adları iç yüzeyde kalır.
+- Bu polish, `UX-ROOM-OPS-PANEL-TABS-01`, `UX-ROOM-SHIFTS-TABS-01`, `UX-PANEL-REALITY-CLEANUP-02D` ve `UX-COMPANY-PANELS-FINAL-POLISH-01` zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SUPERADMIN-OVERVIEW-CLEANUP-01
+
+- `check:uxsuperadminoverviewcleanup01` Süper Yönetici Genel Bakış ekranını summary-first dashboard yapısına taşır.
+- `Hızlı erişim`, `Özet` ve `Bölüm rehberi` ana dashboardta kalır; `Geri Bildirimler`, `Demo / Debug` ve `Sistem Detayları` alt functional alanlara taşınır.
+- `Kritik geri bildirim` bandı üstte kompakt görünür ve CTA ile geri bildirim detay alanını açar; ana sayfa uzun listeye dönüşmez.
+- Bu cleanup, `UX-COMPANY-PANELS-FINAL-POLISH-01`, `UX-COMPANY-QUALITY-PANEL-TABS-01`, `UX-COMPANY-SHIFTS-TABS-01`, `UX-ROOM-SHIFTS-TABS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SUPERADMIN-LIVE-MONITORING-01
+
+- `check:uxsuperadminlivemonitoring01` Süper Admin / Canlı İzleme ekranını summary-first monitoring dashboard yapısına taşır.
+- `Canlı Sağlık ve Risk Özeti` üstte kalır; `Özet`, `Canlı Akış`, `Alarmlar & Riskler`, `İzlenen Olaylar`, `Sistem Kanıtı` ve `Geçmiş / Log` gerçek tablar halinde ayrılır.
+- `KVKK / alarm` bandı üstte kompakt görünür; uzun canlı akış ve olay listeleri ana sayfayı işgal etmez.
+- Bu cleanup, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-COMPANY-PANELS-FINAL-POLISH-01`, `UX-SCHOOL-ORGANIZATION-PANELS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.

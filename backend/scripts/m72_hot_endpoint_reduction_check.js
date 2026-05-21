@@ -57,7 +57,7 @@ function main() {
   if (includesText(agreements, "take: 30")) ok("AgreementsPanel room directory take reduced to 30"); else fail("AgreementsPanel room directory take reduced to 30");
   if (includesText(shifts, "take: 20") && includesText(shifts, "take: 30") && includesText(shifts, "take: 32")) ok("ShiftsPanel reference loads reduced"); else fail("ShiftsPanel reference loads reduced");
   if (includesText(map, "take: 20, onlyActive: true") && hasAny(map, ["ttlMs: 45000", "ttlMs: 15000"])) ok("MapPanel hot endpoints reduced + cache tuned"); else fail("MapPanel hot endpoints reduced + cache tuned");
-  if (hasAny(serviceEval, ["take: 24", "take: 40"])) ok("ServiceEvaluationPanel items first-load take reduced"); else fail("ServiceEvaluationPanel items first-load take reduced");
+  if (hasAny(serviceEval, ["take: 12", "take: 24", "take: 40"])) ok("ServiceEvaluationPanel items first-load take reduced"); else fail("ServiceEvaluationPanel items first-load take reduced");
   if (includesText(reports, "rememberResponse") && includesText(reports, "reportCacheKey")) ok("Reports summary uses response cache"); else fail("Reports summary uses response cache");
   if (includesText(routePreview, "shift-route-preview:") && hasAny(routePreview, ["ttlMs: 30000", "ttlMs: 12000"])) ok("Route preview backend response cache exists"); else fail("Route preview backend response cache exists");
   if (hasAny(overview, ["take: 8", "take: 12"])) ok("Company overview list payloads narrowed"); else fail("Company overview list payloads narrowed");

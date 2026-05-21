@@ -1,23 +1,30 @@
-import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+function CountCard({ label, value, note }) {
+  return (
+    <div className="card" style={{ minWidth: 170, flex: "1 1 170px" }}>
+      <div className="muted" style={{ fontSize: 12 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1.1, marginTop: 6 }}>{value}</div>
+      {note ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>{note}</div> : null}
+    </div>
+  );
+}
 
-export default function CompanyShiftsPanelIntro(props) {
-  const {
-    isCommercialMode,
-    err,
-    applyToast,
-    focusMarketById,
-    setApplyToast,
-    busy,
-    goPlanningCenter,
-    mainTab,
-    setMainTab,
-  } = props;
+function scopeTitle(companyKind) {
+  const kind = String(companyKind || "").toUpperCase();
+  if (kind === "SCHOOL") return "Okul Vardiyaları";
+  if (kind === "ORGANIZATION") return "Kurum Vardiyaları";
+  return "Shifts (COMPANY)";
+}
+
+export default function CompanyShiftsPanelIntro({ err, applyToast, focusMarketById, setApplyToast, trackCounts, companyKind }) {
+  const counts = trackCounts || {};
 
   return (
     <>
       <div className="card">
-        <div className="panelSectionTitle">{isCommercialMode ? "Ticari Akışım (COMPANY)" : "Shifts (COMPANY)"}</div>
-        <div className="panelMeta" style={{ marginTop: 6 }}>{isCommercialMode ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: kabul edildi / aktif / tamamlandı / reddedildi" : "Bekleyen: bekliyor • Liste: kabul edildi / aktif / tamamlandı / reddedildi"}</div>
+        <div className="panelSectionTitle">{scopeTitle(companyKind)}</div>
+        <div className="panelMeta" style={{ marginTop: 6 }}>
+          Market, bekleyen, sözleşmeden üretilen ve diğer vardiyaları takip et. Takip ve operasyon bu ekranda kalır.
+        </div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -26,14 +33,14 @@ export default function CompanyShiftsPanelIntro(props) {
         <div className="card" style={{ marginTop: 10 }}>
           <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
-              <div className="panelSectionTitle">Oluşturuldu:</div>
+              <div className="panelSectionTitle">Yeni bağlantı oluştu</div>
               <div className="panelMeta" style={{ marginTop: 4 }}>
                 {(applyToast.ids || []).map((id) => (
                   <button key={id} type="button" className="btn" style={{ marginRight: 6, marginTop: 6 }} onClick={() => focusMarketById(id)}>
                     #{id}
                   </button>
                 ))}
-                <span className="panelMeta" style={{ marginLeft: 8 }}>Tıkla → Bekleyen Talepler / Market Shifts’te filtrele</span>
+                <span className="panelMeta" style={{ marginLeft: 8 }}>Tıkla → Market’te filtrele</span>
               </div>
             </div>
             <button type="button" className="btn" onClick={() => setApplyToast(null)}>Kapat</button>
@@ -41,69 +48,12 @@ export default function CompanyShiftsPanelIntro(props) {
         </div>
       ) : null}
 
-      <PanelSegmentTabs
-        ariaLabel="Company shifts ana bölümleri"
-        tabs={[
-          { key: "track", label: "Takip" },
-          { key: "create", label: "Oluşturma" },
-        ]}
-        value={mainTab}
-        onChange={setMainTab}
-        compact
-      />
-
-      {!isCommercialMode ? (
-        <div className="card">
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="btn"
-              disabled={busy}
-              onClick={goPlanningCenter}
-              title="Şablon / talep / Shift Tools / plan üretimi Planlama Merkezi'nde yapılır"
-            >
-              Planlama Merkezi'ne git
-            </button>
-            <button
-              type="button"
-              className={mainTab === "track" ? "btn primary" : "btn"}
-              disabled={busy}
-              onClick={() => setMainTab("track")}
-              title="Market / Bekleyen / Liste + hızlı filtre"
-            >
-              Takip
-            </button>
-          </div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            Oluşturma akışı bu ekrandan kaldırıldı. Şablon, talep, Shift Tools, OSRM + solver ve teklif üretimi Planlama Merkezi'nden yürür; bu ekran takip ve operasyon içindir.
-          </div>
-        </div>
-      ) : null}
-
-      {mainTab === "create" ? (
-        <div className="card">
-          <div className="panelSectionTitle">Oluşturma Planlama Merkezi'ne taşındı</div>
-          <div className="panelMeta" style={{ marginTop: 8 }}>
-            {isCommercialMode
-              ? "Aynı işi iki farklı yerden üretmemek için ticari akış üzerindeki oluşturma adımları Planlama Merkezi'nde yürür. Yeni vardiya kurma, şablon/talep, Shift Tools, durak üretimi, OSRM + solver ön izlemesi ve market teklif akışı oradan yapılır."
-              : "Aynı işi iki farklı yerden üretmemek için bu ekrandaki oluşturma akışı pasife alındı. Yeni vardiya kurma, şablon/talep, Shift Tools, durak üretimi, OSRM + solver ön izleme ve market teklif akışı Planlama Merkezi'nden yapılır."}
-          </div>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-            <button type="button" className="btn primary" disabled={busy} onClick={goPlanningCenter}>Planlama Merkezi'ne git</button>
-            <button type="button" className="btn" disabled={busy} onClick={() => setMainTab("track")}>Takibe dön</button>
-          </div>
-        </div>
-      ) : isCommercialMode ? (
-        <div className="card">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <div>
-              <div className="panelSectionTitle">Ticari Akışım</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>Company için teklif, karşı teklif ve pazarlık görünürlüğü</div>
-            </div>
-            <div className="panelMeta">Kapsam: Kendi ticari alanınız</div>
-          </div>
-        </div>
-      ) : null}
+      <div className="row" style={{ alignItems: "stretch", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+        <CountCard label="Market" value={String(counts.market || 0)} note="room seçilmemiş / pazara düşmüş" />
+        <CountCard label="Bekleyen" value={String(counts.pending || 0)} note="pazarlık / karar bekleyen" />
+        <CountCard label="Sözleşmeden Üretilen" value={String(counts.contract || 0)} note="agreement / contract bağlı" />
+        <CountCard label="Diğer Vardiyalar" value={String(counts.other || 0)} note="sözleşmesiz normal / guided" />
+      </div>
     </>
   );
 }

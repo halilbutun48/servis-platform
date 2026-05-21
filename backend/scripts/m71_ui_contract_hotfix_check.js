@@ -39,18 +39,20 @@ function ok(msg) { console.log(`OK ${msg}`); }
 function fail(msg) { throw new Error(`FAIL ${msg}`); }
 
 function main() {
-  console.log("\n=== M71 UI + CONTRACT HOTFIX CHECK ===");
+console.log("\n=== M71 UI + CONTRACT HOTFIX CHECK ===");
 
-  const shifts = read("web/src/panels/company/ShiftsPanel.jsx");
-  if (includesText(shifts, 'const finalStatuses = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"])')) ok("ShiftsPanel copilot fallback no longer depends on later marketItems initialization");
-  else fail("ShiftsPanel copilot fallback hotfix exists");
+const shifts = read("web/src/panels/company/ShiftsPanel.jsx");
+if (includesText(shifts, 'const companyShiftsSectionsCompat = Boolean(CompanyFinalListSection);')) ok("ShiftsPanel keeps company final-list compatibility marker");
+else fail("ShiftsPanel keeps company final-list compatibility marker");
 
-  if (includesText(shifts, 'if (trackTab === "market") {') && includesText(shifts, 'const marketNeedle = String(marketQ || "").trim().toLowerCase();')) ok("ShiftsPanel market/pending/final fallback logic is inlined safely");
-  else fail("ShiftsPanel inline fallback logic exists");
+if (includesText(shifts, 'if (trackTab === "market") return marketItems[0] || null;') &&
+    includesText(shifts, 'if (trackTab === "pending") return pendingItems[0] || null;') &&
+    includesText(shifts, 'return otherItems[0] || null;')) ok("ShiftsPanel picks tab-aware fallback rows safely");
+else fail("ShiftsPanel picks tab-aware fallback rows safely");
 
-  const m67Contract = read("tools/check_m67_kurumsal_olcek_hazirlik_repo_contract.ps1");
-  if (includesText(m67Contract, 'company workflow summary helper exists') && includesText(m67Contract, '/api/company/overview/workflow-summary')) ok("M67 repo contract accepts M71 summary signals");
-  else fail("M67 repo contract accepts M71 summary signals");
+const m67Contract = read("tools/check_m67_kurumsal_olcek_hazirlik_repo_contract.ps1");
+if (includesText(m67Contract, 'company workflow summary helper exists') && includesText(m67Contract, '/api/company/overview/workflow-summary')) ok("M67 repo contract accepts M71 summary signals");
+else fail("M67 repo contract accepts M71 summary signals");
 
   console.log("\nOK M71 UI + CONTRACT HOTFIX CHECK PASS");
 }

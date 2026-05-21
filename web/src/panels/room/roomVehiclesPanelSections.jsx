@@ -258,7 +258,7 @@ export function RoomVehicleManageSection({
                             setErr("");
                           }}
                         >
-                          Bağlantı
+                          Bağlı sürücüyü yönet
                         </button>
 
                         <button type="button" disabled={busy || isArchived || !hasDriver} onClick={() => unbindDriver(v.id)} title="Bağlantıyı kaldır">

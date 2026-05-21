@@ -101,15 +101,15 @@ export function ShiftPeopleSummarySection({
         <div className="card" style={{ marginTop: 10 }}>
           <div className="muted"><b>Stop Generation Özeti</b></div>
           <div className="muted" style={{ marginTop: 6 }}>
-            maxWalkM: <b>{stopSummary.maxWalkM ?? maxWalkMValue}</b> • Durak (hub hariç): <b>{stopSummary.stopCountWithoutHub ?? stopSummary.stopCount}</b> • Durak (hub dahil): <b>{stopSummary.stopCountWithHub ?? stopSummary.stopCount}</b>
+            maxWalkM: <b>{stopSummary.maxWalkM ?? maxWalkMValue}</b> • Durak (toplanma konumu hariç): <b>{stopSummary.stopCountWithoutHub ?? stopSummary.stopCount}</b> • Durak (toplanma konumu dahil): <b>{stopSummary.stopCountWithHub ?? stopSummary.stopCount}</b>
           </div>
           <div className="muted" style={{ marginTop: 4 }}>
             Toplam kişi: <b>{stopSummary.totalPeople}</b> • Kapsanan: <b>{stopSummary.coveredCount}</b> • Tekil: <b>{stopSummary.singletonCount}</b> • İncelenecek: <b>{stopSummary.reviewCount}</b> • Dışarıda/atlanan: <b>{stopSummary.skippedCount}</b>
-            {stopSummary.hubApplied ? <span> • Hub uygulandı</span> : null}
+            {stopSummary.hubApplied ? <span> • Toplanma konumu uygulandı</span> : null}
           </div>
           {(stopSummary.stopCountWithHub ?? stopSummary.stopCount) !== (stopSummary.stopCountWithoutHub ?? stopSummary.stopCount) ? (
             <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-              Hub sayıya ayrı eklenir: preview ve draft sayaçlarında hub dahil sayı bir fazla görünebilir.
+              Toplanma konumu sayıya ayrı eklenir: preview ve draft sayaçlarında toplanma konumu dahil sayı bir fazla görünebilir.
             </div>
           ) : null}
           {Array.isArray(stopSummary.stopLoads) && stopSummary.stopLoads.length ? (
@@ -147,18 +147,18 @@ export function ShiftPeopleHubSection({
   selectedShift,
 }) {
   return (
-    <div className="card" style={{ margin: 0 }}>
-      <h3 style={{ marginTop: 0 }}>Vardiya Toplanma / Dağıtım Yeri</h3>
+        <div className="card" style={{ margin: 0 }}>
+      <h3 style={{ marginTop: 0 }}>Vardiya Toplanma / Dağıtım Konumu</h3>
       <div className="muted" style={{ marginTop: -6 }}>
-        INBOUND: hub <b>son durak</b> olur. OUTBOUND: hub <b>1. durak</b> olur.
+        INBOUND: toplanma konumu <b>son durak</b> olur. OUTBOUND: toplanma konumu <b>1. durak</b> olur.
       </div>
 
       <div className="grid" style={{ marginTop: 8 }}>
         <div className="col">
           <label className="muted">Yön</label>
           <select value={hubDirection} onChange={(e) => setHubDirection(e.target.value)} disabled={busy}>
-            <option value="INBOUND">INBOUND (Toplama → Hub)</option>
-            <option value="OUTBOUND">OUTBOUND (Hub → Dağıtım)</option>
+            <option value="INBOUND">INBOUND (Toplama → Toplanma Konumu)</option>
+            <option value="OUTBOUND">OUTBOUND (Toplanma Konumu → Dağıtım)</option>
           </select>
         </div>
 
@@ -168,7 +168,7 @@ export function ShiftPeopleHubSection({
             <input
               value={hubAddress}
               onChange={(e) => setHubAddress(e.target.value)}
-              placeholder="örn. Fabrika / Ofis / Toplanma noktası"
+            placeholder="örn. Fabrika / Ofis / Toplanma konumu"
               disabled={busy}
               style={{ flex: 1 }}
             />
@@ -179,11 +179,11 @@ export function ShiftPeopleHubSection({
         </div>
 
         <div className="col">
-          <label className="muted">Hub Lat</label>
+          <label className="muted">Toplanma Konumu Lat</label>
           <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} placeholder="41.0..." disabled={busy} />
         </div>
         <div className="col">
-          <label className="muted">Hub Lng</label>
+          <label className="muted">Toplanma Konumu Lng</label>
           <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} placeholder="29.0..." disabled={busy} />
         </div>
 
@@ -201,7 +201,7 @@ export function ShiftPeopleHubSection({
         <b>Liste pozisyonu:</b> {hubPosLabel}
         {selectedShift?.hubLat != null && selectedShift?.hubLng != null ? (
           <span style={{ marginLeft: 10 }}>
-            <b>Mevcut Hub:</b> {Number(selectedShift.hubLat).toFixed(6)}, {Number(selectedShift.hubLng).toFixed(6)}
+            <b>Mevcut Toplanma Konumu:</b> {Number(selectedShift.hubLat).toFixed(6)}, {Number(selectedShift.hubLng).toFixed(6)}
           </span>
         ) : null}
       </div>

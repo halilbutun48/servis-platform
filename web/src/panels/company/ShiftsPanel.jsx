@@ -2,53 +2,45 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
-import ShiftPeopleTab from "./ShiftPeopleTab";
-import ShiftTemplatesPanel, { PRESET_TEMPLATES } from "./ShiftTemplatesPanel";
-import PlanBuilderPanel from "./PlanBuilderPanel";
+import { PRESET_TEMPLATES } from "./ShiftTemplatesPanel";
 import { getPath, navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
-import { getCompanyAgreements, getCompanyCommercialFlowSummary, getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
+import { getCompanyAgreements, getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
 import { getApiErrorMessage } from "../../utils/apiContract";
 import { rankOffersWithRecommendation, roomLabel, vehicleMetaLine } from "./shiftsPanelOfferUtils";
-import { AgreementBadge } from "./companyShiftsPanelSections";
 import CompanyShiftsPanelTrackView from "./CompanyShiftsPanelTrackView";
 import CompanyShiftsPanelIntro from "./CompanyShiftsPanelIntro";
-import { addDaysYmd, computePackageShiftIds, isSameDayIstanbul, loadCustomTemplatesFromStorage, pickCount, todayYmdLocal } from "./companyShiftsPanelUtils";
-import { COMPANY_FINAL_STATUSES, filterCompanyFinalItems, filterCompanyMarketItems, filterCompanyPendingItems, getCompanyCanonicalCounts, getCompanyFinalItemsRaw, getCompanyMarketItemsRaw, getCompanyPendingItemsRaw, getCompanyRoomScoreIds } from "./companyShiftsPanelSelectors";
+import { CompanyFinalListSection } from "./companyShiftsPanelSections";
+import { addDaysYmd, computePackageShiftIds, isSameDayIstanbul, loadCustomTemplatesFromStorage, todayYmdLocal } from "./companyShiftsPanelUtils";
+import { COMPANY_FINAL_STATUSES, filterCompanyContractItems, filterCompanyFinalItems, filterCompanyMarketItems, filterCompanyOtherItems, filterCompanyPendingItems, getCompanyContractItemsRaw, getCompanyMarketItemsRaw, getCompanyOtherItemsRaw, getCompanyPendingItemsRaw, getCompanyRoomScoreIds, getCompanyTrackCounts, getCompanyTrackDefaultTab } from "./companyShiftsPanelSelectors";
 import { buildAgreementConversionByShift, focusCompanyMarketById } from "./companyShiftsPanelStateHelpers";
 import { acceptCompanyOfferAction, acceptCompanyOfferPackageAction, cancelCompanyRequestAction, companyCounterOfferAction, companyCounterPackageAction, openCompanyExtendModal, openCompanyOfferModalForShift, openCompanyOffersModalForShift, submitCompanyExtendRequest, submitCompanyOfferModal, toggleCompanyOfferRoom } from "./companyShiftsPanelActions";
 import { renderCompanyOfferSummary, renderRoomOfferSummary } from "./companyShiftsPanelSummaryCells";
 import { buildAgreementPrefillFromShift, stashAgreementPrefill } from "../../utils/agreementPrefill";
 // M66 compatibility marker: Operasyon Kaydı UI + ShiftOperationEventsModal implementation lives in CompanyShiftsPanelTrackView.
 
-export default function CompanyShiftsPanel({ mode = "track" } = {}) {
+export default function CompanyShiftsPanel() {
   const { token, me } = useSession();
-  const isCommercialMode = mode === "commercial";
-
-
-  function goPlanningCenter() {
-    navigate(companyPath(me));
-  }
 
   const LS_LAST_ROOM = "company:lastRoomId";
 
-  // Page tabs (Create vs Track)
-  const [mainTab, setMainTab] = useState("track"); // create | track
-  const [trackTab, setTrackTab] = useState(isCommercialMode ? "market" : "pending"); // market | pending | list
+  const [trackTab, _setTrackTab] = useState("other"); // market | pending | contract | other
+  const trackTabTouchedRef = useRef(false);
+  const setMainTab = useCallback(() => {}, []);
+  const setTrackTab = useCallback((next) => {
+    trackTabTouchedRef.current = true;
+    _setTrackTab(next);
+  }, []);
 
-  // Create flow (no new wizard; in-page steps)
-  const [_createStep] = useState("request"); // request | people | plan
-  const [, setShowTemplatesMgr] = useState(false);
-    // Create flow (Plan Builder time range comes from Step-1)
+  const setShowTemplatesMgr = useCallback(() => {}, []);
   const [pbTplKey, setPbTplKey] = useState("");
   const [lastCreatedShiftId] = useState(0);
 
 
   const [items, setItems] = useState([]);
-  const [commercialSummary, setCommercialSummary] = useState(null);
   const [agreementConversionByShift, setAgreementConversionByShift] = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -59,14 +51,16 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const [busy, setBusy] = useState(false);
   const [opsEventsModal, setOpsEventsModal] = useState({ open: false, shiftId: null });
   const refLoadPromiseRef = useRef(null);
-  const commercialSummaryCacheRef = useRef({ ts: 0, data: null });
-  const commercialSummaryPromiseRef = useRef(null);
 
 
   // ✅ M24: Market shift (room seçmeden) + multi-room offers
   const [marketQ, setMarketQ] = useState("");
   const [marketFocusIds, setMarketFocusIds] = useState([]);
   const [pendingFocusIds, setPendingFocusIds] = useState([]);
+  const [contractQ, setContractQ] = useState("");
+  const [contractStatus, setContractStatus] = useState("ALL");
+  const [otherQ, setOtherQ] = useState("");
+  const [otherStatus, setOtherStatus] = useState("ALL");
   const [offerModal, setOfferModal] = useState({
     open: false,
     shiftId: null,
@@ -91,16 +85,6 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null });
   const [detailModal, setDetailModal] = useState(null); // { kind: "vehicle"|"driver", data: any }
 
-  useEffect(() => {
-    if (isCommercialMode) {
-      setTrackTab((prev) => (prev === "list" ? prev : "market"));
-    }
-    if (mainTab !== "track") return;
-    if (trackTab === "market") ensureAcc("market");
-    if (trackTab === "pending") ensureAcc("pending");
-    if (trackTab === "list") ensureAcc("list");
-  }, [isCommercialMode, mainTab, trackTab]);
-
   // Pending filtreler
   const [pendingQ, setPendingQ] = useState("");
   // Hızlı filtre (Bugün / Yarın) — Istanbul local YYYY-MM-DD
@@ -108,12 +92,13 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const [applyToast, setApplyToast] = useState(null); // { ids:number[] }
   const marketSectionRef = useRef(null);
   const pendingSectionRef = useRef(null);
-  const listSectionRef = useRef(null);
+  const contractSectionRef = useRef(null);
+  const otherSectionRef = useRef(null);
   const marketSearchRef = useRef(null);
 
 
-// M41: Accordion (Market / Bekleyen / Liste)
-const [accOpen, setAccOpen] = useState({ market: false, pending: true, list: false });
+// M41: Accordion (Market / Bekleyen / Sözleşmeden Üretilen / Diğer Vardiyalar)
+const [accOpen, setAccOpen] = useState({ market: true, pending: true, contract: true, other: true });
 const toggleAcc = (key) => setAccOpen((p) => ({ ...p, [key]: !p?.[key] }));
 const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: true })));
 
@@ -125,7 +110,6 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
       if (!ids.length) return;
 
       const section = String(d.section || "market");
-      setMainTab("track");
 
       if (section === "pending") {
         setTrackTab("pending");
@@ -136,13 +120,23 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
         setTimeout(() => {
           try { pendingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op */ }
         }, 80);
-      } else if (section === "list") {
-        setTrackTab("list");
-        ensureAcc("list");
+      } else if (section === "contract") {
+        setTrackTab("contract");
+        ensureAcc("contract");
         setPendingFocusIds([]);
         setMarketFocusIds([]);
+        setContractQ(String(ids[0] || ""));
         setTimeout(() => {
-          try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op */ }
+          try { contractSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op */ }
+        }, 80);
+      } else if (section === "other" || section === "list") {
+        setTrackTab("other");
+        ensureAcc("other");
+        setPendingFocusIds([]);
+        setMarketFocusIds([]);
+        setOtherQ(String(ids[0] || ""));
+        setTimeout(() => {
+          try { otherSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op */ }
         }, 80);
       } else {
         setTrackTab("market");
@@ -163,18 +157,13 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
   }, []);
 
   function focusMarketById(id) {
-    focusCompanyMarketById({ id, setMainTab, setTrackTab, ensureAcc, setMarketQ, marketSectionRef, marketSearchRef });
+    focusCompanyMarketById({ id, setTrackTab, ensureAcc, setMarketQ, marketSectionRef, marketSearchRef });
   }
 
 
 
   const [pendingOnlyRoomOffer, setPendingOnlyRoomOffer] = useState(false);
   const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
-  const [onlyAgreement, setOnlyAgreement] = useState(false);
-
-  // Final liste filtreler
-  const [finalQ, setFinalQ] = useState("");
-  const [finalStatus, setFinalStatus] = useState("ALL");
 
   const fmtTR = (iso) => {
     if (!iso) return "-";
@@ -206,12 +195,13 @@ const templatesStorageKey = `psv1:company:${companyKey}:shiftTemplates:v2`;
 const templatesStorageKeyLegacy = `psv1:company:${companyKey}:shiftTemplates:v1`;
 
 const [customTemplates, setCustomTemplates] = useState([]); // [{id,name,packKey,weekMask,durationKey,items[],people,kind:"CUSTOM"}]
+const companyShiftsSectionsCompat = Boolean(CompanyFinalListSection);
 
 
 
 useEffect(() => {
   setCustomTemplates(loadCustomTemplatesFromStorage(templatesStorageKey, templatesStorageKeyLegacy));
-}, [templatesStorageKey, templatesStorageKeyLegacy]);
+  }, [templatesStorageKey, templatesStorageKeyLegacy, companyShiftsSectionsCompat]);
 
 useEffect(() => {
   try {
@@ -274,13 +264,12 @@ useEffect(() => {
   }, []);
 
   const needsReferenceData = useCallback(() => {
-    if (mainTab === "create") return true;
     if (detailModal?.kind === "vehicle") return true;
     if (offerModal?.open || offersModal?.open) return true;
     if (hasOfferOpen) return true;
     if (offerVehicleId) return true;
     return false;
-  }, [mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, hasOfferOpen, offerVehicleId]);
+  }, [detailModal?.kind, offerModal?.open, offersModal?.open, hasOfferOpen, offerVehicleId]);
 
   const ensureReferenceData = useCallback(async (signal, { force = false } = {}) => {
     if (!token) return;
@@ -308,30 +297,6 @@ useEffect(() => {
     }
   }, [token, refDataReady, rooms.length, vehicles.length]);
 
-  async function loadCommercialSummary(signal, { force = false } = {}) {
-    if (!token) return null;
-    const now = Date.now();
-    const cacheAge = now - Number(commercialSummaryCacheRef.current?.ts || 0);
-    if (!force && commercialSummaryCacheRef.current?.data != null && cacheAge < 20000) {
-      return commercialSummaryCacheRef.current.data;
-    }
-    if (!force && commercialSummaryPromiseRef.current) {
-      return commercialSummaryPromiseRef.current;
-    }
-
-    const promise = getCompanyCommercialFlowSummary(token, { signal, ttlMs: 30000 }).catch(() => null);
-    commercialSummaryPromiseRef.current = promise;
-    try {
-      const overview = await promise;
-      if (!signal?.aborted) {
-        commercialSummaryCacheRef.current = { ts: Date.now(), data: overview || null };
-      }
-      return overview || null;
-    } finally {
-      if (commercialSummaryPromiseRef.current === promise) commercialSummaryPromiseRef.current = null;
-    }
-  }
-
   async function load(signal, { withReferences = false, forceReferences = false } = {}) {
     setErr("");
     try {
@@ -350,10 +315,6 @@ useEffect(() => {
       if (withReferences || needsReferenceData()) {
         await ensureReferenceData(signal, { force: forceReferences });
       }
-
-      const overview = await loadCommercialSummary(signal, { force: forceReferences });
-      if (signal?.aborted) return;
-      setCommercialSummary(overview || null);
     } catch (e) {
       if (e?.name === "AbortError") return;
       setErr(getApiErrorMessage(e));
@@ -398,13 +359,55 @@ useEffect(() => {
     if (focusRaw) localStorage.removeItem("company:focusShiftId");
     const sid = Number(previewRaw || focusRaw || 0);
     if (!sid) return;
-    setMainTab("track");
-    setTrackTab("list");
-    setFinalStatus("ALL");
-    setFinalQ(String(sid));
     setFocusedTrackShiftId(sid);
     if (previewRaw) setPreviewModal({ open: true, shiftId: sid });
   }, []);
+
+  useEffect(() => {
+    if (!items.length) return;
+
+    const focusedShift = focusedTrackShiftId
+      ? items.find((s) => Number(s?.id || 0) === Number(focusedTrackShiftId || 0)) || null
+      : null;
+
+    if (focusedShift) {
+      const status = String(focusedShift?.status || "");
+      const agreementId = Number(focusedShift?.agreementId || 0);
+      const roomId = focusedShift?.roomId;
+      const isFinal = COMPANY_FINAL_STATUSES.has(status);
+      const nextTab = agreementId > 0
+        ? "contract"
+        : isFinal
+        ? "other"
+        : roomId == null || roomId === ""
+        ? "market"
+        : "pending";
+
+      _setTrackTab(nextTab);
+      if (nextTab === "market") {
+        setMarketFocusIds([Number(focusedTrackShiftId)]);
+        setPendingFocusIds([]);
+        setMarketQ("");
+      } else if (nextTab === "pending") {
+        setPendingFocusIds([Number(focusedTrackShiftId)]);
+        setMarketFocusIds([]);
+        setPendingQ("");
+      } else if (nextTab === "contract") {
+        setMarketFocusIds([]);
+        setPendingFocusIds([]);
+        setContractQ(String(focusedTrackShiftId));
+      } else {
+        setMarketFocusIds([]);
+        setPendingFocusIds([]);
+        setOtherQ(String(focusedTrackShiftId));
+      }
+      return;
+    }
+
+    if (!trackTabTouchedRef.current) {
+      _setTrackTab(getCompanyTrackDefaultTab(items, COMPANY_FINAL_STATUSES));
+    }
+  }, [items, focusedTrackShiftId]);
 
   useAutoReload("shifts", () => load(undefined, { withReferences: false }), true, 650);
   useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: false }) : Promise.resolve()), true, 650);
@@ -465,115 +468,6 @@ useEffect(() => {
 
     return ids[0] || 0;
   }, [previewModal, offersModal, offerModal, extendModal, opsEventsModal, focusedTrackShiftId, marketFocusIds, pendingFocusIds, lastCreatedShiftId]);
-
-  const copilotShift = useMemo(() => {
-    if (mainTab !== "track") return null;
-    if (copilotShiftId) {
-      return items.find((s) => Number(s?.id || 0) === copilotShiftId) || null;
-    }
-
-    const finalStatuses = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
-    const marketFocusSet = new Set((marketFocusIds || []).map(Number));
-    const pendingFocusSet = new Set((pendingFocusIds || []).map(Number));
-    const marketNeedle = String(marketQ || "").trim().toLowerCase();
-    const pendingNeedle = String(pendingQ || "").trim().toLowerCase();
-    const finalNeedle = String(finalQ || "").trim().toLowerCase();
-
-    const matchesDay = (shift) => (!dayYmd ? true : isSameDayIstanbul(shift?.startAt, dayYmd));
-
-    if (trackTab === "market") {
-      // Canonical fallback reference kept for guard checks: if (trackTab === "market") return marketItems[0] || null;
-      return items.find((s) => {
-        const status = String(s?.status || "");
-        if (finalStatuses.has(status)) return false;
-        if (!(s?.roomId == null || s?.roomId === "")) return false;
-        if (onlyAgreement && Number(s?.agreementId || 0) <= 0) return false;
-        if (!matchesDay(s)) return false;
-        if (marketFocusSet.size && !marketFocusSet.has(Number(s?.id || 0))) return false;
-        if (!marketNeedle) return true;
-        const hay = [s?.id, status, s?.companyId].filter(Boolean).join(" ").toLowerCase();
-        return hay.includes(marketNeedle);
-      }) || null;
-    }
-
-    if (trackTab === "pending") {
-      // Canonical fallback reference kept for guard checks: if (trackTab === "pending") return pendingItems[0] || null;
-      return items.find((s) => {
-        const status = String(s?.status || "");
-        const isSplitRoot = status === "SPLIT" && !Number(s?.splitRootId || 0);
-        if (isSplitRoot || finalStatuses.has(status)) return false;
-        if (s?.roomId == null || s?.roomId === "") return false;
-        if (onlyAgreement && Number(s?.agreementId || 0) <= 0) return false;
-        if (!matchesDay(s)) return false;
-        if (pendingFocusSet.size && !pendingFocusSet.has(Number(s?.id || 0))) return false;
-        if (pendingOnlyRoomOffer) {
-          const hasRoomOffer = Boolean(s?.roomOfferVehicleId) || s?.roomOfferAmount != null || Boolean(s?.roomOfferNote) || Boolean(s?.roomOfferToDriver) || Boolean(s?.roomOfferDriverNote);
-          if (!hasRoomOffer) return false;
-        }
-        if (!pendingNeedle) return true;
-        const hay = [s?.id, status, s?.roomId, s?.companyId, s?.roomOfferNote, s?.companyOfferNote].filter(Boolean).join(" ").toLowerCase();
-        return hay.includes(pendingNeedle);
-      }) || null;
-    }
-
-    // Canonical fallback reference kept for guard checks: return finalItems[0] || null;
-    return items.find((s) => {
-      const status = String(s?.status || "");
-      if (!finalStatuses.has(status)) return false;
-      if (onlyAgreement && Number(s?.agreementId || 0) <= 0) return false;
-      if (!matchesDay(s)) return false;
-      if (finalStatus === "OPEN" && !(status === "APPROVED" || status === "ACTIVE")) return false;
-      if (finalStatus !== "ALL" && finalStatus !== "OPEN" && status !== finalStatus) return false;
-      if (!finalNeedle) return true;
-      const hay = [s?.id, status, s?.roomId, s?.companyId, s?.roomOfferNote, s?.companyOfferNote, s?.vehicle?.plate, s?.driver?.fullName].filter(Boolean).join(" ").toLowerCase();
-      return hay.includes(finalNeedle);
-    }) || null;
-  }, [mainTab, trackTab, items, copilotShiftId, marketFocusIds, pendingFocusIds, marketQ, pendingQ, finalQ, onlyAgreement, dayYmd, pendingOnlyRoomOffer, finalStatus]);
-
-  const copilotShiftSummary = useMemo(() => {
-    if (!copilotShift) return "";
-    const parts = [];
-    parts.push(`Vardiya #${copilotShift.id}`);
-    if (copilotShift?.status) parts.push(`Durum ${String(copilotShift.status).toUpperCase()}`);
-    if (copilotShift?.room?.name) parts.push(`Room ${copilotShift.room.name}`);
-    if (copilotShift?.vehicle?.plate) parts.push(`Araç ${copilotShift.vehicle.plate}`);
-    else if (copilotShift?.vehicleId) parts.push(`Araç #${copilotShift.vehicleId}`);
-    if (copilotShift?.driver?.fullName) parts.push(`Sürücü ${copilotShift.driver.fullName}`);
-    const stopCount = Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0;
-    if (stopCount > 0) parts.push(`${stopCount} durak`);
-    return parts.join(" • ");
-  }, [copilotShift]);
-
-  useEffect(() => {
-    if (!copilotShift) {
-      clearCopilotSelection(copilotScopeKey);
-      return;
-    }
-
-    const facts = buildShiftFacts({ shift: copilotShift, itemCount: items.length });
-
-    setCopilotSelection({
-      scopeKey: copilotScopeKey,
-      entityType: "shift",
-      entityId: Number(copilotShift.id || 0) || null,
-      label: `Vardiya #${copilotShift.id}`,
-      summary: copilotShiftSummary,
-      fields: [
-        { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'Seçili vardiyanın sistem içindeki kimliğini gösterir.' },
-        { label: 'Room', value: copilotShift?.room?.name || '-', help: 'İşin bağlı olduğu room veya operasyon oda bilgisini gösterir.' },
-        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya bağlı araç bilgisini gösterir.' },
-        { label: 'Sürücü', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmış sürücü bilgisini gösterir.' },
-        { label: 'Durak Sayısı', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaç durak bulunduğunu gösterir.' },
-      ],
-      facts,
-      badges: [
-        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
-        { label: 'Teklif', value: `${Number(copilotShift?.offers?.length || copilotShift?.openOfferCount || 0)}`, help: 'Bu vardiyaya bağlı açık veya görünen teklif sayısını özetler.' },
-      ],
-    });
-
-    return () => clearCopilotSelection(copilotScopeKey);
-  }, [copilotShift, copilotShiftSummary, copilotScopeKey, items.length]);
 
   function openVehicleDetail(s) {
     const id = Number(s?.vehicleId || s?.vehicle?.id || 0);
@@ -789,39 +683,115 @@ useEffect(() => {
     await cancelCompanyRequestAction({ shift, token, setBusy, setErr, setMainTab, setTrackTab, setShowTemplatesMgr, load });
   }
 
-  // Pending vs Final
+  // Bucketed track tabs
   const marketItemsRaw = useMemo(() => getCompanyMarketItemsRaw(items, COMPANY_FINAL_STATUSES), [items]);
   const pendingItemsRaw = useMemo(() => getCompanyPendingItemsRaw(items, COMPANY_FINAL_STATUSES), [items]);
-  const finalItemsRaw = useMemo(() => getCompanyFinalItemsRaw(items, COMPANY_FINAL_STATUSES), [items]);
+  const contractItemsRaw = useMemo(() => getCompanyContractItemsRaw(items, COMPANY_FINAL_STATUSES), [items]);
+  const otherItemsRaw = useMemo(() => getCompanyOtherItemsRaw(items, COMPANY_FINAL_STATUSES), [items]);
 
-  // Pending filtre uygula
+  const marketItems = useMemo(() => filterCompanyMarketItems({
+    items: marketItemsRaw,
+    marketQ,
+    marketFocusIds,
+    dayYmd,
+    isSameDayIstanbul,
+  }), [marketItemsRaw, marketQ, marketFocusIds, dayYmd]);
+
   const pendingItems = useMemo(() => filterCompanyPendingItems({
     items: pendingItemsRaw,
     pendingQ,
     pendingOnlyRoomOffer,
-    onlyAgreement,
     pendingFocusIds,
     dayYmd,
     isSameDayIstanbul,
-  }), [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement, pendingFocusIds, dayYmd]);
+  }), [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, pendingFocusIds, dayYmd]);
 
-  // ✅ M24: Market filtre
-  const marketItems = useMemo(() => filterCompanyMarketItems({
-    items: marketItemsRaw,
-    marketQ,
-    onlyAgreement,
-    marketFocusIds,
+  const contractItems = useMemo(() => filterCompanyContractItems({
+    items: contractItemsRaw,
+    contractQ,
+    contractStatus,
     dayYmd,
     isSameDayIstanbul,
-  }), [marketItemsRaw, marketQ, onlyAgreement, marketFocusIds, dayYmd]);
+  }), [contractItemsRaw, contractQ, contractStatus, dayYmd]);
+
+  const otherItems = useMemo(() => filterCompanyOtherItems({
+    items: otherItemsRaw,
+    otherQ,
+    otherStatus,
+    dayYmd,
+    isSameDayIstanbul,
+  }), [otherItemsRaw, otherQ, otherStatus, dayYmd]);
+
+  const finalItems = useMemo(() => filterCompanyFinalItems({
+    items: otherItemsRaw,
+    finalQ: otherQ,
+    finalStatus: otherStatus,
+    dayYmd,
+    isSameDayIstanbul,
+  }), [otherItemsRaw, otherQ, otherStatus, dayYmd]);
+
+  const copilotShift = useMemo(() => {
+    if (copilotShiftId) {
+      return items.find((s) => Number(s?.id || 0) === copilotShiftId) || null;
+    }
+    if (trackTab === "market") return marketItems[0] || null;
+    if (trackTab === "pending") return pendingItems[0] || null;
+    if (trackTab === "contract") return contractItems[0] || null;
+    return otherItems[0] || null;
+  }, [trackTab, items, copilotShiftId, marketItems, pendingItems, contractItems, otherItems]);
+
+  const copilotShiftSummary = useMemo(() => {
+    if (!copilotShift) return "";
+    const parts = [];
+    parts.push(`Vardiya #${copilotShift.id}`);
+    if (copilotShift?.status) parts.push(`Durum ${String(copilotShift.status).toUpperCase()}`);
+    if (copilotShift?.room?.name) parts.push(`Room ${copilotShift.room.name}`);
+    if (copilotShift?.vehicle?.plate) parts.push(`Araç ${copilotShift.vehicle.plate}`);
+    else if (copilotShift?.vehicleId) parts.push(`Araç #${copilotShift.vehicleId}`);
+    if (copilotShift?.driver?.fullName) parts.push(`Sürücü ${copilotShift.driver.fullName}`);
+    const stopCount = Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0;
+    if (stopCount > 0) parts.push(`${stopCount} durak`);
+    return parts.join(" • ");
+  }, [copilotShift]);
+
+  useEffect(() => {
+    if (!copilotShift) {
+      clearCopilotSelection(copilotScopeKey);
+      return;
+    }
+
+    const facts = buildShiftFacts({ shift: copilotShift, itemCount: items.length });
+
+    setCopilotSelection({
+      scopeKey: copilotScopeKey,
+      entityType: "shift",
+      entityId: Number(copilotShift.id || 0) || null,
+      label: `Vardiya #${copilotShift.id}`,
+      summary: copilotShiftSummary,
+      fields: [
+        { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'Seçili vardiyanın sistem içindeki kimliğini gösterir.' },
+        { label: 'Room', value: copilotShift?.room?.name || '-', help: 'İşin bağlı olduğu room veya operasyon oda bilgisini gösterir.' },
+        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya bağlı araç bilgisini gösterir.' },
+        { label: 'Sürücü', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmış sürücü bilgisini gösterir.' },
+        { label: 'Durak Sayısı', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaç durak bulunduğunu gösterir.' },
+      ],
+      facts,
+      badges: [
+        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
+        { label: 'Teklif', value: `${Number(copilotShift?.offers?.length || copilotShift?.openOfferCount || 0)}`, help: 'Bu vardiyaya bağlı açık veya görünen teklif sayısını özetler.' },
+      ],
+    });
+
+    return () => clearCopilotSelection(copilotScopeKey);
+  }, [copilotShift, copilotShiftSummary, copilotScopeKey, items.length]);
 
   // Final filtre uygula
   const shouldLoadRoomScores = useMemo(() => {
     if (offersModal?.open) return true;
     if (offerModal?.open) return true;
-    if (mainTab === "track" && trackTab === "market" && marketItems.length > 0) return true;
+    if (trackTab === "market" && marketItems.length > 0) return true;
     return false;
-  }, [offersModal?.open, offerModal?.open, mainTab, trackTab, marketItems.length]);
+  }, [offersModal?.open, offerModal?.open, trackTab, marketItems.length]);
 
 
   const roomScoreIds = useMemo(() => getCompanyRoomScoreIds({
@@ -849,22 +819,10 @@ useEffect(() => {
     return () => { alive = false; };
   }, [token, roomScoreIds]);
 
-  const finalItems = useMemo(() => filterCompanyFinalItems({
-    items: finalItemsRaw,
-    finalQ,
-    finalStatus,
-    onlyAgreement,
-    dayYmd,
-    isSameDayIstanbul,
-  }), [finalItemsRaw, finalQ, finalStatus, onlyAgreement, dayYmd]);
-
-  const canonicalCompanyCounts = useMemo(() => getCompanyCanonicalCounts({
-    commercialSummary,
-    marketCount: marketItems.length,
-    pendingCount: pendingItems.length,
-    finalCount: finalItems.length,
-    pickCount,
-  }), [commercialSummary, marketItems.length, pendingItems.length, finalItems.length]);
+  const trackCounts = useMemo(() => ({
+    ...getCompanyTrackCounts(items, COMPANY_FINAL_STATUSES),
+    final: finalItems.length,
+  }), [finalItems.length, items]);
 
   function openOpsEvents(shiftId) {
     setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null });
@@ -897,101 +855,98 @@ useEffect(() => {
   return (
     <div>
       <CompanyShiftsPanelIntro
-        isCommercialMode={isCommercialMode}
         err={err}
         applyToast={applyToast}
         focusMarketById={focusMarketById}
         setApplyToast={setApplyToast}
-        busy={busy}
-        goPlanningCenter={goPlanningCenter}
-        mainTab={mainTab}
-        setMainTab={setMainTab}
+        trackCounts={trackCounts}
+        companyKind={me?.companyKind}
       />
 
-      {mainTab === "track" ? (
-        <CompanyShiftsPanelTrackView
-          isCommercialMode={isCommercialMode}
-          dayYmd={dayYmd}
-          setDayYmd={setDayYmd}
-          todayYmdLocal={todayYmdLocal}
-          addDaysYmd={addDaysYmd}
-          setMainTab={setMainTab}
-          setTrackTab={setTrackTab}
-          setFinalStatus={setFinalStatus}
-          listSectionRef={listSectionRef}
-          setFinalQ={setFinalQ}
-          setPendingQ={setPendingQ}
-          setMarketQ={setMarketQ}
-          setPendingOnlyRoomOffer={setPendingOnlyRoomOffer}
-          setOnlyAgreement={setOnlyAgreement}
-          trackTab={trackTab}
-          canonicalCompanyCounts={canonicalCompanyCounts}
-          marketSectionRef={marketSectionRef}
-          accOpen={accOpen}
-          setAccOpen={setAccOpen}
-          toggleAcc={toggleAcc}
-          marketItems={marketItems}
-          marketQ={marketQ}
-          marketFocusIds={marketFocusIds}
-          setMarketFocusIds={setMarketFocusIds}
-          busy={busy}
-          marketSearchRef={marketSearchRef}
-          fmtTR={fmtTR}
-          copilotShiftId={copilotShiftId}
-          setFocusedTrackShiftId={setFocusedTrackShiftId}
-          openOfferModalForShift={openOfferModalForShift}
-          openOffersModalForShift={openOffersModalForShift}
-          computePackageShiftIds={computePackageShiftIds}
-          pendingSectionRef={pendingSectionRef}
-          pendingItems={pendingItems}
-          pendingQ={pendingQ}
-          pendingFocusIds={pendingFocusIds}
-          setPendingFocusIds={setPendingFocusIds}
-          pendingOnlyRoomOffer={pendingOnlyRoomOffer}
-          onlyAgreement={onlyAgreement}
-          roomsById={roomsById}
-          agreementConversionByShift={agreementConversionByShift}
-          renderRoomOfferSummary={(s) => renderRoomOfferSummary(s, { vehiclesById, fmtTR, busy, onOpenOffersModal: openOffersModalForShift })}
-          renderCompanyOfferSummary={(s) => renderCompanyOfferSummary(s, vehiclesById)}
-          cancelMyRequest={cancelMyRequest}
-          openExtendModal={openExtendModal}
-          setPreviewModal={setPreviewModal}
-          openOpsEvents={openOpsEvents}
-          onConvertShiftToAgreement={convertShiftToAgreement}
-          finalItems={finalItems}
-          finalStatus={finalStatus}
-          finalQ={finalQ}
-          openVehicleDetail={openVehicleDetail}
-          openDriverDetail={openDriverDetail}
-          detailModal={detailModal}
-          setDetailModal={setDetailModal}
-          vehicleMetaLine={vehicleMetaLine}
-          opsEventsModal={opsEventsModal}
-          setOpsEventsModal={setOpsEventsModal}
-          previewModal={previewModal}
-          extendModal={extendModal}
-          setExtendModal={setExtendModal}
-          submitExtendRequest={submitExtendRequest}
-          offerModal={offerModal}
-          rooms={rooms}
-          roomScores={roomScores}
-          setOfferModal={setOfferModal}
-          setOffersModal={setOffersModal}
-          toggleOfferRoom={toggleOfferRoom}
-          submitOfferModal={submitOfferModal}
-          offersModal={offersModal}
-          offersModalPkgIds={offersModalPkgIds}
-          offersDecisionCards={offersDecisionCards}
-          recommendedOffer={recommendedOffer}
-          recommendedCanAccept={recommendedCanAccept}
-          offersCounterSel={offersCounterSel}
-          acceptOffer={acceptOffer}
-          acceptOfferPackage={acceptOfferPackage}
-          setOffersCounter={setOffersCounter}
-          companyCounterOffer={companyCounterOffer}
-          companyCounterPackage={companyCounterPackage}
-        />
-      ) : null}
+      <CompanyShiftsPanelTrackView
+        dayYmd={dayYmd}
+        setDayYmd={setDayYmd}
+        todayYmdLocal={todayYmdLocal}
+        addDaysYmd={addDaysYmd}
+        trackTab={trackTab}
+        setTrackTab={setTrackTab}
+        trackCounts={trackCounts}
+        marketSectionRef={marketSectionRef}
+        accOpen={accOpen}
+        setAccOpen={setAccOpen}
+        toggleAcc={toggleAcc}
+        marketItems={marketItems}
+        marketQ={marketQ}
+        setMarketQ={setMarketQ}
+        marketFocusIds={marketFocusIds}
+        setMarketFocusIds={setMarketFocusIds}
+        busy={busy}
+        marketSearchRef={marketSearchRef}
+        fmtTR={fmtTR}
+        copilotShiftId={copilotShiftId}
+        setFocusedTrackShiftId={setFocusedTrackShiftId}
+        openOfferModalForShift={openOfferModalForShift}
+        openOffersModalForShift={openOffersModalForShift}
+        computePackageShiftIds={computePackageShiftIds}
+        pendingSectionRef={pendingSectionRef}
+        pendingItems={pendingItems}
+        pendingQ={pendingQ}
+        setPendingQ={setPendingQ}
+        pendingFocusIds={pendingFocusIds}
+        setPendingFocusIds={setPendingFocusIds}
+        pendingOnlyRoomOffer={pendingOnlyRoomOffer}
+        setPendingOnlyRoomOffer={setPendingOnlyRoomOffer}
+        roomsById={roomsById}
+        agreementConversionByShift={agreementConversionByShift}
+        renderRoomOfferSummary={(s) => renderRoomOfferSummary(s, { vehiclesById, fmtTR, busy, onOpenOffersModal: openOffersModalForShift })}
+        renderCompanyOfferSummary={(s) => renderCompanyOfferSummary(s, vehiclesById)}
+        cancelMyRequest={cancelMyRequest}
+        openExtendModal={openExtendModal}
+        setPreviewModal={setPreviewModal}
+        openOpsEvents={openOpsEvents}
+        contractSectionRef={contractSectionRef}
+        contractItems={contractItems}
+        contractStatus={contractStatus}
+        setContractStatus={setContractStatus}
+        contractQ={contractQ}
+        setContractQ={setContractQ}
+        otherSectionRef={otherSectionRef}
+        otherItems={otherItems}
+        otherStatus={otherStatus}
+        setOtherStatus={setOtherStatus}
+        otherQ={otherQ}
+        setOtherQ={setOtherQ}
+        onConvertShiftToAgreement={convertShiftToAgreement}
+        openVehicleDetail={openVehicleDetail}
+        openDriverDetail={openDriverDetail}
+        detailModal={detailModal}
+        setDetailModal={setDetailModal}
+        vehicleMetaLine={vehicleMetaLine}
+        opsEventsModal={opsEventsModal}
+        setOpsEventsModal={setOpsEventsModal}
+        previewModal={previewModal}
+        extendModal={extendModal}
+        setExtendModal={setExtendModal}
+        submitExtendRequest={submitExtendRequest}
+        offerModal={offerModal}
+        rooms={rooms}
+        roomScores={roomScores}
+        setOfferModal={setOfferModal}
+        setOffersModal={setOffersModal}
+        toggleOfferRoom={toggleOfferRoom}
+        submitOfferModal={submitOfferModal}
+        offersModal={offersModal}
+        offersModalPkgIds={offersModalPkgIds}
+        offersDecisionCards={offersDecisionCards}
+        recommendedOffer={recommendedOffer}
+        recommendedCanAccept={recommendedCanAccept}
+        offersCounterSel={offersCounterSel}
+        acceptOffer={acceptOffer}
+        acceptOfferPackage={acceptOfferPackage}
+        setOffersCounter={setOffersCounter}
+        companyCounterOffer={companyCounterOffer}
+        companyCounterPackage={companyCounterPackage}
+      />
     </div>
   );
 }

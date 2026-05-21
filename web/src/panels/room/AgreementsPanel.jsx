@@ -851,7 +851,7 @@ export default function AgreementsPanel() {
                   <th>Günler</th>
                   <th>Dir/Pat</th>
                   <th>Vardiyalar</th>
-                  <th>Hub</th>
+                  <th>Toplanma Konumu</th>
                   <th>Şirket Teklifi</th>
                   <th>Oda Karşı Teklifi</th>
                   <th>Aksiyon</th>

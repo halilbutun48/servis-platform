@@ -41,6 +41,10 @@ function mustContains(text, needle, label) {
   must(normalize(text).includes(normalize(needle)), label);
 }
 
+function mustNotContains(text, needle, label) {
+  must(!normalize(text).includes(normalize(needle)), label);
+}
+
 function countMatches(text, pattern) {
   const matches = String(text || "").match(pattern);
   return matches ? matches.length : 0;
@@ -73,12 +77,10 @@ function main() {
   mustContains(panel, "const [activeTab, setActiveTab] = useState(\"summary\")", "OperationHealthPanel has active tab state");
   mustContains(panel, "Şartlı Küme", "OperationHealthPanel keeps conditional cluster tab");
   mustContains(panel, "Oda Operasyon Özeti", "OperationHealthPanel keeps summary tab");
-  mustContains(panel, "Sorunlu Sürücüler", "OperationHealthPanel keeps drivers tab");
-  mustContains(panel, "Açık Sorunlar", "OperationHealthPanel keeps issues tab");
+  mustContains(panel, "Sürücü & Sorunlar", "OperationHealthPanel keeps combined problems tab");
   mustContains(panel, 'activeTab === "proof"', "OperationHealthPanel renders proof tab conditionally");
   mustContains(panel, 'activeTab === "summary"', "OperationHealthPanel renders summary tab conditionally");
-  mustContains(panel, 'activeTab === "drivers"', "OperationHealthPanel renders drivers tab conditionally");
-  mustContains(panel, 'activeTab === "issues"', "OperationHealthPanel renders issues tab conditionally");
+  mustContains(panel, 'activeTab === "problems"', "OperationHealthPanel renders combined problems tab conditionally");
   mustContains(panel, 'role="tabpanel"', "OperationHealthPanel uses tabpanel semantics");
   mustContains(panel, "OperationProofMiniCard", "OperationHealthPanel keeps conditional cluster block");
   mustContains(panel, "RoomOperationsBoard", "OperationHealthPanel keeps room operations board block");
@@ -86,8 +88,11 @@ function main() {
   mustContains(panel, "Açık Sorunlar", "OperationHealthPanel keeps issue block");
   mustContains(panel, "Filtre", "OperationHealthPanel keeps top filter row");
   mustContains(panel, "MetricCard", "OperationHealthPanel keeps top KPI cards");
-  must(countMatches(panel, /role="tabpanel"/g) >= 4, "OperationHealthPanel renders four tab panels");
-  must(countMatches(panel, /activeTab === "/g) >= 4, "OperationHealthPanel uses conditional activeTab branches");
+  mustNotContains(panel, 'label: "Açık Sorunlar"', "OperationHealthPanel removes open issues tab label");
+  mustNotContains(panel, 'activeTab === "drivers"', "OperationHealthPanel removes standalone drivers tab branch");
+  mustNotContains(panel, 'activeTab === "issues"', "OperationHealthPanel removes standalone issues tab branch");
+  must(countMatches(panel, /role="tabpanel"/g) === 3, "OperationHealthPanel renders exactly three tab panels");
+  must(countMatches(panel, /activeTab === "/g) === 3, "OperationHealthPanel uses exactly three activeTab branches");
   must(countMatches(panel, /OperationProofMiniCard/g) >= 2, "OperationHealthPanel keeps proof card import and usage");
   must(countMatches(panel, /RoomOperationsBoard/g) >= 2, "OperationHealthPanel keeps operations board import and usage");
   must(countMatches(panel, /Sorunlu Sürücüler \/ Canlılık Listesi/g) === 1, "OperationHealthPanel keeps a single driver live list heading");

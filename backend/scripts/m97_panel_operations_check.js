@@ -95,7 +95,7 @@ must(has(superOpsPanel, 'Biniş değişikliği kayıtları'), "super admin opera
 
 must(has(screenRegistry, '{ id: 2117, path: "/company/operations", label: "Operasyon Paneli" }'), "copilot registry keeps company operations");
 must(has(screenRegistry, '{ id: 2218, path: "/school/operations", label: "Okul Operasyon Paneli" }'), "copilot registry keeps school operations");
-must(has(screenRegistry, '{ id: 2315, path: "/organization/operations", label: "Organizasyon Operasyon Paneli" }'), "copilot registry keeps organization operations");
+must(has(screenRegistry, '{ id: 2315, path: "/organization/operations", label: "Kurum Operasyon Paneli" }'), "copilot registry keeps organization operations");
 must(has(screenRegistry, '{ id: 6117, path: "/superadmin/operations", label: "Denetim Paneli" }'), "copilot registry keeps super admin operations");
 
 must(has(packageJson, '"m97opscheck": "node scripts/m97_panel_operations_check.js"'), "backend package exposes m97opscheck");

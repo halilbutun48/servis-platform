@@ -51,7 +51,7 @@ export default function GuidedPeopleStopsStep({
 
   return (
     <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-      <div className="muted">{organization ? "3. adım: Yerleri ve kişi sayısını son kez kontrol et. Kişi/import bölümü Organization için opsiyoneldir." : `3. adım: ${who} ekle/import → durak üret → önizleme.`}</div>
+      <div className="muted">{organization ? "3. adım: Konumları ve kişi sayısını son kez kontrol et. Kişi/import bölümü Organization için opsiyoneldir." : `3. adım: ${who} ekle/import → durak üret → önizleme.`}</div>
       {!draftShiftIds.length ? (
         <div className="card err">Önce taslak shift oluşturmalısın.</div>
       ) : (
@@ -69,7 +69,7 @@ export default function GuidedPeopleStopsStep({
               Toplanma: <b>{orgGatheringName || "-"}</b> • Tahmini kişi: <b>{orgEstimatedPax || "-"}</b> • Dönüş: <b>{orgReturnType === "RETURN_TO_START" ? "Başlangıç noktasına dön" : "Son noktada bitir"}</b>
             </div>
             <div className="muted" style={{ marginTop: 6 }}>
-              Yerler: {orgFilledDestinations.length ? orgFilledDestinations.map((d) => d.title || d.address).join(" → ") : "Henüz yer girilmedi"}
+              Konumlar: {orgFilledDestinations.length ? orgFilledDestinations.map((d) => d.title || d.address).join(" → ") : "Henüz konum girilmedi"}
             </div>
           </div>
           <details className="card">

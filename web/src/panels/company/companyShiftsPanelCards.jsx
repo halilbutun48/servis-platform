@@ -257,7 +257,7 @@ export function CompanyOfferRoomCard({ room, selected, score, onToggle }) {
             <span>
               <b>{roomLabel(room)}</b> (#{room.id})
             </span>
-            <span className="muted">{room?.hubLat != null && room?.hubLng != null ? "Hub konumu hazır" : "Hub yok"}</span>
+            <span className="muted">{room?.hubLat != null && room?.hubLng != null ? "Toplanma konumu hazır" : "Toplanma konumu yok"}</span>
           </span>
         </span>
         <ProviderScoreBadge score={score} prominent showLabel />

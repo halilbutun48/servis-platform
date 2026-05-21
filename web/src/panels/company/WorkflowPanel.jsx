@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
-import { personLabel } from "../../utils/labels";
+import { hubLabel, personLabel } from "../../utils/labels";
 import GuidedPlanModal from "./GuidedPlanModal";
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import { formatDateTimeTR } from "../../utils/time";
@@ -355,6 +355,7 @@ export default function WorkflowPanel() {
   const { token, me } = useSession();
   // School mode (Company.kind=SCHOOL) uses the same panel; copy/paste safe label.
   const who = personLabel(me);
+  const scopeHubLabel = hubLabel(me);
   const school = me?.companyKind === "SCHOOL";
   const organization = me?.companyKind === "ORGANIZATION";
 
@@ -485,9 +486,9 @@ export default function WorkflowPanel() {
   const organizationGuideRows = useMemo(() => ([
     {
       done: guide.geoOk,
-      title: "1) Toplanma noktası",
-      desc: guide.geoOk ? "Toplanma noktası hazır" : "Önce toplanma noktasını kaydet",
-      actionLabel: guide.geoOk ? "Konumu kontrol et" : "Toplanma noktasını aç",
+      title: "1) Toplanma Konumu",
+      desc: guide.geoOk ? "Toplanma konumu hazır" : "Önce toplanma konumunu kaydet",
+      actionLabel: guide.geoOk ? "Konumu kontrol et" : "Toplanma konumunu aç",
       onAction: () => setGuidedOpen(true),
     },
     {
@@ -633,15 +634,15 @@ export default function WorkflowPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title={school ? "Okul — Planlama Merkezi" : organization ? "Organization — Gezi / Planlama Merkezi" : "Company — Planlama Merkezi"}
+        title={school ? "Okul — Planlama Merkezi" : organization ? "Kurum — Gezi / Planlama Merkezi" : "Company — Planlama Merkezi"}
         subtitle={
           organization ? (
             <>
-              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>Toplanma noktası</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek yerler</b> → <b>Ön izleme / teklif</b>.
+              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>{scopeHubLabel}</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek konumlar</b> → <b>Ön izleme / teklif</b>.
             </>
           ) : (
             <>
-              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme / teklif</b>.
+              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>{scopeHubLabel}</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme / teklif</b>.
             </>
           )
         }
@@ -688,7 +689,7 @@ export default function WorkflowPanel() {
         <div className="muted" style={{ marginTop: 4 }}>
           {organization ? (
             <>
-              Sade akış: <b>Toplanma noktası</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek yerler</b> → <b>Ön izleme</b> → <b>Teklif oluştur</b>.
+              Sade akış: <b>Toplanma Konumu</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek konumlar</b> → <b>Ön izleme</b> → <b>Teklif oluştur</b>.
             </>
           ) : (
             <>

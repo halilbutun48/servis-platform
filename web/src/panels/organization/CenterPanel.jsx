@@ -58,9 +58,9 @@ export default function OrganizationCenterPanel() {
   return (
     <div className="wrap">
       <div className="card">
-        <div className="title">Organizasyon Merkezi</div>
+        <div className="title">Kurum Merkezi</div>
         <div className="muted">
-          Operasyonun asıl çalışma ekranı <b>Yer Planları</b> ekranıdır. Buradan planı açar,
+          Operasyonun asıl çalışma ekranı <b>Kurum Planları</b> ekranıdır. Buradan planı açar,
           markete çıkarır, room&apos;lara fiyatlı teklif yollar ve onay sonrası canlı haritadan takip edersin.
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function OrganizationCenterPanel() {
           <div className="big">{stats.draft}</div>
         </div>
         <div className="card">
-          <div className="muted">Toplam lokasyon</div>
+          <div className="muted">Toplam konum</div>
           <div className="big">{stats.totalStops}</div>
         </div>
         <div className="card">
@@ -100,7 +100,7 @@ export default function OrganizationCenterPanel() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => navigate("/organization/plans")}>Yer Planları</button>
+            <button type="button" onClick={() => navigate("/organization/plans")}>Kurum Planları</button>
             <button type="button" onClick={() => navigate("/organization/shifts")}>Vardiyalar</button>
             <button type="button" onClick={() => navigate("/organization/map")}>Canlı Harita</button>
           </div>
@@ -111,7 +111,7 @@ export default function OrganizationCenterPanel() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <div className="title">Son Planlar</div>
-            <div className="muted">Planı açınca Yer Planları ekranında otomatik seçilir.</div>
+            <div className="muted">Planı açınca Kurum Planları ekranında otomatik seçilir.</div>
           </div>
           <button type="button" onClick={load} disabled={busy}>
             {busy ? "..." : "Yenile"}
@@ -124,7 +124,7 @@ export default function OrganizationCenterPanel() {
               <th>Plan</th>
               <th>Tarih</th>
               <th>Durum</th>
-              <th>Lokasyon</th>
+              <th>Konum</th>
               <th></th>
             </tr>
           </thead>

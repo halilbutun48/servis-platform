@@ -116,7 +116,7 @@ export async function createGuidedDraftShiftsAction({
         const stopDrafts = [];
         for (let idx = 0; idx < (orgFilledDestinations || []).length; idx++) {
           const dest = orgFilledDestinations[idx];
-          let stopName = String(dest?.title || dest?.address || `Yer ${idx + 1}`).trim();
+          let stopName = String(dest?.title || dest?.address || `Konum ${idx + 1}`).trim();
           let stopLat = dest?.lat === "" ? null : Number(dest?.lat);
           let stopLng = dest?.lng === "" ? null : Number(dest?.lng);
           if (!(Number.isFinite(stopLat) && Number.isFinite(stopLng))) {
@@ -136,7 +136,7 @@ export async function createGuidedDraftShiftsAction({
           }
           if (Number.isFinite(stopLat) && Number.isFinite(stopLng)) {
             stopDrafts.push({
-              name: stopName || `Yer ${idx + 1}`,
+              name: stopName || `Konum ${idx + 1}`,
               lat: stopLat,
               lng: stopLng,
               order: stopDrafts.length + 1,

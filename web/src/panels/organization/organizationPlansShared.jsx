@@ -51,13 +51,13 @@ export function SummaryCard({ current, summary, onGoPlanning }) {
       <div className="title">Özet ve Aksiyonlar</div>
       <div className="muted" style={{ marginBottom: 10 }}>
         Yeni üretim akışı artık <b>Planlama Merkezi</b> içinden yürür. Bu ekran eski
-        organization planlarını incelemek için tutulur; yeni plan açma, teklif gönderme ve
+        kurum planlarını incelemek için tutulur; yeni plan açma, teklif gönderme ve
         sözleşme başlatma işlemleri Planlama Merkezi&apos;nden yapılmalıdır.
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         <Pill>Durum: {statusLabel(current.status)}</Pill>
-        <Pill>Lokasyon: {summary.count}</Pill>
+        <Pill>Konum: {summary.count}</Pill>
         <Pill>Kişi: {summary.pax}</Pill>
         <Pill>
           Saat: {minToHm(current.startMin)} – {minToHm(current.endMin)}
@@ -84,7 +84,7 @@ export function MiniMapPreview({ stops }) {
     return (
       <div className="card">
         <div className="title">Mini Harita Önizleme</div>
-        <div className="muted">Koordinatlı lokasyon ekleyin.</div>
+        <div className="muted">Koordinatlı konum ekleyin.</div>
       </div>
     );
   }
@@ -113,7 +113,7 @@ export function MiniMapPreview({ stops }) {
     <div className="card">
       <div className="title">Mini Harita Önizleme</div>
       <div className="muted" style={{ marginBottom: 8 }}>
-        Lokasyon sırası çizgisel önizleme.
+        Konum sırası çizgisel önizleme.
       </div>
 
       <svg
@@ -169,7 +169,7 @@ export function PlanListItem({ item, active, onClick }) {
       <div className="muted">
         {String(item.planDate || "").slice(0, 10)} • {statusLabel(item.status)}
       </div>
-      <div className="muted">{(item.stops || []).length} lokasyon</div>
+      <div className="muted">{(item.stops || []).length} konum</div>
     </button>
   );
 }
@@ -233,7 +233,7 @@ export function StopCard({
         >
           <Pill>::</Pill>
           <Pill>#{index + 1}</Pill>
-          <span style={{ fontWeight: 700 }}>{row.name || `Lokasyon ${index + 1}`}</span>
+      <span style={{ fontWeight: 700 }}>{row.name || `Konum ${index + 1}`}</span>
           <span className="muted">{row.passengerCount || 1} kişi</span>
         </button>
 

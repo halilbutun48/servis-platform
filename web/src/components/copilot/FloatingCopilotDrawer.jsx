@@ -11,6 +11,7 @@ import { captureCopilotUiSurface } from "./uiSurface";
 const STORAGE_KEY = "psv1:copilot:drawer:v4";
 const HISTORY_KEY = "psv1:copilot:drawer:history:v4";
 const SIZE_PRESETS = { S: { width: 440, height: 560 }, M: { width: 560, height: 700 }, L: { width: 700, height: 860 } };
+const DEFAULT_DRAWER_SIZE = "S";
 
 function loadDrawerState() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}; } catch { return {}; }
@@ -20,6 +21,10 @@ function loadHistory() { try { const parsed = JSON.parse(localStorage.getItem(HI
 
 function normalizeScopePath(path) {
   return String(path || "").split("?")[0];
+}
+
+function normalizeDrawerSize(size) {
+  return size === "S" || size === "M" ? size : DEFAULT_DRAWER_SIZE;
 }
 
 function scopeFamily(path) {
@@ -188,7 +193,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const initial = useRef(loadDrawerState()).current || {};
   const [open, setOpen] = useState(Boolean(initial.open));
   const [mode, setMode] = useState(initial.mode || "STEP");
-  const [size, setSize] = useState(initial.size || "M");
+  const [size, setSize] = useState(normalizeDrawerSize(initial.size));
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [messages, setMessages] = useState(loadHistory());
   const [text, setText] = useState("");
@@ -398,8 +403,19 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   if (!token || !me || isCopilotPage) return null;
 
   return !open ? (
-    <button type="button" className="copilotFab" onClick={() => setOpen(true)} title="Yardım ve copilot">
-      <span>Yardım</span><span className="copilotFabDot" />
+    <button
+      type="button"
+      className="copilotFab"
+      onClick={() => setOpen(true)}
+      title="Sefer Abi’ye Sor — Operasyon yardımcısı"
+      aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"
+    >
+      <span className="copilotFabBadge" aria-hidden="true">SA</span>
+      <span className="copilotFabBody">
+        <span className="copilotFabTitle">Sefer Abi’ye Sor</span>
+        <span className="copilotFabSubtitle">Operasyon yardımcısı</span>
+      </span>
+      <span className="copilotFabStatus"><span className="copilotFabDot" />hazır</span>
     </button>
   ) : (
     <aside className="copilotDrawer" style={{ width: dims.width, height: dims.height }}>
@@ -412,10 +428,36 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           {selection?.label ? <div className="copilotDrawerContext">Seçili kayıt: <b>{selection.label}</b>{selection?.summary && selection.summary !== selection.label ? ` • ${selection.summary}` : ""}</div> : null}
         </div>
         <div className="copilotDrawerTools">
-          <button type="button" className={size === "S" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"} onClick={() => setSize("S")}>−</button>
-          <button type="button" className={size === "M" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"} onClick={() => setSize("M")}>□</button>
-          <button type="button" className={size === "L" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"} onClick={() => setSize("L")}>＋</button>
-          <button type="button" className="btn sm copilotToolBtn" onClick={() => setOpen(false)}>Kapat</button>
+          <button
+            type="button"
+            className={size === "S" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
+            onClick={() => setSize("S")}
+            aria-pressed={size === "S"}
+            title="Küçük"
+          >
+            <span className="copilotToolIcon" aria-hidden="true">−</span><span>Küçük</span>
+          </button>
+          <button
+            type="button"
+            className={size === "M" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
+            onClick={() => setSize("M")}
+            aria-pressed={size === "M"}
+            title="Orta"
+          >
+            <span className="copilotToolIcon" aria-hidden="true">▢</span><span>Orta</span>
+          </button>
+          <button
+            type="button"
+            className={size === "L" ? "btn sm primary copilotToolBtn" : "btn sm copilotToolBtn"}
+            onClick={() => setSize("L")}
+            aria-pressed={size === "L"}
+            title="Büyük"
+          >
+            <span className="copilotToolIcon" aria-hidden="true">＋</span><span>Büyük</span>
+          </button>
+          <button type="button" className="btn sm copilotToolBtn copilotToolBtn--close" onClick={() => setOpen(false)} title="Kapat">
+            Kapat
+          </button>
         </div>
       </div>
 

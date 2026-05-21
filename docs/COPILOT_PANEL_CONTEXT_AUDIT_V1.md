@@ -56,9 +56,9 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 | `web/src/panels/company/CommercialFlowPanel.jsx` | COMPANY | Ticari Akış | `/company/commercial-flow` | Evet | Evet | Evet | Evet, readonly payment preview / production bridge | PARTIAL | P1 |
 | `web/src/panels/company/MapPanel.jsx` | COMPANY | Canlı Takip | `/company/map` | Evet | Evet | Evet, araç / vardiya seçimi | Evet, GPS / ETA / durak / son konum | PARTIAL | P0 |
 | `web/src/panels/company/ShiftsPanel.jsx` | COMPANY | Vardiyalar | `/company/shifts` | Evet | Evet | Evet, vardiya seçimi | Evet, status / route / proof signals | PARTIAL | P1 |
-| `web/src/panels/company/ServiceEvaluationPanel.jsx` | COMPANY | Güven / kalite benzeri servis değerlendirme | `/company/service-evaluation` | Evet | Evet | Evet | Evet, evaluation / review style signals | PARTIAL | P1 |
+| `web/src/panels/company/ServiceEvaluationPanel.jsx` | COMPANY | Güven / kalite benzeri servis değerlendirme | `/company/service-evaluation` | Evet | Evet | Evet | Evet, evaluation / review style signals | COMPLETE | P1 |
 | `web/src/panels/company/OperationsPanel.jsx` | COMPANY | Operasyon | UNKNOWN | Hayır / MISSING | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P1 |
-| `web/src/panels/company/HubPanel.jsx` | COMPANY | Hub / çalışma merkezi | UNKNOWN | Hayır / MISSING | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P1 |
+| `web/src/panels/company/HubPanel.jsx` | COMPANY | Konum / çalışma merkezi | UNKNOWN | Hayır / MISSING | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P1 |
 | `web/src/panels/company/WorkflowPanel.jsx` | COMPANY | Workflow | UNKNOWN | Hayır / MISSING | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P1 |
 | `web/src/panels/company/CheckinPanel.jsx` | COMPANY | Check-in | UNKNOWN | Hayır / MISSING | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P1 |
 | `web/src/panels/company/PersonelAccessPanel.jsx` | COMPANY | Personel erişim | UNKNOWN | Hayır / MISSING | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P1 |
@@ -152,6 +152,7 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 
 ## COP-04B-FIX-02 acceptance note
 - Company / Sözleşmeler, Company / Vardiyalar ve Super Admin / Ticari Akış yüzeylerinde commercial / readiness context selected facts ile birlikte okunur.
+- Super Admin / Genel Bakış ekranı summary-first dashboard olarak kalır; hızlı erişim, özet ve bölüm rehberi üstte, geri bildirim / demo-debug alt detay alanında yaşar.
 - `Bu hakediş neden hazır değil?` sorusu `Eksik bilgi: 0` ile çelişmez; readonly hakediş önizlemesi ve ödeme hesabı / komisyon / hizmet-onay sinyali birlikte yorumlanır.
 - `Bu sözleşmeden bugün vardiya üretildi mi?` sorusu sözleşme → vardiya üretim sinyalini korur ve `Bunu anlayamadım` fallback'ine düşmez.
 - `Ödeme başlatılmaz.` sınırı korunur; aktif ödeme veya settlement execute dili görünmez.
@@ -207,6 +208,8 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `Sefer Abi` marka adı olarak görünür, ama kullanıcıya `abi`, `kardeşim`, `kaptanım`, `reis` gibi hitaplar kullanılmaz.
 - Ton sakin, net, kurumsal, sahayı bilen ve kısa olmalıdır.
 - Web Copilot ve sürücü sesli yardımcı aynı marka sesi ailesinde düşünülür.
+- Rol bazlı ses varyantları aynı ailede kalır: Driver daha kısa ve komut netliği yüksek, Web Copilot daha açıklayıcı, Parent / Personel daha sade ve güven verici olur.
+- Önerilen config anahtarı `VOICE_PERSONA=sefer_abi`, profil anahtarı ise `ASSISTANT_VOICE_PROFILE=driver|copilot|parent` şeklinde düşünülür; bu sadece ses/ton yönlendirmesidir, product flow değildir.
 - `VOICE-PERSONA-01` ayrı bir milestone olarak bırakılır; bu audit mobil canlı kabul iddiası taşımaz.
 - Proactive AI dispatcher bu çerçevenin dışındadır.
 
@@ -316,3 +319,44 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 ## UX-LIVE-MAP-TABS-SIMPLIFY-01 note
 - Room / Canlı Takip artık Harita / Araçlar sekmeleriyle sadeleştirilir; GPS, ETA, risk ve geçmiş bilgisi Harita görünümündeki kısa badge ve satırlarda tutulur.
 - Bu sadeleştirme, Copilot'un aynı canlı bağlamı kullanmasını korur; seçili araç, son GPS, sıradaki durak ve ETA yardım bağlamında taşınmaya devam eder.
+
+## UX-COMPANY-OPS-PANEL-TABS-01 note
+- Company / Operasyon Paneli artık summary-first + functional tab standardı ile çalışır; Özet, Servis Kümesi, Personel, Servis Zamanları, İstisnalar / Değişiklikler ve Bildirimler aynı anda alt alta görünmez.
+- Üst KPI / durum bandı ve kısa bildirim bandı açık kalırken, bildirim CTA'sı ilgili taba geçirir ve detaylar yalnızca Bildirimler tabında taşınır.
+- Bu not, company operations panelinin Copilot context parity'ini korur; ürün davranışı değiştirmez.
+
+## UX-COMPANY-SHIFTS-TABS-01 note
+- Company / Vardiyalar ekranı track-only dört gerçek taba taşınır: Market, Bekleyen, Sözleşmeden Üretilen ve Diğer Vardiyalar.
+- Oluşturma, Liste ve Planlama Merkezi tekrarları bu ekrandan kaldırılır; üstte yalnızca takip özet bandı ve kompakt filtre kalır.
+- Bu not, company shifts takip panelinin Copilot context parity'ini korur; ürün davranışı değiştirmez.
+
+## UX-COMPANY-QUALITY-PANEL-TABS-01 note
+- Company / Hizmet Değerlendirme ekranı summary-first + functional tab standardına taşınır; Özet, Kanıt / Hazırlık, Taslak Skor, İnceleme Kararı, Geçmiş ve Değerlendirme Alanları aynı anda alt alta görünmez.
+- Üst KPI / durum bandı ve değerlendirme bekleyen bilgi bandı açık kalır; CTA ilgili taba geçirir ve detaylar yalnızca seçili sekmede render edilir.
+- Bu not, company quality panelinin Copilot context parity'ini korur; ürün davranışı değiştirmez.
+
+## UX-SEFER-ABI-LAUNCHER-01 note
+- Sağ alttaki Sefer Abi’ye Sor launcher'ı branded compact kart yüzeyine taşınır; kapalı halde yalnız launcher görünür, drawer içeriği açılmadan rahatsız etmez.
+- Drawer açıkken üç kademe boyut korunur ve başlangıç boyutu küçük/orta çizgide kalır; hızlı çipler mevcut ekran bağlamına göre sade öneriler üretir.
+- Bu not, Sefer Abi persona / terminal sınırını korur; ürün davranışı değiştirmez.
+
+## UX-COMPANY-PANELS-FINAL-POLISH-01 note
+- Company / Vardiyalar ekranı track-only dört gerçek taba sahip kalır; Market, Bekleyen, Sözleşmeden Üretilen ve Diğer Vardiyalar accordion başlıkları varsayılan açık gelir.
+- Company / Ticari Akış artık agreement-bağlı final kayıtları için `Sözleşmeden Üretilen` / `Diğer Vardiyalar` yönlendirmesi kullanır; kullanıcıyı yanıltan `Listeyi aç` ifadesi kaldırılır.
+- Bu not, company operations / shifts / commercial flow panel sınırını korur; ürün davranışı değiştirmez.
+
+## UX-SCHOOL-ORGANIZATION-PANELS-01 note
+- School / Okul Operasyon Paneli summary-first + functional tab standardına taşınır; Özet, Öğrenci Servisleri, Veli & Bildirimler, İstisnalar / Günlük Değişiklikler, Kanıt / Check-in ve Geçmiş ayrı içerik akışları olarak kalır.
+- School vardiya başlığı role-aware hale gelir; `Okul Vardiyaları` ve `Kurum Vardiyaları` label'ları school / organization scope'a göre görünür ve `Shifts (COMPANY)` sızıntısı kullanıcıya taşınmaz.
+- Organization panellerinde `Lokasyon` yerine `Konum` standardı uygulanır; `Kurum Merkezi`, `Toplanma Konumu` ve ilgili plan kopyaları role-aware Türkçe label üretir.
+- Bu not, School / Organization panel gerçekliği ile Copilot context parity'i korur; ürün davranışı değiştirmez.
+
+## UX-ROOM-OPS-RELATIONSHIP-POLISH-01 note
+- Room / Operasyon Sağlığı tek sorun bağlamı altında sadeleşir; Sorunlu Sürücüler ve Açık Sorunlar aynı sorun görünümünde taşınır.
+- Room / Araçlar bağlantı yönetiminin tek sahibi olur; Room / Sürücüler yalnız readonly bağlı araç özeti ve araçlara yönlendiren CTA gösterir.
+- Visible Konum copy, role / ekran bağlamına göre Oda Konumu / Toplanma Konumu gibi Türkçe label'lara çevrilir; ürün davranışı değiştirmez.
+
+## UX-SUPERADMIN-LIVE-MONITORING-01 note
+- Süper Admin / Canlı İzleme ekranı summary-first monitoring dashboard olarak kalır; üstte KVKK / alarm bandı, altta canlı akış / alarm / olay tipi / kanıt / log sekmeleri yaşar.
+- Uzun teknik liste ve debug detayları ana dashboardu işgal etmez; kritik alarm bandı üstte compact uyarı olarak görünür.
+- Bu not, canlı izleme panelinin Copilot context parity'ini korur; ürün davranışı değiştirmez.

@@ -21,7 +21,7 @@ export function RoomVehicleTransferWarning({ selectedBound }) {
   if (!selectedBound) return null;
   return (
     <div className="card" style={{ marginTop: 10, padding: "10px 12px", borderLeft: "6px solid" }}>
-      <b>⚠️ Bu driver başka araca bağlı:</b>{" "}<span className="muted">{selectedBound?.plate}</span>
+      <b>⚠️ Bu sürücü başka araca bağlı:</b>{" "}<span className="muted">{selectedBound?.plate}</span>
       <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
         Kural gereği aynı anda tek araçta olabilir. “Transfer” ile otomatik taşıyabilirsin.
       </div>
@@ -32,11 +32,11 @@ export function RoomVehicleTransferWarning({ selectedBound }) {
 export function RoomVehicleCurrentLinkCard({ focusVehicle, focusDriverLabel, focusHasDriver, focusDriverId, busy, focusArchived, unbindDriver, focusVehicleId }) {
   return (
     <div className="card" style={{ margin: 0 }}>
-      <h3 style={{ marginTop: 0 }}>Mevcut Bağlantı</h3>
+      <h3 style={{ marginTop: 0 }}>Mevcut Bağlı Sürücü</h3>
       <div className="muted">Seçili araç: <b>{focusVehicle?.plate || "-"}</b></div>
       {hasRegionOwnership(focusVehicle) ? <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>{formatRegionOwnership(focusVehicle)}</div> : null}
       <div style={{ marginTop: 10 }}>
-        <div className="muted">Aktif sürücü</div>
+        <div className="muted">Bağlı sürücü</div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
           <b>{focusDriverLabel}</b>
           {focusHasDriver ? <span className="muted">(id={focusDriverId})</span> : null}
@@ -74,7 +74,7 @@ export function RoomVehicleLinkSection({
 }) {
   return (
     <div className="card">
-      <h3>Bağlantı (Araç ↔ Sürücü)</h3>
+      <h3>Araç bağlantısı (Araç ↔ Sürücü)</h3>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
         <div>
           <div style={{ display: "flex", gap: 12, alignItems: "end", flexWrap: "wrap" }}>
@@ -98,19 +98,23 @@ export function RoomVehicleLinkSection({
               </select>
             </div>
             <div style={{ minWidth: 260 }}>
-              <label className="muted">Yeni Sürücü</label>
-              <select value={String(bindSel[focusVehicleId] ?? "")} onChange={(e) => setBindSel((prev) => ({ ...prev, [focusVehicleId]: e.target.value }))} disabled={busy || focusArchived}>
-                <option value="">Driver seç</option>
+              <label className="muted">Sürücü</label>
+              <select
+                value={String(bindSel[focusVehicleId] ?? focusVehicle?.driver?.id ?? focusVehicle?.driverId ?? "")}
+                onChange={(e) => setBindSel((prev) => ({ ...prev, [focusVehicleId]: e.target.value }))}
+                disabled={busy || focusArchived}
+              >
+                <option value="">Sürücü seç</option>
                 {drivers.map((d) => (
                   <option key={d.id} value={d.id}>{driverOptionLabel(d)}{hasRegionOwnership(d) ? ` • ${formatRegionOwnership(d).replace(/^Bölge:\s*/, "")}` : ""}</option>
                 ))}
               </select>
             </div>
-            <button type="button" disabled={busy || !focusVehicleId || !bindSel[focusVehicleId] || focusArchived || selectedBoundOther} onClick={() => bindDriver(focusVehicleId)} title={selectedBoundOther ? "Driver başka araca bağlı. Transfer kullan." : ""}>
+            <button type="button" disabled={busy || !focusVehicleId || !String(bindSel[focusVehicleId] ?? focusVehicle?.driver?.id ?? focusVehicle?.driverId ?? "").trim() || focusArchived || selectedBoundOther} onClick={() => bindDriver(focusVehicleId)} title={selectedBoundOther ? "Sürücü başka bir araca bağlı. Transfer kullan." : ""}>
               Bağla
             </button>
             {selectedBoundOther ? (
-              <button type="button" className="btn" disabled={busy || focusArchived} onClick={() => transferDriver(focusVehicleId, selectedDriverId, selectedBound.vehicleId)} title="Driver başka araca bağlıysa: önce ayır, sonra bağla">
+              <button type="button" className="btn" disabled={busy || focusArchived} onClick={() => transferDriver(focusVehicleId, selectedDriverId, selectedBound.vehicleId)} title="Sürücü başka araca bağlıysa: önce ayır, sonra bağla">
                 Transfer
               </button>
             ) : null}

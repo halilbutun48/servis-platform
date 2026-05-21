@@ -52,6 +52,11 @@ function mustNotContains(text, needle, label) {
   must(!normalize(text).includes(normalize(needle)), label);
 }
 
+function countMatches(text, pattern) {
+  const matches = String(text || "").match(pattern);
+  return matches ? matches.length : 0;
+}
+
 function main() {
   console.log("=== UX-PANEL-TABS-FUNCTIONAL-02B-FIX-01 CHECK ===");
 
@@ -112,26 +117,49 @@ function main() {
   must(!roomCommercial.includes('label: "İlk adım"'), "Room commercial flow no longer exposes first-step tab label");
 
   const companyCommercial = read("web/src/panels/company/CommercialFlowPanel.jsx");
-  mustContains(companyCommercial, "PanelSegmentTabs", "Company commercial flow uses segmented tabs");
-  mustContains(companyCommercial, "viewMode === \"summary\"", "Company commercial flow has summary render");
-  mustContains(companyCommercial, "viewMode === \"list\"", "Company commercial flow has list render");
-  mustContains(companyCommercial, "viewMode === \"selected\"", "Company commercial flow has selected render");
+  mustNotContains(companyCommercial, "PanelSegmentTabs", "Company commercial flow removes decorative segmented tabs");
+  mustNotContains(companyCommercial, "viewMode === \"summary\"", "Company commercial flow removes summary render");
+  mustNotContains(companyCommercial, "viewMode === \"list\"", "Company commercial flow removes list tab render");
+  mustNotContains(companyCommercial, "viewMode === \"selected\"", "Company commercial flow removes selected tab render");
+  mustContains(companyCommercial, "Ticari Akış Listesi", "Company commercial flow keeps main list title");
+  mustContains(companyCommercial, "Seçili kayıt", "Company commercial flow keeps selected record panel");
+  mustContains(companyCommercial, "companyCommercialFlowSplit", "Company commercial flow keeps single-page split layout");
 
   const agreements = read("web/src/panels/company/AgreementsPanel.jsx");
   mustContains(agreements, "PanelSegmentTabs", "Company agreements uses segmented tabs");
-  mustContains(agreements, "viewMode === \"summary\"", "Company agreements has summary render");
+  mustContains(agreements, 'useState("list")', "Company agreements defaults to list");
   mustContains(agreements, "viewMode === \"bridge\"", "Company agreements has bridge render");
   mustContains(agreements, "viewMode === \"wizard\"", "Company agreements has wizard render");
   mustContains(agreements, "viewMode === \"list\"", "Company agreements has list render");
+  mustNotContains(agreements, "viewMode === \"summary\"", "Company agreements removes summary render");
+  mustNotContains(agreements, 'label: "Özet"', "Company agreements removes summary tab label");
 
   const shiftsIntro = read("web/src/panels/company/CompanyShiftsPanelIntro.jsx");
-  mustContains(shiftsIntro, "mainTab === \"create\"", "Company shifts intro keeps create branch");
-  mustContains(shiftsIntro, "Planlama Merkezi'ne git", "Company shifts intro keeps planning center action");
-  mustContains(shiftsIntro, "Takibe dön", "Company shifts intro keeps return-to-track action");
+  mustContains(shiftsIntro, "Shifts (COMPANY)", "Company shifts intro keeps title");
+  mustContains(shiftsIntro, "Market", "Company shifts intro keeps market count");
+  mustContains(shiftsIntro, "Bekleyen", "Company shifts intro keeps pending count");
+  mustContains(shiftsIntro, "Sözleşmeden Üretilen", "Company shifts intro keeps contract count");
+  mustContains(shiftsIntro, "Diğer Vardiyalar", "Company shifts intro keeps other count");
+  mustNotContains(shiftsIntro, "PanelSegmentTabs", "Company shifts intro removes decorative tab row");
+  mustNotContains(shiftsIntro, "mainTab === \"create\"", "Company shifts intro removes create branch");
+  mustNotContains(shiftsIntro, "Planlama Merkezi'ne git", "Company shifts intro removes planning center action");
+  mustNotContains(shiftsIntro, "Takibe dön", "Company shifts intro removes return-to-track action");
 
-  const shiftsPanel = read("web/src/panels/company/ShiftsPanel.jsx");
-  mustContains(shiftsPanel, "setTrackTab((prev) => (prev === \"list\" ? prev : \"market\"))", "Company shifts panel preserves commercial track default");
-  must(!normalize(shiftsPanel).includes("if (iscommercialmode) { setmaintab(\"track\");"), "Company shifts panel no longer forces commercial mainTab back to track");
+  const shiftsTrackView = read("web/src/panels/company/CompanyShiftsPanelTrackView.jsx");
+  mustContains(shiftsTrackView, "PanelSegmentTabs", "Company shifts track view uses segmented tabs");
+  mustContains(shiftsTrackView, 'tabs={[', "Company shifts track view defines tab list");
+  mustContains(shiftsTrackView, 'key: "market"', "Company shifts track view keeps market tab");
+  mustContains(shiftsTrackView, 'key: "pending"', "Company shifts track view keeps pending tab");
+  mustContains(shiftsTrackView, 'key: "contract"', "Company shifts track view keeps contract tab");
+  mustContains(shiftsTrackView, 'key: "other"', "Company shifts track view keeps other tab");
+  mustContains(shiftsTrackView, 'trackTab === "market"', "Company shifts track view renders market branch");
+  mustContains(shiftsTrackView, 'trackTab === "pending"', "Company shifts track view renders pending branch");
+  mustContains(shiftsTrackView, 'trackTab === "contract"', "Company shifts track view renders contract branch");
+  mustContains(shiftsTrackView, 'trackTab === "other"', "Company shifts track view renders other branch");
+  must(countMatches(shiftsTrackView, /trackTab === "/g) === 4, "Company shifts track view keeps exactly four branches");
+  mustNotContains(shiftsTrackView, "Oluşturma", "Company shifts track view removes create wording");
+  mustNotContains(shiftsTrackView, "Planlama Merkezi", "Company shifts track view removes planning center wording");
+  mustNotContains(shiftsTrackView, "Liste", "Company shifts track view removes list wording");
 
   const audit = read("docs/UX_PANEL_STRUCTURE_02_AUDIT.md");
   mustContains(audit, "Functional tab fix", "structure audit includes functional tab fix note");

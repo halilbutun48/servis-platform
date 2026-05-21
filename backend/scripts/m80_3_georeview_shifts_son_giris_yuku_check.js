@@ -77,7 +77,7 @@ if (includesText(geo, 'scopeAutoSeeded') && includesText(geo, 'hasPlanningScope'
 if (geoUseEffects <= 7) ok(`GeoReviewPanel useEffect count reduced to ${geoUseEffects}`); else fail(`GeoReviewPanel useEffect count reduced to <=7 (actual ${geoUseEffects})`);
 
 const shiftsUseEffects = count(shifts, /useEffect\s*\(/g);
-if (includesText(shifts, 'if (isCommercialMode)') && includesText(shifts, 'if (mainTab !== "track") return;')) ok("ShiftsPanel merges commercial mode and accordion sync flow"); else fail("ShiftsPanel merges commercial mode and accordion sync flow");
+if (includesText(shifts, 'const [trackTab, _setTrackTab] = useState("other")') && includesText(shifts, 'if (trackTab === "market") return marketItems[0] || null;') && includesText(shifts, '_setTrackTab(getCompanyTrackDefaultTab(items, COMPANY_FINAL_STATUSES));')) ok("ShiftsPanel keeps tab sync flow for current company shifts tabs"); else fail("ShiftsPanel keeps tab sync flow for current company shifts tabs");
 if (includesText(shifts, 'localStorage.setItem(LS_LAST_ROOM') && includesText(shifts, 'vehiclesById.get(Number(offerVehicleId))')) ok("ShiftsPanel keeps merged room persist and vehicle validity flow"); else fail("ShiftsPanel keeps merged room persist and vehicle validity flow");
 if (shiftsUseEffects <= 13) ok(`ShiftsPanel useEffect count within current review snapshot ${shiftsUseEffects}`); else fail(`ShiftsPanel useEffect count within current review snapshot <=13 (actual ${shiftsUseEffects})`);
 

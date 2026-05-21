@@ -1,5 +1,6 @@
 import { companyBase } from "../utils/paths";
 import { COPILOT_PERSONA } from "../utils/copilotFacts";
+import { hubLabelForKind } from "../utils/labels";
 
 const COPILOT_MENU_LABEL = COPILOT_PERSONA.terminalLabel || COPILOT_PERSONA.menuLabel || "Sefer Abi Terminali";
 
@@ -30,7 +31,7 @@ const REGISTRY = {
     { id: 1105, path: "/room/drivers", label: "Sürücüler" },
     { id: 1106, path: "/room/agreements", label: "Sözleşmeler" },
     { id: 1107, path: "/room/copilot", label: COPILOT_MENU_LABEL },
-    { id: 1108, path: "/room/hub", label: "Hub" },
+    { id: 1108, path: "/room/hub", label: "Oda Konumu" },
     { id: 1109, path: "/room/checkin", label: "Check-in" },
     { id: 1114, path: "/room/operation-health", label: "Operasyon Sağlığı" },
     { id: 1115, path: "/room/commercial-flow", label: "Ticari Akışım" },
@@ -44,7 +45,7 @@ const REGISTRY = {
     { id: 2103, path: "/company/agreements", label: "Sözleşmeler" },
     { id: 2104, path: "/company/access-links", label: "Personel Link" },
     { id: 2105, path: "/company/copilot", label: COPILOT_MENU_LABEL },
-    { id: 2106, path: "/company/hub", label: "Hub" },
+    { id: 2106, path: "/company/hub", label: hubLabelForKind("COMPANY") },
     { id: 2107, path: "/company/checkin", label: "Check-in" },
     { id: 2109, path: "/company/georeview", label: "Personel Konum Seçici" },
     { id: 2113, path: "/company/map", label: "Harita" },
@@ -60,7 +61,7 @@ const REGISTRY = {
     { id: 2203, path: "/school/agreements", label: "Sözleşmeler" },
     { id: 2204, path: "/school/access-links", label: "Öğrenci Link" },
     { id: 2205, path: "/school/copilot", label: COPILOT_MENU_LABEL },
-    { id: 2206, path: "/school/hub", label: "Hub" },
+    { id: 2206, path: "/school/hub", label: hubLabelForKind("SCHOOL") },
     { id: 2207, path: "/school/checkin", label: "Check-in" },
     { id: 2209, path: "/school/georeview", label: "Öğrenci Konum Seçici" },
     { id: 2210, path: "/school/parents", label: "Veli Erişimi" },
@@ -72,15 +73,15 @@ const REGISTRY = {
   ],
   ORGANIZATION: [
     { id: 2301, path: "/organization", label: "Gezi / Planlama Merkezi" },
-    { id: 2315, path: "/organization/operations", label: "Organizasyon Operasyon Paneli" },
-    { id: 2302, path: "/organization/plans", label: "Yer Planları" },
+    { id: 2315, path: "/organization/operations", label: "Kurum Operasyon Paneli" },
+    { id: 2302, path: "/organization/plans", label: "Kurum Planları" },
     { id: 2303, path: "/organization/shifts", label: "Vardiyalar" },
     { id: 2304, path: "/organization/agreements", label: "Sözleşmeler" },
     { id: 2305, path: "/organization/access-links", label: "Personel Link" },
     { id: 2306, path: "/organization/copilot", label: COPILOT_MENU_LABEL },
-    { id: 2307, path: "/organization/hub", label: "Hub" },
+    { id: 2307, path: "/organization/hub", label: hubLabelForKind("ORGANIZATION") },
     { id: 2308, path: "/organization/checkin", label: "Check-in" },
-    { id: 2310, path: "/organization/georeview", label: "Lokasyon İncele" },
+    { id: 2310, path: "/organization/georeview", label: "Konum İncele" },
     { id: 2311, path: "/organization/map", label: "Harita" },
     { id: 2312, path: "/organization/service-evaluation", label: "Hizmet Değerlendirme" },
     { id: 2313, path: "/organization/commercial-flow", label: "Ticari Akışım" },

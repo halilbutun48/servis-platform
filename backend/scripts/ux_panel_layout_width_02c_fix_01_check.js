@@ -45,6 +45,10 @@ function mustContains(text, needle, label) {
   must(normalize(text).includes(normalize(needle)), label);
 }
 
+function mustNotContains(text, needle, label) {
+  must(!normalize(text).includes(normalize(needle)), label);
+}
+
 function main() {
   console.log("=== UX-PANEL-LAYOUT-WIDTH-02C-FIX-01 CHECK ===");
 
@@ -86,10 +90,19 @@ function main() {
   const agreements = read("web/src/panels/company/AgreementsPanel.jsx");
   mustContains(commercialCore, "PanelSegmentTabs", "CommercialCore still uses functional tabs");
   mustContains(commercialCore, "scrollIntoView", "CommercialCore still uses focus-model sections");
-  mustContains(companyCommercial, "PanelSegmentTabs", "Company commercial flow still uses functional tabs");
-  mustContains(companyCommercial, "viewMode === \"summary\"", "Company commercial flow keeps summary render");
+  mustNotContains(companyCommercial, "PanelSegmentTabs", "Company commercial flow is single-page and no longer uses functional tabs");
+  mustNotContains(companyCommercial, 'viewMode === "summary"', "Company commercial flow removes summary render");
+  mustNotContains(companyCommercial, 'viewMode === "list"', "Company commercial flow removes list render");
+  mustNotContains(companyCommercial, 'viewMode === "selected"', "Company commercial flow removes selected render");
+  mustContains(companyCommercial, "Ticari Akış Listesi", "Company commercial flow keeps list panel title");
+  mustContains(companyCommercial, "Seçili kayıt", "Company commercial flow keeps selected record panel");
+  mustContains(companyCommercial, "companyCommercialFlowSplit", "Company commercial flow keeps split layout");
   mustContains(agreements, "PanelSegmentTabs", "Company agreements still uses functional tabs");
-  mustContains(agreements, "viewMode === \"summary\"", "Company agreements keeps summary render");
+  mustNotContains(agreements, 'label: "Özet"', "Company agreements removes summary tab label");
+  mustNotContains(agreements, 'viewMode === "summary"', "Company agreements removes summary render");
+  mustContains(agreements, 'useState("list")', "Company agreements defaults to list");
+  mustContains(agreements, 'label: "Liste"', "Company agreements keeps list tab");
+  mustContains(agreements, 'viewMode === "list"', "Company agreements keeps list render");
 
   const pkg = read("package.json");
   mustContains(pkg, '"check:uxpanellayoutwidth02cfix01"', "package.json exposes width fix check");

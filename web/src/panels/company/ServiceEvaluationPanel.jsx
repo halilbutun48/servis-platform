@@ -1,22 +1,24 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
-import { useCallback } from "react";
-import { getCompanyTrustQualityItems, getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { getPath, navigate } from "../../router";
 import { resolveRuntimeScopeKey } from "../../copilot/screenRegistry";
 import { useSession } from "../../state/session";
+import { getCompanyTrustQualityItems, getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { companyPath } from "../../utils/paths";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildServiceEvaluationFacts } from "../../utils/copilotFacts";
+import PanelChrome from "../../components/PanelChrome";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard";
 import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
 import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCard";
 import QualityReviewHistoryCard from "../../components/QualityReviewHistoryCard";
-import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 
 function fmtTR(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString("tr-TR", {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("tr-TR", {
     timeZone: "Europe/Istanbul",
     year: "numeric",
     month: "2-digit",
@@ -26,45 +28,76 @@ function fmtTR(iso) {
   });
 }
 
-function MetricCard({ title, value, note, className = "", style }) {
-  return <div className={`quality-card-shell ${className}`.trim()} style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, minWidth: 0, width: "100%", ...style }}><div className="muted" style={{ marginBottom: 8 }}>{title}</div><div style={{ fontSize: 26, fontWeight: 800 }}>{value}</div>{note ? <div className="muted" style={{ marginTop: 8 }}>{note}</div> : null}</div>;
-}
-
-function SectionCard({ title, children, className = "", style }) {
+function MetricCard({ title, value, note, accent = "default" }) {
+  const palette = {
+    default: { border: "1px solid rgba(255,255,255,0.08)", title: "#98a2b3", value: "#f8fafc" },
+    warm: { border: "1px solid rgba(247,144,9,0.35)", title: "#f7b267", value: "#ffd38a" },
+    good: { border: "1px solid rgba(18,183,106,0.35)", title: "#6ce9a6", value: "#d1fadf" },
+  };
+  const colors = palette[accent] || palette.default;
   return (
     <div
-      className={`quality-card-shell ${className}`.trim()}
+      className="quality-card-shell"
+      style={{
+        padding: 14,
+        border: colors.border,
+        borderRadius: 8,
+        minWidth: 0,
+        width: "100%",
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <div className="panelSectionTitle" style={{ color: colors.title }}>{title}</div>
+      <div className="panelStatValue" style={{ color: colors.value }}>{value}</div>
+      {note ? <div className="panelMeta">{note}</div> : null}
+    </div>
+  );
+}
+
+function SectionCard({ title, subtitle, children, className = "", style }) {
+  return (
+    <div
+      className={`quality-card-shell${className ? ` ${className}` : ""}`}
       style={{
         padding: 14,
         border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 14,
+        borderRadius: 12,
         minWidth: 0,
         width: "100%",
+        display: "grid",
+        gap: 10,
         ...style,
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: 10 }}>{title}</div>
+      <div>
+        <div className="panelSectionTitle">{title}</div>
+        {subtitle ? <div className="panelMeta" style={{ marginTop: 4 }}>{subtitle}</div> : null}
+      </div>
       {children}
     </div>
   );
 }
 
 function StatusBadge({ value }) {
-  const normalized = String(value || "").trim().toUpperCase();
-  let style = { color: "#d0d5dd", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" };
-  if (["DEĞERLENDİRME AÇIK", "BEKLİYOR", "PENDING"].includes(normalized)) style = { color: "#fedf89", background: "rgba(247,144,9,0.16)", border: "1px solid rgba(247,144,9,0.45)" };
-  if (["HENÜZ AÇILAMAZ", "HİZMET DEVAM EDİYOR", "ACTIVE", "DEVAM_EDIYOR"].includes(normalized)) style = { color: "#b2ddff", background: "rgba(83,177,253,0.12)", border: "1px solid rgba(83,177,253,0.35)" };
-  if (["TAMAMLANDI", "DONE", "KAYDEDİLDİ"].includes(normalized)) style = { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" };
-  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{value || "-"}</span>;
-}
-
-function Stars({ value, onChange, readOnly = false }) {
-  return <div style={{ display: "inline-flex", gap: 6 }}>{[1,2,3,4,5].map((n) => <button key={n} type="button" onClick={readOnly ? undefined : () => onChange?.(n)} style={{ border: 0, background: "transparent", cursor: readOnly ? "default" : "pointer", fontSize: 20, color: n <= Number(value || 0) ? "#fdb022" : "#667085", padding: 0 }}>{n <= Number(value || 0) ? "★" : "☆"}</button>)}</div>;
-}
-
-function ScorePill({ score, count }) {
-  if (!count) return <span className="muted">Henüz puan yok</span>;
-  return <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" }}>{Number(score || 0).toFixed(1)} ★ <span className="muted">({count})</span></span>;
+  const text = String(value || "").trim().toUpperCase();
+  const style = { color: "#d0d5dd", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" };
+  if (["DEĞERLENDİRME AÇIK", "BEKLİYOR", "PENDING", "REVIEW_PENDING"].includes(text)) {
+    style.color = "#fedf89";
+    style.background = "rgba(247,144,9,0.16)";
+    style.border = "1px solid rgba(247,144,9,0.45)";
+  }
+  if (["HENÜZ AÇILAMAZ", "HİZMET DEVAM EDİYOR", "ACTIVE", "APPROVED", "DEVAM_EDIYOR"].includes(text)) {
+    style.color = "#b2ddff";
+    style.background = "rgba(83,177,253,0.12)";
+    style.border = "1px solid rgba(83,177,253,0.35)";
+  }
+  if (["TAMAMLANDI", "DONE", "KAYDEDİLDİ", "REVIEWED"].includes(text)) {
+    style.color = "#d1fadf";
+    style.background = "rgba(18,183,106,0.16)";
+    style.border = "1px solid rgba(18,183,106,0.45)";
+  }
+  return <span className="pill" style={style}>{value || "-"}</span>;
 }
 
 function buildInitialEvaluationForm(item) {
@@ -82,7 +115,13 @@ function buildInitialEvaluationForm(item) {
 
 function EvaluationModal({ open, item, busy, onClose, onSubmit }) {
   const [form, setForm] = useState(() => buildInitialEvaluationForm(item));
-  if (!open || !item || !form) return null;
+
+  useEffect(() => {
+    setForm(buildInitialEvaluationForm(item));
+  }, [item]);
+
+  if (!open || !item) return null;
+
   const fields = [
     ["timeliness", "Zamanında başlama"],
     ["vehicleSuitability", "Araç uygunluğu"],
@@ -91,6 +130,7 @@ function EvaluationModal({ open, item, busy, onClose, onSubmit }) {
     ["liveTrackingConfidence", "Canlı takip güveni"],
     ["overallSatisfaction", "Genel memnuniyet"],
   ];
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "grid", placeItems: "center", zIndex: 60 }}>
       <div className="card" style={{ width: "min(760px, calc(100vw - 32px))", maxHeight: "90vh", overflow: "auto" }}>
@@ -101,12 +141,56 @@ function EvaluationModal({ open, item, busy, onClose, onSubmit }) {
           </div>
           <button type="button" onClick={onClose}>Kapat</button>
         </div>
+
         <div style={{ display: "grid", gap: 12 }}>
-          {fields.map(([key, label]) => <div key={key} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center", padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12 }}><div>{label}</div><Stars value={form[key]} onChange={(n) => setForm((p) => ({ ...p, [key]: n }))} /></div>)}
+          {fields.map(([key, label]) => (
+            <div
+              key={key}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+                alignItems: "center",
+                padding: 12,
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 12,
+              }}
+            >
+              <div>{label}</div>
+              <div style={{ display: "inline-flex", gap: 6 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, [key]: n }))}
+                    style={{
+                      border: 0,
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: 20,
+                      color: n <= Number(form[key] || 0) ? "#fdb022" : "#667085",
+                      padding: 0,
+                    }}
+                  >
+                    {n <= Number(form[key] || 0) ? "★" : "☆"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+
           <label>
             <div className="muted" style={{ marginBottom: 6 }}>Kısa not</div>
-            <textarea rows={4} value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} style={{ width: "100%" }} placeholder="Kısa yorum yaz" />
+            <textarea
+              rows={4}
+              value={form.note}
+              onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))}
+              style={{ width: "100%" }}
+              placeholder="Kısa yorum yaz"
+            />
           </label>
+
           <label>
             <div className="muted" style={{ marginBottom: 6 }}>Tekrar çalışmak ister misiniz?</div>
             <select value={form.recommendAgain} onChange={(e) => setForm((p) => ({ ...p, recommendAgain: e.target.value }))}>
@@ -114,9 +198,28 @@ function EvaluationModal({ open, item, busy, onClose, onSubmit }) {
               <option value="false">Hayır</option>
             </select>
           </label>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={onClose}>Vazgeç</button>
-            <button type="button" disabled={busy} onClick={() => onSubmit({ shiftId: item.shiftId, ratings: { timeliness: form.timeliness, vehicleSuitability: form.vehicleSuitability, driverBehavior: form.driverBehavior, operationOrder: form.operationOrder, liveTrackingConfidence: form.liveTrackingConfidence, overallSatisfaction: form.overallSatisfaction }, note: form.note, recommendAgain: form.recommendAgain === "true" })}>{busy ? "Kaydediliyor..." : "Kaydet"}</button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onSubmit({
+                shiftId: item.shiftId,
+                ratings: {
+                  timeliness: form.timeliness,
+                  vehicleSuitability: form.vehicleSuitability,
+                  driverBehavior: form.driverBehavior,
+                  operationOrder: form.operationOrder,
+                  liveTrackingConfidence: form.liveTrackingConfidence,
+                  overallSatisfaction: form.overallSatisfaction,
+                },
+                note: form.note,
+                recommendAgain: form.recommendAgain === "true",
+              })}
+            >
+              {busy ? "Kaydediliyor..." : "Kaydet"}
+            </button>
           </div>
         </div>
       </div>
@@ -129,125 +232,139 @@ export default function ServiceEvaluationPanel() {
   const [summary, setSummary] = useState(null);
   const [items, setItems] = useState([]);
   const [evaluation, setEvaluation] = useState(null);
+  const [activeTab, setActiveTab] = useState("overview");
   const [selected, setSelected] = useState(null);
-  const [focusedItemId, setFocusedItemId] = useState(null);
+  const [focusedItemId, setFocusedItemId] = useState("");
+  const [loading, setLoading] = useState(Boolean(token));
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
+  const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/service-evaluation"), []);
+  const kindLabel = me?.companyKind === "SCHOOL" ? "Okul" : me?.companyKind === "ORGANIZATION" ? "Kurum" : "Firma";
+
+  const completedCount = Number(summary?.cards?.completedServices || 0);
+  const pendingCount = Number(summary?.cards?.pendingEvaluation || 0);
+  const activeCount = Number(summary?.cards?.activeServices || 0);
+  const providerCount = Number(summary?.cards?.providerCount || 0);
+  const templateFields = Array.isArray(evaluation?.fields) ? evaluation.fields : [];
+  const pendingPreview = useMemo(() => (Array.isArray(items) ? items : []).slice(0, 3), [items]);
+  const selectedItem = useMemo(
+    () => pendingPreview.find((item) => String(item.id || "") === String(focusedItemId || "")) || null,
+    [pendingPreview, focusedItemId]
+  );
+  const copilotSubject = selectedItem || pendingPreview[0] || null;
+
   const loadBase = useCallback(async (signal) => {
-    const [s, i] = await Promise.all([
-      getCompanyTrustQualitySummary(token, { signal, ttlMs: 25000 }),
-      getCompanyTrustQualityItems(token, { signal, take: 24, pendingOnly: true, ttlMs: 25000 }),
-    ]);
-    if (signal?.aborted) return;
-    setSummary(s || null);
-    setItems(Array.isArray(i?.items) ? i.items : []);
+    if (!token) return;
+    setLoading(true);
+    setErr("");
+    try {
+      const [summaryPayload, itemsPayload] = await Promise.all([
+        getCompanyTrustQualitySummary(token, { signal }),
+        getCompanyTrustQualityItems(token, { signal, take: 12, pendingOnly: true }),
+      ]);
+      if (signal?.aborted) return;
+      setSummary(summaryPayload || null);
+      setItems(Array.isArray(itemsPayload?.items) ? itemsPayload.items : []);
+    } catch (e) {
+      if (signal?.aborted || e?.name === "AbortError") return;
+      setErr(e?.message || String(e));
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
   }, [token]);
 
   const ensureTemplate = useCallback(async (signal) => {
-    if (evaluation) return evaluation;
-    const tpl = await getTrustQualityTemplate(token, { signal });
-    if (signal?.aborted) return null;
-    setEvaluation(tpl || null);
-    return tpl || null;
-  }, [evaluation, token]);
+    if (!token) return;
+    try {
+      const templatePayload = await getTrustQualityTemplate(token, { signal });
+      if (signal?.aborted) return;
+      setEvaluation(templatePayload || null);
+    } catch (e) {
+      if (signal?.aborted || e?.name === "AbortError") return;
+      setErr(e?.message || String(e));
+    }
+  }, [token]);
 
   useEffect(() => {
+    if (!token) {
+      setSummary(null);
+      setItems([]);
+      setEvaluation(null);
+      setFocusedItemId("");
+      setSelected(null);
+      setLoading(false);
+      return undefined;
+    }
     const controller = new AbortController();
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      (async () => {
-        try {
-          await loadBase(controller.signal);
-        } catch (e2) {
-          if (cancelled || e2?.name === "AbortError") return;
-          setErr(e2?.message || String(e2));
-        }
-      })();
-    }, 320);
-    return () => { cancelled = true; controller.abort(); clearTimeout(timer); };
+    (async () => {
+      await loadBase(controller.signal);
+    })();
+    return () => controller.abort();
   }, [token, loadBase]);
 
-  const copilotItem = useMemo(() => {
-    if (selected) return selected;
-    return items.find((item) => String(item?.id || '') === String(focusedItemId || '')) || null;
-  }, [selected, items, focusedItemId]);
-
-  const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/service-evaluation"), []);
+  useEffect(() => {
+    if (!token || activeTab !== "fields" || evaluation) return undefined;
+    const controller = new AbortController();
+    ensureTemplate(controller.signal);
+    return () => controller.abort();
+  }, [token, activeTab, evaluation, ensureTemplate]);
 
   useEffect(() => {
-    if (!copilotItem) {
+    if (!token || (!summary && !pendingPreview.length && !evaluation)) {
       clearCopilotSelection(copilotScopeKey);
-      return;
+      return () => clearCopilotSelection(copilotScopeKey);
     }
-    const facts = buildServiceEvaluationFacts({ item: copilotItem, summary });
 
+    const facts = buildServiceEvaluationFacts({ item: copilotSubject, summary });
     setCopilotSelection({
       scopeKey: copilotScopeKey,
-      entityType: copilotItem?.shiftId ? 'shift' : 'screen',
-      entityId: Number(copilotItem?.shiftId || 2114) || 2114,
-      label: copilotItem?.serviceLabel ? `${copilotItem.serviceLabel}` : `Hizmet #${copilotItem?.id || '-'}` ,
-      summary: [copilotItem?.providerName || null, copilotItem?.serviceLabel || null, copilotItem?.statusLabel || null].filter(Boolean).join(' • '),
+      entityType: "screen",
+      entityId: 6114,
+      label: "Hizmet Değerlendirme",
+      summary: [
+        pendingCount ? `${pendingCount} bekleyen` : null,
+        completedCount ? `${completedCount} tamamlanan` : null,
+        activeCount ? `${activeCount} aktif` : null,
+        providerCount ? `${providerCount} sağlayıcı` : null,
+        templateFields.length ? `${templateFields.length} alan` : null,
+        facts?.copilotSummary || null,
+      ].filter(Boolean).join(" • "),
       fields: [
-        { label: 'Sağlayıcı', value: copilotItem?.providerName || '-', help: 'Bu hizmeti veren oda veya sağlayıcıyı gösterir.' },
-        { label: 'Puan', value: copilotItem?.providerScore?.evaluationCount ? `${Number(copilotItem?.providerScore?.averageScore || 0).toFixed(1)} ★ (${copilotItem?.providerScore?.evaluationCount || 0})` : 'Henüz puan yok', help: 'Sağlayıcının geçmiş hizmet puanını gösterir.' },
-        { label: 'Hizmet', value: copilotItem?.serviceLabel || '-', help: 'Değerlendirilen işin kısa hizmet etiketidir.' },
-        { label: 'Tarih', value: fmtTR(copilotItem?.completedAt), help: 'Hizmetin tamamlandığı veya değerlendirme tarihine düştüğü zamanı gösterir.' },
-        { label: 'Sonraki Adım', value: copilotItem?.nextStep || '-', help: 'Bu kayıtta şimdi hangi işleme geçileceğini gösterir.' },
+        { label: "Tamamlanan Hizmet", value: String(completedCount), help: "Kapanmış hizmet sayısı." },
+        { label: "Aktif Hizmet", value: String(activeCount), help: "Hâlâ açık operasyon sayısı." },
+        { label: "Değerlendirme Bekleyen", value: String(pendingCount), help: "İnceleme bekleyen kayıt sayısı." },
+        { label: "Sağlayıcı Sayısı", value: String(providerCount), help: "Hizmet değerlendirmesinde görünen sağlayıcı sayısı." },
+        { label: "Değerlendirme Alanı", value: String(templateFields.length), help: "Görünen değerlendirme alanı sayısı." },
+      ],
+      badges: [
+        { label: "Durum", value: pendingCount ? "BEKLEYEN VAR" : "TEMİZ", help: "Kritik değerlendirme bekleyen kayıt durumu." },
       ],
       facts,
-      badges: [
-        { label: 'Durum', value: copilotItem?.statusLabel || '-', help: 'Hizmetin operasyon durumunu gösterir.' },
-        { label: 'Değerlendirme', value: copilotItem?.evaluationStatus || '-', help: 'Puan verilebilir mi, bekliyor mu, tamamlandı mı bilgisini gösterir.' },
-      ],
     });
     return () => clearCopilotSelection(copilotScopeKey);
-  }, [copilotItem, summary, copilotScopeKey]);
+  }, [token, summary, pendingPreview, evaluation, copilotScopeKey, copilotSubject, pendingCount, completedCount, activeCount, providerCount, templateFields.length]);
 
-  useEffect(() => {
-    if (!token || !selected || evaluation) return;
-    const controller = new AbortController();
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      (async () => {
-        try {
-          await ensureTemplate(controller.signal);
-        } catch (e2) {
-          if (cancelled || e2?.name === "AbortError") return;
-        }
-      })();
-    }, 80);
-    return () => {
-      cancelled = true;
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, [token, selected, evaluation, ensureTemplate]);
-
-  const cards = useMemo(() => {
-    const c = summary?.cards || {};
-    return [
-      { title: "Tamamlanan Hizmet", value: c.completedServices ?? "-", note: "Değerlendirme açılabilecek hizmetler" },
-      { title: "Değerlendirme Bekleyen", value: c.pendingEvaluation ?? "-", note: "Kısa puan ve yorum bekleyen kayıtlar" },
-      { title: "Aktif Hizmet", value: c.activeServices ?? "-", note: "kabul edilen / aktif operasyonlar" },
-      { title: "Sağlayıcı Sayısı", value: c.providerCount ?? "-", note: "Son hizmetlerde görünen oda / sağlayıcı" },
-    ];
-  }, [summary]);
-
-  const base = companyPath(me);
-  const kindLabel = me?.companyKind === "SCHOOL" ? "Okul" : me?.companyKind === "ORGANIZATION" ? "Organizasyon" : "Firma";
-
+  const tabs = useMemo(() => ([
+    { key: "overview", label: "Özet", badge: pendingCount || null },
+    { key: "proof", label: "Kanıt / Hazırlık", badge: completedCount || null },
+    { key: "draft", label: "Taslak Skor", badge: activeCount || null },
+    { key: "decision", label: "İnceleme Kararı", badge: pendingCount || null },
+    { key: "history", label: "Geçmiş" },
+    { key: "fields", label: "Değerlendirme Alanları", badge: templateFields.length || null },
+  ]), [pendingCount, completedCount, activeCount, templateFields.length]);
 
   function openCompanyList(shiftId) {
-    navigate(base + "/shifts");
+    const shiftsPath = companyPath(me, "/shifts");
+    navigate(shiftsPath);
     setTimeout(() => {
       try {
-        window.dispatchEvent(
-          new CustomEvent("company:shifts:focus", {
-            detail: { section: "list", shiftIds: shiftId ? [Number(shiftId)] : [] },
-          })
-        );
-      } catch { /* no-op */ }
+        window.dispatchEvent(new CustomEvent("company:shifts:focus", {
+          detail: { section: "list", shiftIds: shiftId ? [Number(shiftId)] : [] },
+        }));
+      } catch {
+        // no-op
+      }
     }, 60);
   }
 
@@ -257,6 +374,7 @@ export default function ServiceEvaluationPanel() {
     try {
       await api.post("/api/trust-quality/company/evaluations", payload, { token });
       setSelected(null);
+      setFocusedItemId("");
       await loadBase();
     } catch (e) {
       setErr(e?.message || String(e));
@@ -265,104 +383,257 @@ export default function ServiceEvaluationPanel() {
     }
   }
 
+  const overviewLead = pendingCount > 0
+    ? `Değerlendirme bekleyen hizmet var · ${pendingCount} kayıt`
+    : "Değerlendirme bekleyen hizmet yok. Kanıt ve taslak skor sekmeleri yine referans olarak açık.";
+
   return (
-    <div className="card">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div className="panelTitle">Hizmet Değerlendirme</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>{kindLabel} için önce değerlendirme bekleyen son hizmetler yüklenir</div>
+    <div style={{ display: "grid", gap: 14 }}>
+      <PanelChrome
+        title="Hizmet Değerlendirme"
+        subtitle={`${kindLabel} için kısa özet, kanıt, taslak skor, karar ve geçmiş sekmeleriyle okunur.`}
+        actions={<div className="panelMeta">Kapsam: Kendi hizmet alanınız</div>}
+      />
+
+      {err ? <div className="card" style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
+
+      <div className="card" style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+          <MetricCard
+            title="Tamamlanan Hizmet"
+            value={loading ? "…" : completedCount}
+            note="Değerlendirme açılabilecek hizmetler"
+            accent={completedCount ? "good" : "default"}
+          />
+          <MetricCard
+            title="Aktif Hizmet"
+            value={loading ? "…" : activeCount}
+            note="Kabul edilen / aktif operasyonlar"
+            accent={activeCount ? "good" : "default"}
+          />
+          <MetricCard
+            title="Değerlendirme Bekleyen"
+            value={loading ? "…" : pendingCount}
+            note="Kısa puan ve yorum bekleyen kayıtlar"
+            accent={pendingCount ? "warm" : "default"}
+          />
+          <MetricCard
+            title="Sağlayıcı Sayısı"
+            value={loading ? "…" : providerCount}
+            note="Son hizmetlerde görünen oda / sağlayıcı"
+          />
         </div>
-        <div className="muted">Kapsam: Kendi hizmet alanınız</div>
       </div>
 
-      {err ? <div style={{ marginTop: 12, color: "#f97066", whiteSpace: "pre-wrap" }}>{err}</div> : null}
+      {pendingCount > 0 ? (
+        <div className="card" style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <div>
+            <div className="panelSectionTitle">Yeni değerlendirme bekleyen hizmet var</div>
+            <div className="panelMeta" style={{ marginTop: 4 }}>{overviewLead}</div>
+          </div>
+          <button type="button" onClick={() => setActiveTab("decision")}>İnceleme Kararı sekmesine git</button>
+        </div>
+      ) : null}
 
-      <div style={{ marginTop: 14, maxWidth: 980 }}>
-        <FlowSummaryStrip
-          title="Değerlendirme akışı"
-          description="Bu alan kalite değerlendirmesine yardımcı olur; ödeme veya komisyon başlatmaz."
-          steps={["Kanıt", "Taslak", "İnceleme", "Geçmiş"]}
-          statusText="Ödeme veya komisyon başlatmaz"
-          tone="info"
+      <div className="card" style={{ paddingTop: 12, paddingBottom: 12 }}>
+        <PanelSegmentTabs
+          ariaLabel="Hizmet değerlendirme sekmeleri"
+          compact
+          tabs={tabs}
+          value={activeTab}
+          onChange={setActiveTab}
         />
       </div>
 
-      <div className="quality-summary-grid" style={{ marginTop: 14 }}>
-        <QualityProofReadonlyCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
-        <QualityDraftScoreCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
-        <QualityReviewDecisionCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
-        <QualityReviewHistoryCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
-      </div>
+      <div style={{ display: "grid", gap: 14 }}>
+        {activeTab === "overview" ? (
+          <div role="tabpanel" aria-label="Özet" className="card" style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+              <SectionCard
+                title="Sıradaki doğru işlem"
+                subtitle="Kısa aksiyon, karar öncesi yönlendirme"
+              >
+                <div className="panelBody">
+                  {pendingCount > 0
+                    ? "Önce bekleyen hizmetleri gözden geçir. Sonra inceleme kararını ver."
+                    : "Bekleyen kayıt görünmüyor. Kanıt ve taslak skor referans yüzeylerini gerektiğinde aç."}
+                </div>
+                <div className="toolbar" style={{ flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => setActiveTab("decision")} disabled={!pendingCount}>
+                    İnceleme Kararı
+                  </button>
+                  <button type="button" onClick={() => setActiveTab("proof")}>Kanıt / Hazırlık</button>
+                </div>
+              </SectionCard>
 
-      <div className="quality-detail-layout" style={{ marginTop: 16 }}>
-        <div className="quality-detail-main">
-          <div className="quality-detail-stack">
-            <div className="quality-metric-grid">
-              {cards.map((card) => <MetricCard key={card.title} {...card} style={{ height: "100%" }} />)}
+              <SectionCard
+                title="Bekleyen değerlendirme özeti"
+                subtitle="Kısa durum ve ilk bakış"
+              >
+                <div className="panelBody">{overviewLead}</div>
+                <div className="panelMeta">
+                  Bu özet detaylı kalite checklistini tekrar etmez; sadece son adıma geçişi tarif eder.
+                </div>
+              </SectionCard>
             </div>
 
-            <SectionCard title="Son Değerlendirme Bekleyen Hizmetler">
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead><tr style={{ textAlign: "left" }}><th>Sağlayıcı</th><th>Puan</th><th>Hizmet</th><th>Durum</th><th>Değerlendirme</th><th>Tarih</th><th>Sonraki Adım</th><th>Aksiyon</th></tr></thead>
-                  <tbody>
-                    {items.length ? items.map((item) => (
-                      <tr key={item.id} onClick={() => setFocusedItemId(item.id)} style={{ cursor: 'pointer', background: String(focusedItemId || '') === String(item.id || '') ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
-                        <td>{item.providerName || "-"}</td>
-                        <td><ScorePill score={item.providerScore?.averageScore} count={item.providerScore?.evaluationCount} /></td>
-                        <td>{item.serviceLabel || "-"}</td>
-                        <td><StatusBadge value={item.statusLabel} /></td>
-                        <td><StatusBadge value={item.evaluationStatus} /></td>
-                        <td>{fmtTR(item.completedAt)}</td>
-                        <td>{item.nextStep || "-"}</td>
-                        <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {item.canEvaluate ? <button type="button" onClick={(e) => { e.stopPropagation(); setFocusedItemId(item.id); setSelected(item); }}>{item.evaluation ? "Puanı güncelle" : "Değerlendir"}</button> : null}
-                          {item.actionPath ? (
-                            <button type="button" onClick={(e) => {
-                              e.stopPropagation();
+            <SectionCard
+              title="Bekleyen hizmetler"
+              subtitle="İlk 3 kayıt görünür; ayrıntı karar tabında"
+            >
+              {pendingPreview.length ? (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {pendingPreview.map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1.4fr) auto",
+                        gap: 10,
+                        alignItems: "center",
+                        padding: 12,
+                        borderRadius: 12,
+                        border: String(focusedItemId || "") === String(item.id || "")
+                          ? "1px solid rgba(61,122,255,0.45)"
+                          : "1px solid rgba(255,255,255,0.08)",
+                        background: String(focusedItemId || "") === String(item.id || "")
+                          ? "rgba(61,122,255,0.10)"
+                          : "rgba(255,255,255,0.02)",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <div style={{ fontWeight: 700 }}>{item.providerName || "-"}</div>
+                          <StatusBadge value={item.statusLabel} />
+                          <StatusBadge value={item.evaluationStatus} />
+                        </div>
+                        <div className="panelMeta" style={{ marginTop: 4 }}>{item.serviceLabel || "-"}</div>
+                        <div className="panelMeta" style={{ marginTop: 4 }}>{item.nextStep || "-"}</div>
+                        <div className="panelMeta" style={{ marginTop: 4 }}>{fmtTR(item.completedAt)}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                        {item.canEvaluate ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFocusedItemId(item.id);
+                              setSelected(item);
+                            }}
+                          >
+                            {item.evaluation ? "Puanı güncelle" : "Değerlendir"}
+                          </button>
+                        ) : null}
+                        {item.actionPath ? (
+                          <button
+                            type="button"
+                            onClick={() => {
                               const path = companyPath(me, item.actionPath.replace(/^\/company/, ""));
-                              if (path === base + "/shifts") {
+                              if (path === companyPath(me, "/shifts")) {
                                 setFocusedItemId(item.id);
                                 openCompanyList(item.shiftId);
                               } else {
                                 navigate(path);
                               }
-                            }}>{item.actionLabel || "Aç"}</button>
-                          ) : "-"}
-                        </td>
-                      </tr>
-                    )) : <tr><td colSpan={8} className="muted" style={{ padding: "8px 0" }}>
-                      {Number(summary?.cards?.pendingEvaluation || 0) > 0
-                        ? `Özet kartında ${Number(summary?.cards?.pendingEvaluation || 0)} değerlendirme bekleyen hizmet görünüyor; bu listeyi genişletmek için Hizmetleri aç ile vardiya listesine geç veya ekranı yenile.`
-                        : 'Henüz değerlendirme ekranına düşen tamamlanmış hizmet yok.'}
-                    </td></tr>}
-                  </tbody>
-                </table>
-              </div>
+                            }}
+                          >
+                            {item.actionLabel || "Aç"}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="muted">
+                  Henüz değerlendirme ekranına düşen tamamlanmış hizmet yok.
+                </div>
+              )}
             </SectionCard>
           </div>
-        </div>
+        ) : null}
 
-        <div className="quality-detail-side">
-          <div className="quality-detail-stack">
-            <SectionCard title="Değerlendirme Alanları">
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
-                <div>
-                  <div className="muted" style={{ marginTop: 6 }}>{(evaluation?.fields || []).join(" • ") || "Henüz veri yok"}</div>
+        {activeTab === "proof" ? (
+          <div role="tabpanel" aria-label="Kanıt / Hazırlık" className="card" style={{ padding: 14 }}>
+            <QualityProofReadonlyCard />
+          </div>
+        ) : null}
+
+        {activeTab === "draft" ? (
+          <div role="tabpanel" aria-label="Taslak Skor" className="card" style={{ padding: 14 }}>
+            <QualityDraftScoreCard />
+          </div>
+        ) : null}
+
+        {activeTab === "decision" ? (
+          <div role="tabpanel" aria-label="İnceleme Kararı" className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
+            <QualityReviewDecisionCard />
+            {selected ? (
+              <SectionCard
+                title="Seçili hizmet"
+                subtitle="Karar kaydını açmadan önce kısa bağlam"
+              >
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div><b>{selected.providerName || "-"}</b></div>
+                  <div className="panelMeta">Hizmet: {selected.serviceLabel || "-"}</div>
+                  <div className="panelMeta">Durum: <StatusBadge value={selected.statusLabel} /></div>
+                  <div className="panelMeta">Değerlendirme: <StatusBadge value={selected.evaluationStatus} /></div>
+                  <div className="panelMeta">Sonraki Adım: {selected.nextStep || "-"}</div>
+                  <div className="panelMeta">Son Güncelleme: {fmtTR(selected.completedAt)}</div>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" onClick={() => openCompanyList()}>Hizmetleri aç</button>
-                  <button type="button" onClick={() => navigate(base + "/agreements")}>Sözleşmeleri aç</button>
-                </div>
+              </SectionCard>
+            ) : (
+              <SectionCard
+                title="Seçili hizmet"
+                subtitle="Karar için bir satır seç"
+              >
+                <div className="muted">Listeden bir hizmet seçtiğinde buradaki bağlam görünür.</div>
+              </SectionCard>
+            )}
+          </div>
+        ) : null}
+
+        {activeTab === "history" ? (
+          <div role="tabpanel" aria-label="Geçmiş" className="card" style={{ padding: 14 }}>
+            <QualityReviewHistoryCard />
+          </div>
+        ) : null}
+
+        {activeTab === "fields" ? (
+          <div role="tabpanel" aria-label="Değerlendirme Alanları" className="card" style={{ display: "grid", gap: 12 }}>
+            <SectionCard
+              title="Değerlendirme alanları"
+              subtitle="Hizmetler ve sözleşmeler için görünür kalite alanları"
+            >
+              <div className="panelBody">
+                {evaluation?.summary || "Hizmet değerlendirme alanları ve sözleşme yönlendirmeleri burada görünür."}
               </div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>
-                Değerlendirme alanları ve sözleşme görünümü birlikte okunur.
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {templateFields.length ? templateFields.map((field) => (
+                  <span key={field} className="pill">{field}</span>
+                )) : <span className="muted">Henüz değerlendirme alanı yok</span>}
+              </div>
+              <div className="panelMeta">
+                Puan ölçeği: 1 • 2 • 3 • 4 • 5
               </div>
             </SectionCard>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" onClick={() => openCompanyList()}>Hizmetleri aç</button>
+              <button type="button" onClick={() => navigate(companyPath(me, "/agreements"))}>Sözleşmeleri aç</button>
+              <button type="button" onClick={() => setActiveTab("proof")}>Kanıt / Hazırlık</button>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
-      <EvaluationModal key={selected ? `eval-${selected.id || selected.shiftId || "x"}-${selected.evaluation?.updatedAt || selected.evaluation?.note || "new"}` : "eval-empty"} open={!!selected} item={selected} busy={saving} onClose={() => setSelected(null)} onSubmit={submitEvaluation} />
+
+      <EvaluationModal
+        key={selected ? `eval-${selected.id || selected.shiftId || "x"}-${selected.evaluation?.updatedAt || selected.evaluation?.note || "new"}` : "eval-empty"}
+        open={!!selected}
+        item={selected}
+        busy={saving}
+        onClose={() => setSelected(null)}
+        onSubmit={submitEvaluation}
+      />
     </div>
   );
 }

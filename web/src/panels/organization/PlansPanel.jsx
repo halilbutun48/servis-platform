@@ -220,7 +220,7 @@ export default function OrganizationPlansPanel() {
 
     setCurrent((p) => ({ ...p, stops: rows }));
     setOpenStops(Object.fromEntries(rows.map((_, i) => [i, i === 0])));
-    setMsg(`${rows.length} lokasyon içe aktarıldı.`);
+    setMsg(`${rows.length} konum içe aktarıldı.`);
   }
 
   function _addEmptyStop() {
@@ -337,10 +337,10 @@ export default function OrganizationPlansPanel() {
   return (
     <div className="wrap" style={{ maxWidth: "none", width: "100%", paddingRight: 12, overflowX: "hidden" }}>
       <div className="card" style={{ width: "100%" }}>
-        <div className="title">Yer Planları (Legacy)</div>
+        <div className="title">Kurum Planları (Legacy)</div>
         <div className="muted">
           Yeni plan oluşturma akışı <b>Planlama Merkezi</b> ekranına taşındı. Bu sayfa eski
-          organization planlarını görmek için korunur. Yeni iş kurarken <b>Planlama Merkezi</b>
+          kurum planlarını görmek için korunur. Yeni iş kurarken <b>Planlama Merkezi</b>
           kullanılmalıdır.
         </div>
         <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -481,7 +481,7 @@ export default function OrganizationPlansPanel() {
           </div>
 
           <div className="card">
-            <div className="title">Toplu Lokasyon İçe Aktar (Legacy)</div>
+            <div className="title">Toplu Konum İçe Aktar (Legacy)</div>
             <div className="muted" style={{ marginBottom: 8 }}>
               Her satır: <b>İsim;Adres;Lat;Lng;Kişi;Başlangıç(HH:mm);Bitiş(HH:mm);Not</b>
             </div>
@@ -515,8 +515,8 @@ export default function OrganizationPlansPanel() {
               }}
             >
               <div>
-                <div className="title">Lokasyonlar</div>
-                <div className="muted">Bu ekran eski planı okumak için tutulur. Yeni lokasyon kurgusu Planlama Merkezi&apos;nde yapılır.</div>
+                <div className="title">Konumlar</div>
+                <div className="muted">Bu ekran eski planı okumak için tutulur. Yeni konum kurgusu Planlama Merkezi&apos;nde yapılır.</div>
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -530,7 +530,7 @@ export default function OrganizationPlansPanel() {
             </div>
 
             <div className="muted" style={{ marginBottom: 10 }}>
-              Sürükle-bırak ile lokasyon sırasını değiştirebilirsin.
+              Sürükle-bırak ile konum sırasını değiştirebilirsin.
             </div>
 
             <div style={{ display: "grid", gap: 10 }}>
@@ -554,7 +554,7 @@ export default function OrganizationPlansPanel() {
                   isDragging={dragIndex === idx}
                 />
               ))}
-              {!current.stops.length ? <div className="muted">Henüz lokasyon yok.</div> : null}
+              {!current.stops.length ? <div className="muted">Henüz konum yok.</div> : null}
             </div>
           </div>
 

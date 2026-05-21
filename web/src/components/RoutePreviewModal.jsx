@@ -25,7 +25,7 @@ function buildRouteQuality(summary, source, stops, people) {
   const singletonCount = stopList.filter((s) => Number(s?.count || 0) === 1).length;
   const reviewCount = peopleList.filter((p) => String(p?.geoStatus || "") === "NEEDS_REVIEW").length;
   const qualityNotes = [];
-  if (summary?.warning === "hubMissing") qualityNotes.push("Hub eksik; rota tahmini stop sırasına göre gösteriliyor.");
+  if (summary?.warning === "hubMissing") qualityNotes.push("Toplanma Konumu eksik; rota tahmini durak sırasına göre gösteriliyor.");
   if (reviewCount > 0) qualityNotes.push(`${reviewCount} review kaydı rota kalitesini sınırlayabilir.`);
   if (!qualityNotes.length) {
     qualityNotes.push(
@@ -250,7 +250,7 @@ function scrollToStopRow(stopId) {
     const hubLat = Number(effShift?.hubLat);
     const hubLng = Number(effShift?.hubLng);
     const hasHub = Number.isFinite(hubLat) && Number.isFinite(hubLng) && !(Math.abs(hubLat) < 1e-9 && Math.abs(hubLng) < 1e-9);
-    const hubStop = hasHub ? { id: '__hub__', title: 'Hub', lat: hubLat, lng: hubLng } : null;
+    const hubStop = hasHub ? { id: '__hub__', title: 'Toplanma Konumu', lat: hubLat, lng: hubLng } : null;
 
     const direction = String(effSummary?.direction || effShift?.direction || '').toUpperCase();
     const pattern = String(effSummary?.pattern || effShift?.pattern || '').toUpperCase();
@@ -301,8 +301,8 @@ function scrollToStopRow(stopId) {
             </div>
 
             <div className="routePreviewStats">
-              <div>Durak (hub hariç): <b>{routeQuality.stopCountWithoutHub}</b></div>
-              <div>Durak (hub dahil): <b>{routeQuality.stopCountWithHub}</b></div>
+              <div>Durak (toplanma konumu hariç): <b>{routeQuality.stopCountWithoutHub}</b></div>
+              <div>Durak (toplanma konumu dahil): <b>{routeQuality.stopCountWithHub}</b></div>
               <div>{organizationLikePreview ? "Tahmini kişi" : "Kişi"}: <b>{effectiveRequiredPax || Number(stopPts.reduce((sum, s) => sum + Number(s.count ?? 0), 0))}</b></div>
               <div>KM (tahmini): <b>{Number(effSummary?.distanceKmEstimated || 0).toFixed(2)}</b></div>
               <div>Süre (tahmini): <b>{Number(effSummary?.durationMinEstimated || 0)}</b> dk</div>

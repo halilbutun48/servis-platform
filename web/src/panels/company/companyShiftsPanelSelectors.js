@@ -1,32 +1,72 @@
 export const COMPANY_FINAL_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
 
+function isAgreementShift(item) {
+  return Number(item?.agreementId || 0) > 0;
+}
+
+function isFinalShift(item, finalStatuses = COMPANY_FINAL_STATUSES) {
+  return finalStatuses.has(String(item?.status || ""));
+}
+
+function getCompanyTrackBuckets(items, finalStatuses = COMPANY_FINAL_STATUSES) {
+  const buckets = { market: [], pending: [], contract: [], other: [] };
+  for (const item of items || []) {
+    if (!item) continue;
+    const status = String(item?.status || "");
+    if (status === "DRAFT") continue;
+    if (isAgreementShift(item)) {
+      buckets.contract.push(item);
+      continue;
+    }
+    if (isFinalShift(item, finalStatuses)) {
+      buckets.other.push(item);
+      continue;
+    }
+    if (item?.roomId == null || item?.roomId === "") buckets.market.push(item);
+    else buckets.pending.push(item);
+  }
+  return buckets;
+}
+
+export function getCompanyTrackCounts(items, finalStatuses = COMPANY_FINAL_STATUSES) {
+  const buckets = getCompanyTrackBuckets(items, finalStatuses);
+  return {
+    market: buckets.market.length,
+    pending: buckets.pending.length,
+    contract: buckets.contract.length,
+    other: buckets.other.length,
+    total: buckets.market.length + buckets.pending.length + buckets.contract.length + buckets.other.length,
+  };
+}
+
+export function getCompanyTrackDefaultTab() {
+  return "other";
+}
+
 export function getCompanyMarketItemsRaw(items, finalStatuses = COMPANY_FINAL_STATUSES) {
-  return (items || []).filter((s) => {
-    const status = String(s?.status || "");
-    if (status === "DRAFT") return false;
-    return !finalStatuses.has(status) && (s?.roomId == null || s?.roomId === "");
-  });
+  return getCompanyTrackBuckets(items, finalStatuses).market;
 }
 
 export function getCompanyPendingItemsRaw(items, finalStatuses = COMPANY_FINAL_STATUSES) {
-  return (items || []).filter((s) => {
-    const status = String(s?.status || "");
-    if (status === "DRAFT") return false;
-    const isSplitRoot = status === "SPLIT" && !Number(s?.splitRootId || 0);
-    if (isSplitRoot) return false;
-    return !finalStatuses.has(status) && s?.roomId != null && s?.roomId !== "";
-  });
+  return getCompanyTrackBuckets(items, finalStatuses).pending;
+}
+
+export function getCompanyContractItemsRaw(items, finalStatuses = COMPANY_FINAL_STATUSES) {
+  return getCompanyTrackBuckets(items, finalStatuses).contract;
+}
+
+export function getCompanyOtherItemsRaw(items, finalStatuses = COMPANY_FINAL_STATUSES) {
+  return getCompanyTrackBuckets(items, finalStatuses).other;
 }
 
 export function getCompanyFinalItemsRaw(items, finalStatuses = COMPANY_FINAL_STATUSES) {
-  return (items || []).filter((s) => finalStatuses.has(String(s?.status)));
+  return getCompanyOtherItemsRaw(items, finalStatuses);
 }
 
 export function filterCompanyPendingItems({
   items,
   pendingQ,
   pendingOnlyRoomOffer,
-  onlyAgreement,
   pendingFocusIds,
   dayYmd,
   isSameDayIstanbul,
@@ -34,7 +74,6 @@ export function filterCompanyPendingItems({
   const q = String(pendingQ || "").trim().toLowerCase();
   const pendingFocusSet = new Set((pendingFocusIds || []).map(Number));
   return (items || [])
-    .filter((s) => (!onlyAgreement ? true : Number(s?.agreementId) > 0))
     .filter((s) => (!dayYmd ? true : isSameDayIstanbul(s?.startAt, dayYmd)))
     .filter((s) => (pendingFocusSet.size ? pendingFocusSet.has(Number(s?.id)) : true))
     .filter((s) => {
@@ -60,7 +99,6 @@ export function filterCompanyPendingItems({
 export function filterCompanyMarketItems({
   items,
   marketQ,
-  onlyAgreement,
   marketFocusIds,
   dayYmd,
   isSameDayIstanbul,
@@ -68,7 +106,6 @@ export function filterCompanyMarketItems({
   const q = String(marketQ || "").trim().toLowerCase();
   const marketFocusSet = new Set((marketFocusIds || []).map(Number));
   return (items || [])
-    .filter((s) => (onlyAgreement ? Number(s?.agreementId) > 0 : true))
     .filter((s) => (!dayYmd ? true : isSameDayIstanbul(s?.startAt, dayYmd)))
     .filter((s) => (marketFocusSet.size ? marketFocusSet.has(Number(s?.id)) : true))
     .filter((s) => {
@@ -78,32 +115,65 @@ export function filterCompanyMarketItems({
     });
 }
 
-export function filterCompanyFinalItems({
+function matchesCompanyStatusFilter(status, statusFilter) {
+  const st = String(status || "").toUpperCase();
+  const filter = String(statusFilter || "ALL").toUpperCase();
+  if (filter === "ALL") return true;
+  if (filter === "ACTIVE") return st === "APPROVED" || st === "ACTIVE";
+  if (filter === "DONE") return st === "DONE";
+  if (filter === "REJECTED") return st === "REJECTED";
+  return true;
+}
+
+function filterCompanyShiftStatusItems({
   items,
-  finalQ,
-  finalStatus,
-  onlyAgreement,
+  q,
+  statusFilter,
   dayYmd,
   isSameDayIstanbul,
 }) {
-  const q = String(finalQ || "").trim().toLowerCase();
+  const needle = String(q || "").trim().toLowerCase();
   return (items || [])
-    .filter((s) => (!onlyAgreement ? true : Number(s?.agreementId) > 0))
     .filter((s) => (!dayYmd ? true : isSameDayIstanbul(s?.startAt, dayYmd)))
+    .filter((s) => matchesCompanyStatusFilter(s?.status, statusFilter))
     .filter((s) => {
-      const st = String(s?.status);
-      if (finalStatus === "ALL") return true;
-      if (finalStatus === "OPEN") return st === "APPROVED" || st === "ACTIVE";
-      return st === finalStatus;
-    })
-    .filter((s) => {
-      if (!q) return true;
+      if (!needle) return true;
       const hay = [s?.id, s?.status, s?.roomId, s?.companyId, s?.roomOfferNote, s?.companyOfferNote, s?.vehicle?.plate, s?.driver?.fullName]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-      return hay.includes(q);
+      return hay.includes(needle);
     });
+}
+
+export function filterCompanyContractItems({ items, contractQ, contractStatus, dayYmd, isSameDayIstanbul }) {
+  return filterCompanyShiftStatusItems({
+    items,
+    q: contractQ,
+    statusFilter: contractStatus,
+    dayYmd,
+    isSameDayIstanbul,
+  });
+}
+
+export function filterCompanyOtherItems({ items, otherQ, otherStatus, dayYmd, isSameDayIstanbul }) {
+  return filterCompanyShiftStatusItems({
+    items,
+    q: otherQ,
+    statusFilter: otherStatus,
+    dayYmd,
+    isSameDayIstanbul,
+  });
+}
+
+export function filterCompanyFinalItems({ items, finalQ, finalStatus, dayYmd, isSameDayIstanbul }) {
+  return filterCompanyShiftStatusItems({
+    items,
+    q: finalQ,
+    statusFilter: finalStatus,
+    dayYmd,
+    isSameDayIstanbul,
+  });
 }
 
 export function getCompanyRoomScoreIds({ shouldLoadRoomScores, offersModalItems, offerModalOpen, rooms }) {

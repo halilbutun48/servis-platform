@@ -68,7 +68,7 @@ export function buildDestinationNavigationTarget({ dest, hubLat, hubLng }) {
   const lat = coordNum(dest?.lat);
   const lng = coordNum(dest?.lng);
   if (!hasCoord(lat, lng)) {
-    return { error: "Navigasyon için yer koordinatı gerekli." };
+    return { error: "Navigasyon için konum koordinatı gerekli." };
   }
   const hLat = coordNum(hubLat);
   const hLng = coordNum(hubLng);
@@ -104,7 +104,7 @@ export function buildShiftNavigationTarget({ shift }) {
     waypoints = stops.slice(0, -1);
   } else {
     if (stops.length < 2) {
-      return { error: "Navigasyon için hub veya en az 2 durak gerekli." };
+      return { error: "Navigasyon için toplanma konumu veya en az 2 durak gerekli." };
     }
     origin = stops[0];
     destination = stops[stops.length - 1];
@@ -151,7 +151,7 @@ export async function geocodeGuidedDestinationAtIndex({
   const item = (orgDestinations || [])[idx];
   const q = String(item?.address || item?.title || "").trim();
   if (q.length < 3) {
-    if (typeof setErr === "function") setErr("Yer için en az 3 karakterlik ad veya adres gir.");
+    if (typeof setErr === "function") setErr("Konum için en az 3 karakterlik ad veya adres gir.");
     return;
   }
   setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "loading", foundText: "" } : x)));
@@ -194,9 +194,9 @@ export function buildOrganizationNoteSummary({
     .filter(Boolean);
   const returnText = orgReturnType === "RETURN_TO_START" ? "Başlangıç noktasına dön" : "Son noktada bitir";
   const parts = [];
-  if (gathering) parts.push(`Toplanma: ${gathering}`);
+  if (gathering) parts.push(`Toplanma Konumu: ${gathering}`);
   if (pax) parts.push(`Tahmini kişi: ${pax}`);
-  if (places.length) parts.push(`Yerler: ${places.join(" • ")}`);
+  if (places.length) parts.push(`Konumlar: ${places.join(" • ")}`);
   parts.push(`Dönüş: ${returnText}`);
   return organization ? `[Gezi planı] ${parts.join(" | ")}` : "";
 }

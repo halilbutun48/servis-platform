@@ -137,7 +137,7 @@ export default function AgreementWizard({
   const [direction, setDirection] = useState("INBOUND");
   const [pattern, setPattern] = useState("ONE_WAY");
 
-  // hub
+  // toplanma konumu
   const [useRoomHub, setUseRoomHub] = useState(true);
   const [hubLat, setHubLat] = useState("");
   const [hubLng, setHubLng] = useState("");
@@ -257,7 +257,7 @@ function guessPackKey(prefill) {
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
   }, [startDate, durationDays]);
 
-  // room selection -> hub autofill
+  // room selection -> toplanma konumu autofill
   useEffect(() => {
     if (!useRoomHub) return;
     const rid = Number(roomId || 0);
@@ -362,14 +362,14 @@ function guessPackKey(prefill) {
 
     const hasHubLat = String(hubLat || "").trim() !== "";
     const hasHubLng = String(hubLng || "").trim() !== "";
-    if (hasHubLat !== hasHubLng) return setErr("Hub için lat/lng birlikte girilmeli.");
+    if (hasHubLat !== hasHubLng) return setErr("Toplanma konumu için lat/lng birlikte girilmeli.");
 
     let hubLatN = null;
     let hubLngN = null;
     if (hasHubLat) {
       const a = Number(hubLat);
       const b = Number(hubLng);
-      if (!Number.isFinite(a) || !Number.isFinite(b)) return setErr("Hub lat/lng sayı olmalı.");
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return setErr("Toplanma konumu lat/lng sayı olmalı.");
       hubLatN = a;
       hubLngN = b;
     }
@@ -480,17 +480,17 @@ function guessPackKey(prefill) {
     const endDateForShift = eMin < sMin ? addDaysISO(marketDate, 1) : marketDate;
     const endAt = ymdMinToIso(endDateForShift, eMin);
 
-    // Hub: same as wizard hub fields (lat/lng together)
+    // Toplanma konumu: same as wizard hub fields (lat/lng together)
     const hasHubLat = String(hubLat || "").trim() !== "";
     const hasHubLng = String(hubLng || "").trim() !== "";
-    if (hasHubLat !== hasHubLng) return setMarketErr("Hub için lat/lng birlikte girilmeli.");
+    if (hasHubLat !== hasHubLng) return setMarketErr("Toplanma konumu için lat/lng birlikte girilmeli.");
 
     let hubLatN = null;
     let hubLngN = null;
     if (hasHubLat) {
       const a = Number(hubLat);
       const b = Number(hubLng);
-      if (!Number.isFinite(a) || !Number.isFinite(b)) return setMarketErr("Hub lat/lng sayı olmalı.");
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return setMarketErr("Toplanma konumu lat/lng sayı olmalı.");
       hubLatN = a;
       hubLngN = b;
     }
@@ -678,7 +678,7 @@ function guessPackKey(prefill) {
                 />
                 <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <input type="checkbox" checked={marketOnlyHub} onChange={(e) => setMarketOnlyHub(e.target.checked)} />
-                  Sadece hub’lı
+                  Sadece toplanma konumu olan
                 </label>
                 <button type="button" disabled={marketBusy} onClick={selectAllMarketFiltered}>Tümünü seç</button>
                 <button type="button" disabled={marketBusy} onClick={clearMarketSelected}>Temizle</button>
@@ -712,7 +712,7 @@ function guessPackKey(prefill) {
                           <span>
                             <b>{r.name ?? `Oda #${r.id}`}</b> <span className="muted">(#{r.id})</span>
                           </span>
-                          <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik"}</span>
+                          <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Toplanma konumu hazır" : "Toplanma konumu eksik"}</span>
                         </span>
                       </span>
                       <ProviderScoreBadge score={score} prominent showLabel />
@@ -749,7 +749,7 @@ function guessPackKey(prefill) {
               />
               <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <input type="checkbox" checked={onlyHub} onChange={(e) => setOnlyHub(e.target.checked)} disabled={busy} />
-                Sadece hub’lı
+                Sadece toplanma konumu olan
               </label>
               {onReloadRooms ? (
                 <button type="button" disabled={busy} onClick={onReloadRooms}>Yenile</button>
@@ -785,7 +785,7 @@ function guessPackKey(prefill) {
                         <span>
                           <b>{r.name ?? `Oda #${r.id}`}</b> <span className="muted">(#{r.id})</span>
                         </span>
-                        <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik"}</span>
+                        <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Toplanma konumu hazır" : "Toplanma konumu eksik"}</span>
                       </span>
                     </span>
                     <ProviderScoreBadge score={score} prominent showLabel />
@@ -904,16 +904,16 @@ function guessPackKey(prefill) {
           <div style={{ marginTop: 10 }}>
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={useRoomHub} onChange={(e) => setUseRoomHub(e.target.checked)} disabled={busy} />
-              Oda hub’ını otomatik kullan
+              Odanın toplanma konumunu otomatik kullan
             </label>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8 }}>
               <label className="muted">
-                Hub Lat
+                Toplanma Konumu Lat
                 <input type="number" step="0.000001" value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
               </label>
               <label className="muted">
-                Hub Lng
+                Toplanma Konumu Lng
                 <input type="number" step="0.000001" value={hubLng} onChange={(e) => setHubLng(e.target.value)} disabled={busy} />
               </label>
             </div>

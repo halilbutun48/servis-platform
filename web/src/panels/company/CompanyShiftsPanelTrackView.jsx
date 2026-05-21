@@ -2,39 +2,39 @@ import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import {
+  CompanyContractSection,
   CompanyDetailModal,
   CompanyExtendModal,
-  CompanyFinalListSection,
   CompanyMarketSection,
   CompanyOfferSendModal,
   CompanyOffersDecisionModal,
+  CompanyOtherSection,
   CompanyPendingSection,
 } from "./companyShiftsPanelSections";
 
+const TRACK_TAB_LABELS = {
+  market: "Market",
+  pending: "Bekleyen",
+  contract: "Sözleşmeden Üretilen",
+  other: "Diğer Vardiyalar",
+};
+
 export default function CompanyShiftsPanelTrackView(props) {
   const {
-    isCommercialMode,
     dayYmd,
     setDayYmd,
     todayYmdLocal,
     addDaysYmd,
-    setMainTab,
-    setTrackTab,
-    setFinalStatus,
-    listSectionRef,
-    setFinalQ,
-    setPendingQ,
-    setMarketQ,
-    setPendingOnlyRoomOffer,
-    setOnlyAgreement,
     trackTab,
-    canonicalCompanyCounts,
+    setTrackTab,
+    trackCounts,
     marketSectionRef,
     accOpen,
     setAccOpen,
     toggleAcc,
     marketItems,
     marketQ,
+    setMarketQ,
     setMarketFocusIds,
     marketFocusIds,
     busy,
@@ -48,10 +48,11 @@ export default function CompanyShiftsPanelTrackView(props) {
     pendingSectionRef,
     pendingItems,
     pendingQ,
+    setPendingQ,
     pendingFocusIds,
     setPendingFocusIds,
     pendingOnlyRoomOffer,
-    onlyAgreement,
+    setPendingOnlyRoomOffer,
     roomsById,
     agreementConversionByShift,
     renderRoomOfferSummary,
@@ -60,9 +61,18 @@ export default function CompanyShiftsPanelTrackView(props) {
     openExtendModal,
     setPreviewModal,
     openOpsEvents,
-    finalItems,
-    finalStatus,
-    finalQ,
+    contractSectionRef,
+    contractItems,
+    contractStatus,
+    setContractStatus,
+    contractQ,
+    setContractQ,
+    otherSectionRef,
+    otherItems,
+    otherStatus,
+    setOtherStatus,
+    otherQ,
+    setOtherQ,
     openVehicleDetail,
     openDriverDetail,
     detailModal,
@@ -111,64 +121,15 @@ export default function CompanyShiftsPanelTrackView(props) {
           <div>
             <div style={{ fontWeight: 800 }}>Hızlı Filtre</div>
             <div className="muted" style={{ marginTop: 4 }}>
-              Gün: <b>{dayYmd || "Hepsi"}</b> • Liste: <b>{finalStatus === "ALL" ? "Hepsi" : finalStatus}</b>
+              Gün: <b>{dayYmd || "Hepsi"}</b> • Aktif sekme: <b>{TRACK_TAB_LABELS[trackTab] || trackTab || "?"}</b>
             </div>
           </div>
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
             <input type="date" value={dayYmd} onChange={(e) => setDayYmd(e.target.value)} title="Gün filtresi" style={{ padding: "8px 10px" }} />
-
             <button type="button" className="btn sm" onClick={() => setDayYmd(todayYmdLocal())}>Bugün</button>
             <button type="button" className="btn sm" onClick={() => setDayYmd(addDaysYmd(todayYmdLocal(), 1))}>Yarın</button>
-
-            <span className="muted" style={{ margin: "0 4px" }}>|</span>
-
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setMainTab("track");
-                setTrackTab("list");
-                setFinalStatus("OPEN");
-                setTimeout(() => {
-                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op: scrolling is best effort */ }
-                }, 0);
-              }}
-              title="Liste: kabul edildi + aktif"
-            >
-              Açık
-            </button>
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setMainTab("track");
-                setTrackTab("list");
-                setFinalStatus("ACTIVE");
-                setTimeout(() => {
-                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op: scrolling is best effort */ }
-                }, 0);
-              }}
-            >
-              Active
-            </button>
-
-            <span className="muted" style={{ margin: "0 4px" }}>|</span>
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setDayYmd("");
-                setFinalStatus("ALL");
-                setFinalQ("");
-                setPendingQ("");
-                setMarketQ("");
-                setPendingOnlyRoomOffer(false);
-                setOnlyAgreement(false);
-              }}
-            >
-              Temizle
-            </button>
+            <button type="button" className="btn sm" onClick={() => setDayYmd("")}>Temizle</button>
           </div>
         </div>
       </div>
@@ -177,102 +138,129 @@ export default function CompanyShiftsPanelTrackView(props) {
         <PanelSegmentTabs
           ariaLabel="Company shifts bölümleri"
           tabs={[
-            { key: "market", label: "Market", badge: canonicalCompanyCounts.market },
-            { key: "pending", label: "Bekleyen", badge: canonicalCompanyCounts.pending },
-            { key: "list", label: "Liste", badge: canonicalCompanyCounts.final },
+            { key: "market", label: "Market", badge: trackCounts.market },
+            { key: "pending", label: "Bekleyen", badge: trackCounts.pending },
+            { key: "contract", label: "Sözleşmeden Üretilen", badge: trackCounts.contract },
+            { key: "other", label: "Diğer Vardiyalar", badge: trackCounts.other },
           ]}
           value={trackTab}
           onChange={setTrackTab}
           compact
         />
         <div className="muted" style={{ marginTop: 6 }}>
-          {isCommercialMode
-            ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: kabul edildi / aktif / tamamlandı / reddedildi"
-            : "Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Liste: kabul edildi / aktif / tamamlandı / reddedildi"}
+          Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Sözleşmeden Üretilen: agreement / contract bağlı vardiyalar • Diğer Vardiyalar: sözleşmesiz vardiyalar
         </div>
       </div>
 
-      <CompanyMarketSection
-        trackTab={trackTab}
-        sectionRef={marketSectionRef}
-        accOpen={accOpen.market}
-        onSetOpen={(next) => setAccOpen((p) => ({ ...p, market: next }))}
-        onToggle={() => toggleAcc("market")}
-        marketItems={marketItems}
-        marketQ={marketQ}
-        onChangeMarketQ={setMarketQ}
-        marketFocusIds={marketFocusIds}
-        onClearFocus={() => setMarketFocusIds([])}
-        busy={busy}
-        searchRef={marketSearchRef}
-        fmtTR={fmtTR}
-        copilotShiftId={copilotShiftId}
-        onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
-        onOpenOfferModal={openOfferModalForShift}
-        onOpenOffersModal={openOffersModalForShift}
-        computePackageShiftIds={computePackageShiftIds}
-      />
+      {trackTab === "market" ? (
+        <CompanyMarketSection
+          sectionRef={marketSectionRef}
+          accOpen={accOpen.market}
+          onSetOpen={(next) => setAccOpen((p) => ({ ...p, market: next }))}
+          onToggle={() => toggleAcc("market")}
+          marketItems={marketItems}
+          marketQ={marketQ}
+          onChangeMarketQ={setMarketQ}
+          marketFocusIds={marketFocusIds}
+          onClearFocus={() => setMarketFocusIds([])}
+          busy={busy}
+          searchRef={marketSearchRef}
+          fmtTR={fmtTR}
+          copilotShiftId={copilotShiftId}
+          onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
+          onOpenOfferModal={openOfferModalForShift}
+          onOpenOffersModal={openOffersModalForShift}
+          computePackageShiftIds={computePackageShiftIds}
+        />
+      ) : null}
 
-      <CompanyPendingSection
-        trackTab={trackTab}
-        sectionRef={pendingSectionRef}
-        accOpen={accOpen.pending}
-        onSetOpen={(next) => setAccOpen((p) => ({ ...p, pending: next }))}
-        onToggle={() => toggleAcc("pending")}
-        pendingItems={pendingItems}
-        pendingQ={pendingQ}
-        onChangePendingQ={setPendingQ}
-        pendingFocusIds={pendingFocusIds}
-        onClearFocus={() => setPendingFocusIds([])}
-        pendingOnlyRoomOffer={pendingOnlyRoomOffer}
-        onChangePendingOnlyRoomOffer={setPendingOnlyRoomOffer}
-        onlyAgreement={onlyAgreement}
-        onChangeOnlyAgreement={setOnlyAgreement}
-        busy={busy}
-        copilotShiftId={copilotShiftId}
-        onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
-        roomsById={roomsById}
-        agreementConversionByShift={agreementConversionByShift}
-        renderRoomOfferSummary={renderRoomOfferSummary}
-        renderCompanyOfferSummary={renderCompanyOfferSummary}
-        onOpenOffersModal={openOffersModalForShift}
-        onCancelMyRequest={cancelMyRequest}
-        fmtTR={fmtTR}
-        onOpenExtendModal={openExtendModal}
-        onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
-        onOpenOpsEvents={openOpsEvents}
-        onConvertShiftToAgreement={onConvertShiftToAgreement}
-      />
+      {trackTab === "pending" ? (
+        <CompanyPendingSection
+          sectionRef={pendingSectionRef}
+          accOpen={accOpen.pending}
+          onSetOpen={(next) => setAccOpen((p) => ({ ...p, pending: next }))}
+          onToggle={() => toggleAcc("pending")}
+          pendingItems={pendingItems}
+          pendingQ={pendingQ}
+          onChangePendingQ={setPendingQ}
+          pendingFocusIds={pendingFocusIds}
+          onClearFocus={() => setPendingFocusIds([])}
+          pendingOnlyRoomOffer={pendingOnlyRoomOffer}
+          onChangePendingOnlyRoomOffer={setPendingOnlyRoomOffer}
+          busy={busy}
+          copilotShiftId={copilotShiftId}
+          onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
+          roomsById={roomsById}
+          agreementConversionByShift={agreementConversionByShift}
+          renderRoomOfferSummary={renderRoomOfferSummary}
+          renderCompanyOfferSummary={renderCompanyOfferSummary}
+          onOpenOffersModal={openOffersModalForShift}
+          onCancelMyRequest={cancelMyRequest}
+          fmtTR={fmtTR}
+          onOpenExtendModal={openExtendModal}
+          onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
+          onOpenOpsEvents={openOpsEvents}
+          onConvertShiftToAgreement={onConvertShiftToAgreement}
+        />
+      ) : null}
 
-      <CompanyFinalListSection
-        trackTab={trackTab}
-        sectionRef={listSectionRef}
-        accOpen={accOpen.list}
-        onSetOpen={(next) => setAccOpen((p) => ({ ...p, list: next }))}
-        onToggle={() => toggleAcc("list")}
-        finalItems={finalItems}
-        finalStatus={finalStatus}
-        onChangeFinalStatus={setFinalStatus}
-        finalQ={finalQ}
-        onChangeFinalQ={setFinalQ}
-        onlyAgreement={onlyAgreement}
-        onChangeOnlyAgreement={setOnlyAgreement}
-        onClearFilters={() => { setFinalStatus("ALL"); setFinalQ(""); setOnlyAgreement(false); }}
-        busy={busy}
-        copilotShiftId={copilotShiftId}
-        onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
-        roomsById={roomsById}
-        agreementConversionByShift={agreementConversionByShift}
-        renderRoomOfferSummary={renderRoomOfferSummary}
-        renderCompanyOfferSummary={renderCompanyOfferSummary}
-        fmtTR={fmtTR}
-        onOpenVehicleDetail={openVehicleDetail}
-        onOpenDriverDetail={openDriverDetail}
-        onOpenExtendModal={openExtendModal}
-        onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
-        onOpenOpsEvents={openOpsEvents}
-        onConvertShiftToAgreement={onConvertShiftToAgreement}
-      />
+      {trackTab === "contract" ? (
+        <CompanyContractSection
+          sectionRef={contractSectionRef}
+          accOpen={accOpen.contract}
+          onSetOpen={(next) => setAccOpen((p) => ({ ...p, contract: next }))}
+          onToggle={() => toggleAcc("contract")}
+          contractItems={contractItems}
+          contractStatus={contractStatus}
+          onChangeContractStatus={setContractStatus}
+          contractQ={contractQ}
+          onChangeContractQ={setContractQ}
+          onClearFilters={() => { setContractStatus("ALL"); setContractQ(""); }}
+          busy={busy}
+          copilotShiftId={copilotShiftId}
+          onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
+          roomsById={roomsById}
+          agreementConversionByShift={agreementConversionByShift}
+          renderRoomOfferSummary={renderRoomOfferSummary}
+          renderCompanyOfferSummary={renderCompanyOfferSummary}
+          fmtTR={fmtTR}
+          onOpenVehicleDetail={openVehicleDetail}
+          onOpenDriverDetail={openDriverDetail}
+          onOpenExtendModal={openExtendModal}
+          onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
+          onOpenOpsEvents={openOpsEvents}
+          onConvertShiftToAgreement={onConvertShiftToAgreement}
+        />
+      ) : null}
+
+      {trackTab === "other" ? (
+        <CompanyOtherSection
+          sectionRef={otherSectionRef}
+          accOpen={accOpen.other}
+          onSetOpen={(next) => setAccOpen((p) => ({ ...p, other: next }))}
+          onToggle={() => toggleAcc("other")}
+          otherItems={otherItems}
+          otherStatus={otherStatus}
+          onChangeOtherStatus={setOtherStatus}
+          otherQ={otherQ}
+          onChangeOtherQ={setOtherQ}
+          onClearFilters={() => { setOtherStatus("ALL"); setOtherQ(""); }}
+          busy={busy}
+          copilotShiftId={copilotShiftId}
+          onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
+          roomsById={roomsById}
+          agreementConversionByShift={agreementConversionByShift}
+          renderRoomOfferSummary={renderRoomOfferSummary}
+          renderCompanyOfferSummary={renderCompanyOfferSummary}
+          fmtTR={fmtTR}
+          onOpenVehicleDetail={openVehicleDetail}
+          onOpenDriverDetail={openDriverDetail}
+          onOpenExtendModal={openExtendModal}
+          onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
+          onOpenOpsEvents={openOpsEvents}
+          onConvertShiftToAgreement={onConvertShiftToAgreement}
+        />
+      ) : null}
 
       <CompanyDetailModal detailModal={detailModal} onClose={() => setDetailModal(null)} fmtTR={fmtTR} vehicleMetaLine={vehicleMetaLine} />
 

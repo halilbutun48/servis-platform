@@ -171,7 +171,7 @@ export const PACKS = [
   {
     key: "WK_MORNING",
     title: "Hafta içi • Sabah",
-    desc: "07:00 → 09:00 (Toplama → Hub)",
+    desc: "07:00 → 09:00 (Toplama → Toplanma Konumu)",
     weekMask: 62,
     durationDays: 30,
     items: [{ label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
@@ -179,7 +179,7 @@ export const PACKS = [
   {
     key: "WK_EVENING",
     title: "Hafta içi • Akşam",
-    desc: "17:00 → 19:00 (Hub → Dağıtım)",
+    desc: "17:00 → 19:00 (Toplanma Konumu → Dağıtım)",
     weekMask: 62,
     durationDays: 30,
     items: [{ label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" }],
@@ -240,7 +240,7 @@ export function packTitleForMode(pack, organization) {
 export function packDescForMode(pack, organization) {
   if (!organization) return pack?.desc || "";
   const map = {
-    WK_MORNING: "Sabah tek tur. Toplanma noktasından çıkıp ziyaret akışını başlatır.",
+    WK_MORNING: "Sabah tek tur. Toplanma konumundan çıkıp ziyaret akışını başlatır.",
     WK_EVENING: "Akşam tek tur. Dönüş ya da kapanış akışı için uygundur.",
     WK_MORNING_EVENING: "Aynı gün gidiş + dönüş için 2 taslak oluşturur.",
     WK_MORNING_AFTERNOON: "Sabah çıkış, öğleden sonra devam / dönüş için 2 taslak oluşturur.",
@@ -276,7 +276,7 @@ export function buildGuidedPlanDestinationAudit(orgDestinations) {
       const lng = coordNum(d?.lng);
       return {
         idx,
-        label: label || `Yer ${idx + 1}`,
+        label: label || `Konum ${idx + 1}`,
         lat,
         lng,
         hasCoord: hasCoord(lat, lng),
@@ -297,9 +297,9 @@ export function buildGuidedPlanDraftCompletion({ organization, draftShifts, draf
 
   const reasons = [];
   const expectedStops = Number(orgDestinationAudit?.total || 0);
-  if (!expectedStops) reasons.push("En az 1 gidilecek yer ekle.");
+  if (!expectedStops) reasons.push("En az 1 gidilecek konum ekle.");
   if (!orgDestinationAudit?.ok) {
-    reasons.push(`Koordinatı eksik yerler: ${(orgDestinationAudit?.missing || []).map((x) => x.label).join(", ")}`);
+    reasons.push(`Koordinatı eksik konumlar: ${(orgDestinationAudit?.missing || []).map((x) => x.label).join(", ")}`);
   }
   const badShiftIds = (Array.isArray(draftShifts) ? draftShifts : [])
     .filter((s) => {
@@ -357,7 +357,7 @@ export function fmtCoord(v) {
 
 export function stepTitle(step, who, organization) {
   if (organization) {
-    if (step === 0) return "1) Toplanma noktası";
+    if (step === 0) return "1) Toplanma Konumu";
     if (step === 1) return "2) Plan paketi";
     if (step === 2) return "3) Kişi sayısı + yerler";
     if (step === 3) return "4) Ön izleme + teklif";
