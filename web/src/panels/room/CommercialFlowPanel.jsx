@@ -12,7 +12,6 @@ import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
 
 const ROOM_FLOW_TABS = [
-  { key: "summary", label: "Özet" },
   { key: "settlement", label: "Hakediş" },
   { key: "contractShift", label: "Sözleşme & Vardiya" },
   { key: "offers", label: "Teklifler" },
@@ -165,7 +164,7 @@ export default function CommercialFlowPanel() {
   const [summary, setSummary] = useState(null);
   const [items, setItems] = useState([]);
   const [err, setErr] = useState("");
-  const [viewMode, setViewMode] = useState("summary");
+  const [viewMode, setViewMode] = useState("contractShift");
   const [filterQ, setFilterQ] = useState("");
   const [counterpartyQ, setCounterpartyQ] = useState("");
   const [flowQ, setFlowQ] = useState("");
@@ -283,10 +282,12 @@ export default function CommercialFlowPanel() {
     + Number(summary?.cards?.approvedOrActiveShifts || 0);
   const qualityCount = Number(summary?.cards?.counteredOffers || 0) + Number(summary?.cards?.openOffers || 0);
   const paymentCount = Number(summary?.cards?.activeAgreements || 0) + Number(summary?.cards?.approvedOrActiveShifts || 0);
+  const selectedSummaryText = selectedItem
+    ? [selectedItem.flowLabel, selectedItem.statusLabel || selectedItem.status, selectedItem.nextStep].filter(Boolean).join(" • ")
+    : "";
 
   const tabs = useMemo(() => ROOM_FLOW_TABS.map((tab) => {
     let badge = null;
-    if (tab.key === "summary") badge = items.length ? String(items.length) : null;
     if (tab.key === "settlement") badge = settlementCount ? String(settlementCount) : null;
     if (tab.key === "contractShift") badge = contractShiftItems.length ? String(contractShiftItems.length) : null;
     if (tab.key === "offers") badge = offerItems.length ? String(offerItems.length) : null;
@@ -295,10 +296,6 @@ export default function CommercialFlowPanel() {
     if (tab.key === "history") badge = items.length ? String(items.length) : null;
     return { ...tab, badge };
   }), [items.length, settlementCount, contractShiftItems.length, offerItems.length, qualityCount, paymentCount]);
-
-  const selectedSummaryText = selectedItem
-    ? [selectedItem.flowLabel, selectedItem.statusLabel || selectedItem.status, selectedItem.nextStep].filter(Boolean).join(" • ")
-    : "";
 
   const renderActionButtons = () => (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -310,52 +307,6 @@ export default function CommercialFlowPanel() {
   );
 
   const mainContent = (() => {
-    if (viewMode === "summary") {
-      return (
-        <div style={{ display: "grid", gap: 14 }}>
-          <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
-            <div className="panelSectionTitle">Kısa özet</div>
-            <div className="panelMeta">
-              Oda ticari akışı artık kısa özet + sekmeli bölüm standardıyla açılıyor. Ana özet ve kritik kararlar görünür kalır, ikincil detaylar kendi sekmesine iner.
-            </div>
-            {renderActionButtons()}
-          </div>
-
-          <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
-            <div className="panelSectionTitle">Görünen ana özet</div>
-            <div className="panelMeta">
-              Açık teklif, sözleşme ve operasyona inen kayıtların tek bakışta özeti.
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-              <MetricCard title="Açık Teklif" value={summary?.cards?.openOffers ?? "-"} note="İncelenmesi gereken teklifler" accent={summary?.cards?.openOffers ? "warm" : "default"} />
-              <MetricCard title="Karşı Teklif" value={summary?.cards?.counteredOffers ?? "-"} note="Pazarlık aşamasındaki kayıtlar" accent={summary?.cards?.counteredOffers ? "warm" : "default"} />
-              <MetricCard title="Bekleyen" value={summary?.cards?.acceptedOffers ?? "-"} note="Operasyon hazırlığı bekleyen talepler" accent={summary?.cards?.acceptedOffers ? "good" : "default"} />
-              <MetricCard title="Sözleşme Bekleyen" value={summary?.cards?.requestedAgreements ?? "-"} note="Sözleşmeye dönüşen kayıtlar" accent={summary?.cards?.requestedAgreements ? "warm" : "default"} />
-              <MetricCard title="Aktif Sözleşme" value={summary?.cards?.activeAgreements ?? "-"} note="Aktif bağlanan işler" accent={summary?.cards?.activeAgreements ? "good" : "default"} />
-              <MetricCard title="Aktif Operasyon" value={summary?.cards?.approvedOrActiveShifts ?? "-"} note="Sahaya inen işler" accent={summary?.cards?.approvedOrActiveShifts ? "good" : "default"} />
-            </div>
-          </div>
-
-          <CollapsibleSection
-            title="Sekme rehberi"
-            subtitle="Hangi bölümde ne görüneceğini kısa cümlelerle sabitler"
-            badge={`${ROOM_FLOW_TABS.length} sekme`}
-            compact
-          >
-            <div style={{ display: "grid", gap: 8 }}>
-              <div className="panelMeta">• Özet: kısa durum ve ana aksiyonlar.</div>
-              <div className="panelMeta">• Hakediş: ödeme yolu ve sözleşme bağlantısı.</div>
-              <div className="panelMeta">• Sözleşme & Vardiya: operasyon bağlantılı kayıtlar.</div>
-              <div className="panelMeta">• Teklifler: market ve pazarlık kayıtları.</div>
-              <div className="panelMeta">• Kalite / Kanıt: kalite ve destek yönlendirmesi.</div>
-              <div className="panelMeta">• Ödeme & Komisyon: read-only ödeme yolu.</div>
-              <div className="panelMeta">• Geçmiş: filtreli tam tablo.</div>
-            </div>
-          </CollapsibleSection>
-        </div>
-      );
-    }
-
     if (viewMode === "settlement") {
       return (
         <div style={{ display: "grid", gap: 14 }}>
@@ -544,7 +495,8 @@ export default function CommercialFlowPanel() {
       );
     }
 
-    return (
+    if (viewMode === "history") {
+      return (
       <div style={{ display: "grid", gap: 14 }}>
         <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
           <div className="panelSectionTitle">Geçmiş kayıtlar</div>
@@ -638,90 +590,94 @@ export default function CommercialFlowPanel() {
           </div>
         </CollapsibleSection>
       </div>
-    );
+      );
+    }
+
+    return null;
   })();
 
   return (
-    <div style={{ display: "grid", gap: 14, maxWidth: 1440, width: "100%", margin: "0 auto" }}>
-      <PanelChrome
-        title="Ticari Akışım"
-        subtitle="Room için ticari görünüm artık kısa özet + sekmeli bölümlerle açılıyor. Hakediş, sözleşme, teklif, kalite, ödeme ve geçmiş ayrı okunur; kritik özet hep açık kalır."
-        actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
-      />
+      <div className="roomCommercialWorkspaceFull">
+        <PanelChrome
+          title="Ticari Akışım"
+          subtitle="Room için ticari görünüm artık kısa özet + sekmeli bölümlerle açılıyor. Hakediş, sözleşme, teklif, kalite, ödeme ve geçmiş ayrı okunur; kritik özet hep açık kalır."
+          actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
+          style={{ width: "100%" }}
+        />
 
-      {err ? <div style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
+        {err ? <div style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, width: "100%" }}>
         {cards.map((card) => <MetricCard key={card.title} {...card} />)}
-      </div>
-
-      <PanelSegmentTabs
-        ariaLabel="Ticari akış bölümleri"
-        tabs={tabs}
-        value={viewMode}
-        onChange={setViewMode}
-      />
-
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.6fr) minmax(280px, 0.85fr)", gap: 14, alignItems: "start" }}>
-        <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
-          {mainContent}
         </div>
 
-        <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
-          <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
-            <div className="panelSectionTitle">Seçili kayıt</div>
-            {selectedItem ? (
-              <div style={{ display: "grid", gap: 6 }}>
-                <div><b>{selectedItem.counterparty || "-"}</b></div>
-                <div className="panelMeta">Akış: {selectedItem.flowLabel || "-"}</div>
-                <div className="panelMeta">Durum: <StatusBadge value={selectedItem.statusLabel || selectedItem.status} /></div>
-                <div className="panelMeta">Tutar: {selectedItem.amountLabel || "-"}</div>
-                <div className="panelMeta">Son Güncelleme: {fmtTR(selectedItem.updatedAt)}</div>
-                <div className="panelMeta">Sonraki Adım: {selectedItem.nextStep || "-"}</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {selectedItem.actionPath ? (
-                    <button type="button" onClick={() => openAction(selectedItem)}>{selectedItem.actionLabel || "Aç"}</button>
-                  ) : null}
-                  {selectedItem.section === "list" ? (
-                    <button type="button" className="btn sm" onClick={() => navigate("/room/shifts")}>Vardiyaları aç</button>
-                  ) : null}
+        <PanelSegmentTabs
+          ariaLabel="Ticari akış bölümleri"
+          tabs={tabs}
+          value={viewMode}
+          onChange={setViewMode}
+        />
+
+        <div className="roomCommercialWorkspaceFullSplit">
+          <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
+            {mainContent}
+          </div>
+
+          <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
+            <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
+              <div className="panelSectionTitle">Seçili kayıt</div>
+              {selectedItem ? (
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div><b>{selectedItem.counterparty || "-"}</b></div>
+                  <div className="panelMeta">Akış: {selectedItem.flowLabel || "-"}</div>
+                  <div className="panelMeta">Durum: <StatusBadge value={selectedItem.statusLabel || selectedItem.status} /></div>
+                  <div className="panelMeta">Tutar: {selectedItem.amountLabel || "-"}</div>
+                  <div className="panelMeta">Son Güncelleme: {fmtTR(selectedItem.updatedAt)}</div>
+                  <div className="panelMeta">Sonraki Adım: {selectedItem.nextStep || "-"}</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {selectedItem.actionPath ? (
+                      <button type="button" onClick={() => openAction(selectedItem)}>{selectedItem.actionLabel || "Aç"}</button>
+                    ) : null}
+                    {selectedItem.section === "list" ? (
+                      <button type="button" className="btn sm" onClick={() => navigate("/room/shifts")}>Vardiyaları aç</button>
+                    ) : null}
+                  </div>
                 </div>
+              ) : (
+                <div className="panelMeta">Bir satır seçildiğinde detay burada görünür.</div>
+              )}
+            </div>
+
+            <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
+              <div className="panelSectionTitle">Hızlı erişim</div>
+              <div className="panelMeta">Sık kullanılan oda yüzeylerine kısa yol.</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => navigate("/room/offers")}>Teklifler</button>
+                <button type="button" onClick={() => navigate("/room/agreements")}>Sözleşmeler</button>
+                <button type="button" onClick={() => navigate("/room/shifts")}>Vardiyalar</button>
+                <button type="button" onClick={() => navigate("/room/operation-health")}>Operasyon Sağlığı</button>
+                <button type="button" onClick={() => navigate("/shared/feedback")}>Geri Bildirim</button>
               </div>
-            ) : (
-              <div className="panelMeta">Bir satır seçildiğinde özet burada görünür.</div>
-            )}
-          </div>
-
-          <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
-            <div className="panelSectionTitle">Hızlı erişim</div>
-            <div className="panelMeta">Sık kullanılan oda yüzeylerine kısa yol.</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button type="button" onClick={() => navigate("/room/offers")}>Teklifler</button>
-              <button type="button" onClick={() => navigate("/room/agreements")}>Sözleşmeler</button>
-              <button type="button" onClick={() => navigate("/room/shifts")}>Vardiyalar</button>
-              <button type="button" onClick={() => navigate("/room/operation-health")}>Operasyon Sağlığı</button>
-              <button type="button" onClick={() => navigate("/shared/feedback")}>Geri Bildirim</button>
             </div>
-          </div>
 
-          <CollapsibleSection
-            title="Sekme rehberi"
-            subtitle="Hangi bölümde ne beklenir?"
-            badge={`${ROOM_FLOW_TABS.length} sekme`}
-            compact
-          >
-            <div style={{ display: "grid", gap: 8 }}>
-              <div className="panelMeta">• Özet: kısa durum ve ana aksiyonlar.</div>
-              <div className="panelMeta">• Hakediş: ödeme yolu ve sözleşme bağlantısı.</div>
-              <div className="panelMeta">• Sözleşme & Vardiya: operasyon bağlantılı kayıtlar.</div>
-              <div className="panelMeta">• Teklifler: market ve pazarlık kayıtları.</div>
-              <div className="panelMeta">• Kalite / Kanıt: kalite ve destek yönlendirmesi.</div>
-              <div className="panelMeta">• Ödeme & Komisyon: read-only ödeme yolu.</div>
-              <div className="panelMeta">• Geçmiş: filtreli tam tablo.</div>
-            </div>
-          </CollapsibleSection>
+            <CollapsibleSection
+              title="Sekme rehberi"
+              subtitle="Hangi bölümde ne beklenir?"
+              badge={`${ROOM_FLOW_TABS.length} sekme`}
+              compact
+            >
+              <div style={{ display: "grid", gap: 8 }}>
+                <div className="panelMeta">• Hakediş: ödeme yolu ve sözleşme bağlantısı.</div>
+                <div className="panelMeta">• Sözleşme & Vardiya: operasyon bağlantılı kayıtlar.</div>
+                <div className="panelMeta">• Teklifler: market ve pazarlık kayıtları.</div>
+                <div className="panelMeta">• Kalite / Kanıt: kalite ve destek yönlendirmesi.</div>
+                <div className="panelMeta">• Ödeme & Komisyon: read-only ödeme yolu.</div>
+                <div className="panelMeta">• Geçmiş: filtreli tam tablo.</div>
+              </div>
+            </CollapsibleSection>
+          </div>
         </div>
       </div>
-    </div>
   );
 }
+

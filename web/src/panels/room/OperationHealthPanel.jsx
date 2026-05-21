@@ -6,7 +6,7 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { buildOperationHealthCopilotFacts } from "../../utils/copilotFacts";
-import CollapsibleSection from "../../components/CollapsibleSection";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import RoomOperationsBoard from "./roomOperationsBoard";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 
@@ -148,11 +148,11 @@ export default function OperationHealthPanel() {
   const [drivers, setDrivers] = useState([]);
   const [issues, setIssues] = useState([]);
   const [roomOperations, setRoomOperations] = useState(null);
-  const [err, setErr] = useState("");
   const [filterQ, setFilterQ] = useState("");
   const [driverStatusFilter, setDriverStatusFilter] = useState("");
   const [selectedDriverId, setSelectedDriverId] = useState(0);
   const [selectedIssueKey, setSelectedIssueKey] = useState("");
+  const [activeTab, setActiveTab] = useState("summary");
 
   useEffect(() => {
     let cancelled = false;
@@ -182,9 +182,9 @@ export default function OperationHealthPanel() {
           driverSummary: driverSummary || null,
           requests: Array.isArray(requests) ? requests : [],
         });
-      } catch (e) {
+      } catch (error) {
         if (cancelled) return;
-        setErr(e?.message || String(e));
+        console.error(error);
       }
     })();
     return () => {
@@ -256,8 +256,31 @@ export default function OperationHealthPanel() {
     ];
   }, [summary]);
 
+  const tabs = useMemo(() => [
+    {
+      key: "proof",
+      label: "Şartlı Küme",
+      badge: summary?.cards?.openIssues ?? 0,
+    },
+    {
+      key: "summary",
+      label: "Oda Operasyon Özeti",
+      badge: summary?.cards?.activeDrivers ?? "-",
+    },
+    {
+      key: "drivers",
+      label: "Sorunlu Sürücüler",
+      badge: `${filteredDrivers.length}/${drivers.length}`,
+    },
+    {
+      key: "issues",
+      label: "Açık Sorunlar",
+      badge: filteredIssues.length,
+    },
+  ], [summary, filteredDrivers.length, drivers.length, filteredIssues.length]);
+
   return (
-      <div className="card">
+    <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div className="panelTitle">Oda Operasyon Paneli</div>
@@ -268,17 +291,13 @@ export default function OperationHealthPanel() {
           <div className="muted">Kapsam: Kendi operasyon alanınız</div>
         </div>
 
-        <div style={{ marginTop: 14 }}>
-          <OperationProofMiniCard
-            manualNoteScopeType="SHIFT"
-            manualNoteScopeId="room-operation-health"
-          />
+      <div style={{ marginTop: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+          {cards.map((card) => (
+            <MetricCard key={card.title} {...card} />
+          ))}
         </div>
-
-        <RoomOperationsBoard
-          roomSummary={summary}
-          roomData={roomOperations}
-      />
+      </div>
 
       <div className="card" style={{ marginTop: 14, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
         <div>
@@ -288,22 +307,61 @@ export default function OperationHealthPanel() {
         <div className="muted">Sürücü: <b>{filteredDrivers.length}</b> / {drivers.length} • Sorun: <b>{filteredIssues.length}</b> / {issues.length}</div>
       </div>
 
-      {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
+      <PanelSegmentTabs
+        ariaLabel="Oda operasyon bölümleri"
+        tabs={tabs}
+        value={activeTab}
+        onChange={(next) => {
+          setActiveTab(next);
+        }}
+        compact
+        className="panelSegmentTabs--roomOps"
+      />
 
-      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        {cards.map((card) => (
-          <MetricCard key={card.title} {...card} />
-        ))}
-      </div>
+      {activeTab === "proof" ? (
+        <section role="tabpanel" aria-label="Şartlı Küme" style={{ marginTop: 14 }}>
+          <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>Şartlı Küme</div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Operasyon kanıtı ve hızlı aksiyon köprüsü. Bu bölüm seçili değilken gizli kalır.
+                </div>
+              </div>
+              <div className="muted">Kapanan / bekleyen aksiyonlar burada kısa okunur.</div>
+            </div>
 
-      <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
-        <CollapsibleSection
-          title="Sorunlu Sürücüler / Canlılık Listesi"
-          subtitle="Canlılık, izin ve oturum riskleri. Ana filtreler açık; detay tablo bu bölümde toplanır."
-          badge={`${filteredDrivers.length}/${drivers.length}`}
-          defaultOpen
-        >
+            <div style={{ marginTop: 14 }}>
+              <OperationProofMiniCard
+                manualNoteScopeType="SHIFT"
+                manualNoteScopeId="room-operation-health"
+              />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "summary" ? (
+        <section role="tabpanel" aria-label="Oda Operasyon Özeti" style={{ marginTop: 14 }}>
+          <RoomOperationsBoard
+            roomSummary={summary}
+            roomData={roomOperations}
+          />
+        </section>
+      ) : null}
+
+      {activeTab === "drivers" ? (
+        <section role="tabpanel" aria-label="Sorunlu Sürücüler" style={{ marginTop: 14 }}>
           <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>Sorunlu Sürücüler / Canlılık Listesi</div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Canlılık, izin ve oturum riskleri. Ana filtreler açık; detay tablo bu sekmede toplanır.
+                </div>
+              </div>
+              <div className="muted">Filtreye uyan: {filteredDrivers.length}</div>
+            </div>
             <div style={{ overflowX: "auto", marginTop: 14 }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
@@ -347,42 +405,47 @@ export default function OperationHealthPanel() {
               </table>
             </div>
           </div>
-        </CollapsibleSection>
+        </section>
+      ) : null}
 
-        <CollapsibleSection
-          title="Açık Sorunlar"
-          subtitle="Takip edilmesi gereken tanı ve rehber önerileri."
-          badge={filteredIssues.length}
-          defaultOpen={false}
-          compact
-        >
+      {activeTab === "issues" ? (
+        <section role="tabpanel" aria-label="Açık Sorunlar" style={{ marginTop: 14 }}>
           <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
-            <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>Açık Sorunlar</div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Takip edilmesi gereken tanı ve rehber önerileri.
+                </div>
+              </div>
+              <div className="muted">Filtreye uyan: {filteredIssues.length}</div>
+            </div>
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
               {filteredIssues.length ? filteredIssues.map((issue, idx) => {
                 const issueKey = `${idx}:${issue?.title || ''}`;
                 const isSelected = String(selectedIssueKey || '') === issueKey;
                 return (
-                <div key={issueKey} onClick={() => setSelectedIssueKey(issueKey)} style={{ padding: 12, borderRadius: 12, background: isSelected ? 'rgba(61, 122, 255, 0.10)' : 'rgba(255,255,255,0.03)', outline: isSelected ? '1px solid rgba(59,130,246,.35)' : undefined, cursor: 'pointer' }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ fontWeight: 700 }}>{issue.title}</div>
-                    <StatusBadge kind="severity" value={issue.severity} />
+                  <div key={issueKey} onClick={() => setSelectedIssueKey(issueKey)} style={{ padding: 12, borderRadius: 12, background: isSelected ? 'rgba(61, 122, 255, 0.10)' : 'rgba(255,255,255,0.03)', outline: isSelected ? '1px solid rgba(59,130,246,.35)' : undefined, cursor: 'pointer' }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <div style={{ fontWeight: 700 }}>{issue.title}</div>
+                      <StatusBadge kind="severity" value={issue.severity} />
+                    </div>
+                    <div className="muted" style={{ marginTop: 8 }}>{issue.detail}</div>
+                    <div style={{ marginTop: 10 }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openRoomCopilotWithHint(buildGuideHint(issue.title, issue.detail, { severity: issue.severity, suggestedRouteKey: issueRouteKey(issue) })); }}
+                      >
+                        Rehberde ne yapacağımı göster
+                      </button>
+                    </div>
                   </div>
-                  <div className="muted" style={{ marginTop: 8 }}>{issue.detail}</div>
-                  <div style={{ marginTop: 10 }}>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); openRoomCopilotWithHint(buildGuideHint(issue.title, issue.detail, { severity: issue.severity, suggestedRouteKey: issueRouteKey(issue) })); }}
-                    >
-                      Rehberde ne yapacağımı göster
-                    </button>
-                  </div>
-                </div>
-              );
+                );
               }) : <div className="muted">{issues.length ? 'Filtreye uyan açık sorun yok.' : 'Açık sorun yok.'}</div>}
             </div>
           </div>
-        </CollapsibleSection>
-      </div>
+        </section>
+      ) : null}
     </div>
   );
 }

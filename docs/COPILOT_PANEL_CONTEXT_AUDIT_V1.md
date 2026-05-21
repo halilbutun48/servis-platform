@@ -262,6 +262,10 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Secondary detaylar accordion altında tutulur; sayfa ilk açılışta daha kısa ve okunur hissi verir.
 - Bu dalga, `Room / Araçlar`, `Room / Sürücüler`, `Room / Ticari Akışım`, `Company / Sözleşmeler`, `Company / Ticari Akış`, `Super Admin / Operasyon Doğrulama`, `Parent / Canlı Takip` ve `Personel / Canlı Takip` yüzeylerini kapsar.
 
+## UX-PANEL-STRUCTURE-02B long panel follow-up
+- Kalan P0 uzun paneller summary-first + segmented/tab + collapsible standardının ikinci dalgası ile ele alınır.
+- `CommercialCorePanel`, `VehiclesPanel`, `DriversPanel`, `ShiftsPanel` ve `MapPanel` için ilk açılışta kritik özet açık, ikincil detaylar ise ayrı section'larda tutulur.
+
 ## UX-COLLAPSIBLE-PANELS-01 long panel summary-first standard
 - Uzun panellerde kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; ikincil detaylar collapsible/accordion altında toplanır.
 - `Room / Operasyon Sağlığı`, `Driver / Bugün`, `Driver / Rota`, `Parent / Canlı Takip` ve `Company / Sözleşmeler` bu standart için ilk patch yüzeyleri olarak daraltılır.
@@ -298,3 +302,17 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Bu audit product behavior değiştirmez.
 - Runtime behavior değiştirmez.
 - Bu belge yalnızca görünür context coverage ve risk görünürlüğü içindir.
+
+## UX-PANEL-REALITY-AUDIT-02C note
+- PanelSegmentTabs kullanılan yüzeylerde gerçek functional tab ile cosmetic-only risk arasındaki farkı görünür tutar.
+- `Room / Araçlar` ve `Room / Sürücüler` reference standard olarak kalır; focus-model yüzeyler browser / DOM smoke için watchlist'te tutulur.
+- Bu not ürün davranışını değiştirmez; yalnızca panel gerçekliği ve uzun scroll riskini güncel tutar.
+
+## UX-PANEL-REALITY-CLEANUP-02D note
+- Room / Sözleşmeler artık gerçek tab mimarisiyle çalışır; Operasyon Köprüsü, Rota Talepleri, Uygulanan Rota, Uzatma Talepleri, Bekleyen ve Diğer Sözleşmeler aynı viewport içinde tek kaynaklı render edilir.
+- Üst bilgi bandı yalnızca yönlendirme / uyarı katmanıdır; detay tablosunu tekrar etmez ve CTA ile ilgili taba geçirir.
+- Bu cleanup, Room / Ticari Akışım ve Room / Canlı Takip üstünde kurulu summary-first + functional tab standardını bozmadan uzun stacked akışı kapatır.
+
+## UX-LIVE-MAP-TABS-SIMPLIFY-01 note
+- Room / Canlı Takip artık Harita / Araçlar sekmeleriyle sadeleştirilir; GPS, ETA, risk ve geçmiş bilgisi Harita görünümündeki kısa badge ve satırlarda tutulur.
+- Bu sadeleştirme, Copilot'un aynı canlı bağlamı kullanmasını korur; seçili araç, son GPS, sıradaki durak ve ETA yardım bağlamında taşınmaya devam eder.

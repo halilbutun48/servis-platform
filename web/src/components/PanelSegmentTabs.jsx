@@ -2,6 +2,8 @@ export default function PanelSegmentTabs({
   tabs,
   value,
   onChange,
+  onSelect,
+  onClick,
   ariaLabel = "Panel bölümleri",
   compact = false,
   className = "",
@@ -25,7 +27,11 @@ export default function PanelSegmentTabs({
             role="tab"
             aria-selected={active}
             className={`panelSegmentTab${active ? " active" : ""}`}
-            onClick={() => onChange?.(tab?.key)}
+            onClick={(event) => {
+              onClick?.(tab, event);
+              onSelect?.(tab?.key, tab, event);
+              onChange?.(tab?.key, tab, event);
+            }}
           >
             <span className="panelSegmentTabLabel">{tab?.label ?? tab?.key ?? "-"}</span>
             {badge ? <span className="panelSegmentTabBadge">{badge}</span> : null}

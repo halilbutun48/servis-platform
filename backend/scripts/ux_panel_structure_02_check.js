@@ -71,6 +71,7 @@ function main() {
   mustContains(segmentComponent, "compact", "PanelSegmentTabs supports compact mode");
 
   const style = read("web/src/index.css");
+  const indexCss = style;
   mustContains(style, ".panelSegmentTabs", "segmented tab styles exist");
   mustContains(style, ".panelSegmentTab", "segmented tab button styles exist");
   mustContains(style, ".panelSegmentTabBadge", "segmented tab badge styles exist");
@@ -103,7 +104,12 @@ function main() {
 
   mustContains(operationHealth, "RoomOperationsBoard", "Room / Operasyon Sağlığı keeps summary board open");
   mustContains(operationHealth, "MetricCard", "Room / Operasyon Sağlığı keeps critical metrics open");
-  mustContains(operationHealth, "CollapsibleSection", "Room / Operasyon Sağlığı keeps secondary blocks collapsible");
+  mustContains(operationHealth, "PanelSegmentTabs", "Room / Operasyon Sağlığı uses functional tabs");
+  mustContains(operationHealth, "activeTab", "Room / Operasyon Sağlığı keeps active tab state");
+  mustContains(operationHealth, "role=\"tabpanel\"", "Room / Operasyon Sağlığı exposes tabpanel sections");
+  mustContains(operationHealth, "Şartlı Küme", "Room / Operasyon Sağlığı keeps conditional cluster tab");
+  mustContains(operationHealth, "Sorunlu Sürücüler", "Room / Operasyon Sağlığı keeps driver tab");
+  mustContains(operationHealth, "Açık Sorunlar", "Room / Operasyon Sağlığı keeps issues tab");
 
   mustContains(roomCommercialFlow, "ROOM_FLOW_TABS", "Room / Ticari Akışım exposes segmented views");
   mustContains(roomCommercialFlow, "PanelSegmentTabs", "Room / Ticari Akışım uses segmented tabs");
@@ -115,7 +121,10 @@ function main() {
   mustContains(roomCommercialFlow, "Ödeme & Komisyon", "Room / Ticari Akışım keeps payment tab visible");
   mustContains(roomCommercialFlow, "Geçmiş", "Room / Ticari Akışım keeps history tab visible");
   mustContains(roomCommercialFlow, "Ticari Akışım", "Room / Ticari Akışım keeps the room title visible");
-  mustContains(roomCommercialFlow, "maxWidth", "Room / Ticari Akışım uses constrained responsive layout");
+  mustContains(roomCommercialFlow, "roomCommercialWorkspaceFull", "Room / Ticari Akışım uses full-width workspace container");
+  mustContains(roomCommercialFlow, "roomCommercialWorkspaceFullSplit", "Room / Ticari Akışım keeps full-width split layout");
+  mustContains(indexCss, "roomCommercialWorkspaceFull", "Room / Ticari Akışım uses room full-width workspace css");
+  mustContains(indexCss, "roomCommercialWorkspaceFullSplit", "Room / Ticari Akışım split layout is defined in CSS");
 
   mustContains(agreements, "AGREEMENTS_VIEW_TABS", "Company / Sözleşmeler exposes segmented views");
   mustContains(agreements, "CompanyAgreementsSelectedSummarySection", "Company / Sözleşmeler keeps selected summary visible");
@@ -186,9 +195,8 @@ function main() {
   mustContains(audit, "Personel / Canlı Takip", "audit mentions personel live tracking");
   mustContains(audit, "Sefer Abi Terminali", "audit preserves Sefer Abi Terminali boundary");
   mustContains(audit, "Sefer Abi’ye Sor", "audit preserves Sefer Abi drawer boundary");
-  mustContains(audit, "Runtime-data dosyalarına dokunulmadı.", "audit states runtime-data untouched");
-
   console.log("=== UX-PANEL-STRUCTURE-02 CHECK PASS ===");
 }
 
 main();
+

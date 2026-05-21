@@ -97,9 +97,74 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
 
+.panelWorkspaceWide {
+  width: min(100%, clamp(1280px, 94vw, 1600px));
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.panelWorkspaceWideSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 2.05fr) minmax(320px, 0.95fr);
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
+.roomCommercialWorkspaceFull {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  align-self: stretch;
+  justify-self: stretch;
+  justify-items: stretch;
+  align-items: start;
+}
+
+.roomCommercialWorkspaceFullSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 24vw, 460px);
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+  width: 100%;
+}
+
+.roomCommercialWorkspaceFull > * {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .panelWorkspaceWideSplit {
+    grid-template-columns: 1fr;
+  }
+
+  .roomCommercialWorkspaceFullSplit {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .panelWorkspaceWide {
+    width: 100%;
+  }
+
+  .roomCommercialWorkspaceFull {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+}
+
 /* --- Map layouts --- */
 /* Left list smaller, map gets the remaining space */
-.mapGrid { grid-template-columns: 320px minmax(0, 1fr); align-items: stretch; }
+.mapGrid { grid-template-columns: clamp(320px, 26vw, 400px) minmax(0, 1fr); align-items: stretch; }
 .mapAsideCard { height: var(--mapH); display:flex; flex-direction:column; }
 .mapAsideList { overflow:auto; padding-right: 4px; }
 
@@ -1319,3 +1384,4 @@ button, input, select, textarea, .btn, .secondary {
 .listSelectionBanner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1px solid rgba(83,177,253,0.24); background: rgba(83,177,253,0.08); border-radius: 14px; margin-top: 10px; }
 .listSelectionBannerTitle { font-size: 14px; color: #f8fafc; }
 .listSelectionBannerMeta { font-size: 12px; color: #c8d6f6; margin-top: 4px; }
+

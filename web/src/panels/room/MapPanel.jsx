@@ -12,6 +12,7 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 
 function toNum(v) {
   const n = typeof v === "number" ? v : Number(v);
@@ -127,6 +128,24 @@ function focusStop(stop) {
   window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat: c.lat, lng: c.lng, zoom: 17 } }));
 }
 
+function MapTabCard(props) {
+  const { tabRef, title, subtitle, children, className = "", style = {} } = props;
+  return (
+    <div
+      ref={tabRef}
+      tabIndex={-1}
+      role="tabpanel"
+      aria-label={title}
+      className={`card${className ? ` ${className}` : ""}`}
+      style={{ marginBottom: 10, ...style }}
+    >
+      <div className="title" style={{ fontSize: 16 }}>{title}</div>
+      {subtitle ? <div className="muted" style={{ fontSize: 12 }}>{subtitle}</div> : null}
+      <div style={{ marginTop: 10 }}>{children}</div>
+    </div>
+  );
+}
+
 export default function RoomMapPanel() {
   const { token } = useSession();
 
@@ -141,6 +160,9 @@ export default function RoomMapPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [routePreview, setRoutePreview] = useState({ points: [], source: "ESTIMATED" });
+  const [mapTab, setMapTab] = useState("map");
+  const mapTabRefs = useRef({});
+  const didMapTabMountRef = useRef(false);
 
   async function load() {
     setErr("");
@@ -285,6 +307,36 @@ export default function RoomMapPanel() {
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
+  const selectedRiskLines = useMemo(() => {
+    const lines = [];
+    if (!selected) return ["Araç seçilmedi"];
+
+    const gpsStatus = String(uiStatusFromVehicle(selected) || "").toUpperCase();
+    if (!hasGpsFix(selected)) {
+      lines.push("GPS bekleniyor");
+    } else if (gpsStatus === "OFFLINE") {
+      lines.push("GPS çevrim dışı");
+    } else if (gpsStatus === "STALE") {
+      lines.push("GPS güncel değil");
+    } else if (gpsStatus === "LOW_SIGNAL") {
+      lines.push("GPS düşük sinyal");
+    }
+
+    if (!selectedShift) lines.push("Shift yok");
+    if (!selectedNext?.name) lines.push("Sıradaki durak bekleniyor");
+    if (selectedEta == null) lines.push("ETA hesaplanamıyor");
+    return lines.length ? lines : ["Belirgin risk yok"];
+  }, [selected, selectedShift, selectedNext?.name, selectedEta]);
+
+  const selectedHistoryLine = useMemo(() => {
+    if (!selected) return "";
+    const parts = [
+      `Son güncelleme: ${fmtTR(selectedShift?.updatedAt || selectedShift?.lastUpdatedAt || selectedShift?.startAt)}`,
+      `Son GPS: ${gpsAgeLabel(selected)}`,
+      `Rota kaynağı: ${routePreview?.source || "ESTIMATED"}`,
+    ];
+    return parts.join(" • ");
+  }, [selected, selectedShift?.updatedAt, selectedShift?.lastUpdatedAt, selectedShift?.startAt, routePreview?.source]);
 
   const copilotSummary = useMemo(() => {
     if (!selected) return null;
@@ -295,7 +347,22 @@ export default function RoomMapPanel() {
     if (ui) parts.push(`GPS ${ui}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     return parts.join(" - ");
-  }, [selected, selectedShift?.id, selectedNext?.name]);
+  }, [selected, selectedShift?.id, selectedNext]);
+
+  const selectedSummaryText = useMemo(() => {
+    if (!selected) return "";
+    const parts = [];
+    const ui = uiStatusFromVehicle(selected);
+    if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
+    if (selected?.plate) parts.push(`Araç ${selected.plate}`);
+    if (ui) parts.push(`GPS ${ui}`);
+    if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
+    if (selectedEta != null) {
+      const etaText = etaDisplayText(selected, selectedEta, selectedNext);
+      if (etaText) parts.push(`ETA ${etaText}`);
+    }
+    return parts.join(" • ");
+  }, [selected, selectedShift?.id, selectedNext, selectedEta]);
 
   useEffect(() => {
     if (!selected) {
@@ -380,6 +447,145 @@ export default function RoomMapPanel() {
     } catch { /* no-op: fitAll event dispatch is best effort */ }
   }
 
+  useEffect(() => {
+    if (!didMapTabMountRef.current) {
+      didMapTabMountRef.current = true;
+      return;
+    }
+
+    const target = mapTabRefs.current?.[mapTab];
+    if (!target) return;
+    try {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.focus?.({ preventScroll: true });
+    } catch {
+      // no-op
+    }
+  }, [mapTab]);
+
+  function renderVehicleListCard({
+    title = "Canlı Liste",
+    subtitle = "Satıra tıkla → sağda timeline + harita.",
+    cardHeight = null,
+  } = {}) {
+    return (
+      <div className="card mapAsideCard" style={cardHeight ? { height: cardHeight } : undefined}>
+        <div className="title" style={{ fontSize: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <span>{title}</span>
+          <span className="muted" style={{ fontSize: 12 }}>{cards.length} kayıt</span>
+        </div>
+
+        <div className="muted" style={{ margin: "8px 0 10px" }}>
+          {subtitle}
+        </div>
+
+        <div className="col mapAsideList" style={{ flex: 1, minHeight: 0 }}>
+          {!cards.length ? (
+            <div className="muted" style={{ padding: 10 }}>
+              Aktif/uygun vardiya bulunamadı.
+            </div>
+          ) : null}
+
+          {cards.map((c) => {
+            const v = c.vehicle;
+            const s = c.shift;
+            const isSel = String(v?.id) === String(selectedVehicleId);
+            const gpsOk = hasGpsFix(v);
+
+            return (
+              <button
+                key={`${v.id}:${s.id}`}
+                onClick={() => setSelectedVehicleId(v.id)}
+                className={isSel ? "navItem active" : "navItem"}
+                style={{
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: 12,
+                  padding: 12,
+                  minHeight: 96,
+                  overflow: "hidden",
+                  textAlign: "left",
+                }}
+                title={shiftTitle(s)}
+              >
+                <span
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    gap: 4,
+                    minWidth: 0,
+                    flex: 1,
+                  }}
+                >
+                  <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
+                    <b>{v?.plate || "-"}</b>
+                    <span className="pill" data-status={c.pillKey} title={`GPS: ${displayStatusLabel(c.ui)}`}>{displayStatusLabel(c.ui)}</span>
+                    <span className="pill" data-status={String(s?.status || "").toUpperCase()}>
+                      {displayStatusLabel(String(s?.status || "").toUpperCase())}
+                    </span>
+                    {!gpsOk ? (
+                      <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>
+                        GPS yok
+                      </span>
+                    ) : null}
+                  </span>
+
+                  <span
+                    className="muted"
+                    style={{
+                      fontSize: 12,
+                      width: "100%",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    Sürücü: {s?.driver?.fullName || v?.driver?.fullName || "-"}
+                    {s?.company?.name ? ` • ${s.company.name}` : ""}
+                  </span>
+
+                  <span
+                    className="muted"
+                    style={{
+                      fontSize: 12,
+                      width: "100%",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "block",
+                    }}
+                  >
+                    İlerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
+                    {c.nextStop?.name ? ` • Sıradaki: ${c.nextStop.name}` : ""}
+                    {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${etaDisplayText(v, c.nextEtaMin, c.nextStop)}` : ""}
+                  </span>
+                </span>
+
+                <span
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 6,
+                    flex: "0 0 118px",
+                    maxWidth: 118,
+                  }}
+                >
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    Son GPS: {gpsAgeLabel(v)}
+                  </span>
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    Başlangıç: {fmtTR(s?.startAt)}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
@@ -418,252 +624,215 @@ export default function RoomMapPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      <div className="grid mapGrid" style={{ ["--mapH"]: "min(700px, calc(100vh - 300px))" }}>
-        <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>
-          <div className="title" style={{ fontSize: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
-            <span>Canlı Liste</span>
-            <span className="muted" style={{ fontSize: 12 }}>{cards.length} kayıt</span>
-          </div>
+      <div style={{ marginBottom: 12 }}>
+        <PanelSegmentTabs
+          ariaLabel="Canlı takip bölümleri"
+          compact
+          value={mapTab}
+          onChange={setMapTab}
+          tabs={[
+            { key: "map", label: "Harita" },
+            { key: "vehicles", label: "Araçlar" },
+          ]} 
+        />
+      </div>
 
-          <div className="muted" style={{ margin: "8px 0 10px" }}>
-            Satıra tıkla → sağda timeline + harita.
-          </div>
+      {mapTab === "map" ? (
+        <MapTabCard
+          tabRef={(node) => { mapTabRefs.current.map = node; }}
+          title="Harita"
+          subtitle="Büyük harita + canlı araç listesi."
+          badge={`${cards.length}`}
+        >
+          <div className="grid mapGrid" style={{ ["--mapH"]: "min(700px, calc(100vh - 300px))" }}>
+            {renderVehicleListCard({
+              title: "Canlı Liste",
+              subtitle: "Satıra tıkla → sağda timeline + harita.",
+              cardHeight: "calc(var(--mapH) + 285px)",
+            })}
 
-          <div className="col mapAsideList" style={{ flex: 1, minHeight: 0 }}>
-            {!cards.length ? (
-              <div className="muted" style={{ padding: 10 }}>
-                Aktif/uygun vardiya bulunamadı.
-              </div>
-            ) : null}
+            <div className="col" style={{ gap: 10 }}>
+              <div className="card" style={{ marginBottom: 0, paddingTop: 12, paddingBottom: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className="muted" style={{ fontSize: 12, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                    Harita Önizleme
+                  </div>
+                  <div>
+                    <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Seçili Araç</div>
+                    <div className="muted" style={{ fontSize: 12, lineHeight: 1.1 }}>
+                      {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
+                    </div>
+                  </div>
 
-            {cards.map((c) => {
-              const v = c.vehicle;
-              const s = c.shift;
-              const isSel = String(v?.id) === String(selectedVehicleId);
-              const gpsOk = hasGpsFix(v);
-
-              return (
-                <button
-                  key={`${v.id}:${s.id}`}
-                  onClick={() => setSelectedVehicleId(v.id)}
-                  className={isSel ? "navItem active" : "navItem"}
-                  style={{
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: 12,
-                    padding: 12,
-                    minHeight: 96,
-                    overflow: "hidden",
-                    textAlign: "left",
-                  }}
-                  title={shiftTitle(s)}
-                >
-                  <span
+                  <div
                     style={{
                       display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      gap: 4,
-                      minWidth: 0,
-                      flex: 1,
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 12,
+                      flexWrap: "wrap",
                     }}
                   >
-                    <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
-                      <b>{v?.plate || "-"}</b>
-                      <span className="pill" data-status={c.pillKey} title={`GPS: ${displayStatusLabel(c.ui)}`}>{displayStatusLabel(c.ui)}</span>
-                      <span className="pill" data-status={String(s?.status || "").toUpperCase()}>
-                        {displayStatusLabel(String(s?.status || "").toUpperCase())}
-                      </span>
-                      {!gpsOk ? (
-                        <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>
-                          GPS yok
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
+                        minWidth: 0,
+                        flex: "1 1 780px",
+                      }}
+                    >
+                      {selectedShift ? (
+                        <span className="pill" data-status={String(selectedShift?.status || "").toUpperCase()}>
+                          {displayStatusLabel(String(selectedShift?.status || "").toUpperCase())}
                         </span>
                       ) : null}
-                    </span>
 
-                    <span
-                      className="muted"
-                      style={{
-                        fontSize: 12,
-                        width: "100%",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      Sürücü: {s?.driver?.fullName || v?.driver?.fullName || "-"}
-                      {s?.company?.name ? ` • ${s.company.name}` : ""}
-                    </span>
+                      <span className="muted" style={{ fontSize: 12 }}>GPS:</span>
+                      <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
+                        {displayStatusLabel(uiStatusFromVehicle(selected))}
+                      </span>
 
-                    <span
-                      className="muted"
-                      style={{
-                        fontSize: 12,
-                        width: "100%",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "block",
-                      }}
-                    >
-                      İlerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
-                      {c.nextStop?.name ? ` • Sıradaki: ${c.nextStop.name}` : ""}
-                      {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${etaDisplayText(selected, c.nextEtaMin, c.nextStop)}` : ""}
-                    </span>
-                  </span>
+                      <span className="muted" style={{ fontSize: 12 }}>Son GPS:</span>
+                      <span className="pill">{gpsAgeLabel(selected)}</span>
 
-                  <span
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: 6,
-                      flex: "0 0 118px",
-                      maxWidth: 118,
-                    }}
-                  >
-                    <span className="muted" style={{ fontSize: 12 }}>
-                      Son GPS: {gpsAgeLabel(v)}
-                    </span>
-                    <span className="muted" style={{ fontSize: 12 }}>
-                      Başlangıç: {fmtTR(s?.startAt)}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <div className="card" style={{ marginBottom: 10, paddingTop: 12, paddingBottom: 12 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div>
-                <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Seçili Araç</div>
-                <div className="muted" style={{ fontSize: 12, lineHeight: 1.1 }}>
-                  {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    minWidth: 0,
-                    flex: "1 1 780px",
-                  }}
-                >
-                  {selectedShift ? (
-                    <span className="pill" data-status={String(selectedShift?.status || "").toUpperCase()}>
-                      {displayStatusLabel(String(selectedShift?.status || "").toUpperCase())}
-                    </span>
-                  ) : null}
-
-                  <span className="muted" style={{ fontSize: 12 }}>GPS:</span>
-                  <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
-                    {displayStatusLabel(uiStatusFromVehicle(selected))}
-                  </span>
-
-                  <span className="muted" style={{ fontSize: 12 }}>Son GPS:</span>
-                  <span className="pill">{gpsAgeLabel(selected)}</span>
-
-                  {selectedNext?.name ? (
-                    <>
-                      <span className="muted" style={{ fontSize: 12 }}>Sıradaki:</span>
-                      <span className="pill" data-status="NEXT">{selectedNext.name}</span>
-
-                      <button
-                        className="btn sm"
-                        onClick={() => openNextStopNavigation(selectedNext, selected)}
-                      >
-                        Sonraki Durağa Navigasyon
-                      </button>
+                      {selectedNext?.name ? (
+                        <>
+                          <span className="muted" style={{ fontSize: 12 }}>Sıradaki:</span>
+                          <span className="pill" data-status="NEXT">{selectedNext.name}</span>
+                        </>
+                      ) : (
+                        <span className="muted">Sıradaki durak yok.</span>
+                      )}
 
                       {selectedEta != null ? (
                         <span className="pill">ETA: {etaDisplayText(selected, selectedEta, selectedNext)}</span>
                       ) : null}
 
-                      <button
-                        className="btn sm"
-                        onClick={() => openFullRouteNavigation(selectedStops, selected)}
+                      <span className="pill">Toplam Durak Sayısı: {selectedStats.total}</span>
+                      <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
+                      <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: 8,
+                        flexWrap: "wrap",
+                        flex: "0 1 auto",
+                        marginLeft: "auto",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginLeft: 4,
+                        }}
                       >
-                        Tam Rotayı Dış Navigasyonda Aç
-                      </button>
-                    </>
-                  ) : (
-                    <span className="muted">Sıradaki durak yok.</span>
-                  )}
-                </div>
+                        <span className="muted" style={{ fontSize: 12 }}>Mini Timeline</span>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <StopTimeline
+                            stops={selectedStops}
+                            nextStopId={selectedNext?.id ?? null}
+                            compact
+                            onSelect={(s) => focusStop(s)}
+                          />
+                        </div>
+                      </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    flex: "0 1 auto",
-                    marginLeft: "auto",
-                  }}
-                >
-                  <span className="pill">Toplam Durak Sayısı: {selectedStats.total}</span>
-                  <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
-                  <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginLeft: 4,
-                    }}
-                  >
-                    <span className="muted" style={{ fontSize: 12 }}>Mini Timeline</span>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <StopTimeline
-                        stops={selectedStops}
-                        nextStopId={selectedNext?.id ?? null}
-                        compact
-                        onSelect={(s) => focusStop(s)}
-                      />
+                      <button className="btn sm" onClick={fitAll}>Tümünü Göster</button>
                     </div>
                   </div>
 
+                  <div className="toolbar" style={{ flexWrap: "wrap" }}>
+                    <button className="btn sm" onClick={() => openNextStopNavigation(selectedNext, selected)} disabled={!selectedNext}>
+                      Sonraki Durağa Navigasyon
+                    </button>
+                    <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)} disabled={!selectedStops.length}>
+                      Tam Rotayı Dış Navigasyonda Aç
+                    </button>
+                  </div>
+
+                  <div className="panelMeta" style={{ marginTop: 2 }}>
+                    {selectedSummaryText || "Canlı araç seçimi bekleniyor."}
+                  </div>
+                  <div className="panelMeta" style={{ marginTop: 2 }}>
+                    {selectedHistoryLine || "Son güncelleme ve rota kaynağı burada görünür."}
+                  </div>
+
+                  <div className="col" style={{ gap: 8, marginTop: 4 }}>
+                    {selectedRiskLines.slice(0, 2).map((line) => (
+                      <div key={line} className="pill" style={{ justifyContent: "flex-start", width: "fit-content" }}>
+                        {line}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <MapView
+                vehicles={vehicles}
+                stops={showStops ? selectedStops : []}
+                routePath={routePreview.points}
+                routeSource={routePreview.source}
+                selectedVehicleId={selectedVehicleId}
+                onSelectVehicle={setSelectedVehicleId}
+                fitKey={`room:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}`}
+                height="var(--mapH)"
+              />
+            </div>
+          </div>
+        </MapTabCard>
+      ) : null}
+
+      {mapTab === "vehicles" ? (
+        <MapTabCard
+          tabRef={(node) => { mapTabRefs.current.vehicles = node; }}
+          title="Araçlar"
+          subtitle="Canlı liste ve seçili araç detayı."
+          badge={`${cards.length}`}
+        >
+          <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.9fr)", gap: 12 }}>
+            {renderVehicleListCard({
+              title: "Canlı Araçlar",
+              subtitle: "Satıra tıkla → sağdaki detay değişsin.",
+              cardHeight: "min(760px, calc(100vh - 330px))",
+            })}
+            <div className="col" style={{ gap: 10 }}>
+              <div className="card">
+                <div className="title" style={{ fontSize: 16 }}>Seçili Araç</div>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
+                </div>
+                <div className="col" style={{ gap: 8, marginTop: 10 }}>
+                  <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>{displayStatusLabel(uiStatusFromVehicle(selected))}</span>
+                  <span className="pill">Son GPS: {gpsAgeLabel(selected)}</span>
+                  <span className="pill">Sonraki: {selectedNext?.name || "Bekleniyor"}</span>
+                  <span className="pill">ETA: {etaDisplayText(selected, selectedEta, selectedNext)}</span>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="title" style={{ fontSize: 16 }}>Hızlı İşlem</div>
+                <div className="toolbar" style={{ marginTop: 10, flexWrap: "wrap" }}>
+                  <button className="btn sm" onClick={() => openNextStopNavigation(selectedNext, selected)} disabled={!selectedNext}>
+                    Sonraki Durağa Git
+                  </button>
+                  <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)} disabled={!selectedStops.length}>
+                    Tam Rotayı Aç
+                  </button>
                   <button className="btn sm" onClick={fitAll}>Tümünü Göster</button>
                 </div>
               </div>
             </div>
           </div>
-
-          <div className="card" style={{ marginBottom: 10 }}>
-            <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
-            <div className="muted" style={{ fontSize: 12 }}>
-              Seçili araç + tüm rota. Yol ağına yakın önizleme varsa otomatik kullanılır.
-            </div>
-          </div>
-
-          <MapView
-            vehicles={vehicles}
-            stops={showStops ? selectedStops : []}
-            routePath={routePreview.points}
-            routeSource={routePreview.source}
-            selectedVehicleId={selectedVehicleId}
-            onSelectVehicle={setSelectedVehicleId}
-            fitKey={`room:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}`}
-            height="var(--mapH)"
-          />
-        </div>
-      </div>
+        </MapTabCard>
+      ) : null}
     </div>
   );
 }

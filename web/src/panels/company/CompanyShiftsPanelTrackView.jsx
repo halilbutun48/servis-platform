@@ -1,3 +1,4 @@
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import {
@@ -173,17 +174,17 @@ export default function CompanyShiftsPanelTrackView(props) {
       </div>
 
       <div className="card" style={{ marginTop: 10 }}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <button type="button" className={trackTab === "market" ? "btn primary" : "btn"} onClick={() => setTrackTab("market")}>
-            Market <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.market}</span>
-          </button>
-          <button type="button" className={trackTab === "pending" ? "btn primary" : "btn"} onClick={() => setTrackTab("pending")}>
-            Bekleyen <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.pending}</span>
-          </button>
-          <button type="button" className={trackTab === "list" ? "btn primary" : "btn"} onClick={() => setTrackTab("list")}>
-            Liste <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.final}</span>
-          </button>
-        </div>
+        <PanelSegmentTabs
+          ariaLabel="Company shifts bölümleri"
+          tabs={[
+            { key: "market", label: "Market", badge: canonicalCompanyCounts.market },
+            { key: "pending", label: "Bekleyen", badge: canonicalCompanyCounts.pending },
+            { key: "list", label: "Liste", badge: canonicalCompanyCounts.final },
+          ]}
+          value={trackTab}
+          onChange={setTrackTab}
+          compact
+        />
         <div className="muted" style={{ marginTop: 6 }}>
           {isCommercialMode
             ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: kabul edildi / aktif / tamamlandı / reddedildi"

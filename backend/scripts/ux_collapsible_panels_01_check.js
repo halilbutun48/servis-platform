@@ -87,7 +87,12 @@ function main() {
 
   mustContains(op, "RoomOperationsBoard", "Room / Operasyon Sağlığı keeps summary board open");
   mustContains(op, "MetricCard", "Room / Operasyon Sağlığı keeps critical metrics open");
-  mustContains(op, "CollapsibleSection", "Room / Operasyon Sağlığı has collapsible secondary blocks");
+  mustContains(op, "PanelSegmentTabs", "Room / Operasyon Sağlığı uses functional tabs");
+  mustContains(op, "activeTab", "Room / Operasyon Sağlığı has active tab state");
+  mustContains(op, "role=\"tabpanel\"", "Room / Operasyon Sağlığı exposes tabpanel sections");
+  mustContains(op, "Şartlı Küme", "Room / Operasyon Sağlığı keeps conditional cluster tab");
+  mustContains(op, "Sorunlu Sürücüler", "Room / Operasyon Sağlığı keeps driver tab");
+  mustContains(op, "Açık Sorunlar", "Room / Operasyon Sağlığı keeps issues tab");
 
   mustContains(today, "Aktif Görev", "Driver / Bugün keeps active task visible");
   mustContains(today, "Bugün Vardiyalar", "Driver / Bugün keeps today's list visible");

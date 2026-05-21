@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
@@ -617,11 +619,38 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
     return pickCurrentNext(focusShifts);
   }, [focusDriver, focusShifts]);
 
+  const driverSummary = useMemo(() => {
+    const total = Array.isArray(filteredDrivers) ? filteredDrivers.length : 0;
+    const live = Array.isArray(visibleStatusDrivers) ? visibleStatusDrivers.length : 0;
+    const bound = Array.isArray(filteredDrivers)
+      ? filteredDrivers.filter((d) => Boolean(boundVehicleByDriverId.get(Number(d.id)))).length
+      : 0;
+    return { total, live, bound };
+  }, [filteredDrivers, visibleStatusDrivers, boundVehicleByDriverId]);
+
   return (
     <div>
       <div className="card">
         <h3>Drivers</h3>
         <div className="muted">ROOM: sürücü yönetimi + operasyon + bağlantı</div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
+        <div className="card">
+          <div className="muted">Seçili sürücü</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{focusDriver?.fullName || "-"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Araç: {focusVehicle?.plate || "-"}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Operasyon özet</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{driverSummary.total} sürücü</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Canlı: {driverSummary.live} • Bağlı: {driverSummary.bound}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Bağlantı / GPS</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{focusOps?.connectionLabel || "Bekleniyor"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>GPS: {focusOps?.gpsLabel || "-"}</div>
+        </div>
       </div>
 
       {toast ? (
@@ -635,19 +664,16 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
 
       {/* Tabs */}
       <div className="card">
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              disabled={busy}
-              onClick={() => setTab(t.key)}
-              className={tab === t.key ? "btn primary" : "btn"}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <PanelSegmentTabs
+          ariaLabel="Sürücü bölümleri"
+          tabs={TABS}
+          value={tab}
+          onChange={(next) => {
+            setTab(next);
+            setErr("");
+          }}
+          compact
+        />
 
         <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
           <div>
@@ -721,14 +747,20 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
 
 {/* YÖNETİM */}
       {tab === "manage" ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.45fr 1fr",
-            gap: 12,
-            alignItems: "start",
-          }}
+        <CollapsibleSection
+          title="Yönetim detayları"
+          subtitle="Yeni sürücü formu, giriş bilgileri ve liste işlemleri."
+          badge={`${filteredDrivers.length}`}
+          defaultOpen={false}
         >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1.45fr 1fr",
+              gap: 12,
+              alignItems: "start",
+            }}
+          >
           <div className="card">
             <h3>Yeni Sürücü</h3>
             <form onSubmit={createDriver} className="grid">
@@ -847,7 +879,8 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </CollapsibleSection>
       ) : null}
 
       {/* VARDİYALAR */}
@@ -865,6 +898,12 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
 
       {/* BAĞLANTI */}
       {tab === "link" ? (
+        <CollapsibleSection
+          title="Bağlantı detayları"
+          subtitle="Sürücü ↔ araç eşleme ve vardiya bağlamı."
+          badge={focusDriverId ? `#${focusDriverId}` : "0"}
+          defaultOpen={false}
+        >
         <div className="card">
           <h3>Bağlantı (Sürücü ↔ Araç)</h3>
 
@@ -942,6 +981,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
             </div>
           </div>
         </div>
+        </CollapsibleSection>
       ) : null}
 
       {/* EDIT MODAL */}

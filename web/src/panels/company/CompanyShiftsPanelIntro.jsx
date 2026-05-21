@@ -1,3 +1,5 @@
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+
 export default function CompanyShiftsPanelIntro(props) {
   const {
     isCommercialMode,
@@ -39,49 +41,59 @@ export default function CompanyShiftsPanelIntro(props) {
         </div>
       ) : null}
 
-      {!isCommercialMode ? (
-        <>
-            <div className="card">
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className="btn"
-                disabled={busy}
-                onClick={goPlanningCenter}
-                title="Şablon / talep / Shift Tools / plan üretimi Planlama Merkezi'nde yapılır"
-              >
-                Planlama Merkezi'ne git
-              </button>
-              <button
-                type="button"
-                className={mainTab === "track" ? "btn primary" : "btn"}
-                disabled={busy}
-                onClick={() => setMainTab("track")}
-                title="Market / Bekleyen / Liste + hızlı filtre"
-              >
-                Takip
-              </button>
-              </div>
-            <div className="panelMeta" style={{ marginTop: 6 }}>
-              Oluşturma akışı bu ekrandan kaldırıldı. Şablon, talep, Shift Tools, OSRM + solver ve teklif üretimi Planlama Merkezi'nden yürür; bu ekran takip ve operasyon içindir.
-            </div>
-          </div>
+      <PanelSegmentTabs
+        ariaLabel="Company shifts ana bölümleri"
+        tabs={[
+          { key: "track", label: "Takip" },
+          { key: "create", label: "Oluşturma" },
+        ]}
+        value={mainTab}
+        onChange={setMainTab}
+        compact
+      />
 
-          {mainTab === "create" ? (
-            <div className="card">
-              <div className="panelSectionTitle">Oluşturma Planlama Merkezi'ne taşındı</div>
-              <div className="panelMeta" style={{ marginTop: 8 }}>
-                Aynı işi iki farklı yerden üretmemek için bu ekrandaki oluşturma akışı pasife alındı.
-                Yeni vardiya kurma, şablon/talep, Shift Tools, durak üretimi, OSRM + solver ön izleme ve market teklif akışı Planlama Merkezi'nden yapılır.
-              </div>
-              <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                <button type="button" className="btn primary" disabled={busy} onClick={goPlanningCenter}>Planlama Merkezi'ne git</button>
-                <button type="button" className="btn" disabled={busy} onClick={() => setMainTab("track")}>Takibe dön</button>
-              </div>
-            </div>
-          ) : null}
-        </>
-      ) : (
+      {!isCommercialMode ? (
+        <div className="card">
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn"
+              disabled={busy}
+              onClick={goPlanningCenter}
+              title="Şablon / talep / Shift Tools / plan üretimi Planlama Merkezi'nde yapılır"
+            >
+              Planlama Merkezi'ne git
+            </button>
+            <button
+              type="button"
+              className={mainTab === "track" ? "btn primary" : "btn"}
+              disabled={busy}
+              onClick={() => setMainTab("track")}
+              title="Market / Bekleyen / Liste + hızlı filtre"
+            >
+              Takip
+            </button>
+          </div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Oluşturma akışı bu ekrandan kaldırıldı. Şablon, talep, Shift Tools, OSRM + solver ve teklif üretimi Planlama Merkezi'nden yürür; bu ekran takip ve operasyon içindir.
+          </div>
+        </div>
+      ) : null}
+
+      {mainTab === "create" ? (
+        <div className="card">
+          <div className="panelSectionTitle">Oluşturma Planlama Merkezi'ne taşındı</div>
+          <div className="panelMeta" style={{ marginTop: 8 }}>
+            {isCommercialMode
+              ? "Aynı işi iki farklı yerden üretmemek için ticari akış üzerindeki oluşturma adımları Planlama Merkezi'nde yürür. Yeni vardiya kurma, şablon/talep, Shift Tools, durak üretimi, OSRM + solver ön izlemesi ve market teklif akışı oradan yapılır."
+              : "Aynı işi iki farklı yerden üretmemek için bu ekrandaki oluşturma akışı pasife alındı. Yeni vardiya kurma, şablon/talep, Shift Tools, durak üretimi, OSRM + solver ön izleme ve market teklif akışı Planlama Merkezi'nden yapılır."}
+          </div>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+            <button type="button" className="btn primary" disabled={busy} onClick={goPlanningCenter}>Planlama Merkezi'ne git</button>
+            <button type="button" className="btn" disabled={busy} onClick={() => setMainTab("track")}>Takibe dön</button>
+          </div>
+        </div>
+      ) : isCommercialMode ? (
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
@@ -91,7 +103,7 @@ export default function CompanyShiftsPanelIntro(props) {
             <div className="panelMeta">Kapsam: Kendi ticari alanınız</div>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

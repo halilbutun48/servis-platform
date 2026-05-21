@@ -106,6 +106,19 @@ function main() {
   must(pkg, '"check:uxcollapsiblepanels01"', 'package.json keeps check:uxcollapsiblepanels01');
   must(pkg, '"check:uxpanelstructure02"', 'package.json keeps check:uxpanelstructure02');
   must(pkg, '"check:uxpanelinventory02a"', 'package.json keeps check:uxpanelinventory02a');
+  must(pkg, '"check:uxpanelstructure02b"', 'package.json keeps check:uxpanelstructure02b');
+  must(pkg, '"check:uxroomvehiclestelematicsfix"', 'package.json exposes check:uxroomvehiclestelematicsfix');
+  must(pkg, '"check:uxroomopspaneltabs01"', 'package.json exposes check:uxroomopspaneltabs01');
+  must(pkg, '"check:uxroomshiftstabs01"', 'package.json exposes check:uxroomshiftstabs01');
+  must(pkg, '"check:uxpaneltabsfix01"', 'package.json keeps check:uxpaneltabsfix01');
+  must(pkg, '"check:uxlivemaptabsfix01"', 'package.json exposes check:uxlivemaptabsfix01');
+  must(pkg, '"check:uxlivemaptabssimplify01"', 'package.json exposes check:uxlivemaptabssimplify01');
+  must(pkg, '"check:uxpanelreality02c"', 'package.json keeps check:uxpanelreality02c');
+  must(pkg, '"check:uxpanelrealitycleanup02d"', 'package.json exposes check:uxpanelrealitycleanup02d');
+  must(pkg, '"check:uxroomagreementstabs01"', 'package.json exposes check:uxroomagreementstabs01');
+  must(pkg, '"check:uxpanellayoutwidth02cfix01"', 'package.json exposes check:uxpanellayoutwidth02cfix01');
+  must(pkg, '"check:uxpanellayoutwidth02cfix02"', 'package.json exposes check:uxpanellayoutwidth02cfix02');
+  must(pkg, '"check:uxpanellayoutwidth02cfix03"', 'package.json exposes check:uxpanellayoutwidth02cfix03');
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
@@ -156,6 +169,18 @@ function main() {
     'check:uxcollapsiblepanels01',
     'check:uxpanelstructure02',
     'check:uxpanelinventory02a',
+    'check:uxpanelstructure02b',
+    'check:uxroomvehiclestelematicsfix',
+    'check:uxroomopspaneltabs01',
+    'check:uxroomshiftstabs01',
+    'check:uxpaneltabsfix01',
+    'check:uxlivemaptabsfix01',
+    'check:uxlivemaptabssimplify01',
+    'check:uxpanelreality02c',
+    'check:uxpanelrealitycleanup02d',
+    'check:uxpanellayoutwidth02cfix01',
+    'check:uxpanellayoutwidth02cfix02',
+    'check:uxpanellayoutwidth02cfix03',
     'check:livetrackingfinal01',
     'check:driverflowfinal01',
     'check:uxnav01',
@@ -197,6 +222,23 @@ function main() {
   must(guide, 'check:uxcollapsiblepanels01', 'script guide exposes check:uxcollapsiblepanels01');
   must(guide, 'check:uxpanelstructure02', 'script guide exposes check:uxpanelstructure02');
   must(guide, 'check:uxpanelinventory02a', 'script guide exposes check:uxpanelinventory02a');
+  must(guide, 'check:uxpanelstructure02b', 'script guide exposes check:uxpanelstructure02b');
+  must(guide, 'check:uxroomvehiclestelematicsfix', 'script guide exposes check:uxroomvehiclestelematicsfix');
+  must(guide, 'UX-ROOM-OPS-PANEL-TABS-01', 'script guide mentions UX-ROOM-OPS-PANEL-TABS-01');
+  must(guide, 'check:uxroomopspaneltabs01', 'script guide exposes check:uxroomopspaneltabs01');
+  must(guide, 'UX-ROOM-SHIFTS-TABS-01', 'script guide mentions UX-ROOM-SHIFTS-TABS-01');
+  must(guide, 'check:uxroomshiftstabs01', 'script guide exposes check:uxroomshiftstabs01');
+  must(guide, 'check:uxpaneltabsfix01', 'script guide exposes check:uxpaneltabsfix01');
+  must(guide, 'check:uxlivemaptabsfix01', 'script guide exposes check:uxlivemaptabsfix01');
+  must(guide, 'UX-LIVE-MAP-TABS-SIMPLIFY-01', 'script guide mentions UX-LIVE-MAP-TABS-SIMPLIFY-01');
+  must(guide, 'check:uxlivemaptabssimplify01', 'script guide exposes check:uxlivemaptabssimplify01');
+  must(guide, 'UX-PANEL-REALITY-CLEANUP-02D', 'script guide mentions UX-PANEL-REALITY-CLEANUP-02D');
+  must(guide, 'check:uxpanelreality02c', 'script guide exposes check:uxpanelreality02c');
+  must(guide, 'check:uxpanelrealitycleanup02d', 'script guide exposes check:uxpanelrealitycleanup02d');
+  must(guide, 'check:uxroomagreementstabs01', 'script guide exposes check:uxroomagreementstabs01');
+  must(guide, 'check:uxpanellayoutwidth02cfix01', 'script guide exposes check:uxpanellayoutwidth02cfix01');
+  must(guide, 'check:uxpanellayoutwidth02cfix02', 'script guide exposes check:uxpanellayoutwidth02cfix02');
+  must(guide, 'check:uxpanellayoutwidth02cfix03', 'script guide exposes check:uxpanellayoutwidth02cfix03');
   must(guide, 'check:uxnav01', 'script guide exposes check:uxnav01');
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
   must(guide, 'UX-COPILOT-TERMINAL-01', 'script guide mentions UX-COPILOT-TERMINAL-01');
@@ -209,6 +251,7 @@ function main() {
   must(guide, 'UX-COLLAPSIBLE-PANELS-01', 'script guide mentions UX-COLLAPSIBLE-PANELS-01');
   must(guide, 'UX-PANEL-STRUCTURE-02', 'script guide mentions UX-PANEL-STRUCTURE-02');
   must(guide, 'UX-PANEL-INVENTORY-02A', 'script guide mentions UX-PANEL-INVENTORY-02A');
+  must(guide, 'UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-01', 'script guide mentions UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-01');
   must(guide, 'UX-NAV-01', 'script guide mentions UX-NAV-01');
   must(guide, 'UX-DENSITY-01', 'script guide mentions UX-DENSITY-01');
   must(guide, 'check:e2esmoke01', 'script guide exposes check:e2esmoke01');
@@ -222,3 +265,5 @@ function main() {
 }
 
 main();
+
+

@@ -93,7 +93,6 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
 
   useEffect(() => {
     if (isCommercialMode) {
-      setMainTab("track");
       setTrackTab((prev) => (prev === "list" ? prev : "market"));
     }
     if (mainTab !== "track") return;

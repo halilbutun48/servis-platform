@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { Card, fmtBps, fmtDateTime, InputRow, stripHtmlNoise } from "./commercialCorePanelShared";
 import { readOptional } from "./commercialCorePanelOptionalStates";
@@ -12,6 +12,8 @@ import PaymentReadinessReadonlyCard from "../../components/PaymentReadinessReado
 import PaymentPreviewReadonlyCard from "../../components/PaymentPreviewReadonlyCard";
 import PaymentReadonlySafetyBadge from "../../components/PaymentReadonlySafetyBadge";
 import FlowSummaryStrip from "../../components/FlowSummaryStrip";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import { getOperationProofSummary, getPaymentBackboneReadinessPreview } from "../../api";
 
 export default function CommercialCorePanel() {
@@ -39,6 +41,8 @@ export default function CommercialCorePanel() {
   const [paymentSources, setPaymentSources] = useState([]);
   const [paymentPreviewSummary, setPaymentPreviewSummary] = useState(null);
   const [operationProofSummary, setOperationProofSummary] = useState(null);
+  const [viewTab, setViewTab] = useState("summary");
+  const tabSectionRefs = useRef({});
   const [rooms, setRooms] = useState([]);
   const [roomQuery, setRoomQuery] = useState("");
   const [paymentSourceFilters, setPaymentSourceFilters] = useState({
@@ -268,6 +272,17 @@ export default function CommercialCorePanel() {
     return () => clearCopilotSelection('/superadmin/commercial-core');
   }, [paymentPreviewSummary, paymentBackbone, settings, settlementStatus, accountStatus, operationProofSummary, paymentSourcesMeta, lifecycle]);
 
+  useEffect(() => {
+    const target = tabSectionRefs.current?.[viewTab];
+    if (!target) return;
+    try {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.focus?.({ preventScroll: true });
+    } catch {
+      target.scrollIntoView?.({ block: "start" });
+    }
+  }, [viewTab]);
+
   return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -317,15 +332,38 @@ export default function CommercialCorePanel() {
         />
       </div>
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <PaymentPreviewReadonlyCard />
-      </div>
-
       <div style={{ marginTop: 14, maxWidth: 980 }}>
-        <OperationProofReadonlyBadge />
+        <PanelSegmentTabs
+          ariaLabel="Ticari akış bölümleri"
+          compact
+          value={viewTab}
+          onSelect={setViewTab}
+          tabs={[
+            { key: "summary", label: "Özet" },
+            { key: "billing", label: "Hakediş" },
+            { key: "prep", label: "Ödeme Hazırlık" },
+            { key: "commission", label: "Komisyon" },
+            { key: "proof", label: "Kalite / Kanıt" },
+            { key: "risk", label: "Riskler" },
+            { key: "history", label: "Geçmiş" },
+          ]}
+        />
       </div>
 
-        <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
+      {viewTab === "proof" ? (
+        <div
+          ref={(node) => { tabSectionRefs.current.proof = node; }}
+          tabIndex={-1}
+          role="tabpanel"
+          aria-label="Kalite / Kanıt"
+          style={{ marginTop: 14, display: "grid", gap: 12 }}
+        >
+          <PaymentPreviewReadonlyCard />
+          <OperationProofReadonlyBadge />
+        </div>
+      ) : null}
+
+      <div ref={(node) => { tabSectionRefs.current.summary = node; }} tabIndex={-1} className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
         <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Card title="Aktif durum">
             <div>{manifest?.title || "Henüz ticari özet yok"}</div>
@@ -390,20 +428,26 @@ export default function CommercialCorePanel() {
         </Card>
       </div>
 
-      <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div className="panelSectionTitle">Ödeme listesi ve dışa aktarım</div>
-        <div className="panelMeta">
-          Hazırlık omurgasındaki kaynakları filtreleyip CSV olarak indirebilirsin. Export için Super Admin step-up gerekir.
-        </div>
-        {paymentSourcesEndpointStatus !== "ok" ? (
-          <div className="panelMeta" style={{ color: "#ffb17b" }}>
-            {paymentSourcesEndpointStatus === "forbidden"
-              ? "Ödeme listesi için önce TOTP step-up doğrulamasını tamamla."
-              : "Ödeme listesi endpointi bu çalışmakta olan sunucuda yok görünüyor."}
+      <div ref={(node) => { tabSectionRefs.current.billing = node; }} tabIndex={-1}>
+      <CollapsibleSection
+        title="Ödeme listesi ve dışa aktarım"
+        subtitle="Filtrelenmiş ödeme kaynakları ve CSV dışa aktarımı."
+        badge={paymentSourcesMeta?.summary || paymentSources.length || 0}
+        defaultOpen={false}
+      >
+        <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+          <div className="panelMeta">
+            Hazırlık omurgasındaki kaynakları filtreleyip CSV olarak indirebilirsin. Export için Super Admin step-up gerekir.
           </div>
-        ) : null}
-        <Card title={`Ödeme kaynakları (${paymentSourcesMeta?.summary || paymentSources.length || 0})`}>
-          <div style={{ display: "grid", gap: 10 }}>
+          {paymentSourcesEndpointStatus !== "ok" ? (
+            <div className="panelMeta" style={{ color: "#ffb17b" }}>
+              {paymentSourcesEndpointStatus === "forbidden"
+                ? "Ödeme listesi için önce TOTP step-up doğrulamasını tamamla."
+                : "Ödeme listesi endpointi bu çalışmakta olan sunucuda yok görünüyor."}
+            </div>
+          ) : null}
+          <Card title={`Ödeme kaynakları (${paymentSourcesMeta?.summary || paymentSources.length || 0})`}>
+            <div style={{ display: "grid", gap: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
               <InputRow label="Kaynak türü">
                 <select value={paymentSourceFilters.sourceType} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, sourceType: e.target.value }))}>
@@ -513,10 +557,19 @@ export default function CommercialCorePanel() {
             ) : (
               <div className="panelMeta">Filtreye uyan ödeme kaynağı yok. Filtreleri daraltmayı veya hazırlık omurgasında yeni kaynak üretmeyi dene.</div>
             )}
-          </div>
-        </Card>
+            </div>
+          </Card>
+        </div>
+      </CollapsibleSection>
       </div>
 
+      <div ref={(node) => { tabSectionRefs.current.prep = node; }} tabIndex={-1}>
+      <CollapsibleSection
+        title="Ödeme hazırlık, komisyon ve risk detayları"
+        subtitle="M85-M89 blokları ve canlı ödeme hazırlık ayrıntıları."
+        badge={paymentBackboneWriteEnabled ? "Açık" : "Kapalı"}
+        defaultOpen={false}
+      >
         {paymentBackboneWriteEnabled ? (
           <>
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
@@ -639,7 +692,7 @@ export default function CommercialCorePanel() {
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div className="panelSectionTitle">M85 opsiyonel ödeme pilotu</div>
+        <div ref={(node) => { tabSectionRefs.current.commission = node; }} tabIndex={-1} className="panelSectionTitle">M85 opsiyonel ödeme pilotu</div>
         <div className="panelMeta">
           {pilotStatus?.summary || "OPTIONAL moddaki ticari kaynaklar pilot listesine alınabilir. READY olanlar yalnız pilot hazırlık görünürlüğü taşır; gerçek charge/payout hala dormant kalır."}
         </div>
@@ -865,7 +918,7 @@ export default function CommercialCorePanel() {
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div className="panelSectionTitle">M88 settlement operasyon masası</div>
+        <div ref={(node) => { tabSectionRefs.current.risk = node; }} tabIndex={-1} className="panelSectionTitle">M88 settlement operasyon masası</div>
         <div className="panelMeta">
           {settlementStatus?.summary || "READY/PLANNED/EXECUTED settlement entry satırları Super Admin yüzeyinde görünür ve manuel operasyon akışıyla yönetilir."}
         </div>
@@ -1018,7 +1071,10 @@ export default function CommercialCorePanel() {
           </div>
         )}
 
-        <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
+      </CollapsibleSection>
+      </div>
+
+        <div ref={(node) => { tabSectionRefs.current.history = node; }} tabIndex={-1} className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Planlı ticari adımlar">
           <div>{plannedSteps.length ? plannedSteps.map((item) => item.label).join(" • ") : "Planlı adım yok"}</div>

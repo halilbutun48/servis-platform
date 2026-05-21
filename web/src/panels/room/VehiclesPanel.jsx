@@ -4,6 +4,8 @@ import { useRoomVehicleTelematics } from "./useRoomVehicleTelematics";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { isoFromTRDateInput, isoFromTRLocalInput, toDatetimeLocalTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
@@ -12,6 +14,7 @@ import {
   TABS,
   buildVehicleCopilotSelection,
   fmtDriverHuman,
+  hasGpsFix,
   isoToDateInput,
   isoToDatetimeLocal,
   normalizeList,
@@ -135,7 +138,6 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     odometerKm: "",
     nextMaintenanceAt: "",
   });
-
 
   function applyTemplate(tid) {
     setTemplateId(tid);
@@ -333,20 +335,6 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   const focusHasDriver = Boolean(focusDriverId);
   const focusUi = useMemo(() => uiStatusFromVehicle(focusVehicle) || {}, [focusVehicle]);
 
-  useEffect(() => {
-    if (!focusVehicle) {
-      clearCopilotSelection("/room/vehicles");
-      return;
-    }
-    const ui = uiStatusFromVehicle(focusVehicle) || {};
-    setCopilotSelection(buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, focusHasDriver, ui }));
-  }, [focusVehicle, focusDriverLabel, focusHasDriver]);
-
-  const selectedDriverId = Number(bindSel?.[focusVehicleId] || 0);
-  const selectedBound = selectedDriverId ? driverBoundMap.get(selectedDriverId) : null;
-  const selectedBoundOther =
-    selectedBound && Number(selectedBound.vehicleId) !== Number(focusVehicleId);
-
   const {
     deviceBusy,
     deviceSaving,
@@ -355,8 +343,8 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     deviceForm,
     setDeviceForm,
     tokenReveal,
-    telematicsRows,
-    telematicsCounts,
+    telematicsRows = [],
+    telematicsCounts = {},
     createDevice,
     saveDevice,
     rotateDeviceToken,
@@ -372,6 +360,28 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     setErr,
     showToast,
   });
+
+  const vehicleSummary = useMemo(() => {
+    const total = Array.isArray(items) ? items.length : 0;
+    const archived = Array.isArray(items) ? items.filter((v) => Boolean(v?.archivedAt)).length : 0;
+    const gpsReady = Array.isArray(items) ? items.filter((v) => hasGpsFix(v)).length : 0;
+    const telematicsTotal = Object.values(telematicsCounts || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    return { total, archived, gpsReady, telematicsTotal };
+  }, [items, telematicsCounts]);
+
+  useEffect(() => {
+    if (!focusVehicle) {
+      clearCopilotSelection("/room/vehicles");
+      return;
+    }
+    const ui = uiStatusFromVehicle(focusVehicle) || {};
+    setCopilotSelection(buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, focusHasDriver, ui }));
+  }, [focusVehicle, focusDriverLabel, focusHasDriver]);
+
+  const selectedDriverId = Number(bindSel?.[focusVehicleId] || 0);
+  const selectedBound = selectedDriverId ? driverBoundMap.get(selectedDriverId) : null;
+  const selectedBoundOther =
+    selectedBound && Number(selectedBound.vehicleId) !== Number(focusVehicleId);
 
 
   function driverOptionLabel(d) {
@@ -766,6 +776,24 @@ async function checkAvailabilityAll(onlySelected = false) {
         <div className="muted">ROOM: günlük izleme + yönetim</div>
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
+        <div className="card">
+          <div className="muted">Seçili araç</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{focusVehicle?.plate || "-"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>{focusDriverLabel || "Sürücü yok"}{focusHasDriver ? " • bağlı" : ""}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Filo özet</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{vehicleSummary.total} araç</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>GPS hazır: {vehicleSummary.gpsReady} • Arşiv: {vehicleSummary.archived}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Telematics</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{vehicleSummary.telematicsTotal} cihaz</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Seçili araç cihaz sayısı: {telematicsCounts[Number(focusVehicleId)] || 0}</div>
+        </div>
+      </div>
+
       {toast ? (
         <div className={`card ${toast.kind === "err" ? "err" : ""}`} style={{ borderLeft: "6px solid", padding: "10px 12px" }}>
           <b>{toast.kind === "warn" ? "⚠️ " : toast.kind === "err" ? "❌ " : "✅ "}</b>
@@ -775,26 +803,16 @@ async function checkAvailabilityAll(onlySelected = false) {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      {/* Tabs */}
-      <div className="card">
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setTab(t.key);
-                setErr("");
-                // Link tabına geçince (focusVehicleId varsa) seçim temizlenir; useEffect zaten yapıyor.
-              }}
-              className={tab === t.key ? "btn primary" : "btn"}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PanelSegmentTabs
+        ariaLabel="Araç bölümleri"
+        tabs={TABS}
+        value={tab}
+        onChange={(next) => {
+          setTab(next);
+          setErr("");
+        }}
+        compact
+      />
 
       {/* DURUM */}
       {tab === "status" ? (
@@ -913,55 +931,71 @@ async function checkAvailabilityAll(onlySelected = false) {
 
       {/* TELEMATICS */}
       {tab === "telematics" ? (
-        <RoomVehicleTelematicsSection
-          focusVehicleId={focusVehicleId}
-          setFocusVehicleId={setFocusVehicleId}
-          setErr={setErr}
-          busy={busy}
-          deviceBusy={deviceBusy}
-          deviceSaving={deviceSaving}
-          items={items}
-          deviceForm={deviceForm}
-          setDeviceForm={setDeviceForm}
-          focusArchived={focusArchived}
-          createDevice={createDevice}
-          tokenReveal={tokenReveal}
-          copyToken={copyToken}
-          focusVehicle={focusVehicle}
-          telematicsCounts={telematicsCounts}
-          loadDevices={loadDevices}
-          telematicsRows={telematicsRows}
-          deviceDrafts={deviceDrafts}
-          setDeviceDrafts={setDeviceDrafts}
-          saveDevice={saveDevice}
-          rotateDeviceToken={rotateDeviceToken}
-        />
+        <CollapsibleSection
+          title="Telematics detayları"
+          subtitle="Cihaz yönetimi, token görünürlüğü ve rotasyon akışı."
+          badge={telematicsCounts[Number(focusVehicleId)] || 0}
+          defaultOpen
+          compact
+        >
+          <RoomVehicleTelematicsSection
+            focusVehicleId={focusVehicleId}
+            setFocusVehicleId={setFocusVehicleId}
+            setErr={setErr}
+            busy={busy}
+            deviceBusy={deviceBusy}
+            deviceSaving={deviceSaving}
+            items={items}
+            deviceForm={deviceForm}
+            setDeviceForm={setDeviceForm}
+            focusArchived={focusArchived}
+            createDevice={createDevice}
+            tokenReveal={tokenReveal}
+            copyToken={copyToken}
+            focusVehicle={focusVehicle}
+            telematicsCounts={telematicsCounts}
+            loadDevices={loadDevices}
+            telematicsRows={telematicsRows}
+            deviceDrafts={deviceDrafts}
+            setDeviceDrafts={setDeviceDrafts}
+            saveDevice={saveDevice}
+            rotateDeviceToken={rotateDeviceToken}
+          />
+        </CollapsibleSection>
       ) : null}
 
       {/* BAĞLANTI */}
       {tab === "link" ? (
-        <RoomVehicleLinkSection
-          focusVehicleId={focusVehicleId}
-          setFocusVehicleId={setFocusVehicleId}
-          setErr={setErr}
-          setBindSel={setBindSel}
-          bindSel={bindSel}
-          busy={busy}
-          items={items}
-          focusArchived={focusArchived}
-          drivers={drivers}
-          driverOptionLabel={driverOptionLabel}
-          selectedBoundOther={selectedBoundOther}
-          bindDriver={bindDriver}
-          selectedDriverId={selectedDriverId}
-          selectedBound={selectedBound}
-          transferDriver={transferDriver}
-          focusVehicle={focusVehicle}
-          focusDriverLabel={focusDriverLabel}
-          focusHasDriver={focusHasDriver}
-          focusDriverId={focusDriverId}
-          unbindDriver={unbindDriver}
-        />
+        <CollapsibleSection
+          title="Bağlantı detayları"
+          subtitle="Sürücü eşleme, transfer ve ayırma akışı."
+          badge={focusHasDriver ? "aktif" : "boş"}
+          defaultOpen
+          compact
+        >
+          <RoomVehicleLinkSection
+            focusVehicleId={focusVehicleId}
+            setFocusVehicleId={setFocusVehicleId}
+            setErr={setErr}
+            setBindSel={setBindSel}
+            bindSel={bindSel}
+            busy={busy}
+            items={items}
+            focusArchived={focusArchived}
+            drivers={drivers}
+            driverOptionLabel={driverOptionLabel}
+            selectedBoundOther={selectedBoundOther}
+            bindDriver={bindDriver}
+            selectedDriverId={selectedDriverId}
+            selectedBound={selectedBound}
+            transferDriver={transferDriver}
+            focusVehicle={focusVehicle}
+            focusDriverLabel={focusDriverLabel}
+            focusHasDriver={focusHasDriver}
+            focusDriverId={focusDriverId}
+            unbindDriver={unbindDriver}
+          />
+        </CollapsibleSection>
       ) : null}
 
       {/* EDIT MODAL */}

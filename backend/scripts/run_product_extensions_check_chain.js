@@ -53,6 +53,18 @@ const steps = [
   'check:uxcollapsiblepanels01',
   'check:uxpanelstructure02',
   'check:uxpanelinventory02a',
+    'check:uxpanelstructure02b',
+    'check:uxroomvehiclestelematicsfix',
+    'check:uxroomopspaneltabs01',
+    'check:uxroomshiftstabs01',
+    'check:uxpaneltabsfix01',
+    'check:uxlivemaptabsfix01',
+    'check:uxlivemaptabssimplify01',
+    'check:uxpanelreality02c',
+    'check:uxpanelrealitycleanup02d',
+  'check:uxpanellayoutwidth02cfix01',
+  'check:uxpanellayoutwidth02cfix02',
+  'check:uxpanellayoutwidth02cfix03',
   'check:uxnav01',
   'check:uxdensity01',
   'check:livetrackingfinal01',
@@ -93,3 +105,5 @@ main().catch((err) => {
   console.error(err?.stack || String(err));
   process.exit(1);
 });
+
+

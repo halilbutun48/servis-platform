@@ -53,15 +53,15 @@ export default function RoomShiftsPanel() {
   const [busy, setBusy] = useState(false);
   const [reassignModal, setReassignModal] = useState({ open: false, shift: null });
   const [opsEventsModal, setOpsEventsModal] = useState({ open: false, shiftId: null });
+  const [shiftsTab, setShiftsTab] = useState("pending"); // pending | contract | other
 
   // Bekleyen filtreleri
   const [pendingStatus, setPendingStatus] = useState("OPEN"); // OPEN | REQUESTED | DRAFT
   const [pendingQ, setPendingQ] = useState("");
-  const [onlyAgreement, setOnlyAgreement] = useState(false);
+  const [contractQ, setContractQ] = useState("");
+  const [otherQ, setOtherQ] = useState("");
+  const userSelectedShiftsTabRef = useRef(false);
 
-  // Tüm shifts filtreleri
-  const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
-  const [listQ, setListQ] = useState("");
   const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
   const [pendingPreviewShiftId, setPendingPreviewShiftId] = useState(null);
 
@@ -72,6 +72,8 @@ export default function RoomShiftsPanel() {
       localStorage.removeItem("room:focusPendingShiftId");
       const sid = String(pendingRaw || "").trim();
       if (sid) {
+        userSelectedShiftsTabRef.current = true;
+        setShiftsTab("pending");
         setPendingStatus("REQUESTED");
         setPendingQ(sid);
         return;
@@ -84,8 +86,10 @@ export default function RoomShiftsPanel() {
     if (raw) localStorage.removeItem("room:focusShiftId");
     const sid = String(previewRaw || raw || "").trim();
     if (!sid) return;
-    setListStatus("ALL");
-    setListQ(sid);
+    userSelectedShiftsTabRef.current = true;
+    setShiftsTab("contract");
+    setContractQ(sid);
+    setOtherQ(sid);
     if (previewRaw) setPendingPreviewShiftId(Number(sid || 0));
   }, []);
 
@@ -616,37 +620,51 @@ async function decideExtend(shiftId, decision) {
     if (pendingStatus !== "OPEN") {
       arr = arr.filter((s) => String(s.status) === pendingStatus);
     }
-    if (onlyAgreement) arr = arr.filter((s) => Number(s.agreementId) > 0);
     arr = arr.filter((s) => matchShift(s, pendingQ));
     return arr;
-  }, [pendingBase, pendingStatus, pendingQ, onlyAgreement]);
+  }, [pendingBase, pendingStatus, pendingQ]);
 
-  const listBase = useMemo(
-    () => items.filter((s) => !(String(s?.status || "") === "SPLIT" && !Number(s?.splitRootId || 0))),
+  const nonPendingBase = useMemo(
+    () => items.filter((s) => !(String(s?.status || "") === "SPLIT" && !Number(s?.splitRootId || 0)) && !PENDING_STATUSES.has(String(s.status))),
     [items]
   );
 
-  const listFiltered = useMemo(() => {
-    let arr = [...listBase];
+  const contractBase = useMemo(() => nonPendingBase.filter((s) => Number(s?.agreementId) > 0), [nonPendingBase]);
 
-    if (listStatus === "OPEN") {
-      arr = arr.filter((s) => ["APPROVED", "ACTIVE"].includes(String(s.status)));
-    } else if (listStatus !== "ALL") {
-      arr = arr.filter((s) => String(s.status) === listStatus);
-    }
+  const otherBase = useMemo(() => nonPendingBase.filter((s) => Number(s?.agreementId) <= 0), [nonPendingBase]);
 
-    if (onlyAgreement) arr = arr.filter((s) => Number(s.agreementId) > 0);
-    arr = arr.filter((s) => matchShift(s, listQ));
-    return arr;
-  }, [listBase, listStatus, listQ, onlyAgreement]);
+  const contractFiltered = useMemo(() => contractBase.filter((s) => matchShift(s, contractQ)), [contractBase, contractQ]);
+
+  const otherFiltered = useMemo(() => otherBase.filter((s) => matchShift(s, otherQ)), [otherBase, otherQ]);
+
+  const tabCounts = useMemo(() => ({
+    pending: pendingBase.length,
+    contract: contractBase.length,
+    other: otherBase.length,
+  }), [pendingBase.length, contractBase.length, otherBase.length]);
+
+  const defaultShiftsTab = useMemo(() => {
+    if (tabCounts.pending > 0) return "pending";
+    if (tabCounts.contract > 0) return "contract";
+    return "other";
+  }, [tabCounts]);
+
+  useEffect(() => {
+    if (userSelectedShiftsTabRef.current) return;
+    setShiftsTab(defaultShiftsTab);
+  }, [defaultShiftsTab]);
 
   const copilotShiftId = useMemo(
-    () => Number(focusedTrackShiftId || 0) || Number(pendingFiltered[0]?.id || listFiltered[0]?.id || 0) || null,
-    [focusedTrackShiftId, pendingFiltered, listFiltered]
+    () => Number(focusedTrackShiftId || 0) || Number((shiftsTab === "pending" ? pendingFiltered[0] : shiftsTab === "contract" ? contractFiltered[0] : otherFiltered[0])?.id || 0) || null,
+    [focusedTrackShiftId, shiftsTab, pendingFiltered, contractFiltered, otherFiltered]
   );
   const copilotShift = useMemo(
-    () => items.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0)) || pendingFiltered.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0)) || listFiltered.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0)) || null,
-    [items, pendingFiltered, listFiltered, copilotShiftId]
+    () => items.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0))
+      || pendingFiltered.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0))
+      || contractFiltered.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0))
+      || otherFiltered.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0))
+      || null,
+    [items, pendingFiltered, contractFiltered, otherFiltered, copilotShiftId]
   );
 
   useEffect(() => {
@@ -654,7 +672,7 @@ async function decideExtend(shiftId, decision) {
       clearCopilotSelection('/room/shifts');
       return;
     }
-    const facts = buildShiftFacts({ shift: copilotShift, itemCount: pendingFiltered.length + listFiltered.length });
+    const facts = buildShiftFacts({ shift: copilotShift, itemCount: pendingFiltered.length + contractFiltered.length + otherFiltered.length });
     setCopilotSelection({
       scopeKey: '/room/shifts',
       entityType: 'shift',
@@ -669,10 +687,10 @@ async function decideExtend(shiftId, decision) {
         { label: 'Yolcu', value: String(shiftRequiredPax(copilotShift) || 0), help: 'Tahmini gerekli yolcu kapasitesini gösterir.' },
       ],
       badges: [
-                ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: `#${copilotShift.agreementId}`, help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
+        ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: `#${copilotShift.agreementId}`, help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
       ],
       facts });
-  }, [copilotShift, pendingFiltered.length, listFiltered.length]);
+  }, [copilotShift, pendingFiltered.length, contractFiltered.length, otherFiltered.length]);
 
   // keep mutable refs fresh without widening effect dependency sets
   checkAvailabilityForShiftRef.current = checkAvailabilityForShift;
@@ -869,16 +887,31 @@ async function decideExtend(shiftId, decision) {
 
   return (
     <div>
-      <RoomShiftsOverviewSection err={err} />
+      <RoomShiftsOverviewSection
+        err={err}
+        pendingCount={tabCounts.pending}
+        contractCount={tabCounts.contract}
+        otherCount={tabCounts.other}
+      />
 
       <RoomShiftsMainSections
+        activeTab={shiftsTab}
+        onChangeTab={(tab) => {
+          userSelectedShiftsTabRef.current = true;
+          setShiftsTab(tab);
+        }}
+        tabCounts={tabCounts}
         pendingStatus={pendingStatus}
         setPendingStatus={setPendingStatus}
         pendingQ={pendingQ}
         setPendingQ={setPendingQ}
-        onlyAgreement={onlyAgreement}
-        setOnlyAgreement={setOnlyAgreement}
         pendingFiltered={pendingFiltered}
+        contractQ={contractQ}
+        setContractQ={setContractQ}
+        contractFiltered={contractFiltered}
+        otherQ={otherQ}
+        setOtherQ={setOtherQ}
+        otherFiltered={otherFiltered}
         offersByShiftId={offersByShiftId}
         effectiveShiftRoomId={effectiveShiftRoomId}
         vehiclesForRoom={vehiclesForRoom}
@@ -914,12 +947,7 @@ async function decideExtend(shiftId, decision) {
         loadPoolSummary={loadPoolSummary}
         loadDispatchPreview={loadDispatchPreview}
         autoSplitApprove={autoSplitApprove}
-        listStatus={listStatus}
-        setListStatus={setListStatus}
-        listQ={listQ}
-        setListQ={setListQ}
         copilotShift={copilotShift}
-        listFiltered={listFiltered}
         items={items}
         extendNoteSel={extendNoteSel}
         setExtendNote={setExtendNote}

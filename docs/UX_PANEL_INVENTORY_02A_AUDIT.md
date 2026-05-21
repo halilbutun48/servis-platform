@@ -269,3 +269,9 @@ Ek yakın aday:
 - `Sefer Abi Terminali` ve sağ alttaki `Sefer Abi’ye Sor` bu envanter dalgasında korunur.
 - Bu audit yalnızca envanter, risk sınıflandırması ve panel mimarisi önerisidir.
 - Bu dalga ürün davranışını değiştirmez; yalnızca sonraki UX kararlarını hizalar.
+
+## UX-PANEL-STRUCTURE-02B follow-up
+
+- 02A envanterinde işaretlenen P0 uzun panel grubunun ilk dalgası 02B ile summary-first + segmented/tab + collapsible standardına taşınır.
+- Öncelikli yüzeyler: `CommercialCorePanel`, `VehiclesPanel`, `DriversPanel`, `ShiftsPanel`, `MapPanel`.
+- Bu follow-up, envanter sayımlarını değiştirmez; yalnızca mimari uygulama sırasını netleştirir.

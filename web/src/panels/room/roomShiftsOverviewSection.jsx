@@ -3,12 +3,17 @@ import ShiftReassignModal from "../../components/ShiftReassignModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import { RoomDispatchPoolSummary } from "./roomShiftsPanelSections";
 
-export function RoomShiftsOverviewSection({ err }) {
+export function RoomShiftsOverviewSection({ err, pendingCount = 0, contractCount = 0, otherCount = 0 }) {
   return (
     <>
       <div className="card">
         <div className="panelSectionTitle">Shifts (ROOM)</div>
         <div className="panelMeta" style={{ marginTop: 6 }}>Company request → Room approve (vehicle+driver) + opsiyonel pazarlık</div>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          <span className="pill" data-status="PENDING">Bekleyen Talepler • {pendingCount}</span>
+          <span className="pill" data-status="AGREEMENT">Sözleşmeden Üretilen • {contractCount}</span>
+          <span className="pill" data-status="OTHER">Diğer Vardiyalar • {otherCount}</span>
+        </div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}

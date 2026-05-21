@@ -72,6 +72,19 @@
     "check:uxcollapsiblepanels01": "node backend/scripts/ux_collapsible_panels_01_check.js",
     "check:uxpanelstructure02": "node backend/scripts/ux_panel_structure_02_check.js",
     "check:uxpanelinventory02a": "node backend/scripts/ux_panel_inventory_02a_check.js",
+    "check:uxpanelstructure02b": "node backend/scripts/ux_panel_structure_02b_check.js",
+    "check:uxroomvehiclestelematicsfix": "node backend/scripts/ux_room_vehicles_telematics_counts_fix_check.js",
+    "check:uxroomopspaneltabs01": "node backend/scripts/ux_room_ops_panel_tabs_01_check.js",
+    "check:uxroomshiftstabs01": "node backend/scripts/ux_room_shifts_tabs_01_check.js",
+    "check:uxpaneltabsfix01": "node backend/scripts/ux_panel_tabs_functional_02b_fix_01_check.js",
+    "check:uxlivemaptabsfix01": "node backend/scripts/ux_live_map_tabs_fix_01_check.js",
+    "check:uxlivemaptabssimplify01": "node backend/scripts/ux_live_map_tabs_simplify_01_check.js",
+    "check:uxpanelreality02c": "node backend/scripts/ux_panel_reality_audit_02c_check.js",
+    "check:uxpanelrealitycleanup02d": "node backend/scripts/ux_panel_reality_cleanup_02d_check.js",
+    "check:uxroomagreementstabs01": "node backend/scripts/ux_panel_reality_cleanup_02d_check.js",
+    "check:uxpanellayoutwidth02cfix01": "node backend/scripts/ux_panel_layout_width_02c_fix_01_check.js",
+    "check:uxpanellayoutwidth02cfix02": "node backend/scripts/ux_panel_layout_width_02c_fix_02_check.js",
+    "check:uxpanellayoutwidth02cfix03": "node backend/scripts/ux_panel_layout_width_02c_fix_03_check.js",
     "check:uxnav01": "node backend/scripts/ux_nav_01_premium_navdock_check.js",
     "check:uxdensity01": "node backend/scripts/ux_density_01_panel_card_density_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",
@@ -108,3 +121,6 @@
     "verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"
   }
 }
+
+
+

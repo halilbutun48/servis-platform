@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../../router";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -10,6 +10,7 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
 import AgreementConflictBox from "../../components/AgreementConflictBox";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { summarizeRoutePreview } from "../../utils/routePreviewSummary";
@@ -66,6 +67,23 @@ function parseTryInput(raw) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+const ROOM_AGREEMENT_TABS = [
+  { key: "bridge", label: "Operasyon Köprüsü" },
+  { key: "route", label: "Rota Talepleri" },
+  { key: "applied", label: "Uygulanan Rota" },
+  { key: "extend", label: "Uzatma Talepleri" },
+  { key: "pending", label: "Bekleyen" },
+  { key: "other", label: "Diğer Sözleşmeler" },
+];
+
+function resolveRoomAgreementsDefaultTab({ routeRefreshPendingCount, pendingCount, extendCount, otherCount }) {
+  if (routeRefreshPendingCount > 0) return "route";
+  if (pendingCount > 0) return "bridge";
+  if (extendCount > 0) return "extend";
+  if (otherCount > 0) return "other";
+  return "bridge";
+}
+
 export default function AgreementsPanel() {
   const { token } = useSession();
   const [busy, setBusy] = useState(false);
@@ -99,6 +117,8 @@ export default function AgreementsPanel() {
   const [extendCounterNote, setExtendCounterNote] = useState("");
   const [selectedAgreementId, setSelectedAgreementId] = useState(null);
   const [filterQ, setFilterQ] = useState("");
+  const [viewMode, setViewMode] = useState("bridge");
+  const viewModeInitializedRef = useRef(false);
 
   const approveTarget = useMemo(() => pending.find((x) => x.id === approveId), [pending, approveId]);
   const counterTarget = useMemo(() => pending.find((x) => x.id === counterId), [pending, counterId]);
@@ -122,14 +142,6 @@ export default function AgreementsPanel() {
     a?.id, a?.status, a?.startDate, a?.endDate, a?.companyOfferAmount, a?.roomOfferAmount, a?.companyOfferNote, a?.roomOfferNote,
     a?.direction, a?.pattern, a?.hubLat, a?.hubLng, weekMaskToText(a?.weekMask),
   ], filterQ)), [others, filterQ]);
-  const agreementById = useMemo(() => {
-    const map = {};
-    [...pending, ...others, ...extendItems].forEach((item) => {
-      const id = Number(item?.id || 0);
-      if (id > 0 && !map[String(id)]) map[String(id)] = item;
-    });
-    return map;
-  }, [pending, others, extendItems]);
   const pendingRouteRefreshItems = useMemo(() => routeRefreshItems.filter((item) => ["PENDING", "COUNTERED"].includes(String(item?.status || '').toUpperCase())), [routeRefreshItems]);
   const acceptedRouteRefreshItems = useMemo(() => routeRefreshItems.filter((item) => String(item?.status || '').toUpperCase() === 'ACCEPTED'), [routeRefreshItems]);
   const filteredRouteRefreshItems = useMemo(() => pendingRouteRefreshItems.filter((item) => includesFilter([
@@ -165,7 +177,62 @@ export default function AgreementsPanel() {
     item?.stopCount,
     item?.decidedAt,
   ], filterQ)), [acceptedRouteRefreshItems, filterQ]);
-
+  const roomAgreementsNotice = useMemo(() => {
+    if (pendingRouteRefreshItems.length > 0) {
+      return {
+        tone: "warning",
+        title: "Yeni rota güncelleme talebi var",
+        detail: `${pendingRouteRefreshItems.length} kayıt`,
+        actionLabel: "Rota Taleplerine git",
+        actionTab: "route",
+      };
+    }
+    if (pending.length > 0) {
+      return {
+        tone: "info",
+        title: "Karar bekleyen sözleşme teklifi var",
+        detail: `${pending.length} kayıt`,
+        actionLabel: "Operasyon Köprüsünü aç",
+        actionTab: "bridge",
+      };
+    }
+    if (extendItems.length > 0) {
+      return {
+        tone: "warning",
+        title: "Uzatma talebi geldi",
+        detail: `${extendItems.length} kayıt`,
+        actionLabel: "Uzatma Taleplerine git",
+        actionTab: "extend",
+      };
+    }
+    return null;
+  }, [extendItems.length, pending.length, pendingRouteRefreshItems.length]);
+  const roomAgreementTabs = useMemo(() => ROOM_AGREEMENT_TABS.map((tab) => ({
+    ...tab,
+    badge:
+      tab.key === "bridge" ? (pending.length ? String(pending.length) : null) :
+      tab.key === "route" ? (filteredRouteRefreshItems.length ? String(filteredRouteRefreshItems.length) : null) :
+      tab.key === "applied" ? (filteredAcceptedRouteRefreshItems.length ? String(filteredAcceptedRouteRefreshItems.length) : null) :
+      tab.key === "extend" ? (filteredExtendItems.length ? String(filteredExtendItems.length) : null) :
+      tab.key === "pending" ? (filteredPending.length ? String(filteredPending.length) : null) :
+      tab.key === "other" ? (filteredOthers.length ? String(filteredOthers.length) : null) :
+      null,
+  })), [
+    filteredAcceptedRouteRefreshItems.length,
+    filteredExtendItems.length,
+    filteredOthers.length,
+    filteredPending.length,
+    filteredRouteRefreshItems.length,
+    pending.length,
+  ]);
+  const agreementById = useMemo(() => {
+    const map = {};
+    [...pending, ...others, ...extendItems].forEach((item) => {
+      const id = Number(item?.id || 0);
+      if (id > 0 && !map[String(id)]) map[String(id)] = item;
+    });
+    return map;
+  }, [pending, others, extendItems]);
   useEffect(() => {
     const item = copilotAgreementTarget;
     if (!item) {
@@ -333,6 +400,18 @@ export default function AgreementsPanel() {
     if (!token) return;
     loadAll();
   }, [loadAll, token]);
+
+  useEffect(() => {
+    if (viewModeInitializedRef.current) return;
+    if (!pendingRouteRefreshItems.length && !pending.length && !others.length && !extendItems.length) return;
+    setViewMode(resolveRoomAgreementsDefaultTab({
+      routeRefreshPendingCount: pendingRouteRefreshItems.length,
+      pendingCount: pending.length,
+      extendCount: extendItems.length,
+      otherCount: others.length,
+    }));
+    viewModeInitializedRef.current = true;
+  }, [extendItems.length, others.length, pending.length, pendingRouteRefreshItems.length]);
 
   async function approve() {
     setConflict(null);
@@ -541,11 +620,31 @@ export default function AgreementsPanel() {
 
       {err ? <div className="card err">{String(err)}</div> : null}
 
-      {copilotAgreementTarget ? (
-        <AgreementOpsBridgeCard agreement={copilotAgreementTarget} bridge={opsBridge?.[copilotAgreementTarget.id] || null} onOpenShift={openAgreementShift} onOpenPreview={openAgreementPreview} />
+      {roomAgreementsNotice ? (
+        <div
+          className="card"
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            border: roomAgreementsNotice.tone === "warning" ? "1px solid rgba(250,204,21,.42)" : "1px solid rgba(88,166,255,.32)",
+            background: roomAgreementsNotice.tone === "warning" ? "rgba(250,204,21,.06)" : "rgba(88,166,255,.06)",
+          }}
+        >
+          <div style={{ minWidth: 240 }}>
+            <div className="muted" style={{ marginBottom: 4 }}>Yeni gelen talep</div>
+            <div style={{ fontWeight: 900 }}>{roomAgreementsNotice.title}</div>
+            <div className="muted" style={{ marginTop: 4 }}>{roomAgreementsNotice.detail}</div>
+          </div>
+          <button type="button" className="btn sm primary" onClick={() => setViewMode(roomAgreementsNotice.actionTab)}>
+            {roomAgreementsNotice.actionLabel}
+          </button>
+        </div>
       ) : null}
 
-      <div className="card" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
+      <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
         <div>
           <div className="muted">Filtre</div>
           <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="ID / durum / teklif / tarih / not" />
@@ -553,328 +652,366 @@ export default function AgreementsPanel() {
         <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
       </div>
 
-
-      <RoomAgreementsRouteRefreshPendingSection
-        items={filteredRouteRefreshItems}
-        agreementById={agreementById}
-        routeRefreshPreviewById={routeRefreshPreviewById}
-        opsBridge={opsBridge}
-        selectedAgreementId={selectedAgreementId}
-        onSelectAgreement={setSelectedAgreementId}
-        onOpenPreview={openAgreementPreview}
-        busy={busy}
-        routeRefreshCounterId={routeRefreshCounterId}
-        routeRefreshCounterAmount={routeRefreshCounterAmount}
-        routeRefreshCounterNote={routeRefreshCounterNote}
-        onStartCounter={startRouteRefreshCounter}
-        onChangeCounterAmount={setRouteRefreshCounterAmount}
-        onChangeCounterNote={setRouteRefreshCounterNote}
-        onCancelCounter={cancelRouteRefreshCounter}
-        onSubmitCounter={counterRouteRefresh}
-        onDecision={decideRouteRefresh}
+      <PanelSegmentTabs
+        tabs={roomAgreementTabs}
+        value={viewMode}
+        onChange={setViewMode}
+        compact
       />
 
-      <RoomAgreementsRouteRefreshAcceptedSection
-        items={filteredAcceptedRouteRefreshItems}
-        agreementById={agreementById}
-        routeRefreshPreviewById={routeRefreshPreviewById}
-        selectedAgreementId={selectedAgreementId}
-        onSelectAgreement={setSelectedAgreementId}
-        onOpenPreview={openAgreementPreview}
-      />
+      {viewMode === "bridge" ? (
+        <div style={{ display: "grid", gap: 12 }}>
+          {copilotAgreementTarget ? (
+            <AgreementOpsBridgeCard
+              agreement={copilotAgreementTarget}
+              bridge={opsBridge?.[copilotAgreementTarget.id] || null}
+              onOpenShift={openAgreementShift}
+              onOpenPreview={openAgreementPreview}
+            />
+          ) : (
+            <div className="card muted">Operasyon köprüsü için bir sözleşme seç.</div>
+          )}
 
-      <RoomAgreementsExtendRequestsSection
-        items={filteredExtendItems}
-        selectedAgreementId={selectedAgreementId}
-        onSelectAgreement={setSelectedAgreementId}
-        busy={busy}
-        extendCounterId={extendCounterId}
-        extendCounterAmount={extendCounterAmount}
-        extendCounterNote={extendCounterNote}
-        onDecision={extendDecision}
-        onStartCounter={startExtendCounter}
-        onChangeCounterAmount={setExtendCounterAmount}
-        onChangeCounterNote={setExtendCounterNote}
-        onSubmitCounter={extendCounter}
-        onCancelCounter={cancelExtendCounter}
-      />
+          {counterTarget ? (
+            <div className="card">
+              <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme #{counterTarget.id}</div>
 
-<div className="card">
-        <div style={{ fontWeight: 900, marginBottom: 10 }}>Bekleyen Sözleşmeler</div>
-        <div className="tableWrap">
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Tarih</th>
-                <th>Saat</th>
-                <th>Günler</th>
-                <th>Dir/Pat</th>
-                <th>Vardiyalar</th>
-                <th>Hub</th>
-                <th>Şirket Teklifi</th>
-                <th>Oda Karşı Teklifi</th>
-                <th>Aksiyon</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPending.map((a) => (
-                <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
-                  <td><div>{a.id}</div><CommercialReadonlySummary item={a.commercialBackbone} compact /></td>
-                  <td className="muted">
-                    {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
-                  </td>
-                  <td className="muted">
-                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
-                  </td>
-                  <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
-                  <td className="muted">
-                    {String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}
-                  </td>
-                  <td><ShiftSummary st={shiftStats?.[a.id]} /></td>
-                  <td className="muted">
-                    {typeof a.hubLat === "number" && typeof a.hubLng === "number" ? `${a.hubLat.toFixed(4)}, ${a.hubLng.toFixed(4)}` : "-"}
-                  </td>
-                  <td><OfferCell amount={a.companyOfferAmount} note={a.companyOfferNote} /></td>
-                  <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn sm ghost"
-                      disabled={!agreementPreviewShiftId(a)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
-                      }}
-                    >
-                      Rota Önizleme
-                    </button>
-                    <button
-                      type="button"
-                      className="btn sm ghost"
-                      disabled={busy}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCounterId(a.id);
-                        setApproveId(null);
-                        setConflict(null);
-                        setCounterAmount(String(a.roomOfferAmount ?? a.companyOfferAmount ?? ""));
-                        setCounterNote(String(a.roomOfferNote ?? ""));
-                      }}
-                    >
-                      Karşı Teklif
-                    </button>
-                    <button
-                      type="button"
-                      className="btn sm ghost"
-                      disabled={busy}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rejectAgreement(a.id);
-                      }}
-                    >
-                      Reddet
-                    </button>
-                    <button
-                      type="button"
-                      className="btn sm"
-                      disabled={busy}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setApproveId(a.id);
-                        setCounterId(null);
-                        setConflict(null);
-                      }}
-                    >
-                      Kabul Et
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {!filteredPending.length ? (
-                <tr>
-                  <td colSpan={10} className="muted">Bekleyen sözleşme yok.</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-
-        {counterTarget ? (
-          <div className="card" style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme #{counterTarget.id}</div>
-
-            <div className="muted" style={{ marginTop: 6 }}>
-              Şirket teklifi: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
-              {counterTarget.companyOfferNote ? <span> — {counterTarget.companyOfferNote}</span> : null}
-            </div>
-
-            <div className="fieldRow" style={{ marginTop: 12 }}>
-              <div className="field">
-                <div className="muted">Karşı Teklif (₺)</div>
-                <input value={counterAmount} onChange={(e) => setCounterAmount(e.target.value)} placeholder="örn: 5000" />
+              <div className="muted" style={{ marginTop: 6 }}>
+                Şirket teklifi: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
+                {counterTarget.companyOfferNote ? <span> — {counterTarget.companyOfferNote}</span> : null}
               </div>
-              <div className="field" style={{ flex: 2 }}>
-                <div className="muted">Not (opsiyonel)</div>
-                <input value={counterNote} onChange={(e) => setCounterNote(e.target.value)} placeholder="örn: 3 gün / 2 araç" />
+
+              <div className="fieldRow" style={{ marginTop: 12 }}>
+                <div className="field">
+                  <div className="muted">Karşı Teklif (₺)</div>
+                  <input value={counterAmount} onChange={(e) => setCounterAmount(e.target.value)} placeholder="örn: 5000" />
+                </div>
+                <div className="field" style={{ flex: 2 }}>
+                  <div className="muted">Not (opsiyonel)</div>
+                  <input value={counterNote} onChange={(e) => setCounterNote(e.target.value)} placeholder="örn: 3 gün / 2 araç" />
+                </div>
+              </div>
+
+              <div className="actionsRow" style={{ marginTop: 12 }}>
+                <button type="button" className="btn sm primary" disabled={busy} onClick={counter}>
+                  {busy ? "Gönderiliyor..." : "Karşı Teklif Gönder"}
+                </button>
+                <button
+                  type="button"
+                  className="btn sm ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setCounterId(null);
+                    setCounterAmount("");
+                    setCounterNote("");
+                  }}
+                >
+                  Vazgeç
+                </button>
               </div>
             </div>
+          ) : null}
 
-            <div className="actionsRow" style={{ marginTop: 12 }}>
-              <button type="button" className="btn sm primary" disabled={busy} onClick={counter}>
-                {busy ? "Gönderiliyor..." : "Karşı Teklif Gönder"}
-              </button>
-              <button
-                type="button"
-                className="btn sm ghost"
-                disabled={busy}
-                onClick={() => {
-                  setCounterId(null);
-                  setCounterAmount("");
-                  setCounterNote("");
-                }}
-              >
-                Vazgeç
-              </button>
-            </div>
-          </div>
-        ) : null}
+          {approveTarget ? (
+            <div className="card">
+              <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme #{approveTarget.id}</div>
 
-        {approveTarget ? (
-          <div className="card" style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme #{approveTarget.id}</div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Şirket teklifi: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
+                {approveTarget.companyOfferNote ? <span> — {approveTarget.companyOfferNote}</span> : null}
+              </div>
 
-            <div className="muted" style={{ marginTop: 6 }}>
-              Şirket teklifi: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
-              {approveTarget.companyOfferNote ? <span> — {approveTarget.companyOfferNote}</span> : null}
-            </div>
+              <div className="fieldRow" style={{ marginTop: 12 }}>
+                <div className="field">
+                  <div className="muted">Araç</div>
+                  <select
+                    value={selVehicle}
+                    onChange={(e) => {
+                      setSelVehicle(e.target.value);
+                      setConflict(null);
+                    }}
+                  >
+                    <option value="">Seç</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.plate ?? `#${v.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="fieldRow" style={{ marginTop: 12 }}>
-              <div className="field">
-                <div className="muted">Araç</div>
-                <select
-                  value={selVehicle}
-                  onChange={(e) => {
-                    setSelVehicle(e.target.value);
+                <div className="field">
+                  <div className="muted">Sürücü</div>
+                  <select
+                    value={selDriver}
+                    onChange={(e) => {
+                      setSelDriver(e.target.value);
+                      setConflict(null);
+                    }}
+                  >
+                    <option value="">Seç</option>
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.fullName ?? `#${d.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="actionsRow" style={{ marginTop: 12 }}>
+                <button type="button" className="btn sm primary" disabled={busy} onClick={approve}>
+                  {busy ? "Kabul ediliyor..." : "Kabul Et"}
+                </button>
+                <button
+                  type="button"
+                  className="btn sm ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setApproveId(null);
+                    setSelVehicle("");
+                    setSelDriver("");
                     setConflict(null);
                   }}
                 >
-                  <option value="">Seç</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.plate ?? `#${v.id}`}
-                    </option>
-                  ))}
-                </select>
+                  Vazgeç
+                </button>
               </div>
 
-              <div className="field">
-                <div className="muted">Sürücü</div>
-                <select
-                  value={selDriver}
-                  onChange={(e) => {
-                    setSelDriver(e.target.value);
-                    setConflict(null);
-                  }}
-                >
-                  <option value="">Seç</option>
-                  {drivers.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.fullName ?? `#${d.id}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <AgreementConflictBox errObj={conflict} />
             </div>
+          ) : null}
+        </div>
+      ) : null}
 
-            <div className="actionsRow" style={{ marginTop: 12 }}>
-              <button type="button" className="btn sm primary" disabled={busy} onClick={approve}>
-                {busy ? "Kabul ediliyor..." : "Kabul Et"}
-              </button>
-              <button
-                type="button"
-                className="btn sm ghost"
-                disabled={busy}
-                onClick={() => {
-                  setApproveId(null);
-                  setSelVehicle("");
-                  setSelDriver("");
-                  setConflict(null);
-                }}
-              >
-                Vazgeç
-              </button>
-            </div>
+      {viewMode === "route" ? (
+        <RoomAgreementsRouteRefreshPendingSection
+          items={filteredRouteRefreshItems}
+          agreementById={agreementById}
+          routeRefreshPreviewById={routeRefreshPreviewById}
+          opsBridge={opsBridge}
+          selectedAgreementId={selectedAgreementId}
+          onSelectAgreement={setSelectedAgreementId}
+          onOpenPreview={openAgreementPreview}
+          busy={busy}
+          routeRefreshCounterId={routeRefreshCounterId}
+          routeRefreshCounterAmount={routeRefreshCounterAmount}
+          routeRefreshCounterNote={routeRefreshCounterNote}
+          onStartCounter={startRouteRefreshCounter}
+          onChangeCounterAmount={setRouteRefreshCounterAmount}
+          onChangeCounterNote={setRouteRefreshCounterNote}
+          onCancelCounter={cancelRouteRefreshCounter}
+          onSubmitCounter={counterRouteRefresh}
+          onDecision={decideRouteRefresh}
+        />
+      ) : null}
 
-            <AgreementConflictBox errObj={conflict} />
+      {viewMode === "applied" ? (
+        <RoomAgreementsRouteRefreshAcceptedSection
+          items={filteredAcceptedRouteRefreshItems}
+          agreementById={agreementById}
+          routeRefreshPreviewById={routeRefreshPreviewById}
+          selectedAgreementId={selectedAgreementId}
+          onSelectAgreement={setSelectedAgreementId}
+          onOpenPreview={openAgreementPreview}
+        />
+      ) : null}
+
+      {viewMode === "extend" ? (
+        <RoomAgreementsExtendRequestsSection
+          items={filteredExtendItems}
+          selectedAgreementId={selectedAgreementId}
+          onSelectAgreement={setSelectedAgreementId}
+          busy={busy}
+          extendCounterId={extendCounterId}
+          extendCounterAmount={extendCounterAmount}
+          extendCounterNote={extendCounterNote}
+          onDecision={extendDecision}
+          onStartCounter={startExtendCounter}
+          onChangeCounterAmount={setExtendCounterAmount}
+          onChangeCounterNote={setExtendCounterNote}
+          onSubmitCounter={extendCounter}
+          onCancelCounter={cancelExtendCounter}
+        />
+      ) : null}
+
+      {viewMode === "pending" ? (
+        <div className="card">
+          <div style={{ fontWeight: 900, marginBottom: 10 }}>Bekleyen Sözleşmeler</div>
+          <div className="muted" style={{ marginBottom: 12 }}>
+            Yeni gelen teklif, karşı teklif ve karar bekleyen kayıtlar burada listelenir. Operasyon köprüsü üstteki tek CTA ile açılır; detaylar burada tekrar edilmez.
           </div>
-        ) : null}
-      </div>
-
-      <div className="card">
-        <div className="topbar" style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 900 }}>Diğer Sözleşmeler</div>
-          <div className="muted">Kabul edildi / devam ediyor / tamamlandı / iptal edildi...</div>
-        </div>
-
-        <div className="tableWrap">
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Durum</th>
-                <th>Tarih</th>
-                <th>Saat</th>
-                <th>Günler</th>
-                <th>Dir/Pat</th>
-                <th>Şirket Teklifi</th>
-                <th>Oda Karşı Teklifi</th>
-                <th>Araç</th>
-                <th>Sürücü</th>
-                <th>Aksiyon</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOthers.map((a) => (
-                <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
-                  <td>{a.id}</td>
-                  <td>{pill(a.status)}</td>
-                  <td className="muted">
-                    {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
-                  </td>
-                  <td className="muted">
-                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
-                  </td>
-                  <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
-                  <td className="muted">{String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}</td>
-                  <td><OfferCell amount={a.companyOfferAmount} note={a.companyOfferNote} /></td>
-                  <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
-                  <td className="muted">{a.vehicle?.plate ?? a.vehicleId ?? "-"}</td>
-                  <td className="muted">{a.driver?.fullName ?? a.driverId ?? "-"}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn sm ghost"
-                      disabled={!agreementPreviewShiftId(a)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
-                      }}
-                    >
-                      Rota Önizleme
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {!filteredOthers.length ? (
+          <div className="tableWrap">
+            <table className="tbl">
+              <thead>
                 <tr>
-                  <td colSpan={11} className="muted">Kayıt yok.</td>
+                  <th>ID</th>
+                  <th>Tarih</th>
+                  <th>Saat</th>
+                  <th>Günler</th>
+                  <th>Dir/Pat</th>
+                  <th>Vardiyalar</th>
+                  <th>Hub</th>
+                  <th>Şirket Teklifi</th>
+                  <th>Oda Karşı Teklifi</th>
+                  <th>Aksiyon</th>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredPending.map((a) => (
+                  <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
+                    <td><div>{a.id}</div><CommercialReadonlySummary item={a.commercialBackbone} compact /></td>
+                    <td className="muted">
+                      {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
+                    </td>
+                    <td className="muted">
+                      {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
+                    </td>
+                    <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
+                    <td className="muted">
+                      {String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}
+                    </td>
+                    <td><ShiftSummary st={shiftStats?.[a.id]} /></td>
+                    <td className="muted">
+                      {typeof a.hubLat === "number" && typeof a.hubLng === "number" ? `${a.hubLat.toFixed(4)}, ${a.hubLng.toFixed(4)}` : "-"}
+                    </td>
+                    <td><OfferCell amount={a.companyOfferAmount} note={a.companyOfferNote} /></td>
+                    <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn sm ghost"
+                        disabled={!agreementPreviewShiftId(a)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
+                        }}
+                      >
+                        Rota Önizleme
+                      </button>
+                      <button
+                        type="button"
+                        className="btn sm ghost"
+                        disabled={busy}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAgreementId(a.id);
+                          setCounterId(a.id);
+                          setApproveId(null);
+                          setConflict(null);
+                          setCounterAmount(String(a.roomOfferAmount ?? a.companyOfferAmount ?? ""));
+                          setCounterNote(String(a.roomOfferNote ?? ""));
+                          setViewMode("bridge");
+                        }}
+                      >
+                        Karşı Teklif
+                      </button>
+                      <button
+                        type="button"
+                        className="btn sm ghost"
+                        disabled={busy}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rejectAgreement(a.id);
+                        }}
+                      >
+                        Reddet
+                      </button>
+                      <button
+                        type="button"
+                        className="btn sm"
+                        disabled={busy}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAgreementId(a.id);
+                          setApproveId(a.id);
+                          setCounterId(null);
+                          setConflict(null);
+                          setViewMode("bridge");
+                        }}
+                      >
+                        Kabul Et
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {!filteredPending.length ? (
+                  <tr>
+                    <td colSpan={10} className="muted">Bekleyen sözleşme yok.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ) : null}
+
+      {viewMode === "other" ? (
+        <div className="card">
+          <div className="topbar" style={{ marginBottom: 10 }}>
+            <div style={{ fontWeight: 900 }}>Diğer Sözleşmeler</div>
+            <div className="muted">Kabul edildi / devam ediyor / tamamlandı / iptal edildi...</div>
+          </div>
+
+          <div className="tableWrap">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Durum</th>
+                  <th>Tarih</th>
+                  <th>Saat</th>
+                  <th>Günler</th>
+                  <th>Dir/Pat</th>
+                  <th>Şirket Teklifi</th>
+                  <th>Oda Karşı Teklifi</th>
+                  <th>Araç</th>
+                  <th>Sürücü</th>
+                  <th>Aksiyon</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOthers.map((a) => (
+                  <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
+                    <td>{a.id}</td>
+                    <td>{pill(a.status)}</td>
+                    <td className="muted">
+                      {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
+                    </td>
+                    <td className="muted">
+                      {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
+                    </td>
+                    <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
+                    <td className="muted">{String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}</td>
+                    <td><OfferCell amount={a.companyOfferAmount} note={a.companyOfferNote} /></td>
+                    <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
+                    <td className="muted">{a.vehicle?.plate ?? a.vehicleId ?? "-"}</td>
+                    <td className="muted">{a.driver?.fullName ?? a.driverId ?? "-"}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn sm ghost"
+                        disabled={!agreementPreviewShiftId(a)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
+                        }}
+                      >
+                        Rota Önizleme
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {!filteredOthers.length ? (
+                  <tr>
+                    <td colSpan={11} className="muted">Kayıt yok.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       {previewModal.open ? (
         <RoutePreviewModal

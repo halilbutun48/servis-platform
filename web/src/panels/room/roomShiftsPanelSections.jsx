@@ -19,8 +19,42 @@ export {
   RoomStatusPill,
 };
 
-export function RoomPendingSection({ pendingStatus, setPendingStatus, pendingQ, setPendingQ, onlyAgreement, setOnlyAgreement, pendingFiltered, ...props }) {
-  return <div className="card"><h3>Bekleyen Talepler</h3><div className="toolbarLeft" style={{ marginBottom: 10 }}><select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}><option value="OPEN">Açık (DRAFT + REQUESTED)</option><option value="REQUESTED">Bekliyor</option><option value="DRAFT">Taslak</option></select><input value={pendingQ} onChange={(e) => setPendingQ(e.target.value)} placeholder="Ara (id / şirket / plaka / sürücü / not)" style={{ minWidth: 280 }} /><label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={onlyAgreement} onChange={(e) => setOnlyAgreement(e.target.checked)} />Sadece sözleşmeli vardiyalar</label><button type="button" className="btn sm" onClick={() => { setPendingQ(""); setOnlyAgreement(false); }}>Temizle</button></div>{pendingFiltered.length ? <table className="tbl"><thead><tr><th>ID</th><th>Şirket</th><th>Başlangıç</th><th>Bitiş</th><th>Harita</th><th>Teklif / Pazarlık</th><th>Vehicle + Driver</th><th>Kabul Et</th><th>Reddet</th></tr></thead><tbody>{pendingFiltered.map((shift) => <RoomPendingShiftRow key={shift.id} shift={shift} {...props} />)}</tbody></table> : <div className="muted">Bekleyen talep yok.</div>}</div>;
+export function RoomPendingSection({ pendingStatus, setPendingStatus, pendingQ, setPendingQ, pendingFiltered, ...props }) {
+  return (
+    <div className="card">
+      <h3>Bekleyen Talepler</h3>
+      <div className="muted" style={{ marginBottom: 8 }}>Firma request / room approval / karar bekleyen vardiya talepleri.</div>
+      <div className="toolbarLeft" style={{ marginBottom: 10 }}>
+        <select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}>
+          <option value="OPEN">Açık (DRAFT + REQUESTED)</option>
+          <option value="REQUESTED">Bekliyor</option>
+          <option value="DRAFT">Taslak</option>
+        </select>
+        <input value={pendingQ} onChange={(e) => setPendingQ(e.target.value)} placeholder="Ara (id / şirket / plaka / sürücü / not)" style={{ minWidth: 280 }} />
+        <button type="button" className="btn sm" onClick={() => { setPendingQ(""); setPendingStatus("OPEN"); }}>Temizle</button>
+      </div>
+      {pendingFiltered.length ? (
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Şirket</th>
+              <th>Başlangıç</th>
+              <th>Bitiş</th>
+              <th>Harita</th>
+              <th>Teklif / Pazarlık</th>
+              <th>Vehicle + Driver</th>
+              <th>Kabul Et</th>
+              <th>Reddet</th>
+            </tr>
+          </thead>
+          <tbody>{pendingFiltered.map((shift) => <RoomPendingShiftRow key={shift.id} shift={shift} {...props} />)}</tbody>
+        </table>
+      ) : (
+        <div className="muted">Bekleyen talep yok.</div>
+      )}
+    </div>
+  );
 }
 
 export function RoomDispatchPoolSummary({
@@ -179,6 +213,56 @@ export function RoomDispatchPoolSummary({
     </div>
   );
 }
-export function RoomFinalListSection({ listStatus, setListStatus, listQ, setListQ, onlyAgreement, setOnlyAgreement, copilotShift, listFiltered, items, ...props }) {
-  return <div className="card"><h3>Tüm Vardiyalar</h3><div className="muted" style={{ marginBottom: 8 }}>Bekleyen Talepler üstte görünür. Bu listede varsayılan olarak sadece onaylı ve aktif işler gösterilir.</div><div className="toolbarLeft" style={{ marginBottom: 10 }}><select value={listStatus} onChange={(e) => setListStatus(e.target.value)}><option value="OPEN">Açık (kabul edildi + aktif)</option><option value="ALL">Hepsi</option><option value="REQUESTED">Bekliyor</option><option value="DRAFT">Taslak</option><option value="APPROVED">Kabul Edildi</option><option value="ACTIVE">Aktif</option><option value="DONE">Tamamlandı</option><option value="REJECTED">Reddedildi</option></select><input value={listQ} onChange={(e) => setListQ(e.target.value)} placeholder="Ara (id / şirket / plaka / sürücü / not)" style={{ minWidth: 320 }} /><label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={onlyAgreement} onChange={(e) => setOnlyAgreement(e.target.checked)} />Sadece sözleşmeli vardiyalar</label><button type="button" className="btn sm" onClick={() => { setListQ(""); setListStatus("OPEN"); setOnlyAgreement(false); }}>Temizle</button></div><ListSelectionBanner selectedLabel={copilotShift ? `Vardiya #${copilotShift.id}` : ""} selectedSummary={copilotShift ? [displayStatusLabel(copilotShift?.status) || "-", fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(" • ") : ""} visibleCount={listFiltered.length} totalCount={items.length} filterValue={`${listQ} ${listStatus} ${onlyAgreement ? "agreement" : ""}`.trim()} onClearFilter={() => { setListQ(""); setListStatus("OPEN"); setOnlyAgreement(false); }} helper="Copilot seçili vardiyayı kullanır." />{listFiltered.length ? <table className="tbl"><thead><tr><th>ID</th><th>Durum</th><th>Şirket</th><th>Teklifler</th><th>Araç</th><th>Sürücü</th><th>Başlangıç</th><th>Bitiş</th><th>Uzatma</th><th>Operasyon</th></tr></thead><tbody>{listFiltered.map((shift) => <RoomAllShiftRow key={shift.id} shift={shift} {...props} />)}</tbody></table> : <div className="muted">Kayıt yok.</div>}</div>;
+export function RoomFinalListSection({
+  title = "Vardiyalar",
+  description = "",
+  listQ,
+  setListQ,
+  copilotShift,
+  listFiltered,
+  items,
+  emptyText = "Kayıt yok.",
+  searchPlaceholder = "Ara (id / şirket / plaka / sürücü / not)",
+  ...props
+}) {
+  return (
+    <div className="card">
+      <h3>{title}</h3>
+      {description ? <div className="muted" style={{ marginBottom: 8 }}>{description}</div> : null}
+      <div className="toolbarLeft" style={{ marginBottom: 10 }}>
+        <input value={listQ} onChange={(e) => setListQ(e.target.value)} placeholder={searchPlaceholder} style={{ minWidth: 320 }} />
+        <button type="button" className="btn sm" onClick={() => { setListQ(""); }}>Temizle</button>
+      </div>
+      <ListSelectionBanner
+        selectedLabel={copilotShift ? `Vardiya #${copilotShift.id}` : ""}
+        selectedSummary={copilotShift ? [displayStatusLabel(copilotShift?.status) || "-", fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(" • ") : ""}
+        visibleCount={listFiltered.length}
+        totalCount={items.length}
+        filterValue={String(listQ || "").trim()}
+        onClearFilter={() => { setListQ(""); }}
+        helper="Copilot seçili vardiyayı kullanır."
+      />
+      {listFiltered.length ? (
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Durum</th>
+              <th>Şirket</th>
+              <th>Teklifler</th>
+              <th>Araç</th>
+              <th>Sürücü</th>
+              <th>Başlangıç</th>
+              <th>Bitiş</th>
+              <th>Uzatma</th>
+              <th>Operasyon</th>
+            </tr>
+          </thead>
+          <tbody>{listFiltered.map((shift) => <RoomAllShiftRow key={shift.id} shift={shift} {...props} />)}</tbody>
+        </table>
+      ) : (
+        <div className="muted">{emptyText}</div>
+      )}
+    </div>
+  );
 }

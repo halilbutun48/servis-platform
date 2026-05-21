@@ -1,0 +1,158 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const root = path.resolve(__dirname, "../..");
+
+function read(rel) {
+  return fs.readFileSync(path.join(root, rel), "utf8");
+}
+
+function exists(rel) {
+  return fs.existsSync(path.join(root, rel));
+}
+
+function normalize(text) {
+  return String(text || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function ok(label) {
+  console.log(`OK ${label}`);
+}
+
+function fail(label) {
+  throw new Error(`FAIL ${label}`);
+}
+
+function must(cond, label) {
+  if (cond) ok(label);
+  else fail(label);
+}
+
+function mustContains(text, needle, label) {
+  must(normalize(text).includes(normalize(needle)), label);
+}
+
+function mustNotContains(text, needle, label) {
+  must(!normalize(text).includes(normalize(needle)), label);
+}
+
+function panelUsesTabs(text) {
+  const normalized = normalize(text);
+  return normalized.includes("panelsegmenttabs") || normalized.includes("role=\"tablist\"") || normalized.includes("aria-selected");
+}
+
+function main() {
+  console.log("=== UX-PANEL-STRUCTURE-02B CHECK ===");
+
+  const auditPath = "docs/UX_PANEL_STRUCTURE_02_AUDIT.md";
+  must(exists(auditPath), "structure audit doc exists");
+  const audit = read(auditPath);
+  mustContains(audit, "UX-PANEL-STRUCTURE-02B", "audit includes 02B section");
+  mustContains(audit, "CommercialCorePanel.jsx", "audit includes CommercialCorePanel");
+  mustContains(audit, "VehiclesPanel.jsx", "audit includes VehiclesPanel");
+  mustContains(audit, "DriversPanel.jsx", "audit includes DriversPanel");
+  mustContains(audit, "ShiftsPanel.jsx", "audit includes ShiftsPanel");
+  mustContains(audit, "MapPanel.jsx", "audit includes MapPanel");
+  mustContains(audit, "PanelSegmentTabs", "audit mentions segmented/tab standard");
+  mustContains(audit, "CollapsibleSection", "audit mentions collapsible standard");
+
+  const commercialCore = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
+  const roomVehicles = read("web/src/panels/room/VehiclesPanel.jsx");
+  const roomDrivers = read("web/src/panels/room/DriversPanel.jsx");
+  const roomMap = read("web/src/panels/room/MapPanel.jsx");
+  const companyShifts = read("web/src/panels/company/ShiftsPanel.jsx");
+  const companyShiftsIntro = read("web/src/panels/company/CompanyShiftsPanelIntro.jsx");
+  const companyShiftsTrack = read("web/src/panels/company/CompanyShiftsPanelTrackView.jsx");
+
+  const tabbedPanels = [commercialCore, roomVehicles, roomDrivers, roomMap, companyShiftsIntro, companyShiftsTrack]
+    .filter(panelUsesTabs)
+    .length;
+  must(tabbedPanels >= 3, "at least 3 targeted panels use segmented/tab standard");
+
+  mustContains(commercialCore, "PanelSegmentTabs", "CommercialCore uses segmented tabs");
+  mustContains(commercialCore, "CollapsibleSection", "CommercialCore uses collapsible sections");
+  mustContains(commercialCore, "Ticari Akış Özeti", "CommercialCore keeps summary visible");
+  mustContains(commercialCore, "Hakediş", "CommercialCore tab set includes settlement view");
+  mustContains(commercialCore, "Ödeme Hazırlık", "CommercialCore tab set includes payment prep view");
+  mustContains(commercialCore, "Komisyon", "CommercialCore tab set includes commission view");
+  mustContains(commercialCore, "Kalite / Kanıt", "CommercialCore tab set includes quality/proof view");
+  mustContains(commercialCore, "Riskler", "CommercialCore tab set includes risk view");
+  mustContains(commercialCore, "Geçmiş", "CommercialCore tab set includes history view");
+
+  mustContains(roomVehicles, "PanelSegmentTabs", "Room / Araçlar keeps segmented tabs");
+  mustContains(roomVehicles, "CollapsibleSection", "Room / Araçlar keeps secondary collapsible details");
+  mustContains(roomVehicles, "Telematics", "Room / Araçlar keeps summary labels visible");
+
+  mustContains(roomDrivers, "PanelSegmentTabs", "Room / Sürücüler keeps segmented tabs");
+  mustContains(roomDrivers, "CollapsibleSection", "Room / Sürücüler keeps secondary collapsible details");
+  mustContains(roomDrivers, "Yönetim detayları", "Room / Sürücüler keeps management details collapsed");
+  mustContains(roomDrivers, "Bağlantı detayları", "Room / Sürücüler keeps connection details collapsed");
+
+  mustContains(roomMap, "PanelSegmentTabs", "Room / Map keeps segmented tabs");
+  mustContains(roomMap, 'const [mapTab, setMapTab] = useState("map")', "Room / Map defaults to Harita tab");
+  mustContains(roomMap, "selectedSummaryText", "Room / Map keeps compact summary text");
+  mustContains(roomMap, "selectedHistoryLine", "Room / Map keeps short history line");
+  mustContains(roomMap, "selectedRiskLines", "Room / Map keeps short risk lines");
+  mustContains(roomMap, "Harita Önizleme", "Room / Map keeps live map preview section");
+  mustContains(roomMap, "Araçlar", "Room / Map keeps vehicle tab");
+  mustNotContains(roomMap, "Özet", "Room / Map removes summary tab");
+  mustNotContains(roomMap, "Rota / Durak", "Room / Map removes route tab");
+  mustNotContains(roomMap, "GPS Durumu", "Room / Map removes gps tab");
+  mustNotContains(roomMap, "Riskler", "Room / Map removes risk tab");
+  mustNotContains(roomMap, "Geçmiş", "Room / Map removes history tab");
+  mustContains(roomMap, "Harita Önizleme", "Room / Map keeps map preview visible");
+
+  mustContains(companyShifts, "mainTab", "Company / Shifts keeps main tab state");
+  mustContains(companyShifts, "trackTab", "Company / Shifts keeps track tab state");
+  mustContains(companyShiftsIntro, "PanelSegmentTabs", "Company / Shifts intro uses segmented tabs");
+  mustContains(companyShiftsTrack, "PanelSegmentTabs", "Company / Shifts track view uses segmented tabs");
+
+  const pkg = read("package.json");
+  mustContains(pkg, '"check:uxpanelstructure02b"', "package.json exposes check:uxpanelstructure02b");
+  mustContains(pkg, '"check:uxpanelstructure02"', "package.json keeps check:uxpanelstructure02");
+  mustContains(pkg, '"check:uxcollapsiblepanels01"', "package.json keeps check:uxcollapsiblepanels01");
+
+  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
+  mustContains(runner, "check:uxpanelstructure02b", "product extensions runner includes UX-PANEL-STRUCTURE-02B");
+  mustContains(runner, "check:uxpanelstructure02", "product extensions runner keeps UX-PANEL-STRUCTURE-02");
+  mustContains(runner, "check:uxpanelinventory02a", "product extensions runner keeps UX-PANEL-INVENTORY-02A");
+  mustContains(runner, "check:uxcollapsiblepanels01", "product extensions runner keeps UX-COLLAPSIBLE-PANELS-01");
+
+  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  mustContains(verify, "check:uxpanelstructure02b", "verify chain includes UX-PANEL-STRUCTURE-02B");
+  mustContains(verify, "check:uxpanelstructure02", "verify chain keeps UX-PANEL-STRUCTURE-02");
+  mustContains(verify, "check:uxpanelinventory02a", "verify chain keeps UX-PANEL-INVENTORY-02A");
+  mustContains(verify, "check:uxcollapsiblepanels01", "verify chain keeps UX-COLLAPSIBLE-PANELS-01");
+  mustContains(verify, "check:uxnav01", "verify chain keeps UX-NAV-01");
+
+  const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
+  mustContains(guide, "UX-PANEL-STRUCTURE-02B", "milestone guide mentions UX-PANEL-STRUCTURE-02B");
+  mustContains(guide, "check:uxpanelstructure02b", "milestone guide exposes check:uxpanelstructure02b");
+
+  const inventory = read("docs/UX_PANEL_INVENTORY_02A_AUDIT.md");
+  mustContains(inventory, "UX-PANEL-STRUCTURE-02B follow-up", "inventory audit includes 02B follow-up note");
+
+  const copilotAudit = read("docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md");
+  mustContains(copilotAudit, "UX-PANEL-STRUCTURE-02B", "copilot audit mentions UX-PANEL-STRUCTURE-02B");
+
+  must(!normalize(audit).includes("runtime-data"), "audit avoids runtime-data");
+  must(!normalize(audit).includes("prisma"), "audit avoids prisma");
+  must(!normalize(audit).includes("migration"), "audit avoids migration");
+
+  console.log("=== UX-PANEL-STRUCTURE-02B CHECK PASS ===");
+}
+
+main();

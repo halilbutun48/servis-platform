@@ -168,6 +168,36 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; eş düzey alt modlar tab/segmented button olarak ayrılır, ikincil detaylar collapsible kalır.
 - `Room / Araçlar`, `Room / Sürücüler`, `Room / Ticari Akışım`, `Company / Sözleşmeler`, `Company / Ticari Akış`, `Super Admin / Operasyon Doğrulama`, `Parent / Canlı Takip` ve `Personel / Canlı Takip` ilk hedef yüzeylerdir.
 
+### UX-PANEL-STRUCTURE-02B [CHECK]
+- `check:uxpanelstructure02b` kalan P0 uzun panellerin ilk grubunu summary-first + segmented/tab + collapsible follow-up standardı ile daraltır.
+- `CommercialCorePanel`, `VehiclesPanel`, `DriversPanel`, `ShiftsPanel` ve `MapPanel` follow-up yüzeyleridir.
+- Bu dalga, UX-PANEL-STRUCTURE-02 ve UX-COLLAPSIBLE-PANELS-01 zincirini korur; ürün davranışı değiştirmez.
+
+### UX-PANEL-STRUCTURE-02B-FIX-01 [CHECK]
+- `check:uxpaneltabsfix01` PanelSegmentTabs kullanılan yüzeylerde tabların dekoratif kalmamasını, section focus/scroll veya conditional tab davranışı ile işlevsel olmasını doğrular.
+- `CommercialCorePanel` için ticari akış sekmeleri ilgili bölüm başlıklarına kaydırılır; `Room / Ticari Akışım`, `Company / Ticari Akış` ve `Sözleşmeler` zaten functional tab standardını korur.
+- Bu dalga UX-PANEL-STRUCTURE-02, UX-PANEL-INVENTORY-02A ve UX-PANEL-STRUCTURE-02B zincirini bozmaz; ürün davranışı değiştirmez.
+
+### UX-LIVE-MAP-TABS-FIX-01 [CHECK]
+- `check:uxlivemaptabsfix01` `Room / Canlı Takip` sekme mimarisinde dekoratif buton davranışını engeller; aktif sekme içeriği değişir ve Harita / Araçlar ana yüzeyleri olarak korunur.
+- Harita sekmesi büyük harita + canlı liste görünümünü ve canlı durum badge'lerini, Araçlar sekmesi canlı araç listesi ve kısa durum kartlarını korur.
+- Bu dalga UX-PANEL-REALITY-AUDIT-02C ve UX-PANEL-STRUCTURE-02 / 02B zincirini bozmaz; ürün davranışı değiştirmez.
+
+### UX-LIVE-MAP-TABS-SIMPLIFY-01 [CHECK]
+- `check:uxlivemaptabssimplify01` `Room / Canlı Takip` sekmesini Harita / Araçlar'a sadeleştirir; Özet / Rota / GPS / Risk / Geçmiş ayrı tab olmaktan çıkar.
+- Kaldırılan bilgiler Harita görünümünde kısa badge, mini özet ve kısa geçmiş satırı olarak korunur.
+- Bu dalga UX-PANEL-REALITY-AUDIT-02C, UX-PANEL-REALITY-CLEANUP-02D ve UX-LIVE-MAP-TABS-FIX-01 zincirini bozmaz; ürün davranışı değiştirmez.
+
+### UX-PANEL-LAYOUT-WIDTH-02C-FIX-01 [CHECK]
+- `check:uxpanellayoutwidth02cfix01` `Room / Ticari Akışım` panel kabuğunu geniş dashboard clamp'i ve dengeli split grid ile açar.
+- Sekme davranışı işlevsel kalır; ana özet, sekmeler, seçili kayıt ve ana tablo daha ferah bir dashboard alanı içinde görünür.
+- Bu dalga UX-PANEL-STRUCTURE-02, UX-PANEL-STRUCTURE-02B, UX-PANEL-REALITY-AUDIT-02C ve UX-COLLAPSIBLE-PANELS-01 zincirini bozmaz; ürün davranışı değiştirmez.
+
+### UX-PANEL-REALITY-AUDIT-02C [CHECK]
+- `check:uxpanelreality02c` tüm panel yüzeylerinde gerçek functional tab, focus-model, accordion-only ve cosmetic-only risk ayrımını görünür kılar.
+- `Room / Araçlar` ve `Room / Sürücüler` reference standard olarak korunur; `CommercialCorePanel`, `Room / Canlı Takip` ve `Company / Vardiyalar` focus-model watchlist yüzeyleri olarak smoke gerektirir.
+- Bu audit ürün davranışını değiştirmez; yalnızca panel gerçekliğini ve uzun scroll riskini tekrar sınıflandırır.
+
 ### UX-PANEL-INVENTORY-02A [CHECK]
 - `check:uxpanelinventory02a` tüm web panel envanterini çıkarır; route/kind listesi, uzun panel riski ve P0/P1/P2 önceliklerini belgeye bağlar.
 - Panel / ekran aileleri, route-menu bağlantıları ve `PanelChrome` / container standardı taranır; ürün davranışı değişmez.
@@ -789,3 +819,37 @@ Bu bant güncel doğrulanmış üst hattır.
 - `OP-03`: web servis kanıtı / manuel not küçük kartı check'i
 - `OP-04`: servis kanıtı durumunu ticari/kalite yüzeylerine readonly köprü check'i
 - `OP-04`: servis kanıtı durumunu ticari/kalite yüzeylerine readonly köprü check'i
+- `UX-PANEL-STRUCTURE-02B`: kalan P0 uzun paneller için summary-first + segmented/tab + collapsible follow-up check'i
+
+### UX-PANEL-LAYOUT-WIDTH-02C-FIX-02 [CHECK]
+- `check:uxpanellayoutwidth02cfix02` `Room / Ticari Akışım` panel kabuğunu centered max-width yerine gerçek full-width dashboard kabuğuna taşır.
+- Sol ana alan `minmax(0, 1fr)` olarak açılır; sağ kolon `clamp(340px, 24vw, 460px)` ile dengede kalır.
+- Duplicate KPI/summary bloğu kaldırılır; üstteki ana KPI bandı tek kaynak kalır.
+- Bu dalga, full-width kabuğu gerçek iş sekmelerine hazırlayan ara hizalama adımıdır; son durumda `İlk adım` / `Özet` sekmesi kaldırılır ve `Sözleşme & Vardiya` default yüzey olur.
+- Bu dalga UX-PANEL-LAYOUT-WIDTH-02C-FIX-01, UX-PANEL-STRUCTURE-02B, UX-PANEL-REALITY-AUDIT-02C ve UX-COLLAPSIBLE-PANELS-01 zincirini bozmaz; ürün davranışı değiştirmez.
+
+### UX-PANEL-LAYOUT-WIDTH-02C-FIX-03 [CHECK]
+- `check:uxpanellayoutwidth02cfix03` `Room / Ticari Akışım` içindeki `İlk adım` / `Özet` sekmesini kaldırır.
+- Default görünüm `Sözleşme & Vardiya` olur; üst KPI bandı tek ana özet olarak kalır.
+- Sağ kolon seçili kayıt, hızlı erişim ve sekme rehberi alanlarını tek kaynak olarak taşır; ana alanda tekrar eden seçili kayıt / hızlı erişim blokları görünmez.
+- Bu dalga UX-PANEL-LAYOUT-WIDTH-02C-FIX-02, UX-PANEL-STRUCTURE-02B ve UX-PANEL-REALITY-AUDIT-02C zincirini bozmaz; ürün davranışı değiştirmez.
+
+### UX-PANEL-REALITY-CLEANUP-02D [CHECK]
+- `check:uxpanelrealitycleanup02d` Room / Sözleşmeler panelini gerçek tab mimarisine taşır; Operasyon Köprüsü, Rota Talepleri, Uygulanan Rota, Uzatma Talepleri, Bekleyen ve Diğer Sözleşmeler ayrı görünür.
+- `check:uxroomagreementstabs01` aynı statik reality gate için kısa alias olarak yaşar; ekip isterse daha kısa komutla aynı kontrolü çalıştırabilir.
+- Üst bilgi bandı yalnızca yönlendirme / uyarı amaçlıdır; detay tablosunu veya karar akışını tekrar etmez.
+- Bu check summary-first + segmented/tab + collapsible standardını bozmaz; Room / Ticari Akışım ve Room / Canlı Takip tarafındaki önceki UX sınırlarını korur.
+
+### UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-01 [CHECK]
+- `check:uxroomvehiclestelematicsfix` `Room / Araçlar` içinde `telematicsCounts` TDZ crash fix doğrular; telematics özetinin güvenli fallback ile ve doğru sırada üretildiğini kontrol eder.
+- `Room / Araçlar` sekme/segment yapısı korunur; bu düzeltme yalnızca crash fix kapsamındadır ve ürün davranışını değiştirmez.
+
+### UX-ROOM-OPS-PANEL-TABS-01 [CHECK]
+- `check:uxroomopspaneltabs01` `Oda Operasyon Paneli` içindeki uzun alt blokları gerçek tab yapısına taşır; `Şartlı Küme`, `Oda Operasyon Özeti`, `Sorunlu Sürücüler` ve `Açık Sorunlar` aynı anda alt alta görünmez.
+- Üst mini özet, filtre ve sayaç bandı açık kalır; seçilen sekmenin içeriği tek başına render edilir.
+- Bu düzeltme `UX-COLLAPSIBLE-PANELS-01`, `UX-PANEL-STRUCTURE-02`, `UX-PANEL-STRUCTURE-02B` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+### UX-ROOM-SHIFTS-TABS-01 [CHECK]
+- `check:uxroomshiftstabs01` `Room / Vardiyalar` ekranını üç gerçek taba böler: `Bekleyen Talepler`, `Sözleşmeden Üretilen` ve `Diğer Vardiyalar`.
+- Üstteki KPI bandı açık kalır; `Bekleyen Talepler` ile `Tüm Vardiyalar` gibi tek uzun akış yerine seçili tabın içeriği tek başına render edilir.
+- Bu düzeltme `UX-PANEL-STRUCTURE-02`, `UX-PANEL-STRUCTURE-02B`, `UX-ROOM-OPS-PANEL-TABS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
