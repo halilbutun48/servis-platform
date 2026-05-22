@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import PanelChrome from "../../components/PanelChrome";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 
 function SummaryCard({ title, value, note }) {
@@ -18,6 +19,15 @@ function Row({ title, text }) {
     <div className="card">
       <div className="panelSectionTitle">{title}</div>
       <div className="panelBody" style={{ marginTop: 6 }}>{text}</div>
+    </div>
+  );
+}
+
+function TabPanel({ active, label, children }) {
+  if (!active) return null;
+  return (
+    <div role="tabpanel" aria-label={label} tabIndex={-1} style={{ marginTop: 14, display: "grid", gap: 12 }}>
+      {children}
     </div>
   );
 }
@@ -86,6 +96,17 @@ const RISK_STATUS_OPTIONS = [
   { id: "CLOSED", label: "CLOSED" },
 ];
 
+// FIELD DISPATCH DISCOVERY / INVENTORY
+// Üstte kalacak: Sahaya Çıkış Kontrolü başlığı, kritik engel / hazır değil / onay gerekli bandı, ana KPI kartları ve varsa global uyarı sinyalleri.
+// Özet: Son karar, risk sayısı, saha hazırlık, M84 saha döngüsü, kabul / sağlık / build özetleri ve sıradaki doğru kontrol.
+// Hazırlık Kontrolü: Launch checklist, canlı ortam ve release kontrolleri, operatör sırası, saha senaryoları, rol/cihaz checklisti, kapasite kartları, açık bloklar, uyarılar ve saha notları.
+// Not: Bölge / Kapasite için ayrı uzun bölüm yok; kapasite kartları Hazırlık Kontrolü altında gruplanır.
+// Onay & Çıkış: Karar kaydı ve GO / LIMITED_GO / NO_GO kararı.
+// Eksikler & Riskler: Risk kaydı, kayıtlı riskler ve kritik risk özeti.
+// Geri Bildirimler: Saha gözlem / geri bildirim döngüsü, yeni geri bildirim formu, rol kapsaması, yüzey kapsaması.
+// Geçmiş / Log: Son saha kayıtları, M84 bloklar, M84 uyarılar, M84 notları.
+// Veri kaybı yok; yalnızca uzun tek kolon görünümü bölüm bölüm okunur hale getiriliyor.
+
 const DEFAULT_FEEDBACK_FORM = {
   title: "",
   detail: "",
@@ -118,6 +139,7 @@ export default function PilotLaunchGatePanel() {
   const [manifest, setManifest] = useState(null);
   const [decision, setDecision] = useState(null);
   const [risks, setRisks] = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
   const [decisionForm, setDecisionForm] = useState(DEFAULT_DECISION_FORM);
   const [riskForm, setRiskForm] = useState(DEFAULT_RISK_FORM);
   const [acceptanceManifest, setAcceptanceManifest] = useState(null);
@@ -329,6 +351,40 @@ export default function PilotLaunchGatePanel() {
     }
   };
 
+  const prepBlockerCount = Number(prepSummary.blockerCount || 0);
+  const prepWarningCount = Number(prepSummary.warningCount || 0);
+  const feedbackCriticalCount = Number(feedbackSummary.criticalOpenCount || 0);
+  const acceptanceChecklist = Array.isArray(acceptanceSession?.checklist)
+    ? acceptanceSession.checklist
+    : Array.isArray(acceptanceManifest?.checklist)
+      ? acceptanceManifest.checklist
+      : [];
+  const hasBlockingIssue = prepBlockerCount > 0 || decisionLabel !== "GO";
+  const hasRiskIssue = riskCount > 0 || prepWarningCount > 0 || feedbackCriticalCount > 0;
+  const fieldDispatchBandText = hasBlockingIssue
+    ? `Hazır değil veya onay gerekli · ${prepBlockerCount} blok • karar ${decisionLabel}`
+    : hasRiskIssue
+      ? `Risk / uyarı açık · ${riskCount} risk • ${prepWarningCount} uyarı`
+      : `Hazırlık ve onay hattı şu anda açık görünüyor.`;
+  const fieldDispatchBandDescription = hasBlockingIssue
+    ? "Karar ve hazırlık sinyallerini Onay & Çıkış ve Hazırlık Kontrolü tablarında birlikte incele."
+    : hasRiskIssue
+      ? "Eksikler, riskler ve saha geri bildirimleri detay tablarına taşındı."
+      : "Özet karar için hazırlık ve geçmiş sekmeleri yeterli görünüyor.";
+  const fieldDispatchBandTarget = hasBlockingIssue
+    ? "decision"
+    : hasRiskIssue
+      ? (riskCount > 0 ? "risks" : "feedback")
+      : "overview";
+  const fieldDispatchTabs = [
+    { key: "overview", label: "Özet", badge: null },
+    { key: "prep", label: "Hazırlık Kontrolü", badge: (Array.isArray(fieldPrep?.envChecks) ? fieldPrep.envChecks.length : 0) + (Array.isArray(fieldPrep?.operatorSequence) ? fieldPrep.operatorSequence.length : 0) + (Array.isArray(fieldPrep?.scenarios) ? fieldPrep.scenarios.length : 0) + (Array.isArray(fieldPrep?.roleDeviceChecklist) ? fieldPrep.roleDeviceChecklist.length : 0) },
+    { key: "decision", label: "Onay & Çıkış", badge: decisionLabel === "GO" ? null : 1 },
+    { key: "risks", label: "Eksikler & Riskler", badge: riskCount + prepBlockerCount + prepWarningCount || null },
+    { key: "feedback", label: "Geri Bildirimler", badge: (Array.isArray(feedbackRecords) ? feedbackRecords.length : 0) + (Array.isArray(feedbackPacket?.roleCoverage) ? feedbackPacket.roleCoverage.length : 0) },
+    { key: "history", label: "Geçmiş / Log", badge: (Array.isArray(feedbackPacket?.notes) ? feedbackPacket.notes.length : 0) + 3 },
+  ];
+
   return (
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
@@ -339,6 +395,25 @@ export default function PilotLaunchGatePanel() {
         )}
       />
 
+      <div className="card" style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <div>
+            <div className="panelSectionTitle">Kritik engel / hazır değil / onay gerekli</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>{fieldDispatchBandDescription}</div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <Pill code={decisionLabel} />
+            <span className="pill" data-status={hasBlockingIssue ? "WARN" : hasRiskIssue ? "INFO" : "SUCCESS"}>{fieldDispatchBandText}</span>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn sm" onClick={() => setActiveTab(fieldDispatchBandTarget === "decision" ? "decision" : fieldDispatchBandTarget === "risks" ? "risks" : fieldDispatchBandTarget === "feedback" ? "feedback" : "overview")}>
+            {fieldDispatchBandTarget === "decision" ? "Onay & Çıkış sekmesine git" : fieldDispatchBandTarget === "risks" ? "Eksikler & Riskler sekmesine git" : fieldDispatchBandTarget === "feedback" ? "Geri Bildirimler sekmesine git" : "Özet sekmesine git"}
+          </button>
+          {hasBlockingIssue ? <button className="btn sm" onClick={() => setActiveTab("prep")}>Hazırlık Kontrolü sekmesine git</button> : null}
+        </div>
+      </div>
+
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <SummaryCard title="Son karar" value={decisionLabel} note={decision?.reason || "Checklist tamamlanmadı"} />
         <SummaryCard title="Risk sayısı" value={String(riskCount)} note={riskCount ? "Açık riskler izlenmeli" : "Kritik risk görünmüyor"} />
@@ -346,7 +421,63 @@ export default function PilotLaunchGatePanel() {
         <SummaryCard title="M84 saha döngüsü" value={feedbackStage} note={feedbackErr || `${feedbackSummary.openCount || 0} açık • ${feedbackSummary.repeatedCount || 0} tekrar`} />
       </div>
 
-      <div style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+      <PanelSegmentTabs
+        tabs={fieldDispatchTabs}
+        value={activeTab}
+        onChange={(tabKey) => setActiveTab(String(tabKey || "overview"))}
+        ariaLabel="Sahaya Çıkış sekmeleri"
+      />
+
+      <TabPanel active={activeTab === "overview"} label="Özet">
+        <Row title="Kritik risk listesi" text={riskSummary} />
+        <Row title="Acceptance özetleri" text={acceptanceSummary} />
+        <Row title="Gözlemleme sağlık özeti" text={healthSummaryText} />
+        <Row title="Build / cihaz uygunluk özeti" text={buildText} />
+        <Row title="GO / LIMITED GO / NO-GO" text={decisionText} />
+      </TabPanel>
+
+      <TabPanel active={activeTab === "prep"} label="Hazırlık Kontrolü">
+        <div className="card" style={{ display: "grid", gap: 10 }}>
+          <div className="panelSectionTitle">Kapasite / hazırlık</div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <SummaryCard title="Hazır vardiya" value={String(prepCounters.readyShifts || 0)} note="Yakın penceredeki kabul edilen / aktif vardiyalar" />
+            <SummaryCard title="Aktif araç" value={String(prepCounters.activeVehicles || 0)} note="Sahaya çıkabilecek aktif araç sayısı" />
+            <SummaryCard title="Driver kullanıcı" value={String(prepCounters.driverUsers || 0)} note="Mobil tur için giriş yapabilecek sürücü hesabı" />
+            <SummaryCard title="Aktif sözleşme" value={String(prepCounters.activeAgreements || 0)} note="Operasyonla ilişkili aktif / kabul edilen sözleşme görünürlüğü" />
+          </div>
+        </div>
+        {fieldPrepErr ? <div style={{ color: "#ffb17b", whiteSpace: "pre-wrap" }}>{fieldPrepErr}</div> : null}
+        <PrepList
+          title="Launch checklist"
+          items={acceptanceChecklist}
+          renderDetail={(item) => `${item?.area || "-"} • ${item?.status || "-"}`}
+        />
+        <PrepList
+          title="Canlı ortam ve release kontrolleri"
+          items={fieldPrep?.envChecks}
+          renderDetail={(item) => item?.status?.detail || item?.detail || "-"}
+        />
+        <PrepList
+          title="Operatör uygulama sırası"
+          items={fieldPrep?.operatorSequence}
+          renderDetail={(item) => item?.detail || "-"}
+        />
+        <PrepList
+          title="Gerçek saha senaryoları"
+          items={fieldPrep?.scenarios}
+          renderDetail={(item) => `${item?.success || "-"}${item?.status?.detail ? ` • ${item.status.detail}` : ""}`}
+        />
+        <PrepList
+          title="Rol ve cihaz checklisti"
+          items={fieldPrep?.roleDeviceChecklist}
+          renderDetail={(item) => item?.detail || "-"}
+        />
+        <Row title="Açık bloklar" text={(fieldPrep?.blockers || []).join(" • ") || "Henüz blok listesi yok."} />
+        <Row title="Kontrol edilmesi gereken uyarılar" text={(fieldPrep?.warnings || []).join(" • ") || "Ek uyarı görünmüyor."} />
+        <Row title="Saha paket notları" text={(fieldPrep?.notes || []).join(" • ") || "Henüz saha paket notu yok."} />
+      </TabPanel>
+
+      <TabPanel active={activeTab === "decision"} label="Onay & Çıkış">
         <div className="card" style={{ display: "grid", gap: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <div>
@@ -366,7 +497,10 @@ export default function PilotLaunchGatePanel() {
             <button className="btn" onClick={saveDecision} disabled={decisionBusy}>{decisionBusy ? "Kaydediliyor..." : "Kararı kaydet"}</button>
           </div>
         </div>
+        <Row title="GO / LIMITED GO / NO-GO" text={decisionText} />
+      </TabPanel>
 
+      <TabPanel active={activeTab === "risks"} label="Eksikler & Riskler">
         <div className="card" style={{ display: "grid", gap: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <div>
@@ -396,91 +530,48 @@ export default function PilotLaunchGatePanel() {
             </div>
           </div>
         </div>
-      </div>
-
-        <div className="card" style={{ marginTop: 12, display: "grid", gap: 10 }}>
+        <div className="card" style={{ display: "grid", gap: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <div className="panelSectionTitle">Kayıtlı riskler</div>
-          <div className="panelMeta">{riskCount} kayıt</div>
-        </div>
-        {riskCount ? risks.map((item) => (
-          <div key={item.id} style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, display: "grid", gap: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-              <div className="panelSectionTitle">{item.title}</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <SeverityPill value={item.severity} />
-                <Pill code={item.status} />
+            <div className="panelMeta">{riskCount} kayıt</div>
+          </div>
+          {riskCount ? risks.map((item) => (
+            <div key={item.id} style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, display: "grid", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <div className="panelSectionTitle">{item.title}</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <SeverityPill value={item.severity} />
+                  <Pill code={item.status} />
+                </div>
+              </div>
+              <div className="panelBody">{item.detail || "Detay girilmemiş."}</div>
+              <div className="panelMeta">Sorumlu: {item.owner} • Son güncelleme: {item.updatedAt || "-"}</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn sm" onClick={() => editRisk(item)} disabled={riskBusy}>Düzenle</button>
+                <button className="btn sm" onClick={() => removeRisk(item.id)} disabled={riskBusy}>Sil</button>
               </div>
             </div>
-            <div className="panelBody">{item.detail || "Detay girilmemiş."}</div>
-            <div className="panelMeta">Sorumlu: {item.owner} • Son güncelleme: {item.updatedAt || "-"}</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="btn sm" onClick={() => editRisk(item)} disabled={riskBusy}>Düzenle</button>
-              <button className="btn sm" onClick={() => removeRisk(item.id)} disabled={riskBusy}>Sil</button>
+          )) : <div className="muted">Henüz risk kaydı yok.</div>}
+        </div>
+        <Row title="Kritik risk listesi" text={riskSummary} />
+        <Row title="Açık bloklar" text={(fieldPrep?.blockers || []).join(" • ") || "Henüz blok listesi yok."} />
+        <Row title="Kontrol edilmesi gereken uyarılar" text={(fieldPrep?.warnings || []).join(" • ") || "Ek uyarı görünmüyor."} />
+        <Row title="Saha paket notları" text={(fieldPrep?.notes || []).join(" • ") || "Henüz saha paket notu yok."} />
+      </TabPanel>
+
+      <TabPanel active={activeTab === "feedback"} label="Geri Bildirimler">
+        <div className="card" style={{ display: "grid", gap: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <div>
+              <div className="panelSectionTitle">Saha gözlem / geri bildirim döngüsü</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Durum akışı: görüldü → tekrarlandı → çözüldü → kapandı.</div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <Pill code={feedbackStage} />
             </div>
           </div>
-        )) : <div className="muted">Henüz risk kaydı yok.</div>}
-      </div>
 
-      <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-        <Row title="Launch checklist" text={totalChecklist ? `${passChecklist}/${totalChecklist} madde tamamlandı.` : "Henüz checklist verisi yok."} />
-        <Row title="Kritik risk listesi" text={riskSummary} />
-        <Row title="Acceptance özetleri" text={acceptanceSummary} />
-        <Row title="Gözlemleme sağlık özeti" text={healthSummaryText} />
-        <Row title="Build / cihaz uygunluk özeti" text={buildText} />
-        <Row title="GO / LIMITED GO / NO-GO" text={decisionText} />
-      </div>
-
-      <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <SummaryCard title="Hazır vardiya" value={String(prepCounters.readyShifts || 0)} note="Yakın penceredeki kabul edilen / aktif vardiyalar" />
-        <SummaryCard title="Aktif araç" value={String(prepCounters.activeVehicles || 0)} note="Sahaya çıkabilecek aktif araç sayısı" />
-        <SummaryCard title="Driver kullanıcı" value={String(prepCounters.driverUsers || 0)} note="Mobil tur için giriş yapabilecek sürücü hesabı" />
-        <SummaryCard title="Aktif sözleşme" value={String(prepCounters.activeAgreements || 0)} note="Operasyonla ilişkili aktif / kabul edilen sözleşme görünürlüğü" />
-      </div>
-
-      {fieldPrepErr ? <div style={{ marginTop: 14, color: "#ffb17b", whiteSpace: "pre-wrap" }}>{fieldPrepErr}</div> : null}
-
-      <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
-        <PrepList
-          title="Canlı ortam ve release kontrolleri"
-          items={fieldPrep?.envChecks}
-          renderDetail={(item) => item?.status?.detail || item?.detail || '-'}
-        />
-        <PrepList
-          title="Operatör uygulama sırası"
-          items={fieldPrep?.operatorSequence}
-          renderDetail={(item) => item?.detail || '-'}
-        />
-        <PrepList
-          title="Gerçek saha senaryoları"
-          items={fieldPrep?.scenarios}
-          renderDetail={(item) => `${item?.success || '-'}${item?.status?.detail ? ` • ${item.status.detail}` : ''}`}
-        />
-        <PrepList
-          title="Rol ve cihaz checklisti"
-          items={fieldPrep?.roleDeviceChecklist}
-          renderDetail={(item) => item?.detail || '-'}
-        />
-      </div>
-
-      <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-        <Row title="Açık bloklar" text={(fieldPrep?.blockers || []).join(' • ') || 'Henüz blok listesi yok.'} />
-        <Row title="Kontrol edilmesi gereken uyarılar" text={(fieldPrep?.warnings || []).join(' • ') || 'Ek uyarı görünmüyor.'} />
-        <Row title="Saha paket notları" text={(fieldPrep?.notes || []).join(' • ') || 'Henüz saha paket notu yok.'} />
-      </div>
-
-      <div className="card" style={{ marginTop: 18, display: "grid", gap: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div>
-            <div className="panelSectionTitle">Saha gözlem / geri bildirim döngüsü</div>
-            <div className="panelMeta" style={{ marginTop: 6 }}>Durum akışı: görüldü → tekrarlandı → çözüldü → kapandı.</div>
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <Pill code={feedbackStage} />
-          </div>
-        </div>
-
-        {feedbackErr ? <div style={{ color: '#ffb17b', whiteSpace: 'pre-wrap' }}>{feedbackErr}</div> : null}
+          {feedbackErr ? <div style={{ color: "#ffb17b", whiteSpace: "pre-wrap" }}>{feedbackErr}</div> : null}
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <SummaryCard title="Açık kayıt" value={String(feedbackSummary.openCount || 0)} note="Görüldü durumundaki kayıtlar" />
@@ -489,87 +580,91 @@ export default function PilotLaunchGatePanel() {
             <SummaryCard title="Kapandı" value={String(feedbackSummary.closedCount || 0)} note="Doğrulanıp kapanan kayıtlar" />
           </div>
 
-        <div className="card" style={{ display: "grid", gap: 10 }}>
-          <div className="panelSectionTitle">Yeni saha geri bildirimi ekle</div>
-          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-            <input className="input" placeholder="Başlık" value={feedbackForm.title} onChange={(e) => updateFeedbackField('title', e.target.value)} />
-            <select className="input" value={feedbackForm.reportedByRole} onChange={(e) => updateFeedbackField('reportedByRole', e.target.value)}>
-              {FEEDBACK_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
-            </select>
-            <select className="input" value={feedbackForm.ownerRole} onChange={(e) => updateFeedbackField('ownerRole', e.target.value)}>
-              {FEEDBACK_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
-            </select>
-            <select className="input" value={feedbackForm.surface} onChange={(e) => updateFeedbackField('surface', e.target.value)}>
-              {feedbackSurfaces.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
-            <select className="input" value={feedbackForm.severity} onChange={(e) => updateFeedbackField('severity', e.target.value)}>
-              {feedbackSeverities.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
-            <select className="input" value={feedbackForm.status} onChange={(e) => updateFeedbackField('status', e.target.value)}>
-              {feedbackStatuses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-            </select>
-            <select className="input" value={feedbackForm.scenarioId} onChange={(e) => updateFeedbackField('scenarioId', e.target.value)}>
-              <option value="">Senaryo seç</option>
-              {(fieldPrep?.scenarios || []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-            </select>
-            <input className="input" placeholder="İlgili yol / ekran" value={feedbackForm.relatedPath} onChange={(e) => updateFeedbackField('relatedPath', e.target.value)} />
-          </div>
-          <textarea className="input" rows={4} placeholder="Detay / gözlem" value={feedbackForm.detail} onChange={(e) => updateFeedbackField('detail', e.target.value)} />
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <div className="panelMeta">Bu kayıt backend üstünde saklanır; tarayıcı local state tek kaynak değildir.</div>
-            <button className="btn" onClick={submitFeedback} disabled={feedbackBusy || !String(feedbackForm.title || '').trim() || !String(feedbackForm.detail || '').trim()}>{feedbackBusy ? 'Kaydediliyor...' : 'Kaydı ekle'}</button>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <SummaryCard title="Kritik açık" value={String(feedbackSummary.criticalOpenCount || 0)} note="High/Critical ve açık durumda kalan kayıtlar" />
-          <SummaryCard title="Toplam kayıt" value={String(feedbackSummary.total || 0)} note={feedbackSummary.lastUpdatedAt ? `Son güncelleme: ${feedbackSummary.lastUpdatedAt}` : 'Henüz kayıt yok'} />
-          <SummaryCard title="Bölüm sayısı" value={String(sectionsCount)} note="Saha öncesi son karar kapısı" />
-        </div>
-
-        <PrepList
-          title="Rol kapsaması"
-          items={feedbackPacket?.roleCoverage?.map((item) => ({ ...item, title: item.roleId }))}
-          renderDetail={(item) => `${item?.count || 0} kayıt${item?.lastUpdatedAt ? ` • son: ${item.lastUpdatedAt}` : ''}`}
-        />
-        <PrepList
-          title="Yüzey kapsaması"
-          items={feedbackPacket?.surfaceCoverage?.map((item) => ({ ...item, title: item.label }))}
-          renderDetail={(item) => `${item?.count || 0} kayıt`}
-        />
-
-        <div className="card" style={{ display: "grid", gap: 10 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <div className="panelSectionTitle">Son saha kayıtları</div>
-          <div className="panelMeta">{feedbackRecords.length} kayıt</div>
-        </div>
-        {feedbackRecords.length ? feedbackRecords.map((item) => (
-          <div key={item.id} style={{ padding: 12, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, display: 'grid', gap: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div className="panelSectionTitle">{item.title}</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                <SeverityPill value={item.severity} />
-                <Pill code={item.status} />
-              </div>
+          <div className="card" style={{ display: "grid", gap: 10 }}>
+            <div className="panelSectionTitle">Yeni saha geri bildirimi ekle</div>
+            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+              <input className="input" placeholder="Başlık" value={feedbackForm.title} onChange={(e) => updateFeedbackField("title", e.target.value)} />
+              <select className="input" value={feedbackForm.reportedByRole} onChange={(e) => updateFeedbackField("reportedByRole", e.target.value)}>
+                {FEEDBACK_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+              </select>
+              <select className="input" value={feedbackForm.ownerRole} onChange={(e) => updateFeedbackField("ownerRole", e.target.value)}>
+                {FEEDBACK_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+              </select>
+              <select className="input" value={feedbackForm.surface} onChange={(e) => updateFeedbackField("surface", e.target.value)}>
+                {feedbackSurfaces.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+              <select className="input" value={feedbackForm.severity} onChange={(e) => updateFeedbackField("severity", e.target.value)}>
+                {feedbackSeverities.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+              <select className="input" value={feedbackForm.status} onChange={(e) => updateFeedbackField("status", e.target.value)}>
+                {feedbackStatuses.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+              <select className="input" value={feedbackForm.scenarioId} onChange={(e) => updateFeedbackField("scenarioId", e.target.value)}>
+                <option value="">Senaryo seç</option>
+                {(fieldPrep?.scenarios || []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+              </select>
+              <input className="input" placeholder="İlgili yol / ekran" value={feedbackForm.relatedPath} onChange={(e) => updateFeedbackField("relatedPath", e.target.value)} />
             </div>
-            <div className="panelMeta">{item.detail}</div>
-            <div className="panelMeta">Rol: {item.reportedByRole} • Sorumlu: {item.ownerRole} • Yüzey: {item.surface}{item.relatedPath ? ` • Yol: ${item.relatedPath}` : ''}{item.scenarioId ? ` • Senaryo: ${item.scenarioId}` : ''}</div>
-            <div className="panelMeta">Son güncelleyen: {item.lastUpdatedByEmail || '-'} • {item.updatedAt || '-'}</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button className="btn sm" disabled={feedbackBusy || item.status === 'TEKRARLANDI'} onClick={() => changeFeedbackStatus(item.id, 'TEKRARLANDI')}>Tekrarlandı</button>
-                <button className="btn sm" disabled={feedbackBusy || item.status === 'COZULDU'} onClick={() => changeFeedbackStatus(item.id, 'COZULDU')}>Çözüldü</button>
-                <button className="btn sm" disabled={feedbackBusy || item.status === 'KAPANDI'} onClick={() => changeFeedbackStatus(item.id, 'KAPANDI')}>Kapandı</button>
-              </div>
+            <textarea className="input" rows={4} placeholder="Detay / gözlem" value={feedbackForm.detail} onChange={(e) => updateFeedbackField("detail", e.target.value)} />
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div className="panelMeta">Bu kayıt backend üstünde saklanır; tarayıcı local state tek kaynak değildir.</div>
+              <button className="btn" onClick={submitFeedback} disabled={feedbackBusy || !String(feedbackForm.title || "").trim() || !String(feedbackForm.detail || "").trim()}>{feedbackBusy ? "Kaydediliyor..." : "Kaydı ekle"}</button>
             </div>
-          )) : <div className="muted">Henüz saha geri bildirimi yok.</div>}
-        </div>
+          </div>
 
-        <div style={{ display: "grid", gap: 10 }}>
-          <Row title="M84 bloklar" text={(feedbackPacket?.blockers || []).join(' • ') || 'Aktif kritik saha bloğu görünmüyor.'} />
-          <Row title="M84 uyarılar" text={(feedbackPacket?.warnings || []).join(' • ') || 'Tekrarlayan uyarı görünmüyor.'} />
-          <Row title="M84 notları" text={(feedbackPacket?.notes || []).join(' • ') || 'Henüz M84 notu yok.'} />
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <SummaryCard title="Kritik açık" value={String(feedbackSummary.criticalOpenCount || 0)} note="High/Critical ve açık durumda kalan kayıtlar" />
+            <SummaryCard title="Toplam kayıt" value={String(feedbackSummary.total || 0)} note={feedbackSummary.lastUpdatedAt ? `Son güncelleme: ${feedbackSummary.lastUpdatedAt}` : "Henüz kayıt yok"} />
+            <SummaryCard title="Bölüm sayısı" value={String(sectionsCount)} note="Saha öncesi son karar kapısı" />
+          </div>
+
+          <PrepList
+            title="Rol kapsaması"
+            items={feedbackPacket?.roleCoverage?.map((item) => ({ ...item, title: item.roleId }))}
+            renderDetail={(item) => `${item?.count || 0} kayıt${item?.lastUpdatedAt ? ` • son: ${item.lastUpdatedAt}` : ""}`}
+          />
+          <PrepList
+            title="Yüzey kapsaması"
+            items={feedbackPacket?.surfaceCoverage?.map((item) => ({ ...item, title: item.label }))}
+            renderDetail={(item) => `${item?.count || 0} kayıt`}
+          />
+
+          <div className="card" style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div className="panelSectionTitle">Son saha kayıtları</div>
+              <div className="panelMeta">{feedbackRecords.length} kayıt</div>
+            </div>
+            {feedbackRecords.length ? feedbackRecords.map((item) => (
+              <div key={item.id} style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, display: "grid", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <div className="panelSectionTitle">{item.title}</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <SeverityPill value={item.severity} />
+                    <Pill code={item.status} />
+                  </div>
+                </div>
+                <div className="panelMeta">{item.detail}</div>
+                <div className="panelMeta">Rol: {item.reportedByRole} • Sorumlu: {item.ownerRole} • Yüzey: {item.surface}{item.relatedPath ? ` • Yol: ${item.relatedPath}` : ""}{item.scenarioId ? ` • Senaryo: ${item.scenarioId}` : ""}</div>
+                <div className="panelMeta">Son güncelleyen: {item.lastUpdatedByEmail || "-"} • {item.updatedAt || "-"}</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn sm" disabled={feedbackBusy || item.status === "TEKRARLANDI"} onClick={() => changeFeedbackStatus(item.id, "TEKRARLANDI")}>Tekrarlandı</button>
+                  <button className="btn sm" disabled={feedbackBusy || item.status === "COZULDU"} onClick={() => changeFeedbackStatus(item.id, "COZULDU")}>Çözüldü</button>
+                  <button className="btn sm" disabled={feedbackBusy || item.status === "KAPANDI"} onClick={() => changeFeedbackStatus(item.id, "KAPANDI")}>Kapandı</button>
+                </div>
+              </div>
+            )) : <div className="muted">Henüz saha geri bildirimi yok.</div>}
+          </div>
         </div>
-      </div>
+      </TabPanel>
+
+      <TabPanel active={activeTab === "history"} label="Geçmiş / Log">
+        <Row title="Acceptance özetleri" text={acceptanceSummary} />
+        <Row title="Gözlemleme sağlık özeti" text={healthSummaryText} />
+        <Row title="Build / cihaz uygunluk özeti" text={buildText} />
+        <Row title="M84 bloklar" text={(feedbackPacket?.blockers || []).join(" • ") || "Aktif kritik saha bloğu görünmüyor."} />
+        <Row title="M84 uyarılar" text={(feedbackPacket?.warnings || []).join(" • ") || "Tekrarlayan uyarı görünmüyor."} />
+        <Row title="M84 notları" text={(feedbackPacket?.notes || []).join(" • ") || "Henüz M84 notu yok."} />
+      </TabPanel>
     </div>
   );
 }

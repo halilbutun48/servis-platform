@@ -20,7 +20,6 @@ const TABS = [
   { key: "status", label: "Durum" },
   { key: "manage", label: "Yönetim" },
   { key: "shifts", label: "Vardiyalar" },
-  { key: "link", label: "Bağlı Araç" },
 ];
 
 function fmtTR(dt) {
@@ -507,19 +506,6 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
   const focusOps = focusDriver ? driverOps(focusDriver) : null;
   const focusVehicle = focusStat?.vehicle ?? (focusDriver ? boundVehicleByDriverId.get(Number(focusDriver.id)) : null);
 
-  // shifts source: backend fields or boundVehicle.shifts or empty
-  const focusShifts = useMemo(() => {
-    if (!focusDriver) return [];
-    if (focusDriver.currentShift || focusDriver.nextShift) {
-      const arr = [];
-      if (focusDriver.currentShift) arr.push(focusDriver.currentShift);
-      if (focusDriver.nextShift) arr.push(focusDriver.nextShift);
-      return arr;
-    }
-    const bv = focusVehicle;
-    return Array.isArray(bv?.shifts) ? bv.shifts : [];
-  }, [focusDriver, focusVehicle]);
-
 
   async function createNoShow(driver, payload) {
     if (!driver?.id) return;
@@ -536,14 +522,6 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       setBusy(false);
     }
   }
-
-  const focusCurNext = useMemo(() => {
-    // if backend already gave current/next use them
-    if (focusDriver?.currentShift || focusDriver?.nextShift) {
-      return { current: focusDriver.currentShift ?? null, next: focusDriver.nextShift ?? null };
-    }
-    return pickCurrentNext(focusShifts);
-  }, [focusDriver, focusShifts]);
 
   const driverSummary = useMemo(() => {
     const total = Array.isArray(filteredDrivers) ? filteredDrivers.length : 0;
@@ -573,9 +551,24 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           <div className="panelMeta" style={{ marginTop: 6 }}>Canlı: {driverSummary.live} • Bağlı: {driverSummary.bound}</div>
         </div>
         <div className="card">
-          <div className="muted">Eşleşme / GPS</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>{focusOps?.connectionLabel || "Bekleniyor"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>GPS: {focusOps?.gpsLabel || "-"}</div>
+          <div className="muted">Bağlı araç</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{focusVehicle?.plate || "Bağlı araç yok"}</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Bağlı araç: <b>{focusVehicle?.plate || "-"}</b>
+          </div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            {focusVehicle
+              ? `Bağlı sürücü: ${focusDriver?.fullName || "-"}`
+              : "Sürücü seçilince bağlı araç burada görünür."}
+          </div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            {focusVehicle
+              ? `Readonly özet • ${focusStat ? `Durum: ${focusStat.ui}` : "Eşleşme okunuyor"}`
+              : "Araç bağlantısını Araçlar ekranında yönet."}
+          </div>
+          <button type="button" className="btn sm ghost" style={{ marginTop: 8 }} onClick={() => navigate("/room/vehicles")}>
+            Araç bağlantısını Araçlar ekranında yönet
+          </button>
         </div>
       </div>
 
@@ -782,17 +775,6 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                           <button type="button" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); deleteDriver(d); }}>Sil</button>
                           <button type="button" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); resetPin(d); }}>PIN üret</button>
                           <button type="button" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); resetDevice(d); }}>Cihaz sıfırla</button>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFocusDriverId(Number(d.id));
-                              setTab("link");
-                            }}
-                          >
-                            Bağlı Araç
-                          </button>
                         </td>
                       </tr>
                     );
@@ -820,47 +802,6 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           pickCurrentNext={pickCurrentNext}
           rowSelectionStyle={rowSelectionStyle}
         />
-      ) : null}
-
-      {/* BAĞLI ARAÇ */}
-      {tab === "link" ? (
-        <CollapsibleSection
-          title="Bağlı araç özeti"
-          subtitle="Sürücü için bağlı araç yalnızca okunur; yönetim Araçlar ekranında yapılır."
-          badge={focusDriverId ? `#${focusDriverId}` : "0"}
-          defaultOpen={false}
-        >
-        <div className="card">
-          <h3>Bağlı Araç (Sürücü ↔ Araç)</h3>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
-            <div>
-              <div className="muted">Seçili sürücü</div>
-              <div style={{ fontWeight: 900, marginTop: 6 }}>{focusDriver?.fullName || "-"}</div>
-              <div className="muted" style={{ marginTop: 10 }}>
-                Bağlı araç: <b>{focusVehicle?.plate || "-"}</b>{" "}
-                {focusStat ? (
-                  <span className="pill" data-status={focusStat.pillKey} style={{ marginLeft: 8 }}>
-                    {focusStat.ui}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="muted" style={{ marginTop: 10 }}>
-                Current: {focusCurNext.current ? `${focusCurNext.current.company?.name || "-"} • ${fmtTR(focusCurNext.current.startAt)}–${fmtTR(focusCurNext.current.endAt)}` : "-"}
-                <br />
-                Next: {focusCurNext.next ? `${focusCurNext.next.company?.name || "-"} • ${fmtTR(focusCurNext.next.startAt)}–${fmtTR(focusCurNext.next.endAt)}` : "-"}
-              </div>
-
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" className="btn" onClick={() => navigate("/room/vehicles")}>
-                  Araç bağlantısını Araçlar ekranında yönet
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        </CollapsibleSection>
       ) : null}
 
       {/* EDIT MODAL */}

@@ -17,7 +17,7 @@ export function normalizeGuideRoleKey(me) {
 
 const SHARED = [
   { id: 9001, path: "/shared/notifications", label: "Bildirimler" },
-  { id: 9002, path: "/shared/logs", label: "Log Export" },
+  { id: 9002, path: "/shared/logs", label: "Log Dışa Aktarımı" },
   { id: 9003, path: "/shared/kvkk", label: "KVKK" },
   { id: 9004, path: "/shared/feedback", label: "Geri Bildirim" },
 ];
@@ -114,7 +114,7 @@ const REGISTRY = {
     { id: 6102, path: "/superadmin/companies", label: "Şirketler" },
     { id: 6103, path: "/superadmin/rooms", label: "Operasyon Odaları" },
     { id: 6104, path: "/superadmin/users", label: "Kullanıcılar" },
-    { id: 6105, path: "/superadmin/regions", label: "Bölgeler" },
+    { id: 6105, path: "/superadmin/regions", label: "İller ve Bölgeler" },
     { id: 6106, path: "/superadmin/audit", label: "İşlem Kayıtları" },
     { id: 6107, path: "/superadmin/observability", label: "Canlı İzleme" },
     { id: 6108, path: "/superadmin/acceptance", label: "Kabul Merkezi" },
@@ -125,7 +125,7 @@ const REGISTRY = {
     { id: 6113, path: "/superadmin/trust-quality", label: "Güven ve Kalite" },
     { id: 6114, path: "/superadmin/copilot", label: COPILOT_MENU_LABEL },
     { id: 6115, path: "/superadmin/logexport", label: "Log Dışa Aktarımı" },
-    { id: 6116, path: "/superadmin/natural-copilot", label: "Natural Copilot" },
+    { id: 6116, path: "/superadmin/natural-copilot", label: "Doğal Copilot" },
     ...SHARED,
   ],
 };

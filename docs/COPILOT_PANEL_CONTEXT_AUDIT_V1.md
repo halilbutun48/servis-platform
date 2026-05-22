@@ -77,7 +77,7 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 | `web/src/panels/superadmin/OperationVerificationPanel.jsx` | SUPER_ADMIN | Operasyon Doğrulama | `/superadmin/operation-verification` | Evet | Evet | Evet | Evet, role / verify signals | PARTIAL | P1 |
 | `web/src/panels/superadmin/ObservabilityPanel.jsx` | SUPER_ADMIN | Canlı sağlık ve queue | `/superadmin/observability` | Evet | Evet | Evet | Evet, event / queue metrics | PARTIAL | P2 |
 | `web/src/panels/superadmin/TrustQualityPanel.jsx` | SUPER_ADMIN | Güven ve Kalite | `/superadmin/trust-quality` | Evet | Evet | Evet | Evet, quality / trust signals | PARTIAL | P1 |
-| `web/src/panels/superadmin/FieldAcceptanceCenter.jsx` | SUPER_ADMIN | Saha kabul merkezi | `/superadmin/acceptance` | Evet | Evet | Evet | Evet, acceptance items | PARTIAL | P2 |
+| `web/src/panels/superadmin/FieldAcceptanceCenter.jsx` | SUPER_ADMIN | Saha kabul merkezi / sekmeli komuta paneli | `/superadmin/acceptance` | Evet | Evet | Evet | Evet, acceptance items | FULL | P2 |
 | `web/src/panels/driver/TodayPanel.jsx` | DRIVER | Bugünkü görev | `/driver/today` | MISSING / UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P1 |
 | `web/src/panels/driver/RoutePanel.jsx` | DRIVER | Rota | `/driver/route` | MISSING / UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P1 |
 | `web/src/panels/driver/MapPanel.jsx` | DRIVER | Canlı takip / harita | `/driver/map` | MISSING / UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | P0 |
@@ -153,6 +153,10 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 ## COP-04B-FIX-02 acceptance note
 - Company / Sözleşmeler, Company / Vardiyalar ve Super Admin / Ticari Akış yüzeylerinde commercial / readiness context selected facts ile birlikte okunur.
 - Super Admin / Genel Bakış ekranı summary-first dashboard olarak kalır; hızlı erişim, özet ve bölüm rehberi üstte, geri bildirim / demo-debug alt detay alanında yaşar.
+- Super Admin / Güven ve Kalite ekranı summary-first dashboard olarak kalır; güven/kanıt/inceleme bandı üstte, servis kanıtı, taslak skor, kalite geçmişi ve yol haritası/risk detayları ilgili tablarda yaşar.
+- `UX-SUPERADMIN-QUALITY-PANEL-01`:
+  - Süper Admin / Güven ve Kalite ekranı summary-first dashboard olarak kalır; güven/kanıt/inceleme bandı üstte, servis kanıtı, taslak skor, kalite geçmişi ve yol haritası/risk detayları ilgili tablarda yaşar.
+  - Bu not, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-COMMERCIAL-FLOW-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
 - `Bu hakediş neden hazır değil?` sorusu `Eksik bilgi: 0` ile çelişmez; readonly hakediş önizlemesi ve ödeme hesabı / komisyon / hizmet-onay sinyali birlikte yorumlanır.
 - `Bu sözleşmeden bugün vardiya üretildi mi?` sorusu sözleşme → vardiya üretim sinyalini korur ve `Bunu anlayamadım` fallback'ine düşmez.
 - `Ödeme başlatılmaz.` sınırı korunur; aktif ödeme veya settlement execute dili görünmez.
@@ -360,3 +364,23 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Süper Admin / Canlı İzleme ekranı summary-first monitoring dashboard olarak kalır; üstte KVKK / alarm bandı, altta canlı akış / alarm / olay tipi / kanıt / log sekmeleri yaşar.
 - Uzun teknik liste ve debug detayları ana dashboardu işgal etmez; kritik alarm bandı üstte compact uyarı olarak görünür.
 - Bu not, canlı izleme panelinin Copilot context parity'ini korur; ürün davranışı değiştirmez.
+
+## UX-SUPERADMIN-AUDIT-PANEL-01 note
+- `web/src/panels/superadmin/OperationsPanel.jsx` artık summary-first denetim dashboard olarak okunur; `STEP_UP_REQUIRED` ve `KVKK sınırı aktif` bandı üstte compact kalır.
+- Ayrıntılar `Özet`, `Yetki & Erişim`, `Servis Kanıtı`, `KVKK & Uyumluluk`, `Audit / Log Kayıtları` ve `Riskler & Kararlar` tablarında ayrışır.
+- Bu not, Super Admin ailesindeki overview / live monitoring / commercial flow context parity'si ile birlikte okunur; ürün davranışı değiştirmez.
+
+## UX-SUPERADMIN-COMMERCIAL-FLOW-01 note
+- Süper Admin / Ticari Akış ekranı summary-first ticari dashboard olarak kalır; üstte readonly ödeme güvenli bandı, altta Hakediş, Ödeme Hazırlık, Komisyon, Kalite / Kanıt, Riskler ve Geçmiş tabları yaşar.
+- Ödeme başlatma / settlement execute görünür UI’dan kaldırılır; `Ödeme kapalı`, `readonly` ve `hakediş önizleme` sınırı üstte compact olarak görünür.
+- Bu not, ticari akış panelinin Copilot context parity'ini korur; ürün davranışı değiştirmez.
+
+## UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01 note
+- Sahaya Çıkış Kontrolü paneli discovery-first envanter mantığıyla kalır; üstte kritik engel bandı ve ana KPI'lar açık, altta Özet, Hazırlık Kontrolü, Onay & Çıkış, Eksikler & Riskler, Geri Bildirimler ve Geçmiş / Log gerçek tablar halinde ayrı akışlar olarak yaşar.
+- Kapasite kartları ayrıca yeni yapay bir tab yaratmadan Hazırlık Kontrolü içinde gruplanır; veri kaybı olmaz, yalnızca uzun tek kolon görünüm daha okunur hale gelir.
+- Bu not, Super Admin panel ailesindeki overview / live monitoring / audit / quality / commercial context parity'si ile birlikte okunur; ürün davranışı değiştirmez.
+
+## UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01 note
+- Saha Kabul Merkezi artık sekmeli acceptance komuta paneli olarak okunur; canlı oturum mini bandı ve checklist mini durum üstte kalır.
+- Manifest, karar kaydı, oturum bilgisi, checklist güncelleme ve geçmiş/log verileri ayrı tablarda yaşar; veri kaybı olmaz, yalnızca uzun acceptance yüzeyi daha okunur hale gelir.
+- Bu not, Super Admin panel ailesindeki overview / live monitoring / audit / quality / commercial context parity'si ile birlikte okunur; ürün davranışı değiştirmez.

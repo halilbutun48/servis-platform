@@ -61,7 +61,7 @@ export default function RegionsPanel() {
 
   async function create() {
     const n = name.trim();
-    if (!n) return setErr("İl adı gerekli");
+    if (!n) return setErr("Bölge adı gerekli");
 
     setBusy(true);
     setErr("");
@@ -79,7 +79,7 @@ export default function RegionsPanel() {
   async function saveEdit() {
     if (!edit?.id) return;
     const n = (edit.name || "").trim();
-    if (!n) return setErr("İl adı gerekli");
+    if (!n) return setErr("Bölge adı gerekli");
 
     setBusy(true);
     setErr("");
@@ -95,7 +95,7 @@ export default function RegionsPanel() {
   }
 
   async function del(id) {
-    const ok = window.confirm(`#${id} ili silinsin mi? (boş olmalı)`);
+    const ok = window.confirm(`#${id} bölgesi silinsin mi? (boş olmalı)`);
     if (!ok) return;
 
     setBusy(true);
@@ -134,8 +134,8 @@ export default function RegionsPanel() {
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
         <div>
-          <div className="panelTitle" style={{ marginBottom: 6 }}>İller (Region)</div>
-          <div className="panelMeta">SUPER_ADMIN illeri tanımlar. Company/Room tarafındaki ilçe/zone alanı bu tanımın alt kırılımı olarak görünür.</div>
+          <div className="panelTitle" style={{ marginBottom: 6 }}>İller ve Bölgeler</div>
+          <div className="panelMeta">SUPER_ADMIN il ve bölge tanımlarını yönetir. Company/Room tarafındaki ilçe/bölge alanı bu tanımın alt kırılımı olarak görünür.</div>
         </div>
         <div className="saActions">
           <span className="pill" data-status="COUNT">
@@ -146,7 +146,7 @@ export default function RegionsPanel() {
 
       <div className="card" style={{ marginTop: 12 }}>
         <div className="toolbar">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="İl adı (örn: İstanbul)" style={{ minWidth: 260 }} />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Bölge adı (örn: İstanbul)" style={{ minWidth: 260 }} />
           <button className="btn" onClick={create} disabled={busy}>
             Ekle
           </button>
@@ -164,7 +164,7 @@ export default function RegionsPanel() {
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <span className="pill" data-status="COUNT">İl: {totals.regions}</span>
+          <span className="pill" data-status="COUNT">Bölge: {totals.regions}</span>
           <span className="pill" data-status="COUNT">Şirket: {totals.companies}</span>
           <span className="pill" data-status="COUNT">Oda: {totals.rooms}</span>
           <span className="pill" data-status="COUNT">Araç: {totals.vehicles} / Aktif {totals.activeVehicles}</span>
@@ -173,7 +173,7 @@ export default function RegionsPanel() {
         </div>
         {nextPhase?.items?.length ? (
           <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-            <div className="panelMeta">Region next phase execution pack</div>
+            <div className="panelMeta">Bölge gelecek faz paketi</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {nextPhase.items.map((item) => (
                 <span key={item.key} className="pill" data-status={item.status === "READY" ? "PASS" : "WARN"}>
@@ -189,11 +189,11 @@ export default function RegionsPanel() {
 
         {deploymentBlueprint ? (
           <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-            <div className="panelMeta">Physical region cell deployment blueprint</div>
+            <div className="panelMeta">Bölge hücre yerleşim planı</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <span className="pill" data-status="COUNT">Region: {deploymentBlueprint.summary?.regionCount || 0}</span>
-              <span className="pill" data-status="COUNT">Multi-cell: {deploymentBlueprint.summary?.multiCellRegions || 0}</span>
-              <span className="pill" data-status="COUNT">Cells: {deploymentBlueprint.summary?.totalCells || 0}</span>
+              <span className="pill" data-status="COUNT">Bölge: {deploymentBlueprint.summary?.regionCount || 0}</span>
+              <span className="pill" data-status="COUNT">Çok hücreli: {deploymentBlueprint.summary?.multiCellRegions || 0}</span>
+              <span className="pill" data-status="COUNT">Hücre: {deploymentBlueprint.summary?.totalCells || 0}</span>
             </div>
             <div className="panelMeta" style={{ lineHeight: 1.4 }}>
               Control plane: {deploymentBlueprint.controlPlane?.services?.join(", ") || "-"}
@@ -203,7 +203,7 @@ export default function RegionsPanel() {
 
         {failoverDrill ? (
           <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-            <div className="panelMeta">Failover / rebalancing drill</div>
+            <div className="panelMeta">Failover / dengeleme tatbikatı</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               <span className="pill" data-status="COUNT">Senaryo: {failoverDrill.scenarioCount || 0}</span>
               <span className="pill" data-status={failoverDrill.latestRun?.status === "DRY_RUN_OK" ? "PASS" : "ROLE"}>
@@ -225,7 +225,7 @@ export default function RegionsPanel() {
         <div className="saHead" style={{ display: "grid", gridTemplateColumns: "80px 1fr 220px 260px 240px", padding: "10px 12px" }}>
           <div>ID</div>
           <div>Ad</div>
-          <div>İlçe / Zone</div>
+          <div>İlçe / Bölge</div>
           <div>Kapasite</div>
           <div>Aksiyon</div>
         </div>
@@ -252,7 +252,7 @@ export default function RegionsPanel() {
                       .join(", ")}
                   </div>
                 ) : (
-                  <div className="panelMeta" style={{ opacity: 0.6 }}>İlçe/zone yok</div>
+                  <div className="panelMeta" style={{ opacity: 0.6 }}>İlçe/bölge yok</div>
                 )}
               </div>
             </div>

@@ -99,7 +99,7 @@ function main() {
   mustContains(roomDrivers, "PanelSegmentTabs", "Room / Sürücüler keeps segmented tabs");
   mustContains(roomDrivers, "CollapsibleSection", "Room / Sürücüler keeps secondary collapsible details");
   mustContains(roomDrivers, "Yönetim detayları", "Room / Sürücüler keeps management details collapsed");
-  mustContains(roomDrivers, "Bağlı araç özeti", "Room / Sürücüler keeps linked vehicle summary visible");
+  mustContains(roomDrivers, "Bağlı araç:", "Room / Sürücüler keeps linked vehicle readout visible");
   mustContains(roomDrivers, "Araç bağlantısını Araçlar ekranında yönet", "Room / Sürücüler routes connection management away from driver screen");
 
   mustContains(roomMap, "PanelSegmentTabs", "Room / Map keeps segmented tabs");

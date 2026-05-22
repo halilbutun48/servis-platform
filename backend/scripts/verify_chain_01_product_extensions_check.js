@@ -66,6 +66,11 @@ function main() {
   must(pkg, '"check:web01b"', 'package.json keeps check:web01b');
   must(pkg, '"check:uxsuperadminoverviewcleanup01"', 'package.json exposes check:uxsuperadminoverviewcleanup01');
   must(pkg, '"check:uxsuperadminlivemonitoring01"', 'package.json exposes check:uxsuperadminlivemonitoring01');
+  must(pkg, '"check:uxsuperadminauditpanel01"', 'package.json exposes check:uxsuperadminauditpanel01');
+  must(pkg, '"check:uxsuperadminqualitypanel01"', 'package.json exposes check:uxsuperadminqualitypanel01');
+  must(pkg, '"check:uxsuperadmincommercialflow01"', 'package.json exposes check:uxsuperadmincommercialflow01');
+  must(pkg, '"check:uxsuperadminfielddispatchdiscovery01"', 'package.json exposes check:uxsuperadminfielddispatchdiscovery01');
+  must(pkg, '"check:uxsuperadminfieldacceptancecenter01"', 'package.json exposes check:uxsuperadminfieldacceptancecenter01');
   must(pkg, '"check:paysafe01"', 'package.json keeps check:paysafe01');
   must(pkg, '"check:pay01e"', 'package.json keeps check:pay01e');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
@@ -143,6 +148,11 @@ function main() {
     'check:web01b',
     'check:uxsuperadminoverviewcleanup01',
     'check:uxsuperadminlivemonitoring01',
+    'check:uxsuperadminauditpanel01',
+    'check:uxsuperadminqualitypanel01',
+    'check:uxsuperadmincommercialflow01',
+    'check:uxsuperadminfielddispatchdiscovery01',
+    'check:uxsuperadminfieldacceptancecenter01',
     'check:cop01e',
     'check:cop02a',
     'check:cop02b',
@@ -238,6 +248,16 @@ function main() {
   must(guide, 'check:uxsuperadminoverviewcleanup01', 'script guide exposes check:uxsuperadminoverviewcleanup01');
   must(guide, 'UX-SUPERADMIN-LIVE-MONITORING-01', 'script guide mentions UX-SUPERADMIN-LIVE-MONITORING-01');
   must(guide, 'check:uxsuperadminlivemonitoring01', 'script guide exposes check:uxsuperadminlivemonitoring01');
+  must(guide, 'UX-SUPERADMIN-AUDIT-PANEL-01', 'script guide mentions UX-SUPERADMIN-AUDIT-PANEL-01');
+  must(guide, 'check:uxsuperadminauditpanel01', 'script guide exposes check:uxsuperadminauditpanel01');
+  must(guide, 'UX-SUPERADMIN-QUALITY-PANEL-01', 'script guide mentions UX-SUPERADMIN-QUALITY-PANEL-01');
+  must(guide, 'check:uxsuperadminqualitypanel01', 'script guide exposes check:uxsuperadminqualitypanel01');
+  must(guide, 'UX-SUPERADMIN-COMMERCIAL-FLOW-01', 'script guide mentions UX-SUPERADMIN-COMMERCIAL-FLOW-01');
+  must(guide, 'check:uxsuperadmincommercialflow01', 'script guide exposes check:uxsuperadmincommercialflow01');
+  must(guide, 'UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01', 'script guide mentions UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01');
+  must(guide, 'check:uxsuperadminfielddispatchdiscovery01', 'script guide exposes check:uxsuperadminfielddispatchdiscovery01');
+  must(guide, 'UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01', 'script guide mentions UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01');
+  must(guide, 'check:uxsuperadminfieldacceptancecenter01', 'script guide exposes check:uxsuperadminfieldacceptancecenter01');
   must(guide, 'check:etasanity01', 'script guide exposes check:etasanity01');
   must(guide, 'check:etaosrm01', 'script guide exposes check:etaosrm01');
   must(guide, 'check:etaosrm02', 'script guide exposes check:etaosrm02');

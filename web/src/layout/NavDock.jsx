@@ -142,7 +142,7 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "Oda Konumu", path: "/room/hub" });
       advanced.push({ label: "Check-in", path: "/room/checkin" });
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
-      advanced.push({ label: "Log Export", path: "/shared/logs" });
+      advanced.push({ label: "Log Dışa Aktarımı", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
       advanced.push(feedbackEntry);
     } else if (role === "COMPANY") {
@@ -181,7 +181,7 @@ export default function NavDock({ role, path, me }) {
       });
       advanced.push({ label: companyHubLabel, path: base + "/hub" });
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
-      advanced.push({ label: "Log Export", path: "/shared/logs" });
+      advanced.push({ label: "Log Dışa Aktarımı", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
       advanced.push({ label: "Geri Bildirim", path: "/shared/feedback" });
     } else if (role === "DRIVER") {
@@ -192,7 +192,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Rota", path: "/driver/route" },
           { label: "Harita", path: "/driver/map" },
           { label: "KVKK", path: "/shared/kvkk" },
-          { label: "Log Export", path: "/shared/logs" },
+          { label: "Log Dışa Aktarımı", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
@@ -203,7 +203,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Canlı", path: "/personel/live" },
           { label: "Servisim", path: "/personel/my" },
           { label: "KVKK", path: "/shared/kvkk" },
-          { label: "Log Export", path: "/shared/logs" },
+          { label: "Log Dışa Aktarımı", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
@@ -213,7 +213,7 @@ export default function NavDock({ role, path, me }) {
         items: [
           { label: "Canlı", path: "/parent/live" },
           { label: "KVKK", path: "/shared/kvkk" },
-          { label: "Log Export", path: "/shared/logs" },
+          { label: "Log Dışa Aktarımı", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
@@ -225,7 +225,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Şirketler", path: "/superadmin/companies" },
           { label: "Operasyon Odaları", path: "/superadmin/rooms" },
           { label: "Kullanıcılar", path: "/superadmin/users" },
-          { label: "Bölgeler", path: "/superadmin/regions" },
+          { label: "İller ve Bölgeler", path: "/superadmin/regions" },
         ],
       });
       sections.push({
@@ -240,7 +240,7 @@ export default function NavDock({ role, path, me }) {
         ],
       });
       sections.push({
-        title: "Standart ve Sistem",
+        title: "Ticari, Kalite ve Uyum",
         items: [
           { label: "Sistem Standartları", path: "/superadmin/ssot-alignment" },
           { label: "Ticari Akış", path: "/superadmin/commercial-core" },

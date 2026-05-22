@@ -138,7 +138,7 @@ const SHARED = [
     chatQuestions: ['Bu bildirim hangi olaydan geldi?', 'Bildirim kaynağı ne?', 'Bu bilgi neden görünmüyor?', 'İlgili kaydı aç'],
     simpleTerms: pickTerms(['bildirim', 'notification']),
   }),
-  screen(9002, '/shared/logs', 'Loglar', {
+  screen(9002, '/shared/logs', 'Log Dışa Aktarımı', {
     menuPurpose: 'Sistem işlem kayıtlarını ve izleri görmek için kullanılır.',
     forWhom: 'Tüm roller içindir.',
     firstStep: 'Karşılaştırılacak kaydı seç.',
@@ -439,7 +439,7 @@ const PARENT = [
 ];
 
 const SUPER_ADMIN = [
-  screen(6101, '/superadmin', 'Overview', {
+  screen(6101, '/superadmin', 'Genel Bakış', {
     menuPurpose: 'Sistem genelini üst seviyede görmek için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce hangi alana ineceğine karar ver.',
@@ -450,14 +450,14 @@ const SUPER_ADMIN = [
     doneChecklist: ['Doğru yönetim alanı seçildi.'],
     buttonGuides: [button('Alanı aç', 'Özetten ilgili yönetim alanına geçer.', 'Detaya inmek istediğinde kullan.', 'İlgili ekran açılır.')],
       screenMenus: [
-        { label: 'Companies', path: '/superadmin/companies', purpose: 'Şirket yönetimi için açılır.' },
-        { label: 'Rooms', path: '/superadmin/rooms', purpose: 'Oda yönetimi için açılır.' },
+        { label: 'Şirketler', path: '/superadmin/companies', purpose: 'Şirket yönetimi için açılır.' },
+        { label: 'Operasyon Odaları', path: '/superadmin/rooms', purpose: 'Oda yönetimi için açılır.' },
         { label: 'Ticari Akış', path: '/superadmin/commercial-core', purpose: 'Hakediş hazırlığı, önizleme ve CSV taslağını görmek için açılır.' },
         { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', purpose: 'Kanıt, taslak skor, inceleme ve denetim izini birlikte okumak için açılır.' },
-        { label: 'Copilot', path: '/superadmin/copilot', purpose: 'Yardım için açılır.' },
+        { label: 'Sefer Abi Terminali', path: '/superadmin/copilot', purpose: 'Yardım için açılır.' },
       ],
     }),
-  screen(6102, '/superadmin/companies', 'Companies', {
+  screen(6102, '/superadmin/companies', 'Şirketler', {
     menuPurpose: 'Şirket kayıtlarını yönetmek için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce doğru şirketi seç.',
@@ -467,9 +467,9 @@ const SUPER_ADMIN = [
     commonMistakes: ['Yanlış şirketi açmak.'],
     doneChecklist: ['Doğru şirket seçildi.'],
     buttonGuides: [button('Şirketi aç', 'Şirket detayını açar.', 'Detay görmek için kullan.', 'Detay alanı açılır.')],
-    screenMenus: [{ label: 'Rooms', path: '/superadmin/rooms', purpose: 'Oda bağlantısını görmek için açılır.' }, { label: 'Users', path: '/superadmin/users', purpose: 'Kullanıcı bağlantısını görmek için açılır.' }],
+    screenMenus: [{ label: 'Operasyon Odaları', path: '/superadmin/rooms', purpose: 'Oda bağlantısını görmek için açılır.' }, { label: 'Kullanıcılar', path: '/superadmin/users', purpose: 'Kullanıcı bağlantısını görmek için açılır.' }],
   }),
-  screen(6105, '/superadmin/rooms', 'Rooms', {
+  screen(6105, '/superadmin/rooms', 'Operasyon Odaları', {
     menuPurpose: 'Oda kayıtlarını, bağlantılarını ve kapsama alanını yönetmek için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce doğru odayı seç.',
@@ -479,9 +479,9 @@ const SUPER_ADMIN = [
     commonMistakes: ['Yanlış odayı açmak.', 'Kapsamı görmeden karar vermek.'],
     doneChecklist: ['Doğru oda seçildi.', 'Bağlantı bilgisi okundu.'],
     buttonGuides: [button('Odayı aç', 'Seçili odayı detaylı incelemeye götürür.', 'Bağlantı ve kapsamı görmek istediğinde kullan.', 'Oda detay akışı açılır.')],
-    screenMenus: [{ label: 'Companies', path: '/superadmin/companies', purpose: 'Bağlı şirketi kontrol etmek için açılır.' }, { label: 'Users', path: '/superadmin/users', purpose: 'Yetkili kullanıcıları görmek için açılır.' }, { label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Rol ve operasyon yüzeyini doğrulamak için açılır.' }],
+    screenMenus: [{ label: 'Şirketler', path: '/superadmin/companies', purpose: 'Bağlı şirketi kontrol etmek için açılır.' }, { label: 'Kullanıcılar', path: '/superadmin/users', purpose: 'Yetkili kullanıcıları görmek için açılır.' }, { label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Rol ve operasyon yüzeyini doğrulamak için açılır.' }],
   }),
-  screen(6106, '/superadmin/users', 'Users', {
+  screen(6106, '/superadmin/users', 'Kullanıcılar', {
     menuPurpose: 'Kullanıcı kayıtlarını, rollerini ve erişim durumunu yönetmek için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce doğru kullanıcıyı veya rol filtresini seç.',
@@ -491,19 +491,19 @@ const SUPER_ADMIN = [
     commonMistakes: ['Yanlış kullanıcı üzerinde işlem yapmak.', 'Rol ile şirket/oda kapsamını karıştırmak.'],
     doneChecklist: ['Doğru kullanıcı veya rol filtresi seçildi.', 'Erişim durumu okundu.'],
     buttonGuides: [button('Kullanıcıyı aç', 'Seçili kullanıcıyı detaylı incelemeye götürür.', 'Rol veya erişim durumunu netleştirmek istediğinde kullan.', 'Kullanıcı detay akışı açılır.')],
-    screenMenus: [{ label: 'Rooms', path: '/superadmin/rooms', purpose: 'Kullanıcının bağlı olduğu oda tarafını görmek için açılır.' }, { label: 'Companies', path: '/superadmin/companies', purpose: 'Kullanıcının bağlı olduğu şirketi görmek için açılır.' }, { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', purpose: 'Kritik rol ve kalite sinyalini birlikte okumak için açılır.' }],
+    screenMenus: [{ label: 'Operasyon Odaları', path: '/superadmin/rooms', purpose: 'Kullanıcının bağlı olduğu oda tarafını görmek için açılır.' }, { label: 'Şirketler', path: '/superadmin/companies', purpose: 'Kullanıcının bağlı olduğu şirketi görmek için açılır.' }, { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', purpose: 'Kritik rol ve kalite sinyalini birlikte okumak için açılır.' }],
   }),
-  screen(6103, '/superadmin/audit', 'Audit', {
+  screen(6103, '/superadmin/audit', 'İşlem Kayıtları', {
     menuPurpose: 'İşlem kayıtlarını ve izleri görmek için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce neyi aradığını netleştir.',
-    nextStep: 'Gerekirse log export veya Copilot ekranına geç.',
+    nextStep: 'Gerekirse log dışa aktarımı veya Sefer Abi Terminali ekranına geç.',
     doNotDo: 'Log ile audit kaydını aynı şey sanma.',
     stepByStep: ['Filtreyi seç.', 'Kayıtları incele.', 'Gerekirse dışa aktar.'],
     commonMistakes: ['Yanlış zaman aralığı ile arama yapmak.'],
     doneChecklist: ['İlgili kayıt bulundu.'],
     buttonGuides: [button('Filtrele', 'İşlem kayıtlarını daraltır.', 'Belirli işlem ararken kullan.', 'Liste daha anlamlı hale gelir.')],
-    screenMenus: [{ label: 'Log Export', path: '/superadmin/logexport', purpose: 'Dışa aktarım için açılır.' }, { label: 'Copilot', path: '/superadmin/copilot', purpose: 'Kayıtları açıklatmak için açılır.' }],
+    screenMenus: [{ label: 'Log Dışa Aktarımı', path: '/superadmin/logexport', purpose: 'Dışa aktarım için açılır.' }, { label: 'Sefer Abi Terminali', path: '/superadmin/copilot', purpose: 'Kayıtları açıklatmak için açılır.' }],
     simpleTerms: pickTerms(['islemKaydi']),
   }),
   screen(6107, '/superadmin/observability', 'Canlı İzleme', {
@@ -574,7 +574,7 @@ const SUPER_ADMIN = [
     ],
     chatQuestions: ['Bu hakediş neden hazır değil?', 'Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?'],
   }),
-  screen(6114, '/superadmin/regions', 'Bölgeler', {
+  screen(6114, '/superadmin/regions', 'İller ve Bölgeler', {
     menuPurpose: 'Bölge, kapsam ve atama sınırlarını görmek için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce doğru bölgeyi seç.',
@@ -629,7 +629,7 @@ const SUPER_ADMIN = [
     ],
     chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Bunu kim yapabilir?', 'Sürücünün telefon GPS’i devrede mi?', 'Yetkili rolü göster'],
   }),
-  screen(6104, '/superadmin/copilot', 'Copilot', {
+  screen(6104, '/superadmin/copilot', 'Sefer Abi Terminali', {
     menuPurpose: 'Sistem genelinde rehber ve açıklama almak için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce iş veya ekran rehberini seç.',

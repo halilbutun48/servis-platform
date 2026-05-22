@@ -43,7 +43,7 @@ const MENU_GUIDE = [
   { title: "Şirketler", desc: "Şirket kayıtları, kapsam ve bağlı yapıların yönetimi." },
   { title: "Operasyon Odaları", desc: "Operasyon odaları, araç ve sürücü omurgasının merkezi." },
   { title: "Kullanıcılar", desc: "Kullanıcı hesapları, roller ve erişim görünümü." },
-  { title: "Bölgeler", desc: "İl ve bölge tanımlarının yönetimi." },
+  { title: "İller ve Bölgeler", desc: "İl ve bölge tanımlarının yönetimi." },
   { title: "İşlem Kayıtları", desc: "Kim, ne zaman, hangi işlemi yaptı sorusunun kaydı." },
   { title: "Canlı İzleme", desc: "Sistemin ve sahadaki akışın canlı görünümü." },
   { title: "Kabul Merkezi", desc: "Saha kabul ve doğrulama işlerinin ana ekranı." },
@@ -343,7 +343,7 @@ export default function SuperAdminPanel() {
             <button className="btn sm" onClick={() => navigate("/superadmin/companies")}>Şirketler</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/rooms")}>Operasyon Odaları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/users")}>Kullanıcılar</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/regions")}>Bölgeler</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/regions")}>İller ve Bölgeler</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/audit")}>İşlem Kayıtları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/operations")}>Denetim Paneli</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/observability")}>Canlı İzleme</button>
@@ -351,7 +351,7 @@ export default function SuperAdminPanel() {
             <button className="btn sm" onClick={() => navigate("/room/checkin")}>Check-in</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/ssot-alignment")}>Sistem Standartları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/commercial-core")}>Ticari Akış</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/trust-quality")}>Güven + Kalite</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/trust-quality")}>Güven ve Kalite</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/copilot")}>Yardımcı</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/pilot-launch-gate")}>Sahaya Çıkış Kontrolü</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/operation-verification")}>Operasyon Doğrulama</button>

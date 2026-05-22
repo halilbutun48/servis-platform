@@ -264,7 +264,7 @@ export default function LogsPanel() {
   return (
     <div className="panel">
       <div className="card">
-        <div className="card-title">Log Export</div>
+        <div className="card-title">Log Dışa Aktarımı</div>
         <div className="muted">
           Varsayılan format: <b>TXT</b>. Excel için CSV. Preview: son N kayıt (özet + filtre + kopyala).
         </div>

@@ -329,3 +329,37 @@ Aynı kaydın eş düzey alt modları accordion içine atılmamalı:
 - `Canlı Sağlık ve Risk Özeti` üstte kalır; `Özet`, `Canlı Akış`, `Alarmlar & Riskler`, `İzlenen Olaylar`, `Sistem Kanıtı` ve `Geçmiş / Log` gerçek tablar halinde ayrılır.
 - `KVKK / alarm` bandı üstte kompakt görünür; uzun canlı akış ve olay listeleri ana sayfayı işgal etmez.
 - Bu cleanup, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-COMPANY-PANELS-FINAL-POLISH-01`, `UX-SCHOOL-ORGANIZATION-PANELS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SUPERADMIN-AUDIT-PANEL-01
+
+- `check:uxsuperadminauditpanel01` Süper Admin / Denetim Paneli'ni summary-first denetim dashboard yapısına taşır.
+- `STEP_UP_REQUIRED` ve `KVKK sınırı aktif` üstte kompakt kalır; `Özet`, `Yetki & Erişim`, `Servis Kanıtı`, `KVKK & Uyumluluk`, `Audit / Log Kayıtları` ve `Riskler & Kararlar` gerçek tablar halinde ayrılır.
+- Servis kanıtı, audit/log kayıtları ve risk detayları ana yüzeyi uzatmaz; ayrıntılar yalnız ilgili sekmede okunur.
+- Bu cleanup, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-COMMERCIAL-FLOW-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SUPERADMIN-QUALITY-PANEL-01
+
+- `check:uxsuperadminqualitypanel01` Süper Admin / Güven ve Kalite ekranını summary-first dashboard yapısına taşır.
+- `Güven ve Kalite Özeti` üstte kalır; `Özet`, `Servis Kanıtı`, `Taslak Skor`, `İnceleme Kararı`, `Kalite Geçmişi` ve `Yol Haritası / Riskler` gerçek tablar halinde ayrılır.
+- `Kalite/kanıt bekleyen` kritik bandı üstte kompakt kalır; servis kanıtı, taslak skor, inceleme kararı ve kalite geçmişi ayrıntıları yalnız ilgili sekmede okunur.
+- Bu cleanup, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-COMMERCIAL-FLOW-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SUPERADMIN-COMMERCIAL-FLOW-01
+
+- `check:uxsuperadmincommercialflow01` Süper Admin / Ticari Akış ekranını summary-first ticari dashboard yapısına taşır; `Özet`, `Hakediş`, `Ödeme Hazırlık`, `Komisyon`, `Kalite / Kanıt`, `Riskler` ve `Geçmiş` gerçek tablar halinde ayrılır.
+- Üstteki ticari özet, güvenli ödeme bandı ve kısa KPI satırı açık kalır; `Payment backbone` / `aktivasyon checklist` / `settlement` / `komisyon` detayları artık tek uzun blok yerine ilgili tablarda taşınır.
+- Ekran ödeme başlatmaz; `Ödeme kapalı` ve `readonly` sınırı korunur, execute aksiyonu görünür UI’dan kaldırılır.
+- Bu cleanup, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-COMPANY-PANELS-FINAL-POLISH-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01
+
+- `check:uxsuperadminfielddispatchdiscovery01` Sahaya Çıkış Kontrolü ekranındaki gerçek section envanterini çıkarır; `Sahaya Çıkış Kontrolü`, `Kritik engel / hazır değil / onay gerekli`, `Son karar`, `Risk sayısı`, `Saha hazırlık` ve `M84 saha döngüsü` üst yüzeyde kalır.
+- Gerçek envantere göre `Özet`, `Hazırlık Kontrolü`, `Onay & Çıkış`, `Eksikler & Riskler`, `Geri Bildirimler` ve `Geçmiş / Log` functional tablara ayrılır; uzun içerik tek sayfada alt alta akmaz.
+- `Launch checklist`, canlı ortam / release kontrolleri, karar kaydı, risk kaydı, saha gözlem döngüsü ve M84 geçmişi verileri kaybolmadan ilgili tablarda saklanır; kapasite kartları ayrıca zorla yeni bir tab yaratmadan Hazırlık Kontrolü içinde gruplanır.
+- Bu note, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-QUALITY-PANEL-01` ve `UX-SUPERADMIN-COMMERCIAL-FLOW-01` zincirini bozmaz; ürün davranışını değiştirmez.
+
+## UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01
+
+- `check:uxsuperadminfieldacceptancecenter01` Saha Kabul Merkezi ekranını functional tab yapısına taşır; canlı oturum, manifest, karar kaydı, oturum bilgisi, checklist güncelleme ve geçmiş/log verileri ayrı sekmelerde okunur.
+- Üstte canlı oturum mini bandı ve checklist mini durum özeti açık kalır; veri kaybı olmaz, yalnızca uzun tek kolon acceptance görünümü daha okunur hale gelir.
+- Bu düzenleme, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-QUALITY-PANEL-01`, `UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.

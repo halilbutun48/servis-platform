@@ -272,7 +272,7 @@ export default function OperationHealthPanel() {
       label: "Sürücü & Sorunlar",
       badge: `${filteredDrivers.length + filteredIssues.length}`,
     },
-  ], [summary, filteredDrivers.length, drivers.length, filteredIssues.length]);
+  ], [summary, filteredDrivers.length, filteredIssues.length]);
 
   return (
     <div className="card">

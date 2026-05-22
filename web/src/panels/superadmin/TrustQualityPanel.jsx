@@ -11,8 +11,9 @@ import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
 import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCard";
 import QualityReviewHistoryCard from "../../components/QualityReviewHistoryCard";
 import FlowSummaryStrip from "../../components/FlowSummaryStrip";
+import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 
-function Card({ title, children, className = "", style }) {
+function Card({ title, subtitle, children, className = "", style }) {
   return (
     <div
       className={`quality-card-shell ${className}`.trim()}
@@ -26,13 +27,43 @@ function Card({ title, children, className = "", style }) {
       }}
     >
       <div className="panelSectionTitle" style={{ marginBottom: 8 }}>{title}</div>
+      {subtitle ? <div className="panelMeta" style={{ marginTop: -2, marginBottom: 10 }}>{subtitle}</div> : null}
       {children}
+    </div>
+  );
+}
+
+function MetricTile({ title, value, note, tone = "default" }) {
+  const palette = {
+    default: { border: "1px solid rgba(255,255,255,0.08)", title: "#98a2b3", value: "#f8fafc" },
+    warn: { border: "1px solid rgba(247,144,9,0.35)", title: "#f7b267", value: "#ffd38a" },
+    good: { border: "1px solid rgba(18,183,106,0.35)", title: "#6ce9a6", value: "#d1fadf" },
+    muted: { border: "1px solid rgba(255,255,255,0.08)", title: "#98a2b3", value: "#d0d5dd" },
+  };
+  const colors = palette[tone] || palette.default;
+  return (
+    <div
+      className="quality-card-shell"
+      style={{
+        padding: 14,
+        border: colors.border,
+        borderRadius: 8,
+        minWidth: 0,
+        width: "100%",
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <div className="panelSectionTitle" style={{ color: colors.title }}>{title}</div>
+      <div className="panelStatValue" style={{ color: colors.value }}>{value}</div>
+      {note ? <div className="panelMeta">{note}</div> : null}
     </div>
   );
 }
 
 export default function TrustQualityPanel() {
   const { token } = useSession();
+  const [activeTab, setActiveTab] = useState("overview");
   const [manifest, setManifest] = useState(null);
   const [summary, setSummary] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
@@ -43,15 +74,16 @@ export default function TrustQualityPanel() {
   const [reviewHistorySummary, setReviewHistorySummary] = useState(null);
   const [err, setErr] = useState("");
 
+  const summaryCards = summary?.cards || {};
+  const completedServices = Number(summaryCards.completedServices || 0);
+  const pendingEvaluation = Number(summaryCards.pendingEvaluation || 0);
+  const activeServices = Number(summaryCards.activeServices || 0);
+  const providerCount = Number(summaryCards.providerCount || 0);
+  const summaryReady = summary != null;
+  const fields = Array.isArray(evaluation?.fields) ? evaluation.fields : [];
+  const signals = Array.isArray(providerSignal?.signals) ? providerSignal.signals : [];
+
   useEffect(() => {
-    const summaryCards = summary?.cards || {};
-    const completedServices = Number(summaryCards.completedServices || 0);
-    const pendingEvaluation = Number(summaryCards.pendingEvaluation || 0);
-    const activeServices = Number(summaryCards.activeServices || 0);
-    const providerCount = Number(summaryCards.providerCount || 0);
-    const summaryReady = summary != null;
-    const fields = Array.isArray(evaluation?.fields) ? evaluation.fields : [];
-    const signals = Array.isArray(providerSignal?.signals) ? providerSignal.signals : [];
     const qualityFacts = buildTrustQualityCopilotFacts({
       proofSummary,
       draftScoreSummary,
@@ -91,18 +123,18 @@ export default function TrustQualityPanel() {
         providerSignal?.summary ? `Özet: ${providerSignal.summary}` : '',
       ].filter(Boolean),
       reasoningLead: summaryReady
-        ? 'Bu ekranda canlı kalite özeti ile planlı template kartları birlikte okunur.'
+        ? 'Bu ekranda canlı kalite özeti, kanıt, taslak skor, inceleme kararı ve kalite geçmişi sekmeleri birlikte okunur.'
         : 'Bu ekranda hizmet değerlendirmesi ile sağlayıcı sinyali birlikte okunur.',
       nextBestAction: summaryReady
-        ? 'Önce canlı kalite özetini oku. Sonra roadmap kartlarındaki değerlendirme ve sinyal kartlarını birlikte incele.'
+        ? 'Önce özet bandını oku. Sonra gerekirse Servis Kanıtı veya İnceleme Kararı sekmesini aç.'
         : (signals.length
           ? 'Önce değerlendirme alanları ile sağlayıcı sinyal özetini birlikte oku. Sonra gerekirse hizmet ekranına in.'
           : 'Önce hangi kalite sinyalinin eksik kaldığını netleştir. Sonra hizmet değerlendirme hattına geri dön.'),
       safestNextStep: summaryReady
-        ? 'En risksiz adım, canlı kalite özetini roadmap kartlarıyla birlikte okumaktır.'
+        ? 'En risksiz adım, özet bandından sonra Servis Kanıtı ve İnceleme Kararı sekmelerini sırayla okumaktır.'
         : 'En risksiz adım, değerlendirme alanları ile sağlayıcı sinyal setini aynı anda okumaktır.',
       compareHint: summaryReady
-        ? 'Canlı özet operasyonel snapshot, template kartları ise roadmap referansıdır.'
+        ? 'Canlı özet operasyonel snapshot, sekmeler ise karar ve denetim referansıdır.'
         : 'Hizmet puanı ile sağlayıcı sinyali aynı şey değildir; karar desteği için ikisi birlikte okunur.',
     };
     setCopilotSelection({
@@ -134,7 +166,7 @@ export default function TrustQualityPanel() {
         { label: 'Kanıt', value: proofSummary?.statusText || proofSummary?.summaryText || proofSummary?.title || '-', help: 'Servis kanıtı ve hizmet kanıtı durumunu gösterir.' },
         { label: 'Taslak Skor', value: draftScoreSummary?.scoreBand || draftScoreSummary?.status || draftScoreSummary?.summaryText || '-', help: 'Taslak kalite skorunun görünür bandını gösterir.' },
         { label: 'İnceleme', value: reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || '-', help: 'Kalite inceleme kararının durumunu gösterir.' },
-        { label: 'Geçmiş', value: reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || '-', help: 'Son kalite karar geçmişini gösterir.' },
+        { label: 'Kalite Geçmişi', value: reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || '-', help: 'Son kalite karar geçmişini gösterir.' },
         { label: 'Özet', value: providerSignal?.summary || qualityFacts?.copilotSummary || '-', help: 'Güven ve kalite görünümünün kısa özetini gösterir.' },
       ],
       badges: [
@@ -177,10 +209,53 @@ export default function TrustQualityPanel() {
     return () => { cancelled = true; };
   }, [token]);
 
-  const dimensions = Array.isArray(manifest?.dimensions) ? manifest.dimensions : [];
-  const activeDimensions = dimensions.filter((item) => String(item?.status || "").toUpperCase() === "ACTIVE");
-  const plannedDimensions = dimensions.filter((item) => String(item?.status || "").toUpperCase() === "PLANNED");
+  const activeDimensions = Array.isArray(manifest?.dimensions)
+    ? manifest.dimensions.filter((item) => String(item?.status || "").toUpperCase() === "ACTIVE")
+    : [];
+  const plannedDimensions = Array.isArray(manifest?.dimensions)
+    ? manifest.dimensions.filter((item) => String(item?.status || "").toUpperCase() === "PLANNED")
+    : [];
   const manifestRules = Array.isArray(manifest?.rules) ? manifest.rules : [];
+  const hasLoadedAny =
+    summary !== null
+    || evaluation !== null
+    || providerSignal !== null
+    || proofSummary !== null
+    || draftScoreSummary !== null
+    || reviewDecisionSummary !== null
+    || reviewHistorySummary !== null;
+  const proofStatus = proofSummary?.statusText || proofSummary?.summaryText || proofSummary?.title || (summaryReady ? "Hazır" : "-");
+  const draftStatus = draftScoreSummary?.scoreBand || draftScoreSummary?.status || draftScoreSummary?.summaryText || "-";
+  const reviewStatus = reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || "-";
+  const historyStatus = reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || "-";
+  const proofSignal = String(proofStatus || "").toUpperCase();
+  const reviewSignal = String(reviewStatus || "").toUpperCase();
+  const proofNeedsAttention =
+    proofSignal.includes("BEK")
+    || proofSignal.includes("PEND")
+    || proofSignal.includes("EKS");
+  const reviewNeedsAttention =
+    pendingEvaluation > 0
+    || reviewSignal.includes("BEK")
+    || reviewSignal.includes("PEND");
+  const hasCriticalBand = proofNeedsAttention || reviewNeedsAttention;
+  const criticalBandText = pendingEvaluation > 0
+    ? `Kalite/kanıt bekleyen hizmet var · ${pendingEvaluation} kayıt`
+    : reviewNeedsAttention
+      ? `Kanıt veya inceleme sinyali dikkat gerektiriyor · ${reviewStatus !== "-" ? reviewStatus : proofStatus}`
+      : `Kanıt veya inceleme sinyali dikkat gerektiriyor · ${proofStatus}`;
+  const criticalBandDescription = pendingEvaluation > 0
+    ? "İnceleme Kararı sekmesi, bekleyen kayıtları ve kanıt sinyallerini birlikte gösterir."
+    : `Kanıt durumu: ${proofStatus} • İnceleme durumu: ${reviewStatus}`;
+  const criticalBandTarget = reviewNeedsAttention ? "decision" : "proof";
+  const tabs = [
+    { key: "overview", label: "Özet" },
+    { key: "proof", label: "Servis Kanıtı" },
+    { key: "draft", label: "Taslak Skor" },
+    { key: "decision", label: "İnceleme Kararı", badge: pendingEvaluation > 0 ? pendingEvaluation : null },
+    { key: "history", label: "Kalite Geçmişi", badge: Array.isArray(reviewHistorySummary?.historyItems) ? reviewHistorySummary.historyItems.length : null },
+    { key: "roadmap", label: "Yol Haritası / Riskler", badge: (plannedDimensions.length + manifestRules.length) || null },
+  ];
 
   return (
     <div className="card">
@@ -188,7 +263,7 @@ export default function TrustQualityPanel() {
         <div>
           <div className="panelTitle">Güven ve Kalite Özeti</div>
           <div className="panelSubtitle" style={{ marginTop: 6 }}>
-            Canlı kalite özeti ile planlı template kartlarını birlikte gösterir.
+            Canlı kalite özeti, kanıt ve karar sekmeleri birlikte okunur.
           </div>
         </div>
       </div>
@@ -205,71 +280,147 @@ export default function TrustQualityPanel() {
         />
       </div>
 
-      <div className="quality-summary-grid" style={{ marginTop: 14 }}>
-        <OperationProofReadonlyBadge className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
-        <QualityDraftScoreCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
-        <QualityReviewDecisionCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
-        <QualityReviewHistoryCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+      <div className="card" style={{ marginTop: 14, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <div>
+          <div className="panelSectionTitle">
+            {!hasLoadedAny ? "Kalite verileri yükleniyor..." : hasCriticalBand ? criticalBandText : "Kalite ve kanıt akışı hazır"}
+          </div>
+          <div className="panelMeta" style={{ marginTop: 4 }}>
+            {!hasLoadedAny
+              ? "Canlı kalite bandı kısa süre içinde yüklenecek."
+              : hasCriticalBand
+                ? criticalBandDescription
+                : "Kritik kalite uyarısı görünmüyor; detaylar gerektiğinde ilgili sekmelerden açılır."}
+          </div>
+        </div>
+        {!hasLoadedAny ? null : hasCriticalBand ? (
+          <button type="button" onClick={() => setActiveTab(criticalBandTarget === "decision" ? "decision" : "proof")}>
+            {criticalBandTarget === "decision" ? "İnceleme Kararı sekmesine git" : "Servis Kanıtı sekmesine git"}
+          </button>
+        ) : null}
       </div>
 
-      <div className="quality-detail-layout" style={{ marginTop: 16 }}>
-        <div className="quality-detail-main">
-          <div className="quality-detail-stack">
-            <QualityProofReadonlyCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+      <div className="quality-summary-grid" style={{ marginTop: 14 }}>
+        <MetricTile title="Kanıt" value={proofStatus} note="Servis kanıtı ve görünür sinyal" tone={String(proofStatus || "").includes("Hazır") ? "good" : "default"} />
+        <MetricTile title="Taslak skor" value={draftStatus} note="Taslak kalite bandı" tone={String(draftStatus || "").includes("Yükleniyor") ? "muted" : "default"} />
+        <MetricTile title="İnceleme" value={reviewStatus} note="İnceleme kararı durumu" tone={pendingEvaluation > 0 ? "warn" : "default"} />
+        <MetricTile title="Karar bekleyen" value={pendingEvaluation} note="Bekleyen değerlendirme sayısı" tone={pendingEvaluation > 0 ? "warn" : "good"} />
+        <MetricTile title="Kalite geçmişi" value={historyStatus} note="Son karar geçmişi" tone={String(historyStatus || "").includes("Yok") ? "muted" : "default"} />
+        <MetricTile title="Aktif operasyon" value={activeServices} note="Canlı hizmet sayısı" tone={activeServices > 0 ? "good" : "default"} />
+      </div>
 
-            <div className="panelSectionTitle" style={{ marginTop: 2 }}>Aktif operasyon</div>
-            <div className="quality-detail-stack">
-              <Card title="Canlı kalite özeti">
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-                  <div>
-                    <div className="panelMeta">Tamamlanan hizmet</div>
-                    <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.completedServices ?? "-"}</div>
-                  </div>
-                  <div>
-                    <div className="panelMeta">Değerlendirme bekleyen</div>
-                    <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.pendingEvaluation ?? "-"}</div>
-                  </div>
-                  <div>
-                    <div className="panelMeta">Aktif hizmet</div>
-                    <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.activeServices ?? "-"}</div>
-                  </div>
-                  <div>
-                    <div className="panelMeta">Sağlayıcı sayısı</div>
-                    <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.providerCount ?? "-"}</div>
-                  </div>
+      <div className="card" style={{ marginTop: 14, paddingTop: 12, paddingBottom: 12 }}>
+        <PanelSegmentTabs
+          ariaLabel="Güven ve kalite sekmeleri"
+          compact
+          tabs={tabs}
+          value={activeTab}
+          onChange={setActiveTab}
+        />
+      </div>
+
+      <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
+        {activeTab === "overview" ? (
+          <div role="tabpanel" aria-label="Özet" className="card" style={{ display: "grid", gap: 12 }}>
+            <div className="quality-detail-layout">
+              <Card
+                title="Kalite akışı kısa yorumu"
+                subtitle="Özet, kanıt ve karar sekmeleri için kısa okuma"
+              >
+                <div className="panelBody">
+                  Canlı kalite özeti, Tamamlanan hizmet, Değerlendirme bekleyen, Aktif hizmet ve Sağlayıcı sayısı üstteki KPI bandında okunur.
+                  Detaylar Servis Kanıtı, Taslak Skor, İnceleme Kararı ve Kalite Geçmişi sekmelerine taşınır.
                 </div>
-                <div className="panelMeta" style={{ marginTop: 8 }}>Bu kart `/api/trust-quality/company/summary` ile beslenir; template kartlar roadmap tarafında kalır.</div>
-              </Card>
-              <Card title="Yol haritası: hizmet alan değerlendirmesi">
-                <div className="panelStatValue">{(evaluation?.fields || []).length} alan</div>
                 <div className="panelMeta" style={{ marginTop: 6 }}>
-                  {(evaluation?.fields || []).join(" • ") || "Henüz değerlendirme alanı yok"}
+                  Bu özet kesin kalite puanı değildir; yalnızca hangi sekmenin önce açılacağını gösterir.
+                </div>
+              </Card>
+
+              <Card
+                title="Sıradaki doğru kontrol"
+                subtitle="Karar öncesi güvenli adım"
+              >
+                <div className="panelBody">
+                  {pendingEvaluation > 0
+                    ? "Önce bekleyen kayıtları incele. Sonra gerekirse Servis Kanıtı ve İnceleme Kararı sekmelerini aç."
+                    : "Bekleyen kayıt görünmüyor. Gerekirse Servis Kanıtı ve Kalite Geçmişi sekmelerini aç."}
+                </div>
+                <div className="toolbar" style={{ flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => setActiveTab("proof")}>Servis Kanıtı</button>
+                  <button type="button" onClick={() => setActiveTab("decision")} disabled={!pendingEvaluation}>
+                    İnceleme Kararı
+                  </button>
                 </div>
               </Card>
             </div>
           </div>
-        </div>
+        ) : null}
 
-        <div className="quality-detail-side">
-          <div className="quality-detail-stack">
-            <Card title="Yol haritası: sağlayıcı kalite sinyali">
-              <div className="panelBody">{(providerSignal?.signals || []).join(" • ") || "Henüz sinyal yok"}</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>{providerSignal?.summary || "Sağlayıcı kalite ve güven görünürlüğü için özet sinyal seti."}</div>
+        {activeTab === "proof" ? (
+          <div role="tabpanel" aria-label="Servis Kanıtı" className="card" style={{ display: "grid", gap: 12 }}>
+            <div className="panelMeta">
+              Servis kanıtı detayları burada toplanır; ana sayfada uzun açık blok olarak kalmaz.
+            </div>
+            <OperationProofReadonlyBadge className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+            <QualityProofReadonlyCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+          </div>
+        ) : null}
+
+        {activeTab === "draft" ? (
+          <div role="tabpanel" aria-label="Taslak Skor" className="card" style={{ padding: 14 }}>
+            <QualityDraftScoreCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+          </div>
+        ) : null}
+
+        {activeTab === "decision" ? (
+          <div role="tabpanel" aria-label="İnceleme Kararı" className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
+            <div className="panelMeta">
+              Karar notu ve inceleme aksiyonları bu sekmede kaydedilir; kritik kararlar üstte tekrar edilmez.
+            </div>
+            <QualityReviewDecisionCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+          </div>
+        ) : null}
+
+        {activeTab === "history" ? (
+          <div role="tabpanel" aria-label="Kalite Geçmişi" className="card" style={{ padding: 14 }}>
+            <QualityReviewHistoryCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+          </div>
+        ) : null}
+
+        {activeTab === "roadmap" ? (
+          <div role="tabpanel" aria-label="Yol Haritası / Riskler" className="card" style={{ display: "grid", gap: 12 }}>
+            <Card
+              title="Yol haritası: hizmet alan değerlendirmesi"
+              subtitle="Kaliteye bağlı etki ve görevler"
+            >
+              <div className="panelBody">
+                {evaluation?.summary || "Hizmet değerlendirme alanları ve kalite etkileri burada görünür."}
+              </div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                {(evaluation?.fields || []).join(" • ") || "Henüz değerlendirme alanı yok"}
+              </div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                Aktif milestone: {manifest?.activeMilestone || "M63"}
+              </div>
             </Card>
-            <Card title="Gelecek faz">
-              <div className="panelBody">{plannedDimensions.length ? plannedDimensions.map((item) => item.label).join(" • ") : "Planlı boyut yok"}</div>
+
+            <Card
+              title="Yol haritası: sağlayıcı kalite sinyali"
+              subtitle="Risk ve tamamlanması gereken kalite adımları"
+            >
+              <div className="panelBody">{providerSignal?.summary || "Sağlayıcı kalite ve güven görünürlüğü için özet sinyal seti."}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                {(providerSignal?.signals || []).join(" • ") || "Henüz sinyal yok"}
+              </div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                {manifestRules.join(" • ") || "Henüz yol haritası kuralı yok"}
+              </div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
                 Aktif: {activeDimensions.length} • Planlı: {plannedDimensions.length}
               </div>
             </Card>
-            <Card title="Yol haritası kuralları">
-              <div className="panelBody">{manifest?.activeMilestone || "M63"}</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>
-                {manifestRules.join(" • ") || "Henüz yol haritası kuralı yok"}
-              </div>
-            </Card>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );

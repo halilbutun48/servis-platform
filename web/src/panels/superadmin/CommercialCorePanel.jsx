@@ -16,6 +16,44 @@ import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import { getOperationProofSummary, getPaymentBackboneReadinessPreview } from "../../api";
 
+function MetricTile({ title, value, help, tone = "normal" }) {
+  const borderColor =
+    tone === "warn"
+      ? "rgba(255, 176, 123, 0.34)"
+      : tone === "danger"
+        ? "rgba(255, 123, 123, 0.34)"
+        : "rgba(255,255,255,0.08)";
+  const background =
+    tone === "warn"
+      ? "rgba(255, 176, 123, 0.08)"
+      : tone === "danger"
+        ? "rgba(255, 123, 123, 0.08)"
+        : "rgba(255,255,255,0.03)";
+
+  return (
+    <div
+      style={{
+        padding: 14,
+        border: `1px solid ${borderColor}`,
+        borderRadius: 10,
+        background,
+        flex: "1 1 190px",
+        minWidth: 0,
+      }}
+    >
+      <div className="panelMeta">{title}</div>
+      <div className="panelStatValue" style={{ marginTop: 6, wordBreak: "break-word" }}>
+        {value}
+      </div>
+      {help ? (
+        <div className="panelMeta" style={{ marginTop: 6 }}>
+          {help}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function CommercialCorePanel() {
   const { token } = useSession();
   const [manifest, setManifest] = useState(null);
@@ -42,6 +80,7 @@ export default function CommercialCorePanel() {
   const [paymentPreviewSummary, setPaymentPreviewSummary] = useState(null);
   const [operationProofSummary, setOperationProofSummary] = useState(null);
   const [viewTab, setViewTab] = useState("summary");
+  const renderLegacyPrepBlock = Boolean(globalThis && globalThis.__superAdminCommercialLegacyPrepVisible);
   const tabSectionRefs = useRef({});
   const [rooms, setRooms] = useState([]);
   const [roomQuery, setRoomQuery] = useState("");
@@ -179,16 +218,63 @@ export default function CommercialCorePanel() {
   const settlementQueueEndpointStatus = String(settlementQueueMeta?.endpointStatus || "ok");
   const reconciliationEndpointStatus = String(reconciliationStatus?.endpointStatus || "ok");
   const reconciliationQueueEndpointStatus = String(reconciliationQueueMeta?.endpointStatus || "ok");
-    const paymentSourcesEndpointStatus = String(paymentSourcesMeta?.endpointStatus || "ok");
-    const settingsWritable = settingsEndpointStatus === "ok";
-    const pilotWritable = pilotEndpointStatus === "ok" && pilotCandidatesEndpointStatus === "ok";
-    const requiredWritable = requiredEndpointStatus === "ok" && requiredCandidatesEndpointStatus === "ok";
-    const accountWritable = accountEndpointStatus === "ok" && accountCandidatesEndpointStatus === "ok";
-    const settlementWritable = settlementEndpointStatus === "ok" && settlementQueueEndpointStatus === "ok";
-    const reconciliationWritable = reconciliationEndpointStatus === "ok" && reconciliationQueueEndpointStatus === "ok";
-    const paymentSourcesWritable = paymentSourcesEndpointStatus === "ok";
-    const paymentBackboneWriteEnabled = Boolean(paymentBackbone?.activationGate?.enabled);
-    const paymentBackboneSafeMode = !paymentBackboneWriteEnabled;
+  const paymentSourcesEndpointStatus = String(paymentSourcesMeta?.endpointStatus || "ok");
+  const settingsWritable = settingsEndpointStatus === "ok";
+  const pilotWritable = pilotEndpointStatus === "ok" && pilotCandidatesEndpointStatus === "ok";
+  const requiredWritable = requiredEndpointStatus === "ok" && requiredCandidatesEndpointStatus === "ok";
+  const accountWritable = accountEndpointStatus === "ok" && accountCandidatesEndpointStatus === "ok";
+  const settlementWritable = settlementEndpointStatus === "ok" && settlementQueueEndpointStatus === "ok";
+  const reconciliationWritable = reconciliationEndpointStatus === "ok" && reconciliationQueueEndpointStatus === "ok";
+  const paymentSourcesWritable = paymentSourcesEndpointStatus === "ok";
+  const paymentBackboneWriteEnabled = Boolean(paymentBackbone?.activationGate?.enabled);
+  const paymentBackboneSafeMode = !paymentBackboneWriteEnabled;
+  const criticalSignals = [
+    paymentBackboneSafeMode ? "Ödeme kapalı" : null,
+    (paymentPreviewSummary?.missingCount ?? 0) > 0 ? `${paymentPreviewSummary?.missingCount ?? 0} eksik bilgi` : null,
+    (paymentPreviewSummary?.reviewCount ?? 0) > 0 ? `${paymentPreviewSummary?.reviewCount ?? 0} kontrol gerekli` : null,
+    ((accountStatus?.companyMissingCount || 0) + (accountStatus?.roomMissingCount || 0)) > 0 ? "Ödeme hesabı eksik" : null,
+    (settlementStatus?.blockedCount || 0) > 0 ? `${settlementStatus?.blockedCount || 0} bloklu settlement` : null,
+    (reconciliationStatus?.mismatchCount || 0) > 0 ? `${reconciliationStatus?.mismatchCount || 0} uyuşmazlık` : null,
+  ].filter(Boolean);
+  const hasCriticalSignals = criticalSignals.length > 0;
+  const topMetrics = [
+    {
+      title: "Hazırlık",
+      value: paymentBackbone?.activeMilestone || paymentBackbone?.summary || "Hazırlık bekliyor",
+      help: paymentBackboneSafeMode ? "Ödeme kapalı" : "Hazırlık açık",
+      tone: paymentBackboneSafeMode ? "warn" : "normal",
+    },
+    {
+      title: "Önizleme",
+      value: paymentPreviewSummary?.statusText || paymentPreviewSummary?.summaryText || paymentPreviewSummary?.status || "Bekliyor",
+      help: "Readonly hakediş önizleme durumu",
+      tone: "normal",
+    },
+    {
+      title: "CSV taslağı",
+      value: paymentSourcesMeta?.summary || `${paymentSources.length} kaynak`,
+      help: "Dışa aktarıma hazır kaynak sayısı",
+      tone: "normal",
+    },
+    {
+      title: "Son kontrol",
+      value: operationProofSummary?.statusText || operationProofSummary?.summaryText || operationProofSummary?.status || "Bekliyor",
+      help: "Kanıt ve son durum özeti",
+      tone: hasCriticalSignals ? "warn" : "normal",
+    },
+    {
+      title: "Ödeme kapalı",
+      value: paymentBackboneSafeMode ? "Kapalı" : "Açık",
+      help: "Canlı ödeme bu yüzeyde başlatılmaz",
+      tone: paymentBackboneSafeMode ? "warn" : "normal",
+    },
+    {
+      title: "Eksik bilgi / kontrol gerekli",
+      value: `${paymentPreviewSummary?.missingCount ?? 0} / ${paymentPreviewSummary?.reviewCount ?? 0}`,
+      help: "Hazır olmayan veya tekrar bakılacak kayıtlar",
+      tone: "warn",
+    },
+  ];
 
   const filteredRooms = useMemo(() => {
     const q = String(roomQuery || "").trim().toLowerCase();
@@ -209,7 +295,6 @@ export default function CommercialCorePanel() {
     savePaymentAccount,
     markSettlementPlanned,
     markSettlementReady,
-    markSettlementExecuted,
     markSettlementCancelled,
     saveReconciliation,
     refreshPaymentSources,
@@ -308,31 +393,25 @@ export default function CommercialCorePanel() {
         />
       </div>
 
-        <div style={{ marginTop: 14, maxWidth: 760 }}>
-          <PaymentReadonlySafetyBadge />
-        </div>
-
-        {paymentBackboneSafeMode ? (
-          <div style={{ marginTop: 12, maxWidth: 980 }}>
-            <div className="panelMeta">
-              Aktif ödeme kapalı · Hakediş sadece önizleme modunda · Bu ekran ödeme başlatmaz · Canlı ödeme daha sonra açılacak
-            </div>
-          </div>
-        ) : null}
-
-        <div style={{ marginTop: 14, maxWidth: 760 }}>
-          <PaymentReadinessReadonlyCard
-            paymentBackbone={paymentBackbone}
-            settings={settings}
-          activeRule={activeRule}
-          settlementStatus={settlementStatus}
-          cards={cards}
-          paymentBackboneEndpointStatus={paymentBackboneEndpointStatus}
-          settingsEndpointStatus={settingsEndpointStatus}
-        />
+      <div style={{ marginTop: 14, width: "100%", maxWidth: "none" }}>
+        <PaymentReadonlySafetyBadge />
       </div>
 
-      <div style={{ marginTop: 14, maxWidth: 980 }}>
+      {paymentBackboneSafeMode ? (
+        <div style={{ marginTop: 12, width: "100%", maxWidth: "none" }}>
+          <div className="panelMeta">
+            Aktif ödeme kapalı · Hakediş sadece önizleme modunda · Bu ekran ödeme başlatmaz · Canlı ödeme daha sonra açılacak
+          </div>
+        </div>
+      ) : null}
+
+      <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10 }}>
+        {topMetrics.map((metric) => (
+          <MetricTile key={metric.title} {...metric} />
+        ))}
+      </div>
+
+      <div style={{ marginTop: 14, width: "100%", maxWidth: "none" }}>
         <PanelSegmentTabs
           ariaLabel="Ticari akış bölümleri"
           compact
@@ -350,219 +429,661 @@ export default function CommercialCorePanel() {
         />
       </div>
 
-      {viewTab === "proof" ? (
-        <div
-          ref={(node) => { tabSectionRefs.current.proof = node; }}
-          tabIndex={-1}
-          role="tabpanel"
-          aria-label="Kalite / Kanıt"
-          style={{ marginTop: 14, display: "grid", gap: 12 }}
-        >
-          <PaymentPreviewReadonlyCard />
-          <OperationProofReadonlyBadge />
+      {viewTab === "summary" ? (
+        <div ref={(node) => { tabSectionRefs.current.summary = node; }} tabIndex={-1} role="tabpanel" aria-label="Özet" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <Card title="Aktif durum" wide>
+              <div>{manifest?.title || "Henüz ticari özet yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{manifest?.activeMilestone || "Aktif durum bilgisi gelmedi"}</div>
+            </Card>
+            <Card title="Aktif adımlar" wide>
+              <div>{activeSteps.length} adım</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{activeSteps.map((item) => item.label).join(" • ") || "Henüz aktif adım yok"}</div>
+            </Card>
+            <Card title="Sözleşmeye geçiş" wide>
+              <div>{route.join(" → ") || "Henüz geçiş yolu yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{lifecycle?.summary || "Bu ekran ticari sürecin hangi kapılardan geçtiğini anlatır"}</div>
+            </Card>
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <Card title="Readonly sınırı" wide>
+              <div>{paymentBackboneSafeMode ? "Ödeme başlatılmaz" : "Hazırlık modu açık"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                Ticari omurga yalnızca okuma ve hazırlık sinyali taşır.
+              </div>
+            </Card>
+          </div>
         </div>
       ) : null}
 
-      <div ref={(node) => { tabSectionRefs.current.summary = node; }} tabIndex={-1} className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
-        <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Card title="Aktif durum">
-            <div>{manifest?.title || "Henüz ticari özet yok"}</div>
-            <div className="panelMeta" style={{ marginTop: 6 }}>
-              {manifest?.activeMilestone || "Aktif durum bilgisi gelmedi"}
-            </div>
-        </Card>
-        <Card title="Aktif adımlar">
-          <div>{activeSteps.length} adım</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            {activeSteps.map((item) => item.label).join(" • ") || "Henüz aktif adım yok"}
-          </div>
-        </Card>
-        <Card title="Sözleşmeye geçiş">
-          <div>{route.join(" → ") || "Henüz geçiş yolu yok"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            {lifecycle?.summary || "Bu ekran ticari sürecin hangi kapılardan geçtiğini anlatır"}
-          </div>
-        </Card>
-      </div>
-
-      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Payment backbone durumu">
-          <div>{paymentBackbone?.summary || "Henüz payment backbone özeti yok"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            {paymentBackbone?.activeMilestone || "-"} • {paymentBackbone?.dormant ? "Dormant" : "Açık"}
-          </div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            Aktivasyon anahtarı: {activationGate?.state ?? "0"} • {activationGate?.enabled ? "Hazırlıktan canlı kapıya uygun" : "Hazırlık modu"}
-          </div>
-        </Card>
-        <Card title="Aktivasyon checklist">
-          <div style={{ display: "grid", gap: 6 }}>
-            {(activationChecklist || []).map((item) => (
-              <div key={item.key} style={{ display: "grid", gap: 4, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                  <strong>{item.label}</strong>
-                  <span className="panelMeta">{item.status}</span>
-                </div>
-                <div className="panelMeta">{item.detail}</div>
+      {viewTab === "billing" ? (
+        <div ref={(node) => { tabSectionRefs.current.billing = node; }} tabIndex={-1} role="tabpanel" aria-label="Hakediş" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <PaymentReadinessReadonlyCard
+            paymentBackbone={paymentBackbone}
+            settings={settings}
+            activeRule={activeRule}
+            settlementStatus={settlementStatus}
+            cards={cards}
+            paymentBackboneEndpointStatus={paymentBackboneEndpointStatus}
+            settingsEndpointStatus={settingsEndpointStatus}
+          />
+          <CollapsibleSection
+            title="Ödeme listesi ve dışa aktarım"
+            subtitle="Filtrelenmiş ödeme kaynakları ve CSV dışa aktarımı."
+            badge={paymentSourcesMeta?.summary || paymentSources.length || 0}
+            defaultOpen={false}
+          >
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              <div className="panelMeta">
+                Hazırlık omurgasındaki kaynakları filtreleyip CSV olarak indirebilirsin. Export için Super Admin step-up gerekir.
               </div>
-            ))}
-          </div>
-        </Card>
-        <Card title="Aktif komisyon kuralı">
-          <div>{activeRule ? `${activeRule.paymentMode} • ${fmtBps(activeRule.commissionBps)}` : "Henüz aktif kural yok"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            {activeRule ? `Kaynak: ${activeRule.scopeType}${activeRule.roomId ? ` #${activeRule.roomId}` : ""}${activeRule.ruleId ? ` • Kural #${activeRule.ruleId}` : ""}` : "M82.10 ile yönetim yüzeyi açılacak"}
-          </div>
-        </Card>
-        <Card title="Kaynak sayaçları">
-          <div>Toplam kaynak: {cards.commercialSources || 0}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            Agreement: {cards.agreementSources || 0} • Shift series: {cards.shiftSeriesSources || 0}
-          </div>
-        </Card>
-        <Card title="Settlement hazırlığı">
-          <div>Plan: {cards.settlementPlans || 0}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            Hesap: {cards.paymentAccounts || 0} • Kural: {cards.commissionRules || 0}
-          </div>
-        </Card>
-      </div>
-
-      <div ref={(node) => { tabSectionRefs.current.billing = node; }} tabIndex={-1}>
-      <CollapsibleSection
-        title="Ödeme listesi ve dışa aktarım"
-        subtitle="Filtrelenmiş ödeme kaynakları ve CSV dışa aktarımı."
-        badge={paymentSourcesMeta?.summary || paymentSources.length || 0}
-        defaultOpen={false}
-      >
-        <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-          <div className="panelMeta">
-            Hazırlık omurgasındaki kaynakları filtreleyip CSV olarak indirebilirsin. Export için Super Admin step-up gerekir.
-          </div>
-          {paymentSourcesEndpointStatus !== "ok" ? (
-            <div className="panelMeta" style={{ color: "#ffb17b" }}>
-              {paymentSourcesEndpointStatus === "forbidden"
-                ? "Ödeme listesi için önce TOTP step-up doğrulamasını tamamla."
-                : "Ödeme listesi endpointi bu çalışmakta olan sunucuda yok görünüyor."}
-            </div>
-          ) : null}
-          <Card title={`Ödeme kaynakları (${paymentSourcesMeta?.summary || paymentSources.length || 0})`}>
-            <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-              <InputRow label="Kaynak türü">
-                <select value={paymentSourceFilters.sourceType} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, sourceType: e.target.value }))}>
-                  <option value="ALL">Tümü</option>
-                  <option value="AGREEMENT">Agreement</option>
-                  <option value="SHIFT_SERIES">Shift series</option>
-                </select>
-              </InputRow>
-              <InputRow label="Payment mode">
-                <select value={paymentSourceFilters.paymentMode} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, paymentMode: e.target.value }))}>
-                  <option value="ALL">Tümü</option>
-                  <option value="OFF">OFF</option>
-                  <option value="OPTIONAL">OPTIONAL</option>
-                  <option value="REQUIRED">REQUIRED</option>
-                </select>
-              </InputRow>
-              <InputRow label="Mutabakat durumu">
-                <select value={paymentSourceFilters.settlementStatus} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, settlementStatus: e.target.value }))}>
-                  <option value="ALL">Tümü</option>
-                  <option value="DORMANT">DORMANT</option>
-                  <option value="READY">READY</option>
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="DISABLED">DISABLED</option>
-                  <option value="CANCELLED">CANCELLED</option>
-                </select>
-              </InputRow>
-              <InputRow label="Şirket ID">
-                <input
-                  type="number"
-                  min="1"
-                  value={paymentSourceFilters.companyId}
-                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, companyId: e.target.value }))}
-                  placeholder="örn. 12"
-                />
-              </InputRow>
-              <InputRow label="Oda ID">
-                <input
-                  type="number"
-                  min="1"
-                  value={paymentSourceFilters.roomId}
-                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, roomId: e.target.value }))}
-                  placeholder="örn. 4"
-                />
-              </InputRow>
-              <InputRow label="Ara">
-                <input
-                  value={paymentSourceFilters.q}
-                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, q: e.target.value }))}
-                  placeholder="sourceKey / şirket / oda"
-                />
-              </InputRow>
-              <InputRow label="Başlangıç">
-                <input
-                  type="datetime-local"
-                  value={paymentSourceFilters.from}
-                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, from: e.target.value }))}
-                />
-              </InputRow>
-              <InputRow label="Bitiş">
-                <input
-                  type="datetime-local"
-                  value={paymentSourceFilters.to}
-                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, to: e.target.value }))}
-                />
-              </InputRow>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="btn" onClick={refreshPaymentSources} disabled={busyKey === "payment-sources" || !paymentSourcesWritable}>
-                {busyKey === "payment-sources" ? "Yenileniyor..." : "Listeyi yenile"}
-              </button>
-              <button className="btn" onClick={exportPaymentSourcesCsv} disabled={busyKey === "payment-sources-export" || !paymentSourcesWritable}>
-                {busyKey === "payment-sources-export" ? "İndiriliyor..." : "CSV indir"}
-              </button>
-              <button className="btn" onClick={exportSettlementLedgerCsv} disabled={busyKey === "payment-sources-ledger-export" || !paymentSourcesWritable}>
-                {busyKey === "payment-sources-ledger-export" ? "İndiriliyor..." : "Detaylı muhasebe CSV indir"}
-              </button>
-              <button
-                className="btn sm"
-                onClick={() => setPaymentSourceFilters({
-                  sourceType: "ALL",
-                  paymentMode: "ALL",
-                  settlementStatus: "ALL",
-                  companyId: "",
-                  roomId: "",
-                  q: "",
-                  from: "",
-                  to: "",
-                })}
-              >
-                Filtreleri temizle
-              </button>
-            </div>
-            {Array.isArray(paymentSources) && paymentSources.length ? (
-              <div style={{ display: "grid", gap: 8 }}>
-                {paymentSources.map((item) => (
-                  <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                      <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
-                      <div>{item.settlementStatus || item?.settlementPlan?.status || "DORMANT"}</div>
+              {paymentSourcesEndpointStatus !== "ok" ? (
+                <div className="panelMeta" style={{ color: "#ffb17b" }}>
+                  {paymentSourcesEndpointStatus === "forbidden"
+                    ? "Ödeme listesi için önce TOTP step-up doğrulamasını tamamla."
+                    : "Ödeme listesi endpointi bu çalışmakta olan sunucuda yok görünüyor."}
+                </div>
+              ) : null}
+              <Card title={`Ödeme kaynakları (${paymentSourcesMeta?.summary || paymentSources.length || 0})`}>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+                    <InputRow label="Kaynak türü">
+                      <select value={paymentSourceFilters.sourceType} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, sourceType: e.target.value }))}>
+                        <option value="ALL">Tümü</option>
+                        <option value="AGREEMENT">Agreement</option>
+                        <option value="SHIFT_SERIES">Shift series</option>
+                      </select>
+                    </InputRow>
+                    <InputRow label="Payment mode">
+                      <select value={paymentSourceFilters.paymentMode} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, paymentMode: e.target.value }))}>
+                        <option value="ALL">Tümü</option>
+                        <option value="OFF">OFF</option>
+                        <option value="OPTIONAL">OPTIONAL</option>
+                        <option value="REQUIRED">REQUIRED</option>
+                      </select>
+                    </InputRow>
+                    <InputRow label="Mutabakat durumu">
+                      <select value={paymentSourceFilters.settlementStatus} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, settlementStatus: e.target.value }))}>
+                        <option value="ALL">Tümü</option>
+                        <option value="DORMANT">DORMANT</option>
+                        <option value="READY">READY</option>
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="DISABLED">DISABLED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                      </select>
+                    </InputRow>
+                    <InputRow label="Şirket ID">
+                      <input type="number" min="1" value={paymentSourceFilters.companyId} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, companyId: e.target.value }))} placeholder="örn. 12" />
+                    </InputRow>
+                    <InputRow label="Oda ID">
+                      <input type="number" min="1" value={paymentSourceFilters.roomId} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, roomId: e.target.value }))} placeholder="örn. 4" />
+                    </InputRow>
+                    <InputRow label="Ara">
+                      <input value={paymentSourceFilters.q} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, q: e.target.value }))} placeholder="sourceKey / şirket / oda" />
+                    </InputRow>
+                    <InputRow label="Başlangıç">
+                      <input type="datetime-local" value={paymentSourceFilters.from} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, from: e.target.value }))} />
+                    </InputRow>
+                    <InputRow label="Bitiş">
+                      <input type="datetime-local" value={paymentSourceFilters.to} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, to: e.target.value }))} />
+                    </InputRow>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button className="btn" onClick={refreshPaymentSources} disabled={busyKey === "payment-sources" || !paymentSourcesWritable}>
+                      {busyKey === "payment-sources" ? "Yenileniyor..." : "Listeyi yenile"}
+                    </button>
+                    <button className="btn" onClick={exportPaymentSourcesCsv} disabled={busyKey === "payment-sources-export" || !paymentSourcesWritable}>
+                      {busyKey === "payment-sources-export" ? "İndiriliyor..." : "CSV indir"}
+                    </button>
+                    <button className="btn" onClick={exportSettlementLedgerCsv} disabled={busyKey === "payment-sources-ledger-export" || !paymentSourcesWritable}>
+                      {busyKey === "payment-sources-ledger-export" ? "İndiriliyor..." : "Detaylı muhasebe CSV indir"}
+                    </button>
+                    <button
+                      className="btn sm"
+                      onClick={() => setPaymentSourceFilters({
+                        sourceType: "ALL",
+                        paymentMode: "ALL",
+                        settlementStatus: "ALL",
+                        companyId: "",
+                        roomId: "",
+                        q: "",
+                        from: "",
+                        to: "",
+                      })}
+                    >
+                      Filtreleri temizle
+                    </button>
+                  </div>
+                  {Array.isArray(paymentSources) && paymentSources.length ? (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {paymentSources.map((item) => (
+                        <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                            <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
+                            <div>{item.settlementStatus || item?.settlementPlan?.status || "DORMANT"}</div>
+                          </div>
+                          <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                          <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                        </div>
+                      ))}
                     </div>
-                    <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
-                    <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                    <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                  ) : (
+                    <div className="panelMeta">Filtreye uyan ödeme kaynağı yok. Filtreleri daraltmayı veya hazırlık omurgasında yeni kaynak üretmeyi dene.</div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          </CollapsibleSection>
+        </div>
+      ) : null}
+
+      {viewTab === "prep" ? (
+        <div ref={(node) => { tabSectionRefs.current.prep = node; }} tabIndex={-1} role="tabpanel" aria-label="Ödeme Hazırlık" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <Card title="Payment backbone durumu">
+              <div>{paymentBackbone?.summary || "Henüz payment backbone özeti yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                {paymentBackbone?.activeMilestone || "-"} • {paymentBackbone?.dormant ? "Dormant" : "Açık"}
+              </div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                Aktivasyon anahtarı: {activationGate?.state ?? "0"} • {activationGate?.enabled ? "Hazırlıktan canlı kapıya uygun" : "Hazırlık modu"}
+              </div>
+            </Card>
+            <Card title="Aktivasyon checklist">
+              <div style={{ display: "grid", gap: 6 }}>
+                {(activationChecklist || []).map((item) => (
+                  <div key={item.key} style={{ display: "grid", gap: 4, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                      <strong>{item.label}</strong>
+                      <span className="panelMeta">{item.status}</span>
+                    </div>
+                    <div className="panelMeta">{item.detail}</div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="panelMeta">Filtreye uyan ödeme kaynağı yok. Filtreleri daraltmayı veya hazırlık omurgasında yeni kaynak üretmeyi dene.</div>
-            )}
+            </Card>
+            <Card title="Settlement hazırlığı">
+              <div>Plan: {cards.settlementPlans || 0}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                Hesap: {cards.paymentAccounts || 0} • Kural: {cards.commissionRules || 0}
+              </div>
+            </Card>
+          </div>
+
+          <CollapsibleSection title="Super Admin ticari ayarlar" subtitle="Global payment mode ve oda bazlı komisyon override ayarları." defaultOpen={false}>
+            <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Card title="Global ayar">
+                <div style={{ display: "grid", gap: 12 }}>
+                  <InputRow label="Payment mode" help="Tüm sistem için varsayılan mod.">
+                    <select value={globalForm.paymentMode} onChange={(e) => setGlobalForm((prev) => ({ ...prev, paymentMode: e.target.value }))}>
+                      {(settings?.paymentModes || ["OFF", "OPTIONAL", "REQUIRED"]).map((mode) => (
+                        <option key={mode} value={mode}>{mode}</option>
+                      ))}
+                    </select>
+                  </InputRow>
+                  <InputRow label="Global komisyon (bps)" help="Örnek: 250 = %2.50">
+                    <input type="number" min="0" max="10000" value={globalForm.commissionBps} onChange={(e) => setGlobalForm((prev) => ({ ...prev, commissionBps: e.target.value }))} />
+                  </InputRow>
+                  <InputRow label="Not" help="İç not. Ticari snapshot içine doğrudan yazılmaz.">
+                    <textarea rows="3" value={globalForm.note} onChange={(e) => setGlobalForm((prev) => ({ ...prev, note: e.target.value }))} />
+                  </InputRow>
+                  <div className="panelMeta">Son güncelleme: {fmtDateTime(settings?.globalRule?.updatedAt)}</div>
+                  <button className="btn" onClick={saveGlobal} disabled={busyKey === "global" || !settingsWritable}>
+                    {busyKey === "global" ? "Kaydediliyor..." : "Global ayarı kaydet"}
+                  </button>
+                </div>
+              </Card>
+              <Card title="Oda bazlı override">
+                <div style={{ display: "grid", gap: 12 }}>
+                  <InputRow label="Oda ara" help="Önce odayı seç, sonra override kaydet.">
+                    <input value={roomQuery} onChange={(e) => setRoomQuery(e.target.value)} placeholder="Oda adı yaz" disabled={!settingsWritable} />
+                  </InputRow>
+                  <div style={{ maxHeight: 180, overflow: "auto", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 8 }}>
+                    {!settingsWritable ? <div className="panelMeta">Ayar endpointi hazır olmadan oda override seçimi kapalı.</div> : filteredRooms.length ? filteredRooms.map((room) => (
+                      <button key={room.id} className="btn sm" style={{ width: "100%", justifyContent: "space-between", marginBottom: 6 }} onClick={() => applyRoom(room)} disabled={!settingsWritable}>
+                        <span>{room.name}</span>
+                        <span>#{room.id}</span>
+                      </button>
+                    )) : <div className="panelMeta">Eşleşen oda bulunamadı.</div>}
+                  </div>
+                  <InputRow label="Seçili oda">
+                    <input value={roomForm.roomId} readOnly placeholder="Önce oda seç" />
+                  </InputRow>
+                  <InputRow label="Payment mode">
+                    <select value={roomForm.paymentMode} onChange={(e) => setRoomForm((prev) => ({ ...prev, paymentMode: e.target.value }))}>
+                      {(settings?.paymentModes || ["OFF", "OPTIONAL", "REQUIRED"]).map((mode) => (
+                        <option key={mode} value={mode}>{mode}</option>
+                      ))}
+                    </select>
+                  </InputRow>
+                  <InputRow label="Oda komisyonu (bps)">
+                    <input type="number" min="0" max="10000" value={roomForm.commissionBps} onChange={(e) => setRoomForm((prev) => ({ ...prev, commissionBps: e.target.value }))} />
+                  </InputRow>
+                  <InputRow label="Not">
+                    <textarea rows="3" value={roomForm.note} onChange={(e) => setRoomForm((prev) => ({ ...prev, note: e.target.value }))} />
+                  </InputRow>
+                  <button className="btn" onClick={saveRoomOverride} disabled={busyKey === "room" || !roomForm.roomId || !settingsWritable}>
+                    {busyKey === "room" ? "Kaydediliyor..." : "Oda override kaydet"}
+                  </button>
+                </div>
+              </Card>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <Card title={`Aktif oda override listesi (${settings?.roomOverrideCount || 0})`}>
+                {roomOverrides.length ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {roomOverrides.map((item) => (
+                      <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                          <div style={{ fontWeight: 700 }}>{item.roomName || `Oda #${item.roomId}`}</div>
+                          <button className="btn sm" disabled={busyKey === `disable:${item.roomId}` || !settingsWritable} onClick={() => disableRoomOverride(item.roomId)}>
+                            {busyKey === `disable:${item.roomId}` ? "Kapatılıyor..." : "Override kapat"}
+                          </button>
+                        </div>
+                        <div>{item.paymentMode} • {fmtBps(item.commissionBps)}</div>
+                        <div className="panelMeta">Room #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                        {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="panelMeta">Aktif oda override yok. Tüm yeni ticari kaynaklar global ayarı kullanır.</div>
+                )}
+              </Card>
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection title="M85 opsiyonel ödeme pilotu" subtitle="OPTIONAL moddaki ticari kaynaklar pilot listesine alınabilir." defaultOpen={false}>
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              <div className="panelMeta">
+                {pilotStatus?.summary || "OPTIONAL moddaki ticari kaynaklar pilot listesine alınabilir. READY olanlar yalnız pilot hazırlık görünürlüğü taşır; gerçek charge/payout hala dormant kalır."}
+              </div>
+              {pilotEndpointStatus !== "ok" || pilotCandidatesEndpointStatus !== "ok" ? (
+                <div className="panelMeta" style={{ color: "#ffb17b" }}>
+                  {pilotEndpointStatus === "forbidden"
+                    ? "Opsiyonel ödeme pilot yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+                    : pilotEndpointStatus === "missing"
+                    ? "Opsiyonel ödeme pilot endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
+                    : "Opsiyonel ödeme pilot yüzeyi şu an sınırlı erişimde."}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Card title="Pilot özeti">
+                <div>{pilotStatus?.activeMilestone || "M85"}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Hazır: {pilotStatus?.readyCount || 0} • Bekleyen: {pilotStatus?.dormantCount || 0}</div>
+              </Card>
+              <Card title="OPTIONAL adaylar">
+                <div>{pilotStatus?.candidateCount || 0} kaynak</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Global veya oda override OPTIONAL ise yeni ticari kaynak burada görünür.</div>
+              </Card>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <Card title="Opsiyonel ödeme pilot listesi">
+                {Array.isArray(pilotCandidates) && pilotCandidates.length ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {pilotCandidates.map((item) => {
+                      const settlementStatus = String(item?.settlementStatus || item?.settlementPlan?.status || "DORMANT").toUpperCase();
+                      const isReady = settlementStatus === "READY";
+                      const busyOn = busyKey === `pilot:on:${item.id}`;
+                      const busyOff = busyKey === `pilot:off:${item.id}`;
+                      return (
+                        <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                            <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
+                            <div>{isReady ? "READY" : settlementStatus}</div>
+                          </div>
+                          <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                          <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button className="btn sm" disabled={!pilotWritable || isReady || busyOn} onClick={() => activatePilot(item.id)}>
+                              {busyOn ? "Hazırlanıyor..." : "Pilot READY yap"}
+                            </button>
+                            <button className="btn sm" disabled={!pilotWritable || !isReady || busyOff} onClick={() => deactivatePilot(item.id)}>
+                              {busyOff ? "Kapatılıyor..." : "Pilot DORMANT yap"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="panelMeta">OPTIONAL modda pilot adayı kaynak yok. Önce payment mode OPTIONAL olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
+                )}
+              </Card>
+            </div>
+
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              <div className="panelSectionTitle">M86 zorunlu ödeme rollout'u</div>
+              <div className="panelMeta">{requiredStatus?.summary || "REQUIRED moddaki ticari kaynaklar ACTIVE/DISABLED akışıyla yönetilir. ACTIVE durumda settlement planı aktif, entry satırları READY görünür; gerçek provider entegrasyonu hala dormant adapter üstünden temsil edilir."}</div>
+              {requiredEndpointStatus !== "ok" || requiredCandidatesEndpointStatus !== "ok" ? (
+                <div className="panelMeta" style={{ color: "#ffb17b" }}>
+                  {requiredEndpointStatus === "forbidden"
+                    ? "Zorunlu ödeme rollout yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+                    : requiredEndpointStatus === "missing"
+                    ? "Zorunlu ödeme rollout endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
+                    : "Zorunlu ödeme rollout yüzeyi şu an sınırlı erişimde."}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Card title="Rollout özeti">
+                <div>{requiredStatus?.activeMilestone || "M86"}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Aktif: {requiredStatus?.activeCount || 0} • Bekleyen: {requiredStatus?.waitingCount || 0} • Durdurulan: {requiredStatus?.disabledCount || 0}</div>
+              </Card>
+              <Card title="REQUIRED adaylar">
+                <div>{requiredStatus?.candidateCount || 0} kaynak</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Global veya oda override REQUIRED ise yeni ticari kaynak burada zorunlu rollout adayı olarak görünür.</div>
+              </Card>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <Card title="Zorunlu ödeme rollout listesi">
+                {Array.isArray(requiredCandidates) && requiredCandidates.length ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {requiredCandidates.map((item) => {
+                      const settlementStatus = String(item?.settlementStatus || item?.settlementPlan?.status || "DORMANT").toUpperCase();
+                      const isActive = settlementStatus === "ACTIVE";
+                      const isDisabled = settlementStatus === "DISABLED";
+                      const busyOn = busyKey === `required:on:${item.id}`;
+                      const busyOff = busyKey === `required:off:${item.id}`;
+                      return (
+                        <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                            <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
+                            <div>{settlementStatus}</div>
+                          </div>
+                          <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                          <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button className="btn sm" disabled={!requiredWritable || isActive || busyOn} onClick={() => activateRequired(item.id)}>
+                              {busyOn ? "Aktifleştiriliyor..." : "Rollout ACTIVE yap"}
+                            </button>
+                            <button className="btn sm" disabled={!requiredWritable || (!isActive && isDisabled) || busyOff} onClick={() => deactivateRequired(item.id)}>
+                              {busyOff ? "Durduruluyor..." : "Rollout DISABLED yap"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="panelMeta">REQUIRED modda rollout adayı kaynak yok. Önce payment mode REQUIRED olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
+                )}
+              </Card>
+            </div>
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              <div className="panelSectionTitle">M87 ödeme hesabı hazırlığı</div>
+              <div className="panelMeta">{accountStatus?.summary || "Şirket ve oda tarafındaki ödeme hesabı metadata/readiness durumu bu yüzeyde görünür. Bu faz gerçek charge/payout açmaz."}</div>
+              {accountEndpointStatus !== "ok" || accountCandidatesEndpointStatus !== "ok" ? (
+                <div className="panelMeta" style={{ color: "#ffb17b" }}>
+                  {accountEndpointStatus === "forbidden"
+                    ? "Ödeme hesabı hazırlık yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+                    : accountEndpointStatus === "missing"
+                    ? "Ödeme hesabı hazırlık endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
+                    : "Ödeme hesabı hazırlık yüzeyi şu an sınırlı erişimde."}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Card title="Hesap hazırlık özeti">
+                <div>{accountStatus?.activeMilestone || "M87"}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Şirket hazır: {accountStatus?.companyReadyCount || 0}/{accountStatus?.companyCandidateCount || 0} • Oda hazır: {accountStatus?.roomReadyCount || 0}/{accountStatus?.roomCandidateCount || 0}</div>
+              </Card>
+              <Card title="Eksik / hata">
+                <div>Eksik: {(accountStatus?.companyMissingCount || 0) + (accountStatus?.roomMissingCount || 0)}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Hata: {(accountStatus?.companyErrorCount || 0) + (accountStatus?.roomErrorCount || 0)} • Platform hesabı: {accountStatus?.platformAccountCount || 0}</div>
+              </Card>
+            </div>
+            <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Card title="Ödeme hesabı metadata formu">
+                <div style={{ display: "grid", gap: 12 }}>
+                  <InputRow label="Sahip tipi" help="Company veya Room için owner id girilir.">
+                    <select value={accountForm.ownerType} onChange={(e) => setAccountForm((prev) => ({ ...prev, ownerType: e.target.value }))}>
+                      {["COMPANY", "ROOM", "PLATFORM"].map((mode) => <option key={mode} value={mode}>{mode}</option>)}
+                    </select>
+                  </InputRow>
+                  <InputRow label="Owner id" help="PLATFORM için boş bırakabilirsin.">
+                    <input value={accountForm.ownerId} onChange={(e) => setAccountForm((prev) => ({ ...prev, ownerId: e.target.value }))} placeholder="ör: 12" />
+                  </InputRow>
+                  <InputRow label="Provider key" help="Şimdilik DORMANT kalabilir.">
+                    <input value={accountForm.providerKey} onChange={(e) => setAccountForm((prev) => ({ ...prev, providerKey: e.target.value }))} />
+                  </InputRow>
+                  <InputRow label="Durum">
+                    <select value={accountForm.status} onChange={(e) => setAccountForm((prev) => ({ ...prev, status: e.target.value }))}>
+                      {["INACTIVE", "ACTIVE", "VERIFIED", "ERROR"].map((mode) => <option key={mode} value={mode}>{mode}</option>)}
+                    </select>
+                  </InputRow>
+                  <InputRow label="Etiket">
+                    <input value={accountForm.label} onChange={(e) => setAccountForm((prev) => ({ ...prev, label: e.target.value }))} placeholder="ör: Şirket ana hesap" />
+                  </InputRow>
+                  <InputRow label="Maskeli IBAN">
+                    <input value={accountForm.maskedIban} onChange={(e) => setAccountForm((prev) => ({ ...prev, maskedIban: e.target.value }))} placeholder="TR** **** **** 1234" />
+                  </InputRow>
+                  <InputRow label="Account ref">
+                    <input value={accountForm.accountRef} onChange={(e) => setAccountForm((prev) => ({ ...prev, accountRef: e.target.value }))} placeholder="provider ref" />
+                  </InputRow>
+                  <InputRow label="Not">
+                    <textarea rows="3" value={accountForm.note} onChange={(e) => setAccountForm((prev) => ({ ...prev, note: e.target.value }))} />
+                  </InputRow>
+                  <button className="btn" onClick={savePaymentAccount} disabled={busyKey === "account" || !accountWritable}>
+                    {busyKey === "account" ? "Kaydediliyor..." : "Hesap metadata kaydet"}
+                  </button>
+                </div>
+              </Card>
+              <Card title="Ödeme hesabı aday listesi">
+                {Array.isArray(accountCandidates) && accountCandidates.length ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {accountCandidates.map((item) => (
+                      <div key={item.key} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                          <div style={{ fontWeight: 700 }}>{item.ownerName}</div>
+                          <div>{item.accountStatus || "MISSING"}</div>
+                        </div>
+                        <div>{item.ownerType} • Mode: {item.paymentModeHint} • Settlement: {item.settlementStatusHint}</div>
+                        <div className="panelMeta">Kaynak: {item.sourceType} • {item.sourceKey} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                        <div className="panelMeta">Hesap: {item?.account?.label || "-"} • Provider: {item?.account?.providerKey || "-"} • IBAN: {item?.account?.maskedIban || "-"}</div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button className="btn sm" disabled={!accountWritable} onClick={() => applyAccountCandidate(item)}>Forma al</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="panelMeta">OPTIONAL/REQUIRED modda hesap hazırlık adayı kaynak yok.</div>
+                )}
+              </Card>
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection title="M88 settlement operasyon masası" subtitle="READY/PLANNED/EXECUTED satırlar için görünür operasyon kuyruğu." defaultOpen={false}>
+            <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+              <div className="panelMeta">
+                {settlementStatus?.summary || "READY/PLANNED/EXECUTED settlement entry satırları Super Admin yüzeyinde görünür ve manuel operasyon akışıyla yönetilir."}
+              </div>
+              {settlementEndpointStatus !== "ok" || settlementQueueEndpointStatus !== "ok" ? (
+                <div className="panelMeta" style={{ color: "#ffb17b" }}>
+                  {settlementEndpointStatus === "forbidden"
+                    ? "Settlement operasyon yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+                    : settlementEndpointStatus === "missing"
+                    ? "Settlement operasyon endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
+                    : "Settlement operasyon yüzeyi şu an sınırlı erişimde."}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Card title="Settlement queue özeti">
+                <div>{settlementStatus?.activeMilestone || "M88"}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Planned: {settlementStatus?.plannedCount || 0} • Ready: {settlementStatus?.readyCount || 0} • Cancelled: {settlementStatus?.cancelledCount || 0}</div>
+              </Card>
+              <Card title="Risk sinyali">
+                <div>Finans hazırlık: {settlementStatus?.financeReadyCount || 0}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Vadesi geçen: {settlementStatus?.overdueCount || 0} • Kuyruk: {settlementStatus?.candidateCount || 0}</div>
+              </Card>
+            </div>
+            <Card title="Settlement mutabakat kuyruğu" wide>
+              {Array.isArray(settlementQueue) && settlementQueue.length ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {settlementQueue.map((item) => {
+                    const status = String(item?.settlementStatus || item?.settlementPlan?.status || "PLANNED").toUpperCase();
+                    const busyPlan = busyKey === `settlement:plan:${item.entryId}`;
+                    const busyReady = busyKey === `settlement:ready:${item.entryId}`;
+                    const busyCancel = busyKey === `settlement:cancel:${item.entryId}`;
+                    const canPlan = settlementWritable && ["DORMANT", "CANCELLED"].includes(status);
+                    const canReady = settlementWritable && ["PLANNED", "CANCELLED"].includes(status);
+                    const canCancel = settlementWritable && ["READY", "PLANNED"].includes(status);
+                    return (
+                      <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                          <div style={{ fontWeight: 700 }}>{item.entryKind} • {item.sourceKey}</div>
+                          <div>{status}</div>
+                        </div>
+                        <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                        <div className="panelMeta">Tutar: {item.amount || 0} {item.currencyCode || "TRY"} • Mode: {item.paymentModeSnapshot} • Plan: {item.settlementPlanStatus}</div>
+                        <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Şirket hesap: {item?.companyAccount?.status || "MISSING"} • Oda hesap: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "N/A"}</div>
+                        <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                        {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button className="btn sm" disabled={!canPlan || busyPlan} onClick={() => markSettlementPlanned(item)}>{busyPlan ? "Planlanıyor..." : "PLANNED yap"}</button>
+                          <button className="btn sm" disabled={!canReady || busyReady} onClick={() => markSettlementReady(item)}>{busyReady ? "Hazırlanıyor..." : "READY yap"}</button>
+                          <button className="btn sm" disabled={!canCancel || busyCancel} onClick={() => markSettlementCancelled(item)}>{busyCancel ? "İptal ediliyor..." : "CANCELLED yap"}</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="panelMeta">Settlement operasyon kuyruğunda görünür satır yok.</div>
+              )}
+            </Card>
+            <Card title="Settlement mutabakat masası" wide>
+              <div className="panelMeta">
+                {reconciliationStatus?.summary || "PLANNED/READY satırlar için bekliyor-eşleşti-inceleme-uyuşmazlık-kapandı döngüsü görünür olur."}
+              </div>
+              <div style={{ marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <Card title="Mutabakat özet">
+                  <div>{reconciliationStatus?.activeMilestone || "M89"}</div>
+                  <div className="panelMeta" style={{ marginTop: 6 }}>Bekliyor: {reconciliationStatus?.pendingCount || 0} • Eşleşti: {reconciliationStatus?.matchedCount || 0}</div>
+                  <div className="panelMeta" style={{ marginTop: 6 }}>İnceleme: {reconciliationStatus?.reviewCount || 0} • Uyuşmazlık: {reconciliationStatus?.mismatchCount || 0} • Kapandı: {reconciliationStatus?.closedCount || 0}</div>
+                </Card>
+                <Card title="Risk sinyali">
+                  <div>Eksik provider ref: {reconciliationStatus?.missingProviderRefCount || 0}</div>
+                  <div className="panelMeta" style={{ marginTop: 6 }}>Vadesi geçen planlı: {reconciliationStatus?.overduePlannedCount || 0} • Kuyruk: {reconciliationStatus?.candidateCount || 0}</div>
+                </Card>
+              </div>
+            </Card>
+          </CollapsibleSection>
+        </div>
+      ) : null}
+
+      {viewTab === "commission" ? (
+        <div ref={(node) => { tabSectionRefs.current.commission = node; }} tabIndex={-1} role="tabpanel" aria-label="Komisyon" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <Card title="Aktif komisyon kuralı">
+              <div>{activeRule ? `${activeRule.paymentMode} • ${fmtBps(activeRule.commissionBps)}` : "Henüz aktif kural yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                {activeRule ? `Kaynak: ${activeRule.scopeType}${activeRule.roomId ? ` #${activeRule.roomId}` : ""}${activeRule.ruleId ? ` • Kural #${activeRule.ruleId}` : ""}` : "M82.10 ile yönetim yüzeyi açılacak"}
+              </div>
+            </Card>
+            <Card title="Kaynak sayaçları">
+              <div>Toplam kaynak: {cards.commercialSources || 0}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Agreement: {cards.agreementSources || 0} • Shift series: {cards.shiftSeriesSources || 0}</div>
+            </Card>
+            <Card title="Komisyon sinyali">
+              <div>{paymentBackbone?.summary || "Komisyon omurgası hazır değil"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{paymentBackboneSafeMode ? "Ödeme kapalı" : "Hazırlık açık"} • {cards.commissionRules || 0} kural</div>
+            </Card>
+          </div>
+        </div>
+      ) : null}
+
+      {viewTab === "proof" ? (
+        <div ref={(node) => { tabSectionRefs.current.proof = node; }} tabIndex={-1} role="tabpanel" aria-label="Kalite / Kanıt" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <PaymentReadinessReadonlyCard
+            paymentBackbone={paymentBackbone}
+            settings={settings}
+            activeRule={activeRule}
+            settlementStatus={settlementStatus}
+            cards={cards}
+            paymentBackboneEndpointStatus={paymentBackboneEndpointStatus}
+            settingsEndpointStatus={settingsEndpointStatus}
+          />
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <PaymentPreviewReadonlyCard />
+            <OperationProofReadonlyBadge />
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <Card title="Hakediş önizleme özeti">
+              <div>{paymentPreviewSummary?.title || paymentPreviewSummary?.statusText || paymentPreviewSummary?.summaryText || "Önizleme bekliyor"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                Eksik: {paymentPreviewSummary?.missingCount ?? 0} • Kontrol gerekli: {paymentPreviewSummary?.reviewCount ?? 0}
+              </div>
+            </Card>
+            <Card title="Kanıt özeti">
+              <div>{operationProofSummary?.title || operationProofSummary?.statusText || operationProofSummary?.summaryText || "Kanıt bekliyor"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                {operationProofSummary?.summaryText || "operation proof ve destination sinyalleri okunur"}
+              </div>
+            </Card>
+          </div>
+        </div>
+      ) : null}
+
+      {viewTab === "risk" ? (
+        <div ref={(node) => { tabSectionRefs.current.risk = node; }} tabIndex={-1} role="tabpanel" aria-label="Riskler" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <Card title="Eksik bilgi">
+              <div>{paymentPreviewSummary?.missingCount ?? 0}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Hazır olmayan kayıtlar</div>
+            </Card>
+            <Card title="Kontrol gerekli">
+              <div>{paymentPreviewSummary?.reviewCount ?? 0}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Tekrar bakılması gereken kayıtlar</div>
+            </Card>
+            <Card title="Ödeme hesabı riski">
+              <div>{accountStatus?.summary || "MISSING"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Hesap hazırlığı tarafındaki eksik sinyaller</div>
+            </Card>
+            <Card title="Güvenli mod">
+              <div>{paymentBackboneSafeMode ? "Ödeme kapalı" : "Hazırlık açık"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Bu ekranda canlı ödeme başlatılmaz.</div>
+            </Card>
+          </div>
+          <Card title="Kritik sinyaller">
+            <div style={{ display: "grid", gap: 6 }}>
+              {criticalSignals.length ? criticalSignals.map((item) => (
+                <div key={item} className="panelMeta">{item}</div>
+              )) : <div className="panelMeta">Kritik risk sinyali yok.</div>}
             </div>
           </Card>
         </div>
-      </CollapsibleSection>
-      </div>
+      ) : null}
 
+      {viewTab === "history" ? (
+        <div ref={(node) => { tabSectionRefs.current.history = node; }} tabIndex={-1} role="tabpanel" aria-label="Geçmiş" style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <Card title="Planlı ticari adımlar">
+              <div>{plannedSteps.length ? plannedSteps.map((item) => item.label).join(" • ") : "Planlı adım yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Aktif: {activeSteps.length} • Planlı: {plannedSteps.length}</div>
+            </Card>
+            <Card title="Plan notları">
+              <div>{manifest?.activeMilestone || "M62"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{manifest?.rules?.join(" • ") || "Henüz plan notu yok"}</div>
+            </Card>
+            <Card title="Ticari kayıt geçmişi">
+              <div>{route.length ? `${route.length} adım` : "Henüz geçmiş yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{lifecycle?.summary || "Gelecek faz notları burada toplanır."}</div>
+            </Card>
+          </div>
+          <CollapsibleSection title="Gelecek faz" subtitle="Plan notları ve sonraki fazlar." defaultOpen={false}>
+            <div className="panelMeta">Gelecek faz notları ana sayfayı uzatmaz; bu alanda saklanır.</div>
+          </CollapsibleSection>
+        </div>
+      ) : null}
+
+      {renderLegacyPrepBlock ? (<>
       <div ref={(node) => { tabSectionRefs.current.prep = node; }} tabIndex={-1}>
       <CollapsibleSection
         title="Ödeme hazırlık, komisyon ve risk detayları"
@@ -956,10 +1477,8 @@ export default function CommercialCorePanel() {
                 const status = String(item?.entryStatus || "DORMANT").toUpperCase();
                 const busyPlan = busyKey === `settlement:plan:${item.entryId}`;
                 const busyReady = busyKey === `settlement:ready:${item.entryId}`;
-                const busyExecute = busyKey === `settlement:execute:${item.entryId}`;
                 const busyCancel = busyKey === `settlement:cancel:${item.entryId}`;
                 const canPlan = settlementWritable && item.financeReady && ["READY", "PLANNED"].includes(status);
-                const canExecute = settlementWritable && item.financeReady && ["READY", "PLANNED"].includes(status);
                 const canReady = settlementWritable && ["PLANNED", "CANCELLED", "READY"].includes(status);
                 const canCancel = settlementWritable && ["READY", "PLANNED", "CANCELLED"].includes(status);
                 return (
@@ -980,8 +1499,8 @@ export default function CommercialCorePanel() {
                       <button className="btn sm" disabled={!canReady || busyReady} onClick={() => markSettlementReady(item)}>
                         {busyReady ? "Hazırlanıyor..." : "READY yap"}
                       </button>
-                      <button className="btn sm" disabled={!canExecute || busyExecute} onClick={() => markSettlementExecuted(item)}>
-                        {busyExecute ? "İşleniyor..." : "EXECUTED yap"}
+                      <button className="btn sm" disabled>
+                        İşlem kapalı
                       </button>
                       <button className="btn sm" disabled={!canCancel || busyCancel} onClick={() => markSettlementCancelled(item)}>
                         {busyCancel ? "İptal ediliyor..." : "CANCELLED yap"}
@@ -1089,6 +1608,8 @@ export default function CommercialCorePanel() {
           </div>
         </Card>
       </div>
+      </>
+      ) : null}
 
     </div>
   );

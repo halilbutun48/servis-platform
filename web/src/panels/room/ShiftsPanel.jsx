@@ -626,7 +626,7 @@ async function decideExtend(shiftId, decision) {
 
   const nonPendingBase = useMemo(
     () => items.filter((s) => !(String(s?.status || "") === "SPLIT" && !Number(s?.splitRootId || 0)) && !PENDING_STATUSES.has(String(s.status))),
-    [items]
+    [items, PENDING_STATUSES]
   );
 
   const contractBase = useMemo(() => nonPendingBase.filter((s) => Number(s?.agreementId) > 0), [nonPendingBase]);

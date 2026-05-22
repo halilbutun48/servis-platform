@@ -905,3 +905,37 @@ Bu bant güncel doğrulanmış üst hattır.
   - Ana konu: Süper Admin / Canlı İzleme ekranını summary-first monitoring dashboard düzenine taşımak; canlı akış, alarm/risk, olay tipi, sistem kanıtı ve log detaylarını tablara ayırmak.
   - `KVKK / alarm` bandı üstte kompakt kalır; ana sayfa teknik uzun listeye dönüşmez.
   - Bu check, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-COMPANY-PANELS-FINAL-POLISH-01`, `UX-SCHOOL-ORGANIZATION-PANELS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz.
+
+- `UX-SUPERADMIN-AUDIT-PANEL-01`:
+  - Komut: `node backend\scripts\ux_superadmin_audit_panel_01_check.js`
+  - Check alias: `check:uxsuperadminauditpanel01`
+  - Ana konu: Süper Admin / Denetim Paneli'ni summary-first denetim dashboard düzenine taşımak; güvenlik/uyum uyarı bandını, yetki erişim özetini, servis kanıtını, KVKK uyumunu, audit/log kayıtlarını ve risk/karar detaylarını tablara ayırmak.
+  - `STEP_UP_REQUIRED` ve `KVKK sınırı aktif` bandı üstte kompakt kalır; ana sayfa uzun listeye dönüşmez.
+  - Bu check, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-COMMERCIAL-FLOW-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz.
+
+- `UX-SUPERADMIN-QUALITY-PANEL-01`:
+  - Komut: `node backend\scripts\ux_superadmin_quality_panel_01_check.js`
+  - Check alias: `check:uxsuperadminqualitypanel01`
+  - Ana konu: Süper Admin / Güven ve Kalite ekranını summary-first dashboard düzenine taşımak; güven/kanıt bandını, taslak skor, inceleme kararı, kalite geçmişi ve yol haritası/risk detaylarını tablara ayırmak.
+  - `Güven ve Kalite Özeti` ile kritik kalite/kanıt bandı üstte kompakt kalır; uzun denetim dökümü ana yüzeyi işgal etmez.
+  - Bu check, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-COMMERCIAL-FLOW-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz.
+
+- `UX-SUPERADMIN-COMMERCIAL-FLOW-01`:
+  - Komut: `node backend\scripts\ux_superadmin_commercial_flow_01_check.js`
+  - Check alias: `check:uxsuperadmincommercialflow01`
+  - Ana konu: Süper Admin / Ticari Akış ekranını summary-first ticari dashboard düzenine taşımak; hakediş, ödeme hazırlık, komisyon, kalite/kanıt, risk ve geçmiş detaylarını tablara ayırmak.
+  - `Ödeme kapalı` ve readonly güvenli sınırı üstte kompakt kalır; execute / settlement başlatma yüzeyi görünür UI’dan kaldırılır.
+  - Bu check, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-COMPANY-PANELS-FINAL-POLISH-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz.
+
+- `UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01`:
+  - Komut: `node backend\scripts\ux_superadmin_field_dispatch_discovery_01_check.js`
+  - Check alias: `check:uxsuperadminfielddispatchdiscovery01`
+  - Ana konu: Sahaya Çıkış Kontrolü ekranındaki gerçek section envanterini çıkarıp buna göre functional tab gruplaması yapmak; özet, hazırlık, onay, eksikler/riskler, geri bildirimler ve geçmiş/log detaylarını doğru tablarda toplamak.
+  - Kritik engel / hazır değil / onay gerekli bandı üstte kompakt kalır; launch checklist, risk kaydı ve saha geri bildirimleri uzun tek sayfada alt alta akmaz.
+  - Bu check, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-QUALITY-PANEL-01`, `UX-SUPERADMIN-COMMERCIAL-FLOW-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz.
+
+## UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01
+
+- `check:uxsuperadminfieldacceptancecenter01` Saha Kabul Merkezi ekranını summary-first acceptance komuta paneline taşır; canlı oturum, manifest, karar kaydı, oturum bilgisi, checklist güncelleme ve geçmiş/log ayrıntıları gerçek tablarda yaşar.
+- Üstte canlı oturum mini bandı ve checklist mini durum özeti kalır; uzun acceptance formu tek sayfa olarak akmaz.
+- Bu check, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-QUALITY-PANEL-01`, `UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.

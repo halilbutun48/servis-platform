@@ -24,6 +24,11 @@ function mustInclude(text, needle, label) {
   else fail(label);
 }
 
+function mustNotInclude(text, needle, label) {
+  if (includesText(text, needle)) fail(label);
+  else ok(label);
+}
+
 function includesText(text, needle) {
   return normalizeText(text).includes(normalizeText(needle));
 }
@@ -81,7 +86,7 @@ mustInclude(route, "/payment-backbone/settlement/entries/execute", "commercial c
 mustInclude(route, "/payment-backbone/settlement/entries/cancel", "commercial core route exposes settlement cancel endpoint");
 mustInclude(panel, "M88 settlement operasyon masası", "commercial core panel renders M88 section");
 mustInclude(panel, "Settlement operasyon kuyruğu", "commercial core panel renders settlement queue");
-mustInclude(panel, "EXECUTED yap", "commercial core panel renders settlement execute action");
+mustNotInclude(panel, "EXECUTED yap", "commercial core panel does not expose settlement execute action");
 mustInclude(backendPkg, '"m88check": "node scripts/m88_settlement_operations_console_check.js"', "backend package exposes m88check script");
 mustInclude(toolsReadme, "pack_m88_settlement_operations_console.ps1", "tools readme lists M88 pack");
 mustMentionMilestone(toolsPrimer, "M88", ["settlement operasyon masasi", "settlement operations console", "m88check"], "tools primer lists M88");

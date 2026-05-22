@@ -53,7 +53,7 @@ export default function AuditLogsPanel() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
-        <div className="panelTitle">Audit Logs</div>
+        <div className="panelTitle">İşlem Kayıtları</div>
         <span className="pill" data-status="COUNT">
           {items.length} kayıt
         </span>

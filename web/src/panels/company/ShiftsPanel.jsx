@@ -154,7 +154,7 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
     };
     window.addEventListener("company:shifts:focus", onFocus);
     return () => window.removeEventListener("company:shifts:focus", onFocus);
-  }, []);
+  }, [setTrackTab]);
 
   function focusMarketById(id) {
     focusCompanyMarketById({ id, setTrackTab, ensureAcc, setMarketQ, marketSectionRef, marketSearchRef });

@@ -100,14 +100,19 @@ function main() {
   mustContains(vehicleSections, 'Bağlı sürücüyü yönet', "Vehicle list rows route connection management to vehicles");
 
   const drivers = read("web/src/panels/room/DriversPanel.jsx");
-  mustContains(drivers, 'label: "Bağlı Araç"', "DriversPanel keeps linked-vehicle tab label");
-  mustContains(drivers, 'Bağlı araç özeti', "DriversPanel shows readonly linked vehicle summary");
+  mustContains(drivers, 'label: "Durum"', "DriversPanel keeps status tab label");
+  mustContains(drivers, 'label: "Yönetim"', "DriversPanel keeps management tab label");
+  mustContains(drivers, 'label: "Vardiyalar"', "DriversPanel keeps shifts tab label");
+  mustNotContains(drivers, 'label: "Bağlı Araç"', "DriversPanel removes standalone linked-vehicle tab");
+  mustContains(drivers, 'Bağlı araç yok', "DriversPanel shows readonly linked vehicle summary");
   mustContains(drivers, 'Bağlı araç:', "DriversPanel exposes linked vehicle readout");
   mustContains(drivers, 'Araç bağlantısını Araçlar ekranında yönet', "DriversPanel routes management CTA to VehiclesPanel");
   mustContains(drivers, 'navigate("/room/vehicles")', "DriversPanel CTA navigates to Vehicles panel");
   mustNotContains(drivers, 'bindDriver(', "DriversPanel removes binding form logic");
   mustNotContains(drivers, 'unbindDriver(', "DriversPanel removes unbind form logic");
   mustNotContains(drivers, 'setBindSel', "DriversPanel removes binding form state");
+  mustNotContains(drivers, 'setTab("link")', "DriversPanel removes standalone linked-vehicle tab navigation");
+  mustNotContains(drivers, 'Bağlı araç özeti', "DriversPanel removes duplicate linked-vehicle panel");
   mustNotContains(drivers, 'Bağlantı detayları', "DriversPanel removes generic connection wording");
   mustNotContains(drivers, 'Bağlantı (Sürücü ↔ Araç)', "DriversPanel removes duplicate binding heading");
 
