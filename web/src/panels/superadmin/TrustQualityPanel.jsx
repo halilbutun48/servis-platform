@@ -175,7 +175,22 @@ export default function TrustQualityPanel() {
       facts: { ...facts, ...qualityFacts },
     });
     return () => clearCopilotSelection('/superadmin/trust-quality');
-  }, [summary, evaluation, providerSignal, proofSummary, draftScoreSummary, reviewDecisionSummary, reviewHistorySummary]);
+  }, [
+    summary,
+    evaluation,
+    providerSignal,
+    proofSummary,
+    draftScoreSummary,
+    reviewDecisionSummary,
+    reviewHistorySummary,
+    completedServices,
+    pendingEvaluation,
+    activeServices,
+    providerCount,
+    summaryReady,
+    fields.length,
+    signals.length,
+  ]);
 
   useEffect(() => {
     if (!token) return;
