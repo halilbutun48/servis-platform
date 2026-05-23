@@ -87,6 +87,11 @@ const WORKFLOW_SURFACE_HINTS = [
   '/superadmin/commercial-core',
   '/superadmin/trust-quality',
   '/superadmin/operation-verification',
+  '/room/operation-health',
+  '/room/shifts',
+  '/company/operations',
+  '/school/operations',
+  '/organization/operations',
 ];
 
 function isWorkflowDiagnosticQuestionType(questionType) {
@@ -168,6 +173,7 @@ function selectedDiagnosticTheme(message) {
   if (/(sağlayıcı|saglayici|provider).*(neden).*(daha iyi|daha güçlü|daha guclu)/.test(text) || /(daha iyi|daha güçlü|daha guclu).*(sağlayıcı|saglayici|provider)/.test(text)) return 'QUALITY_SIGNAL';
   if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text) || /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)) return 'CONTRACT_SHIFT_TODAY';
   if (/(sözleşme|sozlesme).*(vardiya|shift)/.test(text)) return 'CONTRACT_TO_SHIFT';
+  if (/(rota etkisi|rota etkisini|önizleme|onizleme|etkiyi hesapla|bugün binmezse|bugun binmezse|farklı duraktan|farkli duraktan|geçici durak|gecici durak|biniş değişikliği|binis degisikligi|km farkı|km farki|süre artar mı|sure artar mi|kapasite etkisi|rotasını|rotasini|rotayı|rotayi|rota.*değiştir|rota.*degistir)/.test(text)) return 'BOARDING_ROUTE_IMPACT_PREVIEW';
   if (/(hakediş|hakedis|ödeme|odeme).*(hazır değil|hazir degil|neden).*(eksik|kontrol gerekli|hazır değil|hazir degil)/.test(text) || /(önizleme|onizleme|csv).*(hazır değil|hazir degil|eksik|kontrol gerekli)/.test(text)) return 'PAYMENT_READINESS';
   if (/(hakediş|hakedis).*(neden).*(eksik|kontrol gerekli)/.test(text) || /(önizleme|onizleme).*(neden).*(eksik|kontrol gerekli)/.test(text)) return 'PAYMENT_MISSING';
   if (/(sorun ne|sorunu ne|ne sorun|problem ne)/.test(text)) return 'WHY_BLOCKED';
@@ -490,6 +496,7 @@ function topicLabelForContext(topic) {
     SHIFT_BLOCKED: 'Vardiya engeli',
     VEHICLE_NOT_VISIBLE: 'GPS görünürlüğü',
     DRIVER_PHONE_GPS: 'Sürücünün telefon GPS’i',
+    BOARDING_ROUTE_IMPACT_PREVIEW: 'Biniş değişikliği önizlemesi',
     PROVIDER_BETTER: 'Kalite sinyali',
     QUALITY_SIGNAL: 'Kalite sinyali',
     CONTRACT_SHIFT_TODAY: 'Sözleşme / vardiya üretimi',
@@ -534,6 +541,7 @@ const WORKFLOW_TOPICS = new Set([
   'NEXT_STEP',
   'NEXT_SCREEN',
   'WHY_BLOCKED',
+  'BOARDING_ROUTE_IMPACT_PREVIEW',
 ]);
 
 function isWorkflowTopic(topic) {
@@ -569,6 +577,10 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
     return /(üretildi|uretildi|oluştu|olustu|bugün|bugun)/.test(text) ? 'CONTRACT_SHIFT_TODAY' : 'CONTRACT_TO_SHIFT';
   }
   if (path.includes('/commercial-core') || path.includes('/payment') || /(hakediş|hakedis|ödeme|odeme|settlement|komisyon|csv|önizleme|onizleme)/.test(text)) return /(hazır değil|hazir degil|hazırlık|hazirlik|eksik|kontrol gerekli)/.test(text) ? 'PAYMENT_READINESS' : 'PAYMENT_PREVIEW';
+  if ((path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations') || path.includes('/room/operation-health') || path.includes('/room/shifts') || path.includes('/company/shifts') || path.includes('/school/shifts') || path.includes('/organization/shifts'))
+    && /(rota etkisi|rota etkisini|önizleme|onizleme|etkiyi hesapla|bugün binmezse|bugun binmezse|farklı duraktan|farkli duraktan|geçici durak|gecici durak|biniş değişikliği|binis degisikligi|km farkı|km farki|süre artar mı|sure artar mi|kapasite etkisi|rotasını|rotasini|rotayı|rotayi|rota.*değiştir|rota.*degistir)/.test(text)) {
+    return 'BOARDING_ROUTE_IMPACT_PREVIEW';
+  }
   if (path.includes('/map') || path.includes('/live') || /(gps|konum|harita|haritada)/.test(text)) {
     if (/(sürücü|surucu|telefon gps|telefon gps['’]i|telefon gps'i)/.test(text)) return 'DRIVER_PHONE_GPS';
     return 'VEHICLE_NOT_VISIBLE';
@@ -650,8 +662,13 @@ function buildContextualSuggestedChips({
   let chips = [];
   const path = normalizeText(screenPath);
   const hasSelectedRecord = Boolean(selectedLabel || selectedSummary || sameRecordLikely);
-  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType);
-  if (workflowTopic) chips.push(...workflowTopicChipSet({ activeTopic, questionType, screenPath }));
+  const boardingPreviewTopic = Boolean(
+    ['BOARDING_ROUTE_IMPACT_PREVIEW'].includes(String(activeTopic || questionType || ''))
+    || ['BOARDING_ROUTE_IMPACT_PREVIEW'].includes(String(context?.structuredFacts?.screenType || context?.liveFacts?.screenType || sourceScreenContext?.structuredFacts?.screenType || ''))
+  );
+  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType) || boardingPreviewTopic;
+  const workflowChipTopic = boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : activeTopic;
+  if (workflowTopic) chips.push(...workflowTopicChipSet({ activeTopic: workflowChipTopic, questionType, screenPath }));
   if (hasSelectedRecord && !workflowTopic && !path.includes('/parent/live')) {
     chips.push('Seçili kaydı aç', 'Başlatma zamanını kontrol et', 'Eksik veriyi göster', 'Yetki sınırını açıkla');
   }
@@ -670,15 +687,22 @@ function buildContextualSuggestedChips({
       return ['Son GPS ne zaman geldi?', 'ETA nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?'];
     }
     if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
-    if (path.includes('/room/operation-health')) return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Canlılık riskini açıkla'];
+    if (path.includes('/room/operation-health')) {
+      if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
+      return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Canlılık riskini açıkla'];
+    }
     if (path.includes('/room/shifts')) {
+      if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
       if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(questionType || ''))) return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
       if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(questionType || ''))) return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
       if (['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''))) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
       if (['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP'].includes(String(questionType || ''))) return ['Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?'];
       return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
     }
-    if (path.includes('/superadmin/operations')) return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
+    if (path.includes('/superadmin/operations')) {
+      if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
+      return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
+    }
     if (path.includes('/superadmin/commercial-core')) return ['Hakediş önizlemesini aç', 'Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?'];
     if (path.includes('/room/commercial-flow')) return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
     if (path.includes('/commercial-flow')) return ['İlgili sözleşmeyi aç', 'Hakediş önizlemesini aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
@@ -689,6 +713,7 @@ function buildContextualSuggestedChips({
     if (path.includes('/room/drivers')) return ['Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla'];
     if (path.includes('/room/reports')) return ['Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Filtreleri nasıl kullanırım?'];
     if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
+      if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
       return ['Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri ne?', 'Bu rolde ne görünür?'];
     }
     if (path.includes('/driver/change-pin')) return ['Bu ekranı detaylı anlat', 'PIN veya şifre nasıl değişir?', 'İlk girişte ne olur?'];
@@ -1052,6 +1077,7 @@ function buildContextPriorityDecision({
     SHIFT_BLOCKED: 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.',
     FIRST_CONTROL: 'Önce ilgili satırı veya ilk kontrol alanını aç.',
     SAFE_NEXT_STEP: 'Önce en risksiz kayıt veya alanı kontrol et.',
+    BOARDING_ROUTE_IMPACT_PREVIEW: 'Bu sadece önizlemedir. Rota/atama uygulanmadı. Kişi, durak, km, süre ve kapasite farkını birlikte oku.',
     STATUS_HELP: 'Önce durum satırını ve ilgili kaydı kontrol et.',
     FEEDBACK_STATUS: 'Önce açık veya kritik geri bildirimi ve sorumlu rolü kontrol et.',
     NOTIFICATION_SOURCE: 'Önce bildirimin kaynağı olan olay kaydını aç.',

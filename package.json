@@ -74,6 +74,7 @@
     "check:uxcopilotterminal01": "node backend/scripts/ux_copilot_terminal_01_check.js",
     "check:uxseferabilauncher01": "node backend/scripts/ux_sefer_abi_launcher_01_check.js",
     "check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js",
+    "check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js",
     "check:etasanity01": "node backend/scripts/eta_sanity_01_live_tracking_check.js",
     "check:etaosrm01": "node backend/scripts/eta_osrm_01_route_eta_service_check.js",
     "check:etaosrm02": "node backend/scripts/eta_osrm_02_api_eta_bridge_check.js",

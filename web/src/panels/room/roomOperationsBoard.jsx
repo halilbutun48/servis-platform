@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
+import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
 
 function cardStyle() {
   return {
@@ -66,6 +67,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
     () => (Array.isArray(data.requests) ? data.requests : []),
     [data.requests]
   );
+  const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
   const roomIssueCount = Number(roomSummary?.cards?.openIssues || 0);
 
   const metrics = useMemo(() => {
@@ -131,9 +133,22 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
         decisionText: item?.decisionText || boardingChangeDecisionLabel(decisionState),
         status: item?.status || "OPEN",
         decisionState,
+        preview: item?.routeImpactPreview || null,
       };
     });
   }, [requests]);
+
+  const selectedPreviewRequest = useMemo(() => {
+    if (!requestItems.length) return null;
+    const desiredId = Number(selectedPreviewRequestId || 0);
+    if (desiredId > 0) {
+      const hit = requestItems.find((item) => Number(item?.id || 0) === desiredId);
+      if (hit) return hit;
+    }
+    return requestItems[0] || null;
+  }, [requestItems, selectedPreviewRequestId]);
+
+  const selectedPreview = useMemo(() => selectedPreviewRequest?.preview || null, [selectedPreviewRequest]);
 
   const summaryRows = useMemo(() => [
     {
@@ -179,6 +194,10 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
         </div>
       </div>
 
+      {selectedPreview ? (
+        <BoardingRouteImpactPreviewCard preview={selectedPreview} title="Rota etkisi önizlemesi" />
+      ) : null}
+
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
         <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
           <div style={{ fontWeight: 800, marginBottom: 10 }}>Biniş Değişiklikleri</div>
@@ -196,6 +215,14 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>{item.detail}</div>
                 <div className="muted" style={{ marginTop: 4 }}>{item.decisionText}</div>
+                <button
+                  type="button"
+                  className="btn sm"
+                  style={{ marginTop: 8 }}
+                  onClick={() => setSelectedPreviewRequestId(Number(item.id || 0) || null)}
+                >
+                  Rota etkisini önizle
+                </button>
               </div>
             )) : <div className="muted">Bekleyen biniş değişikliği yok.</div>}
           </div>

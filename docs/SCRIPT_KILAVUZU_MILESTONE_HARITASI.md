@@ -217,6 +217,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `Sefer Abi Terminali`, `Sefer Abi’ye Sor`, `Konum` standardı ve `İller ve Bölgeler` label'i korunur; `Yer Planları` gibi legacy guidance notları PASS- seviyesinde raporlanır.
 - Bu check ürün/business flow değiştirmez; yalnızca panel ve label gerçekliğini doğrular.
 
+### BOARDING-OPS-01A [CHECK]
+- `check:boardingops01a` günlük biniş değişiklikleri için readonly rota etki önizlemesini doğrular.
+- `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` change türleri kişi / durak / km / süre / kapasite etkisiyle birlikte görünür; değişiklik uygulanmaz.
+- Bu milestone yalnızca önizlemedir; `StopAssignment` değişimi `BOARDING-OPS-01B`, driver route refresh ise `BOARDING-OPS-01C` olarak ayrıştırılır.
+- GPS / ETA dili güvenli kalır; kesin ETA yoksa `ETA hesaplanamıyor` veya `ETA güncel değil` standardı korunur.
+
 ### COP-LIVE-ACCEPT-01 [CHECK]
 - `check:copliveaccept01` Sefer Abi / Copilot canlı kabul matrisi için readonly static gate'tir.
 - `ROOM`, `COMPANY`, `DRIVER`, `PARENT`, `PERSONEL` ve `SUPER_ADMIN` canlı yüzeylerinde `Sefer Abi` persona/launcher, context payload köprüsü ve GPS/ETA safe wording korunur.

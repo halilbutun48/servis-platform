@@ -6,6 +6,7 @@ import { createRequestSchema } from "../validators.js";
 import logger from "../lib/logger.js";
 import { audit } from "../audit.js";
 import { emitBoardingChangeNotifications, evaluateBoardingChangeDecision, buildBoardingChangeRequestReason, formatBoardingChangeDecisionText, normalizeBoardingChangeKind } from "./boardingChangeRequestOps.js";
+import { previewBoardingChangeRouteImpact } from "../services/boardingRouteImpactPreview.js";
 
 /**
  * PickupRequestStatus enum:
@@ -19,6 +20,74 @@ import { emitBoardingChangeNotifications, evaluateBoardingChangeDecision, buildB
 
 const DEFAULT_CLOSE_STATUS = "ACCEPTED";
 const ALLOWED_CLOSE = new Set(["ACCEPTED", "CANCELLED"]);
+const REQUEST_SHIFT_PREVIEW_INCLUDE = {
+  include: {
+    vehicle: {
+      select: {
+        id: true,
+        plate: true,
+        capacity: true,
+      },
+    },
+    driver: {
+      select: {
+        id: true,
+        fullName: true,
+        name: true,
+      },
+    },
+    stops: {
+      select: {
+        id: true,
+        name: true,
+        label: true,
+        stopName: true,
+        title: true,
+        code: true,
+        stationName: true,
+        address: true,
+        lat: true,
+        lng: true,
+        order: true,
+        sortOrder: true,
+        sequence: true,
+        index: true,
+      },
+    },
+    people: {
+      select: {
+        id: true,
+        personelId: true,
+        note: true,
+      },
+    },
+    assignments: {
+      select: {
+        id: true,
+        personelId: true,
+        stopId: true,
+        stop: {
+          select: {
+            id: true,
+            name: true,
+            label: true,
+            stopName: true,
+            title: true,
+            code: true,
+            stationName: true,
+            address: true,
+            lat: true,
+            lng: true,
+            order: true,
+            sortOrder: true,
+            sequence: true,
+            index: true,
+          },
+        },
+      },
+    },
+  },
+};
 
 export function requestsRouter(io) {
   const r = express.Router();
@@ -285,7 +354,7 @@ export function requestsRouter(io) {
 
       const items = await prisma.pickupRequest.findMany({
         where,
-        include: { personel: true, shift: true },
+        include: { personel: true, shift: REQUEST_SHIFT_PREVIEW_INCLUDE },
         orderBy: { id: "desc" },
         take: 200,
       });
@@ -327,17 +396,33 @@ export function requestsRouter(io) {
           requesterRole: meta.actorRole || "PERSONEL",
           decisionState,
         });
+        const nearestStop = meta.nearestStopName ? {
+          id: meta.nearestStopId ?? null,
+          name: meta.nearestStopName,
+          distanceM: meta.distanceM != null ? Math.round(Number(meta.distanceM)) : null,
+        } : null;
+        const routeImpactPreview = previewBoardingChangeRouteImpact({
+          shift: item.shift || null,
+          currentStops: item.shift?.stops || [],
+          passengersOrPeople: item.shift?.people || [],
+          boardingChange: {
+            changeType: meta.requestKind || item.requestKind || item.kind || "DIFFERENT_STOP",
+            personelId: item.personelId,
+            personLabel: item.personel?.fullName || item.personel?.name || item.personel?.label || `#${item.personelId || "-"}`,
+            requestReason: meta.requestReason || "",
+            nearestStop,
+            lat: item.lat,
+            lng: item.lng,
+          },
+        });
         return {
           ...item,
           requestKind: meta.requestKind || "DIFFERENT_STOP",
           requestReason: meta.requestReason || "",
           decisionState,
           decisionText,
-          nearestStop: meta.nearestStopName ? {
-            id: meta.nearestStopId ?? null,
-            name: meta.nearestStopName,
-            distanceM: meta.distanceM != null ? Math.round(Number(meta.distanceM)) : null,
-          } : null,
+          nearestStop,
+          routeImpactPreview,
         };
       }));
     } catch (e) {

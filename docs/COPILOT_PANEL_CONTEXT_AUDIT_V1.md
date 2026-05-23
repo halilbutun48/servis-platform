@@ -23,6 +23,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `Sefer Abi` persona/launcher, `screenContext` payload köprüsü, GPS/ETA safe wording ve payment/settlement execute yokluğu readonly kabul olarak korunur.
 - Bu not product behavior değiştirmez.
 
+## BOARDING-OPS-01A kapsam notu
+- Bu readonly önizleme `Company / Operasyon Paneli`, `Company / Vardiyalar`, `School / Operasyon Paneli` ve gerekli görülen `Room / Operasyon Sağlığı` yüzeylerinde günlük biniş değişikliklerinin rota etkisini okur.
+- `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` değişiklik türleri kişi / durak / km / süre / kapasite etkileriyle birlikte görünür; değişiklik uygulanmaz.
+- `StopAssignment` write, driver route refresh, SMS ve notification send bu milestone kapsamı dışındadır.
+- Bu not product behavior değiştirmez; sonraki accepted change ve route refresh milestone'ları ayrıştırılır.
+
 ## Yöntem
 - Panel dosyaları ve Copilot helper zinciri statik olarak tarandı.
 - Hızlı Yardım üst bağlamı ile serbest chat route ayrışması için risk yüzeyleri not edildi.

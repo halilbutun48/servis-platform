@@ -6,8 +6,11 @@ import { useAutoReload } from "../../live/useAutoReload";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import PanelChrome from "../../components/PanelChrome";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
+import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildBoardingRouteImpactCopilotFacts } from "../../utils/copilotFacts";
 import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
 
 function MiniStat({ title, value, note }) {
@@ -61,6 +64,7 @@ export default function SchoolOperationsPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
+  const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -140,9 +144,87 @@ export default function SchoolOperationsPanel() {
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
       detail: item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
       createdAt: item?.createdAt || item?.at || null,
+      preview: item?.routeImpactPreview || null,
     })),
     [riskRequestRows]
   );
+
+  const selectedPreviewRequest = useMemo(() => {
+    if (!requestRows.length) return null;
+    const desiredId = Number(selectedPreviewRequestId || 0);
+    if (desiredId > 0) {
+      const hit = requestRows.find((item) => Number(item?.id || 0) === desiredId);
+      if (hit) return hit;
+    }
+    return requestRows[0] || null;
+  }, [requestRows, selectedPreviewRequestId]);
+
+  const selectedPreview = useMemo(() => selectedPreviewRequest?.preview || null, [selectedPreviewRequest]);
+  const selectedPreviewFacts = useMemo(() => {
+    if (!selectedPreviewRequest || !selectedPreview) return null;
+    return buildBoardingRouteImpactCopilotFacts({
+      preview: selectedPreview,
+      request: selectedPreviewRequest,
+      screenPath: "/school/operations",
+    });
+  }, [selectedPreview, selectedPreviewRequest]);
+
+  const selectedPreviewSelection = useMemo(() => {
+    if (!selectedPreviewRequest || !selectedPreview || !selectedPreviewFacts) return null;
+    const personLabel = selectedPreview.personLabel || selectedPreviewRequest?.personel || `#${selectedPreviewRequest?.id || "-"}`;
+    const summary = selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || "";
+    return {
+      scopeKey: "/school/operations",
+      entityType: "screen",
+      entityId: Number(selectedPreviewRequest?.id || 0) || 0,
+      label: `${selectedPreview.changeTypeLabel || boardingChangeKindLabel(selectedPreviewRequest?.kind)} • ${personLabel}`,
+      summary,
+      selectedLabel: personLabel,
+      selectedSummary: summary,
+      selectedRecordLabel: personLabel,
+      selectedRecordSummary: summary,
+      selectedRecordStatus: selectedPreview.selectedRecordStatus || selectedPreview.reliability?.label || "Önizleme",
+      helpContextSummary: `${selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
+      contextSummary: summary,
+      selectedRecord: {
+        label: personLabel,
+        summary,
+        status: selectedPreview.selectedRecordStatus || selectedPreview.reliability?.label || "Önizleme",
+        changeType: selectedPreview.changeTypeLabel,
+        oldStopLabel: selectedPreview.oldStopLabel,
+        newStopLabel: selectedPreview.newStopLabel,
+        previewOnlyNote: selectedPreview.previewOnlyNote,
+      },
+      selectedFields: [
+        { label: "Değişiklik Türü", value: selectedPreview.changeTypeLabel || "-" },
+        { label: "Eski Durak", value: selectedPreview.oldStopLabel || "-" },
+        { label: "Yeni / Geçici Durak", value: selectedPreview.newStopLabel || "-" },
+        { label: "Kişi Etkisi", value: `${selectedPreview.currentPeopleCount} → ${selectedPreview.previewPeopleCount}` },
+        { label: "Durak Etkisi", value: `${selectedPreview.currentStopCount} → ${selectedPreview.previewStopCount}` },
+        { label: "Km Etkisi", value: `${selectedPreview.distanceDeltaKm?.toFixed ? selectedPreview.distanceDeltaKm.toFixed(2) : selectedPreview.distanceDeltaKm} km` },
+        { label: "Süre Etkisi", value: `${selectedPreview.durationDeltaMin} dk` },
+        { label: "Kapasite", value: selectedPreview.capacityImpact?.status || "-" },
+        { label: "Güvenilirlik", value: selectedPreview.reliability?.label || "-" },
+      ],
+      selectedBadges: [
+        { label: "Önizleme", value: selectedPreview.previewOnlyNote || "Bu sadece önizlemedir." },
+        { label: "ETA", value: selectedPreview.reliability?.label || "ETA hesaplanamıyor" },
+      ],
+      facts: selectedPreviewFacts,
+      liveFacts: selectedPreviewFacts,
+      structuredFacts: selectedPreviewFacts,
+      screenPath: "/school/operations",
+    };
+  }, [selectedPreview, selectedPreviewFacts, selectedPreviewRequest]);
+
+  useEffect(() => {
+    if (!selectedPreviewSelection) {
+      clearCopilotSelection("/school/operations");
+      return;
+    }
+    setCopilotSelection(selectedPreviewSelection);
+    return () => clearCopilotSelection("/school/operations");
+  }, [selectedPreviewSelection]);
 
   const tabItems = useMemo(() => ([
     { key: "summary", label: "Özet" },
@@ -334,6 +416,12 @@ export default function SchoolOperationsPanel() {
 
       {activeTab === "exceptions" ? (
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          {selectedPreview ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <BoardingRouteImpactPreviewCard preview={selectedPreview} title="Rota etkisi önizlemesi" />
+            </div>
+          ) : null}
+
           <SectionCard title="Bugün binmeyecek öğrenciler" subtitle="Bugün servise binmeyeceği bildirilen kayıtlar">
             <div style={{ display: "grid", gap: 8 }}>
               {noBoardRows.length ? noBoardRows.slice(0, 5).map((row) => (
@@ -367,6 +455,7 @@ export default function SchoolOperationsPanel() {
                     <th>Tür</th>
                     <th>Karar</th>
                     <th>Zaman</th>
+                    <th>Önizleme</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -378,8 +467,17 @@ export default function SchoolOperationsPanel() {
                       <td>{row.kind}</td>
                       <td>{row.decision}</td>
                       <td>{fmtTR(row.createdAt)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn sm"
+                          onClick={() => setSelectedPreviewRequestId(Number(row.id || 0) || null)}
+                        >
+                          Rota etkisini önizle
+                        </button>
+                      </td>
                     </tr>
-                  )) : <tr><td colSpan={6} className="muted">Riskli istek yok.</td></tr>}
+                  )) : <tr><td colSpan={7} className="muted">Riskli istek yok.</td></tr>}
                 </tbody>
               </table>
             </div>

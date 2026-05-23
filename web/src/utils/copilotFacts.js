@@ -527,6 +527,8 @@ export function buildActionSimulationWording({
     text = 'Açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
   } else if (normalizedScreenType === 'MAP' || normalizedScreenType === 'OPERATION_PROOF') {
     text = 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.';
+  } else if (normalizedScreenType === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
+    text = 'Önerilen adım: rota etkisini önizle, kişi/durak/km/süre/kapasite farkını kontrol et ve değişiklik uygulama.';
   } else if (normalizedScreenType === 'AGREEMENTS') {
     text = 'Üretim geçmişini aç, bugünkü vardiyalar listesini kontrol et ve son üretilen vardiyayı doğrula.';
   } else if (normalizedScreenType === 'KVKK' || normalizedScreenType === 'ROLE_HELP') {
@@ -1142,6 +1144,130 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
   };
 }
 
+export function buildBoardingRouteImpactCopilotFacts({
+  preview = null,
+  request = null,
+} = {}) {
+  const routeImpact = preview && typeof preview === 'object' ? preview : null;
+  const previewOnlyNote = compactText(routeImpact?.previewOnlyNote || 'Bu sadece önizlemedir. Rota/atama uygulanmadı.', 'Bu sadece önizlemedir. Rota/atama uygulanmadı.');
+  const changeTypeLabel = compactText(routeImpact?.changeTypeLabel || 'Biniş değişikliği önizlemesi', 'Biniş değişikliği önizlemesi');
+  const personLabel = compactText(routeImpact?.personLabel || request?.personel?.fullName || request?.personel?.name || 'Seçili kişi', 'Seçili kişi');
+  const oldStopLabel = compactText(routeImpact?.oldStopLabel || '-', '-');
+  const newStopLabel = compactText(routeImpact?.newStopLabel || '-', '-');
+  const currentPeopleCount = Number(routeImpact?.currentPeopleCount ?? 0);
+  const previewPeopleCount = Number(routeImpact?.previewPeopleCount ?? currentPeopleCount);
+  const currentStopCount = Number(routeImpact?.currentStopCount ?? 0);
+  const previewStopCount = Number(routeImpact?.previewStopCount ?? currentStopCount);
+  const currentDistanceKm = Number(routeImpact?.currentDistanceKm ?? 0);
+  const previewDistanceKm = Number(routeImpact?.previewDistanceKm ?? currentDistanceKm);
+  const distanceDeltaKm = Number(routeImpact?.distanceDeltaKm ?? Number((previewDistanceKm - currentDistanceKm).toFixed(2)));
+  const currentDurationMin = Number(routeImpact?.currentDurationMin ?? 0);
+  const previewDurationMin = Number(routeImpact?.previewDurationMin ?? currentDurationMin);
+  const durationDeltaMin = Number(routeImpact?.durationDeltaMin ?? (previewDurationMin - currentDurationMin));
+  const capacityImpact = routeImpact?.capacityImpact && typeof routeImpact.capacityImpact === 'object'
+    ? routeImpact.capacityImpact
+    : { capacity: null, currentLoad: currentPeopleCount, previewLoad: previewPeopleCount, delta: previewPeopleCount - currentPeopleCount, availableBefore: null, availableAfter: null, status: 'UNKNOWN' };
+  const reliability = routeImpact?.reliability && typeof routeImpact.reliability === 'object'
+    ? routeImpact.reliability
+    : { ok: false, displayMode: 'unavailable', label: 'ETA hesaplanamıyor', note: 'ETA hesaplanamıyor', reason: 'ROUTE_DATA_MISSING' };
+  const summary = compactText(
+    routeImpact?.summaryLine
+    || `${changeTypeLabel} • ${personLabel} • Km farkı ${distanceDeltaKm.toFixed(2)} • Süre farkı ${durationDeltaMin} dk`,
+    '',
+  );
+  const evidence = [
+    `Değişiklik: ${changeTypeLabel}`,
+    `Kişi: ${personLabel}`,
+    `Eski durak: ${oldStopLabel}`,
+    `Yeni/geçici durak: ${newStopLabel}`,
+    `Kişi farkı: ${previewPeopleCount - currentPeopleCount}`,
+    `Durak farkı: ${previewStopCount - currentStopCount}`,
+    `Km farkı: ${distanceDeltaKm.toFixed(2)} km`,
+    `Süre farkı: ${durationDeltaMin} dk`,
+    `Kapasite: ${capacityImpact.availableAfter != null ? `${capacityImpact.availableAfter} boş` : 'Bilinmiyor'}`,
+  ];
+  const copilotSignals = [
+    { id: 'boarding-change-type', label: 'Değişiklik tipi', value: changeTypeLabel, note: previewOnlyNote },
+    { id: 'boarding-person', label: 'Etkilenen kişi', value: personLabel, note: 'Seçili kişi üzerinden okunur.' },
+    { id: 'boarding-stops', label: 'Duraklar', value: `${oldStopLabel} → ${newStopLabel}`, note: 'Eski ve yeni/geçici durak birlikte okunur.' },
+    { id: 'boarding-distance', label: 'Km etkisi', value: `${distanceDeltaKm.toFixed(2)} km`, note: 'Yaklaşık rota farkı.' },
+    { id: 'boarding-duration', label: 'Süre etkisi', value: `${durationDeltaMin} dk`, note: 'ETA güncel değilse kesin bilgi gibi okunmaz.' },
+    { id: 'boarding-capacity', label: 'Kapasite etkisi', value: capacityImpact.status || 'UNKNOWN', note: `Önceki yük ${currentPeopleCount}, önizleme yükü ${previewPeopleCount}.` },
+    { id: 'boarding-reliability', label: 'Güvenilirlik', value: reliability.label || 'ETA hesaplanamıyor', note: reliability.note || 'ETA hesaplanamıyor' },
+  ];
+  const actionSimulation = routeImpact?.previewOnlyNote
+    ? `${previewOnlyNote} Rota etkisini önizle, ardından uygulama yapma.`
+    : 'Bu sadece önizlemedir. Rota/atama uygulanmadı.';
+  const readonlyFacts = buildReadonlyCopilotFacts({
+    screenType: 'BOARDING_ROUTE_IMPACT_PREVIEW',
+    stage: compactText(routeImpact?.changeType || request?.requestKind || 'TEMPORARY_BOARDING_NOTE', 'TEMPORARY_BOARDING_NOTE'),
+    readiness: 'PREVIEW_ONLY',
+    readinessScore: reliability?.ok ? 78 : 52,
+    summary,
+    blockers: Array.isArray(routeImpact?.warnings) ? routeImpact.warnings : [],
+    evidence,
+    nextBestAction: routeImpact?.nextBestAction || 'Önizleme kartını doğrula.',
+    safestNextStep: previewOnlyNote,
+    compareHint: 'Kişi, durak, km, süre ve kapasite farkını birlikte oku.',
+    counters: {
+      currentPeopleCount,
+      previewPeopleCount,
+      currentStopCount,
+      previewStopCount,
+      currentDistanceKm,
+      previewDistanceKm,
+      distanceDeltaKm,
+      currentDurationMin,
+      previewDurationMin,
+      durationDeltaMin,
+      capacity: Number(capacityImpact.capacity ?? NaN),
+    },
+    copilotSignals,
+    boundaryNotes: [
+      previewOnlyNote,
+      'StopAssignment yazılmaz.',
+      'Yazma yok.',
+    ],
+    selectedRecordStatus: reliability?.label || 'Önizleme',
+    liveFactConfidence: {
+      summary: routeImpact?.summaryLine || summary,
+      rows: copilotSignals.slice(0, 4),
+    },
+    diagnosticPriority: {
+      summary: previewOnlyNote,
+      rows: copilotSignals.slice(0, 3),
+    },
+    actionSimulation,
+  });
+  return {
+    ...readonlyFacts,
+    preview: routeImpact,
+    requestId: request?.id ?? null,
+    requestKind: request?.requestKind || request?.kind || '',
+    changeType: routeImpact?.changeType || request?.requestKind || request?.kind || 'TEMPORARY_BOARDING_NOTE',
+    changeTypeLabel,
+    personLabel,
+    oldStopLabel,
+    newStopLabel,
+    currentPeopleCount,
+    previewPeopleCount,
+    currentStopCount,
+    previewStopCount,
+    currentDistanceKm,
+    previewDistanceKm,
+    distanceDeltaKm,
+    currentDurationMin,
+    previewDurationMin,
+    durationDeltaMin,
+    capacityImpact,
+    reliability,
+    warnings: Array.isArray(routeImpact?.warnings) ? routeImpact.warnings : [],
+    nextBestAction: routeImpact?.nextBestAction || 'Önizleme kartını doğrula.',
+    previewOnlyNote,
+    summaryLine: routeImpact?.summaryLine || summary,
+  };
+}
+
 export function buildMapFacts({ selected, selectedShift, selectedNext, selectedEta, selectedStats, gpsStatus, gpsAge, vehicleCount = 0 }) {
   const status = String(selectedShift?.status || '-').toUpperCase();
   const gpsInput = {
@@ -1641,6 +1767,11 @@ export function buildCopilotStarterChips({
   const selectionText = selectionStarterText(selection);
   const fallback = ['Bu ekranda neye bakmalıyım?', 'Riskleri sırala', 'Sıradaki doğru işlem ne?'];
 
+  const isBoardingPreview = selection?.facts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
+    || selection?.liveFacts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
+    || selection?.structuredFacts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
+    || selection?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
+    || includesAny(selectionText, ['rota etkisi', 'biniş değişikliği', 'bugün binmezse', 'farklı duraktan', 'geçici durak', 'rota/atama uygulanmadı', 'km farkı', 'süre artar mı', 'kapasite etkisi']);
   const isRoomMap = path.includes('/room/map') || path.includes('/company/map') || path.includes('/school/map') || path.includes('/organization/map');
   const isRoomOperationHealth = path.includes('/room/operation-health');
   const isSuperAdminOps = path.includes('/superadmin/observability') || path.includes('/superadmin/operations');
@@ -1652,6 +1783,15 @@ export function buildCopilotStarterChips({
   const isParentLive = path.includes('/parent/live');
   const isDriverToday = path.includes('/driver/today');
   const isDriverRouteOrMap = path.includes('/driver/route') || path.includes('/driver/map');
+
+  if (isBoardingPreview) {
+    return finalizeStarterChips([
+      'Rota etkisini özetle',
+      'Kişi/durak farkını açıkla',
+      'Km/süre farkını göster',
+      'Bu sadece önizleme mi?',
+    ], fallback);
+  }
 
   const hasVehicleSignal = includesAny(selectionText, [
     'araç',

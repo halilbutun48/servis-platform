@@ -7,8 +7,11 @@ import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
+import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildBoardingRouteImpactCopilotFacts } from "../../utils/copilotFacts";
 import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
 
 function companyBaseFromKind(kind) {
@@ -83,6 +86,7 @@ export default function CompanyOperationsPanel() {
   const [notifications, setNotifications] = useState([]);
   const [shiftSummary, setShiftSummary] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
+  const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
   const [notificationQ, setNotificationQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -178,11 +182,90 @@ export default function CompanyOperationsPanel() {
       status: item?.status || "OPEN",
       kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
-      detail: item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
+      detail: item?.routeImpactPreview?.summaryLine || item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
       createdAt: item?.createdAt || item?.at || null,
+      preview: item?.routeImpactPreview || null,
     })),
     [openRequestRows]
   );
+
+  const selectedPreviewRequest = useMemo(() => {
+    if (!openRequestRows.length) return null;
+    const desiredId = Number(selectedPreviewRequestId || 0);
+    if (desiredId > 0) {
+      const hit = openRequestRows.find((item) => Number(item?.id || 0) === desiredId);
+      if (hit) return hit;
+    }
+    return openRequestRows[0] || null;
+  }, [openRequestRows, selectedPreviewRequestId]);
+
+  const selectedPreview = useMemo(() => selectedPreviewRequest?.routeImpactPreview || null, [selectedPreviewRequest]);
+  const selectedPreviewFacts = useMemo(() => {
+    if (!selectedPreviewRequest || !selectedPreview) return null;
+    return buildBoardingRouteImpactCopilotFacts({
+      preview: selectedPreview,
+      request: selectedPreviewRequest,
+      screenPath: `${basePath}/operations`,
+    });
+  }, [basePath, selectedPreview, selectedPreviewRequest]);
+
+  const selectedPreviewSelection = useMemo(() => {
+    if (!selectedPreviewRequest || !selectedPreview || !selectedPreviewFacts) return null;
+    const scopeKey = `${basePath}/operations`;
+    const personLabel = selectedPreview.personLabel || selectedPreviewRequest?.personel || selectedPreviewRequest?.personel?.fullName || selectedPreviewRequest?.personel?.name || `#${selectedPreviewRequest?.personelId || "-"}`;
+    const summary = selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || selectedPreviewRequest?.decisionText || "";
+    return {
+      scopeKey,
+      entityType: "screen",
+      entityId: Number(selectedPreviewRequest?.id || 0) || 0,
+      label: `${selectedPreview.changeTypeLabel || boardingChangeKindLabel(selectedPreviewRequest?.requestKind || selectedPreviewRequest?.kind)} • ${personLabel}`,
+      summary,
+      selectedLabel: personLabel,
+      selectedSummary: summary,
+      selectedRecordLabel: personLabel,
+      selectedRecordSummary: summary,
+      selectedRecordStatus: selectedPreview.selectedRecordStatus || selectedPreview.reliability?.label || "Önizleme",
+      helpContextSummary: `${selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
+      contextSummary: summary,
+      selectedRecord: {
+        label: personLabel,
+        summary,
+        status: selectedPreview.selectedRecordStatus || selectedPreview.reliability?.label || "Önizleme",
+        changeType: selectedPreview.changeTypeLabel,
+        oldStopLabel: selectedPreview.oldStopLabel,
+        newStopLabel: selectedPreview.newStopLabel,
+        previewOnlyNote: selectedPreview.previewOnlyNote,
+      },
+      selectedFields: [
+        { label: "Değişiklik Türü", value: selectedPreview.changeTypeLabel || "-" },
+        { label: "Eski Durak", value: selectedPreview.oldStopLabel || "-" },
+        { label: "Yeni / Geçici Durak", value: selectedPreview.newStopLabel || "-" },
+        { label: "Kişi Etkisi", value: `${selectedPreview.currentPeopleCount} → ${selectedPreview.previewPeopleCount}` },
+        { label: "Durak Etkisi", value: `${selectedPreview.currentStopCount} → ${selectedPreview.previewStopCount}` },
+        { label: "Km Etkisi", value: `${selectedPreview.distanceDeltaKm?.toFixed ? selectedPreview.distanceDeltaKm.toFixed(2) : selectedPreview.distanceDeltaKm} km` },
+        { label: "Süre Etkisi", value: `${selectedPreview.durationDeltaMin} dk` },
+        { label: "Kapasite", value: selectedPreview.capacityImpact?.status || "-" },
+        { label: "Güvenilirlik", value: selectedPreview.reliability?.label || "-" },
+      ],
+      selectedBadges: [
+        { label: "Önizleme", value: selectedPreview.previewOnlyNote || "Bu sadece önizlemedir." },
+        { label: "ETA", value: selectedPreview.reliability?.label || "ETA hesaplanamıyor" },
+      ],
+      facts: selectedPreviewFacts,
+      liveFacts: selectedPreviewFacts,
+      structuredFacts: selectedPreviewFacts,
+      screenPath: scopeKey,
+    };
+  }, [basePath, selectedPreview, selectedPreviewFacts, selectedPreviewRequest]);
+
+  useEffect(() => {
+    if (!selectedPreviewSelection) {
+      clearCopilotSelection(`${basePath}/operations`);
+      return undefined;
+    }
+    setCopilotSelection(selectedPreviewSelection);
+    return () => clearCopilotSelection(`${basePath}/operations`);
+  }, [basePath, selectedPreviewSelection]);
 
   const notificationRows = useMemo(
     () => notifRows.slice(0, 10).map((item) => ({
@@ -486,6 +569,13 @@ export default function CompanyOperationsPanel() {
 
       {activeTab === "exceptions" ? (
         <div role="tabpanel" aria-label="İstisnalar / Değişiklikler" style={{ display: "grid", gap: 12, minWidth: 0 }}>
+          {selectedPreview ? (
+            <BoardingRouteImpactPreviewCard
+              preview={selectedPreview}
+              title="Rota etkisi önizlemesi"
+            />
+          ) : null}
+
           <CollapsibleSection
             title="Eksik değişiklikleri"
             badge={metricValue(openRequestCount)}
@@ -503,6 +593,7 @@ export default function CompanyOperationsPanel() {
                     <th>Tür</th>
                     <th>Karar</th>
                     <th>Zaman</th>
+                    <th>Önizleme</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -514,9 +605,18 @@ export default function CompanyOperationsPanel() {
                       <td>{row.kind}</td>
                       <td>{row.decision}</td>
                       <td>{fmtTR(row.createdAt)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn sm"
+                          onClick={() => setSelectedPreviewRequestId(Number(row.id || 0) || null)}
+                        >
+                          Rota etkisini önizle
+                        </button>
+                      </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={6} className="muted">Bekleyen biniş değişikliği yok.</td></tr>
+                    <tr><td colSpan={7} className="muted">Bekleyen biniş değişikliği yok.</td></tr>
                   )}
                 </tbody>
               </table>

@@ -6,6 +6,12 @@ const KIND_LABELS = {
   OPERATION_NOTE: "Operasyon notu",
 };
 
+const PREVIEW_KIND_LABELS = {
+  NO_SERVICE_TODAY: "Bugün servis dışı",
+  ALTERNATE_STOP_TODAY: "Farklı durak önizleme",
+  TEMPORARY_BOARDING_NOTE: "Geçici biniş notu",
+};
+
 const DECISION_LABELS = {
   AUTO_ACCEPTED: "Otomatik onay",
   MANUAL_REVIEW: "İncelemede",
@@ -32,6 +38,10 @@ function normalize(value) {
 
 export function boardingChangeKindLabel(kind) {
   return KIND_LABELS[normalize(kind)] || "Biniş değişikliği";
+}
+
+export function boardingChangePreviewKindLabel(kind) {
+  return PREVIEW_KIND_LABELS[normalize(kind)] || boardingChangeKindLabel(kind);
 }
 
 export function boardingChangeDecisionLabel(state) {

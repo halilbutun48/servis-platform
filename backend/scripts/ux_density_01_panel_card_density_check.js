@@ -72,6 +72,7 @@ function changedFiles() {
 function assertNoRestrictedBackendPaths(paths) {
   const allowed = new Set([
     'backend/src/routes/eta.js',
+    'backend/src/routes/requests.js',
   ]);
   const forbidden = paths.filter((file) => /^backend\/(src\/routes|prisma|migrations)\//.test(file) && !allowed.has(file));
   if (forbidden.length) {

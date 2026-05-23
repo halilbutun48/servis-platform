@@ -57,6 +57,7 @@ const steps = [
   'check:uxcopilotterminal01',
   'check:uxseferabilauncher01',
   'check:copliveaccept01',
+  'check:boardingops01a',
   'check:etasanity01',
   'check:etaosrm01',
   'check:etaosrm02',

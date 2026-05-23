@@ -71,6 +71,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   const path = normalizeText(screenPath);
 
   if (path.includes('/room/operation-health') || path.includes('/superadmin/operations')) {
+    if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
+      return ['Rota etkisini önizle', 'Kişi farkını göster', 'Km/süre farkını açıkla', 'Kapasite etkisini göster'];
+    }
     return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (path.includes('/driver/today')) {
@@ -95,6 +98,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (path.includes('/room/shifts') || path.includes('/company/shifts') || path.includes('/organization/shifts')) {
+    if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
+      return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
+    }
     if (topic === 'PAYMENT_READINESS' || topic === 'PAYMENT_MISSING') {
       return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
     }
@@ -117,6 +123,12 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
       return ['Bu işlemi kim yapabilir?', 'Yetki sınırını açıkla', 'Bu rolde ne görünür?', 'Yetkili ekrana yönlendir'];
     }
     return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+  }
+  if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
+    if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
+      return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
+    }
+    return ['Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri', 'Yetki sınırı'];
   }
   if (path.includes('/superadmin/commercial-core')) {
     return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
@@ -142,9 +154,6 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   if (path.includes('/room/reports')) {
     return ['Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Hangi rapora bakmalıyım?', 'Filtreleri nasıl kullanırım?'];
   }
-  if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
-    return ['Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri', 'Yetki sınırı'];
-  }
   if (path.includes('/superadmin/trust-quality')) {
     return ['Açık kalite sinyallerini göster', 'Son değerlendirmeyi aç', 'Risk nedenini açıkla', 'Kanıt durumunu kontrol et'];
   }
@@ -163,6 +172,8 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     case 'PAYMENT_MISSING':
     case 'PAYMENT_PREVIEW':
       return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
+    case 'BOARDING_ROUTE_IMPACT_PREVIEW':
+      return ['Rota etkisini önizle', 'Kişi farkını göster', 'Km/süre farkını açıkla', 'Kapasite etkisini göster'];
     case 'CONTRACT_TO_SHIFT':
     case 'CONTRACT_SHIFT_TODAY':
       return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
@@ -227,6 +238,16 @@ export function workflowActionSpec({ activeTopic = '', questionType = '' } = {})
         askLabel: 'Hakediş eksiklerini sor',
         askQuery: 'bu hakediş neden hazır değil',
         askReason: 'Hakediş eksiklerini hızlıca tekrar sorar.',
+      };
+    case 'BOARDING_ROUTE_IMPACT_PREVIEW':
+      return {
+        guideLabel: 'Rota etkisi önizlemesini aç',
+        jobType: 'ASSIGNMENT_READINESS_GUIDE',
+        guideLevel: 'STEP_BY_STEP',
+        reason: 'Biniş değişikliğinin kişi, durak, km, süre ve kapasite etkisini readonly gösterir.',
+        askLabel: 'Rota etkisini sor',
+        askQuery: 'bu kişi bugün binmezse rota etkisi ne olur',
+        askReason: 'Readonly rota etkisi önizlemesini tekrar sorar.',
       };
     case 'CONTRACT_TO_SHIFT':
     case 'CONTRACT_SHIFT_TODAY':

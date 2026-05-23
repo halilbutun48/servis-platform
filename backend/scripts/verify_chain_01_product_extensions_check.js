@@ -107,6 +107,7 @@ function main() {
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');
   must(pkg, '"check:uxseferabilauncher01"', 'package.json exposes check:uxseferabilauncher01');
   must(pkg, '"check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js"', 'package.json exposes check:copliveaccept01');
+  must(pkg, '"check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js"', 'package.json exposes check:boardingops01a');
   must(pkg, '"check:etasanity01"', 'package.json keeps check:etasanity01');
   must(pkg, '"check:etaosrm01"', 'package.json keeps check:etaosrm01');
   must(pkg, '"check:etaosrm02"', 'package.json keeps check:etaosrm02');
@@ -185,11 +186,12 @@ function main() {
     'check:cop04bfix07',
     'check:cop04bfix08',
     'check:uxcopilotsmartchips01',
-    'check:uxcopilotpersona01',
-    'check:uxcopilotterminal01',
-    'check:uxseferabilauncher01',
-    'check:copliveaccept01',
-    'check:etasanity01',
+  'check:uxcopilotpersona01',
+  'check:uxcopilotterminal01',
+  'check:uxseferabilauncher01',
+  'check:copliveaccept01',
+  'check:boardingops01a',
+  'check:etasanity01',
     'check:etaosrm01',
     'check:etaosrm02',
     'check:uxcollapsiblepanels01',
@@ -307,6 +309,8 @@ function main() {
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
   must(guide, 'FINAL-UX-SMOKE-01', 'script guide mentions FINAL-UX-SMOKE-01');
   must(guide, 'check:finaluxsmoke01', 'script guide exposes check:finaluxsmoke01');
+  must(guide, 'BOARDING-OPS-01A', 'script guide mentions BOARDING-OPS-01A');
+  must(guide, 'check:boardingops01a', 'script guide exposes check:boardingops01a');
   must(guide, 'UX-COPILOT-TERMINAL-01', 'script guide mentions UX-COPILOT-TERMINAL-01');
   must(guide, 'UX-COPILOT-PERSONA-01', 'script guide mentions UX-COPILOT-PERSONA-01');
   must(guide, 'ETA-SANITY-01', 'script guide mentions ETA-SANITY-01');
