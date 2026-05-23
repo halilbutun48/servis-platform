@@ -106,6 +106,7 @@ function main() {
   must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotpersona01');
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');
   must(pkg, '"check:uxseferabilauncher01"', 'package.json exposes check:uxseferabilauncher01');
+  must(pkg, '"check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js"', 'package.json exposes check:copliveaccept01');
   must(pkg, '"check:etasanity01"', 'package.json keeps check:etasanity01');
   must(pkg, '"check:etaosrm01"', 'package.json keeps check:etaosrm01');
   must(pkg, '"check:etaosrm02"', 'package.json keeps check:etaosrm02');
@@ -136,6 +137,7 @@ function main() {
   must(pkg, '"check:uxpanellayoutwidth02cfix03"', 'package.json exposes check:uxpanellayoutwidth02cfix03');
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
+  must(pkg, '"check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js"', 'package.json exposes check:finaluxsmoke01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 
@@ -185,6 +187,8 @@ function main() {
     'check:uxcopilotsmartchips01',
     'check:uxcopilotpersona01',
     'check:uxcopilotterminal01',
+    'check:uxseferabilauncher01',
+    'check:copliveaccept01',
     'check:etasanity01',
     'check:etaosrm01',
     'check:etaosrm02',
@@ -209,10 +213,11 @@ function main() {
     'check:uxpanellayoutwidth02cfix01',
     'check:uxpanellayoutwidth02cfix02',
     'check:uxpanellayoutwidth02cfix03',
-    'check:livetrackingfinal01',
-    'check:driverflowfinal01',
     'check:uxnav01',
     'check:uxdensity01',
+    'check:finaluxsmoke01',
+    'check:livetrackingfinal01',
+    'check:driverflowfinal01',
 ], 'product extensions runner order');
 
   must(guide, 'check:product-extensions', 'script guide exposes check:product-extensions');
@@ -244,6 +249,8 @@ function main() {
   must(guide, 'check:uxcopilotterminal01', 'script guide exposes check:uxcopilotterminal01');
   must(guide, 'UX-SEFER-ABI-LAUNCHER-01', 'script guide mentions UX-SEFER-ABI-LAUNCHER-01');
   must(guide, 'check:uxseferabilauncher01', 'script guide exposes check:uxseferabilauncher01');
+  must(guide, 'COP-LIVE-ACCEPT-01', 'script guide mentions COP-LIVE-ACCEPT-01');
+  must(guide, 'check:copliveaccept01', 'script guide exposes check:copliveaccept01');
   must(guide, 'UX-SUPERADMIN-OVERVIEW-CLEANUP-01', 'script guide mentions UX-SUPERADMIN-OVERVIEW-CLEANUP-01');
   must(guide, 'check:uxsuperadminoverviewcleanup01', 'script guide exposes check:uxsuperadminoverviewcleanup01');
   must(guide, 'UX-SUPERADMIN-LIVE-MONITORING-01', 'script guide mentions UX-SUPERADMIN-LIVE-MONITORING-01');
@@ -298,6 +305,8 @@ function main() {
   must(guide, 'check:uxpanellayoutwidth02cfix03', 'script guide exposes check:uxpanellayoutwidth02cfix03');
   must(guide, 'check:uxnav01', 'script guide exposes check:uxnav01');
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
+  must(guide, 'FINAL-UX-SMOKE-01', 'script guide mentions FINAL-UX-SMOKE-01');
+  must(guide, 'check:finaluxsmoke01', 'script guide exposes check:finaluxsmoke01');
   must(guide, 'UX-COPILOT-TERMINAL-01', 'script guide mentions UX-COPILOT-TERMINAL-01');
   must(guide, 'UX-COPILOT-PERSONA-01', 'script guide mentions UX-COPILOT-PERSONA-01');
   must(guide, 'ETA-SANITY-01', 'script guide mentions ETA-SANITY-01');

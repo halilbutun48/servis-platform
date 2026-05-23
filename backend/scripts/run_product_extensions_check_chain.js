@@ -56,6 +56,7 @@ const steps = [
   'check:uxcopilotpersona01',
   'check:uxcopilotterminal01',
   'check:uxseferabilauncher01',
+  'check:copliveaccept01',
   'check:etasanity01',
   'check:etaosrm01',
   'check:etaosrm02',
@@ -83,6 +84,7 @@ const steps = [
   'check:uxpanellayoutwidth02cfix03',
   'check:uxnav01',
   'check:uxdensity01',
+  'check:finaluxsmoke01',
   'check:livetrackingfinal01',
   'check:driverflowfinal01',
 ];

@@ -17,6 +17,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Backend route fallback ve validation error davranışı.
 - Check chain, package script ve milestone rehberi.
 
+## COP-LIVE-ACCEPT-01 kapsam notu
+- Bu canlı kabul matrisi `ROOM`, `COMPANY`, `DRIVER`, `PARENT`, `PERSONEL` ve `SUPER_ADMIN` yüzeylerinde Sefer Abi / Copilot çağrı bağlamını statik olarak izler.
+- Kapsamda `Canlı Takip`, `Operasyon Sağlığı`, `Sözleşmeler`, `Vardiyalar`, `Ticari Akış`, `Bugün`, `Rota`, `Canlı İzleme` ve `Saha Kabul Merkezi` yüzeyleri bulunur.
+- `Sefer Abi` persona/launcher, `screenContext` payload köprüsü, GPS/ETA safe wording ve payment/settlement execute yokluğu readonly kabul olarak korunur.
+- Bu not product behavior değiştirmez.
+
 ## Yöntem
 - Panel dosyaları ve Copilot helper zinciri statik olarak tarandı.
 - Hızlı Yardım üst bağlamı ile serbest chat route ayrışması için risk yüzeyleri not edildi.

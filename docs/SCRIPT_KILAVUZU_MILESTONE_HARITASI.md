@@ -86,6 +86,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcopilotterminal01` -> `node backend\scripts\ux_copilot_terminal_01_check.js`
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
+- `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
+- `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
 - `check:uxcollapsiblepanels01` -> `node backend\scripts\ux_collapsible_panels_01_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
@@ -208,6 +210,18 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcollapsiblepanels01` uzun paneller için summary-first + collapsible secondary details standardını doğrular.
 - Kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; ikincil bilgiler accordion altında toplanır.
 - `Sefer Abi Terminali`, sağ alttaki `Sefer Abi’ye Sor`, NavDock role/kind standardı ve ETA final zinciri korunur.
+
+### FINAL-UX-SMOKE-01 [CHECK]
+- `check:finaluxsmoke01` tüm rol panelleri için son static UX smoke kapısıdır.
+- Route/panel envanteri, visible label zinciri, functional tab davranışı, raw `Hub` ve yanlış label riskleri tek raporda birleştirilir.
+- `Sefer Abi Terminali`, `Sefer Abi’ye Sor`, `Konum` standardı ve `İller ve Bölgeler` label'i korunur; `Yer Planları` gibi legacy guidance notları PASS- seviyesinde raporlanır.
+- Bu check ürün/business flow değiştirmez; yalnızca panel ve label gerçekliğini doğrular.
+
+### COP-LIVE-ACCEPT-01 [CHECK]
+- `check:copliveaccept01` Sefer Abi / Copilot canlı kabul matrisi için readonly static gate'tir.
+- `ROOM`, `COMPANY`, `DRIVER`, `PARENT`, `PERSONEL` ve `SUPER_ADMIN` canlı yüzeylerinde `Sefer Abi` persona/launcher, context payload köprüsü ve GPS/ETA safe wording korunur.
+- `Payment/settlement execute` görünmez; kabul matrisinde 14 ekran ve 15 soru tek referans altında toplanır.
+- Bu check ürün/business flow değiştirmez; yalnızca kabul kapsamını görünür kılar.
 
 ## 5) Faz haritası
 ### Faz A — M0→M41 çekirdek temel hat [HISTORICAL]
@@ -727,11 +741,12 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:cop04bfix03`
 - `check:cop04bfix04`
 - `check:cop04bfix05`
-- `check:cop04bfix06`
-- `check:cop04bfix07`
-- `check:cop04bfix08`
+  - `check:cop04bfix06`
+  - `check:cop04bfix07`
+  - `check:cop04bfix08`
   - `check:uxcopilotsmartchips01`
   - `check:docsstate01`
+  - `check:finaluxsmoke01`
 
 ### E2E-SMOKE-01 — demo acceptance pack [CHECK]
 - Komut: `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
