@@ -71,11 +71,15 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   const path = normalizeText(screenPath);
   const paymentBridgeTopics = new Set(['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'QUALITY_SIGNAL', 'TRUST_QUALITY']);
   const paymentBridgeChips = ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?'];
+  const seferScoreChips = ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?'];
   const commercialPaymentChips = ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç', 'Hakediş eksiklerini sor'];
 
   if (path.includes('/company/commercial-flow') || path.includes('/room/commercial-flow') || path.includes('/superadmin/commercial-core')) {
     if (topic === 'DYNAMIC_SAVINGS_PREVIEW') {
       return ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
+    }
+    if (topic === 'SEFER_SCORE_PREVIEW') {
+      return seferScoreChips;
     }
     if (path.includes('/superadmin/commercial-core') && paymentBridgeTopics.has(topic)) {
       return commercialPaymentChips;
@@ -115,6 +119,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     if (topic === 'DYNAMIC_SAVINGS_PREVIEW') {
       return ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
     }
+    if (topic === 'SEFER_SCORE_PREVIEW') {
+      return seferScoreChips;
+    }
     if (topic === 'AGREEMENT_ROUTE_REFRESH') {
       return ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
     }
@@ -144,6 +151,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     }
     if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
       return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
+    }
+    if (topic === 'SEFER_SCORE_PREVIEW') {
+      return seferScoreChips;
     }
     if (topic === 'PAYMENT_READINESS' || topic === 'PAYMENT_MISSING' || topic === 'PAYMENT_PREVIEW' || topic === 'QUALITY_SIGNAL' || topic === 'TRUST_QUALITY') {
       return paymentBridgeChips;
@@ -202,6 +212,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Hangi rapora bakmalıyım?', 'Filtreleri nasıl kullanırım?'];
   }
   if (path.includes('/superadmin/trust-quality')) {
+    if (topic === 'SEFER_SCORE_PREVIEW') {
+      return seferScoreChips;
+    }
     return ['Açık kalite sinyallerini göster', 'Son değerlendirmeyi aç', 'Risk nedenini açıkla', 'Kanıt durumunu kontrol et'];
   }
   if (path.includes('/superadmin/operation-verification') || path.includes('/superadmin/acceptance') || path.includes('/superadmin/observability')) {
@@ -209,6 +222,8 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   }
 
   switch (topic) {
+    case 'SEFER_SCORE_PREVIEW':
+      return seferScoreChips;
     case 'SHIFT_BLOCKED':
     case 'WHY_BLOCKED':
       return ['Başlatma zamanı uygun mu?', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
@@ -297,6 +312,16 @@ export function workflowActionSpec({ activeTopic = '', questionType = '' } = {})
         askLabel: 'Tasarruf hesabını sor',
         askQuery: 'bu değişiklikte tasarruf ne',
         askReason: 'Readonly tasarruf önizlemesini tekrar sorar.',
+      };
+    case 'SEFER_SCORE_PREVIEW':
+      return {
+        guideLabel: 'SeferPuanı önizleme rehberini aç',
+        jobType: 'SCREEN_MENU_GUIDE',
+        guideLevel: 'WHY',
+        reason: 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini readonly okur.',
+        askLabel: 'SeferPuanını sor',
+        askQuery: 'bu tedarikçinin sefer puanı kaç',
+        askReason: 'Readonly kalite puanı önizlemesini tekrar sorar.',
       };
     case 'BOARDING_ROUTE_IMPACT_PREVIEW':
       return {

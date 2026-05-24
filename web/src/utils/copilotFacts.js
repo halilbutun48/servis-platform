@@ -1850,6 +1850,12 @@ function selectionStarterText(selection = null) {
     selection?.facts?.copilotSummary,
     selection?.facts?.helpContextSummary,
     selection?.facts?.contextSummary,
+    selection?.facts?.seferScoreSummaryText,
+    selection?.facts?.seferScoreStatus,
+    selection?.facts?.seferScoreNextAction,
+    selection?.facts?.seferScorePreview?.summaryText,
+    selection?.facts?.seferScorePreview?.safeExplanation,
+    selection?.facts?.seferScorePreview?.previewOnlyNote,
     selection?.facts?.qualityPaymentBridgeSummaryText,
     selection?.facts?.qualityPaymentBridgeStatus,
     selection?.facts?.qualityPaymentBridgeSettlementReadiness,
@@ -1934,6 +1940,15 @@ export function buildCopilotStarterChips({
     || selection?.structuredFacts?.dynamicSavingsPreviewText
     || selection?.screenType === 'DYNAMIC_SAVINGS_PREVIEW'
     || includesAny(selectionText, ['tasarruf', 'tasarruf önizlemesi', 'tasarruf onizlemesi', 'km tasarrufu', 'süre tasarrufu', 'sure tasarrufu', 'yaklaşık maliyet', 'yaklasik maliyet', 'maliyet etkisi', 'readonly önizleme', 'readonly onizleme']);
+  const isSeferScorePreview = Boolean(
+    selection?.facts?.seferScorePreview
+    || selection?.liveFacts?.seferScorePreview
+    || selection?.structuredFacts?.seferScorePreview
+    || selection?.facts?.seferScoreSummaryText
+    || selection?.facts?.seferScoreStatus
+    || selection?.facts?.seferScoreNextAction
+    || includesAny(selectionText, ['sefer puanı', 'sefer puani', 'readonly kalite puanı', 'readonly kalite puani', 'sefer score', 'kalite puanı neden düşük', 'kalite puani neden düşük', 'eksik sinyaller', 'sefer puanı nasıl yükselir', 'sefer puani nasil yukselir'])
+  );
   const isQualityPaymentBridgePreview = Boolean(
     selection?.facts?.qualityPaymentBridgePreview
     || selection?.liveFacts?.qualityPaymentBridgePreview
@@ -1949,6 +1964,14 @@ export function buildCopilotStarterChips({
       'Km / süre farkını açıkla',
       'Kapasite etkisini göster',
       'Yaklaşık maliyet etkisini açıkla',
+    ], fallback);
+  }
+  if (isSeferScorePreview) {
+    return finalizeStarterChips([
+      'Bu tedarikçinin SeferPuanı kaç?',
+      'Kalite puanı neden düşük?',
+      'Eksik sinyalleri göster',
+      'SeferPuanı nasıl yükselir?',
     ], fallback);
   }
   if (isQualityPaymentBridgePreview) {
@@ -2061,11 +2084,15 @@ export function buildCopilotStarterChips({
   } else if (isDynamicSavingsPreview) {
     chips = ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
   } else if (isAgreementSurface) {
-    chips = isQualityPaymentBridgePreview
+    chips = isSeferScorePreview
+      ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
+      : isQualityPaymentBridgePreview
       ? ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?']
       : ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {
-    chips = isQualityPaymentBridgePreview
+    chips = isSeferScorePreview
+      ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
+      : isQualityPaymentBridgePreview
       ? ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?']
       : ['Bu hakediş neden hazır değil?', 'Ödeme hesabı eksik mi?', 'Komisyon durumu ne?', 'Hakediş önizlemesini açıkla'];
   } else if (isCompanyShifts) {

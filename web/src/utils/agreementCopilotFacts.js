@@ -162,6 +162,21 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const qualityPaymentBridgeRiskReasons = compactList(summary.qualityPaymentBridgeRiskReasons || qualityPaymentBridgePreview?.riskReasons || [], 6);
   const qualityPaymentBridgeNextAction = compactText(summary.qualityPaymentBridgeNextAction || qualityPaymentBridgePreview?.nextBestAction || "");
   const qualityPaymentBridgePreviewNote = compactText(summary.qualityPaymentBridgePreviewNote || qualityPaymentBridgePreview?.previewOnlyNote || "Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.");
+  const seferScorePreview = summary.seferScorePreview && typeof summary.seferScorePreview === "object"
+    ? summary.seferScorePreview
+    : null;
+  const seferScoreSummaryText = compactText(summary.seferScoreSummaryText || seferScorePreview?.summaryText || seferScorePreview?.safeExplanation || "");
+  const seferScoreValue = Number(summary.seferScoreValue ?? seferScorePreview?.score ?? NaN);
+  const seferScoreMax = Number(summary.seferScoreMax ?? seferScorePreview?.scoreMax ?? 5) || 5;
+  const seferScoreLevel = compactText(summary.seferScoreLevel || seferScorePreview?.level || "");
+  const seferScoreConfidence = compactText(summary.seferScoreConfidence || seferScorePreview?.confidence || "");
+  const seferScoreStatus = compactText(summary.seferScoreStatus || seferScorePreview?.status || "");
+  const seferScoreSupplierLabel = compactText(summary.seferScoreSupplierLabel || seferScorePreview?.supplierLabel || "");
+  const seferScorePositiveReasons = compactList(summary.seferScorePositiveReasons || seferScorePreview?.positiveReasons || [], 6);
+  const seferScoreRiskReasons = compactList(summary.seferScoreRiskReasons || seferScorePreview?.riskReasons || [], 6);
+  const seferScoreMissingSignals = compactList(summary.seferScoreMissingSignals || seferScorePreview?.missingSignals || [], 6);
+  const seferScoreNextAction = compactText(summary.seferScoreNextAction || seferScorePreview?.nextBestAction || "");
+  const seferScoreSafeExplanation = compactText(summary.seferScoreSafeExplanation || seferScorePreview?.safeExplanation || "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.");
   const selectedRecordSummary = compactText([
     summary.selectedRecordSummary || buildSelectedSummary({
       statusText,
@@ -179,6 +194,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     }),
     routeRefreshSummaryText,
     qualityPaymentBridgeSummaryText ? `Kalite / hakediş: ${qualityPaymentBridgeSummaryText}` : "",
+    seferScoreSummaryText ? `SeferPuanı: ${seferScoreSummaryText}` : "",
   ].filter(Boolean).join(" • "), "");
 
   const sourceShiftId = safeInt(summary.sourceShiftId || summary.sourceShift?.id || item?.sourceShiftId || 0);
@@ -223,6 +239,16 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         qualityPaymentBridgeImpactStatus ? `Etkisi: ${qualityPaymentBridgeImpactStatus}` : "",
         qualityPaymentBridgeNextAction ? `Sıradaki işlem: ${qualityPaymentBridgeNextAction}` : "",
       ], 3).join(" • ") || qualityPaymentBridgePreviewNote || "Readonly kalite / hakediş önizlemesi.",
+    } : null,
+    seferScoreSummaryText || seferScoreStatus || seferScoreNextAction ? {
+      id: "sefer-score",
+      label: "SeferPuanı",
+      value: Number.isFinite(seferScoreValue) ? `${seferScoreValue.toFixed(2)} / ${seferScoreMax.toFixed(0)}` : (seferScoreLevel || "Yetersiz veri"),
+      note: compactList([
+        seferScoreSummaryText,
+        seferScoreStatus ? `Durum: ${seferScoreStatus}` : "",
+        seferScoreNextAction ? `Sıradaki işlem: ${seferScoreNextAction}` : "",
+      ], 3).join(" • ") || seferScoreSafeExplanation || "Readonly kalite puanı önizlemesi.",
     } : null,
     { id: "source-shift", label: "Kaynak vardiya", value: sourceShiftId ? `#${sourceShiftId}` : "Yok", note: sourceShiftId ? "Üretim kökü okunur." : "Kaynak vardiya bağlantısı görünmüyor." },
     { id: "generated-count", label: "Üretilen vardiya", value: generatedShiftCount > 0 ? String(generatedShiftCount) : "Yok", note: generatedShiftCount > 0 ? "Bugün üretim sinyali var." : "Bugün üretim sinyali görünmüyor." },
@@ -305,6 +331,12 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         label: "Kalite / hakediş",
         value: qualityPaymentBridgeStatus || (qualityPaymentBridgePreview?.previewOnly ? "Readonly önizleme" : "Yetersiz veri"),
         note: qualityPaymentBridgeSummaryText || qualityPaymentBridgePreviewNote || "Readonly kalite / hakediş önizlemesi.",
+      })] : []),
+      ...(seferScoreSummaryText || seferScoreStatus || seferScoreNextAction ? [normalizeCopilotSignal({
+        id: "sefer-score",
+        label: "SeferPuanı",
+        value: Number.isFinite(seferScoreValue) ? `${seferScoreValue.toFixed(2)} / ${seferScoreMax.toFixed(0)}` : (seferScoreLevel || "Yetersiz veri"),
+        note: seferScoreSummaryText || seferScoreSafeExplanation || "Readonly kalite puanı önizlemesi.",
       })] : []),
       normalizeCopilotSignal({
         id: "workflow-signal",
@@ -434,5 +466,18 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     qualityPaymentBridgeRiskReasons,
     qualityPaymentBridgeNextAction,
     qualityPaymentBridgePreviewNote,
+    seferScorePreview,
+    seferScoreSummaryText,
+    seferScoreValue,
+    seferScoreMax,
+    seferScoreLevel,
+    seferScoreConfidence,
+    seferScoreStatus,
+    seferScoreSupplierLabel,
+    seferScorePositiveReasons,
+    seferScoreRiskReasons,
+    seferScoreMissingSignals,
+    seferScoreNextAction,
+    seferScoreSafeExplanation,
   };
 }

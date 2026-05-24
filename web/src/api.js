@@ -269,6 +269,11 @@ export async function getAgreementQualityPaymentBridgePreview(agreementId, { tok
   return api(`/api/agreements/${Number(agreementId)}/quality-payment-bridge`, { token, signal });
 }
 
+export async function getAgreementSeferScorePreview(agreementId, { token, signal } = {}) {
+  const payload = await api(`/api/agreements/${Number(agreementId)}/sefer-score-preview`, { token, signal });
+  return payload?.seferScorePreview ?? payload;
+}
+
 export function normalizeQualityReviewDecisionError(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorInfo(error, fallbackMessage);
 }

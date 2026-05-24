@@ -32,6 +32,34 @@ function matchesStandalonePhrase(text, phrases) {
   });
 }
 
+function hasSeferScoreSignal(text) {
+  return hasAny(text, [
+    'seferpuan',
+    'sefer puanı',
+    'sefer puani',
+    'sefer score',
+    'kalitepuan',
+    'readonly kalite puanı',
+    'readonly kalite puani',
+    'kalite puanı',
+    'kalite puani',
+    'tedarikcipuan',
+    'tedarikçi puanı',
+    'tedarikci puani',
+    'sağlayıcıpuan',
+    'sağlayıcı puanı',
+    'saglayici puani',
+    'bu servis kaliteli mi',
+    'eksik sinyaller',
+    'puan neden düşük',
+    'puan neden dusuk',
+    'puan nasıl yükselir',
+    'puan nasil yukselir',
+    'bu puan ödeme veya teklif sıralamasını etkiliyor mu',
+    'bu puan odeme veya teklif siralamasini etkiliyor mu',
+  ]);
+}
+
 function pathHas(path, parts) {
   const value = normalizeText(path);
   return (Array.isArray(parts) ? parts : []).some((p) => {
@@ -119,6 +147,7 @@ const BASE_RULES = [
   { type: 'PAYMENT_MISSING', score: 13, patterns: ['kanıt eksikleri', 'kanit eksikleri', 'kanıtlar eksik', 'kanitlar eksik', 'hakediş eksik', 'hakedis eksik', 'ödeme eksik', 'odeme eksik', 'kontrol gerekli', 'hazır değil', 'hazir degil'], label: 'payment-missing' },
   { type: 'READINESS_CHECK', score: 10, patterns: ['hazır mı', 'hazir mi', 'atamaya hazır mı', 'atamaya hazir mi', 'ilerlemeye hazır mı', 'iş hazır mı', 'bu kayıt hazır mı', 'bu kayit hazir mi', 'hakediş tarafında ne kontrol etmeliyim', 'hakedis tarafında ne kontrol etmeliyim', 'bu hakediş neden hazır değil', 'bu hakedis neden hazir degil', 'hazır değil', 'hazir degil', 'hazırlık', 'hazirlik', 'vardiya üretildi mi', 'vardiya uretildi mi', 'bugün vardiya üretildi mi', 'bugun vardiya uretildi mi', 'sözleşmeden vardiya', 'sozlesmeden vardiya', 'sözleşmeden bugün vardiya üretildi mi', 'sozlesmeden bugun vardiya uretildi mi'], label: 'readiness' },
   { type: 'DYNAMIC_SAVINGS_PREVIEW', score: 14, patterns: ['tasarruf', 'tasarruf önizlemesi', 'tasarruf onizlemesi', 'km tasarrufu', 'süre tasarrufu', 'sure tasarrufu', 'yaklaşık maliyet', 'yaklasik maliyet', 'maliyet etkisi', 'readonly tasarruf', 'readonly önizleme', 'dinamik tasarruf'], label: 'dynamic-savings-preview' },
+  { type: 'SEFER_SCORE_PREVIEW', score: 15, patterns: ['sefer puanı', 'sefer puani', 'sefer score', 'readonly kalite puanı', 'readonly kalite puani', 'kalite puanı', 'kalite puani', 'tedarikçi puanı', 'tedarikci puani', 'sağlayıcı puanı', 'saglayici puani', 'bu servis kaliteli mi', 'eksik sinyaller', 'puan neden düşük', 'puan neden dusuk', 'puan nasıl yükselir', 'puan nasil yukselir', 'bu puan ödeme veya teklif sıralamasını etkiliyor mu', 'bu puan odeme veya teklif siralamasini etkiliyor mu'], label: 'sefer-score-preview' },
   { type: 'BOARDING_ROUTE_IMPACT_PREVIEW', score: 13, patterns: ['rota etkisi', 'rota etkisini', 'önizle', 'onizle', 'önizleme', 'onizleme', 'etkiyi hesapla', 'bugün binmezse', 'bugun binmezse', 'farklı duraktan', 'farkli duraktan', 'geçici durak', 'gecici durak', 'biniş değişikliği', 'binis degisikligi', 'km farkı', 'km farki', 'süre artar mı', 'sure artar mi', 'kapasite etkisi', 'rotasını', 'rotasini', 'rotayı', 'rotayi', 'rota.*değiştir', 'rota.*degistir'], label: 'boarding-route-impact-preview' },
   { type: 'AGREEMENT_ROUTE_REFRESH', score: 16, patterns: ['rota değişikliği', 'rota degisikligi', 'rota güncelleme', 'rota guncelleme', 'eski rota', 'yeni rota', 'teklif mi', 'kabul mü', 'kabul mu', 'karşı teklif', 'karsi teklif', 'uygulanan rota', 'rota geçmişi', 'rota gecmisi', 'room a rota güncelleme talebi', 'room a rota guncelleme talebi', 'rooma rota güncelleme talebi'], label: 'agreement-route-refresh' },
   { type: 'BOARDING_CHANGE_APPLICATION', score: 14, patterns: ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'kabul edilen değişikliği işleme al', 'kabul edilen degisikligi isleme al', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlen', 'gunluk atamaya işlen', 'günlük atamaya işlenebilir', 'gunluk atamaya işlenebilir', 'günlük atama etkisi', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'sürücü rota ekranında görünür', 'surucu rota ekraninda gorunur', 'rota güncellemesi bekliyor', 'rota guncellemesi bekliyor', 'günlük değişiklik rotada görünüyor', 'gunluk degisiklik rotada gorunuyor', 'sürücüye gönderildi mi', 'surucuye gonderildi mi', 'driver route refresh', 'mobile route update', 'rotasına yansıdı mı', 'rotasina yansidi mi', 'stopassignment', 'boarding change application', 'boarding change uygulama'], label: 'boarding-change-application' },
@@ -159,6 +188,7 @@ const INTENT_PRIORITY = [
   'ROW_HELP',
   'MISSING_DATA_HELP',
   'CONTRACT_TO_SHIFT',
+  'SEFER_SCORE_PREVIEW',
   'PAYMENT_READINESS',
   'PAYMENT_MISSING',
   'READINESS_CHECK',
@@ -226,10 +256,11 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/shifts', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|önizleme|onizleme|csv|komisyon|ödeme hesabı|odeme hesabi|kanıt|kanit|kanıt|proof|kalite|quality|eksik bilgi|kontrol gerekli|hazır değil|hazir degil|başlatılabilir|baslatilabilir|güvenli|guvenli|etkiliyor|etkisi)/.test(text)) addScore(scores, signals, 'PAYMENT_READINESS', 12, 'payment-readiness-path');
   if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/shifts', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(kanıt eksik|kanit eksik|kanıtlar eksik|kanitlar eksik|hakediş eksik|hakedis eksik|ödeme eksik|odeme eksik|neden eksik|hazır değil|hazir degil|kontrol gerekli)/.test(text)) addScore(scores, signals, 'PAYMENT_MISSING', 13, 'payment-missing-path');
   if (pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements', '/commercial-flow', '/commercial-core']) && /(tasarruf|tasarruf önizlemesi|tasarruf onizlemesi|km tasarrufu|süre tasarrufu|sure tasarrufu|yaklaşık maliyet|yaklasik maliyet|maliyet etkisi|readonly tasarruf|readonly önizleme|dinamik tasarruf)/.test(text)) addScore(scores, signals, 'DYNAMIC_SAVINGS_PREVIEW', 15, 'dynamic-savings-path');
+  if (pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements', '/commercial-flow', '/commercial-core']) && hasSeferScoreSignal(text)) addScore(scores, signals, 'SEFER_SCORE_PREVIEW', 18, 'sefer-score-path');
   if (pathHas(options.screenPath, ['/company/operations', '/school/operations', '/organization/operations', '/room/operation-health', '/room/shifts']) && /(rota etkisi|rota etkisini|önizle|onizle|önizleme|onizleme|etkiyi hesapla|bugün binmezse|bugun binmezse|farklı duraktan|farkli duraktan|geçici durak|gecici durak|biniş değişikliği|binis degisikligi|km farkı|km farki|süre artar mı|sure artar mi|kapasite etkisi|rotasını|rotasini|rotayı|rotayi|rota.*değiştir|rota.*degistir)/.test(text)) addScore(scores, signals, 'BOARDING_ROUTE_IMPACT_PREVIEW', 13, 'boarding-route-impact-preview-path');
   if (pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|uygulanan rota|rota geçmişi|rota gecmisi|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) addScore(scores, signals, 'AGREEMENT_ROUTE_REFRESH', 20, 'agreement-route-refresh-path');
   if (pathHas(options.screenPath, ['/company/operations', '/school/operations', '/organization/operations', '/room/operation-health', '/room/shifts', '/driver/today', '/driver/route', '/driver/map']) && /(kabul edilen değişikliği uygula|kabul edilen degisikligi uygula|kabul edilen değişikliği işleme al|kabul edilen degisikligi isleme al|günlük atamaya işle|gunluk atamaya işle|günlük atamaya işlen|gunluk atamaya işlen|günlük atamaya işlenebilir|gunluk atamaya işlenebilir|günlük atama etkisi|sürücü rotası yenilenmez|surucu rotasi yenilenmez|kalıcı atama değişmez|kalici atama degismez|sürücü rota ekranında görünür|surucu rota ekraninda gorunur|rota güncellemesi bekliyor|rota guncellemesi bekliyor|günlük değişiklik rotada görünüyor|gunluk degisiklik rotada gorunuyor|sürücüye gönderildi mi|surucuye gonderildi mi|driver route refresh|mobile route update|rotasına yansıdı mı|rotasina yansidi mi|stopassignment|boarding change application|boarding change uygulama)/.test(text)) addScore(scores, signals, 'BOARDING_CHANGE_APPLICATION', 15, 'boarding-change-application-path');
-    if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|kanıt|kanit|kanıt|proof|csv|önizleme|onizleme|hazır değil|hazir degil|hazırlık|hazirlik|eksik)/.test(text)) addScore(scores, signals, 'READINESS_CHECK', 6, 'commercial-readiness');
+  if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|kanıt|kanit|kanıt|proof|csv|önizleme|onizleme|hazır değil|hazir degil|hazırlık|hazirlik|eksik)/.test(text)) addScore(scores, signals, 'READINESS_CHECK', 6, 'commercial-readiness');
     if (pathHas(options.screenPath, ['/superadmin/commercial-core']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text)) {
       addScore(scores, signals, 'READINESS_CHECK', 12, 'superadmin-commercial-core-contract-shift-readiness');
       addScore(scores, signals, 'CONTRACT_TO_SHIFT', -8, 'superadmin-commercial-core-contract-shift-downgrade');
@@ -285,12 +316,16 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     if (pathHas(options.screenPath, ['/shared/feedback']) && /(geri bildirim|feedback).*(açık|acik|kritik|çözüldü|cozuldu|kapandı|kapandi|sorumlu|yıldız|yildiz)/.test(text)) addScore(scores, signals, 'STATUS_HELP', 5, 'feedback-status');
     if (pathHas(options.screenPath, ['/shared/notifications']) && /(hangi olaydan|nereden geldi|kaynak|neden geldi|bu bildirim)/.test(text)) addScore(scores, signals, 'STATUS_HELP', 5, 'notification-source');
     if (pathHas(options.screenPath, ['/shared/kvkk']) && /(görünmüyor|gorunmuyor|görünürlük|gorunurluk|kim görebilir|kim gorebilir|hangi rol)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 6, 'kvkk-visibility');
-  if (pathHas(options.screenPath, ['/shared/feedback']) && /(hangi kayıt|hangi kayit|bu kayıt kimde|sorumlu kim|kim yapabilir)/.test(text)) addScore(scores, signals, 'ROLE_HELP', 4, 'feedback-ownership');
-  if (/(konum|gps|telefon\s+gps).*(neden).*(görünmüyor|gorunmuyor|gecik|gecikiyor|yok)/.test(text) && options.entityType === 'vehicle') {
+    if (pathHas(options.screenPath, ['/shared/feedback']) && /(hangi kayıt|hangi kayit|bu kayıt kimde|sorumlu kim|kim yapabilir)/.test(text)) addScore(scores, signals, 'ROLE_HELP', 4, 'feedback-ownership');
+    if (/(konum|gps|telefon\s+gps).*(neden).*(görünmüyor|gorunmuyor|gecik|gecikiyor|yok)/.test(text) && options.entityType === 'vehicle') {
     addScore(scores, signals, 'LOCATION_HELP', 6, 'vehicle-location-diagnosis');
     addScore(scores, signals, 'WHY_BLOCKED', -2, 'vehicle-location-not-generic-blocked');
   }
   if (pathHas(options.screenPath, ['/operation-health', '/observability', '/trust-quality']) && /(sorun ne|sorunu ne|ne sorun|problem ne|neden|niye).*(sorunlu|riskli|uyarı|uyari|kırmızı|kirmizi|zayıf|zayif|gecik|gecikme|yok)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 6, 'health-risk-why');
+  if (pathHas(options.screenPath, ['/trust-quality'])) {
+    // Trust-quality keeps the legacy quality-signal flow; Sefer preview is restricted to agreements/commercial surfaces.
+    addScore(scores, signals, 'SEFER_SCORE_PREVIEW', -100, 'trust-quality-sefer-suppression');
+  }
   if (pathHas(options.screenPath, ['/personel/my', '/personel/live', '/parent/live', '/driver/route', '/driver/today', '/driver/map']) && /(şimdi|simdi|bundan sonra|sonra).*(ne yap|nereye|neye bak)/.test(text)) {
     addScore(scores, signals, 'NEXT_STEP', 5, 'simple-flow-next-step');
     addScore(scores, signals, 'SCREEN_PURPOSE', -2, 'simple-flow-not-purpose');
@@ -373,6 +408,7 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
   if (String(questionType || '') === 'BOARDING_CHANGE_APPLICATION' || hasAny(text, ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlenebilir', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'sürücü rota ekranında görünür', 'surucu rota ekraninda gorunur', 'rota güncellemesi bekliyor', 'rota guncellemesi bekliyor', 'günlük değişiklik rotada görünüyor', 'gunluk degisiklik rotada gorunuyor', 'sürücüye gönderildi mi', 'surucuye gonderildi mi', 'driver route refresh', 'mobile route update', 'rotasına yansıdı mı', 'rotasina yansidi mi', 'stopassignment'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(questionType || '') === 'BOARDING_ROUTE_IMPACT_PREVIEW' || hasAny(text, ['rota etkisi', 'rota etkisini', 'önizle', 'onizle', 'önizleme', 'onizleme', 'bugün binmezse', 'bugun binmezse', 'farklı duraktan', 'farkli duraktan', 'geçici durak', 'gecici durak', 'biniş değişikliği', 'binis degisikligi', 'km farkı', 'km farki', 'süre artar mı', 'sure artar mi', 'kapasite etkisi'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(questionType || '') === 'DYNAMIC_SAVINGS_PREVIEW' || hasAny(text, ['tasarruf', 'tasarruf önizlemesi', 'tasarruf onizlemesi', 'km tasarrufu', 'süre tasarrufu', 'sure tasarrufu', 'yaklaşık maliyet', 'yaklasik maliyet', 'maliyet etkisi', 'readonly tasarruf', 'dinamik tasarruf'])) return 'ASSIGNMENT_READINESS_GUIDE';
+  if (pathHas(screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements', '/commercial-flow', '/commercial-core']) && (String(questionType || '') === 'SEFER_SCORE_PREVIEW' || hasSeferScoreSignal(text))) return 'SCREEN_MENU_GUIDE'; // check:seferscore01 remains in the product-extensions chain
   if (String(questionType || '') === 'AGREEMENT_ROUTE_REFRESH' || hasAny(text, ['rota değişikliği', 'rota degisikligi', 'rota güncelleme', 'rota guncelleme', 'eski rota', 'yeni rota', 'teklif mi', 'kabul mü', 'kabul mu', 'karşı teklif', 'karsi teklif', 'uygulanan rota', 'rota geçmişi', 'rota gecmisi', 'room a rota güncelleme talebi', 'room a rota guncelleme talebi'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(entityType) === 'vehicle') {
     if (hasAny(text, ['bağla', 'bagla', 'sürücü', 'surucu'])) return 'VEHICLE_DRIVER_BIND';
@@ -399,7 +435,7 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
 }
 
 function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -478,7 +514,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
 }
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -554,7 +590,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
 
 export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPEN', roleMode = 'OPERATIONS', screenPath = '', context = null }) {
   const base = [];
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   const boardingApplicationContext = Boolean(
     context?.structuredFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'

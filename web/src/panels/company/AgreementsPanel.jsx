@@ -18,10 +18,11 @@ import { fetchProviderScore } from "../../utils/providerScores";
 import { getCompanyAgreements, getCompanyRooms } from "../../utils/companyDataHub";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
-import { getAgreementQualityPaymentBridgePreview } from "../../api";
+import { getAgreementQualityPaymentBridgePreview, getAgreementSeferScorePreview } from "../../api";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
 import QualityPaymentBridgePreviewCard from "../shared/QualityPaymentBridgePreviewCard";
+import SeferScorePreviewCard from "../shared/SeferScorePreviewCard";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CompanyAgreementsOverviewSection from "./companyAgreementsOverviewSection";
@@ -148,6 +149,7 @@ export default function AgreementsPanel() {
   const [opsBridge, setOpsBridge] = useState({});
   const [routeRefreshPendingByAgreement, setRouteRefreshPendingByAgreement] = useState({});
   const [qualityPaymentBridgePreview, setQualityPaymentBridgePreview] = useState({ loading: false, data: null, err: "" });
+  const [seferScorePreview, setSeferScorePreview] = useState({ loading: false, data: null, err: "" });
   const shiftStatsCacheRef = useRef(new Map());
 
   const [take, setTake] = useState(20);
@@ -653,6 +655,7 @@ export default function AgreementsPanel() {
 
     if (!token || !agreementId) {
       setQualityPaymentBridgePreview({ loading: false, data: null, err: "" });
+      setSeferScorePreview({ loading: false, data: null, err: "" });
       return () => {
         cancelled = true;
       };
@@ -660,16 +663,24 @@ export default function AgreementsPanel() {
 
     const controller = new AbortController();
     setQualityPaymentBridgePreview((prev) => ({ ...prev, loading: true, err: "" }));
+    setSeferScorePreview((prev) => ({ ...prev, loading: true, err: "" }));
 
     (async () => {
-      try {
-        const payload = await getAgreementQualityPaymentBridgePreview(agreementId, { token, signal: controller.signal });
-        if (cancelled) return;
-        setQualityPaymentBridgePreview({ loading: false, data: payload, err: "" });
-      } catch (error) {
-        if (cancelled) return;
-        setQualityPaymentBridgePreview({ loading: false, data: null, err: error?.message || "Readonly önizleme yüklenemedi" });
-      }
+      const [qualityResult, seferResult] = await Promise.allSettled([
+        getAgreementQualityPaymentBridgePreview(agreementId, { token, signal: controller.signal }),
+        getAgreementSeferScorePreview(agreementId, { token, signal: controller.signal }),
+      ]);
+      if (cancelled) return;
+      setQualityPaymentBridgePreview(
+        qualityResult.status === "fulfilled"
+          ? { loading: false, data: qualityResult.value, err: "" }
+          : { loading: false, data: null, err: qualityResult.reason?.message || "Readonly önizleme yüklenemedi" }
+      );
+      setSeferScorePreview(
+        seferResult.status === "fulfilled"
+          ? { loading: false, data: seferResult.value, err: "" }
+          : { loading: false, data: null, err: seferResult.reason?.message || "Readonly puan önizlemesi yüklenemedi" }
+      );
     })();
 
     return () => {
@@ -765,6 +776,25 @@ export default function AgreementsPanel() {
   ), [qualityBridgePreview]);
   const qualityBridgeNextAction = useMemo(() => compactText(qualityBridgePreview?.nextBestAction || '', ''), [qualityBridgePreview]);
   const qualityBridgeSummaryText = useMemo(() => compactText(qualityBridgePreview?.summaryText || qualityBridgePreview?.previewOnlyNote || '', ''), [qualityBridgePreview]);
+  const seferScorePreviewData = useMemo(() => seferScorePreview.data || null, [seferScorePreview.data]);
+  const seferScoreValue = Number(seferScorePreviewData?.score ?? NaN);
+  const seferScoreMax = Number(seferScorePreviewData?.scoreMax ?? 5) || 5;
+  const seferScoreLevel = useMemo(() => compactText(seferScorePreviewData?.level || '', ''), [seferScorePreviewData]);
+  const seferScoreConfidence = useMemo(() => compactText(seferScorePreviewData?.confidence || '', ''), [seferScorePreviewData]);
+  const seferScoreStatus = useMemo(() => compactText(seferScorePreviewData?.status || '', ''), [seferScorePreviewData]);
+  const seferScoreSummaryText = useMemo(() => compactText(seferScorePreviewData?.summaryText || seferScorePreviewData?.safeExplanation || '', ''), [seferScorePreviewData]);
+  const seferScoreSupplierLabel = useMemo(() => compactText(seferScorePreviewData?.supplierLabel || '', ''), [seferScorePreviewData]);
+  const seferScorePositiveReasons = useMemo(() => (
+    Array.isArray(seferScorePreviewData?.positiveReasons) ? seferScorePreviewData.positiveReasons : EMPTY_QUALITY_BRIDGE_LIST
+  ), [seferScorePreviewData]);
+  const seferScoreRiskReasons = useMemo(() => (
+    Array.isArray(seferScorePreviewData?.riskReasons) ? seferScorePreviewData.riskReasons : EMPTY_QUALITY_BRIDGE_LIST
+  ), [seferScorePreviewData]);
+  const seferScoreMissingSignals = useMemo(() => (
+    Array.isArray(seferScorePreviewData?.missingSignals) ? seferScorePreviewData.missingSignals : EMPTY_QUALITY_BRIDGE_LIST
+  ), [seferScorePreviewData]);
+  const seferScoreNextAction = useMemo(() => compactText(seferScorePreviewData?.nextBestAction || '', ''), [seferScorePreviewData]);
+  const seferScoreSafeExplanation = useMemo(() => compactText(seferScorePreviewData?.safeExplanation || '', ''), [seferScorePreviewData]);
 
   const selectedAgreementCopilotContext = useMemo(() => {
     const row = selectedAgreementRow;
@@ -798,6 +828,7 @@ export default function AgreementsPanel() {
       personelCount > 0 ? `Personel: ${personelCount}` : null,
       stopCount > 0 ? `Durak: ${stopCount}` : null,
       qualityBridgeSummaryText ? `Kalite / hakediş: ${qualityBridgeSummaryText}` : null,
+      seferScoreSummaryText ? `SeferPuanı: ${seferScoreSummaryText}` : null,
     ].filter(Boolean).join(' • ');
     const selectedRecordLabel = `Sözleşme #${a.id}`;
     const selectedRecordType = 'agreement';
@@ -859,6 +890,19 @@ export default function AgreementsPanel() {
       qualityPaymentBridgeMissingProofs: qualityBridgeMissingProofs,
       qualityPaymentBridgeRiskReasons: qualityBridgeRiskReasons,
       qualityPaymentBridgeNextAction: qualityBridgeNextAction,
+      seferScorePreview: seferScorePreviewData,
+      seferScoreSummaryText,
+      seferScoreValue,
+      seferScoreMax,
+      seferScoreLevel,
+      seferScoreConfidence,
+      seferScoreStatus,
+      seferScoreSupplierLabel,
+      seferScorePositiveReasons,
+      seferScoreRiskReasons,
+      seferScoreMissingSignals,
+      seferScoreNextAction,
+      seferScoreSafeExplanation,
       pendingCount: Number(items?.length || 0),
       otherCount: 0,
       extendCount: 0,
@@ -880,6 +924,10 @@ export default function AgreementsPanel() {
       qualityBridgePreview ? { label: 'Önizleme etkisi', value: qualityBridgeImpactStatus || '-', help: qualityBridgeImpactReason || 'Hakediş önizleme etkisi sadece okunur.' } : null,
       qualityBridgePreview ? { label: 'Hazırlık', value: qualityBridgeSettlementReadiness || '-', help: 'Settlement hazırlığı yalnızca readonly görünür.' } : null,
       qualityBridgePreview ? { label: 'Sıradaki işlem', value: qualityBridgeNextAction || '-', help: 'Sadece öneri gösterilir; ödeme başlatılmaz.' } : null,
+      seferScorePreviewData ? { label: 'SeferPuanı', value: Number.isFinite(seferScoreValue) ? `${seferScoreValue.toFixed(2)} / ${seferScoreMax.toFixed(0)}` : '-', help: seferScoreSummaryText || 'Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.' } : null,
+      seferScorePreviewData ? { label: 'Seviye', value: seferScoreLevel || '-', help: 'Elit / İyi / Standart / Riskli / Kritik.' } : null,
+      seferScorePreviewData ? { label: 'Güven', value: seferScoreConfidence || '-', help: 'Önizleme güven seviyesini gösterir.' } : null,
+      seferScorePreviewData ? { label: 'Sıradaki Sefer adımı', value: seferScoreNextAction || '-', help: 'Sadece okunur yönlendirme gösterir.' } : null,
       { label: 'Araç', value: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'), help: 'Onay veya üretim sırasında seçilen aracı gösterir.' },
       { label: 'Sürücü', value: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'), help: 'Onay veya üretim sırasında seçilen sürücüyü gösterir.' },
       { label: 'Oda', value: roomText, help: 'Sözleşmenin bağlı olduğu operasyon odasını gösterir.' },
@@ -935,6 +983,19 @@ export default function AgreementsPanel() {
     qualityBridgeRiskReasons,
     qualityBridgeNextAction,
     qualityBridgeSummaryText,
+    seferScorePreviewData,
+    seferScoreValue,
+    seferScoreMax,
+    seferScoreLevel,
+    seferScoreConfidence,
+    seferScoreStatus,
+    seferScoreSummaryText,
+    seferScoreSupplierLabel,
+    seferScorePositiveReasons,
+    seferScoreRiskReasons,
+    seferScoreMissingSignals,
+    seferScoreNextAction,
+    seferScoreSafeExplanation,
   ]);
 
   useEffect(() => {
@@ -1033,6 +1094,13 @@ export default function AgreementsPanel() {
                 preview={qualityPaymentBridgePreview.data}
                 loading={qualityPaymentBridgePreview.loading}
                 error={qualityPaymentBridgePreview.err}
+              />
+              <SeferScorePreviewCard
+                agreement={selectedAgreementRow.a}
+                preview={seferScorePreviewData}
+                loading={seferScorePreview.loading}
+                error={seferScorePreview.err}
+                style={{ marginTop: 12 }}
               />
             </CollapsibleSection>
           ) : null}

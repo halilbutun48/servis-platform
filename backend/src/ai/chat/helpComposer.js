@@ -44,6 +44,34 @@ function matchesStandalonePhrase(text, phrases) {
   });
 }
 
+function hasSeferScoreSignal(text) {
+  return matchesStandalonePhrase(text, [
+    'seferpuan',
+    'sefer puanı',
+    'sefer puani',
+    'sefer score',
+    'kalitepuan',
+    'readonly kalite puanı',
+    'readonly kalite puani',
+    'kalite puanı',
+    'kalite puani',
+    'tedarikcipuan',
+    'tedarikçi puanı',
+    'tedarikci puani',
+    'sağlayıcıpuan',
+    'sağlayıcı puanı',
+    'saglayici puani',
+    'bu servis kaliteli mi',
+    'eksik sinyaller',
+    'puan neden düşük',
+    'puan neden dusuk',
+    'puan nasıl yükselir',
+    'puan nasil yukselir',
+    'bu puan ödeme veya teklif sıralamasını etkiliyor mu',
+    'bu puan odeme veya teklif siralamasini etkiliyor mu',
+  ]);
+}
+
 const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
   'WHY_BLOCKED',
   'MISSING_DATA',
@@ -51,6 +79,7 @@ const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
   'CONTRACT_SHIFT_TODAY',
   'DYNAMIC_SAVINGS_PREVIEW',
   'AGREEMENT_ROUTE_REFRESH',
+  'SEFER_SCORE_PREVIEW',
   'PAYMENT_READINESS',
   'PAYMENT_MISSING',
   'QUALITY_SIGNAL',
@@ -377,6 +406,9 @@ function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefin
   const asksSystem = /(sistem durumu|sistem durumu ne demek|ne açık ne kapalı|ne acik ne kapali|ödeme neden kapalı|ödeme neden kapali|ödemeler neden kapalı|ödemeler neden kapali|neden kapalı|neden kapali)/.test(text);
   const asksCommercial = /(hakediş|hakedis|ödeme başlat|odeme baslat|ödemeyi başlat|önizleme|onizleme|csv|csv taslağı|csv taslagi|hazırlık|hazirlik|hazır mı|hazir mi|kontrol gerekli|eksik bilgi)/.test(text);
   const asksQuality = /(kalite puanı|kalite puani|taslak skor|inceleme kararı|inceleme karari|denetim izi|sağlayıcı sıralaması|saglayici siralamasi|kesin puan|kesin mi|tekrar kontrol gerekli|şimdilik dikkate alınmadı|simdilik dikkate alinmadi)/.test(text);
+  const isSeferScoreSurface = ['/commercial-core', '/commercial-flow', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']
+    .some((segment) => screenPath.includes(segment));
+  const asksSeferScore = isSeferScoreSurface && hasSeferScoreSignal(text);
   const asksProof = /(servis kanıtı|servis kaniti|hizmet kanıtı|hizmet kaniti|operatör notu|operatör not|operatör notu|sürücünün telefon gps['’]i|sürücünün telefon gps'i|telefon gps|araç gps|arac gps|biniş kaydı|binis kaydı|binis kaydi|kanıt ne işe yarar|kanıt ne ise yarar)/.test(text);
   const asksContractOrReadinessWorkflow = ['PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(questionType || ''))
     || /((sözleşme|sozlesme|sözleşmeden|sozlesmeden).*(vardiya|shift).*(üret|uret|oluş|olustur|oluştur|bugün|bugun))|((hakediş|hakedis|ödeme|odeme).*(hazır değil|hazir degil|hazır mı|hazir mi|eksik bilgi|ödeme hesabı|odeme hesabi|komisyon|önizleme|onizleme|csv))/i.test(text);
@@ -395,6 +427,10 @@ function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefin
   if ((asksProof || (isVerification && relevantQuestionType)) && isTargetSurface) {
     const now = actionLeadQuestion ? 'Servis Kanıtı kartını aç.' : 'Servis Kanıtı kartını incele.';
     return `Şimdi: ${now} Bu programda bunun anlamı: Servis Kanıtı operasyon görünürlüğü sağlar. Neden? Ham GPS ve teknik veri göstermez; sürücünün telefon GPS’i güvenli sinyal olarak görünür. Hakediş için nihai karar değildir. Öneri: Servis Kanıtı kartını seçili kayıtla birlikte oku. Sıradaki doğru işlem: Servis Kanıtı kartını açıp ilgili kaydı kontrol et.`.trim();
+  }
+  if ((asksSeferScore || String(questionType || '') === 'SEFER_SCORE_PREVIEW') && (isQuality || isCommercial || isSuperAdminOverview || isVerification)) {
+    const now = actionLeadQuestion ? 'SeferPuanı önizlemesini aç.' : 'SeferPuanı önizlemesini incele.';
+    return `Şimdi: ${now} Bu programda bunun anlamı: SeferPuanı sadece readonly kalite puanı önizlemesidir. Neden? Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleri birlikte okunur; ödeme, ceza, teklif sıralaması veya otomatik işlem başlatılmaz. Öneri: Sinyal kırılımını ve eksik verileri kontrol et. Sıradaki doğru işlem: SeferPuanı önizlemesini açıp ilgili kayıt satırını incele.`.trim();
   }
   if ((asksQuality || (isQuality && relevantQuestionType)) && (isQuality || isCommercial || isSuperAdminOverview || isVerification)) {
     const now = actionLeadQuestion ? 'Kalite akış özetine bak.' : 'Kalite akış özetini incele.';
@@ -522,6 +558,7 @@ function topicLabelForContext(topic) {
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
     PROVIDER_BETTER: 'Kalite / kanıt sinyali',
     QUALITY_SIGNAL: 'Kalite / kanıt sinyali',
+    SEFER_SCORE_PREVIEW: 'SeferPuanı önizlemesi',
     CONTRACT_SHIFT_TODAY: 'Sözleşme / vardiya üretimi',
     PAYMENT_MISSING: 'Hakediş / kanıt önizlemesi',
     PAYMENT_PREVIEW: 'Hakediş / kanıt önizlemesi',
@@ -552,6 +589,7 @@ const WORKFLOW_TOPICS = new Set([
   'CONTRACT_TO_SHIFT',
   'DYNAMIC_SAVINGS_PREVIEW',
   'AGREEMENT_ROUTE_REFRESH',
+  'SEFER_SCORE_PREVIEW',
   'PAYMENT_MISSING',
   'PAYMENT_PREVIEW',
   'PAYMENT_READINESS',
@@ -600,6 +638,7 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   const theme = selectedDiagnosticTheme(message);
   if (theme) return theme;
   if (questionType === 'SCREEN_PURPOSE') return 'SCREEN_PURPOSE';
+  if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core')) && hasSeferScoreSignal(text)) return 'SEFER_SCORE_PREVIEW';
   if (path.includes('/trust-quality') || /(kalite|saglayıcı|sağlayıcı|saglayici|provider)/.test(text)) return /(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text) ? 'QUALITY_SIGNAL' : 'TRUST_QUALITY';
   if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core'))
     && hasDynamicSavingsSignal([text, selectedText].filter(Boolean).join(' '))) {
@@ -1105,6 +1144,7 @@ function buildContextPriorityDecision({
   }
   const topicWhy = {
     QUALITY_SIGNAL: 'Bu sinyal kesin kalite puanı değil; sağlayıcıyı okumaya yardım eder.',
+    SEFER_SCORE_PREVIEW: 'Bu sadece readonly kalite puanı önizlemesidir. Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.',
     PAYMENT_READINESS: 'Bu sadece önizlemedir; ödeme başlatılmaz ve önce eksik kanıt/kalite kontrolü tamamlanır.',
     PAYMENT_MISSING: 'Bu sadece önizlemedir; eksik kanıtlar kapatılmadan hakediş hazır sayılmaz.',
     PAYMENT_PREVIEW: 'Bu sadece önizlemedir; tahsilat/fatura oluşturulmaz ve kanıt satırları okunur.',
@@ -1150,6 +1190,7 @@ function buildContextPriorityDecision({
   );
   const topicAdvice = {
     QUALITY_SIGNAL: 'Önce kalite sinyalini sağlayıcı puanı, inceleme kararı ve denetim iziyle birlikte oku.',
+    SEFER_SCORE_PREVIEW: 'Önce zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini oku; eksik veri varsa kesin hüküm verme.',
     PAYMENT_READINESS: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et. Ödeme başlatılmaz.',
     PAYMENT_MISSING: 'Önce eksik kanıtları ve kalite kontrolünü tamamla; bu sadece önizlemedir.',
     PAYMENT_PREVIEW: 'Önce hakediş / kanıt önizleme kayıtlarını ve risk nedenlerini kontrol et; ödeme başlatılmaz.',
@@ -1375,6 +1416,10 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
 
   const choose = (predicate) => screens.find(predicate) || null;
   const pickScreenByPathContains = (parts = []) => choose((row) => parts.some((part) => String(row?.path || '').includes(String(part || ''))));
+  const trustQualitySurface = /\/trust-quality/.test(sourcePath) || /trust-quality/.test(sourceSurfaceText);
+  if (trustQualitySurface && /(kalite|quality|puan|skor|sefer|sağlayıcı|saglayici|provider|kanıt|kanit|denetim|inceleme)/.test(text)) {
+    return screenDefinition;
+  }
   const liveSurfaceHint = /\/personel\/live|\/personel\/my|\/parent\/live|\/driver\/today|\/driver\/route|\/driver\/map|\/room\/map|\/room\/live|\/company\/map|\/company\/live|\/organization\/map|\/organization\/live|\/school\/map|\/school\/live/.test(sourcePath)
     || /veli.*canlı takip|veli.*canli takip|parent.*canlı takip|parent.*canli takip|öğrencimin servisi|ogrencimin servisi|canlı takip|canli takip/.test(sourceSurfaceText);
   if (liveSurfaceHint && /(servis|servisim|araç|arac|görev|gorev|gps|konum|harita|haritada|durak|eta)/.test(text)) {
@@ -1760,6 +1805,10 @@ const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFiel
       case 'QUALITY_SIGNAL':
         result = 'Bu ekrandaki veriye göre bu sağlayıcı daha güçlü görünüyor.';
         firstControl = 'Kanıt, taslak skor, inceleme kararı ve denetim izi';
+        break;
+      case 'SEFER_SCORE_PREVIEW':
+        result = 'Bu ekrandaki veriye göre bu tedarikçinin SeferPuanı önizleniyor; ödeme, ceza veya teklif sıralaması başlatmaz.';
+        firstControl = 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleri';
         break;
       case 'CONTRACT_SHIFT_TODAY':
       case 'CONTRACT_TO_SHIFT':
@@ -2610,6 +2659,13 @@ function nextPromptByEntity(entityType, roleMode) {
 }
 
 function guideLinksForEntity(entityType, { questionType = 'OPEN', activeTopic = '', screenPath: _screenPath = '' } = {}) {
+  if (['SEFER_SCORE_PREVIEW'].includes(String(activeTopic || questionType || ''))) {
+    return [
+      makeLinkedGuide('SCREEN_MENU_GUIDE', 'SeferPuanı önizleme rehberini aç', 'WHY', 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini birlikte okur.'),
+      makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Sinyal kırılımını aç', 'SHORT', 'Readonly kalite puanı önizlemesini sadeleştirir.'),
+      makeLinkedGuide('ROLE_HELP_GUIDE', 'Rol yardımını aç', 'SHORT', 'Bu rolde nereye bakacağını gösterir.'),
+    ];
+  }
   if (String(entityType) === 'vehicle') {
     return [
       makeLinkedGuide('LOCATION_SOURCE_GUIDE', 'Konum kaynağı rehberini aç', 'SHORT', 'Telefon GPS\'i ve cihaz GPS\'i farkını açar.'),
@@ -2645,6 +2701,13 @@ function guideLinksForEntity(entityType, { questionType = 'OPEN', activeTopic = 
         return [
           makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Kalite sinyali rehberini aç', 'WHY', 'Kalite, inceleme ve denetim izini birlikte okur.'),
           makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Karşılaştırma rehberini aç', 'SHORT', 'Sağlayıcı farkını sadeleştirir.'),
+          makeLinkedGuide('ROLE_HELP_GUIDE', 'Rol yardımını aç', 'SHORT', 'Bu rolde nereye bakacağını gösterir.'),
+        ];
+      }
+      if (['SEFER_SCORE_PREVIEW'].includes(String(activeTopic || questionType || ''))) {
+        return [
+          makeLinkedGuide('SCREEN_MENU_GUIDE', 'SeferPuanı önizleme rehberini aç', 'WHY', 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini birlikte okur.'),
+          makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Sinyal kırılımını aç', 'SHORT', 'Readonly kalite puanı önizlemesini sadeleştirir.'),
           makeLinkedGuide('ROLE_HELP_GUIDE', 'Rol yardımını aç', 'SHORT', 'Bu rolde nereye bakacağını gösterir.'),
         ];
       }
@@ -3777,6 +3840,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     const screen = String(screenPath || '').toLocaleLowerCase('tr-TR');
     const isVehicleSurface = answerEntityType === 'vehicle' || screen.includes('/map') || screen.includes('/live');
     const isShiftSurface = answerEntityType === 'shift' || screen.includes('/shifts');
+    if (['SEFER_SCORE_PREVIEW'].includes(String(workflowTopic || questionType || ''))) {
+      return ['SeferPuanını sor', 'bu tedarikçinin sefer puanı kaç', 'Readonly kalite puanı önizlemesini tekrar sorar.'];
+    }
     if (['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW'].includes(String(workflowTopic || questionType || ''))) {
       return ['Kanıt eksiklerini sor', 'bu hakediş neden hazır değil', 'Hakediş / kanıt önizlemesini tekrar sorar.'];
     }
@@ -4237,6 +4303,7 @@ function verificationHintForQuestionType(questionType, screenDefinition, quickAc
   if (questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `Tasarruf önizlemesini netleştirmek için önce ${firstControl} ve mevcut / yeni rota farkını kontrol et.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `Rota değişikliği teklifini işleme almadan önce ${firstControl} ve eski/yeni rota farkını kontrol et.`;
+  if (questionType === 'SEFER_SCORE_PREVIEW') return `SeferPuanı önizlemesini netleştirmek için önce ${firstControl} ve eksik sinyal satırlarını kontrol et.`;
   if (questionType === 'STATUS_HELP') return `Durumu netleştirmek için önce ${firstControl} ve varsa seçili kaydın son sinyallerine bak.`;
   if (routeLabel) return `${routeLabel} adımına geçmeden önce ${firstControl} kontrolünü yap.`;
   return `Önce ${firstControl} kontrolünü yap; sonra bu yönlendirmeyi uygula.`;
@@ -4277,6 +4344,7 @@ function questionTypeLabel(questionType) {
     CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
     DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
+    SEFER_SCORE_PREVIEW: 'SeferPuanı önizlemesi',
     WHY_BLOCKED: 'Neden olmuyor',
     QUALITY_SIGNAL: 'Kalite / kanıt sinyali',
     TRUST_QUALITY: 'Kalite / kanıt akışı',
@@ -4325,6 +4393,7 @@ function responseWhyText(questionType, screenDefinition) {
   if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;
+  if (questionType === 'SEFER_SCORE_PREVIEW') return `${screenLabel} ekranındaki SeferPuanı önizlemesini, zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleriyle birlikte okudum. Bu sadece önizlemedir. Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.`;
   if (['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW'].includes(String(questionType || ''))) return `${screenLabel} ekranındaki hakediş / kanıt önizlemesini, kalite ve eksik satırlarla birlikte okudum. Bu sadece önizlemedir; ödeme başlatılmaz.`;
   if (questionType === 'WHY_BLOCKED') return `${screenLabel} ekranındaki blokaj ve eksik bilgi ihtimaline göre cevap verdim.`;
   if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum ve GPS işaretlerine göre yorum yaptım.`;

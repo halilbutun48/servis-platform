@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `300`
-- Toplam executable tracked file: `1067`
-- Combined registry row: `1367`
-- Root/backend/web/mobile package dağılımı: root `143`, backend `634`, web `86`, mobile `201`
+- Toplam package script entry: `301`
+- Toplam executable tracked file: `1069`
+- Combined registry row: `1370`
+- Root/backend/web/mobile package dağılımı: root `144`, backend `636`, web `86`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `17`
 - ACTIVE: `360`
@@ -28,7 +28,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `475`
+- NEEDS_REVIEW: `478`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
@@ -49,7 +49,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 475 |
+| NEEDS_REVIEW | 478 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -89,6 +89,7 @@ Repo: `servis-platform`
 | root:check:pay01e | package.json | root | node backend/scripts/pay_01e_payment_readonly_closure_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PAY-01-E |  | Breaks canonical verification chain |  |
 | root:check:paysafe01 | package.json | root | node backend/scripts/pay_safe_01_payment_write_gate_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PAYSAFE-01 |  | Breaks canonical verification chain |  |
 | root:check:qltpaybridge01 | package.json | root | node backend/scripts/qlt_pay_bridge_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-QLTPAYBRIDGE-01 |  | Owner or chain unclear |  |
+| root:check:seferscore01 | package.json | root | node backend/scripts/sefer_score_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERSCORE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -574,6 +575,7 @@ Repo: `servis-platform`
 | run_web_lint_with_evidence.js | backend/scripts/run_web_lint_with_evidence.js | backend | root:lint:web | web-lint | ACTIVE_CORE |  | RUN-WEB-LINT-WITH-EVIDENCE |  | Owner or chain unclear | canonical runner |
 | scale_readiness_check.js | backend/scripts/scale_readiness_check.js | backend |  | review | NEEDS_REVIEW |  | SCALE-READINESS-CHECK |  | Owner or chain unclear |  |
 | script_harness_consolidation_01_check.js | backend/scripts/script_harness_consolidation_01_check.js | backend | root:check:scriptharnessconsolidation01 | product-extensions | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01-CHECK |  | Owner or chain unclear | canonical repo harness inventory |
+| sefer_score_01_check.js | backend/scripts/sefer_score_01_check.js | backend | root:check:seferscore01 | review | NEEDS_REVIEW |  | SEFER-SCORE-01-CHECK |  | Owner or chain unclear |  |
 | session_safe_panels_cleanup_hotfix_check.mjs | backend/scripts/session_safe_panels_cleanup_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | SESSION-SAFE-PANELS-CLEANUP-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | smoke.js | backend/scripts/smoke.js | backend | backend:current:surface, backend:m91:smoke, backend:m91:smoke:agreement, backend:m91:smoke:route-preview, backend:smoke, root:check:e2esmoke01, root:check:finaluxsmoke01, root:check:m95e26, root:smoke:m98e4 | review | NEEDS_REVIEW |  | SMOKE |  | Owner or chain unclear |  |
 | step06_stabil_check.js | backend/scripts/step06_stabil_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-06-STABIL-CHECK |  | Owner or chain unclear |  |
@@ -835,6 +837,7 @@ Repo: `servis-platform`
 | roomPoolPlanner.js | backend/src/services/roomPoolPlanner.js | backend |  | review | NEEDS_REVIEW |  | ROOM-POOL-PLANNER |  | Owner or chain unclear |  |
 | routeEtaService.js | backend/src/services/routeEtaService.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-ETA-SERVICE |  | Owner or chain unclear |  |
 | routeLearning.js | backend/src/services/routeLearning.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-LEARNING |  | Owner or chain unclear |  |
+| seferScoreService.js | backend/src/services/seferScoreService.js | backend |  | review | NEEDS_REVIEW |  | SEFER-SCORE-SERVICE |  | Owner or chain unclear |  |
 | shiftConflict.js | backend/src/services/shiftConflict.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-CONFLICT |  | Owner or chain unclear |  |
 | shiftConflictBatch.js | backend/src/services/shiftConflictBatch.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-CONFLICT-BATCH |  | Owner or chain unclear |  |
 | shiftPackage.js | backend/src/services/shiftPackage.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-PACKAGE |  | Owner or chain unclear |  |

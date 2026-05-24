@@ -752,6 +752,11 @@ Bu bant güncel doğrulanmış üst hattır.
 - Ana konu: kalite sinyali, operasyon kanıtı ve hakediş önizleme etkisini readonly köprüde birleştirmek; ödeme başlatma, tahsilat, fatura, settlement execute ve komisyon/platform fee açmamak.
 - Not: yalnızca preview/eskalasyon öncesi hazırlık durumu taşır; SeferPuanı için sinyal zemini oluşturur.
 
+### SEFER-SCORE-01 — readonly SeferPuanı önizlemesi [CHECK]
+- Komut: `node backend\scripts\sefer_score_01_check.js`
+- Ana konu: QLT-PAY-BRIDGE-01’den gelen kalite/kanıt/hakediş sinyallerini tedarikçi bazlı readonly SeferPuanı önizlemesine çevirmek; ödeme, ceza, teklif sıralaması, komisyon, platform fee ve settlement execute açmamak.
+- Not: yalnızca preview/fallback kalır; SeferPuanı için açıklanabilir sinyal zeminini hazırlar.
+
 ### DOCS-STATE-01 — son kapanan ürün hatları görünürlüğü [CHECK]
 - Komut: `node backend\scripts\docs_state_01_recent_product_closure_check.js`
 - Ana konu: son kapanan ürün hatlarını SSOT / registry / backlog / repo-contract state içinde görünür ve güncel tutmak; ürün davranışı değiştirmez.
@@ -760,6 +765,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:web01b`
   - `check:qlt04b`
   - `check:qltpaybridge01`
+  - `check:seferscore01`
   - `check:pay01e`
   - `check:paysafe01`
   - `check:cop01e`
@@ -805,6 +811,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:e2esmoke01`
   - `check:fieldlaunch01`
   - `check:qltpaybridge01`
+  - `check:seferscore01`
   - `check:cop03cfix03`
   - `check:cop04a`
   - `check:cop04afix02`
