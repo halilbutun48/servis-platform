@@ -13,7 +13,7 @@ import AgreementConflictBox from "../../components/AgreementConflictBox";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
-import { summarizeRoutePreview } from "../../utils/routePreviewSummary";
+import { routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
 import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import {
@@ -233,13 +233,80 @@ export default function AgreementsPanel() {
     });
     return map;
   }, [pending, others, extendItems]);
+  const selectedRouteRefreshAgreementId = Number(copilotAgreementTarget?.id || selectedAgreement?.id || 0);
+  const selectedRouteRefreshItem = useMemo(() => (
+    selectedRouteRefreshAgreementId > 0
+      ? routeRefreshItems.find((item) => Number(item?.agreementId || 0) === selectedRouteRefreshAgreementId) || null
+      : null
+  ), [routeRefreshItems, selectedRouteRefreshAgreementId]);
+  const selectedRouteRefreshPreview = useMemo(() => (
+    selectedRouteRefreshItem
+      ? routeRefreshPreviewById[String(selectedRouteRefreshItem.id)] || { loading: false, current: null, proposed: null, err: "" }
+      : null
+  ), [selectedRouteRefreshItem, routeRefreshPreviewById]);
+  const selectedRouteRefreshStatus = String(selectedRouteRefreshItem?.status || "").toUpperCase();
+  const selectedRouteRefreshCountered = selectedRouteRefreshStatus === "COUNTERED";
+  const selectedRouteRefreshSummaryText = selectedRouteRefreshItem
+    ? `Talep #${selectedRouteRefreshItem.id} • ${String(selectedRouteRefreshItem.startDate || "").slice(0, 10)} → ${String(selectedRouteRefreshItem.endDate || "").slice(0, 10)} • ${Number(selectedRouteRefreshItem.shiftCount || 0)} taslak vardiya`
+    : "";
+  const selectedRouteRefreshCurrentText = routeSummaryText(selectedRouteRefreshPreview?.current, {
+    peopleCount: Number(selectedRouteRefreshItem?.peopleCount || 0),
+    stopCount: Number(selectedRouteRefreshItem?.stopCount || 0),
+    distanceM: Number(selectedRouteRefreshItem?.currentDistanceM || 0),
+    durationSec: Number(selectedRouteRefreshItem?.currentDurationSec || 0),
+  });
+  const selectedRouteRefreshProposedText = routeSummaryText(selectedRouteRefreshPreview?.proposed, {
+    peopleCount: Number(selectedRouteRefreshItem?.peopleCount || 0),
+    stopCount: Number(selectedRouteRefreshItem?.stopCount || 0),
+    distanceM: Number(selectedRouteRefreshItem?.proposedDistanceM || 0),
+    durationSec: Number(selectedRouteRefreshItem?.proposedDurationSec || 0),
+  });
+  const selectedRouteRefreshDiffText = routeDiffText(
+    selectedRouteRefreshPreview?.current || null,
+    selectedRouteRefreshPreview?.proposed || null,
+    { emptyText: "Personel / durak değişikliği yok", showNegativeMetricSign: false }
+  );
+  const selectedRouteRefreshCurrentAmount = Number(selectedRouteRefreshItem?.initialCompanyOfferAmount ?? selectedRouteRefreshItem?.companyOfferAmount ?? 0);
+  const selectedRouteRefreshNextAmount = Number(
+    selectedRouteRefreshCountered
+      ? selectedRouteRefreshItem?.roomCounterAmount ?? selectedRouteRefreshItem?.companyOfferAmount ?? selectedRouteRefreshCurrentAmount
+      : selectedRouteRefreshItem?.companyOfferAmount ?? selectedRouteRefreshCurrentAmount
+  );
+  const selectedRouteRefreshPriceImpactText = `${moneyTry(selectedRouteRefreshCurrentAmount)} → ${moneyTry(selectedRouteRefreshNextAmount)} (${selectedRouteRefreshNextAmount - selectedRouteRefreshCurrentAmount > 0 ? "+" : ""}${moneyTry(selectedRouteRefreshNextAmount - selectedRouteRefreshCurrentAmount)})`;
+  const selectedRouteRefreshRoomCounterText = selectedRouteRefreshCountered
+    ? `${moneyTry(selectedRouteRefreshItem?.roomCounterAmount)}${selectedRouteRefreshItem?.roomCounterNote ? ` — ${selectedRouteRefreshItem.roomCounterNote}` : ""}`
+    : "";
   useEffect(() => {
     const item = copilotAgreementTarget;
     if (!item) {
       clearCopilotSelection('/room/agreements');
       return;
     }
-    const facts = buildAgreementCopilotFacts(item, { pendingCount: pending.length, otherCount: others.length, extendCount: extendItems.length, shiftCount: Number(shiftStats?.[item.id]?.todayTotal || 0) + Number(shiftStats?.[item.id]?.horizonOpen || 0) });
+    const facts = buildAgreementCopilotFacts(item, {
+      pendingCount: pending.length,
+      otherCount: others.length,
+      extendCount: extendItems.length,
+      shiftCount: Number(shiftStats?.[item.id]?.todayTotal || 0) + Number(shiftStats?.[item.id]?.horizonOpen || 0),
+      routeRefreshState: selectedRouteRefreshItem ? selectedRouteRefreshStatus : '',
+      routeRefreshRequestId: Number(selectedRouteRefreshItem?.id || 0),
+      routeRefreshLabel: selectedRouteRefreshItem ? `Rota güncelleme #${selectedRouteRefreshItem.id}` : '',
+      routeRefreshNote: selectedRouteRefreshItem
+        ? (selectedRouteRefreshStatus === 'ACCEPTED'
+          ? 'Kabul edildi'
+          : selectedRouteRefreshStatus === 'REJECTED'
+            ? 'Reddedildi'
+            : selectedRouteRefreshCountered
+              ? 'Karşı teklif'
+              : 'Bekliyor')
+        : '',
+      routeRefreshChangeType: selectedRouteRefreshItem?.changeType || '',
+      routeRefreshCurrentText: selectedRouteRefreshCurrentText,
+      routeRefreshProposedText: selectedRouteRefreshProposedText,
+      routeRefreshDiffText: selectedRouteRefreshDiffText,
+      routeRefreshPriceImpactText: selectedRouteRefreshPriceImpactText,
+      routeRefreshRoomCounterText: selectedRouteRefreshRoomCounterText,
+      routeRefreshSummaryText: selectedRouteRefreshSummaryText,
+    });
     setCopilotSelection({
       scopeKey: '/room/agreements',
       entityType: item?.shiftId ? 'shift' : 'screen',
@@ -253,6 +320,17 @@ export default function AgreementsPanel() {
         { label: 'Tutar', value: moneyTry(item?.companyOfferAmount ?? item?.amount ?? '-'), help: 'Şirkete ait teklif veya sözleşme tutarını gösterir.' },
         { label: 'Araç', value: item?.vehicleId ? `#${item.vehicleId}` : '-', help: 'Onay sırasında seçilen aracı gösterir.' },
         { label: 'Sürücü', value: item?.driverId ? `#${item.driverId}` : '-', help: 'Onay sırasında seçilen sürücüyü gösterir.' },
+        selectedRouteRefreshItem ? {
+          label: 'Rota güncellemesi',
+          value: selectedRouteRefreshStatus === 'ACCEPTED'
+            ? 'Kabul edildi'
+            : selectedRouteRefreshStatus === 'REJECTED'
+              ? 'Reddedildi'
+              : selectedRouteRefreshCountered
+                ? 'Karşı teklif'
+                : 'Bekliyor',
+          help: selectedRouteRefreshSummaryText || 'Sözleşmeye bağlı rota güncelleme talebi.',
+        } : null,
         { label: 'Bugün / Ufuk', value: `${Number(shiftStats?.[item.id]?.todayDone || 0)}/${Number(shiftStats?.[item.id]?.todayTotal || 0)} tamamlandı • ${Number(shiftStats?.[item.id]?.horizonOpen || 0)} kabul edildi`, help: 'Bugünkü ilerlemeyi ve 7 günlük ufuktaki üretilmiş vardiya sayısını gösterir.' },
       ],
       badges: [
@@ -262,7 +340,24 @@ export default function AgreementsPanel() {
       facts,
     });
     return () => clearCopilotSelection('/room/agreements');
-  }, [copilotAgreementTarget, pending, others, extendItems, shiftStats]);
+  }, [
+    copilotAgreementTarget,
+    pending,
+    others,
+    extendItems,
+    shiftStats,
+    routeRefreshItems,
+    routeRefreshPreviewById,
+    selectedRouteRefreshItem,
+    selectedRouteRefreshStatus,
+    selectedRouteRefreshCountered,
+    selectedRouteRefreshSummaryText,
+    selectedRouteRefreshCurrentText,
+    selectedRouteRefreshProposedText,
+    selectedRouteRefreshDiffText,
+    selectedRouteRefreshPriceImpactText,
+    selectedRouteRefreshRoomCounterText,
+  ]);
 
   function openAgreementShift(shiftId) {
     const sid = Number(shiftId || 0);

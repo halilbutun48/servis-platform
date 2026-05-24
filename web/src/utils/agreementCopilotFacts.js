@@ -45,6 +45,20 @@ function formatRangeTR(start, end) {
   return `${left} - ${right}`;
 }
 
+const ROUTE_REFRESH_STATE_LABELS = {
+  PENDING: "Bekliyor",
+  COUNTERED: "Karşı teklif",
+  ACCEPTED: "Kabul edildi",
+  REJECTED: "Reddedildi",
+  CANCELLED: "İptal edildi",
+  CLOSED: "Kapandı",
+};
+
+function routeRefreshStatusLabel(value) {
+  const key = compactText(value, "").toUpperCase();
+  return ROUTE_REFRESH_STATE_LABELS[key] || compactText(value, "");
+}
+
 function buildSelectedSummary({
   statusText,
   roomName,
@@ -84,7 +98,29 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const selectedRecordLabel = compactText(summary.selectedRecordLabel || item?.label || `Sözleşme #${item?.id || "-"}`);
   const selectedRecordId = safeInt(summary.selectedRecordId || item?.id || 0) || null;
   const roomName = compactText(summary.roomName || item?.roomName || summary.roomLabel || "");
-  const selectedRecordSummary = compactText(
+  const routeRefreshState = compactText(summary.routeRefreshState || summary.routeRefreshStatus || "");
+  const routeRefreshRequestId = safeInt(summary.routeRefreshRequestId || summary.routeRefreshId || 0);
+  const routeRefreshLabel = compactText(summary.routeRefreshLabel || (routeRefreshState ? (routeRefreshRequestId > 0 ? `Rota güncelleme #${routeRefreshRequestId}` : 'Rota güncellemesi') : ""));
+  const routeRefreshNote = compactText(summary.routeRefreshNote || routeRefreshStatusLabel(routeRefreshState) || "", "");
+  const routeRefreshChangeType = compactText(summary.routeRefreshChangeType || item?.changeType || item?.type || "");
+  const routeRefreshCurrentText = compactText(summary.routeRefreshCurrentText || "");
+  const routeRefreshProposedText = compactText(summary.routeRefreshProposedText || "");
+  const routeRefreshDiffText = compactText(summary.routeRefreshDiffText || "");
+  const routeRefreshPriceImpactText = compactText(summary.routeRefreshPriceImpactText || "");
+  const routeRefreshRoomCounterText = compactText(summary.routeRefreshRoomCounterText || "");
+  const routeRefreshCurrentPreviewShiftId = safeInt(summary.routeRefreshCurrentPreviewShiftId || 0);
+  const routeRefreshProposedPreviewShiftId = safeInt(summary.routeRefreshProposedPreviewShiftId || 0);
+  const routeRefreshSummaryText = compactText(summary.routeRefreshSummaryText || [
+    routeRefreshLabel,
+    routeRefreshNote ? `Durum: ${routeRefreshNote}` : "",
+    routeRefreshChangeType ? `Tür: ${routeRefreshChangeType}` : "",
+    routeRefreshCurrentText ? `Mevcut rota: ${routeRefreshCurrentText}` : "",
+    routeRefreshProposedText ? `Yeni rota: ${routeRefreshProposedText}` : "",
+    routeRefreshDiffText ? `Fark: ${routeRefreshDiffText}` : "",
+    routeRefreshPriceImpactText ? `Ücret etkisi: ${routeRefreshPriceImpactText}` : "",
+    routeRefreshRoomCounterText ? `Oda karşı teklifi: ${routeRefreshRoomCounterText}` : "",
+  ].filter(Boolean).join(" • "), "");
+  const selectedRecordSummary = compactText([
     summary.selectedRecordSummary || buildSelectedSummary({
       statusText,
       roomName: roomName || compactText(summary.roomName || `Oda #${item?.roomId || "-"}`),
@@ -99,8 +135,8 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       personelCount: summary.personelCount ?? summary.lastGeneratedShift?.peopleCount ?? summary.lastShift?.peopleCount ?? 0,
       stopCount: summary.stopCount ?? summary.lastGeneratedShift?.stopCount ?? summary.lastShift?.stopCount ?? 0,
     }),
-    "",
-  );
+    routeRefreshSummaryText,
+  ].filter(Boolean).join(" • "), "");
 
   const sourceShiftId = safeInt(summary.sourceShiftId || summary.sourceShift?.id || item?.sourceShiftId || 0);
   const generatedShiftCount = safeInt(summary.generatedShiftCount ?? summary.generatedCount ?? item?.generatedCount ?? 0);
@@ -128,6 +164,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const signals = [
     { id: "screen-title", label: "Ekran", value: screenTitle, note: "Köprü yüzeyi." },
     { id: "selected-record", label: "Seçili kayıt", value: selectedRecordLabel, note: status ? `Durum: ${status}` : "Seçili sözleşme kaydı." },
+    routeRefreshState || routeRefreshLabel || routeRefreshSummaryText ? { id: "route-refresh", label: "Rota güncellemesi", value: routeRefreshState || routeRefreshNote || "Yok", note: routeRefreshSummaryText || "Rota değişikliği sinyali okunuyor." } : null,
     { id: "source-shift", label: "Kaynak vardiya", value: sourceShiftId ? `#${sourceShiftId}` : "Yok", note: sourceShiftId ? "Üretim kökü okunur." : "Kaynak vardiya bağlantısı görünmüyor." },
     { id: "generated-count", label: "Üretilen vardiya", value: generatedShiftCount > 0 ? String(generatedShiftCount) : "Yok", note: generatedShiftCount > 0 ? "Bugün üretim sinyali var." : "Bugün üretim sinyali görünmüyor." },
     { id: "last-generated", label: "Son üretilen vardiya", value: lastGeneratedShiftId ? `#${lastGeneratedShiftId}` : "Yok", note: lastGeneratedShiftStatus ? `Durum: ${lastGeneratedShiftStatus}` : "Son vardiya görünmüyor." },
@@ -148,6 +185,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     blockers: hasProductionSignal ? [] : ["Üretim geçmişi görünmüyor"],
     evidence: [
       selectedRecordSummary ? `Seçili kayıt: ${selectedRecordSummary}` : "",
+      routeRefreshSummaryText ? `Rota güncellemesi: ${routeRefreshSummaryText}` : "",
       sourceShiftId ? `Kaynak vardiya #${sourceShiftId}` : "",
       generatedShiftCount > 0 ? `Üretilen vardiya: ${generatedShiftCount}` : "",
       lastGeneratedShiftId ? `Son üretilen vardiya #${lastGeneratedShiftId}` : "",
@@ -188,6 +226,12 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         value: selectedRecordLabel,
         note: status ? `Durum: ${status}` : "Seçili kayıt okunuyor.",
       }),
+      ...(routeRefreshState || routeRefreshLabel || routeRefreshSummaryText ? [normalizeCopilotSignal({
+        id: "route-refresh",
+        label: "Rota güncellemesi",
+        value: routeRefreshState || routeRefreshNote || "Yok",
+        note: routeRefreshSummaryText || "Rota değişikliği sinyali okunuyor.",
+      })] : []),
       normalizeCopilotSignal({
         id: "workflow-signal",
         label: "Genel workflow",
@@ -252,9 +296,10 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
       .trim(),
     copilotSignals: signals,
-    copilotSummary: `${productionSummary} • ${todayProductionSummary} • ${buildCopilotSignalSummary(signals, 4)}`,
+    copilotSummary: `${productionSummary} • ${todayProductionSummary} • ${buildCopilotSignalSummary(signals, 5)}`,
     copilotBoundary: [
       "Sözleşme",
+      "Rota güncellemesi",
       "Sürücünün telefon GPS’i",
       "Araç GPS’i",
       "Hakediş önizlemesi",
@@ -274,5 +319,18 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     personelCount,
     stopCount,
     roomLabel,
+    routeRefreshState,
+    routeRefreshLabel,
+    routeRefreshNote,
+    routeRefreshSummaryText,
+    routeRefreshChangeType,
+    routeRefreshCurrentText,
+    routeRefreshProposedText,
+    routeRefreshDiffText,
+    routeRefreshPriceImpactText,
+    routeRefreshRoomCounterText,
+    routeRefreshCurrentPreviewShiftId,
+    routeRefreshProposedPreviewShiftId,
+    routeRefreshRequestId,
   };
 }

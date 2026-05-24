@@ -40,6 +40,22 @@ const BLOCKED_SHIFT_CONTEXT = {
   openOfferCount: 1,
 };
 
+const AGREEMENT_ROUTE_SHIFT_CONTEXT = {
+  ...SHIFT_CONTEXT,
+  agreementId: 901,
+  routeRefreshState: 'PENDING',
+  routeRefreshLabel: 'Rota güncelleme #77',
+  changeType: 'PERSONEL_CHANGED',
+};
+
+const AGREEMENT_ROUTE_SHIFT_ACCEPTED_CONTEXT = {
+  ...SHIFT_CONTEXT,
+  agreementId: 901,
+  routeRefreshState: 'ACCEPTED',
+  routeRefreshLabel: 'Rota güncelleme #77',
+  changeType: 'PERSONEL_CHANGED',
+};
+
 export function buildGoldenQuestionPack() {
   return [
     {
@@ -148,6 +164,50 @@ export function buildGoldenQuestionPack() {
       expectedFirstActionKind: 'ASK',
       minConfidence: 0.6,
       screenContext: ctx('/room/agreements', { label: 'Sözleşmeler' }),
+    },
+    {
+      id: 'room-agreements-route-refresh-offer',
+      role: 'ROOM',
+      entityType: 'shift',
+      path: '/room/agreements',
+      message: 'Bu sözleşmede rota değişikliği var mı?',
+      expectedType: 'AGREEMENT_ROUTE_REFRESH',
+      expectedFirstActionKind: 'ASK',
+      minConfidence: 0.72,
+      context: AGREEMENT_ROUTE_SHIFT_CONTEXT,
+      screenContext: ctx('/room/agreements', {
+        label: 'Sözleşmeler',
+        selectedLabel: 'Rota güncelleme #77',
+        selectedSummary: 'Talep #77 • Bekliyor',
+        selectedFields: [
+          { label: 'Eski rota', value: 'Var' },
+          { label: 'Yeni rota', value: 'Var' },
+          { label: 'Fark', value: 'Kişi / durak / km / süre' },
+        ],
+        selectedBadges: [{ label: 'Durum', value: 'Bekliyor' }],
+      }),
+    },
+    {
+      id: 'room-agreements-route-refresh-history',
+      role: 'ROOM',
+      entityType: 'shift',
+      path: '/room/agreements',
+      message: 'Bu rota uygulanmış mı, sadece teklif mi?',
+      expectedType: 'AGREEMENT_ROUTE_REFRESH',
+      expectedFirstActionKind: 'ASK',
+      minConfidence: 0.72,
+      context: AGREEMENT_ROUTE_SHIFT_ACCEPTED_CONTEXT,
+      screenContext: ctx('/room/agreements', {
+        label: 'Sözleşmeler',
+        selectedLabel: 'Rota güncelleme #77',
+        selectedSummary: 'Talep #77 • Uygulandı',
+        selectedFields: [
+          { label: 'Eski rota', value: 'Önceki' },
+          { label: 'Yeni rota', value: 'Uygulanan' },
+          { label: 'Durum', value: 'Uygulandı' },
+        ],
+        selectedBadges: [{ label: 'Tip', value: 'Geçmiş' }],
+      }),
     },
     {
       id: 'room-operation-health-first',
@@ -1110,9 +1170,56 @@ export function buildGoldenQuestionPack() {
         message: 'Bu ekran ne için var?',
         expectedType: 'SCREEN_PURPOSE',
         expectedFirstActionKind: 'ASK',
-        minConfidence: 0.6,
-        screenContext: ctx('/company/agreements', { label: 'Sözleşmeler' }),
+      minConfidence: 0.6,
+      screenContext: ctx('/company/agreements', { label: 'Sözleşmeler' }),
+    },
+    {
+      id: 'company-agreements-route-refresh-offer',
+      role: 'COMPANY',
+      entityType: 'shift',
+      path: '/company/agreements',
+      message: 'Room’a rota güncelleme talebi gitti mi?',
+      expectedType: 'AGREEMENT_ROUTE_REFRESH',
+      expectedFirstActionKind: 'ASK',
+      minConfidence: 0.72,
+      context: AGREEMENT_ROUTE_SHIFT_CONTEXT,
+      screenContext: ctx('/company/agreements', {
+        label: 'Sözleşmeler (Company)',
+        selectedLabel: 'Rota güncelleme #77',
+        selectedSummary: 'Talep #77 • Bekliyor',
+        selectedFields: [
+          { label: 'Şirket', value: 'Teklif gönderildi' },
+          { label: 'Room', value: 'Karşı teklif bekliyor' },
+          { label: 'Fark', value: 'Kişi / durak / km / süre' },
+        ],
+        selectedBadges: [{ label: 'Durum', value: 'Bekliyor' }],
+      }),
+    },
+    {
+      id: 'company-agreements-route-refresh-diff',
+      role: 'COMPANY',
+      entityType: 'shift',
+      path: '/company/agreements',
+      message: 'Eski rota ile yeni rota farkı ne?',
+      expectedType: 'AGREEMENT_ROUTE_REFRESH',
+      expectedFirstActionKind: 'ASK',
+      minConfidence: 0.72,
+      context: {
+        ...AGREEMENT_ROUTE_SHIFT_CONTEXT,
+        routeRefreshState: 'COUNTERED',
       },
+      screenContext: ctx('/company/agreements', {
+        label: 'Sözleşmeler (Company)',
+        selectedLabel: 'Rota güncelleme #77',
+        selectedSummary: 'Talep #77 • Karşı teklif',
+        selectedFields: [
+          { label: 'Eski rota', value: 'Önceki' },
+          { label: 'Yeni rota', value: 'Önerilen' },
+          { label: 'Fark', value: 'Kişi / durak / km / süre' },
+        ],
+        selectedBadges: [{ label: 'Durum', value: 'Karşı teklif' }],
+      }),
+    },
     {
       id: 'company-agreements-contract-today',
       role: 'COMPANY',

@@ -41,6 +41,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `mobile route update` burada yeni write kanalı değil, sürücü ekranında görünen güvenli route-refresh sinyalinin adıdır.
 - Bu not product behavior değiştirmez; yalnızca günlük atama etkisinin sürücü yüzeyinde nasıl izlendiğini tarif eder.
 
+## ROUTE-CHANGE-FINAL-01 kapsam notu
+- Bu final kabul akışı `Company / Sözleşmeler` ve `Room / Sözleşmeler` yüzeylerinde sözleşmeye bağlı rota güncelleme teklifini, karşı teklifi, kabul / red / tekrar kontrol durumunu ve eski/yeni rota farkını statik olarak izler.
+- `Personel ekleme`, `personel çıkarma` ve `personel değişme` etkileri yalnızca rota farkı, kişi / durak / km / süre metrikleri ve uygulanan rota geçmişi üzerinden okunur; driver route refresh bu milestone kapsamında değildir.
+- `Sefer Abi` persona/launcher, safe answer wording, payment / settlement execute yokluğu ve raw internal/debug/OperationProof sızıntısının olmaması korunur.
+- Bu not product behavior değiştirmez; yalnızca sözleşme kaynaklı rota değişikliği final kabul yüzeyini tarif eder.
+
 ## Yöntem
 - Panel dosyaları ve Copilot helper zinciri statik olarak tarandı.
 - Hızlı Yardım üst bağlamı ile serbest chat route ayrışması için risk yüzeyleri not edildi.

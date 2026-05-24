@@ -2,6 +2,7 @@ import CommercialReadonlySummary from "../../components/CommercialReadonlySummar
 import { rowSelectionStyle } from "../../utils/listUi";
 import { agreementExtendStatusText } from "../../utils/agreementLabels";
 import { routeDiffText, routeSummaryText } from "../../utils/routePreviewSummary";
+import AgreementRouteChangePreviewCard from "../shared/AgreementRouteChangePreviewCard";
 
 function moneyTry(v) {
   if (v == null || v === "") return "-";
@@ -45,31 +46,6 @@ function ymd(value) {
   return String(value || "").slice(0, 10);
 }
 
-function RouteRefreshCommercialBox({ item, agreement, accepted = false }) {
-  const priorAmount = Number(item?.priorAgreementAmount ?? agreement?.companyOfferAmount ?? 0);
-  const companyAmount = Number(item?.initialCompanyOfferAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount ?? priorAmount);
-  const roomAmount = item?.roomCounterAmount == null ? null : Number(item.roomCounterAmount);
-  const finalAmount = accepted
-    ? Number(item?.finalAcceptedAmount ?? (roomAmount ?? item?.companyOfferAmount ?? companyAmount ?? priorAmount))
-    : Number(roomAmount ?? item?.companyOfferAmount ?? companyAmount ?? priorAmount);
-  return (
-    <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-      <div className="muted">{accepted ? "Ücret akışı" : "Ücret pazarlığı"}</div>
-      <div style={{ fontWeight: 800, marginTop: 4 }}>
-        {routePriceDiffText(priorAmount, finalAmount)}
-      </div>
-      <div className="muted" style={{ marginTop: 6, lineHeight: 1.5 }}>
-        <div>Mevcut: <b>{moneyTry(priorAmount)}</b></div>
-        <div>Şirket teklifi: <b>{moneyTry(companyAmount)}</b>{item?.initialCompanyOfferNote ? <span> — {item.initialCompanyOfferNote}</span> : null}</div>
-        <div>Oda karşı teklifi: <b>{roomAmount == null ? "-" : moneyTry(roomAmount)}</b>{item?.roomCounterNote ? <span> — {item.roomCounterNote}</span> : null}</div>
-        {accepted ? (
-          <div>Uygulanan final: <b>{moneyTry(finalAmount)}</b>{item?.finalAcceptedNote ? <span> — {item.finalAcceptedNote}</span> : null}</div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 function RoomAgreementsRouteRefreshPendingCard({
   item,
   agreement,
@@ -107,6 +83,8 @@ function RoomAgreementsRouteRefreshPendingCard({
   };
   const effectiveCurrentSummary = preview?.current || currentSummaryFallback;
   const effectiveProposedSummary = preview?.proposed || proposedSummaryFallback;
+  const itemStatus = String(item?.status || "").toUpperCase();
+  const roomAmount = item?.roomCounterAmount == null ? null : Number(item.roomCounterAmount);
 
   return (
     <div
@@ -127,49 +105,51 @@ function RoomAgreementsRouteRefreshPendingCard({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginTop: 12 }}>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Mevcut rota</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>
-            {routeSummaryText(effectiveCurrentSummary)}
-          </div>
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Önerilen yeni rota</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>
-            {routeSummaryText(effectiveProposedSummary)}
-          </div>
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Fark</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>
-            {routeDiffText(effectiveCurrentSummary, effectiveProposedSummary)}
-          </div>
-        </div>
-        <RouteRefreshCommercialBox item={item} agreement={agreement} />
-      </div>
-
-      {preview?.err ? <div className="muted" style={{ marginTop: 10 }}>Rota özeti yüklenemedi: {preview.err}</div> : null}
-      {preview?.loading ? <div className="muted" style={{ marginTop: 10 }}>Rota özeti yükleniyor…</div> : null}
-
-      <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-        <button type="button" className="btn sm ghost" disabled={!sourceShiftId} onClick={(e) => { e.stopPropagation(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Mevcut Rota` }); }}>
-          Mevcut Rotayı Gör
-        </button>
-        <button type="button" className="btn sm ghost" disabled={!draftShiftId} onClick={(e) => { e.stopPropagation(); onOpenPreview(draftShiftId, { title: `Sözleşme #${agreementId} — Önerilen Yeni Rota` }); }}>
-          Yeni Rotayı Önizle
-        </button>
-        <button type="button" className="btn sm ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onStartCounter(item); }}>
-          {String(item?.status || "").toUpperCase() === "COUNTERED" ? "Karşı Teklifi Güncelle" : "Karşı Teklif"}
-        </button>
-        <button type="button" className="btn sm ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onDecision(requestId, "CANCEL"); }}>
-          İptal Et
-        </button>
-        {String(item?.status || "").toUpperCase() !== "COUNTERED" ? (
-          <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); onDecision(requestId, "ACCEPT"); }}>
-            Kabul Et
-          </button>
-        ) : null}
+      <div style={{ marginTop: 12 }}>
+        <AgreementRouteChangePreviewCard
+          summaryText={`Talep #${requestId} • ${String(item?.status || "-").toUpperCase()} • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
+          companyOfferNote={item?.initialCompanyOfferNote || item?.companyOfferNote || ""}
+          roomCounterText={roomAmount == null ? "" : `${moneyTry(roomAmount)}${item?.roomCounterNote ? ` — ${item.roomCounterNote}` : ""}`}
+          currentRouteLabel="Mevcut rota"
+          proposedRouteLabel="Önerilen yeni rota"
+          diffLabel="Kişi / durak / km / süre farkı"
+          priceLabel="Ücret etkisi"
+          currentRouteText={routeSummaryText(effectiveCurrentSummary)}
+          proposedRouteText={routeSummaryText(effectiveProposedSummary)}
+          diffText={routeDiffText(effectiveCurrentSummary, effectiveProposedSummary)}
+          priceImpactText={routePriceDiffText(
+            Number(item?.initialCompanyOfferAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount ?? 0),
+            Number(
+              itemStatus === "COUNTERED"
+                ? (item?.roomCounterAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount ?? item?.initialCompanyOfferAmount ?? 0)
+                : (item?.companyOfferAmount ?? agreement?.companyOfferAmount ?? item?.initialCompanyOfferAmount ?? 0)
+            )
+          )}
+          boundaryNote={itemStatus === "COUNTERED"
+            ? "Bu sadece teklif / önizleme; rota uygulanmadı. Karşı teklif bekleniyor."
+            : "Bu sadece teklif / önizleme; rota uygulanmadı."}
+          previewError={preview?.err}
+          previewLoading={preview?.loading}
+          currentPreviewShiftId={sourceShiftId}
+          proposedPreviewShiftId={draftShiftId}
+          currentPreviewButtonLabel="Mevcut Rotayı Gör"
+          proposedPreviewButtonLabel="Yeni Rotayı Önizle"
+          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Mevcut Rota` }); }}
+          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(draftShiftId, { title: `Sözleşme #${agreementId} — Önerilen Yeni Rota` }); }}
+          actions={(
+            <>
+              <button type="button" className="btn sm ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onStartCounter(item); }}>
+                {isCounterOpen ? "Karşı Teklifi Güncelle" : "Tekrar Kontrol"}
+              </button>
+              <button type="button" className="btn sm ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onDecision(requestId, "CANCEL"); }}>
+                Reddet
+              </button>
+              <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); onDecision(requestId, "ACCEPT"); }}>
+                {itemStatus === "COUNTERED" ? "Karşı Teklifi Kabul Et" : "Kabul Et"}
+              </button>
+            </>
+          )}
+        />
       </div>
 
       {isCounterOpen ? (
@@ -288,6 +268,8 @@ function RoomAgreementsRouteRefreshAcceptedCard({
   };
   const effectiveCurrentSummary = preview?.current || currentSummaryFallback;
   const effectiveAppliedSummary = preview?.proposed || appliedSummaryFallback;
+  const roomAmount = item?.roomCounterAmount == null ? null : Number(item.roomCounterAmount);
+  const itemStatus = String(item?.status || "").toUpperCase();
 
   return (
     <div
@@ -309,38 +291,36 @@ function RoomAgreementsRouteRefreshAcceptedCard({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginTop: 12 }}>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Önceki rota</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>
-            {routeSummaryText(effectiveCurrentSummary)}
-          </div>
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Uygulanan yeni rota</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>
-            {routeSummaryText(effectiveAppliedSummary)}
-          </div>
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Fark</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>
-            {routeDiffText(effectiveCurrentSummary, effectiveAppliedSummary)}
-          </div>
-        </div>
-        <RouteRefreshCommercialBox item={item} agreement={agreement} accepted />
-      </div>
-
-      {preview?.err ? <div className="muted" style={{ marginTop: 10 }}>Rota özeti yüklenemedi: {preview.err}</div> : null}
-      {preview?.loading ? <div className="muted" style={{ marginTop: 10 }}>Rota özeti yükleniyor…</div> : null}
-
-      <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-        <button type="button" className="btn sm ghost" disabled={!sourceShiftId} onClick={(e) => { e.stopPropagation(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Önceki Rota` }); }}>
-          Önceki Rotayı Gör
-        </button>
-        <button type="button" className="btn sm ghost" disabled={!acceptedShiftId} onClick={(e) => { e.stopPropagation(); onOpenPreview(acceptedShiftId, { title: `Sözleşme #${agreementId} — Uygulanan Yeni Rota` }); }}>
-          Uygulanan Rotayı Gör
-        </button>
+      <div style={{ marginTop: 12 }}>
+        <AgreementRouteChangePreviewCard
+          summaryText={`Talep #${item?.id || '-'} • Uygulandı • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
+          companyOfferNote={item?.finalAcceptedNote || item?.initialCompanyOfferNote || item?.companyOfferNote || ""}
+          roomCounterText={roomAmount == null ? "" : `${moneyTry(roomAmount)}${item?.roomCounterNote ? ` — ${item.roomCounterNote}` : ""}`}
+          currentRouteLabel="Önceki rota"
+          proposedRouteLabel="Uygulanan yeni rota"
+          diffLabel="Kişi / durak / km / süre farkı"
+          priceLabel="Ücret etkisi"
+          currentRouteText={routeSummaryText(effectiveCurrentSummary)}
+          proposedRouteText={routeSummaryText(effectiveAppliedSummary)}
+          diffText={routeDiffText(effectiveCurrentSummary, effectiveAppliedSummary)}
+          priceImpactText={routePriceDiffText(
+            Number(item?.initialCompanyOfferAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount ?? 0),
+            Number(
+              itemStatus === "COUNTERED"
+                ? (item?.roomCounterAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount ?? item?.initialCompanyOfferAmount ?? 0)
+                : (item?.finalAcceptedAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount ?? item?.initialCompanyOfferAmount ?? 0)
+            )
+          )}
+          boundaryNote="Bu yalnızca uygulanan geçmişi gösterir; rota yeniden uygulanmadı."
+          previewError={preview?.err}
+          previewLoading={preview?.loading}
+          currentPreviewShiftId={sourceShiftId}
+          proposedPreviewShiftId={acceptedShiftId}
+          currentPreviewButtonLabel="Önceki Rotayı Gör"
+          proposedPreviewButtonLabel="Uygulanan Rotayı Gör"
+          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Önceki Rota` }); }}
+          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(acceptedShiftId, { title: `Sözleşme #${agreementId} — Uygulanan Yeni Rota` }); }}
+        />
       </div>
     </div>
   );

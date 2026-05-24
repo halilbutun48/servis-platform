@@ -60,6 +60,7 @@ const steps = [
   'check:boardingops01a',
   'check:boardingops01b',
   'check:boardingops01c',
+  'check:routechangefinal01',
   'check:etasanity01',
   'check:etaosrm01',
   'check:etaosrm02',

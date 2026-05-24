@@ -1942,6 +1942,30 @@ export function buildCopilotStarterChips({
   const isRoomOperationHealth = path.includes('/room/operation-health');
   const isSuperAdminOps = path.includes('/superadmin/observability') || path.includes('/superadmin/operations');
   const isAgreementSurface = path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements');
+  const isAgreementRouteRefresh = isAgreementSurface && Boolean(
+    selection?.facts?.routeRefreshState
+    || selection?.liveFacts?.routeRefreshState
+    || selection?.structuredFacts?.routeRefreshState
+    || selection?.facts?.routeRefreshLabel
+    || selection?.liveFacts?.routeRefreshLabel
+    || selection?.structuredFacts?.routeRefreshLabel
+    || includesAny(selectionText, [
+      'rota güncelleme',
+      'rota guncelleme',
+      'rota değişikliği',
+      'rota degisikligi',
+      'eski rota',
+      'yeni rota',
+      'teklif mi',
+      'kabul mü',
+      'kabul mu',
+      'karşı teklif',
+      'karsi teklif',
+      'uygulanan rota',
+      'rota geçmişi',
+      'rota gecmisi',
+    ]),
+  );
   const isCommercialSurface = path.includes('/company/commercial-flow') || path.includes('/superadmin/commercial-core') || path.includes('/room/commercial-flow');
   const isCompanyShifts = path.includes('/company/shifts') || path.includes('/school/shifts') || path.includes('/organization/shifts');
   const isCompanyQuality = path.includes('/company/service-evaluation') || path.includes('/school/service-evaluation') || path.includes('/organization/service-evaluation');
@@ -1993,6 +2017,8 @@ export function buildCopilotStarterChips({
     chips = ['Riskli cihazları göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücü durumunu sor'];
   } else if (isSuperAdminOps) {
     chips = ['Riskleri sırala', 'GPS görünürlüğünü kontrol et', 'Açık sorunları göster', 'Sıradaki doğru işlem ne?'];
+  } else if (isAgreementRouteRefresh) {
+    chips = ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
   } else if (isAgreementSurface) {
     chips = ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {

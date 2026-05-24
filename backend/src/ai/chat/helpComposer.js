@@ -49,6 +49,7 @@ const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
   'MISSING_DATA',
   'CONTRACT_TO_SHIFT',
   'CONTRACT_SHIFT_TODAY',
+  'AGREEMENT_ROUTE_REFRESH',
   'PAYMENT_READINESS',
   'PAYMENT_MISSING',
   'QUALITY_SIGNAL',
@@ -80,6 +81,7 @@ const WORKFLOW_SURFACE_HINTS = [
   '/feedback',
   '/notifications',
   '/kvkk',
+  '/agreements',
   '/driver/today',
   '/personel/live',
   '/parent/live',
@@ -171,6 +173,7 @@ function selectedDiagnosticTheme(message) {
   if (/(görev|gorev|rota|sonraki durak|durak).*(başlamıyor|baslamiyor|başlayamıyor|baslayamiyor|görünmüyor|gorunmuyor|bekliyor|yok)/.test(text)) return 'SHIFT_BLOCKED';
   if (/(sürücünün|surucunun).*(telefon gps|telefon gps['’]i|telefon gps’i).*(neden).*(devrede|aktif|açık|acik)/.test(text) || /(telefon gps|cihaz gps).*(neden).*(devrede|aktif|açık|acik)/.test(text)) return 'DRIVER_PHONE_GPS';
   if (/(sağlayıcı|saglayici|provider).*(neden).*(daha iyi|daha güçlü|daha guclu)/.test(text) || /(daha iyi|daha güçlü|daha guclu).*(sağlayıcı|saglayici|provider)/.test(text)) return 'QUALITY_SIGNAL';
+  if (/(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|uygulanan rota|rota geçmişi|rota gecmisi|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) return 'AGREEMENT_ROUTE_REFRESH';
   if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text) || /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)) return 'CONTRACT_SHIFT_TODAY';
   if (/(sözleşme|sozlesme).*(vardiya|shift)/.test(text)) return 'CONTRACT_TO_SHIFT';
   if (/(kabul edilen değişikliği uygula|kabul edilen degisikligi uygula|kabul edilen değişikliği işleme al|kabul edilen degisikligi isleme al|günlük atamaya işle|gunluk atamaya işle|günlük atamaya işlen|gunluk atamaya işlen|günlük atamaya işlenebilir|gunluk atamaya işlenebilir|günlük atama etkisi|sürücü rotası yenilenmez|surucu rotasi yenilenmez|kalıcı atama değişmez|kalici atama degismez|stopassignment|boarding change application|boarding change uygulama)/.test(text)) return 'BOARDING_CHANGE_APPLICATION';
@@ -505,6 +508,7 @@ function topicLabelForContext(topic) {
     DRIVER_PHONE_GPS: 'Sürücünün telefon GPS’i',
     BOARDING_CHANGE_APPLICATION: 'Kabul edilen değişiklik / günlük atama',
     BOARDING_ROUTE_IMPACT_PREVIEW: 'Biniş değişikliği önizlemesi',
+    AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
     PROVIDER_BETTER: 'Kalite sinyali',
     QUALITY_SIGNAL: 'Kalite sinyali',
     CONTRACT_SHIFT_TODAY: 'Sözleşme / vardiya üretimi',
@@ -535,6 +539,7 @@ const WORKFLOW_TOPICS = new Set([
   'QUALITY_SIGNAL',
   'CONTRACT_SHIFT_TODAY',
   'CONTRACT_TO_SHIFT',
+  'AGREEMENT_ROUTE_REFRESH',
   'PAYMENT_MISSING',
   'PAYMENT_PREVIEW',
   'PAYMENT_READINESS',
@@ -580,6 +585,10 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   if (theme) return theme;
   if (questionType === 'SCREEN_PURPOSE') return 'SCREEN_PURPOSE';
   if (path.includes('/trust-quality') || /(kalite|saglayıcı|sağlayıcı|saglayici|provider)/.test(text)) return /(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text) ? 'QUALITY_SIGNAL' : 'TRUST_QUALITY';
+  if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements'))
+    && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|uygulanan rota|rota geçmişi|rota gecmisi|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) {
+    return 'AGREEMENT_ROUTE_REFRESH';
+  }
   if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text)
     || /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)
     || (/(sözleşme|sozlesme|contract)/.test(text) && /(vardiya|shift)/.test(text))) {
@@ -679,8 +688,29 @@ function buildContextualSuggestedChips({
     ['BOARDING_ROUTE_IMPACT_PREVIEW'].includes(String(activeTopic || questionType || ''))
     || ['BOARDING_ROUTE_IMPACT_PREVIEW'].includes(String(context?.structuredFacts?.screenType || context?.liveFacts?.screenType || sourceScreenContext?.structuredFacts?.screenType || ''))
   );
-  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType) || boardingPreviewTopic || boardingApplicationTopic;
-  const workflowChipTopic = boardingApplicationTopic ? 'BOARDING_CHANGE_APPLICATION' : boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : activeTopic;
+  const routeRefreshSignalText = normalizeText([
+    firstNonEmpty(context?.facts?.routeRefreshState, ''),
+    firstNonEmpty(context?.liveFacts?.routeRefreshState, ''),
+    firstNonEmpty(context?.structuredFacts?.routeRefreshState, ''),
+    firstNonEmpty(sourceScreenContext?.facts?.routeRefreshState, ''),
+    firstNonEmpty(sourceScreenContext?.liveFacts?.routeRefreshState, ''),
+    firstNonEmpty(sourceScreenContext?.structuredFacts?.routeRefreshState, ''),
+    firstNonEmpty(context?.facts?.routeRefreshLabel, ''),
+    firstNonEmpty(context?.liveFacts?.routeRefreshLabel, ''),
+    firstNonEmpty(context?.structuredFacts?.routeRefreshLabel, ''),
+    firstNonEmpty(sourceScreenContext?.facts?.routeRefreshLabel, ''),
+    firstNonEmpty(sourceScreenContext?.liveFacts?.routeRefreshLabel, ''),
+    firstNonEmpty(sourceScreenContext?.structuredFacts?.routeRefreshLabel, ''),
+    selectedLabel,
+    selectedSummary,
+  ].filter(Boolean).join(' '));
+  const topicKey = String(activeTopic || questionType || '');
+  const routeRefreshTopic = Boolean(
+    ['AGREEMENT_ROUTE_REFRESH'].includes(topicKey)
+    || (!['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(topicKey) && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|uygulanan rota|rota geçmişi|rota gecmisi|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(routeRefreshSignalText))
+  );
+  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType) || boardingPreviewTopic || boardingApplicationTopic || routeRefreshTopic;
+  const workflowChipTopic = boardingApplicationTopic ? 'BOARDING_CHANGE_APPLICATION' : boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : routeRefreshTopic ? 'AGREEMENT_ROUTE_REFRESH' : activeTopic;
   if (workflowTopic) chips.push(...workflowTopicChipSet({ activeTopic: workflowChipTopic, questionType, screenPath }));
   if (hasSelectedRecord && !workflowTopic && !path.includes('/parent/live')) {
     chips.push('Seçili kaydı aç', 'Başlatma zamanını kontrol et', 'Eksik veriyi göster', 'Yetki sınırını açıkla');
@@ -1057,6 +1087,7 @@ function buildContextPriorityDecision({
     MISSING_DATA: 'Boş alanlar yüzünden kayıt ilerlemiyor olabilir.',
     CONTRACT_TO_SHIFT: 'Şimdi: Bu sözleşme için bugün vardiya üretim sinyali görünüyor mu, önce onu kontrol et.',
     CONTRACT_SHIFT_TODAY: 'Şimdi: Bu sözleşme için bugün vardiya üretim sinyali görünüyor mu, önce onu kontrol et.',
+    AGREEMENT_ROUTE_REFRESH: 'Bu sözleşmedeki rota değişikliği talebi eski rota, yeni rota ve teklif/kabul durumuyla birlikte okunur.',
     DRIVER_PHONE_GPS: 'Telefon GPS’i cihaz GPS’inin yerine geçiyor olabilir.',
     VEHICLE_NOT_VISIBLE: 'Araç, görev bağlantısı, son GPS veya Sürücünün telefon GPS’i devrede olmadığı için görünmüyor olabilir.',
     WHY_BLOCKED: operationHealthLead || 'Önce blokaj nedeni ve eksik alanı kontrol et.',
@@ -1093,6 +1124,7 @@ function buildContextPriorityDecision({
     PAYMENT_READINESS: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.',
     PAYMENT_MISSING: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.',
     PAYMENT_PREVIEW: 'Önce hakediş önizleme kayıtlarını ve eksik bilgi satırlarını kontrol et.',
+    AGREEMENT_ROUTE_REFRESH: 'Önce şirket teklifini, oda karşı teklifini, eski rota ile yeni rota farkını ve kabul durumunu kontrol et; bu yalnızca teklif/önizleme akışıdır.',
     NEXT_SCREEN: 'Önce ilgili ekrana geç.',
     NEXT_STEP: 'Önce ilgili kayıt veya alanı kontrol et.',
     WHY_BLOCKED: operationHealthAdvice || 'Önce blokaj nedeni ve eksik alanı kontrol et.',
@@ -4117,6 +4149,7 @@ function openingActionForQuestionType(questionType, screenDefinition) {
       GO_TO: `Şimdi: ${ensureVisibleSentence(first)}`,
       READINESS_CHECK: `Şimdi: ${ensureVisibleSentence(first)}`,
       CONTRACT_TO_SHIFT: `Şimdi: ${ensureVisibleSentence(first)}`,
+      AGREEMENT_ROUTE_REFRESH: `Şimdi: ${ensureVisibleSentence(first)}`,
       FIRST_CONTROL: `İlk kontrol: ${ensureVisibleSentence(first)}`,
     WHY_BLOCKED: `Önce ${first}.`,
     STATUS_HELP: `Şimdi: ${ensureVisibleSentence(first)}`,
@@ -4133,7 +4166,7 @@ function ensureActionLead(reply, questionType, screenDefinition, roleMode = 'OPE
   const preserveIntro = ['SCREEN_PURPOSE', 'ROLE_HELP', 'OPEN'].includes(String(questionType || ''))
     || (String(roleMode || 'OPERATIONS') !== 'SIMPLE' && /^(Bu ekran|Bu bilgi)/i.test(value));
   if (preserveIntro && /^(Bu ekrandaki veriye göre|Bu ekran(,| için)|Bu programda bunun anlamı:|Bu bilgi bu rolde|Bu rolde bu bilgi|İlk bakılacak yer:|İlk kontrol:)/i.test(value)) return value;
-    if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE'].includes(String(questionType || ''))) {
+  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'AGREEMENT_ROUTE_REFRESH', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE'].includes(String(questionType || ''))) {
     if (!/^(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk kontrol:)/.test(value)) {
       const lead = openingActionForQuestionType(questionType, screenDefinition);
       return `${lead} ${value}`.trim();
@@ -4167,7 +4200,8 @@ function verificationHintForQuestionType(questionType, screenDefinition, quickAc
   const routeLabel = normalizeActionStepText(routeAction?.label);
   if (['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))) return `${screenLabel} için önce ${firstControl} kontrolü yap; sonra yönlendirmeyi uygula.`;
   if (questionType === 'WHY_BLOCKED') return `Blokajı kesinleştirmek için önce ${firstControl} ve pasif/kırmızı alanları kontrol et.`;
-    if (questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
+  if (questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
+  if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `Rota değişikliği teklifini işleme almadan önce ${firstControl} ve eski/yeni rota farkını kontrol et.`;
   if (questionType === 'STATUS_HELP') return `Durumu netleştirmek için önce ${firstControl} ve varsa seçili kaydın son sinyallerine bak.`;
   if (routeLabel) return `${routeLabel} adımına geçmeden önce ${firstControl} kontrolünü yap.`;
   return `Önce ${firstControl} kontrolünü yap; sonra bu yönlendirmeyi uygula.`;
@@ -4206,6 +4240,7 @@ function questionTypeLabel(questionType) {
       STATUS_HELP: 'Şu an ne durumda',
       READINESS_CHECK: 'Hazır mı',
       CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
+      AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
       WHY_BLOCKED: 'Neden olmuyor',
     BUTTON_HELP: 'Bu buton ne yapar',
     SCREEN_PURPOSE: 'Bu ekran ne için',
@@ -4222,7 +4257,7 @@ function buildRoutePlan({ questionType, quickActions, screenDefinition, continui
   const guideAction = (Array.isArray(quickActions) ? quickActions : []).find((row) => String(row?.actionKind || '') === 'OPEN_GUIDE');
   const primaryRoute = routeActions[0] || null;
   const secondaryRoute = routeActions[1] || null;
-  const routeHeavy = ['NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL', 'ROLE_HELP', 'SAFE_NEXT_STEP'].includes(String(questionType || ''));
+  const routeHeavy = ['NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL', 'ROLE_HELP', 'SAFE_NEXT_STEP', 'AGREEMENT_ROUTE_REFRESH'].includes(String(questionType || ''));
   if (!routeHeavy && !primaryRoute) return null;
   const steps = [];
   if (primaryRoute?.label) steps.push(`Önce ${normalizeActionStepText(primaryRoute.label)}`);
@@ -4246,7 +4281,8 @@ function responseWhyText(questionType, screenDefinition) {
   const screenLabel = String(screenDefinition?.label || 'bu ekran');
   if (questionType === 'NEXT_SCREEN' || questionType === 'GO_TO') return `${screenLabel} ekranında sonraki doğru adımı bulmaya odaklandım.`;
   if (questionType === 'FIRST_CONTROL') return `${screenLabel} ekranında önce bakılması gereken noktayı öne çıkardım.`;
-    if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
+  if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
+  if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;
   if (questionType === 'WHY_BLOCKED') return `${screenLabel} ekranındaki blokaj ve eksik bilgi ihtimaline göre cevap verdim.`;
   if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum ve GPS işaretlerine göre yorum yaptım.`;
   return `${screenLabel} ekranını ve seçili kaydı birlikte dikkate aldım.`;

@@ -88,6 +88,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
+- `check:routechangefinal01` -> `node backend\scripts\route_change_final_01_check.js`
 - `check:uxcollapsiblepanels01` -> `node backend\scripts\ux_collapsible_panels_01_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
@@ -234,6 +235,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` sürücü ekranında günlük değişiklik olarak görünür; kalıcı rota / durak / personel ataması değişmez.
 - SMS / push notification, payment / settlement execute ve şema değişiklikleri bu milestone kapsamı dışındadır; workspace-sensitive artifact write yapılmaz.
 - Bu adım mobile route update görünürlüğü içindir; route refresh sinyali idempotent ve readonly gösterim olarak korunur.
+
+### ROUTE-CHANGE-FINAL-01 [CHECK]
+- `check:routechangefinal01` sözleşme kaynaklı rota değişikliği final kabul akışını doğrular.
+- `Company / Sözleşmeler` tarafında teklif / önizleme ve `Room / Sözleşmeler` tarafında kabul / red / tekrar kontrol görünürlüğü tek rota değişikliği hattında okunur.
+- Eski rota / yeni rota, kişi / durak / km / süre farkı ve uygulanan rota geçmişi görünür; driver route refresh bu milestone kapsamı dışındadır.
+- SMS / push, payment / settlement ve otomatik kalıcı route apply yoktur.
 
 ### COP-LIVE-ACCEPT-01 [CHECK]
 - `check:copliveaccept01` Sefer Abi / Copilot canlı kabul matrisi için readonly static gate'tir.

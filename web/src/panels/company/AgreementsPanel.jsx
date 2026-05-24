@@ -840,6 +840,21 @@ export default function AgreementsPanel() {
       productionSignal: generatedShiftCount > 0 ? `Üretilen vardiya: ${generatedShiftCount}` : 'Bugün üretim sinyali görünmüyor',
       vehicleLabel: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'),
       driverLabel: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'),
+      routeRefreshState: selectedRouteRefreshPending ? String(selectedRouteRefreshPending.status || '').toUpperCase() : '',
+      routeRefreshRequestId: Number(selectedRouteRefreshPending?.id || 0),
+      routeRefreshLabel: selectedRouteRefreshPending ? `Rota güncelleme #${selectedRouteRefreshPending.id}` : '',
+      routeRefreshNote: selectedRouteRefreshCountered
+        ? 'Karşı teklif'
+        : (selectedRouteRefreshPending ? 'Bekliyor' : ''),
+      routeRefreshChangeType: selectedRouteRefreshPending?.changeType || '',
+      routeRefreshCurrentText: selectedRouteRefreshCurrentText,
+      routeRefreshProposedText: selectedRouteRefreshProposedText,
+      routeRefreshDiffText: selectedRouteRefreshDiffText,
+      routeRefreshPriceImpactText: selectedRouteRefreshPriceImpactText,
+      routeRefreshRoomCounterText: selectedRouteRefreshRoomCounterText,
+      routeRefreshSummaryText: selectedRouteRefreshSummaryText,
+      routeRefreshCurrentPreviewShiftId: selectedRouteRefreshCurrentPreviewShiftId,
+      routeRefreshProposedPreviewShiftId: selectedRouteRefreshProposedPreviewShiftId,
       pendingCount: Number(items?.length || 0),
       otherCount: 0,
       extendCount: 0,
@@ -860,6 +875,7 @@ export default function AgreementsPanel() {
       { label: 'Sürücü', value: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'), help: 'Onay veya üretim sırasında seçilen sürücüyü gösterir.' },
       { label: 'Oda', value: roomText, help: 'Sözleşmenin bağlı olduğu operasyon odasını gösterir.' },
       { label: 'Durum', value: statusText, help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
+      selectedRouteRefreshPending ? { label: 'Rota güncellemesi', value: selectedRouteRefreshCountered ? 'Karşı teklif' : 'Bekliyor', help: selectedRouteRefreshSummaryText || 'Sözleşmeye bağlı rota güncelleme talebi.' } : null,
       { label: 'Bugün / Ufuk', value: `${todayDone}/${todayTotal} tamamlandı • ${horizonOpen} kabul edildi`, help: 'Bugünkü ilerleme ve ufuktaki vardiya sayısını özetler.' },
       { label: 'Tarih', value: `${ymdTR(a?.startDate)} → ${ymdTR(a?.endDate)}`, help: 'Sözleşmenin geçerli tarih aralığını gösterir.' },
       { label: 'Saat', value: `${toHHMM(a?.startMin)} → ${toHHMM(a?.endMin)}`, help: 'Sözleşmenin çalışma saat aralığını gösterir.' },
@@ -882,7 +898,23 @@ export default function AgreementsPanel() {
       selectedRecordSummary,
       copilotSummary: selectionFacts?.copilotSummary || selectedRecordSummary,
     };
-  }, [selectedAgreementRow, selectedAgreementBridge, selectedAgreementOrigin, shiftStats, items.length]);
+  }, [
+    selectedAgreementRow,
+    selectedAgreementBridge,
+    selectedAgreementOrigin,
+    shiftStats,
+    items.length,
+    selectedRouteRefreshPending,
+    selectedRouteRefreshCountered,
+    selectedRouteRefreshCurrentText,
+    selectedRouteRefreshProposedText,
+    selectedRouteRefreshDiffText,
+    selectedRouteRefreshPriceImpactText,
+    selectedRouteRefreshRoomCounterText,
+    selectedRouteRefreshSummaryText,
+    selectedRouteRefreshCurrentPreviewShiftId,
+    selectedRouteRefreshProposedPreviewShiftId,
+  ]);
 
   useEffect(() => {
     if (!selectedAgreementCopilotContext) {

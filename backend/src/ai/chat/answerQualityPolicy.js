@@ -97,6 +97,15 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     }
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
+  if (path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements')) {
+    if (topic === 'AGREEMENT_ROUTE_REFRESH') {
+      return ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
+    }
+    if (topic === 'CONTRACT_TO_SHIFT' || topic === 'CONTRACT_SHIFT_TODAY') {
+      return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
+    }
+    return ['İlgili sözleşmeyi aç', 'Üretim geçmişini göster', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
+  }
   if (path.includes('/personel/my')) {
     return ['Servis nerede?', 'Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?'];
   }
@@ -268,6 +277,16 @@ export function workflowActionSpec({ activeTopic = '', questionType = '' } = {})
         askLabel: 'Rota etkisini sor',
         askQuery: 'bu kişi bugün binmezse rota etkisi ne olur',
         askReason: 'Readonly rota etkisi önizlemesini tekrar sorar.',
+      };
+    case 'AGREEMENT_ROUTE_REFRESH':
+      return {
+        guideLabel: 'Rota değişikliği rehberini aç',
+        jobType: 'ASSIGNMENT_READINESS_GUIDE',
+        guideLevel: 'STEP_BY_STEP',
+        reason: 'Sözleşme kaynaklı rota değişikliği teklif, kabul, red ve geçmişini güvenli dille okur.',
+        askLabel: 'Rota farkını sor',
+        askQuery: 'eski rota ile yeni rota farkı ne',
+        askReason: 'Sözleşmeli rota değişikliği akışını tekrar sorar.',
       };
     case 'CONTRACT_TO_SHIFT':
     case 'CONTRACT_SHIFT_TODAY':
