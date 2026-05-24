@@ -12,7 +12,14 @@ import { displayStatusLabel } from "../../utils/displayStatus";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildBoardingRouteImpactCopilotFacts } from "../../utils/copilotFacts";
-import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
+import {
+  boardingChangeApplyBoundaryNote,
+  boardingChangeApplyButtonLabel,
+  boardingChangeApplySuccessNote,
+  boardingChangeApplicationStatusLabel,
+  boardingChangeDecisionLabel,
+  boardingChangeKindLabel,
+} from "../shared/boardingChangeUi";
 
 function companyBaseFromKind(kind) {
   const k = String(kind || "").toUpperCase();
@@ -87,6 +94,8 @@ export default function CompanyOperationsPanel() {
   const [shiftSummary, setShiftSummary] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
   const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
+  const [applyingRequestId, setApplyingRequestId] = useState(null);
+  const [applyNotice, setApplyNotice] = useState("");
   const [notificationQ, setNotificationQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -106,7 +115,7 @@ export default function CompanyOperationsPanel() {
       const [personelsResp, shiftsResp, requestsResp, notificationsResp, summaryResp] = await Promise.all([
         api("/api/company/personels?kind=PERSONEL&take=120", { token }),
         api("/api/shifts?take=120&status=APPROVED,ACTIVE,DONE", { token }),
-        api("/api/requests?onlyOpen=1&onlyActive=1", { token }).catch(() => []),
+        api("/api/requests", { token }).catch(() => []),
         api("/api/notifications/my", { token }).catch(() => []),
         api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
       ]);
@@ -122,6 +131,23 @@ export default function CompanyOperationsPanel() {
       setBusy(false);
     }
   }, [token]);
+
+  const handleApplyAcceptedRequest = useCallback(async (requestId) => {
+    const id = Number(requestId || 0);
+    if (!id) return;
+    setApplyingRequestId(id);
+    setErr("");
+    setApplyNotice("");
+    try {
+      const result = await api(`/api/requests/${id}/apply-boarding-change`, { token, method: "POST" });
+      setApplyNotice(result?.applicationBoundaryNote || result?.applicationText || boardingChangeApplySuccessNote());
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setApplyingRequestId(null);
+    }
+  }, [load, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -141,6 +167,7 @@ export default function CompanyOperationsPanel() {
     const status = String(item?.status || "").toUpperCase();
     return ["REQUESTED", "OPEN", "PENDING", "COUNTERED"].includes(status) || item?.lat != null || item?.lng != null;
   }), [requests]);
+  const acceptedRequestRows = useMemo(() => (Array.isArray(requests) ? requests : []).filter((item) => String(item?.status || "").toUpperCase() === "ACCEPTED"), [requests]);
 
   const activeShiftRows = useMemo(() => (Array.isArray(shifts) ? shifts : []).filter((item) => ["APPROVED", "ACTIVE"].includes(String(item?.status || "").toUpperCase())), [shifts]);
   const activeContractRows = useMemo(() => activeShiftRows.filter((item) => Number(item?.agreementId || 0) > 0), [activeShiftRows]);
@@ -182,22 +209,44 @@ export default function CompanyOperationsPanel() {
       status: item?.status || "OPEN",
       kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
-      detail: item?.routeImpactPreview?.summaryLine || item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
+      applicationStatus: item?.boardingChangeApplicationStatus || "READY",
+      applicationText: item?.boardingChangeApplicationText || "",
+      applicationAt: item?.boardingChangeAppliedAt || null,
+      detail: item?.boardingChangeApplicationText || item?.routeImpactPreview?.summaryLine || item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
       createdAt: item?.createdAt || item?.at || null,
       preview: item?.routeImpactPreview || null,
     })),
     [openRequestRows]
   );
+  const acceptedRows = useMemo(
+    () => acceptedRequestRows.slice(0, 10).map((item) => ({
+      id: item.id,
+      personel: item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`,
+      shift: item?.shift?.id || item?.shiftId || "-",
+      status: item?.status || "ACCEPTED",
+      kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
+      decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
+      applicationStatus: item?.boardingChangeApplicationStatus || "READY",
+      applicationText: item?.boardingChangeApplicationText || "",
+      applicationAt: item?.boardingChangeAppliedAt || null,
+      detail: item?.boardingChangeApplicationText || item?.routeImpactPreview?.summaryLine || item?.decisionText || (item?.lat != null || item?.lng != null ? "Kabul edilen biniş değişikliği" : "Kabul edilen değişiklik"),
+      createdAt: item?.createdAt || item?.at || null,
+      preview: item?.routeImpactPreview || null,
+      boundaryNote: item?.boardingChangeApplicationBoundaryNote || "",
+    })),
+    [acceptedRequestRows]
+  );
+  const requestSelectionRows = useMemo(() => [...openRequestRows, ...acceptedRequestRows], [openRequestRows, acceptedRequestRows]);
 
   const selectedPreviewRequest = useMemo(() => {
-    if (!openRequestRows.length) return null;
+    if (!requestSelectionRows.length) return null;
     const desiredId = Number(selectedPreviewRequestId || 0);
     if (desiredId > 0) {
-      const hit = openRequestRows.find((item) => Number(item?.id || 0) === desiredId);
+      const hit = requestSelectionRows.find((item) => Number(item?.id || 0) === desiredId);
       if (hit) return hit;
     }
-    return openRequestRows[0] || null;
-  }, [openRequestRows, selectedPreviewRequestId]);
+    return openRequestRows[0] || acceptedRequestRows[0] || null;
+  }, [acceptedRequestRows, openRequestRows, requestSelectionRows, selectedPreviewRequestId]);
 
   const selectedPreview = useMemo(() => selectedPreviewRequest?.routeImpactPreview || null, [selectedPreviewRequest]);
   const selectedPreviewFacts = useMemo(() => {
@@ -213,7 +262,7 @@ export default function CompanyOperationsPanel() {
     if (!selectedPreviewRequest || !selectedPreview || !selectedPreviewFacts) return null;
     const scopeKey = `${basePath}/operations`;
     const personLabel = selectedPreview.personLabel || selectedPreviewRequest?.personel || selectedPreviewRequest?.personel?.fullName || selectedPreviewRequest?.personel?.name || `#${selectedPreviewRequest?.personelId || "-"}`;
-    const summary = selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || selectedPreviewRequest?.decisionText || "";
+    const summary = selectedPreviewRequest?.boardingChangeApplicationText || selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || selectedPreviewRequest?.decisionText || "";
     return {
       scopeKey,
       entityType: "screen",
@@ -224,16 +273,18 @@ export default function CompanyOperationsPanel() {
       selectedSummary: summary,
       selectedRecordLabel: personLabel,
       selectedRecordSummary: summary,
-      selectedRecordStatus: selectedPreview.selectedRecordStatus || selectedPreview.reliability?.label || "Önizleme",
-      helpContextSummary: `${selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
+      selectedRecordStatus: selectedPreviewRequest?.boardingChangeApplicationStatus ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.boardingChangeApplicationStatus) : (selectedPreview.reliability?.label || "Önizleme"),
+      helpContextSummary: `${selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
       contextSummary: summary,
       selectedRecord: {
         label: personLabel,
         summary,
-        status: selectedPreview.selectedRecordStatus || selectedPreview.reliability?.label || "Önizleme",
+        status: selectedPreviewRequest?.boardingChangeApplicationStatus ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.boardingChangeApplicationStatus) : (selectedPreview.reliability?.label || "Önizleme"),
         changeType: selectedPreview.changeTypeLabel,
         oldStopLabel: selectedPreview.oldStopLabel,
         newStopLabel: selectedPreview.newStopLabel,
+        applicationStatus: selectedPreviewRequest?.boardingChangeApplicationStatus || null,
+        applicationBoundaryNote: selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || null,
         previewOnlyNote: selectedPreview.previewOnlyNote,
       },
       selectedFields: [
@@ -248,7 +299,7 @@ export default function CompanyOperationsPanel() {
         { label: "Güvenilirlik", value: selectedPreview.reliability?.label || "-" },
       ],
       selectedBadges: [
-        { label: "Önizleme", value: selectedPreview.previewOnlyNote || "Bu sadece önizlemedir." },
+        { label: "Uygulama", value: selectedPreviewRequest?.boardingChangeApplicationStatus ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.boardingChangeApplicationStatus) : (selectedPreview.previewOnlyNote || "Bu sadece önizlemedir.") },
         { label: "ETA", value: selectedPreview.reliability?.label || "ETA hesaplanamıyor" },
       ],
       facts: selectedPreviewFacts,
@@ -344,6 +395,7 @@ export default function CompanyOperationsPanel() {
       />
 
       {err ? <div className="card err">{err}</div> : null}
+      {applyNotice ? <div className="card" style={{ borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{applyNotice}</div> : null}
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Personel" value={metricValue(personels.length)} note="Şirket kapsamındaki personel kaydı" />
@@ -617,6 +669,66 @@ export default function CompanyOperationsPanel() {
                     </tr>
                   )) : (
                     <tr><td colSpan={7} className="muted">Bekleyen biniş değişikliği yok.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title="Kabul edilen değişiklikler"
+            badge={metricValue(acceptedRows.length)}
+            subtitle={boardingChangeApplyBoundaryNote()}
+            compact
+            defaultOpen={acceptedRows.length > 0}
+          >
+            <div style={{ overflowX: "auto" }}>
+              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+                <thead>
+                  <tr>
+                    <th>Kişi</th>
+                    <th>Shift</th>
+                    <th>Durum</th>
+                    <th>Tür</th>
+                    <th>Uygulama</th>
+                    <th>Zaman</th>
+                    <th>İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {acceptedRows.length ? acceptedRows.map((row) => {
+                    const statusLabel = boardingChangeApplicationStatusLabel(row.applicationStatus || "READY");
+                    const canApply = String(row.applicationStatus || "").toUpperCase() === "READY";
+                    const isApplying = Number(applyingRequestId || 0) === Number(row.id || 0);
+                    return (
+                      <tr key={`accepted-${row.id}`}>
+                        <td>{row.personel}</td>
+                        <td>#{row.shift}</td>
+                        <td>{displayStatusLabel(row.status)}</td>
+                        <td>{row.kind}</td>
+                        <td>{statusLabel}</td>
+                        <td>{fmtTR(row.applicationAt || row.createdAt)}</td>
+                        <td>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            {canApply ? (
+                              <button
+                                type="button"
+                                className="btn sm"
+                                onClick={() => handleApplyAcceptedRequest(row.id)}
+                                disabled={isApplying}
+                              >
+                                {isApplying ? "..." : boardingChangeApplyButtonLabel()}
+                              </button>
+                            ) : (
+                              <span className="muted">{row.applicationText || boardingChangeApplySuccessNote()}</span>
+                            )}
+                          </div>
+                          {row.boundaryNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{row.boundaryNote}</div> : null}
+                        </td>
+                      </tr>
+                    );
+                  }) : (
+                    <tr><td colSpan={7} className="muted">Kabul edilen değişiklik yok.</td></tr>
                   )}
                 </tbody>
               </table>

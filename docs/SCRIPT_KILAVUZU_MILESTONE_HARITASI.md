@@ -223,6 +223,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu milestone yalnızca önizlemedir; `StopAssignment` değişimi `BOARDING-OPS-01B`, driver route refresh ise `BOARDING-OPS-01C` olarak ayrıştırılır.
 - GPS / ETA dili güvenli kalır; kesin ETA yoksa `ETA hesaplanamıyor` veya `ETA güncel değil` standardı korunur.
 
+### BOARDING-OPS-01B [CHECK]
+- `check:boardingops01b` kabul edilmiş boarding change kaydını güvenli ve dar bir uygulama yoluyla günlük `StopAssignment` etkisine bağlar.
+- `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` desteklenir; `TEMPORARY_BOARDING_NOTE` not/audit olarak kalabilir.
+- Uygulama explicit kullanıcı aksiyonu ile yapılır, idempotent çalışır ve audit izi üretir.
+- Driver route refresh, SMS / notification ve payment / settlement execute bu milestone kapsamı dışındadır; sürücü route refresh sonraki adımda (`BOARDING-OPS-01C`) ele alınır.
+
 ### COP-LIVE-ACCEPT-01 [CHECK]
 - `check:copliveaccept01` Sefer Abi / Copilot canlı kabul matrisi için readonly static gate'tir.
 - `ROOM`, `COMPANY`, `DRIVER`, `PARENT`, `PERSONEL` ve `SUPER_ADMIN` canlı yüzeylerinde `Sefer Abi` persona/launcher, context payload köprüsü ve GPS/ETA safe wording korunur.

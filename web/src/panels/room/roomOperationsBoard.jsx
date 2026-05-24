@@ -1,6 +1,13 @@
 import { useMemo, useState } from "react";
 import { displayStatusLabel } from "../../utils/displayStatus";
-import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
+import {
+  boardingChangeApplyBoundaryNote,
+  boardingChangeApplyButtonLabel,
+  boardingChangeApplySuccessNote,
+  boardingChangeApplicationStatusLabel,
+  boardingChangeDecisionLabel,
+  boardingChangeKindLabel,
+} from "../shared/boardingChangeUi";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
 
@@ -54,7 +61,7 @@ function lineLabel(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export default function RoomOperationsBoard({ roomSummary, roomData }) {
+export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcceptedRequest = null, applyingRequestId = null }) {
   const data = roomData || {};
   const driverSignals = useMemo(
     () => (Array.isArray(data.driverSignals) ? data.driverSignals : []),
@@ -67,6 +74,11 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
     () => (Array.isArray(data.requests) ? data.requests : []),
     [data.requests]
   );
+  const openRequestItems = useMemo(() => requests.filter((item) => {
+    const status = String(item?.status || "").toUpperCase();
+    return ["REQUESTED", "OPEN", "PENDING", "COUNTERED"].includes(status) || item?.lat != null || item?.lng != null;
+  }), [requests]);
+  const acceptedRequestItems = useMemo(() => requests.filter((item) => String(item?.status || "").toUpperCase() === "ACCEPTED"), [requests]);
   const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
   const roomIssueCount = Number(roomSummary?.cards?.openIssues || 0);
 
@@ -87,8 +99,9 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
       String(item?.ops?.connectionState || "").toUpperCase() === "ONLINE"
       && String(item?.ops?.assignmentState || "").toUpperCase() !== "ACTIVE"
     )).length;
-    const openRequests = requests.length;
-    const locationRequests = requests.filter((item) => item?.lat != null && item?.lng != null).length;
+    const openRequests = openRequestItems.length;
+    const locationRequests = openRequestItems.filter((item) => item?.lat != null && item?.lng != null).length;
+    const acceptedRequests = acceptedRequestItems.length;
     const totalShifts = Number(shiftSummary?.total || 0);
     const activeShifts = Number(shiftSummary?.byStatus?.ACTIVE || 0);
     const approvedShifts = Number(shiftSummary?.byStatus?.APPROVED || 0);
@@ -109,6 +122,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
       restingDrivers,
       readyForJobDrivers,
       openRequests,
+      acceptedRequests,
       locationRequests,
       totalShifts,
       activeShifts,
@@ -118,10 +132,10 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
       avgVehicleLoad,
       noShowCount,
     };
-  }, [driverSignals, requests, shiftSummary, vehicleSummary, driverSummary]);
+  }, [acceptedRequestItems, driverSignals, openRequestItems, shiftSummary, vehicleSummary, driverSummary]);
 
   const requestItems = useMemo(() => {
-    return requests.slice(0, 5).map((item) => {
+    return openRequestItems.slice(0, 5).map((item) => {
       const personelName = item?.personel?.fullName || item?.personel?.name || `Personel #${item?.personelId || "-"}`;
       const shiftId = item?.shift?.id || item?.shiftId || "-";
       const kindLabel = boardingChangeKindLabel(item?.requestKind || item?.kind);
@@ -136,17 +150,37 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
         preview: item?.routeImpactPreview || null,
       };
     });
-  }, [requests]);
+  }, [openRequestItems]);
+  const acceptedRequestCards = useMemo(() => acceptedRequestItems.slice(0, 5).map((item) => {
+    const personelName = item?.personel?.fullName || item?.personel?.name || `Personel #${item?.personelId || "-"}`;
+    const shiftId = item?.shift?.id || item?.shiftId || "-";
+    const kindLabel = boardingChangeKindLabel(item?.requestKind || item?.kind);
+    const applicationStatus = String(item?.boardingChangeApplicationStatus || "READY").trim().toUpperCase();
+    return {
+      id: item?.id || `${shiftId}-${personelName}`,
+      title: personelName,
+      detail: item?.boardingChangeApplicationText || item?.decisionText || `${kindLabel} • shift #${shiftId}`,
+      status: item?.status || "ACCEPTED",
+      decisionState: String(item?.decisionState || item?.status || "").trim().toUpperCase(),
+      preview: item?.routeImpactPreview || null,
+      applicationStatus,
+      applicationText: item?.boardingChangeApplicationText || "",
+      boundaryNote: item?.boardingChangeApplicationBoundaryNote || "",
+      createdAt: item?.createdAt || null,
+      appliedAt: item?.boardingChangeAppliedAt || null,
+    };
+  }), [acceptedRequestItems]);
+  const requestSelectionCards = useMemo(() => [...requestItems, ...acceptedRequestCards], [acceptedRequestCards, requestItems]);
 
   const selectedPreviewRequest = useMemo(() => {
-    if (!requestItems.length) return null;
+    if (!requestSelectionCards.length) return null;
     const desiredId = Number(selectedPreviewRequestId || 0);
     if (desiredId > 0) {
-      const hit = requestItems.find((item) => Number(item?.id || 0) === desiredId);
+      const hit = requestSelectionCards.find((item) => Number(item?.id || 0) === desiredId);
       if (hit) return hit;
     }
-    return requestItems[0] || null;
-  }, [requestItems, selectedPreviewRequestId]);
+    return requestSelectionCards[0] || null;
+  }, [requestSelectionCards, selectedPreviewRequestId]);
 
   const selectedPreview = useMemo(() => selectedPreviewRequest?.preview || null, [selectedPreviewRequest]);
 
@@ -190,6 +224,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
           <MiniCard title="Moladaki sürücüler" value={metrics.restingDrivers} note="Görev dışı sinyallerden türetilir." />
           <MiniCard title="Yeni iş alabilir sürücüler" value={metrics.readyForJobDrivers} note="Aktif vardiyada olmayan canlı sürücüler." />
           <MiniCard title="Biniş değişiklikleri" value={metrics.openRequests} note="Açık istekler ve onay bekleyen kayıtlar." />
+          <MiniCard title="Kabul edilenler" value={metrics.acceptedRequests} note="Günlük atamaya işlenebilir ya da işlendi." />
           <MiniCard title="Riskli / onay bekleyen istekler" value={metrics.locationRequests} note="Konumlu talepler ilk sırada okunur." />
         </div>
       </div>
@@ -258,6 +293,52 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
                 <div className="muted" style={{ marginTop: 4 }}>{item.decisionText}</div>
               </div>
             )) : <div className="muted">Riskli ya da onay bekleyen istek yok.</div>}
+          </div>
+        </div>
+
+        <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
+            <div>
+              <div style={{ fontWeight: 800, marginBottom: 10 }}>Kabul edilen değişiklikler</div>
+              <div className="muted" style={{ marginBottom: 10 }}>{boardingChangeApplyBoundaryNote()}</div>
+            </div>
+            <div className="muted">{acceptedRequestCards.length} kayıt</div>
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {acceptedRequestCards.length ? acceptedRequestCards.map((item) => {
+              const isApplying = Number(applyingRequestId || 0) === Number(item.id || 0);
+              const canApply = String(item.applicationStatus || "").toUpperCase() === "READY";
+              return (
+                <div key={`accepted-${item.id}`} style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ fontWeight: 700 }}>{item.title}</div>
+                    <StatusPill value={item.status} />
+                  </div>
+                  <div className="muted" style={{ marginTop: 6 }}>{item.detail}</div>
+                  <div className="muted" style={{ marginTop: 4 }}>{boardingChangeApplicationStatusLabel(item.applicationStatus || "READY")}</div>
+                  {item.boundaryNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{item.boundaryNote}</div> : null}
+                  <div style={{ marginTop: 8 }}>
+                    {canApply ? (
+                      <button
+                        type="button"
+                        className="btn sm"
+                        onClick={() => onApplyAcceptedRequest?.(item.id)}
+                        disabled={isApplying}
+                      >
+                        {isApplying ? "..." : boardingChangeApplyButtonLabel()}
+                      </button>
+                    ) : (
+                      <span className="muted">{item.applicationText || boardingChangeApplySuccessNote()}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            }) : <div className="muted">Kabul edilen değişiklik yok.</div>}
           </div>
         </div>
       </div>

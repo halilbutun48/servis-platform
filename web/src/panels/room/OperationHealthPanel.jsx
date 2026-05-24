@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
@@ -9,6 +9,7 @@ import { buildOperationHealthCopilotFacts } from "../../utils/copilotFacts";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import RoomOperationsBoard from "./roomOperationsBoard";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
+import { boardingChangeApplySuccessNote } from "../shared/boardingChangeUi";
 
 const ENTRY_HINT_KEY = "room:operationHealthHint";
 
@@ -73,6 +74,20 @@ function buildGuideHint(title, detail, extras = {}) {
     fromPath: "/room/operation-health",
     ...extras,
   };
+}
+
+function mergeRequestLists(...lists) {
+  const seen = new Map();
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const item of list) {
+      if (!item) continue;
+      const key = String(item?.id || "");
+      if (!key || seen.has(key)) continue;
+      seen.set(key, item);
+    }
+  }
+  return Array.from(seen.values());
 }
 
 function operationRouteKeyFromItem(item = {}) {
@@ -153,6 +168,8 @@ export default function OperationHealthPanel() {
   const [selectedDriverId, setSelectedDriverId] = useState(0);
   const [selectedIssueKey, setSelectedIssueKey] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
+  const [applyingRequestId, setApplyingRequestId] = useState(null);
+  const [applyNotice, setApplyNotice] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -164,14 +181,16 @@ export default function OperationHealthPanel() {
           api("/api/observability/room/drivers", { token }),
           api("/api/observability/room/issues", { token }),
         ]);
-        const [driverSignals, shiftSummary, vehicleSummary, driverSummary, requests] = await Promise.all([
+        const [driverSignals, shiftSummary, vehicleSummary, driverSummary, openRequests, activeRequests] = await Promise.all([
           api("/api/drivers?take=200", { token }).catch(() => []),
           api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
           api(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
           api(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
           api("/api/requests?onlyOpen=1&onlyActive=1", { token }).catch(() => []),
+          api("/api/requests?onlyActive=1", { token }).catch(() => []),
         ]);
         if (cancelled) return;
+        const mergedRequests = mergeRequestLists(openRequests, activeRequests);
         setSummary(s || null);
         setDrivers(Array.isArray(d?.items) ? d.items : []);
         setIssues(Array.isArray(i?.items) ? i.items : []);
@@ -180,7 +199,7 @@ export default function OperationHealthPanel() {
           shiftSummary: shiftSummary || null,
           vehicleSummary: vehicleSummary || null,
           driverSummary: driverSummary || null,
-          requests: Array.isArray(requests) ? requests : [],
+          requests: mergedRequests,
         });
       } catch (error) {
         if (cancelled) return;
@@ -190,6 +209,44 @@ export default function OperationHealthPanel() {
     return () => {
       cancelled = true;
     };
+  }, [token]);
+
+  const handleApplyAcceptedRequest = useCallback(async (requestId) => {
+    const id = Number(requestId || 0);
+    if (!id) return;
+    setApplyingRequestId(id);
+    setApplyNotice("");
+    try {
+      const result = await api(`/api/requests/${id}/apply-boarding-change`, { token, method: "POST" });
+      setApplyNotice(result?.applicationBoundaryNote || result?.applicationText || boardingChangeApplySuccessNote());
+      const today = new Date().toISOString().slice(0, 10);
+      const [s, d, i, driverSignals, shiftSummary, vehicleSummary, driverSummary, openRequests, activeRequests] = await Promise.all([
+        api("/api/observability/room/summary", { token }),
+        api("/api/observability/room/drivers", { token }),
+        api("/api/observability/room/issues", { token }),
+        api("/api/drivers?take=200", { token }).catch(() => []),
+        api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+        api(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+        api(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+        api("/api/requests?onlyOpen=1&onlyActive=1", { token }).catch(() => []),
+        api("/api/requests?onlyActive=1", { token }).catch(() => []),
+      ]);
+      const mergedRequests = mergeRequestLists(openRequests, activeRequests);
+      setSummary(s || null);
+      setDrivers(Array.isArray(d?.items) ? d.items : []);
+      setIssues(Array.isArray(i?.items) ? i.items : []);
+      setRoomOperations({
+        driverSignals: Array.isArray(driverSignals) ? driverSignals : [],
+        shiftSummary: shiftSummary || null,
+        vehicleSummary: vehicleSummary || null,
+        driverSummary: driverSummary || null,
+        requests: mergedRequests,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setApplyingRequestId(null);
+    }
   }, [token]);
 
   const statusOptions = useMemo(() => {
@@ -294,6 +351,8 @@ export default function OperationHealthPanel() {
         </div>
       </div>
 
+      {applyNotice ? <div className="card" style={{ marginTop: 14, borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{applyNotice}</div> : null}
+
       <div className="card" style={{ marginTop: 14, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
         <div>
           <div className="muted">Filtre</div>
@@ -341,6 +400,8 @@ export default function OperationHealthPanel() {
           <RoomOperationsBoard
             roomSummary={summary}
             roomData={roomOperations}
+            onApplyAcceptedRequest={handleApplyAcceptedRequest}
+            applyingRequestId={applyingRequestId}
           />
         </section>
       ) : null}

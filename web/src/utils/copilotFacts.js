@@ -187,6 +187,18 @@ function normalizeEnumKey(value) {
   return String(value || '').trim().toUpperCase();
 }
 
+const BOARDING_APPLICATION_STATUS_LABELS = {
+  READY: 'Uygulamaya hazır',
+  APPLIED: 'Günlük atamaya işlendi',
+  NOTE_ONLY: 'Not kaydı',
+  NOOP: 'Değişiklik yok',
+  BLOCKED: 'Uygulanamadı',
+};
+
+function boardingApplicationStatusLabel(value) {
+  return BOARDING_APPLICATION_STATUS_LABELS[normalizeEnumKey(value)] || 'Uygulamaya hazır';
+}
+
 function scoreSignalTerms(text, terms = []) {
   const normalized = normalizeSignalText(text);
   if (!normalized) return 0;
@@ -1149,7 +1161,19 @@ export function buildBoardingRouteImpactCopilotFacts({
   request = null,
 } = {}) {
   const routeImpact = preview && typeof preview === 'object' ? preview : null;
-  const previewOnlyNote = compactText(routeImpact?.previewOnlyNote || 'Bu sadece önizlemedir. Rota/atama uygulanmadı.', 'Bu sadece önizlemedir. Rota/atama uygulanmadı.');
+  const requestApplicationStatus = compactText(request?.boardingChangeApplicationStatus || routeImpact?.applicationStatus || '', '');
+  const requestApplicationText = compactText(request?.boardingChangeApplicationText || routeImpact?.applicationText || '', '');
+  const requestApplicationBoundaryNote = compactText(request?.boardingChangeApplicationBoundaryNote || routeImpact?.applicationBoundaryNote || '', '');
+  const requestApplicationState = compactText(request?.boardingChangeApplicationState || routeImpact?.applicationState || '', '');
+  const hasApplicationContext = Boolean(requestApplicationStatus || requestApplicationText || requestApplicationBoundaryNote || requestApplicationState);
+  const applicationStateKey = normalizeEnumKey(requestApplicationStatus || requestApplicationState);
+  const applicationStatusLabel = requestApplicationStatus ? boardingApplicationStatusLabel(requestApplicationStatus) : '';
+  const isAppliedApplication = applicationStateKey === 'APPLIED';
+  const previewOnlyNote = hasApplicationContext
+    ? (requestApplicationBoundaryNote || (isAppliedApplication
+      ? 'Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi.'
+      : 'Bu değişiklik kabul edilmiş ve günlük atamaya işlenebilir. Bu işlem sürücü rotasını yenilemez.'))
+    : compactText(routeImpact?.previewOnlyNote || 'Bu sadece önizlemedir. Rota/atama uygulanmadı.', 'Bu sadece önizlemedir. Rota/atama uygulanmadı.');
   const changeTypeLabel = compactText(routeImpact?.changeTypeLabel || 'Biniş değişikliği önizlemesi', 'Biniş değişikliği önizlemesi');
   const personLabel = compactText(routeImpact?.personLabel || request?.personel?.fullName || request?.personel?.name || 'Seçili kişi', 'Seçili kişi');
   const oldStopLabel = compactText(routeImpact?.oldStopLabel || '-', '-');
@@ -1171,8 +1195,11 @@ export function buildBoardingRouteImpactCopilotFacts({
     ? routeImpact.reliability
     : { ok: false, displayMode: 'unavailable', label: 'ETA hesaplanamıyor', note: 'ETA hesaplanamıyor', reason: 'ROUTE_DATA_MISSING' };
   const summary = compactText(
-    routeImpact?.summaryLine
-    || `${changeTypeLabel} • ${personLabel} • Km farkı ${distanceDeltaKm.toFixed(2)} • Süre farkı ${durationDeltaMin} dk`,
+    requestApplicationText
+    || routeImpact?.summaryLine
+    || (hasApplicationContext
+      ? `${changeTypeLabel} • ${personLabel} • ${applicationStatusLabel || 'Kabul edilen değişiklik'}`
+      : `${changeTypeLabel} • ${personLabel} • Km farkı ${distanceDeltaKm.toFixed(2)} • Süre farkı ${durationDeltaMin} dk`),
     '',
   );
   const evidence = [
@@ -1186,8 +1213,15 @@ export function buildBoardingRouteImpactCopilotFacts({
     `Süre farkı: ${durationDeltaMin} dk`,
     `Kapasite: ${capacityImpact.availableAfter != null ? `${capacityImpact.availableAfter} boş` : 'Bilinmiyor'}`,
   ];
+  if (hasApplicationContext) {
+    evidence.unshift(
+      `Uygulama durumu: ${applicationStatusLabel || requestApplicationState || 'Kabul edilen değişiklik'}`,
+    );
+    if (requestApplicationText) evidence.push(`Uygulama özeti: ${requestApplicationText}`);
+    if (requestApplicationBoundaryNote) evidence.push(`Sınır: ${requestApplicationBoundaryNote}`);
+  }
   const copilotSignals = [
-    { id: 'boarding-change-type', label: 'Değişiklik tipi', value: changeTypeLabel, note: previewOnlyNote },
+    { id: 'boarding-change-type', label: 'Değişiklik tipi', value: changeTypeLabel, note: hasApplicationContext ? (requestApplicationBoundaryNote || previewOnlyNote) : previewOnlyNote },
     { id: 'boarding-person', label: 'Etkilenen kişi', value: personLabel, note: 'Seçili kişi üzerinden okunur.' },
     { id: 'boarding-stops', label: 'Duraklar', value: `${oldStopLabel} → ${newStopLabel}`, note: 'Eski ve yeni/geçici durak birlikte okunur.' },
     { id: 'boarding-distance', label: 'Km etkisi', value: `${distanceDeltaKm.toFixed(2)} km`, note: 'Yaklaşık rota farkı.' },
@@ -1195,19 +1229,57 @@ export function buildBoardingRouteImpactCopilotFacts({
     { id: 'boarding-capacity', label: 'Kapasite etkisi', value: capacityImpact.status || 'UNKNOWN', note: `Önceki yük ${currentPeopleCount}, önizleme yükü ${previewPeopleCount}.` },
     { id: 'boarding-reliability', label: 'Güvenilirlik', value: reliability.label || 'ETA hesaplanamıyor', note: reliability.note || 'ETA hesaplanamıyor' },
   ];
-  const actionSimulation = routeImpact?.previewOnlyNote
-    ? `${previewOnlyNote} Rota etkisini önizle, ardından uygulama yapma.`
-    : 'Bu sadece önizlemedir. Rota/atama uygulanmadı.';
+  if (hasApplicationContext) {
+    copilotSignals.unshift(
+      { id: 'boarding-application-status', label: 'Uygulama durumu', value: applicationStatusLabel || requestApplicationState || 'Uygulamaya hazır', note: requestApplicationText || requestApplicationBoundaryNote || 'Kabul edilen değişiklik.' },
+      { id: 'boarding-application-boundary', label: 'Sınır', value: isAppliedApplication ? 'Günlük atamaya işlendi' : 'Günlük atamaya işlenebilir', note: requestApplicationBoundaryNote || 'Sürücü rotası yenilenmez.' },
+    );
+  }
+  const actionSimulation = hasApplicationContext
+    ? (isAppliedApplication
+      ? (requestApplicationText || 'Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi.')
+      : (requestApplicationBoundaryNote || 'Bu değişiklik kabul edilmiş. Günlük atamaya işlenebilir; sürücü rotası yenilenmez.'))
+    : (routeImpact?.previewOnlyNote
+      ? `${previewOnlyNote} Rota etkisini önizle, ardından uygulama yapma.`
+      : 'Bu sadece önizlemedir. Rota/atama uygulanmadı.');
+  const screenType = hasApplicationContext ? 'BOARDING_CHANGE_APPLICATION' : 'BOARDING_ROUTE_IMPACT_PREVIEW';
+  const stage = hasApplicationContext
+    ? compactText(requestApplicationStatus || requestApplicationState || request?.requestKind || routeImpact?.changeType || 'ACCEPTED', 'ACCEPTED')
+    : compactText(routeImpact?.changeType || request?.requestKind || 'TEMPORARY_BOARDING_NOTE', 'TEMPORARY_BOARDING_NOTE');
+  const readiness = hasApplicationContext
+    ? (isAppliedApplication ? 'APPLIED' : 'READY')
+    : 'PREVIEW_ONLY';
+  const readinessScore = hasApplicationContext
+    ? (isAppliedApplication ? 90 : 84)
+    : (reliability?.ok ? 78 : 52);
+  const nextBestAction = hasApplicationContext
+    ? (isAppliedApplication
+      ? 'Günlük atamayı doğrula.'
+      : 'Kabul edilen değişikliği uygula.')
+    : (routeImpact?.nextBestAction || 'Önizleme kartını doğrula.');
+  const safestNextStep = hasApplicationContext
+    ? (requestApplicationBoundaryNote || previewOnlyNote)
+    : previewOnlyNote;
+  const boundaryNotes = hasApplicationContext
+    ? [
+      requestApplicationBoundaryNote || 'Bu işlem sadece günlük atama etkisi uygular. Sürücü rotası yenilenmez.',
+      isAppliedApplication ? 'Sürücü rotası henüz yenilenmedi.' : 'Driver route refresh sonraki milestone kapsamındadır.',
+    ]
+    : [
+      previewOnlyNote,
+      'StopAssignment yazılmaz.',
+      'Yazma yok.',
+    ];
   const readonlyFacts = buildReadonlyCopilotFacts({
-    screenType: 'BOARDING_ROUTE_IMPACT_PREVIEW',
-    stage: compactText(routeImpact?.changeType || request?.requestKind || 'TEMPORARY_BOARDING_NOTE', 'TEMPORARY_BOARDING_NOTE'),
-    readiness: 'PREVIEW_ONLY',
-    readinessScore: reliability?.ok ? 78 : 52,
+    screenType,
+    stage,
+    readiness,
+    readinessScore,
     summary,
     blockers: Array.isArray(routeImpact?.warnings) ? routeImpact.warnings : [],
     evidence,
-    nextBestAction: routeImpact?.nextBestAction || 'Önizleme kartını doğrula.',
-    safestNextStep: previewOnlyNote,
+    nextBestAction,
+    safestNextStep,
     compareHint: 'Kişi, durak, km, süre ve kapasite farkını birlikte oku.',
     counters: {
       currentPeopleCount,
@@ -1223,12 +1295,8 @@ export function buildBoardingRouteImpactCopilotFacts({
       capacity: Number(capacityImpact.capacity ?? NaN),
     },
     copilotSignals,
-    boundaryNotes: [
-      previewOnlyNote,
-      'StopAssignment yazılmaz.',
-      'Yazma yok.',
-    ],
-    selectedRecordStatus: reliability?.label || 'Önizleme',
+    boundaryNotes,
+    selectedRecordStatus: applicationStatusLabel || reliability?.label || 'Önizleme',
     liveFactConfidence: {
       summary: routeImpact?.summaryLine || summary,
       rows: copilotSignals.slice(0, 4),
@@ -1244,7 +1312,7 @@ export function buildBoardingRouteImpactCopilotFacts({
     preview: routeImpact,
     requestId: request?.id ?? null,
     requestKind: request?.requestKind || request?.kind || '',
-    changeType: routeImpact?.changeType || request?.requestKind || request?.kind || 'TEMPORARY_BOARDING_NOTE',
+    changeType: hasApplicationContext ? (request?.requestKind || request?.kind || routeImpact?.changeType || 'ACCEPTED') : (routeImpact?.changeType || request?.requestKind || request?.kind || 'TEMPORARY_BOARDING_NOTE'),
     changeTypeLabel,
     personLabel,
     oldStopLabel,
@@ -1262,9 +1330,14 @@ export function buildBoardingRouteImpactCopilotFacts({
     capacityImpact,
     reliability,
     warnings: Array.isArray(routeImpact?.warnings) ? routeImpact.warnings : [],
-    nextBestAction: routeImpact?.nextBestAction || 'Önizleme kartını doğrula.',
+    nextBestAction,
     previewOnlyNote,
-    summaryLine: routeImpact?.summaryLine || summary,
+    summaryLine: routeImpact?.summaryLine || requestApplicationText || summary,
+    applicationStatus: requestApplicationStatus,
+    applicationStatusLabel,
+    applicationState: hasApplicationContext ? (isAppliedApplication ? 'APPLIED' : 'READY') : '',
+    applicationText: requestApplicationText,
+    applicationBoundaryNote: requestApplicationBoundaryNote || previewOnlyNote,
   };
 }
 
@@ -1767,11 +1840,24 @@ export function buildCopilotStarterChips({
   const selectionText = selectionStarterText(selection);
   const fallback = ['Bu ekranda neye bakmalıyım?', 'Riskleri sırala', 'Sıradaki doğru işlem ne?'];
 
+  const isBoardingApplication = selection?.facts?.screenType === 'BOARDING_CHANGE_APPLICATION'
+    || selection?.liveFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'
+    || selection?.structuredFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'
+    || selection?.screenType === 'BOARDING_CHANGE_APPLICATION'
+    || includesAny(selectionText, ['günlük atamaya işlendi', 'günlük atamaya işlenebilir', 'kabul edilen değişiklik', 'sürücü rotası yenilenmedi', 'sürücü rotası yenilenmez', 'sadece günlük atama etkisi', 'uygulama durumu']);
   const isBoardingPreview = selection?.facts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || selection?.liveFacts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || selection?.structuredFacts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || selection?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || includesAny(selectionText, ['rota etkisi', 'biniş değişikliği', 'bugün binmezse', 'farklı duraktan', 'geçici durak', 'rota/atama uygulanmadı', 'km farkı', 'süre artar mı', 'kapasite etkisi']);
+  if (isBoardingApplication) {
+    return finalizeStarterChips([
+      'Bu değişiklik uygulamaya hazır mı?',
+      'Günlük atamaya işlenir mi?',
+      'Sürücü rotası yenilenir mi?',
+      'Bu sadece günlük atama mı?',
+    ], fallback);
+  }
   const isRoomMap = path.includes('/room/map') || path.includes('/company/map') || path.includes('/school/map') || path.includes('/organization/map');
   const isRoomOperationHealth = path.includes('/room/operation-health');
   const isSuperAdminOps = path.includes('/superadmin/observability') || path.includes('/superadmin/operations');

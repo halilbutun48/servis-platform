@@ -173,6 +173,7 @@ function selectedDiagnosticTheme(message) {
   if (/(sağlayıcı|saglayici|provider).*(neden).*(daha iyi|daha güçlü|daha guclu)/.test(text) || /(daha iyi|daha güçlü|daha guclu).*(sağlayıcı|saglayici|provider)/.test(text)) return 'QUALITY_SIGNAL';
   if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text) || /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)) return 'CONTRACT_SHIFT_TODAY';
   if (/(sözleşme|sozlesme).*(vardiya|shift)/.test(text)) return 'CONTRACT_TO_SHIFT';
+  if (/(kabul edilen değişikliği uygula|kabul edilen degisikligi uygula|kabul edilen değişikliği işleme al|kabul edilen degisikligi isleme al|günlük atamaya işle|gunluk atamaya işle|günlük atamaya işlen|gunluk atamaya işlen|günlük atamaya işlenebilir|gunluk atamaya işlenebilir|günlük atama etkisi|sürücü rotası yenilenmez|surucu rotasi yenilenmez|kalıcı atama değişmez|kalici atama degismez|stopassignment|boarding change application|boarding change uygulama)/.test(text)) return 'BOARDING_CHANGE_APPLICATION';
   if (/(rota etkisi|rota etkisini|önizleme|onizleme|etkiyi hesapla|bugün binmezse|bugun binmezse|farklı duraktan|farkli duraktan|geçici durak|gecici durak|biniş değişikliği|binis degisikligi|km farkı|km farki|süre artar mı|sure artar mi|kapasite etkisi|rotasını|rotasini|rotayı|rotayi|rota.*değiştir|rota.*degistir)/.test(text)) return 'BOARDING_ROUTE_IMPACT_PREVIEW';
   if (/(hakediş|hakedis|ödeme|odeme).*(hazır değil|hazir degil|neden).*(eksik|kontrol gerekli|hazır değil|hazir degil)/.test(text) || /(önizleme|onizleme|csv).*(hazır değil|hazir degil|eksik|kontrol gerekli)/.test(text)) return 'PAYMENT_READINESS';
   if (/(hakediş|hakedis).*(neden).*(eksik|kontrol gerekli)/.test(text) || /(önizleme|onizleme).*(neden).*(eksik|kontrol gerekli)/.test(text)) return 'PAYMENT_MISSING';
@@ -208,6 +209,10 @@ function _selectedDiagnosticResult(theme, contextText = '') {
       return hasNegative
         ? 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretildiğine dair net işaret yok.'
         : 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretilmiş görünüyor.';
+    case 'BOARDING_CHANGE_APPLICATION':
+      return hasNegative
+        ? 'Bu ekrandaki veriye göre kabul edilen değişiklik henüz günlük atamaya işlenmemiş olabilir.'
+        : 'Bu ekrandaki veriye göre kabul edilen değişiklik günlük atamaya işlenebilir veya işlenmiş görünüyor.';
     case 'PAYMENT_READINESS':
       return hasNegative
         ? 'Bu ekrandaki veriye göre hakediş hazır değil.'
@@ -245,6 +250,8 @@ function _selectedDiagnosticSurfaceHint(theme) {
     case 'CONTRACT_SHIFT_TODAY':
     case 'CONTRACT_TO_SHIFT':
       return 'Sözleşme / vardiya üretimi';
+    case 'BOARDING_CHANGE_APPLICATION':
+      return 'Kabul edilen değişiklik / günlük atama';
     case 'PAYMENT_READINESS':
       return 'Hakediş hazırlığı, önizleme ve CSV taslağı';
     case 'PAYMENT_MISSING':
@@ -496,6 +503,7 @@ function topicLabelForContext(topic) {
     SHIFT_BLOCKED: 'Vardiya engeli',
     VEHICLE_NOT_VISIBLE: 'GPS görünürlüğü',
     DRIVER_PHONE_GPS: 'Sürücünün telefon GPS’i',
+    BOARDING_CHANGE_APPLICATION: 'Kabul edilen değişiklik / günlük atama',
     BOARDING_ROUTE_IMPACT_PREVIEW: 'Biniş değişikliği önizlemesi',
     PROVIDER_BETTER: 'Kalite sinyali',
     QUALITY_SIGNAL: 'Kalite sinyali',
@@ -541,6 +549,7 @@ const WORKFLOW_TOPICS = new Set([
   'NEXT_STEP',
   'NEXT_SCREEN',
   'WHY_BLOCKED',
+  'BOARDING_CHANGE_APPLICATION',
   'BOARDING_ROUTE_IMPACT_PREVIEW',
 ]);
 
@@ -662,12 +671,16 @@ function buildContextualSuggestedChips({
   let chips = [];
   const path = normalizeText(screenPath);
   const hasSelectedRecord = Boolean(selectedLabel || selectedSummary || sameRecordLikely);
+  const boardingApplicationTopic = Boolean(
+    ['BOARDING_CHANGE_APPLICATION'].includes(String(activeTopic || questionType || ''))
+    || ['BOARDING_CHANGE_APPLICATION'].includes(String(context?.structuredFacts?.screenType || context?.liveFacts?.screenType || sourceScreenContext?.structuredFacts?.screenType || ''))
+  );
   const boardingPreviewTopic = Boolean(
     ['BOARDING_ROUTE_IMPACT_PREVIEW'].includes(String(activeTopic || questionType || ''))
     || ['BOARDING_ROUTE_IMPACT_PREVIEW'].includes(String(context?.structuredFacts?.screenType || context?.liveFacts?.screenType || sourceScreenContext?.structuredFacts?.screenType || ''))
   );
-  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType) || boardingPreviewTopic;
-  const workflowChipTopic = boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : activeTopic;
+  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType) || boardingPreviewTopic || boardingApplicationTopic;
+  const workflowChipTopic = boardingApplicationTopic ? 'BOARDING_CHANGE_APPLICATION' : boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : activeTopic;
   if (workflowTopic) chips.push(...workflowTopicChipSet({ activeTopic: workflowChipTopic, questionType, screenPath }));
   if (hasSelectedRecord && !workflowTopic && !path.includes('/parent/live')) {
     chips.push('Seçili kaydı aç', 'Başlatma zamanını kontrol et', 'Eksik veriyi göster', 'Yetki sınırını açıkla');
@@ -688,10 +701,12 @@ function buildContextualSuggestedChips({
     }
     if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
     if (path.includes('/room/operation-health')) {
+      if (boardingApplicationTopic) return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
       if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
       return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Canlılık riskini açıkla'];
     }
     if (path.includes('/room/shifts')) {
+      if (boardingApplicationTopic) return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
       if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
       if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(questionType || ''))) return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
       if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(questionType || ''))) return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
@@ -700,6 +715,7 @@ function buildContextualSuggestedChips({
       return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
     }
     if (path.includes('/superadmin/operations')) {
+      if (boardingApplicationTopic) return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
       if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
       return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
     }
@@ -713,6 +729,7 @@ function buildContextualSuggestedChips({
     if (path.includes('/room/drivers')) return ['Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla'];
     if (path.includes('/room/reports')) return ['Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Filtreleri nasıl kullanırım?'];
     if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
+      if (boardingApplicationTopic) return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
       if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
       return ['Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri ne?', 'Bu rolde ne görünür?'];
     }
@@ -1077,6 +1094,7 @@ function buildContextPriorityDecision({
     SHIFT_BLOCKED: 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.',
     FIRST_CONTROL: 'Önce ilgili satırı veya ilk kontrol alanını aç.',
     SAFE_NEXT_STEP: 'Önce en risksiz kayıt veya alanı kontrol et.',
+    BOARDING_CHANGE_APPLICATION: 'Bu değişiklik kabul edilmişse günlük atamaya işlenebilir; sürücü rotası yenilenmez. Önce kabul durumu ve günlük atama etkisini kontrol et.',
     BOARDING_ROUTE_IMPACT_PREVIEW: 'Bu sadece önizlemedir. Rota/atama uygulanmadı. Kişi, durak, km, süre ve kapasite farkını birlikte oku.',
     STATUS_HELP: 'Önce durum satırını ve ilgili kaydı kontrol et.',
     FEEDBACK_STATUS: 'Önce açık veya kritik geri bildirimi ve sorumlu rolü kontrol et.',
@@ -1682,6 +1700,12 @@ const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFiel
           ? 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretildiğine dair net işaret yok.'
           : 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretilmiş görünüyor.';
         firstControl = 'Sözleşme / vardiya üretimi';
+        break;
+      case 'BOARDING_CHANGE_APPLICATION':
+        result = hasNegative
+          ? 'Bu ekrandaki veriye göre kabul edilen değişiklik henüz günlük atamaya işlenmemiş olabilir.'
+          : 'Bu ekrandaki veriye göre kabul edilen değişiklik günlük atamaya işlenebilir veya işlenmiş görünüyor.';
+        firstControl = 'Kabul durumu ve günlük atama etkisi';
         break;
       case 'PAYMENT_READINESS':
         result = hasNegative

@@ -1,12 +1,13 @@
 // backend/src/routes/requests.js
 import express from "express";
 import { prisma } from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { createRequestSchema } from "../validators.js";
 import logger from "../lib/logger.js";
 import { audit } from "../audit.js";
 import { emitBoardingChangeNotifications, evaluateBoardingChangeDecision, buildBoardingChangeRequestReason, formatBoardingChangeDecisionText, normalizeBoardingChangeKind } from "./boardingChangeRequestOps.js";
 import { previewBoardingChangeRouteImpact } from "../services/boardingRouteImpactPreview.js";
+import { applyAcceptedBoardingChange } from "../services/boardingChangeApplication.js";
 
 /**
  * PickupRequestStatus enum:
@@ -20,6 +21,13 @@ import { previewBoardingChangeRouteImpact } from "../services/boardingRouteImpac
 
 const DEFAULT_CLOSE_STATUS = "ACCEPTED";
 const ALLOWED_CLOSE = new Set(["ACCEPTED", "CANCELLED"]);
+const BOARDING_CHANGE_DECISION_ACTIONS = [
+  "BOARDING_CHANGE_REQUEST_CREATE",
+  "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
+  "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT",
+  "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
+];
+const BOARDING_CHANGE_APPLY_ACTION = "BOARDING_CHANGE_APPLIED";
 const REQUEST_SHIFT_PREVIEW_INCLUDE = {
   include: {
     vehicle: {
@@ -365,12 +373,7 @@ export function requestsRouter(io) {
             where: {
               entity: "PickupRequest",
               entityId: { in: ids },
-              action: { in: [
-                "BOARDING_CHANGE_REQUEST_CREATE",
-                "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
-                "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT",
-                "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
-              ] },
+              action: { in: [...BOARDING_CHANGE_DECISION_ACTIONS, BOARDING_CHANGE_APPLY_ACTION] },
             },
             orderBy: { createdAt: "desc" },
           })
@@ -378,12 +381,22 @@ export function requestsRouter(io) {
       const auditMap = new Map();
       for (const row of audits) {
         const key = Number(row?.entityId || 0);
-        if (!key || auditMap.has(key)) continue;
-        auditMap.set(key, row);
+        if (!key) continue;
+        const current = auditMap.get(key) || { decisionAudit: null, applyAudit: null };
+        const action = String(row?.action || "");
+        if (!current.decisionAudit && BOARDING_CHANGE_DECISION_ACTIONS.includes(action)) {
+          current.decisionAudit = row;
+        }
+        if (!current.applyAudit && action === BOARDING_CHANGE_APPLY_ACTION) {
+          current.applyAudit = row;
+        }
+        auditMap.set(key, current);
       }
 
       return res.json(items.map((item) => {
-        const meta = auditMap.get(Number(item.id || 0))?.meta || {};
+        const bucket = auditMap.get(Number(item.id || 0)) || {};
+        const meta = bucket.decisionAudit?.meta || bucket.applyAudit?.meta || {};
+        const applyMeta = bucket.applyAudit?.meta || {};
         const closeState = String(meta.closeStatus || "").toUpperCase();
         const derivedDecisionState = closeState === "ACCEPTED"
           ? "ROOM_ACCEPTED"
@@ -396,6 +409,12 @@ export function requestsRouter(io) {
           requesterRole: meta.actorRole || "PERSONEL",
           decisionState,
         });
+        const applicationState = String(applyMeta.applicationState || (bucket.applyAudit ? "APPLIED" : (String(item.status || "").toUpperCase() === "ACCEPTED" ? "READY" : "BLOCKED"))).toUpperCase();
+        const applicationText = applyMeta.applicationText || (applicationState === "APPLIED"
+          ? "Değişiklik günlük atamaya işlendi."
+          : applicationState === "READY"
+            ? "Kabul edilen değişiklik günlük atamaya işlenebilir."
+            : "Beklemede.");
         const nearestStop = meta.nearestStopName ? {
           id: meta.nearestStopId ?? null,
           name: meta.nearestStopName,
@@ -423,6 +442,14 @@ export function requestsRouter(io) {
           decisionText,
           nearestStop,
           routeImpactPreview,
+          boardingChangeApplicationStatus: applicationState,
+          boardingChangeApplicationText: applicationText,
+          boardingChangeAppliedAt: bucket.applyAudit?.createdAt || null,
+          boardingChangeApplicationBoundaryNote: applyMeta.applicationBoundaryNote || (applicationState === "APPLIED"
+            ? "Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi."
+            : applicationState === "READY"
+              ? "Bu değişiklik kabul edilmiş ve günlük atamaya işlenebilir. Bu işlem sürücü rotasını yenilemez."
+              : "Önce değişiklik kabul edilmeli."),
         };
       }));
     } catch (e) {
@@ -533,6 +560,34 @@ export function requestsRouter(io) {
     } catch (e) {
       logger.error("[requests] POST /:id/close error:", e);
       return res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  r.post("/:id/apply-boarding-change", authRequired(), requireStepUpWrite("COMPANY", "ROOM", "SUPER_ADMIN"), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+    try {
+      const requestId = Number(req.params.id);
+      if (!Number.isFinite(requestId) || requestId <= 0) {
+        return res.status(400).json({ error: "Invalid requestId" });
+      }
+
+      const result = await applyAcceptedBoardingChange({
+        requestId,
+        actor: req.user,
+        role: req.user?.role,
+        scope: {
+          roomId: req.user?.roomId ?? null,
+          companyId: req.user?.companyId ?? null,
+        },
+        now: new Date(),
+      });
+
+      return res.json(result);
+    } catch (e) {
+      logger.error("[requests] POST /:id/apply-boarding-change error:", e);
+      return res.status(e?.status || 500).json({
+        error: e?.message || "Internal Server Error",
+        code: e?.code || null,
+      });
     }
   });
 

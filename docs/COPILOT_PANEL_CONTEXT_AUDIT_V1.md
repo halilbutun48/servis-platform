@@ -29,6 +29,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `StopAssignment` write, driver route refresh, SMS ve notification send bu milestone kapsamı dışındadır.
 - Bu not product behavior değiştirmez; sonraki accepted change ve route refresh milestone'ları ayrıştırılır.
 
+## BOARDING-OPS-01B kapsam notu
+- Bu uygulama taslağı kabul edilmiş boarding change kaydını yalnızca açık kullanıcı aksiyonu ile günlük `StopAssignment` etkisine bağlar; `Company / Operasyon Paneli`, `Company / Vardiyalar`, `School / Operasyon Paneli` ve `Room / Operasyon Sağlığı` yüzeylerinde görünür.
+- `NO_SERVICE_TODAY` shift-scoped etki, `ALTERNATE_STOP_TODAY` geçici durak etkisi, `TEMPORARY_BOARDING_NOTE` ise not/audit bağlamı olarak ele alınır; idempotency guard ve audit izi korunur.
+- Driver route refresh, SMS / notification, payment / settlement execute ve schema / migration bu milestone kapsamı dışındadır; route refresh sonraki `BOARDING-OPS-01C` adımına bırakılır.
+- Bu not product behavior değiştirmez; yalnızca kabul edilmiş değişiklikten günlük atamaya giden dar yolu tarif eder.
+
 ## Yöntem
 - Panel dosyaları ve Copilot helper zinciri statik olarak tarandı.
 - Hızlı Yardım üst bağlamı ile serbest chat route ayrışması için risk yüzeyleri not edildi.

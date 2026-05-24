@@ -32,6 +32,14 @@ const DECISION_TONES = {
   NO_SHOW: "warning",
 };
 
+const APPLICATION_LABELS = {
+  READY: "Uygulamaya hazır",
+  APPLIED: "Günlük atamaya işlendi",
+  NOTE_ONLY: "Not kaydı",
+  NOOP: "Değişiklik yok",
+  BLOCKED: "Uygulanamadı",
+};
+
 function normalize(value) {
   return String(value || "").trim().toUpperCase();
 }
@@ -50,4 +58,20 @@ export function boardingChangeDecisionLabel(state) {
 
 export function boardingChangeDecisionTone(state) {
   return DECISION_TONES[normalize(state)] || "info";
+}
+
+export function boardingChangeApplicationStatusLabel(state) {
+  return APPLICATION_LABELS[normalize(state)] || "Uygulamaya hazır";
+}
+
+export function boardingChangeApplyButtonLabel() {
+  return "Kabul edilen değişikliği uygula";
+}
+
+export function boardingChangeApplyBoundaryNote() {
+  return "Bu işlem sadece günlük atama etkisi uygular. Sürücü rotası yenilenmez.";
+}
+
+export function boardingChangeApplySuccessNote() {
+  return "Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi.";
 }

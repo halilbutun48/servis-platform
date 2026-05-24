@@ -11,7 +11,14 @@ import { displayStatusLabel } from "../../utils/displayStatus";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildBoardingRouteImpactCopilotFacts } from "../../utils/copilotFacts";
-import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
+import {
+  boardingChangeApplyBoundaryNote,
+  boardingChangeApplyButtonLabel,
+  boardingChangeApplySuccessNote,
+  boardingChangeApplicationStatusLabel,
+  boardingChangeDecisionLabel,
+  boardingChangeKindLabel,
+} from "../shared/boardingChangeUi";
 
 function MiniStat({ title, value, note }) {
   return (
@@ -65,6 +72,8 @@ export default function SchoolOperationsPanel() {
   const [err, setErr] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
   const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
+  const [applyingRequestId, setApplyingRequestId] = useState(null);
+  const [applyNotice, setApplyNotice] = useState("");
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -73,7 +82,7 @@ export default function SchoolOperationsPanel() {
       const [studentsResp, invitesResp, requestsResp, notificationsResp] = await Promise.all([
         api("/api/company/personels?kind=STUDENT&take=120", { token }),
         api("/api/school/parent-invites?take=120", { token }),
-        api("/api/requests?onlyOpen=1&onlyActive=1", { token }).catch(() => []),
+        api("/api/requests", { token }).catch(() => []),
         api("/api/notifications/my", { token }).catch(() => []),
       ]);
 
@@ -87,6 +96,23 @@ export default function SchoolOperationsPanel() {
       setBusy(false);
     }
   }, [token]);
+
+  const handleApplyAcceptedRequest = useCallback(async (requestId) => {
+    const id = Number(requestId || 0);
+    if (!id) return;
+    setApplyingRequestId(id);
+    setErr("");
+    setApplyNotice("");
+    try {
+      const result = await api(`/api/requests/${id}/apply-boarding-change`, { token, method: "POST" });
+      setApplyNotice(result?.applicationBoundaryNote || result?.applicationText || boardingChangeApplySuccessNote());
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setApplyingRequestId(null);
+    }
+  }, [load, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -105,6 +131,7 @@ export default function SchoolOperationsPanel() {
     const status = String(item?.status || "").toUpperCase();
     return ["REQUESTED", "OPEN", "PENDING", "COUNTERED"].includes(status) || item?.lat != null || item?.lng != null;
   }), [requests]);
+  const acceptedRequestRows = useMemo(() => (Array.isArray(requests) ? requests : []).filter((item) => String(item?.status || "").toUpperCase() === "ACCEPTED"), [requests]);
 
   const studentRows = useMemo(
     () => (Array.isArray(students) ? students : []).slice(0, 12).map((student) => {
@@ -148,16 +175,34 @@ export default function SchoolOperationsPanel() {
     })),
     [riskRequestRows]
   );
+  const acceptedRows = useMemo(
+    () => acceptedRequestRows.slice(0, 10).map((item) => ({
+      id: item.id,
+      personel: item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`,
+      shift: item?.shift?.id || item?.shiftId || "-",
+      status: item?.status || "ACCEPTED",
+      kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
+      decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
+      detail: item?.boardingChangeApplicationText || item?.decisionText || (item?.lat != null || item?.lng != null ? "Kabul edilen biniş değişikliği" : "Kabul edilen değişiklik"),
+      applicationStatus: item?.boardingChangeApplicationStatus || "READY",
+      applicationText: item?.boardingChangeApplicationText || "",
+      applicationAt: item?.boardingChangeAppliedAt || null,
+      boundaryNote: item?.boardingChangeApplicationBoundaryNote || "",
+      preview: item?.routeImpactPreview || null,
+    })),
+    [acceptedRequestRows]
+  );
+  const requestSelectionRows = useMemo(() => [...requestRows, ...acceptedRows], [requestRows, acceptedRows]);
 
   const selectedPreviewRequest = useMemo(() => {
-    if (!requestRows.length) return null;
+    if (!requestSelectionRows.length) return null;
     const desiredId = Number(selectedPreviewRequestId || 0);
     if (desiredId > 0) {
-      const hit = requestRows.find((item) => Number(item?.id || 0) === desiredId);
+      const hit = requestSelectionRows.find((item) => Number(item?.id || 0) === desiredId);
       if (hit) return hit;
     }
-    return requestRows[0] || null;
-  }, [requestRows, selectedPreviewRequestId]);
+    return requestSelectionRows[0] || null;
+  }, [requestSelectionRows, selectedPreviewRequestId]);
 
   const selectedPreview = useMemo(() => selectedPreviewRequest?.preview || null, [selectedPreviewRequest]);
   const selectedPreviewFacts = useMemo(() => {
@@ -172,7 +217,10 @@ export default function SchoolOperationsPanel() {
   const selectedPreviewSelection = useMemo(() => {
     if (!selectedPreviewRequest || !selectedPreview || !selectedPreviewFacts) return null;
     const personLabel = selectedPreview.personLabel || selectedPreviewRequest?.personel || `#${selectedPreviewRequest?.id || "-"}`;
-    const summary = selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || "";
+    const summary = selectedPreviewRequest?.boardingChangeApplicationText || selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || "";
+    const applicationStatusLabel = selectedPreviewRequest?.boardingChangeApplicationStatus
+      ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.boardingChangeApplicationStatus)
+      : (selectedPreview.reliability?.label || "Önizleme");
     return {
       scopeKey: "/school/operations",
       entityType: "screen",
@@ -183,16 +231,18 @@ export default function SchoolOperationsPanel() {
       selectedSummary: summary,
       selectedRecordLabel: personLabel,
       selectedRecordSummary: summary,
-      selectedRecordStatus: selectedPreview.selectedRecordStatus || selectedPreview.reliability?.label || "Önizleme",
-      helpContextSummary: `${selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
+      selectedRecordStatus: applicationStatusLabel,
+      helpContextSummary: `${selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
       contextSummary: summary,
       selectedRecord: {
         label: personLabel,
         summary,
-        status: selectedPreview.selectedRecordStatus || selectedPreview.reliability?.label || "Önizleme",
+        status: applicationStatusLabel,
         changeType: selectedPreview.changeTypeLabel,
         oldStopLabel: selectedPreview.oldStopLabel,
         newStopLabel: selectedPreview.newStopLabel,
+        applicationStatus: selectedPreviewRequest?.boardingChangeApplicationStatus || null,
+        applicationBoundaryNote: selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || null,
         previewOnlyNote: selectedPreview.previewOnlyNote,
       },
       selectedFields: [
@@ -207,7 +257,7 @@ export default function SchoolOperationsPanel() {
         { label: "Güvenilirlik", value: selectedPreview.reliability?.label || "-" },
       ],
       selectedBadges: [
-        { label: "Önizleme", value: selectedPreview.previewOnlyNote || "Bu sadece önizlemedir." },
+        { label: "Uygulama", value: selectedPreviewRequest?.boardingChangeApplicationStatus ? applicationStatusLabel : (selectedPreview.previewOnlyNote || "Bu sadece önizlemedir.") },
         { label: "ETA", value: selectedPreview.reliability?.label || "ETA hesaplanamıyor" },
       ],
       facts: selectedPreviewFacts,
@@ -264,6 +314,7 @@ export default function SchoolOperationsPanel() {
       />
 
       {err ? <div className="card err">{err}</div> : null}
+      {applyNotice ? <div className="card" style={{ borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{applyNotice}</div> : null}
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Öğrenci servis atamaları" value={metricValue(students.length)} note="Öğrenci envanteri" />
@@ -478,6 +529,60 @@ export default function SchoolOperationsPanel() {
                       </td>
                     </tr>
                   )) : <tr><td colSpan={7} className="muted">Riskli istek yok.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Kabul edilen değişiklikler" subtitle={boardingChangeApplyBoundaryNote()}>
+            <div style={{ overflowX: "auto" }}>
+              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+                <thead>
+                  <tr>
+                    <th>Kişi</th>
+                    <th>Shift</th>
+                    <th>Durum</th>
+                    <th>Tür</th>
+                    <th>Uygulama</th>
+                    <th>Zaman</th>
+                    <th>İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {acceptedRows.length ? acceptedRows.map((row) => {
+                    const statusLabel = boardingChangeApplicationStatusLabel(row.applicationStatus || "READY");
+                    const canApply = String(row.applicationStatus || "").toUpperCase() === "READY";
+                    const isApplying = Number(applyingRequestId || 0) === Number(row.id || 0);
+                    return (
+                      <tr key={`accepted-${row.id}`}>
+                        <td>{row.personel}</td>
+                        <td>#{row.shift}</td>
+                        <td>{displayStatusLabel(row.status)}</td>
+                        <td>{row.kind}</td>
+                        <td>{statusLabel}</td>
+                        <td>{fmtTR(row.applicationAt || row.createdAt)}</td>
+                        <td>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            {canApply ? (
+                              <button
+                                type="button"
+                                className="btn sm"
+                                onClick={() => handleApplyAcceptedRequest(row.id)}
+                                disabled={isApplying}
+                              >
+                                {isApplying ? "..." : boardingChangeApplyButtonLabel()}
+                              </button>
+                            ) : (
+                              <span className="muted">{row.applicationText || boardingChangeApplySuccessNote()}</span>
+                            )}
+                          </div>
+                          {row.boundaryNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{row.boundaryNote}</div> : null}
+                        </td>
+                      </tr>
+                    );
+                  }) : (
+                    <tr><td colSpan={7} className="muted">Kabul edilen değişiklik yok.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

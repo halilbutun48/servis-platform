@@ -117,6 +117,7 @@ const BASE_RULES = [
   { type: 'PAYMENT_READINESS', score: 12, patterns: ['bu hakediş neden hazır değil', 'bu hakedis neden hazir degil', 'hakediş neden hazır değil', 'hakedis neden hazir degil', 'hakediş hazır değil', 'hakedis hazir degil', 'ödeme hazır değil', 'odeme hazir degil', 'hakediş önizlemesi', 'hakedis onizlemesi', 'ödeme önizlemesi', 'odeme onizlemesi', 'ödeme hesabı', 'odeme hesabi', 'komisyon', 'eksik bilgi', 'kontrol gerekli'], label: 'payment-readiness' },
   { type: 'READINESS_CHECK', score: 10, patterns: ['hazır mı', 'hazir mi', 'atamaya hazır mı', 'atamaya hazir mi', 'ilerlemeye hazır mı', 'iş hazır mı', 'bu kayıt hazır mı', 'bu kayit hazir mi', 'hakediş tarafında ne kontrol etmeliyim', 'hakedis tarafında ne kontrol etmeliyim', 'bu hakediş neden hazır değil', 'bu hakedis neden hazir degil', 'hazır değil', 'hazir degil', 'hazırlık', 'hazirlik', 'vardiya üretildi mi', 'vardiya uretildi mi', 'bugün vardiya üretildi mi', 'bugun vardiya uretildi mi', 'sözleşmeden vardiya', 'sozlesmeden vardiya', 'sözleşmeden bugün vardiya üretildi mi', 'sozlesmeden bugun vardiya uretildi mi'], label: 'readiness' },
   { type: 'BOARDING_ROUTE_IMPACT_PREVIEW', score: 13, patterns: ['rota etkisi', 'rota etkisini', 'önizle', 'onizle', 'önizleme', 'onizleme', 'etkiyi hesapla', 'bugün binmezse', 'bugun binmezse', 'farklı duraktan', 'farkli duraktan', 'geçici durak', 'gecici durak', 'biniş değişikliği', 'binis degisikligi', 'km farkı', 'km farki', 'süre artar mı', 'sure artar mi', 'kapasite etkisi', 'rotasını', 'rotasini', 'rotayı', 'rotayi', 'rota.*değiştir', 'rota.*degistir'], label: 'boarding-route-impact-preview' },
+  { type: 'BOARDING_CHANGE_APPLICATION', score: 14, patterns: ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'kabul edilen değişikliği işleme al', 'kabul edilen degisikligi isleme al', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlen', 'gunluk atamaya işlen', 'günlük atamaya işlenebilir', 'gunluk atamaya işlenebilir', 'günlük atama etkisi', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'stopassignment', 'boarding change application', 'boarding change uygulama'], label: 'boarding-change-application' },
   { type: 'SAFE_NEXT_STEP', score: 9, patterns: ['en risksiz sonraki adım', 'en risksiz sonraki adim', 'en güvenli sonraki adım', 'en guvenli sonraki adim', 'en güvenli ne yapayım', 'en guvenli ne yapayim'], label: 'safe-next' },
   { type: 'WHAT_CHANGED', score: 9, patterns: ['az önce ne değişti', 'az once ne degisti', 'ne değişti', 'ne degisti', 'şimdi neden farklı', 'simdi neden farkli'], label: 'what-changed' },
   { type: 'FIELD_HELP', score: 9, patterns: ['bu sütun ne demek', 'bu sutun ne demek', 'bu kolon ne demek', 'bu alan ne demek', 'hangi sütun', 'hangi sutun'], label: 'field-help' },
@@ -151,11 +152,12 @@ const INTENT_PRIORITY = [
   'NEXT_SCREEN',
   'FIRST_CONTROL',
   'DETAIL_FLOW',
-    'ROW_HELP',
+  'ROW_HELP',
   'MISSING_DATA_HELP',
   'CONTRACT_TO_SHIFT',
   'PAYMENT_READINESS',
   'READINESS_CHECK',
+  'BOARDING_CHANGE_APPLICATION',
   'BOARDING_ROUTE_IMPACT_PREVIEW',
   'SHIFT_BLOCKED',
   'SAFE_NEXT_STEP',
@@ -216,6 +218,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   if (/(gps|konum|telefon\s+gps)/.test(text) && options.entityType === 'vehicle') addScore(scores, signals, 'LOCATION_HELP', 2, 'vehicle-location-bias');
   if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/shifts']) && /(hakediş|hakedis|ödeme|odeme|önizleme|onizleme|csv|komisyon|ödeme hesabı|odeme hesabi|eksik bilgi|kontrol gerekli|hazır değil|hazir degil)/.test(text)) addScore(scores, signals, 'PAYMENT_READINESS', 12, 'payment-readiness-path');
   if (pathHas(options.screenPath, ['/company/operations', '/school/operations', '/organization/operations', '/room/operation-health', '/room/shifts']) && /(rota etkisi|rota etkisini|önizle|onizle|önizleme|onizleme|etkiyi hesapla|bugün binmezse|bugun binmezse|farklı duraktan|farkli duraktan|geçici durak|gecici durak|biniş değişikliği|binis degisikligi|km farkı|km farki|süre artar mı|sure artar mi|kapasite etkisi|rotasını|rotasini|rotayı|rotayi|rota.*değiştir|rota.*degistir)/.test(text)) addScore(scores, signals, 'BOARDING_ROUTE_IMPACT_PREVIEW', 13, 'boarding-route-impact-preview-path');
+  if (pathHas(options.screenPath, ['/company/operations', '/school/operations', '/organization/operations', '/room/operation-health', '/room/shifts']) && /(kabul edilen değişikliği uygula|kabul edilen degisikligi uygula|kabul edilen değişikliği işleme al|kabul edilen degisikligi isleme al|günlük atamaya işle|gunluk atamaya işle|günlük atamaya işlen|gunluk atamaya işlen|günlük atamaya işlenebilir|gunluk atamaya işlenebilir|günlük atama etkisi|sürücü rotası yenilenmez|surucu rotasi yenilenmez|kalıcı atama değişmez|kalici atama degismez|stopassignment|boarding change application|boarding change uygulama)/.test(text)) addScore(scores, signals, 'BOARDING_CHANGE_APPLICATION', 15, 'boarding-change-application-path');
     if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment']) && /(hakediş|hakedis|ödeme|odeme|csv|önizleme|onizleme|hazır değil|hazir degil|hazırlık|hazirlik|eksik)/.test(text)) addScore(scores, signals, 'READINESS_CHECK', 6, 'commercial-readiness');
     if (pathHas(options.screenPath, ['/superadmin/commercial-core']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text)) {
       addScore(scores, signals, 'READINESS_CHECK', 12, 'superadmin-commercial-core-contract-shift-readiness');
@@ -356,6 +359,7 @@ export function resolveReplyMode(message, questionType, roleMode = 'OPERATIONS')
 
 export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN', message = '', screenPath = '' }) {
   const text = normalizeText(message);
+  if (String(questionType || '') === 'BOARDING_CHANGE_APPLICATION' || hasAny(text, ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlenebilir', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'stopassignment'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(questionType || '') === 'BOARDING_ROUTE_IMPACT_PREVIEW' || hasAny(text, ['rota etkisi', 'rota etkisini', 'önizle', 'onizle', 'önizleme', 'onizleme', 'bugün binmezse', 'bugun binmezse', 'farklı duraktan', 'farkli duraktan', 'geçici durak', 'gecici durak', 'biniş değişikliği', 'binis degisikligi', 'km farkı', 'km farki', 'süre artar mı', 'sure artar mi', 'kapasite etkisi'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(entityType) === 'vehicle') {
     if (hasAny(text, ['bağla', 'bagla', 'sürücü', 'surucu'])) return 'VEHICLE_DRIVER_BIND';
@@ -382,7 +386,7 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
 }
 
 function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -458,7 +462,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
 }
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -532,13 +536,22 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
 
 export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPEN', roleMode = 'OPERATIONS', screenPath = '', context = null }) {
   const base = [];
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
+  const boardingApplicationContext = Boolean(
+    context?.structuredFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'
+    || context?.liveFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'
+    || context?.screenType === 'BOARDING_CHANGE_APPLICATION'
+  );
   const boardingPreviewContext = Boolean(
     context?.structuredFacts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || context?.liveFacts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || context?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
   );
+  if (boardingApplicationContext) {
+    const applicationChips = ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
+    return roleMode === 'SIMPLE' ? applicationChips.slice(0, 4) : applicationChips.slice(0, 6);
+  }
   if (boardingPreviewContext) {
     const previewChips = ['Rota etkisini önizle', 'Kişi/durak farkını göster', 'Km/süre farkını açıkla', 'Bu sadece önizleme mi?'];
     return roleMode === 'SIMPLE' ? previewChips.slice(0, 4) : previewChips.slice(0, 6);

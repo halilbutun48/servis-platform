@@ -71,6 +71,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   const path = normalizeText(screenPath);
 
   if (path.includes('/room/operation-health') || path.includes('/superadmin/operations')) {
+    if (topic === 'BOARDING_CHANGE_APPLICATION') {
+      return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
+    }
     if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
       return ['Rota etkisini önizle', 'Kişi farkını göster', 'Km/süre farkını açıkla', 'Kapasite etkisini göster'];
     }
@@ -98,6 +101,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (path.includes('/room/shifts') || path.includes('/company/shifts') || path.includes('/organization/shifts')) {
+    if (topic === 'BOARDING_CHANGE_APPLICATION') {
+      return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
+    }
     if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
       return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
     }
@@ -125,6 +131,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
+    if (topic === 'BOARDING_CHANGE_APPLICATION') {
+      return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
+    }
     if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
       return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
     }
@@ -177,6 +186,8 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     case 'CONTRACT_TO_SHIFT':
     case 'CONTRACT_SHIFT_TODAY':
       return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
+    case 'BOARDING_CHANGE_APPLICATION':
+      return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
     case 'QUALITY_SIGNAL':
     case 'TRUST_QUALITY':
       return ['Açık kalite sinyallerini göster', 'Son değerlendirmeyi aç', 'Risk nedenini açıkla', 'Kanıt durumunu kontrol et'];
