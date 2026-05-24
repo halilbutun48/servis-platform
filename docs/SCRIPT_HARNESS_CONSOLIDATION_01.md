@@ -5,13 +5,13 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `299`
-- Toplam executable tracked file: `1064`
-- Combined registry row: `1363`
-- Root/backend/web/mobile package dağılımı: root `142`, backend `631`, web `86`, mobile `201`
+- Toplam package script entry: `300`
+- Toplam executable tracked file: `1067`
+- Combined registry row: `1367`
+- Root/backend/web/mobile package dağılımı: root `143`, backend `634`, web `86`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `17`
-- ACTIVE: `358`
+- ACTIVE: `360`
 - ACTIVE_CORE: `117`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
@@ -28,11 +28,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `473`
+- NEEDS_REVIEW: `475`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
-- Eski sistem term eşleşmesi: `242`
+- Eski sistem term eşleşmesi: `243`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -40,7 +40,7 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 358 |
+| ACTIVE | 360 |
 | ACTIVE_BACKEND_LINT | 2 |
 | ACTIVE_CORE | 117 |
 | ACTIVE_RELEASE_ONLY | 274 |
@@ -49,7 +49,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 473 |
+| NEEDS_REVIEW | 475 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -88,6 +88,7 @@ Repo: `servis-platform`
 | root:check:pay01d | package.json | root | node backend/scripts/pay_01d_payment_preview_csv_export_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PAY-01-D |  | Breaks canonical verification chain |  |
 | root:check:pay01e | package.json | root | node backend/scripts/pay_01e_payment_readonly_closure_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PAY-01-E |  | Breaks canonical verification chain |  |
 | root:check:paysafe01 | package.json | root | node backend/scripts/pay_safe_01_payment_write_gate_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PAYSAFE-01 |  | Breaks canonical verification chain |  |
+| root:check:qltpaybridge01 | package.json | root | node backend/scripts/qlt_pay_bridge_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-QLTPAYBRIDGE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -335,6 +336,7 @@ Repo: `servis-platform`
 | docs_ssot_pack_check.js | backend/scripts/docs_ssot_pack_check.js | backend |  | verify:repo | ACTIVE_CORE |  | DOCS-SSOT-PACK-CHECK |  | Owner or chain unclear | canonical runner |
 | docs_state_01_recent_product_closure_check.js | backend/scripts/docs_state_01_recent_product_closure_check.js | backend | root:check:docsstate01 | verify:repo | ACTIVE_CORE |  | DOCS-STATE-01-RECENT-PRODUCT-CLOSURE-CHECK |  | Owner or chain unclear | canonical runner |
 | driver_flow_final_01_acceptance_check.js | backend/scripts/driver_flow_final_01_acceptance_check.js | backend | root:check:driverflowfinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| dynamic_savings_01_check.js | backend/scripts/dynamic_savings_01_check.js | backend | root:check:dynamicsavings01 | product-extensions | ACTIVE |  | DYNAMIC-SAVINGS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | e2e_smoke_01_demo_acceptance_check.js | backend/scripts/e2e_smoke_01_demo_acceptance_check.js | backend | root:check:e2esmoke01 | review | NEEDS_REVIEW |  | E-2-E-SMOKE-01-DEMO-ACCEPTANCE-CHECK |  | Owner or chain unclear |  |
 | eta_osrm_01_route_eta_service_check.js | backend/scripts/eta_osrm_01_route_eta_service_check.js | backend | root:check:etaosrm01 | review | NEEDS_REVIEW |  | ETA-OSRM-01-ROUTE-ETA-SERVICE-CHECK |  | Owner or chain unclear |  |
 | eta_osrm_02_api_eta_bridge_check.js | backend/scripts/eta_osrm_02_api_eta_bridge_check.js | backend | root:check:etaosrm02 | review | NEEDS_REVIEW |  | ETA-OSRM-02-API-ETA-BRIDGE-CHECK |  | Owner or chain unclear |  |
@@ -557,6 +559,7 @@ Repo: `servis-platform`
 | qlt_04_quality_review_history_check.js | backend/scripts/qlt_04_quality_review_history_check.js | backend | root:check:qlt04 | product | ACTIVE |  | QLT-04-QUALITY-REVIEW-HISTORY-CHECK |  | Owner or chain unclear | product check/helper |
 | qlt_04a_quality_layout_polish_check.js | backend/scripts/qlt_04a_quality_layout_polish_check.js | backend | root:check:qlt04a | product | ACTIVE |  | QLT-04-A-QUALITY-LAYOUT-POLISH-CHECK |  | Owner or chain unclear | product check/helper |
 | qlt_04b_compact_signal_list_check.js | backend/scripts/qlt_04b_compact_signal_list_check.js | backend | root:check:qlt04b | product | ACTIVE |  | QLT-04-B-COMPACT-SIGNAL-LIST-CHECK |  | Owner or chain unclear | product check/helper |
+| qlt_pay_bridge_01_check.js | backend/scripts/qlt_pay_bridge_01_check.js | backend | root:check:qltpaybridge01 | product | ACTIVE |  | QLT-PAY-BRIDGE-01-CHECK |  | Owner or chain unclear | product check/helper |
 | relative_import_integrity_check.js | backend/scripts/relative_import_integrity_check.js | backend |  | verify:repo | ACTIVE_CORE |  | RELATIVE-IMPORT-INTEGRITY-CHECK |  | Owner or chain unclear | canonical runner |
 | repo_audit.js | backend/scripts/repo_audit.js | backend | root:audit:repo | verify:repo | ACTIVE_CORE |  | REPO-AUDIT |  | Owner or chain unclear | canonical runner |
 | repo_deep_audit.js | backend/scripts/repo_deep_audit.js | backend |  | review | NEEDS_REVIEW |  | REPO-DEEP-AUDIT |  | Owner or chain unclear |  |
@@ -827,6 +830,7 @@ Repo: `servis-platform`
 | paymentBackboneAccounts.js | backend/src/services/paymentBackboneAccounts.js | backend |  | review | NEEDS_REVIEW |  | PAYMENT-BACKBONE-ACCOUNTS |  | Owner or chain unclear |  |
 | paymentBackboneWriteGate.js | backend/src/services/paymentBackboneWriteGate.js | backend |  | review | NEEDS_REVIEW |  | PAYMENT-BACKBONE-WRITE-GATE |  | Owner or chain unclear |  |
 | planSolve.js | backend/src/services/planSolve.js | backend |  | review | NEEDS_REVIEW |  | PLAN-SOLVE |  | Owner or chain unclear |  |
+| qualityPaymentBridgeService.js | backend/src/services/qualityPaymentBridgeService.js | backend |  | review | NEEDS_REVIEW |  | QUALITY-PAYMENT-BRIDGE-SERVICE |  | Owner or chain unclear |  |
 | reservationConflict.js | backend/src/services/reservationConflict.js | backend |  | review | NEEDS_REVIEW |  | RESERVATION-CONFLICT |  | Owner or chain unclear |  |
 | roomPoolPlanner.js | backend/src/services/roomPoolPlanner.js | backend |  | review | NEEDS_REVIEW |  | ROOM-POOL-PLANNER |  | Owner or chain unclear |  |
 | routeEtaService.js | backend/src/services/routeEtaService.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-ETA-SERVICE |  | Owner or chain unclear |  |

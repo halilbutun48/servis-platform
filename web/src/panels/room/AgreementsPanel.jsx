@@ -9,12 +9,14 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
+import QualityPaymentBridgePreviewCard from "../shared/QualityPaymentBridgePreviewCard";
 import AgreementConflictBox from "../../components/AgreementConflictBox";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
 import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
+import { getAgreementQualityPaymentBridgePreview } from "../../api";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import {
   OfferCell,
@@ -22,6 +24,8 @@ import {
   RoomAgreementsRouteRefreshAcceptedSection,
   RoomAgreementsRouteRefreshPendingSection,
 } from "./roomAgreementsPanelSections";
+
+const EMPTY_QUALITY_BRIDGE_LIST = [];
 
 function moneyTry(v) {
   if (v == null || v === "") return "-";
@@ -94,6 +98,7 @@ export default function AgreementsPanel() {
   const [opsBridge, setOpsBridge] = useState({});
   const [routeRefreshItems, setRouteRefreshItems] = useState([]);
   const [routeRefreshPreviewById, setRouteRefreshPreviewById] = useState({});
+  const [qualityPaymentBridgePreview, setQualityPaymentBridgePreview] = useState({ loading: false, data: null, err: "" });
   const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null, title: "Rota Önizleme" });
 
   const [vehicles, setVehicles] = useState([]);
@@ -290,6 +295,20 @@ export default function AgreementsPanel() {
       durationSec: Number(selectedRouteRefreshItem?.proposedDurationSec || 0),
     },
   });
+  const qualityBridgePreview = useMemo(() => qualityPaymentBridgePreview.data || null, [qualityPaymentBridgePreview.data]);
+  const qualityBridgeStatusText = useMemo(() => String(qualityBridgePreview?.qualityStatus || "").trim().toUpperCase(), [qualityBridgePreview]);
+  const qualityBridgeProofCompleteness = Number(qualityBridgePreview?.proofCompleteness ?? NaN);
+  const qualityBridgeSettlementReadiness = useMemo(() => String(qualityBridgePreview?.settlementReadiness || "").trim().toUpperCase(), [qualityBridgePreview]);
+  const qualityBridgeImpactStatus = useMemo(() => String(qualityBridgePreview?.paymentPreviewImpact?.status || "").trim().toUpperCase(), [qualityBridgePreview]);
+  const qualityBridgeImpactReason = useMemo(() => String(qualityBridgePreview?.paymentPreviewImpact?.reason || "").trim(), [qualityBridgePreview]);
+  const qualityBridgeMissingProofs = useMemo(() => (
+    Array.isArray(qualityBridgePreview?.missingProofs) ? qualityBridgePreview.missingProofs : EMPTY_QUALITY_BRIDGE_LIST
+  ), [qualityBridgePreview]);
+  const qualityBridgeRiskReasons = useMemo(() => (
+    Array.isArray(qualityBridgePreview?.riskReasons) ? qualityBridgePreview.riskReasons : EMPTY_QUALITY_BRIDGE_LIST
+  ), [qualityBridgePreview]);
+  const qualityBridgeNextAction = useMemo(() => String(qualityBridgePreview?.nextBestAction || "").trim(), [qualityBridgePreview]);
+  const qualityBridgeSummaryText = useMemo(() => String(qualityBridgePreview?.summaryText || qualityBridgePreview?.previewOnlyNote || "").trim(), [qualityBridgePreview]);
   useEffect(() => {
     const item = copilotAgreementTarget;
     if (!item) {
@@ -321,6 +340,16 @@ export default function AgreementsPanel() {
       routeRefreshRoomCounterText: selectedRouteRefreshRoomCounterText,
       routeRefreshSummaryText: selectedRouteRefreshSummaryText,
       dynamicSavingsPreview: selectedDynamicSavingsPreview,
+      qualityPaymentBridgePreview: qualityBridgePreview,
+      qualityPaymentBridgeSummaryText: qualityBridgeSummaryText,
+      qualityPaymentBridgeStatus: qualityBridgeStatusText,
+      qualityPaymentBridgeProofCompleteness: qualityBridgeProofCompleteness,
+      qualityPaymentBridgeSettlementReadiness: qualityBridgeSettlementReadiness,
+      qualityPaymentBridgeImpactStatus: qualityBridgeImpactStatus,
+      qualityPaymentBridgeImpactReason: qualityBridgeImpactReason,
+      qualityPaymentBridgeMissingProofs: qualityBridgeMissingProofs,
+      qualityPaymentBridgeRiskReasons: qualityBridgeRiskReasons,
+      qualityPaymentBridgeNextAction: qualityBridgeNextAction,
     });
     setCopilotSelection({
       scopeKey: '/room/agreements',
@@ -335,6 +364,31 @@ export default function AgreementsPanel() {
         { label: 'Tutar', value: moneyTry(item?.companyOfferAmount ?? item?.amount ?? '-'), help: 'Şirkete ait teklif veya sözleşme tutarını gösterir.' },
         { label: 'Araç', value: item?.vehicleId ? `#${item.vehicleId}` : '-', help: 'Onay sırasında seçilen aracı gösterir.' },
         { label: 'Sürücü', value: item?.driverId ? `#${item.driverId}` : '-', help: 'Onay sırasında seçilen sürücüyü gösterir.' },
+        qualityBridgePreview ? {
+          label: 'Kalite durumu',
+          value: qualityBridgeStatusText || '-',
+          help: 'Readonly kalite değerlendirmesi; ödeme başlatılmaz.',
+        } : null,
+        qualityBridgePreview ? {
+          label: 'Kanıt tamlığı',
+          value: Number.isFinite(qualityBridgeProofCompleteness) ? `${Math.max(0, Math.min(100, Math.round(qualityBridgeProofCompleteness)))}%` : '-',
+          help: 'Eksik kanıt varsa önce tamamlanmalı.',
+        } : null,
+        qualityBridgePreview ? {
+          label: 'Önizleme etkisi',
+          value: qualityBridgeImpactStatus || '-',
+          help: qualityBridgeImpactReason || 'Hakediş önizleme etkisi sadece okunur.',
+        } : null,
+        qualityBridgePreview ? {
+          label: 'Hazırlık',
+          value: qualityBridgeSettlementReadiness || '-',
+          help: 'Settlement hazırlığı yalnızca readonly görünür.',
+        } : null,
+        qualityBridgePreview ? {
+          label: 'Sıradaki işlem',
+          value: qualityBridgeNextAction || '-',
+          help: 'Sadece öneri gösterilir; ödeme başlatılmaz.',
+        } : null,
         selectedRouteRefreshItem ? {
           label: 'Rota güncellemesi',
           value: selectedRouteRefreshStatus === 'ACCEPTED'
@@ -351,6 +405,7 @@ export default function AgreementsPanel() {
       badges: [
         { label: 'Liste', value: pending.some((x) => x.id === item.id) ? 'Bekleyen' : others.some((x) => x.id === item.id) ? 'Diğer' : 'Uzatma', help: 'Sözleşmenin şu an hangi bölümde göründüğünü gösterir.' },
         { label: 'Kalan Gün', value: daysLeftYmd(item?.endDate) == null ? '-' : `${daysLeftYmd(item?.endDate)} gün`, help: 'Bitiş tarihine kaç gün kaldığını özetler.' },
+        qualityBridgePreview ? { label: 'Readonly', value: 'Ödeme başlatılmaz', help: qualityBridgePreview?.previewOnlyNote || 'Tahsilat/fatura oluşturulmaz.' } : null,
       ],
       facts,
     });
@@ -373,7 +428,48 @@ export default function AgreementsPanel() {
     selectedRouteRefreshPriceImpactText,
     selectedRouteRefreshRoomCounterText,
     selectedDynamicSavingsPreview,
+    qualityPaymentBridgePreview,
+    qualityBridgePreview,
+    qualityBridgeStatusText,
+    qualityBridgeProofCompleteness,
+    qualityBridgeSettlementReadiness,
+    qualityBridgeImpactStatus,
+    qualityBridgeImpactReason,
+    qualityBridgeMissingProofs,
+    qualityBridgeRiskReasons,
+    qualityBridgeNextAction,
+    qualityBridgeSummaryText,
   ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const agreementId = Number(copilotAgreementTarget?.id || 0);
+    if (!token || !agreementId) {
+      setQualityPaymentBridgePreview({ loading: false, data: null, err: "" });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const controller = new AbortController();
+    setQualityPaymentBridgePreview((prev) => ({ ...prev, loading: true, err: "" }));
+
+    (async () => {
+      try {
+        const payload = await getAgreementQualityPaymentBridgePreview(agreementId, { token, signal: controller.signal });
+        if (cancelled) return;
+        setQualityPaymentBridgePreview({ loading: false, data: payload, err: "" });
+      } catch (error) {
+        if (cancelled) return;
+        setQualityPaymentBridgePreview({ loading: false, data: null, err: error?.message || "Readonly önizleme yüklenemedi" });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [token, copilotAgreementTarget?.id]);
 
   function openAgreementShift(shiftId) {
     const sid = Number(shiftId || 0);
@@ -782,6 +878,20 @@ export default function AgreementsPanel() {
           ) : (
             <div className="card muted">Operasyon köprüsü için bir sözleşme seç.</div>
           )}
+
+          {copilotAgreementTarget ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <div className="muted" style={{ lineHeight: 1.45 }}>
+                Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
+              </div>
+              <QualityPaymentBridgePreviewCard
+                agreement={copilotAgreementTarget}
+                preview={qualityPaymentBridgePreview.data}
+                loading={qualityPaymentBridgePreview.loading}
+                error={qualityPaymentBridgePreview.err}
+              />
+            </div>
+          ) : null}
 
           {counterTarget ? (
             <div className="card">

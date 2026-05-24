@@ -11,6 +11,7 @@ import { computeFirstStartAtUTC } from "../services/agreementConflict.js";
 import { findReservationConflictForAgreement } from "../services/reservationConflict.js";
 import { validateAgreementSlotItems } from "../services/agreementSlots.js";
 import { buildAgreementOpsBridgeById } from "../services/agreementOpsBridge.js";
+import { buildAgreementQualityPaymentBridgePreview } from "../services/qualityPaymentBridgeService.js";
 import { buildAgreementShiftStats } from "../services/agreementShiftStats.js";
 import { requireSourceShiftForAgreementCreate } from "../services/agreementSourceShiftGate.js";
 import { agreementRef } from "../services/agreementCopy.js";
@@ -98,6 +99,30 @@ export function agreementsRouter(io) {
     const byId = await buildAgreementOpsBridgeById({ agreementIds: ids, companyId, roomId });
 
     res.json({ byId });
+  });
+
+  r.get("/:id/quality-payment-bridge", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) return sendErrorResponse(res, httpError(400, "invalidAgreementId"));
+
+    const ag = await prisma.agreement.findUnique({
+      where: { id },
+      include: {
+        company: { select: { id: true, name: true, kind: true } },
+        room: { select: { id: true, name: true } },
+      },
+    });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+
+    if (req.user.role === "COMPANY" && ag.companyId !== req.user.companyId) {
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
+    }
+    if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
+    }
+
+    const preview = await buildAgreementQualityPaymentBridgePreview({ agreement: ag });
+    return res.json(preview);
   });
 
   // GET by id (debug + checks)

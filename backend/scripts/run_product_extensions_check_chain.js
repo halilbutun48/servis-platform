@@ -11,6 +11,7 @@ const repoRoot = path.resolve(__dirname, '../..');
 const steps = [
   'check:op04',
   'check:qlt04b',
+  'check:qltpaybridge01',
   'check:pay01e',
   'check:paysafe01',
   'check:web01a',

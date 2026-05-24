@@ -265,6 +265,10 @@ export async function getPaymentBackboneReadinessPreviewCsv(params = {}, { token
   return api(`/api/commercial-core/payment-backbone/readiness/preview.csv${buildQueryString(params)}`, { token });
 }
 
+export async function getAgreementQualityPaymentBridgePreview(agreementId, { token, signal } = {}) {
+  return api(`/api/agreements/${Number(agreementId)}/quality-payment-bridge`, { token, signal });
+}
+
 export function normalizeQualityReviewDecisionError(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorInfo(error, fallbackMessage);
 }

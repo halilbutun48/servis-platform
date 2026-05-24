@@ -10,6 +10,21 @@ function compactText(value, fallback = "") {
   return text || String(fallback || "").trim();
 }
 
+function compactList(items = [], limit = 6) {
+  const seen = new Set();
+  const out = [];
+  for (const item of Array.isArray(items) ? items : []) {
+    const text = compactText(item, "");
+    if (!text) continue;
+    const key = text.toLocaleLowerCase("tr-TR");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(text);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 function safeInt(value) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.trunc(n) : 0;
@@ -134,6 +149,19 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const dynamicSavingsBoundaryText = compactText(summary.dynamicSavingsPreviewOnlyNote || dynamicSavingsPreview?.previewOnlyNote || "");
   const dynamicSavingsNextBestAction = compactText(summary.dynamicSavingsNextBestAction || dynamicSavingsPreview?.nextBestAction || "");
   const dynamicSavingsReliability = compactText(summary.dynamicSavingsReliability || dynamicSavingsPreview?.reliability || "");
+  const qualityPaymentBridgePreview = summary.qualityPaymentBridgePreview && typeof summary.qualityPaymentBridgePreview === "object"
+    ? summary.qualityPaymentBridgePreview
+    : null;
+  const qualityPaymentBridgeSummaryText = compactText(summary.qualityPaymentBridgeSummaryText || qualityPaymentBridgePreview?.summaryText || qualityPaymentBridgePreview?.previewOnlyNote || "");
+  const qualityPaymentBridgeStatus = compactText(summary.qualityPaymentBridgeStatus || qualityPaymentBridgePreview?.qualityStatus || "");
+  const qualityPaymentBridgeProofCompleteness = Number(summary.qualityPaymentBridgeProofCompleteness ?? qualityPaymentBridgePreview?.proofCompleteness ?? NaN);
+  const qualityPaymentBridgeSettlementReadiness = compactText(summary.qualityPaymentBridgeSettlementReadiness || qualityPaymentBridgePreview?.settlementReadiness || "");
+  const qualityPaymentBridgeImpactStatus = compactText(summary.qualityPaymentBridgeImpactStatus || qualityPaymentBridgePreview?.paymentPreviewImpact?.status || "");
+  const qualityPaymentBridgeImpactReason = compactText(summary.qualityPaymentBridgeImpactReason || qualityPaymentBridgePreview?.paymentPreviewImpact?.reason || "");
+  const qualityPaymentBridgeMissingProofs = compactList(summary.qualityPaymentBridgeMissingProofs || qualityPaymentBridgePreview?.missingProofs || [], 6);
+  const qualityPaymentBridgeRiskReasons = compactList(summary.qualityPaymentBridgeRiskReasons || qualityPaymentBridgePreview?.riskReasons || [], 6);
+  const qualityPaymentBridgeNextAction = compactText(summary.qualityPaymentBridgeNextAction || qualityPaymentBridgePreview?.nextBestAction || "");
+  const qualityPaymentBridgePreviewNote = compactText(summary.qualityPaymentBridgePreviewNote || qualityPaymentBridgePreview?.previewOnlyNote || "Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.");
   const selectedRecordSummary = compactText([
     summary.selectedRecordSummary || buildSelectedSummary({
       statusText,
@@ -150,6 +178,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       stopCount: summary.stopCount ?? summary.lastGeneratedShift?.stopCount ?? summary.lastShift?.stopCount ?? 0,
     }),
     routeRefreshSummaryText,
+    qualityPaymentBridgeSummaryText ? `Kalite / hakediş: ${qualityPaymentBridgeSummaryText}` : "",
   ].filter(Boolean).join(" • "), "");
 
   const sourceShiftId = safeInt(summary.sourceShiftId || summary.sourceShift?.id || item?.sourceShiftId || 0);
@@ -184,6 +213,16 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       label: "Tasarruf önizlemesi",
       value: dynamicSavingsReliability || (dynamicSavingsPreview?.ok ? "Tahmini" : "Yetersiz veri"),
       note: dynamicSavingsSummaryText || "Readonly tasarruf önizlemesi.",
+    } : null,
+    qualityPaymentBridgeSummaryText || qualityPaymentBridgeStatus || qualityPaymentBridgeSettlementReadiness || qualityPaymentBridgeNextAction ? {
+      id: "quality-payment-bridge",
+      label: "Kalite / hakediş",
+      value: qualityPaymentBridgeStatus || (qualityPaymentBridgePreview?.previewOnly ? "Readonly önizleme" : "Yetersiz veri"),
+      note: compactList([
+        qualityPaymentBridgeSummaryText,
+        qualityPaymentBridgeImpactStatus ? `Etkisi: ${qualityPaymentBridgeImpactStatus}` : "",
+        qualityPaymentBridgeNextAction ? `Sıradaki işlem: ${qualityPaymentBridgeNextAction}` : "",
+      ], 3).join(" • ") || qualityPaymentBridgePreviewNote || "Readonly kalite / hakediş önizlemesi.",
     } : null,
     { id: "source-shift", label: "Kaynak vardiya", value: sourceShiftId ? `#${sourceShiftId}` : "Yok", note: sourceShiftId ? "Üretim kökü okunur." : "Kaynak vardiya bağlantısı görünmüyor." },
     { id: "generated-count", label: "Üretilen vardiya", value: generatedShiftCount > 0 ? String(generatedShiftCount) : "Yok", note: generatedShiftCount > 0 ? "Bugün üretim sinyali var." : "Bugün üretim sinyali görünmüyor." },
@@ -260,6 +299,12 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         label: "Tasarruf önizlemesi",
         value: dynamicSavingsReliability || (dynamicSavingsPreview?.ok ? "Tahmini" : "Yetersiz veri"),
         note: dynamicSavingsSummaryText || "Readonly tasarruf önizlemesi.",
+      })] : []),
+      ...(qualityPaymentBridgeSummaryText || qualityPaymentBridgeStatus || qualityPaymentBridgeSettlementReadiness || qualityPaymentBridgeNextAction ? [normalizeCopilotSignal({
+        id: "quality-payment-bridge",
+        label: "Kalite / hakediş",
+        value: qualityPaymentBridgeStatus || (qualityPaymentBridgePreview?.previewOnly ? "Readonly önizleme" : "Yetersiz veri"),
+        note: qualityPaymentBridgeSummaryText || qualityPaymentBridgePreviewNote || "Readonly kalite / hakediş önizlemesi.",
       })] : []),
       normalizeCopilotSignal({
         id: "workflow-signal",
@@ -378,5 +423,16 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     dynamicSavingsBoundaryText,
     dynamicSavingsNextBestAction,
     dynamicSavingsReliability,
+    qualityPaymentBridgePreview,
+    qualityPaymentBridgeSummaryText,
+    qualityPaymentBridgeStatus,
+    qualityPaymentBridgeProofCompleteness,
+    qualityPaymentBridgeSettlementReadiness,
+    qualityPaymentBridgeImpactStatus,
+    qualityPaymentBridgeImpactReason,
+    qualityPaymentBridgeMissingProofs,
+    qualityPaymentBridgeRiskReasons,
+    qualityPaymentBridgeNextAction,
+    qualityPaymentBridgePreviewNote,
   };
 }

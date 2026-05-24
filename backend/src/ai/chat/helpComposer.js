@@ -173,6 +173,8 @@ function selectedDiagnosticTheme(message) {
   if (/(servis|servisim|öğrencimin servisi|ogrencimin servisi|çocuğumun servisi|cocugumun servisi).*(görünmüyor|gorunmuyor|yok|nerede|neden görünmüyor|neden gorunmuyor|ne zaman|geliyor)/.test(text)) return 'LOCATION_HELP';
   if (/(görev|gorev|rota|sonraki durak|durak).*(başlamıyor|baslamiyor|başlayamıyor|baslayamiyor|görünmüyor|gorunmuyor|bekliyor|yok)/.test(text)) return 'SHIFT_BLOCKED';
   if (/(sürücünün|surucunun).*(telefon gps|telefon gps['’]i|telefon gps’i).*(neden).*(devrede|aktif|açık|acik)/.test(text) || /(telefon gps|cihaz gps).*(neden).*(devrede|aktif|açık|acik)/.test(text)) return 'DRIVER_PHONE_GPS';
+  if (/(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|kanıt|kanit|proof|komisyon|kalite|quality).*(neden).*(eksik|kontrol gerekli|hazır değil|hazir degil|risk|riskli|başlatılam|baslatilam)/.test(text) || /(kanıt eksik|kanit eksik|kanıtlar eksik|kanitlar eksik|hakediş eksik|hakedis eksik)/.test(text)) return 'PAYMENT_MISSING';
+  if (/(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|kanıt|kanit|proof|komisyon|kalite|quality).*(başlatılabilir|baslatilabilir|güvenli mi|guvenli mi|hazır mı|hazir mi|hazır değil|hazir degil|hazırlık|hazirlik|etkiliyor|etkisi)/.test(text) || /(kalite.*hakediş|kalite.*hakedis|hakediş.*kalite|hakedis.*kalite).*(etkiliyor|etkisi|güvenli mi|guvenli mi)/.test(text)) return 'PAYMENT_READINESS';
   if (/(sağlayıcı|saglayici|provider).*(neden).*(daha iyi|daha güçlü|daha guclu)/.test(text) || /(daha iyi|daha güçlü|daha guclu).*(sağlayıcı|saglayici|provider)/.test(text)) return 'QUALITY_SIGNAL';
   if (/(tasarruf|tasarruf önizlemesi|tasarruf onizlemesi|km tasarrufu|süre tasarrufu|sure tasarrufu|yaklaşık maliyet|yaklasik maliyet|maliyet etkisi|readonly tasarruf|readonly önizleme|dinamik tasarruf)/.test(text)) return 'DYNAMIC_SAVINGS_PREVIEW';
   if (/(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|uygulanan rota|rota geçmişi|rota gecmisi|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) return 'AGREEMENT_ROUTE_REFRESH';
@@ -518,13 +520,13 @@ function topicLabelForContext(topic) {
     BOARDING_ROUTE_IMPACT_PREVIEW: 'Biniş değişikliği önizlemesi',
     DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
-    PROVIDER_BETTER: 'Kalite sinyali',
-    QUALITY_SIGNAL: 'Kalite sinyali',
+    PROVIDER_BETTER: 'Kalite / kanıt sinyali',
+    QUALITY_SIGNAL: 'Kalite / kanıt sinyali',
     CONTRACT_SHIFT_TODAY: 'Sözleşme / vardiya üretimi',
-    PAYMENT_MISSING: 'Hakediş önizlemesi',
-    PAYMENT_PREVIEW: 'Hakediş önizlemesi',
-    PAYMENT_READINESS: 'Hakediş önizlemesi',
-    TRUST_QUALITY: 'Kalite akışı',
+    PAYMENT_MISSING: 'Hakediş / kanıt önizlemesi',
+    PAYMENT_PREVIEW: 'Hakediş / kanıt önizlemesi',
+    PAYMENT_READINESS: 'Hakediş / kanıt önizlemesi',
+    TRUST_QUALITY: 'Kalite / kanıt akışı',
     FEEDBACK_STATUS: 'Geri bildirim durumu',
     NOTIFICATION_SOURCE: 'Bildirim kaynağı',
     KVKK_VISIBILITY: 'KVKK görünürlüğü',
@@ -580,7 +582,7 @@ function shouldUseWorkflowGuide({ questionType, activeTopic }) {
   const type = String(questionType || '');
   if (type === 'SCREEN_PURPOSE') return false;
   if (isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(type)) return true;
-  return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
+  return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
 }
 
 function detectContextTopic({ message, questionType, screenPath, screenContext, sourceScreenContext, analysis }) {
@@ -612,7 +614,12 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
     || (/(sözleşme|sozlesme|contract)/.test(text) && /(vardiya|shift)/.test(text))) {
     return /(üretildi|uretildi|oluştu|olustu|bugün|bugun)/.test(text) ? 'CONTRACT_SHIFT_TODAY' : 'CONTRACT_TO_SHIFT';
   }
-  if (path.includes('/commercial-core') || path.includes('/payment') || /(hakediş|hakedis|ödeme|odeme|settlement|komisyon|csv|önizleme|onizleme)/.test(text)) return /(hazır değil|hazir degil|hazırlık|hazirlik|eksik|kontrol gerekli)/.test(text) ? 'PAYMENT_READINESS' : 'PAYMENT_PREVIEW';
+  // if (path.includes('/commercial-core') || path.includes('/payment') || /(hakediş|hakedis|ödeme|odeme|settlement|komisyon|csv|önizleme|onizleme)/.test(text)) return /(hazır değil|hazir degil|hazırlık|hazirlik|eksik|kontrol gerekli)/.test(text) ? 'PAYMENT_READINESS' : 'PAYMENT_PREVIEW';
+  if (path.includes('/commercial-core') || path.includes('/payment') || path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || /(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|komisyon|kanıt|kanit|proof|kalite|quality|önizleme|onizleme)/.test(text)) {
+    if (/(kanıt eksik|kanit eksik|kanıtlar eksik|kanitlar eksik|hakediş eksik|hakedis eksik|neden.*eksik|hazır değil|hazir degil|kontrol gerekli)/.test(text)) return 'PAYMENT_MISSING';
+    if (/(başlatılabilir|baslatilabilir|güvenli mi|guvenli mi|hazır mı|hazir mi|hazır değil|hazir degil|hazırlık|hazirlik|etkiliyor|etkisi)/.test(text) || /(kalite.*hakediş|kalite.*hakedis|hakediş.*kalite|hakedis.*kalite).*(etkiliyor|etkisi|güvenli mi|guvenli mi)/.test(text)) return 'PAYMENT_READINESS';
+    return 'PAYMENT_PREVIEW';
+  }
   if ((path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations') || path.includes('/room/operation-health') || path.includes('/room/shifts') || path.includes('/company/shifts') || path.includes('/school/shifts') || path.includes('/organization/shifts'))
     && /(rota etkisi|rota etkisini|önizleme|onizleme|etkiyi hesapla|bugün binmezse|bugun binmezse|farklı duraktan|farkli duraktan|geçici durak|gecici durak|biniş değişikliği|binis degisikligi|km farkı|km farki|süre artar mı|sure artar mi|kapasite etkisi|rotasını|rotasini|rotayı|rotayi|rota.*değiştir|rota.*degistir)/.test(text)) {
     return 'BOARDING_ROUTE_IMPACT_PREVIEW';
@@ -1098,9 +1105,9 @@ function buildContextPriorityDecision({
   }
   const topicWhy = {
     QUALITY_SIGNAL: 'Bu sinyal kesin kalite puanı değil; sağlayıcıyı okumaya yardım eder.',
-    PAYMENT_READINESS: 'Hakediş hazırlığı tamamlanmadan görünüm hazır sayılmaz.',
-    PAYMENT_MISSING: 'Hakediş eksikleri kapatılmamış olabilir.',
-    PAYMENT_PREVIEW: 'Hakediş önizlemesi bu ekranda görünmüyor olabilir.',
+    PAYMENT_READINESS: 'Bu sadece önizlemedir; ödeme başlatılmaz ve önce eksik kanıt/kalite kontrolü tamamlanır.',
+    PAYMENT_MISSING: 'Bu sadece önizlemedir; eksik kanıtlar kapatılmadan hakediş hazır sayılmaz.',
+    PAYMENT_PREVIEW: 'Bu sadece önizlemedir; tahsilat/fatura oluşturulmaz ve kanıt satırları okunur.',
     SHIFT_BLOCKED: 'Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.',
     FEEDBACK_STATUS: 'Kayıt açık ya da kritik olduğu için tamamlanmış görünmüyor.',
     NOTIFICATION_SOURCE: 'Bildirim bir olay kaydına bağlı olduğu için kaynağı ayrıca okunmalı.',
@@ -1143,9 +1150,9 @@ function buildContextPriorityDecision({
   );
   const topicAdvice = {
     QUALITY_SIGNAL: 'Önce kalite sinyalini sağlayıcı puanı, inceleme kararı ve denetim iziyle birlikte oku.',
-    PAYMENT_READINESS: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.',
-    PAYMENT_MISSING: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.',
-    PAYMENT_PREVIEW: 'Önce hakediş önizleme kayıtlarını ve eksik bilgi satırlarını kontrol et.',
+    PAYMENT_READINESS: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et. Ödeme başlatılmaz.',
+    PAYMENT_MISSING: 'Önce eksik kanıtları ve kalite kontrolünü tamamla; bu sadece önizlemedir.',
+    PAYMENT_PREVIEW: 'Önce hakediş / kanıt önizleme kayıtlarını ve risk nedenlerini kontrol et; ödeme başlatılmaz.',
     DYNAMIC_SAVINGS_PREVIEW: 'Bu sadece önizlemedir. Km, süre, kapasite ve yaklaşık maliyet etkisini birlikte oku; uygulama, ödeme ve settlement başlatılmaz.',
     AGREEMENT_ROUTE_REFRESH: 'Önce şirket teklifini, oda karşı teklifini, eski rota ile yeni rota farkını ve kabul durumunu kontrol et; bu yalnızca teklif/önizleme akışıdır.',
     NEXT_SCREEN: 'Önce ilgili ekrana geç.',
@@ -1769,13 +1776,17 @@ const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFiel
         break;
       case 'PAYMENT_READINESS':
         result = hasNegative
-          ? 'Bu ekrandaki veriye göre hakediş hazır değil.'
-          : 'Bu ekrandaki veriye göre hakediş hazırlığı tamamlanmamış görünüyor.';
-        firstControl = 'Hakediş hazırlığı, önizleme ve CSV taslağı';
+          ? 'Bu ekrandaki veriye göre bu hakedişte eksik kanıt veya kalite kontrolü var; ödeme başlatılmaz.'
+          : 'Bu ekrandaki veriye göre hakediş önizlemesi okunuyor; ödeme başlatılmaz.';
+        firstControl = 'Kanıt tamlığı, kalite sinyali ve ödeme hesabı';
         break;
       case 'PAYMENT_MISSING':
-        result = 'Bu ekrandaki veriye göre bu hakediş eksik görünüyor.';
-        firstControl = 'Hakediş hazırlığı, önizleme ve CSV taslağı';
+        result = 'Bu ekrandaki veriye göre bu hakedişin kanıt tarafında eksikler var; önce tamamlanmalı.';
+        firstControl = 'Eksik kanıtlar, kalite kontrolü ve ödeme hesabı';
+        break;
+      case 'PAYMENT_PREVIEW':
+        result = 'Bu ekrandaki veriye göre hakediş / kanıt önizlemesi okunuyor.';
+        firstControl = 'Kanıt tamlığı, kalite sinyali ve ödeme hesabı';
         break;
       case 'FEEDBACK_STATUS':
         result = 'Bu ekrandaki veriye göre geri bildirim açık veya kritik görünüyor.';
@@ -3766,8 +3777,8 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     const screen = String(screenPath || '').toLocaleLowerCase('tr-TR');
     const isVehicleSurface = answerEntityType === 'vehicle' || screen.includes('/map') || screen.includes('/live');
     const isShiftSurface = answerEntityType === 'shift' || screen.includes('/shifts');
-    if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(workflowTopic || questionType || ''))) {
-      return ['Hakediş eksiklerini sor', 'bu hakediş neden hazır değil', 'Hakediş eksiklerini kısa tekrar sorar.'];
+    if (['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW'].includes(String(workflowTopic || questionType || ''))) {
+      return ['Kanıt eksiklerini sor', 'bu hakediş neden hazır değil', 'Hakediş / kanıt önizlemesini tekrar sorar.'];
     }
     if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(workflowTopic || questionType || ''))) {
       return ['Üretim durumunu sor', 'bu sözleşmeden bugün vardiya üretildi mi', 'Sözleşme → vardiya üretim bilgisini tekrar sorar.'];
@@ -4261,12 +4272,17 @@ function questionTypeLabel(questionType) {
     NEXT_SCREEN: 'Nereye gitmeliyim',
     GO_TO: 'Hızlı geçiş',
     FIRST_CONTROL: 'İlk neye bakayım',
-      STATUS_HELP: 'Şu an ne durumda',
+    STATUS_HELP: 'Şu an ne durumda',
     READINESS_CHECK: 'Hazır mı',
     CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
     DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
-      WHY_BLOCKED: 'Neden olmuyor',
+    WHY_BLOCKED: 'Neden olmuyor',
+    QUALITY_SIGNAL: 'Kalite / kanıt sinyali',
+    TRUST_QUALITY: 'Kalite / kanıt akışı',
+    PAYMENT_MISSING: 'Hakediş / kanıt önizlemesi',
+    PAYMENT_PREVIEW: 'Hakediş / kanıt önizlemesi',
+    PAYMENT_READINESS: 'Hakediş / kanıt önizlemesi',
     BUTTON_HELP: 'Bu buton ne yapar',
     SCREEN_PURPOSE: 'Bu ekran ne için',
     SAFE_NEXT_STEP: 'Şimdi en güvenli adım',
@@ -4309,6 +4325,7 @@ function responseWhyText(questionType, screenDefinition) {
   if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;
+  if (['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW'].includes(String(questionType || ''))) return `${screenLabel} ekranındaki hakediş / kanıt önizlemesini, kalite ve eksik satırlarla birlikte okudum. Bu sadece önizlemedir; ödeme başlatılmaz.`;
   if (questionType === 'WHY_BLOCKED') return `${screenLabel} ekranındaki blokaj ve eksik bilgi ihtimaline göre cevap verdim.`;
   if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum ve GPS işaretlerine göre yorum yaptım.`;
   return `${screenLabel} ekranını ve seçili kaydı birlikte dikkate aldım.`;

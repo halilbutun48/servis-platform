@@ -532,7 +532,7 @@ export function buildActionSimulationWording({
   if (normalizedScreenType === 'SHIFTS') {
     text = 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.';
   } else if (normalizedScreenType === 'PAYMENT_READINESS' || normalizedScreenType === 'COMMERCIAL_FLOW') {
-    text = 'Hakediş önizleme, eksik bilgi, ödeme hesabı ve komisyon satırlarını kontrol et.';
+    text = 'Hakediş / kanıt önizlemesini, eksik bilgi ve kalite sinyaliyle birlikte kontrol et. Ödeme başlatılmaz.';
   } else if (normalizedScreenType === 'TRUST_QUALITY') {
     text = 'Kanıt, taslak skor, inceleme kararı ve denetim izini birlikte kontrol et; kesin sıralama yapma.';
   } else if (normalizedScreenType === 'FEEDBACK') {
@@ -1850,6 +1850,14 @@ function selectionStarterText(selection = null) {
     selection?.facts?.copilotSummary,
     selection?.facts?.helpContextSummary,
     selection?.facts?.contextSummary,
+    selection?.facts?.qualityPaymentBridgeSummaryText,
+    selection?.facts?.qualityPaymentBridgeStatus,
+    selection?.facts?.qualityPaymentBridgeSettlementReadiness,
+    selection?.facts?.qualityPaymentBridgeImpactStatus,
+    selection?.facts?.qualityPaymentBridgeImpactReason,
+    selection?.facts?.qualityPaymentBridgeNextAction,
+    selection?.facts?.qualityPaymentBridgePreview?.summaryText,
+    selection?.facts?.qualityPaymentBridgePreview?.previewOnlyNote,
     selection?.selectedRecord?.label,
     selection?.selectedRecord?.summary,
     selection?.selectedRecord?.status,
@@ -1926,12 +1934,29 @@ export function buildCopilotStarterChips({
     || selection?.structuredFacts?.dynamicSavingsPreviewText
     || selection?.screenType === 'DYNAMIC_SAVINGS_PREVIEW'
     || includesAny(selectionText, ['tasarruf', 'tasarruf önizlemesi', 'tasarruf onizlemesi', 'km tasarrufu', 'süre tasarrufu', 'sure tasarrufu', 'yaklaşık maliyet', 'yaklasik maliyet', 'maliyet etkisi', 'readonly önizleme', 'readonly onizleme']);
+  const isQualityPaymentBridgePreview = Boolean(
+    selection?.facts?.qualityPaymentBridgePreview
+    || selection?.liveFacts?.qualityPaymentBridgePreview
+    || selection?.structuredFacts?.qualityPaymentBridgePreview
+    || selection?.facts?.qualityPaymentBridgeSummaryText
+    || selection?.facts?.qualityPaymentBridgeStatus
+    || selection?.facts?.qualityPaymentBridgeNextAction
+    || includesAny(selectionText, ['hakediş için kalite/kanıt hazırlık önizlemesi', 'readonly önizleme', 'ödeme başlatılmaz', 'tahsilat/fatura oluşturulmaz', 'kanıt eksikleri', 'hakediş etkisi', 'kalite durumu'])
+  );
   if (isDynamicSavingsPreview) {
     return finalizeStarterChips([
       'Tasarruf hesabını göster',
       'Km / süre farkını açıkla',
       'Kapasite etkisini göster',
       'Yaklaşık maliyet etkisini açıkla',
+    ], fallback);
+  }
+  if (isQualityPaymentBridgePreview) {
+    return finalizeStarterChips([
+      'Kanıt eksiklerini göster',
+      'Hakediş etkisini açıkla',
+      'Ödeme başlatılabilir mi?',
+      'Sıradaki doğru işlem ne?',
     ], fallback);
   }
   if (isBoardingApplication) {
@@ -2036,9 +2061,13 @@ export function buildCopilotStarterChips({
   } else if (isDynamicSavingsPreview) {
     chips = ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
   } else if (isAgreementSurface) {
-    chips = ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
+    chips = isQualityPaymentBridgePreview
+      ? ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?']
+      : ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {
-    chips = ['Bu hakediş neden hazır değil?', 'Ödeme hesabı eksik mi?', 'Komisyon durumu ne?', 'Hakediş önizlemesini açıkla'];
+    chips = isQualityPaymentBridgePreview
+      ? ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?']
+      : ['Bu hakediş neden hazır değil?', 'Ödeme hesabı eksik mi?', 'Komisyon durumu ne?', 'Hakediş önizlemesini açıkla'];
   } else if (isCompanyShifts) {
     chips = ['Bu vardiya neden başlayamıyor?', 'Atama eksik mi?', 'Sıradaki doğru işlem ne?', 'Sözleşmeye bağlı mı?'];
   } else if (isCompanyQuality) {

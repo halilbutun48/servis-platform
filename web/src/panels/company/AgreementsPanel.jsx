@@ -7,12 +7,8 @@ import AgreementWizard from "./AgreementWizard";
 import GuidedPlanModal from "./GuidedPlanModal";
 import {
   WEEKDAYS,
-  DAY_PRESETS,
-  TIME_PRESETS,
   DURATION_PRESETS,
   QUICK_DURATION_PRESETS,
-  maskFromSelected,
-  selectedFromMask,
   weekMaskToText,
   toHHMM,
   addDaysISO,
@@ -22,8 +18,10 @@ import { fetchProviderScore } from "../../utils/providerScores";
 import { getCompanyAgreements, getCompanyRooms } from "../../utils/companyDataHub";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { getAgreementQualityPaymentBridgePreview } from "../../api";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
+import QualityPaymentBridgePreviewCard from "../shared/QualityPaymentBridgePreviewCard";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CompanyAgreementsOverviewSection from "./companyAgreementsOverviewSection";
@@ -41,6 +39,8 @@ import { companyPath } from "../../utils/paths";
 import { AGREEMENT_STATUS_OPTIONS, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
+
+const EMPTY_QUALITY_BRIDGE_LIST = [];
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -126,45 +126,11 @@ function trDateTime(value) {
   const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${map.day}.${map.month}.${map.year} ${map.hour}:${map.minute}`;
 }
-const PLAN_TEMPLATES = [
-  {
-    key: "MORNING",
-    label: "Sabah (07:00→09:00) • Hafta içi",
-    daysMask: 62,
-    startMin: 7 * 60,
-    endMin: 9 * 60,
-    direction: "INBOUND",
-    pattern: "ONE_WAY",
-  },
-  {
-    key: "EVENING",
-    label: "Akşam (17:00→19:00) • Hafta içi",
-    daysMask: 62,
-    startMin: 17 * 60,
-    endMin: 19 * 60,
-    direction: "OUTBOUND",
-    pattern: "ONE_WAY",
-  },
-  {
-    key: "NIGHT",
-    label: "Gece (23:00→01:00) • Hafta içi",
-    daysMask: 62,
-    startMin: 23 * 60,
-    endMin: 1 * 60,
-    direction: "INBOUND",
-    pattern: "ONE_WAY",
-  },
-  {
-    key: "CUSTOM",
-    label: "Özel (elle ayarla)",
-    daysMask: 62,
-    startMin: 8 * 60,
-    endMin: 10 * 60,
-    direction: "INBOUND",
-    pattern: "ONE_WAY",
-  },
-];
 
+function compactText(value, fallback = "") {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return text || String(fallback || "").trim();
+}
 const AGREEMENTS_VIEW_TABS = [
   { key: "list", label: "Liste" },
   { key: "bridge", label: "Bağlantı" },
@@ -181,6 +147,7 @@ export default function AgreementsPanel() {
   const [shiftStats, setShiftStats] = useState({}); // ✅ M59
   const [opsBridge, setOpsBridge] = useState({});
   const [routeRefreshPendingByAgreement, setRouteRefreshPendingByAgreement] = useState({});
+  const [qualityPaymentBridgePreview, setQualityPaymentBridgePreview] = useState({ loading: false, data: null, err: "" });
   const shiftStatsCacheRef = useRef(new Map());
 
   const [take, setTake] = useState(20);
@@ -205,7 +172,6 @@ export default function AgreementsPanel() {
   const [routeRefreshNonce, setRouteRefreshNonce] = useState(0);
   const [viewMode, setViewMode] = useState("list");
 
-  const [templateKey, _setTemplateKey] = useState("MORNING");
   const [roomId, _setRoomId] = useState("");
 
   const [startDate, _setStartDate] = useState(todayYmd());
@@ -217,16 +183,6 @@ export default function AgreementsPanel() {
     return Number(p.days || 30);
   }, [DEFAULT_DURATION_KEY, durationKey]);
   const [_endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
-
-  const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
-  const _weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
-
-  const [_startHHMM, setStartHHMM] = useState("07:00");
-  const [_endHHMM, setEndHHMM] = useState("09:00");
-
-  // routing meta
-  const [_direction, setDirection] = useState("INBOUND");
-  const [_pattern, setPattern] = useState("ONE_WAY");
 
   const [useRoomHub, _setUseRoomHub] = useState(true);
   const [hubLat, setHubLat] = useState("");
@@ -274,19 +230,6 @@ export default function AgreementsPanel() {
 
     return () => { cancelled = true; };
   }, [advancedOpen, token, roomId]);
-
-  function applyTemplate(key) {
-    const t = PLAN_TEMPLATES.find((x) => x.key === key) || PLAN_TEMPLATES[0];
-    setDaysSel(selectedFromMask(t.daysMask));
-    setStartHHMM(toHHMM(t.startMin));
-    setEndHHMM(toHHMM(t.endMin));
-    setDirection(t.direction);
-    setPattern(t.pattern);
-  }
-
-  useEffect(() => {
-    applyTemplate(templateKey);
-  }, [templateKey]);
 
   useEffect(() => {
     if (!isYmd(startDate)) return;
@@ -706,6 +649,37 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     let cancelled = false;
+    const agreementId = Number(selectedAgreementRow?.a?.id || 0);
+
+    if (!token || !agreementId) {
+      setQualityPaymentBridgePreview({ loading: false, data: null, err: "" });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const controller = new AbortController();
+    setQualityPaymentBridgePreview((prev) => ({ ...prev, loading: true, err: "" }));
+
+    (async () => {
+      try {
+        const payload = await getAgreementQualityPaymentBridgePreview(agreementId, { token, signal: controller.signal });
+        if (cancelled) return;
+        setQualityPaymentBridgePreview({ loading: false, data: payload, err: "" });
+      } catch (error) {
+        if (cancelled) return;
+        setQualityPaymentBridgePreview({ loading: false, data: null, err: error?.message || "Readonly önizleme yüklenemedi" });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [token, selectedAgreementRow?.a?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
     async function loadRouteRefreshPreviewSummary() {
       const pending = selectedRouteRefreshPending;
       const sourceShiftId = Number(selectedAgreementOrigin?.sourceShiftId || 0);
@@ -777,6 +751,20 @@ export default function AgreementsPanel() {
     currentSummary: routeRefreshPreviewSummary.current || selectedRouteRefreshCurrentFallback,
     proposedSummary: routeRefreshPreviewSummary.proposed || selectedRouteRefreshProposedFallback,
   });
+  const qualityBridgePreview = useMemo(() => qualityPaymentBridgePreview.data || null, [qualityPaymentBridgePreview.data]);
+  const qualityBridgeStatusText = useMemo(() => compactText(qualityBridgePreview?.qualityStatus || '', ''), [qualityBridgePreview]);
+  const qualityBridgeProofCompleteness = Number(qualityBridgePreview?.proofCompleteness ?? NaN);
+  const qualityBridgeSettlementReadiness = useMemo(() => compactText(qualityBridgePreview?.settlementReadiness || '', ''), [qualityBridgePreview]);
+  const qualityBridgeImpactStatus = useMemo(() => compactText(qualityBridgePreview?.paymentPreviewImpact?.status || '', ''), [qualityBridgePreview]);
+  const qualityBridgeImpactReason = useMemo(() => compactText(qualityBridgePreview?.paymentPreviewImpact?.reason || '', ''), [qualityBridgePreview]);
+  const qualityBridgeMissingProofs = useMemo(() => (
+    Array.isArray(qualityBridgePreview?.missingProofs) ? qualityBridgePreview.missingProofs : EMPTY_QUALITY_BRIDGE_LIST
+  ), [qualityBridgePreview]);
+  const qualityBridgeRiskReasons = useMemo(() => (
+    Array.isArray(qualityBridgePreview?.riskReasons) ? qualityBridgePreview.riskReasons : EMPTY_QUALITY_BRIDGE_LIST
+  ), [qualityBridgePreview]);
+  const qualityBridgeNextAction = useMemo(() => compactText(qualityBridgePreview?.nextBestAction || '', ''), [qualityBridgePreview]);
+  const qualityBridgeSummaryText = useMemo(() => compactText(qualityBridgePreview?.summaryText || qualityBridgePreview?.previewOnlyNote || '', ''), [qualityBridgePreview]);
 
   const selectedAgreementCopilotContext = useMemo(() => {
     const row = selectedAgreementRow;
@@ -809,6 +797,7 @@ export default function AgreementsPanel() {
       lastGeneratedShiftStart && lastGeneratedShiftEnd ? `${lastGeneratedShiftStart} - ${lastGeneratedShiftEnd}` : null,
       personelCount > 0 ? `Personel: ${personelCount}` : null,
       stopCount > 0 ? `Durak: ${stopCount}` : null,
+      qualityBridgeSummaryText ? `Kalite / hakediş: ${qualityBridgeSummaryText}` : null,
     ].filter(Boolean).join(' • ');
     const selectedRecordLabel = `Sözleşme #${a.id}`;
     const selectedRecordType = 'agreement';
@@ -860,6 +849,16 @@ export default function AgreementsPanel() {
       routeRefreshCurrentPreviewShiftId: selectedRouteRefreshCurrentPreviewShiftId,
       routeRefreshProposedPreviewShiftId: selectedRouteRefreshProposedPreviewShiftId,
       dynamicSavingsPreview: selectedDynamicSavingsPreview,
+      qualityPaymentBridgePreview: qualityBridgePreview,
+      qualityPaymentBridgeSummaryText: qualityBridgeSummaryText,
+      qualityPaymentBridgeStatus: qualityBridgeStatusText,
+      qualityPaymentBridgeProofCompleteness: qualityBridgeProofCompleteness,
+      qualityPaymentBridgeSettlementReadiness: qualityBridgeSettlementReadiness,
+      qualityPaymentBridgeImpactStatus: qualityBridgeImpactStatus,
+      qualityPaymentBridgeImpactReason: qualityBridgeImpactReason,
+      qualityPaymentBridgeMissingProofs: qualityBridgeMissingProofs,
+      qualityPaymentBridgeRiskReasons: qualityBridgeRiskReasons,
+      qualityPaymentBridgeNextAction: qualityBridgeNextAction,
       pendingCount: Number(items?.length || 0),
       otherCount: 0,
       extendCount: 0,
@@ -876,6 +875,11 @@ export default function AgreementsPanel() {
       { label: 'Son zaman', value: lastGeneratedShiftStart && lastGeneratedShiftEnd ? `${lastGeneratedShiftStart} - ${lastGeneratedShiftEnd}` : '-', help: 'Son üretilen vardiyanın saat penceresini gösterir.' },
       { label: 'Personel', value: personelCount > 0 ? String(personelCount) : '-', help: 'Son üretilen vardiyadaki personel sayısını gösterir.' },
       { label: 'Durak', value: stopCount > 0 ? String(stopCount) : '-', help: 'Son üretilen vardiyadaki durak sayısını gösterir.' },
+      qualityBridgePreview ? { label: 'Kalite durumu', value: qualityBridgeStatusText || '-', help: 'Readonly kalite değerlendirmesi; ödeme başlatılmaz.' } : null,
+      qualityBridgePreview ? { label: 'Kanıt tamlığı', value: Number.isFinite(qualityBridgeProofCompleteness) ? `${Math.max(0, Math.min(100, Math.round(qualityBridgeProofCompleteness)))}%` : '-', help: 'Eksik kanıt varsa önce tamamlanmalı.' } : null,
+      qualityBridgePreview ? { label: 'Önizleme etkisi', value: qualityBridgeImpactStatus || '-', help: qualityBridgeImpactReason || 'Hakediş önizleme etkisi sadece okunur.' } : null,
+      qualityBridgePreview ? { label: 'Hazırlık', value: qualityBridgeSettlementReadiness || '-', help: 'Settlement hazırlığı yalnızca readonly görünür.' } : null,
+      qualityBridgePreview ? { label: 'Sıradaki işlem', value: qualityBridgeNextAction || '-', help: 'Sadece öneri gösterilir; ödeme başlatılmaz.' } : null,
       { label: 'Araç', value: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'), help: 'Onay veya üretim sırasında seçilen aracı gösterir.' },
       { label: 'Sürücü', value: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'), help: 'Onay veya üretim sırasında seçilen sürücüyü gösterir.' },
       { label: 'Oda', value: roomText, help: 'Sözleşmenin bağlı olduğu operasyon odasını gösterir.' },
@@ -890,6 +894,7 @@ export default function AgreementsPanel() {
       { label: 'Plan', value: weekMaskToText(a?.weekMask) || '-', help: 'Haftalık çalışma günlerini özetler.' },
       { label: 'Üretim', value: generatedShiftCount > 0 ? 'Var' : 'Yok', help: 'Bugün üretim sinyali durumunu gösterir.' },
       { label: 'Köprü', value: sourceShiftId > 0 ? 'Açık' : 'Kapalı', help: 'Kaynak vardiya köprüsünün açık olup olmadığını gösterir.' },
+      qualityBridgePreview ? { label: 'Readonly', value: 'Ödeme başlatılmaz', help: qualityBridgePreview?.previewOnlyNote || 'Tahsilat/fatura oluşturulmaz.' } : null,
     ];
     return {
       facts: selectionFacts,
@@ -920,6 +925,16 @@ export default function AgreementsPanel() {
     selectedRouteRefreshCurrentPreviewShiftId,
     selectedRouteRefreshProposedPreviewShiftId,
     selectedDynamicSavingsPreview,
+    qualityBridgePreview,
+    qualityBridgeStatusText,
+    qualityBridgeProofCompleteness,
+    qualityBridgeSettlementReadiness,
+    qualityBridgeImpactStatus,
+    qualityBridgeImpactReason,
+    qualityBridgeMissingProofs,
+    qualityBridgeRiskReasons,
+    qualityBridgeNextAction,
+    qualityBridgeSummaryText,
   ]);
 
   useEffect(() => {
@@ -1001,6 +1016,23 @@ export default function AgreementsPanel() {
                 onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
                 onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
                 emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
+              />
+            </CollapsibleSection>
+          ) : null}
+
+          {selectedAgreementRow?.a ? (
+            <CollapsibleSection
+              title="Kalite / hakediş önizlemesi"
+              subtitle="Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."
+              badge={selectedAgreementRow.a?.id ? `#${selectedAgreementRow.a.id}` : "Seçili"}
+              defaultOpen={false}
+              compact
+            >
+              <QualityPaymentBridgePreviewCard
+                agreement={selectedAgreementRow.a}
+                preview={qualityPaymentBridgePreview.data}
+                loading={qualityPaymentBridgePreview.loading}
+                error={qualityPaymentBridgePreview.err}
               />
             </CollapsibleSection>
           ) : null}

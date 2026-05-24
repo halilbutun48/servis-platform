@@ -69,10 +69,19 @@ export function hasExplicitRoleBoundarySignal({ questionType, activeTopic, messa
 export function workflowTopicChipSet({ activeTopic = '', questionType = '', screenPath = '' } = {}) {
   const topic = String(activeTopic || questionType || '');
   const path = normalizeText(screenPath);
+  const paymentBridgeTopics = new Set(['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'QUALITY_SIGNAL', 'TRUST_QUALITY']);
+  const paymentBridgeChips = ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?'];
+  const commercialPaymentChips = ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç', 'Hakediş eksiklerini sor'];
 
   if (path.includes('/company/commercial-flow') || path.includes('/room/commercial-flow') || path.includes('/superadmin/commercial-core')) {
     if (topic === 'DYNAMIC_SAVINGS_PREVIEW') {
       return ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
+    }
+    if (path.includes('/superadmin/commercial-core') && paymentBridgeTopics.has(topic)) {
+      return commercialPaymentChips;
+    }
+    if (paymentBridgeTopics.has(topic)) {
+      return paymentBridgeChips;
     }
   }
   if (path.includes('/room/operation-health') || path.includes('/superadmin/operations')) {
@@ -109,6 +118,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     if (topic === 'AGREEMENT_ROUTE_REFRESH') {
       return ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
     }
+    if (paymentBridgeTopics.has(topic)) {
+      return paymentBridgeChips;
+    }
     if (topic === 'CONTRACT_TO_SHIFT' || topic === 'CONTRACT_SHIFT_TODAY') {
       return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
     }
@@ -133,8 +145,8 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
       return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
     }
-    if (topic === 'PAYMENT_READINESS' || topic === 'PAYMENT_MISSING') {
-      return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
+    if (topic === 'PAYMENT_READINESS' || topic === 'PAYMENT_MISSING' || topic === 'PAYMENT_PREVIEW' || topic === 'QUALITY_SIGNAL' || topic === 'TRUST_QUALITY') {
+      return paymentBridgeChips;
     }
     if (topic === 'CONTRACT_TO_SHIFT' || topic === 'CONTRACT_SHIFT_TODAY') {
       return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
@@ -166,13 +178,13 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri', 'Yetki sınırı'];
   }
   if (path.includes('/superadmin/commercial-core')) {
-    return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
+    return paymentBridgeTopics.has(topic) ? commercialPaymentChips : commercialPaymentChips;
   }
   if (path.includes('/room/commercial-flow')) {
-    return ['İlgili sözleşmeyi aç', 'Hakediş önizlemesini aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
+    return paymentBridgeTopics.has(topic) ? paymentBridgeChips : ['İlgili sözleşmeyi aç', 'Hakediş önizlemesini aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
   }
   if (path.includes('/room/agreements')) {
-    return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
+    return paymentBridgeTopics.has(topic) ? paymentBridgeChips : ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
   }
   if (path.includes('/shared/feedback')) {
     return ['Açık geri bildirimi göster', 'Sorumlu rolü göster', 'Geri bildirim açık', 'İlgili kaydı aç'];
@@ -206,7 +218,7 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     case 'PAYMENT_READINESS':
     case 'PAYMENT_MISSING':
     case 'PAYMENT_PREVIEW':
-      return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
+      return path.includes('/superadmin/commercial-core') ? commercialPaymentChips : paymentBridgeChips;
     case 'BOARDING_ROUTE_IMPACT_PREVIEW':
       return ['Rota etkisini önizle', 'Kişi farkını göster', 'Km/süre farkını açıkla', 'Kapasite etkisini göster'];
     case 'CONTRACT_TO_SHIFT':
@@ -268,13 +280,13 @@ export function workflowActionSpec({ activeTopic = '', questionType = '' } = {})
     case 'PAYMENT_MISSING':
     case 'PAYMENT_PREVIEW':
       return {
-        guideLabel: 'Hakediş önizleme rehberini aç',
+        guideLabel: 'Hakediş / kanıt önizleme rehberini aç',
         jobType: 'ASSIGNMENT_READINESS_GUIDE',
         guideLevel: 'STEP_BY_STEP',
-        reason: 'Hakediş önizleme sinyallerini adım adım sıralar.',
-        askLabel: 'Hakediş eksiklerini sor',
-        askQuery: 'bu hakediş neden hazır değil',
-        askReason: 'Hakediş eksiklerini hızlıca tekrar sorar.',
+        reason: 'Hakediş / kanıt önizleme sinyallerini adım adım sıralar; ödeme başlatmaz.',
+        askLabel: 'Kanıt eksiklerini sor',
+        askQuery: 'kanıt eksikleri neler',
+        askReason: 'Readonly hakediş / kanıt önizlemesini hızlıca tekrar sorar.',
       };
     case 'DYNAMIC_SAVINGS_PREVIEW':
       return {

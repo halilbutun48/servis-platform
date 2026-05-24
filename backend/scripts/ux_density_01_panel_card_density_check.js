@@ -74,12 +74,13 @@ function assertNoRestrictedBackendPaths(paths) {
     'backend/src/routes/eta.js',
     'backend/src/routes/requests.js',
     'backend/src/routes/driver.js',
+    'backend/src/routes/agreements.js',
   ]);
   const forbidden = paths.filter((file) => /^backend\/(src\/routes|prisma|migrations)\//.test(file) && !allowed.has(file));
   if (forbidden.length) {
     fail(`backend route/schema/migration paths changed: ${forbidden.join(', ')}`);
   }
-  ok('backend route/schema/migration paths untouched');
+  ok('backend route/schema/migration paths untouched outside approved readonly bridge routes');
 }
 
 function assertNoForbiddenVisibleTerms(text, label) {

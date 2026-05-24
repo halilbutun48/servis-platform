@@ -24,6 +24,7 @@
     "check:pay01d": "node backend/scripts/pay_01d_payment_preview_csv_export_check.js",
     "check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js",
     "check:paysafe01": "node backend/scripts/pay_safe_01_payment_write_gate_check.js",
+    "check:qltpaybridge01": "node backend/scripts/qlt_pay_bridge_01_check.js",
     "check:mobiletext01": "npm --prefix mobile run check:mobiletext01",
     "check:m95e23c": "npm --prefix web run check:m95e23c",
     "check:m98e4b": "node backend/scripts/m98_e4b_personel_invite_router_mount_check.js",
