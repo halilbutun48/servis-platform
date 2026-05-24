@@ -131,7 +131,7 @@
                                 "policyVersion":  1,
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
-    "currentLargeFileCount":  7,
+    "currentLargeFileCount":  9,
     "currentWarningHotFileCount":  5,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
@@ -185,10 +185,18 @@
                                                                                                            "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
                                                                                                        }
                                                        ,
+                                                       "backend/scripts/script_harness_consolidation_01_check.js":  {
+                                                                                                             "class":  "safe-candidate-review",
+                                                                                                             "note":  "repo harness inventory check; controlled cleanup adayi"
+                                                                                                         },
+                                                       "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md":  {
+                                                                                                 "class":  "safe-candidate-review",
+                                                                                                 "note":  "repo harness inventory doc; controlled cleanup adayi"
+                                                                                             },
                                                        "mobile/src/screens/driverPremiumUi.js":  {
                                                                                                       "class":  "safe-candidate-review",
-                                                                                                      "note":  "premium mobile shell; controlled cleanup adayi"
-                                                                                                  }
+                                                                                                     "note":  "premium mobile shell; controlled cleanup adayi"
+                                                                                                 }
                                 }
                            },
     "shareablePackageHygiene":  {

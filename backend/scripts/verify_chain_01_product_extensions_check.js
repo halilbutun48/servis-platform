@@ -111,6 +111,7 @@ function main() {
   must(pkg, '"check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js"', 'package.json exposes check:boardingops01b');
   must(pkg, '"check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js"', 'package.json exposes check:boardingops01c');
   must(pkg, '"check:routechangefinal01": "node backend/scripts/route_change_final_01_check.js"', 'package.json exposes check:routechangefinal01');
+  must(pkg, '"check:scriptharnessconsolidation01": "node backend/scripts/script_harness_consolidation_01_check.js"', 'package.json exposes check:scriptharnessconsolidation01');
   must(pkg, '"check:etasanity01"', 'package.json keeps check:etasanity01');
   must(pkg, '"check:etaosrm01"', 'package.json keeps check:etaosrm01');
   must(pkg, '"check:etaosrm02"', 'package.json keeps check:etaosrm02');
@@ -197,6 +198,7 @@ function main() {
     'check:boardingops01b',
     'check:boardingops01c',
     'check:routechangefinal01',
+    'check:scriptharnessconsolidation01',
     'check:etasanity01',
     'check:etaosrm01',
     'check:etaosrm02',
@@ -323,6 +325,8 @@ function main() {
   must(guide, 'check:boardingops01c', 'script guide exposes check:boardingops01c');
   must(guide, 'ROUTE-CHANGE-FINAL-01', 'script guide mentions ROUTE-CHANGE-FINAL-01');
   must(guide, 'check:routechangefinal01', 'script guide exposes check:routechangefinal01');
+  must(guide, 'SCRIPT-HARNESS-CONSOLIDATION-01', 'script guide mentions SCRIPT-HARNESS-CONSOLIDATION-01');
+  must(guide, 'check:scriptharnessconsolidation01', 'script guide exposes check:scriptharnessconsolidation01');
   must(guide, 'UX-COPILOT-TERMINAL-01', 'script guide mentions UX-COPILOT-TERMINAL-01');
   must(guide, 'UX-COPILOT-PERSONA-01', 'script guide mentions UX-COPILOT-PERSONA-01');
   must(guide, 'ETA-SANITY-01', 'script guide mentions ETA-SANITY-01');

@@ -103,10 +103,7 @@ const helpComposerSource = read('backend/src/ai/chat/helpComposer.js');
 const floatingDrawerSource = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
 const copilotPanelSource = read('web/src/panels/shared/CopilotPanel.jsx');
 
-mustAny(pkg, [
-  '"check:cop04bfix06": "node backend/scripts/cop_04b_fix_06_live_drawer_context_bridge_check.js"',
-  '"check:cop04bfix06": "node backend/scripts/cop_04b_fix_06_free_chat_context_bridge_check.js"',
-], 'package.json exposes check:cop04bfix06');
+must(pkg, '"check:cop04bfix06": "node backend/scripts/cop_04b_fix_06_free_chat_context_bridge_check.js"', 'package.json exposes check:cop04bfix06');
 must(pkg, '"check:cop04bfix05"', 'package.json keeps check:cop04bfix05');
 must(pkg, '"check:cop04bfix04"', 'package.json keeps check:cop04bfix04');
 must(pkg, '"check:cop04bfix03"', 'package.json keeps check:cop04bfix03');

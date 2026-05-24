@@ -808,6 +808,12 @@ Bu bant güncel doğrulanmış üst hattır.
   - Not: Personel / Canlı Harita free-chat submit request selected service context'i de taşır; header quick answer ve free chat aynı live context'i kullanır, visible `FORBIDDEN` dönmez.
   - Not: free-chat submit request ile Room / Canlı Takip selected signal seti de taşınır; header quick answer ve free chat aynı live context'i kullanır.
 
+### SCRIPT-HARNESS-CONSOLIDATION-01 — repo script harness inventory [CHECK]
+- Komut: `node backend\scripts\script_harness_consolidation_01_check.js`
+- Root alias: `npm run check:scriptharnessconsolidation01`
+- Ana konu: root/backend/web/mobile/tools/docs script/check/pack/export/wrapper envanterini tek registry’de sınıflandırmak; active, manual, release-only, legacy ve skip ayrımını görünür kılmak.
+- Bu check ürün davranışı değiştirmez; güvenli cleanup adaylarını raporlar ama körlemesine silme yapmaz.
+
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
 - Ana konu: servis kanıtı durumunu ticari ve kalite yüzeylerine readonly köprü olarak doğrulamak.
