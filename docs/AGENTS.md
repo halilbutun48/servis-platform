@@ -2,7 +2,7 @@
 
 ## Repo
 - Repo adı: `servis-platform`
-- Ürün adı: `Vardis`
+- Ürün adı: `SeferPakt`
 - Domain: okul/öğrenci/veli ve personel/şirket/organizasyon alanlarını birlikte taşıyan servis/taşıma platformu
 
 ## Çalışma tarzı

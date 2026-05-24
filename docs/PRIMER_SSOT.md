@@ -106,8 +106,9 @@ Compatibility aliases for legacy checks:
 
 ## Ürün çerçevesi
 - Platform sadece personel değildir; öğrenci/veli + personel alanlarını birlikte taşır.
-- Marka dili: **Vardis**
-- Konumlama: **pazar + sözleşme + operasyon**
+- Marka dili: **SeferPakt**
+- Ürün tanımı: **SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik operasyon kuran, canlı GPS ve kanıtla servisi denetleyen, kaliteye göre hakedişi güvenli önizleyen ve yapay zekâ ile maliyet/saha risklerini önceden yakalayan kurumsal servis operasyon platformudur.**
+- Konumlama: **servis tedariki + sözleşme + operasyon**
 - Yazılım şu anda ücretsiz kullanım yönünde kurgulanır; gelir modeli gelecekte ödeme/komisyon aracılığıdır.
 - Ödeme omurgası gerçek charge/payout açmadan önce dormant/feature-flag mantığında ilerler.
 - Kanonik aktivasyon anahtarı `PAYMENT_BACKBONE_ENABLED=0/1` ile taşınır; `0` hazırlık, `1` canlı kapı için uygun zemin anlamına gelir.
@@ -180,7 +181,7 @@ Compatibility aliases for legacy checks:
 ## CI / verification visibility
 - Repo-native görünür doğrulama zinciri: `npm run verify:ci`.
 - Root verify zinciri backend + web lint çalıştırır; web lint kanonik kanıtı: `artifacts/lint/web_lint_latest.txt`.
-- Workflow: `.github/workflows/vardis_verification_visibility.yml`.
+- Workflow: `.github/workflows/vardis_verification_visibility.yml` (historical/internal identifier).
 - Fresh runner hazırlığı workflow içinde explicit: `npm --prefix backend ci` ve `npm --prefix web ci`.
 - `repo-verification` işi root verify chain çalıştırır; `shareable-export` işi M90C.7 export hygiene pack çalıştırır.
 - Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json`, `artifacts/lint/web_lint_latest.txt` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.

@@ -1,17 +1,18 @@
-# VARDIS / PERSONEL SERVİS V1
+# SEFERPAKT / PERSONEL SERVİS V1
 
 <!-- TOOLS_HYGIENE_CANONICAL_V1 -->
 
-Bu repo, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı omurgada birleştiren; **pazar + sözleşme + operasyon** yaklaşımıyla çalışan canlı ürün ağacıdır.
+SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik operasyon kuran, canlı GPS ve kanıtla servisi denetleyen, kaliteye göre hakedişi güvenli önizleyen ve yapay zekâ ile maliyet/saha risklerini önceden yakalayan kurumsal servis operasyon platformudur.
 
 ## Hızlı referans
 - Primer snapshot: `tools/PRIMER_SNAPSHOT.md`
 - Primer SSOT: `docs/PRIMER_SSOT.md`
 - Checklist SSOT: `docs/CHECKLIST_SSOT.md`
 - Startpack: `docs/STARTPACK_V1.md`
+- Docs/brand cleanup audit: `docs/DOCS_SSOT_BRAND_ARTIFACT_CLEANUP_01.md`
 - Milestone registry: `docs/MILESTONE_REGISTRY_V1.md`
 - Tek rehber: `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md`
-- 10/10 kabul kapısı: `docs/KABUL_KRITERLERI_10_10_VARDIS.md`
+- 10/10 kabul kapısı: [KABUL_KRITERLERI_10_10.md](docs/KABUL_KRITERLERI_10_10_VARDIS.md) (historical evidence)
 - Parent access akışı: `docs/PARENT_ACCESS_FLOW.md`
 - Overlay geçmişi: `docs/overlays/`
 

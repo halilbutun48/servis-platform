@@ -1,4 +1,5 @@
-<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SeferPakt">
+  <title>SeferPakt</title>
   <rect width="256" height="256" rx="56" fill="#0F172A"/>
   <path d="M56 74H84L128 170L172 74H200L142 202H114L56 74Z" fill="#E2E8F0"/>
   <path d="M128 54L144 90H112L128 54Z" fill="#38BDF8"/>

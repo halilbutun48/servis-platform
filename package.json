@@ -79,6 +79,7 @@
     "check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js",
     "check:routechangefinal01": "node backend/scripts/route_change_final_01_check.js",
     "check:scriptharnessconsolidation01": "node backend/scripts/script_harness_consolidation_01_check.js",
+    "check:docsbrandcleanup01": "node backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js",
     "check:etasanity01": "node backend/scripts/eta_sanity_01_live_tracking_check.js",
     "check:etaosrm01": "node backend/scripts/eta_osrm_01_route_eta_service_check.js",
     "check:etaosrm02": "node backend/scripts/eta_osrm_02_api_eta_bridge_check.js",

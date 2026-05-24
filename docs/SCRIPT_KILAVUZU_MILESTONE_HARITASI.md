@@ -814,6 +814,12 @@ Bu bant güncel doğrulanmış üst hattır.
 - Ana konu: root/backend/web/mobile/tools/docs script/check/pack/export/wrapper envanterini tek registry’de sınıflandırmak; active, manual, release-only, legacy ve skip ayrımını görünür kılmak.
 - Bu check ürün davranışı değiştirmez; güvenli cleanup adaylarını raporlar ama körlemesine silme yapmaz.
 
+### DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01 — docs/brand/overlay/archive cleanup [CHECK]
+- Komut: `node backend\scripts\docs_ssot_brand_artifact_cleanup_01_check.js`
+- Root alias: `npm run check:docsbrandcleanup01`
+- Ana konu: görünür SeferPakt marka hizası, tarihsel Vardis dosya adları, overlay/archive/backpack-artifact kalıntıları ve docs SSOT referanslarını tek audit raporunda toplamak.
+- Bu check ürün davranışı değiştirmez; user-facing label ile historical/internal identifier ayrımını görünür tutar.
+
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
 - Ana konu: servis kanıtı durumunu ticari ve kalite yüzeylerine readonly köprü olarak doğrulamak.

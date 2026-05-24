@@ -5,14 +5,14 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `297`
-- Toplam executable tracked file: `1063`
-- Combined registry row: `1360`
-- Root/backend/web/mobile package dağılımı: root `140`, backend `630`, web `86`, mobile `201`
+- Toplam package script entry: `298`
+- Toplam executable tracked file: `1064`
+- Combined registry row: `1362`
+- Root/backend/web/mobile package dağılımı: root `141`, backend `631`, web `86`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `16`
 - ACTIVE: `358`
-- ACTIVE_CORE: `115`
+- ACTIVE_CORE: `116`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `8`
@@ -28,7 +28,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `472`
+- NEEDS_REVIEW: `473`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `19`
 - SKIP gerekçesi olan entry: `59`
@@ -42,14 +42,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 358 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 115 |
+| ACTIVE_CORE | 116 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 472 |
+| NEEDS_REVIEW | 473 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -143,6 +143,7 @@ Repo: `servis-platform`
 | root:check:boardingops01c | package.json | root | node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01C |  | Breaks canonical verification chain |  |
 | root:check:routechangefinal01 | package.json | root | node backend/scripts/route_change_final_01_check.js | core | ACTIVE_CORE |  | ROUTE-CHANGE-FINAL-01 |  | Breaks canonical verification chain |  |
 | root:check:scriptharnessconsolidation01 | package.json | root | node backend/scripts/script_harness_consolidation_01_check.js | verify-core | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01 |  | Breaks canonical verification chain |  |
+| root:check:docsbrandcleanup01 | package.json | root | node backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-DOCSBRANDCLEANUP-01 |  | Breaks canonical verification chain |  |
 | root:check:etasanity01 | package.json | root | node backend/scripts/eta_sanity_01_live_tracking_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ETASANITY-01 |  | Breaks canonical verification chain |  |
 | root:check:etaosrm01 | package.json | root | node backend/scripts/eta_osrm_01_route_eta_service_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ETAOSRM-01 |  | Breaks canonical verification chain |  |
 | root:check:etaosrm02 | package.json | root | node backend/scripts/eta_osrm_02_api_eta_bridge_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ETAOSRM-02 |  | Breaks canonical verification chain |  |
@@ -329,6 +330,7 @@ Repo: `servis-platform`
 | cop_04b_fix_08_parent_live_context_check.js | backend/scripts/cop_04b_fix_08_parent_live_context_check.js | backend | root:check:cop04bfix08 | product | ACTIVE |  | COP-04-B-FIX-08-PARENT-LIVE-CONTEXT-CHECK |  | Owner or chain unclear | product check/helper |
 | cop_04b_panel_context_audit_check.js | backend/scripts/cop_04b_panel_context_audit_check.js | backend | root:check:cop04b | product | ACTIVE |  | COP-04-B-PANEL-CONTEXT-AUDIT-CHECK |  | Owner or chain unclear | product check/helper |
 | cop_live_accept_01_check.js | backend/scripts/cop_live_accept_01_check.js | backend | root:check:copliveaccept01 | product | ACTIVE |  | COP-LIVE-ACCEPT-01-CHECK |  | Owner or chain unclear | product check/helper |
+| docs_ssot_brand_artifact_cleanup_01_check.js | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | backend | root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01-CHECK |  | Owner or chain unclear |  |
 | docs_ssot_pack_check.js | backend/scripts/docs_ssot_pack_check.js | backend |  | verify:repo | ACTIVE_CORE |  | DOCS-SSOT-PACK-CHECK |  | Owner or chain unclear | canonical runner |
 | docs_state_01_recent_product_closure_check.js | backend/scripts/docs_state_01_recent_product_closure_check.js | backend | root:check:docsstate01 | verify:repo | ACTIVE_CORE |  | DOCS-STATE-01-RECENT-PRODUCT-CLOSURE-CHECK |  | Owner or chain unclear | canonical runner |
 | driver_flow_final_01_acceptance_check.js | backend/scripts/driver_flow_final_01_acceptance_check.js | backend | root:check:driverflowfinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
@@ -864,7 +866,7 @@ Repo: `servis-platform`
 | api.js | web/src/api.js | web | mobile:check:m95e2, mobile:check:m95e6, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
 | uiSurface.js | web/src/components/copilot/uiSurface.js | web |  | review | NEEDS_REVIEW |  | UI-SURFACE |  | Owner or chain unclear |  |
 | stopTimelineUtils.js | web/src/components/stopTimelineUtils.js | web |  | review | NEEDS_REVIEW |  | STOP-TIMELINE-UTILS |  | Owner or chain unclear |  |
-| brand.js | web/src/config/brand.js | web | root:check:brand | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
+| brand.js | web/src/config/brand.js | web | root:check:brand, root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
 | screenRegistry.js | web/src/copilot/screenRegistry.js | web |  | review | NEEDS_REVIEW |  | SCREEN-REGISTRY |  | Owner or chain unclear |  |
 | logger.js | web/src/lib/logger.js | web |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
@@ -1105,7 +1107,7 @@ Repo: `servis-platform`
 | useMobileAppLifecycle.js | mobile/src/app/useMobileAppLifecycle.js | mobile |  | review | NEEDS_REVIEW |  | USE-MOBILE-APP-LIFECYCLE |  | Owner or chain unclear |  |
 | api.js | mobile/src/lib/api.js | mobile | mobile:check:m95e2, mobile:check:m95e6, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
 | backgroundGps.js | mobile/src/lib/backgroundGps.js | mobile |  | review | NEEDS_REVIEW |  | BACKGROUND-GPS |  | Owner or chain unclear |  |
-| brand.js | mobile/src/lib/brand.js | mobile | root:check:brand | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
+| brand.js | mobile/src/lib/brand.js | mobile | root:check:brand, root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
 | gps.js | mobile/src/lib/gps.js | mobile | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
 | logger.js | mobile/src/lib/logger.js | mobile |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
 | navigation.js | mobile/src/lib/navigation.js | mobile | mobile:check:m95e22b | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
@@ -1684,6 +1686,7 @@ Repo: `servis-platform`
 | backend/scripts/cop_04b_fix_07_personel_live_copilot_context_check.js | OperationProof | ACTIVE |
 | backend/scripts/cop_04b_fix_08_parent_live_context_check.js | OperationProof | ACTIVE |
 | backend/scripts/cop_live_accept_01_check.js | OperationProof | ACTIVE |
+| backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | Vardis, Hub | NEEDS_REVIEW |
 | backend/scripts/eta_osrm_01_route_eta_service_check.js | OperationProof | NEEDS_REVIEW |
 | backend/scripts/eta_osrm_02_api_eta_bridge_check.js | OperationProof | NEEDS_REVIEW |
 | backend/scripts/final_ux_smoke_01_check.js | Hub, Yer, Audit Logs, Log Export, personel-access | NEEDS_REVIEW |
@@ -1697,7 +1700,6 @@ Repo: `servis-platform`
 | backend/scripts/m27check.js | Hub | ACTIVE_RELEASE_ONLY |
 | backend/scripts/m33check.js | Hub | ACTIVE_RELEASE_ONLY |
 | backend/scripts/m34check.js | Hub | ACTIVE_RELEASE_ONLY |
-| backend/scripts/m35check.js | Hub | ACTIVE_RELEASE_ONLY |
 
 ## 11) Cleanup Raporu
 

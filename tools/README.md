@@ -72,7 +72,7 @@
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - Final verify chain: `npm run verify:final`
 - Kanonik web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
-- CI workflow: `.github/workflows/vardis_verification_visibility.yml`
+- CI workflow: `.github/workflows/vardis_verification_visibility.yml` (historical/internal identifier)
 - Shareable repo zip üretimi: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
 - `verify:snapshot` fiziksel dosya yüzeyini raporlar; `verify:final` bu raporu yeniler ama ilk turda hard blocker değildir.
 - Windows tarafinda export/hijyen kapanisinda `pwsh` tercih edilir.

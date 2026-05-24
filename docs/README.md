@@ -6,7 +6,8 @@
 - **CHECKLIST_SSOT.md** — resmi green kutuları ve marker mantığı
 - **MILESTONE_REGISTRY_V1.md** — tarihsel ve yaşayan milestone anlamları
 - **SCRIPT_KILAVUZU_MILESTONE_HARITASI.md** — M0→latest tek parça script/milestone rehberi
-- **KABUL_KRITERLERI_10_10_VARDIS.md** — 10/10 kalite kapısı
+- **DOCS_SSOT_BRAND_ARTIFACT_CLEANUP_01.md** — docs/brand/overlay/archive cleanup audit
+- **[KABUL_KRITERLERI_10_10.md](./KABUL_KRITERLERI_10_10_VARDIS.md)** — 10/10 kalite kapısı (historical evidence)
 - **NEXT_BACKLOG_V1.md** — bir sonraki kontrollü iş
 - **CONVERSATION_CLOSURE_INDEX_V1.md** — bu sohbetin hizalanan ana bantları ve kalanlar
 - **PARENT_ACCESS_FLOW.md** — Veli Erişimi akışının güncel ürün davranışı

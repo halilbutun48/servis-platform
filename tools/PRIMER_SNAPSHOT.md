@@ -32,8 +32,8 @@
 - `M80 -> M89`
 
 ## Kısa ürün çerçevesi
-- Vardis, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı omurgada taşır.
-- Konumlama: pazar + sözleşme + operasyon.
+- SeferPakt, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı omurgada taşır.
+- Konumlama: servis tedariki + sözleşme + operasyon.
 - Ödeme omurgası dormant/feature-flag mantığında ilerler.
 
 ## Infra / queue truth
