@@ -1,8 +1,9 @@
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import { rowSelectionStyle } from "../../utils/listUi";
 import { agreementExtendStatusText } from "../../utils/agreementLabels";
-import { routeDiffText, routeSummaryText } from "../../utils/routePreviewSummary";
+import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText } from "../../utils/routePreviewSummary";
 import AgreementRouteChangePreviewCard from "../shared/AgreementRouteChangePreviewCard";
+import DynamicSavingsPreviewCard from "../shared/DynamicSavingsPreviewCard";
 
 function moneyTry(v) {
   if (v == null || v === "") return "-";
@@ -83,6 +84,10 @@ function RoomAgreementsRouteRefreshPendingCard({
   };
   const effectiveCurrentSummary = preview?.current || currentSummaryFallback;
   const effectiveProposedSummary = preview?.proposed || proposedSummaryFallback;
+  const dynamicSavingsPreview = buildDynamicSavingsPreview({
+    currentSummary: effectiveCurrentSummary,
+    proposedSummary: effectiveProposedSummary,
+  });
   const itemStatus = String(item?.status || "").toUpperCase();
   const roomAmount = item?.roomCounterAmount == null ? null : Number(item.roomCounterAmount);
 
@@ -150,6 +155,9 @@ function RoomAgreementsRouteRefreshPendingCard({
             </>
           )}
         />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <DynamicSavingsPreviewCard preview={dynamicSavingsPreview} />
       </div>
 
       {isCounterOpen ? (
@@ -268,6 +276,10 @@ function RoomAgreementsRouteRefreshAcceptedCard({
   };
   const effectiveCurrentSummary = preview?.current || currentSummaryFallback;
   const effectiveAppliedSummary = preview?.proposed || appliedSummaryFallback;
+  const dynamicSavingsPreview = buildDynamicSavingsPreview({
+    currentSummary: effectiveCurrentSummary,
+    proposedSummary: effectiveAppliedSummary,
+  });
   const roomAmount = item?.roomCounterAmount == null ? null : Number(item.roomCounterAmount);
   const itemStatus = String(item?.status || "").toUpperCase();
 
@@ -321,6 +333,9 @@ function RoomAgreementsRouteRefreshAcceptedCard({
           onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Önceki Rota` }); }}
           onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(acceptedShiftId, { title: `Sözleşme #${agreementId} — Uygulanan Yeni Rota` }); }}
         />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <DynamicSavingsPreviewCard preview={dynamicSavingsPreview} />
       </div>
     </div>
   );

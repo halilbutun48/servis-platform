@@ -13,7 +13,7 @@ import AgreementConflictBox from "../../components/AgreementConflictBox";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
-import { routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
+import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
 import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import {
@@ -276,6 +276,20 @@ export default function AgreementsPanel() {
   const selectedRouteRefreshRoomCounterText = selectedRouteRefreshCountered
     ? `${moneyTry(selectedRouteRefreshItem?.roomCounterAmount)}${selectedRouteRefreshItem?.roomCounterNote ? ` — ${selectedRouteRefreshItem.roomCounterNote}` : ""}`
     : "";
+  const selectedDynamicSavingsPreview = buildDynamicSavingsPreview({
+    currentSummary: selectedRouteRefreshPreview?.current || {
+      peopleCount: Number(selectedRouteRefreshItem?.peopleCount || 0),
+      stopCount: Number(selectedRouteRefreshItem?.stopCount || 0),
+      distanceM: Number(selectedRouteRefreshItem?.currentDistanceM || 0),
+      durationSec: Number(selectedRouteRefreshItem?.currentDurationSec || 0),
+    },
+    proposedSummary: selectedRouteRefreshPreview?.proposed || {
+      peopleCount: Number(selectedRouteRefreshItem?.peopleCount || 0),
+      stopCount: Number(selectedRouteRefreshItem?.stopCount || 0),
+      distanceM: Number(selectedRouteRefreshItem?.proposedDistanceM || 0),
+      durationSec: Number(selectedRouteRefreshItem?.proposedDurationSec || 0),
+    },
+  });
   useEffect(() => {
     const item = copilotAgreementTarget;
     if (!item) {
@@ -306,6 +320,7 @@ export default function AgreementsPanel() {
       routeRefreshPriceImpactText: selectedRouteRefreshPriceImpactText,
       routeRefreshRoomCounterText: selectedRouteRefreshRoomCounterText,
       routeRefreshSummaryText: selectedRouteRefreshSummaryText,
+      dynamicSavingsPreview: selectedDynamicSavingsPreview,
     });
     setCopilotSelection({
       scopeKey: '/room/agreements',
@@ -357,6 +372,7 @@ export default function AgreementsPanel() {
     selectedRouteRefreshDiffText,
     selectedRouteRefreshPriceImpactText,
     selectedRouteRefreshRoomCounterText,
+    selectedDynamicSavingsPreview,
   ]);
 
   function openAgreementShift(shiftId) {

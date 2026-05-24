@@ -111,6 +111,7 @@ function main() {
   must(pkg, '"check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js"', 'package.json exposes check:boardingops01b');
   must(pkg, '"check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js"', 'package.json exposes check:boardingops01c');
   must(pkg, '"check:routechangefinal01": "node backend/scripts/route_change_final_01_check.js"', 'package.json exposes check:routechangefinal01');
+  must(pkg, '"check:dynamicsavings01": "node backend/scripts/dynamic_savings_01_check.js"', 'package.json exposes check:dynamicsavings01');
   must(pkg, '"check:scriptharnessconsolidation01": "node backend/scripts/script_harness_consolidation_01_check.js"', 'package.json exposes check:scriptharnessconsolidation01');
   must(pkg, '"check:docsbrandcleanup01": "node backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js"', 'package.json exposes check:docsbrandcleanup01');
   must(pkg, '"check:etasanity01"', 'package.json keeps check:etasanity01');
@@ -199,6 +200,7 @@ function main() {
     'check:boardingops01b',
     'check:boardingops01c',
     'check:routechangefinal01',
+    'check:dynamicsavings01',
     'check:scriptharnessconsolidation01',
     'check:etasanity01',
     'check:etaosrm01',
@@ -326,6 +328,8 @@ function main() {
   must(guide, 'check:boardingops01c', 'script guide exposes check:boardingops01c');
   must(guide, 'ROUTE-CHANGE-FINAL-01', 'script guide mentions ROUTE-CHANGE-FINAL-01');
   must(guide, 'check:routechangefinal01', 'script guide exposes check:routechangefinal01');
+  must(guide, 'DYNAMIC-SAVINGS-01', 'script guide mentions DYNAMIC-SAVINGS-01');
+  must(guide, 'check:dynamicsavings01', 'script guide exposes check:dynamicsavings01');
   must(guide, 'SCRIPT-HARNESS-CONSOLIDATION-01', 'script guide mentions SCRIPT-HARNESS-CONSOLIDATION-01');
   must(guide, 'check:scriptharnessconsolidation01', 'script guide exposes check:scriptharnessconsolidation01');
   must(guide, 'DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01', 'script guide mentions DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01');

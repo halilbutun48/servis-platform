@@ -89,6 +89,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
 - `check:routechangefinal01` -> `node backend\scripts\route_change_final_01_check.js`
+- `check:dynamicsavings01` -> `node backend\scripts\dynamic_savings_01_check.js`
 - `check:uxcollapsiblepanels01` -> `node backend\scripts\ux_collapsible_panels_01_check.js`
 - `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `check:fieldlaunch01` -> `node backend\scripts\field_launch_pack_01_readiness_check.js`
@@ -241,6 +242,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `Company / Sözleşmeler` tarafında teklif / önizleme ve `Room / Sözleşmeler` tarafında kabul / red / tekrar kontrol görünürlüğü tek rota değişikliği hattında okunur.
 - Eski rota / yeni rota, kişi / durak / km / süre farkı ve uygulanan rota geçmişi görünür; driver route refresh bu milestone kapsamı dışındadır.
 - SMS / push, payment / settlement ve otomatik kalıcı route apply yoktur.
+
+### DYNAMIC-SAVINGS-01 [CHECK]
+- `check:dynamicsavings01` sözleşme / rota değişikliği / boarding deltasından readonly dinamik tasarruf önizlemesi üretir.
+- `Company / Sözleşmeler` ile `Room / Sözleşmeler` ve ticari akış yüzeylerinde km tasarrufu, süre tasarrufu, kapasite etkisi ve yaklaşık maliyet etkisi birlikte okunur.
+- Veri yoksa `Tasarruf hesabı için yeterli veri yok` güvenli fallback'i kullanılır; route apply, ödeme, settlement, SMS, push ve driver refresh yoktur.
+- Bu check ürün davranışını değiştirmez; yalnızca readonly tasarruf görünürlüğünü doğrular.
 
 ### COP-LIVE-ACCEPT-01 [CHECK]
 - `check:copliveaccept01` Sefer Abi / Copilot canlı kabul matrisi için readonly static gate'tir.

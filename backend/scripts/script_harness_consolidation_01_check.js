@@ -24,6 +24,7 @@ const selectedDocs = [
   "docs/BOARDING_OPS_01B_ACCEPTED_CHANGE_APPLICATION.md",
   "docs/BOARDING_OPS_01C_DRIVER_ROUTE_REFRESH.md",
   "docs/ROUTE_CHANGE_FINAL_01.md",
+  "docs/DYNAMIC_SAVINGS_01.md",
   "docs/FINAL_UX_SMOKE_01_CHECKLIST.md",
   "docs/COP_LIVE_ACCEPT_01_MATRIX.md",
   "tools/README.md",
@@ -138,7 +139,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -146,7 +147,7 @@ function statusFromPackage(pkg, name) {
     if (["verify:snapshot", "verify:docs", "verify:hot", "verify:web-contract", "verify:milestones", "verify:milestones:live"].includes(name)) {
       return "ACTIVE_RELEASE_ONLY";
     }
-    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxdensity01", "check:finaluxsmoke01", "check:copliveaccept01", "check:boardingops01a", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01"].includes(name)) {
+    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxdensity01", "check:finaluxsmoke01", "check:copliveaccept01", "check:boardingops01a", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["smoke:m98e4"].includes(name)) return "MANUAL_SMOKE";
@@ -519,6 +520,18 @@ const coverageMatrix = [
     requiredNextAction: "None",
   },
   {
+    function: "Dynamic Savings / Readonly Preview",
+    rolePanel: "Company/room agreements and commercial flow",
+    backendRouteService: "backend/src/services/boardingRouteImpactPreview.js; backend/src/services/agreementRouteChangePreview.js; route preview helpers",
+    frontendSurface: "web/src/panels/shared/DynamicSavingsPreviewCard.jsx; web/src/panels/company/AgreementsPanel.jsx; web/src/panels/room/AgreementsPanel.jsx; web/src/panels/company/companyAgreementsRouteRefreshPendingSection.jsx; web/src/panels/room/roomAgreementsPanelSections.jsx",
+    currentCheckScript: "check:dynamicsavings01; check:routechangefinal01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:copliveaccept01",
+    checkType: "static",
+    coverageStatus: "COVERED_ACTIVE",
+    missingGap: "None on the current static/product chain. Preview-only by design.",
+    ownerMilestone: "DYNAMIC-SAVINGS-01",
+    requiredNextAction: "None",
+  },
+  {
     function: "Commercial / Payment Preview",
     rolePanel: "Company/room commercial panels",
     backendRouteService: "backend/src/scripts/pay_*.js; backend/src/scripts/op_04*.js; payment readiness helpers",
@@ -607,13 +620,6 @@ const missingCheckRows = [
     ownerMilestone: "Future Copilot milestone",
     requiredNextAction: "Wait for the feature milestone, then add a focused static check only if the behavior exists.",
   },
-  {
-    candidate: "DYNAMIC-SAVINGS-01",
-    status: "MISSING_FUTURE_MILESTONE",
-    why: "Readonly km / süre / maliyet / tasarruf preview is not a current repo-wide harness need without the feature milestone.",
-    ownerMilestone: "Future commercial milestone",
-    requiredNextAction: "Add only when the feature ships; do not invent a check now.",
-  },
 ];
 
 function buildM0M41LegacyFamilyRows() {
@@ -694,7 +700,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -957,7 +963,7 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
       fileEntries.push(entry);
       continue;
     }
-    if (/^backend\/scripts\/(?:boarding_ops_01a|boarding_ops_01b|boarding_ops_01c|route_change_final_01|cop_live_accept_01|final_ux_smoke_01|driver_flow_final_01|live_tracking_final_01|eta_sanity_01|eta_osrm_01|eta_osrm_02|e2e_smoke_01|field_launch_pack_01|ux_.*_check|cop_.*_check|m9\d|m8\d|m7\d|m6\d|m5\d|m4\d|m3\d|m2\d|m1\d|m0check|m10check|m11check|m12check|m13check|m14check|m15check|m16check|m17check|m18check|m19check|m20check|m21check|m22check|m23check|m24check|m25check|m26check|m27check|m28check|m29check|m30check|m31check|m32check|m33check|m34check|m35check|m36check|m37check|m38check|m39check|m40check|m41check|m42_optional_check|m43_google_auth_invite_gate_check|m44_telematics_check|m45_backup_create|m45_backup_restore|m45_retention_backup_check|m46_.*|m47_.*|m48_.*|m49_.*|m50_.*|m51_53_.*|m54_.*|m55_.*|m56_.*|m57_.*|m58_.*|m59_.*|m60_.*|m61_.*|m62_.*|m63_.*|m64_.*|m65_.*|m66_.*|m67_.*|m68_.*|m69_.*|m70_.*|m71_.*|m72_.*|m73_.*|m74_.*|m75_.*|m76_.*|m77_.*|m78_.*|m79_.*|m80_.*|m81_.*|m82_.*|m83_.*|m84_.*|m85_.*|m86_.*|m87_.*|m88_.*|m89_.*|m90_.*|m91_.*|m92_.*|m94_.*|m95_.*|m96_.*|m97_.*|m98_.*|m99_.*|op_.*|pay_.*|qlt_.*)\./i.test(relPath)) {
+    if (/^backend\/scripts\/(?:boarding_ops_01a|boarding_ops_01b|boarding_ops_01c|route_change_final_01|dynamic_savings_01_check|cop_live_accept_01|final_ux_smoke_01|driver_flow_final_01|live_tracking_final_01|eta_sanity_01|eta_osrm_01|eta_osrm_02|e2e_smoke_01|field_launch_pack_01|ux_.*_check|cop_.*_check|m9\d|m8\d|m7\d|m6\d|m5\d|m4\d|m3\d|m2\d|m1\d|m0check|m10check|m11check|m12check|m13check|m14check|m15check|m16check|m17check|m18check|m19check|m20check|m21check|m22check|m23check|m24check|m25check|m26check|m27check|m28check|m29check|m30check|m31check|m32check|m33check|m34check|m35check|m36check|m37check|m38check|m39check|m40check|m41check|m42_optional_check|m43_google_auth_invite_gate_check|m44_telematics_check|m45_backup_create|m45_backup_restore|m45_retention_backup_check|m46_.*|m47_.*|m48_.*|m49_.*|m50_.*|m51_53_.*|m54_.*|m55_.*|m56_.*|m57_.*|m58_.*|m59_.*|m60_.*|m61_.*|m62_.*|m63_.*|m64_.*|m65_.*|m66_.*|m67_.*|m68_.*|m69_.*|m70_.*|m71_.*|m72_.*|m73_.*|m74_.*|m75_.*|m76_.*|m77_.*|m78_.*|m79_.*|m80_.*|m81_.*|m82_.*|m83_.*|m84_.*|m85_.*|m86_.*|m87_.*|m88_.*|m89_.*|m90_.*|m91_.*|m92_.*|m94_.*|m95_.*|m96_.*|m97_.*|m98_.*|m99_.*|op_.*|pay_.*|qlt_.*)\./i.test(relPath)) {
       entry.status = "ACTIVE";
       entry.chain = "product";
       entry.notes.push("product check/helper");
@@ -1010,7 +1016,7 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
     entry.commandRefs = [...new Set(entry.commandRefs)].sort();
     if (entry.commandRefs.some((ref) => ref.startsWith("root:verify:repo") || ref.startsWith("backend:repo:check"))) {
       entry.chain = "verify:repo";
-    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01"))) {
+    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01"))) {
       entry.chain = "product-extensions";
     } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:scriptharnessconsolidation01"))) {
       entry.chain = "product-extensions";
@@ -1306,11 +1312,13 @@ function verifyDoc(docText, summary) {
     "## 11) Cleanup Raporu",
     "## 12) Yeni Verify Standardı",
     "## 13) M0-M41 Legacy Milestone Family",
+    "DYNAMIC-SAVINGS-01",
     "m0-latest-static-milestones",
     "tools/gate.ps1",
     "pack_m0_m41.ps1",
     "verify:final",
     "check:product-extensions",
+    "check:dynamicsavings01",
     "check:scriptharnessconsolidation01",
     "SCRIPT-HARNESS-CONSOLIDATION-01",
     "run_repo_check_chain.js",

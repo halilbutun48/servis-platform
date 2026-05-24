@@ -99,7 +99,7 @@ function main() {
   mustContains(audit, "4) Her panel için önerilen yapı", "audit has per-panel structure recommendation");
   mustContains(audit, "5) İlk düzeltilecek 5 panel önerisi", "audit has first five recommendation");
   mustContains(audit, "6) Sonraya bırakılacak paneller", "audit has deferred panel section");
-  mustContains(audit, "107", "audit states total panel-related JSX file count");
+  mustContains(audit, "108", "audit states total panel-related JSX file count");
   mustContains(audit, "59", "audit states route-backed screen component count");
   mustContains(audit, "94", "audit states route surface count");
   mustContains(audit, "95", "audit states unique route literal count");
@@ -108,7 +108,7 @@ function main() {
   const routeLiterals = extractRouteLiterals(app);
   const screenImports = extractScreenImports(app);
   const panelFiles = walk(path.join(root, "web/src/panels"));
-  must(panelFiles.length === 107, "panel-related JSX count matches audit");
+  must(panelFiles.length === 108, "panel-related JSX count matches audit");
   must(screenImports.length === 59, "route-backed screen component count matches audit");
   must(routeLiterals.length === 95, "unique route literal count matches audit");
   must(routeLiterals.filter((route) => route !== "/").length === 94, "route surface count excluding root matches audit");

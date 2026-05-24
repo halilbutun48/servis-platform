@@ -5,14 +5,14 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `298`
+- Toplam package script entry: `299`
 - Toplam executable tracked file: `1064`
-- Combined registry row: `1362`
-- Root/backend/web/mobile package dağılımı: root `141`, backend `631`, web `86`, mobile `201`
+- Combined registry row: `1363`
+- Root/backend/web/mobile package dağılımı: root `142`, backend `631`, web `86`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `16`
+- Docs indexed: `17`
 - ACTIVE: `358`
-- ACTIVE_CORE: `116`
+- ACTIVE_CORE: `117`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `8`
@@ -30,7 +30,7 @@ Repo: `servis-platform`
 - ARCHIVED: `31`
 - NEEDS_REVIEW: `473`
 - Duplicate/overlap groups: `8`
-- Product coverage rows: `19`
+- Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
 - Eski sistem term eşleşmesi: `242`
 - Browser automation harness bulundu mu: `Hayır`
@@ -42,7 +42,7 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 358 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 116 |
+| ACTIVE_CORE | 117 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -58,7 +58,7 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| COVERED_ACTIVE | 13 |
+| COVERED_ACTIVE | 14 |
 | COVERED_RELEASE_ONLY | 2 |
 | PARTIAL_COVERAGE | 4 |
 
@@ -142,6 +142,7 @@ Repo: `servis-platform`
 | root:check:boardingops01b | package.json | root | node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01B |  | Breaks canonical verification chain |  |
 | root:check:boardingops01c | package.json | root | node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01C |  | Breaks canonical verification chain |  |
 | root:check:routechangefinal01 | package.json | root | node backend/scripts/route_change_final_01_check.js | core | ACTIVE_CORE |  | ROUTE-CHANGE-FINAL-01 |  | Breaks canonical verification chain |  |
+| root:check:dynamicsavings01 | package.json | root | node backend/scripts/dynamic_savings_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-DYNAMICSAVINGS-01 |  | Breaks canonical verification chain |  |
 | root:check:scriptharnessconsolidation01 | package.json | root | node backend/scripts/script_harness_consolidation_01_check.js | verify-core | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01 |  | Breaks canonical verification chain |  |
 | root:check:docsbrandcleanup01 | package.json | root | node backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-DOCSBRANDCLEANUP-01 |  | Breaks canonical verification chain |  |
 | root:check:etasanity01 | package.json | root | node backend/scripts/eta_sanity_01_live_tracking_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ETASANITY-01 |  | Breaks canonical verification chain |  |
@@ -1479,6 +1480,7 @@ Repo: `servis-platform`
 | Live Tracking / GPS / ETA | Driver/room/company live map surfaces | backend/src/services/boardingRouteImpactPreview.js; backend/src/services/boardingChangeRouteRefresh.js; ETA / OSRM helpers | web/src/panels/driver/MapPanel.jsx; web/src/panels/company/MapPanel.jsx; web/src/panels/room/MapPanel.jsx; web/src/lib/markers/vehicleMarkerC.js; web/src/components/map/markers.css | check:etasanity01; check:etaosrm01; check:etaosrm02; check:livetrackingfinal01; check:boardingops01c; check:uxlivemaptabssimplify01; check:m95e23b; check:m95e20 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | ETA / BOARDING-OPS-01C | None |
 | Agreements / Contract / Shift | Company/room agreements and shifts | backend/src/routes/agreements.js; backend/src/routes/shifts/*.js; backend/src/services/agreementRouteChangePreview.js | web/src/panels/company/AgreementsPanel.jsx; web/src/panels/room/AgreementsPanel.jsx; web/src/panels/company/AgreementWizard.jsx; web/src/panels/shared/AgreementRouteChangePreviewCard.jsx | check:routechangefinal01; check:m91c_shift_to_agreement_prefill_check; check:m91c_shift_origin_link_check; check:m91c_linked_shift_disable_convert_check; check:m91d_agreement_operations_bridge_check; check:m91ef_draft_slot_hardening_check; check:m91_route_preview_room_guard_fix_check | static | COVERED_ACTIVE | None on the current static/product chain. | ROUTE-CHANGE-FINAL / M91 | None |
 | Boarding Ops | Company/school/room boarding flow | backend/src/services/boardingRouteImpactPreview.js; backend/src/services/boardingChangeApplication.js; backend/src/services/boardingChangeRouteRefresh.js; backend/src/routes/requests.js; backend/src/routes/driver.js | web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx; web/src/panels/shared/boardingChangeUi.js; company/school/room operations panels | check:boardingops01a; check:boardingops01b; check:boardingops01c | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS-01A/01B/01C | None |
+| Dynamic Savings / Readonly Preview | Company/room agreements and commercial flow | backend/src/services/boardingRouteImpactPreview.js; backend/src/services/agreementRouteChangePreview.js; route preview helpers | web/src/panels/shared/DynamicSavingsPreviewCard.jsx; web/src/panels/company/AgreementsPanel.jsx; web/src/panels/room/AgreementsPanel.jsx; web/src/panels/company/companyAgreementsRouteRefreshPendingSection.jsx; web/src/panels/room/roomAgreementsPanelSections.jsx | check:dynamicsavings01; check:routechangefinal01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:copliveaccept01 | static | COVERED_ACTIVE | None on the current static/product chain. Preview-only by design. | DYNAMIC-SAVINGS-01 | None |
 | Commercial / Payment Preview | Company/room commercial panels | backend/src/scripts/pay_*.js; backend/src/scripts/op_04*.js; payment readiness helpers | web/src/panels/company/CommercialFlowPanel.jsx; web/src/panels/room/CommercialFlowPanel.jsx; web/src/panels/superadmin/CommercialCorePanel.jsx | check:pay01a; check:pay01b; check:pay01c; check:pay01d; check:pay01e; check:paysafe01; check:op04; check:qlt01; check:qlt02; check:qlt03; check:qlt04 | static + release-only | COVERED_ACTIVE | Execute/write actions remain deliberately forbidden. | PAY / QLT / OP | None |
 | Quality / Evidence | Company/superadmin quality views | backend/src/scripts/qlt_*.js; backend/src/scripts/op_*.js; evidence helpers | web/src/panels/company/ServiceEvaluationPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx; web/src/panels/shared/ReportsPanel.jsx | check:qlt01; check:qlt02; check:qlt03; check:qlt04; check:qlt04a; check:qlt04b; check:op01; check:op02; check:op03; check:op04 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | QLT / OP | None |
 | Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
@@ -1647,14 +1649,13 @@ Repo: `servis-platform`
 - MISSING_REQUIRED_NOW: `0`
 - MISSING_RELEASE_ONLY: `0`
 - MISSING_MANUAL_SMOKE: `0`
-- MISSING_FUTURE_MILESTONE: `3`
+- MISSING_FUTURE_MILESTONE: `2`
 - NOT_NEEDED: `0`
 
 | candidate | status | why | ownerMilestone | requiredNextAction |
 | --- | --- | --- | --- | --- |
 | MOBILE-WEB-FINAL-01 | MISSING_FUTURE_MILESTONE | Driver / Parent / Personel mobile web browser smoke needs a real browser flow and should not be forced into this static consolidation. | Future mobile-web milestone | Document the browser smoke requirement and keep it out of product-extensions until the milestone lands. |
 | PROACTIVE-COPILOT-01 | MISSING_FUTURE_MILESTONE | Proactive risk badge/drawer behavior is a future product behavior, not a current static consolidation target. | Future Copilot milestone | Wait for the feature milestone, then add a focused static check only if the behavior exists. |
-| DYNAMIC-SAVINGS-01 | MISSING_FUTURE_MILESTONE | Readonly km / süre / maliyet / tasarruf preview is not a current repo-wide harness need without the feature milestone. | Future commercial milestone | Add only when the feature ships; do not invent a check now. |
 
 ## 10) Eski Sistem Kalıntıları
 

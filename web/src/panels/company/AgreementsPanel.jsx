@@ -40,7 +40,7 @@ import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
 import { companyPath } from "../../utils/paths";
 import { AGREEMENT_STATUS_OPTIONS, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
-import { routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
+import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -773,6 +773,10 @@ export default function AgreementsPanel() {
     : "";
   const selectedRouteRefreshCurrentPreviewShiftId = Number(selectedAgreementOrigin?.sourceShiftId || 0);
   const selectedRouteRefreshProposedPreviewShiftId = Number((selectedRouteRefreshPending?.draftShiftIds || [])[0] || 0);
+  const selectedDynamicSavingsPreview = buildDynamicSavingsPreview({
+    currentSummary: routeRefreshPreviewSummary.current || selectedRouteRefreshCurrentFallback,
+    proposedSummary: routeRefreshPreviewSummary.proposed || selectedRouteRefreshProposedFallback,
+  });
 
   const selectedAgreementCopilotContext = useMemo(() => {
     const row = selectedAgreementRow;
@@ -855,6 +859,7 @@ export default function AgreementsPanel() {
       routeRefreshSummaryText: selectedRouteRefreshSummaryText,
       routeRefreshCurrentPreviewShiftId: selectedRouteRefreshCurrentPreviewShiftId,
       routeRefreshProposedPreviewShiftId: selectedRouteRefreshProposedPreviewShiftId,
+      dynamicSavingsPreview: selectedDynamicSavingsPreview,
       pendingCount: Number(items?.length || 0),
       otherCount: 0,
       extendCount: 0,
@@ -914,6 +919,7 @@ export default function AgreementsPanel() {
     selectedRouteRefreshSummaryText,
     selectedRouteRefreshCurrentPreviewShiftId,
     selectedRouteRefreshProposedPreviewShiftId,
+    selectedDynamicSavingsPreview,
   ]);
 
   useEffect(() => {
@@ -1013,6 +1019,7 @@ export default function AgreementsPanel() {
               previewLoading={routeRefreshPreviewSummary.loading}
               currentPreviewShiftId={selectedRouteRefreshCurrentPreviewShiftId}
               proposedPreviewShiftId={selectedRouteRefreshProposedPreviewShiftId}
+              dynamicSavingsPreview={selectedDynamicSavingsPreview}
               showCounterActions={selectedRouteRefreshCountered}
               busy={busy}
               onOpenCurrentPreview={() => openAgreementShift(selectedRouteRefreshCurrentPreviewShiftId, true)}

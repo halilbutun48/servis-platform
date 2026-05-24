@@ -1,5 +1,6 @@
 import CollapsibleSection from "../../components/CollapsibleSection";
 import AgreementRouteChangePreviewCard from "../shared/AgreementRouteChangePreviewCard";
+import DynamicSavingsPreviewCard from "../shared/DynamicSavingsPreviewCard";
 
 export default function CompanyAgreementsRouteRefreshPendingSection({
   title,
@@ -10,6 +11,7 @@ export default function CompanyAgreementsRouteRefreshPendingSection({
   proposedRouteText = "-",
   diffText = "-",
   priceImpactText = "-",
+  dynamicSavingsPreview = null,
   previewError = "",
   previewLoading = false,
   currentPreviewShiftId = 0,
@@ -62,6 +64,11 @@ export default function CompanyAgreementsRouteRefreshPendingSection({
           </>
         ) : null}
       />
+      {dynamicSavingsPreview ? (
+        <div style={{ marginTop: 12 }}>
+          <DynamicSavingsPreviewCard preview={dynamicSavingsPreview} />
+        </div>
+      ) : null}
     </CollapsibleSection>
   );
 }

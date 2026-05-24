@@ -61,6 +61,7 @@ const steps = [
   'check:boardingops01b',
   'check:boardingops01c',
   'check:routechangefinal01',
+  'check:dynamicsavings01',
   'check:scriptharnessconsolidation01',
   'check:docsbrandcleanup01',
   'check:etasanity01',

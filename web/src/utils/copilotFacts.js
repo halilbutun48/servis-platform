@@ -1920,6 +1920,20 @@ export function buildCopilotStarterChips({
     || selection?.structuredFacts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || selection?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || includesAny(selectionText, ['rota etkisi', 'biniş değişikliği', 'bugün binmezse', 'farklı duraktan', 'geçici durak', 'rota/atama uygulanmadı', 'km farkı', 'süre artar mı', 'kapasite etkisi']);
+  const isDynamicSavingsPreview = selection?.facts?.dynamicSavingsPreviewText
+    || selection?.facts?.dynamicSavingsSummaryText
+    || selection?.liveFacts?.dynamicSavingsPreviewText
+    || selection?.structuredFacts?.dynamicSavingsPreviewText
+    || selection?.screenType === 'DYNAMIC_SAVINGS_PREVIEW'
+    || includesAny(selectionText, ['tasarruf', 'tasarruf önizlemesi', 'tasarruf onizlemesi', 'km tasarrufu', 'süre tasarrufu', 'sure tasarrufu', 'yaklaşık maliyet', 'yaklasik maliyet', 'maliyet etkisi', 'readonly önizleme', 'readonly onizleme']);
+  if (isDynamicSavingsPreview) {
+    return finalizeStarterChips([
+      'Tasarruf hesabını göster',
+      'Km / süre farkını açıkla',
+      'Kapasite etkisini göster',
+      'Yaklaşık maliyet etkisini açıkla',
+    ], fallback);
+  }
   if (isBoardingApplication) {
     return finalizeStarterChips(
       (isDriverToday || isDriverRouteOrMap)
@@ -2019,6 +2033,8 @@ export function buildCopilotStarterChips({
     chips = ['Riskleri sırala', 'GPS görünürlüğünü kontrol et', 'Açık sorunları göster', 'Sıradaki doğru işlem ne?'];
   } else if (isAgreementRouteRefresh) {
     chips = ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
+  } else if (isDynamicSavingsPreview) {
+    chips = ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
   } else if (isAgreementSurface) {
     chips = ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {

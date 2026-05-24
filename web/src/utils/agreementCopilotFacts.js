@@ -120,6 +120,20 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     routeRefreshPriceImpactText ? `Ücret etkisi: ${routeRefreshPriceImpactText}` : "",
     routeRefreshRoomCounterText ? `Oda karşı teklifi: ${routeRefreshRoomCounterText}` : "",
   ].filter(Boolean).join(" • "), "");
+  const dynamicSavingsPreview = summary.dynamicSavingsPreview && typeof summary.dynamicSavingsPreview === "object"
+    ? summary.dynamicSavingsPreview
+    : null;
+  const dynamicSavingsSummaryText = compactText(summary.dynamicSavingsSummaryText || summary.dynamicSavingsPreviewText || dynamicSavingsPreview?.summaryText || "");
+  const dynamicSavingsCurrentText = compactText(summary.dynamicSavingsCurrentText || dynamicSavingsPreview?.currentRouteText || "");
+  const dynamicSavingsProposedText = compactText(summary.dynamicSavingsProposedText || dynamicSavingsPreview?.proposedRouteText || "");
+  const dynamicSavingsDiffText = compactText(summary.dynamicSavingsDiffText || dynamicSavingsPreview?.diffText || "");
+  const dynamicSavingsKmSavingsText = compactText(summary.dynamicSavingsKmSavingsText || dynamicSavingsPreview?.kmSavingsText || "");
+  const dynamicSavingsDurationSavingsText = compactText(summary.dynamicSavingsDurationSavingsText || dynamicSavingsPreview?.durationSavingsText || "");
+  const dynamicSavingsCapacityEffectText = compactText(summary.dynamicSavingsCapacityEffectText || dynamicSavingsPreview?.capacityEffectText || "");
+  const dynamicSavingsApproxCostText = compactText(summary.dynamicSavingsApproxCostText || dynamicSavingsPreview?.approxCostText || "");
+  const dynamicSavingsBoundaryText = compactText(summary.dynamicSavingsPreviewOnlyNote || dynamicSavingsPreview?.previewOnlyNote || "");
+  const dynamicSavingsNextBestAction = compactText(summary.dynamicSavingsNextBestAction || dynamicSavingsPreview?.nextBestAction || "");
+  const dynamicSavingsReliability = compactText(summary.dynamicSavingsReliability || dynamicSavingsPreview?.reliability || "");
   const selectedRecordSummary = compactText([
     summary.selectedRecordSummary || buildSelectedSummary({
       statusText,
@@ -165,6 +179,12 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     { id: "screen-title", label: "Ekran", value: screenTitle, note: "Köprü yüzeyi." },
     { id: "selected-record", label: "Seçili kayıt", value: selectedRecordLabel, note: status ? `Durum: ${status}` : "Seçili sözleşme kaydı." },
     routeRefreshState || routeRefreshLabel || routeRefreshSummaryText ? { id: "route-refresh", label: "Rota güncellemesi", value: routeRefreshState || routeRefreshNote || "Yok", note: routeRefreshSummaryText || "Rota değişikliği sinyali okunuyor." } : null,
+    dynamicSavingsSummaryText || dynamicSavingsCurrentText || dynamicSavingsProposedText ? {
+      id: "dynamic-savings",
+      label: "Tasarruf önizlemesi",
+      value: dynamicSavingsReliability || (dynamicSavingsPreview?.ok ? "Tahmini" : "Yetersiz veri"),
+      note: dynamicSavingsSummaryText || "Readonly tasarruf önizlemesi.",
+    } : null,
     { id: "source-shift", label: "Kaynak vardiya", value: sourceShiftId ? `#${sourceShiftId}` : "Yok", note: sourceShiftId ? "Üretim kökü okunur." : "Kaynak vardiya bağlantısı görünmüyor." },
     { id: "generated-count", label: "Üretilen vardiya", value: generatedShiftCount > 0 ? String(generatedShiftCount) : "Yok", note: generatedShiftCount > 0 ? "Bugün üretim sinyali var." : "Bugün üretim sinyali görünmüyor." },
     { id: "last-generated", label: "Son üretilen vardiya", value: lastGeneratedShiftId ? `#${lastGeneratedShiftId}` : "Yok", note: lastGeneratedShiftStatus ? `Durum: ${lastGeneratedShiftStatus}` : "Son vardiya görünmüyor." },
@@ -210,9 +230,12 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   });
 
   const liveFactConfidence = {
-    summary: hasProductionSignal
-      ? "Ekrandan gelen sinyal var. Seçili kayıttan gelen sinyal var. Genel workflow bilgisi var. Üretim köprüsü açık."
-      : "Ekrandan gelen sinyal var. Seçili kayıttan gelen sinyal var. Genel workflow bilgisi var. Sinyal eksik, bu yüzden kesin konuşulamaz.",
+    summary: [
+      hasProductionSignal
+        ? "Ekrandan gelen sinyal var. Seçili kayıttan gelen sinyal var. Genel workflow bilgisi var. Üretim köprüsü açık."
+        : "Ekrandan gelen sinyal var. Seçili kayıttan gelen sinyal var. Genel workflow bilgisi var. Sinyal eksik, bu yüzden kesin konuşulamaz.",
+      dynamicSavingsSummaryText ? "Tasarruf önizlemesi de okunuyor." : "",
+    ].filter(Boolean).join(" "),
     rows: [
       normalizeCopilotSignal({
         id: "screen-signal",
@@ -231,6 +254,12 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         label: "Rota güncellemesi",
         value: routeRefreshState || routeRefreshNote || "Yok",
         note: routeRefreshSummaryText || "Rota değişikliği sinyali okunuyor.",
+      })] : []),
+      ...(dynamicSavingsSummaryText || dynamicSavingsCurrentText || dynamicSavingsProposedText ? [normalizeCopilotSignal({
+        id: "dynamic-savings",
+        label: "Tasarruf önizlemesi",
+        value: dynamicSavingsReliability || (dynamicSavingsPreview?.ok ? "Tahmini" : "Yetersiz veri"),
+        note: dynamicSavingsSummaryText || "Readonly tasarruf önizlemesi.",
       })] : []),
       normalizeCopilotSignal({
         id: "workflow-signal",
@@ -296,7 +325,12 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       .replace(/^(?:Önerilen adım|Öneri)\s+/i, '')
       .trim(),
     copilotSignals: signals,
-    copilotSummary: `${productionSummary} • ${todayProductionSummary} • ${buildCopilotSignalSummary(signals, 5)}`,
+    copilotSummary: [
+      productionSummary,
+      todayProductionSummary,
+      dynamicSavingsSummaryText,
+      buildCopilotSignalSummary(signals, 5),
+    ].filter(Boolean).join(' • '),
     copilotBoundary: [
       "Sözleşme",
       "Rota güncellemesi",
@@ -332,5 +366,17 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     routeRefreshCurrentPreviewShiftId,
     routeRefreshProposedPreviewShiftId,
     routeRefreshRequestId,
+    dynamicSavingsPreview,
+    dynamicSavingsSummaryText,
+    dynamicSavingsCurrentText,
+    dynamicSavingsProposedText,
+    dynamicSavingsDiffText,
+    dynamicSavingsKmSavingsText,
+    dynamicSavingsDurationSavingsText,
+    dynamicSavingsCapacityEffectText,
+    dynamicSavingsApproxCostText,
+    dynamicSavingsBoundaryText,
+    dynamicSavingsNextBestAction,
+    dynamicSavingsReliability,
   };
 }

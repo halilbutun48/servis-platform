@@ -70,6 +70,11 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   const topic = String(activeTopic || questionType || '');
   const path = normalizeText(screenPath);
 
+  if (path.includes('/company/commercial-flow') || path.includes('/room/commercial-flow') || path.includes('/superadmin/commercial-core')) {
+    if (topic === 'DYNAMIC_SAVINGS_PREVIEW') {
+      return ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
+    }
+  }
   if (path.includes('/room/operation-health') || path.includes('/superadmin/operations')) {
     if (topic === 'BOARDING_CHANGE_APPLICATION') {
       return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
@@ -98,6 +103,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements')) {
+    if (topic === 'DYNAMIC_SAVINGS_PREVIEW') {
+      return ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
+    }
     if (topic === 'AGREEMENT_ROUTE_REFRESH') {
       return ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
     }
@@ -267,6 +275,16 @@ export function workflowActionSpec({ activeTopic = '', questionType = '' } = {})
         askLabel: 'Hakediş eksiklerini sor',
         askQuery: 'bu hakediş neden hazır değil',
         askReason: 'Hakediş eksiklerini hızlıca tekrar sorar.',
+      };
+    case 'DYNAMIC_SAVINGS_PREVIEW':
+      return {
+        guideLabel: 'Tasarruf önizlemesini aç',
+        jobType: 'ASSIGNMENT_READINESS_GUIDE',
+        guideLevel: 'STEP_BY_STEP',
+        reason: 'Km, süre, kapasite ve yaklaşık maliyet önizlemesini güvenli dille okur.',
+        askLabel: 'Tasarruf hesabını sor',
+        askQuery: 'bu değişiklikte tasarruf ne',
+        askReason: 'Readonly tasarruf önizlemesini tekrar sorar.',
       };
     case 'BOARDING_ROUTE_IMPACT_PREVIEW':
       return {

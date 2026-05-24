@@ -47,6 +47,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - `Sefer Abi` persona/launcher, safe answer wording, payment / settlement execute yokluğu ve raw internal/debug/OperationProof sızıntısının olmaması korunur.
 - Bu not product behavior değiştirmez; yalnızca sözleşme kaynaklı rota değişikliği final kabul yüzeyini tarif eder.
 
+## DYNAMIC-SAVINGS-01 kapsam notu
+- Bu readonly tasarruf önizlemesi `Company / Sözleşmeler`, `Company / Ticari Akış`, `Room / Sözleşmeler` ve `Room / Ticari Akış` yüzeylerinde rota change, boarding ve agreement delta sinyallerini kullanır.
+- Km tasarrufu, süre tasarrufu, kapasite etkisi ve yaklaşık maliyet etkisi önizleme olarak okunur; `Tasarruf hesabı için yeterli veri yok` güvenli fallback'i korunur.
+- Route apply, ödeme, settlement, SMS, push ve driver refresh bu milestone kapsamında değildir; Sefer Abi yalnızca readonly tasarruf sinyalini açıklar.
+- Bu not product behavior değiştirmez; yalnızca tasarruf önizleme görünürlüğünü tarif eder.
+
 ## Yöntem
 - Panel dosyaları ve Copilot helper zinciri statik olarak tarandı.
 - Hızlı Yardım üst bağlamı ile serbest chat route ayrışması için risk yüzeyleri not edildi.

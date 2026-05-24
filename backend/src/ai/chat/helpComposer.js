@@ -49,6 +49,7 @@ const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
   'MISSING_DATA',
   'CONTRACT_TO_SHIFT',
   'CONTRACT_SHIFT_TODAY',
+  'DYNAMIC_SAVINGS_PREVIEW',
   'AGREEMENT_ROUTE_REFRESH',
   'PAYMENT_READINESS',
   'PAYMENT_MISSING',
@@ -173,6 +174,7 @@ function selectedDiagnosticTheme(message) {
   if (/(görev|gorev|rota|sonraki durak|durak).*(başlamıyor|baslamiyor|başlayamıyor|baslayamiyor|görünmüyor|gorunmuyor|bekliyor|yok)/.test(text)) return 'SHIFT_BLOCKED';
   if (/(sürücünün|surucunun).*(telefon gps|telefon gps['’]i|telefon gps’i).*(neden).*(devrede|aktif|açık|acik)/.test(text) || /(telefon gps|cihaz gps).*(neden).*(devrede|aktif|açık|acik)/.test(text)) return 'DRIVER_PHONE_GPS';
   if (/(sağlayıcı|saglayici|provider).*(neden).*(daha iyi|daha güçlü|daha guclu)/.test(text) || /(daha iyi|daha güçlü|daha guclu).*(sağlayıcı|saglayici|provider)/.test(text)) return 'QUALITY_SIGNAL';
+  if (/(tasarruf|tasarruf önizlemesi|tasarruf onizlemesi|km tasarrufu|süre tasarrufu|sure tasarrufu|yaklaşık maliyet|yaklasik maliyet|maliyet etkisi|readonly tasarruf|readonly önizleme|dinamik tasarruf)/.test(text)) return 'DYNAMIC_SAVINGS_PREVIEW';
   if (/(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|uygulanan rota|rota geçmişi|rota gecmisi|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) return 'AGREEMENT_ROUTE_REFRESH';
   if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text) || /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)) return 'CONTRACT_SHIFT_TODAY';
   if (/(sözleşme|sozlesme).*(vardiya|shift)/.test(text)) return 'CONTRACT_TO_SHIFT';
@@ -212,6 +214,10 @@ function _selectedDiagnosticResult(theme, contextText = '') {
       return hasNegative
         ? 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretildiğine dair net işaret yok.'
         : 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretilmiş görünüyor.';
+    case 'DYNAMIC_SAVINGS_PREVIEW':
+      return hasNegative
+        ? 'Tasarruf hesabı için yeterli veri yok.'
+        : 'Bu ekrandaki veriye göre tasarruf önizlemesi hesaplanabilir.';
     case 'BOARDING_CHANGE_APPLICATION':
       return hasNegative
         ? 'Bu ekrandaki veriye göre kabul edilen değişiklik henüz günlük atamaya işlenmemiş olabilir.'
@@ -253,6 +259,8 @@ function _selectedDiagnosticSurfaceHint(theme) {
     case 'CONTRACT_SHIFT_TODAY':
     case 'CONTRACT_TO_SHIFT':
       return 'Sözleşme / vardiya üretimi';
+    case 'DYNAMIC_SAVINGS_PREVIEW':
+      return 'Mevcut / yeni / fark rota metrikleri';
     case 'BOARDING_CHANGE_APPLICATION':
       return 'Kabul edilen değişiklik / günlük atama';
     case 'PAYMENT_READINESS':
@@ -508,6 +516,7 @@ function topicLabelForContext(topic) {
     DRIVER_PHONE_GPS: 'Sürücünün telefon GPS’i',
     BOARDING_CHANGE_APPLICATION: 'Kabul edilen değişiklik / günlük atama',
     BOARDING_ROUTE_IMPACT_PREVIEW: 'Biniş değişikliği önizlemesi',
+    DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
     PROVIDER_BETTER: 'Kalite sinyali',
     QUALITY_SIGNAL: 'Kalite sinyali',
@@ -539,6 +548,7 @@ const WORKFLOW_TOPICS = new Set([
   'QUALITY_SIGNAL',
   'CONTRACT_SHIFT_TODAY',
   'CONTRACT_TO_SHIFT',
+  'DYNAMIC_SAVINGS_PREVIEW',
   'AGREEMENT_ROUTE_REFRESH',
   'PAYMENT_MISSING',
   'PAYMENT_PREVIEW',
@@ -560,6 +570,10 @@ const WORKFLOW_TOPICS = new Set([
 
 function isWorkflowTopic(topic) {
   return WORKFLOW_TOPICS.has(String(topic || ''));
+}
+
+function hasDynamicSavingsSignal(text) {
+  return /(tasarruf|tasarruf önizlemesi|tasarruf onizlemesi|km tasarrufu|süre tasarrufu|sure tasarrufu|yaklaşık maliyet|yaklasik maliyet|maliyet etkisi|readonly tasarruf|readonly önizleme|dinamik tasarruf)/.test(normalizeText(text));
 }
 
 function shouldUseWorkflowGuide({ questionType, activeTopic }) {
@@ -585,6 +599,10 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   if (theme) return theme;
   if (questionType === 'SCREEN_PURPOSE') return 'SCREEN_PURPOSE';
   if (path.includes('/trust-quality') || /(kalite|saglayıcı|sağlayıcı|saglayici|provider)/.test(text)) return /(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text) ? 'QUALITY_SIGNAL' : 'TRUST_QUALITY';
+  if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core'))
+    && hasDynamicSavingsSignal([text, selectedText].filter(Boolean).join(' '))) {
+    return 'DYNAMIC_SAVINGS_PREVIEW';
+  }
   if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements'))
     && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|uygulanan rota|rota geçmişi|rota gecmisi|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) {
     return 'AGREEMENT_ROUTE_REFRESH';
@@ -709,8 +727,12 @@ function buildContextualSuggestedChips({
     ['AGREEMENT_ROUTE_REFRESH'].includes(topicKey)
     || (!['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(topicKey) && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|uygulanan rota|rota geçmişi|rota gecmisi|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(routeRefreshSignalText))
   );
-  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType) || boardingPreviewTopic || boardingApplicationTopic || routeRefreshTopic;
-  const workflowChipTopic = boardingApplicationTopic ? 'BOARDING_CHANGE_APPLICATION' : boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : routeRefreshTopic ? 'AGREEMENT_ROUTE_REFRESH' : activeTopic;
+  const dynamicSavingsTopic = Boolean(
+    topicKey === 'DYNAMIC_SAVINGS_PREVIEW'
+    || ((path.includes('/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core')) && hasDynamicSavingsSignal([selectedLabel, selectedSummary, routeRefreshSignalText].filter(Boolean).join(' ')))
+  );
+  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType) || boardingPreviewTopic || boardingApplicationTopic || routeRefreshTopic || dynamicSavingsTopic;
+  const workflowChipTopic = boardingApplicationTopic ? 'BOARDING_CHANGE_APPLICATION' : boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : dynamicSavingsTopic ? 'DYNAMIC_SAVINGS_PREVIEW' : routeRefreshTopic ? 'AGREEMENT_ROUTE_REFRESH' : activeTopic;
   if (workflowTopic) chips.push(...workflowTopicChipSet({ activeTopic: workflowChipTopic, questionType, screenPath }));
   if (hasSelectedRecord && !workflowTopic && !path.includes('/parent/live')) {
     chips.push('Seçili kaydı aç', 'Başlatma zamanını kontrol et', 'Eksik veriyi göster', 'Yetki sınırını açıkla');
@@ -1124,6 +1146,7 @@ function buildContextPriorityDecision({
     PAYMENT_READINESS: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.',
     PAYMENT_MISSING: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et.',
     PAYMENT_PREVIEW: 'Önce hakediş önizleme kayıtlarını ve eksik bilgi satırlarını kontrol et.',
+    DYNAMIC_SAVINGS_PREVIEW: 'Bu sadece önizlemedir. Km, süre, kapasite ve yaklaşık maliyet etkisini birlikte oku; uygulama, ödeme ve settlement başlatılmaz.',
     AGREEMENT_ROUTE_REFRESH: 'Önce şirket teklifini, oda karşı teklifini, eski rota ile yeni rota farkını ve kabul durumunu kontrol et; bu yalnızca teklif/önizleme akışıdır.',
     NEXT_SCREEN: 'Önce ilgili ekrana geç.',
     NEXT_STEP: 'Önce ilgili kayıt veya alanı kontrol et.',
@@ -4201,6 +4224,7 @@ function verificationHintForQuestionType(questionType, screenDefinition, quickAc
   if (['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))) return `${screenLabel} için önce ${firstControl} kontrolü yap; sonra yönlendirmeyi uygula.`;
   if (questionType === 'WHY_BLOCKED') return `Blokajı kesinleştirmek için önce ${firstControl} ve pasif/kırmızı alanları kontrol et.`;
   if (questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
+  if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `Tasarruf önizlemesini netleştirmek için önce ${firstControl} ve mevcut / yeni rota farkını kontrol et.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `Rota değişikliği teklifini işleme almadan önce ${firstControl} ve eski/yeni rota farkını kontrol et.`;
   if (questionType === 'STATUS_HELP') return `Durumu netleştirmek için önce ${firstControl} ve varsa seçili kaydın son sinyallerine bak.`;
   if (routeLabel) return `${routeLabel} adımına geçmeden önce ${firstControl} kontrolünü yap.`;
@@ -4238,9 +4262,10 @@ function questionTypeLabel(questionType) {
     GO_TO: 'Hızlı geçiş',
     FIRST_CONTROL: 'İlk neye bakayım',
       STATUS_HELP: 'Şu an ne durumda',
-      READINESS_CHECK: 'Hazır mı',
-      CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
-      AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
+    READINESS_CHECK: 'Hazır mı',
+    CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
+    DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
+    AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
       WHY_BLOCKED: 'Neden olmuyor',
     BUTTON_HELP: 'Bu buton ne yapar',
     SCREEN_PURPOSE: 'Bu ekran ne için',
@@ -4282,6 +4307,7 @@ function responseWhyText(questionType, screenDefinition) {
   if (questionType === 'NEXT_SCREEN' || questionType === 'GO_TO') return `${screenLabel} ekranında sonraki doğru adımı bulmaya odaklandım.`;
   if (questionType === 'FIRST_CONTROL') return `${screenLabel} ekranında önce bakılması gereken noktayı öne çıkardım.`;
   if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
+  if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;
   if (questionType === 'WHY_BLOCKED') return `${screenLabel} ekranındaki blokaj ve eksik bilgi ihtimaline göre cevap verdim.`;
   if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum ve GPS işaretlerine göre yorum yaptım.`;

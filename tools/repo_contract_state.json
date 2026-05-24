@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  9,
-    "currentWarningHotFileCount":  5,
+    "currentWarningHotFileCount":  6,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -189,6 +189,10 @@
                                                                                                              "class":  "safe-candidate-review",
                                                                                                              "note":  "repo harness inventory check; controlled cleanup adayi"
                                                                                                          },
+                                                       "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md":  {
+                                                                                                          "class":  "safe-candidate-review",
+                                                                                                          "note":  "milestone guide; controlled cleanup adayi"
+                                                                                                      },
                                                        "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md":  {
                                                                                                  "class":  "safe-candidate-review",
                                                                                                  "note":  "repo harness inventory doc; controlled cleanup adayi"
