@@ -40,6 +40,13 @@ const APPLICATION_LABELS = {
   BLOCKED: "Uygulanamadı",
 };
 
+const ROUTE_REFRESH_LABELS = {
+  VISIBLE: "Günlük değişiklik rotada görünüyor",
+  READY: "Rota güncellemesi bekliyor",
+  NOTE_ONLY: "Operasyon notu görünür",
+  NONE: "Rota güncellemesi yok",
+};
+
 function normalize(value) {
   return String(value || "").trim().toUpperCase();
 }
@@ -74,4 +81,27 @@ export function boardingChangeApplyBoundaryNote() {
 
 export function boardingChangeApplySuccessNote() {
   return "Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi.";
+}
+
+export function boardingChangeRouteRefreshLabel(itemOrState) {
+  const state = normalize(itemOrState?.boardingChangeRouteRefreshState || itemOrState?.routeRefreshState || itemOrState?.state || itemOrState);
+  if (state === "APPLIED") return ROUTE_REFRESH_LABELS.VISIBLE;
+  if (state === "READY") return ROUTE_REFRESH_LABELS.READY;
+  if (state === "NOTE_ONLY") return ROUTE_REFRESH_LABELS.NOTE_ONLY;
+  if (state === "VISIBLE") return ROUTE_REFRESH_LABELS.VISIBLE;
+  return ROUTE_REFRESH_LABELS.NONE;
+}
+
+export function boardingChangeRouteRefreshNote(itemOrState) {
+  const state = normalize(itemOrState?.boardingChangeRouteRefreshState || itemOrState?.routeRefreshState || itemOrState?.state || itemOrState);
+  if (state === "APPLIED" || state === "VISIBLE") {
+    return "Sürücü rota ekranında görünür; SMS/push yok; kalıcı rota değişmez.";
+  }
+  if (state === "READY") {
+    return "Kabul edilen değişiklik uygulandığında sürücü rota ekranında görünür.";
+  }
+  if (state === "NOTE_ONLY") {
+    return "Bu kayıt not olarak görünür; StopAssignment yazımı yok.";
+  }
+  return "Bu vardiyada uygulanan günlük değişiklik yok.";
 }

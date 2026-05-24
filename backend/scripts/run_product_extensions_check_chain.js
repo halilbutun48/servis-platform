@@ -59,6 +59,7 @@ const steps = [
   'check:copliveaccept01',
   'check:boardingops01a',
   'check:boardingops01b',
+  'check:boardingops01c',
   'check:etasanity01',
   'check:etaosrm01',
   'check:etaosrm02',

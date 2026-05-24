@@ -229,6 +229,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Uygulama explicit kullanıcı aksiyonu ile yapılır, idempotent çalışır ve audit izi üretir.
 - Driver route refresh, SMS / notification ve payment / settlement execute bu milestone kapsamı dışındadır; sürücü route refresh sonraki adımda (`BOARDING-OPS-01C`) ele alınır.
 
+### BOARDING-OPS-01C [CHECK]
+- `check:boardingops01c` kabul edilmiş ve günlük atamaya işlenmiş boarding change etkisinin driver `Bugün` / `Rota` yüzeylerinde görünürlüğünü ve kontrollü route refresh sinyalini doğrular.
+- `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` sürücü ekranında günlük değişiklik olarak görünür; kalıcı rota / durak / personel ataması değişmez.
+- SMS / push notification, payment / settlement execute ve şema değişiklikleri bu milestone kapsamı dışındadır; workspace-sensitive artifact write yapılmaz.
+- Bu adım mobile route update görünürlüğü içindir; route refresh sinyali idempotent ve readonly gösterim olarak korunur.
+
 ### COP-LIVE-ACCEPT-01 [CHECK]
 - `check:copliveaccept01` Sefer Abi / Copilot canlı kabul matrisi için readonly static gate'tir.
 - `ROOM`, `COMPANY`, `DRIVER`, `PARENT`, `PERSONEL` ve `SUPER_ADMIN` canlı yüzeylerinde `Sefer Abi` persona/launcher, context payload köprüsü ve GPS/ETA safe wording korunur.

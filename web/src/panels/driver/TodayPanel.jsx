@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
+import { boardingChangeRouteRefreshLabel, boardingChangeRouteRefreshNote } from "../shared/boardingChangeUi";
 
 import QueueDetailTable from "../../components/QueueDetailTable";
 import CollapsibleSection from "../../components/CollapsibleSection";
@@ -48,6 +49,17 @@ export default function DriverTodayPanel() {
   const tomorrow = data?.tomorrow || [];
   const selectedShift = active || today[0] || tomorrow[0] || null;
   const selectedVehicle = selectedShift?.vehicle || null;
+  const boardingChangeEffects = Array.isArray(selectedShift?.boardingChangeEffects) ? selectedShift.boardingChangeEffects : [];
+  const boardingChangeSummary = selectedShift?.boardingChangeSummary || null;
+  const routeRefresh = selectedShift?.routeRefresh || null;
+  const routeRefreshState = String(routeRefresh?.routeRefreshState || selectedShift?.boardingChangeRouteRefreshState || '').toUpperCase();
+  const routeRefreshLabel = routeRefresh?.routeRefreshLabel
+    || selectedShift?.boardingChangeRouteRefreshLabel
+    || boardingChangeRouteRefreshLabel(routeRefresh || selectedShift || {});
+  const routeRefreshNote = routeRefresh?.routeRefreshNote
+    || selectedShift?.boardingChangeRouteRefreshNote
+    || boardingChangeRouteRefreshNote(routeRefresh || selectedShift || {});
+  const hasBoardingChangeVisibility = boardingChangeEffects.length > 0 || (routeRefreshState && routeRefreshState !== "NONE");
 
   const hasAny = (today?.length || 0) + (tomorrow?.length || 0) > 0;
 
@@ -346,6 +358,59 @@ useEffect(() => {
           ) : null}
         </div>
       </div>
+
+      {hasBoardingChangeVisibility ? (
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 900 }}>Günlük Biniş Değişiklikleri</div>
+              <div className="muted">Bu sadece günlük atama etkisidir. Kalıcı rota değişmez.</div>
+            </div>
+            {routeRefreshLabel ? (
+              <span className="pill" data-status={routeRefreshState || "REQUESTED"}>
+                {routeRefreshLabel}
+              </span>
+            ) : null}
+          </div>
+
+          {boardingChangeSummary?.label ? (
+            <div style={{ marginTop: 10, fontWeight: 800 }}>{boardingChangeSummary.label}</div>
+          ) : null}
+
+          {routeRefreshNote ? (
+            <div className="muted" style={{ marginTop: 4 }}>{routeRefreshNote}</div>
+          ) : null}
+
+          {boardingChangeEffects.length ? (
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              {boardingChangeEffects.map((effect, index) => {
+                const effectLabel = effect?.effectLabel || effect?.changeTypeLabel || "Günlük değişiklik";
+                const personLabel = effect?.personLabel || effect?.personName || "Seçili kişi";
+                const oldStop = effect?.oldStopLabel || "-";
+                const newStop = effect?.newStopLabel || "-";
+                const effectRouteRefreshLabel = effect?.routeRefreshLabel || routeRefreshLabel;
+                const effectRouteRefreshNote = effect?.routeRefreshNote || routeRefreshNote;
+                return (
+                  <div key={`${String(effect?.changeType || effect?.changeTypeLabel || effect?.personId || index)}-${index}`} style={{ paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ fontWeight: 800 }}>{effectLabel}</div>
+                    <div className="muted" style={{ marginTop: 2 }}>
+                      {personLabel}
+                      {" "}
+                      •
+                      {" "}
+                      {oldStop}
+                      {" → "}
+                      {newStop}
+                    </div>
+                    {effectRouteRefreshLabel ? <div className="panelMeta" style={{ marginTop: 4 }}>{effectRouteRefreshLabel}</div> : null}
+                    {effectRouteRefreshNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{effectRouteRefreshNote}</div> : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {!hasAny ? (
         <div className="card muted">Bugün/yarın için vardiya bulunamadı.</div>

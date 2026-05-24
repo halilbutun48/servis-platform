@@ -109,6 +109,7 @@ function main() {
   must(pkg, '"check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js"', 'package.json exposes check:copliveaccept01');
   must(pkg, '"check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js"', 'package.json exposes check:boardingops01a');
   must(pkg, '"check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js"', 'package.json exposes check:boardingops01b');
+  must(pkg, '"check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js"', 'package.json exposes check:boardingops01c');
   must(pkg, '"check:etasanity01"', 'package.json keeps check:etasanity01');
   must(pkg, '"check:etaosrm01"', 'package.json keeps check:etaosrm01');
   must(pkg, '"check:etaosrm02"', 'package.json keeps check:etaosrm02');
@@ -193,6 +194,7 @@ function main() {
   'check:copliveaccept01',
   'check:boardingops01a',
   'check:boardingops01b',
+  'check:boardingops01c',
   'check:etasanity01',
     'check:etaosrm01',
     'check:etaosrm02',
@@ -315,6 +317,8 @@ function main() {
   must(guide, 'check:boardingops01a', 'script guide exposes check:boardingops01a');
   must(guide, 'BOARDING-OPS-01B', 'script guide mentions BOARDING-OPS-01B');
   must(guide, 'check:boardingops01b', 'script guide exposes check:boardingops01b');
+  must(guide, 'BOARDING-OPS-01C', 'script guide mentions BOARDING-OPS-01C');
+  must(guide, 'check:boardingops01c', 'script guide exposes check:boardingops01c');
   must(guide, 'UX-COPILOT-TERMINAL-01', 'script guide mentions UX-COPILOT-TERMINAL-01');
   must(guide, 'UX-COPILOT-PERSONA-01', 'script guide mentions UX-COPILOT-PERSONA-01');
   must(guide, 'ETA-SANITY-01', 'script guide mentions ETA-SANITY-01');

@@ -8,6 +8,8 @@ import { audit } from "../audit.js";
 import { emitBoardingChangeNotifications, evaluateBoardingChangeDecision, buildBoardingChangeRequestReason, formatBoardingChangeDecisionText, normalizeBoardingChangeKind } from "./boardingChangeRequestOps.js";
 import { previewBoardingChangeRouteImpact } from "../services/boardingRouteImpactPreview.js";
 import { applyAcceptedBoardingChange } from "../services/boardingChangeApplication.js";
+import { buildBoardingChangeRouteRefreshState } from "../services/boardingChangeRouteRefresh.js";
+import { emitShift } from "./shifts/helpers.js";
 
 /**
  * PickupRequestStatus enum:
@@ -434,6 +436,12 @@ export function requestsRouter(io) {
             lng: item.lng,
           },
         });
+        const routeRefresh = buildBoardingChangeRouteRefreshState({
+          applicationState,
+          changeType: routeImpactPreview?.changeType || meta.routeImpactPreview?.changeType || meta.changeType || meta.requestKind || item.requestKind || item.kind,
+          effectiveDate: applyMeta.routeRefreshEffectiveDate || applyMeta.effectiveDate || null,
+          appliedAt: bucket.applyAudit?.createdAt || null,
+        });
         return {
           ...item,
           requestKind: meta.requestKind || "DIFFERENT_STOP",
@@ -450,6 +458,14 @@ export function requestsRouter(io) {
             : applicationState === "READY"
               ? "Bu değişiklik kabul edilmiş ve günlük atamaya işlenebilir. Bu işlem sürücü rotasını yenilemez."
               : "Önce değişiklik kabul edilmeli."),
+          boardingChangeRouteRefreshState: applyMeta.routeRefreshState || routeRefresh.routeRefreshState,
+          boardingChangeRouteRefreshLabel: applyMeta.routeRefreshLabel || routeRefresh.routeRefreshLabel,
+          boardingChangeRouteRefreshNote: applyMeta.routeRefreshNote || routeRefresh.routeRefreshNote,
+          boardingChangeRouteRefreshRequested: applyMeta.routeRefreshRequested ?? routeRefresh.routeRefreshRequested,
+          boardingChangeRouteRefreshCompleted: applyMeta.routeRefreshCompleted ?? routeRefresh.routeRefreshCompleted,
+          boardingChangeRouteRefreshRequired: applyMeta.routeRefreshRequired ?? routeRefresh.routeRefreshRequired,
+          boardingChangeRouteRefreshUpdatedAt: applyMeta.routeRefreshUpdatedAt || routeRefresh.routeRefreshUpdatedAt,
+          boardingChangeRouteRefreshEffectiveDate: applyMeta.routeRefreshEffectiveDate || routeRefresh.routeRefreshEffectiveDate,
         };
       }));
     } catch (e) {
@@ -580,6 +596,22 @@ export function requestsRouter(io) {
         },
         now: new Date(),
       });
+
+      if (io && result?.affectedShift?.id) {
+        emitShift(io, {
+          id: result.affectedShift.id,
+          companyId: result.affectedShift.companyId ?? null,
+          roomId: result.affectedShift.roomId ?? null,
+        }, "shift:update", {
+          action: "boarding-change-applied",
+          requestId: result.requestId,
+          changeType: result.changeType,
+          routeRefreshState: result.routeRefreshState || result.routeRefresh?.routeRefreshState || null,
+          routeRefreshLabel: result.routeRefreshLabel || result.routeRefresh?.routeRefreshLabel || null,
+          routeRefreshNote: result.routeRefreshNote || result.routeRefresh?.routeRefreshNote || null,
+          effectiveDate: result.effectiveDate || null,
+        });
+      }
 
       return res.json(result);
     } catch (e) {

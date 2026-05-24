@@ -977,6 +977,11 @@ function buildContextPriorityDecision({
       ? 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.'
       : 'Açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını kontrol et.')
     : '';
+  const boardingApplicationTopic = activeTopic === 'BOARDING_CHANGE_APPLICATION';
+  const isDriverRouteSurface = /\/driver\/(today|route|map)/.test(screenPathText);
+  const boardingRouteVisibilityLead = boardingApplicationTopic && isDriverRouteSurface
+    ? 'Bu değişiklik günlük atamaya işlendiğinde sürücü rota ekranında görünür. Rota güncellemesi bekliyor olabilir; SMS/push yok ve kalıcı rota değişmez.'
+    : '';
   const liveFactConfidence = structured?.liveFactConfidence && typeof structured.liveFactConfidence === 'object'
     ? structured.liveFactConfidence
     : sourceScreenContext?.structuredFacts?.liveFactConfidence && typeof sourceScreenContext.structuredFacts.liveFactConfidence === 'object'
@@ -1094,7 +1099,7 @@ function buildContextPriorityDecision({
     SHIFT_BLOCKED: 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.',
     FIRST_CONTROL: 'Önce ilgili satırı veya ilk kontrol alanını aç.',
     SAFE_NEXT_STEP: 'Önce en risksiz kayıt veya alanı kontrol et.',
-    BOARDING_CHANGE_APPLICATION: 'Bu değişiklik kabul edilmişse günlük atamaya işlenebilir; sürücü rotası yenilenmez. Önce kabul durumu ve günlük atama etkisini kontrol et.',
+    BOARDING_CHANGE_APPLICATION: firstNonEmpty(boardingRouteVisibilityLead, 'Bu değişiklik kabul edilmişse günlük atamaya işlenebilir; sürücü rotası yenilenmez. Önce kabul durumu ve günlük atama etkisini kontrol et.'),
     BOARDING_ROUTE_IMPACT_PREVIEW: 'Bu sadece önizlemedir. Rota/atama uygulanmadı. Kişi, durak, km, süre ve kapasite farkını birlikte oku.',
     STATUS_HELP: 'Önce durum satırını ve ilgili kaydı kontrol et.',
     FEEDBACK_STATUS: 'Önce açık veya kritik geri bildirimi ve sorumlu rolü kontrol et.',
@@ -1703,9 +1708,9 @@ const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFiel
         break;
       case 'BOARDING_CHANGE_APPLICATION':
         result = hasNegative
-          ? 'Bu ekrandaki veriye göre kabul edilen değişiklik henüz günlük atamaya işlenmemiş olabilir.'
-          : 'Bu ekrandaki veriye göre kabul edilen değişiklik günlük atamaya işlenebilir veya işlenmiş görünüyor.';
-        firstControl = 'Kabul durumu ve günlük atama etkisi';
+          ? 'Bu ekrandaki veriye göre kabul edilen değişiklik henüz günlük atamaya işlenmemiş olabilir; sürücü rota ekranında görünmesi için uygulama bekliyor olabilir.'
+          : 'Bu ekrandaki veriye göre kabul edilen değişiklik günlük atamaya işlenebilir veya işlenmiş görünüyor; sürücü rota ekranında görünür ve kalıcı rota değişmez.';
+        firstControl = 'Kabul durumu, günlük atama etkisi ve sürücü rota görünürlüğü';
         break;
       case 'PAYMENT_READINESS':
         result = hasNegative

@@ -102,7 +102,7 @@ function main() {
   must(service, 'applyAudit?.meta', 'application service keeps idempotency guard');
   must(service, 'nextBestAction', 'application service returns next best action');
   must(service, 'applicationBoundaryNote', 'application service returns boundary note');
-  mustNotAny(service, ['sendSms', 'sendNotification', 'driverRouteRefresh', 'routeRefresh', 'payment execute', 'settlement execute', 'prisma migration', 'runtime-data', 'deleteMany('], 'application service blocks route refresh, notifications, payment and bulk delete paths');
+  mustNotAny(service, ['sendSms', 'sendNotification', 'driverRouteRefresh', 'payment execute', 'settlement execute', 'prisma migration', 'runtime-data', 'deleteMany('], 'application service blocks notifications, payment and bulk delete paths');
   mustNotAny(service, ['OperationProof', 'raw technical', 'internal code'], 'application service blocks raw/internal language');
 
   must(requestsRoute, 'POST /:id/apply-boarding-change', 'requests route exposes explicit apply endpoint');
@@ -112,7 +112,7 @@ function main() {
   must(requestsRoute, 'boardingChangeApplicationStatus', 'requests route returns application status');
   must(requestsRoute, 'boardingChangeApplicationBoundaryNote', 'requests route returns application boundary note');
   must(requestsRoute, 'previewBoardingChangeRouteImpact', 'requests route keeps preview helper');
-  mustNotAny(requestsRoute, ['sendSms', 'sendNotification', 'driverRouteRefresh', 'routeRefresh', 'payment execute', 'settlement execute', 'prisma migration', 'runtime-data'], 'requests route blocks route refresh, notifications, payment and runtime-data');
+  mustNotAny(requestsRoute, ['sendSms', 'sendNotification', 'driverRouteRefresh', 'payment execute', 'settlement execute', 'prisma migration', 'runtime-data'], 'requests route blocks notifications, payment and runtime-data');
 
   must(previewHelper, 'previewBoardingChangeRouteImpact', 'preview helper remains available');
   must(previewHelper, 'NO_SERVICE_TODAY', 'preview helper still supports NO_SERVICE_TODAY');

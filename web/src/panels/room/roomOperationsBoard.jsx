@@ -7,6 +7,8 @@ import {
   boardingChangeApplicationStatusLabel,
   boardingChangeDecisionLabel,
   boardingChangeKindLabel,
+  boardingChangeRouteRefreshLabel,
+  boardingChangeRouteRefreshNote,
 } from "../shared/boardingChangeUi";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
@@ -148,6 +150,9 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
         status: item?.status || "OPEN",
         decisionState,
         preview: item?.routeImpactPreview || null,
+        routeRefreshState: item?.boardingChangeRouteRefreshState || "NONE",
+        routeRefreshLabel: item?.boardingChangeRouteRefreshLabel || boardingChangeRouteRefreshLabel(item),
+        routeRefreshNote: item?.boardingChangeRouteRefreshNote || boardingChangeRouteRefreshNote(item),
       };
     });
   }, [openRequestItems]);
@@ -166,6 +171,9 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
       applicationStatus,
       applicationText: item?.boardingChangeApplicationText || "",
       boundaryNote: item?.boardingChangeApplicationBoundaryNote || "",
+      routeRefreshState: item?.boardingChangeRouteRefreshState || "NONE",
+      routeRefreshLabel: item?.boardingChangeRouteRefreshLabel || boardingChangeRouteRefreshLabel(item),
+      routeRefreshNote: item?.boardingChangeRouteRefreshNote || boardingChangeRouteRefreshNote(item),
       createdAt: item?.createdAt || null,
       appliedAt: item?.boardingChangeAppliedAt || null,
     };
@@ -321,6 +329,8 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
                   </div>
                   <div className="muted" style={{ marginTop: 6 }}>{item.detail}</div>
                   <div className="muted" style={{ marginTop: 4 }}>{boardingChangeApplicationStatusLabel(item.applicationStatus || "READY")}</div>
+                  {item.routeRefreshLabel ? <div className="panelMeta" style={{ marginTop: 4 }}>{item.routeRefreshLabel}</div> : null}
+                  {item.routeRefreshNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{item.routeRefreshNote}</div> : null}
                   {item.boundaryNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{item.boundaryNote}</div> : null}
                   <div style={{ marginTop: 8 }}>
                     {canApply ? (

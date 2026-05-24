@@ -1099,6 +1099,13 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
   const gpsSource = compactText(shift?.vehicle?.gpsLast?.sourceLabel || shift?.vehicle?.gpsState?.sourceLabel || shift?.vehicle?.gpsSourceLabel || shift?.gpsSourceLabel || '', '');
   const gpsState = compactText(shift?.vehicle?.gpsState?.lastUiStatus || shift?.vehicle?.gpsState?.status || shift?.gpsStatus || shift?.vehicle?.gpsLast?.status || '', '');
   const proofState = compactText(shift?.operationProofStatus || shift?.proofStatus || shift?.serviceProofStatus || '', '');
+  const boardingChangeEffects = Array.isArray(shift?.boardingChangeEffects) ? shift.boardingChangeEffects : [];
+  const boardingChangeSummary = shift?.boardingChangeSummary || null;
+  const routeRefresh = shift?.routeRefresh || null;
+  const routeRefreshState = compactText(routeRefresh?.routeRefreshState || shift?.boardingChangeRouteRefreshState || '', '');
+  const routeRefreshLabel = compactText(routeRefresh?.routeRefreshLabel || shift?.boardingChangeRouteRefreshLabel || boardingChangeSummary?.label || '', '');
+  const routeRefreshNote = compactText(routeRefresh?.routeRefreshNote || shift?.boardingChangeRouteRefreshNote || shift?.routeNotice || '', '');
+  const hasBoardingChangeVisibility = boardingChangeEffects.length > 0 || (routeRefreshState && routeRefreshState !== 'NONE');
   const liveStartHint = readyForLiveStart
     ? 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'
     : '';
@@ -1111,13 +1118,18 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
     gpsState ? `GPS: ${gpsState}` : '',
     proofState ? `Operasyon kanıtı: ${proofState}` : '',
     `Açık teklif: ${offerCount}`,
+    hasBoardingChangeVisibility && boardingChangeSummary?.label ? `Günlük değişiklik: ${boardingChangeSummary.label}` : '',
+    hasBoardingChangeVisibility && routeRefreshLabel ? `Rota güncellemesi: ${routeRefreshLabel}` : '',
+    hasBoardingChangeVisibility && routeRefreshNote ? `Rota notu: ${routeRefreshNote}` : '',
   ].filter(Boolean).join(' • ');
   const readonlyFacts = buildReadonlyCopilotFacts({
     screenType: 'SHIFTS',
     stage: status,
     readinessScore: approvedLike && hasVehicle && hasDriver ? (stopCount > 0 ? 88 : 74) : 42,
     readiness: approvedLike && hasVehicle && hasDriver && stopCount > 0 ? 'READY' : blockers.length ? 'NOT_READY' : 'REVIEW_NEEDED',
-    summary: readyForLiveStart ? `Canlı başlatma kontrolü gerekli. ${liveStartHint}` : approvedLike ? 'Vardiya hazır' : blockers.length ? 'Vardiya blokajı' : 'Vardiya kontrol altında',
+    summary: hasBoardingChangeVisibility
+      ? `Günlük değişiklik görünür${routeRefreshLabel ? ` • ${routeRefreshLabel}` : ''}`
+      : readyForLiveStart ? `Canlı başlatma kontrolü gerekli. ${liveStartHint}` : approvedLike ? 'Vardiya hazır' : blockers.length ? 'Vardiya blokajı' : 'Vardiya kontrol altında',
     blockers,
     evidence: [
       `Durum: ${status}`,
@@ -1126,13 +1138,23 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
       `Durak: ${stopCount}`,
       proofState ? `Operasyon kanıtı: ${proofState}` : '',
       `Teklif: ${offerCount}`,
+      hasBoardingChangeVisibility && routeRefreshLabel ? `Rota güncellemesi: ${routeRefreshLabel}` : '',
+      hasBoardingChangeVisibility && routeRefreshNote ? `Rota notu: ${routeRefreshNote}` : '',
       readyForLiveStart ? 'Canlı başlatma kontrolü: gerekli' : '',
     ],
-    nextBestAction: blockers.length
-      ? (offerCount > 0 && !approvedLike ? 'Önce teklif kararını kapat. Sonra araç ve sürücü alanlarını tekrar kontrol et.' : 'Önce araç ve sürücü bağını tamamla. Sonra durak ve sonraki adım alanlarını yeniden oku.')
-      : (readyForLiveStart ? 'Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışını birlikte kontrol et.' : 'Önce seçili vardiyanın araç, sürücü ve durak alanlarını birlikte kontrol et.'),
-    safestNextStep: readyForLiveStart ? 'En risksiz adım, canlı başlatma zamanı ile GPS ve operasyon kanıtı akışını doğrulamaktır.' : 'En risksiz adım, seçili satırda araç ve sürücü gerçekten dolu mu onu doğrulamaktır.',
-    compareHint: readyForLiveStart ? 'APPROVED ile canlı başlatma aynı şey değildir; aktif durum, GPS ve operasyon kanıtı ayrıca okunur.' : 'APPROVED ile tam atama aynı şey değildir; araç veya sürücü boşsa iş saha için eksiktir.',
+    nextBestAction: hasBoardingChangeVisibility
+      ? (routeRefreshState === 'REQUESTED' || routeRefreshState === 'READY'
+        ? 'Rota güncellemesi bekliyor; sürücü rota ekranında görünürlüğü doğrula.'
+        : 'Günlük değişikliği sürücü rota ekranında doğrula.')
+      : blockers.length
+        ? (offerCount > 0 && !approvedLike ? 'Önce teklif kararını kapat. Sonra araç ve sürücü alanlarını tekrar kontrol et.' : 'Önce araç ve sürücü bağını tamamla. Sonra durak ve sonraki adım alanlarını yeniden oku.')
+        : (readyForLiveStart ? 'Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışını birlikte kontrol et.' : 'Önce seçili vardiyanın araç, sürücü ve durak alanlarını birlikte kontrol et.'),
+    safestNextStep: hasBoardingChangeVisibility
+      ? 'En risksiz adım, günlük değişiklik ve rota notunu sürücü rota ekranında doğrulamaktır.'
+      : readyForLiveStart ? 'En risksiz adım, canlı başlatma zamanı ile GPS ve operasyon kanıtı akışını doğrulamaktır.' : 'En risksiz adım, seçili satırda araç ve sürücü gerçekten dolu mu onu doğrulamaktır.',
+    compareHint: hasBoardingChangeVisibility
+      ? 'Günlük atama etkisi kalıcı atama değildir; rota notu ve sürücü görünürlüğü birlikte okunur.'
+      : readyForLiveStart ? 'APPROVED ile canlı başlatma aynı şey değildir; aktif durum, GPS ve operasyon kanıtı ayrıca okunur.' : 'APPROVED ile tam atama aynı şey değildir; araç veya sürücü boşsa iş saha için eksiktir.',
     counters: { visible: Number(itemCount || 0), offers: offerCount, stops: stopCount },
     selectedRecordStatus,
     copilotSignals: [
@@ -1141,9 +1163,15 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
       { id: 'shiftDriver', label: 'Sürücü', value: hasDriver ? (shift?.driver?.fullName || `#${shift?.driverId}`) : 'Yok', note: hasDriver ? 'Sürücü bağlı.' : 'Sürücü eksik.' },
       { id: 'shiftStops', label: 'Durak', value: String(stopCount), note: stopCount > 0 ? 'Durak var.' : 'Durak eksik.' },
       { id: 'shiftOffers', label: 'Açık teklif', value: String(offerCount), note: offerCount > 0 ? 'Teklif açık olabilir.' : 'Açık teklif yok.' },
+      hasBoardingChangeVisibility ? { id: 'boardingChangeSummary', label: 'Günlük değişiklik', value: boardingChangeSummary?.label || 'Yok', note: boardingChangeSummary?.note || 'Sadece günlük etki.' } : null,
+      hasBoardingChangeVisibility ? { id: 'boardingRouteRefresh', label: 'Rota güncellemesi', value: routeRefreshLabel || routeRefreshState || 'Yok', note: routeRefreshNote || 'Sürücü rota ekranında görünür.' } : null,
       readyForLiveStart ? { id: 'liveStartCheck', label: 'Canlı başlatma', value: 'Kontrol gerekli', note: 'Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı birlikte okunur.' } : null,
     ],
-    boundaryNotes: [offerCount > 0 && !approvedLike ? 'Teklif/karar akışı açık olabilir.' : ''],
+    boundaryNotes: [
+      hasBoardingChangeVisibility ? 'Bu sadece günlük atama etkisidir; kalıcı rota değişmez.' : '',
+      hasBoardingChangeVisibility && routeRefreshNote ? routeRefreshNote : '',
+      offerCount > 0 && !approvedLike ? 'Teklif/karar akışı açık olabilir.' : '',
+    ],
   });
   return {
     ...readonlyFacts,
@@ -1151,7 +1179,9 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
     blockers,
     reasoningLead: blockers.length
       ? 'Bu vardiyada ana blokaj atama veya teklif tarafında görünüyor.'
-      : 'Bu vardiyada önce durum, sonra araç-sürücü bağı ve durak hazır mı ona bakılır.',
+      : hasBoardingChangeVisibility
+        ? 'Bu vardiyada kabul edilmiş günlük biniş değişikliği var; sürücü rota ekranında görünürlüğü ayrıca kontrol edilir.'
+        : 'Bu vardiyada önce durum, sonra araç-sürücü bağı ve durak hazır mı ona bakılır.',
     ...actionMatrix,
   };
 }
@@ -1165,14 +1195,19 @@ export function buildBoardingRouteImpactCopilotFacts({
   const requestApplicationText = compactText(request?.boardingChangeApplicationText || routeImpact?.applicationText || '', '');
   const requestApplicationBoundaryNote = compactText(request?.boardingChangeApplicationBoundaryNote || routeImpact?.applicationBoundaryNote || '', '');
   const requestApplicationState = compactText(request?.boardingChangeApplicationState || routeImpact?.applicationState || '', '');
+  const requestRouteRefreshState = compactText(request?.boardingChangeRouteRefreshState || routeImpact?.routeRefreshState || '', '');
+  const requestRouteRefreshLabel = compactText(request?.boardingChangeRouteRefreshLabel || routeImpact?.routeRefreshLabel || '', '');
+  const requestRouteRefreshNote = compactText(request?.boardingChangeRouteRefreshNote || routeImpact?.routeRefreshNote || '', '');
   const hasApplicationContext = Boolean(requestApplicationStatus || requestApplicationText || requestApplicationBoundaryNote || requestApplicationState);
   const applicationStateKey = normalizeEnumKey(requestApplicationStatus || requestApplicationState);
   const applicationStatusLabel = requestApplicationStatus ? boardingApplicationStatusLabel(requestApplicationStatus) : '';
   const isAppliedApplication = applicationStateKey === 'APPLIED';
   const previewOnlyNote = hasApplicationContext
-    ? (requestApplicationBoundaryNote || (isAppliedApplication
-      ? 'Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi.'
-      : 'Bu değişiklik kabul edilmiş ve günlük atamaya işlenebilir. Bu işlem sürücü rotasını yenilemez.'))
+    ? (requestApplicationBoundaryNote
+      || requestRouteRefreshNote
+      || (isAppliedApplication
+        ? 'Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi.'
+        : 'Bu değişiklik kabul edilmiş ve günlük atamaya işlenebilir. Bu işlem sürücü rotasını yenilemez.'))
     : compactText(routeImpact?.previewOnlyNote || 'Bu sadece önizlemedir. Rota/atama uygulanmadı.', 'Bu sadece önizlemedir. Rota/atama uygulanmadı.');
   const changeTypeLabel = compactText(routeImpact?.changeTypeLabel || 'Biniş değişikliği önizlemesi', 'Biniş değişikliği önizlemesi');
   const personLabel = compactText(routeImpact?.personLabel || request?.personel?.fullName || request?.personel?.name || 'Seçili kişi', 'Seçili kişi');
@@ -1217,6 +1252,10 @@ export function buildBoardingRouteImpactCopilotFacts({
     evidence.unshift(
       `Uygulama durumu: ${applicationStatusLabel || requestApplicationState || 'Kabul edilen değişiklik'}`,
     );
+    if (requestRouteRefreshState || requestRouteRefreshLabel || requestRouteRefreshNote) {
+      evidence.push(`Rota güncellemesi: ${requestRouteRefreshLabel || requestRouteRefreshState || 'Bekliyor'}`);
+      if (requestRouteRefreshNote) evidence.push(`Rota notu: ${requestRouteRefreshNote}`);
+    }
     if (requestApplicationText) evidence.push(`Uygulama özeti: ${requestApplicationText}`);
     if (requestApplicationBoundaryNote) evidence.push(`Sınır: ${requestApplicationBoundaryNote}`);
   }
@@ -1233,12 +1272,13 @@ export function buildBoardingRouteImpactCopilotFacts({
     copilotSignals.unshift(
       { id: 'boarding-application-status', label: 'Uygulama durumu', value: applicationStatusLabel || requestApplicationState || 'Uygulamaya hazır', note: requestApplicationText || requestApplicationBoundaryNote || 'Kabul edilen değişiklik.' },
       { id: 'boarding-application-boundary', label: 'Sınır', value: isAppliedApplication ? 'Günlük atamaya işlendi' : 'Günlük atamaya işlenebilir', note: requestApplicationBoundaryNote || 'Sürücü rotası yenilenmez.' },
+      { id: 'boarding-route-refresh', label: 'Rota güncellemesi', value: requestRouteRefreshLabel || requestRouteRefreshState || (isAppliedApplication ? 'Görünür' : 'Bekliyor'), note: requestRouteRefreshNote || 'Sürücü rota ekranında görünür; SMS/push yok.' },
     );
   }
   const actionSimulation = hasApplicationContext
     ? (isAppliedApplication
-      ? (requestApplicationText || 'Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi.')
-      : (requestApplicationBoundaryNote || 'Bu değişiklik kabul edilmiş. Günlük atamaya işlenebilir; sürücü rotası yenilenmez.'))
+      ? (requestRouteRefreshNote || requestApplicationText || 'Değişiklik günlük atamaya işlendi. Sürücü rotası henüz yenilenmedi.')
+      : (requestApplicationBoundaryNote || requestRouteRefreshNote || 'Bu değişiklik kabul edilmiş. Günlük atamaya işlenebilir; sürücü rotası yenilenmez.'))
     : (routeImpact?.previewOnlyNote
       ? `${previewOnlyNote} Rota etkisini önizle, ardından uygulama yapma.`
       : 'Bu sadece önizlemedir. Rota/atama uygulanmadı.');
@@ -1254,7 +1294,7 @@ export function buildBoardingRouteImpactCopilotFacts({
     : (reliability?.ok ? 78 : 52);
   const nextBestAction = hasApplicationContext
     ? (isAppliedApplication
-      ? 'Günlük atamayı doğrula.'
+      ? 'Sürücü rota ekranında görünürlüğü doğrula.'
       : 'Kabul edilen değişikliği uygula.')
     : (routeImpact?.nextBestAction || 'Önizleme kartını doğrula.');
   const safestNextStep = hasApplicationContext
@@ -1262,7 +1302,7 @@ export function buildBoardingRouteImpactCopilotFacts({
     : previewOnlyNote;
   const boundaryNotes = hasApplicationContext
     ? [
-      requestApplicationBoundaryNote || 'Bu işlem sadece günlük atama etkisi uygular. Sürücü rotası yenilenmez.',
+      requestApplicationBoundaryNote || requestRouteRefreshNote || 'Bu işlem sadece günlük atama etkisi uygular. Sürücü rotası yenilenmez.',
       isAppliedApplication ? 'Sürücü rotası henüz yenilenmedi.' : 'Driver route refresh sonraki milestone kapsamındadır.',
     ]
     : [
@@ -1296,13 +1336,13 @@ export function buildBoardingRouteImpactCopilotFacts({
     },
     copilotSignals,
     boundaryNotes,
-    selectedRecordStatus: applicationStatusLabel || reliability?.label || 'Önizleme',
+    selectedRecordStatus: applicationStatusLabel || requestRouteRefreshLabel || reliability?.label || 'Önizleme',
     liveFactConfidence: {
       summary: routeImpact?.summaryLine || summary,
       rows: copilotSignals.slice(0, 4),
     },
     diagnosticPriority: {
-      summary: previewOnlyNote,
+      summary: requestRouteRefreshNote || previewOnlyNote,
       rows: copilotSignals.slice(0, 3),
     },
     actionSimulation,
@@ -1337,7 +1377,7 @@ export function buildBoardingRouteImpactCopilotFacts({
     applicationStatusLabel,
     applicationState: hasApplicationContext ? (isAppliedApplication ? 'APPLIED' : 'READY') : '',
     applicationText: requestApplicationText,
-    applicationBoundaryNote: requestApplicationBoundaryNote || previewOnlyNote,
+    applicationBoundaryNote: requestApplicationBoundaryNote || requestRouteRefreshNote || previewOnlyNote,
   };
 }
 
@@ -1371,6 +1411,13 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
   const hasShift = Boolean(selectedShift?.id);
   const hasSelectedVehicle = Boolean(selected?.id || selected?.plate);
   const totalStops = Number(selectedStats?.total || 0);
+  const boardingChangeEffects = Array.isArray(selectedShift?.boardingChangeEffects) ? selectedShift.boardingChangeEffects : [];
+  const boardingChangeSummary = selectedShift?.boardingChangeSummary || null;
+  const routeRefresh = selectedShift?.routeRefresh || null;
+  const routeRefreshState = compactText(routeRefresh?.routeRefreshState || selectedShift?.boardingChangeRouteRefreshState || '', '');
+  const routeRefreshLabel = compactText(routeRefresh?.routeRefreshLabel || selectedShift?.boardingChangeRouteRefreshLabel || boardingChangeSummary?.label || '', '');
+  const routeRefreshNote = compactText(routeRefresh?.routeRefreshNote || selectedShift?.boardingChangeRouteRefreshNote || selectedShift?.routeNotice || '', '');
+  const hasBoardingChangeVisibility = boardingChangeEffects.length > 0 || (routeRefreshState && routeRefreshState !== 'NONE');
   const missing = [];
   const blockers = [];
   pushIf(missing, !hasSelectedVehicle, 'Seçili araç yok');
@@ -1432,13 +1479,18 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
     `Son GPS: ${gpsAgeValue}`,
     `Sıradaki durak: ${selectedNext?.name || 'Yok'}`,
     `ETA: ${etaValue}`,
+    hasBoardingChangeVisibility && boardingChangeSummary?.label ? `Günlük değişiklik: ${boardingChangeSummary.label}` : '',
+    hasBoardingChangeVisibility && routeRefreshLabel ? `Rota güncellemesi: ${routeRefreshLabel}` : '',
+    hasBoardingChangeVisibility && routeRefreshNote ? `Rota notu: ${routeRefreshNote}` : '',
   ].join(' • ');
   const readonlyFacts = buildReadonlyCopilotFacts({
     screenType: 'MAP',
     stage: status,
     readinessScore: hasSelectedVehicle && gpsFresh && nextReady ? 84 : 46,
     readiness: hasSelectedVehicle && gpsFresh && nextReady ? 'READY' : blockers.length ? 'NOT_READY' : 'REVIEW_NEEDED',
-    summary: hasSelectedVehicle ? liveSummary : 'Araç seçimi gerekiyor',
+    summary: hasBoardingChangeVisibility
+      ? `Günlük değişiklik görünür${routeRefreshLabel ? ` • ${routeRefreshLabel}` : ''}`
+      : hasSelectedVehicle ? liveSummary : 'Araç seçimi gerekiyor',
     blockers,
     evidence: [
       `Araç: ${selected?.plate || `#${selected?.id || '-'}`}`,
@@ -1447,16 +1499,26 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
       `Sıradaki durak: ${selectedNext?.name || 'Yok'}`,
       `ETA: ${etaValue}`,
       `Kalan durak: ${Number(selectedStats?.remaining || 0)}`,
+      hasBoardingChangeVisibility && routeRefreshLabel ? `Rota güncellemesi: ${routeRefreshLabel}` : '',
+      hasBoardingChangeVisibility && routeRefreshNote ? `Rota notu: ${routeRefreshNote}` : '',
     ],
     nextBestAction: !hasSelectedVehicle
       ? "Önce marker'a tıklayıp aracı seç. Sonra üst kartta Shift, Son GPS ve Sıradaki durak dolu mu bak."
-      : blockers.length
+      : hasBoardingChangeVisibility
+        ? (routeRefreshState === 'REQUESTED' || routeRefreshState === 'READY'
+          ? 'Rota güncellemesi bekliyor; sürücü rota ekranında görünürlüğü doğrula.'
+          : 'Günlük değişikliği sürücü rota ekranında doğrula.')
+        : blockers.length
         ? (!gpsFresh ? 'Önce Son GPS zamanını kontrol et. Sonra aynı kaydı Vardiyalar ekranında açıp atama/rota bağını doğrula.' : 'Önce bağlı vardiyayı açıp rota ve durak bilgisini kontrol et.')
         : 'Önce seçili araç için Son GPS, ETA ve kalan durak sayısını birlikte kontrol et.',
     safestNextStep: !hasSelectedVehicle
       ? "En risksiz adım, önce marker'dan doğru aracı seçmektir."
-      : 'En risksiz adım, doğru aracı seçip Son GPS eski mi değil mi onu doğrulamaktır.',
-    compareHint: 'Mavi aktif sıradaki parçayı, yeşil geçilen kısmı gösterir; görsel yorumla canlı karar yorumunu karıştırmamak gerekir.',
+      : hasBoardingChangeVisibility
+        ? 'En risksiz adım, günlük değişiklik ve rota notunu sürücü rota ekranında doğrulamaktır.'
+        : 'En risksiz adım, doğru aracı seçip Son GPS eski mi değil mi onu doğrulamaktır.',
+    compareHint: hasBoardingChangeVisibility
+      ? 'Günlük biniş değişikliği kalıcı rota değişikliği değildir; rota notu ve sürücü görünürlüğü birlikte okunur.'
+      : 'Mavi aktif sıradaki parçayı, yeşil geçilen kısmı gösterir; görsel yorumla canlı karar yorumunu karıştırmamak gerekir.',
     counters: {
       vehicles: Number(vehicleCount || 0),
       totalStops: Number(selectedStats?.total || 0),
@@ -1470,8 +1532,14 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
       { id: 'nextStop', label: 'Sıradaki durak', value: selectedNext?.name || 'Yok', note: nextReady ? 'Sıradaki durak var.' : 'Sıradaki durak yok.' },
       { id: 'eta', label: 'ETA', value: etaValue, note: etaReady ? (isEtaSuspicious(selectedEta, gpsInput) ? 'ETA olağan dışı yüksek.' : 'ETA okunuyor.') : 'ETA güvenilir değil.' },
       { id: 'shiftLink', label: 'Bağlı vardiya', value: hasShift ? 'Var' : 'Yok', note: hasShift ? 'Vardiya bağı görünüyor.' : 'Vardiya bağı görünmüyor.' },
+      hasBoardingChangeVisibility ? { id: 'boardingChangeSummary', label: 'Günlük değişiklik', value: boardingChangeSummary?.label || 'Yok', note: boardingChangeSummary?.note || 'Sadece günlük etki.' } : null,
+      hasBoardingChangeVisibility ? { id: 'boardingRouteRefresh', label: 'Rota güncellemesi', value: routeRefreshLabel || routeRefreshState || 'Yok', note: routeRefreshNote || 'Sürücü rota ekranında görünür.' } : null,
     ],
-    boundaryNotes: [!gpsFresh ? 'GPS kaynağı güncel olmayabilir.' : ''],
+    boundaryNotes: [
+      hasBoardingChangeVisibility ? 'Bu sadece günlük atama etkisidir; kalıcı rota değişmez.' : '',
+      hasBoardingChangeVisibility && routeRefreshNote ? routeRefreshNote : '',
+      !gpsFresh ? 'GPS kaynağı güncel olmayabilir.' : '',
+    ],
   });
   const contextSummary = firstNonEmpty(
     readonlyFacts.copilotSummary,
@@ -1495,7 +1563,9 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
     contextSummary,
     reasoningLead: !hasSelectedVehicle
       ? 'Bu haritada önce seçili araç oluşmadan sonraki ekran kararı vermek erken olur.'
-      : blockers.length
+      : hasBoardingChangeVisibility
+        ? 'Bu haritada günlük biniş değişikliği görünür; rota notu ve sürücü görünürlüğü birlikte okunur.'
+        : blockers.length
         ? 'Bu haritadaki ana sorun canlılık veya rota bağının eksik görünmesi.'
         : 'Bu haritada önce canlılık, sonra sıradaki durak ve ETA birlikte okunmalı.',
     ...actionMatrix,
@@ -1851,12 +1921,22 @@ export function buildCopilotStarterChips({
     || selection?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || includesAny(selectionText, ['rota etkisi', 'biniş değişikliği', 'bugün binmezse', 'farklı duraktan', 'geçici durak', 'rota/atama uygulanmadı', 'km farkı', 'süre artar mı', 'kapasite etkisi']);
   if (isBoardingApplication) {
-    return finalizeStarterChips([
-      'Bu değişiklik uygulamaya hazır mı?',
-      'Günlük atamaya işlenir mi?',
-      'Sürücü rotası yenilenir mi?',
-      'Bu sadece günlük atama mı?',
-    ], fallback);
+    return finalizeStarterChips(
+      (isDriverToday || isDriverRouteOrMap)
+        ? [
+          'Sürücü rota ekranında görünür mü?',
+          'Rota güncellemesi bekliyor mu?',
+          'Bu sadece günlük atama mı?',
+          'Sürücüye gönderildi mi?',
+        ]
+        : [
+          'Bu değişiklik uygulamaya hazır mı?',
+          'Günlük atamaya işlenir mi?',
+          'Sürücü rotası yenilenir mi?',
+          'Bu sadece günlük atama mı?',
+        ],
+      fallback,
+    );
   }
   const isRoomMap = path.includes('/room/map') || path.includes('/company/map') || path.includes('/school/map') || path.includes('/organization/map');
   const isRoomOperationHealth = path.includes('/room/operation-health');

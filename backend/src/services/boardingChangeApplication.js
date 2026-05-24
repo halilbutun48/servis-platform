@@ -2,6 +2,7 @@ import { prisma } from "../prisma.js";
 import { findNearestStop, formatBoardingChangeDecisionText } from "../routes/boardingChangeRequestOps.js";
 import { haversineM } from "../routes/shifts/helpers.js";
 import { previewBoardingChangeRouteImpact } from "./boardingRouteImpactPreview.js";
+import { buildBoardingChangeRouteRefreshState } from "./boardingChangeRouteRefresh.js";
 
 const BOARDING_SHIFT_INCLUDE = {
   include: {
@@ -331,6 +332,12 @@ export async function applyAcceptedBoardingChange({
     const applicationText = applicationState === "NOTE_ONLY"
       ? "Not kayıt altına alındı."
       : "Değişiklik günlük atamaya işlendi.";
+    const routeRefresh = buildBoardingChangeRouteRefreshState({
+      applicationState,
+      changeType: preview.changeType,
+      effectiveDate,
+      appliedAt: requestNow.toISOString(),
+    });
 
     let stopAssignmentEffect = {
       action: "NOOP",
@@ -378,10 +385,19 @@ export async function applyAcceptedBoardingChange({
           applicationState,
           changeType: preview.changeType,
         }),
+        routeRefreshState: appliedMeta.routeRefreshState || routeRefresh.routeRefreshState,
+        routeRefreshLabel: appliedMeta.routeRefreshLabel || routeRefresh.routeRefreshLabel,
+        routeRefreshNote: appliedMeta.routeRefreshNote || routeRefresh.routeRefreshNote,
+        routeRefreshRequested: appliedMeta.routeRefreshRequested ?? routeRefresh.routeRefreshRequested,
+        routeRefreshCompleted: appliedMeta.routeRefreshCompleted ?? routeRefresh.routeRefreshCompleted,
+        routeRefreshRequired: appliedMeta.routeRefreshRequired ?? routeRefresh.routeRefreshRequired,
+        routeRefreshUpdatedAt: appliedMeta.routeRefreshUpdatedAt || routeRefresh.routeRefreshUpdatedAt,
+        routeRefreshEffectiveDate: appliedMeta.routeRefreshEffectiveDate || routeRefresh.routeRefreshEffectiveDate,
         applicationState: appliedMeta.applicationState || applicationState,
         applicationText: appliedMeta.applicationText || applicationText,
         preview: appliedMeta.routeImpactPreview || preview,
         routeImpactPreview: appliedMeta.routeImpactPreview || preview,
+        routeRefresh,
       };
     }
 
@@ -482,6 +498,14 @@ export async function applyAcceptedBoardingChange({
             applicationState,
             changeType: preview.changeType,
           }),
+          routeRefreshState: routeRefresh.routeRefreshState,
+          routeRefreshLabel: routeRefresh.routeRefreshLabel,
+          routeRefreshNote: routeRefresh.routeRefreshNote,
+          routeRefreshRequested: routeRefresh.routeRefreshRequested,
+          routeRefreshCompleted: routeRefresh.routeRefreshCompleted,
+          routeRefreshRequired: routeRefresh.routeRefreshRequired,
+          routeRefreshUpdatedAt: routeRefresh.routeRefreshUpdatedAt,
+          routeRefreshEffectiveDate: routeRefresh.routeRefreshEffectiveDate,
           nextBestAction: buildNextBestAction({
             applicationState,
             changeType: preview.changeType,
@@ -540,6 +564,15 @@ export async function applyAcceptedBoardingChange({
         applicationState,
         changeType: preview.changeType,
       }),
+      routeRefreshState: routeRefresh.routeRefreshState,
+      routeRefreshLabel: routeRefresh.routeRefreshLabel,
+      routeRefreshNote: routeRefresh.routeRefreshNote,
+      routeRefreshRequested: routeRefresh.routeRefreshRequested,
+      routeRefreshCompleted: routeRefresh.routeRefreshCompleted,
+      routeRefreshRequired: routeRefresh.routeRefreshRequired,
+      routeRefreshUpdatedAt: routeRefresh.routeRefreshUpdatedAt,
+      routeRefreshEffectiveDate: routeRefresh.routeRefreshEffectiveDate,
+      routeRefresh,
       applicationState,
       applicationText,
       preview,

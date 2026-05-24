@@ -80,12 +80,21 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (path.includes('/driver/today')) {
+    if (topic === 'BOARDING_CHANGE_APPLICATION') {
+      return ['Sürücü rota ekranında görünür mü?', 'Rota güncellemesi bekliyor mu?', 'Bu sadece günlük atama mı?', 'Sürücüye gönderildi mi?'];
+    }
     return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (path.includes('/driver/route')) {
+    if (topic === 'BOARDING_CHANGE_APPLICATION') {
+      return ['Sürücü rota ekranında görünür mü?', 'Rota güncellemesi bekliyor mu?', 'Bu sadece günlük atama mı?', 'Sürücüye gönderildi mi?'];
+    }
     return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (path.includes('/driver/map')) {
+    if (topic === 'BOARDING_CHANGE_APPLICATION') {
+      return ['Sürücü rota ekranında görünür mü?', 'Rota güncellemesi bekliyor mu?', 'Bu sadece günlük atama mı?', 'Sürücüye gönderildi mi?'];
+    }
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (path.includes('/personel/my')) {

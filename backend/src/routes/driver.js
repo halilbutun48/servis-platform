@@ -11,6 +11,7 @@ import { decorateShiftWithRegionContext, emitShift } from "./shifts/helpers.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
+import { loadDriverBoardingChangeRouteEffects } from "../services/boardingChangeRouteRefresh.js";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
@@ -123,6 +124,23 @@ async function maybeStartShiftIfApproved(shiftId) {
 
 function buildDriverRoutePayload(shift) {
   const decoratedShift = decorateShiftWithRegionContext(shift);
+  const boardingChangeEffects = Array.isArray(decoratedShift?.boardingChangeEffects) ? decoratedShift.boardingChangeEffects : [];
+  const routeRefresh = decoratedShift?.routeRefresh || (boardingChangeEffects.length ? {
+    routeRefreshState: "VISIBLE",
+    routeRefreshLabel: "Günlük değişiklik rotada görünüyor",
+    routeRefreshNote: "Sürücü rota ekranında görünür; SMS/push yok; kalıcı rota değişmez.",
+    routeRefreshRequested: true,
+    routeRefreshCompleted: true,
+    routeRefreshRequired: true,
+  } : null);
+  const routeNotice = decoratedShift?.routeNotice || routeRefresh?.routeRefreshNote || null;
+  const boardingChangeSummary = decoratedShift?.boardingChangeSummary || (boardingChangeEffects.length ? {
+    count: boardingChangeEffects.length,
+    label: boardingChangeEffects.length === 1 ? boardingChangeEffects[0]?.effectLabel || "Günlük değişiklik" : `${boardingChangeEffects.length} günlük değişiklik`,
+    note: routeNotice,
+    latestAppliedAt: boardingChangeEffects[0]?.appliedAt || null,
+    latestEffectiveDate: boardingChangeEffects[0]?.effectiveDate || null,
+  } : null);
   const last = decoratedShift?.vehicle?.gpsLast ?? null;
   const vehicleGpsSource = String(decoratedShift?.vehicle?.gpsState?.lastSource || "BACKEND_VEHICLE_GPS").trim().toUpperCase() || "BACKEND_VEHICLE_GPS";
   const gpsFreshness = last ? gpsStatusFromAt(last.at) : { status: "OFFLINE", ageSec: null };
@@ -236,11 +254,16 @@ function buildDriverRoutePayload(shift) {
       totalPassengers,
       remainingPassengers,
       nextStopPassengers: nextStop ? Math.max(0, Number(nextStop.passengerCount || 0)) : 0,
+      boardingChangeCount: boardingChangeEffects.length,
     },
     orderedStops,
     proximityStops,
     nextStop,
     routeStops,
+    boardingChangeEffects,
+    boardingChangeSummary,
+    routeRefresh,
+    routeNotice,
   };
 }
 
@@ -328,17 +351,24 @@ export function driverRouter(io) {
     });
 
     const decoratedRows = rows.map((row) => decorateShiftWithRegionContext(row));
+    const routeVisibilityByShiftId = await loadDriverBoardingChangeRouteEffects({
+      shiftIds: decoratedRows.map((row) => row?.id).filter((value) => Number.isFinite(Number(value)) && Number(value) > 0),
+    });
+    const rowsWithVisibility = decoratedRows.map((row) => ({
+      ...row,
+      ...(routeVisibilityByShiftId[String(Number(row?.id || 0))] || {}),
+    }));
     const today = [];
     const tomorrow = [];
     const upcoming = [];
-    for (const s of decoratedRows) {
+    for (const s of rowsWithVisibility) {
       const y = ymdTR(s.startAt);
       if (y === todayYmd) today.push(s);
       else if (y === tomorrowYmd) tomorrow.push(s);
       if (new Date(s.startAt).getTime() > now.getTime()) upcoming.push(s);
     }
 
-    const active = decoratedRows.find((s) => {
+    const active = rowsWithVisibility.find((s) => {
       const st = String(s.status || "").toUpperCase();
       const startMs = new Date(s.startAt).getTime();
       const endMs = new Date(s.endAt).getTime();
@@ -357,7 +387,7 @@ export function driverRouter(io) {
       else assignmentState = "ASSIGNED";
     }
 
-    return res.json({ mode: decoratedRows.length ? "OK" : "NO_ASSIGNED_SHIFT", todayYmd, tomorrowYmd, today, tomorrow, upcoming, active, assigned, assignmentState });
+    return res.json({ mode: rowsWithVisibility.length ? "OK" : "NO_ASSIGNED_SHIFT", todayYmd, tomorrowYmd, today, tomorrow, upcoming, active, assigned, assignmentState });
   });
 
   // =========================================================
@@ -397,7 +427,12 @@ export function driverRouter(io) {
     });
 
     if (!shift) return res.json({ mode: "NO_ACTIVE_SHIFT" });
-    return res.json(buildDriverRoutePayload(shift));
+    const routeVisibilityByShiftId = await loadDriverBoardingChangeRouteEffects({ shiftIds: [shift.id] });
+    const enrichedShift = {
+      ...shift,
+      ...(routeVisibilityByShiftId[String(shift.id)] || {}),
+    };
+    return res.json(buildDriverRoutePayload(enrichedShift));
   });
 
   // =========================================================
@@ -444,7 +479,13 @@ export function driverRouter(io) {
       return res.status(400).json({ error: "Shift route not available in this status", status: shift.status });
     }
 
-    return res.json(buildDriverRoutePayload(shift));
+    const routeVisibilityByShiftId = await loadDriverBoardingChangeRouteEffects({ shiftIds: [shift.id] });
+    const enrichedShift = {
+      ...shift,
+      ...(routeVisibilityByShiftId[String(shift.id)] || {}),
+    };
+
+    return res.json(buildDriverRoutePayload(enrichedShift));
   });
 
   // =========================================================

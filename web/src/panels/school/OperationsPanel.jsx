@@ -18,6 +18,8 @@ import {
   boardingChangeApplicationStatusLabel,
   boardingChangeDecisionLabel,
   boardingChangeKindLabel,
+  boardingChangeRouteRefreshLabel,
+  boardingChangeRouteRefreshNote,
 } from "../shared/boardingChangeUi";
 
 function MiniStat({ title, value, note }) {
@@ -105,7 +107,7 @@ export default function SchoolOperationsPanel() {
     setApplyNotice("");
     try {
       const result = await api(`/api/requests/${id}/apply-boarding-change`, { token, method: "POST" });
-      setApplyNotice(result?.applicationBoundaryNote || result?.applicationText || boardingChangeApplySuccessNote());
+      setApplyNotice(result?.boardingChangeRouteRefreshNote || result?.boardingChangeRouteRefreshLabel || result?.applicationBoundaryNote || result?.applicationText || boardingChangeApplySuccessNote());
       await load();
     } catch (e) {
       setErr(String(e?.message || e));
@@ -170,6 +172,9 @@ export default function SchoolOperationsPanel() {
       kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
       detail: item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
+      routeRefreshState: item?.boardingChangeRouteRefreshState || "NONE",
+      routeRefreshLabel: item?.boardingChangeRouteRefreshLabel || boardingChangeRouteRefreshLabel(item),
+      routeRefreshNote: item?.boardingChangeRouteRefreshNote || boardingChangeRouteRefreshNote(item),
       createdAt: item?.createdAt || item?.at || null,
       preview: item?.routeImpactPreview || null,
     })),
@@ -184,6 +189,9 @@ export default function SchoolOperationsPanel() {
       kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
       detail: item?.boardingChangeApplicationText || item?.decisionText || (item?.lat != null || item?.lng != null ? "Kabul edilen biniş değişikliği" : "Kabul edilen değişiklik"),
+      routeRefreshState: item?.boardingChangeRouteRefreshState || "NONE",
+      routeRefreshLabel: item?.boardingChangeRouteRefreshLabel || boardingChangeRouteRefreshLabel(item),
+      routeRefreshNote: item?.boardingChangeRouteRefreshNote || boardingChangeRouteRefreshNote(item),
       applicationStatus: item?.boardingChangeApplicationStatus || "READY",
       applicationText: item?.boardingChangeApplicationText || "",
       applicationAt: item?.boardingChangeAppliedAt || null,
@@ -576,6 +584,8 @@ export default function SchoolOperationsPanel() {
                               <span className="muted">{row.applicationText || boardingChangeApplySuccessNote()}</span>
                             )}
                           </div>
+                          {row.routeRefreshLabel ? <div className="panelMeta" style={{ marginTop: 4 }}>{row.routeRefreshLabel}</div> : null}
+                          {row.routeRefreshNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{row.routeRefreshNote}</div> : null}
                           {row.boundaryNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{row.boundaryNote}</div> : null}
                         </td>
                       </tr>

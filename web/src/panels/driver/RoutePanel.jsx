@@ -11,6 +11,7 @@ import { openNextStopNavigation, openFullRouteNavigation, routeStats, isReachedS
 import { nowIsoTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
+import { boardingChangeRouteRefreshLabel, boardingChangeRouteRefreshNote } from "../shared/boardingChangeUi";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 
 function getQueryParam(name) {
@@ -69,6 +70,19 @@ export default function RoutePanel() {
   const routeSummary = useMemo(() => routeStats(orderedStops), [orderedStops]);
   const selectedVehicle = data?.vehicle || null;
   const vehicleCount = selectedVehicle ? 1 : 0;
+  const boardingChangeEffects = Array.isArray(data?.boardingChangeEffects) ? data.boardingChangeEffects : Array.isArray(shift?.boardingChangeEffects) ? shift.boardingChangeEffects : [];
+  const boardingChangeSummary = data?.boardingChangeSummary || shift?.boardingChangeSummary || null;
+  const routeRefresh = data?.routeRefresh || shift?.routeRefresh || null;
+  const routeRefreshState = String(routeRefresh?.routeRefreshState || data?.boardingChangeRouteRefreshState || shift?.boardingChangeRouteRefreshState || '').toUpperCase();
+  const routeRefreshLabel = routeRefresh?.routeRefreshLabel
+    || data?.boardingChangeRouteRefreshLabel
+    || shift?.boardingChangeRouteRefreshLabel
+    || boardingChangeRouteRefreshLabel(routeRefresh || data || shift || {});
+  const routeRefreshNote = routeRefresh?.routeRefreshNote
+    || data?.boardingChangeRouteRefreshNote
+    || shift?.boardingChangeRouteRefreshNote
+    || boardingChangeRouteRefreshNote(routeRefresh || data || shift || {});
+  const hasBoardingChangeVisibility = boardingChangeEffects.length > 0 || (routeRefreshState && routeRefreshState !== "NONE");
   const gpsAge = useMemo(() => gpsAgeText(data?.last || selectedVehicle?.gpsLast), [data?.last, selectedVehicle?.gpsLast]);
   const gpsStatusText = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || data?.last?.status || data?.liveLocation?.routeProgressState || data?.liveLocation?.officialSource || (selectedVehicle ? "LIVE" : "-"));
   const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel || (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
@@ -568,6 +582,47 @@ async function undoLast() {
         </div>
       ) : null}
 
+      {hasBoardingChangeVisibility ? (
+        <div className="card" style={{ marginBottom: 10 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 900 }}>Günlük Biniş Değişiklikleri</div>
+              <div className="muted">Bu sadece günlük atama etkisidir. Sürücü rotası henüz kalıcı olarak değişmez.</div>
+            </div>
+            {routeRefreshLabel ? <span className="pill" data-status={routeRefreshState || "REQUESTED"}>{routeRefreshLabel}</span> : null}
+          </div>
+          {boardingChangeSummary?.label ? <div style={{ marginTop: 10, fontWeight: 800 }}>{boardingChangeSummary.label}</div> : null}
+          {routeRefreshNote ? <div className="muted" style={{ marginTop: 4 }}>{routeRefreshNote}</div> : null}
+          {boardingChangeEffects.length ? (
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              {boardingChangeEffects.map((effect, index) => {
+                const effectLabel = effect?.effectLabel || effect?.changeTypeLabel || "Günlük değişiklik";
+                const personLabel = effect?.personLabel || effect?.personName || "Seçili kişi";
+                const oldStop = effect?.oldStopLabel || "-";
+                const newStop = effect?.newStopLabel || "-";
+                const effectRouteRefreshLabel = effect?.routeRefreshLabel || routeRefreshLabel;
+                const effectRouteRefreshNote = effect?.routeRefreshNote || routeRefreshNote;
+                return (
+                  <div key={`${String(effect?.changeType || effect?.changeTypeLabel || effect?.personId || index)}-${index}`} style={{ paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ fontWeight: 800 }}>{effectLabel}</div>
+                    <div className="muted" style={{ marginTop: 2 }}>
+                      {personLabel}
+                      {" "}
+                      •
+                      {" "}
+                      {oldStop}
+                      {" → "}
+                      {newStop}
+                    </div>
+                    {effectRouteRefreshLabel ? <div className="panelMeta" style={{ marginTop: 4 }}>{effectRouteRefreshLabel}</div> : null}
+                    {effectRouteRefreshNote ? <div className="panelMeta" style={{ marginTop: 4 }}>{effectRouteRefreshNote}</div> : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {data?.routeStops?.length ? (
       <MapView

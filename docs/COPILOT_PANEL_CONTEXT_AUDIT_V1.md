@@ -35,6 +35,12 @@ Audit snapshot: `HEAD 258f510` / tag `v2026.05.13-cop04afix04-quick-help-contrac
 - Driver route refresh, SMS / notification, payment / settlement execute ve schema / migration bu milestone kapsamı dışındadır; route refresh sonraki `BOARDING-OPS-01C` adımına bırakılır.
 - Bu not product behavior değiştirmez; yalnızca kabul edilmiş değişiklikten günlük atamaya giden dar yolu tarif eder.
 
+## BOARDING-OPS-01C kapsam notu
+- Bu aşama kabul edilmiş ve günlük atamaya işlenmiş boarding change etkisini `Driver / Bugün` ve `Driver / Rota` yüzeylerinde readonly görünür hale getirir; harita yüzeyi bu milestone için zorunlu değildir ve route refresh durumu kalıcı rota değişimi olmadan gösterilir.
+- `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` sürücü tarafında günlük değişiklik etiketi olarak okunur; SMS / push yok ve kalıcı atama korunur.
+- `mobile route update` burada yeni write kanalı değil, sürücü ekranında görünen güvenli route-refresh sinyalinin adıdır.
+- Bu not product behavior değiştirmez; yalnızca günlük atama etkisinin sürücü yüzeyinde nasıl izlendiğini tarif eder.
+
 ## Yöntem
 - Panel dosyaları ve Copilot helper zinciri statik olarak tarandı.
 - Hızlı Yardım üst bağlamı ile serbest chat route ayrışması için risk yüzeyleri not edildi.
