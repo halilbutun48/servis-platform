@@ -5,14 +5,14 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `302`
-- Toplam executable tracked file: `1070`
-- Combined registry row: `1372`
-- Root/backend/web/mobile package dağılımı: root `145`, backend `637`, web `86`, mobile `201`
+- Toplam package script entry: `303`
+- Toplam executable tracked file: `1071`
+- Combined registry row: `1374`
+- Root/backend/web/mobile package dağılımı: root `146`, backend `638`, web `86`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `17`
 - ACTIVE: `360`
-- ACTIVE_CORE: `117`
+- ACTIVE_CORE: `118`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `8`
@@ -28,11 +28,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `480`
+- NEEDS_REVIEW: `481`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
-- Eski sistem term eşleşmesi: `243`
+- Eski sistem term eşleşmesi: `244`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -42,14 +42,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 360 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 117 |
+| ACTIVE_CORE | 118 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 480 |
+| NEEDS_REVIEW | 481 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -142,6 +142,7 @@ Repo: `servis-platform`
 | root:check:copliveaccept01 | package.json | root | node backend/scripts/cop_live_accept_01_check.js | core | ACTIVE_CORE |  | COP-LIVE-ACCEPT-01 |  | Breaks canonical verification chain |  |
 | root:check:boardingops01a | package.json | root | node backend/scripts/boarding_ops_01a_route_impact_preview_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01A |  | Breaks canonical verification chain |  |
 | root:check:bugrouteimpactpreviewbutton01 | package.json | root | node backend/scripts/bug_route_impact_preview_button_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-BUGROUTEIMPACTPREVIEWBUTTON-01 |  | Owner or chain unclear |  |
+| root:check:uiactionwiringaudit01 | package.json | root | node backend/scripts/ui_action_wiring_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UIACTIONWIRINGAUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:boardingops01b | package.json | root | node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01B |  | Breaks canonical verification chain |  |
 | root:check:boardingops01c | package.json | root | node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01C |  | Breaks canonical verification chain |  |
 | root:check:routechangefinal01 | package.json | root | node backend/scripts/route_change_final_01_check.js | core | ACTIVE_CORE |  | ROUTE-CHANGE-FINAL-01 |  | Breaks canonical verification chain |  |
@@ -300,6 +301,7 @@ Repo: `servis-platform`
 | boarding_ops_01b_apply_accepted_change_check.js | backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | backend | root:check:boardingops01b | review | NEEDS_REVIEW |  | BOARDING-OPS-01-B-APPLY-ACCEPTED-CHANGE-CHECK |  | Owner or chain unclear |  |
 | boarding_ops_01c_driver_route_refresh_check.js | backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | backend | root:check:boardingops01c | review | NEEDS_REVIEW |  | BOARDING-OPS-01-C-DRIVER-ROUTE-REFRESH-CHECK |  | Owner or chain unclear |  |
 | bootstrap_dependencies.js | backend/scripts/bootstrap_dependencies.js | backend |  | review | NEEDS_REVIEW |  | BOOTSTRAP-DEPENDENCIES |  | Owner or chain unclear |  |
+| bug_route_impact_preview_button_01_check.js | backend/scripts/bug_route_impact_preview_button_01_check.js | backend | root:check:bugrouteimpactpreviewbutton01 | review | NEEDS_REVIEW |  | BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01-CHECK |  | Owner or chain unclear |  |
 | clean_snapshot_artifacts.js | backend/scripts/clean_snapshot_artifacts.js | backend | root:verify:final | verify:final | ACTIVE_CORE |  | CLEAN-SNAPSHOT-ARTIFACTS |  | Owner or chain unclear | canonical runner |
 | company_fetch_storm_check.js | backend/scripts/company_fetch_storm_check.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-FETCH-STORM-CHECK |  | Owner or chain unclear |  |
 | company_fetch_storm_v2_check.cjs | backend/scripts/company_fetch_storm_v2_check.cjs | backend |  | review | NEEDS_REVIEW |  | COMPANY-FETCH-STORM-V-2-CHECK |  | Owner or chain unclear |  |
@@ -584,6 +586,7 @@ Repo: `servis-platform`
 | step1_totp_stepup_check.js | backend/scripts/step1_totp_stepup_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-TOTP-STEPUP-CHECK |  | Owner or chain unclear |  |
 | superadmin_menu_copilot_sadelestirme_check.js | backend/scripts/superadmin_menu_copilot_sadelestirme_check.js | backend |  | review | NEEDS_REVIEW |  | SUPERADMIN-MENU-COPILOT-SADELESTIRME-CHECK |  | Owner or chain unclear |  |
 | superadmin_menu_turkce_hotfix_check.js | backend/scripts/superadmin_menu_turkce_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | SUPERADMIN-MENU-TURKCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
+| ui_action_wiring_audit_01_check.js | backend/scripts/ui_action_wiring_audit_01_check.js | backend | root:check:uiactionwiringaudit01 | review | NEEDS_REVIEW |  | UI-ACTION-WIRING-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ui_route_resilience_hotfix_check.js | backend/scripts/ui_route_resilience_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | UI-ROUTE-RESILIENCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | username_first_login_hotfix_check.js | backend/scripts/username_first_login_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | USERNAME-FIRST-LOGIN-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | ux_collapsible_panels_01_check.js | backend/scripts/ux_collapsible_panels_01_check.js | backend | root:check:uxcollapsiblepanels01 | product | ACTIVE |  | UX-COLLAPSIBLE-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -659,7 +662,7 @@ Repo: `servis-platform`
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
 | service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
-| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:cop04b, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01 | review | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
+| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:cop04b, root:check:uiactionwiringaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01 | review | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
 | google.js | backend/src/auth/google.js | backend |  | review | NEEDS_REVIEW |  | GOOGLE |  | Owner or chain unclear |  |
 | jwt.js | backend/src/auth/jwt.js | backend |  | review | NEEDS_REVIEW |  | JWT |  | Owner or chain unclear |  |
@@ -1853,3 +1856,4 @@ Repo: `servis-platform`
 - Bu doküman repo harness envanterini tek yerde toplar.
 - Safe cleanup bu turda yalnızca saf alias wrapper dosyalarında yapıldı.
 - Legacy alias girişleri docs ve chain referansları nedeniyle korunuyor.
+

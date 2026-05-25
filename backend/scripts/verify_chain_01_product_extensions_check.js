@@ -111,6 +111,7 @@ function main() {
   must(pkg, '"check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js"', 'package.json exposes check:copliveaccept01');
   must(pkg, '"check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js"', 'package.json exposes check:boardingops01a');
   must(pkg, '"check:bugrouteimpactpreviewbutton01": "node backend/scripts/bug_route_impact_preview_button_01_check.js"', 'package.json exposes check:bugrouteimpactpreviewbutton01');
+  must(pkg, '"check:uiactionwiringaudit01": "node backend/scripts/ui_action_wiring_audit_01_check.js"', 'package.json exposes check:uiactionwiringaudit01');
   must(pkg, '"check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js"', 'package.json exposes check:boardingops01b');
   must(pkg, '"check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js"', 'package.json exposes check:boardingops01c');
   must(pkg, '"check:routechangefinal01": "node backend/scripts/route_change_final_01_check.js"', 'package.json exposes check:routechangefinal01');
@@ -203,6 +204,7 @@ function main() {
     'check:copliveaccept01',
     'check:boardingops01a',
     'check:bugrouteimpactpreviewbutton01',
+    'check:uiactionwiringaudit01',
     'check:boardingops01b',
     'check:boardingops01c',
     'check:routechangefinal01',
@@ -244,6 +246,8 @@ function main() {
   must(guide, 'QLT-PAY-BRIDGE-01', 'script guide mentions QLT-PAY-BRIDGE-01');
   must(guide, 'check:qltpaybridge01', 'script guide exposes check:qltpaybridge01');
   must(guide, 'check:seferscore01', 'script guide exposes check:seferscore01');
+  must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
+  must(guide, 'check:uiactionwiringaudit01', 'script guide exposes check:uiactionwiringaudit01');
   must(guide, 'check:cop03a', 'script guide exposes check:cop03a');
   must(guide, 'check:cop03afix01', 'script guide exposes check:cop03afix01');
   must(guide, 'check:cop03afix02', 'script guide exposes check:cop03afix02');

@@ -165,7 +165,7 @@ function pickPreferredSpeechVoice(synth, lang = "tr-TR") {
   }
 }
 
-function filterMessageActions(actions, suggestions, followUpPrompt) {
+function filterMessageActions(actions, suggestions, followUpPrompt, me) {
   const rows = Array.isArray(actions) ? actions : [];
   const visible = [];
   for (const action of rows) {
@@ -175,6 +175,12 @@ function filterMessageActions(actions, suggestions, followUpPrompt) {
       if (!askText) continue;
       if (Array.isArray(suggestions) && suggestions.some((chip) => samePrompt(chip, askText))) continue;
       if (followUpPrompt && samePrompt(followUpPrompt, askText)) continue;
+    } else if (kind === "COPY_TEXT") {
+      const copyText = String(action?.copyText || "").trim();
+      if (!copyText) continue;
+    } else if (kind === "OPEN_ROUTE") {
+      const rawPath = action?.path || action?.href || resolveGuideRoute(me, action?.routeKey || "");
+      if (!String(rawPath || "").trim()) continue;
     }
     const key = `${kind}|${action?.label || ""}|${action?.routeKey || action?.href || action?.path || ""}|${action?.askText || ""}|${action?.guide?.jobType || ""}`;
     if (visible.some((x) => x.__k === key)) continue;
@@ -375,7 +381,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       return copyText(action?.copyText || "");
     }
     const rawPath = action?.path || action?.href || resolveGuideRoute(me, action?.routeKey || "");
-    if (!rawPath) return;
+    if (!rawPath) {
+      setErr("Bu hızlı aksiyon için geçerli bir hedef bulunamadı.");
+      return;
+    }
     openPath(withRouteParams(rawPath, action?.routeParams));
   }
 
@@ -478,7 +487,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           {m.role === "assistant" && !m.system ? <div className="copilotMsgActions">
             <button type="button" className="btn sm copilotToolBtn" onClick={() => speak(m.text, idx)}>{readingIndex === idx ? "Okuyor..." : "Sesli oku"}</button>
             {m.followUpPrompt ? <button type="button" className="btn sm copilotToolBtn" onClick={() => ask(m.followUpPrompt)}>Devamını anlat</button> : null}
-            {filterMessageActions(m.quickActions, suggestions, m.followUpPrompt).map((a, i) => (
+            {filterMessageActions(m.quickActions, suggestions, m.followUpPrompt, me).map((a, i) => (
               <button key={`${idx}-${i}-${actionText(a)}`} type="button" className="btn sm copilotToolBtn" title={a?.reason || ""} onClick={() => triggerQuickAction(a)}>{actionText(a)}</button>
             ))}
           </div> : null}

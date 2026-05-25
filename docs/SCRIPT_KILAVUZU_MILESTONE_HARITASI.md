@@ -101,6 +101,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\docs_state_01_recent_product_closure_check.js`
 - `node backend\scripts\run_product_extensions_check_chain.js`
 - `node backend\scripts\verify_chain_01_product_extensions_check.js`
+- `node backend\scripts\ui_action_wiring_audit_01_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -229,6 +230,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:bugrouteimpactpreviewbutton01` Company / School / Room operasyon yüzeylerinde `Rota etkisini önizle` butonunu görünür preview akışına bağlar; preview alanı scroll/focus ile görünür kalır.
 - Preview alanı readonly kalır; `Rota uygulanmaz`, `Sürücü rotası yenilenmez`, `Bildirim gönderilmez`, yalnızca etki analizi gösterilir.
 - Boş, yükleniyor ve temizle akışları kullanıcıya açık feedback verir; Organization yüzeyi Company altyapısını kullanmaya devam eder.
+
+### UI-ACTION-WIRING-AUDIT-01 [CHECK]
+- `check:uiactionwiringaudit01` panel ve copilot yüzeylerindeki aktif aksiyonların wiring kalitesini, role guard'larını ve readonly sınırlarını denetler.
+- Boş handler, `href="#"`, `console.log` / `alert` tabanlı sahte aksiyon ve hedefi olmayan quick-action chip'leri reddeder.
+- Visible result, loading/error/empty state ve role/permission görünürlüğü korunur; yeni business flow açılmaz.
 
 ### BOARDING-OPS-01B [CHECK]
 - `check:boardingops01b` kabul edilmiş boarding change kaydını güvenli ve dar bir uygulama yoluyla günlük `StopAssignment` etkisine bağlar.
@@ -817,6 +823,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:fieldlaunch01`
   - `check:qltpaybridge01`
   - `check:seferscore01`
+  - `check:uiactionwiringaudit01`
   - `check:cop03cfix03`
   - `check:cop04a`
   - `check:cop04afix02`
