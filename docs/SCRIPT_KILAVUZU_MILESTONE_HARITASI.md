@@ -225,6 +225,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu milestone yalnızca önizlemedir; `StopAssignment` değişimi `BOARDING-OPS-01B`, driver route refresh ise `BOARDING-OPS-01C` olarak ayrıştırılır.
 - GPS / ETA dili güvenli kalır; kesin ETA yoksa `ETA hesaplanamıyor` veya `ETA güncel değil` standardı korunur.
 
+### BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01 [CHECK]
+- `check:bugrouteimpactpreviewbutton01` Company / School / Room operasyon yüzeylerinde `Rota etkisini önizle` butonunu görünür preview akışına bağlar; preview alanı scroll/focus ile görünür kalır.
+- Preview alanı readonly kalır; `Rota uygulanmaz`, `Sürücü rotası yenilenmez`, `Bildirim gönderilmez`, yalnızca etki analizi gösterilir.
+- Boş, yükleniyor ve temizle akışları kullanıcıya açık feedback verir; Organization yüzeyi Company altyapısını kullanmaya devam eder.
+
 ### BOARDING-OPS-01B [CHECK]
 - `check:boardingops01b` kabul edilmiş boarding change kaydını güvenli ve dar bir uygulama yoluyla günlük `StopAssignment` etkisine bağlar.
 - `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` desteklenir; `TEMPORARY_BOARDING_NOTE` not/audit olarak kalabilir.

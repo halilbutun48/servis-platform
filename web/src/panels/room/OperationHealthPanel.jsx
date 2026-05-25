@@ -76,20 +76,6 @@ function buildGuideHint(title, detail, extras = {}) {
   };
 }
 
-function mergeRequestLists(...lists) {
-  const seen = new Map();
-  for (const list of lists) {
-    if (!Array.isArray(list)) continue;
-    for (const item of list) {
-      if (!item) continue;
-      const key = String(item?.id || "");
-      if (!key || seen.has(key)) continue;
-      seen.set(key, item);
-    }
-  }
-  return Array.from(seen.values());
-}
-
 function operationRouteKeyFromItem(item = {}) {
   if (String(item.sessionState || "") === "REFRESH_NEEDED") return "ROOM_DRIVERS";
   if (String(item.permissionState || "") !== "GRANTED") return "ROOM_DRIVERS";
@@ -171,45 +157,40 @@ export default function OperationHealthPanel() {
   const [applyingRequestId, setApplyingRequestId] = useState(null);
   const [applyNotice, setApplyNotice] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const today = new Date().toISOString().slice(0, 10);
-        const [s, d, i] = await Promise.all([
-          api("/api/observability/room/summary", { token }),
-          api("/api/observability/room/drivers", { token }),
-          api("/api/observability/room/issues", { token }),
-        ]);
-        const [driverSignals, shiftSummary, vehicleSummary, driverSummary, openRequests, activeRequests] = await Promise.all([
-          api("/api/drivers?take=200", { token }).catch(() => []),
-          api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-          api(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-          api(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-          api("/api/requests?onlyOpen=1&onlyActive=1", { token }).catch(() => []),
-          api("/api/requests?onlyActive=1", { token }).catch(() => []),
-        ]);
-        if (cancelled) return;
-        const mergedRequests = mergeRequestLists(openRequests, activeRequests);
-        setSummary(s || null);
-        setDrivers(Array.isArray(d?.items) ? d.items : []);
-        setIssues(Array.isArray(i?.items) ? i.items : []);
-        setRoomOperations({
-          driverSignals: Array.isArray(driverSignals) ? driverSignals : [],
-          shiftSummary: shiftSummary || null,
-          vehicleSummary: vehicleSummary || null,
-          driverSummary: driverSummary || null,
-          requests: mergedRequests,
-        });
-      } catch (error) {
-        if (cancelled) return;
-        console.error(error);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const refreshRoomState = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const [s, d, i] = await Promise.all([
+        api("/api/observability/room/summary", { token }),
+        api("/api/observability/room/drivers", { token }),
+        api("/api/observability/room/issues", { token }),
+      ]);
+      const [driverSignals, shiftSummary, vehicleSummary, driverSummary, requestsResp] = await Promise.all([
+        api("/api/drivers?take=200", { token }).catch(() => []),
+        api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+        api(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+        api(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+        api("/api/requests", { token }).catch(() => []),
+      ]);
+      setSummary(s || null);
+      setDrivers(Array.isArray(d?.items) ? d.items : []);
+      setIssues(Array.isArray(i?.items) ? i.items : []);
+      setRoomOperations({
+        driverSignals: Array.isArray(driverSignals) ? driverSignals : [],
+        shiftSummary: shiftSummary || null,
+        vehicleSummary: vehicleSummary || null,
+        driverSummary: driverSummary || null,
+        requests: Array.isArray(requestsResp?.items) ? requestsResp.items : Array.isArray(requestsResp) ? requestsResp : [],
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    refreshRoomState();
+  }, [token, refreshRoomState]);
 
   const handleApplyAcceptedRequest = useCallback(async (requestId) => {
     const id = Number(requestId || 0);
@@ -219,35 +200,13 @@ export default function OperationHealthPanel() {
     try {
       const result = await api(`/api/requests/${id}/apply-boarding-change`, { token, method: "POST" });
       setApplyNotice(result?.applicationBoundaryNote || result?.applicationText || boardingChangeApplySuccessNote());
-      const today = new Date().toISOString().slice(0, 10);
-      const [s, d, i, driverSignals, shiftSummary, vehicleSummary, driverSummary, openRequests, activeRequests] = await Promise.all([
-        api("/api/observability/room/summary", { token }),
-        api("/api/observability/room/drivers", { token }),
-        api("/api/observability/room/issues", { token }),
-        api("/api/drivers?take=200", { token }).catch(() => []),
-        api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-        api(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-        api(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-        api("/api/requests?onlyOpen=1&onlyActive=1", { token }).catch(() => []),
-        api("/api/requests?onlyActive=1", { token }).catch(() => []),
-      ]);
-      const mergedRequests = mergeRequestLists(openRequests, activeRequests);
-      setSummary(s || null);
-      setDrivers(Array.isArray(d?.items) ? d.items : []);
-      setIssues(Array.isArray(i?.items) ? i.items : []);
-      setRoomOperations({
-        driverSignals: Array.isArray(driverSignals) ? driverSignals : [],
-        shiftSummary: shiftSummary || null,
-        vehicleSummary: vehicleSummary || null,
-        driverSummary: driverSummary || null,
-        requests: mergedRequests,
-      });
+      await refreshRoomState();
     } catch (error) {
       console.error(error);
     } finally {
       setApplyingRequestId(null);
     }
-  }, [token]);
+  }, [refreshRoomState, token]);
 
   const statusOptions = useMemo(() => {
     return Array.from(

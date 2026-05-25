@@ -57,7 +57,7 @@ must(has(panel, "/api/reports/shifts/summary?from="), "room panel fetches shift 
 must(has(panel, "/api/reports/vehicles/summary?from="), "room panel fetches vehicle summary");
 must(has(panel, "/api/reports/drivers/summary?from="), "room panel fetches driver summary");
 must(has(panel, "/api/drivers?take=200"), "room panel fetches room driver signals");
-must(has(panel, "/api/requests?onlyOpen=1&onlyActive=1"), "room panel fetches open pickup requests");
+must(has(panel, "/api/requests"), "room panel fetches room requests");
 must(has(panel, "RoomOperationsBoard"), "room panel mounts the room operations board");
 
 must(has(board, "Oda Operasyon Özeti"), "room operations board headline exists");

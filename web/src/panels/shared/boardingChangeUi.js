@@ -18,6 +18,10 @@ const DECISION_LABELS = {
   CUTOFF_REVIEW: "Cutoff incelemesi",
   ROOM_ACCEPTED: "Oda onayı",
   ROOM_CANCELLED: "Oda iptali",
+  DRIVER_ACCEPTED: "Sürücü onayı",
+  DRIVER_CANCELLED: "Sürücü iptali",
+  COMPANY_ACCEPTED: "Hizmet alan taraf onayı",
+  COMPANY_CANCELLED: "Hizmet alan taraf iptali",
   CANCELLED: "İptal edildi",
   NO_SHOW: "No-show",
 };
@@ -28,6 +32,10 @@ const DECISION_TONES = {
   CUTOFF_REVIEW: "warning",
   ROOM_ACCEPTED: "success",
   ROOM_CANCELLED: "critical",
+  DRIVER_ACCEPTED: "success",
+  DRIVER_CANCELLED: "critical",
+  COMPANY_ACCEPTED: "success",
+  COMPANY_CANCELLED: "critical",
   CANCELLED: "critical",
   NO_SHOW: "warning",
 };
@@ -65,6 +73,36 @@ export function boardingChangeDecisionLabel(state) {
 
 export function boardingChangeDecisionTone(state) {
   return DECISION_TONES[normalize(state)] || "info";
+}
+
+export function boardingChangeDecisionOwnerLabel(itemOrState, context = {}) {
+  const state = normalize(itemOrState?.status || itemOrState?.decisionState || itemOrState?.boardingChangeApplicationStatus || itemOrState);
+  if (["ACCEPTED", "AUTO_ACCEPTED", "ROOM_ACCEPTED", "ROOM_CANCELLED", "DRIVER_ACCEPTED", "DRIVER_CANCELLED", "COMPANY_ACCEPTED", "COMPANY_CANCELLED", "APPLIED"].includes(state)) {
+    return "İşlendi";
+  }
+  if (["CANCELLED"].includes(state)) return "Kapandı";
+  const ownerRole = normalize(itemOrState?.decisionOwnerRole || context?.decisionOwnerRole || itemOrState?.decisionOwner || context?.decisionOwner || "");
+  if (ownerRole === "DRIVER") return "Sürücü";
+  if (ownerRole === "COMPANY") return "Hizmet alan taraf";
+  return "Hizmet alan taraf";
+}
+
+export function boardingChangeDecisionOwnerNote(itemOrState, context = {}) {
+  const state = normalize(itemOrState?.status || itemOrState?.decisionState || itemOrState?.boardingChangeApplicationStatus || itemOrState);
+  if (["ACCEPTED", "AUTO_ACCEPTED", "ROOM_ACCEPTED", "DRIVER_ACCEPTED", "COMPANY_ACCEPTED", "APPLIED"].includes(state)) {
+    return "Değişiklik günlük atamaya işlendi.";
+  }
+  if (["CANCELLED", "ROOM_CANCELLED", "DRIVER_CANCELLED", "COMPANY_CANCELLED"].includes(state)) {
+    return "İstek kapandı.";
+  }
+  const ownerRole = normalize(itemOrState?.decisionOwnerRole || context?.decisionOwnerRole || itemOrState?.decisionOwner || context?.decisionOwner || "");
+  if (ownerRole === "DRIVER") {
+    return "Aynı rota üzerindeki talep sürücü tarafında karar bekliyor.";
+  }
+  if (ownerRole === "COMPANY") {
+    return "Rota değişikliği içerdiği için hizmet alan taraf karar veriyor.";
+  }
+  return "Hizmet alan taraf karar veriyor.";
 }
 
 export function boardingChangeApplicationStatusLabel(state) {

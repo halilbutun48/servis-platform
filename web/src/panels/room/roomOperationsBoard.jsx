@@ -1,11 +1,14 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { resolvePersonDisplayLabel } from "../../utils/labels";
 import {
   boardingChangeApplyBoundaryNote,
   boardingChangeApplyButtonLabel,
   boardingChangeApplySuccessNote,
   boardingChangeApplicationStatusLabel,
   boardingChangeDecisionLabel,
+  boardingChangeDecisionOwnerLabel,
+  boardingChangeDecisionOwnerNote,
   boardingChangeKindLabel,
   boardingChangeRouteRefreshLabel,
   boardingChangeRouteRefreshNote,
@@ -63,7 +66,18 @@ function lineLabel(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcceptedRequest = null, applyingRequestId = null }) {
+function isDifferentStopRequest(item = {}) {
+  const kind = String(item?.requestKind || item?.kind || "").toUpperCase();
+  const label = boardingChangeKindLabel(item?.requestKind || item?.kind);
+  return kind.includes("ALTERNATE_STOP") || kind.includes("DIFFERENT_STOP") || String(label || "").includes("Farklı durak");
+}
+
+export default function RoomOperationsBoard({
+  roomSummary,
+  roomData,
+  onApplyAcceptedRequest = null,
+  applyingRequestId = null,
+}) {
   const data = roomData || {};
   const driverSignals = useMemo(
     () => (Array.isArray(data.driverSignals) ? data.driverSignals : []),
@@ -82,7 +96,10 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
   }), [requests]);
   const acceptedRequestItems = useMemo(() => requests.filter((item) => String(item?.status || "").toUpperCase() === "ACCEPTED"), [requests]);
   const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewSelectionNonce, setPreviewSelectionNonce] = useState(0);
   const roomIssueCount = Number(roomSummary?.cards?.openIssues || 0);
+  const previewCardRef = useRef(null);
 
   const metrics = useMemo(() => {
     const liveCount = driverSignals.filter((item) => String(item?.liveState || "").toUpperCase() === "LIVE").length;
@@ -102,6 +119,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
       && String(item?.ops?.assignmentState || "").toUpperCase() !== "ACTIVE"
     )).length;
     const openRequests = openRequestItems.length;
+    const differentStopRequests = requests.filter((item) => isDifferentStopRequest(item)).length;
     const locationRequests = openRequestItems.filter((item) => item?.lat != null && item?.lng != null).length;
     const acceptedRequests = acceptedRequestItems.length;
     const totalShifts = Number(shiftSummary?.total || 0);
@@ -124,6 +142,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
       restingDrivers,
       readyForJobDrivers,
       openRequests,
+      differentStopRequests,
       acceptedRequests,
       locationRequests,
       totalShifts,
@@ -134,7 +153,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
       avgVehicleLoad,
       noShowCount,
     };
-  }, [acceptedRequestItems, driverSignals, openRequestItems, shiftSummary, vehicleSummary, driverSummary]);
+  }, [acceptedRequestItems, driverSignals, openRequestItems, requests, shiftSummary, vehicleSummary, driverSummary]);
 
   const requestItems = useMemo(() => {
     return openRequestItems.slice(0, 5).map((item) => {
@@ -147,8 +166,17 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
         title: personelName,
         detail: `${kindLabel} • shift #${shiftId}`,
         decisionText: item?.decisionText || boardingChangeDecisionLabel(decisionState),
+        decisionOwnerRole: item?.decisionOwnerRole || "COMPANY",
+        decisionOwnerLabel: boardingChangeDecisionOwnerLabel(item),
+        decisionOwnerNote: boardingChangeDecisionOwnerNote(item),
         status: item?.status || "OPEN",
         decisionState,
+        personelId: item?.personelId || item?.personel?.id || null,
+        shiftRecord: item?.shift || null,
+        requestKind: item?.requestKind || item?.kind || null,
+        lat: item?.lat ?? null,
+        lng: item?.lng ?? null,
+        nearestStop: item?.nearestStop || null,
         preview: item?.routeImpactPreview || null,
         routeRefreshState: item?.boardingChangeRouteRefreshState || "NONE",
         routeRefreshLabel: item?.boardingChangeRouteRefreshLabel || boardingChangeRouteRefreshLabel(item),
@@ -165,8 +193,17 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
       id: item?.id || `${shiftId}-${personelName}`,
       title: personelName,
       detail: item?.boardingChangeApplicationText || item?.decisionText || `${kindLabel} • shift #${shiftId}`,
+      decisionOwnerRole: item?.decisionOwnerRole || "COMPANY",
+      decisionOwnerLabel: boardingChangeDecisionOwnerLabel(item),
+      decisionOwnerNote: boardingChangeDecisionOwnerNote(item),
       status: item?.status || "ACCEPTED",
       decisionState: String(item?.decisionState || item?.status || "").trim().toUpperCase(),
+      personelId: item?.personelId || item?.personel?.id || null,
+      shiftRecord: item?.shift || null,
+      requestKind: item?.requestKind || item?.kind || null,
+      lat: item?.lat ?? null,
+      lng: item?.lng ?? null,
+      nearestStop: item?.nearestStop || null,
       preview: item?.routeImpactPreview || null,
       applicationStatus,
       applicationText: item?.boardingChangeApplicationText || "",
@@ -180,6 +217,20 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
   }), [acceptedRequestItems]);
   const requestSelectionCards = useMemo(() => [...requestItems, ...acceptedRequestCards], [acceptedRequestCards, requestItems]);
 
+  const handlePreviewRequestSelect = useCallback((item) => {
+    const id = Number(item?.id || 0) || null;
+    if (!id) return;
+    setSelectedPreviewRequestId(id);
+    setPreviewLoading(true);
+    setPreviewSelectionNonce((value) => value + 1);
+  }, []);
+
+  const handlePreviewSelectionClear = useCallback(() => {
+    setSelectedPreviewRequestId(null);
+    setPreviewLoading(false);
+    setPreviewSelectionNonce((value) => value + 1);
+  }, []);
+
   const selectedPreviewRequest = useMemo(() => {
     if (!requestSelectionCards.length) return null;
     const desiredId = Number(selectedPreviewRequestId || 0);
@@ -187,10 +238,42 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
       const hit = requestSelectionCards.find((item) => Number(item?.id || 0) === desiredId);
       if (hit) return hit;
     }
-    return requestSelectionCards[0] || null;
-  }, [requestSelectionCards, selectedPreviewRequestId]);
+    if (!openRequestItems.length) return acceptedRequestCards[0] || null;
+    return null;
+  }, [acceptedRequestCards, openRequestItems.length, requestSelectionCards, selectedPreviewRequestId]);
 
   const selectedPreview = useMemo(() => selectedPreviewRequest?.preview || null, [selectedPreviewRequest]);
+
+  useEffect(() => {
+    if (!selectedPreviewRequestId) return undefined;
+    const timer = setTimeout(() => {
+      try {
+        previewCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        previewCardRef.current?.focus?.({ preventScroll: true });
+      } catch {
+        /* no-op */
+      }
+      setPreviewLoading(false);
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [previewSelectionNonce, selectedPreviewRequestId]);
+
+  const previewSelectionLabel = useMemo(() => {
+    if (!selectedPreviewRequest) return "";
+    const personLabel = resolvePersonDisplayLabel(selectedPreviewRequest, selectedPreview, "Kişi bilgisi eksik");
+    return `${boardingChangeKindLabel(selectedPreviewRequest?.requestKind || selectedPreviewRequest?.kind)} • ${personLabel}`;
+  }, [selectedPreview, selectedPreviewRequest]);
+
+  const previewSelectionNote = useMemo(() => {
+    if (!requestSelectionCards.length) return "";
+    if (!selectedPreviewRequestId && selectedPreviewRequest) {
+      return "Açık istek yok; ilk kabul edilen kayıt gösteriliyor.";
+    }
+    if (selectedPreviewRequestId && selectedPreviewRequest) {
+      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Readonly önizleme seçildi.";
+    }
+    return "Seçili satırın readonly önizlemesi burada gösterilir.";
+  }, [requestSelectionCards.length, selectedPreviewRequest, selectedPreviewRequestId]);
 
   const summaryRows = useMemo(() => [
     {
@@ -200,8 +283,8 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
     },
     {
       label: "Farklı duraktan binecek",
-      value: lineLabel(metrics.locationRequests),
-      note: "Konumlu istekler üzerinden okunur.",
+      value: lineLabel(metrics.differentStopRequests),
+      note: "Açık ve kabul edilen isteklerden okunur.",
     },
     {
       label: "Konumdan alınma isteği onay bekliyor",
@@ -237,9 +320,20 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
         </div>
       </div>
 
-      {selectedPreview ? (
-        <BoardingRouteImpactPreviewCard preview={selectedPreview} title="Rota etkisi önizlemesi" />
-      ) : null}
+      <div ref={previewCardRef} tabIndex={-1} style={{ scrollMarginTop: 16, outline: "none" }}>
+        <BoardingRouteImpactPreviewCard
+          preview={previewLoading ? null : selectedPreview}
+          request={selectedPreviewRequest}
+          loading={previewLoading}
+          emptyText={selectedPreviewRequestId ? "Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok." : ""}
+          selectionLabel={previewSelectionLabel}
+          selectionNote={previewSelectionNote}
+          decisionOwnerLabel={selectedPreviewRequest?.decisionOwnerLabel || boardingChangeDecisionOwnerLabel(selectedPreviewRequest)}
+          decisionOwnerNote={selectedPreviewRequest?.decisionOwnerNote || boardingChangeDecisionOwnerNote(selectedPreviewRequest)}
+          onClearSelection={selectedPreviewRequestId ? handlePreviewSelectionClear : null}
+          title="Rota etkisi önizlemesi"
+        />
+      </div>
 
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
         <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
@@ -251,6 +345,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
                 borderRadius: 8,
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.06)",
+                ...(Number(selectedPreviewRequestId || 0) === Number(item.id || 0) ? { boxShadow: "0 0 0 1px rgba(59, 130, 246, 0.22)", background: "rgba(59, 130, 246, 0.10)" } : {}),
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 700 }}>{item.title}</div>
@@ -258,13 +353,20 @@ export default function RoomOperationsBoard({ roomSummary, roomData, onApplyAcce
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>{item.detail}</div>
                 <div className="muted" style={{ marginTop: 4 }}>{item.decisionText}</div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>{item.decisionOwnerNote}</div>
                 <button
                   type="button"
                   className="btn sm"
-                  style={{ marginTop: 8 }}
-                  onClick={() => setSelectedPreviewRequestId(Number(item.id || 0) || null)}
+                  style={{
+                    marginTop: 8,
+                    ...(Number(selectedPreviewRequestId || 0) === Number(item.id || 0)
+                      ? { borderColor: "rgba(59, 130, 246, 0.55)", boxShadow: "0 0 0 1px rgba(59, 130, 246, 0.18)" }
+                      : {}),
+                  }}
+                  aria-pressed={Number(selectedPreviewRequestId || 0) === Number(item.id || 0)}
+                  onClick={() => handlePreviewRequestSelect(item)}
                 >
-                  Rota etkisini önizle
+                  {previewLoading && Number(selectedPreviewRequestId || 0) === Number(item.id || 0) ? "Önizleniyor..." : "Rota etkisini önizle"}
                 </button>
               </div>
             )) : <div className="muted">Bekleyen biniş değişikliği yok.</div>}

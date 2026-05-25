@@ -186,8 +186,6 @@ export async function loadDriverBoardingChangeRouteEffects({
         select: {
           id: true,
           fullName: true,
-          name: true,
-          label: true,
         },
       },
     },

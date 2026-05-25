@@ -30,6 +30,35 @@ const BOARDING_CHANGE_DECISION_ACTIONS = [
   "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
 ];
 const BOARDING_CHANGE_APPLY_ACTION = "BOARDING_CHANGE_APPLIED";
+
+function normalizeDecisionOwnerRole(value) {
+  const role = String(value || "").trim().toUpperCase();
+  if (role === "DRIVER" || role === "COMPANY" || role === "ROOM") return role;
+  return "";
+}
+
+function decisionOwnerLabelForRole(role) {
+  const normalized = normalizeDecisionOwnerRole(role);
+  if (normalized === "DRIVER") return "Sürücü";
+  return "Hizmet alan taraf";
+}
+
+function decisionOwnerNoteForRole(role, { requestKind = "", requestStatus = "", routeOwnerHint = "" } = {}) {
+  const normalized = normalizeDecisionOwnerRole(role);
+  const kind = String(requestKind || "").toUpperCase();
+  if (requestStatus === "ACCEPTED") return "Talep işlendi.";
+  if (requestStatus === "CANCELLED") return "Talep kapandı.";
+  if (normalized === "DRIVER") {
+    return kind === "ALTERNATE_STOP_TODAY"
+      ? "Aynı rota üzerindeki durak değişikliği sürücü tarafında karar bekliyor."
+      : "Bu talep sürücü tarafında karar bekliyor.";
+  }
+  if (routeOwnerHint) return routeOwnerHint;
+  return kind === "ALTERNATE_STOP_TODAY"
+    ? "Rota değişikliği içerdiği için hizmet alan taraf karar veriyor."
+    : "Hizmet alan taraf karar veriyor.";
+}
+
 const REQUEST_SHIFT_PREVIEW_INCLUDE = {
   include: {
     vehicle: {
@@ -43,25 +72,20 @@ const REQUEST_SHIFT_PREVIEW_INCLUDE = {
       select: {
         id: true,
         fullName: true,
-        name: true,
       },
     },
     stops: {
       select: {
         id: true,
         name: true,
-        label: true,
-        stopName: true,
-        title: true,
-        code: true,
-        stationName: true,
-        address: true,
         lat: true,
         lng: true,
         order: true,
-        sortOrder: true,
-        sequence: true,
-        index: true,
+        type: true,
+        state: true,
+        reachedAt: true,
+        skippedAt: true,
+        updatedAt: true,
       },
     },
     people: {
@@ -80,18 +104,14 @@ const REQUEST_SHIFT_PREVIEW_INCLUDE = {
           select: {
             id: true,
             name: true,
-            label: true,
-            stopName: true,
-            title: true,
-            code: true,
-            stationName: true,
-            address: true,
             lat: true,
             lng: true,
             order: true,
-            sortOrder: true,
-            sequence: true,
-            index: true,
+            type: true,
+            state: true,
+            reachedAt: true,
+            skippedAt: true,
+            updatedAt: true,
           },
         },
       },
@@ -436,6 +456,13 @@ export function requestsRouter(io) {
             lng: item.lng,
           },
         });
+        const decisionOwnerRole = normalizeDecisionOwnerRole(meta.decisionOwnerRole || routeImpactPreview?.decisionOwnerRole || (String(item.status || "").toUpperCase() === "OPEN" ? "COMPANY" : ""));
+        const decisionOwnerLabel = meta.decisionOwnerLabel || routeImpactPreview?.decisionOwnerLabel || decisionOwnerLabelForRole(decisionOwnerRole);
+        const decisionOwnerNote = meta.decisionOwnerNote || routeImpactPreview?.decisionOwnerNote || decisionOwnerNoteForRole(decisionOwnerRole, {
+          requestKind: meta.requestKind || item.requestKind || item.kind,
+          requestStatus: String(item.status || "").toUpperCase(),
+          routeOwnerHint: routeImpactPreview?.decisionOwnerNote || "",
+        });
         const routeRefresh = buildBoardingChangeRouteRefreshState({
           applicationState,
           changeType: routeImpactPreview?.changeType || meta.routeImpactPreview?.changeType || meta.changeType || meta.requestKind || item.requestKind || item.kind,
@@ -448,6 +475,9 @@ export function requestsRouter(io) {
           requestReason: meta.requestReason || "",
           decisionState,
           decisionText,
+          decisionOwnerRole,
+          decisionOwnerLabel,
+          decisionOwnerNote,
           nearestStop,
           routeImpactPreview,
           boardingChangeApplicationStatus: applicationState,
@@ -476,27 +506,70 @@ export function requestsRouter(io) {
 
   // ROOM: close pickup request (OPEN -> ACCEPTED/CANCELLED)
   // Body opsiyonel: { status: "CANCELLED" } veya { status: "ACCEPTED" }
-  r.post("/:id/close", authRequired(), requireRole("ROOM"), async (req, res) => {
+  r.post("/:id/close", authRequired(), requireRole("COMPANY", "DRIVER", "SUPER_ADMIN"), async (req, res) => {
     try {
       const u = req.user;
-      if (!u.roomId) return res.status(400).json({ error: "ROOM must have roomId" });
 
       const requestId = Number(req.params.id);
 
       const item = await prisma.pickupRequest.findUnique({
         where: { id: requestId },
-        include: { shift: true, personel: true },
+        include: { shift: REQUEST_SHIFT_PREVIEW_INCLUDE, personel: true },
       });
       if (!item) return res.status(404).json({ error: "Request not found" });
-
-      if (!item.shift || item.shift.roomId !== u.roomId) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
 
       if (item.status !== "OPEN") {
         return res
           .status(409)
           .json({ error: `Request not OPEN (current=${item.status})` });
+      }
+
+      const requestKind = "DIFFERENT_STOP";
+      const routeImpactPreview = previewBoardingChangeRouteImpact({
+        shift: item.shift || null,
+        currentStops: item.shift?.stops || [],
+        passengersOrPeople: item.shift?.people || [],
+        boardingChange: {
+          changeType: requestKind,
+          requestKind,
+          personelId: item.personelId,
+          personLabel: item.personel?.fullName || item.personel?.name || item.personel?.label || `#${item.personelId || "-"}`,
+          lat: item.lat,
+          lng: item.lng,
+        },
+      });
+      const decisionOwnerRole = normalizeDecisionOwnerRole(routeImpactPreview?.decisionOwnerRole || "COMPANY");
+      const decisionOwnerLabel = routeImpactPreview?.decisionOwnerLabel || decisionOwnerLabelForRole(decisionOwnerRole);
+      const decisionOwnerNote = routeImpactPreview?.decisionOwnerNote || decisionOwnerNoteForRole(decisionOwnerRole, {
+        requestKind,
+        requestStatus: "OPEN",
+      });
+
+      if (u.role === "DRIVER") {
+        const driver = await prisma.driver.findFirst({ where: { userId: u.id }, select: { id: true } });
+        if (!driver || Number(driver.id || 0) !== Number(item.shift?.driverId || 0)) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+        if (decisionOwnerRole !== "DRIVER") {
+          return res.status(403).json({
+            error: "Decision owner mismatch",
+            decisionOwnerRole,
+            decisionOwnerLabel,
+          });
+        }
+      }
+
+      if (u.role === "COMPANY") {
+        if (Number(u.companyId || 0) !== Number(item.shift?.companyId || 0)) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+        if (decisionOwnerRole !== "COMPANY") {
+          return res.status(403).json({
+            error: "Decision owner mismatch",
+            decisionOwnerRole,
+            decisionOwnerLabel,
+          });
+        }
       }
 
       // default: ACCEPTED
@@ -511,6 +584,8 @@ export function requestsRouter(io) {
         });
       }
 
+      const decisionState = `${decisionOwnerRole}_${closeStatus}`;
+
       const updated = await prisma.pickupRequest.update({
         where: { id: requestId },
         data: { status: closeStatus },
@@ -524,13 +599,16 @@ export function requestsRouter(io) {
         meta: {
           actorId: u.id,
           actorRole: u.role,
+          decisionOwnerRole,
+          decisionOwnerLabel,
+          decisionOwnerNote,
           shiftId: updated.shiftId,
           personelId: updated.personelId,
           closeStatus,
-          decisionState: closeStatus === "ACCEPTED" ? "ROOM_ACCEPTED" : "ROOM_CANCELLED",
+          decisionState,
           decisionText: closeStatus === "ACCEPTED"
-            ? "İstek oda tarafından onaylandı."
-            : "İstek oda tarafından iptal edildi.",
+            ? `${decisionOwnerLabel} talebi onayladı.`
+            : `${decisionOwnerLabel} talebi reddetti.`,
         },
       });
 
@@ -542,14 +620,13 @@ export function requestsRouter(io) {
         requesterRole: "PERSONEL",
         requestKind: "DIFFERENT_STOP",
         requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
-        decisionState: closeStatus === "ACCEPTED" ? "ROOM_ACCEPTED" : "ROOM_CANCELLED",
+        decisionState,
         nearestStop: null,
       });
 
-      const decisionState = closeStatus === "ACCEPTED" ? "ROOM_ACCEPTED" : "ROOM_CANCELLED";
       const decisionText = closeStatus === "ACCEPTED"
-        ? "İstek oda tarafından onaylandı."
-        : "İstek oda tarafından iptal edildi.";
+        ? `${decisionOwnerLabel} talebi onayladı.`
+        : `${decisionOwnerLabel} talebi reddetti.`;
       const evt = {
         requestId: updated.id,
         action: "closed",
@@ -560,6 +637,9 @@ export function requestsRouter(io) {
         requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
         decisionState,
         decisionText,
+        decisionOwnerRole,
+        decisionOwnerLabel,
+        decisionOwnerNote,
       };
 
       io.to(`company:${updated.shift.companyId}`).emit("request:update", evt);
@@ -572,6 +652,9 @@ export function requestsRouter(io) {
         requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
         decisionState,
         decisionText,
+        decisionOwnerRole,
+        decisionOwnerLabel,
+        decisionOwnerNote,
       });
     } catch (e) {
       logger.error("[requests] POST /:id/close error:", e);

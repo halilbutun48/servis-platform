@@ -110,6 +110,7 @@ function main() {
   must(pkg, '"check:uxseferabilauncher01"', 'package.json exposes check:uxseferabilauncher01');
   must(pkg, '"check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js"', 'package.json exposes check:copliveaccept01');
   must(pkg, '"check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js"', 'package.json exposes check:boardingops01a');
+  must(pkg, '"check:bugrouteimpactpreviewbutton01": "node backend/scripts/bug_route_impact_preview_button_01_check.js"', 'package.json exposes check:bugrouteimpactpreviewbutton01');
   must(pkg, '"check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js"', 'package.json exposes check:boardingops01b');
   must(pkg, '"check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js"', 'package.json exposes check:boardingops01c');
   must(pkg, '"check:routechangefinal01": "node backend/scripts/route_change_final_01_check.js"', 'package.json exposes check:routechangefinal01');
@@ -196,11 +197,12 @@ function main() {
     'check:cop04bfix07',
     'check:cop04bfix08',
     'check:uxcopilotsmartchips01',
-  'check:uxcopilotpersona01',
-  'check:uxcopilotterminal01',
-  'check:uxseferabilauncher01',
-  'check:copliveaccept01',
+    'check:uxcopilotpersona01',
+    'check:uxcopilotterminal01',
+    'check:uxseferabilauncher01',
+    'check:copliveaccept01',
     'check:boardingops01a',
+    'check:bugrouteimpactpreviewbutton01',
     'check:boardingops01b',
     'check:boardingops01c',
     'check:routechangefinal01',
@@ -329,6 +331,8 @@ function main() {
   must(guide, 'check:finaluxsmoke01', 'script guide exposes check:finaluxsmoke01');
   must(guide, 'BOARDING-OPS-01A', 'script guide mentions BOARDING-OPS-01A');
   must(guide, 'check:boardingops01a', 'script guide exposes check:boardingops01a');
+  must(guide, 'BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01', 'script guide mentions BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01');
+  must(guide, 'check:bugrouteimpactpreviewbutton01', 'script guide exposes check:bugrouteimpactpreviewbutton01');
   must(guide, 'BOARDING-OPS-01B', 'script guide mentions BOARDING-OPS-01B');
   must(guide, 'check:boardingops01b', 'script guide exposes check:boardingops01b');
   must(guide, 'BOARDING-OPS-01C', 'script guide mentions BOARDING-OPS-01C');

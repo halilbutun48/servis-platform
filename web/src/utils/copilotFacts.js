@@ -6,6 +6,7 @@ import {
   isEtaSuspicious,
   normalizeGpsFreshness,
 } from "./etaSanity.js";
+import { resolvePersonDisplayLabel } from "./labels.js";
 
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
@@ -1198,6 +1199,8 @@ export function buildBoardingRouteImpactCopilotFacts({
   const requestRouteRefreshState = compactText(request?.boardingChangeRouteRefreshState || routeImpact?.routeRefreshState || '', '');
   const requestRouteRefreshLabel = compactText(request?.boardingChangeRouteRefreshLabel || routeImpact?.routeRefreshLabel || '', '');
   const requestRouteRefreshNote = compactText(request?.boardingChangeRouteRefreshNote || routeImpact?.routeRefreshNote || '', '');
+  const requestDecisionOwnerLabel = compactText(request?.decisionOwnerLabel || routeImpact?.decisionOwnerLabel || '', '');
+  const requestDecisionOwnerNote = compactText(request?.decisionOwnerNote || routeImpact?.decisionOwnerNote || '', '');
   const hasApplicationContext = Boolean(requestApplicationStatus || requestApplicationText || requestApplicationBoundaryNote || requestApplicationState);
   const applicationStateKey = normalizeEnumKey(requestApplicationStatus || requestApplicationState);
   const applicationStatusLabel = requestApplicationStatus ? boardingApplicationStatusLabel(requestApplicationStatus) : '';
@@ -1210,7 +1213,7 @@ export function buildBoardingRouteImpactCopilotFacts({
         : 'Bu değişiklik kabul edilmiş ve günlük atamaya işlenebilir. Bu işlem sürücü rotasını yenilemez.'))
     : compactText(routeImpact?.previewOnlyNote || 'Bu sadece önizlemedir. Rota/atama uygulanmadı.', 'Bu sadece önizlemedir. Rota/atama uygulanmadı.');
   const changeTypeLabel = compactText(routeImpact?.changeTypeLabel || 'Biniş değişikliği önizlemesi', 'Biniş değişikliği önizlemesi');
-  const personLabel = compactText(routeImpact?.personLabel || request?.personel?.fullName || request?.personel?.name || 'Seçili kişi', 'Seçili kişi');
+  const personLabel = compactText(resolvePersonDisplayLabel(routeImpact, request, 'Seçili kişi'), 'Seçili kişi');
   const oldStopLabel = compactText(routeImpact?.oldStopLabel || '-', '-');
   const newStopLabel = compactText(routeImpact?.newStopLabel || '-', '-');
   const currentPeopleCount = Number(routeImpact?.currentPeopleCount ?? 0);
@@ -1258,6 +1261,10 @@ export function buildBoardingRouteImpactCopilotFacts({
     }
     if (requestApplicationText) evidence.push(`Uygulama özeti: ${requestApplicationText}`);
     if (requestApplicationBoundaryNote) evidence.push(`Sınır: ${requestApplicationBoundaryNote}`);
+    if (requestDecisionOwnerLabel || requestDecisionOwnerNote) {
+      evidence.push(`Karar sahibi: ${requestDecisionOwnerLabel || 'Oda'}`);
+      if (requestDecisionOwnerNote) evidence.push(`Karar notu: ${requestDecisionOwnerNote}`);
+    }
   }
   const copilotSignals = [
     { id: 'boarding-change-type', label: 'Değişiklik tipi', value: changeTypeLabel, note: hasApplicationContext ? (requestApplicationBoundaryNote || previewOnlyNote) : previewOnlyNote },
@@ -1267,6 +1274,7 @@ export function buildBoardingRouteImpactCopilotFacts({
     { id: 'boarding-duration', label: 'Süre etkisi', value: `${durationDeltaMin} dk`, note: 'ETA güncel değilse kesin bilgi gibi okunmaz.' },
     { id: 'boarding-capacity', label: 'Kapasite etkisi', value: capacityImpact.status || 'UNKNOWN', note: `Önceki yük ${currentPeopleCount}, önizleme yükü ${previewPeopleCount}.` },
     { id: 'boarding-reliability', label: 'Güvenilirlik', value: reliability.label || 'ETA hesaplanamıyor', note: reliability.note || 'ETA hesaplanamıyor' },
+    { id: 'boarding-decision-owner', label: 'Karar sahibi', value: requestDecisionOwnerLabel || 'Oda', note: requestDecisionOwnerNote || 'Oda tarafında karar bekliyor.' },
   ];
   if (hasApplicationContext) {
     copilotSignals.unshift(
@@ -1958,6 +1966,8 @@ export function buildCopilotStarterChips({
     || selection?.facts?.qualityPaymentBridgeNextAction
     || includesAny(selectionText, ['hakediş için kalite/kanıt hazırlık önizlemesi', 'readonly önizleme', 'ödeme başlatılmaz', 'tahsilat/fatura oluşturulmaz', 'kanıt eksikleri', 'hakediş etkisi', 'kalite durumu'])
   );
+  const isDriverToday = path.includes('/driver/today');
+  const isDriverRouteOrMap = path.includes('/driver/route') || path.includes('/driver/map');
   if (isDynamicSavingsPreview) {
     return finalizeStarterChips([
       'Tasarruf hesabını göster',
@@ -2033,9 +2043,6 @@ export function buildCopilotStarterChips({
   const isCompanyQuality = path.includes('/company/service-evaluation') || path.includes('/school/service-evaluation') || path.includes('/organization/service-evaluation');
   const isPersonelLive = path.includes('/personel/live') || path.includes('/personel/my');
   const isParentLive = path.includes('/parent/live');
-  const isDriverToday = path.includes('/driver/today');
-  const isDriverRouteOrMap = path.includes('/driver/route') || path.includes('/driver/map');
-
   if (isBoardingPreview) {
     return finalizeStarterChips([
       'Rota etkisini özetle',

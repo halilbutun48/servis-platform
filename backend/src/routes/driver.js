@@ -12,6 +12,7 @@ import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
 import { loadDriverBoardingChangeRouteEffects } from "../services/boardingChangeRouteRefresh.js";
+import { previewBoardingChangeRouteImpact } from "../services/boardingRouteImpactPreview.js";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
@@ -112,6 +113,59 @@ async function getShiftForDriver({ shiftId }) {
     },
   });
   return decorateShiftWithRegionContext(shift);
+}
+
+async function loadDriverPendingBoardingChangeRequests({ shift }) {
+  if (!shift?.id) return [];
+  const requests = await prisma.pickupRequest.findMany({
+    where: {
+      shiftId: shift.id,
+      status: "OPEN",
+    },
+    include: {
+      personel: {
+        select: {
+          id: true,
+          fullName: true,
+        },
+      },
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 20,
+  });
+
+  return requests.map((request) => {
+    const preview = previewBoardingChangeRouteImpact({
+      shift,
+      currentStops: shift?.stops || [],
+      passengersOrPeople: shift?.people || [],
+      boardingChange: {
+        changeType: "DIFFERENT_STOP",
+        requestKind: "DIFFERENT_STOP",
+        personelId: request.personelId,
+        personLabel: request.personel?.fullName || request.personel?.name || request.personel?.label || `#${request.personelId || "-"}`,
+        lat: request.lat,
+        lng: request.lng,
+      },
+    });
+
+    return {
+      id: request.id,
+      status: request.status,
+      personelId: request.personelId,
+      personLabel: preview.personLabel,
+      requestKind: "DIFFERENT_STOP",
+      decisionOwnerRole: preview.decisionOwnerRole || "COMPANY",
+      decisionOwnerLabel: preview.decisionOwnerLabel || "Hizmet alan taraf",
+      decisionOwnerNote: preview.decisionOwnerNote || "Hizmet alan taraf karar veriyor.",
+      routeImpactPreview: preview,
+      preview,
+      createdAt: request.createdAt,
+      lat: request.lat ?? null,
+      lng: request.lng ?? null,
+      nearestStop: null,
+    };
+  });
 }
 
 async function maybeStartShiftIfApproved(shiftId) {
@@ -262,6 +316,7 @@ function buildDriverRoutePayload(shift) {
     routeStops,
     boardingChangeEffects,
     boardingChangeSummary,
+    pendingBoardingChangeRequests: Array.isArray(decoratedShift?.pendingBoardingChangeRequests) ? decoratedShift.pendingBoardingChangeRequests : [],
     routeRefresh,
     routeNotice,
   };
@@ -428,9 +483,11 @@ export function driverRouter(io) {
 
     if (!shift) return res.json({ mode: "NO_ACTIVE_SHIFT" });
     const routeVisibilityByShiftId = await loadDriverBoardingChangeRouteEffects({ shiftIds: [shift.id] });
+    const pendingBoardingChangeRequests = await loadDriverPendingBoardingChangeRequests({ shift });
     const enrichedShift = {
       ...shift,
       ...(routeVisibilityByShiftId[String(shift.id)] || {}),
+      pendingBoardingChangeRequests,
     };
     return res.json(buildDriverRoutePayload(enrichedShift));
   });
@@ -480,9 +537,11 @@ export function driverRouter(io) {
     }
 
     const routeVisibilityByShiftId = await loadDriverBoardingChangeRouteEffects({ shiftIds: [shift.id] });
+    const pendingBoardingChangeRequests = await loadDriverPendingBoardingChangeRequests({ shift });
     const enrichedShift = {
       ...shift,
       ...(routeVisibilityByShiftId[String(shift.id)] || {}),
+      pendingBoardingChangeRequests,
     };
 
     return res.json(buildDriverRoutePayload(enrichedShift));

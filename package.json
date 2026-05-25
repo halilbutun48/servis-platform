@@ -77,6 +77,7 @@
     "check:uxseferabilauncher01": "node backend/scripts/ux_sefer_abi_launcher_01_check.js",
     "check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js",
     "check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js",
+    "check:bugrouteimpactpreviewbutton01": "node backend/scripts/bug_route_impact_preview_button_01_check.js",
     "check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js",
     "check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js",
     "check:routechangefinal01": "node backend/scripts/route_change_final_01_check.js",

@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-05-24
+Tarih: 2026-05-25
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `301`
-- Toplam executable tracked file: `1069`
-- Combined registry row: `1370`
-- Root/backend/web/mobile package dağılımı: root `144`, backend `636`, web `86`, mobile `201`
+- Toplam package script entry: `302`
+- Toplam executable tracked file: `1070`
+- Combined registry row: `1372`
+- Root/backend/web/mobile package dağılımı: root `145`, backend `637`, web `86`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `17`
 - ACTIVE: `360`
@@ -28,7 +28,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `478`
+- NEEDS_REVIEW: `480`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
@@ -49,7 +49,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 478 |
+| NEEDS_REVIEW | 480 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -141,6 +141,7 @@ Repo: `servis-platform`
 | root:check:uxseferabilauncher01 | package.json | root | node backend/scripts/ux_sefer_abi_launcher_01_check.js | core | ACTIVE_CORE |  | UX-SEFER-ABI-LAUNCHER-01 |  | Breaks canonical verification chain |  |
 | root:check:copliveaccept01 | package.json | root | node backend/scripts/cop_live_accept_01_check.js | core | ACTIVE_CORE |  | COP-LIVE-ACCEPT-01 |  | Breaks canonical verification chain |  |
 | root:check:boardingops01a | package.json | root | node backend/scripts/boarding_ops_01a_route_impact_preview_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01A |  | Breaks canonical verification chain |  |
+| root:check:bugrouteimpactpreviewbutton01 | package.json | root | node backend/scripts/bug_route_impact_preview_button_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-BUGROUTEIMPACTPREVIEWBUTTON-01 |  | Owner or chain unclear |  |
 | root:check:boardingops01b | package.json | root | node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01B |  | Breaks canonical verification chain |  |
 | root:check:boardingops01c | package.json | root | node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01C |  | Breaks canonical verification chain |  |
 | root:check:routechangefinal01 | package.json | root | node backend/scripts/route_change_final_01_check.js | core | ACTIVE_CORE |  | ROUTE-CHANGE-FINAL-01 |  | Breaks canonical verification chain |  |
@@ -1852,4 +1853,3 @@ Repo: `servis-platform`
 - Bu doküman repo harness envanterini tek yerde toplar.
 - Safe cleanup bu turda yalnızca saf alias wrapper dosyalarında yapıldı.
 - Legacy alias girişleri docs ve chain referansları nedeniyle korunuyor.
-

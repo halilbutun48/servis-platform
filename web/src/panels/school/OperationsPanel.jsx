@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
@@ -8,6 +8,7 @@ import PanelChrome from "../../components/PanelChrome";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { resolvePersonDisplayLabel } from "../../utils/labels";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildBoardingRouteImpactCopilotFacts } from "../../utils/copilotFacts";
@@ -17,6 +18,8 @@ import {
   boardingChangeApplySuccessNote,
   boardingChangeApplicationStatusLabel,
   boardingChangeDecisionLabel,
+  boardingChangeDecisionOwnerLabel,
+  boardingChangeDecisionOwnerNote,
   boardingChangeKindLabel,
   boardingChangeRouteRefreshLabel,
   boardingChangeRouteRefreshNote,
@@ -64,6 +67,12 @@ function latestInviteByChild(invites = []) {
   return map;
 }
 
+function isDifferentStopRequest(item = {}) {
+  const kind = String(item?.requestKind || item?.kind || "").toUpperCase();
+  const label = boardingChangeKindLabel(item?.requestKind || item?.kind);
+  return kind.includes("ALTERNATE_STOP") || kind.includes("DIFFERENT_STOP") || String(label || "").includes("Farklı durak");
+}
+
 export default function SchoolOperationsPanel() {
   const { token, me } = useSession();
   const [students, setStudents] = useState([]);
@@ -74,8 +83,14 @@ export default function SchoolOperationsPanel() {
   const [err, setErr] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
   const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewSelectionNonce, setPreviewSelectionNonce] = useState(0);
   const [applyingRequestId, setApplyingRequestId] = useState(null);
+  const [decidingRequestId, setDecidingRequestId] = useState(null);
   const [applyNotice, setApplyNotice] = useState("");
+  const [decisionNotice, setDecisionNotice] = useState("");
+  const [decisionError, setDecisionError] = useState("");
+  const previewCardRef = useRef(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -116,6 +131,43 @@ export default function SchoolOperationsPanel() {
     }
   }, [load, token]);
 
+  const handleDecideRequest = useCallback(async (requestId, status) => {
+    const id = Number(requestId || 0);
+    if (!id) return;
+    const nextStatus = String(status || "").trim().toUpperCase();
+    if (!["ACCEPTED", "CANCELLED"].includes(nextStatus)) return;
+    setDecidingRequestId(id);
+    setDecisionNotice("");
+    setDecisionError("");
+    try {
+      const result = await api(`/api/requests/${id}/close`, {
+        token,
+        method: "POST",
+        body: { status: nextStatus },
+      });
+      setDecisionNotice(result?.decisionText || (nextStatus === "ACCEPTED" ? "Talep onaylandı." : "Talep reddedildi."));
+      await load();
+    } catch (e) {
+      setDecisionError(String(e?.message || e));
+    } finally {
+      setDecidingRequestId(null);
+    }
+  }, [load, token]);
+
+  const handlePreviewRequestSelect = useCallback((row) => {
+    const id = Number(row?.id || 0) || null;
+    if (!id) return;
+    setSelectedPreviewRequestId(id);
+    setPreviewLoading(true);
+    setPreviewSelectionNonce((value) => value + 1);
+  }, []);
+
+  const handlePreviewSelectionClear = useCallback(() => {
+    setSelectedPreviewRequestId(null);
+    setPreviewLoading(false);
+    setPreviewSelectionNonce((value) => value + 1);
+  }, []);
+
   useEffect(() => {
     if (!token) return;
     load();
@@ -125,7 +177,6 @@ export default function SchoolOperationsPanel() {
 
   const notifRows = useMemo(() => normalizeNotificationDigest(notifications), [notifications]);
   const noBoardRows = useMemo(() => filterNotificationDigest(notifRows, ["bugün öğrencinizin servise binmeyeceği", "bugün öğrencim servise binmeyecek", "bugün binmeyecek"]), [notifRows]);
-  const diffStopRows = useMemo(() => filterNotificationDigest(notifRows, ["farklı duraktan", "farklı durak"]), [notifRows]);
   const boardedRows = useMemo(() => filterNotificationDigest(notifRows, ["servise bindi", "okula ulaştı", "ulaştı"]), [notifRows]);
   const parentNotificationRows = useMemo(() => notifRows.slice(0, 10), [notifRows]);
   const inviteByChild = useMemo(() => latestInviteByChild(invites), [invites]);
@@ -167,15 +218,24 @@ export default function SchoolOperationsPanel() {
     () => riskRequestRows.slice(0, 10).map((item) => ({
       id: item.id,
       personel: item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`,
+      personelId: item?.personelId || item?.personel?.id || null,
       shift: item?.shift?.id || item?.shiftId || "-",
+      shiftRecord: item?.shift || null,
       status: item?.status || "OPEN",
+      requestKind: item?.requestKind || item?.kind || null,
       kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
+      decisionOwnerRole: item?.decisionOwnerRole || "COMPANY",
+      decisionOwnerLabel: boardingChangeDecisionOwnerLabel(item),
+      decisionOwnerNote: boardingChangeDecisionOwnerNote(item),
       detail: item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
       routeRefreshState: item?.boardingChangeRouteRefreshState || "NONE",
       routeRefreshLabel: item?.boardingChangeRouteRefreshLabel || boardingChangeRouteRefreshLabel(item),
       routeRefreshNote: item?.boardingChangeRouteRefreshNote || boardingChangeRouteRefreshNote(item),
       createdAt: item?.createdAt || item?.at || null,
+      lat: item?.lat ?? null,
+      lng: item?.lng ?? null,
+      nearestStop: item?.nearestStop || null,
       preview: item?.routeImpactPreview || null,
     })),
     [riskRequestRows]
@@ -184,10 +244,16 @@ export default function SchoolOperationsPanel() {
     () => acceptedRequestRows.slice(0, 10).map((item) => ({
       id: item.id,
       personel: item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`,
+      personelId: item?.personelId || item?.personel?.id || null,
       shift: item?.shift?.id || item?.shiftId || "-",
+      shiftRecord: item?.shift || null,
       status: item?.status || "ACCEPTED",
+      requestKind: item?.requestKind || item?.kind || null,
       kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
+      decisionOwnerRole: item?.decisionOwnerRole || "COMPANY",
+      decisionOwnerLabel: boardingChangeDecisionOwnerLabel(item),
+      decisionOwnerNote: boardingChangeDecisionOwnerNote(item),
       detail: item?.boardingChangeApplicationText || item?.decisionText || (item?.lat != null || item?.lng != null ? "Kabul edilen biniş değişikliği" : "Kabul edilen değişiklik"),
       routeRefreshState: item?.boardingChangeRouteRefreshState || "NONE",
       routeRefreshLabel: item?.boardingChangeRouteRefreshLabel || boardingChangeRouteRefreshLabel(item),
@@ -196,11 +262,20 @@ export default function SchoolOperationsPanel() {
       applicationText: item?.boardingChangeApplicationText || "",
       applicationAt: item?.boardingChangeAppliedAt || null,
       boundaryNote: item?.boardingChangeApplicationBoundaryNote || "",
+      lat: item?.lat ?? null,
+      lng: item?.lng ?? null,
+      nearestStop: item?.nearestStop || null,
       preview: item?.routeImpactPreview || null,
     })),
     [acceptedRequestRows]
   );
   const requestSelectionRows = useMemo(() => [...requestRows, ...acceptedRows], [requestRows, acceptedRows]);
+
+  const diffStopRows = useMemo(() => [...requestRows, ...acceptedRows].filter((row) => isDifferentStopRequest(row)).map((row) => ({
+    key: `request-${row.id}`,
+    title: row.personel,
+    message: `${row.kind} • ${row.decision}${row.detail ? ` • ${row.detail}` : ""}`,
+  })), [acceptedRows, requestRows]);
 
   const selectedPreviewRequest = useMemo(() => {
     if (!requestSelectionRows.length) return null;
@@ -209,10 +284,29 @@ export default function SchoolOperationsPanel() {
       const hit = requestSelectionRows.find((item) => Number(item?.id || 0) === desiredId);
       if (hit) return hit;
     }
-    return requestSelectionRows[0] || null;
-  }, [requestSelectionRows, selectedPreviewRequestId]);
+    if (!riskRequestRows.length) return acceptedRequestRows[0] || null;
+    return null;
+  }, [acceptedRequestRows, requestSelectionRows, riskRequestRows.length, selectedPreviewRequestId]);
 
   const selectedPreview = useMemo(() => selectedPreviewRequest?.preview || null, [selectedPreviewRequest]);
+
+  useEffect(() => {
+    if (!selectedPreviewRequestId) {
+      setPreviewLoading(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      try {
+        previewCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        previewCardRef.current?.focus?.({ preventScroll: true });
+      } catch {
+        /* no-op */
+      }
+      setPreviewLoading(false);
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [previewSelectionNonce, selectedPreviewRequestId]);
+
   const selectedPreviewFacts = useMemo(() => {
     if (!selectedPreviewRequest || !selectedPreview) return null;
     return buildBoardingRouteImpactCopilotFacts({
@@ -224,7 +318,7 @@ export default function SchoolOperationsPanel() {
 
   const selectedPreviewSelection = useMemo(() => {
     if (!selectedPreviewRequest || !selectedPreview || !selectedPreviewFacts) return null;
-    const personLabel = selectedPreview.personLabel || selectedPreviewRequest?.personel || `#${selectedPreviewRequest?.id || "-"}`;
+    const personLabel = resolvePersonDisplayLabel(selectedPreviewRequest, selectedPreview, "Kişi bilgisi eksik");
     const summary = selectedPreviewRequest?.boardingChangeApplicationText || selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || "";
     const applicationStatusLabel = selectedPreviewRequest?.boardingChangeApplicationStatus
       ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.boardingChangeApplicationStatus)
@@ -240,7 +334,7 @@ export default function SchoolOperationsPanel() {
       selectedRecordLabel: personLabel,
       selectedRecordSummary: summary,
       selectedRecordStatus: applicationStatusLabel,
-      helpContextSummary: `${selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
+      helpContextSummary: `${selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
       contextSummary: summary,
       selectedRecord: {
         label: personLabel,
@@ -249,6 +343,8 @@ export default function SchoolOperationsPanel() {
         changeType: selectedPreview.changeTypeLabel,
         oldStopLabel: selectedPreview.oldStopLabel,
         newStopLabel: selectedPreview.newStopLabel,
+        decisionOwnerLabel: selectedPreviewRequest?.decisionOwnerLabel || boardingChangeDecisionOwnerLabel(selectedPreviewRequest),
+        decisionOwnerNote: selectedPreviewRequest?.decisionOwnerNote || boardingChangeDecisionOwnerNote(selectedPreviewRequest),
         applicationStatus: selectedPreviewRequest?.boardingChangeApplicationStatus || null,
         applicationBoundaryNote: selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || null,
         previewOnlyNote: selectedPreview.previewOnlyNote,
@@ -257,6 +353,7 @@ export default function SchoolOperationsPanel() {
         { label: "Değişiklik Türü", value: selectedPreview.changeTypeLabel || "-" },
         { label: "Eski Durak", value: selectedPreview.oldStopLabel || "-" },
         { label: "Yeni / Geçici Durak", value: selectedPreview.newStopLabel || "-" },
+        { label: "Karar Sahibi", value: selectedPreviewRequest?.decisionOwnerLabel || boardingChangeDecisionOwnerLabel(selectedPreviewRequest) },
         { label: "Kişi Etkisi", value: `${selectedPreview.currentPeopleCount} → ${selectedPreview.previewPeopleCount}` },
         { label: "Durak Etkisi", value: `${selectedPreview.currentStopCount} → ${selectedPreview.previewStopCount}` },
         { label: "Km Etkisi", value: `${selectedPreview.distanceDeltaKm?.toFixed ? selectedPreview.distanceDeltaKm.toFixed(2) : selectedPreview.distanceDeltaKm} km` },
@@ -274,6 +371,23 @@ export default function SchoolOperationsPanel() {
       screenPath: "/school/operations",
     };
   }, [selectedPreview, selectedPreviewFacts, selectedPreviewRequest]);
+
+  const previewSelectionLabel = useMemo(() => {
+    if (!selectedPreviewRequest) return "";
+    const personLabel = resolvePersonDisplayLabel(selectedPreviewRequest, selectedPreview, "Kişi bilgisi eksik");
+    return `${boardingChangeKindLabel(selectedPreviewRequest?.requestKind || selectedPreviewRequest?.kind)} • ${personLabel}`;
+  }, [selectedPreview, selectedPreviewRequest]);
+
+  const previewSelectionNote = useMemo(() => {
+    if (!requestSelectionRows.length) return "";
+    if (!selectedPreviewRequestId && selectedPreviewRequest) {
+      return "Açık istek yok; ilk kabul edilen kayıt gösteriliyor.";
+    }
+    if (selectedPreviewRequestId && selectedPreviewRequest) {
+      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Readonly önizleme seçildi.";
+    }
+    return "Seçili satırın readonly önizlemesi burada gösterilir.";
+  }, [requestSelectionRows.length, selectedPreviewRequest, selectedPreviewRequestId]);
 
   useEffect(() => {
     if (!selectedPreviewSelection) {
@@ -323,12 +437,14 @@ export default function SchoolOperationsPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
       {applyNotice ? <div className="card" style={{ borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{applyNotice}</div> : null}
+      {decisionNotice ? <div className="card" style={{ borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{decisionNotice}</div> : null}
+      {decisionError ? <div className="card err">{decisionError}</div> : null}
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Öğrenci servis atamaları" value={metricValue(students.length)} note="Öğrenci envanteri" />
         <MiniStat title="Veli bağlantıları" value={metricValue(invites.length)} note="Aktif ve geçmiş erişim" />
         <MiniStat title="Bugün binmeyecek öğrenciler" value={metricValue(noBoardRows.length)} note="Bildirim özetinden okunur" />
-        <MiniStat title="Farklı duraktan binecek öğrenciler" value={metricValue(diffStopRows.length)} note="Durak değişiklik sinyali" />
+        <MiniStat title="Farklı duraktan binecek öğrenciler" value={metricValue(diffStopRows.length)} note="Açık ve kabul edilen isteklerden okunur" />
         <MiniStat title="Servise bindi / okula ulaştı" value={metricValue(boardedRows.length)} note="Canlı durum bildirimleri" />
         <MiniStat title="Veli bildirim geçmişi" value={metricValue(parentNotificationRows.length)} note="Son kayıtlar" />
       </div>
@@ -475,11 +591,20 @@ export default function SchoolOperationsPanel() {
 
       {activeTab === "exceptions" ? (
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-          {selectedPreview ? (
-            <div style={{ gridColumn: "1 / -1" }}>
-              <BoardingRouteImpactPreviewCard preview={selectedPreview} title="Rota etkisi önizlemesi" />
-            </div>
-          ) : null}
+          <div ref={previewCardRef} tabIndex={-1} style={{ gridColumn: "1 / -1", scrollMarginTop: 16, outline: "none" }}>
+            <BoardingRouteImpactPreviewCard
+              preview={previewLoading ? null : selectedPreview}
+              request={selectedPreviewRequest}
+              loading={previewLoading}
+              emptyText={selectedPreviewRequestId ? "Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok." : ""}
+              selectionLabel={previewSelectionLabel}
+              selectionNote={previewSelectionNote}
+              decisionOwnerLabel={selectedPreviewRequest?.decisionOwnerLabel || boardingChangeDecisionOwnerLabel(selectedPreviewRequest)}
+              decisionOwnerNote={selectedPreviewRequest?.decisionOwnerNote || boardingChangeDecisionOwnerNote(selectedPreviewRequest)}
+              onClearSelection={selectedPreviewRequestId ? handlePreviewSelectionClear : null}
+              title="Rota etkisi önizlemesi"
+            />
+          </div>
 
           <SectionCard title="Bugün binmeyecek öğrenciler" subtitle="Bugün servise binmeyeceği bildirilen kayıtlar">
             <div style={{ display: "grid", gap: 8 }}>
@@ -492,7 +617,7 @@ export default function SchoolOperationsPanel() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Farklı duraktan binecek öğrenciler" subtitle="Onaylı veya bekleyen durak değişikliği sinyalleri">
+          <SectionCard title="Farklı duraktan binecek öğrenciler" subtitle="Açık ve kabul edilen durak değişikliği istekleri">
             <div style={{ display: "grid", gap: 8 }}>
               {diffStopRows.length ? diffStopRows.slice(0, 5).map((row) => (
                 <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
@@ -519,20 +644,55 @@ export default function SchoolOperationsPanel() {
                 </thead>
                 <tbody>
                   {requestRows.length ? requestRows.map((row) => (
-                    <tr key={row.id}>
+                    <tr
+                      key={row.id}
+                      style={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)
+                        ? { background: "rgba(59, 130, 246, 0.12)" }
+                        : undefined}
+                    >
                       <td>{row.personel}</td>
                       <td>#{row.shift}</td>
                       <td>{displayStatusLabel(row.status)}</td>
                       <td>{row.kind}</td>
-                      <td>{row.decision}</td>
+                      <td>
+                        <div>{row.decision}</div>
+                        <div className="panelMeta" style={{ marginTop: 4 }}>{row.decisionOwnerNote}</div>
+                        {String(row.decisionOwnerRole || "").toUpperCase() === "COMPANY" && String(row.status || "").toUpperCase() === "OPEN" ? (
+                          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            <button
+                              type="button"
+                              className="btn sm"
+                              disabled={Number(decidingRequestId || 0) === Number(row.id || 0)}
+                              onClick={() => handleDecideRequest(row.id, "ACCEPTED")}
+                            >
+                              {Number(decidingRequestId || 0) === Number(row.id || 0) ? "..." : "Kabul et"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn sm ghost"
+                              disabled={Number(decidingRequestId || 0) === Number(row.id || 0)}
+                              onClick={() => handleDecideRequest(row.id, "CANCELLED")}
+                            >
+                              {Number(decidingRequestId || 0) === Number(row.id || 0) ? "..." : "Reddet"}
+                            </button>
+                          </div>
+                        ) : null}
+                        {String(row.decisionOwnerRole || "").toUpperCase() === "DRIVER" && String(row.status || "").toUpperCase() === "OPEN" ? (
+                          <div className="panelMeta" style={{ marginTop: 8 }}>Sürücü tarafında karar bekliyor.</div>
+                        ) : null}
+                      </td>
                       <td>{fmtTR(row.createdAt)}</td>
                       <td>
                         <button
                           type="button"
                           className="btn sm"
-                          onClick={() => setSelectedPreviewRequestId(Number(row.id || 0) || null)}
+                          aria-pressed={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)}
+                          onClick={() => handlePreviewRequestSelect(row)}
+                          style={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)
+                            ? { borderColor: "rgba(59, 130, 246, 0.55)", boxShadow: "0 0 0 1px rgba(59, 130, 246, 0.18)" }
+                            : undefined}
                         >
-                          Rota etkisini önizle
+                          {previewLoading && Number(selectedPreviewRequestId || 0) === Number(row.id || 0) ? "Önizleniyor..." : "Rota etkisini önizle"}
                         </button>
                       </td>
                     </tr>

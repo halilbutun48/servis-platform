@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
@@ -9,6 +9,7 @@ import CollapsibleSection from "../../components/CollapsibleSection";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { resolvePersonDisplayLabel } from "../../utils/labels";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildBoardingRouteImpactCopilotFacts } from "../../utils/copilotFacts";
@@ -18,6 +19,8 @@ import {
   boardingChangeApplySuccessNote,
   boardingChangeApplicationStatusLabel,
   boardingChangeDecisionLabel,
+  boardingChangeDecisionOwnerLabel,
+  boardingChangeDecisionOwnerNote,
   boardingChangeKindLabel,
   boardingChangeRouteRefreshLabel,
   boardingChangeRouteRefreshNote,
@@ -87,6 +90,12 @@ function getShiftContractLabel(shift = {}) {
   return agreementId > 0 ? `Sözleşme #${agreementId}` : "-";
 }
 
+function isDifferentStopRequest(item = {}) {
+  const kind = String(item?.requestKind || item?.kind || "").toUpperCase();
+  const label = boardingChangeKindLabel(item?.requestKind || item?.kind);
+  return kind.includes("ALTERNATE_STOP") || kind.includes("DIFFERENT_STOP") || String(label || "").includes("Farklı durak");
+}
+
 export default function CompanyOperationsPanel() {
   const { token, me } = useSession();
   const [personels, setPersonels] = useState([]);
@@ -96,11 +105,17 @@ export default function CompanyOperationsPanel() {
   const [shiftSummary, setShiftSummary] = useState(null);
   const [activeTab, setActiveTab] = useState("summary");
   const [selectedPreviewRequestId, setSelectedPreviewRequestId] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewSelectionNonce, setPreviewSelectionNonce] = useState(0);
   const [applyingRequestId, setApplyingRequestId] = useState(null);
+  const [decidingRequestId, setDecidingRequestId] = useState(null);
   const [applyNotice, setApplyNotice] = useState("");
+  const [decisionNotice, setDecisionNotice] = useState("");
+  const [decisionError, setDecisionError] = useState("");
   const [notificationQ, setNotificationQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const previewCardRef = useRef(null);
 
   const companyKind = String(me?.companyKind || "COMPANY").toUpperCase();
   const basePath = companyBaseFromKind(companyKind);
@@ -151,6 +166,43 @@ export default function CompanyOperationsPanel() {
     }
   }, [load, token]);
 
+  const handleDecideRequest = useCallback(async (requestId, status) => {
+    const id = Number(requestId || 0);
+    if (!id) return;
+    const nextStatus = String(status || "").trim().toUpperCase();
+    if (!["ACCEPTED", "CANCELLED"].includes(nextStatus)) return;
+    setDecidingRequestId(id);
+    setDecisionNotice("");
+    setDecisionError("");
+    try {
+      const result = await api(`/api/requests/${id}/close`, {
+        token,
+        method: "POST",
+        body: { status: nextStatus },
+      });
+      setDecisionNotice(result?.decisionText || (nextStatus === "ACCEPTED" ? "Talep onaylandı." : "Talep reddedildi."));
+      await load();
+    } catch (e) {
+      setDecisionError(String(e?.message || e));
+    } finally {
+      setDecidingRequestId(null);
+    }
+  }, [load, token]);
+
+  const handlePreviewRequestSelect = useCallback((row) => {
+    const id = Number(row?.id || 0) || null;
+    if (!id) return;
+    setSelectedPreviewRequestId(id);
+    setPreviewLoading(true);
+    setPreviewSelectionNonce((value) => value + 1);
+  }, []);
+
+  const handlePreviewSelectionClear = useCallback(() => {
+    setSelectedPreviewRequestId(null);
+    setPreviewLoading(false);
+    setPreviewSelectionNonce((value) => value + 1);
+  }, []);
+
   useEffect(() => {
     if (!token) return;
     load();
@@ -160,7 +212,6 @@ export default function CompanyOperationsPanel() {
 
   const notifRows = useMemo(() => normalizeNotificationDigest(notifications), [notifications]);
   const noBoardRows = useMemo(() => filterNotificationDigest(notifRows, ["bugün servisi kullanmayacağ", "bugün binmeyecek", "servisi kullanmayacağım"]), [notifRows]);
-  const diffStopRows = useMemo(() => filterNotificationDigest(notifRows, ["farklı duraktan", "farklı durak"]), [notifRows]);
   const lateRows = useMemo(() => filterNotificationDigest(notifRows, ["yetişem", "gecik", "kaçır"]), [notifRows]);
   const boardedRows = useMemo(() => filterNotificationDigest(notifRows, ["servise bindi", "bindi"]), [notifRows]);
   const arrivedRows = useMemo(() => filterNotificationDigest(notifRows, ["okula ulaştı", "ulaştı"]), [notifRows]);
@@ -207,10 +258,16 @@ export default function CompanyOperationsPanel() {
     () => openRequestRows.slice(0, 10).map((item) => ({
       id: item.id,
       personel: item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`,
+      personelId: item?.personelId || item?.personel?.id || null,
       shift: item?.shift?.id || item?.shiftId || "-",
+      shiftRecord: item?.shift || null,
       status: item?.status || "OPEN",
+      requestKind: item?.requestKind || item?.kind || null,
       kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
+      decisionOwnerRole: item?.decisionOwnerRole || "COMPANY",
+      decisionOwnerLabel: boardingChangeDecisionOwnerLabel(item),
+      decisionOwnerNote: boardingChangeDecisionOwnerNote(item),
       applicationStatus: item?.boardingChangeApplicationStatus || "READY",
       applicationText: item?.boardingChangeApplicationText || "",
       applicationAt: item?.boardingChangeAppliedAt || null,
@@ -219,6 +276,9 @@ export default function CompanyOperationsPanel() {
       routeRefreshNote: item?.boardingChangeRouteRefreshNote || boardingChangeRouteRefreshNote(item),
       detail: item?.boardingChangeApplicationText || item?.routeImpactPreview?.summaryLine || item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
       createdAt: item?.createdAt || item?.at || null,
+      lat: item?.lat ?? null,
+      lng: item?.lng ?? null,
+      nearestStop: item?.nearestStop || null,
       preview: item?.routeImpactPreview || null,
     })),
     [openRequestRows]
@@ -227,10 +287,16 @@ export default function CompanyOperationsPanel() {
     () => acceptedRequestRows.slice(0, 10).map((item) => ({
       id: item.id,
       personel: item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`,
+      personelId: item?.personelId || item?.personel?.id || null,
       shift: item?.shift?.id || item?.shiftId || "-",
+      shiftRecord: item?.shift || null,
       status: item?.status || "ACCEPTED",
+      requestKind: item?.requestKind || item?.kind || null,
       kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
       decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
+      decisionOwnerRole: item?.decisionOwnerRole || "COMPANY",
+      decisionOwnerLabel: boardingChangeDecisionOwnerLabel(item),
+      decisionOwnerNote: boardingChangeDecisionOwnerNote(item),
       applicationStatus: item?.boardingChangeApplicationStatus || "READY",
       applicationText: item?.boardingChangeApplicationText || "",
       applicationAt: item?.boardingChangeAppliedAt || null,
@@ -239,12 +305,21 @@ export default function CompanyOperationsPanel() {
       routeRefreshNote: item?.boardingChangeRouteRefreshNote || boardingChangeRouteRefreshNote(item),
       detail: item?.boardingChangeApplicationText || item?.routeImpactPreview?.summaryLine || item?.decisionText || (item?.lat != null || item?.lng != null ? "Kabul edilen biniş değişikliği" : "Kabul edilen değişiklik"),
       createdAt: item?.createdAt || item?.at || null,
+      lat: item?.lat ?? null,
+      lng: item?.lng ?? null,
+      nearestStop: item?.nearestStop || null,
       preview: item?.routeImpactPreview || null,
       boundaryNote: item?.boardingChangeApplicationBoundaryNote || "",
     })),
     [acceptedRequestRows]
   );
   const requestSelectionRows = useMemo(() => [...openRequestRows, ...acceptedRequestRows], [openRequestRows, acceptedRequestRows]);
+
+  const diffStopRows = useMemo(() => [...requestRows, ...acceptedRows].filter((row) => isDifferentStopRequest(row)).map((row) => ({
+    key: `request-${row.id}`,
+    title: row.personel,
+    message: `${row.kind} • ${row.decision}${row.detail ? ` • ${row.detail}` : ""}`,
+  })), [acceptedRows, requestRows]);
 
   const selectedPreviewRequest = useMemo(() => {
     if (!requestSelectionRows.length) return null;
@@ -253,10 +328,29 @@ export default function CompanyOperationsPanel() {
       const hit = requestSelectionRows.find((item) => Number(item?.id || 0) === desiredId);
       if (hit) return hit;
     }
-    return openRequestRows[0] || acceptedRequestRows[0] || null;
+    if (!openRequestRows.length) return acceptedRequestRows[0] || null;
+    return null;
   }, [acceptedRequestRows, openRequestRows, requestSelectionRows, selectedPreviewRequestId]);
 
   const selectedPreview = useMemo(() => selectedPreviewRequest?.routeImpactPreview || null, [selectedPreviewRequest]);
+
+  useEffect(() => {
+    if (!selectedPreviewRequestId) {
+      setPreviewLoading(false);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      try {
+        previewCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        previewCardRef.current?.focus?.({ preventScroll: true });
+      } catch {
+        /* no-op */
+      }
+      setPreviewLoading(false);
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [previewSelectionNonce, selectedPreviewRequestId]);
+
   const selectedPreviewFacts = useMemo(() => {
     if (!selectedPreviewRequest || !selectedPreview) return null;
     return buildBoardingRouteImpactCopilotFacts({
@@ -269,7 +363,7 @@ export default function CompanyOperationsPanel() {
   const selectedPreviewSelection = useMemo(() => {
     if (!selectedPreviewRequest || !selectedPreview || !selectedPreviewFacts) return null;
     const scopeKey = `${basePath}/operations`;
-    const personLabel = selectedPreview.personLabel || selectedPreviewRequest?.personel || selectedPreviewRequest?.personel?.fullName || selectedPreviewRequest?.personel?.name || `#${selectedPreviewRequest?.personelId || "-"}`;
+    const personLabel = resolvePersonDisplayLabel(selectedPreviewRequest, selectedPreview, "Kişi bilgisi eksik");
     const summary = selectedPreviewRequest?.boardingChangeApplicationText || selectedPreview.summaryLine || selectedPreview.previewOnlyNote || selectedPreviewRequest?.detail || selectedPreviewRequest?.decisionText || "";
     return {
       scopeKey,
@@ -282,7 +376,7 @@ export default function CompanyOperationsPanel() {
       selectedRecordLabel: personLabel,
       selectedRecordSummary: summary,
       selectedRecordStatus: selectedPreviewRequest?.boardingChangeApplicationStatus ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.boardingChangeApplicationStatus) : (selectedPreview.reliability?.label || "Önizleme"),
-      helpContextSummary: `${selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
+      helpContextSummary: `${selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || selectedPreview.previewOnlyNote || ""} ${selectedPreview.nextBestAction || ""}`.trim(),
       contextSummary: summary,
       selectedRecord: {
         label: personLabel,
@@ -291,6 +385,8 @@ export default function CompanyOperationsPanel() {
         changeType: selectedPreview.changeTypeLabel,
         oldStopLabel: selectedPreview.oldStopLabel,
         newStopLabel: selectedPreview.newStopLabel,
+        decisionOwnerLabel: selectedPreviewRequest?.decisionOwnerLabel || boardingChangeDecisionOwnerLabel(selectedPreviewRequest),
+        decisionOwnerNote: selectedPreviewRequest?.decisionOwnerNote || boardingChangeDecisionOwnerNote(selectedPreviewRequest),
         applicationStatus: selectedPreviewRequest?.boardingChangeApplicationStatus || null,
         applicationBoundaryNote: selectedPreviewRequest?.boardingChangeApplicationBoundaryNote || null,
         previewOnlyNote: selectedPreview.previewOnlyNote,
@@ -299,6 +395,7 @@ export default function CompanyOperationsPanel() {
         { label: "Değişiklik Türü", value: selectedPreview.changeTypeLabel || "-" },
         { label: "Eski Durak", value: selectedPreview.oldStopLabel || "-" },
         { label: "Yeni / Geçici Durak", value: selectedPreview.newStopLabel || "-" },
+        { label: "Karar Sahibi", value: selectedPreviewRequest?.decisionOwnerLabel || boardingChangeDecisionOwnerLabel(selectedPreviewRequest) },
         { label: "Kişi Etkisi", value: `${selectedPreview.currentPeopleCount} → ${selectedPreview.previewPeopleCount}` },
         { label: "Durak Etkisi", value: `${selectedPreview.currentStopCount} → ${selectedPreview.previewStopCount}` },
         { label: "Km Etkisi", value: `${selectedPreview.distanceDeltaKm?.toFixed ? selectedPreview.distanceDeltaKm.toFixed(2) : selectedPreview.distanceDeltaKm} km` },
@@ -316,6 +413,23 @@ export default function CompanyOperationsPanel() {
       screenPath: scopeKey,
     };
   }, [basePath, selectedPreview, selectedPreviewFacts, selectedPreviewRequest]);
+
+  const previewSelectionLabel = useMemo(() => {
+    if (!selectedPreviewRequest) return "";
+    const personLabel = resolvePersonDisplayLabel(selectedPreviewRequest, selectedPreview, "Kişi bilgisi eksik");
+    return `${boardingChangeKindLabel(selectedPreviewRequest?.requestKind || selectedPreviewRequest?.kind)} • ${personLabel}`;
+  }, [selectedPreview, selectedPreviewRequest]);
+
+  const previewSelectionNote = useMemo(() => {
+    if (!requestSelectionRows.length) return "";
+    if (!selectedPreviewRequestId && selectedPreviewRequest) {
+      return "Açık istek yok; ilk kabul edilen kayıt gösteriliyor.";
+    }
+    if (selectedPreviewRequestId && selectedPreviewRequest) {
+      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Readonly önizleme seçildi.";
+    }
+    return "Seçili satırın readonly önizlemesi burada gösterilir.";
+  }, [requestSelectionRows.length, selectedPreviewRequest, selectedPreviewRequestId]);
 
   useEffect(() => {
     if (!selectedPreviewSelection) {
@@ -367,7 +481,7 @@ export default function CompanyOperationsPanel() {
       return { tab: "exceptions", label: "Servis kullanmayacak personeller", note: `${noBoardRows.length} kayıt bildirim akışından geliyor.` };
     }
     if (diffStopRows.length > 0) {
-      return { tab: "exceptions", label: "Farklı durak kayıtları", note: `${diffStopRows.length} kayıt konum / durak sinyalinden okunuyor.` };
+      return { tab: "exceptions", label: "Farklı durak kayıtları", note: `${diffStopRows.length} kayıt açık/kabul edilen isteklerden okunuyor.` };
     }
     if (activeContractRows.length > 0) {
       return { tab: "cluster", label: "Servis Kümesini incele", note: `${activeContractRows.length} sözleşmeli aktif vardiya var.` };
@@ -404,13 +518,15 @@ export default function CompanyOperationsPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
       {applyNotice ? <div className="card" style={{ borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{applyNotice}</div> : null}
+      {decisionNotice ? <div className="card" style={{ borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{decisionNotice}</div> : null}
+      {decisionError ? <div className="card err">{decisionError}</div> : null}
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Personel" value={metricValue(personels.length)} note="Şirket kapsamındaki personel kaydı" />
         <MiniStat title="Servis durumu" value={metricValue(todayShiftCount)} note={`Aktif ${todayActiveCount} • Onaylı ${todayApprovedCount}`} />
         <MiniStat title="Değişiklik" value={metricValue(openRequestRows.length)} note="Açık veya onay bekleyen kayıtlar" />
         <MiniStat title="Servis dışı" value={metricValue(noBoardRows.length)} note="Bildirim akışından türetilir" />
-        <MiniStat title="Farklı durak" value={metricValue(diffStopRows.length)} note="Konum / durak sinyalinden okunur" />
+        <MiniStat title="Farklı durak" value={metricValue(diffStopRows.length)} note="Açık ve kabul edilen isteklerden okunur" />
         <MiniStat title="Sözleşme ilişkisi" value={metricValue(activeContractRows.length)} note="Sözleşmeye bağlı aktif vardiyalar" />
         <MiniStat title="Bildirim" value={metricValue(notifRows.length)} note={liveDigest} />
       </div>
@@ -629,12 +745,20 @@ export default function CompanyOperationsPanel() {
 
       {activeTab === "exceptions" ? (
         <div role="tabpanel" aria-label="İstisnalar / Değişiklikler" style={{ display: "grid", gap: 12, minWidth: 0 }}>
-          {selectedPreview ? (
+          <div ref={previewCardRef} tabIndex={-1} style={{ scrollMarginTop: 16, outline: "none" }}>
             <BoardingRouteImpactPreviewCard
-              preview={selectedPreview}
+              preview={previewLoading ? null : selectedPreview}
+              request={selectedPreviewRequest}
+              loading={previewLoading}
+              emptyText={selectedPreviewRequestId ? "Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok." : ""}
+              selectionLabel={previewSelectionLabel}
+              selectionNote={previewSelectionNote}
+              decisionOwnerLabel={selectedPreviewRequest?.decisionOwnerLabel || boardingChangeDecisionOwnerLabel(selectedPreviewRequest)}
+              decisionOwnerNote={selectedPreviewRequest?.decisionOwnerNote || boardingChangeDecisionOwnerNote(selectedPreviewRequest)}
+              onClearSelection={selectedPreviewRequestId ? handlePreviewSelectionClear : null}
               title="Rota etkisi önizlemesi"
             />
-          ) : null}
+          </div>
 
           <CollapsibleSection
             title="Eksik değişiklikleri"
@@ -658,20 +782,55 @@ export default function CompanyOperationsPanel() {
                 </thead>
                 <tbody>
                   {requestRows.length ? requestRows.map((row) => (
-                    <tr key={row.id}>
+                    <tr
+                      key={row.id}
+                      style={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)
+                        ? { background: "rgba(59, 130, 246, 0.12)" }
+                        : undefined}
+                    >
                       <td>{row.personel}</td>
                       <td>#{row.shift}</td>
                       <td>{displayStatusLabel(row.status)}</td>
                       <td>{row.kind}</td>
-                      <td>{row.decision}</td>
+                      <td>
+                        <div>{row.decision}</div>
+                        <div className="panelMeta" style={{ marginTop: 4 }}>{row.decisionOwnerNote}</div>
+                        {String(row.decisionOwnerRole || "").toUpperCase() === "COMPANY" && String(row.status || "").toUpperCase() === "OPEN" ? (
+                          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            <button
+                              type="button"
+                              className="btn sm"
+                              disabled={Number(decidingRequestId || 0) === Number(row.id || 0)}
+                              onClick={() => handleDecideRequest(row.id, "ACCEPTED")}
+                            >
+                              {Number(decidingRequestId || 0) === Number(row.id || 0) ? "..." : "Kabul et"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn sm ghost"
+                              disabled={Number(decidingRequestId || 0) === Number(row.id || 0)}
+                              onClick={() => handleDecideRequest(row.id, "CANCELLED")}
+                            >
+                              {Number(decidingRequestId || 0) === Number(row.id || 0) ? "..." : "Reddet"}
+                            </button>
+                          </div>
+                        ) : null}
+                        {String(row.decisionOwnerRole || "").toUpperCase() === "DRIVER" && String(row.status || "").toUpperCase() === "OPEN" ? (
+                          <div className="panelMeta" style={{ marginTop: 8 }}>Sürücü tarafında karar bekliyor.</div>
+                        ) : null}
+                      </td>
                       <td>{fmtTR(row.createdAt)}</td>
                       <td>
                         <button
                           type="button"
                           className="btn sm"
-                          onClick={() => setSelectedPreviewRequestId(Number(row.id || 0) || null)}
+                          aria-pressed={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)}
+                          onClick={() => handlePreviewRequestSelect(row)}
+                          style={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)
+                            ? { borderColor: "rgba(59, 130, 246, 0.55)", boxShadow: "0 0 0 1px rgba(59, 130, 246, 0.18)" }
+                            : undefined}
                         >
-                          Rota etkisini önizle
+                          {previewLoading && Number(selectedPreviewRequestId || 0) === Number(row.id || 0) ? "Önizleniyor..." : "Rota etkisini önizle"}
                         </button>
                       </td>
                     </tr>
@@ -765,7 +924,7 @@ export default function CompanyOperationsPanel() {
           <CollapsibleSection
             title="Farklı duraktan binecek personeller"
             badge={metricValue(diffStopRows.length)}
-            subtitle="Konum / durak değişikliği sinyalleri"
+            subtitle="Açık ve kabul edilen durak değişikliği istekleri"
             compact
             defaultOpen={false}
           >

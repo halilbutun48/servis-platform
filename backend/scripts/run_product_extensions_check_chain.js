@@ -60,6 +60,7 @@ const steps = [
   'check:uxseferabilauncher01',
   'check:copliveaccept01',
   'check:boardingops01a',
+  'check:bugrouteimpactpreviewbutton01',
   'check:boardingops01b',
   'check:boardingops01c',
   'check:routechangefinal01',

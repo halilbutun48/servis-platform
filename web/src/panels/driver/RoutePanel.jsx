@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
+import { navigate } from "../../router";
 import { enqueueRequest, flushQueue, getQueue, isOnline, queueSize } from "../../utils/offlineQueue";
 import MapView from "../../components/map/MapView";
 import QueueDetailTable from "../../components/QueueDetailTable";
@@ -40,6 +41,9 @@ export default function RoutePanel() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
+  const [decidingRequestId, setDecidingRequestId] = useState(null);
+  const [decisionNotice, setDecisionNotice] = useState("");
+  const [decisionError, setDecisionError] = useState("");
   const [_prevReachedOrder, setPrevReachedOrder] = useState(null);
   const [online, setOnline] = useState(isOnline());
   const [qLen, setQLen] = useState(queueSize());
@@ -72,6 +76,14 @@ export default function RoutePanel() {
   const vehicleCount = selectedVehicle ? 1 : 0;
   const boardingChangeEffects = Array.isArray(data?.boardingChangeEffects) ? data.boardingChangeEffects : Array.isArray(shift?.boardingChangeEffects) ? shift.boardingChangeEffects : [];
   const boardingChangeSummary = data?.boardingChangeSummary || shift?.boardingChangeSummary || null;
+  const pendingBoardingChangeRequests = useMemo(
+    () => (Array.isArray(data?.pendingBoardingChangeRequests) ? data.pendingBoardingChangeRequests : []),
+    [data?.pendingBoardingChangeRequests],
+  );
+  const driverBoardingRequests = useMemo(
+    () => pendingBoardingChangeRequests.filter((item) => String(item?.decisionOwnerRole || "").trim().toUpperCase() === "DRIVER"),
+    [pendingBoardingChangeRequests]
+  );
   const routeRefresh = data?.routeRefresh || shift?.routeRefresh || null;
   const routeRefreshState = String(routeRefresh?.routeRefreshState || data?.boardingChangeRouteRefreshState || shift?.boardingChangeRouteRefreshState || '').toUpperCase();
   const routeRefreshLabel = routeRefresh?.routeRefreshLabel
@@ -264,6 +276,29 @@ function gpsAgeText(gpsLast) {
         return { queued: true };
       }
       throw e;
+    }
+  }
+
+  async function decideBoardingRequest(requestId, nextStatus) {
+    const id = Number(requestId || 0);
+    if (!id) return;
+    const status = String(nextStatus || "").trim().toUpperCase();
+    if (!["ACCEPTED", "CANCELLED"].includes(status)) return;
+    setDecidingRequestId(id);
+    setDecisionNotice("");
+    setDecisionError("");
+    try {
+      const result = await safePost(`/api/requests/${id}/close`, { status }, "boarding-change-close");
+      if (result?.queued) {
+        setDecisionNotice("Talep kuyruklandı.");
+        return;
+      }
+      setDecisionNotice(result?.decisionText || (status === "ACCEPTED" ? "Talep onaylandı." : "Talep reddedildi."));
+      await load();
+    } catch (e) {
+      setDecisionError(String(e?.message || e));
+    } finally {
+      setDecidingRequestId(null);
     }
   }
 
@@ -621,6 +656,73 @@ async function undoLast() {
               })}
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {decisionNotice ? <div className="card" style={{ marginBottom: 10, borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{decisionNotice}</div> : null}
+      {decisionError ? <div className="card err" style={{ marginBottom: 10 }}>{decisionError}</div> : null}
+
+      {driverBoardingRequests.length ? (
+        <div className="card" style={{ marginBottom: 10 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 900 }}>Bekleyen Biniş Değişiklikleri</div>
+              <div className="muted">Aynı rota üzerindeki talepler burada sürücü kararına düşer.</div>
+            </div>
+            <span className="pill" data-status="PENDING">{driverBoardingRequests.length}</span>
+          </div>
+          <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+            {driverBoardingRequests.map((item) => {
+              const requestId = Number(item?.id || 0);
+              const isBusy = Number(decidingRequestId || 0) === requestId;
+              const preview = item?.routeImpactPreview || item?.preview || null;
+              return (
+                <div key={`driver-boarding-${requestId}`} style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ fontWeight: 800 }}>{item?.personLabel || `Talep #${requestId}`}</div>
+                    <span className="pill" data-status={item?.decisionOwnerRole || "DRIVER"}>{item?.decisionOwnerLabel || "Sürücü"}</span>
+                  </div>
+                  <div className="panelMeta" style={{ marginTop: 6 }}>{item?.decisionOwnerNote || "Aynı rota üzerindeki talep sürücü tarafında karar bekliyor."}</div>
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    {preview?.summaryLine || item?.summaryLine || `${item?.oldStopLabel || "-"} → ${item?.newStopLabel || "-"}`}
+                  </div>
+                  <div className="muted" style={{ marginTop: 4 }}>
+                    Eski durak: {preview?.oldStopLabel || item?.oldStopLabel || "-"} • Yeni/alternatif durak: {preview?.newStopLabel || item?.newStopLabel || "-"}
+                  </div>
+                  <div className="muted" style={{ marginTop: 4 }}>
+                    Kişi: {preview?.personLabel || item?.personLabel || "Kişi bilgisi yok"}
+                  </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="btn sm"
+                      disabled={isBusy}
+                      onClick={() => decideBoardingRequest(requestId, "ACCEPTED")}
+                    >
+                      {isBusy ? "..." : "Kabul et"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn sm ghost"
+                      disabled={isBusy}
+                      onClick={() => decideBoardingRequest(requestId, "CANCELLED")}
+                    >
+                      {isBusy ? "..." : "Reddet"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn sm"
+                      disabled={isBusy}
+                      onClick={() => navigate(`/driver/today?shift=${shift?.id || ""}`)}
+                    >
+                      Vardiyayı aç
+                    </button>
+                  </div>
+                  <div className="panelMeta" style={{ marginTop: 8 }}>Readonly önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez.</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : null}
 

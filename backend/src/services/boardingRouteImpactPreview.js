@@ -311,6 +311,19 @@ export function previewBoardingChangeRouteImpact({
     boardingChange?.personName,
     "Seçili kişi",
   );
+  const requestedStopOnRoute = findRouteStopIndex(sortedStops, requestedStop) >= 0;
+  const sameAssignedStop = Boolean(currentAssignedStop && requestedStop && sameStop(currentAssignedStop, requestedStop));
+  const driverDecidableKinds = new Set(["DIFFERENT_STOP", "ALTERNATE_STOP_TODAY", "PICKUP_FROM_LOCATION"]);
+  const isSameRouteDecision = requestedStopOnRoute || sameAssignedStop;
+  const decisionOwnerRole = driverDecidableKinds.has(changeType) && isSameRouteDecision
+    ? "DRIVER"
+    : "COMPANY";
+  const decisionOwnerLabel = decisionOwnerRole === "DRIVER" ? "Sürücü" : "Hizmet alan taraf";
+  const decisionOwnerNote = decisionOwnerRole === "DRIVER"
+    ? isSameRouteDecision
+      ? "Aynı rota üzerindeki durak değişikliği sürücü tarafında karar bekliyor."
+      : "Bu talep sürücü tarafında karar bekliyor."
+    : "Rota değişikliği içerdiği için hizmet alan taraf karar veriyor.";
   const oldStopLabel = firstNonEmpty(stopLabel(currentAssignedStop), boardingChange?.oldStopLabel, "Mevcut durak bulunamadı");
   const newStopLabel = changeType === "NO_SERVICE_TODAY"
     ? "Bugün servis dışı"
@@ -439,6 +452,9 @@ export function previewBoardingChangeRouteImpact({
     previewOnlyNote,
     summaryLine,
     selectedRecordStatus: reliability.label || "Önizleme",
+    decisionOwnerRole,
+    decisionOwnerLabel,
+    decisionOwnerNote,
   };
 }
 
