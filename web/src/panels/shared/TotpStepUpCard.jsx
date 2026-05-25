@@ -5,7 +5,8 @@ import { useSession } from "../../state/session";
 export default function TotpStepUpCard() {
   const { token, me, setToken } = useSession();
   const role = String(me?.role || "");
-  const shouldShow = role === "ROOM" || role === "SUPER_ADMIN" || role === "COMPANY";
+  const isStepUpEnabled = String(import.meta.env.VITE_STEP_UP_ENABLED ?? "1").trim() !== "0";
+  const shouldShow = isStepUpEnabled && (role === "ROOM" || role === "SUPER_ADMIN" || role === "COMPANY");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
   const [setupData, setSetupData] = useState(null);

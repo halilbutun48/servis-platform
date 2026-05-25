@@ -23,7 +23,14 @@ export function isGreenpackBypassAllowed(req) {
   return hdr === "1" && isLocalDevMode() && ENV.GREENPACK_BYPASS_ENABLED === true;
 }
 
+export function isStepUpEnabled() {
+  const raw = String(ENV.STEP_UP_ENABLED ?? "").trim();
+  if (!raw) return true;
+  return raw !== "0";
+}
+
 export function getStepUpRequiredRoles() {
+  if (!isStepUpEnabled()) return new Set();
   const roles = String(ENV.STEP_UP_REQUIRED_ROLES || "SUPER_ADMIN,ROOM,COMPANY")
     .split(",")
     .map((x) => normalizeRole(x))
@@ -33,6 +40,7 @@ export function getStepUpRequiredRoles() {
 }
 
 export function isStepUpRole(role) {
+  if (!isStepUpEnabled()) return false;
   return getStepUpRequiredRoles().has(normalizeRole(role));
 }
 

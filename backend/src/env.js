@@ -26,7 +26,11 @@ export const ENV = {
   // ✅ M46.9: if session/device is bound, require deviceId on refresh (prod only)
   REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND: (process.env.REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND ?? "1") === "1",
   REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30),
+  // Step-up / TOTP dev toggle
+  // 0 = disable all step-up checks, 1 or empty = enable step-up checks
+  STEP_UP_ENABLED: process.env.STEP_UP_ENABLED ?? "",
   STEP_UP_REQUIRED_ROLES: process.env.STEP_UP_REQUIRED_ROLES ?? "SUPER_ADMIN,ROOM,COMPANY",
+  STEP_UP_TOTP_ENABLED: (process.env.STEP_UP_TOTP_ENABLED ?? "0") === "1",
   STEP_UP_TOTP_WINDOW_SEC: Number(process.env.STEP_UP_TOTP_WINDOW_SEC ?? 12 * 60 * 60),
   STEP_UP_TOTP_ISSUER: process.env.STEP_UP_TOTP_ISSUER ?? "Personel-Servis V1",
   TOTP_SECRET_VAULT_KEY: process.env.TOTP_SECRET_VAULT_KEY ?? "",

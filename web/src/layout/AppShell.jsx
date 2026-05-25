@@ -14,6 +14,7 @@ export default function AppShell({ path, children }) {
   const isSchool = role === "COMPANY" && me?.companyKind === "SCHOOL";
   const isOrganization = role === "COMPANY" && me?.companyKind === "ORGANIZATION";
   const isTabletOpsRole = role === "ROOM" || role === "COMPANY";
+  const isStepUpEnabled = String(import.meta.env.VITE_STEP_UP_ENABLED ?? "1").trim() !== "0";
 
   // Map and Copilot pages should be fluid (full width). Everything else is centered for readability.
   const fluidPath = String(path || "");
@@ -40,7 +41,7 @@ export default function AppShell({ path, children }) {
         </div>
         <div className="shellContent">
           <div className={isFluid ? "page page--fluid" : "page"}>
-            <TotpStepUpCard />
+            {isStepUpEnabled ? <TotpStepUpCard /> : null}
             <KvkkConsentGate />
             {isTabletOpsRole ? <TabletOpsQuickBar role={role} me={me} path={path} /> : null}
             {children}
