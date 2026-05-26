@@ -207,6 +207,12 @@ const safetyText = [
   answerQualityPolicy,
   goldenQuestionPack,
 ].join("\n");
+const coreSafetyText = [
+  service,
+  route,
+  api,
+  card,
+].join("\n");
 
 for (const [needle, label] of [
   ["ödeme başlattım", "service/UI does not claim payment started"],
@@ -230,6 +236,10 @@ for (const [needle, label] of [
   }
   if (needle === "banka") {
     mustNotRegex(safetyText, /(?:^|[^a-z0-9])banka(?:$|[^a-z0-9])/i, label);
+    continue;
+  }
+  if (needle === "başarı payı" || needle === "platform fee") {
+    mustNot(coreSafetyText, needle, label);
     continue;
   }
   mustNot(safetyText, needle, label);

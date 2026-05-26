@@ -13,6 +13,7 @@ import { validateAgreementSlotItems } from "../services/agreementSlots.js";
 import { buildAgreementOpsBridgeById } from "../services/agreementOpsBridge.js";
 import { buildAgreementQualityPaymentBridgePreview } from "../services/qualityPaymentBridgeService.js";
 import { computeSeferScorePreview } from "../services/seferScoreService.js";
+import { computePlatformFeePreview } from "../services/platformFeePreviewService.js";
 import { buildAgreementShiftStats } from "../services/agreementShiftStats.js";
 import { requireSourceShiftForAgreementCreate } from "../services/agreementSourceShiftGate.js";
 import { agreementRef } from "../services/agreementCopy.js";
@@ -149,6 +150,63 @@ export function agreementsRouter(io) {
 
     const seferScorePreview = await computeSeferScorePreview({ agreement: ag, agreementId: id });
     return res.json({ seferScorePreview });
+  });
+
+  r.get("/:id/platform-fee-preview", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) return sendErrorResponse(res, httpError(400, "invalidAgreementId"));
+
+    const ag = await prisma.agreement.findUnique({
+      where: { id },
+      include: {
+        company: { select: { id: true, name: true, kind: true } },
+        room: { select: { id: true, name: true } },
+        commercialSources: {
+          select: {
+            id: true,
+            sourceType: true,
+            sourceKey: true,
+            shiftRootId: true,
+            agreementId: true,
+          },
+        },
+      },
+    });
+
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+
+    if (req.user.role === "COMPANY" && ag.companyId !== req.user.companyId) {
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
+    }
+    if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
+    }
+
+    const [bridgeById, seferScorePreview] = await Promise.all([
+      buildAgreementOpsBridgeById({
+        agreementIds: [id],
+        companyId: req.user.role === "COMPANY" ? (req.user.companyId ?? -1) : null,
+        roomId: req.user.role === "ROOM" ? (req.user.roomId ?? -1) : null,
+      }),
+      computeSeferScorePreview({ agreement: ag, agreementId: id }),
+    ]);
+    const bridge = bridgeById?.[id] || null;
+    const platformFeePreview = computePlatformFeePreview({
+      agreement: ag,
+      bridge,
+      seferScorePreview,
+      sourceShiftId: bridge?.sourceShiftId || null,
+      sourceSummary: bridge?.sourceSummary || null,
+      commercialSources: ag.commercialSources || [],
+      companyOfferAmount: ag.companyOfferAmount,
+      roomOfferAmount: ag.roomOfferAmount,
+      extendOfferAmount: ag.extendOfferAmount,
+      extendCounterAmount: ag.extendCounterAmount,
+      extendStatus: ag.extendStatus,
+      agreementStatus: ag.status,
+    });
+
+    return res.json({ platformFeePreview });
   });
 
   // GET by id (debug + checks)

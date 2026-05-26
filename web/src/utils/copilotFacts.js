@@ -1872,6 +1872,14 @@ function selectionStarterText(selection = null) {
     selection?.facts?.qualityPaymentBridgeNextAction,
     selection?.facts?.qualityPaymentBridgePreview?.summaryText,
     selection?.facts?.qualityPaymentBridgePreview?.previewOnlyNote,
+    selection?.facts?.platformFeeSummaryText,
+    selection?.facts?.platformFeeStatus,
+    selection?.facts?.platformFeeRateText,
+    selection?.facts?.platformFeeEstimatedShareText,
+    selection?.facts?.platformFeeSafeExplanation,
+    selection?.facts?.platformFeePreview?.summaryText,
+    selection?.facts?.platformFeePreview?.safeExplanation,
+    selection?.facts?.platformFeePreview?.previewOnlyNote,
     selection?.selectedRecord?.label,
     selection?.selectedRecord?.summary,
     selection?.selectedRecord?.status,
@@ -1965,6 +1973,15 @@ export function buildCopilotStarterChips({
     || selection?.facts?.seferScoreNextAction
     || includesAny(selectionText, ['sefer puanı', 'sefer puani', 'readonly kalite puanı', 'readonly kalite puani', 'sefer score', 'kalite puanı neden düşük', 'kalite puani neden düşük', 'eksik sinyaller', 'sefer puanı nasıl yükselir', 'sefer puani nasil yukselir'])
   );
+  const isMarketplaceFreeToOperatePreview = Boolean(
+    selection?.facts?.platformFeePreview
+    || selection?.liveFacts?.platformFeePreview
+    || selection?.structuredFacts?.platformFeePreview
+    || selection?.facts?.platformFeeSummaryText
+    || selection?.facts?.platformFeeStatus
+    || selection?.facts?.platformFeeRateText
+    || includesAny(selectionText, ['lisans ücreti', 'lisans ucreti', 'başarı payı', 'basari payi', 'mevcut sözleşmeden pay', 'mevcut sozlesmeden pay', 'platform fee', 'free-to-operate', 'seferpakt kaynaklı', 'pay alınır mı', 'pay alinır mı', 'pay alacak mı', 'pay doğmaz', 'pay dogmaz'])
+  );
   const isQualityPaymentBridgePreview = Boolean(
     selection?.facts?.qualityPaymentBridgePreview
     || selection?.liveFacts?.qualityPaymentBridgePreview
@@ -1990,6 +2007,14 @@ export function buildCopilotStarterChips({
       'Kalite puanı neden düşük?',
       'Eksik sinyalleri göster',
       'SeferPuanı nasıl yükselir?',
+    ], fallback);
+  }
+  if (isMarketplaceFreeToOperatePreview) {
+    return finalizeStarterChips([
+      'Lisans ücreti var mı?',
+      'Bu sözleşmeden SeferPakt pay alacak mı?',
+      'Mevcut sözleşmeden pay alınır mı?',
+      'Başarı payı neden 0 görünüyor?',
     ], fallback);
   }
   if (isQualityPaymentBridgePreview) {
@@ -2107,13 +2132,17 @@ export function buildCopilotStarterChips({
   } else if (isDynamicSavingsPreview) {
     chips = ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
   } else if (isAgreementSurface) {
-    chips = isSeferScorePreview
+    chips = isMarketplaceFreeToOperatePreview
+      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?']
+      : isSeferScorePreview
       ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
       : isQualityPaymentBridgePreview
       ? ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?']
       : ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {
-    chips = isSeferScorePreview
+    chips = isMarketplaceFreeToOperatePreview
+      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Mevcut sözleşmeden pay alınır mı?', 'Kalite puanı payı etkiliyor mu?']
+      : isSeferScorePreview
       ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
       : isQualityPaymentBridgePreview
       ? ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?']

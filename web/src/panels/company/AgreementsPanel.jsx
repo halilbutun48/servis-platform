@@ -18,10 +18,11 @@ import { fetchProviderScore } from "../../utils/providerScores";
 import { getCompanyAgreements, getCompanyRooms } from "../../utils/companyDataHub";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
-import { getAgreementQualityPaymentBridgePreview, getAgreementSeferScorePreview } from "../../api";
+import { getAgreementPlatformFeePreview, getAgreementQualityPaymentBridgePreview, getAgreementSeferScorePreview } from "../../api";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
 import QualityPaymentBridgePreviewCard from "../shared/QualityPaymentBridgePreviewCard";
+import PlatformFeePreviewCard from "../shared/PlatformFeePreviewCard";
 import SeferScorePreviewCard from "../shared/SeferScorePreviewCard";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
@@ -150,6 +151,7 @@ export default function AgreementsPanel() {
   const [routeRefreshPendingByAgreement, setRouteRefreshPendingByAgreement] = useState({});
   const [qualityPaymentBridgePreview, setQualityPaymentBridgePreview] = useState({ loading: false, data: null, err: "" });
   const [seferScorePreview, setSeferScorePreview] = useState({ loading: false, data: null, err: "" });
+  const [platformFeePreview, setPlatformFeePreview] = useState({ loading: false, data: null, err: "" });
   const shiftStatsCacheRef = useRef(new Map());
 
   const [take, setTake] = useState(20);
@@ -656,6 +658,7 @@ export default function AgreementsPanel() {
     if (!token || !agreementId) {
       setQualityPaymentBridgePreview({ loading: false, data: null, err: "" });
       setSeferScorePreview({ loading: false, data: null, err: "" });
+      setPlatformFeePreview({ loading: false, data: null, err: "" });
       return () => {
         cancelled = true;
       };
@@ -664,11 +667,13 @@ export default function AgreementsPanel() {
     const controller = new AbortController();
     setQualityPaymentBridgePreview((prev) => ({ ...prev, loading: true, err: "" }));
     setSeferScorePreview((prev) => ({ ...prev, loading: true, err: "" }));
+    setPlatformFeePreview((prev) => ({ ...prev, loading: true, err: "" }));
 
     (async () => {
-      const [qualityResult, seferResult] = await Promise.allSettled([
+      const [qualityResult, seferResult, platformResult] = await Promise.allSettled([
         getAgreementQualityPaymentBridgePreview(agreementId, { token, signal: controller.signal }),
         getAgreementSeferScorePreview(agreementId, { token, signal: controller.signal }),
+        getAgreementPlatformFeePreview(agreementId, { token, signal: controller.signal }),
       ]);
       if (cancelled) return;
       setQualityPaymentBridgePreview(
@@ -680,6 +685,11 @@ export default function AgreementsPanel() {
         seferResult.status === "fulfilled"
           ? { loading: false, data: seferResult.value, err: "" }
           : { loading: false, data: null, err: seferResult.reason?.message || "Readonly puan önizlemesi yüklenemedi" }
+      );
+      setPlatformFeePreview(
+        platformResult.status === "fulfilled"
+          ? { loading: false, data: platformResult.value, err: "" }
+          : { loading: false, data: null, err: platformResult.reason?.message || "Readonly platform önizlemesi yüklenemedi" }
       );
     })();
 
@@ -795,6 +805,31 @@ export default function AgreementsPanel() {
   ), [seferScorePreviewData]);
   const seferScoreNextAction = useMemo(() => compactText(seferScorePreviewData?.nextBestAction || '', ''), [seferScorePreviewData]);
   const seferScoreSafeExplanation = useMemo(() => compactText(seferScorePreviewData?.safeExplanation || '', ''), [seferScorePreviewData]);
+  const platformFeePreviewData = useMemo(() => platformFeePreview.data || null, [platformFeePreview.data]);
+  const platformFeeSourceType = useMemo(() => compactText(platformFeePreviewData?.agreementSource || '', ''), [platformFeePreviewData]);
+  const platformFeeSourceLabel = useMemo(() => compactText(platformFeePreviewData?.agreementSourceLabel || '', 'Yetersiz lineage'), [platformFeePreviewData]);
+  const platformFeeSourceConfidence = useMemo(() => compactText(platformFeePreviewData?.sourceConfidence || '', 'LOW'), [platformFeePreviewData]);
+  const platformFeeLicenseFeeText = useMemo(() => compactText(platformFeePreviewData?.licenseFeeText || '0 TL', '0 TL'), [platformFeePreviewData]);
+  const platformFeeAmountText = useMemo(() => compactText(platformFeePreviewData?.agreementAmountText || 'Tutar bulunamadı', 'Tutar bulunamadı'), [platformFeePreviewData]);
+  const platformFeeRateLabel = useMemo(() => compactText(platformFeePreviewData?.successShareRateLabel || 'Başarı payı doğmaz', 'Başarı payı doğmaz'), [platformFeePreviewData]);
+  const platformFeeEstimatedShareText = useMemo(() => compactText(platformFeePreviewData?.estimatedSuccessShareText || 'Tutar bulunamadı', 'Tutar bulunamadı'), [platformFeePreviewData]);
+  const platformFeeSummaryText = useMemo(() => compactText(platformFeePreviewData?.summaryText || '', ''), [platformFeePreviewData]);
+  const platformFeeSafeExplanation = useMemo(() => compactText(platformFeePreviewData?.safeExplanation || '', ''), [platformFeePreviewData]);
+  const platformFeeLineageSummary = useMemo(() => compactText(platformFeePreviewData?.lineageSummary || '', ''), [platformFeePreviewData]);
+  const platformFeeReason = useMemo(() => compactText(platformFeePreviewData?.reason || '', ''), [platformFeePreviewData]);
+  const platformFeeScoreText = useMemo(() => {
+    const score = Number(platformFeePreviewData?.seferScoreUsed?.score ?? NaN);
+    const scoreMax = Number(platformFeePreviewData?.seferScoreUsed?.scoreMax ?? 5) || 5;
+    return Number.isFinite(score) ? `${score.toFixed(2)} / ${scoreMax.toFixed(0)}` : compactText(platformFeePreviewData?.seferScoreUsed?.summaryText || '', '');
+  }, [platformFeePreviewData]);
+  const platformFeeEvidence = useMemo(() => (
+    Array.isArray(platformFeePreviewData?.sourceEvidence) ? platformFeePreviewData.sourceEvidence : EMPTY_QUALITY_BRIDGE_LIST
+  ), [platformFeePreviewData]);
+  const platformFeeSignals = useMemo(() => (
+    platformFeePreviewData?.sourceSignals && typeof platformFeePreviewData.sourceSignals === 'object'
+      ? platformFeePreviewData.sourceSignals
+      : {}
+  ), [platformFeePreviewData]);
 
   const selectedAgreementCopilotContext = useMemo(() => {
     const row = selectedAgreementRow;
@@ -829,6 +864,7 @@ export default function AgreementsPanel() {
       stopCount > 0 ? `Durak: ${stopCount}` : null,
       qualityBridgeSummaryText ? `Kalite / hakediş: ${qualityBridgeSummaryText}` : null,
       seferScoreSummaryText ? `SeferPuanı: ${seferScoreSummaryText}` : null,
+      platformFeeSummaryText ? `Platform / lisans: ${platformFeeSummaryText}` : null,
     ].filter(Boolean).join(' • ');
     const selectedRecordLabel = `Sözleşme #${a.id}`;
     const selectedRecordType = 'agreement';
@@ -903,6 +939,21 @@ export default function AgreementsPanel() {
       seferScoreMissingSignals,
       seferScoreNextAction,
       seferScoreSafeExplanation,
+      platformFeePreview: platformFeePreviewData,
+      platformFeeSummaryText,
+      platformFeeSourceType,
+      platformFeeSourceLabel,
+      platformFeeSourceConfidence,
+      platformFeeLicenseFeeText,
+      platformFeeAmountText,
+      platformFeeRateLabel,
+      platformFeeEstimatedShareText,
+      platformFeeSafeExplanation,
+      platformFeeLineageSummary,
+      platformFeeReason,
+      platformFeeScoreText,
+      platformFeeEvidence,
+      platformFeeSignals,
       pendingCount: Number(items?.length || 0),
       otherCount: 0,
       extendCount: 0,
@@ -928,6 +979,12 @@ export default function AgreementsPanel() {
       seferScorePreviewData ? { label: 'Seviye', value: seferScoreLevel || '-', help: 'Elit / İyi / Standart / Riskli / Kritik.' } : null,
       seferScorePreviewData ? { label: 'Güven', value: seferScoreConfidence || '-', help: 'Önizleme güven seviyesini gösterir.' } : null,
       seferScorePreviewData ? { label: 'Sıradaki Sefer adımı', value: seferScoreNextAction || '-', help: 'Sadece okunur yönlendirme gösterir.' } : null,
+      platformFeePreviewData ? { label: 'Lisans ücreti', value: platformFeeLicenseFeeText || '-', help: 'Lisans ücreti daima 0 TL readonly önizlemedir.' } : null,
+      platformFeePreviewData ? { label: 'Kaynak durumu', value: platformFeeSourceLabel || '-', help: platformFeeSummaryText || platformFeeSafeExplanation || 'Readonly free-to-operate önizlemesi.' } : null,
+      platformFeePreviewData ? { label: 'Başarı payı oranı', value: platformFeeRateLabel || '-', help: platformFeeReason || 'Başarı payı yalnızca readonly önizlenir.' } : null,
+      platformFeePreviewData ? { label: 'Tahmini başarı payı', value: platformFeeEstimatedShareText || '-', help: `Tutar: ${platformFeeAmountText || '-'}` } : null,
+      platformFeePreviewData ? { label: 'Tahsilat / fatura', value: 'Kapalı', help: 'Readonly önizleme — tahsilat/fatura oluşturulmaz.' } : null,
+      platformFeePreviewData ? { label: 'Kaynak zinciri', value: platformFeeSignals?.hasLineageSignal ? 'Sinyal var' : 'Yok', help: platformFeeLineageSummary || 'Kaynak vardiya / market shift sinyali görünmüyor.' } : null,
       { label: 'Araç', value: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'), help: 'Onay veya üretim sırasında seçilen aracı gösterir.' },
       { label: 'Sürücü', value: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'), help: 'Onay veya üretim sırasında seçilen sürücüyü gösterir.' },
       { label: 'Oda', value: roomText, help: 'Sözleşmenin bağlı olduğu operasyon odasını gösterir.' },
@@ -943,6 +1000,7 @@ export default function AgreementsPanel() {
       { label: 'Üretim', value: generatedShiftCount > 0 ? 'Var' : 'Yok', help: 'Bugün üretim sinyali durumunu gösterir.' },
       { label: 'Köprü', value: sourceShiftId > 0 ? 'Açık' : 'Kapalı', help: 'Kaynak vardiya köprüsünün açık olup olmadığını gösterir.' },
       qualityBridgePreview ? { label: 'Readonly', value: 'Ödeme başlatılmaz', help: qualityBridgePreview?.previewOnlyNote || 'Tahsilat/fatura oluşturulmaz.' } : null,
+      platformFeePreviewData ? { label: 'Platform', value: 'Readonly', help: platformFeeSafeExplanation || 'Readonly önizleme — tahsilat/fatura oluşturulmaz.' } : null,
     ];
     return {
       facts: selectionFacts,
@@ -996,6 +1054,21 @@ export default function AgreementsPanel() {
     seferScoreMissingSignals,
     seferScoreNextAction,
     seferScoreSafeExplanation,
+    platformFeePreviewData,
+    platformFeeSourceType,
+    platformFeeSourceLabel,
+    platformFeeSourceConfidence,
+    platformFeeLicenseFeeText,
+    platformFeeAmountText,
+    platformFeeRateLabel,
+    platformFeeEstimatedShareText,
+    platformFeeSummaryText,
+    platformFeeSafeExplanation,
+    platformFeeLineageSummary,
+    platformFeeReason,
+    platformFeeScoreText,
+    platformFeeEvidence,
+    platformFeeSignals,
   ]);
 
   useEffect(() => {
@@ -1100,6 +1173,13 @@ export default function AgreementsPanel() {
                 preview={seferScorePreviewData}
                 loading={seferScorePreview.loading}
                 error={seferScorePreview.err}
+                style={{ marginTop: 12 }}
+              />
+              <PlatformFeePreviewCard
+                agreement={selectedAgreementRow.a}
+                preview={platformFeePreviewData}
+                loading={platformFeePreview.loading}
+                error={platformFeePreview.err}
                 style={{ marginTop: 12 }}
               />
             </CollapsibleSection>

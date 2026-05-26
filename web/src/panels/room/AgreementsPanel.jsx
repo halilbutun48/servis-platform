@@ -10,6 +10,7 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
 import QualityPaymentBridgePreviewCard from "../shared/QualityPaymentBridgePreviewCard";
+import PlatformFeePreviewCard from "../shared/PlatformFeePreviewCard";
 import SeferScorePreviewCard from "../shared/SeferScorePreviewCard";
 import AgreementConflictBox from "../../components/AgreementConflictBox";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
@@ -17,7 +18,7 @@ import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agree
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
 import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
-import { getAgreementQualityPaymentBridgePreview, getAgreementSeferScorePreview } from "../../api";
+import { getAgreementPlatformFeePreview, getAgreementQualityPaymentBridgePreview, getAgreementSeferScorePreview } from "../../api";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import {
   OfferCell,
@@ -100,6 +101,7 @@ export default function AgreementsPanel() {
   const [routeRefreshItems, setRouteRefreshItems] = useState([]);
   const [routeRefreshPreviewById, setRouteRefreshPreviewById] = useState({});
   const [qualityPaymentBridgePreview, setQualityPaymentBridgePreview] = useState({ loading: false, data: null, err: "" });
+  const [platformFeePreview, setPlatformFeePreview] = useState({ loading: false, data: null, err: "" });
   const [seferScorePreview, setSeferScorePreview] = useState({ loading: false, data: null, err: "" });
   const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null, title: "Rota Önizleme" });
 
@@ -330,6 +332,31 @@ export default function AgreementsPanel() {
   ), [seferScorePreviewData]);
   const seferScoreNextAction = useMemo(() => String(seferScorePreviewData?.nextBestAction || "").trim(), [seferScorePreviewData]);
   const seferScoreSafeExplanation = useMemo(() => String(seferScorePreviewData?.safeExplanation || "").trim(), [seferScorePreviewData]);
+  const platformFeePreviewData = useMemo(() => platformFeePreview.data || null, [platformFeePreview.data]);
+  const platformFeeSourceType = useMemo(() => String(platformFeePreviewData?.agreementSource || "").trim(), [platformFeePreviewData]);
+  const platformFeeSourceLabel = useMemo(() => String(platformFeePreviewData?.agreementSourceLabel || "Yetersiz lineage").trim(), [platformFeePreviewData]);
+  const platformFeeSourceConfidence = useMemo(() => String(platformFeePreviewData?.sourceConfidence || "LOW").trim(), [platformFeePreviewData]);
+  const platformFeeLicenseFeeText = useMemo(() => String(platformFeePreviewData?.licenseFeeText || "0 TL").trim(), [platformFeePreviewData]);
+  const platformFeeAmountText = useMemo(() => String(platformFeePreviewData?.agreementAmountText || "Tutar bulunamadı").trim(), [platformFeePreviewData]);
+  const platformFeeRateLabel = useMemo(() => String(platformFeePreviewData?.successShareRateLabel || "Başarı payı doğmaz").trim(), [platformFeePreviewData]);
+  const platformFeeEstimatedShareText = useMemo(() => String(platformFeePreviewData?.estimatedSuccessShareText || "Tutar bulunamadı").trim(), [platformFeePreviewData]);
+  const platformFeeSummaryText = useMemo(() => String(platformFeePreviewData?.summaryText || "").trim(), [platformFeePreviewData]);
+  const platformFeeSafeExplanation = useMemo(() => String(platformFeePreviewData?.safeExplanation || "").trim(), [platformFeePreviewData]);
+  const platformFeeLineageSummary = useMemo(() => String(platformFeePreviewData?.lineageSummary || "").trim(), [platformFeePreviewData]);
+  const platformFeeReason = useMemo(() => String(platformFeePreviewData?.reason || "").trim(), [platformFeePreviewData]);
+  const platformFeeScoreText = useMemo(() => {
+    const score = Number(platformFeePreviewData?.seferScoreUsed?.score ?? NaN);
+    const scoreMax = Number(platformFeePreviewData?.seferScoreUsed?.scoreMax ?? 5) || 5;
+    return Number.isFinite(score) ? `${score.toFixed(2)} / ${scoreMax.toFixed(0)}` : String(platformFeePreviewData?.seferScoreUsed?.summaryText || "").trim();
+  }, [platformFeePreviewData]);
+  const platformFeeEvidence = useMemo(() => (
+    Array.isArray(platformFeePreviewData?.sourceEvidence) ? platformFeePreviewData.sourceEvidence : EMPTY_QUALITY_BRIDGE_LIST
+  ), [platformFeePreviewData]);
+  const platformFeeSignals = useMemo(() => (
+    platformFeePreviewData?.sourceSignals && typeof platformFeePreviewData.sourceSignals === 'object'
+      ? platformFeePreviewData.sourceSignals
+      : {}
+  ), [platformFeePreviewData]);
   useEffect(() => {
     const item = copilotAgreementTarget;
     if (!item) {
@@ -384,13 +411,28 @@ export default function AgreementsPanel() {
       seferScoreMissingSignals,
       seferScoreNextAction,
       seferScoreSafeExplanation,
+      platformFeePreview: platformFeePreviewData,
+      platformFeeSummaryText,
+      platformFeeSourceType,
+      platformFeeSourceLabel,
+      platformFeeSourceConfidence,
+      platformFeeLicenseFeeText,
+      platformFeeAmountText,
+      platformFeeRateLabel,
+      platformFeeEstimatedShareText,
+      platformFeeSafeExplanation,
+      platformFeeLineageSummary,
+      platformFeeReason,
+      platformFeeScoreText,
+      platformFeeEvidence,
+      platformFeeSignals,
     });
     setCopilotSelection({
       scopeKey: '/room/agreements',
       entityType: item?.shiftId ? 'shift' : 'screen',
       entityId: Number(item?.shiftId || 1106) || 1106,
       label: `Sözleşme #${item.id}`,
-      summary: [String(item?.status || '').toUpperCase() || '-', ymdTR(item?.startDate), ymdTR(item?.endDate), qualityBridgeSummaryText, seferScoreSummaryText].filter(Boolean).join(' • '),
+      summary: [String(item?.status || '').toUpperCase() || '-', ymdTR(item?.startDate), ymdTR(item?.endDate), qualityBridgeSummaryText, seferScoreSummaryText, platformFeeSummaryText].filter(Boolean).join(' • '),
       fields: [
         { label: 'Durum', value: String(item?.status || '-').toUpperCase(), help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
         { label: 'Başlangıç', value: ymdTR(item?.startDate), help: 'Sözleşmenin başlangıç tarihini gösterir.' },
@@ -443,6 +485,36 @@ export default function AgreementsPanel() {
           value: seferScoreNextAction || '-',
           help: 'Sadece okunur yönlendirme gösterir.',
         } : null,
+        platformFeePreviewData ? {
+          label: 'Lisans ücreti',
+          value: platformFeeLicenseFeeText || '-',
+          help: 'Lisans ücreti daima 0 TL readonly önizlemedir.',
+        } : null,
+        platformFeePreviewData ? {
+          label: 'Kaynak durumu',
+          value: platformFeeSourceLabel || '-',
+          help: platformFeeSummaryText || platformFeeSafeExplanation || 'Readonly free-to-operate önizlemesi.',
+        } : null,
+        platformFeePreviewData ? {
+          label: 'Başarı payı oranı',
+          value: platformFeeRateLabel || '-',
+          help: platformFeeReason || 'Başarı payı yalnızca readonly önizlenir.',
+        } : null,
+        platformFeePreviewData ? {
+          label: 'Tahmini başarı payı',
+          value: platformFeeEstimatedShareText || '-',
+          help: `Tutar: ${platformFeeAmountText || '-'}`,
+        } : null,
+        platformFeePreviewData ? {
+          label: 'Tahsilat / fatura',
+          value: 'Kapalı',
+          help: 'Readonly önizleme — tahsilat/fatura oluşturulmaz.',
+        } : null,
+        platformFeePreviewData ? {
+          label: 'Kaynak zinciri',
+          value: platformFeeSignals?.hasLineageSignal ? 'Sinyal var' : 'Yok',
+          help: platformFeeLineageSummary || 'Kaynak vardiya / market shift sinyali görünmüyor.',
+        } : null,
         selectedRouteRefreshItem ? {
           label: 'Rota güncellemesi',
           value: selectedRouteRefreshStatus === 'ACCEPTED'
@@ -460,6 +532,7 @@ export default function AgreementsPanel() {
         { label: 'Liste', value: pending.some((x) => x.id === item.id) ? 'Bekleyen' : others.some((x) => x.id === item.id) ? 'Diğer' : 'Uzatma', help: 'Sözleşmenin şu an hangi bölümde göründüğünü gösterir.' },
         { label: 'Kalan Gün', value: daysLeftYmd(item?.endDate) == null ? '-' : `${daysLeftYmd(item?.endDate)} gün`, help: 'Bitiş tarihine kaç gün kaldığını özetler.' },
         qualityBridgePreview ? { label: 'Readonly', value: 'Ödeme başlatılmaz', help: qualityBridgePreview?.previewOnlyNote || 'Tahsilat/fatura oluşturulmaz.' } : null,
+        platformFeePreviewData ? { label: 'Platform', value: 'Readonly', help: platformFeeSafeExplanation || 'Readonly önizleme — tahsilat/fatura oluşturulmaz.' } : null,
       ],
       facts,
     });
@@ -506,6 +579,21 @@ export default function AgreementsPanel() {
     seferScoreMissingSignals,
     seferScoreNextAction,
     seferScoreSafeExplanation,
+    platformFeePreviewData,
+    platformFeeSourceType,
+    platformFeeSourceLabel,
+    platformFeeSourceConfidence,
+    platformFeeLicenseFeeText,
+    platformFeeAmountText,
+    platformFeeRateLabel,
+    platformFeeEstimatedShareText,
+    platformFeeSummaryText,
+    platformFeeSafeExplanation,
+    platformFeeLineageSummary,
+    platformFeeReason,
+    platformFeeScoreText,
+    platformFeeEvidence,
+    platformFeeSignals,
   ]);
 
   useEffect(() => {
@@ -513,6 +601,7 @@ export default function AgreementsPanel() {
     const agreementId = Number(copilotAgreementTarget?.id || 0);
     if (!token || !agreementId) {
       setQualityPaymentBridgePreview({ loading: false, data: null, err: "" });
+      setPlatformFeePreview({ loading: false, data: null, err: "" });
       setSeferScorePreview({ loading: false, data: null, err: "" });
       return () => {
         cancelled = true;
@@ -521,11 +610,13 @@ export default function AgreementsPanel() {
 
     const controller = new AbortController();
     setQualityPaymentBridgePreview((prev) => ({ ...prev, loading: true, err: "" }));
+    setPlatformFeePreview((prev) => ({ ...prev, loading: true, err: "" }));
     setSeferScorePreview((prev) => ({ ...prev, loading: true, err: "" }));
 
     (async () => {
-      const [qualityResult, seferResult] = await Promise.allSettled([
+      const [qualityResult, platformResult, seferResult] = await Promise.allSettled([
         getAgreementQualityPaymentBridgePreview(agreementId, { token, signal: controller.signal }),
+        getAgreementPlatformFeePreview(agreementId, { token, signal: controller.signal }),
         getAgreementSeferScorePreview(agreementId, { token, signal: controller.signal }),
       ]);
       if (cancelled) return;
@@ -533,6 +624,11 @@ export default function AgreementsPanel() {
         qualityResult.status === "fulfilled"
           ? { loading: false, data: qualityResult.value, err: "" }
           : { loading: false, data: null, err: qualityResult.reason?.message || "Readonly önizleme yüklenemedi" }
+      );
+      setPlatformFeePreview(
+        platformResult.status === "fulfilled"
+          ? { loading: false, data: platformResult.value, err: "" }
+          : { loading: false, data: null, err: platformResult.reason?.message || "Readonly platform fee önizlemesi yüklenemedi" }
       );
       setSeferScorePreview(
         seferResult.status === "fulfilled"
@@ -971,6 +1067,13 @@ export default function AgreementsPanel() {
                 preview={seferScorePreviewData}
                 loading={seferScorePreview.loading}
                 error={seferScorePreview.err}
+              />
+              <PlatformFeePreviewCard
+                agreement={copilotAgreementTarget}
+                preview={platformFeePreviewData}
+                loading={platformFeePreview.loading}
+                error={platformFeePreview.err}
+                style={{ marginTop: 12 }}
               />
             </div>
           ) : null}

@@ -1,0 +1,375 @@
+function compactText(value, fallback = "") {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return text || String(fallback || "").trim();
+}
+
+function compactList(items = [], limit = 6) {
+  const seen = new Set();
+  const out = [];
+  for (const item of Array.isArray(items) ? items : []) {
+    const text = compactText(item, "");
+    if (!text) continue;
+    const key = text.toLocaleLowerCase("tr-TR");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(text);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+function toNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function roundTo(value, digits = 0) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  const factor = 10 ** digits;
+  return Math.round(n * factor) / factor;
+}
+
+function formatMoneyTR(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+  return new Intl.NumberFormat("tr-TR", {
+    maximumFractionDigits: 0,
+  }).format(Math.round(n));
+}
+
+function normalizeSourceType(value) {
+  const text = compactText(value, "").replace(/[\s-]+/g, "_").toUpperCase();
+  if (!text) return "";
+  if (["EXISTING_IMPORTED", "MANUAL_INTERNAL", "PILOT_FREE", "SEFERPAKT_NEW", "SEFERPAKT_RENEWAL", "INSUFFICIENT_LINEAGE"].includes(text)) {
+    return text;
+  }
+  if (["EXISTING", "IMPORTED", "LEGACY", "MIGRATED"].includes(text)) return "EXISTING_IMPORTED";
+  if (["MANUAL", "MANUAL_ENTRY", "INTERNAL", "INTERNAL_MANUAL"].includes(text)) return "MANUAL_INTERNAL";
+  if (["PILOT", "PILOT_FREE", "FREE_PILOT"].includes(text)) return "PILOT_FREE";
+  if (["NEW", "SEFERPAKT", "SEFERPAKT_NEW", "SOURCE_SHIFT", "SHIFT_SERIES", "LINEAGED"].includes(text)) return "SEFERPAKT_NEW";
+  if (["RENEWAL", "EXTEND", "EXTENSION", "SEFERPAKT_RENEWAL"].includes(text)) return "SEFERPAKT_RENEWAL";
+  if (["INSUFFICIENT", "INSUFFICIENT_DATA", "INSUFFICIENT_LINEAGE", "UNKNOWN"].includes(text)) return "INSUFFICIENT_LINEAGE";
+  return "";
+}
+
+function isExplicitLineageSource(row = {}) {
+  const type = compactText(row?.sourceType || row?.type || row?.commercialSourceType || "", "").toUpperCase();
+  if (type === "SHIFT_SERIES") return true;
+  if (Number(row?.shiftRootId || 0) > 0) return true;
+  if (Number(row?.shiftId || 0) > 0) return true;
+  if (Number(row?.agreementId || 0) > 0 && type === "AGREEMENT") return true;
+  return false;
+}
+
+function normalizeCommercialSources(input = {}) {
+  const commercialSources = Array.isArray(input.commercialSources)
+    ? input.commercialSources
+    : Array.isArray(input.agreement?.commercialSources)
+      ? input.agreement.commercialSources
+      : [];
+  return commercialSources.filter((row) => row && typeof row === "object");
+}
+
+function selectAgreementAmount(input = {}) {
+  const agreement = input.agreement && typeof input.agreement === "object" ? input.agreement : null;
+  const candidates = [
+    input.contractAmount,
+    input.agreementAmount,
+    input.amount,
+    input.companyOfferAmount,
+    input.roomOfferAmount,
+    input.extendOfferAmount,
+    input.extendCounterAmount,
+    agreement?.companyOfferAmount,
+    agreement?.roomOfferAmount,
+    agreement?.extendOfferAmount,
+    agreement?.extendCounterAmount,
+  ];
+  for (const candidate of candidates) {
+    const value = toNumber(candidate);
+    if (value != null && value > 0) return value;
+  }
+  return null;
+}
+
+function hasRenewalSignal(input = {}) {
+  const agreement = input.agreement && typeof input.agreement === "object" ? input.agreement : null;
+  const extendStatus = compactText(input.extendStatus || agreement?.extendStatus || "", "").toUpperCase();
+  return Boolean(
+    extendStatus && extendStatus !== "NONE"
+    || input.isRenewal
+    || agreement?.extendRequestedAt
+    || agreement?.extendRequestedEndDate
+    || agreement?.extendOfferAmount != null
+    || agreement?.extendCounterAmount != null
+    || compactText(input.sourceType || input.agreementSource || input.agreementSourceType || "", "").toUpperCase().includes("RENEWAL")
+  );
+}
+
+function buildLineageSignals(input = {}) {
+  const agreement = input.agreement && typeof input.agreement === "object" ? input.agreement : null;
+  const bridge = input.bridge && typeof input.bridge === "object" ? input.bridge : null;
+  const sourceShiftId = Number(
+    input.sourceShiftId
+    || bridge?.sourceShiftId
+    || input.sourceShift?.shift?.id
+    || input.sourceShift?.id
+    || 0
+  );
+  const sourceSummary = compactText(
+    input.sourceSummary
+    || bridge?.sourceSummary
+    || input.sourceShift?.sourceSummary
+    || input.marketShift?.sourceSummary
+    || "",
+  );
+  const commercialSources = normalizeCommercialSources(input);
+  const explicitLineage = commercialSources.some(isExplicitLineageSource);
+  const hasLineageSignal = Boolean(
+    sourceShiftId > 0
+    || sourceSummary
+    || input.marketShift
+    || input.marketShiftId
+    || explicitLineage
+  );
+  const sourceTypeHint = normalizeSourceType(
+    input.sourceType
+    || input.agreementSource
+    || input.agreementSourceType
+    || input.commercialSourceType
+    || ""
+  );
+  const manual = Boolean(input.manualInternal || input.manual || input.manualEntry || input.legacy || input.existingImported);
+  const pilot = Boolean(input.pilotFree || input.pilot);
+  let agreementSource = sourceTypeHint;
+
+  if (!agreementSource && manual) agreementSource = "MANUAL_INTERNAL";
+  if (!agreementSource && pilot) agreementSource = "PILOT_FREE";
+  if (!agreementSource && hasLineageSignal) {
+    agreementSource = hasRenewalSignal({ ...input, agreement }) ? "SEFERPAKT_RENEWAL" : "SEFERPAKT_NEW";
+  }
+  if (!agreementSource) {
+    const status = compactText(input.agreementStatus || agreement?.status || "", "").toUpperCase();
+    agreementSource = ["APPROVED", "ACTIVE"].includes(status) ? "EXISTING_IMPORTED" : "INSUFFICIENT_LINEAGE";
+  }
+
+  const sourceConfidence = agreementSource === "SEFERPAKT_NEW" || agreementSource === "SEFERPAKT_RENEWAL"
+    ? (sourceShiftId > 0 ? "HIGH" : hasLineageSignal ? "MEDIUM" : "LOW")
+    : agreementSource === "EXISTING_IMPORTED"
+      ? (sourceSummary ? "MEDIUM" : "LOW")
+      : agreementSource === "MANUAL_INTERNAL" || agreementSource === "PILOT_FREE"
+        ? "MEDIUM"
+        : "LOW";
+
+  const sourceEvidence = compactList([
+    sourceShiftId > 0 ? `Kaynak vardiya #${sourceShiftId}` : "",
+    sourceSummary ? `Kaynak özeti: ${sourceSummary}` : "",
+    hasLineageSignal ? "Kaynak vardiya / market shift sinyali var" : "",
+    explicitLineage ? "Ticari kaynak kaydı var" : "",
+    hasRenewalSignal({ ...input, agreement }) ? "Uzatma / yenileme sinyali var" : "",
+  ], 6);
+
+  return {
+    agreementSource,
+    sourceConfidence,
+    hasLineageSignal,
+    sourceShiftId: sourceShiftId > 0 ? sourceShiftId : null,
+    sourceSummary,
+    sourceEvidence,
+    commercialSources,
+    commercialSourceCount: commercialSources.length,
+    isRenewal: agreementSource === "SEFERPAKT_RENEWAL",
+    isManual: agreementSource === "MANUAL_INTERNAL",
+    isPilot: agreementSource === "PILOT_FREE",
+    isImported: agreementSource === "EXISTING_IMPORTED",
+    isInsufficient: agreementSource === "INSUFFICIENT_LINEAGE",
+  };
+}
+
+function levelFromScore(score) {
+  const n = Number(score);
+  if (!Number.isFinite(n)) {
+    return { band: "INSUFFICIENT_DATA", label: "Yetersiz veri", reviewRequired: false };
+  }
+  if (n >= 4.7) return { band: "ELITE", label: "Elit", reviewRequired: false };
+  if (n >= 4.3) return { band: "GOOD", label: "İyi", reviewRequired: false };
+  if (n >= 3.8) return { band: "STANDARD", label: "Standart", reviewRequired: false };
+  if (n >= 3.3) return { band: "RISKY", label: "Riskli", reviewRequired: false };
+  return { band: "CRITICAL", label: "Kritik", reviewRequired: true };
+}
+
+export function computeSuccessShareRateBySeferScore(score, { renewal = false } = {}) {
+  const classification = levelFromScore(score);
+  if (classification.band === "INSUFFICIENT_DATA") {
+    return {
+      rate: 0,
+      rateLabel: "SeferPuanı yeterli değil",
+      band: classification.band,
+      bandLabel: classification.label,
+      reviewRequired: false,
+      score: null,
+    };
+  }
+
+  const rates = renewal
+    ? { ELITE: 1, GOOD: 1.25, STANDARD: 1.5, RISKY: 1.75, CRITICAL: 2 }
+    : { ELITE: 1, GOOD: 1.5, STANDARD: 2, RISKY: 2.5, CRITICAL: 3 };
+  const rate = Number(rates[classification.band] ?? 0);
+  const rateLabel = rate > 0 ? `%${String(rate).replace(/\.0+$/, "")}` : "Başarı payı doğmaz";
+  return {
+    rate,
+    rateLabel,
+    band: classification.band,
+    bandLabel: classification.label,
+    reviewRequired: classification.reviewRequired,
+    score: Number(score),
+  };
+}
+
+export function inferAgreementSourcePreview(input = {}) {
+  return buildLineageSignals(input);
+}
+
+export function buildPlatformFeeReason(result = {}) {
+  const agreementSource = compactText(result?.agreementSource || "", "INSUFFICIENT_LINEAGE");
+  const licenseFeeText = compactText(result?.licenseFeeText || "0 TL", "0 TL");
+  const shareRateLabel = compactText(result?.successShareRateLabel || "Başarı payı doğmaz", "Başarı payı doğmaz");
+  const scoreText = compactText(result?.seferScoreText || result?.seferScoreUsed?.summaryText || "", "");
+  if (["EXISTING_IMPORTED", "MANUAL_INTERNAL", "PILOT_FREE", "INSUFFICIENT_LINEAGE"].includes(agreementSource)) {
+    return `Lisans ücreti ${licenseFeeText}'dir ve mevcut/taşınmış kayıt için başarı payı doğmaz. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
+  }
+  if (agreementSource === "SEFERPAKT_NEW" || agreementSource === "SEFERPAKT_RENEWAL") {
+    const scorePart = scoreText ? ` SeferPuanı: ${scoreText}.` : "";
+    const reviewPart = result?.reviewRequired ? " İnceleme gerekli." : "";
+    return `Lisans ücreti ${licenseFeeText}'dir; SeferPakt kaynaklı ${agreementSource === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} kayıt için başarı payı readonly önizlenir.${scorePart}${reviewPart} ${shareRateLabel}. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
+  }
+  return `Lisans ücreti ${licenseFeeText}'dir; başarı payı readonly önizlenir. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
+}
+
+export function buildMarketplaceFreeToOperateSummary(result = {}) {
+  const readonlyBoundary = "Readonly önizleme — tahsilat/fatura oluşturulmaz.";
+  const parts = [
+    compactText(result?.licenseFeeText || "Lisans ücreti: 0 TL"),
+    compactText(result?.agreementSourceLabel || result?.agreementSource || "Kaynak durumu belirsiz"),
+    compactText(result?.sourceConfidence ? `Güven: ${result.sourceConfidence}` : ""),
+    compactText(result?.sourceSummary || ""),
+    compactText(result?.seferScoreText || ""),
+    compactText(result?.successShareRateLabel || ""),
+    compactText(result?.estimatedSuccessShareText || ""),
+    compactText(result?.summaryHint || ""),
+  ].filter(Boolean);
+  const detail = compactText(parts.join(" • "), "");
+  return compactText(detail ? `${detail} • ${readonlyBoundary}` : readonlyBoundary, readonlyBoundary);
+}
+
+export function computePlatformFeePreview(input = {}) {
+  const agreement = input.agreement && typeof input.agreement === "object" ? input.agreement : null;
+  const sourcePreview = inferAgreementSourcePreview(input);
+  const seferScorePreview = input.seferScorePreview && typeof input.seferScorePreview === "object"
+    ? input.seferScorePreview
+    : null;
+  const scoreValue = Number(
+    input.seferScoreValue
+    ?? seferScorePreview?.score
+    ?? input.score
+    ?? NaN
+  );
+  const scoreText = Number.isFinite(scoreValue)
+    ? `${scoreValue.toFixed(2)} / ${Number(input.seferScoreMax ?? seferScorePreview?.scoreMax ?? 5).toFixed(0)}`
+    : compactText(seferScorePreview?.summaryText || seferScorePreview?.safeExplanation || "SeferPuanı yeterli değil", "SeferPuanı yeterli değil");
+  const amount = selectAgreementAmount({
+    agreement,
+    contractAmount: input.contractAmount,
+    agreementAmount: input.agreementAmount,
+    amount: input.amount,
+    companyOfferAmount: input.companyOfferAmount,
+    roomOfferAmount: input.roomOfferAmount,
+    extendOfferAmount: input.extendOfferAmount,
+    extendCounterAmount: input.extendCounterAmount,
+  });
+  const amountText = amount != null ? `${formatMoneyTR(amount)} TL` : "Tutar bulunamadı";
+  const sourceType = sourcePreview.agreementSource;
+  const shouldPreviewShare = sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL";
+  const ratePreview = shouldPreviewShare
+    ? computeSuccessShareRateBySeferScore(scoreValue, { renewal: sourceType === "SEFERPAKT_RENEWAL" })
+    : {
+        rate: 0,
+        rateLabel: "Başarı payı doğmaz",
+        band: "NOT_APPLICABLE",
+        bandLabel: "Uygulanmaz",
+        reviewRequired: false,
+        score: Number.isFinite(scoreValue) ? scoreValue : null,
+      };
+  const estimatedSuccessShare = amount != null && ratePreview.rate > 0
+    ? roundTo((amount * ratePreview.rate) / 100, 0)
+    : 0;
+  const estimatedSuccessShareText = amount != null
+    ? `${formatMoneyTR(estimatedSuccessShare)} TL`
+    : "Tutar bulunamadı";
+  const agreementSourceLabelMap = {
+    EXISTING_IMPORTED: "Mevcut / taşınmış kayıt",
+    MANUAL_INTERNAL: "Manuel iç kayıt",
+    PILOT_FREE: "Pilot ücretsiz kayıt",
+    SEFERPAKT_NEW: "SeferPakt kaynaklı yeni sözleşme",
+    SEFERPAKT_RENEWAL: "SeferPakt kaynaklı yenileme",
+    INSUFFICIENT_LINEAGE: "Yetersiz lineage",
+  };
+  const summaryHint = sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL"
+    ? `SeferPuanı ${scoreText} nedeniyle ${ratePreview.rateLabel} önizleniyor.`
+    : "Bu kayıt mevcut / manuel / pilot / taşınmış görünüyor; başarı payı doğmaz.";
+  const result = {
+    previewOnly: true,
+    licenseFee: 0,
+    licenseFeeText: "0 TL",
+    agreementSource: sourceType,
+    agreementSourceLabel: agreementSourceLabelMap[sourceType] || agreementSourceLabelMap.INSUFFICIENT_LINEAGE,
+    sourceConfidence: sourcePreview.sourceConfidence,
+    sourceShiftId: sourcePreview.sourceShiftId,
+    sourceSummary: sourcePreview.sourceSummary,
+    sourceEvidence: sourcePreview.sourceEvidence,
+    sourceSignals: {
+      hasLineageSignal: sourcePreview.hasLineageSignal,
+      commercialSourceCount: sourcePreview.commercialSourceCount,
+      isRenewal: sourcePreview.isRenewal,
+      isManual: sourcePreview.isManual,
+      isPilot: sourcePreview.isPilot,
+      isImported: sourcePreview.isImported,
+      isInsufficient: sourcePreview.isInsufficient,
+    },
+    agreementAmount: amount,
+    agreementAmountText: amountText,
+    successShareRate: ratePreview.rate,
+    successShareRateLabel: ratePreview.rate > 0 ? `${String(ratePreview.rate).replace(/\.0+$/, "")}%` : ratePreview.rateLabel,
+    successShareBand: ratePreview.band,
+    successShareBandLabel: ratePreview.bandLabel,
+    estimatedSuccessShare,
+    estimatedSuccessShareText,
+    payableNow: false,
+    canInvoice: false,
+    canCollect: false,
+    reviewRequired: Boolean(ratePreview.reviewRequired),
+    seferScoreUsed: {
+      score: Number.isFinite(scoreValue) ? scoreValue : null,
+      scoreMax: Number(input.seferScoreMax ?? seferScorePreview?.scoreMax ?? 5) || 5,
+      summaryText: scoreText,
+      level: compactText(input.seferScoreLevel || seferScorePreview?.level || "", ""),
+      confidence: compactText(input.seferScoreConfidence || seferScorePreview?.confidence || "", ""),
+      status: compactText(input.seferScoreStatus || seferScorePreview?.status || "", ""),
+    },
+    reason: buildPlatformFeeReason({
+      agreementSource: sourceType,
+      licenseFeeText: "0 TL",
+      successShareRateLabel: ratePreview.rateLabel,
+      seferScoreText: scoreText,
+      reviewRequired: Boolean(ratePreview.reviewRequired),
+    }),
+    lineageSummary: compactText(sourcePreview.sourceEvidence.join(" • "), sourcePreview.sourceSummary || "Kaynak vardiya / market shift sinyali yok"),
+    safeExplanation: sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL"
+      ? `Lisans ücreti yoktur. Bu kayıt SeferPakt kaynaklı ${sourceType === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} göründüğü için başarı payı sadece readonly önizlenir. Tahsilat/fatura oluşturulmaz.`
+      : "Lisans ücreti yoktur. Bu kayıt mevcut/taşınmış göründüğü için başarı payı doğmaz. Tahsilat/fatura oluşturulmaz.",
+    summaryHint,
+  };
+  result.summaryText = buildMarketplaceFreeToOperateSummary(result);
+  return result;
+}

@@ -773,6 +773,12 @@ Bu bant güncel doğrulanmış üst hattır.
 - Ana konu: QLT-PAY-BRIDGE-01’den gelen kalite/kanıt/hakediş sinyallerini tedarikçi bazlı readonly SeferPuanı önizlemesine çevirmek; ödeme, ceza, teklif sıralaması, komisyon, platform fee ve settlement execute açmamak.
 - Not: yalnızca preview/fallback kalır; SeferPuanı için açıklanabilir sinyal zeminini hazırlar.
 
+### MARKETPLACE-FREE-TO-OPERATE-01 — readonly lisanssız ticari model önizlemesi [CHECK]
+- Check script: `check:marketplacefreetooperate01`
+- Komut: `node backend\scripts\marketplace_free_to_operate_01_check.js`
+- Ana konu: mevcut / manuel / pilot / imported / lineage belirsiz sözleşmelerde lisans ücreti 0 TL ve başarı payı 0 TL güvenli fallback; SeferPakt kaynaklı yeni / yenileme sözleşmelerde kaliteye göre %1-%3 readonly başarı payı önizlemesi; ödeme, tahsilat, fatura, platform fee ledger ve settlement execute açmamak.
+- Not: kaynak vardiya / market shift sinyali görünmüyorsa `EXISTING_IMPORTED` veya `INSUFFICIENT_LINEAGE` fallback'i ile pay doğmaz; SeferPuanı eksikse kesin oran verilmez.
+
 ### DOCS-STATE-01 — son kapanan ürün hatları görünürlüğü [CHECK]
 - Komut: `node backend\scripts\docs_state_01_recent_product_closure_check.js`
 - Ana konu: son kapanan ürün hatlarını SSOT / registry / backlog / repo-contract state içinde görünür ve güncel tutmak; ürün davranışı değiştirmez.

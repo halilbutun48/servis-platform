@@ -80,6 +80,7 @@ const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
   'DYNAMIC_SAVINGS_PREVIEW',
   'AGREEMENT_ROUTE_REFRESH',
   'SEFER_SCORE_PREVIEW',
+  'MARKETPLACE_FREE_TO_OPERATE_PREVIEW',
   'PAYMENT_READINESS',
   'PAYMENT_MISSING',
   'QUALITY_SIGNAL',
@@ -204,6 +205,7 @@ function selectedDiagnosticTheme(message) {
   if (/(sürücünün|surucunun).*(telefon gps|telefon gps['’]i|telefon gps’i).*(neden).*(devrede|aktif|açık|acik)/.test(text) || /(telefon gps|cihaz gps).*(neden).*(devrede|aktif|açık|acik)/.test(text)) return 'DRIVER_PHONE_GPS';
   if (/(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|kanıt|kanit|proof|komisyon|kalite|quality).*(neden).*(eksik|kontrol gerekli|hazır değil|hazir degil|risk|riskli|başlatılam|baslatilam)/.test(text) || /(kanıt eksik|kanit eksik|kanıtlar eksik|kanitlar eksik|hakediş eksik|hakedis eksik)/.test(text)) return 'PAYMENT_MISSING';
   if (/(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|kanıt|kanit|proof|komisyon|kalite|quality).*(başlatılabilir|baslatilabilir|güvenli mi|guvenli mi|hazır mı|hazir mi|hazır değil|hazir degil|hazırlık|hazirlik|etkiliyor|etkisi)/.test(text) || /(kalite.*hakediş|kalite.*hakedis|hakediş.*kalite|hakedis.*kalite).*(etkiliyor|etkisi|güvenli mi|guvenli mi)/.test(text)) return 'PAYMENT_READINESS';
+  if (/(lisans ücreti|lisans ucreti|başarı payı|basari payi|mevcut sözleşmeden pay|mevcut sozlesmeden pay|platform fee|free-to-operate|seferpakt kaynaklı|seferpakt kaynakli|pay alacak mı|pay alacak mi|pay alınır mı|pay alinır mı|pay doğmaz|pay dogmaz|0 tl lisans)/.test(text)) return 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW';
   if (/(sağlayıcı|saglayici|provider).*(neden).*(daha iyi|daha güçlü|daha guclu)/.test(text) || /(daha iyi|daha güçlü|daha guclu).*(sağlayıcı|saglayici|provider)/.test(text)) return 'QUALITY_SIGNAL';
   if (/(tasarruf|tasarruf önizlemesi|tasarruf onizlemesi|km tasarrufu|süre tasarrufu|sure tasarrufu|yaklaşık maliyet|yaklasik maliyet|maliyet etkisi|readonly tasarruf|readonly önizleme|dinamik tasarruf)/.test(text)) return 'DYNAMIC_SAVINGS_PREVIEW';
   if (/(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|uygulanan rota|rota geçmişi|rota gecmisi|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) return 'AGREEMENT_ROUTE_REFRESH';
@@ -249,6 +251,10 @@ function _selectedDiagnosticResult(theme, contextText = '') {
       return hasNegative
         ? 'Tasarruf hesabı için yeterli veri yok.'
         : 'Bu ekrandaki veriye göre tasarruf önizlemesi hesaplanabilir.';
+    case 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW':
+      return hasNegative
+        ? 'Lisans ücreti, kaynak vardiya veya SeferPuanı için yeterli veri yok.'
+        : 'Bu ekrandaki veriye göre lisanssız free-to-operate önizlemesi hesaplanabilir.';
     case 'BOARDING_CHANGE_APPLICATION':
       return hasNegative
         ? 'Bu ekrandaki veriye göre kabul edilen değişiklik henüz günlük atamaya işlenmemiş olabilir.'
@@ -292,6 +298,8 @@ function _selectedDiagnosticSurfaceHint(theme) {
       return 'Sözleşme / vardiya üretimi';
     case 'DYNAMIC_SAVINGS_PREVIEW':
       return 'Mevcut / yeni / fark rota metrikleri';
+    case 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW':
+      return 'Kaynak vardiya / market shift sinyali ve SeferPuanı';
     case 'BOARDING_CHANGE_APPLICATION':
       return 'Kabul edilen değişiklik / günlük atama';
     case 'PAYMENT_READINESS':
@@ -409,6 +417,7 @@ function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefin
   const isSeferScoreSurface = ['/commercial-core', '/commercial-flow', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']
     .some((segment) => screenPath.includes(segment));
   const asksSeferScore = isSeferScoreSurface && hasSeferScoreSignal(text);
+  const asksMarketplace = /(?:lisans ücreti|lisans ucreti|başarı payı|basari payi|mevcut sözleşmeden pay|mevcut sozlesmeden pay|platform fee|free-to-operate|seferpakt kaynaklı|seferpakt kaynakli|pay alacak mı|pay alacak mi|pay alınır mı|pay alinır mı|pay doğmaz|pay dogmaz|0 tl lisans)/.test(text);
   const asksProof = /(servis kanıtı|servis kaniti|hizmet kanıtı|hizmet kaniti|operatör notu|operatör not|operatör notu|sürücünün telefon gps['’]i|sürücünün telefon gps'i|telefon gps|araç gps|arac gps|biniş kaydı|binis kaydı|binis kaydi|kanıt ne işe yarar|kanıt ne ise yarar)/.test(text);
   const asksContractOrReadinessWorkflow = ['PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(questionType || ''))
     || /((sözleşme|sozlesme|sözleşmeden|sozlesmeden).*(vardiya|shift).*(üret|uret|oluş|olustur|oluştur|bugün|bugun))|((hakediş|hakedis|ödeme|odeme).*(hazır değil|hazir degil|hazır mı|hazir mi|eksik bilgi|ödeme hesabı|odeme hesabi|komisyon|önizleme|onizleme|csv))/i.test(text);
@@ -431,6 +440,10 @@ function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefin
   if ((asksSeferScore || String(questionType || '') === 'SEFER_SCORE_PREVIEW') && (isQuality || isCommercial || isSuperAdminOverview || isVerification)) {
     const now = actionLeadQuestion ? 'SeferPuanı önizlemesini aç.' : 'SeferPuanı önizlemesini incele.';
     return `Şimdi: ${now} Bu programda bunun anlamı: SeferPuanı sadece readonly kalite puanı önizlemesidir. Neden? Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleri birlikte okunur; ödeme, ceza, teklif sıralaması veya otomatik işlem başlatılmaz. Öneri: Sinyal kırılımını ve eksik verileri kontrol et. Sıradaki doğru işlem: SeferPuanı önizlemesini açıp ilgili kayıt satırını incele.`.trim();
+  }
+  if ((asksMarketplace || String(questionType || '') === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') && (isCommercial || isSuperAdminOverview || isVerification)) {
+    const now = actionLeadQuestion ? 'Free-to-operate önizlemesini aç.' : 'Free-to-operate önizlemesini incele.';
+    return `Şimdi: ${now} Bu programda bunun anlamı: Lisans ücreti 0 TL readonly önizlenir. Neden? Mevcut / manuel / pilot / legacy kayıt için pay doğmaz; SeferPakt kaynaklı yeni ya da yenileme kayıt için başarı payı yalnızca readonly görünür. Öneri: Kaynak vardiya / market shift sinyalini ve SeferPuanı’nı kontrol et. Sıradaki doğru işlem: Platform fee önizlemesini açıp kaynak zincirini incele.`.trim();
   }
   if ((asksQuality || (isQuality && relevantQuestionType)) && (isQuality || isCommercial || isSuperAdminOverview || isVerification)) {
     const now = actionLeadQuestion ? 'Kalite akış özetine bak.' : 'Kalite akış özetini incele.';
@@ -1151,6 +1164,7 @@ function buildContextPriorityDecision({
   const topicWhy = {
     QUALITY_SIGNAL: 'Bu sinyal kesin kalite puanı değil; sağlayıcıyı okumaya yardım eder.',
     SEFER_SCORE_PREVIEW: 'Bu sadece readonly kalite puanı önizlemesidir. Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.',
+    MARKETPLACE_FREE_TO_OPERATE_PREVIEW: 'Bu sadece lisanssız free-to-operate önizlemesidir. Lisans ücreti yoktur; mevcut / manuel / pilot / legacy kayıt için pay doğmaz; SeferPakt kaynaklı yeni veya yenileme için başarı payı yalnızca readonly görünür.',
     BOARDING_CHANGE_REQUEST_ENTRY: 'Bu sadece talep oluşturma akışıdır. Konum gerekiyorsa Konumumu al, Büyük haritada konum seç ya da Adresten konum bul seçeneklerinden birini kullan; rota otomatik uygulanmaz; same-route ise sürücü, rota dışı ise hizmet alan taraf karar verir; room sadece görür.',
     PAYMENT_READINESS: 'Bu sadece önizlemedir; ödeme başlatılmaz ve önce eksik kanıt/kalite kontrolü tamamlanır.',
     PAYMENT_MISSING: 'Bu sadece önizlemedir; eksik kanıtlar kapatılmadan hakediş hazır sayılmaz.',
@@ -1198,6 +1212,7 @@ function buildContextPriorityDecision({
   const topicAdvice = {
     QUALITY_SIGNAL: 'Önce kalite sinyalini sağlayıcı puanı, inceleme kararı ve denetim iziyle birlikte oku.',
     SEFER_SCORE_PREVIEW: 'Önce zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini oku; eksik veri varsa kesin hüküm verme.',
+    MARKETPLACE_FREE_TO_OPERATE_PREVIEW: 'Önce kaynak vardiya / market shift sinyalini ve SeferPuanı’nı oku; lisans ücreti 0 TL, mevcut / manuel / pilot / legacy kayıtta pay doğmaz, yeni / yenileme kayıtta ise yalnızca readonly önizleme görünür.',
     BOARDING_CHANGE_REQUEST_ENTRY: 'Önce talep tipini, tarihi, servis/shift bağlamını ve konum seçimini gir. Konum gerekiyorsa Konumumu al, Büyük haritada konum seç ya da Adresten konum bul; geocode bağlı değilse açıklama ekle. Talep alındıktan sonra kimde beklediğini durum satırından oku.',
     PAYMENT_READINESS: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et. Ödeme başlatılmaz.',
     PAYMENT_MISSING: 'Önce eksik kanıtları ve kalite kontrolünü tamamla; bu sadece önizlemedir.',
@@ -1817,6 +1832,10 @@ const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFiel
       case 'SEFER_SCORE_PREVIEW':
         result = 'Bu ekrandaki veriye göre bu tedarikçinin SeferPuanı önizleniyor; ödeme, ceza veya teklif sıralaması başlatmaz.';
         firstControl = 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleri';
+        break;
+      case 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW':
+        result = 'Bu ekrandaki veriye göre lisans ücreti 0 TL readonly önizleniyor; mevcut / manuel / pilot / legacy kayıt için pay doğmaz, SeferPakt kaynaklı yeni veya yenileme ise yalnızca readonly başarı payı görünür.';
+        firstControl = 'Kaynak vardiya / market shift sinyali, SeferPuanı ve readonly tahsilat / fatura sınırı';
         break;
       case 'CONTRACT_SHIFT_TODAY':
       case 'CONTRACT_TO_SHIFT':
@@ -3865,6 +3884,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     if (['SEFER_SCORE_PREVIEW'].includes(String(workflowTopic || questionType || ''))) {
       return ['SeferPuanını sor', 'bu tedarikçinin sefer puanı kaç', 'Readonly kalite puanı önizlemesini tekrar sorar.'];
     }
+    if (['MARKETPLACE_FREE_TO_OPERATE_PREVIEW'].includes(String(workflowTopic || questionType || ''))) {
+      return ['Lisans ücreti var mı?', 'bu sözleşmeden SeferPakt pay alacak mı', 'Readonly free-to-operate önizlemesini tekrar sorar.'];
+    }
     if (['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW'].includes(String(workflowTopic || questionType || ''))) {
       return ['Kanıt eksiklerini sor', 'bu hakediş neden hazır değil', 'Hakediş / kanıt önizlemesini tekrar sorar.'];
     }
@@ -4328,6 +4350,7 @@ function verificationHintForQuestionType(questionType, screenDefinition, quickAc
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `Tasarruf önizlemesini netleştirmek için önce ${firstControl} ve mevcut / yeni rota farkını kontrol et.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `Rota değişikliği teklifini işleme almadan önce ${firstControl} ve eski/yeni rota farkını kontrol et.`;
   if (questionType === 'SEFER_SCORE_PREVIEW') return `SeferPuanı önizlemesini netleştirmek için önce ${firstControl} ve eksik sinyal satırlarını kontrol et.`;
+  if (questionType === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') return `Readonly free-to-operate önizlemesini netleştirmek için önce ${firstControl} ve kaynak vardiya / market shift sinyallerini kontrol et.`;
   if (questionType === 'STATUS_HELP') return `Durumu netleştirmek için önce ${firstControl} ve varsa seçili kaydın son sinyallerine bak.`;
   if (routeLabel) return `${routeLabel} adımına geçmeden önce ${firstControl} kontrolünü yap.`;
   return `Önce ${firstControl} kontrolünü yap; sonra bu yönlendirmeyi uygula.`;
@@ -4369,6 +4392,7 @@ function questionTypeLabel(questionType) {
     DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
     SEFER_SCORE_PREVIEW: 'SeferPuanı önizlemesi',
+    MARKETPLACE_FREE_TO_OPERATE_PREVIEW: 'Free-to-operate önizlemesi',
     WHY_BLOCKED: 'Neden olmuyor',
     QUALITY_SIGNAL: 'Kalite / kanıt sinyali',
     TRUST_QUALITY: 'Kalite / kanıt akışı',
@@ -4418,6 +4442,7 @@ function responseWhyText(questionType, screenDefinition) {
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;
   if (questionType === 'SEFER_SCORE_PREVIEW') return `${screenLabel} ekranındaki SeferPuanı önizlemesini, zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleriyle birlikte okudum. Bu sadece önizlemedir. Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.`;
+  if (questionType === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') return `${screenLabel} ekranındaki lisanssız free-to-operate önizlemesini, kaynak vardiya / market shift sinyali ve SeferPuanı ile birlikte okudum. Bu sadece önizlemedir; ödeme, fatura, settlement veya otomatik kesinti başlatmaz.`;
   if (['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW'].includes(String(questionType || ''))) return `${screenLabel} ekranındaki hakediş / kanıt önizlemesini, kalite ve eksik satırlarla birlikte okudum. Bu sadece önizlemedir; ödeme başlatılmaz.`;
   if (questionType === 'WHY_BLOCKED') return `${screenLabel} ekranındaki blokaj ve eksik bilgi ihtimaline göre cevap verdim.`;
   if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum ve GPS işaretlerine göre yorum yaptım.`;

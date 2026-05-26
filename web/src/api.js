@@ -292,6 +292,11 @@ export async function getAgreementSeferScorePreview(agreementId, { token, signal
   return payload?.seferScorePreview ?? payload;
 }
 
+export async function getAgreementPlatformFeePreview(agreementId, { token, signal } = {}) {
+  const payload = await api(`/api/agreements/${Number(agreementId)}/platform-fee-preview`, { token, signal });
+  return payload?.platformFeePreview ?? payload;
+}
+
 export function normalizeQualityReviewDecisionError(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorInfo(error, fallbackMessage);
 }

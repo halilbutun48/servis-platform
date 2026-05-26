@@ -28,6 +28,7 @@
     "check:paysafe01": "node backend/scripts/pay_safe_01_payment_write_gate_check.js",
     "check:qltpaybridge01": "node backend/scripts/qlt_pay_bridge_01_check.js",
     "check:seferscore01": "node backend/scripts/sefer_score_01_check.js",
+    "check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js",
     "check:mobiletext01": "npm --prefix mobile run check:mobiletext01",
     "check:m95e23c": "npm --prefix web run check:m95e23c",
     "check:m98e4b": "node backend/scripts/m98_e4b_personel_invite_router_mount_check.js",
@@ -154,6 +155,5 @@
     "verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"
   }
 }
-
 
 

@@ -177,6 +177,27 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const seferScoreMissingSignals = compactList(summary.seferScoreMissingSignals || seferScorePreview?.missingSignals || [], 6);
   const seferScoreNextAction = compactText(summary.seferScoreNextAction || seferScorePreview?.nextBestAction || "");
   const seferScoreSafeExplanation = compactText(summary.seferScoreSafeExplanation || seferScorePreview?.safeExplanation || "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.");
+  const platformFeePreview = summary.platformFeePreview && typeof summary.platformFeePreview === "object"
+    ? summary.platformFeePreview
+    : null;
+  const platformFeeSummaryText = compactText(summary.platformFeeSummaryText || platformFeePreview?.summaryText || "");
+  const platformFeeStatus = compactText(summary.platformFeeStatus || platformFeePreview?.agreementSourceLabel || platformFeePreview?.agreementSource || "");
+  const platformFeeSourceType = compactText(summary.platformFeeSourceType || platformFeePreview?.agreementSource || "");
+  const platformFeeSourceConfidence = compactText(summary.platformFeeSourceConfidence || platformFeePreview?.sourceConfidence || "");
+  const platformFeeLicenseFeeText = compactText(summary.platformFeeLicenseFeeText || platformFeePreview?.licenseFeeText || "0 TL");
+  const platformFeeAmountText = compactText(summary.platformFeeAmountText || platformFeePreview?.agreementAmountText || "");
+  const platformFeeRateText = compactText(summary.platformFeeRateText || platformFeePreview?.successShareRateLabel || "");
+  const platformFeeEstimatedShareText = compactText(summary.platformFeeEstimatedShareText || platformFeePreview?.estimatedSuccessShareText || "");
+  const platformFeePayableNow = Boolean(summary.platformFeePayableNow ?? platformFeePreview?.payableNow ?? false);
+  const platformFeeCanInvoice = Boolean(summary.platformFeeCanInvoice ?? platformFeePreview?.canInvoice ?? false);
+  const platformFeeCanCollect = Boolean(summary.platformFeeCanCollect ?? platformFeePreview?.canCollect ?? false);
+  const platformFeeLineageSummary = compactText(summary.platformFeeLineageSummary || platformFeePreview?.lineageSummary || "");
+  const platformFeeSafeExplanation = compactText(summary.platformFeeSafeExplanation || platformFeePreview?.safeExplanation || "Readonly önizleme — tahsilat/fatura oluşturulmaz.");
+  const platformFeeReason = compactText(summary.platformFeeReason || platformFeePreview?.reason || "");
+  const platformFeeSourceEvidence = compactList(summary.platformFeeEvidence || platformFeePreview?.sourceEvidence || [], 6);
+  const platformFeeSourceSignals = platformFeePreview?.sourceSignals && typeof platformFeePreview.sourceSignals === "object"
+    ? platformFeePreview.sourceSignals
+    : {};
   const selectedRecordSummary = compactText([
     summary.selectedRecordSummary || buildSelectedSummary({
       statusText,
@@ -195,6 +216,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     routeRefreshSummaryText,
     qualityPaymentBridgeSummaryText ? `Kalite / hakediş: ${qualityPaymentBridgeSummaryText}` : "",
     seferScoreSummaryText ? `SeferPuanı: ${seferScoreSummaryText}` : "",
+    platformFeeSummaryText ? `Platform / lisans: ${platformFeeSummaryText}` : "",
   ].filter(Boolean).join(" • "), "");
 
   const sourceShiftId = safeInt(summary.sourceShiftId || summary.sourceShift?.id || item?.sourceShiftId || 0);
@@ -249,6 +271,17 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         seferScoreStatus ? `Durum: ${seferScoreStatus}` : "",
         seferScoreNextAction ? `Sıradaki işlem: ${seferScoreNextAction}` : "",
       ], 3).join(" • ") || seferScoreSafeExplanation || "Readonly kalite puanı önizlemesi.",
+    } : null,
+    platformFeeSummaryText || platformFeeStatus || platformFeeRateText || platformFeeEstimatedShareText ? {
+      id: "platform-fee",
+      label: "Platform modeli",
+      value: platformFeeStatus || (platformFeePreview?.previewOnly ? "Readonly önizleme" : "Yetersiz veri"),
+      note: compactList([
+        platformFeeSummaryText,
+        platformFeeRateText ? `Oran: ${platformFeeRateText}` : "",
+        platformFeeEstimatedShareText ? `Tahmini pay: ${platformFeeEstimatedShareText}` : "",
+        platformFeeSourceConfidence ? `Güven: ${platformFeeSourceConfidence}` : "",
+      ], 3).join(" • ") || platformFeeSafeExplanation || "Readonly önizleme — tahsilat/fatura oluşturulmaz.",
     } : null,
     { id: "source-shift", label: "Kaynak vardiya", value: sourceShiftId ? `#${sourceShiftId}` : "Yok", note: sourceShiftId ? "Üretim kökü okunur." : "Kaynak vardiya bağlantısı görünmüyor." },
     { id: "generated-count", label: "Üretilen vardiya", value: generatedShiftCount > 0 ? String(generatedShiftCount) : "Yok", note: generatedShiftCount > 0 ? "Bugün üretim sinyali var." : "Bugün üretim sinyali görünmüyor." },
@@ -338,6 +371,17 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         value: Number.isFinite(seferScoreValue) ? `${seferScoreValue.toFixed(2)} / ${seferScoreMax.toFixed(0)}` : (seferScoreLevel || "Yetersiz veri"),
         note: seferScoreSummaryText || seferScoreSafeExplanation || "Readonly kalite puanı önizlemesi.",
       })] : []),
+      ...(platformFeeSummaryText || platformFeeStatus || platformFeeRateText || platformFeeEstimatedShareText ? [normalizeCopilotSignal({
+        id: "platform-fee",
+        label: "Platform modeli",
+        value: platformFeeStatus || (platformFeePreview?.previewOnly ? "Readonly önizleme" : "Yetersiz veri"),
+        note: compactList([
+          platformFeeSummaryText,
+          platformFeeRateText ? `Oran: ${platformFeeRateText}` : "",
+          platformFeeEstimatedShareText ? `Tahmini pay: ${platformFeeEstimatedShareText}` : "",
+          platformFeeSourceConfidence ? `Güven: ${platformFeeSourceConfidence}` : "",
+        ], 3).join(" • ") || platformFeeSafeExplanation || "Readonly önizleme — tahsilat/fatura oluşturulmaz.",
+      })] : []),
       normalizeCopilotSignal({
         id: "workflow-signal",
         label: "Genel workflow",
@@ -406,6 +450,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       productionSummary,
       todayProductionSummary,
       dynamicSavingsSummaryText,
+      platformFeeSummaryText,
       buildCopilotSignalSummary(signals, 5),
     ].filter(Boolean).join(' • '),
     copilotBoundary: [
@@ -414,6 +459,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
       "Sürücünün telefon GPS’i",
       "Araç GPS’i",
       "Hakediş önizlemesi",
+      "Lisans ücreti / başarı payı",
     ],
     summary: productionSummary,
     vehicleLabel,
@@ -479,5 +525,22 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     seferScoreMissingSignals,
     seferScoreNextAction,
     seferScoreSafeExplanation,
+    platformFeePreview,
+    platformFeeSummaryText,
+    platformFeeStatus,
+    platformFeeSourceType,
+    platformFeeSourceConfidence,
+    platformFeeLicenseFeeText,
+    platformFeeAmountText,
+    platformFeeRateText,
+    platformFeeEstimatedShareText,
+    platformFeePayableNow,
+    platformFeeCanInvoice,
+    platformFeeCanCollect,
+    platformFeeLineageSummary,
+    platformFeeSafeExplanation,
+    platformFeeReason,
+    platformFeeSourceEvidence,
+    platformFeeSourceSignals,
   };
 }

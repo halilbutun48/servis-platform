@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `306`
-- Toplam executable tracked file: `1076`
-- Combined registry row: `1382`
-- Root/backend/web/mobile package dağılımı: root `149`, backend `642`, web `87`, mobile `201`
+- Toplam package script entry: `307`
+- Toplam executable tracked file: `1078`
+- Combined registry row: `1385`
+- Root/backend/web/mobile package dağılımı: root `150`, backend `644`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `18`
 - ACTIVE: `360`
@@ -28,7 +28,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `488`
+- NEEDS_REVIEW: `491`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
@@ -49,7 +49,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 488 |
+| NEEDS_REVIEW | 491 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -92,6 +92,7 @@ Repo: `servis-platform`
 | root:check:paysafe01 | package.json | root | node backend/scripts/pay_safe_01_payment_write_gate_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PAYSAFE-01 |  | Breaks canonical verification chain |  |
 | root:check:qltpaybridge01 | package.json | root | node backend/scripts/qlt_pay_bridge_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-QLTPAYBRIDGE-01 |  | Owner or chain unclear |  |
 | root:check:seferscore01 | package.json | root | node backend/scripts/sefer_score_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERSCORE-01 |  | Owner or chain unclear |  |
+| root:check:marketplacefreetooperate01 | package.json | root | node backend/scripts/marketplace_free_to_operate_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-MARKETPLACEFREETOOPERATE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -550,6 +551,7 @@ Repo: `servis-platform`
 | m99_kvkk_01_mobile_web_plain_text_check.js | backend/scripts/m99_kvkk_01_mobile_web_plain_text_check.js | backend | root:check:m99kvkk01 | release | ACTIVE |  | M-99-KVKK-01-MOBILE-WEB-PLAIN-TEXT-CHECK |  | Owner or chain unclear | product check/helper |
 | m99_ux_01_visible_text_hygiene_check.js | backend/scripts/m99_ux_01_visible_text_hygiene_check.js | backend | root:check:m99ux01 | release | ACTIVE |  | M-99-UX-01-VISIBLE-TEXT-HYGIENE-CHECK |  | Owner or chain unclear | product check/helper |
 | m9check.js | backend/scripts/m9check.js | backend | backend:m9check | review | NEEDS_REVIEW |  | M-9-CHECK |  | Owner or chain unclear |  |
+| marketplace_free_to_operate_01_check.js | backend/scripts/marketplace_free_to_operate_01_check.js | backend | root:check:marketplacefreetooperate01 | review | NEEDS_REVIEW |  | MARKETPLACE-FREE-TO-OPERATE-01-CHECK |  | Owner or chain unclear |  |
 | menu_readiness_cleanup_check.mjs | backend/scripts/menu_readiness_cleanup_check.mjs | backend |  | review | NEEDS_REVIEW |  | MENU-READINESS-CLEANUP-CHECK |  | Owner or chain unclear |  |
 | op_01_operation_proof_service_proof_check.js | backend/scripts/op_01_operation_proof_service_proof_check.js | backend | root:check:op01 | product | ACTIVE |  | OP-01-OPERATION-PROOF-SERVICE-PROOF-CHECK |  | Owner or chain unclear | product check/helper |
 | op_02_manual_operator_proof_note_check.js | backend/scripts/op_02_manual_operator_proof_note_check.js | backend | root:check:op02 | product | ACTIVE |  | OP-02-MANUAL-OPERATOR-PROOF-NOTE-CHECK |  | Owner or chain unclear | product check/helper |
@@ -843,6 +845,7 @@ Repo: `servis-platform`
 | paymentBackboneAccounts.js | backend/src/services/paymentBackboneAccounts.js | backend |  | review | NEEDS_REVIEW |  | PAYMENT-BACKBONE-ACCOUNTS |  | Owner or chain unclear |  |
 | paymentBackboneWriteGate.js | backend/src/services/paymentBackboneWriteGate.js | backend |  | review | NEEDS_REVIEW |  | PAYMENT-BACKBONE-WRITE-GATE |  | Owner or chain unclear |  |
 | planSolve.js | backend/src/services/planSolve.js | backend |  | review | NEEDS_REVIEW |  | PLAN-SOLVE |  | Owner or chain unclear |  |
+| platformFeePreviewService.js | backend/src/services/platformFeePreviewService.js | backend |  | review | NEEDS_REVIEW |  | PLATFORM-FEE-PREVIEW-SERVICE |  | Owner or chain unclear |  |
 | qualityPaymentBridgeService.js | backend/src/services/qualityPaymentBridgeService.js | backend |  | review | NEEDS_REVIEW |  | QUALITY-PAYMENT-BRIDGE-SERVICE |  | Owner or chain unclear |  |
 | reservationConflict.js | backend/src/services/reservationConflict.js | backend |  | review | NEEDS_REVIEW |  | RESERVATION-CONFLICT |  | Owner or chain unclear |  |
 | roomPoolPlanner.js | backend/src/services/roomPoolPlanner.js | backend |  | review | NEEDS_REVIEW |  | ROOM-POOL-PLANNER |  | Owner or chain unclear |  |
