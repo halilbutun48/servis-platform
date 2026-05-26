@@ -157,16 +157,36 @@ function countAssignmentsAtStop(assignments = [], stop = null) {
 }
 
 function buildRequestedStop(boardingChange = {}) {
+  const locationProvided = boardingChange?.locationProvided !== false;
+  const hasRequestedCoords = boardingChange?.hasRequestedCoords !== false
+    && Number.isFinite(Number(boardingChange?.lat))
+    && Number.isFinite(Number(boardingChange?.lng))
+    && !(Number(boardingChange?.lat) === 0 && Number(boardingChange?.lng) === 0);
   const fromMeta = boardingChange?.nearestStop && typeof boardingChange.nearestStop === "object" ? boardingChange.nearestStop : null;
   const fromAlt = boardingChange?.newStop && typeof boardingChange.newStop === "object" ? boardingChange.newStop : null;
-  const fromLatLng = Number.isFinite(Number(boardingChange?.lat)) && Number.isFinite(Number(boardingChange?.lng))
+  const fromTarget = boardingChange?.targetStop && typeof boardingChange.targetStop === "object" ? boardingChange.targetStop : null;
+  const requestedAddressText = firstNonEmpty(boardingChange?.requestedAddressText, boardingChange?.requestedAddress, boardingChange?.locationText);
+  const fromTargetLatLng = Number.isFinite(Number(boardingChange?.targetStopLat)) && Number.isFinite(Number(boardingChange?.targetStopLng))
+    ? {
+      lat: Number(boardingChange.targetStopLat),
+      lng: Number(boardingChange.targetStopLng),
+      name: boardingChange?.targetStopName || boardingChange?.requestReason || "Yeni durak",
+    }
+    : null;
+  const fromLatLng = locationProvided && hasRequestedCoords
     ? {
       lat: Number(boardingChange.lat),
       lng: Number(boardingChange.lng),
       name: boardingChange?.stopName || boardingChange?.requestReason || "Geçici durak",
     }
     : null;
-  return fromMeta || fromAlt || fromLatLng || null;
+  const fromAddressText = requestedAddressText
+    ? {
+        name: requestedAddressText,
+        address: requestedAddressText,
+      }
+    : null;
+  return fromTarget || fromTargetLatLng || fromMeta || fromAlt || fromLatLng || fromAddressText || null;
 }
 
 function normalizePreviewKind(kind) {
@@ -311,6 +331,7 @@ export function previewBoardingChangeRouteImpact({
     boardingChange?.personName,
     "Seçili kişi",
   );
+  const locationProvided = boardingChange?.locationProvided !== false;
   const requestedStopOnRoute = findRouteStopIndex(sortedStops, requestedStop) >= 0;
   const sameAssignedStop = Boolean(currentAssignedStop && requestedStop && sameStop(currentAssignedStop, requestedStop));
   const driverDecidableKinds = new Set(["DIFFERENT_STOP", "ALTERNATE_STOP_TODAY", "PICKUP_FROM_LOCATION"]);
@@ -386,7 +407,12 @@ export function previewBoardingChangeRouteImpact({
     warnings.push("Bu kişi bugün servis dışı sayılıyor; rota değişikliği stop etkisi paylaşılan durakta sınırlı olabilir.");
   }
   if (changeType === "ALTERNATE_STOP_TODAY" && !requestedStop) {
-    warnings.push("Yeni durak koordinatı bulunamadı; km/süre etkisi yaklaşık.");
+    warnings.push(locationProvided ? "Yeni durak koordinatı bulunamadı; km/süre etkisi yaklaşık." : "Harita önizlemesi için durak koordinatı eksik. Bu değişiklik için rota etkisi metinsel olarak önizleniyor.");
+  }
+  if (!locationProvided) {
+    warnings.push("Konum paylaşılmadı; talep açıklama üzerinden iletilecek.");
+  } else if (boardingChange?.requestedAddressText && !boardingChange?.hasRequestedCoords) {
+    warnings.push("Adres metni alındı; harita önizlemesi için koordinat eksik.");
   }
   if (!routeSnapshotDistanceM) {
     warnings.push("Rota snapshot yok; km/süre durak koordinatlarına göre yaklaşık hesaplandı.");
@@ -455,6 +481,12 @@ export function previewBoardingChangeRouteImpact({
     decisionOwnerRole,
     decisionOwnerLabel,
     decisionOwnerNote,
+    locationProvided,
+    locationHint: !locationProvided
+      ? "Konum paylaşılmadı; talep açıklama üzerinden iletilecek."
+      : (boardingChange?.requestedAddressText && !boardingChange?.hasRequestedCoords)
+        ? "Adres metni alındı; harita önizlemesi için koordinat eksik."
+        : "",
   };
 }
 

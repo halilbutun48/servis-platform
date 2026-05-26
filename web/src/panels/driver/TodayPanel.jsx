@@ -31,6 +31,8 @@ function gpsAgeText(gpsLast) {
   return getGpsAgeText(gpsLast);
 }
 
+const EMPTY_ARRAY = [];
+
 export default function DriverTodayPanel() {
   const { token } = useSession();
   const [data, setData] = useState(null);
@@ -45,8 +47,12 @@ export default function DriverTodayPanel() {
   const flushNowRef = useRef(null);
 
   const active = data?.active || null;
-  const today = data?.today || [];
-  const tomorrow = data?.tomorrow || [];
+  const today = data?.today || EMPTY_ARRAY;
+  const tomorrow = data?.tomorrow || EMPTY_ARRAY;
+  const approvedTodayCount = useMemo(
+    () => today.filter((s) => ["APPROVED", "ACCEPTED"].includes(String(s?.status || "").toUpperCase())).length,
+    [today]
+  );
   const selectedShift = active || today[0] || tomorrow[0] || null;
   const selectedVehicle = selectedShift?.vehicle || null;
   const boardingChangeEffects = Array.isArray(selectedShift?.boardingChangeEffects) ? selectedShift.boardingChangeEffects : [];
@@ -64,9 +70,20 @@ export default function DriverTodayPanel() {
   const hasAny = (today?.length || 0) + (tomorrow?.length || 0) > 0;
 
   const activeLabel = useMemo(() => {
+    if (!active && approvedTodayCount > 0) return "Henüz başlatılmış aktif görev yok";
     if (!active) return "Aktif görev yok";
     return `Shift #${active.id} - ${displayStatusLabel(active.status)}`;
-  }, [active]);
+  }, [active, approvedTodayCount]);
+
+  const activeDescription = useMemo(() => {
+    if (active) {
+      return `Start: ${fmt(active.startAt)} - End: ${fmt(active.endAt)}`;
+    }
+    if (approvedTodayCount > 0) {
+      return `Bugün için ${approvedTodayCount} kabul edilmiş vardiya var. Göreve başlamak için listeden 'Göreve Başla' seç.`;
+    }
+    return "Bugün için atanmış veya kabul edilmiş vardiya yok.";
+  }, [active, approvedTodayCount]);
 
   const copilotFacts = useMemo(() => buildShiftFacts({
     shift: selectedShift,
@@ -267,6 +284,7 @@ useEffect(() => {
 
   function ShiftRow({ s }) {
     const isActive = active && active.id === s.id;
+    const routeLockedReason = !isActive && s.status !== "ACTIVE" ? "Rota, görev başladıktan sonra açılır." : "";
     return (
       <tr key={s.id}>
         <td>#{s.id}</td>
@@ -283,10 +301,21 @@ useEffect(() => {
               {busyId === s.id ? "..." : "Göreve Başla"}
             </button>
           ) : null}
-          <button type="button" style={{ marginLeft: 8 }} onClick={() => navigate(`/driver/route?shift=${s.id}`)}
-            disabled={!isActive && s.status !== "ACTIVE"}>
+          <button
+            type="button"
+            style={{ marginLeft: 8 }}
+            onClick={() => navigate(`/driver/route?shift=${s.id}`)}
+            disabled={!isActive && s.status !== "ACTIVE"}
+            title={routeLockedReason || undefined}
+            aria-disabled={routeLockedReason ? "true" : undefined}
+          >
             Rota
           </button>
+          {routeLockedReason ? (
+            <div className="panelMeta" style={{ marginTop: 4 }}>
+              {routeLockedReason}
+            </div>
+          ) : null}
         </td>
       </tr>
     );
@@ -342,11 +371,7 @@ useEffect(() => {
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div>
             <b>{activeLabel}</b>
-            {active ? (
-              <div className="muted">Start: {fmt(active.startAt)} - End: {fmt(active.endAt)}</div>
-            ) : (
-              <div className="muted">Bugün için atanmış aktif / kabul edilmiş vardiya yok.</div>
-            )}
+            <div className="muted">{activeDescription}</div>
           </div>
           {active?.status === "APPROVED" ? (
             <button type="button" disabled={busyId === active.id} onClick={() => startShift(active.id)}>

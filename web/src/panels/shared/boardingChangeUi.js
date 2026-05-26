@@ -3,7 +3,16 @@ const KIND_LABELS = {
   DIFFERENT_STOP: "Farklı durak",
   LATE_TO_STOP: "Durağa yetişememe",
   PICKUP_FROM_LOCATION: "Konumdan alınma",
+  TEMPORARY_BOARDING_NOTE: "Geçici biniş notu",
   OPERATION_NOTE: "Operasyon notu",
+};
+
+const REQUEST_ENTRY_KIND_LABELS = {
+  NO_SHOW: "Bugün binmeyeceğim",
+  DIFFERENT_STOP: "Başka durak",
+  PICKUP_FROM_LOCATION: "Farklı konumdan alınmak istiyorum",
+  TEMPORARY_BOARDING_NOTE: "Geçici biniş notu",
+  OPERATION_NOTE: "Geçici biniş notu",
 };
 
 const PREVIEW_KIND_LABELS = {
@@ -55,12 +64,30 @@ const ROUTE_REFRESH_LABELS = {
   NONE: "Rota güncellemesi yok",
 };
 
+const REQUEST_STATUS_LABELS = {
+  OPEN: "Açık / İncelemede",
+  MANUAL_REVIEW: "İncelemede",
+  CUTOFF_REVIEW: "Onay bekliyor",
+  AUTO_ACCEPTED: "Otomatik onaylandı",
+  ACCEPTED: "Kabul edildi",
+  CANCELLED: "Reddedildi",
+  NO_SHOW: "No-show ayrı akış",
+  ROOM_ACCEPTED: "Kabul edildi",
+  ROOM_CANCELLED: "Reddedildi",
+  DRIVER_ACCEPTED: "Kabul edildi",
+  DRIVER_CANCELLED: "Reddedildi",
+};
+
 function normalize(value) {
   return String(value || "").trim().toUpperCase();
 }
 
 export function boardingChangeKindLabel(kind) {
   return KIND_LABELS[normalize(kind)] || "Biniş değişikliği";
+}
+
+export function boardingChangeRequestEntryKindLabel(kind) {
+  return REQUEST_ENTRY_KIND_LABELS[normalize(kind)] || boardingChangeKindLabel(kind);
 }
 
 export function boardingChangePreviewKindLabel(kind) {
@@ -142,4 +169,32 @@ export function boardingChangeRouteRefreshNote(itemOrState) {
     return "Bu kayıt not olarak görünür; StopAssignment yazımı yok.";
   }
   return "Bu vardiyada uygulanan günlük değişiklik yok.";
+}
+
+export function boardingChangeRequestStatusLabel(itemOrState, context = {}) {
+  const status = normalize(itemOrState?.status || itemOrState?.decisionState || context?.status || "");
+  const ownerRole = normalize(itemOrState?.decisionOwnerRole || context?.decisionOwnerRole || "");
+  if (status === "ACCEPTED" || status === "AUTO_ACCEPTED" || status === "ROOM_ACCEPTED" || status === "DRIVER_ACCEPTED" || status === "COMPANY_ACCEPTED") {
+    return REQUEST_STATUS_LABELS.ACCEPTED;
+  }
+  if (status === "CANCELLED" || status === "ROOM_CANCELLED" || status === "DRIVER_CANCELLED" || status === "COMPANY_CANCELLED") {
+    return REQUEST_STATUS_LABELS.CANCELLED;
+  }
+  if (status === "NO_SHOW") return REQUEST_STATUS_LABELS.NO_SHOW;
+  if (status === "CUTOFF_REVIEW") return REQUEST_STATUS_LABELS.CUTOFF_REVIEW;
+  if (ownerRole === "DRIVER") return "Sürücüde bekliyor";
+  if (ownerRole === "COMPANY") return "Firma/Okul/Kurum tarafında bekliyor";
+  if (status === "OPEN" || status === "MANUAL_REVIEW") return REQUEST_STATUS_LABELS.MANUAL_REVIEW;
+  return REQUEST_STATUS_LABELS.OPEN;
+}
+
+export function boardingChangeRequestStatusTone(itemOrState, context = {}) {
+  const status = normalize(itemOrState?.status || itemOrState?.decisionState || context?.status || "");
+  if (status === "ACCEPTED" || status === "AUTO_ACCEPTED" || status === "ROOM_ACCEPTED" || status === "DRIVER_ACCEPTED" || status === "COMPANY_ACCEPTED") return "success";
+  if (status === "CANCELLED" || status === "ROOM_CANCELLED" || status === "DRIVER_CANCELLED" || status === "COMPANY_CANCELLED") return "critical";
+  if (status === "CUTOFF_REVIEW") return "warning";
+  if (status === "NO_SHOW") return "info";
+  if (normalize(itemOrState?.decisionOwnerRole || context?.decisionOwnerRole || "") === "DRIVER") return "info";
+  if (normalize(itemOrState?.decisionOwnerRole || context?.decisionOwnerRole || "") === "COMPANY") return "warning";
+  return "info";
 }

@@ -781,7 +781,9 @@ export default function CompanyOperationsPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {requestRows.length ? requestRows.map((row) => (
+                  {requestRows.length ? requestRows.map((row) => {
+                    const decisionOwnerRole = String(row.decisionOwnerRole || "").trim().toUpperCase();
+                    return (
                     <tr
                       key={row.id}
                       style={Number(selectedPreviewRequestId || 0) === Number(row.id || 0)
@@ -795,7 +797,8 @@ export default function CompanyOperationsPanel() {
                       <td>
                         <div>{row.decision}</div>
                         <div className="panelMeta" style={{ marginTop: 4 }}>{row.decisionOwnerNote}</div>
-                        {String(row.decisionOwnerRole || "").toUpperCase() === "COMPANY" && String(row.status || "").toUpperCase() === "OPEN" ? (
+                        {/* String(row.decisionOwnerRole || "").toUpperCase() === "COMPANY" && String(row.status || "").toUpperCase() === "OPEN" */}
+                        {decisionOwnerRole === "COMPANY" && String(row.status || "").toUpperCase() === "OPEN" ? (
                           <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                             <button
                               type="button"
@@ -815,7 +818,8 @@ export default function CompanyOperationsPanel() {
                             </button>
                           </div>
                         ) : null}
-                        {String(row.decisionOwnerRole || "").toUpperCase() === "DRIVER" && String(row.status || "").toUpperCase() === "OPEN" ? (
+                        {/* String(row.decisionOwnerRole || "").toUpperCase() === "DRIVER" && String(row.status || "").toUpperCase() === "OPEN" */}
+                        {decisionOwnerRole === "DRIVER" && String(row.status || "").toUpperCase() === "OPEN" ? (
                           <div className="panelMeta" style={{ marginTop: 8 }}>Sürücü tarafında karar bekliyor.</div>
                         ) : null}
                       </td>
@@ -834,7 +838,8 @@ export default function CompanyOperationsPanel() {
                         </button>
                       </td>
                     </tr>
-                  )) : (
+                    );
+                  }) : (
                     <tr><td colSpan={7} className="muted">Bekleyen biniş değişikliği yok.</td></tr>
                   )}
                 </tbody>

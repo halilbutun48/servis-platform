@@ -9,6 +9,7 @@ import { emitBoardingChangeNotifications, evaluateBoardingChangeDecision, buildB
 import { previewBoardingChangeRouteImpact } from "../services/boardingRouteImpactPreview.js";
 import { applyAcceptedBoardingChange } from "../services/boardingChangeApplication.js";
 import { buildBoardingChangeRouteRefreshState } from "../services/boardingChangeRouteRefresh.js";
+import { buildBoardingChangeRequestView, loadBoardingChangeRequestAuditMap } from "../services/boardingChangeRequestView.js";
 import { emitShift } from "./shifts/helpers.js";
 
 /**
@@ -119,6 +120,174 @@ const REQUEST_SHIFT_PREVIEW_INCLUDE = {
   },
 };
 
+function buildIstanbulDateRange(dateText) {
+  const text = String(dateText || "").trim();
+  if (!text) return null;
+  const start = new Date(`${text}T00:00:00.000+03:00`);
+  const end = new Date(`${text}T23:59:59.999+03:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  return { start, end };
+}
+
+function normalizeShiftContextStop(stop = null) {
+  if (!stop) return null;
+  return {
+    id: stop.id ?? null,
+    name: stop.name || `Durak #${stop.order || "-"}`,
+    lat: Number.isFinite(Number(stop.lat)) ? Number(stop.lat) : null,
+    lng: Number.isFinite(Number(stop.lng)) ? Number(stop.lng) : null,
+    order: Number.isFinite(Number(stop.order)) ? Number(stop.order) : null,
+    state: stop.state || null,
+    type: stop.type || null,
+  };
+}
+
+function buildRequestContextReason({ hasShift, hasLiveVehicle, hasChildContext } = {}) {
+  if (!hasChildContext) return "Önce bir çocuk seç.";
+  if (!hasShift) return "Seçili tarih için planlı servis bağlamı bulunamadı.";
+  if (!hasLiveVehicle) {
+    return "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.";
+  }
+  return "";
+}
+
+async function resolveRequestContextShift({ user, childId, requestDate, shiftId }) {
+  const dayRange = buildIstanbulDateRange(requestDate) || buildIstanbulDateRange(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date())) || null;
+  const hasExplicitShiftId = Number.isFinite(Number(shiftId)) && Number(shiftId) > 0;
+  const childPersonelId = Number(childId || 0) || null;
+
+  if (user.role === "PERSONEL") {
+    const personel = await prisma.personel.findFirst({
+      where: { userId: user.id },
+      select: { id: true, companyId: true, fullName: true },
+    });
+    if (!personel) {
+      return { available: false, liveVehicleAvailable: false, reason: "Personel profili bulunamadı.", shift: null, selectedStop: null, stops: [] };
+    }
+    const where = {
+      companyId: personel.companyId,
+      status: { in: ["APPROVED", "ACTIVE"] },
+      ...(dayRange ? { startAt: { lte: dayRange.end }, endAt: { gte: dayRange.start } } : {}),
+      OR: [
+        { people: { some: { personelId: personel.id } } },
+        { assignments: { some: { personelId: personel.id } } },
+      ],
+    };
+    if (hasExplicitShiftId) where.id = Number(shiftId);
+
+    const shift = await prisma.shift.findFirst({
+      where,
+      include: REQUEST_SHIFT_PREVIEW_INCLUDE.include,
+      orderBy: [{ startAt: "asc" }, { id: "asc" }],
+    });
+    if (!shift) {
+      return { available: false, liveVehicleAvailable: false, reason: "Seçili tarih için planlı servis bağlamı bulunamadı.", shift: null, selectedStop: null, stops: [] };
+    }
+
+    const assignment = await prisma.stopAssignment.findFirst({
+      where: { shiftId: shift.id, personelId: personel.id },
+      include: { stop: { select: { id: true, name: true, lat: true, lng: true, order: true, state: true, type: true } } },
+    });
+    const selectedStop = normalizeShiftContextStop(assignment?.stop || shift.stops?.[0] || null);
+    const liveVehicleAvailable = Boolean(shift.vehicleId && shift.vehicle);
+    return {
+      available: true,
+      liveVehicleAvailable,
+      reason: buildRequestContextReason({
+        hasShift: true,
+        hasLiveVehicle: liveVehicleAvailable,
+        hasChildContext: true,
+      }),
+      shift: {
+        id: shift.id,
+        companyId: shift.companyId,
+        roomId: shift.roomId,
+        status: shift.status,
+        startAt: shift.startAt,
+        endAt: shift.endAt,
+        vehicle: shift.vehicle ? { id: shift.vehicle.id, plate: shift.vehicle.plate, capacity: shift.vehicle.capacity ?? null } : null,
+        driver: shift.driver ? { id: shift.driver.id, fullName: shift.driver.fullName } : null,
+        room: shift.room ? { id: shift.room.id, name: shift.room.name } : null,
+        stops: Array.isArray(shift.stops) ? shift.stops.map(normalizeShiftContextStop).filter(Boolean) : [],
+        childStop: selectedStop,
+      },
+      selectedStop,
+      stops: Array.isArray(shift.stops) ? shift.stops.map(normalizeShiftContextStop).filter(Boolean) : [],
+    };
+  }
+
+  if (!childPersonelId) {
+    return { available: false, liveVehicleAvailable: false, reason: "Önce bir çocuk seç.", shift: null, selectedStop: null, stops: [] };
+  }
+
+  const link = await prisma.parentChild.findFirst({
+    where: { parentUserId: user.id, personelId: childPersonelId },
+    select: { personelId: true },
+  });
+  if (!link) {
+    return { available: false, liveVehicleAvailable: false, reason: "Bu çocuk için servis bağlantısı bulunamadı.", shift: null, selectedStop: null, stops: [] };
+  }
+
+  const child = await prisma.personel.findUnique({
+    where: { id: childPersonelId },
+    select: { id: true, companyId: true, fullName: true },
+  });
+  if (!child) {
+    return { available: false, liveVehicleAvailable: false, reason: "Çocuk profili bulunamadı.", shift: null, selectedStop: null, stops: [] };
+  }
+
+  const where = {
+    companyId: child.companyId,
+    status: { in: ["APPROVED", "ACTIVE"] },
+    ...(dayRange ? { startAt: { lte: dayRange.end }, endAt: { gte: dayRange.start } } : {}),
+    OR: [
+      { people: { some: { personelId: childPersonelId } } },
+      { assignments: { some: { personelId: childPersonelId } } },
+    ],
+  };
+  if (hasExplicitShiftId) where.id = Number(shiftId);
+
+  const shift = await prisma.shift.findFirst({
+    where,
+    include: REQUEST_SHIFT_PREVIEW_INCLUDE.include,
+    orderBy: [{ startAt: "asc" }, { id: "asc" }],
+  });
+  if (!shift) {
+    return { available: false, liveVehicleAvailable: false, reason: "Seçili tarih için planlı servis bağlamı bulunamadı.", shift: null, selectedStop: null, stops: [] };
+  }
+
+  const assignment = await prisma.stopAssignment.findFirst({
+    where: { shiftId: shift.id, personelId: childPersonelId },
+    include: { stop: { select: { id: true, name: true, lat: true, lng: true, order: true, state: true, type: true } } },
+  });
+  const selectedStop = normalizeShiftContextStop(assignment?.stop || shift.stops?.[0] || null);
+  const liveVehicleAvailable = Boolean(shift.vehicleId && shift.vehicle);
+  return {
+    available: true,
+    liveVehicleAvailable,
+    reason: buildRequestContextReason({
+      hasShift: true,
+      hasLiveVehicle: liveVehicleAvailable,
+      hasChildContext: true,
+    }),
+    shift: {
+      id: shift.id,
+      companyId: shift.companyId,
+      roomId: shift.roomId,
+      status: shift.status,
+      startAt: shift.startAt,
+      endAt: shift.endAt,
+      vehicle: shift.vehicle ? { id: shift.vehicle.id, plate: shift.vehicle.plate, capacity: shift.vehicle.capacity ?? null } : null,
+      driver: shift.driver ? { id: shift.driver.id, fullName: shift.driver.fullName } : null,
+      room: shift.room ? { id: shift.room.id, name: shift.room.name } : null,
+      stops: Array.isArray(shift.stops) ? shift.stops.map(normalizeShiftContextStop).filter(Boolean) : [],
+      childStop: selectedStop,
+    },
+    selectedStop,
+    stops: Array.isArray(shift.stops) ? shift.stops.map(normalizeShiftContextStop).filter(Boolean) : [],
+  };
+}
+
 export function requestsRouter(io) {
   const r = express.Router();
 
@@ -133,7 +302,25 @@ export function requestsRouter(io) {
       }
 
       const requestKind = normalizeBoardingChangeKind(req.body?.kind);
-      const requestReason = String(req.body?.reason || "").trim() || buildBoardingChangeRequestReason(requestKind, u.role);
+      const requestReason = String(req.body?.reason || req.body?.note || "").trim() || buildBoardingChangeRequestReason(requestKind, u.role);
+      const requestNote = String(req.body?.note || "").trim();
+      const requestDate = String(req.body?.requestDate || "").trim();
+      const requestedLatRaw = Number(req.body?.requestedLat ?? parsed.data.requestedLat ?? req.body?.lat ?? parsed.data.lat);
+      const requestedLngRaw = Number(req.body?.requestedLng ?? parsed.data.requestedLng ?? req.body?.lng ?? parsed.data.lng);
+      const requestedAddressText = String(req.body?.requestedAddressText || "").trim();
+      const requestedLocationMode = String(req.body?.requestedLocationMode || "").trim().toUpperCase();
+      const targetStopId = Number(req.body?.targetStopId ?? 0) || null;
+      const targetStopName = String(req.body?.targetStopName || "").trim();
+      const targetStopLat = Number(req.body?.targetStopLat);
+      const targetStopLng = Number(req.body?.targetStopLng);
+      const bodyLat = Number(parsed.data.lat);
+      const bodyLng = Number(parsed.data.lng);
+      const hasBodyCoords = Number.isFinite(bodyLat) && Number.isFinite(bodyLng) && !(bodyLat === 0 && bodyLng === 0);
+      const hasRequestedCoords = Number.isFinite(requestedLatRaw) && Number.isFinite(requestedLngRaw) && !(requestedLatRaw === 0 && requestedLngRaw === 0);
+      const hasTargetCoords = Number.isFinite(targetStopLat) && Number.isFinite(targetStopLng);
+      const locationProvided = Boolean(parsed.data.locationProvided) || hasBodyCoords || hasRequestedCoords || hasTargetCoords || Boolean(requestedAddressText);
+      const requestLat = hasRequestedCoords ? requestedLatRaw : (hasBodyCoords ? bodyLat : (hasTargetCoords ? targetStopLat : 0));
+      const requestLng = hasRequestedCoords ? requestedLngRaw : (hasBodyCoords ? bodyLng : (hasTargetCoords ? targetStopLng : 0));
       const parentChildId = Number(req.body?.childId ?? req.body?.personelId ?? 0) || null;
 
       let requesterUserId = u.id;
@@ -226,8 +413,8 @@ export function requestsRouter(io) {
 
       const decision = evaluateBoardingChangeDecision({
         kind: requestKind,
-        lat: parsed.data.lat,
-        lng: parsed.data.lng,
+        lat: requestLat,
+        lng: requestLng,
         shift,
         now: new Date(),
       });
@@ -238,13 +425,48 @@ export function requestsRouter(io) {
         decisionState,
       });
       const requestStatus = decision.autoAccepted ? "ACCEPTED" : "OPEN";
+      const requestPreview = previewBoardingChangeRouteImpact({
+        shift,
+        currentStops: shift.stops || [],
+        passengersOrPeople: shift.people || [],
+        boardingChange: {
+          changeType: requestKind,
+          requestKind,
+          personelId: personel.id,
+          personLabel: personel.fullName || personel.name || personel.label || `#${personel.id || "-"}`,
+          requestReason,
+          requestNote,
+          requestDate,
+          locationProvided,
+          requestedLat: hasRequestedCoords ? requestedLatRaw : null,
+          requestedLng: hasRequestedCoords ? requestedLngRaw : null,
+          requestedAddressText,
+          requestedLocationMode,
+          hasRequestedCoords,
+          targetStopId,
+          targetStopName,
+          targetStopLat: hasTargetCoords ? targetStopLat : null,
+          targetStopLng: hasTargetCoords ? targetStopLng : null,
+          targetStop: hasTargetCoords ? {
+            id: targetStopId,
+            name: targetStopName || null,
+            lat: targetStopLat,
+            lng: targetStopLng,
+          } : null,
+          lat: requestLat,
+          lng: requestLng,
+        },
+      });
+      const requestDecisionOwnerRole = requestPreview?.decisionOwnerRole || "";
+      const requestDecisionOwnerLabel = requestPreview?.decisionOwnerLabel || (requestDecisionOwnerRole === "DRIVER" ? "Sürücü" : "Hizmet alan taraf");
+      const requestDecisionOwnerNote = requestPreview?.decisionOwnerNote || "";
 
       const item = await prisma.pickupRequest.create({
         data: {
           shiftId: shift.id,
           personelId: personel.id,
-          lat: parsed.data.lat,
-          lng: parsed.data.lng,
+          lat: requestLat,
+          lng: requestLng,
           status: requestStatus,
         },
         include: { personel: true, shift: true },
@@ -259,6 +481,28 @@ export function requestsRouter(io) {
           actorRole: requesterRole,
           requestKind,
           requestReason,
+          requestNote,
+          requestDate,
+          locationProvided,
+          requestedLat: hasRequestedCoords ? requestedLatRaw : null,
+          requestedLng: hasRequestedCoords ? requestedLngRaw : null,
+          requestedAddressText,
+          requestedLocationMode,
+          hasRequestedCoords,
+          targetStopId,
+          targetStopName,
+          targetStopLat: hasTargetCoords ? targetStopLat : null,
+          targetStopLng: hasTargetCoords ? targetStopLng : null,
+          targetStop: hasTargetCoords ? {
+            id: targetStopId,
+            name: targetStopName || null,
+            lat: targetStopLat,
+            lng: targetStopLng,
+          } : null,
+          decisionOwnerRole: requestDecisionOwnerRole,
+          decisionOwnerLabel: requestDecisionOwnerLabel,
+          decisionOwnerNote: requestDecisionOwnerNote,
+          routeImpactPreview: requestPreview,
           decisionText,
           personelId: personel.id,
           shiftId: shift.id,
@@ -286,11 +530,27 @@ export function requestsRouter(io) {
             actorRole: requesterRole,
             requestKind,
             requestReason,
+            requestNote,
+            requestDate,
             decisionText,
             shiftId: shift.id,
+            locationProvided,
+            requestedLat: hasRequestedCoords ? requestedLatRaw : null,
+            requestedLng: hasRequestedCoords ? requestedLngRaw : null,
+            requestedAddressText,
+            requestedLocationMode,
+            hasRequestedCoords,
+            targetStopId,
+            targetStopName,
+            targetStopLat: hasTargetCoords ? targetStopLat : null,
+            targetStopLng: hasTargetCoords ? targetStopLng : null,
             nearestStopId: decision.nearestStop?.id ?? null,
             nearestStopName: decision.nearestStop?.name ?? null,
             distanceM: decision.nearestStop?.distanceM ?? null,
+            decisionOwnerRole: requestDecisionOwnerRole,
+            decisionOwnerLabel: requestDecisionOwnerLabel,
+            decisionOwnerNote: requestDecisionOwnerNote,
+            routeImpactPreview: requestPreview,
           },
         });
       }
@@ -332,8 +592,24 @@ export function requestsRouter(io) {
         ...item,
         requestKind,
         requestReason,
+        requestNote,
+        requestDate,
         decisionState,
         decisionText,
+        decisionOwnerRole: requestDecisionOwnerRole,
+        decisionOwnerLabel: requestDecisionOwnerLabel,
+        decisionOwnerNote: requestDecisionOwnerNote,
+        locationProvided,
+        requestedLat: hasRequestedCoords ? requestedLatRaw : null,
+        requestedLng: hasRequestedCoords ? requestedLngRaw : null,
+        requestedAddressText,
+        requestedLocationMode,
+        hasRequestedCoords,
+        targetStopId,
+        targetStopName,
+        targetStopLat: hasTargetCoords ? targetStopLat : null,
+        targetStopLng: hasTargetCoords ? targetStopLng : null,
+        routeImpactPreview: requestPreview,
         nearestStop: decision.nearestStop ? {
           id: decision.nearestStop.id,
           name: decision.nearestStop.name,
@@ -504,6 +780,70 @@ export function requestsRouter(io) {
     }
   });
 
+  // PERSONEL/PARENT: list own pickup requests
+  r.get("/context", authRequired(), requireRole("PERSONEL", "PARENT"), async (req, res) => {
+    try {
+      const u = req.user;
+      const childId = Number(req.query?.childId ?? 0) || null;
+      const shiftId = Number(req.query?.shiftId ?? 0) || null;
+      const requestDate = String(req.query?.requestDate || "").trim();
+      const context = await resolveRequestContextShift({ user: u, childId, requestDate, shiftId });
+      return res.json({ ok: true, childId, requestDate: requestDate || null, ...context });
+    } catch (e) {
+      logger.error("[requests] GET /context error:", e);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  r.get("/mine", authRequired(), requireRole("PERSONEL", "PARENT"), async (req, res) => {
+    try {
+      const u = req.user;
+      const shiftId = Number(req.query?.shiftId ?? 0) || null;
+      const childId = Number(req.query?.childId ?? 0) || null;
+
+      let personelIds = [];
+      if (u.role === "PERSONEL") {
+        const personel = await prisma.personel.findFirst({
+          where: { userId: u.id },
+          select: { id: true, companyId: true, userId: true, fullName: true },
+        });
+        if (!personel) {
+          return res.status(400).json({ error: "Personel profile not found for user" });
+        }
+        personelIds = [personel.id];
+      } else {
+        const where = { parentUserId: u.id };
+        if (childId) where.personelId = childId;
+        const links = await prisma.parentChild.findMany({
+          where,
+          select: { personelId: true },
+        });
+        personelIds = links.map((x) => Number(x.personelId || 0)).filter((n) => Number.isFinite(n) && n > 0);
+        if (!personelIds.length) {
+          return res.json([]);
+        }
+      }
+
+      const where = {
+        personelId: { in: personelIds },
+      };
+      if (shiftId) where.shiftId = shiftId;
+
+      const items = await prisma.pickupRequest.findMany({
+        where,
+        include: { personel: true, shift: REQUEST_SHIFT_PREVIEW_INCLUDE },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 100,
+      });
+
+      const auditMap = await loadBoardingChangeRequestAuditMap(prisma, items.map((item) => item.id));
+      return res.json(items.map((item) => buildBoardingChangeRequestView(item, auditMap.get(Number(item.id || 0)) || {})));
+    } catch (e) {
+      logger.error("[requests] GET /mine error:", e);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
   // ROOM: close pickup request (OPEN -> ACCEPTED/CANCELLED)
   // Body opsiyonel: { status: "CANCELLED" } veya { status: "ACCEPTED" }
   r.post("/:id/close", authRequired(), requireRole("COMPANY", "DRIVER", "SUPER_ADMIN"), async (req, res) => {
@@ -524,8 +864,16 @@ export function requestsRouter(io) {
           .json({ error: `Request not OPEN (current=${item.status})` });
       }
 
-      const requestKind = "DIFFERENT_STOP";
-      const routeImpactPreview = previewBoardingChangeRouteImpact({
+      const auditMap = await loadBoardingChangeRequestAuditMap(prisma, [requestId]);
+      const requestView = buildBoardingChangeRequestView(
+        {
+          ...item,
+          shift: item.shift || null,
+        },
+        auditMap.get(requestId) || {},
+      );
+      const requestKind = requestView?.requestKind || "DIFFERENT_STOP";
+      const routeImpactPreview = requestView?.routeImpactPreview || previewBoardingChangeRouteImpact({
         shift: item.shift || null,
         currentStops: item.shift?.stops || [],
         passengersOrPeople: item.shift?.people || [],
@@ -538,9 +886,9 @@ export function requestsRouter(io) {
           lng: item.lng,
         },
       });
-      const decisionOwnerRole = normalizeDecisionOwnerRole(routeImpactPreview?.decisionOwnerRole || "COMPANY");
-      const decisionOwnerLabel = routeImpactPreview?.decisionOwnerLabel || decisionOwnerLabelForRole(decisionOwnerRole);
-      const decisionOwnerNote = routeImpactPreview?.decisionOwnerNote || decisionOwnerNoteForRole(decisionOwnerRole, {
+      const decisionOwnerRole = normalizeDecisionOwnerRole(requestView?.decisionOwnerRole || routeImpactPreview?.decisionOwnerRole || "COMPANY");
+      const decisionOwnerLabel = requestView?.decisionOwnerLabel || routeImpactPreview?.decisionOwnerLabel || decisionOwnerLabelForRole(decisionOwnerRole);
+      const decisionOwnerNote = requestView?.decisionOwnerNote || routeImpactPreview?.decisionOwnerNote || decisionOwnerNoteForRole(decisionOwnerRole, {
         requestKind,
         requestStatus: "OPEN",
       });
@@ -618,8 +966,8 @@ export function requestsRouter(io) {
         personel: updated.personel,
         requesterUserId: updated.personel?.userId || null,
         requesterRole: "PERSONEL",
-        requestKind: "DIFFERENT_STOP",
-        requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
+        requestKind,
+        requestReason: requestView?.requestReason || `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
         decisionState,
         nearestStop: null,
       });
@@ -632,9 +980,9 @@ export function requestsRouter(io) {
         action: "closed",
         shiftId: updated.shiftId,
         status: updated.status,
-        kind: "DIFFERENT_STOP",
-        requestKind: "DIFFERENT_STOP",
-        requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
+        kind: requestKind,
+        requestKind,
+        requestReason: requestView?.requestReason || `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
         decisionState,
         decisionText,
         decisionOwnerRole,
@@ -648,8 +996,8 @@ export function requestsRouter(io) {
 
       return res.json({
         ...updated,
-        requestKind: "DIFFERENT_STOP",
-        requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
+        requestKind,
+        requestReason: requestView?.requestReason || `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
         decisionState,
         decisionText,
         decisionOwnerRole,

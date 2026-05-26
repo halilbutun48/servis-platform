@@ -5,14 +5,14 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `305`
-- Toplam executable tracked file: `1074`
-- Combined registry row: `1379`
-- Root/backend/web/mobile package dağılımı: root `148`, backend `640`, web `87`, mobile `201`
+- Toplam package script entry: `306`
+- Toplam executable tracked file: `1076`
+- Combined registry row: `1382`
+- Root/backend/web/mobile package dağılımı: root `149`, backend `642`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `18`
 - ACTIVE: `360`
-- ACTIVE_CORE: `118`
+- ACTIVE_CORE: `119`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `8`
@@ -28,7 +28,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `486`
+- NEEDS_REVIEW: `488`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
@@ -42,14 +42,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 360 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 118 |
+| ACTIVE_CORE | 119 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 486 |
+| NEEDS_REVIEW | 488 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -144,6 +144,7 @@ Repo: `servis-platform`
 | root:check:copliveaccept01 | package.json | root | node backend/scripts/cop_live_accept_01_check.js | core | ACTIVE_CORE |  | COP-LIVE-ACCEPT-01 |  | Breaks canonical verification chain |  |
 | root:check:boardingops01a | package.json | root | node backend/scripts/boarding_ops_01a_route_impact_preview_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01A |  | Breaks canonical verification chain |  |
 | root:check:bugrouteimpactpreviewbutton01 | package.json | root | node backend/scripts/bug_route_impact_preview_button_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-BUGROUTEIMPACTPREVIEWBUTTON-01 |  | Owner or chain unclear |  |
+| root:check:boardingchangerequestentry01 | package.json | root | node backend/scripts/boarding_change_request_entry_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-BOARDINGCHANGEREQUESTENTRY-01 |  | Breaks canonical verification chain |  |
 | root:check:uiactionwiringaudit01 | package.json | root | node backend/scripts/ui_action_wiring_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UIACTIONWIRINGAUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:boardingops01b | package.json | root | node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01B |  | Breaks canonical verification chain |  |
 | root:check:boardingops01c | package.json | root | node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01C |  | Breaks canonical verification chain |  |
@@ -301,6 +302,7 @@ Repo: `servis-platform`
 | auth_stepup_provider_local_default_01_check.js | backend/scripts/auth_stepup_provider_local_default_01_check.js | backend | root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01-CHECK |  | Owner or chain unclear |  |
 | bench_gps_publish_only.js | backend/scripts/bench_gps_publish_only.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels | review | NEEDS_REVIEW |  | BENCH-GPS-PUBLISH-ONLY |  | Owner or chain unclear |  |
 | bench_reset_data.js | backend/scripts/bench_reset_data.js | backend | backend:bench:reset | review | NEEDS_REVIEW |  | BENCH-RESET-DATA |  | Owner or chain unclear |  |
+| boarding_change_request_entry_01_check.js | backend/scripts/boarding_change_request_entry_01_check.js | backend | root:check:boardingchangerequestentry01 | review | NEEDS_REVIEW |  | BOARDING-CHANGE-REQUEST-ENTRY-01-CHECK |  | Owner or chain unclear |  |
 | boarding_ops_01a_route_impact_preview_check.js | backend/scripts/boarding_ops_01a_route_impact_preview_check.js | backend | root:check:boardingops01a | review | NEEDS_REVIEW |  | BOARDING-OPS-01-A-ROUTE-IMPACT-PREVIEW-CHECK |  | Owner or chain unclear |  |
 | boarding_ops_01b_apply_accepted_change_check.js | backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | backend | root:check:boardingops01b | review | NEEDS_REVIEW |  | BOARDING-OPS-01-B-APPLY-ACCEPTED-CHANGE-CHECK |  | Owner or chain unclear |  |
 | boarding_ops_01c_driver_route_refresh_check.js | backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | backend | root:check:boardingops01c | review | NEEDS_REVIEW |  | BOARDING-OPS-01-C-DRIVER-ROUTE-REFRESH-CHECK |  | Owner or chain unclear |  |
@@ -826,6 +828,7 @@ Repo: `servis-platform`
 | agreementSourceShift.js | backend/src/services/agreementSourceShift.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT |  | Owner or chain unclear |  |
 | agreementSourceShiftGate.js | backend/src/services/agreementSourceShiftGate.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT-GATE |  | Owner or chain unclear |  |
 | boardingChangeApplication.js | backend/src/services/boardingChangeApplication.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-APPLICATION |  | Owner or chain unclear |  |
+| boardingChangeRequestView.js | backend/src/services/boardingChangeRequestView.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-REQUEST-VIEW |  | Owner or chain unclear |  |
 | boardingChangeRouteRefresh.js | backend/src/services/boardingChangeRouteRefresh.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-ROUTE-REFRESH |  | Owner or chain unclear |  |
 | boardingRouteImpactPreview.js | backend/src/services/boardingRouteImpactPreview.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-ROUTE-IMPACT-PREVIEW |  | Owner or chain unclear |  |
 | clusterStops.js | backend/src/services/clusterStops.js | backend |  | review | NEEDS_REVIEW |  | CLUSTER-STOPS |  | Owner or chain unclear |  |
@@ -853,7 +856,7 @@ Repo: `servis-platform`
 | hash.js | backend/src/telematics/hash.js | backend |  | review | NEEDS_REVIEW |  | HASH |  | Owner or chain unclear |  |
 | providers.js | backend/src/telematics/providers.js | backend |  | review | NEEDS_REVIEW |  | PROVIDERS |  | Owner or chain unclear |  |
 | service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
-| tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:cop04afix02, root:check:cop04afix04, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
+| tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
 | responseCache.js | backend/src/utils/responseCache.js | backend |  | review | NEEDS_REVIEW |  | RESPONSE-CACHE |  | Owner or chain unclear |  |
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |

@@ -71,6 +71,7 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   const path = normalizeText(screenPath);
   const paymentBridgeTopics = new Set(['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'QUALITY_SIGNAL', 'TRUST_QUALITY']);
   const paymentBridgeChips = ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?'];
+  const requestEntryChips = ['Bugün binmeyeceğim talebi oluştur', 'Konumumu al', 'Büyük haritada konum seç', 'Adresten konum bul'];
   const seferScoreChips = ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?'];
   const commercialPaymentChips = ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç', 'Hakediş eksiklerini sor'];
 
@@ -134,12 +135,21 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     return ['İlgili sözleşmeyi aç', 'Üretim geçmişini göster', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
   }
   if (path.includes('/personel/my')) {
+    if (topic === 'BOARDING_CHANGE_REQUEST_ENTRY') {
+      return requestEntryChips;
+    }
     return ['Servis nerede?', 'Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?'];
   }
   if (path.includes('/personel/live')) {
+    if (topic === 'BOARDING_CHANGE_REQUEST_ENTRY') {
+      return requestEntryChips;
+    }
     return ['Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"];
   }
   if (path.includes('/parent/live')) {
+    if (topic === 'BOARDING_CHANGE_REQUEST_ENTRY') {
+      return ['Çocuğum bugün binmeyecek', 'Başka duraktan binecek', 'Talebim kimde bekliyor?', 'Konum paylaşılmadıysa ne yapmalıyım?'];
+    }
     return ['Son GPS ne zaman geldi?', 'ETA nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?'];
   }
   if (path.includes('/room/map') || path.includes('/room/live') || path.includes('/company/map') || path.includes('/company/live') || path.includes('/organization/map') || path.includes('/organization/live') || path.includes('/school/map') || path.includes('/school/live') || path.includes('/driver/map') || path.includes('/driver/live')) {
@@ -332,6 +342,16 @@ export function workflowActionSpec({ activeTopic = '', questionType = '' } = {})
         askLabel: 'Rota etkisini sor',
         askQuery: 'bu kişi bugün binmezse rota etkisi ne olur',
         askReason: 'Readonly rota etkisi önizlemesini tekrar sorar.',
+      };
+    case 'BOARDING_CHANGE_REQUEST_ENTRY':
+      return {
+        guideLabel: 'Biniş talebi oluşturma rehberini aç',
+        jobType: 'ASSIGNMENT_READINESS_GUIDE',
+        guideLevel: 'STEP_BY_STEP',
+        reason: 'Talep oluşturur; rota otomatik uygulanmaz. Same-route ise sürücü, rota dışı ise hizmet alan taraf karar verir; room sadece görür.',
+        askLabel: 'Talebi nasıl oluştururum?',
+        askQuery: 'bugün binmeyeceğim talebi nasıl oluşturulur',
+        askReason: 'Talep oluşturma yolunu tekrar sorar.',
       };
     case 'AGREEMENT_ROUTE_REFRESH':
       return {

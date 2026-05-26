@@ -168,6 +168,21 @@ export const gpsIngestSchema = z.object({
 
 export const createRequestSchema = z.object({
   shiftId: z.number().int(),
-  lat: latNumber,
-  lng: lngNumber,
+  kind: z.string().trim().optional(),
+  reason: z.string().trim().optional(),
+  note: z.string().trim().optional(),
+  requestDate: z.string().trim().optional(),
+  childId: z.number().int().optional().nullable(),
+  personelId: z.number().int().optional().nullable(),
+  lat: latNumber.optional().nullable(),
+  lng: lngNumber.optional().nullable(),
+  requestedLat: latNumber.optional().nullable(),
+  requestedLng: lngNumber.optional().nullable(),
+  requestedAddressText: z.string().trim().optional().nullable(),
+  requestedLocationMode: z.string().trim().optional().nullable(),
+  targetStopId: z.number().int().optional().nullable(),
+  targetStopName: z.string().trim().optional().nullable(),
+  targetStopLat: latNumber.optional().nullable(),
+  targetStopLng: lngNumber.optional().nullable(),
+  locationProvided: z.boolean().optional(),
 });

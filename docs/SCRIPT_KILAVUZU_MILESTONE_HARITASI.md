@@ -236,6 +236,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Boş handler, `href="#"`, `console.log` / `alert` tabanlı sahte aksiyon ve hedefi olmayan quick-action chip'leri reddeder.
 - Visible result, loading/error/empty state ve role/permission görünürlüğü korunur; yeni business flow açılmaz.
 
+### BOARDING-CHANGE-REQUEST-ENTRY-01 [CHECK]
+- `check:boardingchangerequestentry01` Personel / Veli talep giriş yüzeylerinde `Bugün binmeyeceğim`, `başka durak` ve `farklı konum/not` request entry akışını doğrular.
+- Talep oluşturma mevcut boarding request altyapısına bağlanır; `same-route` ise karar sahibi sürücü, `route-outside` ise hizmet alan taraf olur.
+- Room yalnızca operasyonel görünürlük verir; preview readonly kalır, rota uygulanmaz ve driver route refresh tetiklenmez.
+
 ### BOARDING-OPS-01B [CHECK]
 - `check:boardingops01b` kabul edilmiş boarding change kaydını güvenli ve dar bir uygulama yoluyla günlük `StopAssignment` etkisine bağlar.
 - `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` desteklenir; `TEMPORARY_BOARDING_NOTE` not/audit olarak kalabilir.
@@ -1001,13 +1006,13 @@ Bu bant güncel doğrulanmış üst hattır.
 ### AUTH-STEPUP-DEV-TOGGLE-01 [CHECK]
 - `check:authstepupdevtoggle01` merkezi `STEP_UP_ENABLED` dev/test toggle'ını doğrular; `0` iken tüm step-up kontrollerini kapatır, `1` veya boş iken mevcut step-up davranışını korur.
 - Step-up / TOTP sistemi silinmez; yalnızca backend guard ve ilgili TOTP step-up UI, merkezi toggle ile açılıp kapanır.
-- Bu check, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-ROOM-OPS-RELATIONSHIP-POLISH-01` ve diğer step-up korumalı akışları bozmaz; yalnızca local/dev/test kolaylığı sağlar.
+- Bu check, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-ROOM-OPS-RELATIONSHIP-POLISH-01`, `BOARDING-CHANGE-REQUEST-ENTRY-01` ve diğer step-up korumalı akışları bozmaz; yalnızca local/dev/test kolaylığı sağlar.
 
 ### AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01 [CHECK]
 - `check:authstepupproviderlocaldefault01` Docker/local default step-up kapalı akışını doğrular; `STEP_UP_ENABLED`, `STEP_UP_PROVIDER` ve `STEP_UP_TOTP_ENABLED` değerleri compose/env zincirinden container içine geçer.
 - Local/dev Docker varsayılanında step-up kapalı kalır; `STEP_UP_ENABLED=1` ve `STEP_UP_PROVIDER=totp` ile açık davranış geri gelir.
 - `STEP_UP_PROVIDER=sms` seçimi ileride provider seçimi için saklıdır; bu milestone'da SMS gönderimi yoktur ve güvenli fallback korunur.
-- Bu check, `AUTH-STEPUP-DEV-TOGGLE-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-ROOM-OPS-RELATIONSHIP-POLISH-01` ve diğer step-up korumalı akışları bozmaz; yalnızca local/dev Docker varsayılanını netleştirir.
+- Bu check, `AUTH-STEPUP-DEV-TOGGLE-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-ROOM-OPS-RELATIONSHIP-POLISH-01`, `BOARDING-CHANGE-REQUEST-ENTRY-01` ve diğer step-up korumalı akışları bozmaz; yalnızca local/dev Docker varsayılanını netleştirir.
 
 - `UX-SUPERADMIN-QUALITY-PANEL-01`:
   - Komut: `node backend\scripts\ux_superadmin_quality_panel_01_check.js`

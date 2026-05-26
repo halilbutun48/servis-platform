@@ -89,9 +89,14 @@ async function main() {
   must(navDock, 'Check-in', 'NavDock keeps driver Check-in label');
   must(navDock, 'Sefer Abi Terminali', 'NavDock keeps Sefer Abi Terminali label');
 
-  must(driverToday, 'Aktif görev yok', 'driver today keeps empty-state wording');
-  must(driverToday, 'Bugün için atanmış aktif / kabul edilmiş vardiya yok.', 'driver today keeps no-shift wording');
+  must(driverToday, 'Henüz başlatılmış aktif görev yok', 'driver today distinguishes accepted-but-not-started state');
+  must(driverToday, 'approvedTodayCount', 'driver today counts accepted-but-not-started shifts');
+  must(driverToday, 'kabul edilmiş vardiya var', 'driver today explains accepted shift count');
+  must(driverToday, 'Göreve başlamak için listeden', 'driver today guides to start action');
+  must(driverToday, 'Bugün için atanmış veya kabul edilmiş vardiya yok.', 'driver today keeps no-shift wording');
   must(driverToday, 'Göreve Başla', 'driver today keeps start action');
+  must(driverToday, 'Rota, görev başladıktan sonra açılır.', 'driver today keeps route-disabled reason');
+  mustNot(driverToday, 'Bugün için atanmış aktif / kabul edilmiş vardiya yok.', 'driver today removed misleading no-shift wording');
 
   must(driverMap, 'getEtaDisplay', 'driver map uses safe ETA display helper');
   must(driverMap, 'getGpsReliabilityLabel', 'driver map uses GPS reliability helper');

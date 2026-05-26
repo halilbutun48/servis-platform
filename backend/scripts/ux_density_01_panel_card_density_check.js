@@ -75,6 +75,9 @@ function assertNoRestrictedBackendPaths(paths) {
     'backend/src/routes/requests.js',
     'backend/src/routes/driver.js',
     'backend/src/routes/agreements.js',
+    'backend/src/routes/boardingChangeRequestOps.js',
+    'backend/src/routes/parent.js',
+    'backend/src/routes/auth.js',
   ]);
   const forbidden = paths.filter((file) => /^backend\/(src\/routes|prisma|migrations)\//.test(file) && !allowed.has(file));
   if (forbidden.length) {

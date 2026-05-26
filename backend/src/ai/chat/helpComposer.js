@@ -553,6 +553,7 @@ function topicLabelForContext(topic) {
     VEHICLE_NOT_VISIBLE: 'GPS görünürlüğü',
     DRIVER_PHONE_GPS: 'Sürücünün telefon GPS’i',
     BOARDING_CHANGE_APPLICATION: 'Kabul edilen değişiklik / günlük atama',
+    BOARDING_CHANGE_REQUEST_ENTRY: 'Biniş talebi girişi',
     BOARDING_ROUTE_IMPACT_PREVIEW: 'Biniş değişikliği önizlemesi',
     DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
@@ -604,6 +605,7 @@ const WORKFLOW_TOPICS = new Set([
   'NEXT_STEP',
   'NEXT_SCREEN',
   'WHY_BLOCKED',
+  'BOARDING_CHANGE_REQUEST_ENTRY',
   'BOARDING_CHANGE_APPLICATION',
   'BOARDING_ROUTE_IMPACT_PREVIEW',
 ]);
@@ -643,6 +645,10 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core'))
     && hasDynamicSavingsSignal([text, selectedText].filter(Boolean).join(' '))) {
     return 'DYNAMIC_SAVINGS_PREVIEW';
+  }
+  if ((path.includes('/personel/live') || path.includes('/personel/my') || path.includes('/parent/live'))
+    && /(talep.*oluştur|talep.*olustur|talep.*girişi|talep.*girisi|nasıl oluştur|nasil olustur|bugün binmeyeceğim|bugun binmeyecegim|başka duraktan|baska duraktan|farklı konumdan|farkli konumdan|çocuğum bugün binmeyecek|cocugum bugun binmeyecek|çocuğum başka duraktan binecek|cocugum baska duraktan binecek|çocuğum şu konumdan alınsın|cocugum su konumdan alinsin|talebim kimde bekliyor|kimde bekliyor|konum paylaşılmadı|konum paylasilmadi)/.test(text)) {
+    return 'BOARDING_CHANGE_REQUEST_ENTRY';
   }
   if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements'))
     && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|uygulanan rota|rota geçmişi|rota gecmisi|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) {
@@ -1145,6 +1151,7 @@ function buildContextPriorityDecision({
   const topicWhy = {
     QUALITY_SIGNAL: 'Bu sinyal kesin kalite puanı değil; sağlayıcıyı okumaya yardım eder.',
     SEFER_SCORE_PREVIEW: 'Bu sadece readonly kalite puanı önizlemesidir. Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.',
+    BOARDING_CHANGE_REQUEST_ENTRY: 'Bu sadece talep oluşturma akışıdır. Konum gerekiyorsa Konumumu al, Büyük haritada konum seç ya da Adresten konum bul seçeneklerinden birini kullan; rota otomatik uygulanmaz; same-route ise sürücü, rota dışı ise hizmet alan taraf karar verir; room sadece görür.',
     PAYMENT_READINESS: 'Bu sadece önizlemedir; ödeme başlatılmaz ve önce eksik kanıt/kalite kontrolü tamamlanır.',
     PAYMENT_MISSING: 'Bu sadece önizlemedir; eksik kanıtlar kapatılmadan hakediş hazır sayılmaz.',
     PAYMENT_PREVIEW: 'Bu sadece önizlemedir; tahsilat/fatura oluşturulmaz ve kanıt satırları okunur.',
@@ -1191,6 +1198,7 @@ function buildContextPriorityDecision({
   const topicAdvice = {
     QUALITY_SIGNAL: 'Önce kalite sinyalini sağlayıcı puanı, inceleme kararı ve denetim iziyle birlikte oku.',
     SEFER_SCORE_PREVIEW: 'Önce zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini oku; eksik veri varsa kesin hüküm verme.',
+    BOARDING_CHANGE_REQUEST_ENTRY: 'Önce talep tipini, tarihi, servis/shift bağlamını ve konum seçimini gir. Konum gerekiyorsa Konumumu al, Büyük haritada konum seç ya da Adresten konum bul; geocode bağlı değilse açıklama ekle. Talep alındıktan sonra kimde beklediğini durum satırından oku.',
     PAYMENT_READINESS: 'Hakediş önizleme, ödeme hesabı, komisyon ve hizmet/onay sinyalini kontrol et. Ödeme başlatılmaz.',
     PAYMENT_MISSING: 'Önce eksik kanıtları ve kalite kontrolünü tamamla; bu sadece önizlemedir.',
     PAYMENT_PREVIEW: 'Önce hakediş / kanıt önizleme kayıtlarını ve risk nedenlerini kontrol et; ödeme başlatılmaz.',
@@ -2659,6 +2667,20 @@ function nextPromptByEntity(entityType, roleMode) {
 }
 
 function guideLinksForEntity(entityType, { questionType = 'OPEN', activeTopic = '', screenPath: _screenPath = '' } = {}) {
+  if (['BOARDING_CHANGE_REQUEST_ENTRY'].includes(String(activeTopic || questionType || ''))) {
+    if (String(entityType) === 'shift') {
+      return [
+        makeLinkedGuide('ASSIGNMENT_READINESS_GUIDE', 'Biniş talebi oluşturma rehberini aç', 'STEP_BY_STEP', 'Talep tipini, tarihi, durak/konum bilgisini ve notu girer.'),
+        makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Talebim kimde bekliyor?', 'WHY', 'Karar sahibini ve bekleyen tarafı açıklar.'),
+        makeLinkedGuide('ROLE_HELP_GUIDE', 'Karar sahibini açıkla', 'SHORT', 'Same-route ise sürücü, rota dışı ise hizmet alan taraf kuralını özetler.'),
+      ];
+    }
+    return [
+      makeLinkedGuide('SCREEN_MENU_GUIDE', 'Biniş talebi oluşturma rehberini aç', 'SHORT', 'Talep giriş alanını, tarih ve not alanını sadeleştirir.'),
+      makeLinkedGuide('BUTTON_ACTION_GUIDE', 'Talebim kimde bekliyor?', 'WHY', 'Karar sahibini ve bekleyen tarafı açıklar.'),
+      makeLinkedGuide('ROLE_HELP_GUIDE', 'Karar sahibini açıkla', 'SHORT', 'Same-route ise sürücü, rota dışı ise hizmet alan taraf kuralını özetler.'),
+    ];
+  }
   if (['SEFER_SCORE_PREVIEW'].includes(String(activeTopic || questionType || ''))) {
     return [
       makeLinkedGuide('SCREEN_MENU_GUIDE', 'SeferPuanı önizleme rehberini aç', 'WHY', 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini birlikte okur.'),
@@ -3890,12 +3912,13 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     );
   const withAsk = actionList.some((x) => x?.actionKind === 'ASK') ? actionList : [askFallback, ...actionList];
   const preferRoute = questionType === 'NEXT_SCREEN' || questionType === 'GO_TO' || isDirectRouteRequest(effectiveMessage);
+  const requestEntryPreferAsk = questionType === 'BOARDING_CHANGE_REQUEST_ENTRY';
   const preferOpenRoute = preferRoute
     || (questionType === 'ROLE_HELP' && String(contextPriority?.activeTopic || '') !== 'FEEDBACK_STATUS')
     || (roleMode === 'SIMPLE' && ['NEXT_STEP', 'FIRST_CONTROL'].includes(String(questionType || '')));
   const simplePreferAsk = roleMode === 'SIMPLE' && ['WHY_BLOCKED', 'SHIFT_BLOCKED', 'READINESS_CHECK', 'FIRST_CONTROL', 'MISSING_DATA', 'SAFE_NEXT_STEP'].includes(String(questionType || ''));
   const actionPriority = roleMode === 'SIMPLE'
-    ? (simplePreferAsk
+    ? (simplePreferAsk || requestEntryPreferAsk
       ? { ASK: 0, OPEN_ROUTE: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 }
       : { OPEN_ROUTE: 0, ASK: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 })
     : preferOpenRoute
@@ -4277,7 +4300,8 @@ function ensureActionLead(reply, questionType, screenDefinition, roleMode = 'OPE
 
 function buildQualityHints({ reply, questionType, quickActions, intentConfidence, roleMode }) {
   const text = normalizeReplySurface(reply);
-  const actionReady = /(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk bakılacak yer\s|İlk kontrol:|İlk kontrol\s)/.test(text);
+  const actionReady = /(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk bakılacak yer\s|İlk kontrol:|İlk kontrol\s)/.test(text)
+    || String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY';
   const concise = text.length <= (roleMode === 'SIMPLE' ? 360 : 720);
   const hasSupportAction = (Array.isArray(quickActions) ? quickActions : []).some((row) => ['ASK', 'OPEN_ROUTE', 'OPEN_GUIDE'].includes(String(row?.actionKind || '')));
   return {

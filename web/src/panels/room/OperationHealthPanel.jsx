@@ -361,6 +361,7 @@ export default function OperationHealthPanel() {
             roomData={roomOperations}
             onApplyAcceptedRequest={handleApplyAcceptedRequest}
             applyingRequestId={applyingRequestId}
+            decisionOwnerNote="Readonly önizleme"
           />
         </section>
       ) : null}

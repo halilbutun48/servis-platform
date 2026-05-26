@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  11,
-    "currentWarningHotFileCount":  4,
+    "currentWarningHotFileCount":  5,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -148,6 +148,10 @@
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "operation-health hot path; kontrollu cleanup adayi"
                                                                                                  },
+                                                        "backend/src/routes/requests.js":  {
+                                                                                          "class":  "safe-candidate-review",
+                                                                                          "note":  "boarding request and context hot path; controlled cleanup adayi"
+                                                                                      },
                                                          "backend/prisma/schema.prisma":  {
                                                                                               "class":  "justified-exception",
                                                                                               "note":  "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"

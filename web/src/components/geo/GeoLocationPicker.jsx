@@ -155,6 +155,8 @@ function EditableModalMap({ center, zoom, valid, latNum, lngNum, onPick, watchKe
 export default function GeoLocationPicker({
   title,
   subtitle,
+  selectedLabel,
+  selectedLabelText = "Seçili kayıt",
   selectedName,
   address,
   onAddressChange,
@@ -164,15 +166,30 @@ export default function GeoLocationPicker({
   onLatChange,
   onLngChange,
   onGeocode,
+  onLocateMe,
+  onOpenPicker,
   onSave,
   onSaveNext,
   onMarkOk,
   onClear,
+  confirmButtonLabel = "OK",
   busy = false,
   geoBusy = false,
+  locateMeBusy = false,
+  compact = false,
+  previewHeight = 290,
   statusLabel = "-",
   reasonLabel = "Neden yok",
+  locateMeLabel = "Konumumu Al",
+  mapButtonLabel = "Büyük Haritada İşaretle",
+  geocodeButtonLabel = "Adresten Bul",
+  clearButtonLabel = "Konumu Temizle",
+  locateMeFallbackText = "Konum izni verilmedi. Büyük haritadan konum seçebilir veya adresten arayabilirsiniz.",
+  geocodeUnavailableText = "Adresten konum bulma henüz bağlı değil. Büyük haritadan konum seçebilir veya açıklama yazabilirsiniz.",
+  footerText = "",
+  kvkkText = "",
 }) {
+  const resolvedSelectedLabelText = String(selectedLabelText || selectedLabel || "Seçili kayıt").trim() || "Seçili kayıt";
   const latNum = toNum(lat);
   const lngNum = toNum(lng);
   const valid = latNum != null && lngNum != null;
@@ -192,6 +209,7 @@ export default function GeoLocationPicker({
   );
 
   function openPicker() {
+    if (typeof onOpenPicker === "function") onOpenPicker();
     setDraftLat(valid ? latNum : null);
     setDraftLng(valid ? lngNum : null);
     setPickerOpen(true);
@@ -203,15 +221,31 @@ export default function GeoLocationPicker({
     setPickerOpen(false);
   }
 
+  async function handleGeocodeClick() {
+    if (!onGeocode || busy || geoBusy) return;
+    try {
+      const result = await onGeocode();
+      const nextLat = Number(result?.lat);
+      const nextLng = Number(result?.lng);
+      if (Number.isFinite(nextLat) && Number.isFinite(nextLng)) {
+        setDraftLat(Number(nextLat.toFixed(6)));
+        setDraftLng(Number(nextLng.toFixed(6)));
+        setPickerOpen(true);
+      }
+    } catch {
+      // parent handler already surfaces safe error text
+    }
+  }
+
   return (
     <>
-      <div className="card" style={{ minHeight: 640 }}>
+        <div className="card" style={{ minHeight: compact ? 420 : 640 }}>
         <div className="topbar">
           <div>
             <div className="title">{title || "Konum seçici"}</div>
             <div className="muted">{subtitle || "Adresi yaz, adresten bul ya da büyük haritada işaretleyip kaydet."}</div>
             <div className="muted" style={{ marginTop: 6 }}>
-              Seçili kayıt: <b>{selectedName || "-"}</b>
+              {resolvedSelectedLabelText}: <b>{selectedName || "-"}</b>
             </div>
           </div>
           <div className="muted" style={{ textAlign: "right" }}>
@@ -256,21 +290,28 @@ export default function GeoLocationPicker({
         </div>
 
         <div className="actionsRow" style={{ marginTop: 12, flexWrap: "wrap" }}>
-          <button type="button" className="btn sm" onClick={onGeocode} disabled={busy || geoBusy || !String(address || "").trim()}>
-            {geoBusy ? "Bulunuyor..." : "Adresten Bul"}
+          <button type="button" className="btn sm" onClick={onLocateMe} disabled={busy || locateMeBusy || !onLocateMe}>
+            {locateMeBusy ? "Konum alınıyor..." : locateMeLabel}
+          </button>
+          <button type="button" className="btn sm" onClick={handleGeocodeClick} disabled={busy || geoBusy || !String(address || "").trim() || !onGeocode}>
+            {geoBusy ? "Bulunuyor..." : geocodeButtonLabel}
           </button>
           <button type="button" className="btn sm primary" onClick={openPicker} disabled={busy}>
-            Büyük Haritada İşaretle
+            {mapButtonLabel}
           </button>
           <button type="button" className="btn sm ghost" onClick={onClear} disabled={busy}>
-            Konumu Temizle
+            {clearButtonLabel}
           </button>
         </div>
+
+        {!onGeocode ? <div className="muted" style={{ marginTop: 8 }}>{geocodeUnavailableText}</div> : null}
+        {kvkkText ? <div className="muted" style={{ marginTop: 8 }}>{kvkkText}</div> : null}
+        {locateMeFallbackText && !onLocateMe ? <div className="muted" style={{ marginTop: 8 }}>{locateMeFallbackText}</div> : null}
 
         <div
           style={{
             marginTop: 12,
-            height: 290,
+            height: previewHeight,
             borderRadius: 14,
             overflow: "hidden",
             border: "1px solid rgba(148,163,184,.18)",
@@ -289,20 +330,28 @@ export default function GeoLocationPicker({
         </div>
 
         <div className="muted" style={{ marginTop: 10 }}>
-          Küçük harita sadece önizleme içindir. Noktayı rahat seçmek için "Büyük Haritada İşaretle" butonunu kullan. İşaretleme sonrası OK ile kapanır, seçilen konum küçük haritada görünmeye devam eder.
+          {footerText || `Küçük harita sadece önizleme içindir. Noktayı rahat seçmek için "${mapButtonLabel}" butonunu kullan. İşaretleme sonrası "${confirmButtonLabel}" ile kapanır, seçilen konum küçük haritada görünmeye devam eder.`}
         </div>
 
-        <div className="actionsRow" style={{ marginTop: 12, flexWrap: "wrap" }}>
-          <button type="button" className="btn sm" onClick={onSave} disabled={busy}>
-            {busy ? "Kaydediliyor..." : "Kaydet"}
-          </button>
-          <button type="button" className="btn sm" onClick={onSaveNext} disabled={busy}>
-            {busy ? "..." : "Kaydet + Sonraki"}
-          </button>
-          <button type="button" className="btn sm primary" onClick={onMarkOk} disabled={busy || !valid}>
-            {busy ? "..." : "OK Yap"}
-          </button>
-        </div>
+        {onSave || onSaveNext || onMarkOk ? (
+          <div className="actionsRow" style={{ marginTop: 12, flexWrap: "wrap" }}>
+            {onSave ? (
+              <button type="button" className="btn sm" onClick={onSave} disabled={busy}>
+                {busy ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+            ) : null}
+            {onSaveNext ? (
+              <button type="button" className="btn sm" onClick={onSaveNext} disabled={busy}>
+                {busy ? "..." : "Kaydet + Sonraki"}
+              </button>
+            ) : null}
+            {onMarkOk ? (
+              <button type="button" className="btn sm primary" onClick={onMarkOk} disabled={busy || !valid}>
+                {busy ? "..." : confirmButtonLabel}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {pickerOpen ? (
@@ -311,16 +360,16 @@ export default function GeoLocationPicker({
             <div className="topbar" style={{ alignItems: "flex-start", gap: 12 }}>
               <div>
                 <div className="title">Büyük Haritada Konum İşaretle</div>
-                <div className="muted">Haritada tıkla, pimi yerleştir. Sonra OK ile seçimi uygula.</div>
+                <div className="muted">Haritada tıkla, pimi yerleştir. Sonra {confirmButtonLabel} ile seçimi uygula.</div>
                 <div className="muted" style={{ marginTop: 6 }}>
                   Seçili kayıt: <b>{selectedName || "-"}</b>
                 </div>
               </div>
-              <div className="muted" style={{ textAlign: "right" }}>
-                <div>Lat: <b>{draftValid ? draftLat.toFixed(6) : "-"}</b></div>
-                <div style={{ marginTop: 4 }}>Lng: <b>{draftValid ? draftLng.toFixed(6) : "-"}</b></div>
-              </div>
+            <div className="muted" style={{ textAlign: "right" }}>
+              <div>Lat: <b>{draftValid ? draftLat.toFixed(6) : "-"}</b></div>
+              <div style={{ marginTop: 4 }}>Lng: <b>{draftValid ? draftLng.toFixed(6) : "-"}</b></div>
             </div>
+          </div>
 
             <div
               style={{
@@ -349,7 +398,7 @@ export default function GeoLocationPicker({
             </div>
 
             <div className="muted" style={{ marginTop: 10 }}>
-              İpucu: Kaydır-zoom yap, doğru noktaya tıkla. OK dediğinde seçtiğin koordinat ana forma aktarılır; sonra normal Kaydet ile veritabanına yazılır.
+              İpucu: Kaydır-zoom yap, doğru noktaya tıkla. {confirmButtonLabel} dediğinde seçtiğin koordinat ana forma aktarılır; sonra normal Kaydet ile veritabanına yazılır.
             </div>
 
             <div className="actionsRow" style={{ marginTop: 14, justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
@@ -359,7 +408,7 @@ export default function GeoLocationPicker({
                   İptal
                 </button>
                 <button type="button" className="btn sm primary" onClick={applyDraftAndClose} disabled={!draftValid}>
-                  OK
+                  {confirmButtonLabel}
                 </button>
               </div>
             </div>

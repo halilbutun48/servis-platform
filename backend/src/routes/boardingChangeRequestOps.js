@@ -54,15 +54,32 @@ export function normalizeBoardingChangeKind(value) {
   switch (raw) {
     case "no_show":
     case "no show":
+    case "no service today":
+    case "no service":
     case "dont_board":
     case "don't board":
+    case "bugun binmeyecegim":
+    case "bugun binmeyecegim talebi":
     case "bugun servisi kullanmayacagim":
     case "bugun ogrencim servise binmeyecek":
+    case "cocugum bugun binmeyecek":
+    case "cocugum bugun servise binmeyecek":
       return "NO_SHOW";
     case "different_stop":
     case "different stop":
+    case "alternate_stop":
+    case "alternate stop":
+    case "alternate stop today":
     case "farkli duraktan binecegim":
     case "farkli duraktan binecek":
+    case "farkli duraktan alinmak istiyorum":
+    case "farklı duraktan bineceğim":
+    case "farklı duraktan binecek":
+    case "farklı duraktan alınmak istiyorum":
+    case "baska duraktan binecegim":
+    case "baska duraktan binecek":
+    case "cocugum baska duraktan binecek":
+    case "cocugum farkli duraktan binecek":
       return "DIFFERENT_STOP";
     case "late_to_stop":
     case "late to stop":
@@ -72,10 +89,16 @@ export function normalizeBoardingChangeKind(value) {
     case "pickup_from_location":
     case "pick up from location":
     case "konumdan alinmak istiyorum":
+    case "farkli konumdan alinmak istiyorum":
+    case "cocugum su konumdan alinsin":
+    case "cocugum su konumdan alinmak istiyor":
       return "PICKUP_FROM_LOCATION";
     case "operation_note":
     case "operation note":
+    case "temporary boarding note":
     case "operasyona not gonder":
+    case "gecici binis notu":
+    case "geçici biniş notu":
       return "OPERATION_NOTE";
     default:
       return BOARDING_CHANGE_KIND_ORDER.includes(raw.toUpperCase()) ? raw.toUpperCase() : "DIFFERENT_STOP";

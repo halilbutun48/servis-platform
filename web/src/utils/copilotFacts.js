@@ -1585,7 +1585,7 @@ export function buildParentLiveNoVehicleFacts({
   schoolName = '',
   regionLabel = '',
   vehicleCount = 0,
-  reasonText = 'Bu çocuk için şu an canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür.',
+  reasonText = 'Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.',
   headerText = 'Şu an: Canlı',
 } = {}) {
   const childLabel = firstNonEmpty(selected?.fullName, selected?.name, `#${selected?.id || '-'}`);
@@ -1942,6 +1942,14 @@ export function buildCopilotStarterChips({
     || selection?.structuredFacts?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || selection?.screenType === 'BOARDING_ROUTE_IMPACT_PREVIEW'
     || includesAny(selectionText, ['rota etkisi', 'biniş değişikliği', 'bugün binmezse', 'farklı duraktan', 'geçici durak', 'rota/atama uygulanmadı', 'km farkı', 'süre artar mı', 'kapasite etkisi']);
+  const requestEntryChips = ['Bugün binmeyeceğim talebi oluştur', 'Konumumu al', 'Büyük haritada konum seç', 'Adresten konum bul'];
+  const isBoardingRequestEntry = Boolean(
+    selection?.facts?.screenType === 'BOARDING_CHANGE_REQUEST_ENTRY'
+    || selection?.liveFacts?.screenType === 'BOARDING_CHANGE_REQUEST_ENTRY'
+    || selection?.structuredFacts?.screenType === 'BOARDING_CHANGE_REQUEST_ENTRY'
+    || selection?.screenType === 'BOARDING_CHANGE_REQUEST_ENTRY'
+    || includesAny(selectionText, ['bugün binmeyeceğim talebi', 'bugün binmeyeceğim', 'başka duraktan binmek istiyorum', 'başka duraktan bineceğim', 'farklı konumdan alınmak istiyorum', 'çocuğum bugün binmeyecek', 'çocuğum başka duraktan binecek', 'çocuğum şu konumdan alınsın', 'talebim kimde bekliyor', 'konum paylaşılmadı', 'talep oluştur', 'talep girişi', 'konumumu al', 'büyük haritada konum seç', 'adresten konum bul'])
+  );
   const isDynamicSavingsPreview = selection?.facts?.dynamicSavingsPreviewText
     || selection?.facts?.dynamicSavingsSummaryText
     || selection?.liveFacts?.dynamicSavingsPreviewText
@@ -1990,6 +1998,14 @@ export function buildCopilotStarterChips({
       'Hakediş etkisini açıkla',
       'Ödeme başlatılabilir mi?',
       'Sıradaki doğru işlem ne?',
+    ], fallback);
+  }
+  if (isBoardingRequestEntry) {
+    const chipsForPath = path.includes('/parent/live')
+      ? ['Çocuğum bugün binmeyecek', 'Çocuğum başka duraktan binecek', 'Çocuğum şu konumdan alınsın', 'Konumumu al']
+      : requestEntryChips;
+    return finalizeStarterChips([
+      ...chipsForPath,
     ], fallback);
   }
   if (isBoardingApplication) {

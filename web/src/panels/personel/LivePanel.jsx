@@ -12,6 +12,7 @@ import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import BoardingChangeRequestEntryCard from "../shared/BoardingChangeRequestEntryCard";
 
 function haversineMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000;
@@ -286,6 +287,10 @@ export default function PersonelLivePanel() {
     return stops.find((s) => !isReachedStop(s)) || null;
   }, [stops]);
   const nextStopId = nextStop?.id ?? null;
+  const selectedStop = useMemo(
+    () => stops.find((stop) => String(stop?.id ?? "") === String(selectedStopId || "")) || null,
+    [stops, selectedStopId]
+  );
 
   const reachedCount = useMemo(() => stops.filter((s) => isReachedStop(s)).length, [stops]);
   const totalStops = stops.length;
@@ -407,6 +412,19 @@ export default function PersonelLivePanel() {
         </div>
       </div>
       {err ? <div className="card err">{err}</div> : null}
+
+      <BoardingChangeRequestEntryCard
+      token={token}
+      mode="PERSONEL"
+      entryMode="full"
+      shift={myShift}
+      myPos={myPos}
+      stops={stops}
+      selectedStop={selectedStop || nextStop}
+        heading="Biniş değişikliği talebi"
+        intro="Bugün binmeyeceğim, başka durak ya da farklı konum/not talebini burada oluştur."
+        onRequestCreated={loadAll}
+      />
 
       <div className="grid mapGrid" style={{ ["--mapH"]: "min(520px, calc(100vh - 420px))" }}>
         <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>

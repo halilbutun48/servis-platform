@@ -61,6 +61,7 @@ const steps = [
   'check:copliveaccept01',
   'check:boardingops01a',
   'check:bugrouteimpactpreviewbutton01',
+  'check:boardingchangerequestentry01',
   'check:uiactionwiringaudit01',
   'check:boardingops01b',
   'check:boardingops01c',

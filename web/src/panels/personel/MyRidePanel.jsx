@@ -8,6 +8,7 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import BoardingChangeRequestEntryCard from "../shared/BoardingChangeRequestEntryCard";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -330,6 +331,22 @@ export default function MyRidePanel() {
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
+
+      <BoardingChangeRequestEntryCard
+        token={token}
+        mode="PERSONEL"
+        entryMode="summary"
+        shift={myShift}
+        myPos={myPos}
+        stops={stops}
+        selectedStop={selectedStop || nearestStop}
+        heading="Biniş değişikliği özeti"
+        intro="Bu ekranda yalnızca son talep özeti görünür. Yeni talep için canlı ekranı aç."
+        compact
+        onOpenEntry={() => navigate("/personel/live")}
+        summaryActionLabel="Canlı ekranda talep oluştur"
+        onRequestCreated={loadAll}
+      />
 
       <div className="grid">
         <div className="card">

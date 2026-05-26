@@ -85,6 +85,24 @@ export async function reportNoShow({ token, childId = null, reason = "Bugün gel
   });
 }
 
+export async function createBoardingChangeRequest(payload = {}, { token } = {}) {
+  return api("/api/requests", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function getBoardingChangeRequestContext(params = {}, { token } = {}) {
+  const qs = buildQueryString(params);
+  return api(`/api/requests/context${qs}`, { token });
+}
+
+export async function listMyBoardingChangeRequests(params = {}, { token } = {}) {
+  const qs = buildQueryString(params);
+  return api(`/api/requests/mine${qs}`, { token });
+}
+
 export async function login(identifier, password) {
   // login'de token yok, o yüzden Authorization göndermiyoruz
   const body = { identifier, password, deviceId: getOrCreateBrowserDeviceId() };

@@ -12,7 +12,7 @@ import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
 import { loadDriverBoardingChangeRouteEffects } from "../services/boardingChangeRouteRefresh.js";
-import { previewBoardingChangeRouteImpact } from "../services/boardingRouteImpactPreview.js";
+import { buildBoardingChangeRequestView, loadBoardingChangeRequestAuditMap } from "../services/boardingChangeRequestView.js";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
@@ -133,39 +133,34 @@ async function loadDriverPendingBoardingChangeRequests({ shift }) {
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 20,
   });
-
-  return requests.map((request) => {
-    const preview = previewBoardingChangeRouteImpact({
-      shift,
-      currentStops: shift?.stops || [],
-      passengersOrPeople: shift?.people || [],
-      boardingChange: {
-        changeType: "DIFFERENT_STOP",
-        requestKind: "DIFFERENT_STOP",
-        personelId: request.personelId,
-        personLabel: request.personel?.fullName || request.personel?.name || request.personel?.label || `#${request.personelId || "-"}`,
-        lat: request.lat,
-        lng: request.lng,
-      },
+  const auditMap = await loadBoardingChangeRequestAuditMap(prisma, requests.map((request) => request.id));
+  return requests
+    .map((request) => {
+      const view = buildBoardingChangeRequestView(
+        {
+          ...request,
+          shift,
+        },
+        auditMap.get(Number(request.id || 0)) || {},
+      );
+      const decisionOwnerRole = String(view?.decisionOwnerRole || "").trim().toUpperCase();
+      const decisionOwnerLabel = view?.decisionOwnerLabel || (decisionOwnerRole === "DRIVER" ? "Sürücü" : "Hizmet alan taraf");
+      const decisionOwnerNote = view?.decisionOwnerNote || (decisionOwnerRole === "DRIVER"
+        ? "Bu talep sürücü tarafında karar bekliyor."
+        : "Hizmet alan taraf karar veriyor.");
+      return {
+        ...view,
+        decisionOwnerRole,
+        decisionOwnerLabel,
+        decisionOwnerNote,
+      };
+    })
+    .filter((item) => {
+      // String(item?.decisionOwnerRole || "").trim().toUpperCase() === "DRIVER"
+      const decisionOwnerRole = String(item?.decisionOwnerRole || "").trim().toUpperCase();
+      const driverOwned = decisionOwnerRole === "DRIVER";
+      return driverOwned;
     });
-
-    return {
-      id: request.id,
-      status: request.status,
-      personelId: request.personelId,
-      personLabel: preview.personLabel,
-      requestKind: "DIFFERENT_STOP",
-      decisionOwnerRole: preview.decisionOwnerRole || "COMPANY",
-      decisionOwnerLabel: preview.decisionOwnerLabel || "Hizmet alan taraf",
-      decisionOwnerNote: preview.decisionOwnerNote || "Hizmet alan taraf karar veriyor.",
-      routeImpactPreview: preview,
-      preview,
-      createdAt: request.createdAt,
-      lat: request.lat ?? null,
-      lng: request.lng ?? null,
-      nearestStop: null,
-    };
-  });
 }
 
 async function maybeStartShiftIfApproved(shiftId) {

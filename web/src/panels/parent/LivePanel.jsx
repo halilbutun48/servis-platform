@@ -11,6 +11,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildMapFacts, buildParentLiveNoVehicleFacts } from "../../utils/copilotFacts";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
+import BoardingChangeRequestEntryCard from "../shared/BoardingChangeRequestEntryCard";
 
 function etaText(v) {
   return getEtaDisplay({
@@ -76,7 +77,7 @@ function dedupeStops(list) {
     const key = stopUniqueKey(item, idx);
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(item);
+    out[out.length] = item;
   }
   return out.sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0));
 }
@@ -265,6 +266,16 @@ export default function ParentLivePanel() {
 
   const selected = useMemo(() => children.find((c) => String(c.id) === String(childId)) || null, [children, childId]);
   const selectedVehicle = useMemo(() => vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || vehicles[0] || null, [vehicles, selectedVehicleId]);
+  const requestShift = useMemo(() => {
+    if (!selectedVehicle?.shiftId) return null;
+    return {
+      id: selectedVehicle.shiftId,
+      vehicle: selectedVehicle,
+      driver: selectedVehicle.driver || null,
+      room: selectedVehicle.room || null,
+      stops: Array.isArray(selectedVehicle.stops) ? selectedVehicle.stops : [],
+    };
+  }, [selectedVehicle]);
   const allStops = useMemo(() => dedupeStops(selectedVehicle?.stops || []), [selectedVehicle]);
   const childStop = useMemo(() => selectedVehicle?.childStop || null, [selectedVehicle]);
   const childStopPoint = useMemo(() => stopCoord(childStop), [childStop]);
@@ -308,7 +319,7 @@ export default function ParentLivePanel() {
       })
       .filter((x) => Number.isFinite(Number(x.lat)) && Number.isFinite(Number(x.lng)));
     if (myPos && Number.isFinite(Number(myPos.lat)) && Number.isFinite(Number(myPos.lng))) {
-      arr.push({ id: "me", name: "Siz", lat: Number(myPos.lat), lng: Number(myPos.lng), status: "DONE" });
+      arr[arr.length] = { id: "me", name: "Siz", lat: Number(myPos.lat), lng: Number(myPos.lng), status: "DONE" };
     }
     return arr;
   }, [allStops, childStop, myPos]);
@@ -346,7 +357,7 @@ export default function ParentLivePanel() {
       schoolName: selected?.company?.name || "",
       regionLabel: regionText(selected?.company || null),
       vehicleCount: vehicles.length,
-      reasonText: "Bu çocuk için şu an canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür.",
+      reasonText: "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.",
       headerText: "Şu an: Canlı Takip",
     });
   }, [selectedVehicle, selected, vehicles.length]);
@@ -498,7 +509,22 @@ export default function ParentLivePanel() {
         {geoErr ? <div className="muted" style={{ color: "#fca5a5", marginTop: 12 }}>Konum alınamadı: {geoErr}</div> : null}
         {!myPos ? <div className="muted" style={{ marginTop: 12 }}>Size en yakın durağı ve yürüyüş süresini görmek için <b>Konumumu Al</b> kullanın.</div> : null}
 
-        {!vehicles.length ? <div className="muted" style={{ marginTop: 12 }}>Bu çocuk için şu an canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür.</div> : null}
+        <BoardingChangeRequestEntryCard
+          token={token}
+          mode="PARENT"
+          shift={requestShift}
+          childId={selected?.id || childId || null}
+          childLabel={selected?.fullName || ""}
+          myPos={myPos}
+          stops={Array.isArray(selectedVehicle?.stops) ? selectedVehicle.stops : []}
+          selectedStop={selectedVehicle?.childStop || selectedVehicle?.nextStop || null}
+          heading="Biniş değişikliği talebi"
+          intro="Çocuğum bugün binmeyecek, başka durak veya farklı konum talebini burada oluştur."
+          compact
+          onRequestCreated={loadAll}
+        />
+
+        {!vehicles.length ? <div className="muted" style={{ marginTop: 12 }}>Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.</div> : null}
 
         {selectedVehicle ? (
           <>

@@ -17,6 +17,14 @@ function normalizeVisibleApiErrorMessage(value, fallbackMessage = "İşlem başa
   if (/^(?:FORBIDDEN|Forbidden|HTTP 403 Forbidden|403 Forbidden)$/i.test(clean)) {
     return "Bu işlem için bu rolde erişim görünmüyor.";
   }
+  if (
+    /<\s*!doctype\s+html/i.test(clean) ||
+    /<\s*html[\s>]/i.test(clean) ||
+    /<\s*body[\s>]/i.test(clean) ||
+    /Cannot (GET|POST|PUT|PATCH|DELETE)\s+\//i.test(clean)
+  ) {
+    return fallbackMessage;
+  }
   return clean;
 }
 

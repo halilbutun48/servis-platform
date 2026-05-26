@@ -252,6 +252,7 @@ export function parentRouter() {
           regionOwnership,
           regionRoutingKey: regionOwnership?.regionKey ?? null,
           childId,
+          shiftId: sid,
           visibleWindow,
           // ETA
           etaToChildMin: eta?.etaMin ?? null,
@@ -289,6 +290,7 @@ export function parentRouter() {
         ...baseItem,
         regionOwnership,
         regionRoutingKey: regionOwnership?.regionKey ?? null,
+        shiftId: shiftByVehicleId.get(Number(v.id)) || null,
       };
     }));
   });

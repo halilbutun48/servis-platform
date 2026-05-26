@@ -21,6 +21,7 @@ const selectedDocs = [
   "docs/FINAL_RELEASE_EVIDENCE_M90.md",
   "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
   "docs/BOARDING_OPS_01A_ROUTE_IMPACT_PREVIEW.md",
+  "docs/BOARDING_CHANGE_REQUEST_ENTRY_01.md",
   "docs/BOARDING_OPS_01B_ACCEPTED_CHANGE_APPLICATION.md",
   "docs/BOARDING_OPS_01C_DRIVER_ROUTE_REFRESH.md",
   "docs/ROUTE_CHANGE_FINAL_01.md",
@@ -139,7 +140,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";

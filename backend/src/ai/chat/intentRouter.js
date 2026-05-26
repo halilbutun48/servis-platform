@@ -60,6 +60,41 @@ function hasSeferScoreSignal(text) {
   ]);
 }
 
+function hasBoardingChangeRequestEntrySignal(text) {
+  return hasAny(text, [
+    'talep oluştur',
+    'talep olustur',
+    'talep girişi',
+    'talep girisi',
+    'bugün binmeyeceğim talebi',
+    'bugun binmeyecegim talebi',
+    'bugün binmeyeceğim',
+    'bugun binmeyecegim',
+    'başka duraktan binmek istiyorum',
+    'baska duraktan binmek istiyorum',
+    'başka duraktan bineceğim',
+    'baska duraktan binecegim',
+    'çocuğum bugün binmeyecek',
+    'cocugum bugun binmeyecek',
+    'çocuğum başka duraktan binecek',
+    'cocugum baska duraktan binecek',
+    'çocuğum şu konumdan alınsın',
+    'cocugum su konumdan alinsin',
+    'farklı konumdan alınmak istiyorum',
+    'farkli konumdan alinmak istiyorum',
+    'konumumu al',
+    'büyük haritada konum seç',
+    'buyuk haritada konum sec',
+    'adresten konum bul',
+    'talebim kimde bekliyor',
+    'kimde bekliyor',
+    'konum paylaşılmadı',
+    'konum paylasilmadi',
+    'konum paylaşmadım',
+    'konum paylasmadim',
+  ]);
+}
+
 function pathHas(path, parts) {
   const value = normalizeText(path);
   return (Array.isArray(parts) ? parts : []).some((p) => {
@@ -147,6 +182,7 @@ const BASE_RULES = [
   { type: 'PAYMENT_MISSING', score: 13, patterns: ['kanıt eksikleri', 'kanit eksikleri', 'kanıtlar eksik', 'kanitlar eksik', 'hakediş eksik', 'hakedis eksik', 'ödeme eksik', 'odeme eksik', 'kontrol gerekli', 'hazır değil', 'hazir degil'], label: 'payment-missing' },
   { type: 'READINESS_CHECK', score: 10, patterns: ['hazır mı', 'hazir mi', 'atamaya hazır mı', 'atamaya hazir mi', 'ilerlemeye hazır mı', 'iş hazır mı', 'bu kayıt hazır mı', 'bu kayit hazir mi', 'hakediş tarafında ne kontrol etmeliyim', 'hakedis tarafında ne kontrol etmeliyim', 'bu hakediş neden hazır değil', 'bu hakedis neden hazir degil', 'hazır değil', 'hazir degil', 'hazırlık', 'hazirlik', 'vardiya üretildi mi', 'vardiya uretildi mi', 'bugün vardiya üretildi mi', 'bugun vardiya uretildi mi', 'sözleşmeden vardiya', 'sozlesmeden vardiya', 'sözleşmeden bugün vardiya üretildi mi', 'sozlesmeden bugun vardiya uretildi mi'], label: 'readiness' },
   { type: 'DYNAMIC_SAVINGS_PREVIEW', score: 14, patterns: ['tasarruf', 'tasarruf önizlemesi', 'tasarruf onizlemesi', 'km tasarrufu', 'süre tasarrufu', 'sure tasarrufu', 'yaklaşık maliyet', 'yaklasik maliyet', 'maliyet etkisi', 'readonly tasarruf', 'readonly önizleme', 'dinamik tasarruf'], label: 'dynamic-savings-preview' },
+  { type: 'BOARDING_CHANGE_REQUEST_ENTRY', score: 16, patterns: ['talep oluştur', 'talep olustur', 'talep girişi', 'talep girisi', 'bugün binmeyeceğim talebi', 'bugun binmeyecegim talebi', 'başka duraktan binmek istiyorum', 'baska duraktan binmek istiyorum', 'başka duraktan bineceğim', 'baska duraktan binecegim', 'çocuğum bugün binmeyecek', 'cocugum bugun binmeyecek', 'çocuğum başka duraktan binecek', 'cocugum baska duraktan binecek', 'çocuğum şu konumdan alınsın', 'cocugum su konumdan alinsin', 'farklı konumdan alınmak istiyorum', 'farkli konumdan alinmak istiyorum', 'talebim kimde bekliyor', 'kimde bekliyor', 'konum paylaşılmadı', 'konum paylasilmadi'], label: 'boarding-change-request-entry' },
   { type: 'SEFER_SCORE_PREVIEW', score: 15, patterns: ['sefer puanı', 'sefer puani', 'sefer score', 'readonly kalite puanı', 'readonly kalite puani', 'kalite puanı', 'kalite puani', 'tedarikçi puanı', 'tedarikci puani', 'sağlayıcı puanı', 'saglayici puani', 'bu servis kaliteli mi', 'eksik sinyaller', 'puan neden düşük', 'puan neden dusuk', 'puan nasıl yükselir', 'puan nasil yukselir', 'bu puan ödeme veya teklif sıralamasını etkiliyor mu', 'bu puan odeme veya teklif siralamasini etkiliyor mu'], label: 'sefer-score-preview' },
   { type: 'BOARDING_ROUTE_IMPACT_PREVIEW', score: 13, patterns: ['rota etkisi', 'rota etkisini', 'önizle', 'onizle', 'önizleme', 'onizleme', 'etkiyi hesapla', 'bugün binmezse', 'bugun binmezse', 'farklı duraktan', 'farkli duraktan', 'geçici durak', 'gecici durak', 'biniş değişikliği', 'binis degisikligi', 'km farkı', 'km farki', 'süre artar mı', 'sure artar mi', 'kapasite etkisi', 'rotasını', 'rotasini', 'rotayı', 'rotayi', 'rota.*değiştir', 'rota.*degistir'], label: 'boarding-route-impact-preview' },
   { type: 'AGREEMENT_ROUTE_REFRESH', score: 16, patterns: ['rota değişikliği', 'rota degisikligi', 'rota güncelleme', 'rota guncelleme', 'eski rota', 'yeni rota', 'teklif mi', 'kabul mü', 'kabul mu', 'karşı teklif', 'karsi teklif', 'uygulanan rota', 'rota geçmişi', 'rota gecmisi', 'room a rota güncelleme talebi', 'room a rota guncelleme talebi', 'rooma rota güncelleme talebi'], label: 'agreement-route-refresh' },
@@ -193,6 +229,7 @@ const INTENT_PRIORITY = [
   'PAYMENT_MISSING',
   'READINESS_CHECK',
   'DYNAMIC_SAVINGS_PREVIEW',
+  'BOARDING_CHANGE_REQUEST_ENTRY',
   'BOARDING_CHANGE_APPLICATION',
   'BOARDING_ROUTE_IMPACT_PREVIEW',
   'AGREEMENT_ROUTE_REFRESH',
@@ -257,6 +294,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment', '/shifts', '/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(kanıt eksik|kanit eksik|kanıtlar eksik|kanitlar eksik|hakediş eksik|hakedis eksik|ödeme eksik|odeme eksik|neden eksik|hazır değil|hazir degil|kontrol gerekli)/.test(text)) addScore(scores, signals, 'PAYMENT_MISSING', 13, 'payment-missing-path');
   if (pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements', '/commercial-flow', '/commercial-core']) && /(tasarruf|tasarruf önizlemesi|tasarruf onizlemesi|km tasarrufu|süre tasarrufu|sure tasarrufu|yaklaşık maliyet|yaklasik maliyet|maliyet etkisi|readonly tasarruf|readonly önizleme|dinamik tasarruf)/.test(text)) addScore(scores, signals, 'DYNAMIC_SAVINGS_PREVIEW', 15, 'dynamic-savings-path');
   if (pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements', '/commercial-flow', '/commercial-core']) && hasSeferScoreSignal(text)) addScore(scores, signals, 'SEFER_SCORE_PREVIEW', 18, 'sefer-score-path');
+  if (pathHas(options.screenPath, ['/personel/live', '/personel/my', '/parent/live']) && hasBoardingChangeRequestEntrySignal(text)) addScore(scores, signals, 'BOARDING_CHANGE_REQUEST_ENTRY', 18, 'boarding-change-request-entry-path');
   if (pathHas(options.screenPath, ['/company/operations', '/school/operations', '/organization/operations', '/room/operation-health', '/room/shifts']) && /(rota etkisi|rota etkisini|önizle|onizle|önizleme|onizleme|etkiyi hesapla|bugün binmezse|bugun binmezse|farklı duraktan|farkli duraktan|geçici durak|gecici durak|biniş değişikliği|binis degisikligi|km farkı|km farki|süre artar mı|sure artar mi|kapasite etkisi|rotasını|rotasini|rotayı|rotayi|rota.*değiştir|rota.*degistir)/.test(text)) addScore(scores, signals, 'BOARDING_ROUTE_IMPACT_PREVIEW', 13, 'boarding-route-impact-preview-path');
   if (pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements']) && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|uygulanan rota|rota geçmişi|rota gecmisi|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)) addScore(scores, signals, 'AGREEMENT_ROUTE_REFRESH', 20, 'agreement-route-refresh-path');
   if (pathHas(options.screenPath, ['/company/operations', '/school/operations', '/organization/operations', '/room/operation-health', '/room/shifts', '/driver/today', '/driver/route', '/driver/map']) && /(kabul edilen değişikliği uygula|kabul edilen degisikligi uygula|kabul edilen değişikliği işleme al|kabul edilen degisikligi isleme al|günlük atamaya işle|gunluk atamaya işle|günlük atamaya işlen|gunluk atamaya işlen|günlük atamaya işlenebilir|gunluk atamaya işlenebilir|günlük atama etkisi|sürücü rotası yenilenmez|surucu rotasi yenilenmez|kalıcı atama değişmez|kalici atama degismez|sürücü rota ekranında görünür|surucu rota ekraninda gorunur|rota güncellemesi bekliyor|rota guncellemesi bekliyor|günlük değişiklik rotada görünüyor|gunluk degisiklik rotada gorunuyor|sürücüye gönderildi mi|surucuye gonderildi mi|driver route refresh|mobile route update|rotasına yansıdı mı|rotasina yansidi mi|stopassignment|boarding change application|boarding change uygulama)/.test(text)) addScore(scores, signals, 'BOARDING_CHANGE_APPLICATION', 15, 'boarding-change-application-path');
@@ -406,6 +444,9 @@ export function resolveReplyMode(message, questionType, roleMode = 'OPERATIONS')
 export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN', message = '', screenPath = '' }) {
   const text = normalizeText(message);
   if (String(questionType || '') === 'BOARDING_CHANGE_APPLICATION' || hasAny(text, ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlenebilir', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'sürücü rota ekranında görünür', 'surucu rota ekraninda gorunur', 'rota güncellemesi bekliyor', 'rota guncellemesi bekliyor', 'günlük değişiklik rotada görünüyor', 'gunluk degisiklik rotada gorunuyor', 'sürücüye gönderildi mi', 'surucuye gonderildi mi', 'driver route refresh', 'mobile route update', 'rotasına yansıdı mı', 'rotasina yansidi mi', 'stopassignment'])) return 'ASSIGNMENT_READINESS_GUIDE';
+  if (String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY' || hasBoardingChangeRequestEntrySignal(text)) {
+    return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
+  }
   if (String(questionType || '') === 'BOARDING_ROUTE_IMPACT_PREVIEW' || hasAny(text, ['rota etkisi', 'rota etkisini', 'önizle', 'onizle', 'önizleme', 'onizleme', 'bugün binmezse', 'bugun binmezse', 'farklı duraktan', 'farkli duraktan', 'geçici durak', 'gecici durak', 'biniş değişikliği', 'binis degisikligi', 'km farkı', 'km farki', 'süre artar mı', 'sure artar mi', 'kapasite etkisi'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(questionType || '') === 'DYNAMIC_SAVINGS_PREVIEW' || hasAny(text, ['tasarruf', 'tasarruf önizlemesi', 'tasarruf onizlemesi', 'km tasarrufu', 'süre tasarrufu', 'sure tasarrufu', 'yaklaşık maliyet', 'yaklasik maliyet', 'maliyet etkisi', 'readonly tasarruf', 'dinamik tasarruf'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (pathHas(screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements', '/commercial-flow', '/commercial-core']) && (String(questionType || '') === 'SEFER_SCORE_PREVIEW' || hasSeferScoreSignal(text))) return 'SCREEN_MENU_GUIDE'; // check:seferscore01 remains in the product-extensions chain
@@ -435,7 +476,7 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
 }
 
 function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -445,9 +486,15 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
     return workflowQuestion ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'] : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri'];
   }
   if (pathHas(screenPath, ['/personel/live'])) {
+    if (String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY') {
+      return ['Bugün binmeyeceğim talebi oluştur', 'Konumumu al', 'Büyük haritada konum seç', 'Adresten konum bul'];
+    }
     return workflowQuestion ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'] : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri'];
   }
   if (pathHas(screenPath, ['/parent/live'])) {
+    if (String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY') {
+      return ['Çocuğum bugün binmeyecek', 'Çocuğum başka duraktan binecek', 'Çocuğum şu konumdan alınsın', 'Konumumu al'];
+    }
     return workflowQuestion ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'] : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri'];
   }
   if (pathHas(screenPath, ['/room/map'])) {
@@ -514,7 +561,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
 }
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -524,9 +571,13 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
   if (pathHas(screenPath, ['/driver/today'])) {
     chips.push(...(workflowQuestion ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'] : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı']));
   } else if (pathHas(screenPath, ['/personel/live'])) {
-    chips.push(...(workflowQuestion ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'] : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri']));
+    chips.push(...(String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
+      ? ['Bugün binmeyeceğim talebi oluştur', 'Konumumu al', 'Büyük haritada konum seç', 'Adresten konum bul']
+      : workflowQuestion ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'] : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri']));
   } else if (pathHas(screenPath, ['/parent/live'])) {
-    chips.push(...(workflowQuestion ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'] : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri']));
+    chips.push(...(String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
+      ? ['Çocuğum bugün binmeyecek', 'Çocuğum başka duraktan binecek', 'Çocuğum şu konumdan alınsın', 'Konumumu al']
+      : workflowQuestion ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'] : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri']));
   } else if (pathHas(screenPath, ['/room/map'])) {
     chips.push(...(workflowQuestion ? ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'] : ['Bu ekranı detaylı anlat', 'Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']));
   } else if (pathHas(screenPath, ['/room/operation-health'])) {
@@ -590,7 +641,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
 
 export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPEN', roleMode = 'OPERATIONS', screenPath = '', context = null }) {
   const base = [];
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP']);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   const boardingApplicationContext = Boolean(
     context?.structuredFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'

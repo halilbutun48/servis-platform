@@ -81,6 +81,7 @@ export default function RoutePanel() {
     [data?.pendingBoardingChangeRequests],
   );
   const driverBoardingRequests = useMemo(
+    // decisionOwnerRole === "DRIVER"
     () => pendingBoardingChangeRequests.filter((item) => String(item?.decisionOwnerRole || "").trim().toUpperCase() === "DRIVER"),
     [pendingBoardingChangeRequests]
   );
