@@ -18,15 +18,32 @@ export function isLocalDevMode() {
   return LOCAL_DEV_MODES.has(runtimeMode());
 }
 
+function normalizeStepUpProvider(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "totp" || raw === "sms" || raw === "none") return raw;
+  return "";
+}
+
+export function getStepUpProvider() {
+  const explicit = normalizeStepUpProvider(ENV.STEP_UP_PROVIDER);
+  if (explicit) return explicit;
+  if (isProductionLike()) return "totp";
+  return "none";
+}
+
 export function isGreenpackBypassAllowed(req) {
   const hdr = String(req?.headers?.["x-greenpack"] || "").trim();
-  return hdr === "1" && isLocalDevMode() && ENV.GREENPACK_BYPASS_ENABLED === true;
+  return hdr === "1" && isLocalDevMode() && ENV.GREENPACK_BYPASS_ENABLED === true && isTotpStepUpEnabled();
 }
 
 export function isStepUpEnabled() {
   const raw = String(ENV.STEP_UP_ENABLED ?? "").trim();
-  if (!raw) return true;
-  return raw !== "0";
+  const provider = getStepUpProvider();
+  if (raw === "0") return false;
+  if (provider === "none") return false;
+  if (raw === "1") return true;
+  if (isLocalDevMode()) return false;
+  return true;
 }
 
 export function getStepUpRequiredRoles() {
@@ -42,6 +59,22 @@ export function getStepUpRequiredRoles() {
 export function isStepUpRole(role) {
   if (!isStepUpEnabled()) return false;
   return getStepUpRequiredRoles().has(normalizeRole(role));
+}
+
+export function isTotpStepUpEnabled() {
+  return isStepUpEnabled() && getStepUpProvider() === "totp" && ENV.STEP_UP_TOTP_ENABLED === true;
+}
+
+export function isSmsStepUpEnabled() {
+  return isStepUpEnabled() && getStepUpProvider() === "sms";
+}
+
+export function isStepUpProviderReady() {
+  const provider = getStepUpProvider();
+  if (!isStepUpEnabled()) return false;
+  if (provider === "totp") return isTotpStepUpEnabled();
+  if (provider === "sms") return false;
+  return false;
 }
 
 export function getAccessTokenExpiresInForUser(user) {

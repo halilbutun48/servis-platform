@@ -1,18 +1,18 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-05-25
+Tarih: 2026-05-26
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
 - Toplam package script entry: `305`
-- Toplam executable tracked file: `1071`
-- Combined registry row: `1376`
-- Root/backend/web/mobile package dağılımı: root `148`, backend `638`, web `86`, mobile `201`
+- Toplam executable tracked file: `1074`
+- Combined registry row: `1379`
+- Root/backend/web/mobile package dağılımı: root `148`, backend `640`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `18`
 - ACTIVE: `360`
-- ACTIVE_CORE: `119`
+- ACTIVE_CORE: `118`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `8`
@@ -28,7 +28,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `482`
+- NEEDS_REVIEW: `486`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
@@ -42,14 +42,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 360 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 119 |
+| ACTIVE_CORE | 118 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 482 |
+| NEEDS_REVIEW | 486 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -81,6 +81,7 @@ Repo: `servis-platform`
 | root:check:m99ux01 | package.json | root | node backend/scripts/m99_ux_01_visible_text_hygiene_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-99-UX-01 |  | Owner or chain unclear |  |
 | root:check:uxkvkk01 | package.json | root | node backend/scripts/ux_kvkk_01_compact_boundary_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXKVKK-01 |  | Owner or chain unclear |  |
 | root:check:authstepupdevtoggle01 | package.json | root | node backend/scripts/auth_stepup_dev_toggle_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AUTHSTEPUPDEVTOGGLE-01 |  | Owner or chain unclear |  |
+| root:check:authstepupproviderlocaldefault01 | package.json | root | node backend/scripts/auth_stepup_provider_local_default_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AUTHSTEPUPPROVIDERLOCALDEFAULT-01 |  | Owner or chain unclear |  |
 | root:check:m98e2b | package.json | root | node backend/scripts/m98_e2b_personel_access_backend_check.js | auth-session | REQUIRES_AUTH_SESSION | REQUIRES_AUTH_SESSION | ROOT-CHECK-M-98-E-2-B |  | Fails without auth/session |  |
 | root:check:m98e2d | package.json | root | npm --prefix mobile run check:m98e2d | auth-session | REQUIRES_AUTH_SESSION | REQUIRES_AUTH_SESSION | ROOT-CHECK-M-98-E-2-D |  | Fails without auth/session |  |
 | root:check:m98e2c | package.json | root | npm --prefix web run check:m98e2c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-98-E-2-C |  | Breaks frontend/web lint gate |  |
@@ -143,7 +144,6 @@ Repo: `servis-platform`
 | root:check:copliveaccept01 | package.json | root | node backend/scripts/cop_live_accept_01_check.js | core | ACTIVE_CORE |  | COP-LIVE-ACCEPT-01 |  | Breaks canonical verification chain |  |
 | root:check:boardingops01a | package.json | root | node backend/scripts/boarding_ops_01a_route_impact_preview_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01A |  | Breaks canonical verification chain |  |
 | root:check:bugrouteimpactpreviewbutton01 | package.json | root | node backend/scripts/bug_route_impact_preview_button_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-BUGROUTEIMPACTPREVIEWBUTTON-01 |  | Owner or chain unclear |  |
-| root:check:boardingchangerequestentry01 | package.json | root | node backend/scripts/boarding_change_request_entry_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-BOARDINGCHANGEREQUESTENTRY-01 |  | Breaks canonical verification chain |  |
 | root:check:uiactionwiringaudit01 | package.json | root | node backend/scripts/ui_action_wiring_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UIACTIONWIRINGAUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:boardingops01b | package.json | root | node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01B |  | Breaks canonical verification chain |  |
 | root:check:boardingops01c | package.json | root | node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01C |  | Breaks canonical verification chain |  |
@@ -297,6 +297,8 @@ Repo: `servis-platform`
 | _static_milestone_check.js | backend/scripts/_static_milestone_check.js | backend |  | helper | ACTIVE |  | STATIC-MILESTONE-CHECK |  | Owner or chain unclear | internal helper |
 | _totp_harness.js | backend/scripts/_totp_harness.js | backend |  | helper | ACTIVE |  | TOTP-HARNESS |  | Owner or chain unclear | internal helper |
 | audit_logs_session_hotfix_check.mjs | backend/scripts/audit_logs_session_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | AUDIT-LOGS-SESSION-HOTFIX-CHECK |  | Owner or chain unclear |  |
+| auth_stepup_dev_toggle_01_check.js | backend/scripts/auth_stepup_dev_toggle_01_check.js | backend | root:check:authstepupdevtoggle01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-DEV-TOGGLE-01-CHECK |  | Owner or chain unclear |  |
+| auth_stepup_provider_local_default_01_check.js | backend/scripts/auth_stepup_provider_local_default_01_check.js | backend | root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01-CHECK |  | Owner or chain unclear |  |
 | bench_gps_publish_only.js | backend/scripts/bench_gps_publish_only.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels | review | NEEDS_REVIEW |  | BENCH-GPS-PUBLISH-ONLY |  | Owner or chain unclear |  |
 | bench_reset_data.js | backend/scripts/bench_reset_data.js | backend | backend:bench:reset | review | NEEDS_REVIEW |  | BENCH-RESET-DATA |  | Owner or chain unclear |  |
 | boarding_ops_01a_route_impact_preview_check.js | backend/scripts/boarding_ops_01a_route_impact_preview_check.js | backend | root:check:boardingops01a | review | NEEDS_REVIEW |  | BOARDING-OPS-01-A-ROUTE-IMPACT-PREVIEW-CHECK |  | Owner or chain unclear |  |
@@ -754,7 +756,7 @@ Repo: `servis-platform`
 | agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
 | agreementsHelpers.js | backend/src/routes/agreementsHelpers.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENTS-HELPERS |  | Owner or chain unclear |  |
 | ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:cop03b, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
-| auth.js | backend/src/routes/auth.js | backend | root:check:authstepupdevtoggle01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
+| auth.js | backend/src/routes/auth.js | backend | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
 | auth_step2.js | backend/src/routes/auth_step2.js | backend |  | review | NEEDS_REVIEW |  | AUTH-STEP-2 |  | Owner or chain unclear |  |
 | availability.js | backend/src/routes/availability.js | backend | mobile:check:m96a | review | NEEDS_REVIEW |  | AVAILABILITY |  | Owner or chain unclear |  |
 | boardingChangeRequestOps.js | backend/src/routes/boardingChangeRequestOps.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-REQUEST-OPS |  | Owner or chain unclear |  |
@@ -851,7 +853,7 @@ Repo: `servis-platform`
 | hash.js | backend/src/telematics/hash.js | backend |  | review | NEEDS_REVIEW |  | HASH |  | Owner or chain unclear |  |
 | providers.js | backend/src/telematics/providers.js | backend |  | review | NEEDS_REVIEW |  | PROVIDERS |  | Owner or chain unclear |  |
 | service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
-| tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
+| tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:cop04afix02, root:check:cop04afix04, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
 | responseCache.js | backend/src/utils/responseCache.js | backend |  | review | NEEDS_REVIEW |  | RESPONSE-CACHE |  | Owner or chain unclear |  |
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
@@ -943,6 +945,7 @@ Repo: `servis-platform`
 | shiftRoutePreview.js | web/src/utils/shiftRoutePreview.js | web |  | review | NEEDS_REVIEW |  | SHIFT-ROUTE-PREVIEW |  | Owner or chain unclear |  |
 | statusBadge.js | web/src/utils/statusBadge.js | web |  | review | NEEDS_REVIEW |  | STATUS-BADGE |  | Owner or chain unclear |  |
 | statusPalette.js | web/src/utils/statusPalette.js | web |  | review | NEEDS_REVIEW |  | STATUS-PALETTE |  | Owner or chain unclear |  |
+| stepUp.js | web/src/utils/stepUp.js | web | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | STEP-UP |  | Owner or chain unclear |  |
 | time.js | web/src/utils/time.js | web | mobile:check:m81.2, mobile:check:m95e18, root:check:m95export01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | TIME |  | Owner or chain unclear |  |
 | uiDataCache.js | web/src/utils/uiDataCache.js | web |  | review | NEEDS_REVIEW |  | UI-DATA-CACHE |  | Owner or chain unclear |  |
 | uiStatus.js | web/src/utils/uiStatus.js | web |  | review | NEEDS_REVIEW |  | UI-STATUS |  | Owner or chain unclear |  |

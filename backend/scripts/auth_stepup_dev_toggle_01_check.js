@@ -48,17 +48,36 @@ function mustFalsy(value, label) {
   else fail(label);
 }
 
-function runProbe(stepUpEnabledValue) {
-  const env = { ...process.env };
-  if (stepUpEnabledValue === undefined) delete env.STEP_UP_ENABLED;
-  else env.STEP_UP_ENABLED = String(stepUpEnabledValue);
-  env.NODE_ENV = env.NODE_ENV || "development";
+function runProbe({
+  nodeEnv = "development",
+  stepUpEnabled,
+  stepUpProvider,
+  stepUpTotpEnabled,
+  greenpackBypassEnabled,
+} = {}) {
+  const env = { ...process.env, NODE_ENV: nodeEnv };
+  const assign = (key, value) => {
+    if (value === undefined) delete env[key];
+    else env[key] = String(value);
+  };
+
+  assign("STEP_UP_ENABLED", stepUpEnabled);
+  assign("STEP_UP_PROVIDER", stepUpProvider);
+  assign("STEP_UP_TOTP_ENABLED", stepUpTotpEnabled);
+  assign("GREENPACK_BYPASS_ENABLED", greenpackBypassEnabled);
+  assign("JWT_SECRET", nodeEnv === "production" ? "prod-probe-secret" : "dev-probe-secret");
 
   const securityPolicyUrl = pathToFileURL(path.join(root, "backend/src/auth/securityPolicy.js")).href;
   const middlewareUrl = pathToFileURL(path.join(root, "backend/src/auth/middleware.js")).href;
 
   const script = `
-    import { isStepUpEnabled, isStepUpRole } from ${JSON.stringify(securityPolicyUrl)};
+    import {
+      getStepUpProvider,
+      isSmsStepUpEnabled,
+      isStepUpEnabled,
+      isStepUpRole,
+      isTotpStepUpEnabled
+    } from ${JSON.stringify(securityPolicyUrl)};
     import { requireStepUp, requireStepUpWrite } from ${JSON.stringify(middlewareUrl)};
 
     function makeRes() {
@@ -93,7 +112,10 @@ function runProbe(stepUpEnabledValue) {
     const readResult = await runGuard(requireStepUp("ROOM", "SUPER_ADMIN", "COMPANY"), "POST");
 
     console.log(JSON.stringify({
+      provider: getStepUpProvider(),
       enabled: isStepUpEnabled(),
+      totpEnabled: isTotpStepUpEnabled(),
+      smsEnabled: isSmsStepUpEnabled(),
       roomRole: isStepUpRole("ROOM"),
       driverRole: isStepUpRole("DRIVER"),
       writeResult,
@@ -108,29 +130,39 @@ function runProbe(stepUpEnabledValue) {
   });
 
   if (result.status !== 0) {
-    throw new Error(`probe failed (${stepUpEnabledValue ?? "unset"}): ${result.stderr || result.stdout || "unknown"}`);
+    throw new Error(`probe failed (${nodeEnv}/${stepUpEnabled ?? "unset"}/${stepUpProvider ?? "unset"}): ${result.stderr || result.stdout || "unknown"}`);
   }
 
   const stdout = String(result.stdout || "").trim().split(/\r?\n/).filter(Boolean).pop() || "{}";
   try {
     return JSON.parse(stdout);
   } catch (_err) {
-    throw new Error(`probe parse failed (${stepUpEnabledValue ?? "unset"}): ${stdout}`);
+    throw new Error(`probe parse failed (${nodeEnv}/${stepUpEnabled ?? "unset"}/${stepUpProvider ?? "unset"}): ${stdout}`);
   }
+}
+
+function readStepUpErrorCode(payload) {
+  return String(
+    payload?.error?.code ||
+    payload?.error?.error?.code ||
+    payload?.code ||
+    payload?.error ||
+    ""
+  );
+}
+
+function mustNotBeTracked(relPath, label) {
+  const tracked = spawnSync("git", ["ls-files", "--error-unmatch", relPath], {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (tracked.status === 0) fail(label);
+  ok(label);
 }
 
 function main() {
   console.log("=== AUTH-STEPUP-DEV-TOGGLE-01 CHECK ===");
-
-  function readStepUpErrorCode(payload) {
-    return String(
-      payload?.error?.code ||
-      payload?.error?.error?.code ||
-      payload?.code ||
-      payload?.error ||
-      ""
-    );
-  }
 
   const pkg = read("package.json");
   const envJs = read("backend/src/env.js");
@@ -139,46 +171,92 @@ function main() {
   const authRoute = read("backend/src/routes/auth.js");
   const appShell = read("web/src/layout/AppShell.jsx");
   const totpCard = read("web/src/panels/shared/TotpStepUpCard.jsx");
+  const stepUpWebUtil = read("web/src/utils/stepUp.js");
   const rootEnv = read(".env.example");
   const webEnv = read("web/.env.example");
 
   must(pkg, '"check:authstepupdevtoggle01": "node backend/scripts/auth_stepup_dev_toggle_01_check.js"', "package.json exposes check:authstepupdevtoggle01");
-  must(envJs, "STEP_UP_ENABLED: process.env.STEP_UP_ENABLED ?? \"\"", "backend env exposes STEP_UP_ENABLED");
-  must(securityPolicy, "export function isStepUpEnabled()", "central step-up helper exists");
-  must(securityPolicy, "const raw = String(ENV.STEP_UP_ENABLED ?? \"\").trim();", "step-up helper reads STEP_UP_ENABLED");
-  must(securityPolicy, "if (!raw) return true;", "step-up helper defaults open when undefined");
-  must(securityPolicy, "return raw !== \"0\";", "step-up helper disables on STEP_UP_ENABLED=0");
-  must(securityPolicy, "export function getStepUpRequiredRoles()", "step-up required roles helper exists");
-  must(securityPolicy, "export function isStepUpRole(role)", "step-up role helper exists");
-  must(middleware, "if (!stepUpRequiredForRole(role)) return next();", "middleware bypasses when step-up disabled");
-  must(middleware, "return guard(req, res, next);", "write guard routes through central step-up guard");
-  must(authRoute, "const required = isStepUpRole(user.role);", "auth totp status uses central role helper");
-  must(appShell, 'import.meta.env.VITE_STEP_UP_ENABLED', "AppShell uses VITE_STEP_UP_ENABLED");
-  must(totpCard, 'import.meta.env.VITE_STEP_UP_ENABLED', "TotpStepUpCard uses VITE_STEP_UP_ENABLED");
-  must(rootEnv, "STEP_UP_ENABLED=1", ".env.example documents STEP_UP_ENABLED");
-  must(webEnv, "VITE_STEP_UP_ENABLED=1", "web/.env.example documents VITE_STEP_UP_ENABLED");
+  must(envJs, "STEP_UP_PROVIDER: process.env.STEP_UP_PROVIDER ?? \"\"", "backend env exposes STEP_UP_PROVIDER");
+  must(envJs, "STEP_UP_TOTP_ENABLED: (process.env.STEP_UP_TOTP_ENABLED ?? (IS_PRODUCTION ? \"1\" : \"0\")) === \"1\"", "backend env defaults TOTP readiness by mode");
+  must(securityPolicy, "export function getStepUpProvider()", "central step-up provider helper exists");
+  must(securityPolicy, "export function isStepUpEnabled()", "central step-up enabled helper exists");
+  must(securityPolicy, "export function isTotpStepUpEnabled()", "central TOTP readiness helper exists");
+  must(securityPolicy, "export function isSmsStepUpEnabled()", "central SMS helper exists");
+  must(securityPolicy, "export function isStepUpProviderReady()", "central provider readiness helper exists");
+  must(securityPolicy, "if (provider === \"none\") return false;", "provider none disables step-up");
+  must(securityPolicy, "if (provider === \"sms\") return false;", "sms provider marked unsupported as ready");
+  must(securityPolicy, "if (raw === \"0\") return false;", "STEP_UP_ENABLED=0 disables step-up");
+  must(securityPolicy, "if (raw === \"1\") return true;", "STEP_UP_ENABLED=1 enables step-up");
+  must(middleware, "STEP_UP_PROVIDER_NOT_READY", "middleware emits provider-not-ready fallback");
+  must(middleware, "isTotpStepUpEnabled()", "middleware gates on TOTP readiness");
+  must(authRoute, "providerReady", "auth totp status exposes provider readiness");
+  must(authRoute, "providerMessage", "auth totp status exposes provider message");
+  must(authRoute, "STEP_UP_PROVIDER_NOT_READY", "auth routes guard unsupported provider");
+  must(authRoute, "isTotpStepUpEnabled()", "auth routes use TOTP readiness helper");
+  must(appShell, "getStepUpProvider()", "AppShell uses shared step-up provider helper");
+  must(appShell, "isStepUpEnabled()", "AppShell uses shared step-up enabled helper");
+  must(totpCard, "getStepUpProvider()", "Totp card uses shared step-up provider helper");
+  must(totpCard, "isTotpStepUpEnabled()", "Totp card uses shared TOTP readiness helper");
+  must(stepUpWebUtil, "export function getStepUpProvider()", "web step-up util exposes provider helper");
+  must(stepUpWebUtil, "export function isStepUpEnabled()", "web step-up util exposes enabled helper");
+  must(stepUpWebUtil, "export function isTotpStepUpEnabled()", "web step-up util exposes TOTP helper");
+  must(stepUpWebUtil, "export function isSmsStepUpEnabled()", "web step-up util exposes SMS helper");
+  must(rootEnv, "STEP_UP_ENABLED=0", ".env.example defaults step-up off");
+  must(rootEnv, "STEP_UP_PROVIDER=none", ".env.example defaults provider none");
+  must(rootEnv, "STEP_UP_TOTP_ENABLED=0", ".env.example defaults TOTP off");
+  must(rootEnv, "# STEP_UP_ENABLED=1", ".env.example shows open example");
+  must(rootEnv, "# STEP_UP_PROVIDER=totp", ".env.example shows provider example");
+  must(rootEnv, "# STEP_UP_TOTP_ENABLED=1", ".env.example shows TOTP example");
+  must(webEnv, "VITE_STEP_UP_ENABLED=0", "web/.env.example defaults step-up off");
+  must(webEnv, "VITE_STEP_UP_PROVIDER=none", "web/.env.example defaults provider none");
+  must(webEnv, "VITE_STEP_UP_TOTP_ENABLED=0", "web/.env.example defaults TOTP off");
+  must(webEnv, "# VITE_STEP_UP_ENABLED=1", "web/.env.example shows open example");
+  must(webEnv, "# VITE_STEP_UP_PROVIDER=totp", "web/.env.example shows provider example");
+  must(webEnv, "# VITE_STEP_UP_TOTP_ENABLED=1", "web/.env.example shows TOTP example");
 
-  const unsetProbe = runProbe(undefined);
-  mustTruthy(unsetProbe.enabled === true, "STEP_UP_ENABLED unset defaults open");
-  mustTruthy(unsetProbe.roomRole === true, "STEP_UP_ENABLED unset keeps ROOM step-up active");
-  mustTruthy(unsetProbe.writeResult.nextCount === 0, "STEP_UP_ENABLED unset blocks protected write");
-  mustTruthy(unsetProbe.writeResult.statusCode === 403, "STEP_UP_ENABLED unset returns STEP_UP_REQUIRED on protected write");
-  mustTruthy(readStepUpErrorCode(unsetProbe.writeResult.payload) === "STEP_UP_REQUIRED", "STEP_UP_ENABLED unset keeps STEP_UP_REQUIRED payload");
+  mustNotBeTracked("backend/.env", "backend/.env is not tracked");
+  mustNotBeTracked(".env", "root .env is not tracked");
+  mustNotBeTracked("web/.env", "web/.env is not tracked");
 
-  const disabledProbe = runProbe("0");
-  mustFalsy(disabledProbe.enabled, "STEP_UP_ENABLED=0 disables step-up");
-  mustFalsy(disabledProbe.roomRole, "STEP_UP_ENABLED=0 clears ROOM step-up role");
-  mustTruthy(disabledProbe.writeResult.nextCount === 1, "STEP_UP_ENABLED=0 bypasses protected write");
-  mustTruthy(disabledProbe.writeResult.statusCode === 0, "STEP_UP_ENABLED=0 does not send step-up response");
-  mustTruthy(disabledProbe.readResult.nextCount === 1, "STEP_UP_ENABLED=0 bypasses read guard for guarded role");
+  const devBlank = runProbe({ nodeEnv: "development" });
+  mustTruthy(devBlank.provider === "none", "development blank defaults provider to none");
+  mustFalsy(devBlank.enabled, "development blank keeps step-up off");
+  mustFalsy(devBlank.roomRole, "development blank clears ROOM step-up role");
+  mustTruthy(devBlank.writeResult.nextCount === 1, "development blank bypasses protected write");
+  mustTruthy(devBlank.readResult.nextCount === 1, "development blank bypasses read guard");
 
-  const enabledProbe = runProbe("1");
-  mustTruthy(enabledProbe.enabled, "STEP_UP_ENABLED=1 enables step-up");
-  mustTruthy(enabledProbe.roomRole, "STEP_UP_ENABLED=1 keeps ROOM step-up role");
-  mustTruthy(enabledProbe.driverRole === false, "DRIVER stays outside step-up roles");
-  mustTruthy(enabledProbe.writeResult.nextCount === 0, "STEP_UP_ENABLED=1 keeps protected write guarded");
-  mustTruthy(enabledProbe.writeResult.statusCode === 403, "STEP_UP_ENABLED=1 keeps protected write blocked");
-  mustTruthy(readStepUpErrorCode(enabledProbe.writeResult.payload) === "STEP_UP_REQUIRED", "STEP_UP_ENABLED=1 keeps STEP_UP_REQUIRED payload");
+  const disabledZero = runProbe({ nodeEnv: "development", stepUpEnabled: 0, stepUpProvider: "none", stepUpTotpEnabled: 0 });
+  mustFalsy(disabledZero.enabled, "STEP_UP_ENABLED=0 disables step-up");
+  mustFalsy(disabledZero.roomRole, "STEP_UP_ENABLED=0 clears ROOM step-up role");
+  mustTruthy(disabledZero.writeResult.nextCount === 1, "STEP_UP_ENABLED=0 bypasses protected write");
+  mustTruthy(disabledZero.readResult.nextCount === 1, "STEP_UP_ENABLED=0 bypasses read guard");
+
+  const noneProvider = runProbe({ nodeEnv: "development", stepUpEnabled: 1, stepUpProvider: "none", stepUpTotpEnabled: 1 });
+  mustFalsy(noneProvider.enabled, "STEP_UP_PROVIDER=none disables step-up");
+  mustFalsy(noneProvider.roomRole, "STEP_UP_PROVIDER=none clears ROOM step-up role");
+  mustTruthy(noneProvider.writeResult.nextCount === 1, "STEP_UP_PROVIDER=none bypasses protected write");
+
+  const enabledTotp = runProbe({ nodeEnv: "development", stepUpEnabled: 1, stepUpProvider: "totp", stepUpTotpEnabled: 1 });
+  mustTruthy(enabledTotp.enabled, "STEP_UP_ENABLED=1 with TOTP enables step-up");
+  mustTruthy(enabledTotp.totpEnabled, "TOTP provider ready when enabled");
+  mustTruthy(enabledTotp.roomRole, "TOTP provider keeps ROOM step-up role");
+  mustTruthy(enabledTotp.smsEnabled === false, "TOTP provider does not mark SMS enabled");
+  mustTruthy(enabledTotp.writeResult.statusCode === 403, "TOTP provider keeps protected write guarded");
+  mustTruthy(readStepUpErrorCode(enabledTotp.writeResult.payload) === "STEP_UP_REQUIRED", "TOTP provider keeps STEP_UP_REQUIRED payload");
+
+  const enabledSms = runProbe({ nodeEnv: "development", stepUpEnabled: 1, stepUpProvider: "sms", stepUpTotpEnabled: 1 });
+  mustTruthy(enabledSms.enabled, "STEP_UP_PROVIDER=sms with enabled flag keeps step-up conceptually on");
+  mustTruthy(enabledSms.smsEnabled, "SMS provider is surfaced by helper");
+  mustFalsy(enabledSms.totpEnabled, "SMS provider does not pretend to be TOTP ready");
+  mustTruthy(enabledSms.writeResult.statusCode === 503, "SMS provider returns provider-not-ready");
+  mustTruthy(readStepUpErrorCode(enabledSms.writeResult.payload) === "STEP_UP_PROVIDER_NOT_READY", "SMS provider does not fake SMS");
+
+  const productionDefault = runProbe({ nodeEnv: "production" });
+  mustTruthy(productionDefault.provider === "totp", "production blank defaults provider to TOTP");
+  mustTruthy(productionDefault.enabled, "production blank keeps step-up open by default");
+  mustTruthy(productionDefault.totpEnabled, "production blank keeps TOTP ready by default");
+  mustTruthy(productionDefault.writeResult.statusCode === 403, "production blank keeps protected write guarded");
+  mustTruthy(readStepUpErrorCode(productionDefault.writeResult.payload) === "STEP_UP_REQUIRED", "production blank keeps STEP_UP_REQUIRED payload");
 
   console.log("=== AUTH-STEPUP-DEV-TOGGLE-01 CHECK PASS ===");
 }

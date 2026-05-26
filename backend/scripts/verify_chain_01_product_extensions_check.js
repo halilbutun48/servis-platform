@@ -111,7 +111,6 @@ function main() {
   must(pkg, '"check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js"', 'package.json exposes check:copliveaccept01');
   must(pkg, '"check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js"', 'package.json exposes check:boardingops01a');
   must(pkg, '"check:bugrouteimpactpreviewbutton01": "node backend/scripts/bug_route_impact_preview_button_01_check.js"', 'package.json exposes check:bugrouteimpactpreviewbutton01');
-  must(pkg, '"check:boardingchangerequestentry01": "node backend/scripts/boarding_change_request_entry_01_check.js"', 'package.json exposes check:boardingchangerequestentry01');
   must(pkg, '"check:uiactionwiringaudit01": "node backend/scripts/ui_action_wiring_audit_01_check.js"', 'package.json exposes check:uiactionwiringaudit01');
   must(pkg, '"check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js"', 'package.json exposes check:boardingops01b');
   must(pkg, '"check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js"', 'package.json exposes check:boardingops01c');
@@ -119,6 +118,7 @@ function main() {
   must(pkg, '"check:dynamicsavings01": "node backend/scripts/dynamic_savings_01_check.js"', 'package.json exposes check:dynamicsavings01');
   must(pkg, '"check:scriptharnessconsolidation01": "node backend/scripts/script_harness_consolidation_01_check.js"', 'package.json exposes check:scriptharnessconsolidation01');
   must(pkg, '"check:authstepupdevtoggle01": "node backend/scripts/auth_stepup_dev_toggle_01_check.js"', 'package.json exposes check:authstepupdevtoggle01');
+  must(pkg, '"check:authstepupproviderlocaldefault01": "node backend/scripts/auth_stepup_provider_local_default_01_check.js"', 'package.json exposes check:authstepupproviderlocaldefault01');
   must(pkg, '"check:docsbrandcleanup01": "node backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js"', 'package.json exposes check:docsbrandcleanup01');
   must(pkg, '"check:etasanity01"', 'package.json keeps check:etasanity01');
   must(pkg, '"check:etaosrm01"', 'package.json keeps check:etaosrm01');
@@ -206,7 +206,6 @@ function main() {
     'check:copliveaccept01',
     'check:boardingops01a',
     'check:bugrouteimpactpreviewbutton01',
-    'check:boardingchangerequestentry01',
     'check:uiactionwiringaudit01',
     'check:boardingops01b',
     'check:boardingops01c',
@@ -214,6 +213,7 @@ function main() {
     'check:dynamicsavings01',
     'check:scriptharnessconsolidation01',
     'check:authstepupdevtoggle01',
+    'check:authstepupproviderlocaldefault01',
     'check:etasanity01',
     'check:etaosrm01',
     'check:etaosrm02',
@@ -251,9 +251,9 @@ function main() {
   must(guide, 'check:qltpaybridge01', 'script guide exposes check:qltpaybridge01');
   must(guide, 'check:seferscore01', 'script guide exposes check:seferscore01');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
-  must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
-  must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
   must(guide, 'check:uiactionwiringaudit01', 'script guide exposes check:uiactionwiringaudit01');
+  must(guide, 'AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01', 'script guide mentions AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01');
+  must(guide, 'check:authstepupproviderlocaldefault01', 'script guide exposes check:authstepupproviderlocaldefault01');
   must(guide, 'check:cop03a', 'script guide exposes check:cop03a');
   must(guide, 'check:cop03afix01', 'script guide exposes check:cop03afix01');
   must(guide, 'check:cop03afix02', 'script guide exposes check:cop03afix02');

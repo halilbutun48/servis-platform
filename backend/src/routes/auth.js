@@ -10,7 +10,7 @@ import { httpError, sendErrorResponse } from "../errors/http.js";
 import { clearDriverPinFailureState, getDriverPinLockState, registerDriverPinFailure, validateNewDriverPin } from "../auth/driverAccessGuard.js";
 import { generateSecretBase32, buildOtpauthUrl, verifyTotp, normalizeTotpToken } from "../auth/totp.js";
 import { decryptSecretValue, encryptSecretValue } from "../auth/secretVault.js";
-import { getAccessTokenExpiresInForUser, isGreenpackBypassAllowed, isStepUpRole, isProductionLike } from "../auth/securityPolicy.js";
+import { getAccessTokenExpiresInForUser, getStepUpProvider, isGreenpackBypassAllowed, isProductionLike, isStepUpEnabled, isStepUpRole, isTotpStepUpEnabled } from "../auth/securityPolicy.js";
 import { loginSchema, refreshSchema, logoutSchema } from "../validators.js";
 import { ENV } from "../env.js";
 import { clearPasswordChangeRequired, isPasswordChangeRequired } from "../auth/passwordChangeRequirementStore.js";
@@ -244,7 +244,7 @@ authRouter.post("/login", async (req, res) => {
   const greenpackBypass = isGreenpackBypassAllowed(req);
 
   const loginExtra = {};
-  if (greenpackBypass && isStepUpRole(user.role)) {
+  if (greenpackBypass && isStepUpRole(user.role) && isTotpStepUpEnabled()) {
     loginExtra.stepUpUntil = Date.now() + Number(ENV.STEP_UP_TOTP_WINDOW_SEC || 43200) * 1000;
   }
   if (mustChangePassword && !greenpackBypass) loginExtra.pwdChangeOnly = true;
@@ -339,7 +339,7 @@ authRouter.post("/change-password", authRequired(), async (req, res) => {
   await clearPasswordChangeRequired(user.id);
 
   const loginExtra = {};
-  if (isGreenpackBypassAllowed(req) && isStepUpRole(updated.role)) {
+  if (isGreenpackBypassAllowed(req) && isStepUpRole(updated.role) && isTotpStepUpEnabled()) {
     loginExtra.stepUpUntil = Date.now() + Number(ENV.STEP_UP_TOTP_WINDOW_SEC || 43200) * 1000;
   }
   const token = issueAccessToken(updated, loginExtra);
@@ -500,6 +500,8 @@ authRouter.post("/parent-invite/accept", async (req, res) => {
 // Step 1.5: TOTP status/setup/enable/verify (ROOM + SUPER_ADMIN)
 authRouter.get("/totp/status", authRequired(), async (req, res) => {
   const user = req.user;
+  const provider = getStepUpProvider();
+  const providerReady = provider === "totp" ? isTotpStepUpEnabled() : false;
   const required = isStepUpRole(user.role);
   const enabled = !!(user.totpSecretBase32 && user.totpEnabledAt);
   const pending = !!user.totpPendingSecretBase32;
@@ -509,6 +511,14 @@ authRouter.get("/totp/status", authRequired(), async (req, res) => {
     required,
     enabled,
     pending,
+    provider,
+    providerReady,
+    providerMessage: provider === "sms"
+      ? "SMS doğrulama henüz bağlı değil."
+      : provider === "totp" && !providerReady
+        ? "TOTP step-up henüz bağlı değil."
+        : null,
+    stepUpEnabled: isStepUpEnabled(),
     stepUpSatisfied: enabled && Number.isFinite(stepUpUntil) && stepUpUntil >= Date.now(),
     stepUpUntil: Number.isFinite(stepUpUntil) ? stepUpUntil : 0,
     issuer: ENV.STEP_UP_TOTP_ISSUER,
@@ -518,6 +528,7 @@ authRouter.get("/totp/status", authRequired(), async (req, res) => {
 authRouter.post("/totp/setup", authRequired(), async (req, res) => {
   const user = req.user;
   if (!isStepUpRole(user.role)) return sendErrorResponse(res, httpError(403, "STEP_UP_NOT_APPLICABLE", "STEP_UP_NOT_APPLICABLE"));
+  if (!isTotpStepUpEnabled()) return sendErrorResponse(res, httpError(503, "STEP_UP_PROVIDER_NOT_READY", "TOTP step-up henüz bağlı değil."));
 
   const secretBase32 = generateSecretBase32(20);
   await prisma.user.update({
@@ -537,6 +548,7 @@ authRouter.post("/totp/setup", authRequired(), async (req, res) => {
 authRouter.post("/totp/enable", authRequired(), async (req, res) => {
   const user = req.user;
   if (!isStepUpRole(user.role)) return sendErrorResponse(res, httpError(403, "STEP_UP_NOT_APPLICABLE", "STEP_UP_NOT_APPLICABLE"));
+  if (!isTotpStepUpEnabled()) return sendErrorResponse(res, httpError(503, "STEP_UP_PROVIDER_NOT_READY", "TOTP step-up henüz bağlı değil."));
   const code = normalizeTotpToken(req.body?.code);
   if (!/^\d{6}$/.test(code)) return sendErrorResponse(res, httpError(400, "TOTP_CODE_REQUIRED", "TOTP_CODE_REQUIRED"));
 
@@ -569,6 +581,7 @@ authRouter.post("/totp/enable", authRequired(), async (req, res) => {
 authRouter.post("/totp/verify", authRequired(), async (req, res) => {
   const user = req.user;
   if (!isStepUpRole(user.role)) return sendErrorResponse(res, httpError(403, "STEP_UP_NOT_APPLICABLE", "STEP_UP_NOT_APPLICABLE"));
+  if (!isTotpStepUpEnabled()) return sendErrorResponse(res, httpError(503, "STEP_UP_PROVIDER_NOT_READY", "TOTP step-up henüz bağlı değil."));
   const code = normalizeTotpToken(req.body?.code);
   if (!/^\d{6}$/.test(code)) return sendErrorResponse(res, httpError(400, "TOTP_CODE_REQUIRED", "TOTP_CODE_REQUIRED"));
 

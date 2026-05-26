@@ -1,7 +1,7 @@
 import { verifyToken } from "./jwt.js";
 import { prisma } from "../prisma.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
-import { isGreenpackBypassAllowed, isStepUpRole } from "./securityPolicy.js";
+import { getStepUpProvider, isGreenpackBypassAllowed, isStepUpRole, isTotpStepUpEnabled } from "./securityPolicy.js";
 
 function readToken(req) {
   const header = req.headers["authorization"] || "";
@@ -112,6 +112,15 @@ export function requireStepUp(...roles) {
     if (!roles.includes(role)) return next();
 
     if (!stepUpRequiredForRole(role)) return next();
+
+    const provider = getStepUpProvider();
+    if (provider === "sms") {
+      return sendErrorResponse(res, httpError(503, "STEP_UP_PROVIDER_NOT_READY", "SMS doğrulama henüz bağlı değil."));
+    }
+
+    if (!isTotpStepUpEnabled()) {
+      return sendErrorResponse(res, httpError(503, "STEP_UP_PROVIDER_NOT_READY", "TOTP step-up henüz bağlı değil."));
+    }
 
     if (isGreenpackBypassAllowed(req)) return next();
 

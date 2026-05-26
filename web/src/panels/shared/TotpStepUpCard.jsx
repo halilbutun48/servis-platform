@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { getTotpStatus, setupTotp, enableTotp, verifyTotp } from "../../api";
 import { useSession } from "../../state/session";
+import { getStepUpProvider, isStepUpEnabled, isTotpStepUpEnabled } from "../../utils/stepUp";
 
 export default function TotpStepUpCard() {
   const { token, me, setToken } = useSession();
   const role = String(me?.role || "");
-  const isStepUpEnabled = String(import.meta.env.VITE_STEP_UP_ENABLED ?? "1").trim() !== "0";
-  const shouldShow = isStepUpEnabled && (role === "ROOM" || role === "SUPER_ADMIN" || role === "COMPANY");
+  const provider = getStepUpProvider();
+  const providerReady = provider === "totp" ? isTotpStepUpEnabled() : false;
+  const shouldShow = isStepUpEnabled() && provider !== "none" && (role === "ROOM" || role === "SUPER_ADMIN" || role === "COMPANY");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
   const [setupData, setSetupData] = useState(null);
@@ -29,6 +31,25 @@ export default function TotpStepUpCard() {
   }, [refreshStatus]);
 
   if (!token || !shouldShow) return null;
+
+  const statusProvider = String(status?.provider || provider || "");
+  const statusProviderReady = typeof status?.providerReady === "boolean" ? status.providerReady : providerReady;
+  const providerMessage = String(status?.providerMessage || "");
+  const isSmsProvider = statusProvider === "sms";
+
+  if (provider !== "none" && !statusProviderReady) {
+    return (
+      <div className="card" style={{ marginBottom: 12, borderColor: "#8a6d1f" }}>
+        <div className="title">Güvenlik — {isSmsProvider ? "SMS" : "TOTP"} Step-up</div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          {providerMessage || (isSmsProvider
+            ? "SMS doğrulama henüz bağlı değil. Bu ortamda step-up açık ama SMS provider hazır değil."
+            : "TOTP step-up henüz bağlı değil.")}
+        </div>
+      </div>
+    );
+  }
+
   if (!status?.required) return null;
 
   async function onSetup() {
@@ -78,16 +99,17 @@ export default function TotpStepUpCard() {
   const enabled = !!status?.enabled;
   const steppedUp = !!status?.stepUpSatisfied;
   const needsSetup = !enabled;
+  const providerLabel = isSmsProvider ? "SMS" : "TOTP";
 
   return (
     <div className="card" style={{ marginBottom: 12, borderColor: steppedUp ? "#1f7a1f" : "#8a6d1f" }}>
-      <div className="title">Güvenlik — TOTP Step-up</div>
+      <div className="title">Güvenlik — {providerLabel} Step-up</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {needsSetup
-          ? "Bu rol için TOTP kurulumu zorunlu. Kritik ROOM / COMPANY / SUPER_ADMIN işlemleri kurulum tamamlanmadan açılmaz."
+          ? `Bu rol için ${providerLabel} kurulumu zorunlu. Kritik ROOM / COMPANY / SUPER_ADMIN işlemleri kurulum tamamlanmadan açılmaz.`
           : steppedUp
           ? "Step-up aktif. Kritik işlemler bu oturumda açık."
-          : "TOTP kurulu ama step-up doğrulaması yapılmamış. Kritik işlemler için kod doğrulayın."}
+          : `${providerLabel} kurulu ama step-up doğrulaması yapılmamış. Kritik işlemler için kod doğrulayın.`}
       </div>
 
       {!enabled ? (

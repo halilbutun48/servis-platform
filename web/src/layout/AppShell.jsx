@@ -7,6 +7,7 @@ import TabletOpsQuickBar from "../components/TabletOpsQuickBar";
 import BrandMark from "../components/BrandMark";
 import FloatingCopilotDrawer from "../components/copilot/FloatingCopilotDrawer";
 import { BRAND_NAME } from "../config/brand.js";
+import { getStepUpProvider, isStepUpEnabled } from "../utils/stepUp";
 
 export default function AppShell({ path, children }) {
   const { me, logout } = useSession();
@@ -14,7 +15,8 @@ export default function AppShell({ path, children }) {
   const isSchool = role === "COMPANY" && me?.companyKind === "SCHOOL";
   const isOrganization = role === "COMPANY" && me?.companyKind === "ORGANIZATION";
   const isTabletOpsRole = role === "ROOM" || role === "COMPANY";
-  const isStepUpEnabled = String(import.meta.env.VITE_STEP_UP_ENABLED ?? "1").trim() !== "0";
+  const stepUpProvider = getStepUpProvider();
+  const shouldShowStepUpCard = isStepUpEnabled() && stepUpProvider !== "none";
 
   // Map and Copilot pages should be fluid (full width). Everything else is centered for readability.
   const fluidPath = String(path || "");
@@ -41,7 +43,7 @@ export default function AppShell({ path, children }) {
         </div>
         <div className="shellContent">
           <div className={isFluid ? "page page--fluid" : "page"}>
-            {isStepUpEnabled ? <TotpStepUpCard /> : null}
+            {shouldShowStepUpCard ? <TotpStepUpCard /> : null}
             <KvkkConsentGate />
             {isTabletOpsRole ? <TabletOpsQuickBar role={role} me={me} path={path} /> : null}
             {children}
