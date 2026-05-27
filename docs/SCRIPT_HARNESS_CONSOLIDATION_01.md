@@ -5,14 +5,16 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `311`
+- Toplam package script entry: `312`
 - Toplam executable tracked file: `1083`
-- Combined registry row: `1394`
-- Root/backend/web/mobile package dağılımı: root `154`, backend `649`, web `87`, mobile `201`
+- Combined registry row: `1395`
+- Root/backend/web/mobile package dağılımı: root `155`, backend `649`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `20`
+- Docs indexed: `21`
+- Public lead milestones: `PUBLIC-LANDING-01 -> LEAD-CAPTURE-01`
+- Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/LEAD_CAPTURE_01.md`
 - ACTIVE: `360`
-- ACTIVE_CORE: `120`
+- ACTIVE_CORE: `121`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `8`
@@ -32,7 +34,7 @@ Repo: `servis-platform`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
-- Eski sistem term eşleşmesi: `247`
+- Eski sistem term eşleşmesi: `246`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -42,7 +44,7 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 360 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 120 |
+| ACTIVE_CORE | 121 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -94,6 +96,7 @@ Repo: `servis-platform`
 | root:check:seferscore01 | package.json | root | node backend/scripts/sefer_score_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERSCORE-01 |  | Owner or chain unclear |  |
 | root:check:roadmaplockaimarketplace01 | package.json | root | node backend/scripts/roadmap_lock_ai_marketplace_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ROADMAPLOCKAIMARKETPLACE-01 |  | Owner or chain unclear |  |
 | root:check:publiclanding01 | package.json | root | node backend/scripts/public_landing_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PUBLICLANDING-01 |  | Breaks canonical verification chain |  |
+| root:check:leadcapture01 | package.json | root | node backend/scripts/lead_capture_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-LEADCAPTURE-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
 | root:check:marketplacefreetooperate01 | package.json | root | node backend/scripts/marketplace_free_to_operate_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-MARKETPLACEFREETOOPERATE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |

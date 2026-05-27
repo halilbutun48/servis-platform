@@ -101,6 +101,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\qlt_04_quality_review_history_check.js`
 - `node backend\scripts\docs_state_01_recent_product_closure_check.js`
 - `node backend\scripts\run_product_extensions_check_chain.js`
+- `node backend\scripts\lead_capture_01_check.js`
 - `node backend\scripts\verify_chain_01_product_extensions_check.js`
 - `node backend\scripts\ui_action_wiring_audit_01_check.js`
 
@@ -797,8 +798,14 @@ Bu bant güncel doğrulanmış üst hattır.
 ### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
 - Check script: `check:publiclanding01`
 - Komut: `node backend\scripts\public_landing_01_check.js`
-- Ana konu: SeferPakt public landing sayfasını kurumsal bir vitrin olarak açmak; lisanssız / pazaryeri / AI vizyonunu anlatmak; lisans ücreti yok, mevcut sözleşmeden pay yok ve kritik işlemler kullanıcı onayı olmadan yapılmaz sınırlarını public copy ile görünür tutmak; gerçek lead backend, üyelik, ödeme, fatura ve tahsilat akışını açmamak.
-- Not: public CTA'lar yalnızca yerel iletişim taslağı veya e-posta istemcisi yönlendirmesi üretir; route `/#/landing` public vitrindir.
+- Ana konu: SeferPakt public landing sayfasını kurumsal bir vitrin olarak açmak; lisanssız / pazaryeri / AI vizyonunu anlatmak; lisans ücreti yok, mevcut sözleşmeden pay yok ve kritik işlemler kullanıcı onayı olmadan yapılmaz sınırlarını public copy ile görünür tutmak; public CTA'ları kontrollü lead formuna bağlamak.
+- Not: route `/#/landing` public vitrindir; CTA'lar otomatik üyelik, ödeme, fatura, tahsilat veya invite göndermeden lead kaydı açar.
+
+### LEAD-CAPTURE-01 — kontrollü public lead toplama [CHECK]
+- Check script: `check:leadcapture01`
+- Komut: `node backend\scripts\lead_capture_01_check.js`
+- Ana konu: public CTA'ları kontrollü lead formuna bağlamak; demo / canlı destek / servis ihtiyacı / tedarikçi başvurusu akışlarını JSON lead kaydı olarak toplamak; KVKK, validation, honeypot ve basit rate limit ile güvenli sınır koymak; otomatik üyelik, ödeme, fatura, tahsilat ve invite göndermeyi açmamak.
+- Not: runtime JSON store standardı kullanılır; örnek lead verisi commit'e alınmaz ve Super Admin inceleme kuyruğu sonraki ONBOARDING-REVIEW-01'e bırakılır.
 
 ### AGREEMENT-SOURCE-SHIFT-LINEAGE-01 — agreement source lineage preview [CHECK]
 - Check script: `check:agreementsourceshiftlineage01`

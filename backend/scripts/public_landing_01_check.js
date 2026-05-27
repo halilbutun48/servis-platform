@@ -64,61 +64,85 @@ const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const primer = read("docs/PRIMER_SSOT.md");
 const spec = read("docs/PROJECT_SPEC_V1.md");
 const landingDoc = read("docs/PUBLIC_LANDING_01.md");
+const leadDoc = read("docs/LEAD_CAPTURE_01.md");
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
 const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
 const app = read("web/src/App.jsx");
 const landing = read("web/src/panels/public/PublicLandingPage.jsx");
 
 must(pkg, '"check:publiclanding01": "node backend/scripts/public_landing_01_check.js"', "package.json exposes check:publiclanding01");
+must(pkg, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', "package.json exposes check:leadcapture01");
 must(runner, "check:publiclanding01", "product extensions runner includes public landing check");
+must(runner, "check:leadcapture01", "product extensions runner includes lead capture check");
 must(verifyChain, '"check:publiclanding01": "node backend/scripts/public_landing_01_check.js"', "verify chain exposes public landing check");
-ordered(runner, ["check:roadmaplockaimarketplace01", "check:publiclanding01", "check:agreementsourceshiftlineage01"], "public landing chain order follows roadmap lock");
+must(verifyChain, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', "verify chain exposes lead capture check");
+ordered(
+  runner,
+  ["check:roadmaplockaimarketplace01", "check:publiclanding01", "check:leadcapture01", "check:agreementsourceshiftlineage01"],
+  "public landing chain order follows roadmap lock"
+);
 
 must(guide, "PUBLIC-LANDING-01", "script guide mentions public landing milestone");
+must(guide, "LEAD-CAPTURE-01", "script guide mentions lead capture milestone");
 must(guide, "check:publiclanding01", "script guide exposes public landing check");
+must(guide, "check:leadcapture01", "script guide exposes lead capture check");
 must(guide, "route `/#/landing` public vitrin", "script guide documents public route");
+must(guide, "node backend\\scripts\\lead_capture_01_check.js", "script guide includes lead capture command");
 
 must(primer, "PUBLIC-LANDING-01", "primer mentions public landing milestone");
+must(primer, "LEAD-CAPTURE-01", "primer mentions lead capture milestone");
 must(primer, "route `/#/landing`", "primer records public landing route");
-must(spec, "public landing / tanıtım yüzeyi", "project spec records public landing scope");
+must(primer, "kontrollü lead", "primer records controlled lead copy");
 
-must(landingDoc, "Sayfa bölümleri", "public landing doc describes page sections");
-must(landingDoc, "Public CTA sınırı", "public landing doc describes CTA boundary");
-must(landingDoc, "Lisans ücreti yok.", "public landing doc keeps license-free copy");
-must(landingDoc, "Sefer Abi AI copy", "public landing doc keeps Sefer Abi copy");
-must(landingDoc, "Out-of-scope", "public landing doc states out of scope");
+must(spec, "kontrollü lead toplama", "project spec records controlled lead capture");
+
+must(landingDoc, "Başvuru CTA alanı", "public landing doc describes CTA area");
+must(landingDoc, "kontrollü lead", "public landing doc describes controlled lead flow");
+must(landingDoc, "LEAD-CAPTURE-01", "public landing doc references lead capture milestone");
+must(landingDoc, "Başvurular ekip tarafından incelenir", "public landing doc keeps review boundary");
+must(landingDoc, "Üyelik otomatik açılmaz", "public landing doc keeps no-auto-membership boundary");
+
+must(leadDoc, "Amaç", "lead capture doc includes purpose");
+must(leadDoc, "Public CTA -> lead form akışı", "lead capture doc describes CTA flow");
+must(leadDoc, "DEMO_REQUEST", "lead capture doc lists lead types");
+must(leadDoc, "KVKK", "lead capture doc covers KVKK");
+must(leadDoc, "public-leads.json", "lead capture doc covers storage");
+must(leadDoc, "Out-of-scope", "lead capture doc states out of scope");
+must(leadDoc, "self-service signup", "lead capture doc excludes self-service signup");
 
 must(harnessCheck, "docs/PUBLIC_LANDING_01.md", "harness check source includes public landing doc");
+must(harnessCheck, "docs/LEAD_CAPTURE_01.md", "harness check source includes lead capture doc");
 must(harnessCheck, "check:publiclanding01", "harness check source includes public landing check");
+must(harnessCheck, "check:leadcapture01", "harness check source includes lead capture check");
 must(harnessCheck, "PUBLIC-LANDING-01", "harness check source includes public landing milestone");
+must(harnessCheck, "LEAD-CAPTURE-01", "harness check source includes lead capture milestone");
 
 must(harnessDoc, "public_landing_01_check.js", "harness doc includes public landing check");
+must(harnessDoc, "lead_capture_01_check.js", "harness doc includes lead capture check");
 
 must(app, 'const PublicLandingPage = lazy(() => import("./panels/public/PublicLandingPage"));', "App lazy loads public landing page");
 must(app, 'if (cleanPath === "/landing" || cleanPath === "/public/landing") return { layout: false, node: <PublicLandingPage /> };', "App routes anonymous users to public landing");
 must(app, 'return { layout: false, node: <LoginCard /> };', "App keeps anonymous login fallback");
 must(app, 'if (!token) {', "public landing stays in anonymous branch");
 
-must(landing, "SeferPakt: Servis operasyonunu pazaryeri, kanıt ve Sefer Abi ile yöneten akıllı platform", "landing hero headline");
-must(landing, "Lisans ücreti 0 TL", "landing states zero license fee");
-must(landing, "Mevcut sözleşmeden pay yok", "landing states no share from existing contracts");
-must(landing, "Readonly başarı payı", "landing mentions readonly success share");
-must(landing, "Kritik işlemde kullanıcı onayı", "landing mentions approval gate");
-must(landing, "Sefer Abi AI ne yapar?", "landing explains Sefer Abi AI");
+must(landing, "PublicLeadCaptureModal", "landing wires lead capture modal");
 must(landing, "Demo talep et", "landing exposes demo CTA");
 must(landing, "Canlı destekle görüş", "landing exposes support CTA");
 must(landing, "Servis ihtiyacımı anlat", "landing exposes need CTA");
 must(landing, "Tedarikçi olarak başvur", "landing exposes supplier CTA");
-must(landing, "E-posta istemcisini aç", "landing exposes email CTA");
-must(landing, "Giriş yap", "landing exposes login CTA");
-must(landing, "Bu sayfa otomatik lead backend açmaz.", "landing explains CTA boundary");
-must(landing, "Otomatik üyelik, ödeme, fatura, tahsilat ve signup akışı bu milestone’da kapalıdır.", "landing explains out-of-scope execution");
-must(landing, "Lisanssız modelde backend lead / üyelik / ödeme yok", "landing safety panel explains no backend lead");
-mustNot(landing, "fetch(\"/api", "landing does not call backend APIs");
-mustNot(landing, "onSubmit", "landing does not use submit handler");
-mustNot(landing, "api/leads", "landing does not expose lead backend");
-mustNot(landing, "payment/", "landing does not expose payment execution");
-mustNot(landing, "invoice/", "landing does not expose invoice execution");
-mustNot(landing, "settlement execute", "landing does not expose settlement execution");
+must(landing, "Başvurular ekip tarafından incelenir", "landing says applications are reviewed by team");
+must(landing, "Üyelik otomatik açılmaz", "landing says no automatic membership");
+must(landing, "Ödeme / fatura / tahsilat yok", "landing keeps payment boundary");
+must(landing, "Doğrulama sonrası davetli üyelik", "landing mentions invited membership boundary");
+must(landing, "Başvuru formunu aç", "landing opens lead form");
+must(landing, "Public güven sınırları", "landing shows safety boundary card");
+must(landing, "Güvenli başvuru", "landing shows safe application copy");
+must(landing, "Başvurular kontrollü lead formuna düşer", "landing explains controlled lead intake");
+mustNot(landing, "mailto:", "landing does not expose mailto");
+mustNot(landing, "E-posta istemcisini aç", "landing does not expose email client CTA");
+mustNot(landing, "activeMailto", "landing does not keep mailto helper");
+mustNot(landing, "buildMailto", "landing does not keep mailto builder");
+mustNot(landing, "Bu sayfa otomatik lead backend açmaz.", "landing no longer uses old boundary copy");
+mustNot(landing, "fetch(\"/api", "landing does not call backend APIs directly");
 
 console.log("=== PUBLIC-LANDING-01 CHECK PASS ===");

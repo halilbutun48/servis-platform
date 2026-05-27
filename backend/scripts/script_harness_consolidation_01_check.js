@@ -20,8 +20,9 @@ const selectedDocs = [
   "docs/PRIMER_SSOT.md",
   "docs/FINAL_RELEASE_EVIDENCE_M90.md",
   "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
-  // PUBLIC-LANDING-01 public vitrin docs/check coverage
+  // PUBLIC-LANDING-01 / LEAD-CAPTURE-01 public vitrin docs/check coverage
   "docs/PUBLIC_LANDING_01.md",
+  "docs/LEAD_CAPTURE_01.md",
   "docs/AGREEMENT_SOURCE_SHIFT_LINEAGE_01.md",
   "docs/BOARDING_OPS_01A_ROUTE_IMPACT_PREVIEW.md",
   "docs/BOARDING_CHANGE_REQUEST_ENTRY_01.md",
@@ -143,7 +144,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:publiclanding01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:publiclanding01", "check:leadcapture01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1146,6 +1147,8 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Root/backend/web/mobile package dağılımı: root \`${summary.byDomain.root}\`, backend \`${summary.byDomain.backend}\`, web \`${summary.byDomain.web}\`, mobile \`${summary.byDomain.mobile}\``);
   out.push(`- Tools executable dağılımı: tools \`${summary.byDomain.tools}\``);
   out.push(`- Docs indexed: \`${summary.byDomain.docs}\``);
+  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> LEAD-CAPTURE-01\``);
+  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/LEAD_CAPTURE_01.md\``);
   out.push(`- ACTIVE: \`${summary.statusCounts.ACTIVE || 0}\``);
   out.push(`- ACTIVE_CORE: \`${summary.statusCounts.ACTIVE_CORE || 0}\``);
   out.push(`- ACTIVE_WEB_LINT: \`${summary.statusCounts.ACTIVE_WEB_LINT || 0}\``);
@@ -1322,12 +1325,18 @@ function verifyDoc(docText, summary) {
     "pack_m0_m41.ps1",
     "verify:final",
     "check:product-extensions",
+    "check:publiclanding01",
+    "check:leadcapture01",
     "check:dynamicsavings01",
     "check:scriptharnessconsolidation01",
     "SCRIPT-HARNESS-CONSOLIDATION-01",
+    "PUBLIC-LANDING-01",
+    "LEAD-CAPTURE-01",
     "run_repo_check_chain.js",
     "run_product_extensions_check_chain.js",
     "verify_chain_01_product_extensions_check.js",
+    "docs/PUBLIC_LANDING_01.md",
+    "docs/LEAD_CAPTURE_01.md",
     "Duplicate / overlap groups",
     "Product coverage rows",
     "REMOVED:",

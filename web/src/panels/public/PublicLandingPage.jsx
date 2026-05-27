@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import BrandMark from "../../components/BrandMark";
+import PublicLeadCaptureModal from "../../components/public/PublicLeadCaptureModal";
 import { navigate } from "../../router";
 
 const CTA_PRESETS = [
@@ -7,76 +8,33 @@ const CTA_PRESETS = [
     key: "demo",
     label: "Demo talep et",
     title: "Demo talebi",
-    recipient: "demo@seferpakt.com",
-    subject: "SeferPakt demo talebi",
-    summary: "Ürün demosu, pazaryeri modeli ve Sefer Abi akışını görmek için kısa bir tanışma notu.",
-    note: "Bu CTA yalnızca yerel iletişim taslağını değiştirir; otomatik lead backend açmaz.",
-    body: [
-      "Merhaba,",
-      "",
-      "SeferPakt için demo görmek istiyoruz.",
-      "Lütfen ürünün public vitrinini, pazaryeri modelini ve Sefer Abi'nin karar/onay akışını anlatın.",
-      "",
-      "İlgili kurum / ekip:",
-      "-",
-      "",
-      "Not:",
-      "Bu talep public landing üzerinde otomatik kayıt açmadan iletilir.",
-    ].join("\n"),
+    leadType: "DEMO_REQUEST",
+    summary: "Ürün demosu, pazaryeri modeli ve Sefer Abi akışı için kısa bir başvuru bırakın.",
+    note: "Üyelik otomatik açılmaz; başvurunuz ekip tarafından incelenir.",
   },
   {
     key: "support",
     label: "Canlı destekle görüş",
     title: "Canlı destek talebi",
-    recipient: "destek@seferpakt.com",
-    subject: "SeferPakt canlı destek talebi",
-    summary: "Soru-cevap, kurulum ve ürün kapsamı için hızlı destek notu.",
-    note: "Bu CTA teknik destek taslağı üretir; backend tarafında kayıt oluşturmaz.",
-    body: [
-      "Merhaba,",
-      "",
-      "SeferPakt hakkında canlı destek almak istiyoruz.",
-      "Özellikle public landing, pazaryeri modeli ve AI operasyon yardımcısı akışını netleştirmek istiyoruz.",
-      "",
-      "İhtiyaç konusu:",
-      "-",
-    ].join("\n"),
+    leadType: "LIVE_SUPPORT_REQUEST",
+    summary: "Kurulum, kapsam ve kullanım soruları için kontrollü iletişim talebi bırakın.",
+    note: "Teknik destek kaydı ekip incelemesine düşer; otomatik hesap açılmaz.",
   },
   {
     key: "need",
     label: "Servis ihtiyacımı anlat",
-    title: "Servis ihtiyacı notu",
-    recipient: "merhaba@seferpakt.com",
-    subject: "SeferPakt servis ihtiyacı",
-    summary: "Personel / öğrenci servis ihtiyacını özetleyen kısa bir taslak.",
-    note: "Bu CTA ihtiyacı anlatan yerel bir taslak açar; otomatik başvuru açmaz.",
-    body: [
-      "Merhaba,",
-      "",
-      "Servis ihtiyacımızı anlatmak istiyoruz.",
-      "Personel / öğrenci listesi, durak-rotalar ve teklif süreci için Sefer Abi ile ilerlemek istiyoruz.",
-      "",
-      "Kısa özet:",
-      "-",
-    ].join("\n"),
+    title: "Servis ihtiyacı başvurusu",
+    leadType: "SERVICE_NEED",
+    summary: "Personel, öğrenci veya kurum servisi ihtiyacını güvenli şekilde paylaşın.",
+    note: "Personel / öğrenci listesi sonra paylaşılabilir; form lead olarak kaydolur.",
   },
   {
     key: "supplier",
     label: "Tedarikçi olarak başvur",
-    title: "Tedarikçi başvuru notu",
-    recipient: "tedarikci@seferpakt.com",
-    subject: "SeferPakt tedarikçi başvurusu",
-    summary: "Room / servis sağlayıcı tarafı için kapasite ve teklif hazırlık notu.",
-    note: "Bu CTA yalnızca e-posta taslağı üretir; üyelik / doğrulama backend'i bu milestone’da kapalıdır.",
-    body: [
-      "Merhaba,",
-      "",
-      "Tedarikçi olarak SeferPakt ekosistemine dahil olmak istiyoruz.",
-      "Kapasite, bölge ve kalite bilgimizi paylaşarak uygun işlere teklif vermek istiyoruz.",
-      "",
-      "Firma / oda bilgisi:",
-      "-",
-    ].join("\n"),
+    title: "Tedarikçi başvurusu",
+    leadType: "SUPPLIER_APPLICATION",
+    summary: "Araç kapasitesi ve hizmet bölgesi bilgisiyle tedarikçi başvurusu bırakın.",
+    note: "Doğrulama sonrası davetli üyelik süreci başlar; otomatik üyelik açılmaz.",
   },
 ];
 
@@ -84,7 +42,7 @@ const AUDIENCE_CARDS = [
   {
     title: "Firma / okul / kurum",
     bullets: [
-      "Liste yükleyin ve ihtiyaçları tek ekranda görün.",
+      "İhtiyacı kısa formda bırakın.",
       "Sefer Abi durak ve rota taslağını hazırlasın.",
       "Uygun tedarikçi tekliflerini kalite ve riskle karşılaştırın.",
       "Sözleşmeden vardiyaya güvenli geçişi takip edin.",
@@ -111,12 +69,12 @@ const AUDIENCE_CARDS = [
 ];
 
 const TRUST_ITEMS = [
-  "Canlı GPS / ETA güvenilirliği",
-  "Biniş değişikliği talepleri",
-  "Proof / kalite / hakediş önizleme",
-  "Source lineage / sözleşme kaynağı",
+  "Kontrollü lead kaydı",
+  "Üyelik otomatik açılmaz",
+  "Ödeme / fatura / tahsilat yok",
+  "Doğrulama sonrası davetli üyelik",
   "KVKK ve rol bazlı görünürlük",
-  "Proaktif uyarılar ve next best action",
+  "Başvurular ekip incelemesinden geçer",
 ];
 
 const FAQ = [
@@ -137,18 +95,14 @@ const FAQ = [
     a: "Hayır. Sefer Abi önerir, hazırlar ve riskleri açıklar; teklif, sözleşme, araç atama, rota uygulama, SMS/push, ödeme ve ceza gibi kritik işlemler kullanıcı onayı olmadan yapılmaz.",
   },
   {
-    q: "Tedarikçiler nasıl teklif verir?",
-    a: "Doğrulanmış tedarikçi olarak uygun işlere teklif verir, kapasite / fiyat / kalite sinyalleriyle görünür olur ve en iyi seçenekler gerekçesiyle öne çıkar.",
+    q: "Tedarikçiler nasıl ilerler?",
+    a: "Tedarikçi başvurusu bırakır, ekip kapasite ve bölge bilgisini inceler, doğrulama sonrası davetli üyelik süreci başlatılır.",
   },
   {
     q: "TOTP veya SMS güvenlik modeli nedir?",
     a: "Güvenlik adımları ortam ve politika bazlı yönetilir. Kritik işlemler her durumda onay kapılıdır; bu public sayfa otomatik güvenlik işlemi yapmaz.",
   },
 ];
-
-function buildMailto({ recipient, subject, body }) {
-  return `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
 
 function LandingCard({ title, bullets }) {
   return (
@@ -167,23 +121,23 @@ function LandingCard({ title, bullets }) {
 
 export default function PublicLandingPage() {
   const [selectedKey, setSelectedKey] = useState("demo");
-  const contactRef = useRef(null);
+  const [leadModal, setLeadModal] = useState(null);
 
   const activePreset = useMemo(() => {
     return CTA_PRESETS.find((item) => item.key === selectedKey) || CTA_PRESETS[0];
   }, [selectedKey]);
 
-  const activeMailto = useMemo(() => buildMailto(activePreset), [activePreset]);
+  function openLeadForm(preset) {
+    setSelectedKey(preset.key);
+    setLeadModal({
+      open: true,
+      leadType: preset.leadType,
+      leadTitle: preset.title,
+    });
+  }
 
-  function selectPreset(key) {
-    setSelectedKey(key);
-    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
-      window.requestAnimationFrame(() => {
-        contactRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-      return;
-    }
-    contactRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  function closeLeadForm() {
+    setLeadModal(null);
   }
 
   function openFaq() {
@@ -222,7 +176,7 @@ export default function PublicLandingPage() {
             marginBottom: 16,
           }}
         >
-          <BrandMark subtitle="Public vitrin • pazaryeri + AI operasyon platformu" />
+          <BrandMark subtitle="Public vitrin • kontrollü lead toplama" />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <button type="button" className="btn" onClick={openFaq}>
@@ -252,16 +206,16 @@ export default function PublicLandingPage() {
             <div style={{ minWidth: 0 }}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                 <span className="pill" data-status="SUCCESS">
-                  Lisans ücreti 0 TL
+                  Başvurular ekip tarafından incelenir
                 </span>
                 <span className="pill" data-status="INFO">
-                  Mevcut sözleşmeden pay yok
+                  Üyelik otomatik açılmaz
                 </span>
                 <span className="pill" data-status="INFO">
-                  Readonly başarı payı
+                  Ödeme / fatura / tahsilat yok
                 </span>
                 <span className="pill" data-status="INFO">
-                  Kritik işlemde kullanıcı onayı
+                  Davetli üyelik doğrulama sonrası
                 </span>
               </div>
 
@@ -275,8 +229,8 @@ export default function PublicLandingPage() {
               </p>
 
               <p className="panelBody" style={{ marginTop: 14, maxWidth: 900, color: "#d8e4ff" }}>
-                SeferPakt klasik abonelikli SaaS değildir. Yeni / yenilenen ve kaynak vardiya zinciri kanıtlı işlerde kaliteye
-                göre readonly başarı payı modeli vardır; mevcut sözleşmeden pay alınmaz.
+                Public CTA'lar demo, canlı destek, servis ihtiyacı ve tedarikçi başvurusu toplar. Başvurular kontrollü lead
+                formuna düşer; otomatik hesap, otomatik davet ve otomatik ödeme akışı açılmaz.
               </p>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 }}>
@@ -285,7 +239,7 @@ export default function PublicLandingPage() {
                     key={preset.key}
                     type="button"
                     className={`btn ${preset.key === activePreset.key ? "primary" : ""}`}
-                    onClick={() => selectPreset(preset.key)}
+                    onClick={() => openLeadForm(preset)}
                   >
                     {preset.label}
                   </button>
@@ -293,7 +247,7 @@ export default function PublicLandingPage() {
               </div>
 
               <div className="panelMeta" style={{ marginTop: 12 }}>
-                Bu sayfa otomatik lead backend açmaz. CTA seçimi yalnızca yerel iletişim taslağını değiştirir.
+                CTA'lar güvenli başvuru formunu açar. Ekip incelemesi olmadan üyelik, ödeme veya sözleşme başlatılmaz.
               </div>
             </div>
 
@@ -302,19 +256,19 @@ export default function PublicLandingPage() {
               <div className="panelBody" style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <div>
                   <div className="panelStatTitle">Yok</div>
-                  <div style={{ fontWeight: 800, marginTop: 4 }}>Lisanssız modelde backend lead / üyelik / ödeme yok</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Self-service üyelik</div>
                 </div>
                 <div>
                   <div className="panelStatTitle">Var</div>
-                  <div style={{ fontWeight: 800, marginTop: 4 }}>Sefer Abi ile demand-to-agreement vizyonu</div>
-                </div>
-                <div>
-                  <div className="panelStatTitle">Var</div>
-                  <div style={{ fontWeight: 800, marginTop: 4 }}>Kalite, kanıt ve source lineage odaklı görünürlük</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Kontrollü lead kaydı ve inceleme kuyruğu</div>
                 </div>
                 <div>
                   <div className="panelStatTitle">Yok</div>
-                  <div style={{ fontWeight: 800, marginTop: 4 }}>Otomatik sözleşme / ödeme / fatura / tahsilat</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Otomatik ödeme / fatura / tahsilat</div>
+                </div>
+                <div>
+                  <div className="panelStatTitle">Var</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Doğrulama sonrası davetli üyelik</div>
                 </div>
               </div>
             </aside>
@@ -331,7 +285,7 @@ export default function PublicLandingPage() {
           <div className="card" style={{ marginBottom: 0 }}>
             <div className="panelSectionTitle">Sefer Abi AI ne yapar?</div>
             <ul style={{ margin: "10px 0 0", paddingLeft: 18, display: "grid", gap: 8 }}>
-              <li className="panelBody">Personel / öğrenci listesini analiz eder.</li>
+              <li className="panelBody">Personel / öğrenci / kurum ihtiyacını analiz eder.</li>
               <li className="panelBody">Eksik adresleri ve belirsiz kayıtları yakalar.</li>
               <li className="panelBody">Durak ve rota taslağı hazırlar.</li>
               <li className="panelBody">OSRM ile km / süre etkisini çıkarır.</li>
@@ -351,7 +305,7 @@ export default function PublicLandingPage() {
             </div>
             <div className="panelBody" style={{ marginTop: 12 }}>
               Görünürlük, proof ve kalite sinyalleri public vitrinde anlatılır; gerçek write / payment / invoice süreçleri bu
-              milestone’da açılmaz.
+              milestone'da açılmaz.
             </div>
           </div>
         </section>
@@ -360,26 +314,26 @@ export default function PublicLandingPage() {
           <div className="card" style={{ marginBottom: 0 }}>
             <div className="panelSectionTitle">Nasıl çalışır?</div>
             <ol style={{ margin: "10px 0 0", paddingLeft: 20, display: "grid", gap: 8 }}>
-              <li className="panelBody">Servis ihtiyacınızı anlatın veya listeyi yükleyin.</li>
-              <li className="panelBody">Sefer Abi adresleri ve durakları hazırlasın.</li>
-              <li className="panelBody">Rota, süre ve km etkisi çıkarılsın.</li>
-              <li className="panelBody">Uygun tedarikçilerden teklif süreci hazırlansın.</li>
-              <li className="panelBody">Gelen teklifler analiz edilip gerekçelendirilsin.</li>
-              <li className="panelBody">Kullanıcı en uygun teklifi onaylasın.</li>
-              <li className="panelBody">Teklif sözleşmeye dönüşsün ve source lineage korunsun.</li>
-              <li className="panelBody">Sözleşmeden 7 günlük rolling vardiyalar üretilebilsin.</li>
+              <li className="panelBody">CTA'yı seçin ve başvuru formunu açın.</li>
+              <li className="panelBody">Ad, iletişim bilgisi, rol ve ihtiyacı doldurun.</li>
+              <li className="panelBody">KVKK onayını verin.</li>
+              <li className="panelBody">Başvuru ekip incelemesine düşsün.</li>
+              <li className="panelBody">Uygun görülürse sizinle iletişime geçilsin.</li>
             </ol>
           </div>
 
           <div className="card" style={{ marginBottom: 0 }}>
-            <div className="panelSectionTitle">Güvenli pazaryeri</div>
+            <div className="panelSectionTitle">Güvenli başvuru</div>
             <ul style={{ margin: "10px 0 0", paddingLeft: 18, display: "grid", gap: 8 }}>
-              <li className="panelBody">Kontrollü üyelik ve doğrulanmış tedarikçi yaklaşımı</li>
-              <li className="panelBody">Kaliteye göre görünürlük ve kıyaslama</li>
-              <li className="panelBody">Mevcut sözleşmelerin korunması</li>
-              <li className="panelBody">Yeni / yenilenen SeferPakt kaynaklı işlerde readonly başarı payı</li>
-              <li className="panelBody">İyi hizmet veren daha az öder ve daha çok görünür olur</li>
+              <li className="panelBody">Kontrollü lead kaydı ve review kuyruğu</li>
+              <li className="panelBody">KVKK onayı olmadan submit yok</li>
+              <li className="panelBody">Self-service üyelik ve otomatik hesap açma yok</li>
+              <li className="panelBody">Ödeme, fatura, tahsilat ve settlement yok</li>
+              <li className="panelBody">Davetli üyelik yalnızca doğrulama sonrası</li>
             </ul>
+            <button type="button" className="btn primary" style={{ marginTop: 14 }} onClick={() => openLeadForm(activePreset)}>
+              Başvuru formunu aç
+            </button>
           </div>
         </section>
 
@@ -397,54 +351,49 @@ export default function PublicLandingPage() {
           </div>
         </section>
 
-        <section ref={contactRef} id="contact" className="card" style={{ marginBottom: 12 }}>
+        <section id="contact" className="card" style={{ marginBottom: 12 }}>
           <div className="panelSectionTitle">{activePreset.title}</div>
           <div className="panelSectionSubtitle" style={{ marginTop: 6 }}>
             {activePreset.summary}
           </div>
 
           <div className="grid landingContactGrid" style={{ marginTop: 12 }}>
-            <textarea
-              readOnly
-              value={activePreset.body}
-              rows={10}
-              aria-label={`${activePreset.label} iletişim taslağı`}
-              style={{
-                width: "100%",
-                minHeight: 320,
-                resize: "vertical",
-                background: "#0c1423",
-                color: "#e7eefc",
-                border: "1px solid #243654",
-                borderRadius: 12,
-                padding: 14,
-                font: "inherit",
-                lineHeight: 1.6,
-              }}
-            />
+            <div className="card" style={{ marginBottom: 0, background: "rgba(10,16,28,.94)" }}>
+              <div className="panelSectionTitle">Bu başvuru nasıl ilerler?</div>
+              <ol style={{ margin: "10px 0 0", paddingLeft: 20, display: "grid", gap: 8 }}>
+                <li className="panelBody">Formu güvenli şekilde doldurun.</li>
+                <li className="panelBody">KVKK onayı verin.</li>
+                <li className="panelBody">Başvuru ekip inceleme kuyruğuna düşsün.</li>
+                <li className="panelBody">Uygun görülürse sizinle iletişime geçilsin.</li>
+              </ol>
+              <div className="panelMeta" style={{ marginTop: 12 }}>
+                {activePreset.note}
+              </div>
+            </div>
 
             <div className="card" style={{ marginBottom: 0, background: "rgba(10,16,28,.94)" }}>
-              <div className="panelSectionTitle">İletişim kanalı</div>
-              <div className="panelBody" style={{ marginTop: 10 }}>
-                Seçtiğiniz CTA, public landing üzerinde yalnızca yerel taslağı değiştirir. Sunucuya lead kaydı açmaz.
+              <div className="panelSectionTitle">Güvenli sınır</div>
+              <div className="panelBody" style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                <div>
+                  <div className="panelStatTitle">Yok</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Otomatik üyelik / hesap açma</div>
+                </div>
+                <div>
+                  <div className="panelStatTitle">Yok</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Ödeme / fatura / tahsilat akışı</div>
+                </div>
+                <div>
+                  <div className="panelStatTitle">Yok</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Otomatik davet maili / SMS</div>
+                </div>
+                <div>
+                  <div className="panelStatTitle">Var</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Ekip incelemesi ve kontrollü dönüş</div>
+                </div>
               </div>
-
-              <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-                <a
-                  className="btn primary"
-                  href={activeMailto}
-                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
-                >
-                  E-posta istemcisini aç
-                </a>
-                <button type="button" className="btn" onClick={() => navigate("/")}>
-                  Giriş yap
-                </button>
-              </div>
-
-              <div className="panelMeta" style={{ marginTop: 12 }}>
-                Otomatik üyelik, ödeme, fatura, tahsilat ve signup akışı bu milestone’da kapalıdır.
-              </div>
+              <button type="button" className="btn primary" style={{ marginTop: 14 }} onClick={() => openLeadForm(activePreset)}>
+                Bu başvuru türünü aç
+              </button>
             </div>
           </div>
         </section>
@@ -456,10 +405,18 @@ export default function PublicLandingPage() {
             daha kontrollü yönetme vitrini.
           </div>
           <div className="panelMeta" style={{ marginTop: 10 }}>
-            Mevcut SeferPakt web projesinin public route'u: <code>/landing</code> • Authenticated app akışı ve operasyon panelleri korunur.
+            Mevcut SeferPakt web projesinin public route'u: <code>/landing</code> • Authenticated app akışı ve operasyon
+            panelleri korunur.
           </div>
         </footer>
       </div>
+
+      <PublicLeadCaptureModal
+        open={Boolean(leadModal?.open)}
+        leadType={leadModal?.leadType || activePreset.leadType}
+        leadTitle={leadModal?.leadTitle || activePreset.title}
+        onClose={closeLeadForm}
+      />
     </div>
   );
 }

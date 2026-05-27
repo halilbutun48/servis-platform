@@ -17,7 +17,8 @@ Bu primer yaşayan hattın resmi özetidir.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
 - Repo check chain sonucu: `PASS 21 / FAIL 0`; selected milestone static set: `PASS 92 / FAIL 0 / SKIP 78`.
 - `ROADMAP-LOCK-AI-MARKETPLACE-01` docs-only roadmap kilidi alınmıştır; Sefer Abi ürünün ana farkıdır ve runtime davranışı değiştirilmeden yol haritası docs üzerinden sabitlenir.
-- `PUBLIC-LANDING-01` public vitrin / tanıtım yüzeyi açılmıştır; route `/#/landing` üzerinden çalışır ve otomatik lead / üyelik / ödeme backend'i açmaz.
+- `PUBLIC-LANDING-01` public vitrin / tanıtım yüzeyi açılmıştır; route `/#/landing` üzerinden çalışır ve public CTA'lar kontrollü lead formuna bağlanır.
+- `LEAD-CAPTURE-01` kontrollü public lead toplama akışını açar; otomatik üyelik, ödeme ve davet gönderimi kapalı kalır.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

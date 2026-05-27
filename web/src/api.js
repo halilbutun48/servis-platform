@@ -73,6 +73,13 @@ api.post = (path, body, opts = {}) => api(path, { ...opts, method: "POST", body 
 api.put = (path, body, opts = {}) => api(path, { ...opts, method: "PUT", body });
 api.del = (path, opts = {}) => api(path, { ...opts, method: "DELETE" });
 
+export async function submitPublicLead(payload = {}) {
+  return api("/api/public/leads", {
+    method: "POST",
+    body: payload,
+  });
+}
+
 export async function reportNoShow({ token, childId = null, reason = "Bugün gelmiyorum", durationDays = null } = {}) {
   return api("/api/penalties/self/no-show", {
     method: "POST",

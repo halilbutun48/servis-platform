@@ -30,6 +30,7 @@
     "check:seferscore01": "node backend/scripts/sefer_score_01_check.js",
     "check:roadmaplockaimarketplace01": "node backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
     "check:publiclanding01": "node backend/scripts/public_landing_01_check.js",
+    "check:leadcapture01": "node backend/scripts/lead_capture_01_check.js",
     "check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js",
     "check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js",
     "check:mobiletext01": "npm --prefix mobile run check:mobiletext01",

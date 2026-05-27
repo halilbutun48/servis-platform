@@ -77,6 +77,7 @@ function main() {
   must(pkg, '"check:seferscore01": "node backend/scripts/sefer_score_01_check.js"', 'package.json exposes check:seferscore01');
   must(pkg, '"check:roadmaplockaimarketplace01": "node backend/scripts/roadmap_lock_ai_marketplace_01_check.js"', 'package.json exposes check:roadmaplockaimarketplace01');
   must(pkg, '"check:publiclanding01": "node backend/scripts/public_landing_01_check.js"', 'package.json exposes check:publiclanding01');
+  must(pkg, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', 'package.json exposes check:leadcapture01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
@@ -167,6 +168,7 @@ function main() {
     'check:seferscore01',
     'check:roadmaplockaimarketplace01',
     'check:publiclanding01',
+    'check:leadcapture01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
     'check:pay01e',

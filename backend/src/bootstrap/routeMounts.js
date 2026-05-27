@@ -33,6 +33,7 @@ export function mountCoreRoutes(app, routes, io) {
     schoolParentInvitesRouter,
     personelAccessRouter,
     publicPersonelInviteRouter,
+    publicLeadsRouter,
     companiesRouter,
     roomsRouter,
     routeTemplatesRouter,
@@ -51,6 +52,7 @@ export function mountCoreRoutes(app, routes, io) {
   // Public routes
   app.use("/api/auth", authStep2Router);
   app.use("/api/auth", authRouter);
+  app.use("/api/public/leads", resolveRouterMount(publicLeadsRouter));
   app.use("/api/public/passenger-live", resolveRouterMount(publicPassengerLiveRouter));
   app.use("/api/public/personel-live", resolveRouterMount(publicPassengerLiveRouter));
 

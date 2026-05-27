@@ -15,6 +15,7 @@ const steps = [
   'check:seferscore01',
   'check:roadmaplockaimarketplace01',
   'check:publiclanding01',
+  'check:leadcapture01',
   'check:agreementsourceshiftlineage01',
   'check:marketplacefreetooperate01',
   'check:pay01e',
