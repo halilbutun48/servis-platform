@@ -81,7 +81,7 @@ function groupRoutes(routes) {
     ["Parent/Veli", (route) => route === "/parent" || route.startsWith("/parent/")],
     ["Personel", (route) => route === "/personel" || route.startsWith("/personel/")],
     ["Shared/System", (route) => route.startsWith("/shared/")],
-    ["Utility/Public/Auth", (route) => route === "/auth/change-password" || route === "/accept-parent-invite" || route.startsWith("/public/")],
+    ["Utility/Public/Auth", (route) => route === "/auth/change-password" || route === "/accept-parent-invite" || route === "/landing" || route.startsWith("/public/")],
   ];
   return Object.fromEntries(groups.map(([label, predicate]) => [label, routes.filter(predicate)]));
 }
@@ -99,19 +99,19 @@ function main() {
   mustContains(audit, "4) Her panel için önerilen yapı", "audit has per-panel structure recommendation");
   mustContains(audit, "5) İlk düzeltilecek 5 panel önerisi", "audit has first five recommendation");
   mustContains(audit, "6) Sonraya bırakılacak paneller", "audit has deferred panel section");
-  mustContains(audit, "112", "audit states total panel-related JSX file count");
-  mustContains(audit, "59", "audit states route-backed screen component count");
-  mustContains(audit, "94", "audit states route surface count");
-  mustContains(audit, "95", "audit states unique route literal count");
+  mustContains(audit, "113", "audit states total panel-related JSX file count");
+  mustContains(audit, "60", "audit states route-backed screen component count");
+  mustContains(audit, "96", "audit states route surface count");
+  mustContains(audit, "97", "audit states unique route literal count");
 
   const app = read("web/src/App.jsx");
   const routeLiterals = extractRouteLiterals(app);
   const screenImports = extractScreenImports(app);
   const panelFiles = walk(path.join(root, "web/src/panels"));
-  must(panelFiles.length === 112, "panel-related JSX count matches audit");
-  must(screenImports.length === 59, "route-backed screen component count matches audit");
-  must(routeLiterals.length === 95, "unique route literal count matches audit");
-  must(routeLiterals.filter((route) => route !== "/").length === 94, "route surface count excluding root matches audit");
+  must(panelFiles.length === 113, "panel-related JSX count matches audit");
+  must(screenImports.length === 60, "route-backed screen component count matches audit");
+  must(routeLiterals.length === 97, "unique route literal count matches audit");
+  must(routeLiterals.filter((route) => route !== "/").length === 96, "route surface count excluding root matches audit");
 
   const grouped = groupRoutes(routeLiterals.filter((route) => route !== "/"));
   const expectedCounts = {
@@ -124,7 +124,7 @@ function main() {
     "Parent/Veli": 3,
     "Personel": 3,
     "Shared/System": 4,
-    "Utility/Public/Auth": 4,
+    "Utility/Public/Auth": 6,
   };
   for (const [label, expected] of Object.entries(expectedCounts)) {
     must(grouped[label].length === expected, `${label} route count matches audit`);
@@ -140,7 +140,7 @@ function main() {
     "Parent / Veli (3)",
     "Personel (3)",
     "Shared / System (4)",
-    "Utility / Public / Auth (4)",
+    "Utility / Public / Auth (6)",
   ];
   for (const heading of roleHeadings) {
     mustContains(audit, heading, `audit includes ${heading}`);
@@ -155,6 +155,7 @@ function main() {
     "/parent/live",
     "/personel/live",
     "/shared/kvkk",
+    "/landing",
     "/public/passenger-live",
   ];
   for (const route of requiredRoutes) {

@@ -793,6 +793,12 @@ Bu bant güncel doğrulanmış üst hattır.
   - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
 - Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> LEAD-CAPTURE-01 -> ... -> RELEASE-CANDIDATE-01`
 
+### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
+- Check script: `check:publiclanding01`
+- Komut: `node backend\scripts\public_landing_01_check.js`
+- Ana konu: SeferPakt public landing sayfasını kurumsal bir vitrin olarak açmak; lisanssız / pazaryeri / AI vizyonunu anlatmak; lisans ücreti yok, mevcut sözleşmeden pay yok ve kritik işlemler kullanıcı onayı olmadan yapılmaz sınırlarını public copy ile görünür tutmak; gerçek lead backend, üyelik, ödeme, fatura ve tahsilat akışını açmamak.
+- Not: public CTA'lar yalnızca yerel iletişim taslağı veya e-posta istemcisi yönlendirmesi üretir; route `/#/landing` public vitrindir.
+
 ### AGREEMENT-SOURCE-SHIFT-LINEAGE-01 — agreement source lineage preview [CHECK]
 - Check script: `check:agreementsourceshiftlineage01`
 - Komut: `node backend\scripts\agreement_source_shift_lineage_01_check.js`

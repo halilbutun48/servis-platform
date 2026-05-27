@@ -15,9 +15,9 @@ Tarama kapsamı:
 - `web/src/App.jsx` route/menu bağlantıları
 
 Özet envanter:
-  - `112` panel-related JSX dosyası: `web/src/panels/**/*.jsx`
-- `59` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
-- `94` gerçek route surface + `/` root redirect ile `95` unique route literal
+  - `113` panel-related JSX dosyası: `web/src/panels/**/*.jsx`
+- `60` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
+- `96` gerçek route surface + `/` root redirect ile `97` unique route literal
 
 ### Super Admin (17)
 - `/superadmin`
@@ -127,11 +127,13 @@ Tarama kapsamı:
 - `/shared/feedback`
 - `/shared/kvkk`
 
-### Utility / Public / Auth (4)
+### Utility / Public / Auth (6)
 - `/auth/change-password`
 - `/accept-parent-invite`
 - `/public/passenger-live`
 - `/public/personel-live`
+- `/public/landing`
+- `/landing`
 
 ## 2) Uzun / karmaşık / aşağı scroll riski olan paneller
 

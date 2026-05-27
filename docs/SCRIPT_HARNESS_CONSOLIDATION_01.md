@@ -5,14 +5,14 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `309`
-- Toplam executable tracked file: `1081`
-- Combined registry row: `1390`
-- Root/backend/web/mobile package dağılımı: root `152`, backend `647`, web `87`, mobile `201`
+- Toplam package script entry: `310`
+- Toplam executable tracked file: `1082`
+- Combined registry row: `1392`
+- Root/backend/web/mobile package dağılımı: root `153`, backend `647`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `19`
+- Docs indexed: `20`
 - ACTIVE: `360`
-- ACTIVE_CORE: `119`
+- ACTIVE_CORE: `120`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `8`
@@ -32,7 +32,7 @@ Repo: `servis-platform`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
-- Eski sistem term eşleşmesi: `244`
+- Eski sistem term eşleşmesi: `245`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -42,7 +42,7 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 360 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 119 |
+| ACTIVE_CORE | 120 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -93,6 +93,7 @@ Repo: `servis-platform`
 | root:check:qltpaybridge01 | package.json | root | node backend/scripts/qlt_pay_bridge_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-QLTPAYBRIDGE-01 |  | Owner or chain unclear |  |
 | root:check:seferscore01 | package.json | root | node backend/scripts/sefer_score_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERSCORE-01 |  | Owner or chain unclear |  |
 | root:check:roadmaplockaimarketplace01 | package.json | root | node backend/scripts/roadmap_lock_ai_marketplace_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ROADMAPLOCKAIMARKETPLACE-01 |  | Owner or chain unclear |  |
+| root:check:publiclanding01 | package.json | root | node backend/scripts/public_landing_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PUBLICLANDING-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
 | root:check:marketplacefreetooperate01 | package.json | root | node backend/scripts/marketplace_free_to_operate_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-MARKETPLACEFREETOOPERATE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
@@ -1872,4 +1873,3 @@ Repo: `servis-platform`
 - Bu doküman repo harness envanterini tek yerde toplar.
 - Safe cleanup bu turda yalnızca saf alias wrapper dosyalarında yapıldı.
 - Legacy alias girişleri docs ve chain referansları nedeniyle korunuyor.
-

@@ -50,6 +50,7 @@ const MyRidePanel = lazy(() => import("./panels/personel/MyRidePanel"));
 
 // PARENT
 const ParentLivePanel = lazy(() => import("./panels/parent/LivePanel"));
+const PublicLandingPage = lazy(() => import("./panels/public/PublicLandingPage"));
 const SchoolParentInvitePanel = lazy(() => import("./panels/school/ParentInvitePanel"));
 const AcceptParentInvitePanel = lazy(() => import("./panels/public/AcceptParentInvitePanel"));
 const PassengerLivePanel = lazy(() => import("./panels/public/PassengerLivePanel"));
@@ -175,6 +176,7 @@ export default function App() {
 
   const view = useMemo(() => {
     if (!token) {
+      if (cleanPath === "/landing" || cleanPath === "/public/landing") return { layout: false, node: <PublicLandingPage /> };
       if (cleanPath === "/accept-parent-invite") return { layout: false, node: <AcceptParentInvitePanel path={path} /> };
       if (cleanPath === "/public/passenger-live" || cleanPath === "/public/personel-live") return { layout: false, node: <PassengerLivePanel path={path} /> };
       return { layout: false, node: <LoginCard /> };

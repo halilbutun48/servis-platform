@@ -106,6 +106,7 @@ Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, oper
 ## 7. V1 Kapsamı
 
 ### 7.1 Ticari / Pazaryeri Yetkinlikleri
+- public landing / tanıtım yüzeyi (otomatik lead backend, üyelik veya ödeme olmadan)
 - talep oluşturma
 - teklif yaşam döngüsü
 - pazarlık / karşı teklif zemini

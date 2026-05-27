@@ -97,6 +97,21 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
 
+.landingSplitGrid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+}
+
+.landingContactGrid {
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+}
+
+@media (max-width: 900px) {
+  .landingSplitGrid,
+  .landingContactGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .panelWorkspaceWide {
   width: min(100%, clamp(1280px, 94vw, 1600px));
   margin: 0 auto;
