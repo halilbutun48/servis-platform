@@ -773,6 +773,26 @@ Bu bant güncel doğrulanmış üst hattır.
 - Ana konu: QLT-PAY-BRIDGE-01’den gelen kalite/kanıt/hakediş sinyallerini tedarikçi bazlı readonly SeferPuanı önizlemesine çevirmek; ödeme, ceza, teklif sıralaması, komisyon, platform fee ve settlement execute açmamak.
 - Not: yalnızca preview/fallback kalır; SeferPuanı için açıklanabilir sinyal zeminini hazırlar.
 
+### ROADMAP-LOCK-AI-MARKETPLACE-01 — AI marketplace / Sefer Abi roadmap lock [DOCS]
+- Check script: `check:roadmaplockaimarketplace01`
+- Komut: `node backend\scripts\roadmap_lock_ai_marketplace_01_check.js`
+- Ana konu: Sefer Abi rol/task/voice/proactive omurgasını docs-only olarak sabitlemek; demand-to-agreement yolunu ve locked roadmap order'ı tek canonical kaynakta yaşatmak; runtime behavior değiştirmemek.
+- Not: completed milestones listesi ve locked roadmap order, primer / project spec / copilot roadmap docs ile birlikte okunur.
+- Referans dokümanlar:
+  - `ROADMAP-LOCK-AI-MARKETPLACE-01` -> `docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md`
+  - `COPILOT-ROLE-TASK-MATRIX-01` -> `docs/COPILOT_ROLE_TASK_MATRIX_01.md`
+  - `COPILOT-AI-ACTION-STRATEGY-01` -> `docs/COPILOT_AI_ACTION_STRATEGY_01.md`
+  - `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` -> `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
+  - `VOICE-COPILOT-ROLE-ASSISTANT-01` -> `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
+  - `PROACTIVE-COPILOT-NEXT-BEST-ACTION-01` -> `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
+  - `docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md`
+  - `docs/COPILOT_ROLE_TASK_MATRIX_01.md`
+  - `docs/COPILOT_AI_ACTION_STRATEGY_01.md`
+  - `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
+  - `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
+  - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
+- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> LEAD-CAPTURE-01 -> ... -> RELEASE-CANDIDATE-01`
+
 ### AGREEMENT-SOURCE-SHIFT-LINEAGE-01 — agreement source lineage preview [CHECK]
 - Check script: `check:agreementsourceshiftlineage01`
 - Komut: `node backend\scripts\agreement_source_shift_lineage_01_check.js`

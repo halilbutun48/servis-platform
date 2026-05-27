@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-05-26
+Tarih: 2026-05-27
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `308`
-- Toplam executable tracked file: `1078`
-- Combined registry row: `1386`
-- Root/backend/web/mobile package dağılımı: root `151`, backend `644`, web `87`, mobile `201`
+- Toplam package script entry: `309`
+- Toplam executable tracked file: `1081`
+- Combined registry row: `1390`
+- Root/backend/web/mobile package dağılımı: root `152`, backend `647`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `19`
 - ACTIVE: `360`
@@ -28,7 +28,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `492`
+- NEEDS_REVIEW: `496`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
@@ -49,7 +49,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 492 |
+| NEEDS_REVIEW | 496 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -92,6 +92,7 @@ Repo: `servis-platform`
 | root:check:paysafe01 | package.json | root | node backend/scripts/pay_safe_01_payment_write_gate_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PAYSAFE-01 |  | Breaks canonical verification chain |  |
 | root:check:qltpaybridge01 | package.json | root | node backend/scripts/qlt_pay_bridge_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-QLTPAYBRIDGE-01 |  | Owner or chain unclear |  |
 | root:check:seferscore01 | package.json | root | node backend/scripts/sefer_score_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERSCORE-01 |  | Owner or chain unclear |  |
+| root:check:roadmaplockaimarketplace01 | package.json | root | node backend/scripts/roadmap_lock_ai_marketplace_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ROADMAPLOCKAIMARKETPLACE-01 |  | Owner or chain unclear |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
 | root:check:marketplacefreetooperate01 | package.json | root | node backend/scripts/marketplace_free_to_operate_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-MARKETPLACEFREETOOPERATE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
@@ -299,6 +300,7 @@ Repo: `servis-platform`
 | _repoContractState.js | backend/scripts/_repoContractState.js | backend |  | helper | ACTIVE |  | REPO-CONTRACT-STATE |  | Owner or chain unclear | internal helper |
 | _static_milestone_check.js | backend/scripts/_static_milestone_check.js | backend |  | helper | ACTIVE |  | STATIC-MILESTONE-CHECK |  | Owner or chain unclear | internal helper |
 | _totp_harness.js | backend/scripts/_totp_harness.js | backend |  | helper | ACTIVE |  | TOTP-HARNESS |  | Owner or chain unclear | internal helper |
+| agreement_source_shift_lineage_01_check.js | backend/scripts/agreement_source_shift_lineage_01_check.js | backend | root:check:agreementsourceshiftlineage01 | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT-LINEAGE-01-CHECK |  | Owner or chain unclear |  |
 | audit_logs_session_hotfix_check.mjs | backend/scripts/audit_logs_session_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | AUDIT-LOGS-SESSION-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_dev_toggle_01_check.js | backend/scripts/auth_stepup_dev_toggle_01_check.js | backend | root:check:authstepupdevtoggle01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-DEV-TOGGLE-01-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_provider_local_default_01_check.js | backend/scripts/auth_stepup_provider_local_default_01_check.js | backend | root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01-CHECK |  | Owner or chain unclear |  |
@@ -577,6 +579,7 @@ Repo: `servis-platform`
 | repo_audit.js | backend/scripts/repo_audit.js | backend | root:audit:repo | verify:repo | ACTIVE_CORE |  | REPO-AUDIT |  | Owner or chain unclear | canonical runner |
 | repo_deep_audit.js | backend/scripts/repo_deep_audit.js | backend |  | review | NEEDS_REVIEW |  | REPO-DEEP-AUDIT |  | Owner or chain unclear |  |
 | repo_js_syntax_scan.js | backend/scripts/repo_js_syntax_scan.js | backend |  | review | NEEDS_REVIEW |  | REPO-JS-SYNTAX-SCAN |  | Owner or chain unclear |  |
+| roadmap_lock_ai_marketplace_01_check.js | backend/scripts/roadmap_lock_ai_marketplace_01_check.js | backend | root:check:roadmaplockaimarketplace01 | review | NEEDS_REVIEW |  | ROADMAP-LOCK-AI-MARKETPLACE-01-CHECK |  | Owner or chain unclear |  |
 | route_change_final_01_check.js | backend/scripts/route_change_final_01_check.js | backend | root:check:routechangefinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | run_backend_lint.js | backend/scripts/run_backend_lint.js | backend | backend:lint | backend-lint | ACTIVE_CORE |  | RUN-BACKEND-LINT |  | Owner or chain unclear | canonical runner |
 | run_m0_latest.js | backend/scripts/run_m0_latest.js | backend | backend:m91:milestones, backend:milestones:static, root:verify:milestones, root:verify:milestones:live | verify:repo | ACTIVE_CORE |  | RUN-M-0-LATEST |  | Owner or chain unclear | canonical runner |
@@ -760,7 +763,7 @@ Repo: `servis-platform`
 | agreementRouteRefreshRouter.js | backend/src/routes/agreementRouteRefreshRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-ROUTER |  | Owner or chain unclear |  |
 | agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
 | agreementsHelpers.js | backend/src/routes/agreementsHelpers.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENTS-HELPERS |  | Owner or chain unclear |  |
-| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:cop03b, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
+| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:cop03b, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
 | auth.js | backend/src/routes/auth.js | backend | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
 | auth_step2.js | backend/src/routes/auth_step2.js | backend |  | review | NEEDS_REVIEW |  | AUTH-STEP-2 |  | Owner or chain unclear |  |
 | availability.js | backend/src/routes/availability.js | backend | mobile:check:m96a | review | NEEDS_REVIEW |  | AVAILABILITY |  | Owner or chain unclear |  |
@@ -828,6 +831,7 @@ Repo: `servis-platform`
 | agreementRouteRefreshStore.js | backend/src/services/agreementRouteRefreshStore.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-STORE |  | Owner or chain unclear |  |
 | agreementShiftStats.js | backend/src/services/agreementShiftStats.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SHIFT-STATS |  | Owner or chain unclear |  |
 | agreementSlots.js | backend/src/services/agreementSlots.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SLOTS |  | Owner or chain unclear |  |
+| agreementSourceLineageService.js | backend/src/services/agreementSourceLineageService.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-LINEAGE-SERVICE |  | Owner or chain unclear |  |
 | agreementSourceShift.js | backend/src/services/agreementSourceShift.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT |  | Owner or chain unclear |  |
 | agreementSourceShiftGate.js | backend/src/services/agreementSourceShiftGate.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT-GATE |  | Owner or chain unclear |  |
 | boardingChangeApplication.js | backend/src/services/boardingChangeApplication.js | backend |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-APPLICATION |  | Owner or chain unclear |  |

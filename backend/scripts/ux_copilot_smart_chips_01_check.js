@@ -188,10 +188,10 @@ const companyAgreements = buildCopilotStarterChips({
   },
 });
 assertExactChips(companyAgreements, [
-  'Bugün vardiya üretildi mi?',
-  'Üretilen vardiyaları göster',
-  'Sözleşme üretim durumunu açıkla',
-  'Son üretilen vardiya hangisi?',
+  'Lisans ücreti var mı?',
+  'Bu sözleşmeden SeferPakt pay alacak mı?',
+  'Mevcut sözleşmeden pay alınır mı?',
+  'Başarı payı neden 0 görünüyor?',
 ], 'company agreements starter chips');
 assertNoForbiddenVisibleTerms(companyAgreements, 'company agreements starter chips');
 

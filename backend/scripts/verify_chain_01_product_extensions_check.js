@@ -75,6 +75,7 @@ function main() {
   must(pkg, '"check:pay01e"', 'package.json keeps check:pay01e');
   must(pkg, '"check:qltpaybridge01": "node backend/scripts/qlt_pay_bridge_01_check.js"', 'package.json exposes check:qltpaybridge01');
   must(pkg, '"check:seferscore01": "node backend/scripts/sefer_score_01_check.js"', 'package.json exposes check:seferscore01');
+  must(pkg, '"check:roadmaplockaimarketplace01": "node backend/scripts/roadmap_lock_ai_marketplace_01_check.js"', 'package.json exposes check:roadmaplockaimarketplace01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
@@ -162,6 +163,7 @@ function main() {
     'check:qlt04b',
     'check:qltpaybridge01',
     'check:seferscore01',
+    'check:roadmaplockaimarketplace01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
     'check:pay01e',

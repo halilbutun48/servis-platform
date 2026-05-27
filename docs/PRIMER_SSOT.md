@@ -16,6 +16,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Refresh rotasyonu fail-closed; telematics vendor webhook HMAC + timestamp + replay guard ile korunur; `x-greenpack` sadece explicit local-test override olarak kalır.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
 - Repo check chain sonucu: `PASS 21 / FAIL 0`; selected milestone static set: `PASS 92 / FAIL 0 / SKIP 78`.
+- `ROADMAP-LOCK-AI-MARKETPLACE-01` docs-only roadmap kilidi alınmıştır; Sefer Abi ürünün ana farkıdır ve runtime davranışı değiştirilmeden yol haritası docs üzerinden sabitlenir.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
@@ -78,6 +79,8 @@ Bu primer yaşayan hattın resmi özetidir.
 - `tools\pack_living.ps1` korunur; ancak compatibility / geniş prova hattıdır ve birincil resmi giriş değildir.
 - Wrapper/alias politikası ve hedef klasör düzeni için repo içi kanonik referans: `docs/HEDEF_KLASORLEME_VE_TEST_SIRASI_V1.md`.
 - Bu Tur 1 hizalamasında ürün koduna dokunulmaz; yalnız docs/tools anlatımı ve giriş düzeni netleştirilir.
+- Sefer Abi ürünün ayırt edici AI katmanıdır; rol bazlı, sesli, proaktif ve onay-kapılı çalışır.
+- Demand-to-Agreement ve AI marketplace omurgası docs-only roadmap lock ile sabitlenir; kritik write işlemler kullanıcı onayı olmadan yapılmaz.
 
 ## Güncel yaşayan sıra
 - `M80` — final sert kabul ve yük güveni

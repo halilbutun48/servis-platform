@@ -13,6 +13,7 @@ const steps = [
   'check:qlt04b',
   'check:qltpaybridge01',
   'check:seferscore01',
+  'check:roadmaplockaimarketplace01',
   'check:agreementsourceshiftlineage01',
   'check:marketplacefreetooperate01',
   'check:pay01e',
