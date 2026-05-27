@@ -13,6 +13,7 @@ const steps = [
   'check:qlt04b',
   'check:qltpaybridge01',
   'check:seferscore01',
+  'check:agreementsourceshiftlineage01',
   'check:marketplacefreetooperate01',
   'check:pay01e',
   'check:paysafe01',
@@ -138,4 +139,3 @@ main().catch((err) => {
   console.error(err?.stack || String(err));
   process.exit(1);
 });
-

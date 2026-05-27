@@ -1977,10 +1977,38 @@ export function buildCopilotStarterChips({
     selection?.facts?.platformFeePreview
     || selection?.liveFacts?.platformFeePreview
     || selection?.structuredFacts?.platformFeePreview
+    || selection?.facts?.platformFeeSourceLineage
+    || selection?.facts?.platformFeeBillableByMarketplacePolicy
     || selection?.facts?.platformFeeSummaryText
     || selection?.facts?.platformFeeStatus
     || selection?.facts?.platformFeeRateText
-    || includesAny(selectionText, ['lisans ücreti', 'lisans ucreti', 'başarı payı', 'basari payi', 'mevcut sözleşmeden pay', 'mevcut sozlesmeden pay', 'platform fee', 'free-to-operate', 'seferpakt kaynaklı', 'pay alınır mı', 'pay alinır mı', 'pay alacak mı', 'pay doğmaz', 'pay dogmaz'])
+    || includesAny(selectionText, [
+      'lisans ücreti',
+      'lisans ucreti',
+      'başarı payı',
+      'basari payi',
+      'mevcut sözleşmeden pay',
+      'mevcut sozlesmeden pay',
+      'platform fee',
+      'free-to-operate',
+      'seferpakt kaynaklı',
+      'seferpakt kaynakli',
+      'source lineage',
+      'kaynak vardiya',
+      'market shift',
+      'kaynak zinciri',
+      'organization plan',
+      'seçili teklif',
+      'secili teklif',
+      'hangi vardiyadan geldi',
+      'mevcut sözleşme mi',
+      'mevcut sozlesme mi',
+      'pay alınır mı',
+      'pay alinır mı',
+      'pay alacak mı',
+      'pay doğmaz',
+      'pay dogmaz',
+    ])
   );
   const isQualityPaymentBridgePreview = Boolean(
     selection?.facts?.qualityPaymentBridgePreview
@@ -2015,6 +2043,7 @@ export function buildCopilotStarterChips({
       'Bu sözleşmeden SeferPakt pay alacak mı?',
       'Mevcut sözleşmeden pay alınır mı?',
       'Başarı payı neden 0 görünüyor?',
+      'Bu sözleşme SeferPakt kaynaklı mı?',
     ], fallback);
   }
   if (isQualityPaymentBridgePreview) {
@@ -2133,7 +2162,7 @@ export function buildCopilotStarterChips({
     chips = ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
   } else if (isAgreementSurface) {
     chips = isMarketplaceFreeToOperatePreview
-      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?']
+      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Bu sözleşme hangi vardiyadan geldi?']
       : isSeferScorePreview
       ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
       : isQualityPaymentBridgePreview
@@ -2141,7 +2170,7 @@ export function buildCopilotStarterChips({
       : ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {
     chips = isMarketplaceFreeToOperatePreview
-      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Mevcut sözleşmeden pay alınır mı?', 'Kalite puanı payı etkiliyor mu?']
+      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Mevcut sözleşmeden pay alınır mı?', 'Kalite puanı payı etkiliyor mu?', 'Kaynak zinciri ne?', 'Organization plan’dan gelen sözleşme kaynaklı sayılır mı?']
       : isSeferScorePreview
       ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
       : isQualityPaymentBridgePreview

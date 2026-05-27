@@ -198,6 +198,28 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const platformFeeSourceSignals = platformFeePreview?.sourceSignals && typeof platformFeePreview.sourceSignals === "object"
     ? platformFeePreview.sourceSignals
     : {};
+  const platformFeeSourceLineage = platformFeePreview?.sourceLineage && typeof platformFeePreview.sourceLineage === "object"
+    ? platformFeePreview.sourceLineage
+    : {};
+  const platformFeeBillableByMarketplacePolicy = Boolean(
+    summary.platformFeeBillableByMarketplacePolicy
+    ?? platformFeePreview?.billableByMarketplacePolicy
+    ?? platformFeeSourceLineage.billableByMarketplacePolicy
+    ?? platformFeeSourceSignals.billableByMarketplacePolicy
+    ?? false,
+  );
+  const platformFeeMissingSignals = compactList(
+    summary.platformFeeMissingSignals
+    || platformFeePreview?.missingSignals
+    || platformFeeSourceLineage.missingSignals
+    || platformFeeSourceSignals.missingSignals
+    || [],
+    6,
+  );
+  const platformFeeMarketShiftId = safeInt(summary.platformFeeMarketShiftId || platformFeePreview?.marketShiftId || platformFeeSourceLineage.marketShiftId || 0);
+  const platformFeeOrganizationPlanId = safeInt(summary.platformFeeOrganizationPlanId || platformFeePreview?.organizationPlanId || platformFeeSourceLineage.organizationPlanId || 0);
+  const platformFeeSelectedOfferId = safeInt(summary.platformFeeSelectedOfferId || platformFeePreview?.selectedOfferId || platformFeeSourceLineage.selectedOfferId || 0);
+  const platformFeeRoomId = safeInt(summary.platformFeeRoomId || platformFeePreview?.roomId || platformFeeSourceLineage.roomId || 0);
   const selectedRecordSummary = compactText([
     summary.selectedRecordSummary || buildSelectedSummary({
       statusText,
@@ -282,6 +304,19 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         platformFeeEstimatedShareText ? `Tahmini pay: ${platformFeeEstimatedShareText}` : "",
         platformFeeSourceConfidence ? `Güven: ${platformFeeSourceConfidence}` : "",
       ], 3).join(" • ") || platformFeeSafeExplanation || "Readonly önizleme — tahsilat/fatura oluşturulmaz.",
+    } : null,
+    platformFeeSourceLineage?.lineageSummary || platformFeeBillableByMarketplacePolicy || platformFeeMissingSignals.length ? {
+      id: "platform-lineage",
+      label: "Kaynak zinciri",
+      value: platformFeeBillableByMarketplacePolicy ? "Billable sinyal var" : (platformFeeSourceLineage?.sourceType || platformFeeStatus || "Yetersiz lineage"),
+      note: compactList([
+        platformFeeSourceLineage?.lineageSummary || platformFeeLineageSummary,
+        platformFeeMarketShiftId ? `Market shift: #${platformFeeMarketShiftId}` : "",
+        platformFeeOrganizationPlanId ? `Organization plan: #${platformFeeOrganizationPlanId}` : "",
+        platformFeeSelectedOfferId ? `Seçili teklif: #${platformFeeSelectedOfferId}` : "",
+        platformFeeRoomId ? `Oda: #${platformFeeRoomId}` : "",
+        platformFeeMissingSignals.length ? `Eksik sinyaller: ${platformFeeMissingSignals.join(", ")}` : "",
+      ], 3).join(" • ") || platformFeeSafeExplanation || "Kaynak vardiya / market shift sinyali görünmüyor.",
     } : null,
     { id: "source-shift", label: "Kaynak vardiya", value: sourceShiftId ? `#${sourceShiftId}` : "Yok", note: sourceShiftId ? "Üretim kökü okunur." : "Kaynak vardiya bağlantısı görünmüyor." },
     { id: "generated-count", label: "Üretilen vardiya", value: generatedShiftCount > 0 ? String(generatedShiftCount) : "Yok", note: generatedShiftCount > 0 ? "Bugün üretim sinyali var." : "Bugün üretim sinyali görünmüyor." },
@@ -381,6 +416,19 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
           platformFeeEstimatedShareText ? `Tahmini pay: ${platformFeeEstimatedShareText}` : "",
           platformFeeSourceConfidence ? `Güven: ${platformFeeSourceConfidence}` : "",
         ], 3).join(" • ") || platformFeeSafeExplanation || "Readonly önizleme — tahsilat/fatura oluşturulmaz.",
+      })] : []),
+      ...(platformFeeSourceLineage?.lineageSummary || platformFeeBillableByMarketplacePolicy || platformFeeMissingSignals.length ? [normalizeCopilotSignal({
+        id: "platform-lineage",
+        label: "Kaynak zinciri",
+        value: platformFeeBillableByMarketplacePolicy ? "Billable sinyal var" : (platformFeeSourceLineage?.sourceType || platformFeeStatus || "Yetersiz lineage"),
+        note: compactList([
+          platformFeeSourceLineage?.lineageSummary || platformFeeLineageSummary,
+          platformFeeMarketShiftId ? `Market shift: #${platformFeeMarketShiftId}` : "",
+          platformFeeOrganizationPlanId ? `Organization plan: #${platformFeeOrganizationPlanId}` : "",
+          platformFeeSelectedOfferId ? `Seçili teklif: #${platformFeeSelectedOfferId}` : "",
+          platformFeeRoomId ? `Oda: #${platformFeeRoomId}` : "",
+          platformFeeMissingSignals.length ? `Eksik sinyaller: ${platformFeeMissingSignals.join(", ")}` : "",
+        ], 3).join(" • ") || platformFeeSafeExplanation || "Kaynak vardiya / market shift sinyali görünmüyor.",
       })] : []),
       normalizeCopilotSignal({
         id: "workflow-signal",
@@ -542,5 +590,12 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     platformFeeReason,
     platformFeeSourceEvidence,
     platformFeeSourceSignals,
+    platformFeeSourceLineage,
+    platformFeeBillableByMarketplacePolicy,
+    platformFeeMissingSignals,
+    platformFeeMarketShiftId,
+    platformFeeOrganizationPlanId,
+    platformFeeSelectedOfferId,
+    platformFeeRoomId,
   };
 }

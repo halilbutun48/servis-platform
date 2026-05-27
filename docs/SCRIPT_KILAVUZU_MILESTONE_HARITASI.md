@@ -773,6 +773,12 @@ Bu bant güncel doğrulanmış üst hattır.
 - Ana konu: QLT-PAY-BRIDGE-01’den gelen kalite/kanıt/hakediş sinyallerini tedarikçi bazlı readonly SeferPuanı önizlemesine çevirmek; ödeme, ceza, teklif sıralaması, komisyon, platform fee ve settlement execute açmamak.
 - Not: yalnızca preview/fallback kalır; SeferPuanı için açıklanabilir sinyal zeminini hazırlar.
 
+### AGREEMENT-SOURCE-SHIFT-LINEAGE-01 — agreement source lineage preview [CHECK]
+- Check script: `check:agreementsourceshiftlineage01`
+- Komut: `node backend\scripts\agreement_source_shift_lineage_01_check.js`
+- Ana konu: agreement’ın doğrudan ana ticari kaynak olmadığını göstermek; sourceShiftId / marketShift / commercialSource / teklif seçimi zincirini readonly olarak kanıtlamak; mevcut / manuel / pilot / legacy / lineage belirsiz kayıtlar için güvenli fallback ile başarı payını doğurmamak; ödeme, tahsilat, fatura, platform fee ledger ve settlement execute açmamak.
+- Not: source lineage kanıtı yoksa `EXISTING_IMPORTED` veya `INSUFFICIENT_LINEAGE` fallback’i ile pay doğmaz; Organization plan tek başına billable kanıt değildir.
+
 ### MARKETPLACE-FREE-TO-OPERATE-01 — readonly lisanssız ticari model önizlemesi [CHECK]
 - Check script: `check:marketplacefreetooperate01`
 - Komut: `node backend\scripts\marketplace_free_to_operate_01_check.js`

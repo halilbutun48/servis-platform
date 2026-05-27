@@ -21,7 +21,7 @@ function compactList(items = [], limit = 6) {
 function sourceTone(value) {
   const key = compactText(value, "INSUFFICIENT_LINEAGE").toUpperCase();
   if (["SEFERPAKT_NEW", "SEFERPAKT_RENEWAL"].includes(key)) return "ready";
-  if (["EXISTING_IMPORTED", "MANUAL_INTERNAL", "PILOT_FREE"].includes(key)) return "warning";
+  if (["EXISTING_IMPORTED", "MANUAL_INTERNAL", "PILOT_FREE", "LEGACY"].includes(key)) return "warning";
   return "danger";
 }
 
@@ -38,6 +38,7 @@ function agreementSourceLabel(value) {
     EXISTING_IMPORTED: "Mevcut / taşınmış kayıt",
     MANUAL_INTERNAL: "Manuel iç kayıt",
     PILOT_FREE: "Pilot ücretsiz kayıt",
+    LEGACY: "Legacy kayıt",
     SEFERPAKT_NEW: "SeferPakt kaynaklı yeni sözleşme",
     SEFERPAKT_RENEWAL: "SeferPakt kaynaklı yenileme",
     INSUFFICIENT_LINEAGE: "Yetersiz lineage",
@@ -73,12 +74,30 @@ export default function PlatformFeePreviewCard({
   const amountText = compactText(safePreview.agreementAmountText || "Tutar bulunamadı", "Tutar bulunamadı");
   const rateLabel = compactText(safePreview.successShareRateLabel || "Başarı payı doğmaz", "Başarı payı doğmaz");
   const estimatedText = compactText(safePreview.estimatedSuccessShareText || "Tutar bulunamadı", "Tutar bulunamadı");
+  const sourceLineage = safePreview.sourceLineage && typeof safePreview.sourceLineage === "object" ? safePreview.sourceLineage : {};
   const payableNow = Boolean(safePreview.payableNow);
   const canInvoice = Boolean(safePreview.canInvoice);
   const canCollect = Boolean(safePreview.canCollect);
   const reviewRequired = Boolean(safePreview.reviewRequired);
+  const billableByMarketplacePolicy = Boolean(
+    safePreview.billableByMarketplacePolicy
+    || sourceLineage.billableByMarketplacePolicy
+    || safePreview.sourceSignals?.billableByMarketplacePolicy
+  );
   const sourceSummary = compactText(safePreview.sourceSummary || "", "");
   const lineageSummary = compactText(safePreview.lineageSummary || "", "");
+  const sourceShiftId = compactText(safePreview.sourceShiftId || sourceLineage.sourceShiftId || "", "");
+  const marketShiftId = compactText(safePreview.marketShiftId || sourceLineage.marketShiftId || "", "");
+  const organizationPlanId = compactText(safePreview.organizationPlanId || sourceLineage.organizationPlanId || "", "");
+  const selectedOfferId = compactText(safePreview.selectedOfferId || sourceLineage.selectedOfferId || "", "");
+  const roomId = compactText(safePreview.roomId || sourceLineage.roomId || "", "");
+  const missingSignals = compactList(
+    safePreview.missingSignals
+    || sourceLineage.missingSignals
+    || safePreview.sourceSignals?.missingSignals
+    || [],
+    6,
+  );
   const safeExplanation = compactText(
     safePreview.safeExplanation
     || "Readonly önizleme — tahsilat/fatura oluşturulmaz.",
@@ -100,14 +119,30 @@ export default function PlatformFeePreviewCard({
     lineageSummary ? `Lineage: ${lineageSummary}` : "",
   ], 8);
   const sourceSignals = safePreview.sourceSignals && typeof safePreview.sourceSignals === "object" ? safePreview.sourceSignals : {};
+  const sourceTypeVerdict = ["SEFERPAKT_NEW", "SEFERPAKT_RENEWAL"].includes(sourceType)
+    ? "evet"
+    : ["EXISTING_IMPORTED", "MANUAL_INTERNAL", "PILOT_FREE", "LEGACY"].includes(sourceType)
+      ? "hayır"
+      : "belirsiz";
+  const successShareVerdict = billableByMarketplacePolicy && sourceTypeVerdict === "evet"
+    ? "readonly evet"
+    : "hayır";
   const sourceSignalItems = [
-    sourceSignals.hasLineageSignal ? "Kaynak vardiya / market shift sinyali var" : "Kaynak vardiya / market shift sinyali yok",
+    sourceSignals.hasLineageSignal || sourceSignals.hasSupportLineageSignal ? "Kaynak vardiya / market shift sinyali var" : "Kaynak vardiya / market shift sinyali yok",
+    sourceSignals.hasBillableLineageSignal ? "Kaynak vardiya / market shift / teklif zinciri kanıtlı" : "Kaynak zinciri billable değil",
     Number(sourceSignals.commercialSourceCount || 0) > 0 ? `${Number(sourceSignals.commercialSourceCount)} ticari kaynak kaydı` : "",
+    sourceShiftId ? `Kaynak vardiya #${sourceShiftId}` : "",
+    marketShiftId ? `Market shift #${marketShiftId}` : "",
+    organizationPlanId ? `Organization plan #${organizationPlanId}` : "",
+    selectedOfferId ? `Seçili teklif #${selectedOfferId}` : "",
+    roomId ? `Oda #${roomId}` : "",
     sourceSignals.isRenewal ? "Yenileme sinyali var" : "",
     sourceSignals.isManual ? "Manuel iç kayıt" : "",
     sourceSignals.isPilot ? "Pilot ücretsiz kayıt" : "",
     sourceSignals.isImported ? "Mevcut / taşınmış kayıt" : "",
+    sourceSignals.isLegacy ? "Legacy kayıt" : "",
     sourceSignals.isInsufficient ? "Yetersiz lineage" : "",
+    missingSignals.length ? `Eksik sinyaller: ${missingSignals.join(", ")}` : "",
   ].filter(Boolean);
 
   return (
@@ -154,6 +189,13 @@ export default function PlatformFeePreviewCard({
           <div className="muted">Anlaşma kaynak durumu</div>
           <div style={{ fontWeight: 900, marginTop: 4 }}>{sourceLabel}</div>
           <div className="muted" style={{ marginTop: 4 }}>{sourceSummary || "Kaynak vardiya / market shift sinyali yok"}</div>
+        </div>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+          <div className="muted">Kaynak zinciri</div>
+          <div style={{ fontWeight: 900, marginTop: 4 }}>{sourceSignals.hasBillableLineageSignal ? "Billable sinyal var" : sourceSignals.hasLineageSignal || sourceSignals.hasSupportLineageSignal ? "Sadece destek sinyali" : "Yok"}</div>
+          <div className="muted" style={{ marginTop: 4 }}>
+            {lineageSummary || "Kaynak vardiya / market shift sinyali görünmüyor."}
+          </div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
           <div className="muted">SeferPuanı</div>
@@ -206,6 +248,19 @@ export default function PlatformFeePreviewCard({
       <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
         <div className="muted">Readonly açıklama</div>
         <div style={{ fontWeight: 800, marginTop: 4 }}>{safeExplanation}</div>
+      </div>
+
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+          <div className="muted">SeferPakt kaynaklı</div>
+          <div style={{ fontWeight: 900, marginTop: 4 }}>{sourceTypeVerdict}</div>
+          <div className="muted" style={{ marginTop: 4 }}>Kaynak vardiya / market shift / teklif zinciri okunur.</div>
+        </div>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+          <div className="muted">Başarı payı doğar mı</div>
+          <div style={{ fontWeight: 900, marginTop: 4 }}>{successShareVerdict}</div>
+          <div className="muted" style={{ marginTop: 4 }}>Readonly evet/hayır sonucu.</div>
+        </div>
       </div>
 
       {summaryText ? (

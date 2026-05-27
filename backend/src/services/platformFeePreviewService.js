@@ -1,3 +1,13 @@
+import {
+  buildSourceEvidence,
+  buildAgreementLineageSummary,
+  classifyAgreementSource,
+  getLineageConfidence,
+  hasBillableSeferPaktLineage,
+  hasBillableLineageSignal,
+  inferAgreementSourceLineage,
+} from "./agreementSourceLineageService.js";
+
 function compactText(value, fallback = "") {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   return text || String(fallback || "").trim();
@@ -53,15 +63,6 @@ function normalizeSourceType(value) {
   return "";
 }
 
-function isExplicitLineageSource(row = {}) {
-  const type = compactText(row?.sourceType || row?.type || row?.commercialSourceType || "", "").toUpperCase();
-  if (type === "SHIFT_SERIES") return true;
-  if (Number(row?.shiftRootId || 0) > 0) return true;
-  if (Number(row?.shiftId || 0) > 0) return true;
-  if (Number(row?.agreementId || 0) > 0 && type === "AGREEMENT") return true;
-  return false;
-}
-
 function normalizeCommercialSources(input = {}) {
   const commercialSources = Array.isArray(input.commercialSources)
     ? input.commercialSources
@@ -109,72 +110,165 @@ function hasRenewalSignal(input = {}) {
 
 function buildLineageSignals(input = {}) {
   const agreement = input.agreement && typeof input.agreement === "object" ? input.agreement : null;
-  const bridge = input.bridge && typeof input.bridge === "object" ? input.bridge : null;
-  const sourceShiftId = Number(
-    input.sourceShiftId
-    || bridge?.sourceShiftId
-    || input.sourceShift?.shift?.id
-    || input.sourceShift?.id
-    || 0
-  );
-  const sourceSummary = compactText(
-    input.sourceSummary
-    || bridge?.sourceSummary
-    || input.sourceShift?.sourceSummary
-    || input.marketShift?.sourceSummary
-    || "",
-  );
-  const commercialSources = normalizeCommercialSources(input);
-  const explicitLineage = commercialSources.some(isExplicitLineageSource);
-  const hasLineageSignal = Boolean(
-    sourceShiftId > 0
-    || sourceSummary
-    || input.marketShift
-    || input.marketShiftId
-    || explicitLineage
-  );
   const sourceTypeHint = normalizeSourceType(
     input.sourceType
     || input.agreementSource
     || input.agreementSourceType
     || input.commercialSourceType
+    || (input.existingImported || input.importedExisting ? "EXISTING_IMPORTED" : "")
     || ""
   );
-  const manual = Boolean(input.manualInternal || input.manual || input.manualEntry || input.legacy || input.existingImported);
+  const manual = Boolean(input.manualInternal || input.manual || input.manualEntry);
   const pilot = Boolean(input.pilotFree || input.pilot);
-  let agreementSource = sourceTypeHint;
+  const legacy = Boolean(input.legacy || input.legacySource || sourceTypeHint === "LEGACY");
+  const commercialSources = normalizeCommercialSources(input);
+  const sourceLineage = inferAgreementSourceLineage(agreement, {
+    ...input,
+    commercialSources,
+    sourceType: sourceTypeHint,
+    manualInternal: manual,
+    pilotFree: pilot,
+    legacy,
+  });
+  const sourceShiftId = Number(sourceLineage?.sourceShiftId || 0) > 0
+    ? Number(sourceLineage.sourceShiftId)
+    : Number(
+      input.sourceShiftId
+      || input.bridge?.sourceShiftId
+      || input.sourceShift?.shift?.id
+      || input.sourceShift?.id
+      || 0
+    ) || 0;
+  const marketShiftId = Number(sourceLineage?.marketShiftId || 0) > 0
+    ? Number(sourceLineage.marketShiftId)
+    : Number(input.marketShiftId || input.marketShift?.id || input.marketShift?.shiftRootId || 0) || 0;
+  const organizationPlanId = Number(sourceLineage?.organizationPlanId || 0) > 0
+    ? Number(sourceLineage.organizationPlanId)
+    : Number(input.organizationPlanId || input.organizationPlan?.id || agreement?.organizationPlanId || 0) || 0;
+  const selectedOfferId = Number(sourceLineage?.selectedOfferId || 0) > 0
+    ? Number(sourceLineage.selectedOfferId)
+    : Number(input.selectedOfferId || input.selectedOffer?.id || input.offerId || 0) || 0;
+  const roomId = Number(sourceLineage?.roomId || 0) > 0
+    ? Number(sourceLineage.roomId)
+    : Number(input.roomId || agreement?.roomId || input.marketShift?.roomId || 0) || 0;
+  const sourceSummary = compactText(
+    sourceLineage?.sourceSummary
+    || input.sourceSummary
+    || input.bridge?.sourceSummary
+    || input.sourceShift?.sourceSummary
+    || input.marketShift?.sourceSummary
+    || "",
+  );
+  const hasSupportLineageSignal = Boolean(
+    sourceLineage?.hasSupportLineageSignal
+    || sourceLineage?.hasLineageSignal
+    || sourceLineage?.sourceSignals?.hasSupportLineageSignal
+    || sourceLineage?.sourceSignals?.hasLineageSignal
+    || sourceShiftId > 0
+    || marketShiftId > 0
+    || organizationPlanId > 0
+    || selectedOfferId > 0
+    || sourceSummary
+    || commercialSources.length > 0
+  );
+  const hasBillableSignal = Boolean(
+    sourceLineage?.hasBillableLineageSignal
+    || sourceLineage?.sourceSignals?.hasBillableLineageSignal
+    || hasBillableLineageSignal({
+      sourceShiftId,
+      marketShiftId,
+      selectedOfferId,
+      commercialSources,
+    })
+  );
+  const agreementSource = sourceLineage?.agreementSource || classifyAgreementSource({
+    ...sourceLineage,
+    sourceShiftId,
+    marketShiftId,
+    organizationPlanId,
+    selectedOfferId,
+    roomId,
+    sourceSummary,
+    billableByMarketplacePolicy: Boolean(sourceLineage?.billableByMarketplacePolicy || hasBillableSignal),
+    agreementStatus: input.agreementStatus || agreement?.status || "",
+  });
 
-  if (!agreementSource && manual) agreementSource = "MANUAL_INTERNAL";
-  if (!agreementSource && pilot) agreementSource = "PILOT_FREE";
-  if (!agreementSource && hasLineageSignal) {
-    agreementSource = hasRenewalSignal({ ...input, agreement }) ? "SEFERPAKT_RENEWAL" : "SEFERPAKT_NEW";
-  }
-  if (!agreementSource) {
-    const status = compactText(input.agreementStatus || agreement?.status || "", "").toUpperCase();
-    agreementSource = ["APPROVED", "ACTIVE"].includes(status) ? "EXISTING_IMPORTED" : "INSUFFICIENT_LINEAGE";
-  }
+  const sourceConfidence = sourceLineage?.confidence
+    || getLineageConfidence({
+      sourceType: agreementSource,
+      agreementSource,
+      sourceShiftId,
+      marketShiftId,
+      organizationPlanId,
+      sourceSummary,
+      billableByMarketplacePolicy: Boolean(sourceLineage?.billableByMarketplacePolicy || hasBillableSignal),
+      isRenewal: agreementSource === "SEFERPAKT_RENEWAL",
+      isManual: agreementSource === "MANUAL_INTERNAL",
+      isPilot: agreementSource === "PILOT_FREE",
+      isLegacy: agreementSource === "LEGACY",
+      isImported: agreementSource === "EXISTING_IMPORTED",
+      isInsufficient: agreementSource === "INSUFFICIENT_LINEAGE",
+    });
 
-  const sourceConfidence = agreementSource === "SEFERPAKT_NEW" || agreementSource === "SEFERPAKT_RENEWAL"
-    ? (sourceShiftId > 0 ? "HIGH" : hasLineageSignal ? "MEDIUM" : "LOW")
-    : agreementSource === "EXISTING_IMPORTED"
-      ? (sourceSummary ? "MEDIUM" : "LOW")
-      : agreementSource === "MANUAL_INTERNAL" || agreementSource === "PILOT_FREE"
-        ? "MEDIUM"
-        : "LOW";
-
-  const sourceEvidence = compactList([
-    sourceShiftId > 0 ? `Kaynak vardiya #${sourceShiftId}` : "",
-    sourceSummary ? `Kaynak özeti: ${sourceSummary}` : "",
-    hasLineageSignal ? "Kaynak vardiya / market shift sinyali var" : "",
-    explicitLineage ? "Ticari kaynak kaydı var" : "",
-    hasRenewalSignal({ ...input, agreement }) ? "Uzatma / yenileme sinyali var" : "",
+  const missingSignals = compactList(sourceLineage?.missingSignals || [
+    sourceShiftId > 0 ? "" : "sourceShiftId",
+    marketShiftId > 0 ? "" : "marketShiftId",
+    organizationPlanId > 0 ? "" : "organizationPlanId",
+    selectedOfferId > 0 ? "" : "selectedOfferId",
+    sourceSummary ? "" : "sourceSummary",
+    commercialSources.length > 0 ? "" : "commercialSource",
   ], 6);
+
+  const sourceEvidence = compactList(
+    sourceLineage?.sourceEvidence?.length
+      ? sourceLineage.sourceEvidence
+      : buildSourceEvidence({
+          sourceShiftId: sourceShiftId > 0 ? sourceShiftId : null,
+          marketShiftId: marketShiftId > 0 ? marketShiftId : null,
+          organizationPlanId: organizationPlanId > 0 ? organizationPlanId : null,
+          selectedOfferId: selectedOfferId > 0 ? selectedOfferId : null,
+          sourceSummary,
+          commercialSourceCount: commercialSources.length,
+          hasLineageSignal: hasSupportLineageSignal,
+          hasBillableLineageSignal: hasBillableSignal,
+          hasRenewal: hasRenewalSignal({ ...input, agreement }),
+          isManual: agreementSource === "MANUAL_INTERNAL",
+          isPilot: agreementSource === "PILOT_FREE",
+          isLegacy: agreementSource === "LEGACY",
+          isImported: agreementSource === "EXISTING_IMPORTED",
+          isInsufficient: agreementSource === "INSUFFICIENT_LINEAGE",
+          billableByMarketplacePolicy: Boolean(sourceLineage?.billableByMarketplacePolicy),
+          missingSignals,
+        }),
+    8,
+  );
+
+  const billableByMarketplacePolicy = Boolean(
+    sourceLineage?.billableByMarketplacePolicy
+    || hasBillableSeferPaktLineage({
+      ...sourceLineage,
+      sourceType: agreementSource,
+      sourceShiftId,
+      marketShiftId,
+      organizationPlanId,
+      selectedOfferId,
+      roomId,
+      sourceSummary,
+      missingSignals,
+    })
+  );
 
   return {
     agreementSource,
     sourceConfidence,
-    hasLineageSignal,
+    hasLineageSignal: hasSupportLineageSignal,
+    hasSupportLineageSignal,
+    hasBillableLineageSignal: hasBillableSignal,
     sourceShiftId: sourceShiftId > 0 ? sourceShiftId : null,
+    marketShiftId: marketShiftId > 0 ? marketShiftId : null,
+    organizationPlanId: organizationPlanId > 0 ? organizationPlanId : null,
+    selectedOfferId: selectedOfferId > 0 ? selectedOfferId : null,
+    roomId: roomId > 0 ? roomId : null,
     sourceSummary,
     sourceEvidence,
     commercialSources,
@@ -182,8 +276,48 @@ function buildLineageSignals(input = {}) {
     isRenewal: agreementSource === "SEFERPAKT_RENEWAL",
     isManual: agreementSource === "MANUAL_INTERNAL",
     isPilot: agreementSource === "PILOT_FREE",
+    isLegacy: agreementSource === "LEGACY",
     isImported: agreementSource === "EXISTING_IMPORTED",
     isInsufficient: agreementSource === "INSUFFICIENT_LINEAGE",
+    sourceLineage: {
+      ...(sourceLineage || {}),
+      sourceType: agreementSource,
+      agreementSource,
+      confidence: sourceConfidence,
+      billableByMarketplacePolicy,
+      hasSupportLineageSignal,
+      hasBillableLineageSignal: hasBillableSignal,
+      sourceShiftId: sourceShiftId > 0 ? sourceShiftId : null,
+      marketShiftId: marketShiftId > 0 ? marketShiftId : null,
+      organizationPlanId: organizationPlanId > 0 ? organizationPlanId : null,
+      selectedOfferId: selectedOfferId > 0 ? selectedOfferId : null,
+      roomId: roomId > 0 ? roomId : null,
+      sourceSummary,
+      sourceEvidence,
+      missingSignals,
+      lineageSummary: compactText(
+        sourceLineage?.lineageSummary
+        || buildAgreementLineageSummary({
+          sourceType: agreementSource,
+          sourceShiftId,
+          marketShiftId,
+          organizationPlanId,
+          selectedOfferId,
+          sourceSummary,
+          missingSignals,
+          billableByMarketplacePolicy,
+          isRenewal: agreementSource === "SEFERPAKT_RENEWAL",
+          isManual: agreementSource === "MANUAL_INTERNAL",
+          isPilot: agreementSource === "PILOT_FREE",
+          isLegacy: agreementSource === "LEGACY",
+          isImported: agreementSource === "EXISTING_IMPORTED",
+          isInsufficient: agreementSource === "INSUFFICIENT_LINEAGE",
+        }),
+        "Kaynak vardiya zinciri bulunamadı; mevcut/taşınmış kabul edilir.",
+      ),
+    },
+    billableByMarketplacePolicy,
+    missingSignals,
   };
 }
 
@@ -239,6 +373,9 @@ export function buildPlatformFeeReason(result = {}) {
   if (["EXISTING_IMPORTED", "MANUAL_INTERNAL", "PILOT_FREE", "INSUFFICIENT_LINEAGE"].includes(agreementSource)) {
     return `Lisans ücreti ${licenseFeeText}'dir ve mevcut/taşınmış kayıt için başarı payı doğmaz. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
   }
+  if (agreementSource === "LEGACY") {
+    return `Lisans ücreti ${licenseFeeText}'dir ve legacy kayıt için başarı payı doğmaz. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
+  }
   if (agreementSource === "SEFERPAKT_NEW" || agreementSource === "SEFERPAKT_RENEWAL") {
     const scorePart = scoreText ? ` SeferPuanı: ${scoreText}.` : "";
     const reviewPart = result?.reviewRequired ? " İnceleme gerekli." : "";
@@ -290,7 +427,10 @@ export function computePlatformFeePreview(input = {}) {
   });
   const amountText = amount != null ? `${formatMoneyTR(amount)} TL` : "Tutar bulunamadı";
   const sourceType = sourcePreview.agreementSource;
-  const shouldPreviewShare = sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL";
+  const shouldPreviewShare = Boolean(
+    sourcePreview.billableByMarketplacePolicy
+    && (sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL")
+  );
   const ratePreview = shouldPreviewShare
     ? computeSuccessShareRateBySeferScore(scoreValue, { renewal: sourceType === "SEFERPAKT_RENEWAL" })
     : {
@@ -311,13 +451,14 @@ export function computePlatformFeePreview(input = {}) {
     EXISTING_IMPORTED: "Mevcut / taşınmış kayıt",
     MANUAL_INTERNAL: "Manuel iç kayıt",
     PILOT_FREE: "Pilot ücretsiz kayıt",
+    LEGACY: "Legacy kayıt",
     SEFERPAKT_NEW: "SeferPakt kaynaklı yeni sözleşme",
     SEFERPAKT_RENEWAL: "SeferPakt kaynaklı yenileme",
     INSUFFICIENT_LINEAGE: "Yetersiz lineage",
   };
   const summaryHint = sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL"
     ? `SeferPuanı ${scoreText} nedeniyle ${ratePreview.rateLabel} önizleniyor.`
-    : "Bu kayıt mevcut / manuel / pilot / taşınmış görünüyor; başarı payı doğmaz.";
+    : "Bu kayıt mevcut / manuel / pilot / legacy / taşınmış görünüyor; başarı payı doğmaz.";
   const result = {
     previewOnly: true,
     licenseFee: 0,
@@ -326,16 +467,30 @@ export function computePlatformFeePreview(input = {}) {
     agreementSourceLabel: agreementSourceLabelMap[sourceType] || agreementSourceLabelMap.INSUFFICIENT_LINEAGE,
     sourceConfidence: sourcePreview.sourceConfidence,
     sourceShiftId: sourcePreview.sourceShiftId,
+    marketShiftId: sourcePreview.marketShiftId,
+    organizationPlanId: sourcePreview.organizationPlanId,
+    selectedOfferId: sourcePreview.selectedOfferId,
+    roomId: sourcePreview.roomId,
     sourceSummary: sourcePreview.sourceSummary,
     sourceEvidence: sourcePreview.sourceEvidence,
+    sourceLineage: sourcePreview.sourceLineage,
     sourceSignals: {
       hasLineageSignal: sourcePreview.hasLineageSignal,
+      hasSupportLineageSignal: sourcePreview.hasSupportLineageSignal,
+      hasBillableLineageSignal: sourcePreview.hasBillableLineageSignal,
+      billableByMarketplacePolicy: sourcePreview.billableByMarketplacePolicy,
       commercialSourceCount: sourcePreview.commercialSourceCount,
+      sourceShiftId: sourcePreview.sourceShiftId,
+      marketShiftId: sourcePreview.marketShiftId,
+      organizationPlanId: sourcePreview.organizationPlanId,
+      selectedOfferId: sourcePreview.selectedOfferId,
+      roomId: sourcePreview.roomId,
       isRenewal: sourcePreview.isRenewal,
       isManual: sourcePreview.isManual,
       isPilot: sourcePreview.isPilot,
       isImported: sourcePreview.isImported,
       isInsufficient: sourcePreview.isInsufficient,
+      missingSignals: sourcePreview.missingSignals,
     },
     agreementAmount: amount,
     agreementAmountText: amountText,
@@ -364,10 +519,15 @@ export function computePlatformFeePreview(input = {}) {
       seferScoreText: scoreText,
       reviewRequired: Boolean(ratePreview.reviewRequired),
     }),
-    lineageSummary: compactText(sourcePreview.sourceEvidence.join(" • "), sourcePreview.sourceSummary || "Kaynak vardiya / market shift sinyali yok"),
+    lineageSummary: compactText(
+      sourcePreview.sourceLineage?.lineageSummary
+      || sourcePreview.lineageSummary
+      || sourcePreview.sourceEvidence.join(" • "),
+      sourcePreview.sourceSummary || "Kaynak vardiya / market shift sinyali yok",
+    ),
     safeExplanation: sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL"
       ? `Lisans ücreti yoktur. Bu kayıt SeferPakt kaynaklı ${sourceType === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} göründüğü için başarı payı sadece readonly önizlenir. Tahsilat/fatura oluşturulmaz.`
-      : "Lisans ücreti yoktur. Bu kayıt mevcut/taşınmış göründüğü için başarı payı doğmaz. Tahsilat/fatura oluşturulmaz.",
+      : `Lisans ücreti yoktur. Bu kayıt ${sourceType === "LEGACY" ? "legacy" : "mevcut/taşınmış"} göründüğü için başarı payı doğmaz. Tahsilat/fatura oluşturulmaz.`,
     summaryHint,
   };
   result.summaryText = buildMarketplaceFreeToOperateSummary(result);

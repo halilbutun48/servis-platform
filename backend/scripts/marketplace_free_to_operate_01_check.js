@@ -77,7 +77,10 @@ async function main() {
   const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const docs = read('docs/MARKETPLACE_FREE_TO_OPERATE_01.md');
+  const lineageDocs = read('docs/AGREEMENT_SOURCE_SHIFT_LINEAGE_01.md');
   const serviceFile = read('backend/src/services/platformFeePreviewService.js');
+  const lineageServiceFile = read('backend/src/services/agreementSourceLineageService.js');
+  const marketplaceServiceFile = read('backend/src/services/platformFeePreviewService.js');
   const routeFile = read('backend/src/routes/agreements.js');
   const cardFile = read('web/src/panels/shared/PlatformFeePreviewCard.jsx');
   const companyPanel = read('web/src/panels/company/AgreementsPanel.jsx');
@@ -88,16 +91,34 @@ async function main() {
   const intentRouter = read('backend/src/ai/chat/intentRouter.js');
   const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
   const helpComposer = read('backend/src/ai/chat/helpComposer.js');
+  const goldenPack = read('backend/src/ai/chat/goldenQuestionPack.js');
 
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes marketplace check');
   must(runner, 'check:marketplacefreetooperate01', 'product extensions runner includes marketplace check');
-  ordered(runner, ['check:qltpaybridge01', 'check:seferscore01', 'check:marketplacefreetooperate01', 'check:pay01e'], 'product extensions order keeps marketplace between SeferScore and payment preview');
+  ordered(runner, ['check:qltpaybridge01', 'check:seferscore01', 'check:agreementsourceshiftlineage01', 'check:marketplacefreetooperate01', 'check:pay01e'], 'product extensions order keeps source-lineage before marketplace and payment preview');
   must(guide, 'MARKETPLACE-FREE-TO-OPERATE-01', 'script guide mentions marketplace milestone');
   must(guide, 'check:marketplacefreetooperate01', 'script guide exposes marketplace check');
+  must(lineageDocs, 'AGREEMENT-SOURCE-SHIFT-LINEAGE-01', 'lineage doc names the milestone');
+  must(lineageDocs, 'Agreement doğrudan ana ticari kaynak değildir', 'lineage doc states agreement is not the primary commercial source');
+  must(lineageDocs, 'sourceShiftId / marketShift / commercialSource', 'lineage doc lists source signals');
+  must(lineageDocs, 'EXISTING_IMPORTED', 'lineage doc covers safe fallback');
+  must(lineageDocs, 'Organization plan özel notu', 'lineage doc covers organization plan note');
+
+  must(lineageServiceFile, 'export function inferAgreementSourceLineage', 'lineage service exposes inference helper');
+  must(lineageServiceFile, 'export function classifyAgreementSource', 'lineage service exposes source classifier');
+  must(lineageServiceFile, 'export function buildAgreementLineageSummary', 'lineage service exposes summary helper');
+  must(lineageServiceFile, 'export function hasBillableSeferPaktLineage', 'lineage service exposes billable lineage gate');
+  must(lineageServiceFile, 'export function hasBillableLineageSignal', 'lineage service exposes billable signal gate');
+  must(lineageServiceFile, 'INSUFFICIENT_LINEAGE', 'lineage service handles insufficient lineage fallback');
+  must(lineageServiceFile, 'LEGACY', 'lineage service preserves legacy fallback');
+
   must(docs, 'Lisanssız free-to-operate ticari model önizlemesi', 'marketplace doc explains readonly model');
   must(docs, 'Lisans ücreti', 'marketplace doc covers license fee');
   must(docs, 'Out of scope', 'marketplace doc lists out-of-scope boundaries');
 
+  must(serviceFile, 'sourceLineage', 'platform fee service returns lineage details');
+  must(serviceFile, 'lineageSummary', 'platform fee service returns lineage summary');
+  must(serviceFile, 'agreementSourceLineageService.js', 'platform fee service imports lineage helper');
   must(serviceFile, 'export function inferAgreementSourcePreview', 'platform fee service exposes lineage inference');
   must(serviceFile, 'export function computePlatformFeePreview', 'platform fee service exposes preview compute');
   must(serviceFile, 'licenseFee: 0', 'platform fee service keeps license fee at zero');
@@ -108,6 +129,9 @@ async function main() {
   must(serviceFile, 'Readonly önizleme — tahsilat/fatura oluşturulmaz.', 'platform fee service uses readonly boundary text');
   must(serviceFile, 'mevcut/taşınmış kayıt için başarı payı doğmaz', 'platform fee service blocks imported/manual/pilot share');
   must(serviceFile, 'SeferPakt kaynaklı', 'platform fee service explains seferpakt sources');
+  must(marketplaceServiceFile, 'Mevcut / taşınmış kayıt', 'marketplace service keeps existing imported fallback label');
+  must(marketplaceServiceFile, 'Legacy kayıt', 'marketplace service keeps legacy fallback label');
+  must(marketplaceServiceFile, 'Readonly önizleme', 'marketplace service keeps readonly boundary text');
 
   must(routeFile, '/:id/platform-fee-preview', 'agreements route exposes readonly platform fee preview endpoint');
   must(routeFile, 'return res.json({ platformFeePreview })', 'agreements route returns platformFeePreview JSON');
@@ -133,6 +157,8 @@ async function main() {
   must(helpComposer, 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'help composer knows marketplace preview question type');
   must(helpComposer, 'Lisans ücreti 0 TL readonly önizlenir', 'help composer provides marketplace safety text');
   must(helpComposer, 'Readonly free-to-operate önizlemesini', 'help composer provides marketplace verification hint');
+  must(helpComposer, 'Kaynak vardiya / market shift / teklif seçimi zinciri', 'help composer explains source-lineage gate');
+  must(goldenPack, 'Organization plan’dan gelen sözleşme kaynaklı sayılır mı?', 'golden question pack includes organization plan question');
 
   const serviceUrl = pathToFileURL(path.join(root, 'backend/src/services/platformFeePreviewService.js')).href;
   const {
@@ -154,6 +180,7 @@ async function main() {
     successShareRate: 0,
     estimatedSuccessShare: 0,
   }, 'existing/imported stays zero share');
+  must(existingImported.lineageSummary, 'mevcut/taşınmış kabul edilir', 'existing/imported summary explains fallback');
 
   const manual = computePlatformFeePreview({
     agreement: { id: 2, status: 'APPROVED', companyOfferAmount: 1000 },
@@ -168,6 +195,13 @@ async function main() {
     pilotFree: true,
   });
   expectPreview(pilot, { successShareRate: 0, estimatedSuccessShare: 0 }, 'pilot free stays zero share');
+
+  const legacy = computePlatformFeePreview({
+    agreement: { id: 14, status: 'APPROVED', companyOfferAmount: 1000 },
+    agreementStatus: 'APPROVED',
+    legacy: true,
+  });
+  expectPreview(legacy, { successShareRate: 0, estimatedSuccessShare: 0, agreementSource: 'LEGACY' }, 'legacy stays zero share');
 
   const insufficient = computePlatformFeePreview({
     agreement: { id: 4, status: 'DRAFT', companyOfferAmount: 1000 },
@@ -194,6 +228,8 @@ async function main() {
     successShareRate: 1,
     estimatedSuccessShare: 100,
   }, 'new agreement elite score => 1%');
+  must(newElite.lineageSummary, 'Kaynak vardiya #42', 'new agreement summary includes source shift');
+  must(newElite.sourceLineage?.lineageSummary || '', 'Kaynak vardiya #42', 'new agreement source lineage summary includes source shift');
 
   const newGood = computePlatformFeePreview({
     agreement: { id: 6, status: 'APPROVED', companyOfferAmount: 10000 },
@@ -266,6 +302,7 @@ async function main() {
     successShareRate: 1,
     estimatedSuccessShare: 100,
   }, 'renewal elite score => 1%');
+  must(renewalElite.lineageSummary, 'Kaynak vardiya #47', 'renewal summary includes source shift');
 
   const renewalGood = computePlatformFeePreview({
     agreement: { id: 11, status: 'APPROVED', companyOfferAmount: 10000, extendStatus: 'PENDING' },
@@ -327,6 +364,45 @@ async function main() {
     estimatedSuccessShare: 200,
     reviewRequired: true,
   }, 'renewal critical score => 2% review');
+
+  const orgPlanOnlyDraft = computePlatformFeePreview({
+    agreement: { id: 15, status: 'DRAFT', companyOfferAmount: 1000, organizationPlanId: 91 },
+    agreementStatus: 'DRAFT',
+    organizationPlanId: 91,
+  });
+  expectPreview(orgPlanOnlyDraft, {
+    agreementSource: 'INSUFFICIENT_LINEAGE',
+    successShareRate: 0,
+    estimatedSuccessShare: 0,
+  }, 'org plan only draft stays insufficient');
+
+  const orgPlanOnlyApproved = computePlatformFeePreview({
+    agreement: { id: 16, status: 'APPROVED', companyOfferAmount: 1000, organizationPlanId: 92 },
+    agreementStatus: 'APPROVED',
+    organizationPlanId: 92,
+  });
+  expectPreview(orgPlanOnlyApproved, {
+    agreementSource: 'EXISTING_IMPORTED',
+    successShareRate: 0,
+    estimatedSuccessShare: 0,
+  }, 'org plan only approved stays imported');
+
+  const directLineage = computePlatformFeePreview({
+    agreement: { id: 17, status: 'APPROVED', companyOfferAmount: 1000 },
+    agreementStatus: 'APPROVED',
+    sourceType: 'SEFERPAKT_NEW',
+    sourceShiftId: 52,
+    sourceSummary: 'Kaynak vardiya #52',
+    commercialSources: [{ id: 11, sourceType: 'SHIFT_SERIES', shiftRootId: 52 }],
+    seferScoreValue: 4.8,
+  });
+  expectPreview(directLineage, {
+    agreementSource: 'SEFERPAKT_NEW',
+    successShareRate: 1,
+    estimatedSuccessShare: 10,
+  }, 'direct lineage remains billable preview');
+  must(directLineage.sourceLineage?.sourceType || '', 'SEFERPAKT_NEW', 'direct lineage returns source lineage');
+  must(directLineage.sourceLineage?.lineageSummary || '', 'SeferPakt kaynaklı yeni sözleşme', 'direct lineage summary names new contract');
 
   must(buildMarketplaceFreeToOperateSummary(newElite), 'Readonly önizleme', 'summary helper keeps readonly wording');
   must(buildMarketplaceFreeToOperateSummary(existingImported), 'Readonly önizleme', 'summary helper keeps fallback wording');

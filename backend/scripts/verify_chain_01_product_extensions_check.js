@@ -75,6 +75,7 @@ function main() {
   must(pkg, '"check:pay01e"', 'package.json keeps check:pay01e');
   must(pkg, '"check:qltpaybridge01": "node backend/scripts/qlt_pay_bridge_01_check.js"', 'package.json exposes check:qltpaybridge01');
   must(pkg, '"check:seferscore01": "node backend/scripts/sefer_score_01_check.js"', 'package.json exposes check:seferscore01');
+  must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
   must(pkg, '"check:docsstate01"', 'package.json keeps check:docsstate01');
@@ -161,6 +162,7 @@ function main() {
     'check:qlt04b',
     'check:qltpaybridge01',
     'check:seferscore01',
+    'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
     'check:pay01e',
     'check:paysafe01',
@@ -254,6 +256,8 @@ function main() {
   must(guide, 'QLT-PAY-BRIDGE-01', 'script guide mentions QLT-PAY-BRIDGE-01');
   must(guide, 'check:qltpaybridge01', 'script guide exposes check:qltpaybridge01');
   must(guide, 'check:seferscore01', 'script guide exposes check:seferscore01');
+  must(guide, 'AGREEMENT-SOURCE-SHIFT-LINEAGE-01', 'script guide mentions AGREEMENT-SOURCE-SHIFT-LINEAGE-01');
+  must(guide, 'check:agreementsourceshiftlineage01', 'script guide exposes check:agreementsourceshiftlineage01');
   must(guide, 'MARKETPLACE-FREE-TO-OPERATE-01', 'script guide mentions MARKETPLACE-FREE-TO-OPERATE-01');
   must(guide, 'check:marketplacefreetooperate01', 'script guide exposes check:marketplacefreetooperate01');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');

@@ -3,6 +3,7 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd, ymdTR } from "../time/tr.js";
 import { rebuildShiftRouteStateBestEffort } from "../services/shiftRouteState.js";
+import { upsertAgreementCommercialBackbone } from "../services/paymentBackbone.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { httpError } from "../errors/http.js";
 
@@ -317,6 +318,7 @@ export function organizationRouter(io) {
       data: {
         companyId: company.id,
         roomId: plan.roomId,
+        organizationPlanId: plan.id,
         startDate: plan.planDate,
         endDate: plan.planDate,
         weekMask: weekdayMask(plan.planDate),
@@ -331,6 +333,8 @@ export function organizationRouter(io) {
         companyOfferNote: trimOrNull(req.body?.companyOfferNote) || plan.notes,
       },
     });
+
+    await upsertAgreementCommercialBackbone(agreement.id, { sourceShiftId: plan.publishedShiftId || 0 }).catch(() => null);
 
     await prisma.organizationPlan.update({
       where: { id: plan.id },
