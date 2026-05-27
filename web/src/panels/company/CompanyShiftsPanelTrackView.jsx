@@ -270,7 +270,7 @@ export default function CompanyShiftsPanelTrackView(props) {
         <RoutePreviewModal
           open={previewModal.open}
           onClose={() => setPreviewModal({ open: false, shiftId: null })}
-          title={previewModal.shiftId ? `Shift #${previewModal.shiftId} — Rota/Durak Önizleme` : "Rota/Durak Önizleme"}
+          title={previewModal.shiftId ? `Vardiya #${previewModal.shiftId} — Rota/Durak Önizleme` : "Rota/Durak Önizleme"}
           shiftId={previewModal.shiftId}
         />
       ) : null}

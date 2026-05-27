@@ -222,7 +222,7 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/room/agreements', {
         label: 'Sözleşmeler',
         selectedLabel: 'Tasarruf önizlemesi #77',
-        selectedSummary: 'Readonly • Bekliyor',
+        selectedSummary: 'Sadece önizleme • Bekliyor',
         selectedFields: [
           { label: 'Mevcut rota', value: 'Var' },
           { label: 'Yeni rota', value: 'Var' },
@@ -261,7 +261,7 @@ export function buildGoldenQuestionPack() {
         selectedFields: [
           { label: 'Aktif sürücü', value: '0' },
           { label: 'Riskli cihaz', value: '1' },
-          { label: 'Stale/offline', value: '1' },
+          { label: 'GPS güncel değil / çevrim dışı', value: '1' },
           { label: 'Açık sorun', value: '2' },
         ],
       }),
@@ -604,7 +604,7 @@ export function buildGoldenQuestionPack() {
         selectedFields: [
           { label: 'Kalite', value: 'İnceleme bekliyor' },
           { label: 'Kanıt', value: 'Eksik değil ama kısmi' },
-          { label: 'Hazırlık', value: 'Readonly' },
+          { label: 'Hazırlık', value: 'Sadece önizleme' },
         ],
         selectedBadges: [{ label: 'Durum', value: 'Aktif' }],
       }),
@@ -624,7 +624,7 @@ export function buildGoldenQuestionPack() {
         selectedFields: [
           { label: 'Kanıt', value: 'Eksik' },
           { label: 'Kalite', value: 'Kontrol gerekli' },
-          { label: 'Hazırlık', value: 'Readonly önizleme' },
+          { label: 'Hazırlık', value: 'Sadece önizleme' },
         ],
         selectedBadges: [{ label: 'Durum', value: 'Hazır değil' }],
       }),
@@ -646,7 +646,7 @@ export function buildGoldenQuestionPack() {
           { label: 'Kanıt', value: 'Eksik bilgi yok' },
           { label: 'Hakediş', value: 'Önizleme' },
         ],
-        selectedBadges: [{ label: 'Readonly', value: 'Ödeme başlatılmaz' }],
+        selectedBadges: [{ label: 'Sadece önizleme', value: 'Ödeme başlatılmaz' }],
       }),
     },
     {
@@ -664,7 +664,7 @@ export function buildGoldenQuestionPack() {
         selectedFields: [
           { label: 'Kanıt', value: 'Kısmi' },
           { label: 'Kalite', value: 'İnceleme gerekli' },
-          { label: 'Durum', value: 'Readonly önizleme' },
+          { label: 'Durum', value: 'Sadece önizleme' },
         ],
         selectedBadges: [{ label: 'Hazırlık', value: 'Ödeme başlatılmaz' }],
       }),
@@ -686,7 +686,7 @@ export function buildGoldenQuestionPack() {
           { label: 'Kalite', value: 'İyi' },
           { label: 'Güven', value: 'Önizleme' },
         ],
-        selectedBadges: [{ label: 'Readonly', value: 'Ödeme, ceza ve sıralama yok' }],
+        selectedBadges: [{ label: 'Sadece önizleme', value: 'Ödeme, ceza ve sıralama yok' }],
       }),
     },
     {
@@ -706,7 +706,7 @@ export function buildGoldenQuestionPack() {
           { label: 'Eksik Sinyaller', value: 'GPS, belge' },
           { label: 'Risk', value: 'Orta' },
         ],
-        selectedBadges: [{ label: 'Readonly', value: 'Ödeme başlatılmaz' }],
+        selectedBadges: [{ label: 'Sadece önizleme', value: 'Ödeme başlatılmaz' }],
       }),
     },
     {
@@ -726,7 +726,7 @@ export function buildGoldenQuestionPack() {
           { label: 'Eksik', value: 'Kanıt ve GPS' },
           { label: 'Güven', value: 'Düşük' },
         ],
-        selectedBadges: [{ label: 'Readonly', value: 'Ceza / sıra yok' }],
+        selectedBadges: [{ label: 'Sadece önizleme', value: 'Ceza / sıra yok' }],
       }),
     },
     {
@@ -744,9 +744,9 @@ export function buildGoldenQuestionPack() {
         selectedFields: [
           { label: 'SeferPuanı', value: '3.80 / 5' },
           { label: 'Kalite', value: 'Standart' },
-          { label: 'İşlem', value: 'Readonly önizleme' },
+          { label: 'İşlem', value: 'Sadece önizleme' },
         ],
-        selectedBadges: [{ label: 'Readonly', value: 'Ödeme ve teklif sıralaması yok' }],
+        selectedBadges: [{ label: 'Sadece önizleme', value: 'Ödeme ve teklif sıralaması yok' }],
       }),
     },
     {
@@ -763,10 +763,10 @@ export function buildGoldenQuestionPack() {
         selectedLabel: 'Sözleşme #909',
         selectedFields: [
           { label: 'SeferPuanı', value: '4.20 / 5' },
-          { label: 'Etki', value: 'Readonly önizleme' },
+          { label: 'Etki', value: 'Sadece önizleme' },
           { label: 'Karar', value: 'Yetkili kullanıcıda' },
         ],
-        selectedBadges: [{ label: 'Readonly', value: 'Ödeme, ceza ve sıralama başlatmaz' }],
+        selectedBadges: [{ label: 'Sadece önizleme', value: 'Ödeme, ceza ve sıralama başlatmaz' }],
       }),
     },
     {
@@ -786,7 +786,7 @@ export function buildGoldenQuestionPack() {
           { label: 'Kalite', value: 'İyi' },
           { label: 'Güven', value: 'Yüksek önizleme' },
         ],
-        selectedBadges: [{ label: 'Readonly', value: 'Ödeme ve ceza yok' }],
+        selectedBadges: [{ label: 'Sadece önizleme', value: 'Ödeme ve ceza yok' }],
       }),
     },
     {
@@ -1061,16 +1061,16 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/driver/map', {
         label: 'Harita',
         selectedLabel: '34ABC123',
-        selectedSummary: 'Vardiya #3 • GPS Zayıf / STALE • Son GPS 47s',
+        selectedSummary: 'Vardiya #3 • GPS Zayıf / güncel değil • Son GPS 47s',
         selectedFields: [
           { label: 'Son GPS', value: '47s' },
-          { label: 'GPS durumu', value: 'Zayıf / STALE' },
+          { label: 'GPS durumu', value: 'Zayıf / güncel değil' },
           { label: 'Sıradaki durak', value: 'Pickup 6' },
           { label: 'Toplam durak', value: '6' },
           { label: 'ETA', value: '619dk' },
         ],
         selectedBadges: [
-          { label: 'Araç GPS’i', value: 'Zayıf / STALE' },
+          { label: 'Araç GPS’i', value: 'Zayıf / güncel değil' },
           { label: 'Sürücünün telefon GPS’i', value: 'Bekleniyor' },
         ],
       }),
@@ -1116,7 +1116,7 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/personel/live', {
         label: 'Canlı Takip',
         selectedLabel: 'Bugünkü servis',
-        selectedSummary: '34ABC123 • GPS eski • ETA 12 dk',
+        selectedSummary: '34ABC123 • GPS güncel değil • ETA 12 dk',
         selectedFields: [
           { label: 'Araç', value: '34ABC123' },
           { label: 'Son GPS', value: '2 dk' },
@@ -1124,7 +1124,7 @@ export function buildGoldenQuestionPack() {
           { label: 'Sıradaki durak', value: 'Personel durağı' },
         ],
         selectedBadges: [
-          { label: 'Araç GPS’i', value: 'GPS eski' },
+          { label: 'Araç GPS’i', value: 'GPS güncel değil' },
           { label: 'Sürücünün telefon GPS’i', value: 'Bekleniyor' },
         ],
       }),
@@ -1402,7 +1402,7 @@ export function buildGoldenQuestionPack() {
           { label: 'Sıradaki durak', value: 'Pickup 6' },
         ],
         selectedBadges: [
-          { label: 'Araç GPS’i', value: 'Zayıf / STALE' },
+          { label: 'Araç GPS’i', value: 'Zayıf / güncel değil' },
           { label: 'Sürücünün telefon GPS’i', value: 'Bekleniyor' },
         ],
       }),
@@ -1430,7 +1430,7 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/personel/my', {
         label: 'Servisim',
         selectedLabel: 'Bugünkü servis',
-        selectedSummary: '34ABC123 • GPS eski • ETA 12 dk',
+        selectedSummary: '34ABC123 • GPS güncel değil • ETA 12 dk',
         selectedFields: [
           { label: 'Araç', value: '34ABC123' },
           { label: 'Son GPS', value: '2 dk' },
@@ -1438,7 +1438,7 @@ export function buildGoldenQuestionPack() {
           { label: 'Sıradaki durak', value: 'Personel durağı' },
         ],
         selectedBadges: [
-          { label: 'Araç GPS’i', value: 'GPS eski' },
+          { label: 'Araç GPS’i', value: 'GPS güncel değil' },
           { label: 'Sürücünün telefon GPS’i', value: 'Bekleniyor' },
         ],
       }),
@@ -1563,7 +1563,7 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/company/agreements', {
         label: 'Sözleşmeler (Company)',
         selectedLabel: 'Tasarruf önizlemesi #77',
-        selectedSummary: 'Readonly • Bekliyor',
+        selectedSummary: 'Sadece önizleme • Bekliyor',
         selectedFields: [
           { label: 'Mevcut km', value: '120' },
           { label: 'Yeni km', value: '105' },
@@ -1799,7 +1799,7 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/company/agreements', {
         label: 'Sözleşmeler',
         selectedLabel: 'Sözleşme #911',
-        selectedFields: [{ label: 'Kaynak zinciri', value: 'Readonly' }],
+        selectedFields: [{ label: 'Kaynak zinciri', value: 'Sadece önizleme' }],
       }),
     },
     {
@@ -1814,7 +1814,7 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/room/agreements', {
         label: 'Sözleşmeler',
         selectedLabel: 'Sözleşme #912',
-        selectedFields: [{ label: 'Kaynak durumu', value: 'Readonly' }],
+        selectedFields: [{ label: 'Kaynak durumu', value: 'Sadece önizleme' }],
       }),
     },
     {
@@ -1822,14 +1822,14 @@ export function buildGoldenQuestionPack() {
       role: 'ORGANIZATION',
       entityType: 'screen',
       path: '/organization/shifts',
-      message: 'Organization plan’dan gelen sözleşme kaynaklı sayılır mı?',
-      expectedType: 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW',
+      message: 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?',
+      expectedType: 'PAYMENT_READINESS',
       expectedFirstActionKind: 'ASK',
       minConfidence: 0.72,
       screenContext: ctx('/organization/shifts', {
         label: 'Vardiyalar',
         selectedLabel: 'Sözleşme #913',
-        selectedFields: [{ label: 'Kaynak zinciri', value: 'Readonly' }],
+        selectedFields: [{ label: 'Kaynak zinciri', value: 'Sadece önizleme' }],
       }),
     },
     {
@@ -2069,7 +2069,7 @@ export function buildGoldenQuestionPack() {
         label: 'Ticari Akış',
         selectedFields: [{ label: 'Hazırlık', value: 'Var' }, { label: 'Ödeme', value: 'Kapalı' }],
       }),
-      expectedFocus: 'Hakediş hazırlığı ve readonly ödeme anlatımı',
+      expectedFocus: 'Hakediş hazırlığı ve sadece önizleme ödeme anlatımı',
       forbidden: ['harita', 'Önce Önce', 'settlement kontrolü'],
     },
     {

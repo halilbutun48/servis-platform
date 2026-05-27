@@ -279,17 +279,17 @@ export default function MyRidePanel() {
       scopeKey: '/personel/my',
       entityType: vehicle?.id ? 'vehicle' : 'shift',
       entityId: Number(vehicle?.id || myShift?.id || 0) || null,
-      label: vehicle?.plate ? `Bugünkü servis • ${vehicle.plate}` : `Shift #${myShift?.id || '-'}`,
+      label: vehicle?.plate ? `Bugünkü servis • ${vehicle.plate}` : `Vardiya #${myShift?.id || '-'}`,
       summary: [
-        `Shift #${myShift?.id || '-'}`,
+        `Vardiya #${myShift?.id || '-'}`,
         displayStatusLabel(String(myShift?.status || '').toUpperCase()) || '-',
         vehicle?.plate ? `Araç ${vehicle.plate}` : null,
         `Son GPS ${gpsAgeLabel(vehicle?.gpsLast)}`,
         selectedNext?.name ? `Sıradaki durak ${selectedNext.name}` : null,
-        routeEtaMin != null ? `ETA ${etaDisplayText(vehicle, routeEtaMin, selectedNext)}` : null,
+        routeEtaMin != null ? `Tahmini süre ${etaDisplayText(vehicle, routeEtaMin, selectedNext)}` : null,
       ].filter(Boolean).join(' • '),
       fields: [
-        { label: 'Servis', value: vehicle?.plate || `Shift #${myShift?.id || '-'}`, help: 'Bugünkü servis veya vardiya etiketini gösterir.' },
+        { label: 'Servis', value: vehicle?.plate || `Vardiya #${myShift?.id || '-'}`, help: 'Bugünkü servis veya vardiya etiketini gösterir.' },
         { label: 'Araç', value: vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : '-'), help: 'Bağlı araç plakasını gösterir.' },
         { label: 'Sürücü', value: myShift?.driver?.fullName || (myShift?.driverId ? `#${myShift.driverId}` : '-'), help: 'Bağlı sürücü adını gösterir.' },
         { label: 'Son GPS', value: gpsAgeLabel(vehicle?.gpsLast), help: 'Konumun ne kadar önce geldiğini gösterir.' },
@@ -297,7 +297,7 @@ export default function MyRidePanel() {
         { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını Türkçe ve güvenli biçimde gösterir.' },
         { label: 'Sıradaki durak', value: selectedNext?.name || '-', help: 'Sıradaki veya seçili durağı gösterir.' },
         { label: 'Seçili durak', value: selectedStop?.name || '-', help: 'Elle seçilen durağı gösterir.' },
-        { label: 'ETA', value: routeEtaMin != null ? etaDisplayText(vehicle, routeEtaMin, selectedNext) : '-', help: 'Kalan rota ETA bilgisini güvenli biçimde gösterir.' },
+        { label: 'Tahmini süre', value: routeEtaMin != null ? etaDisplayText(vehicle, routeEtaMin, selectedNext) : '-', help: 'Kalan rota tahmini süre bilgisini güvenli biçimde gösterir.' },
         { label: 'Servis durumu', value: displayStatusLabel(String(myShift?.status || '').toUpperCase()), help: 'Servis veya vardiya durumunu gösterir.' },
       ],
       badges: [
@@ -308,7 +308,7 @@ export default function MyRidePanel() {
         ...copilotFacts,
         selectedRecordType: vehicle?.id ? 'vehicle' : 'shift',
         selectedRecordId: Number(vehicle?.id || myShift?.id || 0) || 0,
-        selectedRecordLabel: vehicle?.plate || `Shift #${myShift?.id || '-'}`,
+        selectedRecordLabel: vehicle?.plate || `Vardiya #${myShift?.id || '-'}`,
         selectedRecordStatus: copilotFacts?.selectedRecordStatus || '',
       },
     };
@@ -369,7 +369,7 @@ export default function MyRidePanel() {
               <div style={{ fontWeight: 700, marginTop: 4 }}>{nearestStop.name}</div>
               <div className="muted" style={{ marginTop: 6 }}>
                 {Number.isFinite(Number(nearestStop.distanceM)) ? <>Bana uzaklık: <b>{(Number(nearestStop.distanceM) / 1000).toFixed(2)} km</b></> : "Konum alınınca uzaklık hesaplanır."}
-                {Number.isFinite(Number(nearestStop.etaMin)) ? <> • Araç ETA: <b>{etaDisplayText(vehicle, Number(nearestStop.etaMin), nearestStop)}</b></> : null}
+                {Number.isFinite(Number(nearestStop.etaMin)) ? <> • Araç tahmini süre: <b>{etaDisplayText(vehicle, Number(nearestStop.etaMin), nearestStop)}</b></> : null}
               </div>
               <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
                 <button type="button" disabled={busy} onClick={() => setSelectedStopId(nearestStop.id)}>En yakın durağı seç</button>
@@ -386,15 +386,15 @@ export default function MyRidePanel() {
           {myShift ? (
             <div className="col" style={{ gap: 6 }}>
               <div>
-                <b>Shift #{myShift.id}</b> — <span className="pill" data-status={String(myShift.status || "").toUpperCase()}>{displayStatusLabel(String(myShift.status || "").toUpperCase())}</span>
+                <b>Vardiya #{myShift.id}</b> — <span className="pill" data-status={String(myShift.status || "").toUpperCase()}>{displayStatusLabel(String(myShift.status || "").toUpperCase())}</span>
               </div>
-              <div className="muted">Room: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
+              <div className="muted">Oda: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
               <div className="muted">Araç: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}</div>
               <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
               <div className="muted">Başlangıç: {fmtTR(myShift.startAt)} • Bitiş: {fmtTR(myShift.endAt)}</div>
               <div className="muted" style={{ marginTop: 6 }}>
                 Kalan durak: <b>{remainingStopsCount}</b>
-                {routeEtaMin != null ? <> • Rota ETA: <b>{etaDisplayText(vehicle, routeEtaMin, selectedStop || nearestStop)}</b></> : null}
+                {routeEtaMin != null ? <> • Rota tahmini süre: <b>{etaDisplayText(vehicle, routeEtaMin, selectedStop || nearestStop)}</b></> : null}
                 {routeKm != null ? <> • Rota km: <b>{routeKm.toFixed(1)} km</b></> : null}
               </div>
               {eta ? (
@@ -429,7 +429,7 @@ export default function MyRidePanel() {
                 <th>Durak</th>
                 <th>Durum</th>
                 <th>Bana Uzaklık</th>
-                <th>Araç ETA</th>
+                <th>Araç tahmini süre</th>
                 <th>İşlem</th>
               </tr>
           </thead>

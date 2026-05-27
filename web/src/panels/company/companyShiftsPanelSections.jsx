@@ -32,7 +32,7 @@ export function CompanyOffersDecisionModal({
     <div className="card" style={{ border: "2px solid #ddd" }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontWeight: 800 }}>Teklifler — Shift #{offersModal.shiftId}</div>
+          <div style={{ fontWeight: 800 }}>Teklifler — Vardiya #{offersModal.shiftId}</div>
           <div className="muted">Birini kabul edince diğerleri otomatik iptal olur{packageSize > 1 ? ` • Paket: ${packageSize} shift` : ""}.</div>
         </div>
         <button type="button" disabled={busy} onClick={onClose}>
@@ -134,7 +134,7 @@ export function CompanyExtendModal({ extendModal, busy, onClose, onChange, onSub
     <div className="card" style={{ border: "2px solid #ddd" }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontWeight: 800 }}>Süre Uzat — Shift #{extendModal.shift?.id}</div>
+          <div style={{ fontWeight: 800 }}>Süre Uzat — Vardiya #{extendModal.shift?.id}</div>
           <div className="muted">Bu talep Room’a gider; kabul edilince vardiya süresi uzar.</div>
         </div>
         <button type="button" className="btn sm" disabled={busy} onClick={onClose}>
@@ -175,7 +175,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
     <div className="card" style={{ border: "2px solid #ddd" }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontWeight: 800 }}>Teklif Gönder — Shift #{offerModal.shiftId}</div>
+          <div style={{ fontWeight: 800 }}>Teklif Gönder — Vardiya #{offerModal.shiftId}</div>
           <div className="muted">Birden fazla room seçip tek seferde teklif at. Room puanı listede üstte görünür.</div>
         </div>
         <button type="button" disabled={busy} onClick={onClose}>

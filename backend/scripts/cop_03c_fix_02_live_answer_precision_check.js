@@ -157,7 +157,7 @@ must(intentRouter, "if (pathHas(screenPath, ['/room/map'])) {\n    return ['Son 
 must(intentRouter, "workflowQuestion ? ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'] : ['Bu ekranı detaylı anlat', 'Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']", 'intent router keeps map workflow chips');
 mustNot(intentRouter, "workflowQuestion ? ['Bu araç neden haritada görünmüyor?',", 'intent router removes GPS self-question chip');
 must(intentRouter, 'Riskli cihazı göster', 'intent router keeps operation-health chips');
-must(intentRouter, 'Stale/offline satırını aç', 'intent router keeps operation-health chips');
+must(intentRouter, 'GPS güncel değil / çevrim dışı satırını aç', 'intent router keeps operation-health chips');
 must(intentRouter, 'Açık sorunları sırala', 'intent router keeps operation-health chips');
 must(intentRouter, 'Aktif sürücüleri kontrol et', 'intent router keeps operation-health chips');
 must(intentRouter, 'Bu bilgi neden görünmüyor?', 'intent router keeps KVKK workflow chips');
@@ -169,9 +169,9 @@ must(screenStateAnalyzer, 'openIssues', 'operation health reads openIssues count
 must(screenStateAnalyzer, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'operation health uses precise diagnosis lead');
 must(screenStateAnalyzer, 'Aktif sürücü: ', 'operation health surfaces active drivers count');
 must(screenStateAnalyzer, 'Riskli cihaz: ', 'operation health surfaces risky device count');
-must(screenStateAnalyzer, 'Stale/Offline: ', 'operation health surfaces stale/offline count');
+must(screenStateAnalyzer, 'GPS güncel değil / çevrim dışı: ', 'operation health surfaces stale/offline count');
 must(screenStateAnalyzer, 'Açık sorun: ', 'operation health surfaces open issues count');
-must(screenStateAnalyzer, 'Önce riskli cihazı aç. Sonra stale/offline satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.', 'operation health next action stays concrete');
+must(screenStateAnalyzer, 'Önce riskli cihazı aç. Sonra GPS güncel değil / çevrim dışı satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.', 'operation health next action stays concrete');
 
 must(facts, 'normalizeEnumKey', 'facts adds enum normalization helper');
 must(facts, "const screenTypeKey = normalizeEnumKey(screenType);", 'facts uses uppercase screen type key');

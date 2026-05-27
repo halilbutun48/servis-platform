@@ -443,7 +443,7 @@ export default function AgreementsPanel() {
         qualityBridgePreview ? {
           label: 'Kalite durumu',
           value: qualityBridgeStatusText || '-',
-          help: 'Readonly kalite değerlendirmesi; ödeme başlatılmaz.',
+          help: 'Sadece kalite değerlendirmesi; ödeme başlatılmaz.',
         } : null,
         qualityBridgePreview ? {
           label: 'Kanıt tamlığı',
@@ -468,7 +468,7 @@ export default function AgreementsPanel() {
         seferScorePreviewData ? {
           label: 'SeferPuanı',
           value: Number.isFinite(seferScoreValue) ? `${seferScoreValue.toFixed(2)} / ${seferScoreMax.toFixed(0)}` : '-',
-          help: seferScoreSummaryText || 'Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.',
+          help: seferScoreSummaryText || 'Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.',
         } : null,
         seferScorePreviewData ? {
           label: 'Seviye',
@@ -488,17 +488,17 @@ export default function AgreementsPanel() {
         platformFeePreviewData ? {
           label: 'Lisans ücreti',
           value: platformFeeLicenseFeeText || '-',
-          help: 'Lisans ücreti daima 0 TL readonly önizlemedir.',
+          help: 'Lisans ücreti daima 0 TL sadece önizlemedir.',
         } : null,
         platformFeePreviewData ? {
           label: 'Kaynak durumu',
           value: platformFeeSourceLabel || '-',
-          help: platformFeeSummaryText || platformFeeSafeExplanation || 'Readonly free-to-operate önizlemesi.',
+          help: platformFeeSummaryText || platformFeeSafeExplanation || 'Sadece kaynak önizlemesi.',
         } : null,
         platformFeePreviewData ? {
           label: 'Başarı payı oranı',
           value: platformFeeRateLabel || '-',
-          help: platformFeeReason || 'Başarı payı yalnızca readonly önizlenir.',
+          help: platformFeeReason || 'Başarı payı yalnızca önizlenir.',
         } : null,
         platformFeePreviewData ? {
           label: 'Tahmini başarı payı',
@@ -508,7 +508,7 @@ export default function AgreementsPanel() {
         platformFeePreviewData ? {
           label: 'Tahsilat / fatura',
           value: 'Kapalı',
-          help: 'Readonly önizleme — tahsilat/fatura oluşturulmaz.',
+          help: 'Sadece önizleme — tahsilat/fatura oluşturulmaz.',
         } : null,
         platformFeePreviewData ? {
           label: 'Kaynak zinciri',
@@ -531,8 +531,8 @@ export default function AgreementsPanel() {
       badges: [
         { label: 'Liste', value: pending.some((x) => x.id === item.id) ? 'Bekleyen' : others.some((x) => x.id === item.id) ? 'Diğer' : 'Uzatma', help: 'Sözleşmenin şu an hangi bölümde göründüğünü gösterir.' },
         { label: 'Kalan Gün', value: daysLeftYmd(item?.endDate) == null ? '-' : `${daysLeftYmd(item?.endDate)} gün`, help: 'Bitiş tarihine kaç gün kaldığını özetler.' },
-        qualityBridgePreview ? { label: 'Readonly', value: 'Ödeme başlatılmaz', help: qualityBridgePreview?.previewOnlyNote || 'Tahsilat/fatura oluşturulmaz.' } : null,
-        platformFeePreviewData ? { label: 'Platform', value: 'Readonly', help: platformFeeSafeExplanation || 'Readonly önizleme — tahsilat/fatura oluşturulmaz.' } : null,
+        qualityBridgePreview ? { label: 'Sadece önizleme', value: 'Ödeme başlatılmaz', help: qualityBridgePreview?.previewOnlyNote || 'Tahsilat/fatura oluşturulmaz.' } : null,
+        platformFeePreviewData ? { label: 'Platform', value: 'Sadece önizleme', help: platformFeeSafeExplanation || 'Sadece önizleme — tahsilat/fatura oluşturulmaz.' } : null,
       ],
       facts,
     });
@@ -623,17 +623,17 @@ export default function AgreementsPanel() {
       setQualityPaymentBridgePreview(
         qualityResult.status === "fulfilled"
           ? { loading: false, data: qualityResult.value, err: "" }
-          : { loading: false, data: null, err: qualityResult.reason?.message || "Readonly önizleme yüklenemedi" }
+          : { loading: false, data: null, err: qualityResult.reason?.message || "Sadece önizleme yüklenemedi" }
       );
       setPlatformFeePreview(
         platformResult.status === "fulfilled"
           ? { loading: false, data: platformResult.value, err: "" }
-          : { loading: false, data: null, err: platformResult.reason?.message || "Readonly platform fee önizlemesi yüklenemedi" }
+          : { loading: false, data: null, err: platformResult.reason?.message || "Sadece platform önizlemesi yüklenemedi" }
       );
       setSeferScorePreview(
         seferResult.status === "fulfilled"
           ? { loading: false, data: seferResult.value, err: "" }
-          : { loading: false, data: null, err: seferResult.reason?.message || "Readonly puan önizlemesi yüklenemedi" }
+          : { loading: false, data: null, err: seferResult.reason?.message || "Sadece puan önizlemesi yüklenemedi" }
       );
     })();
 
@@ -657,7 +657,7 @@ export default function AgreementsPanel() {
     setPreviewModal({
       open: true,
       shiftId: sid,
-      title: nextTitle || `Shift #${sid} — Harita Önizleme`,
+      title: nextTitle || `Vardiya #${sid} — Harita Önizleme`,
     });
   }
 
@@ -1054,7 +1054,7 @@ export default function AgreementsPanel() {
           {copilotAgreementTarget ? (
             <div style={{ display: "grid", gap: 8 }}>
               <div className="muted" style={{ lineHeight: 1.45 }}>
-                Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
+                Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
               </div>
               <QualityPaymentBridgePreviewCard
                 agreement={copilotAgreementTarget}
@@ -1423,7 +1423,7 @@ export default function AgreementsPanel() {
         <RoutePreviewModal
           open={previewModal.open}
           onClose={() => setPreviewModal({ open: false, shiftId: null, title: "Rota Önizleme" })}
-          title={previewModal.title || (previewModal.shiftId ? `Shift #${previewModal.shiftId} — Harita Önizleme` : "Rota Önizleme")}
+          title={previewModal.title || (previewModal.shiftId ? `Vardiya #${previewModal.shiftId} — Harita Önizleme` : "Rota Önizleme")}
           shiftId={previewModal.shiftId}
         />
       ) : null}

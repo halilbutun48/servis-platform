@@ -48,8 +48,7 @@ assert(includesText(help, "kind: 'ROUTE_CHAIN'"), 'help composer adds route chai
 assert(includesText(help, 'routePlan,'), 'help composer returns route plan');
 assert(includesText(panel, 'routePlan: payload?.routePlan || null'), 'copilot panel stores route plan');
 assert(includesText(bubble, 'Hedef ekran:'), 'chat bubble renders route plan badge');
-assert(includesText(qa, 'Hedef yol:'), 'quick actions render primary route hint');
-assert(includesText(qa, 'Yol: {action.routeKey}'), 'quick actions render secondary route hint');
+assert(!includesAnyText(qa, ['Hedef yol:', 'Yol: {action.routeKey}']), 'quick actions keep route-key labels hidden');
 
 const resp = buildChatHelpResponse({
   entityType: 'screen',

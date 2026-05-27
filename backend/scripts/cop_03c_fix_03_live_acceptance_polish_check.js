@@ -142,7 +142,7 @@ must(intentRouter, 'Hakediş önizlemesini aç', 'intent router keeps payment ch
 must(intentRouter, 'İlgili sözleşmeyi aç', 'intent router keeps contract chip');
 must(intentRouter, 'Bildirim kaynağını göster', 'intent router keeps notification chip');
 must(intentRouter, 'Riskli cihazı göster', 'intent router keeps operation-health risk chip');
-must(intentRouter, 'Stale/offline satırını aç', 'intent router keeps operation-health stale chip');
+must(intentRouter, 'GPS güncel değil / çevrim dışı satırını aç', 'intent router keeps operation-health stale chip');
 must(intentRouter, 'Açık sorunları sırala', 'intent router keeps operation-health issue chip');
 must(intentRouter, 'Aktif sürücüleri kontrol et', 'intent router keeps operation-health active driver chip');
 must(intentRouter, 'İşlem kaydını aç', 'intent router keeps logs chip');
@@ -166,7 +166,7 @@ must(facts, "label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon ka
 must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'facts keeps shift recommendation text');
 must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'facts keeps map recommendation text');
   must(facts, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'facts keeps operation health lead');
-  must(facts, 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.', 'facts keeps operation health recommendation');
+  must(facts, 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'facts keeps operation health recommendation');
   mustNotRaw(facts, 'OperationProof', 'facts avoids visible technical proof wording');
 
 must(operationHealthPanel, 'buildOperationHealthCopilotFacts', 'operation health panel uses dedicated copilot facts helper');

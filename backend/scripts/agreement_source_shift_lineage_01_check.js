@@ -125,7 +125,7 @@ async function main() {
 
   must(cardFile, 'Kaynak zinciri', 'platform fee card shows source chain section');
   must(cardFile, 'Mevcut sözleşmeden pay alınmaz', 'platform fee card states no pay on current contract');
-  must(cardFile, 'Readonly önizleme — tahsilat/fatura oluşturulmaz.', 'platform fee card keeps readonly boundary text');
+  must(cardFile, 'Sadece önizleme — tahsilat/fatura oluşturulmaz.', 'platform fee card keeps preview boundary text');
   must(cardFile, 'SeferPakt kaynaklı', 'platform fee card includes source verdict');
   must(cardFile, 'Başarı payı doğar mı', 'platform fee card includes success share verdict');
 
@@ -140,14 +140,14 @@ async function main() {
   must(copilotFacts, 'platformFeeSelectedOfferId', 'agreement copilot facts carry selected offer id');
   must(starterFacts, 'isMarketplaceFreeToOperatePreview', 'starter chips detect marketplace lineage preview');
   must(starterFacts, 'Kaynak zinciri ne?', 'starter chips ask source-chain question');
-  must(starterFacts, 'Organization plan’dan gelen sözleşme kaynaklı sayılır mı?', 'starter chips ask organization plan question');
+  must(starterFacts, 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?', 'starter chips ask organization plan question');
   must(intentRouter, 'source lineage', 'intent router sees source lineage questions');
   must(intentRouter, 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'intent router routes marketplace/source-lineage topic');
   must(answerPolicy, 'marketplaceFreeToOperateChips', 'answer policy exposes marketplace chips');
   must(helpComposer, 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'help composer knows marketplace preview topic');
   must(helpComposer, 'Kaynak vardiyası var mı?', 'help composer includes lineage question');
   must(helpComposer, 'Bu sözleşme hangi vardiyadan geldi?', 'help composer includes source shift question');
-  must(goldenPack, 'Organization plan’dan gelen sözleşme kaynaklı sayılır mı?', 'golden question pack includes organization plan question');
+  must(goldenPack, 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?', 'golden question pack includes organization plan question');
 
   const serviceUrl = pathToFileURL(path.join(root, 'backend/src/services/agreementSourceLineageService.js')).href;
   const platformFeeUrl = pathToFileURL(path.join(root, 'backend/src/services/platformFeePreviewService.js')).href;
@@ -169,7 +169,7 @@ async function main() {
     sourceType: 'LEGACY',
     billableByMarketplacePolicy: false,
   }, 'legacy lineage stays non-billable');
-  must(legacyLineage.lineageSummary, 'Legacy kayıt', 'legacy lineage summary names legacy source');
+  must(legacyLineage.lineageSummary, 'Eski kayıt', 'legacy lineage summary names legacy source');
 
   const manualLineage = inferAgreementSourceLineage({ id: 2, status: 'APPROVED' }, { manualInternal: true, agreementStatus: 'APPROVED' });
   expectPreview(manualLineage, {
@@ -304,9 +304,9 @@ async function main() {
   must(classifyAgreementSource({ sourceType: 'LEGACY', agreementStatus: 'APPROVED' }), 'LEGACY', 'classifier keeps legacy source type');
   must(classifyAgreementSource({ agreementStatus: 'APPROVED', organizationPlanId: 91 }), 'EXISTING_IMPORTED', 'classifier keeps org plan approved as imported');
   must(classifyAgreementSource({ agreementStatus: 'DRAFT', organizationPlanId: 91 }), 'INSUFFICIENT_LINEAGE', 'classifier keeps org plan draft as insufficient');
-  must(buildAgreementLineageSummary({ sourceType: 'LEGACY' }), 'Legacy kayıt', 'summary helper names legacy source');
-  must(buildMarketplaceFreeToOperateSummary(directLineage), 'Readonly önizleme', 'marketplace summary remains readonly');
-  must(buildMarketplaceFreeToOperateSummary(orgPlanApprovedLineage), 'Readonly önizleme', 'marketplace summary keeps fallback readonly');
+  must(buildAgreementLineageSummary({ sourceType: 'LEGACY' }), 'Eski kayıt', 'summary helper names legacy source');
+  must(buildMarketplaceFreeToOperateSummary(directLineage), 'Sadece önizleme', 'marketplace summary remains preview-only');
+  must(buildMarketplaceFreeToOperateSummary(orgPlanApprovedLineage), 'Sadece önizleme', 'marketplace summary keeps fallback preview-only');
 
   const previewSummary = computePlatformFeePreview({
     agreement: { id: 11, status: 'APPROVED', companyOfferAmount: 1000, organizationPlanId: 92 },

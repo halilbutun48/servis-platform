@@ -86,9 +86,9 @@ export default function CopilotAdvancedResultCard({ result, role, copyText, copy
       <div>
         <div className="title">Sonuç</div>
         <div className="muted" style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <span>Provider: <b>{result.provider || "-"}</b></span>
-          <span>Mode: <b>{result.mode || "-"}</b></span>
-          <span>Scope: <b>{result.scope?.role || role || "-"}</b></span>
+          <span>Sağlayıcı: <b>{result.provider || "-"}</b></span>
+          <span>Çalışma modu: <b>{result.mode || "-"}</b></span>
+          <span>Kapsam: <b>{result.scope?.role || role || "-"}</b></span>
           <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
           <span>Oluşturma: <b>{result.generatedAt ? formatDateTimeTR(result.generatedAt) : "-"}</b></span>
           <span>Güven: <b>{confidencePct(result.confidence)}</b></span>
@@ -160,10 +160,13 @@ export default function CopilotAdvancedResultCard({ result, role, copyText, copy
 
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
         <ListBlock title="Sonraki Kontroller" items={result.nextChecks} empty="Ek kontrol önerisi yok." />
-        <div>
-          <div className="title" style={{ fontSize: 16 }}>Referanslar</div>
-          <ReferenceList data={result.references} />
-        </div>
+        <details>
+          <summary className="title" style={{ fontSize: 16, cursor: "pointer" }}>Teknik ayrıntılar</summary>
+          <div style={{ marginTop: 8 }}>
+            <div className="title" style={{ fontSize: 16 }}>Referanslar</div>
+            <ReferenceList data={result.references} />
+          </div>
+        </details>
         <ListBlock title="Kanıtlar" items={result.evidence} empty="Kanıt görünmüyor." />
       </div>
 

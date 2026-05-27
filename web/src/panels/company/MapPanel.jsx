@@ -66,7 +66,7 @@ function normShiftStatus(s) {
 
 function shiftTitle(s) {
   if (!s) return "Shift yok";
-  return `Shift #${s.id} • ${displayStatusLabel(normShiftStatus(s.status))}`;
+  return `Vardiya #${s.id} • ${displayStatusLabel(normShiftStatus(s.status))}`;
 }
 
 function isReached(stop) {
@@ -415,7 +415,7 @@ export default function CompanyMapPanel() {
         { label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Seçili aracın plakasını veya kayıt numarasını gösterir.' },
         { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
         { label: 'Sıradaki Durak', value: selectedNext?.name || '-', help: 'Araç şu anda hangi durağa doğru gidiyor bilgisini gösterir.' },
-        { label: 'ETA', value: etaDisplayText(selected, selectedEta, selectedNext), help: 'Sıradaki durağa tahmini kalan süreyi güvenli biçimde gösterir.' },
+        { label: 'Tahmini süre', value: etaDisplayText(selected, selectedEta, selectedNext), help: 'Sıradaki durağa tahmini kalan süreyi güvenli biçimde gösterir.' },
         { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'Seçili vardiyadaki toplam durak sayısını gösterir.' },
         { label: 'Kalan', value: `${selectedStats?.remaining ?? 0}`, help: 'Henüz tamamlanmamış durak sayısını gösterir.' },
       ],
@@ -590,9 +590,9 @@ export default function CompanyMapPanel() {
                         display: "block",
                       }}
                     >
-                      İlerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
+                      İlerleme: {c.pct}% (tamamlanan: {c.lastReachedOrder}/{c.total || 0})
                       {c.nextStop?.name ? ` • Sıradaki: ${c.nextStop.name}` : ""}
-                      {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${etaDisplayText(selected, c.nextEtaMin, c.nextStop)}` : ""}
+                      {c.nextStop?.name && c.nextEtaMin != null ? ` • Tahmini süre: ${etaDisplayText(selected, c.nextEtaMin, c.nextStop)}` : ""}
                     </span>
                   </span>
 
@@ -671,7 +671,7 @@ export default function CompanyMapPanel() {
                       </button>
 
                       {selectedEta != null ? (
-                        <span className="pill">ETA: {etaDisplayText(selected, selectedEta, selectedNext)}</span>
+                        <span className="pill">Tahmini süre: {etaDisplayText(selected, selectedEta, selectedNext)}</span>
                       ) : null}
 
                       <button

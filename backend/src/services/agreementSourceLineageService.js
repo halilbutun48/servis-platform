@@ -107,20 +107,20 @@ function buildSourceEvidence({
   missingSignals = [],
 } = {}) {
   return compactList([
-    sourceShiftId ? `Kaynak vardiya #${sourceShiftId}` : "",
-    marketShiftId ? `Market shift #${marketShiftId}` : "",
-    organizationPlanId ? `Organization plan #${organizationPlanId}` : "",
+    sourceShiftId ? `Kaynak vardiyası #${sourceShiftId}` : "",
+    marketShiftId ? `Pazar vardiyası #${marketShiftId}` : "",
+    organizationPlanId ? `Organizasyon planı #${organizationPlanId}` : "",
     selectedOfferId ? `Seçili teklif #${selectedOfferId}` : "",
     sourceSummary ? `Kaynak özeti: ${sourceSummary}` : "",
-    hasLineageSignal ? "Kaynak vardiya / market shift sinyali var" : "",
-    hasBillableLineageSignal ? "Kaynak vardiya / market shift / teklif zinciri kanıtlı" : "",
-    hasRenewal ? "Uzatma / yenileme sinyali var" : "",
-    billableByMarketplacePolicy ? "SeferPakt kaynaklı readonly önizleme" : "",
+    hasLineageSignal ? "Kaynak vardiyası sinyali var" : "",
+    hasBillableLineageSignal ? "Kaynak vardiyası / teklif zinciri kanıtlı" : "",
+    hasRenewal ? "Yenileme / uzatma sinyali var" : "",
+    billableByMarketplacePolicy ? "SeferPakt kaynaklı sadece önizleme" : "",
     isManual ? "Manuel iç kayıt" : "",
     isPilot ? "Pilot ücretsiz kayıt" : "",
-    isLegacy ? "Legacy kayıt" : "",
+    isLegacy ? "Eski kayıt" : "",
     isImported ? "Mevcut / taşınmış kayıt" : "",
-    isInsufficient ? "Yetersiz lineage" : "",
+    isInsufficient ? "Kaynak zinciri eksik" : "",
     compactList(missingSignals, 4).length ? `Eksik sinyal: ${compactList(missingSignals, 4).join(", ")}` : "",
   ], 8);
 }
@@ -203,15 +203,15 @@ export function buildAgreementLineageSummary(lineage = {}) {
     EXISTING_IMPORTED: "Mevcut / taşınmış kayıt",
     MANUAL_INTERNAL: "Manuel iç kayıt",
     PILOT_FREE: "Pilot ücretsiz kayıt",
-    LEGACY: "Legacy kayıt",
-    INSUFFICIENT_LINEAGE: "Yetersiz lineage",
+    LEGACY: "Eski kayıt",
+    INSUFFICIENT_LINEAGE: "Kaynak zinciri eksik",
   }[sourceType] || sourceType;
 
   if (sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL") {
     const parts = [
       sourceShiftId ? `Kaynak vardiya #${sourceShiftId}` : "",
-      marketShiftId ? `Market shift #${marketShiftId}` : "",
-      organizationPlanId ? `Organization plan #${organizationPlanId}` : "",
+      marketShiftId ? `Pazar vardiyası #${marketShiftId}` : "",
+      organizationPlanId ? `Organizasyon planı #${organizationPlanId}` : "",
       selectedOfferId ? `Seçili teklif #${selectedOfferId}` : "",
       sourceSummary ? `Kaynak özeti: ${sourceSummary}` : "",
     ].filter(Boolean);
@@ -396,9 +396,9 @@ export function inferAgreementSourceLineage(agreement, context = {}) {
     selectedOfferId: selectedOfferId > 0 ? selectedOfferId : null,
     roomId: roomId > 0 ? roomId : null,
     reason: billableByMarketplacePolicy
-      ? `Kaynak vardiya / market shift zinciri kanıtlı; ${sourceType === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} SeferPakt kaydı readonly önizlenebilir.`
+      ? `Kaynak vardiyası / teklif zinciri kanıtlı; ${sourceType === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} SeferPakt kaydı sadece önizlenebilir.`
       : sourceType === "LEGACY"
-        ? "Legacy kayıt; başarı payı doğmaz."
+        ? "Eski kayıt; başarı payı doğmaz."
         : sourceType === "MANUAL_INTERNAL" || sourceType === "PILOT_FREE"
           ? "Mevcut / manuel / pilot kayıt; başarı payı doğmaz."
           : sourceType === "EXISTING_IMPORTED"

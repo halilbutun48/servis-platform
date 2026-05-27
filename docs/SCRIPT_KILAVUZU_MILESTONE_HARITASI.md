@@ -84,6 +84,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcopilotsmartchips01` -> `node backend\scripts\ux_copilot_smart_chips_01_check.js`
 - `check:uxcopilotpersona01` -> `node backend\scripts\ux_copilot_persona_01_check.js`
 - `check:uxcopilotterminal01` -> `node backend\scripts\ux_copilot_terminal_01_check.js`
+- `check:seferabiterminalhumanize01` -> `node backend\scripts\sefer_abi_terminal_humanize_01_check.js`
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
@@ -1002,6 +1003,11 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:uxseferabilauncher01` sağ alttaki `Sefer Abi’ye Sor` launcher’ını branded compact kart yüzeyine taşır; kapalı halde yalnız launcher görünür ve chat içeriği açılmadan rahatsız etmez.
 - Drawer açıldığında üç kademe boyut korunur; varsayılan açılış küçük/orta çizgide kalır ve büyük boyut başlangıçta zorlanmaz.
 - Bu düzenleme `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`, `UX-COPILOT-SMART-CHIPS-01` ve `UX-NAV-01` zincirini bozmaz; ürün davranışını değiştirmez.
+
+### SEFER-ABI-TERMINAL-HUMANIZE-01 [CHECK]
+- `check:seferabiterminalhumanize01` Sefer Abi Terminali, sağ alt drawer ve analiz yüzeylerindeki teknik/İngilizce/internal/debug metinleri sade Türkçeye taşır.
+- `Sefer Abi Terminali` ana görünümünde rol bazlı, operasyon odaklı, `Durum / Ne anlama geliyor? / Etki / Sıradaki doğru işlem` yapısı korunur; teknik ayrıntılar ikincil `Teknik ayrıntılar` alanında kalır.
+- Bu düzenleme `UX-SEFER-ABI-LAUNCHER-01`, `COP-LIVE-ACCEPT-01`, `DYNAMIC-SAVINGS-01` ve `ROUTE-CHANGE-FINAL-01` zincirini bozmaz; runtime karar ve business flow değiştirmez.
 
 ### UX-COMPANY-PANELS-FINAL-POLISH-01 [CHECK]
 - `check:uxcompanypanelsfinalpolish01` Company / Vardiyalar, Sözleşmeler ve Ticari Akış yüzeylerini son gerçeklik düzeltmesiyle hizalar.

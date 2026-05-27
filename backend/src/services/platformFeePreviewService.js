@@ -371,21 +371,21 @@ export function buildPlatformFeeReason(result = {}) {
   const shareRateLabel = compactText(result?.successShareRateLabel || "Başarı payı doğmaz", "Başarı payı doğmaz");
   const scoreText = compactText(result?.seferScoreText || result?.seferScoreUsed?.summaryText || "", "");
   if (["EXISTING_IMPORTED", "MANUAL_INTERNAL", "PILOT_FREE", "INSUFFICIENT_LINEAGE"].includes(agreementSource)) {
-    return `Lisans ücreti ${licenseFeeText}'dir ve mevcut/taşınmış kayıt için başarı payı doğmaz. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
+    return `Lisans ücreti ${licenseFeeText}'dir ve mevcut/taşınmış kayıt için başarı payı doğmaz. Sadece önizleme — tahsilat/fatura oluşturulmaz.`;
   }
   if (agreementSource === "LEGACY") {
-    return `Lisans ücreti ${licenseFeeText}'dir ve legacy kayıt için başarı payı doğmaz. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
+    return `Lisans ücreti ${licenseFeeText}'dir ve eski sistem kaydı için başarı payı doğmaz. Sadece önizleme — tahsilat/fatura oluşturulmaz.`;
   }
   if (agreementSource === "SEFERPAKT_NEW" || agreementSource === "SEFERPAKT_RENEWAL") {
     const scorePart = scoreText ? ` SeferPuanı: ${scoreText}.` : "";
     const reviewPart = result?.reviewRequired ? " İnceleme gerekli." : "";
-    return `Lisans ücreti ${licenseFeeText}'dir; SeferPakt kaynaklı ${agreementSource === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} kayıt için başarı payı readonly önizlenir.${scorePart}${reviewPart} ${shareRateLabel}. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
+    return `Lisans ücreti ${licenseFeeText}'dir; SeferPakt kaynaklı ${agreementSource === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} kayıt için başarı payı yalnızca önizlenir.${scorePart}${reviewPart} ${shareRateLabel}. Sadece önizleme — tahsilat/fatura oluşturulmaz.`;
   }
-  return `Lisans ücreti ${licenseFeeText}'dir; başarı payı readonly önizlenir. Readonly önizleme — tahsilat/fatura oluşturulmaz.`;
+  return `Lisans ücreti ${licenseFeeText}'dir; başarı payı yalnızca önizlenir. Sadece önizleme — tahsilat/fatura oluşturulmaz.`;
 }
 
 export function buildMarketplaceFreeToOperateSummary(result = {}) {
-  const readonlyBoundary = "Readonly önizleme — tahsilat/fatura oluşturulmaz.";
+  const readonlyBoundary = "Sadece önizleme — tahsilat/fatura oluşturulmaz.";
   const parts = [
     compactText(result?.licenseFeeText || "Lisans ücreti: 0 TL"),
     compactText(result?.agreementSourceLabel || result?.agreementSource || "Kaynak durumu belirsiz"),
@@ -451,14 +451,14 @@ export function computePlatformFeePreview(input = {}) {
     EXISTING_IMPORTED: "Mevcut / taşınmış kayıt",
     MANUAL_INTERNAL: "Manuel iç kayıt",
     PILOT_FREE: "Pilot ücretsiz kayıt",
-    LEGACY: "Legacy kayıt",
+    LEGACY: "Eski kayıt",
     SEFERPAKT_NEW: "SeferPakt kaynaklı yeni sözleşme",
     SEFERPAKT_RENEWAL: "SeferPakt kaynaklı yenileme",
-    INSUFFICIENT_LINEAGE: "Yetersiz lineage",
+    INSUFFICIENT_LINEAGE: "Kaynak zinciri eksik",
   };
   const summaryHint = sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL"
     ? `SeferPuanı ${scoreText} nedeniyle ${ratePreview.rateLabel} önizleniyor.`
-    : "Bu kayıt mevcut / manuel / pilot / legacy / taşınmış görünüyor; başarı payı doğmaz.";
+    : "Bu kayıt mevcut / manuel / pilot / eski / taşınmış görünüyor; başarı payı doğmaz.";
   const result = {
     previewOnly: true,
     licenseFee: 0,
@@ -523,11 +523,11 @@ export function computePlatformFeePreview(input = {}) {
       sourcePreview.sourceLineage?.lineageSummary
       || sourcePreview.lineageSummary
       || sourcePreview.sourceEvidence.join(" • "),
-      sourcePreview.sourceSummary || "Kaynak vardiya / market shift sinyali yok",
+      sourcePreview.sourceSummary || "Kaynak vardiyası sinyali yok",
     ),
     safeExplanation: sourceType === "SEFERPAKT_NEW" || sourceType === "SEFERPAKT_RENEWAL"
-      ? `Lisans ücreti yoktur. Bu kayıt SeferPakt kaynaklı ${sourceType === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} göründüğü için başarı payı sadece readonly önizlenir. Tahsilat/fatura oluşturulmaz.`
-      : `Lisans ücreti yoktur. Bu kayıt ${sourceType === "LEGACY" ? "legacy" : "mevcut/taşınmış"} göründüğü için başarı payı doğmaz. Tahsilat/fatura oluşturulmaz.`,
+      ? `Lisans ücreti yoktur. Bu kayıt SeferPakt kaynaklı ${sourceType === "SEFERPAKT_RENEWAL" ? "yenileme" : "yeni"} göründüğü için başarı payı yalnızca önizlenir. Tahsilat/fatura oluşturulmaz.`
+      : `Lisans ücreti yoktur. Bu kayıt ${sourceType === "LEGACY" ? "eski sistem kaydı" : "mevcut/taşınmış"} göründüğü için başarı payı doğmaz. Tahsilat/fatura oluşturulmaz.`,
     summaryHint,
   };
   result.summaryText = buildMarketplaceFreeToOperateSummary(result);

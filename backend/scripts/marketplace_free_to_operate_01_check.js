@@ -126,19 +126,19 @@ async function main() {
   must(serviceFile, 'payableNow: false', 'platform fee service keeps payableNow false');
   must(serviceFile, 'canInvoice: false', 'platform fee service keeps canInvoice false');
   must(serviceFile, 'canCollect: false', 'platform fee service keeps canCollect false');
-  must(serviceFile, 'Readonly önizleme — tahsilat/fatura oluşturulmaz.', 'platform fee service uses readonly boundary text');
+  must(serviceFile, 'Sadece önizleme — tahsilat/fatura oluşturulmaz.', 'platform fee service uses preview boundary text');
   must(serviceFile, 'mevcut/taşınmış kayıt için başarı payı doğmaz', 'platform fee service blocks imported/manual/pilot share');
   must(serviceFile, 'SeferPakt kaynaklı', 'platform fee service explains seferpakt sources');
   must(marketplaceServiceFile, 'Mevcut / taşınmış kayıt', 'marketplace service keeps existing imported fallback label');
-  must(marketplaceServiceFile, 'Legacy kayıt', 'marketplace service keeps legacy fallback label');
-  must(marketplaceServiceFile, 'Readonly önizleme', 'marketplace service keeps readonly boundary text');
+  must(marketplaceServiceFile, 'Eski kayıt', 'marketplace service keeps legacy fallback label');
+  must(marketplaceServiceFile, 'Sadece önizleme', 'marketplace service keeps preview boundary text');
 
   must(routeFile, '/:id/platform-fee-preview', 'agreements route exposes readonly platform fee preview endpoint');
   must(routeFile, 'return res.json({ platformFeePreview })', 'agreements route returns platformFeePreview JSON');
   mustNot(routeFile, 'r.post("/:id/platform-fee-preview"', 'platform fee preview stays read-only');
 
   must(cardFile, 'Lisanssız free-to-operate ticari model önizlemesi', 'platform fee card headline present');
-  must(cardFile, 'Readonly önizleme — tahsilat/fatura oluşturulmaz.', 'platform fee card readonly boundary present');
+  must(cardFile, 'Sadece önizleme — tahsilat/fatura oluşturulmaz.', 'platform fee card preview boundary present');
   must(cardFile, 'Mevcut sözleşmeden pay alınmaz', 'platform fee card states no pay on current contract');
   must(cardFile, 'Kaynak vardiya zinciri kanıtlanmıyorsa başarı payı doğmaz', 'platform fee card explains lineage fallback');
 
@@ -155,10 +155,10 @@ async function main() {
   must(answerPolicy, 'marketplaceFreeToOperateChips', 'answer policy exposes marketplace chips');
   must(answerPolicy, 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'answer policy routes marketplace topic');
   must(helpComposer, 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'help composer knows marketplace preview question type');
-  must(helpComposer, 'Lisans ücreti 0 TL readonly önizlenir', 'help composer provides marketplace safety text');
-  must(helpComposer, 'Readonly free-to-operate önizlemesini', 'help composer provides marketplace verification hint');
-  must(helpComposer, 'Kaynak vardiya / market shift / teklif seçimi zinciri', 'help composer explains source-lineage gate');
-  must(goldenPack, 'Organization plan’dan gelen sözleşme kaynaklı sayılır mı?', 'golden question pack includes organization plan question');
+  must(helpComposer, 'Lisans ücreti yoktur; mevcut / manuel / pilot / eski kayıt için pay doğmaz', 'help composer provides marketplace safety text');
+  must(helpComposer, 'Bu sadece başarı payı önizlemesidir.', 'help composer provides marketplace verification hint');
+  must(helpComposer, 'kaynak vardiya / teklif seçimi sinyallerini', 'help composer explains source-lineage gate');
+  must(goldenPack, 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?', 'golden question pack includes organization plan question');
 
   const serviceUrl = pathToFileURL(path.join(root, 'backend/src/services/platformFeePreviewService.js')).href;
   const {
@@ -404,8 +404,8 @@ async function main() {
   must(directLineage.sourceLineage?.sourceType || '', 'SEFERPAKT_NEW', 'direct lineage returns source lineage');
   must(directLineage.sourceLineage?.lineageSummary || '', 'SeferPakt kaynaklı yeni sözleşme', 'direct lineage summary names new contract');
 
-  must(buildMarketplaceFreeToOperateSummary(newElite), 'Readonly önizleme', 'summary helper keeps readonly wording');
-  must(buildMarketplaceFreeToOperateSummary(existingImported), 'Readonly önizleme', 'summary helper keeps fallback wording');
+  must(buildMarketplaceFreeToOperateSummary(newElite), 'Sadece önizleme', 'summary helper keeps preview wording');
+  must(buildMarketplaceFreeToOperateSummary(existingImported), 'Sadece önizleme', 'summary helper keeps fallback wording');
 
   const scoreChecks = [
     computeSuccessShareRateBySeferScore(4.8).rate,

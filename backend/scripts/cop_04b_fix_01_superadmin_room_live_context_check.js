@@ -158,7 +158,7 @@ must(helpComposer, 'selectedRecordStatus', 'help composer keeps selected record 
 
 must(answerPolicy, 'workflowTopicChipSet', 'answer policy keeps workflow chip set');
 must(answerPolicy, 'Riskli cihazı göster', 'answer policy keeps operation-health chip');
-must(answerPolicy, 'Stale/offline satırını aç', 'answer policy keeps stale chip');
+must(answerPolicy, 'GPS güncel değil / çevrim dışı satırını aç', 'answer policy keeps stale chip');
 must(answerPolicy, 'Açık sorunları sırala', 'answer policy keeps issue chip');
 must(answerPolicy, 'Aktif sürücüleri kontrol et', 'answer policy keeps active driver chip');
 must(answerPolicy, 'Son GPS ne zaman geldi?', 'answer policy keeps gps chip');
@@ -373,13 +373,13 @@ const roomOperationHelp = buildChatHelpResponse({
 const roomOperationReply = String(roomOperationHelp?.reply || roomOperationHelp?.summary || '');
 mustAny(roomOperationReply, ['Aktif sürücü 0', 'Aktif sürücü: 0'], 'operation health reply keeps active driver count');
 mustAny(roomOperationReply, ['riskli cihaz 1', 'Riskli cihaz: 1'], 'operation health reply keeps risky device count');
-mustAny(roomOperationReply, ['stale/offline 1', 'Stale/offline: 1'], 'operation health reply keeps stale offline count');
+mustAny(roomOperationReply, ['GPS güncel değil / çevrim dışı 1', 'GPS güncel değil / çevrim dışı: 1'], 'operation health reply keeps stale offline count');
 mustAny(roomOperationReply, ['açık sorun 2', 'Açık sorun: 2'], 'operation health reply keeps open issue count');
-must(roomOperationReply, 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.', 'operation health reply keeps natural next step');
+must(roomOperationReply, 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'operation health reply keeps natural next step');
 mustNot(roomOperationReply, 'Yetki sınırını kontrol et', 'operation health reply avoids default role boundary');
 mustNot(roomOperationReply, 'Bu aksiyonu simüle et', 'operation health reply avoids action simulation wording');
 mustAny(roomOperationHelp?.contextualSuggestedChips || roomOperationHelp?.suggestedChips || [], ['Riskli cihazı göster'], 'operation health chips keep risk chip');
-mustAny(roomOperationHelp?.contextualSuggestedChips || roomOperationHelp?.suggestedChips || [], ['Stale/offline satırını aç'], 'operation health chips keep stale chip');
+mustAny(roomOperationHelp?.contextualSuggestedChips || roomOperationHelp?.suggestedChips || [], ['GPS güncel değil / çevrim dışı satırını aç'], 'operation health chips keep stale chip');
 mustAny(roomOperationHelp?.contextualSuggestedChips || roomOperationHelp?.suggestedChips || [], ['Açık sorunları sırala'], 'operation health chips keep issue chip');
 mustAny(roomOperationHelp?.contextualSuggestedChips || roomOperationHelp?.suggestedChips || [], ['Aktif sürücüleri kontrol et'], 'operation health chips keep driver chip');
 mustArrayNotContains(roomOperationHelp?.contextualSuggestedChips || roomOperationHelp?.suggestedChips || [], 'Aynı kayıt için devam et', 'operation health chips avoid generic continuation chip');
@@ -446,7 +446,7 @@ mustNot(superOperationsReply, 'seçili araç bilgisi net görünmüyor', 'supera
 mustNot(superOperationsReply, 'Yetki sınırını kontrol et', 'superadmin operations reply avoids default role boundary');
 mustNot(superOperationsReply, 'Bu aksiyonu simüle et', 'superadmin operations reply avoids mechanical action wording');
 mustAny(superOperationsHelp?.contextualSuggestedChips || superOperationsHelp?.suggestedChips || [], ['Riskli cihazı göster'], 'superadmin operations chips keep risk chip');
-mustAny(superOperationsHelp?.contextualSuggestedChips || superOperationsHelp?.suggestedChips || [], ['Stale/offline satırını aç'], 'superadmin operations chips keep stale chip');
+mustAny(superOperationsHelp?.contextualSuggestedChips || superOperationsHelp?.suggestedChips || [], ['GPS güncel değil / çevrim dışı satırını aç'], 'superadmin operations chips keep stale chip');
 mustAny(superOperationsHelp?.contextualSuggestedChips || superOperationsHelp?.suggestedChips || [], ['Açık sorunları sırala'], 'superadmin operations chips keep issue chip');
 mustAny(superOperationsHelp?.contextualSuggestedChips || superOperationsHelp?.suggestedChips || [], ['Aktif sürücüleri kontrol et'], 'superadmin operations chips keep driver chip');
 mustArrayNotContains(superOperationsHelp?.contextualSuggestedChips || superOperationsHelp?.suggestedChips || [], 'Aynı kayıt için devam et', 'superadmin operations chips avoid generic continuation chip');

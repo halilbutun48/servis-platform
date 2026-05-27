@@ -129,7 +129,7 @@ export const COPILOT_PERSONA = Object.freeze({
 
 export const COPILOT_TERMINAL = Object.freeze({
   title: 'Sefer Abi Terminali',
-  subtitle: 'Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan readonly analiz alanı.',
+  subtitle: 'Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan sade analiz alanı.',
   readonlyBoundary: 'Bu ekran işlem başlatmaz; yalnızca görünür sinyalleri yorumlar.',
   drawerSeparationNote: 'Sağ alttaki Sefer Abi’ye Sor hızlı destek içindir; terminal daha derin analiz yüzeyidir.',
   starterChips: Object.freeze([
@@ -375,10 +375,10 @@ export function buildDiagnosticPriority({
     const rows = [];
     if (Number.isFinite(activeDrivers)) rows.push(normalizeCopilotSignal({ id: 'active-drivers', label: '1. öncelik', value: activeDrivers === 0 ? 'Aktif sürücü 0' : `Aktif sürücü ${activeDrivers}`, note: activeDrivers === 0 ? 'Canlılık riski görünür.' : 'Canlı sürücü sayısı okunur.' }));
     if (Number.isFinite(riskyDevices)) rows.push(normalizeCopilotSignal({ id: 'risky-devices', label: '2. öncelik', value: riskyDevices > 0 ? 'Riskli cihaz' : 'Riskli cihaz yok', note: riskyDevices > 0 ? 'İzin, oturum veya GPS riski var.' : 'Belirgin cihaz riski görünmüyor.' }));
-    if (Number.isFinite(staleOrOffline)) rows.push(normalizeCopilotSignal({ id: 'stale-offline', label: '3. öncelik', value: staleOrOffline > 0 ? 'Stale/offline' : 'Stale/offline yok', note: staleOrOffline > 0 ? 'Canlı konum akışı eski olabilir.' : 'Konum akışı canlı görünüyor.' }));
+    if (Number.isFinite(staleOrOffline)) rows.push(normalizeCopilotSignal({ id: 'stale-offline', label: '3. öncelik', value: staleOrOffline > 0 ? 'GPS güncel değil' : 'GPS güncel', note: staleOrOffline > 0 ? 'Canlı konum akışı eski olabilir.' : 'Konum akışı canlı görünüyor.' }));
     if (Number.isFinite(openIssues)) rows.push(normalizeCopilotSignal({ id: 'open-issues', label: '4. öncelik', value: openIssues > 0 ? 'Açık sorun' : 'Açık sorun yok', note: openIssues > 0 ? 'Takip edilmesi gereken durumlar var.' : 'Açık sorun görünmüyor.' }));
     const summaryText = hasCounts
-      ? `En olası sıra: Canlılık ve cihaz riski • Riskli cihaz • Stale/offline • Açık sorun`
+      ? `En olası sıra: Canlılık ve cihaz riski • Riskli cihaz • GPS güncel değil / çevrim dışı • Açık sorun`
       : 'Belirgin öncelik ayrımı yok';
     return {
       summary: summaryText,
@@ -549,8 +549,8 @@ export function buildActionSimulationWording({
   } else if (normalizedScreenType === 'OPERATION_HEALTH') {
     const hasCounts = [activeDrivers, riskyDevices, staleOrOffline, openIssues].some((value) => Number.isFinite(value));
     text = hasCounts
-      ? 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.'
-      : 'Açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını birlikte kontrol et.';
+      ? 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.'
+      : 'Açık sorun, riskli cihaz, aktif sürücü ve GPS güncel değil / çevrim dışı satırlarını birlikte kontrol et.';
   } else if (topPriority) {
     text = `${topPriority.toLocaleLowerCase('tr-TR')} kontrol edilir, sonra uygun ekran açılır.`;
   }
@@ -738,8 +738,8 @@ export function buildOperationHealthCopilotFacts({
   };
   const hasSignal = [counters.activeDrivers, counters.riskyDevices, counters.staleOrOffline, counters.openIssues].some((value) => Number.isFinite(value));
   const summaryText = hasSignal
-    ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(counters.activeDrivers) ? counters.activeDrivers : 0}, riskli cihaz ${Number.isFinite(counters.riskyDevices) ? counters.riskyDevices : 0}, stale/offline ${Number.isFinite(counters.staleOrOffline) ? counters.staleOrOffline : 0} ve açık sorun ${Number.isFinite(counters.openIssues) ? counters.openIssues : 0} görünüyor.`
-    : 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını kontrol et.';
+    ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(counters.activeDrivers) ? counters.activeDrivers : 0}, riskli cihaz ${Number.isFinite(counters.riskyDevices) ? counters.riskyDevices : 0}, GPS güncel değil / çevrim dışı ${Number.isFinite(counters.staleOrOffline) ? counters.staleOrOffline : 0} ve açık sorun ${Number.isFinite(counters.openIssues) ? counters.openIssues : 0} görünüyor.`
+    : 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve GPS güncel değil / çevrim dışı satırlarını kontrol et.';
   return buildReadonlyCopilotFacts({
     screenType: 'OPERATION_HEALTH',
     stage: String(summary?.status || 'ROOM_VIEW').toUpperCase(),
@@ -749,27 +749,27 @@ export function buildOperationHealthCopilotFacts({
     blockers: [
       counters.openIssues > 0 ? 'Açık sorunlar kapatılmadan saha güveni düşer.' : '',
       counters.riskyDevices > 0 ? 'Riskli cihazlar var.' : '',
-      counters.staleOrOffline > 0 ? 'Stale veya offline kayıtlar var.' : '',
+      counters.staleOrOffline > 0 ? 'GPS güncel değil / çevrim dışı kayıtlar var.' : '',
     ].filter(Boolean),
     evidence: [
       `Aktif sürücü: ${counters.activeDrivers}`,
       `Riskli cihaz: ${counters.riskyDevices}`,
-      `Stale/offline: ${counters.staleOrOffline}`,
+      `GPS güncel değil / çevrim dışı: ${counters.staleOrOffline}`,
       `Açık sorun: ${counters.openIssues}`,
       copilotDriver?.driverName ? `Örnek sürücü: ${copilotDriver.driverName}` : '',
       copilotIssue?.title ? `Örnek sorun: ${copilotIssue.title}` : '',
     ].filter(Boolean),
     nextBestAction: counters.openIssues > 0
-      ? 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.'
-      : 'Aktif sürücü, riskli cihaz, stale/offline ve açık sorun sayısını birlikte kontrol et.',
-    safestNextStep: 'En risksiz adım, önce riskli cihaz ve stale/offline satırını açmaktır.',
+      ? 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını aç ve açık sorunları sırala.'
+      : 'Aktif sürücü, riskli cihaz, GPS güncel değil / çevrim dışı ve açık sorun sayısını birlikte kontrol et.',
+    safestNextStep: 'En risksiz adım, önce riskli cihaz ve GPS güncel değil / çevrim dışı satırını açmaktır.',
     compareHint: 'Operasyon sağlığı canlılık ve risk okuması içindir; tek başına işlem kararı değildir.',
     counters,
-    selectedRecordStatus: `Aktif sürücü ${counters.activeDrivers} • Riskli cihaz ${counters.riskyDevices} • Stale/offline ${counters.staleOrOffline} • Açık sorun ${counters.openIssues}`,
+    selectedRecordStatus: `Aktif sürücü ${counters.activeDrivers} • Riskli cihaz ${counters.riskyDevices} • GPS güncel değil / çevrim dışı ${counters.staleOrOffline} • Açık sorun ${counters.openIssues}`,
     copilotSignals: [
       { id: 'activeDrivers', label: 'Aktif sürücü', value: String(counters.activeDrivers), note: 'Canlı görünen sürücü sayısı.' },
       { id: 'riskyDevices', label: 'Riskli cihaz', value: String(counters.riskyDevices), note: 'İzin, oturum veya GPS riski taşıyan cihaz sayısı.' },
-      { id: 'staleOrOffline', label: 'Stale / Offline', value: String(counters.staleOrOffline), note: 'Canlı konum akışı zayıf olan kayıt sayısı.' },
+      { id: 'staleOrOffline', label: 'GPS güncel değil / çevrim dışı', value: String(counters.staleOrOffline), note: 'Canlı konum akışı zayıf olan kayıt sayısı.' },
       { id: 'openIssues', label: 'Açık sorun', value: String(counters.openIssues), note: 'Takip edilmesi gereken sorun sayısı.' },
       copilotDriver?.driverName ? { id: 'sampleDriver', label: 'Örnek sürücü', value: copilotDriver.driverName, note: copilotDriver?.liveState || 'Canlı durum' } : null,
       copilotIssue?.title ? { id: 'sampleIssue', label: 'Örnek sorun', value: copilotIssue.title, note: copilotIssue?.severity || 'Önem seviyesi' } : null,
@@ -842,12 +842,22 @@ export function buildCommercialCoreCopilotFacts({
   const previewStatus = compactText(paymentPreviewSummary?.statusText || paymentPreviewSummary?.status || 'Taslak', 'Taslak');
   const previewReason = compactText(paymentPreviewSummary?.detailReason || paymentPreviewSummary?.summaryText || paymentPreviewSummary?.nextAction || 'Önizleme verisi okunuyor.', 'Önizleme verisi okunuyor.');
   const settlementText = compactText(settlementStatus?.summaryText || settlementStatus?.status || 'Kontrol gerekli', 'Kontrol gerekli');
+  const paymentModeLabel = compactText(
+    paymentBackbone?.activeRule
+      ? ({
+        OFF: 'Kapalı',
+        OPTIONAL: 'İsteğe bağlı',
+        REQUIRED: 'Zorunlu',
+      }[String(paymentBackbone.activeRule.paymentMode || '').toUpperCase()] || paymentBackbone.activeRule.paymentMode || 'Kapalı')
+      : (settings?.globalRule?.paymentMode || 'Eksik bilgi'),
+    'Eksik bilgi',
+  );
   const commissionText = compactText(
-    paymentBackbone?.activeRule ? `${paymentBackbone.activeRule.paymentMode || 'OFF'} • ${paymentBackbone.activeRule.commissionBps != null ? `${Number(paymentBackbone.activeRule.commissionBps)} bps` : '-'}` : 'Komisyon kuralı tanımlı değil',
+    paymentBackbone?.activeRule ? `${paymentModeLabel} • ${paymentBackbone.activeRule.commissionBps != null ? `${Number(paymentBackbone.activeRule.commissionBps)} bps` : '-'}` : 'Komisyon kuralı tanımlı değil',
     'Komisyon kuralı tanımlı değil',
   );
   const accountText = compactText(
-    paymentPreviewSummary?.paymentAccountStatus || accountStatus?.summaryText || accountStatus?.summary || settings?.globalRule?.paymentMode || 'Eksik bilgi',
+    paymentPreviewSummary?.paymentAccountStatus || accountStatus?.summaryText || accountStatus?.summary || paymentModeLabel || 'Eksik bilgi',
     'Eksik bilgi',
   );
   const serviceProofText = compactText(
@@ -883,7 +893,7 @@ export function buildCommercialCoreCopilotFacts({
       `ödeme hesabı: ${accountText}`,
       `servis kanıtı: ${serviceProofText}`,
       `sözleşme / vardiya: ${contractShiftText}`,
-      `settlement: ${settlementText}`,
+      `Tahsilat: ${settlementText}`,
       `kaynak özeti: ${auditSummary}`,
     ],
     nextBestAction: compactText(paymentPreviewSummary?.nextAction || (missingCount > 0
@@ -903,10 +913,10 @@ export function buildCommercialCoreCopilotFacts({
     copilotSignals: [
       { id: 'paymentPreviewStatus', label: 'Hakediş önizleme', value: previewStatus, note: previewReason },
       { id: 'paymentPreviewMissingInfo', label: 'Eksik / kontrol gerekli', value: missingInfoText, note: missingInfoNote },
-      { id: 'commissionStatus', label: 'Komisyon durumu', value: commissionText, note: 'Aktif ödeme kapalı; sadece hazırlık görünümü.' },
+      { id: 'commissionStatus', label: 'Komisyon durumu', value: commissionText, note: 'Tahsilat kapalı; sadece hazırlık görünümü.' },
       { id: 'paymentAccountStatus', label: 'Ödeme hesabı durumu', value: accountText, note: 'Eksik bilgi veya kontrol gerekli olabilir.' },
-      { id: 'serviceProofStatus', label: 'Servis kanıtı', value: serviceProofText, note: 'Readonly önizleme ve kanıt durumu birlikte okunur.' },
-      { id: 'settlementStatus', label: 'Settlement durumu', value: settlementText, note: 'Aktif ödeme kapalı; sadece kapanış hazırlığı görünür.' },
+      { id: 'serviceProofStatus', label: 'Servis kanıtı', value: serviceProofText, note: 'Sadece önizleme ve kanıt durumu birlikte okunur.' },
+      { id: 'settlementStatus', label: 'Tahsilat durumu', value: settlementText, note: 'Tahsilat kapalı; sadece kapanış hazırlığı görünür.' },
       { id: 'contractShiftGeneration', label: 'Sözleşme / vardiya', value: contractShiftText || contractShiftNote, note: contractShiftNote },
     ],
     boundaryNotes: [csvBoundary, 'Ödeme başlatılmaz.', 'Sadece önizleme verisi indirilir.', auditSummary, `Servis kanıtı: ${serviceProofText}`],
@@ -1045,7 +1055,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
       enabled: offerCount > 0,
       reason: 'Bu kayıtta görünen açık teklif yok.',
       purpose: 'Bu vardiyaya bağlı teklif veya karar akışını açar.',
-      whenToUse: 'Karar kapanmadıysa ve room/company teklifi incelenecekse kullanılır.',
+      whenToUse: 'Karar kapanmadıysa ve oda/firma teklifi incelenecekse kullanılır.',
       whatHappens: 'Teklif listesi veya teklif modalı açılır.',
       required: ['Görünen teklif olmalı'],
       blockedBy: offerCount > 0 ? [] : ['Açık teklif yok'],
@@ -2153,7 +2163,7 @@ export function buildCopilotStarterChips({
   if (isRoomMap) {
     chips = ['Bu araç neden görünmüyor?', 'Son GPS ne zaman geldi?', 'Sürücünün telefon GPS’i devrede mi?', 'Araç bağlantısı var mı?'];
   } else if (isRoomOperationHealth) {
-    chips = ['Riskli cihazları göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücü durumunu sor'];
+    chips = ['Riskli cihazları göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücü durumunu sor'];
   } else if (isSuperAdminOps) {
     chips = ['Riskleri sırala', 'GPS görünürlüğünü kontrol et', 'Açık sorunları göster', 'Sıradaki doğru işlem ne?'];
   } else if (isAgreementRouteRefresh) {
@@ -2170,7 +2180,7 @@ export function buildCopilotStarterChips({
       : ['Bugün vardiya üretildi mi?', 'Üretilen vardiyaları göster', 'Sözleşme üretim durumunu açıkla', 'Son üretilen vardiya hangisi?'];
   } else if (isCommercialSurface) {
     chips = isMarketplaceFreeToOperatePreview
-      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Mevcut sözleşmeden pay alınır mı?', 'Kalite puanı payı etkiliyor mu?', 'Kaynak zinciri ne?', 'Organization plan’dan gelen sözleşme kaynaklı sayılır mı?']
+      ? ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Mevcut sözleşmeden pay alınır mı?', 'Kalite puanı payı etkiliyor mu?', 'Kaynak zinciri ne?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?']
       : isSeferScorePreview
       ? ['Bu tedarikçinin SeferPuanı kaç?', 'Kalite puanı neden düşük?', 'Eksik sinyalleri göster', 'SeferPuanı nasıl yükselir?']
       : isQualityPaymentBridgePreview

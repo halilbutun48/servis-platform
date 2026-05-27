@@ -177,7 +177,7 @@ export default function DriverMapPanel() {
         `Durum: ${String(activeShift?.status || "-").toUpperCase()}`,
         `Son GPS: ${gpsAge}`,
         `Sıradaki durak: ${nextStop?.name || "-"}`,
-        `ETA: ${routeEtaText}`,
+        `Tahmini süre: ${routeEtaText}`,
       ].join(" • "),
       selectedRecordType: selectedVehicle ? "vehicle" : "shift",
       selectedRecordId: Number(selectedVehicle?.id || activeShift?.id || 0) || 0,
@@ -207,7 +207,7 @@ export default function DriverMapPanel() {
         { label: "Sıradaki durak", value: nextStop?.name || "-" },
         { label: "Toplam durak", value: String(stats.total) },
         { label: "Kalan durak", value: String(stats.remaining) },
-        { label: "ETA", value: routeEtaText },
+        { label: "Tahmini süre", value: routeEtaText },
         { label: "Operasyon kanıtı", value: routeProofText },
       ],
       fields: [
@@ -219,7 +219,7 @@ export default function DriverMapPanel() {
         { label: "Sıradaki durak", value: nextStop?.name || "-" },
         { label: "Toplam durak", value: String(stats.total) },
         { label: "Kalan durak", value: String(stats.remaining) },
-        { label: "ETA", value: routeEtaText },
+        { label: "Tahmini süre", value: routeEtaText },
         { label: "Operasyon kanıtı", value: routeProofText },
       ],
       selectedBadges: [
@@ -256,7 +256,7 @@ export default function DriverMapPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title="Driver - Harita"
+        title="Sürücü - Harita"
         subtitle="Seçili araç + vardiya durakları"
         actions={<button onClick={loadAll} style={{ padding: "8px 12px" }}>Yenile</button>}
       />

@@ -413,7 +413,7 @@ function buildQualityPaymentBridgePreview({
     agreementId,
     agreementLabel,
     previewOnly: true,
-    previewOnlyNote: "Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.",
+    previewOnlyNote: "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.",
     canStartPayment: false,
     paymentActionBlocked: true,
     qualityStatus,

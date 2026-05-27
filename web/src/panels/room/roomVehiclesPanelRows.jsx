@@ -38,7 +38,7 @@ export function ShiftCompact({ s, open, onToggle }) {
         <div className="muted" style={{ fontSize: 12, display: "grid", gap: 4 }}>
           <div>{shiftWindowLabel(s)}</div>
           <div>Company: <b>{companyName || "-"}</b></div>
-          <div>Room: <b>{s.room?.name || (s.roomId ? `room#${s.roomId}` : "-")}</b></div>
+          <div>Oda: <b>{s.room?.name || (s.roomId ? `oda#${s.roomId}` : "-")}</b></div>
           <div>Route: <b>{s.route?.name || (s.routeId ? `route#${s.routeId}` : "-")}</b></div>
           <div>Direction: <b>{s.direction || "-"}</b></div>
           {s.note ? <div>Not: <b>{s.note}</b></div> : null}

@@ -272,7 +272,7 @@ const SURFACE_ANALYSIS_RULES = {
   },
   COMMERCIAL_CORE: {
     surfaceLabel: 'Ticari Akış',
-    reasoningLead: 'Bu ekran hakediş hazırlığı, önizleme, CSV taslağı ve readonly ödeme durumunu gösterir.',
+    reasoningLead: 'Bu ekran hakediş hazırlığı, önizleme, CSV taslağı ve sadece önizleme ödeme durumunu gösterir.',
     nextBestAction: 'Önce hazırlık, önizleme ve güvenli mod durumunu oku. Sonra hakediş önizleme veya CSV taslağına geç.',
     safestNextStep: 'En risksiz adım, önce ödeme başlatılmadığını ve sadece taslak veriyi okumaktır.',
     compareHint: 'Ticari akış ekranı ödeme başlatmaz; hazırlanmış veriyi gösterir.',
@@ -790,30 +790,30 @@ function analyzeOperationHealth(screenContext, screenDefinition) {
   if (!hasBlankish(live) && Number(String(live).replace(/[^\d]/g, '') || 0) > 0) result.blockers.push('Stale veya offline sürücü sayısı sıfır değil.');
   if (Number.isFinite(activeDrivers) && activeDrivers === 0) result.blockers.push('Aktif sürücü 0 görünüyor.');
   if (Number.isFinite(riskyDevices) && riskyDevices > 0) result.blockers.push('Riskli cihaz var.');
-  if (Number.isFinite(staleOrOffline) && staleOrOffline > 0) result.blockers.push('Stale/offline kayıt var.');
+  if (Number.isFinite(staleOrOffline) && staleOrOffline > 0) result.blockers.push('GPS güncel değil / çevrim dışı kayıt var.');
   if (Number.isFinite(openIssues) && openIssues > 0) result.blockers.push('Açık sorun var.');
   if (Number.isFinite(activeDrivers)) result.evidence.push(`Aktif sürücü: ${activeDrivers}`);
   if (Number.isFinite(riskyDevices)) result.evidence.push(`Riskli cihaz: ${riskyDevices}`);
-  if (Number.isFinite(staleOrOffline)) result.evidence.push(`Stale/Offline: ${staleOrOffline}`);
+  if (Number.isFinite(staleOrOffline)) result.evidence.push(`GPS güncel değil / çevrim dışı: ${staleOrOffline}`);
   if (Number.isFinite(openIssues)) result.evidence.push(`Açık sorun: ${openIssues}`);
-  if (live) result.evidence.push(`Stale/Offline: ${live}`);
+  if (live) result.evidence.push(`GPS güncel değil / çevrim dışı: ${live}`);
   if (risky) result.evidence.push(`Riskli cihaz: ${risky}`);
   if (issues) result.evidence.push(`Açık sorun: ${issues}`);
   if (sampleDriver) result.evidence.push(`Örnek sürücü: ${sampleDriver}`);
   if (sampleIssue) result.evidence.push(`Örnek sorun: ${sampleIssue}`);
   result.reasoningLead = hasOperationalCounts
-    ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(activeDrivers) ? activeDrivers : 0}, riskli cihaz ${Number.isFinite(riskyDevices) ? riskyDevices : 0}, stale/offline ${Number.isFinite(staleOrOffline) ? staleOrOffline : 0} ve açık sorun ${Number.isFinite(openIssues) ? openIssues : 0} görünüyor.`
+    ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(activeDrivers) ? activeDrivers : 0}, riskli cihaz ${Number.isFinite(riskyDevices) ? riskyDevices : 0}, GPS güncel değil / çevrim dışı ${Number.isFinite(staleOrOffline) ? staleOrOffline : 0} ve açık sorun ${Number.isFinite(openIssues) ? openIssues : 0} görünüyor.`
     : (result.blockers.length
       ? 'Bu ekranda ana konu açık sorunları ve canlılık risklerini azaltmaktır.'
       : 'Bu ekranda önce özet kartlar, sonra sorunlu sürücüler ve açık sorunlar birlikte okunur.');
   result.nextBestAction = hasOperationalCounts
-    ? 'Önce riskli cihazı aç. Sonra stale/offline satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.'
+    ? 'Önce riskli cihazı aç. Sonra GPS güncel değil / çevrim dışı satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.'
     : sampleIssue
       ? 'Önce örnek sorunu aç. Sonra hangi ekrana gitmen gerektiğini netleştir.'
       : sampleDriver
         ? 'Önce örnek sürücünün canlılık, izin ve oturum durumunu birlikte kontrol et.'
         : 'Önce özet kartlardan hangi riskin yüksek olduğunu belirle. Sonra ilgili ekrana geç.';
-  result.safestNextStep = 'En risksiz adım, açık sorun sayısı ile stale/offline sayısını birlikte okuyup önce en riskli satıra inmektir.';
+  result.safestNextStep = 'En risksiz adım, açık sorun sayısı ile GPS güncel değil / çevrim dışı sayısını birlikte okuyup önce en riskli satıra inmektir.';
   result.compareHint = 'Operasyon Sağlığı sorun bulma ekranıdır; tek başına atama veya sözleşme kararı ekranı değildir.';
   applyStructuredFacts(result, screenContext);
   applyUiSurface(result, screenContext);
@@ -952,7 +952,7 @@ function analyzeDriver(screenContext, screenDefinition) {
   if (!result.selectedLabel && !task) result.blockers.push('Aktif görev veya seçili kayıt görünmüyor.');
   if (hasBlankish(nextStop)) result.missingData.push('Sıradaki durak görünmüyor.');
   if (hasBlankish(eta) && !hasBlankish(nextStop)) result.missingData.push('ETA güncel görünmüyor.');
-  if (hasOldGps(gps) || badgeHas(badges, ['stale'])) result.blockers.push('Konum akışı eski görünüyor.');
+  if (hasOldGps(gps) || badgeHas(badges, ['stale'])) result.blockers.push('GPS güncel değil.');
   if (task) result.evidence.push(`Görev: ${task}`);
   if (nextStop) result.evidence.push(`${gpsFreshness.isFresh ? 'Sıradaki durak' : 'Son bilinen sıradaki durak'}: ${nextStop}`);
   if (eta) result.evidence.push(`ETA: ${etaText}`);

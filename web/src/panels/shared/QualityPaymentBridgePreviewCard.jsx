@@ -34,6 +34,8 @@ function statusLabel(value) {
   const labels = {
     READY: "Hazır",
     MISSING_PROOF: "Kanıt eksik",
+    MISSING: "Eksik",
+    PARTIAL: "Kısmi",
     RISKY: "Riskli",
     INSUFFICIENT_DATA: "Yetersiz veri",
     READY_FOR_REVIEW: "İncelemeye hazır",
@@ -93,8 +95,8 @@ export default function QualityPaymentBridgePreviewCard({
   const companyName = compactText(agreement?.company?.name || agreement?.companyName || "", "");
   const previewOnlyNote = compactText(
     safePreview.previewOnlyNote
-    || "Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.",
-    "Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.",
+    || "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.",
+    "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.",
   );
   const qualityStatus = normalizeStatus(safePreview.qualityStatus, "INSUFFICIENT_DATA");
   const settlementReadiness = normalizeStatus(safePreview.settlementReadiness, "INSUFFICIENT_DATA");
@@ -140,7 +142,7 @@ export default function QualityPaymentBridgePreviewCard({
           </div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <span className="pill" data-status={safePreview.previewOnly ? "READY" : "MISSING_PROOF"}>Readonly önizleme</span>
+          <span className="pill" data-status={safePreview.previewOnly ? "READY" : "MISSING_PROOF"}>Sadece önizleme</span>
           <span className="pill" data-status={statusTone(qualityStatus).toUpperCase()}>{statusLabel(qualityStatus)}</span>
           <span className="pill" data-status={statusTone(settlementReadiness).toUpperCase()}>{statusLabel(settlementReadiness)}</span>
         </div>
@@ -211,7 +213,7 @@ export default function QualityPaymentBridgePreviewCard({
         {previewOnlyNote}
       </div>
       <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-        Tahsilat/fatura oluşturulmaz. Hakediş için kalite/kanıt hazırlık önizlemesi.
+        Ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz. Hakediş için kalite/kanıt hazırlık önizlemesi.
       </div>
 
       {error ? (

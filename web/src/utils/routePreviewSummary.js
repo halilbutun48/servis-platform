@@ -86,7 +86,7 @@ export function buildDynamicSavingsPreview({
   proposedSummary = null,
   title = "Dinamik tasarruf önizlemesi",
   fallbackText = "Tasarruf hesabı için yeterli veri yok",
-  previewOnlyNote = "Readonly önizleme: Bu sadece önizlemedir. Uygulama, ödeme ve settlement yok.",
+  previewOnlyNote = "Sadece önizleme: Bu yalnızca önizlemedir. Uygulama, ödeme ve tahsilat yapılmaz.",
   nextBestAction = "Bu sadece önizlemedir; teklif / kabul akışını doğrula.",
   costRatePerKm = 12,
   costRatePerMinute = 1.5,

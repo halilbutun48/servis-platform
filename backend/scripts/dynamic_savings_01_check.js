@@ -77,8 +77,8 @@ function main() {
     "Sefer Abi yalnızca readonly tasarruf sinyalini açıklar.",
   ], failures);
   assertContains("docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md", ["DYNAMIC-SAVINGS-01"], failures);
-  assertContains("web/src/utils/routePreviewSummary.js", ["buildDynamicSavingsPreview", "Tasarruf hesabı için yeterli veri yok", "Readonly önizleme"], failures);
-  assertContains("web/src/panels/shared/DynamicSavingsPreviewCard.jsx", ["Tasarruf hesabı için yeterli veri yok", "Readonly önizleme"], failures);
+  assertContains("web/src/utils/routePreviewSummary.js", ["buildDynamicSavingsPreview", "Tasarruf hesabı için yeterli veri yok", "Sadece önizleme"], failures);
+  assertContains("web/src/panels/shared/DynamicSavingsPreviewCard.jsx", ["Tasarruf hesabı için yeterli veri yok", "Sadece önizleme"], failures);
   assertContains("web/src/utils/agreementCopilotFacts.js", ["dynamicSavingsSummaryText", "copilotSummary"], failures);
   assertContains("web/src/utils/copilotFacts.js", ["DYNAMIC_SAVINGS_PREVIEW", "isDynamicSavingsPreview"], failures);
   assertContains("backend/src/ai/chat/helpComposer.js", ["DYNAMIC_SAVINGS_PREVIEW", "Dinamik tasarruf önizlemesi", "Tasarruf önizlemesini netleştirmek"], failures);

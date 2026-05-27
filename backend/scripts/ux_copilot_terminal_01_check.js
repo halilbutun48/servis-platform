@@ -133,7 +133,7 @@ must(factsSource, "terminalLabel: 'Sefer Abi Terminali'", 'persona constant expo
 must(factsSource, "drawerTitle: 'Sefer Abi’ye Sor'", 'persona constant keeps drawer title');
 must(factsSource, "export const COPILOT_TERMINAL = Object.freeze({", 'copilot facts exports terminal shell constant');
 must(factsSource, "title: 'Sefer Abi Terminali'", 'terminal shell exposes visible title');
-must(factsSource, "subtitle: 'Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan readonly analiz alanı.'", 'terminal shell exposes subtitle');
+must(factsSource, "subtitle: 'Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan sade analiz alanı.'", 'terminal shell exposes subtitle');
 must(factsSource, "readonlyBoundary: 'Bu ekran işlem başlatmaz; yalnızca görünür sinyalleri yorumlar.'", 'terminal shell exposes readonly boundary');
 must(factsSource, "drawerSeparationNote: 'Sağ alttaki Sefer Abi’ye Sor hızlı destek içindir; terminal daha derin analiz yüzeyidir.'", 'terminal shell exposes drawer separation note');
 
@@ -143,7 +143,7 @@ must(COPILOT_PERSONA.terminalLabel, 'Sefer Abi Terminali', 'persona constant ter
 must(COPILOT_PERSONA.drawerTitle, 'Sefer Abi’ye Sor', 'persona constant drawer title value');
 must(COPILOT_PERSONA.menuLabel, 'Sefer Abi', 'persona constant legacy menu label stays branded');
 must(COPILOT_TERMINAL.title, 'Sefer Abi Terminali', 'terminal constant title value');
-must(COPILOT_TERMINAL.subtitle, 'readonly analiz alanı', 'terminal constant subtitle value');
+must(COPILOT_TERMINAL.subtitle, 'sade analiz alanı', 'terminal constant subtitle value');
 must(COPILOT_TERMINAL.readonlyBoundary, 'işlem başlatmaz', 'terminal constant readonly boundary value');
 
 assertExactChips(COPILOT_TERMINAL.starterChips, [

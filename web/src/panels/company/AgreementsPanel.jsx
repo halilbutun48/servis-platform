@@ -679,17 +679,17 @@ export default function AgreementsPanel() {
       setQualityPaymentBridgePreview(
         qualityResult.status === "fulfilled"
           ? { loading: false, data: qualityResult.value, err: "" }
-          : { loading: false, data: null, err: qualityResult.reason?.message || "Readonly önizleme yüklenemedi" }
+          : { loading: false, data: null, err: qualityResult.reason?.message || "Sadece önizleme yüklenemedi" }
       );
       setSeferScorePreview(
         seferResult.status === "fulfilled"
           ? { loading: false, data: seferResult.value, err: "" }
-          : { loading: false, data: null, err: seferResult.reason?.message || "Readonly puan önizlemesi yüklenemedi" }
+          : { loading: false, data: null, err: seferResult.reason?.message || "Sadece puan önizlemesi yüklenemedi" }
       );
       setPlatformFeePreview(
         platformResult.status === "fulfilled"
           ? { loading: false, data: platformResult.value, err: "" }
-          : { loading: false, data: null, err: platformResult.reason?.message || "Readonly platform önizlemesi yüklenemedi" }
+          : { loading: false, data: null, err: platformResult.reason?.message || "Sadece platform önizlemesi yüklenemedi" }
       );
     })();
 
@@ -970,20 +970,20 @@ export default function AgreementsPanel() {
       { label: 'Son zaman', value: lastGeneratedShiftStart && lastGeneratedShiftEnd ? `${lastGeneratedShiftStart} - ${lastGeneratedShiftEnd}` : '-', help: 'Son üretilen vardiyanın saat penceresini gösterir.' },
       { label: 'Personel', value: personelCount > 0 ? String(personelCount) : '-', help: 'Son üretilen vardiyadaki personel sayısını gösterir.' },
       { label: 'Durak', value: stopCount > 0 ? String(stopCount) : '-', help: 'Son üretilen vardiyadaki durak sayısını gösterir.' },
-      qualityBridgePreview ? { label: 'Kalite durumu', value: qualityBridgeStatusText || '-', help: 'Readonly kalite değerlendirmesi; ödeme başlatılmaz.' } : null,
+      qualityBridgePreview ? { label: 'Kalite durumu', value: qualityBridgeStatusText || '-', help: 'Sadece kalite değerlendirmesi; ödeme başlatılmaz.' } : null,
       qualityBridgePreview ? { label: 'Kanıt tamlığı', value: Number.isFinite(qualityBridgeProofCompleteness) ? `${Math.max(0, Math.min(100, Math.round(qualityBridgeProofCompleteness)))}%` : '-', help: 'Eksik kanıt varsa önce tamamlanmalı.' } : null,
       qualityBridgePreview ? { label: 'Önizleme etkisi', value: qualityBridgeImpactStatus || '-', help: qualityBridgeImpactReason || 'Hakediş önizleme etkisi sadece okunur.' } : null,
-      qualityBridgePreview ? { label: 'Hazırlık', value: qualityBridgeSettlementReadiness || '-', help: 'Settlement hazırlığı yalnızca readonly görünür.' } : null,
+      qualityBridgePreview ? { label: 'Hazırlık', value: qualityBridgeSettlementReadiness || '-', help: 'Hazırlık durumu yalnızca önizlemede görünür.' } : null,
       qualityBridgePreview ? { label: 'Sıradaki işlem', value: qualityBridgeNextAction || '-', help: 'Sadece öneri gösterilir; ödeme başlatılmaz.' } : null,
-      seferScorePreviewData ? { label: 'SeferPuanı', value: Number.isFinite(seferScoreValue) ? `${seferScoreValue.toFixed(2)} / ${seferScoreMax.toFixed(0)}` : '-', help: seferScoreSummaryText || 'Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.' } : null,
+      seferScorePreviewData ? { label: 'SeferPuanı', value: Number.isFinite(seferScoreValue) ? `${seferScoreValue.toFixed(2)} / ${seferScoreMax.toFixed(0)}` : '-', help: seferScoreSummaryText || 'Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.' } : null,
       seferScorePreviewData ? { label: 'Seviye', value: seferScoreLevel || '-', help: 'Elit / İyi / Standart / Riskli / Kritik.' } : null,
       seferScorePreviewData ? { label: 'Güven', value: seferScoreConfidence || '-', help: 'Önizleme güven seviyesini gösterir.' } : null,
       seferScorePreviewData ? { label: 'Sıradaki Sefer adımı', value: seferScoreNextAction || '-', help: 'Sadece okunur yönlendirme gösterir.' } : null,
-      platformFeePreviewData ? { label: 'Lisans ücreti', value: platformFeeLicenseFeeText || '-', help: 'Lisans ücreti daima 0 TL readonly önizlemedir.' } : null,
-      platformFeePreviewData ? { label: 'Kaynak durumu', value: platformFeeSourceLabel || '-', help: platformFeeSummaryText || platformFeeSafeExplanation || 'Readonly free-to-operate önizlemesi.' } : null,
-      platformFeePreviewData ? { label: 'Başarı payı oranı', value: platformFeeRateLabel || '-', help: platformFeeReason || 'Başarı payı yalnızca readonly önizlenir.' } : null,
+      platformFeePreviewData ? { label: 'Lisans ücreti', value: platformFeeLicenseFeeText || '-', help: 'Lisans ücreti daima 0 TL sadece önizlemedir.' } : null,
+      platformFeePreviewData ? { label: 'Kaynak durumu', value: platformFeeSourceLabel || '-', help: platformFeeSummaryText || platformFeeSafeExplanation || 'Sadece kaynak önizlemesi.' } : null,
+      platformFeePreviewData ? { label: 'Başarı payı oranı', value: platformFeeRateLabel || '-', help: platformFeeReason || 'Başarı payı yalnızca önizlenir.' } : null,
       platformFeePreviewData ? { label: 'Tahmini başarı payı', value: platformFeeEstimatedShareText || '-', help: `Tutar: ${platformFeeAmountText || '-'}` } : null,
-      platformFeePreviewData ? { label: 'Tahsilat / fatura', value: 'Kapalı', help: 'Readonly önizleme — tahsilat/fatura oluşturulmaz.' } : null,
+      platformFeePreviewData ? { label: 'Tahsilat / fatura', value: 'Kapalı', help: 'Sadece önizleme — tahsilat/fatura oluşturulmaz.' } : null,
       platformFeePreviewData ? { label: 'Kaynak zinciri', value: platformFeeSignals?.hasLineageSignal ? 'Sinyal var' : 'Yok', help: platformFeeLineageSummary || 'Kaynak vardiya / market shift sinyali görünmüyor.' } : null,
       { label: 'Araç', value: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'), help: 'Onay veya üretim sırasında seçilen aracı gösterir.' },
       { label: 'Sürücü', value: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'), help: 'Onay veya üretim sırasında seçilen sürücüyü gösterir.' },
@@ -999,8 +999,8 @@ export default function AgreementsPanel() {
       { label: 'Plan', value: weekMaskToText(a?.weekMask) || '-', help: 'Haftalık çalışma günlerini özetler.' },
       { label: 'Üretim', value: generatedShiftCount > 0 ? 'Var' : 'Yok', help: 'Bugün üretim sinyali durumunu gösterir.' },
       { label: 'Köprü', value: sourceShiftId > 0 ? 'Açık' : 'Kapalı', help: 'Kaynak vardiya köprüsünün açık olup olmadığını gösterir.' },
-      qualityBridgePreview ? { label: 'Readonly', value: 'Ödeme başlatılmaz', help: qualityBridgePreview?.previewOnlyNote || 'Tahsilat/fatura oluşturulmaz.' } : null,
-      platformFeePreviewData ? { label: 'Platform', value: 'Readonly', help: platformFeeSafeExplanation || 'Readonly önizleme — tahsilat/fatura oluşturulmaz.' } : null,
+      qualityBridgePreview ? { label: 'Sadece önizleme', value: 'Ödeme başlatılmaz', help: qualityBridgePreview?.previewOnlyNote || 'Tahsilat/fatura oluşturulmaz.' } : null,
+      platformFeePreviewData ? { label: 'Platform', value: 'Sadece önizleme', help: platformFeeSafeExplanation || 'Sadece önizleme — tahsilat/fatura oluşturulmaz.' } : null,
     ];
     return {
       facts: selectionFacts,
@@ -1157,7 +1157,7 @@ export default function AgreementsPanel() {
           {selectedAgreementRow?.a ? (
             <CollapsibleSection
               title="Kalite / hakediş önizlemesi"
-              subtitle="Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."
+              subtitle="Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."
               badge={selectedAgreementRow.a?.id ? `#${selectedAgreementRow.a.id}` : "Seçili"}
               defaultOpen={false}
               compact

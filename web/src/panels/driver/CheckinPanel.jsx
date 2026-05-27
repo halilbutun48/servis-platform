@@ -202,7 +202,7 @@ export default function DriverCheckinPanel() {
 
             {selectedShift ? (
               <div className="muted" style={{ marginTop: 10 }}>
-                Shift #{selectedShift.id} • <span className="pill" data-status={String(selectedShift.status || "").toUpperCase()}>{displayStatusLabel(String(selectedShift.status || "").toUpperCase())}</span>
+                Vardiya #{selectedShift.id} • <span className="pill" data-status={String(selectedShift.status || "").toUpperCase()}>{displayStatusLabel(String(selectedShift.status || "").toUpperCase())}</span>
                 {selectedShift.status !== "ACTIVE" ? (
                   <button type="button" className="btn sm" style={{ marginLeft: 8 }} onClick={() => navigate("/driver/today")}>Bugün ekranına git</button>
                 ) : null}

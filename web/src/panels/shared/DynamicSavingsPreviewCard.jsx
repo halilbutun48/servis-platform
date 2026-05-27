@@ -13,7 +13,7 @@ export default function DynamicSavingsPreviewCard({
   const durationSavingsText = String(preview?.durationSavingsText || preview?.fallbackText || "Tasarruf hesabı için yeterli veri yok");
   const capacityEffectText = String(preview?.capacityEffectText || preview?.fallbackText || "Tasarruf hesabı için yeterli veri yok");
   const approxCostText = String(preview?.approxCostText || preview?.fallbackText || "Tasarruf hesabı için yeterli veri yok");
-  const previewOnlyNote = String(preview?.previewOnlyNote || "Readonly önizleme: Bu sadece önizlemedir. Uygulama, ödeme ve settlement yok.");
+  const previewOnlyNote = String(preview?.previewOnlyNote || "Sadece önizleme: Bu sadece önizlemedir. Uygulama, ödeme ve tahsilat yapılmaz.");
   const nextBestAction = String(preview?.nextBestAction || "Bu sadece önizlemedir; teklif / kabul akışını doğrula.");
   const reliability = String(preview?.reliability || (ok ? "Tahmini" : "Yetersiz veri"));
   const warnings = Array.isArray(preview?.warnings) ? preview.warnings.filter(Boolean) : [];
@@ -34,7 +34,7 @@ export default function DynamicSavingsPreviewCard({
             {summaryText}
           </div>
         </div>
-        <span className="pill">{ok ? "Readonly önizleme" : "Veri yok"}</span>
+        <span className="pill">{ok ? "Sadece önizleme" : "Veri yok"}</span>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>

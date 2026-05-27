@@ -12,7 +12,7 @@ QLT-PAY-BRIDGE-01, SeferPakt içinde kalite sinyali, operasyon kanıtı ve haked
 
 ## Güvenli Sınırlar
 
-- Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
+- Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
 - Ödeme başlatılmaz.
 - Hakediş onaylanmaz.
 - Settlement execute edilmez.

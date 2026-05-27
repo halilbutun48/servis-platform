@@ -139,7 +139,7 @@ export default function RoutePanel() {
         `Araç: ${selectedVehicle?.plate || data?.vehicle?.plate || "-"}`,
         `Son GPS: ${gpsAge}`,
         `Sıradaki durak: ${nextStop?.name || "-"}`,
-        `ETA: ${routeEtaText}`,
+        `Tahmini süre: ${routeEtaText}`,
       ].join(" • "),
       selectedRecordType: "shift",
       selectedRecordId: Number(shift?.id || 0) || 0,
@@ -171,7 +171,7 @@ export default function RoutePanel() {
         { label: "Sıradaki durak", value: nextStop?.name || "-" },
         { label: "Toplam durak", value: String(routeSummary.total) },
         { label: "Kalan durak", value: String(routeSummary.remaining) },
-        { label: "ETA", value: routeEtaText },
+        { label: "Tahmini süre", value: routeEtaText },
         { label: "Operasyon kanıtı", value: routeProofText },
       ],
       fields: [
@@ -183,7 +183,7 @@ export default function RoutePanel() {
         { label: "Kaynak", value: gpsSourceLabel },
         { label: "Sıradaki durak", value: nextStop?.name || "-" },
         { label: "Seçili durak", value: selectedStop?.name || "-" },
-        { label: "ETA", value: routeEtaText },
+        { label: "Tahmini süre", value: routeEtaText },
         { label: "Operasyon kanıtı", value: routeProofText },
       ],
       selectedBadges: [
@@ -750,19 +750,19 @@ async function undoLast() {
           {shift ? (
             <div className="col">
               <div>
-                <b>Shift #{shift.id}</b> •{" "}
+                <b>Vardiya #{shift.id}</b> •{" "}
                 <span className="pill" data-status={shift.status}>
                   {paused ? `${shift.status} (MOLA)` : shift.status}
                 </span>
               </div>
-              <div className="muted">Start: {String(shift.startAt)} | End: {String(shift.endAt)}</div>
+              <div className="muted">Başlangıç: {String(shift.startAt)} | Bitiş: {String(shift.endAt)}</div>
 
               {progress ? (
                 <>
                   <div className="bar">
                     <div className="barFill" style={{ width: `${pct}%` }} />
                   </div>
-                  <div className="muted">İlerleme: {pct}% (lastReachedOrder: {progress.lastReachedOrder})</div>
+                  <div className="muted">İlerleme: {pct}% (son ulaşılan sıra: {progress.lastReachedOrder})</div>
                 </>
               ) : null}
 
@@ -828,7 +828,7 @@ async function undoLast() {
               </div>
 
               <button type="button" disabled={busy || shift?.status !== "ACTIVE" || paused} onClick={reached} style={reachedBtnStyle}>
-                {busy ? "..." : paused ? "Mola (Devam Et)" : shift?.status !== "ACTIVE" ? "Başlat (Göreve Başla)" : "Reached"}
+                {busy ? "..." : paused ? "Mola (Devam Et)" : shift?.status !== "ACTIVE" ? "Başlat (Göreve Başla)" : "Ulaşıldı"}
               </button>
 
               {lastReachedStop ? (
@@ -859,7 +859,7 @@ async function undoLast() {
       </div>
 
       <CollapsibleSection
-        title="Duraklar (rota sırası / mesafe / ETA)"
+        title="Duraklar (rota sırası / mesafe / tahmini süre)"
         subtitle="Rota satırları ikinci katmanda; ana özet ve sonraki durak üstte açık kalır."
         badge={orderedStops.length}
         defaultOpen={false}
@@ -872,7 +872,7 @@ async function undoLast() {
                 <th>Ad</th>
                 <th>Durum</th>
                 <th>Km</th>
-                <th>ETA</th>
+                <th>Tahmini süre</th>
                 <th></th>
               </tr>
             </thead>
@@ -888,7 +888,7 @@ async function undoLast() {
                     <td>{s.order}</td>
                     <td>{s.name}</td>
                     <td>
-                      {isNext ? <span className="pill" data-status="NEXT">NEXT</span> : reachedState ? <span className="pill" data-status="OK">OK</span> : <span className="pill" data-status="REQUESTED">BEKLİYOR</span>}
+                      {isNext ? <span className="pill" data-status="NEXT">Sıradaki</span> : reachedState ? <span className="pill" data-status="OK">Tamamlandı</span> : <span className="pill" data-status="REQUESTED">Bekliyor</span>}
                     </td>
                     <td>{s.remainingKm}</td>
                     <td>{stopEtaText}</td>

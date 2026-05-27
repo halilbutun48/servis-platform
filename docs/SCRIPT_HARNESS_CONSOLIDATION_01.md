@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `310`
-- Toplam executable tracked file: `1082`
-- Combined registry row: `1392`
-- Root/backend/web/mobile package dağılımı: root `153`, backend `647`, web `87`, mobile `201`
+- Toplam package script entry: `311`
+- Toplam executable tracked file: `1083`
+- Combined registry row: `1394`
+- Root/backend/web/mobile package dağılımı: root `154`, backend `649`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `20`
 - ACTIVE: `360`
@@ -28,11 +28,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `496`
+- NEEDS_REVIEW: `499`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `59`
-- Eski sistem term eşleşmesi: `245`
+- Eski sistem term eşleşmesi: `247`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -49,7 +49,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 496 |
+| NEEDS_REVIEW | 499 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -145,6 +145,7 @@ Repo: `servis-platform`
 | root:check:uxcopilotpersona01 | package.json | root | node backend/scripts/ux_copilot_persona_01_check.js | core | ACTIVE_CORE |  | UX-COPILOT-PERSONA-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcopilotterminal01 | package.json | root | node backend/scripts/ux_copilot_terminal_01_check.js | core | ACTIVE_CORE |  | UX-COPILOT-TERMINAL-01 |  | Breaks canonical verification chain |  |
 | root:check:uxseferabilauncher01 | package.json | root | node backend/scripts/ux_sefer_abi_launcher_01_check.js | core | ACTIVE_CORE |  | UX-SEFER-ABI-LAUNCHER-01 |  | Breaks canonical verification chain |  |
+| root:check:seferabiterminalhumanize01 | package.json | root | node backend/scripts/sefer_abi_terminal_humanize_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERABITERMINALHUMANIZE-01 |  | Owner or chain unclear |  |
 | root:check:copliveaccept01 | package.json | root | node backend/scripts/cop_live_accept_01_check.js | core | ACTIVE_CORE |  | COP-LIVE-ACCEPT-01 |  | Breaks canonical verification chain |  |
 | root:check:boardingops01a | package.json | root | node backend/scripts/boarding_ops_01a_route_impact_preview_check.js | core | ACTIVE_CORE |  | BOARDING-OPS-01A |  | Breaks canonical verification chain |  |
 | root:check:bugrouteimpactpreviewbutton01 | package.json | root | node backend/scripts/bug_route_impact_preview_button_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-BUGROUTEIMPACTPREVIEWBUTTON-01 |  | Owner or chain unclear |  |
@@ -569,6 +570,7 @@ Repo: `servis-platform`
 | pay_01e_payment_readonly_closure_check.js | backend/scripts/pay_01e_payment_readonly_closure_check.js | backend | root:check:pay01e | product | ACTIVE |  | PAY-01-E-PAYMENT-READONLY-CLOSURE-CHECK |  | Owner or chain unclear | product check/helper |
 | pay_safe_01_payment_write_gate_check.js | backend/scripts/pay_safe_01_payment_write_gate_check.js | backend | root:check:paysafe01 | product | ACTIVE |  | PAY-SAFE-01-PAYMENT-WRITE-GATE-CHECK |  | Owner or chain unclear | product check/helper |
 | project_spec_v1_future_strengthening_coverage_check.js | backend/scripts/project_spec_v1_future_strengthening_coverage_check.js | backend | backend:spec16check | review | NEEDS_REVIEW |  | PROJECT-SPEC-V-1-FUTURE-STRENGTHENING-COVERAGE-CHECK |  | Owner or chain unclear |  |
+| public_landing_01_check.js | backend/scripts/public_landing_01_check.js | backend | root:check:publiclanding01 | review | NEEDS_REVIEW |  | PUBLIC-LANDING-01-CHECK |  | Owner or chain unclear |  |
 | qlt_01_quality_provider_readiness_check.js | backend/scripts/qlt_01_quality_provider_readiness_check.js | backend | root:check:qlt01 | product | ACTIVE |  | QLT-01-QUALITY-PROVIDER-READINESS-CHECK |  | Owner or chain unclear | product check/helper |
 | qlt_02_quality_draft_score_check.js | backend/scripts/qlt_02_quality_draft_score_check.js | backend | root:check:qlt02 | product | ACTIVE |  | QLT-02-QUALITY-DRAFT-SCORE-CHECK |  | Owner or chain unclear | product check/helper |
 | qlt_03_quality_review_decision_check.js | backend/scripts/qlt_03_quality_review_decision_check.js | backend | root:check:qlt03 | product | ACTIVE |  | QLT-03-QUALITY-REVIEW-DECISION-CHECK |  | Owner or chain unclear | product check/helper |
@@ -591,6 +593,7 @@ Repo: `servis-platform`
 | run_web_lint_with_evidence.js | backend/scripts/run_web_lint_with_evidence.js | backend | root:lint:web | web-lint | ACTIVE_CORE |  | RUN-WEB-LINT-WITH-EVIDENCE |  | Owner or chain unclear | canonical runner |
 | scale_readiness_check.js | backend/scripts/scale_readiness_check.js | backend |  | review | NEEDS_REVIEW |  | SCALE-READINESS-CHECK |  | Owner or chain unclear |  |
 | script_harness_consolidation_01_check.js | backend/scripts/script_harness_consolidation_01_check.js | backend | root:check:scriptharnessconsolidation01 | product-extensions | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01-CHECK |  | Owner or chain unclear | canonical repo harness inventory |
+| sefer_abi_terminal_humanize_01_check.js | backend/scripts/sefer_abi_terminal_humanize_01_check.js | backend | root:check:seferabiterminalhumanize01 | review | NEEDS_REVIEW |  | SEFER-ABI-TERMINAL-HUMANIZE-01-CHECK |  | Owner or chain unclear |  |
 | sefer_score_01_check.js | backend/scripts/sefer_score_01_check.js | backend | root:check:seferscore01 | review | NEEDS_REVIEW |  | SEFER-SCORE-01-CHECK |  | Owner or chain unclear |  |
 | session_safe_panels_cleanup_hotfix_check.mjs | backend/scripts/session_safe_panels_cleanup_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | SESSION-SAFE-PANELS-CLEANUP-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | smoke.js | backend/scripts/smoke.js | backend | backend:current:surface, backend:m91:smoke, backend:m91:smoke:agreement, backend:m91:smoke:route-preview, backend:smoke, root:check:e2esmoke01, root:check:finaluxsmoke01, root:check:m95e26, root:smoke:m98e4 | review | NEEDS_REVIEW |  | SMOKE |  | Owner or chain unclear |  |
@@ -870,7 +873,7 @@ Repo: `servis-platform`
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
-| z.js | backend/src/z.js | backend | root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| z.js | backend/src/z.js | backend | root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1873,3 +1876,4 @@ Repo: `servis-platform`
 - Bu doküman repo harness envanterini tek yerde toplar.
 - Safe cleanup bu turda yalnızca saf alias wrapper dosyalarında yapıldı.
 - Legacy alias girişleri docs ve chain referansları nedeniyle korunuyor.
+

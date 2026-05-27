@@ -79,9 +79,7 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     'Başarı payı neden 0 görünüyor?',
     'Bu sözleşme SeferPakt kaynaklı mı?',
     'Kaynak vardiyası var mı?',
-    'Bu sözleşme hangi vardiyadan geldi?',
-    'Bu mevcut sözleşme mi?',
-    'Organization plan’dan gelen sözleşme kaynaklı sayılır mı?',
+    'Organizasyon planı tek başına kaynak kanıtı sayılır mı?',
   ];
   const commercialPaymentChips = ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç', 'Hakediş eksiklerini sor'];
 
@@ -109,7 +107,7 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
       return ['Rota etkisini önizle', 'Kişi farkını göster', 'Km/süre farkını açıkla', 'Kapasite etkisini göster'];
     }
-    return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
+    return ['Riskli cihazı göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (path.includes('/driver/today')) {
     if (topic === 'BOARDING_CHANGE_APPLICATION') {
@@ -332,7 +330,7 @@ export function workflowActionSpec({ activeTopic = '', questionType = '' } = {})
         reason: 'Hakediş / kanıt önizleme sinyallerini adım adım sıralar; ödeme başlatmaz.',
         askLabel: 'Kanıt eksiklerini sor',
         askQuery: 'kanıt eksikleri neler',
-        askReason: 'Readonly hakediş / kanıt önizlemesini hızlıca tekrar sorar.',
+        askReason: 'Sadece önizleme hakediş / kanıt görünümünü hızlıca tekrar sorar.',
       };
     case 'DYNAMIC_SAVINGS_PREVIEW':
       return {
@@ -342,34 +340,34 @@ export function workflowActionSpec({ activeTopic = '', questionType = '' } = {})
         reason: 'Km, süre, kapasite ve yaklaşık maliyet önizlemesini güvenli dille okur.',
         askLabel: 'Tasarruf hesabını sor',
         askQuery: 'bu değişiklikte tasarruf ne',
-        askReason: 'Readonly tasarruf önizlemesini tekrar sorar.',
+        askReason: 'Sadece önizleme tasarruf görünümünü tekrar sorar.',
       };
     case 'SEFER_SCORE_PREVIEW':
       return {
         guideLabel: 'SeferPuanı önizleme rehberini aç',
         jobType: 'SCREEN_MENU_GUIDE',
         guideLevel: 'WHY',
-        reason: 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini readonly okur.',
+        reason: 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini sadece önizleme olarak okur.',
         askLabel: 'SeferPuanını sor',
         askQuery: 'bu tedarikçinin sefer puanı kaç',
-        askReason: 'Readonly kalite puanı önizlemesini tekrar sorar.',
+        askReason: 'Sadece önizleme kalite puanı görünümünü tekrar sorar.',
       };
     case 'BOARDING_ROUTE_IMPACT_PREVIEW':
       return {
         guideLabel: 'Rota etkisi önizlemesini aç',
         jobType: 'ASSIGNMENT_READINESS_GUIDE',
         guideLevel: 'STEP_BY_STEP',
-        reason: 'Biniş değişikliğinin kişi, durak, km, süre ve kapasite etkisini readonly gösterir.',
+        reason: 'Biniş değişikliğinin kişi, durak, km, süre ve kapasite etkisini sadece önizleme olarak gösterir.',
         askLabel: 'Rota etkisini sor',
         askQuery: 'bu kişi bugün binmezse rota etkisi ne olur',
-        askReason: 'Readonly rota etkisi önizlemesini tekrar sorar.',
+        askReason: 'Sadece önizleme rota etkisi görünümünü tekrar sorar.',
       };
     case 'BOARDING_CHANGE_REQUEST_ENTRY':
       return {
         guideLabel: 'Biniş talebi oluşturma rehberini aç',
         jobType: 'ASSIGNMENT_READINESS_GUIDE',
         guideLevel: 'STEP_BY_STEP',
-        reason: 'Talep oluşturur; rota otomatik uygulanmaz. Same-route ise sürücü, rota dışı ise hizmet alan taraf karar verir; room sadece görür.',
+        reason: 'Talep oluşturur; rota otomatik uygulanmaz. Aynı rota ise sürücü, rota dışı ise hizmet alan taraf karar verir; oda yalnızca görür.',
         askLabel: 'Talebi nasıl oluştururum?',
         askQuery: 'bugün binmeyeceğim talebi nasıl oluşturulur',
         askReason: 'Talep oluşturma yolunu tekrar sorar.',

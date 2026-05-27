@@ -174,7 +174,7 @@ export default function PassengerLinksPanel() {
         <div className="title">{me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Linkleri" : "Personel Canlı Linkleri"}</div>
         <div className="muted">
           Bu akış hesap aktivasyonu değildir. Login vermeden, tek kişiye özel süreli canlı takip linki üret.
-          Link sadece kendi durak + ETA + navigasyon bilgisini gösterir. Süre dolana kadar tekrar açılabilir; vardiya bitmişse ekran ENDED/final durum olarak görünür.
+          Link sadece kendi durak + tahmini süre + navigasyon bilgisini gösterir. Süre dolana kadar tekrar açılabilir; vardiya bitmişse ekran ENDED/final durum olarak görünür.
         </div>
       </div>
 

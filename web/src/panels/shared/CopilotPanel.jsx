@@ -38,6 +38,8 @@ import {
   selectionApplies,
 } from "../../utils/copilotPanelHelpers";
 
+const COPILOT_TERMINAL_TITLE = COPILOT_TERMINAL.title || "Sefer Abi Terminali";
+
 const PANEL_MODES = [
   { value: "CHAT", label: "Sohbet" },
   { value: "GUIDE", label: "Rehber" },
@@ -567,7 +569,7 @@ export default function CopilotPanel() {
   return (
     <div className="wrap wrap--fluid" style={{ display: "grid", gap: 10 }}>
       <div className="card">
-        <div className="title">{COPILOT_TERMINAL.title}</div>
+        <div className="title">{COPILOT_TERMINAL_TITLE}</div>
         <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
           {COPILOT_PERSONA.assistantDisplayName} · {COPILOT_PERSONA.assistantSubtitle}
         </div>
@@ -625,7 +627,7 @@ export default function CopilotPanel() {
             {!chatMessages.length ? (
               <div className="card" style={{ display: "grid", gap: 8 }}>
                 <div style={{ fontWeight: 800 }}>Terminal başlangıç soruları</div>
-                <div className="muted">Readonly analiz için kısa bir başlangıç seçebilirsin.</div>
+                <div className="muted">Sadece önizleme analizi için kısa bir başlangıç seçebilirsin.</div>
                 <SuggestedChips items={COPILOT_TERMINAL.starterChips} busy={chatBusy || autoChatBusy} onPick={runChat} />
               </div>
             ) : null}
@@ -815,7 +817,7 @@ export default function CopilotPanel() {
           <div>
             <div className="title">Rehber Sonucu</div>
             <div className="muted" style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span>Provider: <b>{result.provider || "-"}</b></span>
+              <span>Sağlayıcı: <b>{result.provider || "-"}</b></span>
               <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
               <span>Seviye: <b>{result.guideLevel || "-"}</b></span>
               <span>Kayıt: <b>{result.entityLabel || `${result.entityType || "entity"} #${result.entityId || "-"}`}</b></span>
@@ -886,7 +888,7 @@ export default function CopilotPanel() {
           <details>
             <summary className="title" style={{ fontSize: 16, cursor: "pointer" }}>Kısa Not</summary>
             <div className="muted" style={{ marginTop: 8 }}>
-              Rehber modu M46.6-A ile eklendi. Copilot çekirdeği yerinde durur; üstüne sade Türkçe iş rehberi gelir. Sistem read-only / suggestion-first kalır ve audit log’a <code>AI_COPILOT_QUERY</code> yazar.
+              Rehber modu M46.6-A ile eklendi. Copilot çekirdeği yerinde durur; üstüne sade Türkçe iş rehberi gelir. Sistem salt okunur ve öneri odaklı kalır; denetim günlüğüne copilot sorgusu yazar.
             </div>
           </details>
         </div>

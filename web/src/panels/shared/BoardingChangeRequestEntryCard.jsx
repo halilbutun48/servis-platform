@@ -78,10 +78,10 @@ function formatLocationSummary({ lat, lng, addressText = "" } = {}) {
 function buildShiftLabel(shift = null) {
   if (!shift) return "Planlı servis bağlamı bulunamadı";
   const parts = [
-    shift?.id ? `Shift #${shift.id}` : null,
+    shift?.id ? `Vardiya #${shift.id}` : null,
     shift?.vehicle?.plate ? `Araç ${shift.vehicle.plate}` : null,
     shift?.driver?.fullName ? `Sürücü ${shift.driver.fullName}` : null,
-    shift?.room?.name ? `Room ${shift.room.name}` : null,
+    shift?.room?.name ? `Oda ${shift.room.name}` : null,
   ].filter(Boolean);
   return parts.length ? parts.join(" • ") : "Aktif servis";
 }

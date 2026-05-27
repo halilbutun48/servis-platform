@@ -504,7 +504,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (pathHas(screenPath, ['/room/operation-health'])) {
-    return ['Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
+    return ['Riskli cihazı göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (pathHas(screenPath, ['/room/shifts'])) {
     return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
@@ -538,7 +538,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
   }
   if (pathHas(screenPath, ['/agreements'])) {
     if (String(questionType || '') === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') {
-      return ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Bu sözleşme hangi vardiyadan geldi?'];
+      return ['Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?'];
     }
     if (String(questionType || '') === 'AGREEMENT_ROUTE_REFRESH') {
       return ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
@@ -587,7 +587,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
   } else if (pathHas(screenPath, ['/room/map'])) {
     chips.push(...(workflowQuestion ? ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'] : ['Bu ekranı detaylı anlat', 'Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']));
   } else if (pathHas(screenPath, ['/room/operation-health'])) {
-    chips.push('Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et');
+    chips.push('Riskli cihazı göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et');
   } else if (pathHas(screenPath, ['/room/shifts'])) {
     chips.push('Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et');
   } else if (pathHas(screenPath, ['/superadmin/operations'])) {
@@ -620,7 +620,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
     chips.push(...(workflowQuestion ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'] : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']));
   } else if (pathHas(screenPath, ['/agreements'])) {
     if (String(questionType || '') === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') {
-      chips.push('Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Bu sözleşme hangi vardiyadan geldi?');
+      chips.push('Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?');
     } else
     chips.push(...(String(questionType || '') === 'AGREEMENT_ROUTE_REFRESH'
       ? ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?']

@@ -161,7 +161,7 @@ const roomOperationHealth = buildCopilotStarterChips({
 });
 assertExactChips(roomOperationHealth, [
   'Riskli cihazları göster',
-  'Stale/offline satırını aç',
+  'GPS güncel değil / çevrim dışı satırını aç',
   'Açık sorunları sırala',
   'Aktif sürücü durumunu sor',
 ], 'room operation health starter chips');

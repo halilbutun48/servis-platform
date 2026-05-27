@@ -193,7 +193,7 @@ must(screenAnalyzer, 'riskyDevices', 'screen analyzer keeps risky devices');
 must(screenAnalyzer, 'staleOrOffline', 'screen analyzer keeps stale offline');
 must(screenAnalyzer, 'openIssues', 'screen analyzer keeps open issues');
 must(screenAnalyzer, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'screen analyzer keeps operation health lead');
-must(screenAnalyzer, 'Önce riskli cihazı aç. Sonra stale/offline satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.', 'screen analyzer keeps operation health next step');
+must(screenAnalyzer, 'Önce riskli cihazı aç. Sonra GPS güncel değil / çevrim dışı satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.', 'screen analyzer keeps operation health next step');
 
 must(schemas, 'isAgreementScreenContext', 'schemas keeps agreement screen helper');
 must(schemas, 'CONTRACT_TO_SHIFT_PHRASES', 'schemas keeps contract phrase helper');

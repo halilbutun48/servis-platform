@@ -825,7 +825,7 @@ export default function WorkflowPanel() {
             {recommendedOffer ? (
               <div className="row" style={{ marginTop: 10, gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
                 <div className="muted">
-                  Öne çıkan teklif: Shift #{recommendedOfferShiftId || "-"} • {String(recommendedOffer.__recommendationShort || recommendedOffer.__recommendationReason || "Otomatik öneri")}
+                  Öne çıkan teklif: Vardiya #{recommendedOfferShiftId || "-"} • {String(recommendedOffer.__recommendationShort || recommendedOffer.__recommendationReason || "Otomatik öneri")}
                 </div>
                 <button type="button" className="btn sm" onClick={() => goCompanyShift(recommendedOfferShiftId)}>
                   Önerilen shift’e git
@@ -896,7 +896,7 @@ export default function WorkflowPanel() {
 
                   <RecommendationReasons reasons={isRecommended ? recommendationReasons : []} />
                   <div className="muted" style={{ marginTop: 8 }}>
-                    Shift #{o.shiftId} • Vardiya durumu {displayStatusLabel(String(shift.status || "-").toUpperCase())} • Güncelleme {fmtTR(o.updatedAt)}
+                    Vardiya #{o.shiftId} • Vardiya durumu {displayStatusLabel(String(shift.status || "-").toUpperCase())} • Güncelleme {fmtTR(o.updatedAt)}
                   </div>
                   <div className="muted" style={{ marginTop: 4 }}>{gap.note}</div>
                   {isRecommended ? (

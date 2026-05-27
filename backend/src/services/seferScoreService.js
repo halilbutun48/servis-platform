@@ -322,7 +322,7 @@ function buildSeferScoreReasons(signals = {}) {
 function buildSeferScoreNextBestAction(result = {}) {
   const status = upper(result.status || "", "INSUFFICIENT_DATA");
   if (status === "READY") {
-    return "Readonly önizlemeyi kontrol et; son kararı yetkili kullanıcı verir.";
+    return "Sadece önizlemeyi kontrol et; son kararı yetkili kullanıcı verir.";
   }
   if (status === "RISKY") {
     return "Risk nedenlerini ve eksik sinyalleri kontrol et; önce kanıt boşluklarını kapat.";
@@ -380,7 +380,7 @@ export async function computeSeferScorePreview(input = {}) {
       : reasons.missingSignals.length > 0
         ? "NEEDS_MORE_PROOF"
         : "READY";
-  const safeExplanation = "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.";
+  const safeExplanation = "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.";
   const nextBestAction = buildSeferScoreNextBestAction({
     status,
     score,

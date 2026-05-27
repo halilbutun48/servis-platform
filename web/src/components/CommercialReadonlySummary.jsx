@@ -22,6 +22,35 @@ function sourceTypeLabel(value) {
   return v || "Ticari kaynak"
 }
 
+function paymentModeLabel(value) {
+  const v = String(value || "OFF").toUpperCase()
+  if (v === "OFF") return "Kapalı"
+  if (v === "OPTIONAL") return "İsteğe bağlı"
+  if (v === "REQUIRED") return "Zorunlu"
+  if (v === "PREVIEW") return "Sadece önizleme"
+  return v.replace(/_/g, " ") || "Kapalı"
+}
+
+function settlementStatusLabel(value) {
+  const v = String(value || "DORMANT").toUpperCase()
+  if (v === "DORMANT") return "Beklemede"
+  if (v === "READY") return "Hazır"
+  if (v === "ACTIVE") return "Etkin"
+  if (v === "DISABLED") return "Kapalı"
+  if (v === "PENDING") return "Beklemede"
+  if (v === "PLANNED") return "Planlandı"
+  return v.replace(/_/g, " ") || "Beklemede"
+}
+
+function adapterLabel(value) {
+  const v = String(value || "DORMANT").toUpperCase()
+  if (v === "DORMANT") return "Beklemede"
+  if (v === "READY") return "Hazır"
+  if (v === "ACTIVE") return "Etkin"
+  if (v === "DISABLED") return "Kapalı"
+  return v.replace(/_/g, " ") || "Beklemede"
+}
+
 export default function CommercialReadonlySummary({ item, compact = false }) {
   if (!item) return null
   const plan = item.settlementPlan || null
@@ -32,11 +61,11 @@ export default function CommercialReadonlySummary({ item, compact = false }) {
   const providerNetAmount = plan?.providerNetAmount ?? item.amountProviderSnapshot ?? null
 
   return (
-    <div className="card" style={{ marginTop: compact ? 6 : 8, padding: compact ? 8 : 10 }} title="Payment backbone readonly özeti">
+    <div className="card" style={{ marginTop: compact ? 6 : 8, padding: compact ? 8 : 10 }} title="Ödeme altyapısı yalnızca önizleme özeti">
       <div className="row" style={{ justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ fontWeight: 800 }}>{sourceTypeLabel(item.sourceType)}</div>
-        <span className="pill" data-status={paymentMode} title="Payment mode snapshot">
-          {paymentMode}
+        <span className="pill" data-status={paymentMode} title="Ödeme modu durumu">
+          {paymentModeLabel(paymentMode)}
         </span>
       </div>
       <div className="muted" style={{ marginTop: 6 }}>
@@ -46,7 +75,7 @@ export default function CommercialReadonlySummary({ item, compact = false }) {
         Tahsilat: <b>{fmtTry(grossAmount)}</b> • Platform: <b>{fmtTry(commissionAmount)}</b> • Sağlayıcı: <b>{fmtTry(providerNetAmount)}</b>
       </div>
       <div className="muted" style={{ marginTop: 4 }}>
-        Settlement hazırlığı: <b>{settlementStatus}</b> • Adaptör: <b>{String(item.providerAdapterKey || plan?.providerAdapterKey || "DORMANT")}</b>
+        Ödeme / settlement hazırlığı: <b>{settlementStatusLabel(settlementStatus)}</b> • Bağlayıcı: <b>{adapterLabel(item.providerAdapterKey || plan?.providerAdapterKey || "DORMANT")}</b>
       </div>
       {paymentMode === "OPTIONAL" ? (
         <div className="muted" style={{ marginTop: 4 }}>

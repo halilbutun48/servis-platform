@@ -1,10 +1,10 @@
 # SEFER-SCORE-01
 
-SEFER-SCORE-01, QLT-PAY-BRIDGE-01’den gelen kalite, kanıt ve hakediş önizleme sinyallerini tedarikçi bazlı readonly SeferPuanı önizlemesine dönüştürür.
+SEFER-SCORE-01, QLT-PAY-BRIDGE-01’den gelen kalite, kanıt ve hakediş önizleme sinyallerini tedarikçi bazlı sade SeferPuanı önizlemesine dönüştürür.
 
 ## Amaç
 
-- SeferPuanı için readonly bir kalite önizlemesi göstermek.
+- SeferPuanı için sade bir kalite önizlemesi göstermek.
 - Kalite seviyesini ve sinyal kırılımını görünür kılmak.
 - Güven seviyesini ve risk / eksik nedenlerini açıklamak.
 - Sıradaki doğru işlemi güvenli şekilde önermek.
@@ -12,8 +12,8 @@ SEFER-SCORE-01, QLT-PAY-BRIDGE-01’den gelen kalite, kanıt ve hakediş önizle
 
 ## Güvenli Sınırlar
 
-- Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.
-- Readonly kalite puanı önizlemesi.
+- Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.
+- Sadece kalite puanı önizlemesi.
 - Ödeme başlatılmaz.
 - Settlement execute edilmez.
 - Fatura / tahsilat oluşturulmaz.

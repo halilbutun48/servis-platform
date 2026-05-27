@@ -72,12 +72,12 @@ export default function DriverTodayPanel() {
   const activeLabel = useMemo(() => {
     if (!active && approvedTodayCount > 0) return "Henüz başlatılmış aktif görev yok";
     if (!active) return "Aktif görev yok";
-    return `Shift #${active.id} - ${displayStatusLabel(active.status)}`;
+    return `Vardiya #${active.id} - ${displayStatusLabel(active.status)}`;
   }, [active, approvedTodayCount]);
 
   const activeDescription = useMemo(() => {
     if (active) {
-      return `Start: ${fmt(active.startAt)} - End: ${fmt(active.endAt)}`;
+      return `Başlangıç: ${fmt(active.startAt)} - Bitiş: ${fmt(active.endAt)}`;
     }
     if (approvedTodayCount > 0) {
       return `Bugün için ${approvedTodayCount} kabul edilmiş vardiya var. Göreve başlamak için listeden 'Göreve Başla' seç.`;
@@ -325,7 +325,7 @@ useEffect(() => {
     <div>
       <div className="card">
         <h3>Bugün</h3>
-        <div className="muted">Tek hedef: aktif görevi gör → başlat → rota ekranında reached ile ilerle.</div>
+        <div className="muted">Tek hedef: aktif görevi gör → başlat → rota ekranında ulaşıldı ile ilerle.</div>
 <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
   <div className="row" style={{ gap: 8, alignItems: "center" }}>
     {!online ? (

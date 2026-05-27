@@ -78,7 +78,7 @@ export default function ShiftOperationEventsModal({ open, onClose, shiftId, subt
       <div className="modal card" style={{ maxWidth: 760 }} onClick={(e) => e.stopPropagation()}>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div>
-            <div style={{ fontWeight: 900 }}>Shift #{shiftId} — Operasyon Akışı</div>
+            <div style={{ fontWeight: 900 }}>Vardiya #{shiftId} — Operasyon Akışı</div>
             {subtitle ? <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>{subtitle}</div> : null}
             <div className="muted" style={{ marginTop: 4 }}>
               Sürücü / araç değişiklikleri burada görünür. Bu alan ticari pazarlık değil, operasyon kaydıdır.

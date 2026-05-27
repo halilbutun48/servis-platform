@@ -189,7 +189,7 @@ must(intentRouter, 'NOTIFICATION_SOURCE', 'intent router keeps notification inte
 must(intentRouter, 'QUALITY_SIGNAL', 'intent router keeps quality intent');
 must(intentRouter, 'filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });', 'intent router keeps workflow chip filtering');
 must(intentRouter, 'Riskli cihazı göster', 'intent router keeps operation health chip');
-must(intentRouter, 'Stale/offline satırını aç', 'intent router keeps stale chip');
+must(intentRouter, 'GPS güncel değil / çevrim dışı satırını aç', 'intent router keeps stale chip');
 must(intentRouter, 'Açık sorunları sırala', 'intent router keeps issue chip');
 must(intentRouter, 'Aktif sürücüleri kontrol et', 'intent router keeps active driver chip');
 must(intentRouter, 'Canlı takip ekranını aç', 'intent router keeps live tracking chip');
@@ -199,7 +199,7 @@ must(screenStateAnalyzer, 'riskyDevices', 'screen analyzer keeps risky device co
 must(screenStateAnalyzer, 'staleOrOffline', 'screen analyzer keeps stale/offline counter');
 must(screenStateAnalyzer, 'openIssues', 'screen analyzer keeps open issues counter');
 must(screenStateAnalyzer, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'screen analyzer keeps operation health lead');
-must(screenStateAnalyzer, 'Önce riskli cihazı aç. Sonra stale/offline satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.', 'screen analyzer keeps operation health next action');
+must(screenStateAnalyzer, 'Önce riskli cihazı aç. Sonra GPS güncel değil / çevrim dışı satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.', 'screen analyzer keeps operation health next action');
 
 must(facts, "label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon kanıtı kontrolü'", 'facts keeps live start label');
 must(facts, "readyForLiveStart ? ['live-start', 'gps-old', 'missing-vehicle-driver', 'operation-proof']", 'facts keeps live-start scoring boost');

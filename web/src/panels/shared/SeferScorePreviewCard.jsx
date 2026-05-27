@@ -124,8 +124,8 @@ export default function SeferScorePreviewCard({
   const agreementLabel = compactText(
     safePreview.agreementLabel
     || (agreement?.id ? `Sözleşme #${agreement.id}` : "")
-    || "Readonly kalite puanı önizlemesi",
-    "Readonly kalite puanı önizlemesi",
+    || "Sadece kalite puanı önizlemesi",
+    "Sadece kalite puanı önizlemesi",
   );
   const supplierLabel = compactText(safePreview.supplierLabel || agreement?.company?.name || agreement?.room?.name || "", "");
   const score = Number(safePreview.score ?? NaN);
@@ -144,8 +144,8 @@ export default function SeferScorePreviewCard({
   );
   const safeExplanation = compactText(
     safePreview.safeExplanation
-    || "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.",
-    "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.",
+    || "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.",
+    "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.",
   );
   const scoreText = scoreToText(score, scoreMax);
   const confidenceTone = confidence === "HIGH" ? "ready" : confidence === "MEDIUM" ? "warning" : confidence === "LOW" ? "warning" : "muted";
@@ -163,7 +163,7 @@ export default function SeferScorePreviewCard({
         <div>
           <div style={{ fontWeight: 900 }}>{agreementLabel}</div>
           <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
-            Readonly kalite puanı önizlemesi
+            Sadece kalite puanı önizlemesi
             {supplierLabel ? ` • ${supplierLabel}` : ""}
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function SeferScorePreviewCard({
         <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
           <div className="muted">SeferPuanı</div>
           <div style={{ fontWeight: 900, marginTop: 4, fontSize: 24 }}>{scoreText}</div>
-          <div className="muted" style={{ marginTop: 4 }}>Readonly kalite puanı önizlemesi.</div>
+          <div className="muted" style={{ marginTop: 4 }}>Sadece kalite puanı önizlemesi.</div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
           <div className="muted">Seviye</div>

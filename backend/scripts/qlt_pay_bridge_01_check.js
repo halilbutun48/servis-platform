@@ -102,7 +102,7 @@ must(service, "qualityReviewSignal", "service exposes qualityReviewSignal");
 must(service, "missingProofs", "service exposes missing proofs");
 must(service, "riskReasons", "service exposes risk reasons");
 must(service, "nextBestAction", "service exposes next best action");
-must(service, "Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "service keeps safe preview boundary wording");
+must(service, "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "service keeps safe preview boundary wording");
 must(service, "Hakediş için kalite/kanıt hazırlık önizlemesi.", "service keeps bridge summary wording");
 mustNot(service, "başarı payı", "service does not introduce success share wording");
 mustNot(service, "%1-%3", "service does not introduce percentage fee wording");
@@ -117,7 +117,7 @@ mustNot(service, "hakediş onaylandı", "service does not claim approval");
 mustNot(service, "tahsil edildi", "service does not claim collection");
 mustNot(service, "fatura kesildi", "service does not claim invoice issuance");
 
-must(bridgeCard, "Readonly önizleme — ödeme başlatılmaz", "bridge card keeps readonly copy");
+must(bridgeCard, "Sadece önizleme — ödeme başlatılmaz", "bridge card keeps preview copy");
 must(bridgeCard, "Tahsilat/fatura oluşturulmaz", "bridge card keeps no-collection copy");
 must(bridgeCard, "Hakediş için kalite/kanıt hazırlık önizlemesi", "bridge card keeps preview positioning");
 must(bridgeCard, "Eksik kanıt varsa önce tamamlanmalı", "bridge card keeps missing-proof guidance");
@@ -130,14 +130,14 @@ must(bridgeCard, "Sıradaki doğru işlem", "bridge card shows next best action"
 must(companyPanel, "QualityPaymentBridgePreviewCard", "company panel imports bridge card");
 must(companyPanel, "qualityPaymentBridgePreview", "company panel fetches bridge preview");
 must(companyPanel, "Kalite / hakediş önizlemesi", "company panel exposes preview section");
-must(companyPanel, "Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "company panel uses safe preview language");
+must(companyPanel, "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "company panel uses safe preview language");
 must(companyPanel, "Kalite durumu", "company panel exposes quality status field");
 must(companyPanel, "Kanıt tamlığı", "company panel exposes proof completeness field");
 must(companyPanel, "Sıradaki işlem", "company panel exposes next action field");
 
 must(roomPanel, "QualityPaymentBridgePreviewCard", "room panel imports bridge card");
 must(roomPanel, "qualityPaymentBridgePreview", "room panel fetches bridge preview");
-must(roomPanel, "Readonly önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "room panel uses safe preview language");
+must(roomPanel, "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "room panel uses safe preview language");
 must(roomPanel, "Kalite durumu", "room panel exposes quality status field");
 must(roomPanel, "Kanıt tamlığı", "room panel exposes proof completeness field");
 must(roomPanel, "Sıradaki işlem", "room panel exposes next action field");
@@ -185,7 +185,7 @@ must(runner, "check:qltpaybridge01", "product extensions runner includes qlt pay
 must(verifyChain, "check:qltpaybridge01", "verify chain includes qlt pay bridge check");
 must(guide, "QLT-PAY-BRIDGE-01", "script guide mentions qlt pay bridge milestone");
 must(guide, "check:qltpaybridge01", "script guide exposes qlt pay bridge check");
-must(milestoneDoc, "Readonly önizleme — ödeme başlatılmaz", "milestone doc keeps safe readonly boundary");
+must(milestoneDoc, "Sadece önizleme — ödeme başlatılmaz", "milestone doc keeps safe preview boundary");
 must(milestoneDoc, "SeferPuanı", "milestone doc keeps SeferPuanı note");
 
 checkRuntimeDataState(gitStatus);

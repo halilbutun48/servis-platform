@@ -140,8 +140,8 @@ export default function HubPanel() {
       />
 
       <div className="toolbar" style={{ gap: 8, flexWrap: "wrap" }}>
-        {roomName ? <span className="pill" data-status="ROLE">Room: {roomName}</span> : null}
-        {roomId ? <span className="pill" data-status="COUNT">Room ID: {roomId}</span> : null}
+        {roomName ? <span className="pill" data-status="ROLE">Oda: {roomName}</span> : null}
+        {roomId ? <span className="pill" data-status="COUNT">Oda ID: {roomId}</span> : null}
         <span className="pill" data-status="ROLE">Oda Konumu: {lat && lng ? `${lat}, ${lng}` : "-"}</span>
       </div>
 

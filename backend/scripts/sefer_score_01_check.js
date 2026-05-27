@@ -113,7 +113,7 @@ must(service, "STANDARD", "service defines STANDARD level");
 must(service, "RISKY", "service defines RISKY level");
 must(service, "CRITICAL", "service defines CRITICAL level");
 must(service, "INSUFFICIENT_DATA", "service defines insufficient-data level");
-must(service, "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "service keeps safe boundary text");
+must(service, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "service keeps safe boundary text");
 must(service, "seferScoreSignalsPreview", "service keeps preview signal bridge");
 must(service, "onTimeSignal", "service exposes onTimeSignal");
 must(service, "gpsProofSignal", "service exposes gpsProofSignal");
@@ -130,7 +130,7 @@ must(route, "seferScorePreview", "agreement route wraps sefer preview payload");
 must(api, "getAgreementSeferScorePreview", "web api exports sefer preview getter");
 must(api, "sefer-score-preview", "web api points to the sefer preview endpoint");
 
-must(card, "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "sefer card keeps safe boundary wording");
+must(card, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "sefer card keeps safe boundary wording");
 must(card, "SeferPuanı", "sefer card shows SeferPuanı label");
 must(card, "Güçlü sinyaller", "sefer card shows positive reasons");
 must(card, "Eksik sinyaller", "sefer card shows missing signals");
@@ -140,12 +140,12 @@ must(card, "Sıradaki doğru işlem", "sefer card shows next action");
 must(companyPanel, "SeferScorePreviewCard", "company panel renders sefer card");
 must(companyPanel, "getAgreementSeferScorePreview", "company panel fetches sefer preview");
 must(companyPanel, "seferScorePreview", "company panel tracks sefer preview state");
-must(companyPanel, "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "company panel keeps safe boundary wording");
+must(companyPanel, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "company panel keeps safe boundary wording");
 
 must(roomPanel, "SeferScorePreviewCard", "room panel renders sefer card");
 must(roomPanel, "getAgreementSeferScorePreview", "room panel fetches sefer preview");
 must(roomPanel, "seferScorePreview", "room panel tracks sefer preview state");
-must(roomPanel, "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "room panel keeps safe boundary wording");
+must(roomPanel, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "room panel keeps safe boundary wording");
 
 must(agreementFacts, "seferScorePreview", "agreement facts keep sefer preview");
 must(agreementFacts, "seferScoreSummaryText", "agreement facts keep sefer summary");
@@ -153,7 +153,7 @@ must(agreementFacts, "seferScorePositiveReasons", "agreement facts keep positive
 must(agreementFacts, "seferScoreRiskReasons", "agreement facts keep risk reasons");
 must(agreementFacts, "seferScoreMissingSignals", "agreement facts keep missing signals");
 must(agreementFacts, "seferScoreNextAction", "agreement facts keep next action");
-must(agreementFacts, "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "agreement facts keep safe explanation");
+must(agreementFacts, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "agreement facts keep safe explanation");
 
 must(copilotFacts, "Bu tedarikçinin SeferPuanı kaç?", "copilot chips include sefer score question");
 must(copilotFacts, "Kalite puanı neden düşük?", "copilot chips include low-score question");
@@ -163,7 +163,7 @@ must(copilotFacts, "isSeferScorePreview", "copilot detection includes sefer prev
 
 must(helpComposer, "SEFER_SCORE_PREVIEW", "help composer knows sefer score workflow");
 must(helpComposer, "SeferPuanı önizlemesini", "help composer explains sefer preview");
-must(helpComposer, "Readonly kalite puanı önizlemesi", "help composer keeps readonly boundary");
+must(helpComposer, "SeferPuanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "help composer keeps preview boundary");
 must(helpComposer, "ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz", "help composer keeps safe boundary");
 
 must(intentRouter, "SEFER_SCORE_PREVIEW", "intent router knows sefer score intent");
@@ -190,7 +190,7 @@ must(runner, "check:seferscore01", "product extensions runner includes sefer sco
 must(verifyChain, "check:seferscore01", "verify chain includes sefer score check");
 must(guide, "SEFER-SCORE-01", "script guide mentions sefer score milestone");
 must(guide, "check:seferscore01", "script guide exposes check:seferscore01");
-must(milestoneDoc, "Readonly kalite puanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "milestone doc keeps safe boundary");
+must(milestoneDoc, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "milestone doc keeps safe boundary");
 must(milestoneDoc, "v2026.05.13-sefer-score-01", "milestone doc keeps recommended tag");
 
 const safetyText = [

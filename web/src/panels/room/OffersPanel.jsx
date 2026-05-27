@@ -558,7 +558,7 @@ export default function RoomOffersPanel() {
             <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontWeight: 700 }}>
-                  Shift #{o.shiftId} — {company?.name || `Company #${shift?.companyId || "?"}`}
+                  Vardiya #{o.shiftId} — {company?.name || `Firma #${shift?.companyId || "?"}`}
                 </div>
                 <div className="muted">
                   {fmtTR(shift?.startAt)} → {fmtTR(shift?.endAt)}
@@ -645,7 +645,7 @@ export default function RoomOffersPanel() {
         <RoutePreviewModal
           open={previewModal.open}
           onClose={() => setPreviewModal({ open: false, shiftId: null })}
-          title={previewModal.shiftId ? `Shift #${previewModal.shiftId} — Rota/Durak Önizleme` : "Rota/Durak Önizleme"}
+          title={previewModal.shiftId ? `Vardiya #${previewModal.shiftId} — Rota/Durak Önizleme` : "Rota/Durak Önizleme"}
           shiftId={previewModal.shiftId}
         />
       ) : null}
@@ -661,7 +661,7 @@ export default function RoomOffersPanel() {
           <div className="modal card">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontWeight: 900 }}>Shift #{approveModal.shiftId} — Onay</div>
+              <div style={{ fontWeight: 900 }}>Vardiya #{approveModal.shiftId} — Onay</div>
               <div className="muted">
                 Kabul edildi teklif → bu shift artık senin. Araç + sürücü seçip <b>Onayla</b> veya <b>Onayla + Başlat</b>.
               </div>

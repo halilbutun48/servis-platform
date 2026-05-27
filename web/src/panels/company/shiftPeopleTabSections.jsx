@@ -77,7 +77,7 @@ export function ShiftPeopleSummarySection({
       </div>
 
       <div className="muted" style={{ marginTop: 10 }}>
-        <b>Room:</b> {roomText}
+        <b>Oda:</b> {roomText}
       </div>
 
       <div className="muted" style={{ marginTop: 6 }}>

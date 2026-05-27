@@ -112,6 +112,7 @@ function main() {
   must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotpersona01');
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');
   must(pkg, '"check:uxseferabilauncher01"', 'package.json exposes check:uxseferabilauncher01');
+  must(pkg, '"check:seferabiterminalhumanize01": "node backend/scripts/sefer_abi_terminal_humanize_01_check.js"', 'package.json exposes check:seferabiterminalhumanize01');
   must(pkg, '"check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js"', 'package.json exposes check:copliveaccept01');
   must(pkg, '"check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js"', 'package.json exposes check:boardingops01a');
   must(pkg, '"check:bugrouteimpactpreviewbutton01": "node backend/scripts/bug_route_impact_preview_button_01_check.js"', 'package.json exposes check:bugrouteimpactpreviewbutton01');
@@ -212,6 +213,7 @@ function main() {
     'check:uxcopilotpersona01',
     'check:uxcopilotterminal01',
     'check:uxseferabilauncher01',
+    'check:seferabiterminalhumanize01',
     'check:copliveaccept01',
     'check:boardingops01a',
     'check:bugrouteimpactpreviewbutton01',
@@ -297,6 +299,9 @@ function main() {
   must(guide, 'check:uxcopilotterminal01', 'script guide exposes check:uxcopilotterminal01');
   must(guide, 'UX-SEFER-ABI-LAUNCHER-01', 'script guide mentions UX-SEFER-ABI-LAUNCHER-01');
   must(guide, 'check:uxseferabilauncher01', 'script guide exposes check:uxseferabilauncher01');
+  must(guide, 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'script guide mentions SEFER-ABI-TERMINAL-HUMANIZE-01');
+  must(guide, 'check:seferabiterminalhumanize01', 'script guide exposes check:seferabiterminalhumanize01');
+  must(guide, 'node backend\\scripts\\sefer_abi_terminal_humanize_01_check.js', 'script guide includes Sefer Abi terminal humanize command');
   must(guide, 'COP-LIVE-ACCEPT-01', 'script guide mentions COP-LIVE-ACCEPT-01');
   must(guide, 'check:copliveaccept01', 'script guide exposes check:copliveaccept01');
   must(guide, 'UX-SUPERADMIN-OVERVIEW-CLEANUP-01', 'script guide mentions UX-SUPERADMIN-OVERVIEW-CLEANUP-01');

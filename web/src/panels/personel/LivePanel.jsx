@@ -321,21 +321,21 @@ export default function PersonelLivePanel() {
   }), [vehicle, myShift, nextStop, nextEtaMin, totalStops, remainingStopsCount, reachedCount, gpsStatusText, vehicles.length]);
   const copilotSelection = useMemo(() => {
     if (!vehicle && !myShift) return null;
-    const serviceLabel = vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : `Shift #${myShift?.id || '-'}`);
+    const serviceLabel = vehicle?.plate || (myShift?.vehicleId ? `#${myShift.vehicleId}` : `Vardiya #${myShift?.id || '-'}`);
     const parts = [
-      `Shift #${myShift?.id || '-'}`,
+      `Vardiya #${myShift?.id || '-'}`,
       displayStatusLabel(String(myShift?.status || '-').toUpperCase()),
       vehicle?.plate ? `Araç ${vehicle.plate}` : null,
       `Son GPS ${gpsAgeLabel(vehicle)}`,
       nextStop?.name ? `Sıradaki ${nextStop.name}` : null,
-      nextEtaMin != null ? `ETA ${etaDisplayText(vehicle, nextEtaMin, nextStop)}` : null,
+      nextEtaMin != null ? `Tahmini süre ${etaDisplayText(vehicle, nextEtaMin, nextStop)}` : null,
       remainingStopsCount ? `Kalan durak ${remainingStopsCount}` : null,
     ].filter(Boolean);
     return {
       scopeKey: "/personel/live",
       entityType: vehicle?.id ? "vehicle" : "shift",
       entityId: Number(vehicle?.id || myShift?.id || 0) || null,
-      label: vehicle?.plate ? `Bugünkü servis • ${vehicle.plate}` : `Shift #${myShift?.id || "-"}`,
+      label: vehicle?.plate ? `Bugünkü servis • ${vehicle.plate}` : `Vardiya #${myShift?.id || "-"}`,
       summary: parts.join(" • "),
       fields: [
         { label: 'Servis', value: serviceLabel, help: 'Sana bağlı bugünkü servis veya vardiya etiketini gösterir.' },
@@ -345,7 +345,7 @@ export default function PersonelLivePanel() {
         { label: 'GPS durumu', value: gpsStatusText, help: 'Araç GPS sinyalinin canlı mı eski mi olduğunu gösterir.' },
         { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını Türkçe ve güvenli olarak gösterir.' },
         { label: 'Sıradaki durak', value: nextStop?.name || '-', help: 'Bir sonraki durak adını gösterir.' },
-        { label: 'ETA', value: nextEtaMin != null ? etaDisplayText(vehicle, nextEtaMin, nextStop) : '-', help: 'Sıradaki durağa kalan tahmini süreyi güvenli biçimde gösterir.' },
+        { label: 'Tahmini süre', value: nextEtaMin != null ? etaDisplayText(vehicle, nextEtaMin, nextStop) : '-', help: 'Sıradaki durağa kalan tahmini süreyi güvenli biçimde gösterir.' },
         { label: 'Servis durumu', value: displayStatusLabel(String(myShift?.status || '-').toUpperCase()), help: 'Vardiya veya servis durumunu gösterir.' },
       ],
       badges: [
@@ -356,7 +356,7 @@ export default function PersonelLivePanel() {
         ...copilotFacts,
         selectedRecordType: vehicle?.id ? 'vehicle' : 'shift',
         selectedRecordId: Number(vehicle?.id || myShift?.id || 0) || 0,
-        selectedRecordLabel: vehicle?.plate || `Shift #${myShift?.id || '-'}`,
+        selectedRecordLabel: vehicle?.plate || `Vardiya #${myShift?.id || '-'}`,
         selectedRecordStatus: copilotFacts?.selectedRecordStatus || '',
       },
     };
@@ -408,7 +408,7 @@ export default function PersonelLivePanel() {
       <div className="topbar">
         <div>
           <div className="title">Personel • Canlı Harita</div>
-          <div className="muted">Sana ait durak + araç yaklaşımı + ETA + navigasyon</div>
+          <div className="muted">Sana ait durak + araç yaklaşımı + tahmini süre + navigasyon</div>
         </div>
       </div>
       {err ? <div className="card err">{err}</div> : null}
@@ -435,13 +435,13 @@ export default function PersonelLivePanel() {
           {myShift ? (
             <div className="col" style={{ gap: 6, marginTop: 10 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <b>Shift #{myShift.id}</b>
+                <b>Vardiya #{myShift.id}</b>
                 <span className="pill" data-status={String(myShift.status || "").toUpperCase()}>
                   {displayStatusLabel(String(myShift.status || "").toUpperCase())}
                 </span>
               </div>
 
-              <div className="muted">Room: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
+              <div className="muted">Oda: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
 
               <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <span>
@@ -459,14 +459,14 @@ export default function PersonelLivePanel() {
               </div>
 
               <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
-              <div className="muted">Start: {fmtTR(myShift.startAt)} • End: {fmtTR(myShift.endAt)}</div>
+              <div className="muted">Başlangıç: {fmtTR(myShift.startAt)} • Bitiş: {fmtTR(myShift.endAt)}</div>
 
               {totalStops ? (
                 <>
                   <div className="muted">
-                    İlerleme: {pct}% (reached:{reachedCount}/{totalStops})
+                    İlerleme: {pct}% (tamamlanan: {reachedCount}/{totalStops})
                     {nextStop?.name ? ` • Sıradaki: ${nextStop.name}` : ""}
-                    {nextStop?.name && nextEtaMin != null ? ` • ETA: ${etaDisplayText(vehicle, nextEtaMin, nextStop)}` : ""}{remainingStopsCount ? ` • Kalan durak: ${remainingStopsCount}` : ""}
+                    {nextStop?.name && nextEtaMin != null ? ` • Tahmini süre: ${etaDisplayText(vehicle, nextEtaMin, nextStop)}` : ""}{remainingStopsCount ? ` • Kalan durak: ${remainingStopsCount}` : ""}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
@@ -493,7 +493,7 @@ export default function PersonelLivePanel() {
                   Seçili Araç
                 </div>
                 <div className="muted" style={{ fontSize: 12 }}>
-                  {vehicle?.plate || "-"} • Shift #{myShift?.id || "-"} • {String(myShift?.status || "-").toUpperCase()}
+                  {vehicle?.plate || "-"} • Vardiya #{myShift?.id || "-"} • {String(myShift?.status || "-").toUpperCase()}
                 </div>
               </div>
               <button className="btn sm" onClick={fitAll}>
@@ -524,7 +524,7 @@ export default function PersonelLivePanel() {
                   </button>
                   {nextEtaMin != null ? (
                     <span className="muted">
-                      ETA: <b>{nextEtaMin != null ? etaDisplayText(vehicle, nextEtaMin, nextStop) : "-"}</b>
+                      Tahmini süre: <b>{nextEtaMin != null ? etaDisplayText(vehicle, nextEtaMin, nextStop) : "-"}</b>
                     </span>
                   ) : null}
                   {toNum(nextStop?.remainingKm) != null ? (
@@ -534,7 +534,7 @@ export default function PersonelLivePanel() {
                   ) : null}
                   {remainingRouteEtaMin != null ? (
                     <span className="muted">
-                      Rota ETA: <b>{remainingRouteEtaMin != null ? etaDisplayText(vehicle, remainingRouteEtaMin, nextStop) : "-"}</b>
+                      Rota tahmini süre: <b>{remainingRouteEtaMin != null ? etaDisplayText(vehicle, remainingRouteEtaMin, nextStop) : "-"}</b>
                     </span>
                   ) : null}
                   {remainingRouteKm != null ? (

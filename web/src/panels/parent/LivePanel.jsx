@@ -398,7 +398,7 @@ export default function ParentLivePanel() {
         selectedVehicle?.plate ? `Araç ${selectedVehicle.plate}` : null,
         `Son GPS ${gpsAgeText(selectedVehicle?.gpsLast)}`,
         selectedNext?.name ? `Sıradaki durak ${selectedNext.name}` : null,
-        `ETA ${etaText(selectedVehicle)}`,
+        `Tahmini süre ${etaText(selectedVehicle)}`,
       ].filter(Boolean).join(' • '),
       fields: [
         { label: 'Öğrenci', value: selected?.fullName || `#${selected?.id || '-'}`, help: 'Seçili öğrencinin güvenli etiketini gösterir.' },
@@ -408,7 +408,7 @@ export default function ParentLivePanel() {
         { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını güvenli şekilde gösterir.' },
         { label: 'Çocuğun durağı', value: childStop ? stopTitle(childStop) : 'Atanmış durak bulunamadı', help: 'Öğrenciye bağlı güvenli durak bilgisini gösterir.' },
         { label: 'Sıradaki durak', value: selectedNext?.name || '-', help: 'Bir sonraki durak adını gösterir.' },
-        { label: 'ETA', value: etaText(selectedVehicle), help: 'Araçtan öğrencinin durağına tahmini süreyi gösterir.' },
+        { label: 'Tahmini süre', value: etaText(selectedVehicle), help: 'Araçtan öğrencinin durağına tahmini süreyi gösterir.' },
         { label: 'Servis durumu', value: selectedVehicle?.serviceStatus || selectedVehicle?.status || 'Yolda', help: 'Servisin görünür durumunu gösterir.' },
       ],
       badges: [
@@ -545,7 +545,7 @@ export default function ParentLivePanel() {
                 <div className="muted">Bölge: <b>{regionText(selectedVehicle)}</b></div>
                 <div>Çocuğun durağı: <b>{childStop ? stopTitle(childStop) : "Atanmış durak bulunamadı"}</b></div>
                 <div>En yakın durak: <b>{nearestStop ? stopTitle(nearestStop) : "Konum alınmadı"}</b>{nearestStop && childStop && sameStop(nearestStop, childStop) ? <span className="muted"> • Çocuğun durağı ile aynı</span> : null}</div>
-                <div className="muted">Araçtan çocuğun durağına ETA: <b>{etaText(selectedVehicle)}</b>{selectedVehicle?.etaToChildKm != null ? <> • Mesafe: <b>{selectedVehicle.etaToChildKm} km</b></> : null}</div>
+                <div className="muted">Araçtan çocuğun durağına tahmini süre: <b>{etaText(selectedVehicle)}</b>{selectedVehicle?.etaToChildKm != null ? <> • Mesafe: <b>{selectedVehicle.etaToChildKm} km</b></> : null}</div>
                 <div className="muted">Sizden çocuğun durağına: <b>{distanceText(childDistanceM)}</b>{Number.isFinite(Number(childDistanceM)) ? <> • Yaklaşık yürüyüş: <b>{walkMinutesText(childDistanceM)}</b></> : null}</div>
                 <div className="muted">Sizden en yakın durağa: <b>{distanceText(nearestDistanceM)}</b>{Number.isFinite(Number(nearestDistanceM)) ? <> • Yaklaşık yürüyüş: <b>{walkMinutesText(nearestDistanceM)}</b></> : null}</div>
                 <div className="muted">Sonraki durak: <b>{stopTitle(selectedVehicle.nextStop)}</b> • Çocuğa kalan: <b>{numText(selectedVehicle.remainingStopsToChild)}</b> • Toplam kalan: <b>{numText(selectedVehicle.remainingStopsTotal)}</b></div>

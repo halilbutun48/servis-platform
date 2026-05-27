@@ -250,14 +250,14 @@ export const ROOM = [
       { label: "Copilot", path: "/room/copilot", purpose: "Sorunun nedenini ve sonraki adımı sade dille almak için açılır." },
     ],
     simpleTerms: pickTerms(["telefonGps", "cihazGps", "oturumYenileme"]),
-    dataRules: ["Açık sorun sayısı sıfır değilse ekran yalnız bilgilendirme değil aksiyon ekranıdır.", "Stale/offline sayısı ile riskli cihaz sayısı birlikte okunmalıdır."],
+    dataRules: ["Açık sorun sayısı sıfır değilse ekran yalnız bilgilendirme değil aksiyon ekranıdır.", "GPS güncel değil / çevrim dışı sayısı ile riskli cihaz sayısı birlikte okunmalıdır."],
     firstControls: ["Önce en riskli kartı belirle.", "Sonra ilk sorunlu sürücü veya açık soruna in."],
     stuckChecks: ["Sorun görünmüyorsa önce Yenile değil kaynak ekrandaki canlı veri akışını kontrol et.", "Canlılık sorunu varsa Harita ekranı ile birlikte oku."],
     nextScreens: [
       { label: "Canlı Takip", path: "/room/map", why: "GPS ve son konum akışını doğrulamak için" },
       { label: "Sürücüler", path: "/room/drivers", why: "İzin, oturum ve araç bağı için" },
     ],
-    chatQuestions: ['Operasyon Sağlığı: sorun ne?', 'Riskli cihazı göster', 'Stale/offline satırını aç', 'Açık sorunları sırala'],
+    chatQuestions: ['Operasyon Sağlığı: sorun ne?', 'Riskli cihazı göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala'],
   }),
   screen(1115, "/room/commercial-flow", "Ticari Akışım", {
     menuPurpose: "Oda tarafındaki ticari kayıtları ve sonraki adımı görmek için kullanılır.",

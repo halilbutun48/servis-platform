@@ -405,7 +405,7 @@ export default function CompanyOperationsPanel() {
       ],
       selectedBadges: [
         { label: "Uygulama", value: selectedPreviewRequest?.boardingChangeApplicationStatus ? boardingChangeApplicationStatusLabel(selectedPreviewRequest.boardingChangeApplicationStatus) : (selectedPreview.previewOnlyNote || "Bu sadece önizlemedir.") },
-        { label: "ETA", value: selectedPreview.reliability?.label || "ETA hesaplanamıyor" },
+        { label: "Tahmini süre", value: selectedPreview.reliability?.label || "Tahmini süre hesaplanamıyor" },
       ],
       facts: selectedPreviewFacts,
       liveFacts: selectedPreviewFacts,

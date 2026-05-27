@@ -79,7 +79,7 @@ export function RoomShiftsModalSection({
         onClose={onClosePreview}
         title={
           previewShift
-            ? `Shift #${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
+            ? `Vardiya #${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
             : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
         }
         subtitle={previewSubtitle}

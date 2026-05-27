@@ -232,7 +232,7 @@ export default function CompanyCheckinPanel() {
         </div>
         {selectedShift ? (
           <div className="muted" style={{ marginTop: 10 }}>
-            Shift #{selectedShift.id} • Araç {selectedShift.vehicle?.plate || "-"} • Sürücü {selectedShift.driver?.fullName || "-"}
+            Vardiya #{selectedShift.id} • Araç {selectedShift.vehicle?.plate || "-"} • Sürücü {selectedShift.driver?.fullName || "-"}
           </div>
         ) : null}
       </div>

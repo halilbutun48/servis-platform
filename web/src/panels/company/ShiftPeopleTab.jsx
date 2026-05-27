@@ -758,7 +758,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       <RoutePreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-    title={selectedShift ? `Shift #${selectedShift.id} - Rota/Durak önizleme` : "Rota/Durak önizleme"}
+    title={selectedShift ? `Vardiya #${selectedShift.id} - Rota/Durak önizleme` : "Rota/Durak önizleme"}
         stops={draftStops}
         people={people}
       />

@@ -415,9 +415,9 @@ function main() {
   assertContainsAll(helpComposer, [
     "BOARDING_CHANGE_REQUEST_ENTRY",
     "Biniş talebi girişi",
-    "Bu sadece talep oluşturma akışıdır. Konum gerekiyorsa Konumumu al, Büyük haritada konum seç ya da Adresten konum bul seçeneklerinden birini kullan; rota otomatik uygulanmaz; same-route ise sürücü, rota dışı ise hizmet alan taraf karar verir; room sadece görür.",
-    "Önce talep tipini, tarihi, servis/shift bağlamını ve konum seçimini gir.",
-    "Konum gerekiyorsa Konumumu al, Büyük haritada konum seç ya da Adresten konum bul; geocode bağlı değilse açıklama ekle.",
+    "Bu sadece talep oluşturma akışıdır. Konum gerekiyorsa Konumumu al, Büyük haritada konum seç ya da Adresten konum bul seçeneklerinden birini kullan; rota otomatik uygulanmaz; aynı rota ise sürücü, rota dışı ise hizmet alan taraf karar verir; oda yalnızca görür.",
+    "Önce talep tipini, tarihi, servis/vardiya bağlamını ve konum seçimini gir.",
+    "Konum gerekiyorsa Konumumu al, Büyük haritada konum seç ya da Adresten konum bul; konum çözümleme bağlı değilse açıklama ekle.",
   ], "help composer request entry guidance");
 
   const goldenPack = read("backend/src/ai/chat/goldenQuestionPack.js");

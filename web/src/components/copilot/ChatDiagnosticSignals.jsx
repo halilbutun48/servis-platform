@@ -29,7 +29,7 @@ function chipTexts(signal) {
   if (/paymentaccountstatus|odeme hesabi/.test(hay)) chips.push('Ödeme hesabı eksik');
   if (/contractshiftgeneration|sozlesme.*vardiya|vardiya uretil/.test(hay)) chips.push('Sözleşme/vardiya üretimi kontrol edildi');
   if (/commissionstatus/.test(hay)) chips.push('Komisyon durumu kontrol edildi');
-  if (/settlementstatus/.test(hay)) chips.push('Settlement kapalı');
+  if (/settlementstatus/.test(hay)) chips.push('Tahsilat kapalı');
   if (/paymentpreviewstatus/.test(hay) && !chips.length) chips.push('Hakediş önizlemesi var');
 
   return chips;

@@ -120,7 +120,7 @@ must(policy, 'Aynı kayıt için devam et', 'workflow chip policy keeps generic 
 must(policy, 'Ekran rehberini aç', 'workflow chip policy keeps generic guide block');
 must(policy, 'Vardiya engelini sor', 'workflow chip policy keeps blocked-shift block');
 
-must(helpComposer, 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.', 'help composer keeps operation-health direct next step');
+must(helpComposer, 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'help composer keeps operation-health direct next step');
   must(helpComposer, 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.', 'help composer keeps shift direct next step');
   must(helpComposer, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.', 'help composer keeps Turkish contract mismatch lead');
   must(helpComposer, 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.', 'help composer keeps contract next action');
@@ -137,8 +137,8 @@ ordered(helpComposer, [
 ], 'contract-shift detection beats payment readiness');
 
 must(facts, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'facts keeps operation-health lead');
-must(facts, 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve stale/offline satırlarını kontrol et.', 'facts keeps operation-health fallback');
-must(facts, 'Riskli cihazı aç, stale/offline satırını kontrol et ve açık sorunları sırala.', 'facts keeps operation-health direct next step');
+must(facts, 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve GPS güncel değil / çevrim dışı satırlarını kontrol et.', 'facts keeps operation-health fallback');
+must(facts, 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını aç ve açık sorunları sırala.', 'facts keeps operation-health direct next step');
 must(facts, 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.', 'facts keeps contract no-signal wording');
 must(facts, 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.', 'facts keeps contract positive signal wording');
 must(facts, 'Eksik bilgi 0 görünüyor; ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini kontrol et.', 'facts keeps payment zero-missing wording');

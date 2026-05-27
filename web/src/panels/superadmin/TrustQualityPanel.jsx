@@ -61,6 +61,15 @@ function MetricTile({ title, value, note, tone = "default" }) {
   );
 }
 
+function reviewStatusLabel(value) {
+  const status = String(value || "REVIEW_PENDING").trim().toUpperCase();
+  if (status === "REVIEW_PENDING") return "Kalite incelemesi bekliyor";
+  if (status === "REVIEWED") return "İncelendi";
+  if (status === "NEEDS_RECHECK") return "Tekrar kontrol gerekli";
+  if (status === "IGNORED_FOR_NOW") return "Şimdilik dikkate alınmadı";
+  return status.replace(/_/g, " ") || "Kalite incelemesi bekliyor";
+}
+
 export default function TrustQualityPanel() {
   const { token } = useSession();
   const [activeTab, setActiveTab] = useState("overview");
@@ -151,7 +160,7 @@ export default function TrustQualityPanel() {
         signals.length ? `${signals.length} sinyal` : null,
         proofSummary?.statusText || proofSummary?.summaryText || proofSummary?.title || null,
         draftScoreSummary?.scoreBand || draftScoreSummary?.status || draftScoreSummary?.summaryText || null,
-        reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || null,
+        reviewStatusLabel(reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || null),
         reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || null,
         providerSignal?.summary || null,
         qualityFacts?.copilotSummary || null,
@@ -165,7 +174,7 @@ export default function TrustQualityPanel() {
         { label: 'Sağlayıcı Sinyali', value: String(signals.length), help: 'Sağlayıcı tarafında görünen kalite sinyali sayısını gösterir.' },
         { label: 'Kanıt', value: proofSummary?.statusText || proofSummary?.summaryText || proofSummary?.title || '-', help: 'Servis kanıtı ve hizmet kanıtı durumunu gösterir.' },
         { label: 'Taslak Skor', value: draftScoreSummary?.scoreBand || draftScoreSummary?.status || draftScoreSummary?.summaryText || '-', help: 'Taslak kalite skorunun görünür bandını gösterir.' },
-        { label: 'İnceleme', value: reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || '-', help: 'Kalite inceleme kararının durumunu gösterir.' },
+        { label: 'İnceleme', value: reviewStatusLabel(reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || '-'), help: 'Kalite inceleme kararının durumunu gösterir.' },
         { label: 'Kalite Geçmişi', value: reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || '-', help: 'Son kalite karar geçmişini gösterir.' },
         { label: 'Özet', value: providerSignal?.summary || qualityFacts?.copilotSummary || '-', help: 'Güven ve kalite görünümünün kısa özetini gösterir.' },
       ],
@@ -241,7 +250,7 @@ export default function TrustQualityPanel() {
     || reviewHistorySummary !== null;
   const proofStatus = proofSummary?.statusText || proofSummary?.summaryText || proofSummary?.title || (summaryReady ? "Hazır" : "-");
   const draftStatus = draftScoreSummary?.scoreBand || draftScoreSummary?.status || draftScoreSummary?.summaryText || "-";
-  const reviewStatus = reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || "-";
+  const reviewStatus = reviewStatusLabel(reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || "-");
   const historyStatus = reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || "-";
   const proofSignal = String(proofStatus || "").toUpperCase();
   const reviewSignal = String(reviewStatus || "").toUpperCase();
@@ -257,7 +266,7 @@ export default function TrustQualityPanel() {
   const criticalBandText = pendingEvaluation > 0
     ? `Kalite/kanıt bekleyen hizmet var · ${pendingEvaluation} kayıt`
     : reviewNeedsAttention
-      ? `Kanıt veya inceleme sinyali dikkat gerektiriyor · ${reviewStatus !== "-" ? reviewStatus : proofStatus}`
+    ? `Kanıt veya inceleme sinyali dikkat gerektiriyor · ${reviewStatus !== "-" ? reviewStatus : proofStatus}`
       : `Kanıt veya inceleme sinyali dikkat gerektiriyor · ${proofStatus}`;
   const criticalBandDescription = pendingEvaluation > 0
     ? "İnceleme Kararı sekmesi, bekleyen kayıtları ve kanıt sinyallerini birlikte gösterir."
