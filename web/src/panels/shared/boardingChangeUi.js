@@ -57,6 +57,20 @@ const APPLICATION_LABELS = {
   BLOCKED: "Uygulanamadı",
 };
 
+const PREVIEW_STATE_LABELS = {
+  PREVIEW_ONLY: "Sadece önizleme",
+  READY: "Kabul bekliyor",
+  APPLIED: "Operasyona ulaştı",
+  REJECTED: "Uygulanmadı",
+};
+
+const PREVIEW_STATE_TONES = {
+  PREVIEW_ONLY: "info",
+  READY: "warning",
+  APPLIED: "success",
+  REJECTED: "critical",
+};
+
 const ROUTE_REFRESH_LABELS = {
   VISIBLE: "Günlük değişiklik rotada görünüyor",
   READY: "Rota güncellemesi bekliyor",
@@ -138,6 +152,42 @@ export function boardingChangeApplicationStatusLabel(state) {
 
 export function boardingChangeApplyButtonLabel() {
   return "Kabul edilen değişikliği uygula";
+}
+
+function previewStateFrom(itemOrState, context = {}) {
+  const requestStatus = normalize(itemOrState?.status || itemOrState?.decisionState || itemOrState?.boardingChangeApplicationStatus || itemOrState?.applicationStatus || context?.status || "");
+  const applicationStatus = normalize(itemOrState?.boardingChangeApplicationStatus || itemOrState?.applicationStatus || context?.applicationStatus || "");
+  const routeRefreshState = normalize(itemOrState?.boardingChangeRouteRefreshState || itemOrState?.routeRefreshState || context?.routeRefreshState || "");
+
+  if (!requestStatus && !applicationStatus && !routeRefreshState && !itemOrState?.id) {
+    return "PREVIEW_ONLY";
+  }
+  if (["CANCELLED", "REJECTED", "ROOM_CANCELLED", "DRIVER_CANCELLED", "COMPANY_CANCELLED"].includes(requestStatus) || ["CANCELLED", "REJECTED", "BLOCKED"].includes(applicationStatus)) {
+    return "REJECTED";
+  }
+  if (["APPLIED", "VISIBLE"].includes(routeRefreshState) || applicationStatus === "APPLIED") {
+    return "APPLIED";
+  }
+  if (["ACCEPTED", "APPROVED", "OPEN", "REQUESTED", "PENDING", "COUNTERED", "MANUAL_REVIEW", "CUTOFF_REVIEW", "READY"].includes(requestStatus) || applicationStatus === "READY") {
+    return "READY";
+  }
+  return "PREVIEW_ONLY";
+}
+
+export function boardingChangePreviewStateLabel(itemOrState, context = {}) {
+  return PREVIEW_STATE_LABELS[previewStateFrom(itemOrState, context)] || PREVIEW_STATE_LABELS.PREVIEW_ONLY;
+}
+
+export function boardingChangePreviewStateTone(itemOrState, context = {}) {
+  return PREVIEW_STATE_TONES[previewStateFrom(itemOrState, context)] || PREVIEW_STATE_TONES.PREVIEW_ONLY;
+}
+
+export function boardingChangePreviewStateNote(itemOrState, context = {}) {
+  const state = previewStateFrom(itemOrState, context);
+  if (state === "APPLIED") return "Günlük atamaya işlendi.";
+  if (state === "READY") return "İnsan onayı bekliyor.";
+  if (state === "REJECTED") return "İstek kapandı.";
+  return "Readonly önizleme.";
 }
 
 export function boardingChangeApplyBoundaryNote() {

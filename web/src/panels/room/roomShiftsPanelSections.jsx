@@ -1,5 +1,5 @@
 import ListSelectionBanner from "../../components/ListSelectionBanner";
-import { formatShiftDateTimeTR as fmtTR } from "./roomShiftsPanelUtils";
+import { buildCapacityMeta, formatShiftDateTimeTR as fmtTR } from "./roomShiftsPanelUtils";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { RoomPendingShiftRow, RoomAllShiftRow } from "./roomShiftsPanelRows";
 import {
@@ -43,7 +43,7 @@ export function RoomPendingSection({ pendingStatus, setPendingStatus, pendingQ, 
               <th>Bitiş</th>
               <th>Harita</th>
               <th>Teklif / Pazarlık</th>
-              <th>Vehicle + Driver</th>
+              <th>Araç + şoför</th>
               <th>Kabul Et</th>
               <th>Reddet</th>
             </tr>
@@ -63,9 +63,13 @@ export function RoomDispatchPoolSummary({
   effectiveRoomId = null,
   poolSummary,
   dispatchPreview,
+  dispatchEditSel,
   getDispatchSelectionStates,
+  items,
   vehiclesForRoom,
   driversForRoom,
+  isDriverAvailableForShift,
+  isVehicleAvailableForShift,
   selectedDispatchVehicleId,
   selectedDispatchDriverId,
   vehiclesById,
@@ -85,14 +89,32 @@ export function RoomDispatchPoolSummary({
   const dState = dispatchPreview[sid] || null;
   const dData = dState?.data || null;
   const suggestions = Array.isArray(dData?.suggestions) ? dData.suggestions : [];
-  const dispatchSelStates = getDispatchSelectionStates(shift, suggestions);
+  const dispatchSelStates = getDispatchSelectionStates({
+    shift,
+    suggestions,
+    dispatchEditSel,
+    vehiclesById,
+    items,
+    vehiclesForRoom,
+    isDriverAvailableForShift,
+    isVehicleAvailableForShift,
+    buildCapacityMeta,
+  });
   const roomVehicles = Array.isArray(data?.vehicles) && data.vehicles.length
     ? data.vehicles.filter((v) => v?.vehicleOk && Number(v.capacity || 0) > 0)
     : vehiclesForRoom(effectiveRoomId ?? shift?.roomId);
   const roomDrivers = Array.isArray(data?.drivers) && data.drivers.length
     ? data.drivers.filter((d) => d?.driverOk)
     : driversForRoom(effectiveRoomId ?? shift?.roomId);
-  const dispatchCanApply = suggestions.length > 0 && suggestions.every((part) => dispatchSelStates?.[Number(part?.splitIndex || 0)]?.status === "ok");
+  const dispatchSelectionRows = suggestions.map((part) => ({
+    part,
+    state: dispatchSelStates?.[Number(part?.splitIndex || 0)] || { status: "missing", code: "SELECT_REQUIRED", message: "Araç ve şoför seç." },
+  }));
+  const dispatchApplyIssue = dispatchSelectionRows.find(({ state }) => state?.status !== "ok") || null;
+  const dispatchCanApply = suggestions.length > 0 && !dispatchApplyIssue;
+  const dispatchApplyMessage = !suggestions.length
+    ? "Önce dispatch önizleme oluştur."
+    : dispatchApplyIssue?.state?.message || "Tüm öneriler hazır.";
 
   return (
     <div className="card" style={{ padding: 10 }}>
@@ -124,7 +146,7 @@ export function RoomDispatchPoolSummary({
               </span>
             </span>
             <span>• <b>Müsait araç:</b> {data.vehicles?.filter?.((x) => x.vehicleOk)?.length || 0}/{data.roomVehicleCount || 0}</span>
-            <span>• <b>Boş driver:</b> {data.freeDriverCount || 0}</span>
+            <span>• <b>Boş şoför:</b> {data.freeDriverCount || 0}</span>
             <span>• <b>Toplam eşleşebilir koltuk:</b> {data.totalPairCapacity || 0}</span>
             {!data.enoughPoolCapacity ? <span>• <b>Eksik:</b> {data.missingPoolCapacity || 0}</span> : null}
           </div>
@@ -136,7 +158,7 @@ export function RoomDispatchPoolSummary({
             </div>
           ) : (
             <div className="muted">
-              Öneri üretilemedi. Room havuzunda bu zaman için uygun araç/driver çifti bulunamadı.
+              Öneri üretilemedi. Room havuzunda bu zaman için uygun araç/şoför çifti bulunamadı.
             </div>
           )}
 
@@ -148,7 +170,7 @@ export function RoomDispatchPoolSummary({
                 disabled={busy || dState?.status === "loading"}
                 onClick={() => loadDispatchPreview(shift, { force: true })}
               >
-                {dState?.status === "loading" ? "Önizleme hazırlanıyor..." : suggestions.length ? "Dispatch Önizlemeyi Yenile" : "Dispatch Önizleme Oluştur"}
+                {dState?.status === "loading" ? "Önizleme hazırlanıyor..." : suggestions.length ? "Bölme önizlemesini yenile" : "Bölme önizlemesi oluştur"}
               </button>
               <div className="muted" style={{ fontSize: 12 }}>
                 Yakın kişileri aynı araca toplamayı dener, sonra araç bazlı durak sırasını OSRM + solver ile iyileştirir.
@@ -158,7 +180,7 @@ export function RoomDispatchPoolSummary({
 
           {dState?.status === "error" ? (
             <div className="muted" style={{ color: "#b42318" }}>
-              <b>Dispatch önizleme hatası:</b> {dState.error}
+              <b>Bölme önizleme hatası:</b> {dState.error}
             </div>
           ) : null}
 
@@ -197,9 +219,9 @@ export function RoomDispatchPoolSummary({
                 Önizlemeyi Uygula: Böl & Onayla
               </button>
               <div className="muted" style={{ fontSize: 12 }}>
-                Dispatch önizleme ile aynı geo-temelli bölme planı uygulanır; seçtiğin araç/şoför eşleşmeleri kullanılır.
+                Önizleme ile aynı bölme planı uygulanır; seçtiğin araç ve şoför eşleşmeleri kullanılır.
               </div>
-              {!dispatchCanApply ? <div className="muted" style={{ color: "#b42318", fontSize: 12 }}>Önce tüm önerilerde uygun araç ve şoför seçimini tamamla.</div> : null}
+              {!dispatchCanApply ? <div className="muted" style={{ color: "#b42318", fontSize: 12 }}>{dispatchApplyMessage}</div> : <div className="muted" style={{ color: "#166534", fontSize: 12 }}>Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.</div>}
             </div>
           ) : null}
         </div>
@@ -207,7 +229,7 @@ export function RoomDispatchPoolSummary({
         <div className="muted" style={{ marginTop: 8 }}>Room havuz özeti hesaplanıyor…</div>
       ) : (
         <div className="muted" style={{ marginTop: 8 }}>
-          Çoklu araç/driver havuzunu görmek için yükle.
+          Çoklu araç/şoför havuzunu görmek için yükle.
         </div>
       )}
     </div>

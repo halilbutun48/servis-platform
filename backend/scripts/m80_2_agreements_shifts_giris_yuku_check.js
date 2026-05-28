@@ -90,7 +90,15 @@ const scaleText = [
   `WARN web/src/panels/company/AgreementsPanel.jsx -> initialLoadCalls=${agreementUseEffects}`,
 ].join("\n");
 ok("scale readiness baseline covered by direct structural checks");
-if (scaleText.includes("WARN web/src/panels/company/AgreementsPanel.jsx -> initialLoadCalls=9") || !scaleText.includes("WARN web/src/panels/company/AgreementsPanel.jsx ->")) ok("scale readiness tracks AgreementsPanel current snapshot"); else fail("scale readiness tracks AgreementsPanel current snapshot");
+if (
+  scaleText.includes("WARN web/src/panels/company/AgreementsPanel.jsx -> initialLoadCalls=8") ||
+  scaleText.includes("WARN web/src/panels/company/AgreementsPanel.jsx -> initialLoadCalls=9") ||
+  !scaleText.includes("WARN web/src/panels/company/AgreementsPanel.jsx ->")
+) {
+  ok("scale readiness tracks AgreementsPanel current snapshot");
+} else {
+  fail("scale readiness tracks AgreementsPanel current snapshot");
+}
 if (scaleText.includes("WARN web/src/panels/company/ShiftsPanel.jsx -> initialLoadCalls=12") || scaleText.includes("WARN web/src/panels/company/ShiftsPanel.jsx -> initialLoadCalls=13") || scaleText.includes("WARN web/src/panels/company/ShiftsPanel.jsx -> initialLoadCalls=14")) ok("scale readiness reflects lower ShiftsPanel entry load"); else fail("scale readiness reflects lower ShiftsPanel entry load");
 
 if (process.exitCode) process.exit(process.exitCode);

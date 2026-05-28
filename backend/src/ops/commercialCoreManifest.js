@@ -1,6 +1,6 @@
 import { prisma } from "../prisma.js";
 
-const FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
+const FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED", "SPLIT"]);
 
 function statusOf(value) {
   return String(value || "").trim().toUpperCase();
@@ -78,7 +78,7 @@ export async function buildRoomCommercialSummary(user) {
       },
     }),
     prisma.agreement.findMany({ where: { roomId }, select: { status: true } }),
-    prisma.shift.count({ where: { roomId, status: { in: ["APPROVED", "ACTIVE"] } } }),
+    prisma.shift.count({ where: { roomId, status: { in: ["APPROVED", "ACTIVE", "SPLIT"] } } }),
   ]);
 
   const liveOffers = offers.filter((x) => !isFinalShiftStatus(x?.shift?.status));
@@ -142,7 +142,7 @@ export async function buildRoomCommercialItems(user) {
         flowLabel: "Operasyon",
         amountLabel: fmtAmountLabel(o),
         statusLabel: shiftStatus,
-        nextStep: "Vardiya kaydini incele",
+        nextStep: shiftStatus === "SPLIT" ? "Bölünmüş vardiya kayıtlarını aç" : "Vardiya kaydini incele",
         actionPath: "/room/shifts",
         actionLabel: "Vardiyalari ac",
       };

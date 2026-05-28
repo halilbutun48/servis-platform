@@ -235,7 +235,7 @@ export function getDispatchSelectionStates({
     }
     const virtualShift = buildDispatchVirtualShift(shift, row.allocatedPax);
     if (!row.vehicleId || !row.driverId) {
-      result[row.splitIndex] = { status: "missing", code: "SELECT_REQUIRED", message: "Araç ve driver seç." };
+      result[row.splitIndex] = { status: "missing", code: "SELECT_REQUIRED", message: "Araç ve şoför seç." };
       continue;
     }
     const vehicle = vehiclesById.get(Number(row.vehicleId)) || null;
@@ -259,7 +259,7 @@ export function getDispatchSelectionStates({
       result[row.splitIndex] = {
         status: "conflict",
         code: "DRIVER_CONFLICT",
-        message: "Driver aynı zaman aralığında başka bir vardiyada.",
+        message: "Şoför aynı zaman aralığında başka bir vardiyada.",
         conflictingShift: conflictingShift || null,
       };
       continue;

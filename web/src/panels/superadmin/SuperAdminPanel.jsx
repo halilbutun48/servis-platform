@@ -52,6 +52,7 @@ const MENU_GUIDE = [
   { title: "Sistem Standartları", desc: "Resmi doküman, paket ve çalışma hattının aynı kurala göre ilerlediğini gösterir." },
   { title: "Ticari Akış", desc: "Talep, teklif, pazarlık ve sözleşme adımlarını tek akışta özetler." },
   { title: "Güven ve Kalite", desc: "Kalite, hizmet değerlendirme ve güven görünümü." },
+  { title: "Başvuru İncelemesi", desc: "Public lead başvurularını insan onayıyla sıraya alır." },
   { title: "Yardımcı", desc: "Yardımcı cevabın yapısını ve geri bildirim akışını gösterir." },
   { title: "Sahaya Çıkış Kontrolü", desc: "Canlıya çıkmadan önce son kontrol kapısı." },
   { title: "KVKK", desc: "Veri koruma ve uyum yüzeyi." },
@@ -352,6 +353,7 @@ export default function SuperAdminPanel() {
             <button className="btn sm" onClick={() => navigate("/superadmin/ssot-alignment")}>Sistem Standartları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/commercial-core")}>Ticari Akış</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/trust-quality")}>Güven ve Kalite</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/onboarding-review")}>Başvuru İncelemesi</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/copilot")}>Yardımcı</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/pilot-launch-gate")}>Sahaya Çıkış Kontrolü</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/operation-verification")}>Operasyon Doğrulama</button>

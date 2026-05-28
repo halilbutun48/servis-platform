@@ -1,6 +1,14 @@
-import { boardingChangeDecisionOwnerLabel, boardingChangeDecisionOwnerNote, boardingChangePreviewKindLabel } from "./boardingChangeUi";
+import {
+  boardingChangeDecisionOwnerLabel,
+  boardingChangeDecisionOwnerNote,
+  boardingChangePreviewKindLabel,
+  boardingChangePreviewStateLabel,
+  boardingChangePreviewStateNote,
+  boardingChangePreviewStateTone,
+} from "./boardingChangeUi";
 import { resolvePersonDisplayLabel } from "../../utils/labels";
 import { formatDateTimeTR } from "../../utils/time";
+import { useRef, useState } from "react";
 
 function toNumber(value) {
   const n = Number(value);
@@ -196,7 +204,7 @@ function MiniMapPreview({ model }) {
 
   const pad = 18;
   const w = 320;
-  const h = 180;
+  const h = 160;
   const minLat = Math.min(...model.allPoints.map((p) => p.lat));
   const maxLat = Math.max(...model.allPoints.map((p) => p.lat));
   const minLng = Math.min(...model.allPoints.map((p) => p.lng));
@@ -232,7 +240,7 @@ function MiniMapPreview({ model }) {
       </div>
 
       <div style={{ position: "relative", padding: 0 }}>
-        <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: 180, display: "block", background: "linear-gradient(180deg, rgba(15,23,42,0.92), rgba(17,24,39,0.82))" }}>
+        <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: 160, display: "block", background: "linear-gradient(180deg, rgba(15,23,42,0.92), rgba(17,24,39,0.82))" }}>
           <defs>
             <pattern id="routePreviewGrid" width="24" height="24" patternUnits="userSpaceOnUse">
               <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
@@ -303,14 +311,71 @@ function MiniMapPreview({ model }) {
   );
 }
 
-function StatTile({ label, value, note }) {
+function StatTile({ label, value, note, dense = false }) {
   return (
-    <div style={{ padding: 12, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
-      <div className="panelMeta" style={{ marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>{value}</div>
-      {note ? <div className="panelMeta" style={{ marginTop: 6 }}>{note}</div> : null}
+    <div style={{
+      padding: dense ? 10 : 12,
+      borderRadius: 12,
+      border: "1px solid rgba(255,255,255,0.08)",
+      background: "rgba(255,255,255,0.03)",
+      minHeight: dense ? 84 : 96,
+    }}>
+      <div className="panelMeta" style={{ marginBottom: dense ? 4 : 6 }}>{label}</div>
+      <div style={{ fontSize: dense ? 16 : 18, fontWeight: 800, lineHeight: 1.2 }}>{value}</div>
+      {note ? <div className="panelMeta" style={{ marginTop: dense ? 4 : 6 }}>{note}</div> : null}
     </div>
   );
+}
+
+function toneStyle(tone = "info") {
+  if (tone === "success") {
+    return { color: "#d1fadf", background: "rgba(18,183,106,0.14)", border: "1px solid rgba(18,183,106,0.38)" };
+  }
+  if (tone === "warning") {
+    return { color: "#fedf89", background: "rgba(247,144,9,0.14)", border: "1px solid rgba(247,144,9,0.38)" };
+  }
+  if (tone === "critical") {
+    return { color: "#fecdca", background: "rgba(240,68,56,0.12)", border: "1px solid rgba(240,68,56,0.35)" };
+  }
+  return { color: "#d0d5dd", background: "rgba(96,165,250,0.10)", border: "1px solid rgba(96,165,250,0.28)" };
+}
+
+function previewStatusTonePreview(item = null, preview = null) {
+  return boardingChangePreviewStateTone(item || preview || {});
+}
+
+function compactCapacityLabel(capacity = {}) {
+  const status = String(capacity?.status || "").toUpperCase();
+  if (status === "OK") return "Uygun";
+  if (status === "NEAR") return "Riskli";
+  if (status === "OVER") return "Yetersiz";
+  return "Bilinmiyor";
+}
+
+function compactReliabilityLabel(reliability = {}, warnings = []) {
+  if (reliability?.ok === false) return "ETA hesaplanamıyor";
+  if (String(reliability?.displayMode || "").toLowerCase() === "not-current" || String(reliability?.label || "").toLowerCase().includes("güncel değil")) {
+    return "ETA güncel değil";
+  }
+  if (Array.isArray(warnings) && warnings.length) return "Yaklaşık hesap";
+  return "Rota önizlemesi";
+}
+
+function compactRiskLabel({ capacity = {}, reliability = {}, warnings = [] } = {}) {
+  if (capacity?.status === "OVER" || reliability?.ok === false) return "Yüksek";
+  if (capacity?.status === "NEAR" || String(reliability?.displayMode || "").toLowerCase() === "not-current" || (Array.isArray(warnings) && warnings.length)) {
+    return "Orta";
+  }
+  return "Düşük";
+}
+
+function buildDecisionSentence(preview = null, request = null, personLabel = "") {
+  const name = String(personLabel || "").trim() || "Seçili kişi";
+  const changeType = String(preview?.changeType || request?.requestKind || request?.kind || "").toUpperCase();
+  if (changeType === "NO_SERVICE_TODAY") return `${name} bugün servisi kullanmayacak.`;
+  if (changeType === "ALTERNATE_STOP_TODAY") return `${name} bugün ${String(preview?.newStopLabel || "yeni durak").trim()} noktasından binecek.`;
+  if (changeType === "TEMPORARY_BOARDING_NOTE") return `${name} için geçici biniş notu var.`;
+  return `${name} için rota etkisi önizleniyor.`;
 }
 
 export default function BoardingRouteImpactPreviewCard({
@@ -341,18 +406,14 @@ export default function BoardingRouteImpactPreviewCard({
     request?.boardingChangeAppliedAt,
     request?.boardingChangeRouteRefreshUpdatedAt,
   );
-  const selectionDecision = firstText(
-    request?.decisionText,
-    request?.decision,
-    request?.boardingChangeApplicationStatus,
-    request?.status,
-  );
   const decisionOwnerChip = decisionOwnerLabelText || "Hizmet alan taraf";
   const decisionOwnerNoteVisible = decisionOwnerNoteText && decisionOwnerNoteText !== selectionNoteText;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsRef = useRef(null);
 
   if (error) {
     return (
-      <div className="card" style={{ borderColor: "rgba(240, 68, 56, 0.35)", background: "rgba(240, 68, 56, 0.10)" }}>
+      <div className="card" style={{ borderColor: "rgba(240, 68, 56, 0.35)", background: "rgba(255,255,255,0.03)" }}>
         <div className="panelSectionTitle">{title}</div>
         {hasSelection ? <div className="panelMeta" style={{ marginTop: 6 }}>Seçili satır: {selectionLabelText}</div> : null}
         {selectionNoteText ? <div className="panelMeta" style={{ marginTop: 4 }}>{selectionNoteText}</div> : null}
@@ -364,7 +425,7 @@ export default function BoardingRouteImpactPreviewCard({
 
   if (loading) {
     return (
-      <div className="card" style={{ borderColor: "rgba(96, 165, 250, 0.28)", background: "rgba(96, 165, 250, 0.08)" }} aria-live="polite">
+      <div className="card" style={{ borderColor: "rgba(96, 165, 250, 0.28)", background: "rgba(255,255,255,0.03)" }} aria-live="polite">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}>
             <div className="panelSectionTitle">{title}</div>
@@ -423,72 +484,117 @@ export default function BoardingRouteImpactPreviewCard({
   const capacity = preview.capacityImpact && typeof preview.capacityImpact === "object" ? preview.capacityImpact : {};
   const reliability = preview.reliability && typeof preview.reliability === "object" ? preview.reliability : {};
   const warnings = Array.isArray(preview.warnings) ? preview.warnings : [];
-  const capacityAfter = capacity.availableAfter != null ? formatNumber(capacity.availableAfter) : "Bilinmiyor";
-  const capacityBefore = capacity.availableBefore != null ? formatNumber(capacity.availableBefore) : "Bilinmiyor";
-  const statusTone = reliability.ok === false ? "rgba(240, 68, 56, 0.22)" : "rgba(18, 183, 106, 0.18)";
-  const borderTone = reliability.ok === false ? "rgba(240, 68, 56, 0.35)" : "rgba(18, 183, 106, 0.35)";
+  const stopDelta = Number(preview.previewStopCount || 0) - Number(preview.currentStopCount || 0);
+  const distanceDeltaKm = Number(preview.distanceDeltaKm || 0);
+  const durationDeltaMin = Number(preview.durationDeltaMin || 0);
+  const previewStateLabel = boardingChangePreviewStateLabel(request || preview);
+  const previewStateTone = previewStatusTonePreview(request, preview);
+  const previewStateNote = boardingChangePreviewStateNote(request || preview);
+  const capacityLabel = compactCapacityLabel(capacity);
+  const reliabilityLabel = compactReliabilityLabel(reliability, warnings);
+  const riskLabel = compactRiskLabel({ capacity, reliability, warnings });
+  const decisionSentence = buildDecisionSentence(preview, request, previewPersonLabel);
+  const detailsHint = String(preview.summaryLine || `${changeTypeLabel} · ${previewPersonLabel}`);
+  const tone = toneStyle(previewStateTone);
+  const statusStatus = previewStateTone === "success" ? "OK" : previewStateTone === "warning" ? "WARN" : previewStateTone === "critical" ? "WARN" : "INFO";
+  const riskStatus = riskLabel === "Yüksek" ? "WARN" : riskLabel === "Orta" ? "WARN" : "OK";
+  const reliabilityStatus = previewStateTone === "critical" || reliability.ok === false ? "WARN" : previewStateTone === "warning" || String(reliability?.displayMode || "").toLowerCase() === "not-current" ? "WARN" : "OK";
+  const handleToggleDetails = () => setDetailsOpen((value) => !value);
+  const handleShowMap = () => {
+    setDetailsOpen(true);
+    setTimeout(() => {
+      detailsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
 
   return (
-    <div className="card" style={{ borderColor: borderTone, background: statusTone }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">{title}</div>
-          <div className="panelMeta" style={{ marginTop: 4 }}>{safePreviewNote}</div>
-          {hasSelection ? <div className="panelMeta" style={{ marginTop: 6 }}>Seçili satır: {selectionLabelText}</div> : null}
-          {selectionNoteText ? <div className="panelMeta" style={{ marginTop: 4 }}>{selectionNoteText}</div> : null}
+    <div
+      className="card"
+      style={{
+        borderColor: tone.border,
+        background: "rgba(255,255,255,0.03)",
+      }}
+    >
+      <div style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ minWidth: 0 }}>
+            <div className="panelSectionTitle">{title}</div>
+            <div className="panelMeta" style={{ marginTop: 4 }}>{safePreviewNote}</div>
+            {hasSelection ? <div className="panelMeta" style={{ marginTop: 6 }}>Seçili satır: {selectionLabelText}</div> : null}
+            {selectionNoteText ? <div className="panelMeta" style={{ marginTop: 4 }}>{selectionNoteText}</div> : null}
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <span className="pill" data-status={statusStatus}>{changeTypeLabel}</span>
+            <span className="pill" data-status={statusStatus}>{previewStateLabel}</span>
+            {onClearSelection && hasSelection ? (
+              <button type="button" className="btn sm" onClick={onClearSelection}>Seçimi temizle</button>
+            ) : null}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <span className="pill" data-status={reliability.ok === false ? "WARN" : "OK"}>{changeTypeLabel}</span>
-          {onClearSelection && hasSelection ? (
-            <button type="button" className="btn sm" onClick={onClearSelection}>Seçimi temizle</button>
-          ) : null}
-        </div>
-      </div>
 
-      <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+        <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
+          <div className="panelMeta">Kısa karar</div>
+          <div style={{ marginTop: 4, fontSize: 18, fontWeight: 800, lineHeight: 1.35 }}>{decisionSentence}</div>
+          {decisionOwnerNoteVisible ? <div className="panelMeta" style={{ marginTop: 6 }}>{decisionOwnerNoteVisible}</div> : null}
+        </div>
+
+        <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+          <StatTile dense label="Kişi" value={previewPersonLabel} note={String(preview.currentPeopleCount || 0) ? `Mevcut: ${formatNumber(preview.currentPeopleCount)}` : "Mevcut kişi sayısı bilinmiyor"} />
+          <StatTile dense label="Durak farkı" value={formatDelta(stopDelta)} note={`${String(preview.oldStopLabel || "-")} → ${String(preview.newStopLabel || "-")}`} />
+          <StatTile dense label="Km etkisi" value={`${formatDelta(distanceDeltaKm, 2)} km`} note={`${formatNumber(preview.currentDistanceKm, 2)} → ${formatNumber(preview.previewDistanceKm, 2)} km`} />
+          <StatTile dense label="Süre etkisi" value={`${formatDelta(durationDeltaMin)} dk`} note={`${formatNumber(preview.currentDurationMin)} → ${formatNumber(preview.previewDurationMin)} dk`} />
+        </div>
+
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <span className="pill" data-status={reliability.ok === false ? "WARN" : "OK"}>Kişi: {previewPersonLabel}</span>
-          <span className="pill" data-status="COUNT">Tür: {changeTypeLabel}</span>
-          <span className="pill" data-status="INFO">Karar: {selectionDecision || "Önizleme"}</span>
+          <span className="pill" data-status="INFO">Kapasite: {capacityLabel}</span>
+          <span className="pill" data-status={reliabilityStatus}>Güvenilirlik: {reliabilityLabel}</span>
+          <span className="pill" data-status={riskStatus}>Risk: {riskLabel}</span>
           <span className="pill" data-status="INFO">Bekleyen taraf: {decisionOwnerChip}</span>
-          <span className="pill" data-status="INFO">Zaman: {formatSelectionTime(selectionTime) || "-"}</span>
+          {selectionTime ? <span className="panelMeta">Zaman: {formatSelectionTime(selectionTime) || "-"}</span> : null}
         </div>
-        {decisionOwnerNoteVisible ? <div className="panelMeta">{decisionOwnerNoteVisible}</div> : null}
-      </div>
 
-      <div className="panelBody" style={{ marginTop: 12 }}>
-        {String(preview.summaryLine || `${changeTypeLabel} · ${previewPersonLabel}`)}
-      </div>
+        {previewStateNote ? <div className="panelMeta">{previewStateNote}</div> : null}
 
-      <div style={{ marginTop: 12 }}>
-        <MiniMapPreview model={mapModel} />
-      </div>
-
-      <div style={{ marginTop: 12, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-        <StatTile label="Etkilenen kişi" value={previewPersonLabel} note={`Değişiklik: ${changeTypeLabel}`} />
-        <StatTile label="Eski durak" value={String(preview.oldStopLabel || "-")} note={`Yeni/geçici durak: ${String(preview.newStopLabel || "-")}`} />
-        <StatTile label="Kişi etkisi" value={`${formatNumber(preview.currentPeopleCount)} → ${formatNumber(preview.previewPeopleCount)}`} note={`Fark ${formatDelta(Number(preview.previewPeopleCount || 0) - Number(preview.currentPeopleCount || 0))}`} />
-        <StatTile label="Durak etkisi" value={`${formatNumber(preview.currentStopCount)} → ${formatNumber(preview.previewStopCount)}`} note={`Fark ${formatDelta(Number(preview.previewStopCount || 0) - Number(preview.currentStopCount || 0))}`} />
-        <StatTile label="Km etkisi" value={`${formatNumber(preview.currentDistanceKm, 2)} → ${formatNumber(preview.previewDistanceKm, 2)}`} note={`Fark ${formatDelta(preview.distanceDeltaKm, 2)} km`} />
-        <StatTile label="Süre etkisi" value={`${formatNumber(preview.currentDurationMin)} → ${formatNumber(preview.previewDurationMin)}`} note={`Fark ${formatDelta(preview.durationDeltaMin)} dk`} />
-        <StatTile label="Kapasite" value={capacity.status || "UNKNOWN"} note={`Önceki yük: ${formatNumber(capacity.currentLoad)} • Önizleme yükü: ${formatNumber(capacity.previewLoad)} • Boş koltuk: ${capacityBefore} → ${capacityAfter}`} />
-        <StatTile label="Güvenilirlik" value={String(reliability.label || "ETA hesaplanamıyor")} note={String(reliability.note || "ETA hesaplanamıyor")} />
-      </div>
-
-      {warnings.length ? (
-        <div style={{ marginTop: 12, padding: 12, borderRadius: 10, border: "1px solid rgba(245, 158, 11, 0.28)", background: "rgba(245, 158, 11, 0.10)" }}>
-          <div style={{ fontWeight: 800, marginBottom: 8 }}>Uyarılar</div>
-          <ul style={{ margin: 0, paddingInlineStart: 18, display: "grid", gap: 4 }}>
-            {warnings.slice(0, 4).map((warning, index) => (
-              <li key={`${index}-${warning}`}>{warning}</li>
-            ))}
-          </ul>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className="btn sm" onClick={handleToggleDetails}>
+            {detailsOpen ? "Detayı gizle" : "Detayı aç"}
+          </button>
+          <button type="button" className="btn sm ghost" onClick={handleShowMap}>
+            {detailsOpen ? "Haritada odakla" : "Haritada göster"}
+          </button>
         </div>
-      ) : null}
 
-      <div style={{ marginTop: 12, padding: 12, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
-        <div className="panelMeta">Sıradaki önerilen işlem</div>
-        <div style={{ marginTop: 4, fontWeight: 700 }}>{String(preview.nextBestAction || "Önizlemeyi doğrula.")}</div>
+        {detailsOpen ? (
+          <div ref={detailsRef} style={{ display: "grid", gap: 10, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="panelMeta">Detay analiz</div>
+            <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+              <StatTile dense label="Eski durak" value={String(preview.oldStopLabel || "-")} note={`Yeni/alternatif durak: ${String(preview.newStopLabel || "-")}`} />
+              <StatTile dense label="Kişi etkisi" value={`${formatNumber(preview.currentPeopleCount)} → ${formatNumber(preview.previewPeopleCount)}`} note={`Fark ${formatDelta(Number(preview.previewPeopleCount || 0) - Number(preview.currentPeopleCount || 0))}`} />
+              <StatTile dense label="Durak etkisi" value={`${formatNumber(preview.currentStopCount)} → ${formatNumber(preview.previewStopCount)}`} note={`Fark ${formatDelta(stopDelta)}`} />
+              <StatTile dense label="Km/süre hesap açıklaması" value={`${formatNumber(preview.currentDistanceKm, 2)} km / ${formatNumber(preview.currentDurationMin)} dk`} note={`Önizleme: ${formatNumber(preview.previewDistanceKm, 2)} km / ${formatNumber(preview.previewDurationMin)} dk`} />
+            </div>
+
+            <MiniMapPreview model={mapModel} />
+
+            {warnings.length ? (
+              <div style={{ marginTop: 2, padding: 12, borderRadius: 12, border: "1px solid rgba(245, 158, 11, 0.28)", background: "rgba(245, 158, 11, 0.10)" }}>
+                <div style={{ fontWeight: 800, marginBottom: 8 }}>Uyarılar</div>
+                <ul style={{ margin: 0, paddingInlineStart: 18, display: "grid", gap: 4 }}>
+                  {warnings.slice(0, 4).map((warning, index) => (
+                    <li key={`${index}-${warning}`}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
+              <div className="panelMeta">Sıradaki önerilen işlem</div>
+              <div style={{ marginTop: 4, fontWeight: 700 }}>{String(preview.nextBestAction || "Önizlemeyi doğrula.")}</div>
+            </div>
+
+            <div className="panelMeta">Hesap özeti: {detailsHint}</div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

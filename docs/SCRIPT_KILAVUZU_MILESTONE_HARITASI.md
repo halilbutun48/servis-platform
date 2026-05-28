@@ -88,6 +88,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
+- `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
 - `check:routechangefinal01` -> `node backend\scripts\route_change_final_01_check.js`
 - `check:dynamicsavings01` -> `node backend\scripts\dynamic_savings_01_check.js`
@@ -101,6 +102,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\qlt_04_quality_review_history_check.js`
 - `node backend\scripts\docs_state_01_recent_product_closure_check.js`
 - `node backend\scripts\run_product_extensions_check_chain.js`
+- `node backend\scripts\shift_dispatch_approval_fix_01_check.js`
 - `node backend\scripts\lead_capture_01_check.js`
 - `node backend\scripts\verify_chain_01_product_extensions_check.js`
 - `node backend\scripts\ui_action_wiring_audit_01_check.js`
@@ -222,6 +224,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `Sefer Abi Terminali`, `Sefer Abi’ye Sor`, `Konum` standardı ve `İller ve Bölgeler` label'i korunur; `Yer Planları` gibi legacy guidance notları PASS- seviyesinde raporlanır.
 - Bu check ürün/business flow değiştirmez; yalnızca panel ve label gerçekliğini doğrular.
 
+### UX-LIVE-PANEL-SMOKE-AUDIT-01 [CHECK]
+- `check:uxlivepanelsmokeaudit01` tüm ana rol panelleri için canlı UX smoke notlarını tek audit kaydında toplar.
+- Check script: `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
+- Browser automation yoksa audit manuel/static smoke olarak raporlanır; `PASS`, `PASS-`, `UX-FIX` ve `BLOCKER` sınıfları görünür kalır.
+- Bu check ürün/business flow değiştirmez; yalnızca panel yoğunluğu, bucket doğruluğu ve okunabilirlik sorunlarını sınıflandırır.
+
 ### BOARDING-OPS-01A [CHECK]
 - `check:boardingops01a` günlük biniş değişiklikleri için readonly rota etki önizlemesini doğrular.
 - `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` change türleri kişi / durak / km / süre / kapasite etkisiyle birlikte görünür; değişiklik uygulanmaz.
@@ -232,6 +240,25 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:bugrouteimpactpreviewbutton01` Company / School / Room operasyon yüzeylerinde `Rota etkisini önizle` butonunu görünür preview akışına bağlar; preview alanı scroll/focus ile görünür kalır.
 - Preview alanı readonly kalır; `Rota uygulanmaz`, `Sürücü rotası yenilenmez`, `Bildirim gönderilmez`, yalnızca etki analizi gösterilir.
 - Boş, yükleniyor ve temizle akışları kullanıcıya açık feedback verir; Organization yüzeyi Company altyapısını kullanmaya devam eder.
+
+### UX-ROUTE-IMPACT-PREVIEW-COMPACT-01 [CHECK]
+- `check:uxrouteimpactpreviewcompact01` Room / Operasyon Sağlığı ve Company yüzeylerindeki rota etkisi önizlemesini kısa karar kartına dönüştürür.
+- Check script: `node backend/scripts/ux_route_impact_preview_compact_01_check.js`
+- Varsayılan görünüm kompakt özet kartıdır; detay analiz, mini harita ve teknik uyarılar açılır bölümde kalır.
+- Preview readonly kalır; rota uygulanmaz, ödeme/fatura/tahsilat/invite/kullanıcı oluşturma/tedarikçi doğrulama açılmaz.
+
+### UX-CONTRACT-CONVERSION-AND-OPS-BRIDGE-CLARITY-01 [CHECK]
+- `check:uxcontractconversionopsbridgeclarity01` Company tarafındaki `Vardiyayı sözleşmeye dönüştür` akışını liste ekranına bırakmadan doğrudan sözleşme taslak / yazım ekranına taşır; Room Operasyon Köprüsü'nü summary-first karta dönüştürür ve detayları collapsible altında toplar.
+- Check script: `node backend/scripts/ux_contract_conversion_ops_bridge_clarity_01_check.js`
+- Ana karar ekranı kısa özet, risk ve sıradaki işlem cümlesi verir; Company tarafı `Sözleşme taslağını gözden geçir`, `Eksik alanları tamamla` ve `Onaya hazırla` yönlendirmesini görünür tutar.
+- Detaylar drawer / accordion içinde kalır.
+- Preview yalnızca readonly hazırlık düzeyindedir; payment / billing / collection / invite / user create / supplier verification auto / settlement execute açılmaz.
+
+### SHIFT-DISPATCH-APPROVAL-FIX-01 [CHECK]
+- `check:shiftdispatchapprovalfix01` Bekleyen Talepler / vardiya onay ekranında bölme önizleme onay butonunu gerçek seçim state'ine bağlar.
+- Tüm önerilerde araç + şoför seçiliyse `Önizlemeyi Uygula: Böl & Onayla` aktif olur; eksik seçim, aynı araç/şoför çakışması veya kapasite riski varsa pasif kalır.
+- Görünür durum dili `Hazır`, `Araç/şoför seç` ve net uyarı mesajlarıyla okunur; apply payload seçili `splitIndex`, `vehicleId`, `driverId` bilgisini taşır.
+- Bu check ödeme / fatura / tahsilat / invite / üyelik / sözleşme akışı açmaz; yalnızca mevcut vardiya onay ve bölme önizleme bağını düzeltir.
 
 ### UI-ACTION-WIRING-AUDIT-01 [CHECK]
 - `check:uiactionwiringaudit01` panel ve copilot yüzeylerindeki aktif aksiyonların wiring kalitesini, role guard'larını ve readonly sınırlarını denetler.
@@ -793,19 +820,31 @@ Bu bant güncel doğrulanmış üst hattır.
   - `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
   - `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
   - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
-- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> LEAD-CAPTURE-01 -> ... -> RELEASE-CANDIDATE-01`
+- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ... -> RELEASE-CANDIDATE-01`
 
 ### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
 - Check script: `check:publiclanding01`
 - Komut: `node backend\scripts\public_landing_01_check.js`
-- Ana konu: SeferPakt public landing sayfasını kurumsal bir vitrin olarak açmak; lisanssız / pazaryeri / AI vizyonunu anlatmak; lisans ücreti yok, mevcut sözleşmeden pay yok ve kritik işlemler kullanıcı onayı olmadan yapılmaz sınırlarını public copy ile görünür tutmak; public CTA'ları kontrollü lead formuna bağlamak.
+- Ana konu: SeferPakt public landing sayfasını kurumsal bir vitrin olarak açmak; lisanssız / pazaryeri / platform-first anlatımı görünür tutmak; Sefer Abi'yi opsiyonel operasyon copilot'u olarak ikincil konumda anlatmak; lisans ücreti yok, mevcut sözleşmeden pay yok ve kritik işlemler kullanıcı onayı olmadan yapılmaz sınırlarını public copy ile görünür tutmak; public CTA'ları kontrollü lead formuna bağlamak.
 - Not: route `/#/landing` public vitrindir; CTA'lar otomatik üyelik, ödeme, fatura, tahsilat veya invite göndermeden lead kaydı açar.
+
+### PUBLIC-LANDING-PLATFORM-FIRST-01 — public landing platform-first copy [CHECK]
+- Check script: `check:publiclandingplatformfirst01`
+- Komut: `node backend\scripts\public_landing_platform_first_01_check.js`
+- Ana konu: public landing copy'sini SeferPakt kurumsal servis operasyon ve tedarik platformu olarak konumlamak; Sefer Abi'yi opsiyonel operasyon copilot'u olarak ikincil anlatmak; ana CTA hiyerarşisini platform-first tutmak; AI / autopilot / otomatik karar algısını zayıflatmak; lead capture ve onboarding review akışlarını bozmamak.
+- Not: bu milestone sadece public metin / konumlandırma hizasıdır; lead capture ve review akışları ayrı milestone'larda çalışır.
 
 ### LEAD-CAPTURE-01 — kontrollü public lead toplama [CHECK]
 - Check script: `check:leadcapture01`
 - Komut: `node backend\scripts\lead_capture_01_check.js`
 - Ana konu: public CTA'ları kontrollü lead formuna bağlamak; demo / canlı destek / servis ihtiyacı / tedarikçi başvurusu akışlarını JSON lead kaydı olarak toplamak; KVKK, validation, honeypot ve basit rate limit ile güvenli sınır koymak; otomatik üyelik, ödeme, fatura, tahsilat ve invite göndermeyi açmamak.
 - Not: runtime JSON store standardı kullanılır; örnek lead verisi commit'e alınmaz ve Super Admin inceleme kuyruğu sonraki ONBOARDING-REVIEW-01'e bırakılır.
+
+### ONBOARDING-REVIEW-01 — public lead inceleme kuyruğu [CHECK]
+- Check script: `check:onboardingreview01`
+- Komut: `node backend\scripts\onboarding_review_01_check.js`
+- Ana konu: public lead kayıtlarını Super Admin insan inceleme kuyruğuna taşımak; RECEIVED / IN_REVIEW / NEEDS_INFO / APPROVED_FOR_INVITE / REJECTED durumlarıyla ilerlemek; inceleme notu ve operasyon notu eklemek; invite, kullanıcı, ödeme, fatura, sözleşme, settlement ve supplier verification execute akışlarını açmamak.
+- Not: `APPROVED_FOR_INVITE` yalnızca sonraki invite adımı için hazırlıktır; bu milestone içinde kullanıcı oluşturma veya davet gönderimi yapılmaz.
 
 ### AGREEMENT-SOURCE-SHIFT-LINEAGE-01 — agreement source lineage preview [CHECK]
 - Check script: `check:agreementsourceshiftlineage01`
@@ -886,9 +925,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:cop04bfix04`
 - `check:cop04bfix05`
 - `check:cop04bfix06`
-- `check:cop04bfix07`
-- `check:cop04bfix08`
-- `check:uxcopilotsmartchips01`
+  - `check:cop04bfix07`
+  - `check:cop04bfix08`
+  - `check:uxcopilotsmartchips01`
+  - `check:shiftdispatchapprovalfix01`
   - Not: Personel / Canlı Harita free-chat submit request selected service context'i de taşır; header quick answer ve free chat aynı live context'i kullanır, visible `FORBIDDEN` dönmez.
   - Not: free-chat submit request ile Room / Canlı Takip selected signal seti de taşınır; header quick answer ve free chat aynı live context'i kullanır.
 

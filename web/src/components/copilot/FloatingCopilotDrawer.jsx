@@ -134,6 +134,7 @@ function resolveGuideRoute(me, routeKey) {
   if (role === "SUPER_ADMIN") {
     if (key === "SUPERADMIN_OVERVIEW") return "/superadmin";
     if (key === "SUPERADMIN_COPILOT") return "/superadmin/copilot";
+    if (key === "SUPERADMIN_ONBOARDING_REVIEW") return "/superadmin/onboarding-review";
   }
   return "";
 }

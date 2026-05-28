@@ -629,6 +629,20 @@ const SUPER_ADMIN = [
     ],
     chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Bunu kim yapabilir?', 'Sürücünün telefon GPS’i devrede mi?', 'Yetkili rolü göster'],
   }),
+  screen(6118, '/superadmin/onboarding-review', 'Başvuru İncelemesi', {
+    menuPurpose: 'Public lead başvurularını insan inceleme kuyruğunda okumak için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce başvuru durumunu, tipini ve maskeli iletişim bilgisini oku.',
+    nextStep: 'Gerekirse inceleme notu, ek bilgi veya reddetme kararını güncelle.',
+    doNotDo: 'Bu ekranı invite, kullanıcı, ödeme veya sözleşme açan akış gibi yorumlama.',
+  }),
+  screen(6119, '/superadmin/public-leads', 'Başvuru İncelemesi', {
+    menuPurpose: 'Public lead inceleme kuyruğunun alternatif yoludur.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce başvuru durumunu, tipini ve maskeli iletişim bilgisini oku.',
+    nextStep: 'Gerekirse inceleme notu, ek bilgi veya reddetme kararını güncelle.',
+    doNotDo: 'Bu ekranı invite, kullanıcı, ödeme veya sözleşme açan akış gibi yorumlama.',
+  }),
   screen(6104, '/superadmin/copilot', 'Sefer Abi Terminali', {
     menuPurpose: 'Sistem genelinde rehber ve açıklama almak için kullanılır.',
     forWhom: 'Super admin içindir.',

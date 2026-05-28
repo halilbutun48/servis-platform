@@ -80,6 +80,19 @@ export async function submitPublicLead(payload = {}) {
   });
 }
 
+export async function listPublicLeadReviewQueue(params = {}, { token } = {}) {
+  const qs = buildQueryString(params);
+  return api(`/api/admin/public-leads${qs}`, { token });
+}
+
+export async function updatePublicLeadReviewStatus(leadId, payload = {}, { token } = {}) {
+  return api(`/api/admin/public-leads/${encodeURIComponent(String(leadId || ""))}`, {
+    method: "PATCH",
+    token,
+    body: payload,
+  });
+}
+
 export async function reportNoShow({ token, childId = null, reason = "Bugün gelmiyorum", durationDays = null } = {}) {
   return api("/api/penalties/self/no-show", {
     method: "POST",

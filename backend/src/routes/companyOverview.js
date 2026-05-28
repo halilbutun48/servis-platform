@@ -26,7 +26,7 @@ function statusOf(value) {
   return String(value || "").trim().toUpperCase();
 }
 
-const FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
+const FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED", "SPLIT"]);
 const NON_MARKET_SHIFT_STATUSES = ["DRAFT", ...Array.from(FINAL_SHIFT_STATUSES)];
 
 function isFinalShiftStatus(value) {
@@ -88,10 +88,6 @@ async function buildWorkflowSummary(company) {
   };
 }
 
-function isSplitRootShift(shift) {
-  return statusOf(shift?.status) === "SPLIT" && !Number(shift?.splitRootId || 0);
-}
-
 async function buildCommercialFlowSummary(company) {
   const [
     marketShiftCount,
@@ -127,7 +123,7 @@ async function buildCommercialFlowSummary(company) {
     prisma.shift.count({
       where: {
         companyId: company.id,
-        status: { in: ["APPROVED", "ACTIVE"] },
+        status: { in: ["APPROVED", "ACTIVE", "SPLIT"] },
       },
     }),
     prisma.shift.count({
@@ -164,7 +160,6 @@ async function buildCommercialFlowSummary(company) {
   ]);
 
   const items = (Array.isArray(shiftRows) ? shiftRows : [])
-    .filter((shift) => !isSplitRootShift(shift))
     .map((shift) => {
       const shiftId = Number(shift?.id || 0) || null;
       const status = statusOf(shift?.status) || "-";
@@ -186,7 +181,7 @@ async function buildCommercialFlowSummary(company) {
           amountLabel,
           statusLabel: status,
           updatedAt,
-          nextStep: "Vardiya / hizmet tarafını aç",
+          nextStep: status === "SPLIT" ? "Bölünmüş vardiya kaydını aç" : "Vardiya / hizmet tarafını aç",
           section: "list",
         };
       }
@@ -240,6 +235,9 @@ async function buildCommercialFlowSummary(company) {
 export function companyOverviewRouter() {
   const r = express.Router();
   r.use(authRequired(), requireRole("COMPANY", "SUPER_ADMIN"));
+  function isForceRefresh(req) {
+    return ["1", "true", "yes", "on"].includes(String(req?.query?.force || "").trim().toLowerCase());
+  }
 
   r.get("/workflow-summary", async (req, res) => {
     const company = await resolveCompany(req);
@@ -251,7 +249,9 @@ export function companyOverviewRouter() {
   r.get("/commercial-flow-summary", async (req, res) => {
     const company = await resolveCompany(req);
     if (!company) return res.status(400).json({ ok: false, error: "companyId required" });
-    const payload = await rememberResponse(`company-overview:commercial-flow:${company.id}`, () => buildCommercialFlowSummary(company), { ttlMs: 15000, scope: scopeOf(req.user) });
+    const payload = isForceRefresh(req)
+      ? await buildCommercialFlowSummary(company)
+      : await rememberResponse(`company-overview:commercial-flow:${company.id}`, () => buildCommercialFlowSummary(company), { ttlMs: 15000, scope: scopeOf(req.user) });
     return res.json(payload);
   });
 

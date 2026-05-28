@@ -7,10 +7,12 @@ const SUCCESS_STATUSES = new Set([
   "GO",
   "STABLE",
   "LIVE",
+  "SPLIT",
   "BOARD",
   "ALIGHT",
   "SUCCESS",
   "OK",
+  "APPROVED_FOR_INVITE",
 ]);
 
 const WARNING_STATUSES = new Set([
@@ -28,6 +30,8 @@ const WARNING_STATUSES = new Set([
   "WARN",
   "WARNING",
   "TRACKING",
+  "IN_REVIEW",
+  "NEEDS_INFO",
 ]);
 
 const CRITICAL_STATUSES = new Set([
@@ -51,6 +55,7 @@ const INFO_STATUSES = new Set([
   "ROLE",
   "INFO",
   "UNKNOWN",
+  "RECEIVED",
 ]);
 
 const PASSIVE_STATUSES = new Set([

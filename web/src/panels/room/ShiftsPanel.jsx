@@ -918,6 +918,7 @@ async function decideExtend(shiftId, decision) {
         assignSel={assignSel}
         vehiclesById={vehiclesById}
         showAvailableOnly={showAvailableOnly}
+        isDriverAvailableForShift={isDriverAvailableForShift}
         isVehicleAvailableForShift={isVehicleAvailableForShift}
         driversById={driversById}
         driverSel={driverSel}
@@ -937,6 +938,7 @@ async function decideExtend(shiftId, decision) {
         copilotShiftId={copilotShiftId}
         poolSummary={poolSummary}
         dispatchPreview={dispatchPreview}
+        dispatchEditSel={dispatchEditSel}
         getDispatchSelectionStates={getDispatchSelectionStatesHelper}
         driversForRoom={driversForRoom}
         selectedDispatchVehicleId={selectedDispatchVehicleId}

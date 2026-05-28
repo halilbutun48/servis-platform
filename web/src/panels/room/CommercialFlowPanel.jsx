@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
+import { useAutoReload } from "../../live/useAutoReload";
 import { useSession } from "../../state/session";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
@@ -74,7 +75,7 @@ function isContractShiftItem(item) {
     || flow === "operasyon"
     || section === "pending"
     || section === "list"
-    || ["approved", "active", "done", "rejected"].includes(status)
+    || ["approved", "active", "done", "rejected", "split"].includes(status)
   );
 }
 
@@ -99,7 +100,7 @@ function StatusBadge({ value }) {
   let style = { color: "#d0d5dd", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" };
   if (["OPEN", "REQUESTED"].includes(normalized)) style = { color: "#fedf89", background: "rgba(247,144,9,0.16)", border: "1px solid rgba(247,144,9,0.45)" };
   if (["COUNTERED", "PAZARLIK", "NEGOTIATION"].includes(normalized)) style = { color: "#b2ddff", background: "rgba(83,177,253,0.12)", border: "1px solid rgba(83,177,253,0.35)" };
-  if (["ACCEPTED", "APPROVED", "ACTIVE"].includes(normalized)) style = { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" };
+  if (["ACCEPTED", "APPROVED", "ACTIVE", "SPLIT"].includes(normalized)) style = { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" };
   if (["CANCELLED", "DONE", "REJECTED"].includes(normalized)) style = { color: "#fecdca", background: "rgba(240,68,56,0.12)", border: "1px solid rgba(240,68,56,0.35)" };
   return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{displayStatusLabel(value)}</span>;
 }
@@ -173,26 +174,47 @@ export default function CommercialFlowPanel() {
   const [nextStepQ, setNextStepQ] = useState("");
   const [preferredId, setPreferredId] = useState("");
 
+  const loadCommercialFlow = useCallback(async ({ signal } = {}) => {
+    const [s, i] = await Promise.all([
+      api("/api/commercial-core/room/summary", { token, signal }),
+      api("/api/commercial-core/room/items", { token, signal }),
+    ]);
+    return {
+      summary: s || null,
+      items: Array.isArray(i?.items) ? i.items : [],
+    };
+  }, [token]);
+
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
-        const [s, i] = await Promise.all([
-          api("/api/commercial-core/room/summary", { token }),
-          api("/api/commercial-core/room/items", { token }),
-        ]);
+        const data = await loadCommercialFlow({ signal: controller.signal });
         if (cancelled) return;
-        setSummary(s || null);
-        setItems(Array.isArray(i?.items) ? i.items : []);
+        setErr("");
+        setSummary(data.summary);
+        setItems(data.items);
       } catch (e) {
-        if (cancelled) return;
+        if (cancelled || e?.name === "AbortError") return;
         setErr(e?.message || String(e));
       }
     })();
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [token]);
+  }, [loadCommercialFlow]);
+
+  useAutoReload("shifts", () => {
+    loadCommercialFlow()
+      .then((data) => {
+        setErr("");
+        setSummary(data.summary);
+        setItems(data.items);
+      })
+      .catch(() => {});
+  }, Boolean(token));
 
   function openAction(item) {
     if (item?.actionPath === "/room/shifts" && Number(item?.shiftId) > 0) {

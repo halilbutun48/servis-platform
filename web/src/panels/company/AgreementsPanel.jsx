@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../../router";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -369,11 +369,12 @@ export default function AgreementsPanel() {
     };
   }, [token, advancedOpen, guidedOpen, loadRooms]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const prefill = consumeAgreementPrefill();
     if (!prefill) return;
     setWizardPrefill(prefill);
     setWizardPrefillNonce((n) => n + 1);
+    setViewMode("wizard");
   }, []);
 
   async function handleWizardCreated(detail = null) {

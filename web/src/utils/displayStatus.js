@@ -8,6 +8,7 @@ export const STATUS_LABELS = {
   APPROVED: "Kabul Edildi",
   ACTIVE: "Aktif",
   DONE: "Tamamlandı",
+  SPLIT: "Bölünerek Onaylandı",
   CANCELLED: "İptal Edildi",
   REJECTED: "Reddedildi",
   DISABLED: "Devre Dışı",
@@ -29,6 +30,10 @@ export const STATUS_LABELS = {
   ARCHIVED: "Arşiv",
   SHIFT_PUBLISHED: "Teklif / Vardiya Açıldı",
   AGREEMENT_REQUESTED: "Sözleşme Talebi",
+  RECEIVED: "Alındı",
+  IN_REVIEW: "İnceleniyor",
+  NEEDS_INFO: "Ek Bilgi Gerekli",
+  APPROVED_FOR_INVITE: "Davet İçin Uygun",
 };
 
 export function displayStatusLabel(status) {

@@ -107,6 +107,7 @@ Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, oper
 
 ### 7.1 Ticari / Pazaryeri Yetkinlikleri
 - public landing / tanıtım yüzeyi ve kontrollü lead toplama (otomatik üyelik, ödeme veya settlement olmadan)
+- kontrollü lead inceleme kuyruğu ve insan onayıyla ilerleyen onboarding review adımı
 - talep oluşturma
 - teklif yaşam döngüsü
 - pazarlık / karşı teklif zemini
@@ -153,7 +154,7 @@ Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, oper
 - "daha basit anlat" seçeneği ve geri bildirim zemini
 - Sefer Abi rol bazlıdır, sesli destek verebilir ve kritik işlemleri kullanıcı onayı olmadan yapmaz.
 - kritik işlemler kullanıcı onayı olmadan yapılmaz.
-- Demand-to-Agreement ve AI marketplace omurgası, Sefer Abi'nin öneri / hazırlık / onay akışının çekirdek yoludur.
+- Demand-to-Agreement ve AI marketplace omurgası, Sefer Abi'nin öneri / hazırlık / onay akışının çekirdek yoludur; public landing ve public vitrin anlatımı ise platform-first kalır ve Sefer Abi ikincil yardımcı katman olarak görünür.
 
 ## 8. Rol Bazlı Ürün Özeti
 
@@ -210,7 +211,7 @@ Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, oper
 - Company default `maxWalkM = 250`
 - School default `maxWalkM = 50`
 - Personel / öğrenci canlı erişim linklerinde TTL presetleri: `1 hafta / 1 ay / 6 ay / 1 yıl`
-- Sefer Abi, platformun ana farklılaştırıcı AI omurgasıdır.
+- Sefer Abi, platformun operasyon sinyallerini özetleyen opsiyonel yardımcı katmanıdır.
 - Proaktif uyarı ve next-best-action, kullanıcı onaylı kritik işlemlerin ön yüzüdür.
 
 ## 10. Mimari

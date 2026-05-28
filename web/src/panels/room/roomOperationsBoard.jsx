@@ -322,6 +322,7 @@ export default function RoomOperationsBoard({
 
       <div ref={previewCardRef} tabIndex={-1} style={{ scrollMarginTop: 16, outline: "none" }}>
         <BoardingRouteImpactPreviewCard
+          key={`${selectedPreviewRequestId || selectedPreview?.changeType || "boarding-route-impact-preview"}`}
           preview={previewLoading ? null : selectedPreview}
           request={selectedPreviewRequest}
           loading={previewLoading}

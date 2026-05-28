@@ -16,9 +16,10 @@ Bu primer yaşayan hattın resmi özetidir.
 - Refresh rotasyonu fail-closed; telematics vendor webhook HMAC + timestamp + replay guard ile korunur; `x-greenpack` sadece explicit local-test override olarak kalır.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
 - Repo check chain sonucu: `PASS 21 / FAIL 0`; selected milestone static set: `PASS 92 / FAIL 0 / SKIP 78`.
-- `ROADMAP-LOCK-AI-MARKETPLACE-01` docs-only roadmap kilidi alınmıştır; Sefer Abi ürünün ana farkıdır ve runtime davranışı değiştirilmeden yol haritası docs üzerinden sabitlenir.
+- `ROADMAP-LOCK-AI-MARKETPLACE-01` docs-only roadmap kilidi alınmıştır; Sefer Abi ürünün ana farkıdır ve runtime davranışı değiştirilmeden yol haritası docs üzerinden sabitlenir. Public landing ve public vitrin copy'sinde ise SeferPakt platform-first anlatılır, Sefer Abi ikincil operasyon copilot'u olarak konumlanır.
 - `PUBLIC-LANDING-01` public vitrin / tanıtım yüzeyi açılmıştır; route `/#/landing` üzerinden çalışır ve public CTA'lar kontrollü lead formuna bağlanır.
 - `LEAD-CAPTURE-01` kontrollü public lead toplama akışını açar; otomatik üyelik, ödeme ve davet gönderimi kapalı kalır.
+- `ONBOARDING-REVIEW-01` lead başvurularını insan inceleme kuyruğuna taşır; `APPROVED_FOR_INVITE` yalnızca sonraki invite adımı için hazırlıktır.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
@@ -81,8 +82,8 @@ Bu primer yaşayan hattın resmi özetidir.
 - `tools\pack_living.ps1` korunur; ancak compatibility / geniş prova hattıdır ve birincil resmi giriş değildir.
 - Wrapper/alias politikası ve hedef klasör düzeni için repo içi kanonik referans: `docs/HEDEF_KLASORLEME_VE_TEST_SIRASI_V1.md`.
 - Bu Tur 1 hizalamasında ürün koduna dokunulmaz; yalnız docs/tools anlatımı ve giriş düzeni netleştirilir.
-- Sefer Abi ürünün ayırt edici AI katmanıdır; rol bazlı, sesli, proaktif ve onay-kapılı çalışır.
-- Demand-to-Agreement ve AI marketplace omurgası docs-only roadmap lock ile sabitlenir; kritik write işlemler kullanıcı onayı olmadan yapılmaz.
+- Sefer Abi ürünün ayırt edici AI katmanıdır; public vitrin copy'sinde opsiyonel operasyon copilot'u olarak anlatılır; rol bazlı, sesli, proaktif ve onay-kapılı çalışır.
+- Demand-to-Agreement ve AI marketplace omurgası docs-only roadmap lock ile sabitlenir; kritik write işlemler kullanıcı onayı olmadan yapılmaz. Public landing copy'sinde ise SeferPakt platform-first anlatılır, Sefer Abi ikincil operasyon copilot'u olarak görünür.
 
 ## Güncel yaşayan sıra
 - `M80` — final sert kabul ve yük güveni
@@ -112,7 +113,7 @@ Compatibility aliases for legacy checks:
 ## Ürün çerçevesi
 - Platform sadece personel değildir; öğrenci/veli + personel alanlarını birlikte taşır.
 - Marka dili: **SeferPakt**
-- Ürün tanımı: **SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik operasyon kuran, canlı GPS ve kanıtla servisi denetleyen, kaliteye göre hakedişi güvenli önizleyen ve yapay zekâ ile maliyet/saha risklerini önceden yakalayan kurumsal servis operasyon platformudur.**
+- Ürün tanımı: **SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik operasyon kuran, canlı GPS ve kanıtla servisi denetleyen, kaliteye göre hakedişi güvenli önizleyen ve operasyon yardımcısı katmanıyla maliyet/saha risklerini önceden görünür kılan kurumsal servis operasyon platformudur.**
 - Konumlama: **servis tedariki + sözleşme + operasyon**
 - Yazılım şu anda ücretsiz kullanım yönünde kurgulanır; gelir modeli gelecekte ödeme/komisyon aracılığıdır.
 - Ödeme omurgası gerçek charge/payout açmadan önce dormant/feature-flag mantığında ilerler.

@@ -20,17 +20,23 @@ const selectedDocs = [
   "docs/PRIMER_SSOT.md",
   "docs/FINAL_RELEASE_EVIDENCE_M90.md",
   "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
-  // PUBLIC-LANDING-01 / LEAD-CAPTURE-01 public vitrin docs/check coverage
+  // PUBLIC-LANDING-01 / PUBLIC-LANDING-PLATFORM-FIRST-01 / LEAD-CAPTURE-01 public vitrin docs/check coverage
   "docs/PUBLIC_LANDING_01.md",
+  "docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md",
   "docs/LEAD_CAPTURE_01.md",
+  "docs/ONBOARDING_REVIEW_01.md",
   "docs/AGREEMENT_SOURCE_SHIFT_LINEAGE_01.md",
   "docs/BOARDING_OPS_01A_ROUTE_IMPACT_PREVIEW.md",
   "docs/BOARDING_CHANGE_REQUEST_ENTRY_01.md",
+  "docs/SHIFT_DISPATCH_APPROVAL_FIX_01.md",
   "docs/BOARDING_OPS_01B_ACCEPTED_CHANGE_APPLICATION.md",
   "docs/BOARDING_OPS_01C_DRIVER_ROUTE_REFRESH.md",
   "docs/ROUTE_CHANGE_FINAL_01.md",
   "docs/DYNAMIC_SAVINGS_01.md",
+  "docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md",
+  "docs/UX_CONTRACT_CONVERSION_OPS_BRIDGE_CLARITY_01.md",
   "docs/FINAL_UX_SMOKE_01_CHECKLIST.md",
+  "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md",
   "docs/COP_LIVE_ACCEPT_01_MATRIX.md",
   "tools/README.md",
   "tools/wrappers/README.md",
@@ -122,6 +128,7 @@ function slugToMilestone(slug) {
     [/uxcopilotsmartchips0?1/i, "UX-COPILOT-SMART-CHIPS-01"],
     [/uxnav0?1/i, "UX-NAV-01"],
     [/uxdensity0?1/i, "UX-DENSITY-01"],
+    [/uxcontractconversionopsbridgeclarity0?1/i, "UX-CONTRACT-CONVERSION-AND-OPS-BRIDGE-CLARITY-01"],
     [/final/i, "FINAL"],
     [/verifychain0?1/i, "VERIFY-CHAIN-01"],
     [/productextensions/i, "PRODUCT-EXTENSIONS"],
@@ -144,7 +151,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:publiclanding01", "check:leadcapture01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:leadcapture01", "check:onboardingreview01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -152,7 +159,7 @@ function statusFromPackage(pkg, name) {
     if (["verify:snapshot", "verify:docs", "verify:hot", "verify:web-contract", "verify:milestones", "verify:milestones:live"].includes(name)) {
       return "ACTIVE_RELEASE_ONLY";
     }
-    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxdensity01", "check:finaluxsmoke01", "check:copliveaccept01", "check:boardingops01a", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01", "check:publiclanding01"].includes(name)) {
+    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxdensity01", "check:finaluxsmoke01", "check:uxlivepanelsmokeaudit01", "check:copliveaccept01", "check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01", "check:uxcontractconversionopsbridgeclarity01", "check:shiftdispatchapprovalfix01", "check:publiclanding01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["smoke:m98e4"].includes(name)) return "MANUAL_SMOKE";
@@ -517,7 +524,7 @@ const coverageMatrix = [
     rolePanel: "Company/school/room boarding flow",
     backendRouteService: "backend/src/services/boardingRouteImpactPreview.js; backend/src/services/boardingChangeApplication.js; backend/src/services/boardingChangeRouteRefresh.js; backend/src/routes/requests.js; backend/src/routes/driver.js",
     frontendSurface: "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx; web/src/panels/shared/boardingChangeUi.js; company/school/room operations panels",
-    currentCheckScript: "check:boardingops01a; check:boardingops01b; check:boardingops01c",
+    currentCheckScript: "check:boardingops01a; check:bugrouteimpactpreviewbutton01; check:uxrouteimpactpreviewcompact01; check:boardingops01b; check:boardingops01c",
     checkType: "static + manual boundary",
     coverageStatus: "COVERED_ACTIVE",
     missingGap: "None on the current static/product chain.",
@@ -1147,8 +1154,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Root/backend/web/mobile package dağılımı: root \`${summary.byDomain.root}\`, backend \`${summary.byDomain.backend}\`, web \`${summary.byDomain.web}\`, mobile \`${summary.byDomain.mobile}\``);
   out.push(`- Tools executable dağılımı: tools \`${summary.byDomain.tools}\``);
   out.push(`- Docs indexed: \`${summary.byDomain.docs}\``);
-  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> LEAD-CAPTURE-01\``);
-  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/LEAD_CAPTURE_01.md\``);
+  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01\``);
+  out.push(`- UX preview milestones: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01\` -> \`UX-LIVE-PANEL-SMOKE-AUDIT-01\``);
+  out.push(`- UX preview docs: \`docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md\`, \`docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md\``);
+  out.push(`- UX preview check alias: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK\``);
+  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md\`, \`docs/LEAD_CAPTURE_01.md\`, \`docs/ONBOARDING_REVIEW_01.md\``);
   out.push(`- ACTIVE: \`${summary.statusCounts.ACTIVE || 0}\``);
   out.push(`- ACTIVE_CORE: \`${summary.statusCounts.ACTIVE_CORE || 0}\``);
   out.push(`- ACTIVE_WEB_LINT: \`${summary.statusCounts.ACTIVE_WEB_LINT || 0}\``);
@@ -1326,17 +1336,31 @@ function verifyDoc(docText, summary) {
     "verify:final",
     "check:product-extensions",
     "check:publiclanding01",
+    "check:publiclandingplatformfirst01",
     "check:leadcapture01",
+    "check:onboardingreview01",
+    "check:uxrouteimpactpreviewcompact01",
+    "check:uxlivepanelsmokeaudit01",
     "check:dynamicsavings01",
     "check:scriptharnessconsolidation01",
     "SCRIPT-HARNESS-CONSOLIDATION-01",
     "PUBLIC-LANDING-01",
+    "PUBLIC-LANDING-PLATFORM-FIRST-01",
     "LEAD-CAPTURE-01",
+    "ONBOARDING-REVIEW-01",
+    "UX-ROUTE-IMPACT-PREVIEW-COMPACT-01",
+    "UX-LIVE-PANEL-SMOKE-AUDIT-01",
     "run_repo_check_chain.js",
     "run_product_extensions_check_chain.js",
     "verify_chain_01_product_extensions_check.js",
+    "public_landing_platform_first_01_check.js",
     "docs/PUBLIC_LANDING_01.md",
+    "docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md",
     "docs/LEAD_CAPTURE_01.md",
+    "docs/ONBOARDING_REVIEW_01.md",
+    "docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md",
+    "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md",
+    "node backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "Duplicate / overlap groups",
     "Product coverage rows",
     "REMOVED:",

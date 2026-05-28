@@ -96,5 +96,5 @@ export function getCompanyWorkflowSummary(token, { signal, force = false, ttlMs 
 }
 
 export function getCompanyCommercialFlowSummary(token, { signal, force = false, ttlMs = 10000, delayMs = 40 } = {}) {
-  return cachedGet("/api/company/overview/commercial-flow-summary", { token, signal, force, ttlMs, delayMs });
+  return cachedGet(withQuery("/api/company/overview/commercial-flow-summary", { force: force ? 1 : null }), { token, signal, force, ttlMs, delayMs });
 }

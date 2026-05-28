@@ -2093,6 +2093,8 @@ export function buildCopilotStarterChips({
   const isRoomMap = path.includes('/room/map') || path.includes('/company/map') || path.includes('/school/map') || path.includes('/organization/map');
   const isRoomOperationHealth = path.includes('/room/operation-health');
   const isSuperAdminOps = path.includes('/superadmin/observability') || path.includes('/superadmin/operations');
+  const isOnboardingReview = path.includes('/superadmin/onboarding-review') || path.includes('/superadmin/public-leads')
+    || selection?.facts?.screenType === 'PUBLIC_LEAD_REVIEW';
   const isAgreementSurface = path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements');
   const isAgreementRouteRefresh = isAgreementSurface && Boolean(
     selection?.facts?.routeRefreshState
@@ -2166,6 +2168,14 @@ export function buildCopilotStarterChips({
     chips = ['Riskli cihazları göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücü durumunu sor'];
   } else if (isSuperAdminOps) {
     chips = ['Riskleri sırala', 'GPS görünürlüğünü kontrol et', 'Açık sorunları göster', 'Sıradaki doğru işlem ne?'];
+  } else if (isOnboardingReview) {
+    const status = String(selection?.facts?.reviewStatus || '').trim().toUpperCase();
+    chips = [
+      status === 'RECEIVED' ? 'Bu başvuruyu incelemeye al' : 'Bu başvuruda neye bakılmalı?',
+      'Ek bilgi gerekenleri göster',
+      'Invite için uygun olanları aç',
+      'Reddedilenleri göster',
+    ];
   } else if (isAgreementRouteRefresh) {
     chips = ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
   } else if (isDynamicSavingsPreview) {

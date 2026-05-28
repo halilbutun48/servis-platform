@@ -30,6 +30,7 @@ export function RoomShiftsMainSections({
   assignSel,
   vehiclesById,
   showAvailableOnly,
+  isDriverAvailableForShift,
   isVehicleAvailableForShift,
   driversById,
   driverSel,
@@ -49,6 +50,7 @@ export function RoomShiftsMainSections({
   copilotShiftId,
   poolSummary,
   dispatchPreview,
+  dispatchEditSel,
   getDispatchSelectionStates,
   driversForRoom,
   selectedDispatchVehicleId,
@@ -75,6 +77,7 @@ export function RoomShiftsMainSections({
       effectiveRoomId={effectiveRoomId}
       poolSummary={poolSummary}
       dispatchPreview={dispatchPreview}
+      dispatchEditSel={dispatchEditSel}
       getDispatchSelectionStates={getDispatchSelectionStates}
       vehiclesForRoom={vehiclesForRoom}
       driversForRoom={driversForRoom}
@@ -82,6 +85,9 @@ export function RoomShiftsMainSections({
       selectedDispatchDriverId={selectedDispatchDriverId}
       vehiclesById={vehiclesById}
       driversById={driversById}
+      items={items}
+      isDriverAvailableForShift={isDriverAvailableForShift}
+      isVehicleAvailableForShift={isVehicleAvailableForShift}
       buildDispatchVirtualShift={buildDispatchVirtualShift}
       setDispatchSelection={setDispatchSelection}
       openDispatchSuggestionPreview={openDispatchSuggestionPreview}
@@ -148,6 +154,7 @@ export function RoomShiftsMainSections({
           copilotShiftId={copilotShiftId}
           poolSummary={poolSummary}
           dispatchPreview={dispatchPreview}
+          dispatchEditSel={dispatchEditSel}
           getDispatchSelectionStates={getDispatchSelectionStates}
           driversForRoom={driversForRoom}
           selectedDispatchVehicleId={selectedDispatchVehicleId}

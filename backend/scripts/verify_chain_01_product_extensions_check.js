@@ -77,7 +77,9 @@ function main() {
   must(pkg, '"check:seferscore01": "node backend/scripts/sefer_score_01_check.js"', 'package.json exposes check:seferscore01');
   must(pkg, '"check:roadmaplockaimarketplace01": "node backend/scripts/roadmap_lock_ai_marketplace_01_check.js"', 'package.json exposes check:roadmaplockaimarketplace01');
   must(pkg, '"check:publiclanding01": "node backend/scripts/public_landing_01_check.js"', 'package.json exposes check:publiclanding01');
+  must(pkg, '"check:publiclandingplatformfirst01": "node backend/scripts/public_landing_platform_first_01_check.js"', 'package.json exposes check:publiclandingplatformfirst01');
   must(pkg, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', 'package.json exposes check:leadcapture01');
+  must(pkg, '"check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js"', 'package.json exposes check:onboardingreview01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
@@ -117,7 +119,10 @@ function main() {
   must(pkg, '"check:copliveaccept01": "node backend/scripts/cop_live_accept_01_check.js"', 'package.json exposes check:copliveaccept01');
   must(pkg, '"check:boardingops01a": "node backend/scripts/boarding_ops_01a_route_impact_preview_check.js"', 'package.json exposes check:boardingops01a');
   must(pkg, '"check:bugrouteimpactpreviewbutton01": "node backend/scripts/bug_route_impact_preview_button_01_check.js"', 'package.json exposes check:bugrouteimpactpreviewbutton01');
+  must(pkg, '"check:uxrouteimpactpreviewcompact01": "node backend/scripts/ux_route_impact_preview_compact_01_check.js"', 'package.json exposes check:uxrouteimpactpreviewcompact01');
+  must(pkg, '"check:uxcontractconversionopsbridgeclarity01": "node backend/scripts/ux_contract_conversion_ops_bridge_clarity_01_check.js"', 'package.json exposes check:uxcontractconversionopsbridgeclarity01');
   must(pkg, '"check:boardingchangerequestentry01": "node backend/scripts/boarding_change_request_entry_01_check.js"', 'package.json exposes check:boardingchangerequestentry01');
+  must(pkg, '"check:shiftdispatchapprovalfix01": "node backend/scripts/shift_dispatch_approval_fix_01_check.js"', 'package.json exposes check:shiftdispatchapprovalfix01');
   must(pkg, '"check:uiactionwiringaudit01": "node backend/scripts/ui_action_wiring_audit_01_check.js"', 'package.json exposes check:uiactionwiringaudit01');
   must(pkg, '"check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js"', 'package.json exposes check:boardingops01b');
   must(pkg, '"check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js"', 'package.json exposes check:boardingops01c');
@@ -158,6 +163,7 @@ function main() {
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
   must(pkg, '"check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js"', 'package.json exposes check:finaluxsmoke01');
+  must(pkg, '"check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js"', 'package.json exposes check:uxlivepanelsmokeaudit01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 
@@ -168,7 +174,9 @@ function main() {
     'check:seferscore01',
     'check:roadmaplockaimarketplace01',
     'check:publiclanding01',
+    'check:publiclandingplatformfirst01',
     'check:leadcapture01',
+    'check:onboardingreview01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
     'check:pay01e',
@@ -219,6 +227,9 @@ function main() {
     'check:copliveaccept01',
     'check:boardingops01a',
     'check:bugrouteimpactpreviewbutton01',
+    'check:uxrouteimpactpreviewcompact01',
+    'check:uxcontractconversionopsbridgeclarity01',
+    'check:shiftdispatchapprovalfix01',
     'check:boardingchangerequestentry01',
     'check:uiactionwiringaudit01',
     'check:boardingops01b',
@@ -255,12 +266,25 @@ function main() {
     'check:uxnav01',
     'check:uxdensity01',
     'check:finaluxsmoke01',
+    'check:uxlivepanelsmokeaudit01',
     'check:livetrackingfinal01',
     'check:driverflowfinal01',
 ], 'product extensions runner order');
 
   must(guide, 'check:product-extensions', 'script guide exposes check:product-extensions');
   must(guide, 'check:verifychain01', 'script guide exposes check:verifychain01');
+  must(guide, 'PUBLIC-LANDING-01', 'script guide mentions public landing milestone');
+  must(guide, 'check:publiclanding01', 'script guide exposes public landing check');
+  must(guide, 'node backend\\scripts\\public_landing_01_check.js', 'script guide includes public landing command');
+  must(guide, 'PUBLIC-LANDING-PLATFORM-FIRST-01', 'script guide mentions public landing platform-first milestone');
+  must(guide, 'check:publiclandingplatformfirst01', 'script guide exposes public landing platform-first check');
+  must(guide, 'node backend\\scripts\\public_landing_platform_first_01_check.js', 'script guide includes public landing platform-first command');
+  must(guide, 'LEAD-CAPTURE-01', 'script guide mentions lead capture milestone');
+  must(guide, 'check:leadcapture01', 'script guide exposes lead capture check');
+  must(guide, 'node backend\\scripts\\lead_capture_01_check.js', 'script guide includes lead capture command');
+  must(guide, 'ONBOARDING-REVIEW-01', 'script guide mentions onboarding review milestone');
+  must(guide, 'check:onboardingreview01', 'script guide exposes onboarding review check');
+  must(guide, 'node backend\\scripts\\onboarding_review_01_check.js', 'script guide includes onboarding review command');
   must(guide, 'QLT-PAY-BRIDGE-01', 'script guide mentions QLT-PAY-BRIDGE-01');
   must(guide, 'check:qltpaybridge01', 'script guide exposes check:qltpaybridge01');
   must(guide, 'check:seferscore01', 'script guide exposes check:seferscore01');
@@ -362,10 +386,16 @@ function main() {
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
   must(guide, 'FINAL-UX-SMOKE-01', 'script guide mentions FINAL-UX-SMOKE-01');
   must(guide, 'check:finaluxsmoke01', 'script guide exposes check:finaluxsmoke01');
+  must(guide, 'UX-LIVE-PANEL-SMOKE-AUDIT-01', 'script guide mentions UX-LIVE-PANEL-SMOKE-AUDIT-01');
+  must(guide, 'check:uxlivepanelsmokeaudit01', 'script guide exposes check:uxlivepanelsmokeaudit01');
+  must(guide, 'node backend\\scripts\\ux_live_panel_smoke_audit_01_check.js', 'script guide includes live panel smoke audit command');
   must(guide, 'BOARDING-OPS-01A', 'script guide mentions BOARDING-OPS-01A');
   must(guide, 'check:boardingops01a', 'script guide exposes check:boardingops01a');
   must(guide, 'BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01', 'script guide mentions BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01');
   must(guide, 'check:bugrouteimpactpreviewbutton01', 'script guide exposes check:bugrouteimpactpreviewbutton01');
+  must(guide, 'UX-ROUTE-IMPACT-PREVIEW-COMPACT-01', 'script guide mentions UX-ROUTE-IMPACT-PREVIEW-COMPACT-01');
+  must(guide, 'check:uxrouteimpactpreviewcompact01', 'script guide exposes check:uxrouteimpactpreviewcompact01');
+  must(guide, 'node backend\\scripts\\ux_route_impact_preview_compact_01_check.js', 'script guide includes compact preview check command');
   must(guide, 'BOARDING-OPS-01B', 'script guide mentions BOARDING-OPS-01B');
   must(guide, 'check:boardingops01b', 'script guide exposes check:boardingops01b');
   must(guide, 'BOARDING-OPS-01C', 'script guide mentions BOARDING-OPS-01C');

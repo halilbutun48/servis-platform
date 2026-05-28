@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getPath, navigate } from "../../router";
+import { useAutoReload } from "../../live/useAutoReload";
 import { resolveRuntimeScopeKey } from "../../copilot/screenRegistry";
 import { useSession } from "../../state/session";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
@@ -59,6 +60,9 @@ function resolveCommercialFlowTarget(item, agreementByShiftId) {
   if (section === "market") {
     return { section: "market", label: "Market", buttonLabel: "Marketi aç", summaryLabel: "Market akışı" };
   }
+  if (section === "list") {
+    return { section: "list", label: "Onaylı Kayıt", buttonLabel: "Kaydı aç", summaryLabel: "Onaylı Kayıt" };
+  }
   const lookupAgreementId = Number(agreementByShiftId?.get(String(item?.shiftId || 0)) || 0);
   const agreementId = Number(item?.agreementId || lookupAgreementId || 0);
   if (agreementId > 0) {
@@ -87,14 +91,30 @@ export default function CompanyCommercialFlowPanel() {
   const [flowFilter, setFlowFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
+  const loadCommercialFlowSummary = useCallback(async ({ signal, force = true } = {}) => {
+    const resp = await getCompanyCommercialFlowSummary(token, { signal, force });
+    return resp || null;
+  }, [token]);
+
+  const loadCompanyShiftRows = useCallback(async ({ signal, force = true } = {}) => {
+    const resp = await getCompanyShifts(token, { signal, force, take: 64, ttlMs: 20000 });
+    return Array.isArray(resp) ? resp : Array.isArray(resp?.items) ? resp.items : [];
+  }, [token]);
+
+  const loadCompanyAgreementRows = useCallback(async ({ signal, force = true } = {}) => {
+    const resp = await getCompanyAgreements(token, { signal, force, take: 64, ttlMs: 20000 });
+    return Array.isArray(resp?.items) ? resp.items : [];
+  }, [token]);
+
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       (async () => {
         try {
-          const resp = await getCompanyCommercialFlowSummary(token, { signal: controller.signal });
+          const resp = await loadCommercialFlowSummary({ signal: controller.signal, force: true });
           if (cancelled) return;
+          setErr("");
           setSummary(resp || null);
         } catch (e) {
           if (cancelled || e?.name === "AbortError") return;
@@ -107,7 +127,7 @@ export default function CompanyCommercialFlowPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token]);
+  }, [loadCommercialFlowSummary]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,10 +135,9 @@ export default function CompanyCommercialFlowPanel() {
     const timer = setTimeout(() => {
       (async () => {
         try {
-          const resp = await getCompanyShifts(token, { signal: controller.signal, take: 64, ttlMs: 20000 });
+          const resp = await loadCompanyShiftRows({ signal: controller.signal, force: true });
           if (cancelled) return;
-          const list = Array.isArray(resp) ? resp : Array.isArray(resp?.items) ? resp.items : [];
-          setShiftRows(list);
+          setShiftRows(resp);
         } catch (e) {
           if (cancelled || e?.name === "AbortError") return;
         }
@@ -129,7 +148,7 @@ export default function CompanyCommercialFlowPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token]);
+  }, [loadCompanyShiftRows]);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,10 +156,9 @@ export default function CompanyCommercialFlowPanel() {
     const timer = setTimeout(() => {
       (async () => {
         try {
-          const resp = await getCompanyAgreements(token, { signal: controller.signal, take: 64, ttlMs: 20000 });
+          const resp = await loadCompanyAgreementRows({ signal: controller.signal, force: true });
           if (cancelled) return;
-          const list = Array.isArray(resp?.items) ? resp.items : [];
-          setAgreementRows(list);
+          setAgreementRows(resp);
         } catch (e) {
           if (cancelled || e?.name === "AbortError") return;
           setAgreementRows([]);
@@ -152,7 +170,25 @@ export default function CompanyCommercialFlowPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token]);
+  }, [loadCompanyAgreementRows]);
+
+  useAutoReload("shifts", async () => {
+    const [summaryResp, shiftResp, agreementResp] = await Promise.allSettled([
+      loadCommercialFlowSummary({ force: true }),
+      loadCompanyShiftRows({ force: true }),
+      loadCompanyAgreementRows({ force: true }),
+    ]);
+    if (summaryResp.status === "fulfilled") {
+      setErr("");
+      setSummary(summaryResp.value || null);
+    }
+    if (shiftResp.status === "fulfilled") {
+      setShiftRows(shiftResp.value);
+    }
+    if (agreementResp.status === "fulfilled") {
+      setAgreementRows(agreementResp.value);
+    }
+  }, Boolean(token));
 
   const counts = useMemo(() => {
     const c = summary?.cards || {};

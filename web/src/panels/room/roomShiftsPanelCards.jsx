@@ -65,7 +65,7 @@ export function RoomAvailabilityLine({ shift, vehicleId, driverId, autoDriverNam
   const ok = availability?.status === "ok";
   const checking = availability?.status === "checking";
   const code = availability?.code || (missing ? "SELECT_REQUIRED" : null);
-  const msg = availability?.message || (missing ? "Araç ve driver seç." : "");
+  const msg = availability?.message || (missing ? "Araç ve şoför seç." : "");
   const cs = availability?.conflictingShift || null;
   const csId = cs?.id ? Number(cs.id) : null;
   const csRoom = cs?.roomId ? roomsById.get(Number(cs.roomId)) : null;
@@ -74,8 +74,8 @@ export function RoomAvailabilityLine({ shift, vehicleId, driverId, autoDriverNam
   return (
     <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
       <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <span><b>Uygunluk:</b> {checking ? <span className="pill" data-status="PENDING">CHECK</span> : ok ? <span className="pill" data-status="OK">OK</span> : conflict ? <span className="pill" data-status="REJECTED">{String(code || "CONFLICT")}</span> : missing ? <span className="pill" data-status="PENDING">SEÇİM</span> : <span className="pill" data-status="REJECTED">ERROR</span>}</span>
-        <span className="muted">(Araç driver: {autoDriverName})</span>
+        <span><b>Uygunluk:</b> {checking ? <span className="pill" data-status="PENDING">Kontrol</span> : ok ? <span className="pill" data-status="OK">Hazır</span> : conflict ? <span className="pill" data-status="REJECTED">{String(code || "Uyarı")}</span> : missing ? <span className="pill" data-status="PENDING">Araç/şoför seç</span> : <span className="pill" data-status="REJECTED">Hata</span>}</span>
+        <span className="muted">(Araç / şoför: {autoDriverName})</span>
         {msg ? <span className="muted">• {msg}</span> : null}
       </div>
       {capacity.requiredPax > 0 ? <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><span><b>Yolcu:</b> {capacity.requiredPax}</span><span>• <b>Koltuk:</b> {capacity.vehicleCapacity || "-"}</span>{capacity.insufficient ? <span>• <b>Eksik:</b> {capacity.missingCapacity}</span> : null}{capacity.insufficient && capacity.minVehicleCount ? <span>• <b>Bu araçla min:</b> {capacity.minVehicleCount} araç</span> : null}{capacity.requiredPax > 0 && capacity.roomMaxCapacity > 0 ? <span>• <b>Room max tek araç:</b> {capacity.roomMaxCapacity}</span> : null}</div> : null}
@@ -167,13 +167,13 @@ export function RoomDispatchSuggestionCard({
         <span>
           <b>Durum:</b>{" "}
           {selectionState.status === "ok" ? (
-            <span className="pill" data-status="OK">OK</span>
+            <span className="pill" data-status="OK">Hazır</span>
           ) : selectionState.status === "checking" ? (
-            <span className="pill" data-status="PENDING">CHECK</span>
+            <span className="pill" data-status="PENDING">Kontrol</span>
           ) : selectionState.status === "missing" ? (
-            <span className="pill" data-status="PENDING">SEÇİM</span>
+            <span className="pill" data-status="PENDING">Araç/şoför seç</span>
           ) : (
-            <span className="pill" data-status="REJECTED">{String(selectionState.code || "CONFLICT")}</span>
+            <span className="pill" data-status="REJECTED">{String(selectionState.code || "Uyarı")}</span>
           )}
         </span>
         {selectionState?.message ? <span>• {selectionState.message}</span> : null}

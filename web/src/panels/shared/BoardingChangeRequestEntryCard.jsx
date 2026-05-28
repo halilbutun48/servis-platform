@@ -673,6 +673,7 @@ export default function BoardingChangeRequestEntryCard({
             <button type="button" className="ghostButton" onClick={() => setSelectedRequestId("")}>Seçimi temizle</button>
           </div>
           <BoardingRouteImpactPreviewCard
+            key={`${previewRequest?.id || previewRequest?.routeImpactPreview?.changeType || "boarding-route-impact-preview"}`}
             request={previewRequest}
             preview={previewRequest?.routeImpactPreview || null}
             title="Talep önizlemesi"

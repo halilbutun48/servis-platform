@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { createJsonFileStore } from "../lib/jsonFileStore.js";
 import { httpError } from "../errors/http.js";
-import { maskIp, maskUserAgent } from "../kvkk/enforcement.js";
+import { maskEmail, maskIp, maskPhone, maskUserAgent } from "../kvkk/enforcement.js";
 
 const store = createJsonFileStore("public-leads.json", {
   defaultValue: () => ({ lastId: 0, items: [] }),
@@ -21,7 +21,24 @@ export const LEAD_TYPE_LABELS = {
   SUPPLIER_APPLICATION: "Tedarikçi başvurusu",
 };
 
+export const LEAD_REVIEW_STATUSES = [
+  "RECEIVED",
+  "IN_REVIEW",
+  "NEEDS_INFO",
+  "APPROVED_FOR_INVITE",
+  "REJECTED",
+];
+
+export const LEAD_REVIEW_STATUS_LABELS = {
+  RECEIVED: "Alındı",
+  IN_REVIEW: "İnceleniyor",
+  NEEDS_INFO: "Ek Bilgi Gerekli",
+  APPROVED_FOR_INVITE: "Davet İçin Uygun",
+  REJECTED: "Reddedildi",
+};
+
 const LEAD_TYPE_SET = new Set(LEAD_TYPES);
+const LEAD_REVIEW_STATUS_SET = new Set(LEAD_REVIEW_STATUSES);
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 3;
 const rateBuckets = new Map();
@@ -102,6 +119,17 @@ function normalizeLeadType(value) {
   return type;
 }
 
+function normalizeLeadReviewStatus(value, fallback = "RECEIVED") {
+  const status = String(value || "").trim().toUpperCase();
+  if (LEAD_REVIEW_STATUS_SET.has(status)) return status;
+  const fallbackStatus = fallback == null ? "RECEIVED" : String(fallback).trim().toUpperCase();
+  return fallbackStatus || "RECEIVED";
+}
+
+function normalizeLeadNote(value, { maxLen = 1200, label = "Not" } = {}) {
+  return cleanText(value, { maxLen, label, allowEmpty: true });
+}
+
 function normalizeNestedLeadObject(raw, fields) {
   const source = raw && typeof raw === "object" ? raw : {};
   const out = {};
@@ -160,11 +188,12 @@ function parseLeadNumber(id) {
 function normalizeLeadRecord(raw) {
   if (!raw || typeof raw !== "object") return null;
   const type = LEAD_TYPE_SET.has(String(raw.type || "").toUpperCase()) ? String(raw.type || "").toUpperCase() : "DEMO_REQUEST";
+  const status = normalizeLeadReviewStatus(raw.status);
   return {
     id: String(raw.id || "").trim() || `lead-${String(parseLeadNumber(raw.id) || 0).padStart(6, "0")}`,
     createdAt: String(raw.createdAt || new Date().toISOString()),
     type,
-    status: String(raw.status || "RECEIVED").trim().toUpperCase() || "RECEIVED",
+    status,
     source: String(raw.source || "PUBLIC_LANDING").trim().toUpperCase() || "PUBLIC_LANDING",
     name: cleanText(raw.name, { maxLen: 120, label: "Ad soyad", allowEmpty: false }),
     phone: cleanPhone(raw.phone),
@@ -181,6 +210,88 @@ function normalizeLeadRecord(raw) {
     ipMasked: cleanText(raw.ipMasked, { maxLen: 64, label: "IP" }),
     userAgentSummary: cleanText(raw.userAgentSummary, { maxLen: 64, label: "User-Agent" }),
     sourceRoute: cleanText(raw.sourceRoute, { maxLen: 120, label: "Source route" }),
+    reviewNote: normalizeLeadNote(raw.reviewNote, { maxLen: 1200, label: "İnceleme notu" }),
+    operationNote: normalizeLeadNote(raw.operationNote, { maxLen: 1200, label: "Operasyon notu" }),
+    reviewedAt: cleanText(raw.reviewedAt, { maxLen: 64, label: "İnceleme zamanı" }),
+    reviewedBy: cleanText(raw.reviewedBy, { maxLen: 160, label: "İnceleyen" }),
+    reviewedById: Number.isFinite(Number(raw.reviewedById)) ? Math.trunc(Number(raw.reviewedById)) : null,
+    reviewedByEmail: cleanText(raw.reviewedByEmail, { maxLen: 160, label: "İnceleyen e-posta" }),
+  };
+}
+
+function buildLeadReviewView(item) {
+  if (!item) return null;
+  const status = normalizeLeadReviewStatus(item.status);
+  const phoneMasked = maskPhone(item.phone);
+  const emailMasked = maskEmail(item.email);
+  return {
+    ...item,
+    status,
+    statusLabel: LEAD_REVIEW_STATUS_LABELS[status] || status,
+    typeLabel: LEAD_TYPE_LABELS[item.type] || item.type,
+    sourceLabel: String(item.source || "").toUpperCase() === "PUBLIC_LANDING" ? "Public landing" : String(item.source || "-"),
+    phoneMasked,
+    emailMasked,
+    hasPhone: Boolean(item.phone),
+    hasEmail: Boolean(item.email),
+    contactSummary: [
+      item.phone ? "Telefon var" : "Telefon yok",
+      item.email ? "E-posta var" : "E-posta yok",
+    ].join(" • "),
+    reviewNote: item.reviewNote || null,
+    operationNote: item.operationNote || null,
+    reviewedAt: item.reviewedAt || null,
+    reviewedBy: item.reviewedBy || null,
+    reviewedById: item.reviewedById ?? null,
+    reviewedByEmail: item.reviewedByEmail || null,
+  };
+}
+
+function normalizeLeadFilterText(value, { maxLen = 120, label = "Arama" } = {}) {
+  const text = cleanText(value, { maxLen, label, allowEmpty: true });
+  return text ? text.toLocaleLowerCase("tr-TR") : "";
+}
+
+function matchLeadSearch(item, query) {
+  if (!query) return true;
+  const haystack = [
+    item.id,
+    item.name,
+    item.phone,
+    item.email,
+    item.organizationName,
+    item.city,
+    item.district,
+    item.role,
+    item.message,
+    item.type,
+    item.status,
+    item.reviewNote,
+    item.operationNote,
+    item.serviceNeed ? JSON.stringify(item.serviceNeed) : "",
+    item.supplierInfo ? JSON.stringify(item.supplierInfo) : "",
+  ]
+    .map((value) => String(value || "").toLocaleLowerCase("tr-TR"))
+    .join(" ");
+  return haystack.includes(query);
+}
+
+function summarizeLeadCounts(items) {
+  const byStatus = Object.fromEntries(LEAD_REVIEW_STATUSES.map((status) => [status, 0]));
+  const byType = Object.fromEntries(LEAD_TYPES.map((type) => [type, 0]));
+  for (const item of items) {
+    const status = normalizeLeadReviewStatus(item?.status);
+    const type = LEAD_TYPE_SET.has(String(item?.type || "").toUpperCase()) ? String(item.type).toUpperCase() : null;
+    if (Object.prototype.hasOwnProperty.call(byStatus, status)) byStatus[status] += 1;
+    if (type && Object.prototype.hasOwnProperty.call(byType, type)) byType[type] += 1;
+  }
+  return {
+    total: items.length,
+    byStatus,
+    byType,
+    pendingCount: (byStatus.RECEIVED || 0) + (byStatus.IN_REVIEW || 0) + (byStatus.NEEDS_INFO || 0),
+    inviteReadyCount: byStatus.APPROVED_FOR_INVITE || 0,
+    rejectedCount: byStatus.REJECTED || 0,
   };
 }
 
@@ -296,4 +407,96 @@ export async function submitPublicLead(payload = {}, meta = {}) {
 
 export function readPublicLeadStoreState() {
   return store.readAsync();
+}
+
+export async function listPublicLeadReviewQueue(params = {}) {
+  const state = normalizeState(await store.readAsync());
+  const query = normalizeLeadFilterText(params.q || params.query || "", { maxLen: 120, label: "Arama" });
+  const statusFilter = Array.isArray(params.status)
+    ? params.status
+    : String(params.status || "")
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+  const typeFilter = Array.isArray(params.type)
+    ? params.type
+    : String(params.type || "")
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+  const normalizedStatusFilter = statusFilter
+    .map((value) => normalizeLeadReviewStatus(value, ""))
+    .filter((value) => LEAD_REVIEW_STATUS_SET.has(value));
+  const normalizedTypeFilter = typeFilter
+    .map((value) => String(value || "").trim().toUpperCase())
+    .filter((value) => LEAD_TYPE_SET.has(value));
+  const takeText = String(params.limit ?? params.take ?? "").trim();
+  const take = takeText ? Math.max(1, Math.min(200, Math.trunc(Number(takeText) || 0))) : 100;
+
+  const filtered = state.items.filter((item) => {
+    if (normalizedStatusFilter.length && !normalizedStatusFilter.includes(normalizeLeadReviewStatus(item.status))) return false;
+    if (normalizedTypeFilter.length && !normalizedTypeFilter.includes(String(item.type || "").toUpperCase())) return false;
+    if (!matchLeadSearch(item, query)) return false;
+    return true;
+  });
+
+  const items = filtered.slice(0, take).map(buildLeadReviewView);
+  return {
+    ok: true,
+    items,
+    total: filtered.length,
+    limit: take,
+    filters: {
+      q: query || null,
+      status: normalizedStatusFilter,
+      type: normalizedTypeFilter,
+    },
+    counts: summarizeLeadCounts(state.items),
+  };
+}
+
+export async function updatePublicLeadReviewDecision(leadId, patch = {}, actor = {}) {
+  const normalizedId = cleanText(leadId, { maxLen: 64, label: "Başvuru ID", allowEmpty: false });
+  const nextStatusRaw = patch?.status ?? patch?.reviewStatus ?? patch?.decisionStatus ?? null;
+  const nextReviewNote = normalizeLeadNote(patch?.reviewNote, { maxLen: 1200, label: "İnceleme notu" });
+  const nextOperationNote = normalizeLeadNote(patch?.operationNote, { maxLen: 1200, label: "Operasyon notu" });
+  const hasReviewNote = Object.prototype.hasOwnProperty.call(patch || {}, "reviewNote");
+  const hasOperationNote = Object.prototype.hasOwnProperty.call(patch || {}, "operationNote");
+  const reviewerId = Number.isFinite(Number(actor?.id)) ? Math.trunc(Number(actor.id)) : null;
+  const reviewerLabel = cleanText(actor?.email || actor?.fullName || actor?.name || actor?.username, { maxLen: 160, label: "İnceleyen", allowEmpty: true });
+  const reviewerEmail = cleanText(actor?.email, { maxLen: 160, label: "İnceleyen e-posta", allowEmpty: true });
+
+  const updated = await store.updateAsync((current) => {
+    const state = normalizeState(current);
+    const index = state.items.findIndex((item) => String(item?.id || "") === normalizedId);
+    if (index < 0) {
+      throw httpError(404, "NOT_FOUND", "Başvuru bulunamadı.");
+    }
+
+    const existing = state.items[index];
+    const hasNextStatus = nextStatusRaw != null && String(nextStatusRaw).trim() !== "";
+    const nextStatus = hasNextStatus
+      ? normalizeLeadReviewStatus(nextStatusRaw, "")
+      : normalizeLeadReviewStatus(existing.status);
+    if (hasNextStatus && !LEAD_REVIEW_STATUS_SET.has(nextStatus)) {
+      throw httpError(400, "BAD_REQUEST", "Geçerli bir inceleme durumu seçin.");
+    }
+    const nextRecord = normalizeLeadRecord({
+      ...existing,
+      status: nextStatus,
+      reviewNote: hasReviewNote ? nextReviewNote : (existing.reviewNote || null),
+      operationNote: hasOperationNote ? nextOperationNote : (existing.operationNote || null),
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: reviewerLabel || existing.reviewedBy || null,
+      reviewedById: reviewerId ?? existing.reviewedById ?? null,
+      reviewedByEmail: reviewerEmail || existing.reviewedByEmail || null,
+    });
+
+    state.items[index] = nextRecord;
+    return state;
+  });
+
+  const state = normalizeState(updated);
+  const item = state.items.find((row) => String(row?.id || "") === normalizedId) || null;
+  return buildLeadReviewView(item);
 }

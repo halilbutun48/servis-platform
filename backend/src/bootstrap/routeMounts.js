@@ -34,6 +34,7 @@ export function mountCoreRoutes(app, routes, io) {
     personelAccessRouter,
     publicPersonelInviteRouter,
     publicLeadsRouter,
+    publicLeadReviewRouter,
     companiesRouter,
     roomsRouter,
     routeTemplatesRouter,
@@ -95,6 +96,7 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/route-templates", routeTemplatesRouter());
   app.use("/api/availability", availabilityRoutes);
   app.use("/api/admin/logs", adminLogsRouter());
+  app.use("/api/admin/public-leads", resolveRouterMount(publicLeadReviewRouter));
   app.use("/api/admin", adminRouter(io));
 }
 

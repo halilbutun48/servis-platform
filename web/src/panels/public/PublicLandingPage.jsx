@@ -9,7 +9,7 @@ const CTA_PRESETS = [
     label: "Demo talep et",
     title: "Demo talebi",
     leadType: "DEMO_REQUEST",
-    summary: "Ürün demosu, pazaryeri modeli ve Sefer Abi akışı için kısa bir başvuru bırakın.",
+    summary: "SeferPakt'ın servis operasyonu ve tedarik akışını kısa bir demoda görün.",
     note: "Üyelik otomatik açılmaz; başvurunuz ekip tarafından incelenir.",
   },
   {
@@ -25,7 +25,7 @@ const CTA_PRESETS = [
     label: "Servis ihtiyacımı anlat",
     title: "Servis ihtiyacı başvurusu",
     leadType: "SERVICE_NEED",
-    summary: "Personel, öğrenci veya kurum servisi ihtiyacını güvenli şekilde paylaşın.",
+    summary: "Personel, öğrenci veya kurum servisi ihtiyacınızı güvenli şekilde paylaşın.",
     note: "Personel / öğrenci listesi sonra paylaşılabilir; form lead olarak kaydolur.",
   },
   {
@@ -33,7 +33,7 @@ const CTA_PRESETS = [
     label: "Tedarikçi olarak başvur",
     title: "Tedarikçi başvurusu",
     leadType: "SUPPLIER_APPLICATION",
-    summary: "Araç kapasitesi ve hizmet bölgesi bilgisiyle tedarikçi başvurusu bırakın.",
+    summary: "Araç kapasitesi, bölge ve yetkili bilgisiyle tedarikçi başvurusu bırakın.",
     note: "Doğrulama sonrası davetli üyelik süreci başlar; otomatik üyelik açılmaz.",
   },
 ];
@@ -42,33 +42,34 @@ const AUDIENCE_CARDS = [
   {
     title: "Firma / okul / kurum",
     bullets: [
-      "İhtiyacı kısa formda bırakın.",
-      "Sefer Abi durak ve rota taslağını hazırlasın.",
-      "Uygun tedarikçi tekliflerini kalite ve riskle karşılaştırın.",
-      "Sözleşmeden vardiyaya güvenli geçişi takip edin.",
+      "İhtiyacınızı kısa formda bırakın.",
+      "SeferPakt talebi, sözleşmeyi, vardiyayı ve canlı takibi tek yerde toplar.",
+      "Uygun tedarikçi tekliflerini kalite ve risk sinyalleriyle karşılaştırın.",
+      "Hakediş ve ödeme önizlemelerini izleyin.",
     ],
   },
   {
     title: "Room / servis tedarikçisi",
     bullets: [
       "Uygun işlere teklif verin.",
-      "Kapasite ve fiyat bilgilerinizi yönetin.",
+      "Kapasite, fiyat ve rota uygunluğunu yönetin.",
       "Kalite ve SeferPuanı ile güven kazanın.",
       "İyi hizmet veren daha avantajlı görünür.",
     ],
   },
   {
-    title: "Sefer Abi AI",
+    title: "Sefer Abi / Operasyon Copilot'u",
     bullets: [
-      "Eksik adresleri bulur ve durakları hazırlar.",
-      "OSRM ile km / süre etkisini analiz eder.",
-      "Teklifleri fiyat, kalite, kapasite ve riskle karşılaştırır.",
-      "Kritik işlemlerde sadece onaylı aksiyon önerir.",
+      "Ekrandaki sinyalleri özetler.",
+      "Riskleri görünür yapar.",
+      "Sonraki adımı önerir.",
+      "Karar ve onay sizdedir.",
     ],
   },
 ];
 
 const TRUST_ITEMS = [
+  "Kurumsal servis operasyon platformu",
   "Kontrollü lead kaydı",
   "Üyelik otomatik açılmaz",
   "Ödeme / fatura / tahsilat yok",
@@ -92,7 +93,7 @@ const FAQ = [
   },
   {
     q: "Sefer Abi otomatik işlem yapar mı?",
-    a: "Hayır. Sefer Abi önerir, hazırlar ve riskleri açıklar; teklif, sözleşme, araç atama, rota uygulama, SMS/push, ödeme ve ceza gibi kritik işlemler kullanıcı onayı olmadan yapılmaz.",
+    a: "Hayır. Sefer Abi opsiyonel operasyon copilot'udur; sinyalleri özetler, riskleri açıklar ve sonraki adımı önerir. Teklif, sözleşme, araç atama, rota uygulama, SMS/push, ödeme ve ceza gibi kritik işlemler kullanıcı onayı olmadan yapılmaz.",
   },
   {
     q: "Tedarikçiler nasıl ilerler?",
@@ -209,6 +210,9 @@ export default function PublicLandingPage() {
                   Başvurular ekip tarafından incelenir
                 </span>
                 <span className="pill" data-status="INFO">
+                  Kurumsal servis operasyonu tek platformda
+                </span>
+                <span className="pill" data-status="INFO">
                   Üyelik otomatik açılmaz
                 </span>
                 <span className="pill" data-status="INFO">
@@ -220,17 +224,16 @@ export default function PublicLandingPage() {
               </div>
 
               <h1 className="title" style={{ fontSize: "clamp(28px, 4vw, 48px)", maxWidth: 980 }}>
-                SeferPakt: Servis operasyonunu pazaryeri, kanıt ve Sefer Abi ile yöneten akıllı platform
+                Servis tedarikinden saha denetimine, sözleşmeden hakedişe tek kurumsal platform
               </h1>
 
               <p className="panelSubtitle" style={{ marginTop: 12, maxWidth: 860 }}>
-                Personel ve öğrenci servislerini planlayın, teklifleri kaliteyle karşılaştırın, sözleşmeden vardiyaya operasyonu
-                güvenli şekilde yönetin.
+                SeferPakt; servis taleplerini, tedarikçileri, sözleşmeleri, vardiyaları, canlı GPS takibini, kanıtları ve
+                hakediş önizlemelerini tek yerde yönetir.
               </p>
 
               <p className="panelBody" style={{ marginTop: 14, maxWidth: 900, color: "#d8e4ff" }}>
-                Public CTA'lar demo, canlı destek, servis ihtiyacı ve tedarikçi başvurusu toplar. Başvurular kontrollü lead
-                formuna düşer; otomatik hesap, otomatik davet ve otomatik ödeme akışı açılmaz.
+                Sefer Abi ise operasyonu anlamanıza ve riskleri erken görmenize yardımcı olan opsiyonel operasyon copilot'udur.
               </p>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 }}>
@@ -247,7 +250,8 @@ export default function PublicLandingPage() {
               </div>
 
               <div className="panelMeta" style={{ marginTop: 12 }}>
-                CTA'lar güvenli başvuru formunu açar. Ekip incelemesi olmadan üyelik, ödeme veya sözleşme başlatılmaz.
+                Public CTA'lar demo, canlı destek, servis ihtiyacı ve tedarikçi başvurusu toplar. Başvurular kontrollü lead
+                formuna düşer; otomatik hesap, otomatik davet ve ödeme akışı açılmaz.
               </div>
             </div>
 
@@ -264,7 +268,7 @@ export default function PublicLandingPage() {
                 </div>
                 <div>
                   <div className="panelStatTitle">Yok</div>
-                  <div style={{ fontWeight: 800, marginTop: 4 }}>Otomatik ödeme / fatura / tahsilat</div>
+                  <div style={{ fontWeight: 800, marginTop: 4 }}>Ödeme / fatura / tahsilat</div>
                 </div>
                 <div>
                   <div className="panelStatTitle">Var</div>
@@ -282,18 +286,6 @@ export default function PublicLandingPage() {
         </section>
 
         <section className="grid" style={{ marginBottom: 12 }}>
-          <div className="card" style={{ marginBottom: 0 }}>
-            <div className="panelSectionTitle">Sefer Abi AI ne yapar?</div>
-            <ul style={{ margin: "10px 0 0", paddingLeft: 18, display: "grid", gap: 8 }}>
-              <li className="panelBody">Personel / öğrenci / kurum ihtiyacını analiz eder.</li>
-              <li className="panelBody">Eksik adresleri ve belirsiz kayıtları yakalar.</li>
-              <li className="panelBody">Durak ve rota taslağı hazırlar.</li>
-              <li className="panelBody">OSRM ile km / süre etkisini çıkarır.</li>
-              <li className="panelBody">Uygun tedarikçileri fiyat, kalite, SeferPuanı, kapasite ve risk ile karşılaştırır.</li>
-              <li className="panelBody">Kritik işlemler için yalnızca onaylı aksiyon önerir; doğrudan uygulama yapmaz.</li>
-            </ul>
-          </div>
-
           <div className="card" style={{ marginBottom: 0 }}>
             <div className="panelSectionTitle">Operasyon güveni</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
@@ -401,8 +393,12 @@ export default function PublicLandingPage() {
         <footer className="card" style={{ marginBottom: 0 }}>
           <div className="panelSectionTitle">SeferPakt public vitrin</div>
           <div className="panelBody" style={{ marginTop: 8 }}>
-            Klasik abonelikli SaaS değil. Pazaryeri + kanıt + Sefer Abi ile servis operasyonunu daha güvenli, daha görünür ve
-            daha kontrollü yönetme vitrini.
+            Klasik abonelikli SaaS değil. Servis tedarikinden saha denetimine, sözleşmeden hakedişe uzanan kurumsal servis
+            operasyon platformu.
+          </div>
+          <div className="panelBody" style={{ marginTop: 8 }}>
+            Sefer Abi ise ekran sinyallerini özetleyen, riskleri görünür yapan ve sonraki adımı öneren opsiyonel operasyon
+            copilot'udur.
           </div>
           <div className="panelMeta" style={{ marginTop: 10 }}>
             Mevcut SeferPakt web projesinin public route'u: <code>/landing</code> • Authenticated app akışı ve operasyon

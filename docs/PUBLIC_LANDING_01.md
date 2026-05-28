@@ -9,56 +9,55 @@ Bu milestone SeferPakt için public landing / tanıtım sayfasını sabitler. Am
 - Public landing, lead capture ve onboarding akışlarına hazırlık yapar.
 
 ## Amaç
-- SeferPakt’ın ne olduğunu kısa ve net anlatmak.
-- Lisanssız / pazaryeri modelini güvenli biçimde açıklamak.
-- Sefer Abi AI vizyonunu gerçekçi ama güçlü bir dille aktarmak.
+- SeferPakt’ı kurumsal servis operasyon ve tedarik platformu olarak kısa ve net anlatmak.
+- Sefer Abi’yi genel amaçlı AI yerine opsiyonel operasyon copilot’u olarak konumlandırmak.
 - Firma / okul / kurum / tedarikçi tarafındaki değer önerisini ayırmak.
 - Demo / destek / servis ihtiyacı / tedarikçi başvurusu için kontrollü lead formu açmak.
 - Self-service üyelik, ödeme, fatura veya otomatik hesap açmadan yönlendirme sunmak.
 
 ## Sayfa bölümleri
 - Hero
-- Lisanssız model açıklaması
-- Sefer Abi AI vizyonu
-- Hedef kullanıcı kartları
+- Platform-first değer anlatımı
 - Operasyon güveni
+- Hedef kullanıcı kartları
 - Nasıl çalışır?
-- Güvenli pazaryeri
+- Güvenli sınır
 - Sık sorulanlar
 - Başvuru CTA alanı / kontrollü lead formu
 
 ## Public CTA sınırı
 - Başvurular ekip tarafından incelenir.
 - Üyelik otomatik açılmaz.
+- CTA'lar kontrollü lead formuna bağlanır.
 - CTA'lar kontrollü lead formunu açar.
 - CTA'lar otomatik üyelik, ödeme, fatura, tahsilat veya settlement başlatmaz.
 - Self-service signup, automatic membership ve invite sending bu milestone'da kapalıdır.
 - Gerçek lead capture akışı `LEAD-CAPTURE-01` içinde resmi hale getirilir.
 
 ## Akış Sırası
+- Public lead order: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - PUBLIC-LANDING-01
+- PUBLIC-LANDING-PLATFORM-FIRST-01
 - LEAD-CAPTURE-01
 - ONBOARDING-REVIEW-01
 - INVITE-BASED-MEMBERSHIP-01
 - VERIFIED-SUPPLIER-01
 - Authenticated app panelleri
 
-## Lisanssız model copy
-- Lisans ücreti yok.
-- Mevcut sözleşmeden pay alınmaz.
-- SeferPakt kaynaklı yeni / yenilenen işlerde kaliteye göre başarı payı politikası yalnızca readonly olarak anlatılır.
-- Kaynak vardiya / market shift zinciri kanıtlanmıyorsa başarı payı doğmaz.
-- Public landing üzerinde gerçek ödeme, fatura, tahsilat veya settlement akışı yoktur.
-- Public CTA'lar yalnızca controlled lead formuna bağlanır.
+## Platform-first copy
+- Servis tedarikinden saha denetimine, sözleşmeden hakedişe tek kurumsal platform.
+- SeferPakt; servis taleplerini, tedarikçileri, sözleşmeleri, vardiyaları, canlı GPS takibini, kanıtları ve hakediş önizlemelerini tek yerde yönetir.
+- Kurumlar ihtiyacı kısa formda bırakır, ekip başvuruyu inceler, uygun işlerde insan onaylı operasyon yürür.
+- Sefer Abi ikincil, opsiyonel operasyon copilot'u olarak anılır; ayrı bir ana vitrin bölümü olarak öne çıkarılmaz.
+- Public landing bir AI platformu değildir; ana değer servis operasyonu, tedarik ve kontrollü süreç yönetimidir.
 
-## Sefer Abi AI copy
-- Personel / öğrenci listelerini analiz eder.
-- Eksik adresleri bulur.
-- Durak ve rota taslağı hazırlar.
-- Teklifleri fiyat / kalite / SeferPuanı / kapasite / risk ile karşılaştırır.
-- Pazarlık ve karşı teklif taslaklarını hazırlayabilir.
-- En uygun seçeneği gerekçesiyle sunar.
-- Kritik işlemleri kullanıcı onayı olmadan yapmaz.
+## Güvenli sınır
+- Kontrolsüz self-service üyelik yok.
+- Otomatik firma / okul / kurum hesabı açma yok.
+- Otomatik Room / tedarikçi hesabı açma yok.
+- Otomatik davet maili / SMS yok.
+- Ödeme, fatura, tahsilat ve settlement execute yok.
+- Sözleşme veya operasyon başlatma yok.
 
 ## Out-of-scope
 - Lead backend

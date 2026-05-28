@@ -82,6 +82,7 @@ const SuperNaturalCopilotPanel = lazy(() => import("./panels/superadmin/NaturalC
 const SuperPilotLaunchGatePanel = lazy(() => import("./panels/superadmin/PilotLaunchGatePanel"));
 const SuperOperationVerificationPanel = lazy(() => import("./panels/superadmin/OperationVerificationPanel"));
 const SuperOperationsPanel = lazy(() => import("./panels/superadmin/OperationsPanel"));
+const SuperPublicLeadReviewPanel = lazy(() => import("./panels/superadmin/PublicLeadReviewPanel"));
 
 function roleDefaultPath(me) {
   if (me?.requirePasswordChange) return "/auth/change-password";
@@ -302,6 +303,8 @@ export default function App() {
     if (path === "/superadmin/natural-copilot") return { layout: true, node: <SuperNaturalCopilotPanel /> };
     if (path === "/superadmin/pilot-launch-gate") return { layout: true, node: <SuperPilotLaunchGatePanel /> };
     if (path === "/superadmin/operation-verification") return { layout: true, node: <SuperOperationVerificationPanel /> };
+    if (path === "/superadmin/onboarding-review") return { layout: true, node: <SuperPublicLeadReviewPanel /> };
+    if (path === "/superadmin/public-leads") return { layout: true, node: <SuperPublicLeadReviewPanel /> };
     if (path === "/superadmin/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // Unknown: go default

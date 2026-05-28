@@ -14,6 +14,7 @@ import PlatformFeePreviewCard from "../shared/PlatformFeePreviewCard";
 import SeferScorePreviewCard from "../shared/SeferScorePreviewCard";
 import AgreementConflictBox from "../../components/AgreementConflictBox";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
@@ -1053,9 +1054,13 @@ export default function AgreementsPanel() {
 
           {copilotAgreementTarget ? (
             <div style={{ display: "grid", gap: 8 }}>
-              <div className="muted" style={{ lineHeight: 1.45 }}>
-                Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
-              </div>
+              <CollapsibleSection
+                title="Kalite / hakediş önizlemesi"
+                subtitle="Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."
+                badge={copilotAgreementTarget?.id ? `#${copilotAgreementTarget.id}` : "Seçili"}
+                defaultOpen={false}
+                compact
+              >
               <QualityPaymentBridgePreviewCard
                 agreement={copilotAgreementTarget}
                 preview={qualityPaymentBridgePreview.data}
@@ -1067,6 +1072,7 @@ export default function AgreementsPanel() {
                 preview={seferScorePreviewData}
                 loading={seferScorePreview.loading}
                 error={seferScorePreview.err}
+                style={{ marginTop: 12 }}
               />
               <PlatformFeePreviewCard
                 agreement={copilotAgreementTarget}
@@ -1075,6 +1081,7 @@ export default function AgreementsPanel() {
                 error={platformFeePreview.err}
                 style={{ marginTop: 12 }}
               />
+              </CollapsibleSection>
             </div>
           ) : null}
 
