@@ -15,11 +15,11 @@ Tarama kapsamı:
 - `web/src/App.jsx` route/menu bağlantıları
 
 Özet envanter:
-  - `113` panel-related JSX dosyası: `web/src/panels/**/*.jsx`
-- `60` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
-- `96` gerçek route surface + `/` root redirect ile `97` unique route literal
+  - `114` panel-related JSX dosyası: `web/src/panels/**/*.jsx`
+- `61` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
+- `98` gerçek route surface + `/` root redirect ile `99` unique route literal
 
-### Super Admin (17)
+### Super Admin (19)
 - `/superadmin`
 - `/superadmin/companies`
 - `/superadmin/rooms`

@@ -99,23 +99,23 @@ function main() {
   mustContains(audit, "4) Her panel için önerilen yapı", "audit has per-panel structure recommendation");
   mustContains(audit, "5) İlk düzeltilecek 5 panel önerisi", "audit has first five recommendation");
   mustContains(audit, "6) Sonraya bırakılacak paneller", "audit has deferred panel section");
-  mustContains(audit, "113", "audit states total panel-related JSX file count");
-  mustContains(audit, "60", "audit states route-backed screen component count");
-  mustContains(audit, "96", "audit states route surface count");
-  mustContains(audit, "97", "audit states unique route literal count");
+  mustContains(audit, "114", "audit states total panel-related JSX file count");
+  mustContains(audit, "61", "audit states route-backed screen component count");
+  mustContains(audit, "98", "audit states route surface count");
+  mustContains(audit, "99", "audit states unique route literal count");
 
   const app = read("web/src/App.jsx");
   const routeLiterals = extractRouteLiterals(app);
   const screenImports = extractScreenImports(app);
   const panelFiles = walk(path.join(root, "web/src/panels"));
-  must(panelFiles.length === 113, "panel-related JSX count matches audit");
-  must(screenImports.length === 60, "route-backed screen component count matches audit");
-  must(routeLiterals.length === 97, "unique route literal count matches audit");
-  must(routeLiterals.filter((route) => route !== "/").length === 96, "route surface count excluding root matches audit");
+  must(panelFiles.length === 114, "panel-related JSX count matches audit");
+  must(screenImports.length === 61, "route-backed screen component count matches audit");
+  must(routeLiterals.length === 99, "unique route literal count matches audit");
+  must(routeLiterals.filter((route) => route !== "/").length === 98, "route surface count excluding root matches audit");
 
   const grouped = groupRoutes(routeLiterals.filter((route) => route !== "/"));
   const expectedCounts = {
-    "Super Admin": 17,
+    "Super Admin": 19,
     "Room/Oda": 13,
     "Company/Firma": 14,
     "School": 14,
@@ -131,7 +131,7 @@ function main() {
   }
 
   const roleHeadings = [
-    "Super Admin (17)",
+    "Super Admin (19)",
     "Room / Oda (13)",
     "Company / Firma (14)",
     "School (14)",

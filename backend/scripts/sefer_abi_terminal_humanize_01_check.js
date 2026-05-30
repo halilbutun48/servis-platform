@@ -79,6 +79,7 @@ async function main() {
     'backend/artifacts/runtime-data/password-change-requirements.json',
     'backend/artifacts/runtime-data/username-directory.json',
     'backend/artifacts/runtime-data/agreement-route-refresh-requests.json',
+    'backend/artifacts/runtime-data/public-leads.json',
     'backend/artifacts/runtime-data/quality-review-decisions.json',
   ];
   const dirtyRuntimeData = dirtyRuntimeDataPaths(statusText);
