@@ -132,6 +132,8 @@
     "check:uxdensity01": "node backend/scripts/ux_density_01_panel_card_density_check.js",
     "check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js",
     "check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",
     "check:e2esmoke01": "node backend/scripts/e2e_smoke_01_demo_acceptance_check.js",
     "check:fieldlaunch01": "node backend/scripts/field_launch_pack_01_readiness_check.js",
@@ -164,5 +166,8 @@
     "verify:milestones:live": "node backend/scripts/run_m0_latest.js --integration-only --to latest --continue",
     "verify:ci": "npm run verify:repo",
     "verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }

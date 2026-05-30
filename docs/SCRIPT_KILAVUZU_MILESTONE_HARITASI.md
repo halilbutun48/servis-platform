@@ -230,6 +230,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Browser automation yoksa audit manuel/static smoke olarak raporlanır; `PASS`, `PASS-`, `UX-FIX` ve `BLOCKER` sınıfları görünür kalır.
 - Bu check ürün/business flow değiştirmez; yalnızca panel yoğunluğu, bucket doğruluğu ve okunabilirlik sorunlarını sınıflandırır.
 
+### UX-LIVE-PANEL-PREMIUM-SMOKE-01 [SMOKE]
+- `smoke:uxlivepanelpremium01` Playwright tabanlı canlı tarayıcı smoke runner'ıdır; desktop ve mobile viewport'ta public, room, company, super admin, driver, personel ve parent panellerini screenshot, console error ve page error sinyalleriyle toplar.
+- Komut: `node backend\scripts\ux_live_panel_premium_smoke_01.mjs`
+- `check:uxlivepanelpremiumsmoke01` bu smoke runner'ın doc / chain / artifact sınırlarını doğrular.
+- Smoke çıktıları `backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/` altında `report.json`, `report.md` ve screenshot klasörü olarak oluşur; artefact'ler commit'e girmez.
+- Panel sınıfları `PASS`, `PASS-`, `UX-FIX`, `BLOCKER`, `AUTH-BLOCKED` ve `NOT-FOUND` olarak raporlanır.
+- Bu milestone yalnızca canlı UX smoke ve premium panel okunabilirlik audit'i yapar; payment / billing / contract execute, invite send, user create, supplier verification auto ve settlement execute açılmaz.
+
 ### BOARDING-OPS-01A [CHECK]
 - `check:boardingops01a` günlük biniş değişiklikleri için readonly rota etki önizlemesini doğrular.
 - `NO_SERVICE_TODAY`, `ALTERNATE_STOP_TODAY` ve `TEMPORARY_BOARDING_NOTE` change türleri kişi / durak / km / süre / kapasite etkisiyle birlikte görünür; değişiklik uygulanmaz.

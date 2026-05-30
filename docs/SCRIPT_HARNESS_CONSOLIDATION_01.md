@@ -1,26 +1,26 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-05-28
+Tarih: 2026-05-30
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `318`
-- Toplam executable tracked file: `1092`
-- Combined registry row: `1410`
-- Root/backend/web/mobile package dağılımı: root `161`, backend `652`, web `87`, mobile `201`
+- Toplam package script entry: `320`
+- Toplam executable tracked file: `1094`
+- Combined registry row: `1414`
+- Root/backend/web/mobile package dağılımı: root `163`, backend `660`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `27`
+- Docs indexed: `28`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
-- UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-SMOKE-AUDIT-01`
-- UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`
+- UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-SMOKE-AUDIT-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
+- UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `360`
-- ACTIVE_CORE: `127`
+- ACTIVE: `363`
+- ACTIVE_CORE: `128`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
-- MANUAL_SMOKE: `8`
+- MANUAL_SMOKE: `9`
 - MANUAL_BROWSER_SMOKE: `0`
 - MANUAL_RELEASE_TOOL: `14`
 - ACTIVE_RELEASE_ONLY: `274`
@@ -33,11 +33,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `502`
+- NEEDS_REVIEW: `507`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
-- SKIP gerekçesi olan entry: `59`
-- Eski sistem term eşleşmesi: `250`
+- SKIP gerekçesi olan entry: `60`
+- Eski sistem term eşleşmesi: `255`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -45,16 +45,16 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 360 |
+| ACTIVE | 363 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 127 |
+| ACTIVE_CORE | 128 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
-| MANUAL_SMOKE | 8 |
-| NEEDS_REVIEW | 502 |
+| MANUAL_SMOKE | 9 |
+| NEEDS_REVIEW | 507 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -201,6 +201,8 @@ Repo: `servis-platform`
 | root:check:uxdensity01 | package.json | root | node backend/scripts/ux_density_01_panel_card_density_check.js | core | ACTIVE_CORE |  | UX-DENSITY-01 |  | Breaks canonical verification chain |  |
 | root:check:finaluxsmoke01 | package.json | root | node backend/scripts/final_ux_smoke_01_check.js | core | ACTIVE_CORE |  | FINAL-UX-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxlivepanelsmokeaudit01 | package.json | root | node backend/scripts/ux_live_panel_smoke_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXLIVEPANELSMOKEAUDIT-01 |  | Breaks canonical verification chain |  |
+| root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
+| root:check:uxlivepanelpremiumsmoke01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01_check.js | core | ACTIVE_CORE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:docsstate01 | package.json | root | node backend/scripts/docs_state_01_recent_product_closure_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-DOCSSTATE-01 |  | Breaks canonical verification chain |  |
 | root:check:e2esmoke01 | package.json | root | node backend/scripts/e2e_smoke_01_demo_acceptance_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-E-2-ESMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:fieldlaunch01 | package.json | root | node backend/scripts/field_launch_pack_01_readiness_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-FIELDLAUNCH-01 |  | Breaks canonical verification chain |  |
@@ -571,6 +573,7 @@ Repo: `servis-platform`
 | m9check.js | backend/scripts/m9check.js | backend | backend:m9check | review | NEEDS_REVIEW |  | M-9-CHECK |  | Owner or chain unclear |  |
 | marketplace_free_to_operate_01_check.js | backend/scripts/marketplace_free_to_operate_01_check.js | backend | root:check:marketplacefreetooperate01 | review | NEEDS_REVIEW |  | MARKETPLACE-FREE-TO-OPERATE-01-CHECK |  | Owner or chain unclear |  |
 | menu_readiness_cleanup_check.mjs | backend/scripts/menu_readiness_cleanup_check.mjs | backend |  | review | NEEDS_REVIEW |  | MENU-READINESS-CLEANUP-CHECK |  | Owner or chain unclear |  |
+| onboarding_review_01_check.js | backend/scripts/onboarding_review_01_check.js | backend | root:check:onboardingreview01 | review | NEEDS_REVIEW |  | ONBOARDING-REVIEW-01-CHECK |  | Owner or chain unclear |  |
 | op_01_operation_proof_service_proof_check.js | backend/scripts/op_01_operation_proof_service_proof_check.js | backend | root:check:op01 | product | ACTIVE |  | OP-01-OPERATION-PROOF-SERVICE-PROOF-CHECK |  | Owner or chain unclear | product check/helper |
 | op_02_manual_operator_proof_note_check.js | backend/scripts/op_02_manual_operator_proof_note_check.js | backend | root:check:op02 | product | ACTIVE |  | OP-02-MANUAL-OPERATOR-PROOF-NOTE-CHECK |  | Owner or chain unclear | product check/helper |
 | op_03_web_operation_proof_card_check.js | backend/scripts/op_03_web_operation_proof_card_check.js | backend | root:check:op03 | product | ACTIVE |  | OP-03-WEB-OPERATION-PROOF-CARD-CHECK |  | Owner or chain unclear | product check/helper |
@@ -584,6 +587,7 @@ Repo: `servis-platform`
 | pay_safe_01_payment_write_gate_check.js | backend/scripts/pay_safe_01_payment_write_gate_check.js | backend | root:check:paysafe01 | product | ACTIVE |  | PAY-SAFE-01-PAYMENT-WRITE-GATE-CHECK |  | Owner or chain unclear | product check/helper |
 | project_spec_v1_future_strengthening_coverage_check.js | backend/scripts/project_spec_v1_future_strengthening_coverage_check.js | backend | backend:spec16check | review | NEEDS_REVIEW |  | PROJECT-SPEC-V-1-FUTURE-STRENGTHENING-COVERAGE-CHECK |  | Owner or chain unclear |  |
 | public_landing_01_check.js | backend/scripts/public_landing_01_check.js | backend | root:check:publiclanding01 | review | NEEDS_REVIEW |  | PUBLIC-LANDING-01-CHECK |  | Owner or chain unclear |  |
+| public_landing_platform_first_01_check.js | backend/scripts/public_landing_platform_first_01_check.js | backend | root:check:publiclandingplatformfirst01 | review | NEEDS_REVIEW |  | PUBLIC-LANDING-PLATFORM-FIRST-01-CHECK |  | Owner or chain unclear |  |
 | qlt_01_quality_provider_readiness_check.js | backend/scripts/qlt_01_quality_provider_readiness_check.js | backend | root:check:qlt01 | product | ACTIVE |  | QLT-01-QUALITY-PROVIDER-READINESS-CHECK |  | Owner or chain unclear | product check/helper |
 | qlt_02_quality_draft_score_check.js | backend/scripts/qlt_02_quality_draft_score_check.js | backend | root:check:qlt02 | product | ACTIVE |  | QLT-02-QUALITY-DRAFT-SCORE-CHECK |  | Owner or chain unclear | product check/helper |
 | qlt_03_quality_review_decision_check.js | backend/scripts/qlt_03_quality_review_decision_check.js | backend | root:check:qlt03 | product | ACTIVE |  | QLT-03-QUALITY-REVIEW-DECISION-CHECK |  | Owner or chain unclear | product check/helper |
@@ -609,7 +613,8 @@ Repo: `servis-platform`
 | sefer_abi_terminal_humanize_01_check.js | backend/scripts/sefer_abi_terminal_humanize_01_check.js | backend | root:check:seferabiterminalhumanize01 | review | NEEDS_REVIEW |  | SEFER-ABI-TERMINAL-HUMANIZE-01-CHECK |  | Owner or chain unclear |  |
 | sefer_score_01_check.js | backend/scripts/sefer_score_01_check.js | backend | root:check:seferscore01 | review | NEEDS_REVIEW |  | SEFER-SCORE-01-CHECK |  | Owner or chain unclear |  |
 | session_safe_panels_cleanup_hotfix_check.mjs | backend/scripts/session_safe_panels_cleanup_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | SESSION-SAFE-PANELS-CLEANUP-HOTFIX-CHECK |  | Owner or chain unclear |  |
-| smoke.js | backend/scripts/smoke.js | backend | backend:current:surface, backend:m91:smoke, backend:m91:smoke:agreement, backend:m91:smoke:route-preview, backend:smoke, root:check:e2esmoke01, root:check:finaluxsmoke01, root:check:m95e26, root:check:uxlivepanelsmokeaudit01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | SMOKE |  | Owner or chain unclear |  |
+| shift_dispatch_approval_fix_01_check.js | backend/scripts/shift_dispatch_approval_fix_01_check.js | backend | root:check:shiftdispatchapprovalfix01 | review | NEEDS_REVIEW |  | SHIFT-DISPATCH-APPROVAL-FIX-01-CHECK |  | Owner or chain unclear |  |
+| smoke.js | backend/scripts/smoke.js | backend | backend:current:surface, backend:m91:smoke, backend:m91:smoke:agreement, backend:m91:smoke:route-preview, backend:smoke, root:check:e2esmoke01, root:check:finaluxsmoke01, root:check:m95e26, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:smoke:m98e4, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | SMOKE |  | Owner or chain unclear |  |
 | step06_stabil_check.js | backend/scripts/step06_stabil_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-06-STABIL-CHECK |  | Owner or chain unclear |  |
 | step1_security_foundation_check.js | backend/scripts/step1_security_foundation_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-SECURITY-FOUNDATION-CHECK |  | Owner or chain unclear |  |
 | step1_totp_stepup_check.js | backend/scripts/step1_totp_stepup_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-TOTP-STEPUP-CHECK |  | Owner or chain unclear |  |
@@ -623,12 +628,15 @@ Repo: `servis-platform`
 | ux_company_panels_final_polish_01_check.js | backend/scripts/ux_company_panels_final_polish_01_check.js | backend | root:check:uxcompanypanelsfinalpolish01 | product | ACTIVE |  | FINAL |  | Owner or chain unclear | product check/helper |
 | ux_company_quality_panel_tabs_01_check.js | backend/scripts/ux_company_quality_panel_tabs_01_check.js | backend | root:check:uxcompanyqualitytabs01 | product | ACTIVE |  | UX-COMPANY-QUALITY-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_shifts_tabs_01_check.js | backend/scripts/ux_company_shifts_tabs_01_check.js | backend | root:check:uxcompanyshiftstabs01 | product | ACTIVE |  | UX-COMPANY-SHIFTS-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_contract_conversion_ops_bridge_clarity_01_check.js | backend/scripts/ux_contract_conversion_ops_bridge_clarity_01_check.js | backend | root:check:uxcontractconversionopsbridgeclarity01 | product | ACTIVE |  | UX-CONTRACT-CONVERSION-OPS-BRIDGE-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_copilot_persona_01_check.js | backend/scripts/ux_copilot_persona_01_check.js | backend | root:check:uxcopilotpersona01 | product | ACTIVE |  | UX-COPILOT-PERSONA-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_copilot_smart_chips_01_check.js | backend/scripts/ux_copilot_smart_chips_01_check.js | backend | root:check:uxcopilotsmartchips01 | product | ACTIVE |  | UX-COPILOT-SMART-CHIPS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_copilot_terminal_01_check.js | backend/scripts/ux_copilot_terminal_01_check.js | backend | root:check:uxcopilotterminal01 | product | ACTIVE |  | UX-COPILOT-TERMINAL-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_density_01_panel_card_density_check.js | backend/scripts/ux_density_01_panel_card_density_check.js | backend | root:check:uxdensity01 | product | ACTIVE |  | UX-DENSITY-01-PANEL-CARD-DENSITY-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_kvkk_01_compact_boundary_check.js | backend/scripts/ux_kvkk_01_compact_boundary_check.js | backend | root:check:uxkvkk01 | product | ACTIVE |  | UX-KVKK-01-COMPACT-BOUNDARY-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_live_map_tabs_simplify_01_check.js | backend/scripts/ux_live_map_tabs_simplify_01_check.js | backend | root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01 | product | ACTIVE |  | UX-LIVE-MAP-TABS-SIMPLIFY-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_live_panel_premium_smoke_01.mjs | backend/scripts/ux_live_panel_premium_smoke_01.mjs | backend | root:check:uxlivepanelpremiumsmoke01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Owner or chain unclear |  |
+| ux_live_panel_premium_smoke_01_check.js | backend/scripts/ux_live_panel_premium_smoke_01_check.js | backend | root:check:uxlivepanelpremiumsmoke01 | product | ACTIVE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_nav_01_premium_navdock_check.js | backend/scripts/ux_nav_01_premium_navdock_check.js | backend | root:check:uxnav01 | product | ACTIVE |  | UX-NAV-01-PREMIUM-NAVDOCK-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_inventory_02a_check.js | backend/scripts/ux_panel_inventory_02a_check.js | backend | root:check:uxpanelinventory02a | product | ACTIVE |  | UX-PANEL-INVENTORY-02-A-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_layout_width_02c_fix_01_check.js | backend/scripts/ux_panel_layout_width_02c_fix_01_check.js | backend | root:check:uxpanellayoutwidth02cfix01 | product | ACTIVE |  | UX-PANEL-LAYOUT-WIDTH-02-C-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -644,6 +652,7 @@ Repo: `servis-platform`
 | ux_room_ops_relationship_polish_01_check.js | backend/scripts/ux_room_ops_relationship_polish_01_check.js | backend | root:check:uxroomopsrelationshippolish01 | product | ACTIVE |  | UX-ROOM-OPS-RELATIONSHIP-POLISH-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_shifts_tabs_01_check.js | backend/scripts/ux_room_shifts_tabs_01_check.js | backend | root:check:uxroomshiftstabs01 | product | ACTIVE |  | UX-ROOM-SHIFTS-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_vehicles_telematics_counts_fix_check.js | backend/scripts/ux_room_vehicles_telematics_counts_fix_check.js | backend | root:check:uxroomvehiclestelematicsfix | product | ACTIVE |  | UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_route_impact_preview_compact_01_check.js | backend/scripts/ux_route_impact_preview_compact_01_check.js | backend | root:check:uxrouteimpactpreviewcompact01 | product | ACTIVE |  | UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_school_organization_panels_01_check.js | backend/scripts/ux_school_organization_panels_01_check.js | backend | root:check:uxschoolorganizationpanels01 | product | ACTIVE |  | UX-SCHOOL-ORGANIZATION-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_sefer_abi_launcher_01_check.js | backend/scripts/ux_sefer_abi_launcher_01_check.js | backend | root:check:uxseferabilauncher01 | product | ACTIVE |  | UX-SEFER-ABI-LAUNCHER-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_audit_panel_01_check.js | backend/scripts/ux_superadmin_audit_panel_01_check.js | backend | root:check:uxsuperadminauditpanel01 | product | ACTIVE |  | UX-SUPERADMIN-AUDIT-PANEL-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -798,7 +807,7 @@ Repo: `servis-platform`
 | geocode.js | backend/src/routes/geocode.js | backend |  | review | NEEDS_REVIEW |  | GEOCODE |  | Owner or chain unclear |  |
 | gps.js | backend/src/routes/gps.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
-| live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelsmokeaudit01, root:check:uxsuperadminlivemonitoring01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
+| live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
 | me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
@@ -817,6 +826,7 @@ Repo: `servis-platform`
 | pilotLaunchGate.js | backend/src/routes/pilotLaunchGate.js | backend |  | review | NEEDS_REVIEW |  | PILOT-LAUNCH-GATE |  | Owner or chain unclear |  |
 | planBuilder.js | backend/src/routes/planBuilder.js | backend |  | review | NEEDS_REVIEW |  | PLAN-BUILDER |  | Owner or chain unclear |  |
 | public.js | backend/src/routes/public.js | backend | root:check:publiclanding01, root:check:publiclandingplatformfirst01 | review | NEEDS_REVIEW |  | PUBLIC |  | Owner or chain unclear |  |
+| publicLeadReview.js | backend/src/routes/publicLeadReview.js | backend |  | review | NEEDS_REVIEW |  | PUBLIC-LEAD-REVIEW |  | Owner or chain unclear |  |
 | reports.js | backend/src/routes/reports.js | backend |  | review | NEEDS_REVIEW |  | REPORTS |  | Owner or chain unclear |  |
 | requests.js | backend/src/routes/requests.js | backend |  | review | NEEDS_REVIEW |  | REQUESTS |  | Owner or chain unclear |  |
 | rooms.js | backend/src/routes/rooms.js | backend |  | review | NEEDS_REVIEW |  | ROOMS |  | Owner or chain unclear |  |
@@ -1553,6 +1563,7 @@ Repo: `servis-platform`
 | root:check:m98e2b | package.json | root | node backend/scripts/m98_e2b_personel_access_backend_check.js | auth-session | REQUIRES_AUTH_SESSION | REQUIRES_AUTH_SESSION | ROOT-CHECK-M-98-E-2-B |  | Fails without auth/session |  |
 | root:check:m98e2d | package.json | root | npm --prefix mobile run check:m98e2d | auth-session | REQUIRES_AUTH_SESSION | REQUIRES_AUTH_SESSION | ROOT-CHECK-M-98-E-2-D |  | Fails without auth/session |  |
 | root:check:m98e5 | package.json | root | node backend/scripts/m98_e5_code_pin_manual_acceptance_check.js | device | REQUIRES_DEVICE | REQUIRES_DEVICE | ROOT-CHECK-M-98-E-5 |  | Fails without device/emulator |  |
+| root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
 | backend:smoke | backend/package.json | backend | node scripts/smoke.js | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | BACKEND-SMOKE |  | Loses manual smoke entrypoint |  |
 | backend:m91:smoke | backend/package.json | backend | npm run m91:smoke:agreement && npm run m91:smoke:route-preview | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | BACKEND-M-91-SMOKE |  | Loses manual smoke entrypoint |  |
 | backend:current:surface | backend/package.json | backend | npm run smoke && npm run m91:smoke && npm run m91a:smoke | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | BACKEND-CURRENT-SURFACE |  | Loses manual smoke entrypoint |  |
@@ -1641,6 +1652,7 @@ Repo: `servis-platform`
 | root:check:m98e2d | package.json | REQUIRES_AUTH_SESSION | REQUIRES_AUTH_SESSION | Fails without auth/session |  |
 | root:check:m98e5 | package.json | REQUIRES_DEVICE | REQUIRES_DEVICE | Fails without device/emulator |  |
 | root:check:uxroomagreementstabs01 | package.json | LEGACY_COMPAT | LEGACY_COMPAT_ONLY | Breaks compatibility alias; canonical replacement exists | compat alias |
+| root:smoke:uxlivepanelpremium01 | package.json | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | Loses manual smoke entrypoint |  |
 | root:verify:snapshot | package.json | ACTIVE_RELEASE_ONLY | RELEASE_ONLY | Breaks release / evidence / closure gate |  |
 | root:verify:docs | package.json | ACTIVE_RELEASE_ONLY | RELEASE_ONLY | Breaks release / evidence / closure gate |  |
 | root:verify:hot | package.json | ACTIVE_RELEASE_ONLY | RELEASE_ONLY | Breaks release / evidence / closure gate |  |

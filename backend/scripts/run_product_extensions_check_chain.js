@@ -111,6 +111,7 @@ const steps = [
   'check:uxdensity01',
   'check:finaluxsmoke01',
   'check:uxlivepanelsmokeaudit01',
+  'check:uxlivepanelpremiumsmoke01',
   'check:livetrackingfinal01',
   'check:driverflowfinal01',
 ];

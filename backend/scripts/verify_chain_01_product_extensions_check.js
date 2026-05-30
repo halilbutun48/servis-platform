@@ -164,6 +164,8 @@ function main() {
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
   must(pkg, '"check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js"', 'package.json exposes check:finaluxsmoke01');
   must(pkg, '"check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js"', 'package.json exposes check:uxlivepanelsmokeaudit01');
+  must(pkg, '"smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs"', 'package.json exposes smoke:uxlivepanelpremium01');
+  must(pkg, '"check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js"', 'package.json exposes check:uxlivepanelpremiumsmoke01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 
@@ -267,6 +269,7 @@ function main() {
     'check:uxdensity01',
     'check:finaluxsmoke01',
     'check:uxlivepanelsmokeaudit01',
+    'check:uxlivepanelpremiumsmoke01',
     'check:livetrackingfinal01',
     'check:driverflowfinal01',
 ], 'product extensions runner order');
@@ -389,6 +392,9 @@ function main() {
   must(guide, 'UX-LIVE-PANEL-SMOKE-AUDIT-01', 'script guide mentions UX-LIVE-PANEL-SMOKE-AUDIT-01');
   must(guide, 'check:uxlivepanelsmokeaudit01', 'script guide exposes check:uxlivepanelsmokeaudit01');
   must(guide, 'node backend\\scripts\\ux_live_panel_smoke_audit_01_check.js', 'script guide includes live panel smoke audit command');
+  must(guide, 'UX-LIVE-PANEL-PREMIUM-SMOKE-01', 'script guide mentions UX-LIVE-PANEL-PREMIUM-SMOKE-01');
+  must(guide, 'check:uxlivepanelpremiumsmoke01', 'script guide exposes check:uxlivepanelpremiumsmoke01');
+  must(guide, 'node backend\\scripts\\ux_live_panel_premium_smoke_01.mjs', 'script guide includes premium smoke command');
   must(guide, 'BOARDING-OPS-01A', 'script guide mentions BOARDING-OPS-01A');
   must(guide, 'check:boardingops01a', 'script guide exposes check:boardingops01a');
   must(guide, 'BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01', 'script guide mentions BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01');

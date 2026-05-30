@@ -1,0 +1,100 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "../..");
+
+const read = (relPath) => fs.readFileSync(path.join(repoRoot, relPath), "utf8");
+const must = (cond, label) => {
+  if (!cond) throw new Error(`FAIL ${label}`);
+  console.log(`OK ${label}`);
+};
+const has = (text, needle) => String(text).includes(needle);
+const notHas = (text, needle) => !String(text).includes(needle);
+
+const pkg = read("package.json");
+const smoke = read("backend/scripts/ux_live_panel_premium_smoke_01.mjs");
+const doc = read("docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md");
+const runner = read("backend/scripts/run_product_extensions_check_chain.js");
+const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
+const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
+const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
+const gitCached = execFileSync("git", ["diff", "--cached", "--name-only"], { cwd: repoRoot, encoding: "utf8", shell: true }).trim();
+const gitIgnore = read(".gitignore");
+const packageLock = fs.existsSync(path.join(repoRoot, "package-lock.json")) ? read("package-lock.json") : "";
+
+must(has(pkg, '"smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs"'), "package.json exposes smoke:uxlivepanelpremium01");
+must(has(pkg, '"check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js"'), "package.json exposes check:uxlivepanelpremiumsmoke01");
+must(has(packageLock, "@playwright/test"), "package-lock keeps @playwright/test");
+
+must(has(smoke, "WEB_BASE_URL"), "smoke script reads WEB_BASE_URL");
+must(has(smoke, "API_BASE_URL"), "smoke script reads API_BASE_URL");
+must(has(smoke, "HEADLESS"), "smoke script reads HEADLESS");
+must(has(smoke, "SLOW_MO"), "smoke script reads SLOW_MO");
+must(has(smoke, "browser-smoke") && has(smoke, "UX_LIVE_PANEL_PREMIUM_SMOKE_01"), "smoke script writes browser-smoke artifact root");
+must(has(smoke, "report.json"), "smoke script writes report.json");
+must(has(smoke, "report.md"), "smoke script writes report.md");
+must(has(smoke, "desktop"), "smoke script includes desktop viewport");
+must(has(smoke, "mobile"), "smoke script includes mobile viewport");
+must(has(smoke, "console"), "smoke script captures console errors");
+must(has(smoke, "pageerror"), "smoke script captures page errors");
+must(has(smoke, '!["BLOCKER", "NOT-FOUND"].includes(row.status)'), "smoke command only fails on blocker and 404 outcomes");
+must(notHas(smoke, '!["BLOCKER", "AUTH-BLOCKED", "NOT-FOUND"].includes(row.status)'), "smoke command no longer fails on AUTH-BLOCKED alone");
+
+must(has(doc, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"), "docs title present");
+must(has(doc, "smoke:uxlivepanelpremium01"), "docs expose smoke alias");
+must(has(doc, "check:uxlivepanelpremiumsmoke01"), "docs expose check alias");
+must(has(doc, "backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/"), "docs document artifact root");
+must(has(doc, "report.json"), "docs mention report.json");
+must(has(doc, "report.md"), "docs mention report.md");
+must(has(doc, "PASS"), "docs keep PASS status");
+must(has(doc, "PASS-"), "docs keep PASS- status");
+must(has(doc, "UX-FIX"), "docs keep UX-FIX status");
+must(has(doc, "BLOCKER"), "docs keep BLOCKER status");
+must(has(doc, "AUTH-BLOCKED"), "docs keep AUTH-BLOCKED status");
+must(has(doc, "NOT-FOUND"), "docs keep NOT-FOUND status");
+must(has(doc, "AUTH-BLOCKED raporlanır; erişim/session/auth notudur; tek başına smoke komutunu fail ettirmez."), "docs explain AUTH-BLOCKED as a non-failing access note");
+must(has(doc, "BLOCKER veya NOT-FOUND varsa smoke komutu fail olur."), "docs explain BLOCKER and NOT-FOUND as failing outcomes");
+must(has(doc, "WEB_BASE_URL=http://127.0.0.1:5173"), "docs document WEB_BASE_URL");
+must(has(doc, "API_BASE_URL=http://127.0.0.1:3000"), "docs document API_BASE_URL");
+must(has(doc, "npx playwright install chromium"), "docs document chromium install");
+must(has(doc, "npm i -D @playwright/test"), "docs document playwright dependency install");
+must(has(doc, "payment execute"), "docs keep forbidden payment execute boundary");
+must(has(doc, "billing execute"), "docs keep forbidden billing execute boundary");
+must(has(doc, "collection execute"), "docs keep forbidden collection execute boundary");
+must(has(doc, "contract execute/sign"), "docs keep forbidden contract execute boundary");
+must(has(doc, "invite send"), "docs keep forbidden invite send boundary");
+must(has(doc, "user create"), "docs keep forbidden user create boundary");
+must(has(doc, "supplier verification auto"), "docs keep forbidden supplier verification boundary");
+must(has(doc, "settlement execute"), "docs keep forbidden settlement execute boundary");
+
+must(has(guide, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"), "milestone guide mentions premium smoke milestone");
+must(has(guide, "check:uxlivepanelpremiumsmoke01"), "milestone guide exposes premium smoke check");
+must(has(guide, "node backend\\scripts\\ux_live_panel_premium_smoke_01.mjs"), "milestone guide includes premium smoke command");
+must(has(guide, "backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01"), "milestone guide documents browser-smoke artifacts");
+
+must(has(runner, "check:uxlivepanelpremiumsmoke01"), "product extensions runner includes premium smoke check");
+must(has(verify, "check:uxlivepanelpremiumsmoke01"), "verify chain includes premium smoke check");
+must(has(harnessCheck, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"), "script harness check knows premium smoke milestone");
+must(has(harnessCheck, "docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md"), "script harness check knows premium smoke doc");
+must(has(harnessCheck, "check:uxlivepanelpremiumsmoke01"), "script harness check knows premium smoke alias");
+must(has(harnessCheck, "smoke:uxlivepanelpremium01"), "script harness check knows premium smoke runner");
+must(has(harnessDoc, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"), "script harness doc mentions premium smoke milestone");
+must(has(harnessDoc, "docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md"), "script harness doc registers premium smoke doc");
+
+must(has(gitIgnore, "backend/artifacts/browser-smoke/"), "gitignore keeps browser-smoke artifacts ignored");
+must(notHas(gitCached, "backend/artifacts/runtime-data"), "runtime-data is not staged");
+must(notHas(gitCached, "public-leads.json"), "public-leads runtime data is not staged");
+must(notHas(gitCached, "backend/artifacts/browser-smoke"), "browser-smoke artifacts are not staged");
+
+must(notHas(doc, "payment execute açma"), "doc avoids action wording for payment execute");
+must(notHas(doc, "billing execute açma"), "doc avoids action wording for billing execute");
+must(notHas(doc, "invite send açma"), "doc avoids action wording for invite send");
+
+console.log("=== UX-LIVE-PANEL-PREMIUM-SMOKE-01 CHECK PASS ===");

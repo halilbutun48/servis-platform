@@ -36,3 +36,4 @@ README_M82_*_PATCH_*.txt
 web/dist/
 pack_living_*.log
 README_M*_OVERLAY*.txt
+backend/artifacts/browser-smoke/
