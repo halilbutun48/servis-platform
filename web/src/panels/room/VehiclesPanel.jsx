@@ -32,6 +32,16 @@ import {
   RoomVehicleManageSection,
 } from "./roomVehiclesPanelSections";
 
+function upperTr(value) {
+  const text = String(value ?? "").trim();
+  return text ? text.toLocaleUpperCase("tr-TR") : "";
+}
+
+function upperTrOrNull(value) {
+  const text = String(value ?? "").trim();
+  return text ? text.toLocaleUpperCase("tr-TR") : null;
+}
+
 export default function VehiclesPanel() {
   const { token } = useSession();
 
@@ -267,18 +277,18 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     setErr("");
     try {
       const body = {
-        plate: plate.trim(),
+        plate: upperTr(plate),
         capacity: Number(capacity),
         speedLimitKmh: Number(speedLimitKmh),
       };
 
       if (type) body.type = type;
-      if (brand.trim()) body.brand = brand.trim();
-      if (model.trim()) body.model = model.trim();
+      if (brand.trim()) body.brand = upperTr(brand);
+      if (model.trim()) body.model = upperTr(model);
       if (String(modelYear).trim()) body.modelYear = Number(modelYear);
-      if (color.trim()) body.color = color.trim();
-      if (vin.trim()) body.vin = vin.trim();
-      if (note.trim()) body.note = note.trim();
+      if (color.trim()) body.color = upperTr(color);
+      if (vin.trim()) body.vin = upperTr(vin);
+      if (note.trim()) body.note = upperTr(note);
 
       if (inspectionDueAt) body.inspectionDueAt = isoFromTRDateInput(inspectionDueAt);
       if (lastServiceAt) body.lastServiceAt = isoFromTRDateInput(lastServiceAt);
@@ -557,17 +567,17 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     setErr("");
     try {
       const body = {
-        plate: String(editForm.plate || "").trim(),
+        plate: upperTr(editForm.plate),
         capacity: Number(editForm.capacity),
         speedLimitKmh: Number(editForm.speedLimitKmh),
 
         type: editForm.type || null,
-        brand: editForm.brand?.trim() || null,
-        model: editForm.model?.trim() || null,
+        brand: upperTrOrNull(editForm.brand),
+        model: upperTrOrNull(editForm.model),
         modelYear: String(editForm.modelYear).trim() ? Number(editForm.modelYear) : null,
-        color: editForm.color?.trim() || null,
-        vin: editForm.vin?.trim() || null,
-        note: editForm.note?.trim() || null,
+        color: upperTrOrNull(editForm.color),
+        vin: upperTrOrNull(editForm.vin),
+        note: upperTrOrNull(editForm.note),
 
         inspectionDueAt: editForm.inspectionDueAt ? isoFromTRDateInput(editForm.inspectionDueAt) : null,
         lastServiceAt: editForm.lastServiceAt ? isoFromTRDateInput(editForm.lastServiceAt) : null,

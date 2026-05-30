@@ -143,6 +143,7 @@ function main() {
   must(pkg, '"check:uxpanelinventory02a"', 'package.json keeps check:uxpanelinventory02a');
   must(pkg, '"check:uxpanelstructure02b"', 'package.json keeps check:uxpanelstructure02b');
   must(pkg, '"check:uxroomvehiclestelematicsfix"', 'package.json exposes check:uxroomvehiclestelematicsfix');
+  must(pkg, '"check:roomvehicledriveruppercase01": "node backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js"', 'package.json exposes check:roomvehicledriveruppercase01');
   must(pkg, '"check:uxroomopspaneltabs01"', 'package.json exposes check:uxroomopspaneltabs01');
   must(pkg, '"check:uxroomopsrelationshippolish01"', 'package.json exposes check:uxroomopsrelationshippolish01');
   must(pkg, '"check:uxroomshiftstabs01"', 'package.json exposes check:uxroomshiftstabs01');
@@ -251,6 +252,7 @@ function main() {
     'check:uxpanelinventory02a',
     'check:uxpanelstructure02b',
     'check:uxroomvehiclestelematicsfix',
+    'check:roomvehicledriveruppercase01',
     'check:uxroomopspaneltabs01',
     'check:uxroomopsrelationshippolish01',
     'check:uxroomshiftstabs01',
@@ -362,6 +364,9 @@ function main() {
   must(guide, 'check:uxpanelinventory02a', 'script guide exposes check:uxpanelinventory02a');
   must(guide, 'check:uxpanelstructure02b', 'script guide exposes check:uxpanelstructure02b');
   must(guide, 'check:uxroomvehiclestelematicsfix', 'script guide exposes check:uxroomvehiclestelematicsfix');
+  must(guide, 'ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01', 'script guide mentions room uppercase normalization milestone');
+  must(guide, 'check:roomvehicledriveruppercase01', 'script guide exposes check:roomvehicledriveruppercase01');
+  must(guide, 'node backend\\scripts\\room_vehicle_driver_uppercase_normalization_01_check.js', 'script guide includes room vehicle driver uppercase normalization command');
   must(guide, 'UX-ROOM-OPS-PANEL-TABS-01', 'script guide mentions UX-ROOM-OPS-PANEL-TABS-01');
   must(guide, 'check:uxroomopspaneltabs01', 'script guide exposes check:uxroomopspaneltabs01');
   must(guide, 'UX-ROOM-OPS-RELATIONSHIP-POLISH-01', 'script guide mentions UX-ROOM-OPS-RELATIONSHIP-POLISH-01');

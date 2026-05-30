@@ -157,7 +157,13 @@ export function RoomVehicleEditModal({ editOpen, busy, setEditOpen, editTemplate
               ))}
             </select>
           </div>
-          <div className="col"><label className="muted">Plaka</label><input value={editForm.plate} onChange={(e) => setEditForm((p) => ({ ...p, plate: e.target.value }))} /></div>
+          <div className="col">
+            <label className="muted">Plaka</label>
+            <input
+              value={editForm.plate}
+              onChange={(e) => setEditForm((p) => ({ ...p, plate: String(e.target.value || "").toLocaleUpperCase("tr-TR") }))}
+            />
+          </div>
           <div className="col"><label className="muted">Kapasite</label><input type="number" value={editForm.capacity} onChange={(e) => setEditForm((p) => ({ ...p, capacity: e.target.value }))} /></div>
           <div className="col"><label className="muted">Araç tipi</label><select value={editForm.type} onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value }))}>{VEHICLE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
           <div className="col"><label className="muted">Marka</label><input value={editForm.brand} onChange={(e) => setEditForm((p) => ({ ...p, brand: e.target.value }))} /></div>

@@ -5,21 +5,23 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `321`
-- Toplam executable tracked file: `1095`
-- Combined registry row: `1416`
-- Root/backend/web/mobile package dağılımı: root `164`, backend `661`, web `87`, mobile `201`
+- Toplam package script entry: `322`
+- Toplam executable tracked file: `1096`
+- Combined registry row: `1418`
+- Root/backend/web/mobile package dağılımı: root `165`, backend `662`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `29`
+- Docs indexed: `30`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-SMOKE-AUDIT-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
 - Super Admin clarity milestone: `UX-SUPERADMIN-PANEL-CLARITY-01`
 - Super Admin clarity docs: `docs/UX_SUPERADMIN_PANEL_CLARITY_01.md`
+- Room vehicle/driver uppercase milestone: `ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01`
+- Room vehicle/driver uppercase docs: `docs/ROOM_VEHICLE_DRIVER_UPPERCASE_NORMALIZATION_01.md`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
 - ACTIVE: `364`
-- ACTIVE_CORE: `129`
+- ACTIVE_CORE: `130`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -35,7 +37,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `507`
+- NEEDS_REVIEW: `508`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `60`
@@ -49,14 +51,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 364 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 129 |
+| ACTIVE_CORE | 130 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 9 |
-| NEEDS_REVIEW | 507 |
+| NEEDS_REVIEW | 508 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -181,6 +183,7 @@ Repo: `servis-platform`
 | root:check:uxpanelinventory02a | package.json | root | node backend/scripts/ux_panel_inventory_02a_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXPANELINVENTORY-02-A |  | Breaks canonical verification chain |  |
 | root:check:uxpanelstructure02b | package.json | root | node backend/scripts/ux_panel_structure_02b_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXPANELSTRUCTURE-02-B |  | Breaks canonical verification chain |  |
 | root:check:uxroomvehiclestelematicsfix | package.json | root | node backend/scripts/ux_room_vehicles_telematics_counts_fix_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMVEHICLESTELEMATICSFIX |  | Breaks canonical verification chain |  |
+| root:check:roomvehicledriveruppercase01 | package.json | root | node backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js | core | ACTIVE_CORE |  | ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01 |  | Breaks canonical verification chain |  |
 | root:check:uxroomopspaneltabs01 | package.json | root | node backend/scripts/ux_room_ops_panel_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMOPSPANELTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxroomopsrelationshippolish01 | package.json | root | node backend/scripts/ux_room_ops_relationship_polish_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMOPSRELATIONSHIPPOLISH-01 |  | Breaks canonical verification chain |  |
 | root:check:uxroomdrivervehiclelinkdedup01 | package.json | root | node backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXROOMDRIVERVEHICLELINKDEDUP-01 |  | Owner or chain unclear |  |
@@ -603,6 +606,7 @@ Repo: `servis-platform`
 | repo_deep_audit.js | backend/scripts/repo_deep_audit.js | backend |  | review | NEEDS_REVIEW |  | REPO-DEEP-AUDIT |  | Owner or chain unclear |  |
 | repo_js_syntax_scan.js | backend/scripts/repo_js_syntax_scan.js | backend |  | review | NEEDS_REVIEW |  | REPO-JS-SYNTAX-SCAN |  | Owner or chain unclear |  |
 | roadmap_lock_ai_marketplace_01_check.js | backend/scripts/roadmap_lock_ai_marketplace_01_check.js | backend | root:check:roadmaplockaimarketplace01 | review | NEEDS_REVIEW |  | ROADMAP-LOCK-AI-MARKETPLACE-01-CHECK |  | Owner or chain unclear |  |
+| room_vehicle_driver_uppercase_normalization_01_check.js | backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js | backend | root:check:roomvehicledriveruppercase01 | review | NEEDS_REVIEW |  | ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01-CHECK |  | Owner or chain unclear |  |
 | route_change_final_01_check.js | backend/scripts/route_change_final_01_check.js | backend | root:check:routechangefinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | run_backend_lint.js | backend/scripts/run_backend_lint.js | backend | backend:lint | backend-lint | ACTIVE_CORE |  | RUN-BACKEND-LINT |  | Owner or chain unclear | canonical runner |
 | run_m0_latest.js | backend/scripts/run_m0_latest.js | backend | backend:m91:milestones, backend:milestones:static, root:verify:milestones, root:verify:milestones:live | verify:repo | ACTIVE_CORE |  | RUN-M-0-LATEST |  | Owner or chain unclear | canonical runner |
@@ -804,7 +808,7 @@ Repo: `servis-platform`
 | companyHub.js | backend/src/routes/companyHub.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-HUB |  | Owner or chain unclear |  |
 | companyOverview.js | backend/src/routes/companyOverview.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-OVERVIEW |  | Owner or chain unclear |  |
 | companyPersonels.js | backend/src/routes/companyPersonels.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-PERSONELS |  | Owner or chain unclear |  |
-| driver.js | backend/src/routes/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
+| driver.js | backend/src/routes/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | drivers.js | backend/src/routes/drivers.js | backend |  | review | NEEDS_REVIEW |  | DRIVERS |  | Owner or chain unclear |  |
 | eta.js | backend/src/routes/eta.js | backend | mobile:check:m49, mobile:check:m49.1, mobile:check:m95b, root:check:etaosrm01, root:check:etaosrm02, root:check:etasanity01, root:check:pay01c | review | NEEDS_REVIEW |  | ETA |  | Owner or chain unclear |  |
 | fieldAcceptance.js | backend/src/routes/fieldAcceptance.js | backend |  | review | NEEDS_REVIEW |  | FIELD-ACCEPTANCE |  | Owner or chain unclear |  |
@@ -837,11 +841,11 @@ Repo: `servis-platform`
 | routeTemplates.js | backend/src/routes/routeTemplates.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-TEMPLATES |  | Owner or chain unclear |  |
 | schoolParentInvites.js | backend/src/routes/schoolParentInvites.js | backend |  | review | NEEDS_REVIEW |  | SCHOOL-PARENT-INVITES |  | Owner or chain unclear |  |
 | company.js | backend/src/routes/shifts/company.js | backend | root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
-| driver.js | backend/src/routes/shifts/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
+| driver.js | backend/src/routes/shifts/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
 | index.js | backend/src/routes/shifts/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | people.js | backend/src/routes/shifts/people.js | backend |  | review | NEEDS_REVIEW |  | PEOPLE |  | Owner or chain unclear |  |
-| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
+| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
 | roomReassignNotifications.js | backend/src/routes/shifts/roomReassignNotifications.js | backend |  | review | NEEDS_REVIEW |  | ROOM-REASSIGN-NOTIFICATIONS |  | Owner or chain unclear |  |
 | roomShared.js | backend/src/routes/shifts/roomShared.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SHARED |  | Owner or chain unclear |  |
 | schemas.js | backend/src/routes/shifts/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
@@ -902,7 +906,7 @@ Repo: `servis-platform`
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
-| z.js | backend/src/z.js | backend | root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

@@ -11,6 +11,14 @@ export function vehiclesRouter(io) {
   const r = express.Router();
 
   const hasKey = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+  const upperTr = (value) => {
+    const text = String(value ?? "").trim();
+    return text ? text.toLocaleUpperCase("tr-TR") : "";
+  };
+  const upperTrOrNull = (value) => {
+    const text = String(value ?? "").trim();
+    return text ? text.toLocaleUpperCase("tr-TR") : null;
+  };
 
   const dt = (v) => {
     if (v == null || v === "") return null;
@@ -335,7 +343,7 @@ export function vehiclesRouter(io) {
 
     // required-ish fields: null/empty göndermeyi engelle
     if (has("plate")) {
-      const p = String(b.plate || "").trim();
+      const p = upperTr(b.plate);
       if (p.length < 3) return res.status(400).json({ code: "BAD_REQUEST", message: "Plate too short" });
       data.plate = p;
     }
@@ -352,12 +360,12 @@ export function vehiclesRouter(io) {
 
     // optional meta (null ile temizlenebilir)
     if (has("type")) data.type = b.type ? String(b.type) : null;
-    if (has("brand")) data.brand = b.brand ? String(b.brand).trim() : null;
-    if (has("model")) data.model = b.model ? String(b.model).trim() : null;
+    if (has("brand")) data.brand = upperTrOrNull(b.brand);
+    if (has("model")) data.model = upperTrOrNull(b.model);
     if (has("modelYear")) data.modelYear = b.modelYear == null || b.modelYear === "" ? null : Number(b.modelYear);
-    if (has("color")) data.color = b.color ? String(b.color).trim() : null;
-    if (has("vin")) data.vin = b.vin ? String(b.vin).trim() : null;
-    if (has("note")) data.note = b.note ? String(b.note).trim() : null;
+    if (has("color")) data.color = upperTrOrNull(b.color);
+    if (has("vin")) data.vin = upperTrOrNull(b.vin);
+    if (has("note")) data.note = upperTrOrNull(b.note);
 
     // dates
     if (has("inspectionDueAt")) data.inspectionDueAt = dt(b.inspectionDueAt);
@@ -527,20 +535,27 @@ export function vehiclesRouter(io) {
     } = parsed.data;
 
     try {
+      const normalizedPlate = upperTr(plate);
+      const normalizedBrand = upperTrOrNull(brand);
+      const normalizedModel = upperTrOrNull(model);
+      const normalizedColor = upperTrOrNull(color);
+      const normalizedVin = upperTrOrNull(vin);
+      const normalizedNote = upperTrOrNull(note);
+
       const vehicle = await prisma.vehicle.create({
         data: {
           roomId: u.roomId,
-          plate,
+          plate: normalizedPlate,
           capacity,
           speedLimitKmh: speedLimitKmh ?? 80,
 
           type: type ?? null,
-          brand: brand ?? null,
-          model: model ?? null,
+          brand: normalizedBrand,
+          model: normalizedModel,
           modelYear: modelYear ?? null,
-          color: color ?? null,
-          vin: vin ?? null,
-          note: note ?? null,
+          color: normalizedColor,
+          vin: normalizedVin,
+          note: normalizedNote,
 
           inspectionDueAt: dt(inspectionDueAt),
           insuranceDueAt: dt(insuranceDueAt),

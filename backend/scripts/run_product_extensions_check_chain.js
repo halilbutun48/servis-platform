@@ -91,6 +91,7 @@ const steps = [
   'check:uxpanelinventory02a',
   'check:uxpanelstructure02b',
   'check:uxroomvehiclestelematicsfix',
+  'check:roomvehicledriveruppercase01',
   'check:uxroomopspaneltabs01',
   'check:uxroomopsrelationshippolish01',
   'check:uxroomshiftstabs01',

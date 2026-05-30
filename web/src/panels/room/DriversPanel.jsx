@@ -16,6 +16,16 @@ import RoomDriversEditModal from "./RoomDriversEditModal";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 
+function upperTr(value) {
+  const text = String(value ?? "").trim();
+  return text ? text.toLocaleUpperCase("tr-TR") : "";
+}
+
+function upperTrOrNull(value) {
+  const text = String(value ?? "").trim();
+  return text ? text.toLocaleUpperCase("tr-TR") : null;
+}
+
 const TABS = [
   { key: "status", label: "Durum" },
   { key: "manage", label: "Yönetim" },
@@ -344,9 +354,9 @@ export default function DriversPanel() {
     setErr("");
     try {
       const body = {
-        fullName: fullName.trim(),
+        fullName: upperTr(fullName),
         phone: phone.trim(),
-        deviceInfo: deviceInfo.trim(),
+        deviceInfo: upperTr(deviceInfo),
       };
 
       const created = await api("/api/drivers", { method: "POST", token, body });
@@ -433,9 +443,9 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
     setErr("");
     try {
       const body = {
-        fullName: String(editForm.fullName || "").trim(),
+        fullName: upperTr(editForm.fullName),
         phone: String(editForm.phone || "").trim(),
-        deviceInfo: String(editForm.deviceInfo || "").trim(),
+        deviceInfo: upperTrOrNull(editForm.deviceInfo),
         backupDriverId: editForm.backupDriverId ? Number(editForm.backupDriverId) : null,
       };
 

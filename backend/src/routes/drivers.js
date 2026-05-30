@@ -30,6 +30,14 @@ export function driversRouter(io) {
   const r = express.Router();
   const ACTIVE_SHIFT_STATUSES = ["APPROVED", "ACTIVE"];
   const hasKey = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+  const upperTr = (value) => {
+    const text = String(value ?? "").trim();
+    return text ? text.toLocaleUpperCase("tr-TR") : "";
+  };
+  const upperTrOrNull = (value) => {
+    const text = String(value ?? "").trim();
+    return text ? text.toLocaleUpperCase("tr-TR") : null;
+  };
   const DRIVER_USER_SELECT = { id: true, email: true, deviceId: true, deviceBoundAt: true, deviceLastSeenAt: true, sessionVersion: true };
 
   const CONNECTION_ONLINE_WINDOW_MS = 5 * 60 * 1000;
@@ -264,13 +272,16 @@ export function driversRouter(io) {
     const { fullName, phone, deviceInfo } = parsed.data;
 
     try {
+      const normalizedFullName = upperTr(fullName);
+      const normalizedDeviceInfo = upperTrOrNull(deviceInfo);
+
       const result = await prisma.$transaction(async (tx) => {
         const created = await tx.driver.create({
           data: {
             roomId: u.roomId,
-            fullName,
+            fullName: normalizedFullName,
             phone,
-            deviceInfo: deviceInfo ?? null,
+            deviceInfo: normalizedDeviceInfo,
           },
           select: { id: true },
         });
@@ -279,7 +290,7 @@ export function driversRouter(io) {
           db: tx,
           driverId: created.id,
           roomId: u.roomId,
-          fullName,
+          fullName: normalizedFullName,
           phone,
         });
 
@@ -466,7 +477,7 @@ export function driversRouter(io) {
     const data = {};
 
     if (hasKey(b, "fullName")) {
-      const v = String(b.fullName || "").trim();
+      const v = upperTr(b.fullName);
       if (!v) return res.status(400).json({ code: "BAD_REQUEST", message: "fullName gerekli" });
       data.fullName = v;
     }
@@ -478,7 +489,7 @@ export function driversRouter(io) {
     }
 
     if (hasKey(b, "deviceInfo")) {
-      const v = String(b.deviceInfo || "").trim();
+      const v = upperTr(b.deviceInfo);
       data.deviceInfo = v ? v : null;
     }
 

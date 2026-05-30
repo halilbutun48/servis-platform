@@ -107,7 +107,11 @@ export function RoomVehicleManageSection({
 
             <div className="col">
               <label className="muted">Plaka</label>
-              <input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="34 ABC 123" />
+              <input
+                value={plate}
+                onChange={(e) => setPlate(String(e.target.value || "").toLocaleUpperCase("tr-TR"))}
+                placeholder="34 ABC 123"
+              />
             </div>
 
             <div className="col">

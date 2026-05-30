@@ -1029,6 +1029,11 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:uxroomvehiclestelematicsfix` `Room / Araçlar` içinde `telematicsCounts` TDZ crash fix doğrular; telematics özetinin güvenli fallback ile ve doğru sırada üretildiğini kontrol eder.
 - `Room / Araçlar` sekme/segment yapısı korunur; bu düzeltme yalnızca crash fix kapsamındadır ve ürün davranışını değiştirmez.
 
+### ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01 [CHECK]
+- `check:roomvehicledriveruppercase01` Room araç/sürücü create ve edit akışlarında plaka, ad soyad, cihaz bilgisi ve ilgili güvenli alanların uppercase normalize edildiğini doğrular.
+- Plaka girişi live input ve payload tarafında uppercase tutulur; backend create/update payload'ları mevcut endpoint contract'ını genişletmeden güvenli normalize helper ile işler.
+- Bu check, `UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-01`, `UX-ROOM-OPS-PANEL-TABS-01`, `UX-ROOM-SHIFTS-TABS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; business flow veya şema değişikliği açmaz.
+
 ### UX-ROOM-OPS-PANEL-TABS-01 [CHECK]
 - `check:uxroomopspaneltabs01` `Oda Operasyon Paneli` içindeki uzun alt blokları gerçek tab yapısına taşır; `Şartlı Küme`, `Oda Operasyon Özeti`, `Sorunlu Sürücüler` ve `Açık Sorunlar` aynı anda alt alta görünmez.
 - Üst mini özet, filtre ve sayaç bandı açık kalır; seçilen sekmenin içeriği tek başına render edilir.
