@@ -38,6 +38,31 @@ function fmt(ts) {
   }
 }
 
+function summarizePreviewMeta(meta) {
+  if (meta == null || meta === "") return "sistem kanıtı hazır";
+  if (typeof meta === "string") {
+    const text = meta.trim();
+    if (!text) return "sistem kanıtı hazır";
+    if (/(token|hash|payload|raw|debug|stack|internal|undefined|null|\[object object\])/i.test(text)) return "sistem kanıtı hazır";
+    return text.length > 120 ? `${text.slice(0, 117)}…` : text;
+  }
+  if (Array.isArray(meta)) return `${meta.length} öğe`;
+  if (typeof meta !== "object") return String(meta);
+
+  const entries = Object.entries(meta).filter(([key, value]) => {
+    const joined = `${key} ${String(value ?? "")}`;
+    return !/(token|hash|payload|raw|debug|stack|internal|undefined|null|\[object object\])/i.test(joined);
+  });
+  const parts = [];
+  for (const [key, value] of entries) {
+    if (value == null || value === "") continue;
+    const rendered = typeof value === "object" ? (Array.isArray(value) ? `${value.length} öğe` : "detay") : String(value);
+    parts.push(`${key}: ${rendered.length > 40 ? `${rendered.slice(0, 37)}…` : rendered}`);
+    if (parts.length >= 3) break;
+  }
+  return parts.length ? parts.join(" • ") : "sistem kanıtı hazır";
+}
+
 
 function basePathForKind(kind) {
   const k = String(kind || "").trim();
@@ -269,7 +294,7 @@ export default function LogExportPanel() {
 
       {!isBundle ? (
         <div className="card" style={{ marginTop: 12 }}>
-          <div className="muted" style={{ marginBottom: 8 }}>Preview (son 250)</div>
+          <div className="muted" style={{ marginBottom: 8 }}>Önizleme (son 250)</div>
           <div style={{ overflow: "auto" }}>
             <table className="table">
               <thead>
@@ -288,8 +313,8 @@ export default function LogExportPanel() {
                       {kind === "requests"
                         ? `${x.status} ${x.method} ${x.path} (${x.durationMs}ms) ip=${x.ip || ""} userId=${x.userId || ""}`
                         : kind === "login"
-                        ? `${x.action} userId=${x.entityId || ""} meta=${JSON.stringify(x.meta || {})}`
-                        : `${x.action} ${x.entity}#${x.entityId || ""} actorUserId=${x.actorUserId || ""} meta=${JSON.stringify(x.meta || {})}`}
+                        ? `${x.action} userId=${x.entityId || ""} kanıt=${summarizePreviewMeta(x.meta)}`
+                        : `${x.action} ${x.entity}#${x.entityId || ""} actorUserId=${x.actorUserId || ""} kanıt=${summarizePreviewMeta(x.meta)}`}
                     </td>
                   </tr>
                 ))}

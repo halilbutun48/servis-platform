@@ -25,6 +25,7 @@ const steps = [
   'check:web01a',
   'check:web01b',
   'check:uxsuperadminoverviewcleanup01',
+  'check:uxsuperadminpanelclarity01',
   'check:uxsuperadminlabelpolish01',
   'check:uxsuperadminlivemonitoring01',
   'check:uxsuperadminauditpanel01',

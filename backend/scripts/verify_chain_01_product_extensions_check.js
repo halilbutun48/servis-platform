@@ -65,6 +65,7 @@ function main() {
   must(pkg, '"check:web01a"', 'package.json keeps check:web01a');
   must(pkg, '"check:web01b"', 'package.json keeps check:web01b');
   must(pkg, '"check:uxsuperadminoverviewcleanup01"', 'package.json exposes check:uxsuperadminoverviewcleanup01');
+  must(pkg, '"check:uxsuperadminpanelclarity01"', 'package.json exposes check:uxsuperadminpanelclarity01');
   must(pkg, '"check:uxsuperadminlivemonitoring01"', 'package.json exposes check:uxsuperadminlivemonitoring01');
   must(pkg, '"check:uxsuperadminauditpanel01"', 'package.json exposes check:uxsuperadminauditpanel01');
   must(pkg, '"check:uxsuperadminqualitypanel01"', 'package.json exposes check:uxsuperadminqualitypanel01');
@@ -186,6 +187,7 @@ function main() {
     'check:web01a',
     'check:web01b',
     'check:uxsuperadminoverviewcleanup01',
+    'check:uxsuperadminpanelclarity01',
     'check:uxsuperadminlivemonitoring01',
     'check:uxsuperadminauditpanel01',
     'check:uxsuperadminqualitypanel01',
@@ -335,6 +337,9 @@ function main() {
   must(guide, 'check:copliveaccept01', 'script guide exposes check:copliveaccept01');
   must(guide, 'UX-SUPERADMIN-OVERVIEW-CLEANUP-01', 'script guide mentions UX-SUPERADMIN-OVERVIEW-CLEANUP-01');
   must(guide, 'check:uxsuperadminoverviewcleanup01', 'script guide exposes check:uxsuperadminoverviewcleanup01');
+  must(guide, 'UX-SUPERADMIN-PANEL-CLARITY-01', 'script guide mentions UX-SUPERADMIN-PANEL-CLARITY-01');
+  must(guide, 'check:uxsuperadminpanelclarity01', 'script guide exposes check:uxsuperadminpanelclarity01');
+  must(guide, 'node backend\\scripts\\ux_superadmin_panel_clarity_01_check.js', 'script guide includes Super Admin clarity command');
   must(guide, 'UX-SUPERADMIN-LIVE-MONITORING-01', 'script guide mentions UX-SUPERADMIN-LIVE-MONITORING-01');
   must(guide, 'check:uxsuperadminlivemonitoring01', 'script guide exposes check:uxsuperadminlivemonitoring01');
   must(guide, 'UX-SUPERADMIN-AUDIT-PANEL-01', 'script guide mentions UX-SUPERADMIN-AUDIT-PANEL-01');

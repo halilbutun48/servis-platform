@@ -5,19 +5,21 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `320`
-- Toplam executable tracked file: `1094`
-- Combined registry row: `1414`
-- Root/backend/web/mobile package dağılımı: root `163`, backend `660`, web `87`, mobile `201`
+- Toplam package script entry: `321`
+- Toplam executable tracked file: `1095`
+- Combined registry row: `1416`
+- Root/backend/web/mobile package dağılımı: root `164`, backend `661`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `28`
+- Docs indexed: `29`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-SMOKE-AUDIT-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
+- Super Admin clarity milestone: `UX-SUPERADMIN-PANEL-CLARITY-01`
+- Super Admin clarity docs: `docs/UX_SUPERADMIN_PANEL_CLARITY_01.md`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `363`
-- ACTIVE_CORE: `128`
+- ACTIVE: `364`
+- ACTIVE_CORE: `129`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -37,7 +39,7 @@ Repo: `servis-platform`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `60`
-- Eski sistem term eşleşmesi: `255`
+- Eski sistem term eşleşmesi: `256`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -45,9 +47,9 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 363 |
+| ACTIVE | 364 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 128 |
+| ACTIVE_CORE | 129 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -112,6 +114,7 @@ Repo: `servis-platform`
 | root:check:web01a | package.json | root | node backend/scripts/web_01a_flow_summary_polish_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-WEB-01-A |  | Owner or chain unclear |  |
 | root:check:web01b | package.json | root | node backend/scripts/web_01b_superadmin_system_mode_summary_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-WEB-01-B |  | Owner or chain unclear |  |
 | root:check:uxsuperadminoverviewcleanup01 | package.json | root | node backend/scripts/ux_superadmin_overview_cleanup_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXSUPERADMINOVERVIEWCLEANUP-01 |  | Owner or chain unclear |  |
+| root:check:uxsuperadminpanelclarity01 | package.json | root | node backend/scripts/ux_superadmin_panel_clarity_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXSUPERADMINPANELCLARITY-01 |  | Breaks canonical verification chain |  |
 | root:check:uxsuperadminlabelpolish01 | package.json | root | node backend/scripts/ux_superadmin_label_polish_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXSUPERADMINLABELPOLISH-01 |  | Owner or chain unclear |  |
 | root:check:uxsuperadminlivemonitoring01 | package.json | root | node backend/scripts/ux_superadmin_live_monitoring_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXSUPERADMINLIVEMONITORING-01 |  | Owner or chain unclear |  |
 | root:check:uxsuperadminauditpanel01 | package.json | root | node backend/scripts/ux_superadmin_audit_panel_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXSUPERADMINAUDITPANEL-01 |  | Owner or chain unclear |  |
@@ -662,6 +665,7 @@ Repo: `servis-platform`
 | ux_superadmin_label_polish_01_check.js | backend/scripts/ux_superadmin_label_polish_01_check.js | backend | root:check:uxsuperadminlabelpolish01 | product | ACTIVE |  | UX-SUPERADMIN-LABEL-POLISH-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_live_monitoring_01_check.js | backend/scripts/ux_superadmin_live_monitoring_01_check.js | backend | root:check:uxsuperadminlivemonitoring01 | product | ACTIVE |  | UX-SUPERADMIN-LIVE-MONITORING-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_overview_cleanup_01_check.js | backend/scripts/ux_superadmin_overview_cleanup_01_check.js | backend | root:check:uxsuperadminoverviewcleanup01 | product | ACTIVE |  | UX-SUPERADMIN-OVERVIEW-CLEANUP-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_superadmin_panel_clarity_01_check.js | backend/scripts/ux_superadmin_panel_clarity_01_check.js | backend | root:check:uxsuperadminpanelclarity01 | product | ACTIVE |  | UX-SUPERADMIN-PANEL-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_quality_panel_01_check.js | backend/scripts/ux_superadmin_quality_panel_01_check.js | backend | root:check:uxsuperadminqualitypanel01 | product | ACTIVE |  | UX-SUPERADMIN-QUALITY-PANEL-01-CHECK |  | Owner or chain unclear | product check/helper |
 | verify_chain_01_product_extensions_check.js | backend/scripts/verify_chain_01_product_extensions_check.js | backend | root:check:verifychain01 | product-extensions | ACTIVE_CORE |  | VERIFY-CHAIN-01-PRODUCT-EXTENSIONS-CHECK |  | Owner or chain unclear | canonical runner |
 | web_01a_flow_summary_polish_check.js | backend/scripts/web_01a_flow_summary_polish_check.js | backend | root:check:web01a | review | NEEDS_REVIEW |  | WEB-01-A-FLOW-SUMMARY-POLISH-CHECK |  | Owner or chain unclear |  |
@@ -783,7 +787,7 @@ Repo: `servis-platform`
 | miniRedis.js | backend/src/redis/miniRedis.js | backend |  | review | NEEDS_REVIEW |  | MINI-REDIS |  | Owner or chain unclear |  |
 | index.js | backend/src/region/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | ownership.js | backend/src/region/ownership.js | backend |  | review | NEEDS_REVIEW |  | OWNERSHIP |  | Owner or chain unclear |  |
-| admin.js | backend/src/routes/admin.js | backend | backend:m82_10check, backend:m94dcheck, root:check:cop04bfix01, root:check:uxsuperadminauditpanel01, root:check:uxsuperadmincommercialflow01, root:check:uxsuperadminfieldacceptancecenter01, root:check:uxsuperadminfielddispatchdiscovery01, root:check:uxsuperadminlabelpolish01, root:check:uxsuperadminlivemonitoring01, root:check:uxsuperadminoverviewcleanup01, root:check:uxsuperadminqualitypanel01, root:check:web01b | review | NEEDS_REVIEW |  | ADMIN |  | Owner or chain unclear |  |
+| admin.js | backend/src/routes/admin.js | backend | backend:m82_10check, backend:m94dcheck, root:check:cop04bfix01, root:check:uxsuperadminauditpanel01, root:check:uxsuperadmincommercialflow01, root:check:uxsuperadminfieldacceptancecenter01, root:check:uxsuperadminfielddispatchdiscovery01, root:check:uxsuperadminlabelpolish01, root:check:uxsuperadminlivemonitoring01, root:check:uxsuperadminoverviewcleanup01, root:check:uxsuperadminpanelclarity01, root:check:uxsuperadminqualitypanel01, root:check:web01b | review | NEEDS_REVIEW |  | ADMIN |  | Owner or chain unclear |  |
 | admin_logs.js | backend/src/routes/admin_logs.js | backend |  | review | NEEDS_REVIEW |  | ADMIN-LOGS |  | Owner or chain unclear |  |
 | agreementExtendNegotiationRouter.js | backend/src/routes/agreementExtendNegotiationRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-EXTEND-NEGOTIATION-ROUTER |  | Owner or chain unclear |  |
 | agreementRouteRefreshRouter.js | backend/src/routes/agreementRouteRefreshRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-ROUTER |  | Owner or chain unclear |  |
@@ -1524,7 +1528,7 @@ Repo: `servis-platform`
 | function | rolePanel | backendRouteService | frontendSurface | currentCheckScript | checkType | coverageStatus | missingGap | ownerMilestone | requiredNextAction |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Auth / login / role access | Mobile login, step-up, KVKK | backend/src/routes/personelAccess.js; backend/src/routes/live.js; auth / step-up services | mobile/src/screens/LoginScreen.js; mobile/src/screens/ForcePasswordChangeScreen.js; mobile/src/screens/PinChangeScreen.js; web/src/panels/shared/KvkkPanel.jsx; web/src/panels/shared/KvkkConsentGate.jsx; web/src/panels/shared/TotpStepUpCard.jsx | check:m98e2e; check:m98e2b; check:m98e2d; check:m98e5; check:m99kvkk01; check:m99ux01 | static + auth-session + device | PARTIAL_COVERAGE | No single canonical end-to-end login/role smoke; browser/device split stays manual. | M98 / M99 | MISSING_FUTURE_MILESTONE: SECURITY-KVKK-FINAL-01 |
-| Super Admin | Super Admin panels | backend/src/routes/live.js; backend/src/routes/company.js; backend/src/routes/organization.js; backend/src/routes/requests.js | web/src/panels/superadmin/SuperAdminPanel.jsx; UsersPanel.jsx; RoomsPanel.jsx; RegionsPanel.jsx; CompaniesPanel.jsx; CommercialCorePanel.jsx; AuditLogsPanel.jsx; LogExportPanel.jsx; TrustQualityPanel.jsx; FieldAcceptanceCenter.jsx | check:web01b; check:uxsuperadminoverviewcleanup01; check:uxsuperadminlabelpolish01; check:uxsuperadminlivemonitoring01; check:uxsuperadminauditpanel01; check:uxsuperadminqualitypanel01; check:uxsuperadmincommercialflow01; check:uxsuperadminfielddispatchdiscovery01; check:uxsuperadminfieldacceptancecenter01; check:cop04bfix01; check:cop04bfix04; check:copliveaccept01; check:finaluxsmoke01 | static | COVERED_ACTIVE | None on the current static/product chain. | M97 / M99 / COP-04B | None |
+| Super Admin | Super Admin panels | backend/src/routes/live.js; backend/src/routes/company.js; backend/src/routes/organization.js; backend/src/routes/requests.js | web/src/panels/superadmin/SuperAdminPanel.jsx; UsersPanel.jsx; RoomsPanel.jsx; RegionsPanel.jsx; CompaniesPanel.jsx; CommercialCorePanel.jsx; AuditLogsPanel.jsx; LogExportPanel.jsx; TrustQualityPanel.jsx; FieldAcceptanceCenter.jsx | check:web01b; check:uxsuperadminoverviewcleanup01; check:uxsuperadminpanelclarity01; check:uxsuperadminlabelpolish01; check:uxsuperadminlivemonitoring01; check:uxsuperadminauditpanel01; check:uxsuperadminqualitypanel01; check:uxsuperadmincommercialflow01; check:uxsuperadminfielddispatchdiscovery01; check:uxsuperadminfieldacceptancecenter01; check:cop04bfix01; check:cop04bfix04; check:copliveaccept01; check:finaluxsmoke01 | static | COVERED_ACTIVE | None on the current static/product chain. | M97 / M99 / COP-04B | None |
 | Room / Oda | Room panels | backend/src/routes/shifts/room.js; backend/src/routes/requests.js; backend/src/routes/live.js; backend/src/routes/agreements.js | web/src/panels/room/roomOperationsBoard.jsx; roomShiftsMainSections.jsx; AgreementsPanel.jsx; ShiftsPanel.jsx; DriversPanel.jsx; MapPanel.jsx; VehiclesPanel.jsx; CommercialFlowPanel.jsx; CheckinPanel.jsx; HubPanel.jsx; OperationHealthPanel.jsx | check:uxroomopspaneltabs01; check:uxroomopsrelationshippolish01; check:uxroomshiftstabs01; check:uxroomvehiclestelematicsfix; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:routechangefinal01; check:finaluxsmoke01 | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS / ROUTE-CHANGE-FINAL | None |
 | Company / Firma | Company panels | backend/src/routes/shifts/company.js; backend/src/routes/agreements.js; backend/src/routes/company.js; backend/src/routes/requests.js; backend/src/routes/personelAccess.js | web/src/panels/company/OperationsPanel.jsx; ShiftsPanel.jsx; AgreementsPanel.jsx; AgreementWizard.jsx; CommercialFlowPanel.jsx; ServiceEvaluationPanel.jsx; MapPanel.jsx; WorkflowPanel.jsx; PersonelAccessPanel.jsx; PassengerLinksPanel.jsx; HubPanel.jsx; CompanyShiftsPanel* | check:uxcompanyopspaneltabs01; check:uxcompanyqualitytabs01; check:uxcompanypanelsfinalpolish01; check:uxcompanypanelssmoke01; check:routechangefinal01; check:boardingops01b; check:boardingops01c | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | ROUTE-CHANGE-FINAL / BOARDING-OPS | None |
 | School / Okul | School panels | backend/src/routes/schoolParentInvites.js; backend/src/routes/requests.js; backend/src/routes/shifts/room.js | web/src/panels/school/OperationsPanel.jsx; ParentInvitePanel.jsx | check:uxschoolorganizationpanels01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:finaluxsmoke01 | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS / FINAL-UX-SMOKE | None |

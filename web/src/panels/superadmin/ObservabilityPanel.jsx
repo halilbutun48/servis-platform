@@ -107,6 +107,10 @@ function formatMaybeNumber(value) {
   return Number.isFinite(n) ? String(n) : String(value);
 }
 
+function proofStateText(value) {
+  return value ? "Hazır" : "-";
+}
+
 function queueStatusText(queueThreshold, queueIncident) {
   const thresholdStatus = String(queueThreshold?.status || "").toUpperCase();
   const incidentSeverity = String(queueIncident?.severity || "").toUpperCase();
@@ -500,23 +504,23 @@ export default function ObservabilityPanel() {
           <div className="panelBody">Bu tab teknik ama sadeleştirilmiş kanıt bilgisini gösterir.</div>
           <div style={{ marginTop: 10, display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
             <div>
-              <div className="panelMeta">Queue depth</div>
+              <div className="panelMeta">Kuyruk derinliği</div>
               <div className="panelSectionTitle">{formatMaybeNumber(queueStats.queueDepth)}</div>
             </div>
             <div>
-              <div className="panelMeta">Processing</div>
+              <div className="panelMeta">İşlemde</div>
               <div className="panelSectionTitle">{formatMaybeNumber(queueStats.processingDepth)}</div>
             </div>
             <div>
-              <div className="panelMeta">Claims</div>
+              <div className="panelMeta">Kanıt</div>
               <div className="panelSectionTitle">{formatMaybeNumber(queueStats.claimsDepth)}</div>
             </div>
             <div>
-              <div className="panelMeta">Dead-letter</div>
+              <div className="panelMeta">Hatalı kayıt</div>
               <div className="panelSectionTitle">{formatMaybeNumber(queueStats.deadLetterDepth)}</div>
             </div>
             <div>
-              <div className="panelMeta">Worker PID</div>
+              <div className="panelMeta">İşçi işlem numarası</div>
               <div className="panelSectionTitle">{queueRuntime?.workerPid || "-"}</div>
             </div>
             <div>
@@ -525,20 +529,20 @@ export default function ObservabilityPanel() {
             </div>
           </div>
           <div className="panelMeta" style={{ marginTop: 10 }}>
-            Redis: {queueHealth?.redisConnected === false ? "Bağlı değil" : "Bağlı"} • Active tasks: {formatMaybeNumber(queueRuntime?.activeTasks)} • Peak: {formatMaybeNumber(queueRuntime?.peakActiveTasks)}
+            Redis durumu: {queueHealth?.redisConnected === false ? "Bağlı değil" : "Bağlı"} • Aktif görevler: {formatMaybeNumber(queueRuntime?.activeTasks)} • Zirve: {formatMaybeNumber(queueRuntime?.peakActiveTasks)}
           </div>
         </Card>
-        <Card title="Destinations" wide>
+        <Card title="Kanıt hedefleri" wide>
           <div className="panelBody">Queue / processing / dead-letter hedefleri.</div>
           <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-            <div className="panelMeta">Queue: {queueHealth?.queue?.key || "-"}</div>
-            <div className="panelMeta">Processing: {queueHealth?.queue?.processingKey || "-"}</div>
-            <div className="panelMeta">Claims hash: {queueHealth?.queue?.claimsHashKey || "-"}</div>
-            <div className="panelMeta">Claims index: {queueHealth?.queue?.claimsIndexKey || "-"}</div>
-            <div className="panelMeta">Dead-letter: {queueHealth?.queue?.deadLetterKey || "-"}</div>
+            <div className="panelMeta">Kuyruk: {proofStateText(queueHealth?.queue?.key)}</div>
+            <div className="panelMeta">İşlemde: {proofStateText(queueHealth?.queue?.processingKey)}</div>
+            <div className="panelMeta">Kanıt anahtarı: {proofStateText(queueHealth?.queue?.claimsHashKey)}</div>
+            <div className="panelMeta">Kanıt indeksi: {proofStateText(queueHealth?.queue?.claimsIndexKey)}</div>
+            <div className="panelMeta">Hatalı kayıt hattı: {proofStateText(queueHealth?.queue?.deadLetterKey)}</div>
           </div>
         </Card>
-        <Card title="Proof signals" wide>
+        <Card title="Kanıt sinyalleri" wide>
           <div className="panelBody">{queueAlarm?.title || queueIncidentTitle}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>Alarm seviyesi: {queueAlarm?.alarmLevel || queueIncident?.severity || "OK"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>Incident: {queueIncident?.title || "-"}</div>
@@ -606,9 +610,9 @@ export default function ObservabilityPanel() {
                   <div key={`${taskId || "dead"}-${idx}`} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                       <div>
-                        <div className="panelSectionTitle">{taskId ? `Task ${taskId}` : "Parse edilemeyen kayıt"}</div>
+                        <div className="panelSectionTitle">{taskId ? `Görev ${taskId}` : "İçeriği okunamayan kayıt"}</div>
                         <div className="panelMeta">
-                          Neden: {parsed?.deadLetterReason || item?.parseError || "Bilinmiyor"}
+                          Ayrıştırma notu: {parsed?.deadLetterReason || (!item?.ok ? "Kayıt okunamadı" : "Bilinmiyor")}
                         </div>
                       </div>
                       <div className="panelMeta" style={{ whiteSpace: "nowrap" }}>
@@ -616,11 +620,11 @@ export default function ObservabilityPanel() {
                       </div>
                     </div>
                     <div className="panelMeta" style={{ marginTop: 6 }}>
-                      Attempts: {formatMaybeNumber(parsed?.attemptCount)} • Requeue reason: {parsed?.lastRequeueReason || "-"}
+                      Deneme sayısı: {formatMaybeNumber(parsed?.attemptCount)} • Yeniden kuyruğa alma nedeni: {parsed?.lastRequeueReason || "-"}
                     </div>
                     {!item?.ok ? (
                       <div className="panelMeta" style={{ marginTop: 6, color: "#ff7b7b" }}>
-                        Raw parse error: {item?.parseError || "-"}
+                        Kayıt ayrıştırılamadı.
                       </div>
                     ) : null}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>

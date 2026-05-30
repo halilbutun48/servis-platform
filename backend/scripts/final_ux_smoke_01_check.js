@@ -233,7 +233,7 @@ function checkTabs(filePath, spec) {
 }
 
 const ROUTE_GROUPS = [
-  { component: "web/src/panels/superadmin/SuperAdminPanel.jsx", paths: ["/superadmin"], tabCheck: { stateNeedle: 'const [activeDetailTab, setActiveDetailTab] = useState("system")', tabLabels: ["Sistem Detayları", "Geri Bildirimler", "Demo / Debug"], branchNeedles: ['activeDetailTab === "system"', 'activeDetailTab === "feedbacks"', 'activeDetailTab === "demo"'] } },
+  { component: "web/src/panels/superadmin/SuperAdminPanel.jsx", paths: ["/superadmin"], tabCheck: { stateNeedle: 'const [activeDetailTab, setActiveDetailTab] = useState("system")', tabLabels: ["Sistem Detayları", "Geri Bildirimler", "Demo Hesapları"], branchNeedles: ['activeDetailTab === "system"', 'activeDetailTab === "feedbacks"', 'activeDetailTab === "demo"'] } },
   { component: "web/src/panels/superadmin/CompaniesPanel.jsx", paths: ["/superadmin/companies"] },
   { component: "web/src/panels/superadmin/RoomsPanel.jsx", paths: ["/superadmin/rooms"] },
   { component: "web/src/panels/superadmin/UsersPanel.jsx", paths: ["/superadmin/users"] },

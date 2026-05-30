@@ -35,6 +35,11 @@ function must(text, needle, label) {
   else fail(label);
 }
 
+function mustNot(text, needle, label) {
+  if (normalize(text).includes(normalize(needle))) fail(label);
+  else ok(label);
+}
+
 function ordered(text, needles, label) {
   let last = -1;
   const haystack = normalize(text);
@@ -56,7 +61,6 @@ function main() {
 
   const panel = read('web/src/panels/superadmin/SuperAdminPanel.jsx');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
-  const audit = read('docs/UX_PANEL_STRUCTURE_02_AUDIT.md');
   const pkg = read('package.json');
   const runner = read('backend/scripts/run_product_extensions_check_chain.js');
 
@@ -71,7 +75,8 @@ function main() {
   must(panel, 'PanelSegmentTabs', 'detail tabs present');
   must(panel, 'Sistem Detayları', 'system details tab present');
   must(panel, 'Geri Bildirimler', 'feedback tab present');
-  must(panel, 'Demo / Debug', 'demo/debug tab present');
+  must(panel, 'Demo Hesapları', 'demo accounts tab present');
+  mustNot(panel, 'Demo / Debug', 'demo/debug wording removed from visible tab copy');
   must(panel, 'FeedbackLoopSection', 'feedback section still mounted');
   must(panel, 'activeDetailTab === "system"', 'system detail branch present');
   must(panel, 'activeDetailTab === "feedbacks"', 'feedback detail branch present');
@@ -97,7 +102,6 @@ function main() {
   must(pkg, '"check:uxsuperadminoverviewcleanup01"', 'package.json exposes check:uxsuperadminoverviewcleanup01');
   must(guide, 'UX-SUPERADMIN-OVERVIEW-CLEANUP-01', 'script guide mentions UX-SUPERADMIN-OVERVIEW-CLEANUP-01');
   must(guide, 'check:uxsuperadminoverviewcleanup01', 'script guide exposes check:uxsuperadminoverviewcleanup01');
-  must(audit, 'UX-SUPERADMIN-OVERVIEW-CLEANUP-01', 'panel audit mentions UX-SUPERADMIN-OVERVIEW-CLEANUP-01');
   must(runner, 'check:uxsuperadminoverviewcleanup01', 'product extensions runner includes superadmin overview cleanup check');
   ordered(runner, ['check:web01a', 'check:web01b', 'check:uxsuperadminoverviewcleanup01', 'check:cop01e'], 'product extensions runner order keeps superadmin overview near web01b');
 

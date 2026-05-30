@@ -76,14 +76,33 @@ function formatPreviewText(value, fallback = "—") {
   return text || fallback;
 }
 
-function renderAuditMeta(row) {
-  if (!row?.meta) return "";
-  if (typeof row.meta === "string") return row.meta;
-  try {
-    return JSON.stringify(row.meta);
-  } catch {
-    return "";
+function summarizeAuditMeta(meta) {
+  if (meta == null || meta === "") return "—";
+  if (typeof meta === "string") {
+    const text = meta.trim();
+    if (!text) return "—";
+    if (/(token|hash|payload|raw|debug|stack|internal|undefined|null|\[object object\])/i.test(text)) return "Sistem kanıtı hazır";
+    return text.length > 120 ? `${text.slice(0, 117)}…` : text;
   }
+  if (Array.isArray(meta)) return `${meta.length} öğe`;
+  if (typeof meta !== "object") return String(meta);
+
+  const entries = Object.entries(meta).filter(([key, value]) => {
+    const joined = `${key} ${String(value ?? "")}`;
+    return !/(token|hash|payload|raw|debug|stack|internal|undefined|null|\[object object\])/i.test(joined);
+  });
+  const parts = [];
+  for (const [key, value] of entries) {
+    if (value == null || value === "") continue;
+    const rendered = typeof value === "object" ? (Array.isArray(value) ? `${value.length} öğe` : "detay") : String(value);
+    parts.push(`${key}: ${rendered.length > 40 ? `${rendered.slice(0, 37)}…` : rendered}`);
+    if (parts.length >= 3) break;
+  }
+  return parts.length ? parts.join(" • ") : "Sistem kanıtı hazır";
+}
+
+function renderAuditMeta(row) {
+  return summarizeAuditMeta(row?.meta);
 }
 
 export default function SuperAdminOperationsPanel() {
@@ -427,7 +446,7 @@ export default function SuperAdminOperationsPanel() {
         <div role="tabpanel" aria-label="Audit / Log Kayıtları" style={{ display: "grid", gap: 12 }}>
           <SectionCard
             title="Audit özeti"
-            subtitle="Zaman, aktör, action, entity, entityId, meta"
+            subtitle="Zaman, kişi, işlem, kayıt türü, kayıt no ve sistem kanıtı"
             actions={(
               <button type="button" className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Dışa Aktarım</button>
             )}
@@ -450,7 +469,7 @@ export default function SuperAdminOperationsPanel() {
                     <th>Action</th>
                     <th>Entity</th>
                     <th>EntityId</th>
-                    <th>Meta</th>
+                    <th>Sistem kanıtı</th>
                   </tr>
                 </thead>
                 <tbody>

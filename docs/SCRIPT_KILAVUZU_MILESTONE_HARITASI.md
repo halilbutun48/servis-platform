@@ -1088,6 +1088,13 @@ Bu bant güncel doğrulanmış üst hattır.
   - Kritik geri bildirim bandı üstte kompakt kalır ve detay alanını açan CTA ile gelir; ana sayfa uzun listeye dönüşmez.
   - Bu check, `UX-COMPANY-PANELS-FINAL-POLISH-01`, `UX-COMPANY-QUALITY-PANEL-TABS-01`, `UX-COMPANY-SHIFTS-TABS-01`, `UX-ROOM-SHIFTS-TABS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz.
 
+- `UX-SUPERADMIN-PANEL-CLARITY-01`:
+  - Komut: `node backend\scripts\ux_superadmin_panel_clarity_01_check.js`
+  - Check alias: `check:uxsuperadminpanelclarity01`
+  - Ana konu: Süper Admin ekranlarındaki debug/token/null/raw kalıntılarını sade Türkçe ile temizlemek; overview, canlı izleme, onboarding review ve ticari çekirdeği summary-first, premium ve okunur halde tutmak.
+  - Teknik kanıt ve detaylar yalnız kontrollü alt alanlarda yaşar; ana dashboard kullanıcıyı teknik dump ile karşılamaz.
+  - Bu check, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-QUALITY-PANEL-01` ve `UX-SUPERADMIN-COMMERCIAL-FLOW-01` zincirini bozmaz.
+
 - `UX-SUPERADMIN-LIVE-MONITORING-01`:
   - Komut: `node backend\scripts\ux_superadmin_live_monitoring_01_check.js`
   - Check alias: `check:uxsuperadminlivemonitoring01`

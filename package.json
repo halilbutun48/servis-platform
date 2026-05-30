@@ -43,6 +43,7 @@
     "check:web01a": "node backend/scripts/web_01a_flow_summary_polish_check.js",
     "check:web01b": "node backend/scripts/web_01b_superadmin_system_mode_summary_check.js",
     "check:uxsuperadminoverviewcleanup01": "node backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
+    "check:uxsuperadminpanelclarity01": "node backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "check:uxsuperadminlabelpolish01": "node backend/scripts/ux_superadmin_label_polish_01_check.js",
     "check:uxsuperadminlivemonitoring01": "node backend/scripts/ux_superadmin_live_monitoring_01_check.js",
     "check:uxsuperadminauditpanel01": "node backend/scripts/ux_superadmin_audit_panel_01_check.js",

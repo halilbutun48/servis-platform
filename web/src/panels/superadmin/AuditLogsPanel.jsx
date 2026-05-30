@@ -11,6 +11,31 @@ function fmt(ts) {
   }
 }
 
+function summarizeAuditMeta(meta) {
+  if (meta == null || meta === "") return "";
+  if (typeof meta === "string") {
+    const text = meta.trim();
+    if (!text) return "";
+    if (/(token|hash|payload|raw|debug|stack|internal|undefined|null|\[object object\])/i.test(text)) return "Sistem kanıtı hazır";
+    return text.length > 120 ? `${text.slice(0, 117)}…` : text;
+  }
+  if (Array.isArray(meta)) return `${meta.length} öğe`;
+  if (typeof meta !== "object") return String(meta);
+
+  const entries = Object.entries(meta).filter(([key, value]) => {
+    const joined = `${key} ${String(value ?? "")}`;
+    return !/(token|hash|payload|raw|debug|stack|internal|undefined|null|\[object object\])/i.test(joined);
+  });
+  const parts = [];
+  for (const [key, value] of entries) {
+    if (value == null || value === "") continue;
+    const rendered = typeof value === "object" ? (Array.isArray(value) ? `${value.length} öğe` : "detay") : String(value);
+    parts.push(`${key}: ${rendered.length > 40 ? `${rendered.slice(0, 37)}…` : rendered}`);
+    if (parts.length >= 3) break;
+  }
+  return parts.length ? parts.join(" • ") : "Sistem kanıtı hazır";
+}
+
 export default function AuditLogsPanel() {
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -121,7 +146,7 @@ export default function AuditLogsPanel() {
           <div>Action</div>
           <div>Entity</div>
           <div>EntityId</div>
-          <div>Meta</div>
+          <div>Sistem kanıtı</div>
           <div></div>
         </div>
 
@@ -142,9 +167,9 @@ export default function AuditLogsPanel() {
             <div style={{ wordBreak: "break-word" }}>{x.action}</div>
             <div>{x.entity}</div>
             <div>{x.entityId ?? "-"}</div>
-            <div className="saMeta">{x.meta ? JSON.stringify(x.meta) : ""}</div>
+            <div className="saMeta">{summarizeAuditMeta(x.meta)}</div>
             <div>
-              <button className="btn sm" onClick={() => copyText(x.meta ? JSON.stringify(x.meta) : "")}>
+              <button className="btn sm" onClick={() => copyText(summarizeAuditMeta(x.meta))}>
                 Kopyala
               </button>
             </div>

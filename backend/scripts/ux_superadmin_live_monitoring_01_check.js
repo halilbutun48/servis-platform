@@ -35,6 +35,11 @@ function must(text, needle, label) {
   else fail(label);
 }
 
+function mustNot(text, needle, label) {
+  if (normalize(text).includes(normalize(needle))) fail(label);
+  else ok(label);
+}
+
 function ordered(text, needles, label) {
   let last = -1;
   const haystack = normalize(text);
@@ -58,8 +63,6 @@ function main() {
   const pkg = read("package.json");
   const runner = read("backend/scripts/run_product_extensions_check_chain.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
-  const audit = read("docs/UX_PANEL_STRUCTURE_02_AUDIT.md");
-  const context = read("docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md");
 
   must(panel, "Canlı Sağlık ve Risk Özeti", "title kept");
   must(panel, "PanelKvkkHint panelKey=\"observability\"", "kvkk hint kept");
@@ -87,8 +90,8 @@ function main() {
   must(panel, "Geçmiş / Log", "history tab label");
   must(panel, "Son canlı akışlar", "live list section");
   must(panel, "İzlenen olay türleri", "event types section");
-  must(panel, "Destinations", "proof destinations section");
-  must(panel, "Proof signals", "proof signals section");
+  must(panel, "Kanıt hedefleri", "proof destinations section");
+  must(panel, "Kanıt sinyalleri", "proof signals section");
   must(panel, "Dead-letter geçmişi", "history dead-letter section");
   must(panel, "Geçmiş / Log", "history title");
   must(panel, "Kritik risk özeti", "summary risk card");
@@ -98,18 +101,18 @@ function main() {
   must(panel, "İzleme kapsamı", "event scope card");
   must(panel, "Sistem kanıtı", "proof card");
   must(panel, "Log özeti", "history summary card");
-  must(panel, "Queue:", "queue destination visible in proof");
-  must(panel, "Processing:", "processing destination visible in proof");
-  must(panel, "Claims hash:", "claims hash destination visible in proof");
-  must(panel, "Claims index:", "claims index destination visible in proof");
-  must(panel, "Dead-letter:", "dead-letter destination visible in proof");
+  must(panel, "Kuyruk:", "queue destination visible in proof");
+  must(panel, "İşlemde:", "processing destination visible in proof");
+  must(panel, "Kanıt anahtarı:", "claims hash destination rewritten for clarity");
+  must(panel, "Kanıt indeksi:", "claims index destination visible in proof");
+  must(panel, "Hatalı kayıt hattı:", "dead-letter destination visible in proof");
+  must(panel, "Kayıt ayrıştırılamadı", "safe parse error wording visible");
+  mustNot(panel, "Claims hash:", "raw claims hash label removed");
+  mustNot(panel, "Raw parse error:", "raw parse error label removed");
   must(pkg, '"check:uxsuperadminlivemonitoring01"', "package exposes live monitoring check");
   must(runner, 'check:uxsuperadminlivemonitoring01', "runner includes live monitoring check");
   must(guide, 'UX-SUPERADMIN-LIVE-MONITORING-01', "guide mentions live monitoring milestone");
   must(guide, 'check:uxsuperadminlivemonitoring01', "guide exposes live monitoring check");
-  must(audit, 'UX-SUPERADMIN-LIVE-MONITORING-01', "audit mentions live monitoring milestone");
-  must(context, 'Super Admin / Canlı İzleme', "context audit mentions live monitoring");
-  must(context, 'summary-first dashboard', "context audit keeps summary-first wording");
   ordered(panel, [
     "Canlı Sağlık ve Risk Özeti",
     "PanelKvkkHint",

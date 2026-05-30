@@ -62,7 +62,7 @@ const MENU_GUIDE = [
 const DETAIL_TABS = [
   { key: "system", label: "Sistem Detayları" },
   { key: "feedbacks", label: "Geri Bildirimler" },
-  { key: "demo", label: "Demo / Debug" },
+  { key: "demo", label: "Demo Hesapları" },
 ];
 
 const DEMO_PASSWORD = "demo123";
@@ -96,7 +96,7 @@ function StatTile({ label, value, tone = "INFO" }) {
   );
 }
 
-function DemoDebugBody() {
+function DemoAccountsBody() {
   return (
     <div
       style={{
@@ -109,9 +109,9 @@ function DemoDebugBody() {
       }}
     >
       <div>
-        <div className="panelSectionTitle">Demo / Debug</div>
+        <div className="panelSectionTitle">Demo Hesapları</div>
         <div className="panelMeta" style={{ marginTop: 6 }}>
-          Demo hesapları, kurulum notları ve debug akışı burada tutulur. Varsayılan olarak kapalı kalabilir.
+          Demo hesapları, kurulum notları ve hızlı erişim bilgileri burada tutulur. Varsayılan olarak kapalı kalabilir.
         </div>
       </div>
 
@@ -402,9 +402,9 @@ export default function SuperAdminPanel() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <div className="panelSectionTitle">Alt detay alanları</div>
-            <div className="panelMeta" style={{ marginTop: 4 }}>
-              Geri bildirimler, demo/debug ve sistem detayları ana dashboardu şişirmeden burada tutulur.
-            </div>
+          <div className="panelMeta" style={{ marginTop: 4 }}>
+              Geri bildirimler, demo hesapları ve sistem detayları ana dashboardu şişirmeden burada tutulur.
+          </div>
           </div>
           <div className="panelMeta">
             {feedbackBusy ? "Geri bildirimler yenileniyor..." : feedbackSummary.total ? `Toplam geri bildirim: ${feedbackSummary.total}` : "Geri bildirim yok"}
@@ -429,7 +429,7 @@ export default function SuperAdminPanel() {
             />
           ) : null}
 
-          {activeDetailTab === "demo" ? <DemoDebugBody /> : null}
+          {activeDetailTab === "demo" ? <DemoAccountsBody /> : null}
 
           {activeDetailTab === "system" ? (
             <SystemDetailsBody me={me} stats={stats} feedbackCount={feedbackSummary.active} />
