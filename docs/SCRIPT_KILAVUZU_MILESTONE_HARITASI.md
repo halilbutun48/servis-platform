@@ -224,11 +224,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `Sefer Abi Terminali`, `Sefer Abi’ye Sor`, `Konum` standardı ve `İller ve Bölgeler` label'i korunur; `Yer Planları` gibi legacy guidance notları PASS- seviyesinde raporlanır.
 - Bu check ürün/business flow değiştirmez; yalnızca panel ve label gerçekliğini doğrular.
 
-### UX-LIVE-PANEL-SMOKE-AUDIT-01 [CHECK]
-- `check:uxlivepanelsmokeaudit01` tüm ana rol panelleri için canlı UX smoke notlarını tek audit kaydında toplar.
+### UX-LIVE-PANEL-COVERAGE-MATRIX-01 [CHECK]
+- `check:uxlivepanelsmokeaudit01` tüm ana rol panelleri için canlı UX coverage matrix ve smoke notlarını tek audit kaydında toplar.
 - Check script: `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
-- Browser automation yoksa audit manuel/static smoke olarak raporlanır; `PASS`, `PASS-`, `UX-FIX` ve `BLOCKER` sınıfları görünür kalır.
-- Bu check ürün/business flow değiştirmez; yalnızca panel yoğunluğu, bucket doğruluğu ve okunabilirlik sorunlarını sınıflandırır.
+- Browser-smoke report'u route, panel, tab, drawer, CTA ve mobile/desktop coverage görünürlüğü sağlar; `PASS`, `PASS-`, `UX-FIX`, `BLOCKER`, `AUTH-BLOCKED` ve `NOT-FOUND` sınıfları görünür kalır.
+- `BLOCKER` ve `NOT-FOUND` kapatıcıdır; `AUTH-BLOCKED` report-only auth/session notudur.
+- Bu check ürün/business flow değiştirmez; yalnızca coverage görünürlüğü, bucket doğruluğu ve okunabilirlik sorunlarını sınıflandırır.
 
 ### UX-LIVE-PANEL-PREMIUM-SMOKE-01 [SMOKE]
 - `smoke:uxlivepanelpremium01` Playwright tabanlı canlı tarayıcı smoke runner'ıdır; desktop ve mobile viewport'ta public, room, company, super admin, driver, personel ve parent panellerini screenshot, console error ve page error sinyalleriyle toplar.

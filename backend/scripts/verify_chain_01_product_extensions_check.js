@@ -399,7 +399,7 @@ function main() {
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
   must(guide, 'FINAL-UX-SMOKE-01', 'script guide mentions FINAL-UX-SMOKE-01');
   must(guide, 'check:finaluxsmoke01', 'script guide exposes check:finaluxsmoke01');
-  must(guide, 'UX-LIVE-PANEL-SMOKE-AUDIT-01', 'script guide mentions UX-LIVE-PANEL-SMOKE-AUDIT-01');
+  must(guide, 'UX-LIVE-PANEL-COVERAGE-MATRIX-01', 'script guide mentions UX-LIVE-PANEL-COVERAGE-MATRIX-01');
   must(guide, 'check:uxlivepanelsmokeaudit01', 'script guide exposes check:uxlivepanelsmokeaudit01');
   must(guide, 'node backend\\scripts\\ux_live_panel_smoke_audit_01_check.js', 'script guide includes live panel smoke audit command');
   must(guide, 'UX-LIVE-PANEL-PREMIUM-SMOKE-01', 'script guide mentions UX-LIVE-PANEL-PREMIUM-SMOKE-01');

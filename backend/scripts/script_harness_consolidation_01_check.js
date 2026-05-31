@@ -1161,7 +1161,7 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Tools executable dağılımı: tools \`${summary.byDomain.tools}\``);
   out.push(`- Docs indexed: \`${summary.byDomain.docs}\``);
   out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01\``);
-  out.push(`- UX preview milestones: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01\` -> \`UX-LIVE-PANEL-SMOKE-AUDIT-01\` -> \`UX-LIVE-PANEL-PREMIUM-SMOKE-01\``);
+  out.push(`- UX preview milestones: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01\` -> \`UX-LIVE-PANEL-COVERAGE-MATRIX-01\` -> \`UX-LIVE-PANEL-PREMIUM-SMOKE-01\``);
   out.push(`- UX preview docs: \`docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md\`, \`docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md\`, \`docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md\``);
   out.push(`- UX preview check alias: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK\``);
   out.push(`- Super Admin clarity milestone: \`UX-SUPERADMIN-PANEL-CLARITY-01\``);
@@ -1360,7 +1360,7 @@ function verifyDoc(docText, summary) {
     "LEAD-CAPTURE-01",
     "ONBOARDING-REVIEW-01",
     "UX-ROUTE-IMPACT-PREVIEW-COMPACT-01",
-    "UX-LIVE-PANEL-SMOKE-AUDIT-01",
+    "UX-LIVE-PANEL-COVERAGE-MATRIX-01",
     "UX-LIVE-PANEL-PREMIUM-SMOKE-01",
     "ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01",
     "run_repo_check_chain.js",
