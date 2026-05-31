@@ -58,6 +58,8 @@ function main() {
   const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const backlog = read('docs/NEXT_BACKLOG_V1.md');
+  const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
+  const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
 
   must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json exposes check:product-extensions');
   must(pkg, '"check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js"', 'package.json exposes check:verifychain01');
@@ -170,6 +172,7 @@ function main() {
   must(pkg, '"check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js"', 'package.json exposes check:uxlivepanelsmokeaudit01');
   must(pkg, '"smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs"', 'package.json exposes smoke:uxlivepanelpremium01');
   must(pkg, '"check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js"', 'package.json exposes check:uxlivepanelpremiumsmoke01');
+  must(pkg, '"check:uxparentpersonelliveerrorclarity01": "node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js"', 'package.json exposes check:uxparentpersonelliveerrorclarity01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 
@@ -277,6 +280,7 @@ function main() {
     'check:finaluxsmoke01',
     'check:uxlivepanelsmokeaudit01',
     'check:uxlivepanelpremiumsmoke01',
+    'check:uxparentpersonelliveerrorclarity01',
     'check:livetrackingfinal01',
     'check:driverflowfinal01',
 ], 'product extensions runner order');
@@ -387,6 +391,12 @@ function main() {
   must(guide, 'UX-COMPANY-MOBILE-ACTION-CLARITY-01', 'script guide mentions UX-COMPANY-MOBILE-ACTION-CLARITY-01');
   must(guide, 'check:uxcompanymobileactionclarity01', 'script guide exposes check:uxcompanymobileactionclarity01');
   must(guide, 'node backend\\scripts\\ux_company_mobile_action_clarity_01_check.js', 'script guide includes company mobile action clarity command');
+  must(harnessCheck, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness check knows parent/personel live error clarity milestone');
+  must(harnessCheck, 'check:uxparentpersonelliveerrorclarity01', 'script harness check knows parent/personel live error clarity alias');
+  must(harnessCheck, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness check knows parent/personel live error clarity doc');
+  must(harnessDoc, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness doc lists parent/personel live error clarity milestone');
+  must(harnessDoc, 'check:uxparentpersonelliveerrorclarity01', 'script harness doc lists parent/personel live error clarity alias');
+  must(harnessDoc, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness doc lists parent/personel live error clarity doc');
   must(guide, 'UX-COMPANY-OPS-PANEL-TABS-01', 'script guide mentions UX-COMPANY-OPS-PANEL-TABS-01');
   must(guide, 'check:uxcompanyopspaneltabs01', 'script guide exposes check:uxcompanyopspaneltabs01');
   must(guide, 'UX-COMPANY-QUALITY-PANEL-TABS-01', 'script guide mentions UX-COMPANY-QUALITY-PANEL-TABS-01');
@@ -415,6 +425,10 @@ function main() {
   must(guide, 'UX-LIVE-PANEL-PREMIUM-SMOKE-01', 'script guide mentions UX-LIVE-PANEL-PREMIUM-SMOKE-01');
   must(guide, 'check:uxlivepanelpremiumsmoke01', 'script guide exposes check:uxlivepanelpremiumsmoke01');
   must(guide, 'node backend\\scripts\\ux_live_panel_premium_smoke_01.mjs', 'script guide includes premium smoke command');
+  must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
+  must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');
+  must(guide, 'node backend\\scripts\\ux_parent_personel_live_error_clarity_01_check.js', 'script guide includes parent/personel live error clarity command');
+  must(guide, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script guide includes parent/personel live error clarity doc');
   must(guide, 'BOARDING-OPS-01A', 'script guide mentions BOARDING-OPS-01A');
   must(guide, 'check:boardingops01a', 'script guide exposes check:boardingops01a');
   must(guide, 'BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01', 'script guide mentions BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01');

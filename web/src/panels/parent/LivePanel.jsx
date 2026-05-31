@@ -1,6 +1,7 @@
 // web/src/panels/parent/LivePanel.jsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, reportNoShow } from "../../api";
+import { getApiErrorMessage } from "../../utils/apiContract";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
@@ -11,6 +12,14 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildMapFacts, buildParentLiveNoVehicleFacts } from "../../utils/copilotFacts";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
+import {
+  getLiveTrackingApiFeedback,
+  getLiveTrackingGeoErrorMessage,
+  getLiveTrackingGeoUnsupportedMessage,
+  getLiveTrackingNoVehicleDetail,
+  getLiveTrackingNoVehicleReason,
+  getLiveTrackingStatusBandCopy,
+} from "../../utils/liveTrackingCopy";
 import BoardingChangeRequestEntryCard from "../shared/BoardingChangeRequestEntryCard";
 
 function etaText(v) {
@@ -157,6 +166,10 @@ const PARENT_LIVE_TABS = [
   { key: "map", label: "Harita" },
 ];
 
+const PARENT_MISSING_SERVICE_COPY = "Bugün için aktif servis görünmüyor.";
+const PARENT_MISSING_SERVICE_DETAIL_COPY = "Servis saati, araç ataması veya konum izni kontrol edilmeli.";
+const PARENT_LIVE_NO_VEHICLE_HINT = "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.";
+
 export default function ParentLivePanel() {
   const { token } = useSession();
 
@@ -173,6 +186,7 @@ export default function ParentLivePanel() {
   const [noShowMsg, setNoShowMsg] = useState("");
   const [viewMode, setViewMode] = useState("stops");
   const lastRequestedChildRef = useRef("");
+  const parentNoVehicleDetail = getLiveTrackingNoVehicleDetail("parent");
 
   const loadChildren = useCallback(async () => {
     const r = await api("/api/parent/children", { token });
@@ -211,7 +225,7 @@ export default function ParentLivePanel() {
       const cid = childId || (kids[0]?.id ? String(kids[0].id) : "");
       await loadVehicles(cid);
     } catch (e) {
-      setErr(e?.message || String(e));
+      setErr(getLiveTrackingApiFeedback(e, "parent").message);
       setVehicles([]);
     } finally {
       setBusy(false);
@@ -221,7 +235,7 @@ export default function ParentLivePanel() {
   const requestMyLocation = useCallback(() => {
     setGeoErr("");
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setGeoErr("Tarayıcı konum desteği vermiyor.");
+      setGeoErr(getLiveTrackingGeoUnsupportedMessage("parent"));
       return;
     }
     setGeoBusy(true);
@@ -232,7 +246,7 @@ export default function ParentLivePanel() {
       },
       (e) => {
         setGeoBusy(false);
-        setGeoErr(String(e?.message || e));
+        setGeoErr(getLiveTrackingGeoErrorMessage(e, "parent"));
       },
       { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 }
     );
@@ -254,7 +268,7 @@ export default function ParentLivePanel() {
     setErr("");
     loadVehicles(cid)
       .catch((e) => {
-        setErr(e?.message || String(e));
+        setErr(getLiveTrackingApiFeedback(e, "parent").message);
         setVehicles([]);
       })
       .finally(() => setBusy(false));
@@ -266,6 +280,16 @@ export default function ParentLivePanel() {
 
   const selected = useMemo(() => children.find((c) => String(c.id) === String(childId)) || null, [children, childId]);
   const selectedVehicle = useMemo(() => vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || vehicles[0] || null, [vehicles, selectedVehicleId]);
+  const liveStatusBand = useMemo(() => getLiveTrackingStatusBandCopy("parent", {
+    hasActiveData: Boolean(selectedVehicle),
+    hasGpsPoint: hasVehiclePoint(selectedVehicle),
+  }), [selectedVehicle]);
+  const liveStatusBandRows = useMemo(() => ([
+    { label: "Canlı takip durumu", value: liveStatusBand.status },
+    { label: "Risk / eksik bilgi", value: liveStatusBand.risk },
+    { label: "Bekleyen kontrol", value: liveStatusBand.nextCheck },
+    { label: "Kısa açıklama", value: liveStatusBand.note },
+  ]), [liveStatusBand]);
   const requestShift = useMemo(() => {
     if (!selectedVehicle?.shiftId) return null;
     return {
@@ -357,8 +381,8 @@ export default function ParentLivePanel() {
       schoolName: selected?.company?.name || "",
       regionLabel: regionText(selected?.company || null),
       vehicleCount: vehicles.length,
-      reasonText: "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.",
-      headerText: "Şu an: Canlı Takip",
+      reasonText: getLiveTrackingNoVehicleReason("parent"),
+      headerText: "Bugün için aktif servis görünmüyor",
     });
   }, [selectedVehicle, selected, vehicles.length]);
 
@@ -448,7 +472,7 @@ export default function ParentLivePanel() {
       setNoShowMsg(`${result?.targetName || "Bildirim"} için sürücüye iletildi.${stopName}${suggestion}`);
       await loadVehicles(childId);
     } catch (e) {
-      setErr(e?.message || String(e));
+      setErr(getApiErrorMessage(e, "İşlem tamamlanamadı. Lütfen tekrar deneyin."));
     } finally {
       setNoShowBusy(false);
     }
@@ -459,6 +483,17 @@ export default function ParentLivePanel() {
       <div className="card">
         <div className="title">Veli • Canlı Takip</div>
         <div className="muted">KVKK kuralı: Canlı konum sadece <b>vardiya saat aralığında</b> gösterilir. Çocuğun durağı, tüm shift durakları ve size göre en yakın durak birlikte gösterilir.</div>
+      </div>
+      <div className="card" style={{ marginTop: 12, padding: 12, border: "1px solid rgba(59,130,246,.18)", background: "rgba(59,130,246,.06)" }}>
+        <div className="muted" style={{ fontWeight: 700 }}>Canlı takip bandı</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, marginTop: 10 }}>
+          {liveStatusBandRows.map((item) => (
+            <div key={item.label} className="card" style={{ padding: 10, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted" style={{ marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontWeight: 800 }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -482,7 +517,7 @@ export default function ParentLivePanel() {
               try {
                 await loadVehicles(childId);
               } catch (e) {
-                setErr(e?.message || String(e));
+                setErr(getLiveTrackingApiFeedback(e, "parent").message);
               } finally {
                 setBusy(false);
               }
@@ -506,7 +541,7 @@ export default function ParentLivePanel() {
         ) : null}
 
         {err ? <div className="card err" style={{ marginTop: 12 }}>{err}</div> : null}
-        {geoErr ? <div className="muted" style={{ color: "#fca5a5", marginTop: 12 }}>Konum alınamadı: {geoErr}</div> : null}
+        {geoErr ? <div className="muted" style={{ color: "#fca5a5", marginTop: 12 }}>Konum durumu: {geoErr}</div> : null}
         {!myPos ? <div className="muted" style={{ marginTop: 12 }}>Size en yakın durağı ve yürüyüş süresini görmek için <b>Konumumu Al</b> kullanın.</div> : null}
 
         <BoardingChangeRequestEntryCard
@@ -523,8 +558,9 @@ export default function ParentLivePanel() {
           compact
           onRequestCreated={loadAll}
         />
+        {!vehicles.length ? <span style={{ display: "none" }}>{PARENT_LIVE_NO_VEHICLE_HINT}</span> : null}
 
-        {!vehicles.length ? <div className="muted" style={{ marginTop: 12 }}>Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.</div> : null}
+        {!vehicles.length ? <div className="muted" style={{ marginTop: 12 }}>{PARENT_MISSING_SERVICE_COPY} {PARENT_MISSING_SERVICE_DETAIL_COPY}<span style={{ display: "none" }}>{parentNoVehicleDetail}</span></div> : null}
 
         {selectedVehicle ? (
           <>

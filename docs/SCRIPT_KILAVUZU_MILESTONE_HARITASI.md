@@ -91,6 +91,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
 - `check:uxroompanelclarity01` -> `node backend\scripts\ux_room_panel_clarity_01_check.js`
 - `check:uxcompanymobileactionclarity01` -> `node backend\scripts\ux_company_mobile_action_clarity_01_check.js`
+- `check:uxparentpersonelliveerrorclarity01` -> `node backend\scripts\ux_parent_personel_live_error_clarity_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
 - `check:routechangefinal01` -> `node backend\scripts\route_change_final_01_check.js`
 - `check:dynamicsavings01` -> `node backend\scripts\dynamic_savings_01_check.js`
@@ -240,6 +241,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Smoke çıktıları `backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/` altında `report.json`, `report.md` ve screenshot klasörü olarak oluşur; artefact'ler commit'e girmez.
 - Panel sınıfları `PASS`, `PASS-`, `UX-FIX`, `BLOCKER`, `AUTH-BLOCKED` ve `NOT-FOUND` olarak raporlanır.
 - Bu milestone yalnızca canlı UX smoke ve premium panel okunabilirlik audit'i yapar; payment / billing / contract execute, invite send, user create, supplier verification auto ve settlement execute açılmaz.
+
+### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
+- `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
+- `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.
+- Parent / Veli canlı takipte `Bugün için aktif servis görünmüyor.`; Personel / Servisim canlı takipte `Bugün için aktif vardiya görünmüyor.` mesajları kullanılır; ETA / GPS kesin değilse kesin ifade verilmez.
+- `Parent / Veli`, `Personel / Servisim` ve shared fallback kartı mobile-safe summary bandı ile kullanıcıyı bir sonraki kontrol adımına yönlendirir; backend auth/business route, schema, SMS/push/notification, route apply ve AI/Copilot capability açılmaz.
+- Komut: `node backend\scripts\ux_parent_personel_live_error_clarity_01_check.js`
 
 ### BOARDING-OPS-01A [CHECK]
 - `check:boardingops01a` günlük biniş değişiklikleri için readonly rota etki önizlemesini doğrular.

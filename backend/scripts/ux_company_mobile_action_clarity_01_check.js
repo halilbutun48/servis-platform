@@ -237,6 +237,14 @@ function main() {
     "web/src/panels/company/ShiftsPanel.jsx",
     "web/src/panels/company/companyShiftsPanelRows.jsx",
     "web/src/panels/company/guidedPlanModalShell.jsx",
+    "web/src/panels/personel/LivePanel.jsx",
+    "web/src/panels/personel/MyRidePanel.jsx",
+    "web/src/panels/parent/LivePanel.jsx",
+    "web/src/panels/shared/BoardingChangeRequestEntryCard.jsx",
+    "web/src/utils/copilotFacts.js",
+    "web/src/utils/liveTrackingCopy.js",
+    "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/"];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");

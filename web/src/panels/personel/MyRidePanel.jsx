@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, reportNoShow } from "../../api";
+import { getApiErrorMessage } from "../../utils/apiContract";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
@@ -8,6 +9,14 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import {
+  getLiveTrackingApiFeedback,
+  getLiveTrackingGeoErrorMessage,
+  getLiveTrackingGeoUnsupportedMessage,
+  getLiveTrackingRouteQualityText,
+  getLiveTrackingRouteQualityTone,
+  getLiveTrackingStatusBandCopy,
+} from "../../utils/liveTrackingCopy";
 import BoardingChangeRequestEntryCard from "../shared/BoardingChangeRequestEntryCard";
 
 function fmtTR(iso) {
@@ -52,27 +61,24 @@ function normalizeStop(s, i) {
   return { ...s, id, order, name, status };
 }
 
+function gpsCoord(v) {
+  const lat = toNum(v?.gpsLast?.lat ?? v?.gpsLast?.latitude ?? v?.gps?.lat);
+  const lng = toNum(v?.gpsLast?.lng ?? v?.gpsLast?.longitude ?? v?.gps?.lng);
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
+}
+
 function isReachedStop(s) {
   const st = String(s?.status || s?.state || "").toUpperCase();
   return st === "REACHED" || st === "DONE" || st === "SKIPPED" || Boolean(s?.reachedAt) || Boolean(s?.reached);
 }
 
 function routeQualityText(eta) {
-  const q = String(eta?.routeQuality || "").toUpperCase();
-  if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
-  if (q === "STALE_GPS") return "GPS gecikmeli";
-  if (q === "SKIP_PRESENT") return "Atlanan durak var";
-  if (q === "DONE_WITH_SKIPS") return "Rota bitti, atlanan durak var";
-  if (q === "DONE") return "Rota tamamlandı";
-  if (q === "NO_SHIFT") return "Aktif rota yok";
-  return String(eta?.progressLabel || "Rota ilerliyor");
+  return getLiveTrackingRouteQualityText(eta, "personel");
 }
 
 function routeQualityTone(eta) {
-  const q = String(eta?.routeQuality || "").toUpperCase();
-  if (["OFFLINE_GPS", "STALE_GPS", "SKIP_PRESENT", "DONE_WITH_SKIPS"].includes(q)) return "WARN";
-  if (q === "DONE") return "OK";
-  return "LIVE";
+  return getLiveTrackingRouteQualityTone(eta);
 }
 
 function gpsAgeLabel(gpsLast) {
@@ -121,7 +127,7 @@ export default function MyRidePanel() {
       return s;
     } catch (e) {
       setMyShift(null);
-      setErr(String(e?.message || e));
+      setErr(getLiveTrackingApiFeedback(e, "personel").message);
       return null;
     }
   }
@@ -175,7 +181,7 @@ export default function MyRidePanel() {
       setNoShowMsg(`${result?.targetName || "Bildirim"} için sürücüye iletildi.${stopName}${suggestion}`);
       await loadAll();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e, "İşlem tamamlanamadı. Lütfen tekrar deneyin."));
     } finally {
       setNoShowBusy(false);
     }
@@ -195,8 +201,8 @@ export default function MyRidePanel() {
 
   function getMyLocation() {
     setErr("");
-    if (!navigator.geolocation) {
-      setErr("Tarayıcı konum desteği vermiyor.");
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setErr(getLiveTrackingGeoUnsupportedMessage("personel"));
       return;
     }
     setBusy(true);
@@ -211,13 +217,23 @@ export default function MyRidePanel() {
       },
       (e) => {
         setBusy(false);
-        setErr(String(e?.message || e));
+        setErr(getLiveTrackingGeoErrorMessage(e, "personel"));
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
   }
 
   const vehicle = myShift?.vehicle || null;
+  const liveStatusBand = useMemo(() => getLiveTrackingStatusBandCopy("personel", {
+    hasActiveData: Boolean(myShift || vehicle),
+    hasGpsPoint: Boolean(gpsCoord(vehicle)),
+  }), [myShift, vehicle]);
+  const liveStatusBandRows = useMemo(() => ([
+    { label: "Canlı takip durumu", value: liveStatusBand.status },
+    { label: "Risk / eksik bilgi", value: liveStatusBand.risk },
+    { label: "Bekleyen kontrol", value: liveStatusBand.nextCheck },
+    { label: "Kısa açıklama", value: liveStatusBand.note },
+  ]), [liveStatusBand]);
 
   const stops = useMemo(() => {
     const baseStops = Array.isArray(myShift?.stops) ? myShift.stops : [];
@@ -330,6 +346,18 @@ export default function MyRidePanel() {
         <div className="muted">Talep ekranı yerine sana bağlı son servis, duraklar ve en yakın durağa navigasyon gösterilir.</div>
       </div>
 
+      <div className="card" style={{ marginTop: 12, padding: 12, border: "1px solid rgba(59,130,246,.18)", background: "rgba(59,130,246,.06)" }}>
+        <div className="muted" style={{ fontWeight: 700 }}>Canlı takip bandı</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, marginTop: 10 }}>
+          {liveStatusBandRows.map((item) => (
+            <div key={item.label} className="card" style={{ padding: 10, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted" style={{ marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontWeight: 800 }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {err ? <div className="card err">{err}</div> : null}
 
       <BoardingChangeRequestEntryCard
@@ -414,7 +442,7 @@ export default function MyRidePanel() {
               ) : null}
             </div>
           ) : (
-            <div className="muted">Şu an sana bağlı bir servis görünmüyor. Eşleşen son servis oluşunca burada duraklar otomatik görünür.</div>
+            <div className="muted">Bugün için aktif vardiya görünmüyor. Servis saati veya vardiya ataması kontrol edilmeli.</div>
           )}
         </div>
       </div>

@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `324`
-- Toplam executable tracked file: `1098`
-- Combined registry row: `1422`
-- Root/backend/web/mobile package dağılımı: root `167`, backend `664`, web `87`, mobile `201`
+- Toplam package script entry: `325`
+- Toplam executable tracked file: `1099`
+- Combined registry row: `1424`
+- Root/backend/web/mobile package dağılımı: root `168`, backend `665`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `32`
+- Docs indexed: `33`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -23,9 +23,11 @@ Repo: `servis-platform`
 - Room panel clarity docs: `docs/UX_ROOM_PANEL_CLARITY_01.md`
 - Company mobile action clarity milestone: `UX-COMPANY-MOBILE-ACTION-CLARITY-01`
 - Company mobile action clarity docs: `docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md`
+- Parent / Personel live error clarity milestone: `UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01`
+- Parent / Personel live error clarity docs: `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `366`
-- ACTIVE_CORE: `132`
+- ACTIVE: `367`
+- ACTIVE_CORE: `133`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -53,9 +55,9 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 366 |
+| ACTIVE | 367 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 132 |
+| ACTIVE_CORE | 133 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -215,6 +217,7 @@ Repo: `servis-platform`
 | root:check:uxlivepanelsmokeaudit01 | package.json | root | node backend/scripts/ux_live_panel_smoke_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXLIVEPANELSMOKEAUDIT-01 |  | Breaks canonical verification chain |  |
 | root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
 | root:check:uxlivepanelpremiumsmoke01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01_check.js | core | ACTIVE_CORE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Breaks canonical verification chain |  |
+| root:check:uxparentpersonelliveerrorclarity01 | package.json | root | node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js | core | ACTIVE_CORE |  | UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 |  | Breaks canonical verification chain |  |
 | root:check:docsstate01 | package.json | root | node backend/scripts/docs_state_01_recent_product_closure_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-DOCSSTATE-01 |  | Breaks canonical verification chain |  |
 | root:check:e2esmoke01 | package.json | root | node backend/scripts/e2e_smoke_01_demo_acceptance_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-E-2-ESMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:fieldlaunch01 | package.json | root | node backend/scripts/field_launch_pack_01_readiness_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-FIELDLAUNCH-01 |  | Breaks canonical verification chain |  |
@@ -637,6 +640,7 @@ Repo: `servis-platform`
 | ui_route_resilience_hotfix_check.js | backend/scripts/ui_route_resilience_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | UI-ROUTE-RESILIENCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | username_first_login_hotfix_check.js | backend/scripts/username_first_login_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | USERNAME-FIRST-LOGIN-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | ux_collapsible_panels_01_check.js | backend/scripts/ux_collapsible_panels_01_check.js | backend | root:check:uxcollapsiblepanels01 | product | ACTIVE |  | UX-COLLAPSIBLE-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_company_mobile_action_clarity_01_check.js | backend/scripts/ux_company_mobile_action_clarity_01_check.js | backend | root:check:uxcompanymobileactionclarity01 | product | ACTIVE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_ops_panel_tabs_01_check.js | backend/scripts/ux_company_ops_panel_tabs_01_check.js | backend | root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelssmoke01 | product | ACTIVE |  | UX-COMPANY-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_panels_final_polish_01_check.js | backend/scripts/ux_company_panels_final_polish_01_check.js | backend | root:check:uxcompanypanelsfinalpolish01 | product | ACTIVE |  | FINAL |  | Owner or chain unclear | product check/helper |
 | ux_company_quality_panel_tabs_01_check.js | backend/scripts/ux_company_quality_panel_tabs_01_check.js | backend | root:check:uxcompanyqualitytabs01 | product | ACTIVE |  | UX-COMPANY-QUALITY-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -823,7 +827,7 @@ Repo: `servis-platform`
 | geocode.js | backend/src/routes/geocode.js | backend |  | review | NEEDS_REVIEW |  | GEOCODE |  | Owner or chain unclear |  |
 | gps.js | backend/src/routes/gps.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
-| live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
+| live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
 | me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
@@ -833,7 +837,7 @@ Repo: `servis-platform`
 | operationProof.js | backend/src/routes/operationProof.js | backend |  | review | NEEDS_REVIEW |  | OPERATION-PROOF |  | Owner or chain unclear |  |
 | operationVerification.js | backend/src/routes/operationVerification.js | backend |  | review | NEEDS_REVIEW |  | OPERATION-VERIFICATION |  | Owner or chain unclear |  |
 | organization.js | backend/src/routes/organization.js | backend | root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | ORGANIZATION |  | Owner or chain unclear |  |
-| parent.js | backend/src/routes/parent.js | backend | mobile:check:m95d, mobile:check:m95e24b, root:check:cop04bfix03, root:check:cop04bfix08 | review | NEEDS_REVIEW |  | PARENT |  | Owner or chain unclear |  |
+| parent.js | backend/src/routes/parent.js | backend | mobile:check:m95d, mobile:check:m95e24b, root:check:cop04bfix03, root:check:cop04bfix08, root:check:uxparentpersonelliveerrorclarity01 | review | NEEDS_REVIEW |  | PARENT |  | Owner or chain unclear |  |
 | passengerLinks.js | backend/src/routes/passengerLinks.js | backend |  | review | NEEDS_REVIEW |  | PASSENGER-LINKS |  | Owner or chain unclear |  |
 | penalties.js | backend/src/routes/penalties.js | backend |  | review | NEEDS_REVIEW |  | PENALTIES |  | Owner or chain unclear |  |
 | personelAccess.js | backend/src/routes/personelAccess.js | backend |  | review | NEEDS_REVIEW |  | PERSONEL-ACCESS |  | Owner or chain unclear |  |
@@ -1546,8 +1550,8 @@ Repo: `servis-platform`
 | School / Okul | School panels | backend/src/routes/schoolParentInvites.js; backend/src/routes/requests.js; backend/src/routes/shifts/room.js | web/src/panels/school/OperationsPanel.jsx; ParentInvitePanel.jsx | check:uxschoolorganizationpanels01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:finaluxsmoke01 | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS / FINAL-UX-SMOKE | None |
 | Organization / Kurum | Organization panels | backend/src/routes/organization.js | web/src/panels/organization/PlansPanel.jsx; CenterPanel.jsx; organizationPlansShared.jsx | check:uxnav01; check:routechangefinal01; check:finaluxsmoke01; check:web01b | static | PARTIAL_COVERAGE | Dedicated organization flow smoke is narrower than company/room coverage. | UX-NAV / ROUTE-CHANGE-FINAL | MISSING_FUTURE_MILESTONE: ORG-CONTEXT-FINAL-01 |
 | Driver / Sürücü | Driver panels | backend/src/routes/driver.js; backend/src/routes/shifts/driver.js; backend/src/routes/live.js | web/src/panels/driver/TodayPanel.jsx; RoutePanel.jsx; MapPanel.jsx; CheckinPanel.jsx; PinChangePanel.jsx | check:driverflowfinal01; check:boardingops01c; check:etasanity01; check:etaosrm01; check:etaosrm02; check:m95e20; check:m95e23b; check:m98e3; check:m98e4 | static + device + manual | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS-01C / ETA | None |
-| Parent / Veli | Parent live panel | backend/src/routes/live.js; backend/src/routes/personelAccess.js; backend/src/routes/schoolParentInvites.js | web/src/panels/parent/LivePanel.jsx; web/src/panels/public/PassengerLivePanel.jsx | check:cop04bfix08; check:m98e2d; check:finaluxsmoke01 | static + auth-session | PARTIAL_COVERAGE | No browser/mobile end-to-end acceptance path yet. | COP-04B / M98 | MISSING_FUTURE_MILESTONE: MOBILE-WEB-FINAL-01 |
-| Personel | Personel live panel | backend/src/routes/live.js; backend/src/routes/personelAccess.js; backend/src/routes/personels.js | web/src/panels/personel/LivePanel.jsx; web/src/panels/personel/MyRidePanel.jsx | check:cop04bfix03; check:copliveaccept01; check:m98e2b; check:finaluxsmoke01 | static + auth-session | COVERED_ACTIVE | No browser/mobile end-to-end acceptance path yet. | COP-LIVE-ACCEPT / M98 | MISSING_FUTURE_MILESTONE: MOBILE-WEB-FINAL-01 |
+| Parent / Veli | Parent live panel | backend/src/routes/live.js; backend/src/routes/personelAccess.js; backend/src/routes/schoolParentInvites.js | web/src/panels/parent/LivePanel.jsx; web/src/panels/public/PassengerLivePanel.jsx | check:cop04bfix08; check:m98e2d; check:uxparentpersonelliveerrorclarity01; check:finaluxsmoke01 | static + auth-session | PARTIAL_COVERAGE | No browser/mobile end-to-end acceptance path yet. | COP-04B / M98 | MISSING_FUTURE_MILESTONE: MOBILE-WEB-FINAL-01 |
+| Personel | Personel live panel | backend/src/routes/live.js; backend/src/routes/personelAccess.js; backend/src/routes/personels.js | web/src/panels/personel/LivePanel.jsx; web/src/panels/personel/MyRidePanel.jsx | check:cop04bfix03; check:copliveaccept01; check:m98e2b; check:uxparentpersonelliveerrorclarity01; check:finaluxsmoke01 | static + auth-session | COVERED_ACTIVE | No browser/mobile end-to-end acceptance path yet. | COP-LIVE-ACCEPT / M98 | MISSING_FUTURE_MILESTONE: MOBILE-WEB-FINAL-01 |
 | Public / Passenger | Public passenger live panel | backend/src/routes/live.js; backend/src/routes/personelAccess.js | web/src/panels/public/PassengerLivePanel.jsx; web/src/panels/public/AcceptParentInvitePanel.jsx | check:m98e2d; check:m98e4b; check:m98e4c | auth-session + legacy compat | PARTIAL_COVERAGE | Public live acceptance still depends on compatibility aliases and manual flow. | M98 / M99 | MISSING_FUTURE_MILESTONE: MOBILE-WEB-FINAL-01 |
 | Live Tracking / GPS / ETA | Driver/room/company live map surfaces | backend/src/services/boardingRouteImpactPreview.js; backend/src/services/boardingChangeRouteRefresh.js; ETA / OSRM helpers | web/src/panels/driver/MapPanel.jsx; web/src/panels/company/MapPanel.jsx; web/src/panels/room/MapPanel.jsx; web/src/lib/markers/vehicleMarkerC.js; web/src/components/map/markers.css | check:etasanity01; check:etaosrm01; check:etaosrm02; check:livetrackingfinal01; check:boardingops01c; check:uxlivemaptabssimplify01; check:m95e23b; check:m95e20 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | ETA / BOARDING-OPS-01C | None |
 | Agreements / Contract / Shift | Company/room agreements and shifts | backend/src/routes/agreements.js; backend/src/routes/shifts/*.js; backend/src/services/agreementRouteChangePreview.js | web/src/panels/company/AgreementsPanel.jsx; web/src/panels/room/AgreementsPanel.jsx; web/src/panels/company/AgreementWizard.jsx; web/src/panels/shared/AgreementRouteChangePreviewCard.jsx | check:routechangefinal01; check:m91c_shift_to_agreement_prefill_check; check:m91c_shift_origin_link_check; check:m91c_linked_shift_disable_convert_check; check:m91d_agreement_operations_bridge_check; check:m91ef_draft_slot_hardening_check; check:m91_route_preview_room_guard_fix_check | static | COVERED_ACTIVE | None on the current static/product chain. | ROUTE-CHANGE-FINAL / M91 | None |

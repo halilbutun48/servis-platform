@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, createBoardingChangeRequest, getBoardingChangeRequestContext, listMyBoardingChangeRequests } from "../../api";
-import { getApiErrorMessage } from "../../utils/apiContract";
+import { getApiErrorInfo, getApiErrorMessage } from "../../utils/apiContract";
 import { resolvePersonDisplayLabel } from "../../utils/labels";
+import {
+  getLiveTrackingGeoErrorMessage,
+  getLiveTrackingGeoUnsupportedMessage,
+  getLiveTrackingServiceContextReason,
+} from "../../utils/liveTrackingCopy";
 import GeoLocationPicker from "../../components/geo/GeoLocationPicker";
 import BoardingRouteImpactPreviewCard from "./BoardingRouteImpactPreviewCard";
 import {
@@ -208,10 +213,13 @@ export default function BoardingChangeRequestEntryCard({
   }, [hasRequestedCoords, requestedAddress, requestKind]);
   const serviceContextReason = useMemo(() => {
     if (serviceContext?.available && !serviceContext?.liveVehicleAvailable) {
-      return "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.";
+      return getLiveTrackingServiceContextReason(normalizedMode);
     }
     return String(serviceContext?.reason || "").trim();
-  }, [serviceContext]);
+  }, [normalizedMode, serviceContext]);
+  const noLiveVehicleCopy = normalizedMode === "PARENT"
+    ? "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır."
+    : "Bu servis için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.";
 
   const disabledReason = useMemo(() => buildDisabledReason({
     shift: resolvedShift,
@@ -291,7 +299,7 @@ export default function BoardingChangeRequestEntryCard({
     setLocationError("");
     setLocationMessage("");
     if (typeof navigator === "undefined" || !navigator?.geolocation) {
-      setLocationError("Tarayıcı konum özelliği yok.");
+      setLocationError(getLiveTrackingGeoUnsupportedMessage(normalizedMode));
       return;
     }
     setLocationBusy(true);
@@ -315,12 +323,12 @@ export default function BoardingChangeRequestEntryCard({
       const fallback = "Konum izni verilmedi. Büyük haritadan konum seçebilir veya adresten arayabilirsiniz.";
       const message =
         code === 1
-          ? fallback
+          ? getLiveTrackingGeoErrorMessage(e, normalizedMode)
           : code === 2
-            ? "Konum bulunamadı. Büyük haritadan konum seçebilir veya adresten arayabilirsiniz."
+            ? getLiveTrackingGeoErrorMessage(e, normalizedMode)
             : code === 3
-              ? "Konum isteği zaman aşımına uğradı. Büyük haritadan konum seçebilir veya adresten arayabilirsiniz."
-              : e?.message || fallback;
+              ? getLiveTrackingGeoErrorMessage(e, normalizedMode)
+              : getLiveTrackingGeoErrorMessage(e, normalizedMode) || fallback;
       setLocationError(message);
     } finally {
       setLocationBusy(false);
@@ -345,12 +353,13 @@ export default function BoardingChangeRequestEntryCard({
       setLocationMessage(`Adres bulundu: ${Number(resp.lat).toFixed(6)}, ${Number(resp.lng).toFixed(6)}. Onaylamak için büyük haritadaki "Bu konumu kullan" düğmesini seç.`);
       return resp;
     } catch (e) {
-      if (e?.status === 404 || String(e?.message || "").includes("Cannot GET")) {
+      const apiError = getApiErrorInfo(e, "");
+      if (apiError.status === 404) {
         setLocationError("Adresten konum bulma henüz bağlı değil. Büyük haritadan konum seçebilir veya açıklama yazabilirsiniz.");
-      } else if (e?.payload?.error === "notfound" || e?.status === 404) {
-        setLocationError("Adres bulunamadı. Büyük haritadan konum seçebilir veya açıklama yazabilirsiniz.");
-      } else if (e?.status === 400) {
+      } else if (apiError.status === 400) {
         setLocationError("Geocode isteği eksik veya hatalı. Büyük haritadan konum seçebilir veya açıklama yazabilirsiniz.");
+      } else if (e?.payload?.error === "notfound") {
+        setLocationError("Adres bulunamadı. Büyük haritadan konum seçebilir veya açıklama yazabilirsiniz.");
       } else {
         setLocationError(getApiErrorMessage(e, "Adresten konum bulma henüz bağlı değil. Büyük haritadan konum seçebilir veya açıklama yazabilirsiniz."));
       }
@@ -484,7 +493,7 @@ export default function BoardingChangeRequestEntryCard({
         {normalizedMode === "PARENT" ? <div className="muted">Çocuk: <b>{resolvePersonDisplayLabel(childLabel, "Çocuk bilgisi")}</b></div> : null}
         {contextLoading ? <div className="muted">Planlı servis bağlamı kontrol ediliyor...</div> : null}
         {contextError ? <div className="card err" style={{ padding: 12 }}>{contextError}</div> : null}
-        {serviceContext?.available && !serviceContext?.liveVehicleAvailable ? <div className="card" style={{ padding: 12, background: "rgba(59,130,246,.06)", border: "1px solid rgba(59,130,246,.18)" }}>Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.</div> : null}
+        {serviceContext?.available && !serviceContext?.liveVehicleAvailable ? <div className="card" style={{ padding: 12, background: "rgba(59,130,246,.06)", border: "1px solid rgba(59,130,246,.18)" }}>{noLiveVehicleCopy}</div> : null}
         <div className="muted">Seçili durak: <b>{selectedStopSummary}</b></div>
         {requestKind === "PICKUP_FROM_LOCATION" ? (
           <div className="muted">Seçilen konum: <b>{requestedLocationSummary || "Henüz seçilmedi"}</b></div>

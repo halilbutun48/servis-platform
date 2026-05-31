@@ -11,6 +11,15 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import {
+  getLiveTrackingApiFeedback,
+  getLiveTrackingGeoErrorMessage,
+  getLiveTrackingGeoUnsupportedMessage,
+  getLiveTrackingNextActionText,
+  getLiveTrackingRouteQualityText,
+  getLiveTrackingRouteQualityTone,
+  getLiveTrackingStatusBandCopy,
+} from "../../utils/liveTrackingCopy";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import BoardingChangeRequestEntryCard from "../shared/BoardingChangeRequestEntryCard";
 
@@ -109,29 +118,15 @@ function normalizeStop(s, i) {
 }
 
 function etaQualityTone(eta) {
-  const q = String(eta?.routeQuality || "").toUpperCase();
-  if (["OFFLINE_GPS", "STALE_GPS", "SKIP_PRESENT", "DONE_WITH_SKIPS"].includes(q)) return "WARN";
-  if (q === "DONE") return "OK";
-  return "LIVE";
+  return getLiveTrackingRouteQualityTone(eta);
 }
 
 function etaQualityText(eta) {
-  const q = String(eta?.routeQuality || "").toUpperCase();
-  if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
-  if (q === "STALE_GPS") return "GPS gecikmeli";
-  if (q === "SKIP_PRESENT") return "Atlanan durak var";
-  if (q === "DONE_WITH_SKIPS") return "Rota bitti, atlanan durak var";
-  if (q === "DONE") return "Rota tamamlandı";
-  if (q === "NO_SHIFT") return "Aktif rota yok";
-  return String(eta?.progressLabel || "Rota ilerliyor");
+  return getLiveTrackingRouteQualityText(eta, "personel");
 }
 
 function nextActionText(eta) {
-  const act = String(eta?.nextAction || "").toUpperCase();
-  if (act === "CONTACT_ROOM") return "Rota tamamlandı; atlanan durak için oda ile görüşün.";
-  if (act === "WAIT_GPS_UPDATE") return "GPS verisi güncellenene kadar kısa süre bekleyin.";
-  if (act === "NO_ACTIVE_ROUTE") return "Şu an aktif rota görünmüyor.";
-  return "";
+  return getLiveTrackingNextActionText(eta, "personel");
 }
 
 function etaMinGuess(vehicle, stop) {
@@ -180,7 +175,7 @@ export default function PersonelLivePanel() {
       return s;
     } catch (e) {
       setMyShift(null);
-      setErr(String(e?.message || e));
+      setErr(getLiveTrackingApiFeedback(e, "personel").message);
       return null;
     }
   }
@@ -217,7 +212,12 @@ export default function PersonelLivePanel() {
   useAutoReload("eta", loadAll);
 
   // Best-effort: get person's location once (for nearest-stop suggestion)
-  useEffect(() => { queueMicrotask(() => { setGeoErr(""); }); if (typeof navigator === "undefined" || !navigator.geolocation) return;
+  useEffect(() => {
+    queueMicrotask(() => { setGeoErr(""); });
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      queueMicrotask(() => setGeoErr(getLiveTrackingGeoUnsupportedMessage("personel")));
+      return;
+    }
     try {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -227,17 +227,16 @@ export default function PersonelLivePanel() {
             accuracy: pos.coords.accuracy });
         },
         (e) => {
-          queueMicrotask(() => setGeoErr(String(e?.message || e)));
+          queueMicrotask(() => setGeoErr(getLiveTrackingGeoErrorMessage(e, "personel")));
         },
         { enableHighAccuracy: true, maximumAge: 60_000, timeout: 8000 }
       );
     } catch (e) {
-      queueMicrotask(() => setGeoErr(String(e?.message || e)));
+      queueMicrotask(() => setGeoErr(getLiveTrackingGeoErrorMessage(e, "personel")));
     }
   }, []);
 
   const baseVehicle = myShift?.vehicle || null;
-
   const vehicle = useMemo(() => {
     if (!baseVehicle) return null;
 
@@ -253,6 +252,17 @@ export default function PersonelLivePanel() {
         at: eta.last?.at,
         speed: eta.last?.speed } };
   }, [baseVehicle, eta]);
+
+  const liveStatusBand = useMemo(() => getLiveTrackingStatusBandCopy("personel", {
+    hasActiveData: Boolean(myShift || vehicle),
+    hasGpsPoint: Boolean(gpsCoord(vehicle)),
+  }), [myShift, vehicle]);
+  const liveStatusBandRows = useMemo(() => ([
+    { label: "Canlı takip durumu", value: liveStatusBand.status },
+    { label: "Risk / eksik bilgi", value: liveStatusBand.risk },
+    { label: "Bekleyen kontrol", value: liveStatusBand.nextCheck },
+    { label: "Kısa açıklama", value: liveStatusBand.note },
+  ]), [liveStatusBand]);
 
   const vehicles = useMemo(() => (vehicle ? [vehicle] : []), [vehicle]);
 
@@ -411,6 +421,17 @@ export default function PersonelLivePanel() {
           <div className="muted">Sana ait durak + araç yaklaşımı + tahmini süre + navigasyon</div>
         </div>
       </div>
+      <div className="card" style={{ marginTop: 12, padding: 12, border: "1px solid rgba(59,130,246,.18)", background: "rgba(59,130,246,.06)" }}>
+        <div className="muted" style={{ fontWeight: 700 }}>Canlı takip bandı</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, marginTop: 10 }}>
+          {liveStatusBandRows.map((item) => (
+            <div key={item.label} className="card" style={{ padding: 10, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted" style={{ marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontWeight: 800 }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
       {err ? <div className="card err">{err}</div> : null}
 
       <BoardingChangeRequestEntryCard
@@ -480,7 +501,9 @@ export default function PersonelLivePanel() {
             </div>
           ) : (
             <div className="muted" style={{ marginTop: 10 }}>
-              Henüz eşleşmiş bir servis yok.
+              Bugün için aktif vardiya görünmüyor.
+              <br />
+              Servis saati veya vardiya ataması kontrol edilmeli.
             </div>
           )}
         </div>
@@ -578,7 +601,7 @@ export default function PersonelLivePanel() {
               </div>
             ) : null}
 
-            {!recommended && geoErr ? <div className="muted" style={{ marginTop: 8 }}>Konum alınamadı: {geoErr}</div> : null}
+            {!recommended && geoErr ? <div className="muted" style={{ marginTop: 8 }}>Konum durumu: {geoErr}</div> : null}
 
             <PanelSegmentTabs
               ariaLabel="Personel canlı takip bölümleri"

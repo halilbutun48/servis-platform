@@ -6,6 +6,10 @@ import {
   isEtaSuspicious,
   normalizeGpsFreshness,
 } from "./etaSanity.js";
+import {
+  getLiveTrackingNoVehicleDetail,
+  getLiveTrackingNoVehicleReason,
+} from "./liveTrackingCopy.js";
 import { resolvePersonDisplayLabel } from "./labels.js";
 
 function normalizeText(value) {
@@ -1595,12 +1599,13 @@ export function buildParentLiveNoVehicleFacts({
   schoolName = '',
   regionLabel = '',
   vehicleCount = 0,
-  reasonText = 'Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.',
-  headerText = 'Şu an: Canlı',
+  reasonText = getLiveTrackingNoVehicleReason('parent'),
+  headerText = 'Bugün için aktif servis görünmüyor',
 } = {}) {
   const childLabel = firstNonEmpty(selected?.fullName, selected?.name, `#${selected?.id || '-'}`);
   const school = firstNonEmpty(schoolName, selected?.company?.name, 'DemoOkul');
   const region = firstNonEmpty(regionLabel, selected?.company ? '' : '#1');
+  const locationText = 'Konum henüz alınmadı';
   const summary = [
     headerText,
     `Çocuk: ${childLabel}`,
@@ -1614,7 +1619,7 @@ export function buildParentLiveNoVehicleFacts({
     'Araç: 0',
     `Okul/Şirket: ${school}`,
     `Bölge: ${region}`,
-    'Canlı araç görünmüyor',
+    'Aktif servis görünmüyor',
   ].join(' • ');
   return {
     selectedRecordType: 'studentService',
@@ -1629,14 +1634,14 @@ export function buildParentLiveNoVehicleFacts({
     summary,
     fields: [
       { label: 'Çocuk', value: childLabel, help: 'Seçili öğrenciyi güvenli şekilde gösterir.' },
+      { label: 'Aktif servis', value: 'Görünmüyor', help: getLiveTrackingNoVehicleReason('parent') },
       { label: 'Araç', value: '0', help: 'Canlı araç olmadığını gösterir.' },
       { label: 'Okul/Şirket', value: school, help: 'Bağlı kurum bilgisini gösterir.' },
       { label: 'Bölge', value: region, help: 'Bağlı bölge bilgisini gösterir.' },
-      { label: 'Canlı araç', value: 'Görünmüyor', help: reasonText },
-      { label: 'Canlı konum', value: 'Yok', help: 'Canlı konum henüz görünmüyor.' },
+      { label: 'Konum', value: 'Henüz alınmadı', help: `${locationText}. ${getLiveTrackingNoVehicleDetail('parent')}` },
     ],
     badges: [
-      { label: 'Canlı araç', value: 'Yok', help: 'Bu çocuk için canlı araç görünmüyor.' },
+      { label: 'Aktif servis', value: 'Yok', help: getLiveTrackingNoVehicleReason('parent') },
       { label: 'Araç ataması', value: 'Gerekli', help: 'Araç ataması gerekiyorsa canlı görünürlük oluşur.' },
       { label: 'Servis saati', value: 'Aktif vardiya gerekli', help: 'Canlı konum için aktif vardiya saat aralığı gerekir.' },
     ],
@@ -2158,7 +2163,7 @@ export function buildCopilotStarterChips({
     selection?.facts?.noLiveVehicle
     || selection?.facts?.liveVehicleVisible === false
     || Number(selection?.facts?.vehicleCount || selection?.vehicleCount || NaN) === 0
-    || includesAny(selectionText, ['canlı araç görünmüyor', 'araç yok', 'araç: 0', 'canlı araç yok']),
+    || includesAny(selectionText, ['canlı araç görünmüyor', 'aktif servis görünmüyor', 'aktif vardiya görünmüyor', 'bugün için aktif servis', 'bugün için aktif vardiya', 'araç yok', 'araç: 0', 'canlı araç yok', 'konum henüz alınamadı']),
   );
 
   let chips = [];
