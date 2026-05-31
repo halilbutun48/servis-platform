@@ -257,7 +257,7 @@ export default function AgreementsPanel() {
   const selectedRouteRefreshStatus = String(selectedRouteRefreshItem?.status || "").toUpperCase();
   const selectedRouteRefreshCountered = selectedRouteRefreshStatus === "COUNTERED";
   const selectedRouteRefreshSummaryText = selectedRouteRefreshItem
-    ? `Talep #${selectedRouteRefreshItem.id} • ${String(selectedRouteRefreshItem.startDate || "").slice(0, 10)} → ${String(selectedRouteRefreshItem.endDate || "").slice(0, 10)} • ${Number(selectedRouteRefreshItem.shiftCount || 0)} taslak vardiya`
+    ? `Talep ID ${selectedRouteRefreshItem.id} • ${String(selectedRouteRefreshItem.startDate || "").slice(0, 10)} → ${String(selectedRouteRefreshItem.endDate || "").slice(0, 10)} • ${Number(selectedRouteRefreshItem.shiftCount || 0)} taslak vardiya`
     : "";
   const selectedRouteRefreshCurrentText = routeSummaryText(selectedRouteRefreshPreview?.current, {
     peopleCount: Number(selectedRouteRefreshItem?.peopleCount || 0),
@@ -371,7 +371,7 @@ export default function AgreementsPanel() {
       shiftCount: Number(shiftStats?.[item.id]?.todayTotal || 0) + Number(shiftStats?.[item.id]?.horizonOpen || 0),
       routeRefreshState: selectedRouteRefreshItem ? selectedRouteRefreshStatus : '',
       routeRefreshRequestId: Number(selectedRouteRefreshItem?.id || 0),
-      routeRefreshLabel: selectedRouteRefreshItem ? `Rota güncelleme #${selectedRouteRefreshItem.id}` : '',
+      routeRefreshLabel: selectedRouteRefreshItem ? `Rota güncelleme ID ${selectedRouteRefreshItem.id}` : '',
       routeRefreshNote: selectedRouteRefreshItem
         ? (selectedRouteRefreshStatus === 'ACCEPTED'
           ? 'Kabul edildi'
@@ -432,15 +432,15 @@ export default function AgreementsPanel() {
       scopeKey: '/room/agreements',
       entityType: item?.shiftId ? 'shift' : 'screen',
       entityId: Number(item?.shiftId || 1106) || 1106,
-      label: `Sözleşme #${item.id}`,
+      label: `Sözleşme ID ${item.id}`,
       summary: [String(item?.status || '').toUpperCase() || '-', ymdTR(item?.startDate), ymdTR(item?.endDate), qualityBridgeSummaryText, seferScoreSummaryText, platformFeeSummaryText].filter(Boolean).join(' • '),
       fields: [
         { label: 'Durum', value: String(item?.status || '-').toUpperCase(), help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
         { label: 'Başlangıç', value: ymdTR(item?.startDate), help: 'Sözleşmenin başlangıç tarihini gösterir.' },
         { label: 'Bitiş', value: ymdTR(item?.endDate), help: 'Sözleşmenin bitiş tarihini gösterir.' },
         { label: 'Tutar', value: moneyTry(item?.companyOfferAmount ?? item?.amount ?? '-'), help: 'Şirkete ait teklif veya sözleşme tutarını gösterir.' },
-        { label: 'Araç', value: item?.vehicleId ? `#${item.vehicleId}` : '-', help: 'Onay sırasında seçilen aracı gösterir.' },
-        { label: 'Sürücü', value: item?.driverId ? `#${item.driverId}` : '-', help: 'Onay sırasında seçilen sürücüyü gösterir.' },
+        { label: 'Araç', value: item?.vehicleId ? `Araç ID ${item.vehicleId}` : '-', help: 'Onay sırasında seçilen aracı gösterir.' },
+        { label: 'Sürücü', value: item?.driverId ? `Sürücü ID ${item.driverId}` : '-', help: 'Onay sırasında seçilen sürücüyü gösterir.' },
         qualityBridgePreview ? {
           label: 'Kalite durumu',
           value: qualityBridgeStatusText || '-',
@@ -658,7 +658,7 @@ export default function AgreementsPanel() {
     setPreviewModal({
       open: true,
       shiftId: sid,
-      title: nextTitle || `Vardiya #${sid} — Harita Önizleme`,
+      title: nextTitle || `Vardiya ID ${sid} — Harita Önizleme`,
     });
   }
 
@@ -990,7 +990,7 @@ export default function AgreementsPanel() {
     <div className="card">
       <div className="topbar">
         <div>
-          <div className="title">Sözleşmeler (Room)</div>
+          <div className="title">Room / Sözleşmeler</div>
           <div className="muted">Bekleyen sözleşmeler burada karar bekler. Oda bu ekranda kabul / karşı teklif / red kararını verir. Not: sözleşme durumu zaman bazlıdır (endDate+endMin). Sürücü vardiyayı bitirse bile sözleşme endDate geçene kadar devam ediyor görünebilir. Uzatma talepleri de burada yönetilir.</div>
         </div>
         <button type="button" className="btn sm ghost" disabled={busy} onClick={loadAll}>
@@ -1057,7 +1057,7 @@ export default function AgreementsPanel() {
               <CollapsibleSection
                 title="Kalite / hakediş önizlemesi"
                 subtitle="Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."
-                badge={copilotAgreementTarget?.id ? `#${copilotAgreementTarget.id}` : "Seçili"}
+                badge={copilotAgreementTarget?.id ? `Sözleşme ID ${copilotAgreementTarget.id}` : "Seçili"}
                 defaultOpen={false}
                 compact
               >
@@ -1087,7 +1087,7 @@ export default function AgreementsPanel() {
 
           {counterTarget ? (
             <div className="card">
-              <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme #{counterTarget.id}</div>
+              <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme ID {counterTarget.id}</div>
 
               <div className="muted" style={{ marginTop: 6 }}>
                 Şirket teklifi: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
@@ -1127,7 +1127,7 @@ export default function AgreementsPanel() {
 
           {approveTarget ? (
             <div className="card">
-              <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme #{approveTarget.id}</div>
+              <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme ID {approveTarget.id}</div>
 
               <div className="muted" style={{ marginTop: 6 }}>
                 Şirket teklifi: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
@@ -1147,7 +1147,7 @@ export default function AgreementsPanel() {
                     <option value="">Seç</option>
                     {vehicles.map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.plate ?? `#${v.id}`}
+                        {v.plate ?? `Araç ID ${v.id}`}
                       </option>
                     ))}
                   </select>
@@ -1165,7 +1165,7 @@ export default function AgreementsPanel() {
                     <option value="">Seç</option>
                     {drivers.map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.fullName ?? `#${d.id}`}
+                        {d.fullName ?? `Sürücü ID ${d.id}`}
                       </option>
                     ))}
                   </select>
@@ -1297,10 +1297,10 @@ export default function AgreementsPanel() {
                         disabled={!agreementPreviewShiftId(a)}
                         onClick={(e) => {
                           e.stopPropagation();
-                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
+                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme ID ${a.id} — Rota Önizleme` });
                         }}
                       >
-                        Rota Önizleme
+                        Detayı aç
                       </button>
                       <button
                         type="button"
@@ -1407,10 +1407,10 @@ export default function AgreementsPanel() {
                         disabled={!agreementPreviewShiftId(a)}
                         onClick={(e) => {
                           e.stopPropagation();
-                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
+                          openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme ID ${a.id} — Rota Önizleme` });
                         }}
                       >
-                        Rota Önizleme
+                        Detayı aç
                       </button>
                     </td>
                   </tr>
@@ -1430,7 +1430,7 @@ export default function AgreementsPanel() {
         <RoutePreviewModal
           open={previewModal.open}
           onClose={() => setPreviewModal({ open: false, shiftId: null, title: "Rota Önizleme" })}
-          title={previewModal.title || (previewModal.shiftId ? `Vardiya #${previewModal.shiftId} — Harita Önizleme` : "Rota Önizleme")}
+          title={previewModal.title || (previewModal.shiftId ? `Vardiya ID ${previewModal.shiftId} — Harita Önizleme` : "Rota Önizleme")}
           shiftId={previewModal.shiftId}
         />
       ) : null}

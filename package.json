@@ -111,6 +111,7 @@
     "check:uxpanelstructure02b": "node backend/scripts/ux_panel_structure_02b_check.js",
     "check:uxroomvehiclestelematicsfix": "node backend/scripts/ux_room_vehicles_telematics_counts_fix_check.js",
     "check:roomvehicledriveruppercase01": "node backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
+    "check:uxroompanelclarity01": "node backend/scripts/ux_room_panel_clarity_01_check.js",
     "check:uxroomopspaneltabs01": "node backend/scripts/ux_room_ops_panel_tabs_01_check.js",
     "check:uxroomopsrelationshippolish01": "node backend/scripts/ux_room_ops_relationship_polish_01_check.js",
     "check:uxroomdrivervehiclelinkdedup01": "node backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js",

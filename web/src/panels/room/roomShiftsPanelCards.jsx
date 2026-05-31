@@ -13,7 +13,7 @@ export function AgreementBadge({ agreementId }) {
   if (!Number.isFinite(id) || id <= 0) return null;
   return (
     <span className="pill" data-status="AGREEMENT" title="Sözleşme kaynaklı otomatik vardiya" style={{ marginLeft: 8 }}>
-      Sözleşme #{id}
+      Sözleşme ID {id}
     </span>
   );
 }
@@ -31,8 +31,8 @@ export function RoomCompanyOfferSummary({ shift, vehiclesById }) {
   if (!has) return <span className="muted">-</span>;
   return (
     <div className="muted" title={shift?.companyOfferNote || ""}>
-      <div><b>C→R Araç:</b> {ovId ? (ov ? `${ov.plate} • ${vehicleMetaLine(ov)}` : `#${ovId}`) : "-"}</div>
-      {cAmt != null ? <div className="muted" style={{ marginTop: 4 }}><b>C→R Tutar:</b> {formatTRY(cAmt)} ₺</div> : null}
+      <div><b>Firma→Oda Araç:</b> {ovId ? (ov ? `${ov.plate} • ${vehicleMetaLine(ov)}` : `Araç ID ${ovId}`) : "-"}</div>
+      {cAmt != null ? <div className="muted" style={{ marginTop: 4 }}><b>Firma→Oda Tutar:</b> {formatTRY(cAmt)} ₺</div> : null}
       {shift?.companyOfferNote ? <div className="muted" style={{ marginTop: 4 }}>{shift.companyOfferNote}</div> : null}
     </div>
   );
@@ -48,10 +48,10 @@ export function RoomOfferSummary({ shift, vehiclesById }) {
   const decisionAtText = shift?.roomOfferDecisionAt ? fmtTR(shift.roomOfferDecisionAt) : "";
   return (
     <div className="muted">
-      <div><b>R→C Araç:</b> {rvId ? (rv ? `${rv.plate} • ${vehicleMetaLine(rv)}` : `#${rvId}`) : "-"}</div>
-      {rAmt != null ? <div className="muted" style={{ marginTop: 4 }}><b>R→C Tutar:</b> {formatTRY(rAmt)} ₺</div> : null}
-      {shift?.roomOfferNote ? <div className="muted" style={{ marginTop: 4 }}><b>R→C Not:</b> {shift.roomOfferNote}</div> : null}
-      {shift?.roomOfferToDriver ? <div className="muted" style={{ marginTop: 4 }}><b>R→D:</b> evet{shift.roomOfferDriverNote ? ` • ${shift.roomOfferDriverNote}` : ""}</div> : null}
+      <div><b>Oda→Firma Araç:</b> {rvId ? (rv ? `${rv.plate} • ${vehicleMetaLine(rv)}` : `Araç ID ${rvId}`) : "-"}</div>
+      {rAmt != null ? <div className="muted" style={{ marginTop: 4 }}><b>Oda→Firma Tutar:</b> {formatTRY(rAmt)} ₺</div> : null}
+      {shift?.roomOfferNote ? <div className="muted" style={{ marginTop: 4 }}><b>Oda→Firma Not:</b> {shift.roomOfferNote}</div> : null}
+      {shift?.roomOfferToDriver ? <div className="muted" style={{ marginTop: 4 }}><b>Oda→Sürücü:</b> evet{shift.roomOfferDriverNote ? ` • ${shift.roomOfferDriverNote}` : ""}</div> : null}
       <div style={{ marginTop: 8 }}><b>Karar:</b> {decision === "PENDING" ? <span className="muted">Bekliyor</span> : <span className="pill" data-status={decision}>{displayStatusLabel(decision)}</span>}{decision !== "PENDING" && decisionAtText ? <span className="muted"> • {decisionAtText}</span> : null}</div>
       {shift?.roomOfferDecisionNote ? <div className="muted" style={{ marginTop: 6 }}><b>Karar Notu:</b> {shift.roomOfferDecisionNote}</div> : null}
     </div>
@@ -69,8 +69,8 @@ export function RoomAvailabilityLine({ shift, vehicleId, driverId, autoDriverNam
   const cs = availability?.conflictingShift || null;
   const csId = cs?.id ? Number(cs.id) : null;
   const csRoom = cs?.roomId ? roomsById.get(Number(cs.roomId)) : null;
-  const csCompanyName = cs?.company?.name || (cs?.companyId ? `#${cs.companyId}` : null);
-  const csRoomName = csRoom ? roomLabel(csRoom) : (cs?.roomId ? `Room #${cs.roomId}` : null);
+  const csCompanyName = cs?.company?.name || (cs?.companyId ? `Firma ID ${cs.companyId}` : null);
+  const csRoomName = csRoom ? roomLabel(csRoom) : (cs?.roomId ? `Oda ID ${cs.roomId}` : null);
   return (
     <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
       <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -80,7 +80,7 @@ export function RoomAvailabilityLine({ shift, vehicleId, driverId, autoDriverNam
       </div>
       {capacity.requiredPax > 0 ? <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><span><b>Yolcu:</b> {capacity.requiredPax}</span><span>• <b>Koltuk:</b> {capacity.vehicleCapacity || "-"}</span>{capacity.insufficient ? <span>• <b>Eksik:</b> {capacity.missingCapacity}</span> : null}{capacity.insufficient && capacity.minVehicleCount ? <span>• <b>Bu araçla min:</b> {capacity.minVehicleCount} araç</span> : null}{capacity.requiredPax > 0 && capacity.roomMaxCapacity > 0 ? <span>• <b>Room max tek araç:</b> {capacity.roomMaxCapacity}</span> : null}</div> : null}
       {capacity.insufficient ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Kapasite uyarısı:</b> tek araç yetmiyor.</div><div className="muted" style={{ marginTop: 6 }}>Bu seçimle en az <b>{capacity.minVehicleCount || "-"}</b> araç gerekir.{capacity.roomMinVehicleCount ? ` Room havuzundaki en büyük araçla bile min ${capacity.roomMinVehicleCount} araç gerekir.` : ""}</div></div> : null}
-      {conflict && csId ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Çakışan vardiya:</b> #{csId} {cs?.status ? <span className="pill" data-status={String(cs.status || "").toUpperCase()} style={{ marginLeft: 6 }}>{displayStatusLabel(String(cs.status || "").toUpperCase())}</span> : null}</div><div className="muted" style={{ marginTop: 6 }}>{csCompanyName ? <span><b>Firma:</b> {csCompanyName}</span> : null}{csRoomName ? <span> • <b>Oda:</b> {csRoomName}</span> : null}</div>{hasRegionOwnership(csRoom) ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>{formatRegionOwnership(csRoom)}</div> : null}<div className="muted" style={{ marginTop: 6 }}><b>Zaman:</b> {fmtTR(cs.startAt)} → {fmtTR(cs.endAt)}</div></div> : null}
+      {conflict && csId ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Çakışan vardiya:</b> Vardiya ID {csId} {cs?.status ? <span className="pill" data-status={String(cs.status || "").toUpperCase()} style={{ marginLeft: 6 }}>{displayStatusLabel(String(cs.status || "").toUpperCase())}</span> : null}</div><div className="muted" style={{ marginTop: 6 }}>{csCompanyName ? <span><b>Firma:</b> {csCompanyName}</span> : null}{csRoomName ? <span> • <b>Oda:</b> {csRoomName}</span> : null}</div>{hasRegionOwnership(csRoom) ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>{formatRegionOwnership(csRoom)}</div> : null}<div className="muted" style={{ marginTop: 6 }}><b>Zaman:</b> {fmtTR(cs.startAt)} → {fmtTR(cs.endAt)}</div></div> : null}
     </div>
   );
 }
@@ -117,7 +117,7 @@ export function RoomDispatchSuggestionCard({
     <div key={`dispatch-${sid}-${part.splitIndex}`} className="card" style={{ padding: 10 }}>
       <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <div className="muted">
-          <b>Öneri #{part.splitIndex}</b>
+          <b>Öneri {splitIndex + 1}</b>
         </div>
         <div className="muted">
           <b>Yolcu:</b> {Number(part?.allocatedPax || 0)} / {Number(splitCapacityMeta?.vehicleCapacity || part?.capacity || 0)}
@@ -145,15 +145,15 @@ export function RoomDispatchSuggestionCard({
           </select>
         </label>
         <label className="muted" style={{ display: "grid", gap: 4 }}>
-          <span><b>Şoför</b></span>
+          <span><b>Sürücü</b></span>
           <select
             value={selectedDriverId || ""}
             onChange={(e) => setDispatchSelection(sid, splitIndex, { driverId: Number(e.target.value || 0) || "" })}
           >
-            <option value="">Şoför seç</option>
+            <option value="">Sürücü seç</option>
             {eligibleDrivers.map((d) => (
               <option key={`dispatch-d-${sid}-${splitIndex}-${d.id}`} value={d.id}>
-                {d.fullName || `#${d.id}`}{hasRegionOwnership(d) ? ` • ${formatRegionOwnership(d).replace(/^Bölge:\s*/, "")}` : ""}
+                {d.fullName || `Sürücü ID ${d.id}`}{hasRegionOwnership(d) ? ` • ${formatRegionOwnership(d).replace(/^Bölge:\s*/, "")}` : ""}
               </option>
             ))}
           </select>
@@ -161,7 +161,7 @@ export function RoomDispatchSuggestionCard({
       </div>
       <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
         <span>
-          <b>Seçim:</b> {selectedVehicle?.plate || `#${selectedVehicleId || "-"}`}
+          <b>Seçim:</b> {selectedVehicle?.plate || (selectedVehicleId ? `Araç ID ${selectedVehicleId}` : "-")}
           {selectedDriver?.fullName ? ` → ${selectedDriver.fullName}` : ""}
         </span>
         <span>

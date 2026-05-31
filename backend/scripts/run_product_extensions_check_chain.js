@@ -92,6 +92,7 @@ const steps = [
   'check:uxpanelstructure02b',
   'check:uxroomvehiclestelematicsfix',
   'check:roomvehicledriveruppercase01',
+  'check:uxroompanelclarity01',
   'check:uxroomopspaneltabs01',
   'check:uxroomopsrelationshippolish01',
   'check:uxroomshiftstabs01',

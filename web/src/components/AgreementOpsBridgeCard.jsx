@@ -50,14 +50,14 @@ export default function AgreementOpsBridgeCard({
   const generatedCount = Number(bridge?.generatedCount || 0);
   const lastShift = bridge?.lastShift || null;
   const hasLastShift = Boolean(lastShift?.id);
-  const vehicleLabel = bridge?.agreementVehicle?.plate || lastShift?.vehicle?.plate || (agreement?.vehicleId ? `#${agreement.vehicleId}` : "-");
-  const driverLabel = bridge?.agreementDriver?.fullName || lastShift?.driver?.fullName || (agreement?.driverId ? `#${agreement.driverId}` : "-");
+  const vehicleLabel = bridge?.agreementVehicle?.plate || lastShift?.vehicle?.plate || (agreement?.vehicleId ? `Araç ID ${agreement.vehicleId}` : "-");
+  const driverLabel = bridge?.agreementDriver?.fullName || lastShift?.driver?.fullName || (agreement?.driverId ? `Sürücü ID ${agreement.driverId}` : "-");
   const hubText = typeof agreement?.hubLat === "number" && typeof agreement?.hubLng === "number"
     ? `${agreement.hubLat.toFixed(4)}, ${agreement.hubLng.toFixed(4)}`
     : (typeof bridge?.plan?.hubLat === "number" && typeof bridge?.plan?.hubLng === "number"
       ? `${bridge.plan.hubLat.toFixed(4)}, ${bridge.plan.hubLng.toFixed(4)}`
       : "-");
-  const contextText = room?.name || (room?.id ? `Oda #${room.id}` : agreementStatusText(agreement?.status));
+  const contextText = room?.name || (room?.id ? `Oda ID ${room.id}` : agreementStatusText(agreement?.status));
   const agreementStatus = agreementStatusText(agreement?.status);
   const routeStateLabel = hasLastShift ? "Operasyona ulaştı" : generatedCount > 0 ? "Taslak bekliyor" : "Sadece önizleme";
   const riskLabel = hasLastShift ? "Düşük" : "Bilgi eksik";
@@ -143,7 +143,7 @@ export default function AgreementOpsBridgeCard({
             <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
               <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontWeight: 900 }}>Son üretilen vardiya #{lastShift.id}</div>
+                  <div style={{ fontWeight: 900 }}>Son üretilen vardiya ID {lastShift.id}</div>
                   <div className="muted" style={{ marginTop: 4 }}>
                     {String(lastShift.status || "-").toUpperCase()} • {trDateTime(lastShift.startAt)} → {trDateTime(lastShift.endAt)}
                   </div>

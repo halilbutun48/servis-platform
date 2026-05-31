@@ -31,7 +31,7 @@ export function vehicleMetaLine(v) {
 
 export function roomLabel(r) {
   if (!r) return "";
-  return r.name || r.title || `Room #${r.id}`;
+  return r.name || r.title || `Oda ID ${r.id}`;
 }
 
 export function toPositiveIntOrZero(v) {

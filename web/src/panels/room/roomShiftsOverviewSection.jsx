@@ -1,18 +1,37 @@
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftReassignModal from "../../components/ShiftReassignModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import { RoomDispatchPoolSummary } from "./roomShiftsPanelSections";
 
-export function RoomShiftsOverviewSection({ err, pendingCount = 0, contractCount = 0, otherCount = 0 }) {
+export function RoomShiftsOverviewSection({
+  err,
+  pendingCount = 0,
+  contractCount = 0,
+  otherCount = 0,
+  onGoPending = null,
+  onGoContract = null,
+  onGoOther = null,
+}) {
   return (
     <>
-      <div className="card">
-        <div className="panelSectionTitle">Shifts (ROOM)</div>
-        <div className="panelMeta" style={{ marginTop: 6 }}>Company request → Room approve (vehicle+driver) + opsiyonel pazarlık</div>
-        <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-          <span className="pill" data-status="PENDING">Bekleyen Talepler • {pendingCount}</span>
-          <span className="pill" data-status="AGREEMENT">Sözleşmeden Üretilen • {contractCount}</span>
-          <span className="pill" data-status="OTHER">Diğer Vardiyalar • {otherCount}</span>
+      <div className="card" style={{ display: "grid", gap: 12 }}>
+        <FlowSummaryStrip
+          title="Shifts (ROOM) · Room / Vardiyalar"
+          description="Özet üstte; karar, dispatch ve rota önizleme tablarda kalır."
+          statusText={pendingCount > 0 ? `${pendingCount} bekleyen karar` : "Akış dengede"}
+          tone={pendingCount > 0 ? "warn" : "good"}
+          steps={[
+            `Bekleyen ${pendingCount}`,
+            `Sözleşmeden ${contractCount}`,
+            `Diğer ${otherCount}`,
+          ]}
+        />
+        <div className="panelMeta">Firma talebi → Room onayı → operasyon takibi aynı akışta okunur.</div>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className="btn sm" onClick={onGoPending}>Bekleyen Talepler</button>
+          <button type="button" className="btn sm" onClick={onGoContract}>Sözleşmeden Üretilen</button>
+          <button type="button" className="btn sm" onClick={onGoOther}>Diğer Vardiyalar</button>
         </div>
       </div>
 
@@ -79,7 +98,7 @@ export function RoomShiftsModalSection({
         onClose={onClosePreview}
         title={
           previewShift
-            ? `Vardiya #${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
+            ? `Vardiya ID ${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
             : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
         }
         subtitle={previewSubtitle}

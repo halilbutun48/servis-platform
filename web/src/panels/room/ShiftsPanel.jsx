@@ -64,6 +64,7 @@ export default function RoomShiftsPanel() {
 
   const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
   const [pendingPreviewShiftId, setPendingPreviewShiftId] = useState(null);
+  const selectShiftsTab = useCallback((tab) => { userSelectedShiftsTabRef.current = true; setShiftsTab(tab); }, []);
 
   // M28/M63-R3A: offers inbox -> ilgili satira hizli gecis
   useEffect(() => {
@@ -677,17 +678,17 @@ async function decideExtend(shiftId, decision) {
       scopeKey: '/room/shifts',
       entityType: 'shift',
       entityId: Number(copilotShift?.id || 1103) || 1103,
-      label: `Vardiya #${copilotShift.id}`,
+      label: `Vardiya ID ${copilotShift.id}`,
       summary: [String(copilotShift?.status || '').toUpperCase() || '-', fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(' ? '),
       fields: [
         { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Vardiyanın operasyon durumunu gösterir.' },
         { label: 'Saat', value: `${fmtTR(copilotShift?.startAt)} - ${fmtTR(copilotShift?.endAt)}`, help: 'Planlanan başlangıç ve bitiş saatini gösterir.' },
-        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Bağlı araç bilgisini gösterir.' },
-        { label: 'Sürücü', value: copilotShift?.driver?.fullName || (copilotShift?.driverId ? `#${copilotShift.driverId}` : '-'), help: 'Bağlı sürücü bilgisini gösterir.' },
+        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `Araç ID ${copilotShift.vehicleId}` : '-'), help: 'Bağlı araç bilgisini gösterir.' },
+        { label: 'Sürücü', value: copilotShift?.driver?.fullName || (copilotShift?.driverId ? `Sürücü ID ${copilotShift.driverId}` : '-'), help: 'Bağlı sürücü bilgisini gösterir.' },
         { label: 'Yolcu', value: String(shiftRequiredPax(copilotShift) || 0), help: 'Tahmini gerekli yolcu kapasitesini gösterir.' },
       ],
       badges: [
-        ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: `#${copilotShift.agreementId}`, help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
+        ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: `Sözleşme ID ${copilotShift.agreementId}`, help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
       ],
       facts });
   }, [copilotShift, pendingFiltered.length, contractFiltered.length, otherFiltered.length]);
@@ -892,14 +893,14 @@ async function decideExtend(shiftId, decision) {
         pendingCount={tabCounts.pending}
         contractCount={tabCounts.contract}
         otherCount={tabCounts.other}
+        onGoPending={() => selectShiftsTab("pending")}
+        onGoContract={() => selectShiftsTab("contract")}
+        onGoOther={() => selectShiftsTab("other")}
       />
 
       <RoomShiftsMainSections
         activeTab={shiftsTab}
-        onChangeTab={(tab) => {
-          userSelectedShiftsTabRef.current = true;
-          setShiftsTab(tab);
-        }}
+        onChangeTab={(tab) => selectShiftsTab(tab)}
         tabCounts={tabCounts}
         pendingStatus={pendingStatus}
         setPendingStatus={setPendingStatus}

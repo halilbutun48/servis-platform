@@ -38,8 +38,8 @@ Bu snapshot `backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/repo
 | Console errors | `8` |
 | Page errors | `0` |
 | PASS | `9` |
-| PASS- | `33` |
-| UX-FIX | `40` |
+| PASS- | `35` |
+| UX-FIX | `38` |
 | BLOCKER | `0` |
 | AUTH-BLOCKED | `0` |
 | NOT-FOUND | `0` |

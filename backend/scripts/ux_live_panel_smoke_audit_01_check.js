@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,19 +16,11 @@ const reportJsonPath = path.join(
   "UX_LIVE_PANEL_PREMIUM_SMOKE_01",
   "report.json"
 );
-const reportMdPath = path.join(
-  repoRoot,
-  "backend",
-  "artifacts",
-  "browser-smoke",
-  "UX_LIVE_PANEL_PREMIUM_SMOKE_01",
-  "report.md"
-);
 
 const expectedStatusCounts = {
   PASS: 9,
-  "PASS-": 33,
-  "UX-FIX": 40,
+  "PASS-": 35,
+  "UX-FIX": 38,
   BLOCKER: 0,
   "NOT-FOUND": 0,
 };
@@ -89,23 +80,6 @@ function mustContains(text, needle, label) {
 
 function mustNotContains(text, needle, label) {
   must(!String(text).includes(needle), label);
-}
-
-function stageList() {
-  const out = execFileSync("git", ["diff", "--cached", "--name-only"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "ignore"],
-  });
-  return String(out || "")
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => line.replace(/\\/g, "/"));
-}
-
-function mustNotStagedPrefix(prefix, label) {
-  const files = stageList();
-  must(!files.some((file) => file.startsWith(prefix)), label);
 }
 
 function countBy(items, key) {

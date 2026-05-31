@@ -1,16 +1,16 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-05-30
+Tarih: 2026-05-31
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `322`
-- Toplam executable tracked file: `1096`
-- Combined registry row: `1418`
-- Root/backend/web/mobile package dağılımı: root `165`, backend `662`, web `87`, mobile `201`
+- Toplam package script entry: `323`
+- Toplam executable tracked file: `1097`
+- Combined registry row: `1420`
+- Root/backend/web/mobile package dağılımı: root `166`, backend `663`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `30`
+- Docs indexed: `31`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -19,9 +19,11 @@ Repo: `servis-platform`
 - Super Admin clarity docs: `docs/UX_SUPERADMIN_PANEL_CLARITY_01.md`
 - Room vehicle/driver uppercase milestone: `ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01`
 - Room vehicle/driver uppercase docs: `docs/ROOM_VEHICLE_DRIVER_UPPERCASE_NORMALIZATION_01.md`
+- Room panel clarity milestone: `UX-ROOM-PANEL-CLARITY-01`
+- Room panel clarity docs: `docs/UX_ROOM_PANEL_CLARITY_01.md`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `364`
-- ACTIVE_CORE: `130`
+- ACTIVE: `365`
+- ACTIVE_CORE: `131`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -49,9 +51,9 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 364 |
+| ACTIVE | 365 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 130 |
+| ACTIVE_CORE | 131 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -184,6 +186,7 @@ Repo: `servis-platform`
 | root:check:uxpanelstructure02b | package.json | root | node backend/scripts/ux_panel_structure_02b_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXPANELSTRUCTURE-02-B |  | Breaks canonical verification chain |  |
 | root:check:uxroomvehiclestelematicsfix | package.json | root | node backend/scripts/ux_room_vehicles_telematics_counts_fix_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMVEHICLESTELEMATICSFIX |  | Breaks canonical verification chain |  |
 | root:check:roomvehicledriveruppercase01 | package.json | root | node backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js | core | ACTIVE_CORE |  | ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01 |  | Breaks canonical verification chain |  |
+| root:check:uxroompanelclarity01 | package.json | root | node backend/scripts/ux_room_panel_clarity_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMPANELCLARITY-01 |  | Breaks canonical verification chain |  |
 | root:check:uxroomopspaneltabs01 | package.json | root | node backend/scripts/ux_room_ops_panel_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMOPSPANELTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxroomopsrelationshippolish01 | package.json | root | node backend/scripts/ux_room_ops_relationship_polish_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMOPSRELATIONSHIPPOLISH-01 |  | Breaks canonical verification chain |  |
 | root:check:uxroomdrivervehiclelinkdedup01 | package.json | root | node backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXROOMDRIVERVEHICLELINKDEDUP-01 |  | Owner or chain unclear |  |
@@ -644,6 +647,7 @@ Repo: `servis-platform`
 | ux_live_map_tabs_simplify_01_check.js | backend/scripts/ux_live_map_tabs_simplify_01_check.js | backend | root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01 | product | ACTIVE |  | UX-LIVE-MAP-TABS-SIMPLIFY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_live_panel_premium_smoke_01.mjs | backend/scripts/ux_live_panel_premium_smoke_01.mjs | backend | root:check:uxlivepanelpremiumsmoke01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Owner or chain unclear |  |
 | ux_live_panel_premium_smoke_01_check.js | backend/scripts/ux_live_panel_premium_smoke_01_check.js | backend | root:check:uxlivepanelpremiumsmoke01 | product | ACTIVE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_live_panel_smoke_audit_01_check.js | backend/scripts/ux_live_panel_smoke_audit_01_check.js | backend | root:check:uxlivepanelsmokeaudit01 | product | ACTIVE |  | UX-LIVE-PANEL-SMOKE-AUDIT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_nav_01_premium_navdock_check.js | backend/scripts/ux_nav_01_premium_navdock_check.js | backend | root:check:uxnav01 | product | ACTIVE |  | UX-NAV-01-PREMIUM-NAVDOCK-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_inventory_02a_check.js | backend/scripts/ux_panel_inventory_02a_check.js | backend | root:check:uxpanelinventory02a | product | ACTIVE |  | UX-PANEL-INVENTORY-02-A-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_layout_width_02c_fix_01_check.js | backend/scripts/ux_panel_layout_width_02c_fix_01_check.js | backend | root:check:uxpanellayoutwidth02cfix01 | product | ACTIVE |  | UX-PANEL-LAYOUT-WIDTH-02-C-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -845,7 +849,7 @@ Repo: `servis-platform`
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
 | index.js | backend/src/routes/shifts/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | people.js | backend/src/routes/shifts/people.js | backend |  | review | NEEDS_REVIEW |  | PEOPLE |  | Owner or chain unclear |  |
-| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
+| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroompanelclarity01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
 | roomReassignNotifications.js | backend/src/routes/shifts/roomReassignNotifications.js | backend |  | review | NEEDS_REVIEW |  | ROOM-REASSIGN-NOTIFICATIONS |  | Owner or chain unclear |  |
 | roomShared.js | backend/src/routes/shifts/roomShared.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SHARED |  | Owner or chain unclear |  |
 | schemas.js | backend/src/routes/shifts/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |

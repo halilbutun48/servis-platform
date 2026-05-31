@@ -23,7 +23,7 @@ export function RoomPendingSection({ pendingStatus, setPendingStatus, pendingQ, 
   return (
     <div className="card">
       <h3>Bekleyen Talepler</h3>
-      <div className="muted" style={{ marginBottom: 8 }}>Firma request / room approval / karar bekleyen vardiya talepleri.</div>
+      <div className="muted" style={{ marginBottom: 8 }}>Firma talebi, Room onayı ve karar bekleyen vardiyalar.</div>
       <div className="toolbarLeft" style={{ marginBottom: 10 }}>
         <select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}>
           <option value="OPEN">Açık (DRAFT + REQUESTED)</option>
@@ -113,8 +113,9 @@ export function RoomDispatchPoolSummary({
   const dispatchApplyIssue = dispatchSelectionRows.find(({ state }) => state?.status !== "ok") || null;
   const dispatchCanApply = suggestions.length > 0 && !dispatchApplyIssue;
   const dispatchApplyMessage = !suggestions.length
-    ? "Önce dispatch önizleme oluştur."
+    ? "Önce bölme önizlemesi oluştur."
     : dispatchApplyIssue?.state?.message || "Tüm öneriler hazır.";
+  const showDispatchApplyAction = suggestions.length > 0;
 
   return (
     <div className="card" style={{ padding: 10 }}>
@@ -150,6 +151,27 @@ export function RoomDispatchPoolSummary({
             <span>• <b>Toplam eşleşebilir koltuk:</b> {data.totalPairCapacity || 0}</span>
             {!data.enoughPoolCapacity ? <span>• <b>Eksik:</b> {data.missingPoolCapacity || 0}</span> : null}
           </div>
+
+          {showDispatchApplyAction ? (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                type="button"
+                className="btn"
+                disabled={busy || !dispatchCanApply}
+                onClick={() => autoSplitApprove(shift)}
+              >
+                Önizlemeyi Uygula: Böl & Onayla
+              </button>
+              <div className="muted" style={{ fontSize: 12 }}>
+                Önizleme ile aynı bölme planı uygulanır; seçtiğin araç ve şoför eşleşmeleri kullanılır.
+              </div>
+              {!dispatchCanApply ? (
+                <div className="muted" style={{ color: "#b42318", fontSize: 12 }}>{dispatchApplyMessage}</div>
+              ) : (
+                <div className="muted" style={{ color: "#166534", fontSize: 12 }}>Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.</div>
+              )}
+            </div>
+          ) : null}
 
           {comboItems.length ? (
             <div className="muted">
@@ -212,18 +234,6 @@ export function RoomDispatchPoolSummary({
             {data?.suggestedCombo?.totalCapacity ? ` • öneri toplam koltuk: ${data.suggestedCombo.totalCapacity}` : ""}
             {Number(data?.suggestedCombo?.overflowCapacity || 0) > 0 ? ` • taşma: ${data.suggestedCombo.overflowCapacity}` : ""}
           </div>
-
-          {data?.enoughPoolCapacity && Number(data?.suggestedCombo?.vehicleCount || 0) > 1 ? (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-              <button type="button" className="btn" disabled={busy || !dispatchCanApply} onClick={() => autoSplitApprove(shift)}>
-                Önizlemeyi Uygula: Böl & Onayla
-              </button>
-              <div className="muted" style={{ fontSize: 12 }}>
-                Önizleme ile aynı bölme planı uygulanır; seçtiğin araç ve şoför eşleşmeleri kullanılır.
-              </div>
-              {!dispatchCanApply ? <div className="muted" style={{ color: "#b42318", fontSize: 12 }}>{dispatchApplyMessage}</div> : <div className="muted" style={{ color: "#166534", fontSize: 12 }}>Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.</div>}
-            </div>
-          ) : null}
         </div>
       ) : state?.status === "loading" ? (
         <div className="muted" style={{ marginTop: 8 }}>Room havuz özeti hesaplanıyor…</div>
@@ -256,7 +266,7 @@ export function RoomFinalListSection({
         <button type="button" className="btn sm" onClick={() => { setListQ(""); }}>Temizle</button>
       </div>
       <ListSelectionBanner
-        selectedLabel={copilotShift ? `Vardiya #${copilotShift.id}` : ""}
+        selectedLabel={copilotShift ? `Vardiya ID ${copilotShift.id}` : ""}
         selectedSummary={copilotShift ? [displayStatusLabel(copilotShift?.status) || "-", fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(" • ") : ""}
         visibleCount={listFiltered.length}
         totalCount={items.length}

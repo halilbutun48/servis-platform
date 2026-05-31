@@ -95,6 +95,26 @@ function MetricCard({ title, value, note, accent = "default" }) {
   );
 }
 
+function FlowSummaryStrip({ summary, selectedItem, selectedSummaryText }) {
+  const activeCount = Number(summary?.cards?.approvedOrActiveShifts || 0);
+  const contractCount = Number(summary?.cards?.activeAgreements || 0);
+  const requestCount = Number(summary?.cards?.requestedAgreements || 0);
+  const currentNextStep = selectedItem?.nextStep || "Detay için kayıt seç";
+  return (
+    <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
+      <div className="panelSectionTitle">Ticari Akış Özeti</div>
+      <div className="panelMeta">Özet üstte; detaylar sekmelerde ve collapsible alanlarda kalır.</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <MetricCard title="Kritik özet" value={selectedSummaryText || "Kayıt seçildiğinde görünür"} note="Seçili satırın kısa özeti" />
+        <MetricCard title="Sözleşme bekleyen" value={requestCount || "-"} note="Hakedişe giden yol" accent={requestCount ? "warm" : "default"} />
+        <MetricCard title="Aktif sözleşme" value={contractCount || "-"} note="Devam eden ticari bağ" accent={contractCount ? "good" : "default"} />
+        <MetricCard title="Aktif operasyon" value={activeCount || "-"} note="Sahaya inen işler" accent={activeCount ? "good" : "default"} />
+      </div>
+      <div className="panelMeta">Sonraki adım: {currentNextStep}</div>
+    </div>
+  );
+}
+
 function StatusBadge({ value }) {
   const normalized = String(value || "").trim().toUpperCase();
   let style = { color: "#d0d5dd", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" };
@@ -266,7 +286,7 @@ export default function CommercialFlowPanel() {
       scopeKey: "/room/commercial-flow",
       entityType: selectedItem?.shiftId ? "shift" : "commercial",
       entityId: Number(selectedItem?.shiftId || selectedItem?.id || 1115) || 1115,
-      label: selectedItem?.counterparty || `Kayıt #${selectedItem?.id || "-"}`,
+      label: selectedItem?.counterparty || `Kayıt ID ${selectedItem?.id || "-"}`,
       summary: [selectedItem?.flowLabel, selectedItem?.statusLabel, selectedItem?.nextStep].filter(Boolean).join(" • "),
       fields: [
         { label: "Karşı Taraf", value: selectedItem?.counterparty || "-", help: "Ticari akışın karşı tarafını gösterir." },
@@ -510,7 +530,7 @@ export default function CommercialFlowPanel() {
             <div style={{ display: "grid", gap: 8 }}>
               <div className="panelMeta">• Ödeme ve komisyon kararı bu ekranda başlatılmaz; yalnızca bağlı kayıtlar görünür.</div>
               <div className="panelMeta">• Sözleşme ve operasyon ilişkisinin netliği, ödeme tarafını okumayı kolaylaştırır.</div>
-              <div className="panelMeta">• Gerektiğinde Sözleşme & Vardiya sekmesi ve Geçmiş sekmesi referans alınır.</div>
+              <div className="panelMeta">• Gerektiğinde Sözleşme ve Vardiya sekmesi ile Geçmiş sekmesi referans alınır.</div>
             </div>
           </CollapsibleSection>
         </div>
@@ -626,6 +646,8 @@ export default function CommercialFlowPanel() {
           actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
           style={{ width: "100%" }}
         />
+
+        <FlowSummaryStrip summary={summary} selectedItem={selectedItem} selectedSummaryText={selectedSummaryText} />
 
         {err ? <div style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 

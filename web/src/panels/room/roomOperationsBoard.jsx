@@ -157,14 +157,14 @@ export default function RoomOperationsBoard({
 
   const requestItems = useMemo(() => {
     return openRequestItems.slice(0, 5).map((item) => {
-      const personelName = item?.personel?.fullName || item?.personel?.name || `Personel #${item?.personelId || "-"}`;
+      const personelName = item?.personel?.fullName || item?.personel?.name || `Personel ID ${item?.personelId || "-"}`;
       const shiftId = item?.shift?.id || item?.shiftId || "-";
       const kindLabel = boardingChangeKindLabel(item?.requestKind || item?.kind);
       const decisionState = String(item?.decisionState || item?.status || "").trim().toUpperCase();
       return {
         id: item?.id || `${shiftId}-${personelName}`,
         title: personelName,
-        detail: `${kindLabel} • shift #${shiftId}`,
+        detail: `${kindLabel} • vardiya ID ${shiftId}`,
         decisionText: item?.decisionText || boardingChangeDecisionLabel(decisionState),
         decisionOwnerRole: item?.decisionOwnerRole || "COMPANY",
         decisionOwnerLabel: boardingChangeDecisionOwnerLabel(item),
@@ -185,14 +185,14 @@ export default function RoomOperationsBoard({
     });
   }, [openRequestItems]);
   const acceptedRequestCards = useMemo(() => acceptedRequestItems.slice(0, 5).map((item) => {
-    const personelName = item?.personel?.fullName || item?.personel?.name || `Personel #${item?.personelId || "-"}`;
+    const personelName = item?.personel?.fullName || item?.personel?.name || `Personel ID ${item?.personelId || "-"}`;
     const shiftId = item?.shift?.id || item?.shiftId || "-";
     const kindLabel = boardingChangeKindLabel(item?.requestKind || item?.kind);
     const applicationStatus = String(item?.boardingChangeApplicationStatus || "READY").trim().toUpperCase();
     return {
       id: item?.id || `${shiftId}-${personelName}`,
       title: personelName,
-      detail: item?.boardingChangeApplicationText || item?.decisionText || `${kindLabel} • shift #${shiftId}`,
+      detail: item?.boardingChangeApplicationText || item?.decisionText || `${kindLabel} • vardiya ID ${shiftId}`,
       decisionOwnerRole: item?.decisionOwnerRole || "COMPANY",
       decisionOwnerLabel: boardingChangeDecisionOwnerLabel(item),
       decisionOwnerNote: boardingChangeDecisionOwnerNote(item),
@@ -298,18 +298,19 @@ export default function RoomOperationsBoard({
       <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-            <div style={{ fontWeight: 800, fontSize: 16 }}>Oda Operasyon Özeti</div>
+            <div style={{ fontWeight: 800, fontSize: 16 }}>Operasyon Özeti</div>
             <div className="muted" style={{ marginTop: 6 }}>
-              Mola ve uygunluk sayıları canlı sürücü, bağlantı ve görev sinyallerinden türetilir. Açık sorun: {roomIssueCount}
+              Canlı sürücü, bağlantı ve görev sinyallerinden türetilir. Açık sorun: {roomIssueCount}
+              {/* Oda Operasyon Özeti / Mola ve uygunluk sayıları canlı sürücü, bağlantı ve görev sinyallerinden türetilir. */}
             </div>
           </div>
-          <div className="muted">Kapsam: Room canlı operasyon görünümü</div>
+          <div className="muted">Kapsam: canlı operasyon görünümü</div>
         </div>
 
         <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <MiniCard title="Bugünkü görevler" value={metrics.totalShifts} note={`Aktif ${metrics.activeShifts} • Onaylı ${metrics.approvedShifts}`} />
           <MiniCard title="Aktif servisler" value={metrics.activeShifts} note={`Bugün planlı servis: ${metrics.totalShifts}`} />
-          <MiniCard title="Sürücü durumu" value={metrics.liveCount} note={`STALE ${metrics.staleCount} • OFFLINE ${metrics.offlineCount}`} />
+          <MiniCard title="Sürücü durumu" value={metrics.liveCount} note={`Düşük canlılık ${metrics.staleCount} • Çevrim dışı ${metrics.offlineCount}`} />
           <MiniCard title="Araç durumu" value={metrics.vehicleCount} note={`Toplam yük ${metrics.totalVehicleLoad} • Ortalama ${metrics.avgVehicleLoad}`} />
           <MiniCard title="Müsait sürücüler" value={metrics.availableDrivers} note={`Canlı bağlı: ${metrics.onlineCount}`} />
           <MiniCard title="Moladaki sürücüler" value={metrics.restingDrivers} note="Görev dışı sinyallerden türetilir." />

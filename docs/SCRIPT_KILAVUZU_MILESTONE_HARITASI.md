@@ -89,6 +89,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
+- `check:uxroompanelclarity01` -> `node backend\scripts\ux_room_panel_clarity_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
 - `check:routechangefinal01` -> `node backend\scripts\route_change_final_01_check.js`
 - `check:dynamicsavings01` -> `node backend\scripts\dynamic_savings_01_check.js`
@@ -1029,6 +1030,12 @@ Bu bant güncel doğrulanmış üst hattır.
 ### UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-01 [CHECK]
 - `check:uxroomvehiclestelematicsfix` `Room / Araçlar` içinde `telematicsCounts` TDZ crash fix doğrular; telematics özetinin güvenli fallback ile ve doğru sırada üretildiğini kontrol eder.
 - `Room / Araçlar` sekme/segment yapısı korunur; bu düzeltme yalnızca crash fix kapsamındadır ve ürün davranışını değiştirmez.
+
+### UX-ROOM-PANEL-CLARITY-01 [CHECK]
+- `check:uxroompanelclarity01` Room panellerinde summary-first görünürlük, ana aksiyon bandı, detay / kanıt alanı ve güvenli ID label standardını doğrular.
+- `Room / Vardiyalar`, `Room / Sözleşmeler`, `Room / Ticari Akış`, `Room / Operasyon Sağlığı`, `Room / Araçlar` ve `Room / Sürücüler` yüzeylerinde `Detayı aç`, `Önizlemeyi Uygula`, `Sistem kanıtı` ve `Telematik` gibi güvenli görünen ifadeler korunur.
+- Doküman: `docs/UX_ROOM_PANEL_CLARITY_01.md`
+- Bu düzeltme route/write-path veya business flow açmaz; yalnızca okunurluk ve premium polish sağlar.
 
 ### ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01 [CHECK]
 - `check:roomvehicledriveruppercase01` Room araç/sürücü create ve edit akışlarında plaka, ad soyad, cihaz bilgisi ve ilgili güvenli alanların uppercase normalize edildiğini doğrular.

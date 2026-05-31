@@ -18,11 +18,6 @@ function compactList(items = [], limit = 6) {
   return out;
 }
 
-function toNumber(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
 function normalizeAgreementSourceType(value) {
   const text = compactText(value, "").replace(/[\s-]+/g, "_").toUpperCase();
   if (!text) return "";
@@ -94,7 +89,6 @@ function buildSourceEvidence({
   organizationPlanId = null,
   selectedOfferId = null,
   sourceSummary = "",
-  commercialSourceCount = 0,
   hasLineageSignal = false,
   hasRenewal = false,
   isManual = false,
@@ -355,7 +349,6 @@ export function inferAgreementSourceLineage(agreement, context = {}) {
     organizationPlanId: organizationPlanId > 0 ? organizationPlanId : null,
     selectedOfferId: selectedOfferId > 0 ? selectedOfferId : null,
     sourceSummary,
-    commercialSourceCount,
     hasLineageSignal: hasSupportLineageSignal,
     hasBillableLineageSignal: hasBillableSignal,
     hasRenewal,

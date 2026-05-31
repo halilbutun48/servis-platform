@@ -114,10 +114,10 @@ export function RoomShiftsMainSections({
         />
         <div className="muted" style={{ marginTop: 6 }}>
           {activeLabel === "Bekleyen Talepler"
-            ? "Firma request / room approval / karar bekleyen vardiya talepleri"
+            ? "Firma talebi, Room onayı ve karar bekleyen vardiyalar."
             : activeLabel === "Sözleşmeden Üretilen"
-              ? "Sözleşme kaynaklı vardiyalar; sözleşme kartları burada toplanır"
-              : "Sözleşmeye bağlı olmayan normal / guided / manuel vardiyalar"}
+              ? "Sözleşme kaynaklı vardiyalar; sözleşme kartları burada toplanır."
+              : "Sözleşmeye bağlı olmayan normal, guided ve manuel vardiyalar."}
         </div>
       </div>
 

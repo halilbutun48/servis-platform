@@ -248,7 +248,7 @@ export default function OperationHealthPanel() {
       fields: [
         { label: 'Aktif Sürücü', value: String(summary?.cards?.activeDrivers ?? '-'), help: 'Room içinde şu an görünen aktif sürücü sayısını gösterir.' },
         { label: 'Riskli Cihaz', value: String(summary?.cards?.riskyDevices ?? '-'), help: 'İzin, oturum veya GPS riski taşıyan cihaz sayısını gösterir.' },
-        { label: 'Stale / Offline', value: String(summary?.cards?.staleOrOffline ?? '-'), help: 'Canlı konum akışı zayıf olan sürücü sayısını gösterir.' },
+        { label: 'Düşük canlılık / Çevrim dışı', value: String(summary?.cards?.staleOrOffline ?? '-'), help: 'Canlı konum akışı zayıf olan sürücü sayısını gösterir.' },
         { label: 'Açık Sorun', value: String(summary?.cards?.openIssues ?? '-'), help: 'Takip edilmesi gereken açık sorun sayısını gösterir.' },
         { label: 'Örnek Sürücü', value: copilotDriver?.driverName || '-', help: 'İlk riskli sürücüyü örnek odak olarak gösterir.' },
         { label: 'Örnek Sorun', value: copilotIssue?.title || '-', help: 'İlk açık sorun başlığını gösterir.' },
@@ -275,7 +275,7 @@ export default function OperationHealthPanel() {
   const tabs = useMemo(() => [
     {
       key: "proof",
-      label: "Şartlı Küme",
+      label: "Şartlı Küme · Kanıt / Rehber",
       badge: summary?.cards?.openIssues ?? 0,
     },
     {
@@ -296,7 +296,8 @@ export default function OperationHealthPanel() {
           <div>
             <div className="panelTitle">Oda Operasyon Paneli</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              Room için görev, servis, sürücü, araç ve biniş değişikliği görünürlüğü
+              Canlı Sağlık ve Risk Özeti. Özet üstte; ayrıntılar tablarda kalır.
+              {/* Room için görev, servis, sürücü, araç ve biniş değişikliği görünürlüğü */}
             </div>
           </div>
           <div className="muted">Kapsam: Kendi operasyon alanınız</div>
@@ -332,11 +333,11 @@ export default function OperationHealthPanel() {
       />
 
       {activeTab === "proof" ? (
-        <section role="tabpanel" aria-label="Şartlı Küme" style={{ marginTop: 14 }}>
+        <section role="tabpanel" aria-label="Şartlı Küme · Kanıt / Rehber" style={{ marginTop: 14 }}>
           <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>Şartlı Küme</div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>Şartlı Küme · Kanıt / Rehber</div>
                 <div className="muted" style={{ marginTop: 6 }}>
                   Operasyon kanıtı ve hızlı aksiyon köprüsü. Bu bölüm seçili değilken gizli kalır.
                 </div>
@@ -367,7 +368,7 @@ export default function OperationHealthPanel() {
       ) : null}
 
       {activeTab === "problems" ? (
-        <section role="tabpanel" aria-label="Sürücü ve sorunlar" style={{ marginTop: 14 }}>
+        <section role="tabpanel" aria-label="Sürücü & Sorunlar" style={{ marginTop: 14 }}>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.55fr) minmax(320px, 1fr)", gap: 14, alignItems: "start" }}>
             <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -428,7 +429,7 @@ export default function OperationHealthPanel() {
                 <div>
                   <div style={{ fontWeight: 800, fontSize: 16 }}>Açık Sorunlar</div>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    Takip edilmesi gereken tanı ve rehber önerileri.
+                    Sürücü ve sorunlar için takip edilmesi gereken tanı ve rehber önerileri.
                   </div>
                 </div>
                 <div className="muted">Filtreye uyan: {filteredIssues.length}</div>

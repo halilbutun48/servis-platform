@@ -99,7 +99,7 @@ function RoomAgreementsRouteRefreshPendingCard({
     >
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontWeight: 900 }}>Sözleşme #{agreementId} • Rota güncelleme #{item.id}</div>
+          <div style={{ fontWeight: 900 }}>Sözleşme ID {agreementId} • Rota güncelleme ID {item.id}</div>
           <div className="muted" style={{ marginTop: 4 }}>
             {String(item?.startDate || "-").slice(0, 10)} → {String(item?.endDate || "-").slice(0, 10)} • {trDateTime(item?.createdAt)}
           </div>
@@ -112,7 +112,7 @@ function RoomAgreementsRouteRefreshPendingCard({
 
       <div style={{ marginTop: 12 }}>
         <AgreementRouteChangePreviewCard
-          summaryText={`Talep #${requestId} • ${String(item?.status || "-").toUpperCase()} • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
+          summaryText={`Talep ID ${requestId} • ${String(item?.status || "-").toUpperCase()} • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
           companyOfferNote={item?.initialCompanyOfferNote || item?.companyOfferNote || ""}
           roomCounterText={roomAmount == null ? "" : `${moneyTry(roomAmount)}${item?.roomCounterNote ? ` — ${item.roomCounterNote}` : ""}`}
           currentRouteLabel="Mevcut rota"
@@ -139,8 +139,8 @@ function RoomAgreementsRouteRefreshPendingCard({
           proposedPreviewShiftId={draftShiftId}
           currentPreviewButtonLabel="Mevcut Rotayı Gör"
           proposedPreviewButtonLabel="Yeni Rotayı Önizle"
-          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Mevcut Rota` }); }}
-          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(draftShiftId, { title: `Sözleşme #${agreementId} — Önerilen Yeni Rota` }); }}
+          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme ID ${agreementId} — Mevcut Rota` }); }}
+          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(draftShiftId, { title: `Sözleşme ID ${agreementId} — Önerilen Yeni Rota` }); }}
           actions={(
             <>
               <button type="button" className="btn sm ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onStartCounter(item); }}>
@@ -291,7 +291,7 @@ function RoomAgreementsRouteRefreshAcceptedCard({
     >
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontWeight: 900 }}>Sözleşme #{agreementId} • Uygulanan rota güncelleme #{item.id}</div>
+          <div style={{ fontWeight: 900 }}>Sözleşme ID {agreementId} • Uygulanan rota güncelleme ID {item.id}</div>
           <div className="muted" style={{ marginTop: 4 }}>
             {String(item?.startDate || "-").slice(0, 10)} → {String(item?.endDate || "-").slice(0, 10)} • Uygulandı: {trDateTime(item?.decidedAt || item?.updatedAt)}
           </div>
@@ -305,7 +305,7 @@ function RoomAgreementsRouteRefreshAcceptedCard({
 
       <div style={{ marginTop: 12 }}>
         <AgreementRouteChangePreviewCard
-          summaryText={`Talep #${item?.id || '-'} • Uygulandı • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
+          summaryText={`Talep ID ${item?.id || '-'} • Uygulandı • ${String(item?.startDate || "-").slice(0, 10)} → ${String(item?.endDate || "-").slice(0, 10)}`}
           companyOfferNote={item?.finalAcceptedNote || item?.initialCompanyOfferNote || item?.companyOfferNote || ""}
           roomCounterText={roomAmount == null ? "" : `${moneyTry(roomAmount)}${item?.roomCounterNote ? ` — ${item.roomCounterNote}` : ""}`}
           currentRouteLabel="Önceki rota"
@@ -330,8 +330,8 @@ function RoomAgreementsRouteRefreshAcceptedCard({
           proposedPreviewShiftId={acceptedShiftId}
           currentPreviewButtonLabel="Önceki Rotayı Gör"
           proposedPreviewButtonLabel="Uygulanan Rotayı Gör"
-          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Önceki Rota` }); }}
-          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(acceptedShiftId, { title: `Sözleşme #${agreementId} — Uygulanan Yeni Rota` }); }}
+          onOpenCurrentPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(sourceShiftId, { title: `Sözleşme ID ${agreementId} — Önceki Rota` }); }}
+          onOpenProposedPreview={(event) => { event?.stopPropagation?.(); onOpenPreview(acceptedShiftId, { title: `Sözleşme ID ${agreementId} — Uygulanan Yeni Rota` }); }}
         />
       </div>
       <div style={{ marginTop: 12 }}>
