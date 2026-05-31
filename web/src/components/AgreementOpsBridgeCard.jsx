@@ -61,10 +61,12 @@ export default function AgreementOpsBridgeCard({
   const agreementStatus = agreementStatusText(agreement?.status);
   const routeStateLabel = hasLastShift ? "Operasyona ulaştı" : generatedCount > 0 ? "Taslak bekliyor" : "Sadece önizleme";
   const riskLabel = hasLastShift ? "Düşük" : "Bilgi eksik";
-  const nextActionLabel = hasLastShift ? "Operasyon kaydını aç" : "Eksikleri tamamla";
+  const nextActionLabel = hasLastShift ? "Operasyon kaydını aç" : "Taslağı incele";
   const summarySentence = hasLastShift
     ? `Son vardiya hazır. ${vehicleLabel !== "-" ? `Araç ${vehicleLabel}.` : ""}${driverLabel !== "-" ? ` Sürücü ${driverLabel}.` : ""}`
-    : emptyText;
+    : generatedCount > 0
+      ? "Taslak hazır. Taslağı inceleyip eksik alanları kontrol edebilirsin. Eksikleri tamamla."
+      : emptyText || "Bu bağlantı için henüz vardiya üretilmedi. Taslak detayını görmek için detayı aç.";
 
   return (
     <div className="card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
@@ -102,7 +104,7 @@ export default function AgreementOpsBridgeCard({
       <div className="row" style={{ marginTop: 12, gap: 8, flexWrap: "wrap" }}>
         <button
           type="button"
-          className="btn"
+          className="btn primary"
           onClick={() => {
             if (hasLastShift) {
               onOpenShift?.(lastShift.id);
@@ -111,7 +113,7 @@ export default function AgreementOpsBridgeCard({
             setDetailsOpen(true);
           }}
         >
-          {hasLastShift ? "Operasyon kaydını aç" : "Eksikleri tamamla"}
+          {nextActionLabel}
         </button>
         <button type="button" className="btn ghost" onClick={() => setDetailsOpen((v) => !v)}>
           {detailsOpen ? "Detayı kapat" : "Detayı aç"}

@@ -6,8 +6,9 @@ export function AgreementWizardModal({ open, onClose, children }) {
         position: "fixed",
         inset: 0,
         background: "rgba(0,0,0,0.35)",
-        zIndex: 50,
+        zIndex: 9050,
         padding: 16,
+        paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
         overflow: "auto",
       }}
       onMouseDown={(e) => {

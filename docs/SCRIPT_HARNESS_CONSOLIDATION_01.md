@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `323`
-- Toplam executable tracked file: `1097`
-- Combined registry row: `1420`
-- Root/backend/web/mobile package dağılımı: root `166`, backend `663`, web `87`, mobile `201`
+- Toplam package script entry: `324`
+- Toplam executable tracked file: `1098`
+- Combined registry row: `1422`
+- Root/backend/web/mobile package dağılımı: root `167`, backend `664`, web `87`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `31`
+- Docs indexed: `32`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -21,9 +21,11 @@ Repo: `servis-platform`
 - Room vehicle/driver uppercase docs: `docs/ROOM_VEHICLE_DRIVER_UPPERCASE_NORMALIZATION_01.md`
 - Room panel clarity milestone: `UX-ROOM-PANEL-CLARITY-01`
 - Room panel clarity docs: `docs/UX_ROOM_PANEL_CLARITY_01.md`
+- Company mobile action clarity milestone: `UX-COMPANY-MOBILE-ACTION-CLARITY-01`
+- Company mobile action clarity docs: `docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `365`
-- ACTIVE_CORE: `131`
+- ACTIVE: `366`
+- ACTIVE_CORE: `132`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -43,7 +45,7 @@ Repo: `servis-platform`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `60`
-- Eski sistem term eşleşmesi: `256`
+- Eski sistem term eşleşmesi: `257`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -51,9 +53,9 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 365 |
+| ACTIVE | 366 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 131 |
+| ACTIVE_CORE | 132 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -193,6 +195,7 @@ Repo: `servis-platform`
 | root:check:uxroomshiftstabs01 | package.json | root | node backend/scripts/ux_room_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxschoolorganizationpanels01 | package.json | root | node backend/scripts/ux_school_organization_panels_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXSCHOOLORGANIZATIONPANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyshiftstabs01 | package.json | root | node backend/scripts/ux_company_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
+| root:check:uxcompanymobileactionclarity01 | package.json | root | node backend/scripts/ux_company_mobile_action_clarity_01_check.js | core | ACTIVE_CORE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyopspaneltabs01 | package.json | root | node backend/scripts/ux_company_ops_panel_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYOPSPANELTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyqualitytabs01 | package.json | root | node backend/scripts/ux_company_quality_panel_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYQUALITYTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanypanelsfinalpolish01 | package.json | root | node backend/scripts/ux_company_panels_final_polish_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
@@ -661,6 +664,7 @@ Repo: `servis-platform`
 | ux_room_driver_vehicle_link_dedup_01_check.js | backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | backend | root:check:uxroomdrivervehiclelinkdedup01 | product | ACTIVE |  | UX-ROOM-DRIVER-VEHICLE-LINK-DEDUP-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_panel_tabs_01_check.js | backend/scripts/ux_room_ops_panel_tabs_01_check.js | backend | root:check:uxroomopspaneltabs01 | product | ACTIVE |  | UX-ROOM-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_relationship_polish_01_check.js | backend/scripts/ux_room_ops_relationship_polish_01_check.js | backend | root:check:uxroomopsrelationshippolish01 | product | ACTIVE |  | UX-ROOM-OPS-RELATIONSHIP-POLISH-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_room_panel_clarity_01_check.js | backend/scripts/ux_room_panel_clarity_01_check.js | backend | root:check:uxroompanelclarity01 | product | ACTIVE |  | UX-ROOM-PANEL-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_shifts_tabs_01_check.js | backend/scripts/ux_room_shifts_tabs_01_check.js | backend | root:check:uxroomshiftstabs01 | product | ACTIVE |  | UX-ROOM-SHIFTS-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_vehicles_telematics_counts_fix_check.js | backend/scripts/ux_room_vehicles_telematics_counts_fix_check.js | backend | root:check:uxroomvehiclestelematicsfix | product | ACTIVE |  | UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_route_impact_preview_compact_01_check.js | backend/scripts/ux_route_impact_preview_compact_01_check.js | backend | root:check:uxrouteimpactpreviewcompact01 | product | ACTIVE |  | UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -844,7 +848,7 @@ Repo: `servis-platform`
 | rooms.js | backend/src/routes/rooms.js | backend |  | review | NEEDS_REVIEW |  | ROOMS |  | Owner or chain unclear |  |
 | routeTemplates.js | backend/src/routes/routeTemplates.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-TEMPLATES |  | Owner or chain unclear |  |
 | schoolParentInvites.js | backend/src/routes/schoolParentInvites.js | backend |  | review | NEEDS_REVIEW |  | SCHOOL-PARENT-INVITES |  | Owner or chain unclear |  |
-| company.js | backend/src/routes/shifts/company.js | backend | root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
+| company.js | backend/src/routes/shifts/company.js | backend | root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/shifts/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
 | index.js | backend/src/routes/shifts/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
@@ -1538,7 +1542,7 @@ Repo: `servis-platform`
 | Auth / login / role access | Mobile login, step-up, KVKK | backend/src/routes/personelAccess.js; backend/src/routes/live.js; auth / step-up services | mobile/src/screens/LoginScreen.js; mobile/src/screens/ForcePasswordChangeScreen.js; mobile/src/screens/PinChangeScreen.js; web/src/panels/shared/KvkkPanel.jsx; web/src/panels/shared/KvkkConsentGate.jsx; web/src/panels/shared/TotpStepUpCard.jsx | check:m98e2e; check:m98e2b; check:m98e2d; check:m98e5; check:m99kvkk01; check:m99ux01 | static + auth-session + device | PARTIAL_COVERAGE | No single canonical end-to-end login/role smoke; browser/device split stays manual. | M98 / M99 | MISSING_FUTURE_MILESTONE: SECURITY-KVKK-FINAL-01 |
 | Super Admin | Super Admin panels | backend/src/routes/live.js; backend/src/routes/company.js; backend/src/routes/organization.js; backend/src/routes/requests.js | web/src/panels/superadmin/SuperAdminPanel.jsx; UsersPanel.jsx; RoomsPanel.jsx; RegionsPanel.jsx; CompaniesPanel.jsx; CommercialCorePanel.jsx; AuditLogsPanel.jsx; LogExportPanel.jsx; TrustQualityPanel.jsx; FieldAcceptanceCenter.jsx | check:web01b; check:uxsuperadminoverviewcleanup01; check:uxsuperadminpanelclarity01; check:uxsuperadminlabelpolish01; check:uxsuperadminlivemonitoring01; check:uxsuperadminauditpanel01; check:uxsuperadminqualitypanel01; check:uxsuperadmincommercialflow01; check:uxsuperadminfielddispatchdiscovery01; check:uxsuperadminfieldacceptancecenter01; check:cop04bfix01; check:cop04bfix04; check:copliveaccept01; check:finaluxsmoke01 | static | COVERED_ACTIVE | None on the current static/product chain. | M97 / M99 / COP-04B | None |
 | Room / Oda | Room panels | backend/src/routes/shifts/room.js; backend/src/routes/requests.js; backend/src/routes/live.js; backend/src/routes/agreements.js | web/src/panels/room/roomOperationsBoard.jsx; roomShiftsMainSections.jsx; AgreementsPanel.jsx; ShiftsPanel.jsx; DriversPanel.jsx; MapPanel.jsx; VehiclesPanel.jsx; CommercialFlowPanel.jsx; CheckinPanel.jsx; HubPanel.jsx; OperationHealthPanel.jsx | check:uxroomopspaneltabs01; check:uxroomopsrelationshippolish01; check:uxroomshiftstabs01; check:uxroomvehiclestelematicsfix; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:routechangefinal01; check:finaluxsmoke01 | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS / ROUTE-CHANGE-FINAL | None |
-| Company / Firma | Company panels | backend/src/routes/shifts/company.js; backend/src/routes/agreements.js; backend/src/routes/company.js; backend/src/routes/requests.js; backend/src/routes/personelAccess.js | web/src/panels/company/OperationsPanel.jsx; ShiftsPanel.jsx; AgreementsPanel.jsx; AgreementWizard.jsx; CommercialFlowPanel.jsx; ServiceEvaluationPanel.jsx; MapPanel.jsx; WorkflowPanel.jsx; PersonelAccessPanel.jsx; PassengerLinksPanel.jsx; HubPanel.jsx; CompanyShiftsPanel* | check:uxcompanyopspaneltabs01; check:uxcompanyqualitytabs01; check:uxcompanypanelsfinalpolish01; check:uxcompanypanelssmoke01; check:routechangefinal01; check:boardingops01b; check:boardingops01c | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | ROUTE-CHANGE-FINAL / BOARDING-OPS | None |
+| Company / Firma | Company panels | backend/src/routes/shifts/company.js; backend/src/routes/agreements.js; backend/src/routes/company.js; backend/src/routes/requests.js; backend/src/routes/personelAccess.js | web/src/panels/company/OperationsPanel.jsx; ShiftsPanel.jsx; AgreementsPanel.jsx; AgreementWizard.jsx; AgreementWizardModal.jsx; GuidedPlanModal.jsx; guidedPlanModalShell.jsx; CommercialFlowPanel.jsx; ServiceEvaluationPanel.jsx; MapPanel.jsx; WorkflowPanel.jsx; RoutePreviewModal.jsx; AgreementOpsBridgeCard.jsx; PersonelAccessPanel.jsx; PassengerLinksPanel.jsx; HubPanel.jsx; CompanyShiftsPanel* | check:uxcompanyshiftstabs01; check:uxcompanymobileactionclarity01; check:uxcompanyopspaneltabs01; check:uxcompanyqualitytabs01; check:uxcompanypanelssmoke01; check:routechangefinal01; check:boardingops01b; check:boardingops01c | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | ROUTE-CHANGE-FINAL / BOARDING-OPS | None |
 | School / Okul | School panels | backend/src/routes/schoolParentInvites.js; backend/src/routes/requests.js; backend/src/routes/shifts/room.js | web/src/panels/school/OperationsPanel.jsx; ParentInvitePanel.jsx | check:uxschoolorganizationpanels01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:finaluxsmoke01 | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS / FINAL-UX-SMOKE | None |
 | Organization / Kurum | Organization panels | backend/src/routes/organization.js | web/src/panels/organization/PlansPanel.jsx; CenterPanel.jsx; organizationPlansShared.jsx | check:uxnav01; check:routechangefinal01; check:finaluxsmoke01; check:web01b | static | PARTIAL_COVERAGE | Dedicated organization flow smoke is narrower than company/room coverage. | UX-NAV / ROUTE-CHANGE-FINAL | MISSING_FUTURE_MILESTONE: ORG-CONTEXT-FINAL-01 |
 | Driver / Sürücü | Driver panels | backend/src/routes/driver.js; backend/src/routes/shifts/driver.js; backend/src/routes/live.js | web/src/panels/driver/TodayPanel.jsx; RoutePanel.jsx; MapPanel.jsx; CheckinPanel.jsx; PinChangePanel.jsx | check:driverflowfinal01; check:boardingops01c; check:etasanity01; check:etaosrm01; check:etaosrm02; check:m95e20; check:m95e23b; check:m98e3; check:m98e4 | static + device + manual | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS-01C / ETA | None |

@@ -168,6 +168,19 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   width: 100%;
 }
 
+.companyActionClarityScope {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.companyActionClarityScope .btn.primary,
+.companyActionClarityScope .btn.sm.primary {
+  position: relative;
+  z-index: 4305;
+  scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom));
+}
+
 .roomCommercialWorkspaceFull > * {
   width: 100%;
   min-width: 0;
@@ -454,7 +467,7 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .shellContent { padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 .page, .page--fluid { width: 100%; min-width: 0; }
 /* M33.6b modal helpers */
-.modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:16px; z-index:9000; }
+.modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom)); z-index:9000; }
 .modal{ width:100%; max-height:90vh; overflow:auto; }
 
 .shellTopBrand { min-width: 0; }
@@ -1109,7 +1122,7 @@ button, input, select, textarea, .btn, .secondary {
   .shellContent { padding: 12px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
   .card { padding: 14px; }
   .tbl { min-width: 640px; }
-  .modal-backdrop { align-items: flex-end; padding: 10px; }
+  .modal-backdrop { align-items: flex-end; padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
   .modal { max-height: min(88vh, 88dvh); border-radius: 16px 16px 0 0; }
   .panelChromeHead { flex-direction: column; align-items: flex-start; }
   .panelChromeActions, .saActions { width: 100%; justify-content: flex-start; }
@@ -1121,6 +1134,9 @@ button, input, select, textarea, .btn, .secondary {
   .flow-summary-head { flex-direction: column; }
   .flow-summary-status { align-self: flex-start; }
   .system-mode-summary-head { flex-direction: column; }
+  .companyActionClarityScope {
+    padding-bottom: calc(240px + env(safe-area-inset-bottom));
+  }
 }
 
 @media (min-width: 641px) and (max-width: 900px) {
@@ -1191,7 +1207,7 @@ button, input, select, textarea, .btn, .secondary {
   .panelChromeActions > *, .saActions > * { flex: 1 1 100%; }
   .btn, .secondary, .navItem, .tabletQuickButton { min-height: 44px; }
   .tbl { min-width: 640px; }
-  .modal-backdrop { align-items: flex-end; padding: 8px; }
+  .modal-backdrop { align-items: flex-end; padding: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   .modal { width: 100%; max-height: min(92dvh, 92vh); border-radius: 18px 18px 0 0; }
 
   .routePreviewModal {
@@ -1211,6 +1227,9 @@ button, input, select, textarea, .btn, .secondary {
   }
   .routePreviewMapFrame {
     height: min(42vh, 360px);
+  }
+  .companyActionClarityScope {
+    padding-bottom: calc(200px + env(safe-area-inset-bottom));
   }
 }
 

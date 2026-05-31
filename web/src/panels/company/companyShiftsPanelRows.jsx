@@ -113,17 +113,22 @@ function CompanyOpsCell({ busy, shift, agreementConversion, onOpenOpsEvents, onC
                 Önceki talep sonuçlandı
               </span>
             ) : null}
-            <button
-              type="button"
-              className="btn sm"
-              disabled={busy || !canConvert}
-              title={!Number(shift?.roomId || 0) ? "Önce room seçili olmalı." : "Bu vardiya düzenini sözleşmeye taşı."}
-              onClick={() => onConvertShiftToAgreement?.(shift)}
-            >
-              {hadClosedAgreementRequest ? "Yeniden Dönüştür" : "Sözleşmeye Dönüştür"}
-            </button>
-          </>
-        )}
+          <button
+            type="button"
+            className="btn sm primary"
+            disabled={busy || !canConvert}
+            title={!Number(shift?.roomId || 0) ? "Önce room seçili olmalı. Sonra taslak Company Sözleşmeler ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
+            onClick={() => onConvertShiftToAgreement?.(shift)}
+          >
+            {hadClosedAgreementRequest ? "Yeniden Dönüştür" : "Sözleşmeye Dönüştür"}
+          </button>
+          {canConvert ? (
+            <div className="muted" style={{ fontSize: 12, lineHeight: 1.35 }}>
+            Vardiyayı sözleşmeye dönüştür: tıkladığında vardiya Company Sözleşmeler ekranında taslak olarak açılır.
+            </div>
+          ) : null}
+        </>
+      )}
       </div>
     </td>
   );

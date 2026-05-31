@@ -853,7 +853,7 @@ useEffect(() => {
   }
 
   return (
-    <div>
+    <div className="companyActionClarityScope">
       <CompanyShiftsPanelIntro
         err={err}
         applyToast={applyToast}

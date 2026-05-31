@@ -271,7 +271,7 @@ function scrollToStopRow(stopId) {
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop routePreviewBackdrop" style={{ zIndex: 60, background: "rgba(0,0,0,0.55)" }}>
+    <div className="modal-backdrop routePreviewBackdrop" style={{ zIndex: 9055, background: "rgba(0,0,0,0.55)" }}>
       <div className="card modal routePreviewModal">
         <div className="routePreviewHeader">
           <div>
@@ -344,7 +344,7 @@ function scrollToStopRow(stopId) {
         <div className="routePreviewActions">
           <button
             type="button"
-            className="btn sm"
+            className="btn sm primary"
             onClick={openPreviewExternalNavigation}
             disabled={!canOpenExternalNav}
             title={!canOpenExternalNav ? "Navigasyon için en az 2 nokta gerekir." : ""}

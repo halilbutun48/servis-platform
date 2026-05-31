@@ -1097,8 +1097,9 @@ export default function AgreementsPanel() {
   }, [selectedAgreementCopilotContext]);
 
   return (
-    <div style={{ padding: 16, display: "grid", gap: 12 }}>
-      <CompanyAgreementsOverviewSection
+    <div className="companyActionClarityScope">
+      <div style={{ padding: 16, display: "grid", gap: 12 }}>
+        <CompanyAgreementsOverviewSection
         busy={busy}
         statusFilter={statusFilter}
         take={take}
@@ -1112,17 +1113,17 @@ export default function AgreementsPanel() {
         onReload={load}
       />
 
-      {err ? <div className="muted" style={{ color: "crimson" }}>{String(err)}</div> : null}
+        {err ? <div className="muted" style={{ color: "crimson" }}>{String(err)}</div> : null}
 
-      <PanelSegmentTabs
+        <PanelSegmentTabs
         ariaLabel="Sözleşme görünümü"
         tabs={AGREEMENTS_VIEW_TABS}
         value={viewMode}
         onChange={setViewMode}
       />
 
-      {viewMode === "bridge" ? (
-        <>
+        {viewMode === "bridge" ? (
+          <>
           {selectedAgreementRow?.a && selectedAgreementOrigin ? (
             <CompanyAgreementsSourceShiftSection
               origin={selectedAgreementOrigin}
@@ -1209,11 +1210,11 @@ export default function AgreementsPanel() {
               onRejectCounter={() => rejectRouteRefreshCounter(selectedRouteRefreshPending.id)}
             />
           ) : null}
-        </>
-      ) : null}
+          </>
+        ) : null}
 
-      {viewMode === "wizard" ? (
-        <>
+        {viewMode === "wizard" ? (
+          <>
           <div className="card">
             <div style={{ fontWeight: 900 }}>Sözleşme oluşturma kuralı</div>
             <div className="muted" style={{ marginTop: 4 }}>
@@ -1231,11 +1232,11 @@ export default function AgreementsPanel() {
               />
             </div>
           </div>
-        </>
-      ) : null}
+          </>
+        ) : null}
 
-      {viewMode === "list" ? (
-        <div className="tableWrap">
+        {viewMode === "list" ? (
+          <div className="tableWrap">
           <CompanyAgreementsSelectedSummarySection
             selectedLabel={selectedAgreementCopilotContext?.label || ""}
             selectedSummary={selectedAgreementCopilotContext?.summary || ""}
@@ -1349,10 +1350,10 @@ export default function AgreementsPanel() {
               ) : null}
             </tbody>
           </table>
-        </div>
-      ) : null}
+          </div>
+        ) : null}
 
-      <GuidedPlanModal
+        <GuidedPlanModal
         open={guidedOpen}
         onClose={() => {
           setGuidedOpen(false);
@@ -1367,6 +1368,7 @@ export default function AgreementsPanel() {
         launchContext={routeRefreshLaunch}
         launchNonce={routeRefreshNonce}
       />
+      </div>
     </div>
   );
 }

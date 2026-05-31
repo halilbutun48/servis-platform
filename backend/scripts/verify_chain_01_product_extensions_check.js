@@ -150,6 +150,7 @@ function main() {
   must(pkg, '"check:uxroomshiftstabs01"', 'package.json exposes check:uxroomshiftstabs01');
   must(pkg, '"check:uxschoolorganizationpanels01"', 'package.json exposes check:uxschoolorganizationpanels01');
   must(pkg, '"check:uxcompanyshiftstabs01"', 'package.json exposes check:uxcompanyshiftstabs01');
+  must(pkg, '"check:uxcompanymobileactionclarity01": "node backend/scripts/ux_company_mobile_action_clarity_01_check.js"', 'package.json exposes check:uxcompanymobileactionclarity01');
   must(pkg, '"check:uxcompanyopspaneltabs01"', 'package.json exposes check:uxcompanyopspaneltabs01');
   must(pkg, '"check:uxcompanyqualitytabs01"', 'package.json exposes check:uxcompanyqualitytabs01');
   must(pkg, '"check:uxcompanypanelsfinalpolish01"', 'package.json exposes check:uxcompanypanelsfinalpolish01');
@@ -260,8 +261,8 @@ function main() {
     'check:uxroomshiftstabs01',
     'check:uxschoolorganizationpanels01',
     'check:uxcompanyshiftstabs01',
+    'check:uxcompanymobileactionclarity01',
     'check:uxcompanyopspaneltabs01',
-    'check:uxcompanypanelsfinalpolish01',
     'check:uxcompanypanelssmoke01',
     'check:uxpaneltabsfix01',
     'check:uxlivemaptabsfix01',
@@ -383,6 +384,9 @@ function main() {
   must(guide, 'check:uxschoolorganizationpanels01', 'script guide exposes check:uxschoolorganizationpanels01');
   must(guide, 'UX-COMPANY-SHIFTS-TABS-01', 'script guide mentions UX-COMPANY-SHIFTS-TABS-01');
   must(guide, 'check:uxcompanyshiftstabs01', 'script guide exposes check:uxcompanyshiftstabs01');
+  must(guide, 'UX-COMPANY-MOBILE-ACTION-CLARITY-01', 'script guide mentions UX-COMPANY-MOBILE-ACTION-CLARITY-01');
+  must(guide, 'check:uxcompanymobileactionclarity01', 'script guide exposes check:uxcompanymobileactionclarity01');
+  must(guide, 'node backend\\scripts\\ux_company_mobile_action_clarity_01_check.js', 'script guide includes company mobile action clarity command');
   must(guide, 'UX-COMPANY-OPS-PANEL-TABS-01', 'script guide mentions UX-COMPANY-OPS-PANEL-TABS-01');
   must(guide, 'check:uxcompanyopspaneltabs01', 'script guide exposes check:uxcompanyopspaneltabs01');
   must(guide, 'UX-COMPANY-QUALITY-PANEL-TABS-01', 'script guide mentions UX-COMPANY-QUALITY-PANEL-TABS-01');

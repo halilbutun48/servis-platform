@@ -90,6 +90,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
 - `check:uxroompanelclarity01` -> `node backend\scripts\ux_room_panel_clarity_01_check.js`
+- `check:uxcompanymobileactionclarity01` -> `node backend\scripts\ux_company_mobile_action_clarity_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
 - `check:routechangefinal01` -> `node backend\scripts\route_change_final_01_check.js`
 - `check:dynamicsavings01` -> `node backend\scripts\dynamic_savings_01_check.js`
@@ -1056,6 +1057,11 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:uxcompanyshiftstabs01` `Company / Vardiyalar` ekranını track-only yapıda dört gerçek taba böler: `Market`, `Bekleyen`, `Sözleşmeden Üretilen` ve `Diğer Vardiyalar`.
 - `Oluşturma`, `Liste` ve `Planlama Merkezi` tekrarları bu ekrandan kaldırılır; üstte yalnızca takip özet bandı ve kompakt filtre kalır.
 - Bu düzenleme `UX-ROOM-SHIFTS-TABS-01`, `UX-COMPANY-OPS-PANEL-TABS-01`, `UX-PANEL-STRUCTURE-02B`, `UX-PANEL-REALITY-CLEANUP-02D` ve `UX-LIVE-MAP-TABS-SIMPLIFY-01` zincirini bozmaz; ürün davranışını değiştirmez.
+
+### UX-COMPANY-MOBILE-ACTION-CLARITY-01 [CHECK]
+- `check:uxcompanymobileactionclarity01` `Company / Vardiyalar`, `Company / Sözleşmeler`, `Company / Ticari Akış` ve sözleşme taslak / önizleme yüzeylerinde mobile-safe ana aksiyonların görünür ve tıklanabilir kalmasını doğrular.
+- `Vardiyayı sözleşmeye dönüştür` akışı görünür primary CTA olarak korunur; `Taslağı incele` ve `Sözleşmeden üretilen vardiyaya git` gibi etiketler readonly preview ile gerçek akış ayrımını netleştirir.
+- `NavDock`, floating assistant/drawer ve alt sabit alanlar için safe-area + z-index hizası korunur; bu düzenleme backend route/write-path, schema ve runner policy'yi değiştirmez.
 
 ### UX-COMPANY-OPS-PANEL-TABS-01 [CHECK]
 - `check:uxcompanyopspaneltabs01` `Company / Operasyon Paneli`'ni summary-first + functional tab standardına taşır; `Özet`, `Servis Kümesi`, `Personel`, `Servis Zamanları`, `İstisnalar / Değişiklikler` ve `Bildirimler` aynı anda alt alta görünmez.

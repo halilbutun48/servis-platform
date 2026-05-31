@@ -8,8 +8,9 @@ export function Modal({ open, onClose, children }) {
         position: "fixed",
         inset: 0,
         background: "rgba(0,0,0,0.35)",
-        zIndex: 60,
+        zIndex: 9060,
         padding: 16,
+        paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
         overflow: "auto",
       }}
       onMouseDown={(e) => {

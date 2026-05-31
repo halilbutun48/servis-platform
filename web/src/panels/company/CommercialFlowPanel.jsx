@@ -55,13 +55,13 @@ function StatusBadge({ value }) {
 function resolveCommercialFlowTarget(item, agreementByShiftId) {
   const section = String(item?.section || "").trim();
   if (section === "pending") {
-    return { section: "pending", label: "Bekleyen", buttonLabel: "Bekleyeni aç", summaryLabel: "Bekleyen akışı" };
+    return { section: "pending", label: "Bekleyen", buttonLabel: "Bekleyen akışını aç", summaryLabel: "Bekleyen akışı" };
   }
   if (section === "market") {
-    return { section: "market", label: "Market", buttonLabel: "Marketi aç", summaryLabel: "Market akışı" };
+    return { section: "market", label: "Market", buttonLabel: "Market akışını aç", summaryLabel: "Market akışı" };
   }
   if (section === "list") {
-    return { section: "list", label: "Onaylı Kayıt", buttonLabel: "Kaydı aç", summaryLabel: "Onaylı Kayıt" };
+    return { section: "list", label: "Onaylı Kayıt", buttonLabel: "Onaylı kaydı aç", summaryLabel: "Onaylı Kayıt" };
   }
   const lookupAgreementId = Number(agreementByShiftId?.get(String(item?.shiftId || 0)) || 0);
   const agreementId = Number(item?.agreementId || lookupAgreementId || 0);
@@ -69,14 +69,14 @@ function resolveCommercialFlowTarget(item, agreementByShiftId) {
     return {
       section: "contract",
       label: "Sözleşmeden Üretilen",
-      buttonLabel: "Sözleşmeden Üretilen'e git",
+      buttonLabel: "Sözleşmeden üretilen vardiyaya git",
       summaryLabel: "Sözleşmeden Üretilen",
     };
   }
   return {
     section: "other",
     label: "Diğer Vardiyalar",
-    buttonLabel: "Diğer Vardiyalar'a git",
+    buttonLabel: "Diğer vardiyalara git",
     summaryLabel: "Diğer Vardiyalar",
   };
 }
@@ -308,7 +308,7 @@ export default function CompanyCommercialFlowPanel() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
+    <div className="companyActionClarityScope" style={{ display: "grid", gap: 14 }}>
       <PanelChrome
         title="Ticari Akışım"
         subtitle="Company için ticari görünüm artık gerçek market tekliflerinden beslenir. Vardiya üstündeki eski room-offer alanları burada referans alınmaz."
@@ -361,7 +361,7 @@ export default function CompanyCommercialFlowPanel() {
                       <td>{fmtTR(item.updatedAt)}</td>
                       <td>{item.nextStep}</td>
                       <td>
-                        <button type="button" onClick={() => { setSelectedId(item.id); const target = resolveCommercialFlowTarget(item, agreementByShiftId); openShifts(target.section, item.shiftId); }}>
+                        <button type="button" className="btn primary" onClick={() => { setSelectedId(item.id); const target = resolveCommercialFlowTarget(item, agreementByShiftId); openShifts(target.section, item.shiftId); }}>
                           {resolveCommercialFlowTarget(item, agreementByShiftId).buttonLabel}
                         </button>
                       </td>
@@ -394,7 +394,7 @@ export default function CompanyCommercialFlowPanel() {
                   Bağlı bölüm: <b>{selectedTarget?.label || "-"}</b>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" onClick={() => openShifts(selectedTarget?.section || selectedItem.section || "market", selectedItem.shiftId)}>
+                  <button type="button" className="btn primary" onClick={() => openShifts(selectedTarget?.section || selectedItem.section || "market", selectedItem.shiftId)}>
                     {selectedTarget?.buttonLabel || "Bağlı bölüme git"}
                   </button>
                 </div>

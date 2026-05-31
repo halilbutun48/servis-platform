@@ -118,6 +118,7 @@
     "check:uxroomshiftstabs01": "node backend/scripts/ux_room_shifts_tabs_01_check.js",
     "check:uxschoolorganizationpanels01": "node backend/scripts/ux_school_organization_panels_01_check.js",
     "check:uxcompanyshiftstabs01": "node backend/scripts/ux_company_shifts_tabs_01_check.js",
+    "check:uxcompanymobileactionclarity01": "node backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "check:uxcompanyopspaneltabs01": "node backend/scripts/ux_company_ops_panel_tabs_01_check.js",
     "check:uxcompanyqualitytabs01": "node backend/scripts/ux_company_quality_panel_tabs_01_check.js",
     "check:uxcompanypanelsfinalpolish01": "node backend/scripts/ux_company_panels_final_polish_01_check.js",
