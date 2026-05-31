@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 
 function fmtDateOnly(v) {
   const s = String(v || "").slice(0, 10);
@@ -26,8 +27,8 @@ export default function OrganizationCenterPanel() {
     try {
       const r = await api.get("/api/organization/plans");
       setPlans(Array.isArray(r?.items) ? r.items : []);
-    } catch (e) {
-      setErr(String(e?.message || e));
+    } catch {
+      setErr("Kurum planları şu anda okunamadı. Yenileyip tekrar deneyin.");
       setPlans([]);
     } finally {
       setBusy(false);
@@ -58,10 +59,35 @@ export default function OrganizationCenterPanel() {
   return (
     <div className="wrap">
       <div className="card">
-        <div className="title">Kurum Merkezi</div>
-        <div className="muted">
-          Operasyonun asıl çalışma ekranı <b>Kurum Planları</b> ekranıdır. Buradan planı açar,
-          markete çıkarır, room&apos;lara fiyatlı teklif yollar ve onay sonrası canlı haritadan takip edersin.
+        <FlowSummaryStrip
+          title="Kurum Merkezi"
+          description="Operasyonun asıl çalışma ekranı Kurum Planları ekranıdır. Buradan planı açar, markete çıkarır, room&apos;lara fiyatlı teklif yollar ve onay sonrası canlı haritadan takip edersin."
+          statusText={busy ? "Yükleniyor" : err ? "Bağlantı okunamadı" : `${stats.total} plan`}
+          tone={stats.total ? "success" : "warning"}
+          steps={[
+            `Taslak ${stats.draft}`,
+            `Markete açık ${stats.published}`,
+            `Konum ${stats.totalStops}`,
+          ]}
+        />
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Plan sayısı</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{stats.total}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Taslak plan</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{stats.draft}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Toplam konum</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{stats.totalStops}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Markete açılmış plan</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{stats.published}</div>
+          </div>
         </div>
       </div>
 
@@ -70,25 +96,6 @@ export default function OrganizationCenterPanel() {
           {err}
         </div>
       ) : null}
-
-      <div className="grid cols-2" style={{ marginTop: 12 }}>
-        <div className="card">
-          <div className="muted">Plan sayısı</div>
-          <div className="big">{stats.total}</div>
-        </div>
-        <div className="card">
-          <div className="muted">Taslak plan</div>
-          <div className="big">{stats.draft}</div>
-        </div>
-        <div className="card">
-          <div className="muted">Toplam konum</div>
-          <div className="big">{stats.totalStops}</div>
-        </div>
-        <div className="card">
-          <div className="muted">Markete açılmış plan</div>
-          <div className="big">{stats.published}</div>
-        </div>
-      </div>
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>

@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import { normalizeNotifV1 } from "../../utils/notificationV1";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { pillKeyFromAny } from "../../utils/uiStatus";
@@ -65,8 +67,8 @@ export default function NotificationsPanel() {
       const r = await api("/api/notifications/my", { token });
       const list = Array.isArray(r) ? r : Array.isArray(r?.items) ? r.items : [];
       setItems(list);
-    } catch (e) {
-      setErr(String(e?.message || e));
+    } catch {
+      setErr("Bildirimler şu anda okunamadı. Yenileyip tekrar deneyin.");
       setItems([]);
     } finally {
       setBusy(false);
@@ -159,6 +161,9 @@ export default function NotificationsPanel() {
     setFStatus("ALL");
   }
 
+  const visibleStatusText = `${filteredRows.length} / ${rows.length}`;
+  const visibleTone = filteredRows.length ? "success" : "warning";
+
   return (
     <div className="wrap notifWide">
       <style>{`
@@ -244,9 +249,40 @@ export default function NotificationsPanel() {
 
       <div className="notifLayout">
         <div className="card">
+          <FlowSummaryStrip
+            title="Bildirimler"
+            description="Son 100 kayıt filtrelenir; detay ve ham veri sadece kontrollü alanda açılır."
+            statusText={busy ? "Yükleniyor" : err ? "Bağlantı okunamadı" : visibleStatusText}
+            tone={visibleTone}
+            steps={[
+              `Scope ${scopes.length}`,
+              `Tip ${types.length}`,
+              `Durum ${statuses.length}`,
+            ]}
+          />
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
+            <div className="card" style={{ margin: 0, padding: 12 }}>
+              <div className="muted">Görüntülenen</div>
+              <div style={{ fontSize: 28, fontWeight: 800 }}>{filteredRows.length}</div>
+            </div>
+            <div className="card" style={{ margin: 0, padding: 12 }}>
+              <div className="muted">Toplam kayıt</div>
+              <div style={{ fontSize: 28, fontWeight: 800 }}>{rows.length}</div>
+            </div>
+            <div className="card" style={{ margin: 0, padding: 12 }}>
+              <div className="muted">Scope sayısı</div>
+              <div style={{ fontSize: 28, fontWeight: 800 }}>{scopes.length}</div>
+            </div>
+            <div className="card" style={{ margin: 0, padding: 12 }}>
+              <div className="muted">Tip sayısı</div>
+              <div style={{ fontSize: 28, fontWeight: 800 }}>{types.length}</div>
+            </div>
+          </div>
+
           <div className="notifTopbar">
             <div>
-              <h3 style={{ margin: 0 }}>Notifications</h3>
+              <h3 style={{ margin: 0 }}>Bildirimler</h3>
               <div className="muted">Son 100 kayıt</div>
             </div>
 
@@ -254,26 +290,26 @@ export default function NotificationsPanel() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Ara: id / type / title / message / veh..."
+                placeholder="Ara: id / tür / başlık / mesaj / araç ..."
                 style={{ minWidth: 240 }}
               />
 
               <select value={fScope} onChange={(e) => setFScope(e.target.value)}>
-                <option value="ALL">Scope: ALL</option>
+                <option value="ALL">Kapsam: Tümü</option>
                 {scopes.map((x) => (
                   <option key={x} value={x}>{x}</option>
                 ))}
               </select>
 
               <select value={fType} onChange={(e) => setFType(e.target.value)} style={{ minWidth: 160 }}>
-                <option value="ALL">Type: ALL</option>
+                <option value="ALL">Tür: Tümü</option>
                 {types.map((x) => (
                   <option key={x} value={x}>{x}</option>
                 ))}
               </select>
 
               <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} style={{ minWidth: 150 }}>
-                <option value="ALL">Status: ALL</option>
+                <option value="ALL">Durum: Tümü</option>
                 {statuses.map((x) => (
                   <option key={x} value={x}>{x}</option>
                 ))}
@@ -318,16 +354,16 @@ export default function NotificationsPanel() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Type</th>
-                    <th>Scope</th>
-                    <th>Region</th>
-                    <th>At</th>
-                    <th className="hideSm">Title</th>
-                    <th>Message</th>
-                    <th className="hideMd">Veh</th>
-                    <th className="hideMd">Kind</th>
-                    <th className="hideSm">Status</th>
-                    <th className="hideMd">Age</th>
+                    <th>Tür</th>
+                    <th>Kapsam</th>
+                    <th>Bölge</th>
+                    <th>Tarih</th>
+                    <th className="hideSm">Başlık</th>
+                    <th>Mesaj</th>
+                    <th className="hideMd">Araç</th>
+                    <th className="hideMd">Kategori</th>
+                    <th className="hideSm">Durum</th>
+                    <th className="hideMd">Yaş</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -393,7 +429,7 @@ export default function NotificationsPanel() {
                         <button
                           style={{ padding: "6px 10px" }}
                           onClick={() => setSelected(r)}
-                          title="v1 payload"
+                          title="Sistem detayını aç"
                           type="button"
                         >
                           Detay
@@ -451,7 +487,14 @@ export default function NotificationsPanel() {
               <b>Bölge:</b> {selected.regionLabel || "-"}
             </div>
 
-            <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{selected.payloadPretty}</pre>
+            <CollapsibleSection
+              title="Sistem kanıtı"
+              subtitle="Ham bildirim verisi yalnız ikinci katmanda görünür."
+              defaultOpen={false}
+              compact
+            >
+              <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{selected.payloadPretty}</pre>
+            </CollapsibleSection>
           </div>
         </div>
       ) : null}

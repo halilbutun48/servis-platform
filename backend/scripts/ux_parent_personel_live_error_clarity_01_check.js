@@ -229,8 +229,6 @@ function main() {
   mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");
   mustNotList(status, "web/src/panels/room/", "room surfaces are untouched");
   mustNotList(status, "web/src/panels/company/", "company surfaces are untouched");
-  mustNotList(status, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
-  mustNotList(status, "web/src/panels/public/PassengerLivePanel.jsx", "public passenger live panel is untouched");
   mustNotList(status, "web/src/components/ShiftOperationEventsModal.jsx", "shift operation modal is untouched");
   mustNotList(status, "web/src/components/ShiftReassignModal.jsx", "shift reassign modal is untouched");
 

@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `325`
-- Toplam executable tracked file: `1099`
-- Combined registry row: `1424`
-- Root/backend/web/mobile package dağılımı: root `168`, backend `665`, web `87`, mobile `201`
+- Toplam package script entry: `326`
+- Toplam executable tracked file: `1102`
+- Combined registry row: `1428`
+- Root/backend/web/mobile package dağılımı: root `169`, backend `667`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `33`
+- Docs indexed: `34`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -25,9 +25,11 @@ Repo: `servis-platform`
 - Company mobile action clarity docs: `docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md`
 - Parent / Personel live error clarity milestone: `UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01`
 - Parent / Personel live error clarity docs: `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md`
+- Panel standard architecture milestone: `UX-PANEL-STANDARD-ARCHITECTURE-01`
+- Panel standard architecture docs: `docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `367`
-- ACTIVE_CORE: `133`
+- ACTIVE: `369`
+- ACTIVE_CORE: `134`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -43,11 +45,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `508`
+- NEEDS_REVIEW: `509`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `60`
-- Eski sistem term eşleşmesi: `257`
+- Eski sistem term eşleşmesi: `258`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -55,16 +57,16 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 367 |
+| ACTIVE | 369 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 133 |
+| ACTIVE_CORE | 134 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 9 |
-| NEEDS_REVIEW | 508 |
+| NEEDS_REVIEW | 509 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -213,6 +215,7 @@ Repo: `servis-platform`
 | root:check:uxpanellayoutwidth02cfix03 | package.json | root | node backend/scripts/ux_panel_layout_width_02c_fix_03_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXPANELLAYOUTWIDTH-02-CFIX-03 |  | Breaks canonical verification chain |  |
 | root:check:uxnav01 | package.json | root | node backend/scripts/ux_nav_01_premium_navdock_check.js | core | ACTIVE_CORE |  | UX-NAV-01 |  | Breaks canonical verification chain |  |
 | root:check:uxdensity01 | package.json | root | node backend/scripts/ux_density_01_panel_card_density_check.js | core | ACTIVE_CORE |  | UX-DENSITY-01 |  | Breaks canonical verification chain |  |
+| root:check:uxpanelstandardarchitecture01 | package.json | root | node backend/scripts/ux_panel_standard_architecture_01_check.js | core | ACTIVE_CORE |  | UX-PANEL-STANDARD-ARCHITECTURE-01 |  | Breaks canonical verification chain |  |
 | root:check:finaluxsmoke01 | package.json | root | node backend/scripts/final_ux_smoke_01_check.js | core | ACTIVE_CORE |  | FINAL-UX-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxlivepanelsmokeaudit01 | package.json | root | node backend/scripts/ux_live_panel_smoke_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXLIVEPANELSMOKEAUDIT-01 |  | Breaks canonical verification chain |  |
 | root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
@@ -662,9 +665,11 @@ Repo: `servis-platform`
 | ux_panel_layout_width_02c_fix_03_check.js | backend/scripts/ux_panel_layout_width_02c_fix_03_check.js | backend | root:check:uxpanellayoutwidth02cfix03 | product | ACTIVE |  | UX-PANEL-LAYOUT-WIDTH-02-C-FIX-03-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_reality_audit_02c_check.js | backend/scripts/ux_panel_reality_audit_02c_check.js | backend | root:check:uxpanelreality02c | product | ACTIVE |  | UX-PANEL-REALITY-AUDIT-02-C-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_reality_cleanup_02d_check.js | backend/scripts/ux_panel_reality_cleanup_02d_check.js | backend | root:check:uxpanelrealitycleanup02d, root:check:uxroomagreementstabs01 | product | ACTIVE |  | UX-PANEL-REALITY-CLEANUP-02-D-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_panel_standard_architecture_01_check.js | backend/scripts/ux_panel_standard_architecture_01_check.js | backend | root:check:uxpanelstandardarchitecture01 | product | ACTIVE |  | UX-PANEL-STANDARD-ARCHITECTURE-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_structure_02_check.js | backend/scripts/ux_panel_structure_02_check.js | backend | root:check:uxpanelstructure02 | product | ACTIVE |  | UX-PANEL-STRUCTURE-02-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_structure_02b_check.js | backend/scripts/ux_panel_structure_02b_check.js | backend | root:check:uxpanelstructure02b | product | ACTIVE |  | UX-PANEL-STRUCTURE-02-B-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_tabs_functional_02b_fix_01_check.js | backend/scripts/ux_panel_tabs_functional_02b_fix_01_check.js | backend | root:check:uxpaneltabsfix01 | product | ACTIVE |  | UX-PANEL-TABS-FUNCTIONAL-02-B-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_parent_personel_live_error_clarity_01_check.js | backend/scripts/ux_parent_personel_live_error_clarity_01_check.js | backend | root:check:uxparentpersonelliveerrorclarity01 | product | ACTIVE |  | UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_driver_vehicle_link_dedup_01_check.js | backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | backend | root:check:uxroomdrivervehiclelinkdedup01 | product | ACTIVE |  | UX-ROOM-DRIVER-VEHICLE-LINK-DEDUP-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_panel_tabs_01_check.js | backend/scripts/ux_room_ops_panel_tabs_01_check.js | backend | root:check:uxroomopspaneltabs01 | product | ACTIVE |  | UX-ROOM-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_relationship_polish_01_check.js | backend/scripts/ux_room_ops_relationship_polish_01_check.js | backend | root:check:uxroomopsrelationshippolish01 | product | ACTIVE |  | UX-ROOM-OPS-RELATIONSHIP-POLISH-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -993,6 +998,7 @@ Repo: `servis-platform`
 | gpsSourceVisibility.js | web/src/utils/gpsSourceVisibility.js | web |  | review | NEEDS_REVIEW |  | GPS-SOURCE-VISIBILITY |  | Owner or chain unclear |  |
 | labels.js | web/src/utils/labels.js | web |  | review | NEEDS_REVIEW |  | LABELS |  | Owner or chain unclear |  |
 | listUi.js | web/src/utils/listUi.js | web |  | review | NEEDS_REVIEW |  | LIST-UI |  | Owner or chain unclear |  |
+| liveTrackingCopy.js | web/src/utils/liveTrackingCopy.js | web |  | review | NEEDS_REVIEW |  | LIVE-TRACKING-COPY |  | Owner or chain unclear |  |
 | navigation.js | web/src/utils/navigation.js | web | mobile:check:m95e22b | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
 | notificationV1.js | web/src/utils/notificationV1.js | web |  | review | NEEDS_REVIEW |  | NOTIFICATION-V-1 |  | Owner or chain unclear |  |
 | offlineQueue.js | web/src/utils/offlineQueue.js | web |  | review | NEEDS_REVIEW |  | OFFLINE-QUEUE |  | Owner or chain unclear |  |

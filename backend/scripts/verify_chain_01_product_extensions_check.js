@@ -168,6 +168,7 @@ function main() {
   must(pkg, '"check:uxpanellayoutwidth02cfix03"', 'package.json exposes check:uxpanellayoutwidth02cfix03');
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
+  must(pkg, '"check:uxpanelstandardarchitecture01": "node backend/scripts/ux_panel_standard_architecture_01_check.js"', 'package.json exposes check:uxpanelstandardarchitecture01');
   must(pkg, '"check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js"', 'package.json exposes check:finaluxsmoke01');
   must(pkg, '"check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js"', 'package.json exposes check:uxlivepanelsmokeaudit01');
   must(pkg, '"smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs"', 'package.json exposes smoke:uxlivepanelpremium01');
@@ -277,6 +278,7 @@ function main() {
     'check:uxpanellayoutwidth02cfix03',
     'check:uxnav01',
     'check:uxdensity01',
+    'check:uxpanelstandardarchitecture01',
     'check:finaluxsmoke01',
     'check:uxlivepanelsmokeaudit01',
     'check:uxlivepanelpremiumsmoke01',

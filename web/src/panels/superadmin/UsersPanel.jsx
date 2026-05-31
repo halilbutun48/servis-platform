@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import ParentChildMiniPanel from "./ParentChildMiniPanel";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
 
@@ -29,6 +30,17 @@ function formatRegionContext(item) {
   if (ctx.regionName) parts.push(ctx.regionName);
   if (ctx.district) parts.push(ctx.district);
   return parts.length ? parts.join(" / ") : "-";
+}
+
+function roleLabel(role) {
+  const r = String(role || "-").trim().toUpperCase();
+  if (r === "SUPER_ADMIN") return "Süper yönetici";
+  if (r === "ROOM") return "Oda";
+  if (r === "COMPANY") return "Şirket";
+  if (r === "DRIVER") return "Sürücü";
+  if (r === "PERSONEL") return "Personel";
+  if (r === "PARENT") return "Veli";
+  return r;
 }
 
 export default function UsersPanel() {
@@ -74,8 +86,8 @@ export default function UsersPanel() {
       qs.set("take", "300");
       const res = await api(`/api/admin/users?${qs.toString()}`, { token });
       setItems(res.items || []);
-    } catch (e) {
-      setErr(e?.message || String(e));
+    } catch {
+      setErr("Kullanıcı listesi şu anda okunamadı. Yenileyip tekrar deneyin.");
     } finally {
       setBusy(false);
     }
@@ -85,8 +97,8 @@ export default function UsersPanel() {
     try {
       await loadRefs();
       await loadUsers();
-    } catch (e) {
-      setErr(e?.message || String(e));
+    } catch {
+      setErr("Kullanıcı paneli şu anda okunamadı. Yenileyip tekrar deneyin.");
     }
   }, [loadRefs, loadUsers]);
 
@@ -142,6 +154,19 @@ export default function UsersPanel() {
     return list;
   }, [items, statusFilter]);
 
+  const summary = useMemo(() => {
+    const list = Array.isArray(items) ? items : [];
+    const activeCount = list.filter((u) => !u.disabled).length;
+    const disabledCount = list.filter((u) => !!u.disabled).length;
+    const rolesCount = new Set(list.map((u) => String(u.role || "-").trim().toUpperCase()).filter(Boolean)).size;
+    return {
+      total: list.length,
+      activeCount,
+      disabledCount,
+      rolesCount,
+    };
+  }, [items]);
+
   async function createUser() {
     setErr("");
     setBusy(true);
@@ -173,8 +198,8 @@ export default function UsersPanel() {
       setLastPw({ login: r?.user?.username || body.username, password: r?.tempPassword || "" });
       setCreateForm({ role: "COMPANY", username: "", email: "", fullName: "", phone: "", companyId: "", roomId: "", password: "" });
       await loadUsers();
-    } catch (e) {
-      setErr(e?.message || String(e));
+    } catch {
+      setErr("Kullanıcı oluşturma işlemi şu anda tamamlanamadı. Yenileyip tekrar deneyin.");
     } finally {
       setBusy(false);
     }
@@ -188,8 +213,8 @@ export default function UsersPanel() {
     try {
       await api(`/api/admin/users/${id}/disable`, { method: "POST", token });
       await loadUsers();
-    } catch (e) {
-      setErr(e?.message || String(e));
+    } catch {
+      setErr("Kullanıcı pasifleştirme işlemi şu anda tamamlanamadı. Yenileyip tekrar deneyin.");
     } finally {
       setBusy(false);
     }
@@ -201,8 +226,8 @@ export default function UsersPanel() {
     try {
       await api(`/api/admin/users/${id}/enable`, { method: "POST", token });
       await loadUsers();
-    } catch (e) {
-      setErr(e?.message || String(e));
+    } catch {
+      setErr("Kullanıcı aktifleştirme işlemi şu anda tamamlanamadı. Yenileyip tekrar deneyin.");
     } finally {
       setBusy(false);
     }
@@ -217,8 +242,8 @@ export default function UsersPanel() {
       const r = await api(`/api/admin/users/${user.id}/reset-password`, { method: "POST", token });
       setLastPw({ login: r?.user?.username || user?.username || `#${user.id}`, password: r?.tempPassword || "" });
       await loadUsers();
-    } catch (e) {
-      setErr(e?.message || String(e));
+    } catch {
+      setErr("Şifre sıfırlama işlemi şu anda tamamlanamadı. Yenileyip tekrar deneyin.");
     } finally {
       setBusy(false);
     }
@@ -239,8 +264,8 @@ export default function UsersPanel() {
       await api(`/api/admin/users/${edit.id}`, { method: "PUT", body, token });
       setEdit(null);
       await loadUsers();
-    } catch (e) {
-      setErr(e?.message || String(e));
+    } catch {
+      setErr("Kullanıcı güncelleme işlemi şu anda tamamlanamadı. Yenileyip tekrar deneyin.");
     } finally {
       setBusy(false);
     }
@@ -254,15 +279,36 @@ export default function UsersPanel() {
 
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
-        <div>
-          <div className="panelTitle" style={{ marginBottom: 6 }}>Kullanıcılar</div>
-          <div className="panelMeta">Süper yönetici kullanıcı hesabı açar, kullanıcı adı tanımlar, gerektiğinde geçici şifre üretir, hesabı pasif eder veya yeniden açar. Reset sonrası ilk girişte şifre değişimi zorunludur.</div>
-        </div>
-        <div className="saActions">
-          <span className="pill" data-status="COUNT">
-            {view.length} kayıt
-          </span>
+      <div className="card" style={{ marginBottom: 12 }}>
+        <FlowSummaryStrip
+          title="Kullanıcılar"
+          description="Süper yönetici kullanıcı hesabı açar, kullanıcı adı tanımlar, gerektiğinde geçici şifre üretir, hesabı pasif eder veya yeniden açar. Reset sonrası ilk girişte şifre değişimi zorunludur."
+          statusText={busy ? "Yükleniyor" : err ? "Bağlantı okunamadı" : `${summary.total} kayıt`}
+          tone={summary.total ? "success" : "warning"}
+          steps={[
+            `Aktif ${summary.activeCount}`,
+            `Pasif ${summary.disabledCount}`,
+            `Roller ${summary.rolesCount}`,
+          ]}
+        />
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Kayıt sayısı</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{summary.total}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Aktif kullanıcı</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{summary.activeCount}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Pasif kullanıcı</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{summary.disabledCount}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Rol sayısı</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{summary.rolesCount}</div>
+          </div>
         </div>
       </div>
 
@@ -362,7 +408,7 @@ export default function UsersPanel() {
             Oluştur
           </button>
           <button className="btn" disabled={busy} onClick={loadRefs}>
-            Refs Yenile
+            Referansları Yenile
           </button>
         </div>
       </div>
@@ -435,7 +481,7 @@ export default function UsersPanel() {
               </div>
 
               <div>
-                <Pill>{u.role}</Pill>
+                <Pill>{roleLabel(u.role)}</Pill>
               </div>
 
               <div>{u.fullName}</div>
@@ -444,27 +490,27 @@ export default function UsersPanel() {
               <div>
                 {u.disabled ? (
                   <span className="pill" data-status="DISABLED">
-                    DISABLED
+                    PASİF
                   </span>
                 ) : (
                   <span className="pill" data-status="ACTIVE">
-                    ACTIVE
+                    AKTİF
                   </span>
                 )}
               </div>
 
               <div className="saActions">
                 <button className="btn sm" disabled={busy} onClick={() => resetPw(u)}>
-                  Reset PW
+                  Şifreyi Sıfırla
                 </button>
 
                 {u.disabled ? (
                   <button className="btn sm" disabled={busy} onClick={() => enableUser(u.id)}>
-                    Enable
+                    Aktifleştir
                   </button>
                 ) : (
                   <button className="btn sm" disabled={busy} onClick={() => disableUser(u.id)}>
-                    Disable
+                    Pasifleştir
                   </button>
                 )}
 

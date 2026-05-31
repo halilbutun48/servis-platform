@@ -176,6 +176,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Ortak kart, başlık, badge, chip, buton ve tablo yoğunluğu daha tutarlı hale gelir; ürün davranışı değişmez.
 - NavDock role/kind IA, `Sefer Abi Terminali` ve `Sefer Abi’ye Sor` standardı korunur.
 
+### UX-PANEL-STANDARD-ARCHITECTURE-01 [CHECK]
+- `check:uxpanelstandardarchitecture01` tüm panel yüzeylerini summary-first, KPI / mini kart, ana aksiyon, işlevsel bölüm ve kontrollü detay standardına göre tarar.
+- Check script: `node backend\scripts\ux_panel_standard_architecture_01_check.js`
+- Doküman: `docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md`
+- Bu check ürün/business flow, backend route/write-path, schema sınırı, Playwright runner policy ve coverage matrix fail policy değiştirmez.
+
 ### UX-PANEL-STRUCTURE-02 [CHECK]
 - `check:uxpanelstructure02` uzun paneller için summary-first + tab/segmented + accordion bölümlenme standardını doğrular.
 - Kritik özet, ana filtre, ana tablo ve birincil aksiyonlar açık kalır; eş düzey alt modlar tab/segmented button olarak ayrılır, ikincil detaylar collapsible kalır.

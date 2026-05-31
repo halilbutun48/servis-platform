@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MapView from "../../components/map/MapView";
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
+import CollapsibleSection from "../../components/CollapsibleSection";
 import { getEtaDisplay } from "../../utils/etaSanity";
 
 function readTokenFromHash() {
@@ -140,7 +142,7 @@ export default function PassengerLivePanel() {
     const tk = readTokenFromHash();
     setToken(tk);
     if (!tk) {
-      setErr("Link token bulunamadı.");
+      setErr("Geçerli bağlantı bulunamadı.");
       setData(null);
       return;
     }
@@ -152,8 +154,8 @@ export default function PassengerLivePanel() {
       if (!res.ok) throw new Error(json?.error || "Link okunamadı");
       setErr("");
       setData(json);
-    } catch (e) {
-      setErr(String(e?.message || e));
+    } catch {
+      setErr("Canlı servis bilgisi şu anda okunamadı. Linki yenileyip tekrar deneyin.");
       setData(null);
     } finally {
       setBusy(false);
@@ -163,7 +165,7 @@ export default function PassengerLivePanel() {
   function requestMyLocation() {
     setGeoErr("");
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setGeoErr("Tarayıcı konum desteği vermiyor.");
+      setGeoErr("Bu cihaz konum paylaşımını desteklemiyor. Konum destekleyen bir cihazda tekrar deneyin.");
       return;
     }
     setGeoBusy(true);
@@ -176,9 +178,9 @@ export default function PassengerLivePanel() {
           accuracy: pos.coords.accuracy,
         });
       },
-      (e) => {
+      () => {
         setGeoBusy(false);
-        setGeoErr(String(e?.message || e));
+        setGeoErr("Konum henüz alınamadı. Konum iznini ve cihaz ayarlarını kontrol edin.");
       },
       { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
     );
@@ -268,11 +270,51 @@ export default function PassengerLivePanel() {
     return Math.max(1, Math.round(Number(nearestDistanceM) / 80));
   }, [nearestDistanceM]);
 
+  const liveStatusLabel = data
+    ? (isLive ? "Canlı" : data.phase === "SCHEDULED" ? "Planlandı" : "Tamamlandı")
+    : "Bekleniyor";
+  const etaSummary = isLive
+    ? getEtaDisplay({
+        etaMinutes: data?.etaMin,
+        gpsStatus: data?.vehicle?.gpsState?.lastUiStatus || data?.vehicle?.gpsState?.lastStatus || data?.status || (data ? "LIVE" : "UNKNOWN"),
+        gpsAge: data?.vehicle?.gpsLast || data?.gpsLast,
+        nextStopName: data?.nextStop?.name,
+      })
+    : "Vardiya saatinde görünür";
+  const liveSteps = [
+    `Durak ${shiftStops.length}`,
+    `Kalan ${data?.remainingStopsTotal ?? "-"}`,
+    `Konum ${myPos ? "Alındı" : "Bekleniyor"}`,
+  ];
+
   return (
     <div className="wrap">
       <div className="card">
-        <div className="title">Canlı Servis Linki</div>
-        <div className="muted">Bu bağlantı yalnızca size ait durak, araç yaklaşımı ve navigasyon bilgisini gösterir.</div>
+        <FlowSummaryStrip
+          title="Canlı Servis Linki"
+          description="Bu bağlantı yalnızca size ait durak, araç yaklaşımı ve navigasyon bilgisini gösterir."
+          statusText={busy ? "Yükleniyor" : err ? "Bağlantı okunamadı" : liveStatusLabel}
+          tone={isLive ? "success" : data ? "warning" : "info"}
+          steps={liveSteps}
+        />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Durum</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{liveStatusLabel}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">ETA</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{etaSummary}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Konum</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{myPos ? "Alındı" : "Bekleniyor"}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Kalan durak</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{data?.remainingStopsTotal ?? "-"}</div>
+          </div>
+        </div>
       </div>
 
       {err ? (
@@ -354,62 +396,72 @@ export default function PassengerLivePanel() {
             </div>
           </div>
 
-          <div className="card" style={{ marginTop: 12 }}>
-            <div className="title">Shift durakları</div>
-            <div className="muted" style={{ marginBottom: 8 }}>
-              Haritada tüm shift durakları mavi, kendi durağınız yeşil görünür. En yakın durak ayrıca üstte ve listede belirtilir.
-            </div>
-            {shiftStops.length ? (
-              <div style={{ display: "grid", gap: 6 }}>
-                {shiftStops.map((stop, idx) => {
-                  const isOwn = ownStop && sameStop(stop, ownStop);
-                  const isNearest = nearestStop && sameStop(stop, nearestStop);
-                  const quickUrl = buildUserNavUrl(stop, myPos);
-                  return (
-                    <div
-                      key={stop?.id ?? `shift-stop-row-${idx}`}
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "8px 10px",
-                        borderRadius: 10,
-                        background: "rgba(255,255,255,0.03)",
-                      }}
-                    >
-                      <div>
-                        <b>{stop?.name || `Durak #${stop?.id || idx + 1}`}</b>
-                        <span className="muted">
-                          {isOwn ? " • Kendi durağınız" : ""}
-                          {isNearest && !isOwn ? " • En yakın durak" : ""}
-                          {!stopCoord(stop) ? " • Koordinat yok" : ""}
-                        </span>
+          <div style={{ marginTop: 12 }}>
+            <CollapsibleSection
+              title="Detay"
+              subtitle="Shift durakları ve en yakın durak bilgisi kontrollü alanda gösterilir."
+              badge={shiftStops.length}
+              defaultOpen={false}
+              compact
+            >
+              {shiftStops.length ? (
+                <div style={{ display: "grid", gap: 6 }}>
+                  {shiftStops.map((stop, idx) => {
+                    const isOwn = ownStop && sameStop(stop, ownStop);
+                    const isNearest = nearestStop && sameStop(stop, nearestStop);
+                    const quickUrl = buildUserNavUrl(stop, myPos);
+                    return (
+                      <div
+                        key={stop?.id ?? `shift-stop-row-${idx}`}
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "8px 10px",
+                          borderRadius: 10,
+                          background: "rgba(255,255,255,0.03)",
+                        }}
+                      >
+                        <div>
+                          <b>{stop?.name || `Durak #${stop?.id || idx + 1}`}</b>
+                          <span className="muted">
+                            {isOwn ? " • Kendi durağınız" : ""}
+                            {isNearest && !isOwn ? " • En yakın durak" : ""}
+                            {!stopCoord(stop) ? " • Koordinat yok" : ""}
+                          </span>
+                        </div>
+                        {quickUrl ? (
+                          <button type="button" onClick={() => window.open(quickUrl, "_blank", "noopener,noreferrer")}>
+                            Git
+                          </button>
+                        ) : null}
                       </div>
-                      {quickUrl ? (
-                        <button type="button" onClick={() => window.open(quickUrl, "_blank", "noopener,noreferrer")}>
-                          Git
-                        </button>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="muted">Shift durağı bulunamadı.</div>
-            )}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="muted">Shift durağı bulunamadı.</div>
+              )}
+            </CollapsibleSection>
           </div>
 
-          <div className="card" style={{ marginTop: 12 }}>
-            <div className="muted" style={{ marginBottom: 8 }}>{isLive ? "Araç yaklaşımı ve tüm duraklar" : "Duraklar (araç yalnız vardiya saatinde görünür)"}</div>
-            <MapView vehicles={vehicles} stops={mapStops} />
+          <div style={{ marginTop: 12 }}>
+            <CollapsibleSection
+              title="Kanıt"
+              subtitle={isLive ? "Araç yaklaşımı ve tüm duraklar burada görülür." : "Duraklar yalnız vardiya saatinde canlı görünür."}
+              defaultOpen={false}
+              compact
+            >
+              <MapView vehicles={vehicles} stops={mapStops} />
+            </CollapsibleSection>
           </div>
         </>
       ) : null}
 
       {!data && !err ? (
-        <div className="card" style={{ marginTop: 12 }}>{busy ? "Yükleniyor..." : (token ? "Link okunuyor..." : "Token bekleniyor...")}</div>
+        <div className="card" style={{ marginTop: 12 }}>{busy ? "Yükleniyor..." : (token ? "Bağlantı okunuyor..." : "Bağlantı bekleniyor...")}</div>
       ) : null}
     </div>
   );

@@ -9,6 +9,7 @@ import { boardingChangeRouteRefreshLabel, boardingChangeRouteRefreshNote } from 
 
 import QueueDetailTable from "../../components/QueueDetailTable";
 import CollapsibleSection from "../../components/CollapsibleSection";
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import { useAutoReload } from "../../live/useAutoReload";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
@@ -37,6 +38,7 @@ export default function DriverTodayPanel() {
   const { token } = useSession();
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [online, setOnline] = useState(isOnline());
   const [qLen, setQLen] = useState(queueSize());
@@ -68,6 +70,14 @@ export default function DriverTodayPanel() {
   const hasBoardingChangeVisibility = boardingChangeEffects.length > 0 || (routeRefreshState && routeRefreshState !== "NONE");
 
   const hasAny = (today?.length || 0) + (tomorrow?.length || 0) > 0;
+  const liveSummaryStatus = !hasAny
+    ? "Bekleyen görev yok"
+    : active
+      ? "Aktif görev var"
+      : approvedTodayCount > 0
+        ? "Başlamaya hazır görev var"
+        : "Bugün görev yok";
+  const liveSummaryTone = active ? "success" : approvedTodayCount > 0 ? "warning" : "info";
 
   const activeLabel = useMemo(() => {
     if (!active && approvedTodayCount > 0) return "Henüz başlatılmış aktif görev yok";
@@ -183,11 +193,14 @@ export default function DriverTodayPanel() {
 
   async function load() {
     setErr("");
+    setLoading(true);
     try {
       const r = await api("/api/driver/shifts/today", { token });
       setData(r);
-    } catch (e) {
-      setErr(String(e?.message || e));
+    } catch {
+      setErr("Bugün vardiya bilgileri şu anda okunamadı. Yenileyip tekrar deneyin.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -274,9 +287,9 @@ useEffect(() => {
         throw e2;
       }
       navigate(`/driver/route?shift=${shiftId}`);
-    } catch (e) {
+    } catch {
       // Eğer endpoint yoksa veya yetki yoksa sürücü yine Rota ekranında manuel reached ile başlayabilir.
-      setErr(String(e?.message || e));
+      setErr("Görev başlatma işlemi şu anda tamamlanamadı. Yenileyip tekrar deneyin.");
     } finally {
       setBusyId(null);
     }
@@ -324,45 +337,74 @@ useEffect(() => {
   return (
     <div>
       <div className="card">
-        <h3>Bugün</h3>
-        <div className="muted">Tek hedef: aktif görevi gör → başlat → rota ekranında ulaşıldı ile ilerle.</div>
-<div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
-  <div className="row" style={{ gap: 8, alignItems: "center" }}>
-    {!online ? (
-      <span className="pill" style={{ fontWeight: 900 }} data-status="REJECTED">
-        OFFLINE {qLen ? `(${qLen})` : ""}
-      </span>
-    ) : qLen ? (
-      <span className="pill" style={{ fontWeight: 900 }} data-status="APPROVED">
-        KUYRUK: {qLen}
-      </span>
-    ) : null}
-  </div>
-</div>
+        <FlowSummaryStrip
+          title="Bugün"
+          description="Tek hedef: aktif görevi gör → başlat → rota ekranında ulaşıldı ile ilerle."
+          statusText={loading ? "Yükleniyor" : err ? "Bağlantı okunamadı" : online ? liveSummaryStatus : "Çevrimdışı"}
+          tone={liveSummaryTone}
+          steps={[
+            `Bugün ${today.length}`,
+            `Yarın ${tomorrow.length}`,
+            `Kuyruk ${qLen || 0}`,
+          ]}
+        />
 
-{qLen ? (
-  <div style={{ marginTop: 10 }}>
-    <CollapsibleSection
-      title="Kuyruk Detayı"
-      subtitle="Offline kuyruktaki bekleyen istekler. Sadece ikinci katmanı aç."
-      badge={qLen}
-      defaultOpen={false}
-      compact
-      rightAction={online && qLen ? (
-        <button type="button" disabled={flushing} onClick={flushNow} style={{ fontWeight: 900 }}>
-          {flushing ? "..." : `Kuyruğu Gönder (${qLen})`}
-        </button>
-      ) : null}
-    >
-      <QueueDetailTable
-        items={getQueue().map((x) => ({
-          ...x,
-          type: x.label || x.type || "-",
-        }))}
-      />
-    </CollapsibleSection>
-  </div>
-) : null}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 12 }}>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Bugün</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{today.length}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Onaylı</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{approvedTodayCount}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Yarın</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{tomorrow.length}</div>
+          </div>
+          <div className="card" style={{ margin: 0, padding: 12 }}>
+            <div className="muted">Kuyruk</div>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{qLen}</div>
+          </div>
+        </div>
+
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
+          <div className="row" style={{ gap: 8, alignItems: "center" }}>
+            {!online ? (
+              <span className="pill" style={{ fontWeight: 900 }} data-status="REJECTED">
+                ÇEVRİMDIŞI {qLen ? `(${qLen})` : ""}
+              </span>
+            ) : qLen ? (
+              <span className="pill" style={{ fontWeight: 900 }} data-status="APPROVED">
+                KUYRUK: {qLen}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {qLen ? (
+          <div style={{ marginTop: 10 }}>
+            <CollapsibleSection
+              title="Kuyruk Detayı"
+              subtitle="Offline kuyruktaki bekleyen istekler. Sadece ikinci katmanı aç."
+              badge={qLen}
+              defaultOpen={false}
+              compact
+              rightAction={online && qLen ? (
+                <button type="button" disabled={flushing} onClick={flushNow} style={{ fontWeight: 900 }}>
+                  {flushing ? "..." : `Kuyruğu Gönder (${qLen})`}
+                </button>
+              ) : null}
+            >
+              <QueueDetailTable
+                items={getQueue().map((x) => ({
+                  ...x,
+                  type: x.label || x.type || "-",
+                }))}
+              />
+            </CollapsibleSection>
+          </div>
+        ) : null}
       </div>
       {err ? <div className="card err">{err}</div> : null}
 

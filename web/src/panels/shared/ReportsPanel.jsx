@@ -121,7 +121,7 @@ export default function ReportsPanel() {
       if (signal?.aborted) return;
       setData((p) => ({ ...p, [activeTab]: json }));
     } catch (e) {
-      if (e?.name !== "AbortError") setErr(String(e?.message || e));
+      if (e?.name !== "AbortError") setErr("Raporlar şu anda okunamadı. Tarih aralığını genişletip tekrar deneyin.");
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
