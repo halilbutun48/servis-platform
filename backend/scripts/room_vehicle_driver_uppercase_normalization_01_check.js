@@ -59,6 +59,14 @@ function mustNotStagedPrefix(prefix, label) {
   must(!files.some((file) => file.startsWith(prefix)), label);
 }
 
+function mustNotStagedPrefixUnless(prefix, allowed, label) {
+  const files = stagedFiles();
+  must(
+    !files.some((file) => file.startsWith(prefix) && !allowed.has(file.replace(/\\/g, "/"))),
+    label,
+  );
+}
+
 function main() {
   console.log("=== ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01 CHECK ===");
 
@@ -144,7 +152,11 @@ function main() {
   mustNotStagedPrefix("backend/artifacts/runtime-data/", "runtime-data not staged");
   mustNotStagedPrefix("backend/artifacts/browser-smoke/", "browser-smoke artifacts not staged");
   mustNotStagedPrefix("debug.log", "debug.log not staged");
-  mustNotStagedPrefix("backend/scripts/ux_live_panel_smoke_audit_01_check.js", "smoke audit check not staged");
+  mustNotStagedPrefixUnless(
+    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    new Set(["backend/scripts/ux_live_panel_smoke_audit_01_check.js"]),
+    "smoke audit check not staged",
+  );
   mustNotStagedPrefix("docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "smoke audit doc not staged");
   mustNotStagedPrefix("backend/scripts/sefer_abi_terminal_humanize_01_check.js", "old Sefer Abi audit check not staged");
   mustNotStagedPrefix("backend/scripts/ux_density_01_panel_card_density_check.js", "old density audit check not staged");

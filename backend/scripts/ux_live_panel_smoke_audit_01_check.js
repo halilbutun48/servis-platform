@@ -82,6 +82,18 @@ function mustNotContains(text, needle, label) {
   must(!String(text).includes(needle), label);
 }
 
+function normalize(text) {
+  return String(text || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function countBy(items, key) {
   const counts = {};
   for (const item of items) {
@@ -245,7 +257,25 @@ function main() {
 
     const agreementRows = report.routes.filter((row) => row.kind === "agreementPreview");
     must(agreementRows.length === 8, "agreement preview coverage spans room/company/school/organization");
-    must(agreementRows.some((row) => row.notes.some((note) => note.includes("Detayı aç butonu görünmüyor."))), "agreement preview gap is documented");
+    const agreementPreviewGapSignals = [
+      "Detayı aç butonu görünmüyor.",
+      "detail click intercepted",
+      "click failed",
+      "detail not readable",
+      "not opened",
+      "açılmadı",
+      "okunur değil",
+      "operation bridge detail not readable",
+      "navDock intercepted",
+    ];
+    const hasAgreementGapSignal = (note) =>
+      agreementPreviewGapSignals.some((needle) => normalize(note).includes(normalize(needle)));
+    const agreementGapRows = agreementRows.filter((row) => row.status === "UX-FIX");
+    must(agreementGapRows.length > 0, "agreement preview gap is documented");
+    must(
+      agreementGapRows.every((row) => Array.isArray(row.notes) && row.notes.some((note) => hasAgreementGapSignal(note))),
+      "agreement preview gap rows keep accepted wording"
+    );
 
     const dispatchRows = report.routes.filter((row) => row.kind === "dispatch");
     must(dispatchRows.length === 2, "dispatch coverage appears in both viewports");

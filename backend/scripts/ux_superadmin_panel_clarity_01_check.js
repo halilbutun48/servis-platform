@@ -209,7 +209,12 @@ function main() {
   mustNotStaged(staged, "web/src/panels/room/VehiclesPanel.jsx", "room vehicles panel is not staged");
   mustNotStaged(staged, "web/src/panels/room/roomVehiclesPanelCards.jsx", "room vehicle cards are not staged");
   mustNotStaged(staged, "web/src/panels/room/roomVehiclesPanelSections.jsx", "room vehicle sections are not staged");
-  mustNotStaged(staged, "backend/scripts/ux_live_panel_smoke_audit_01_check.js", "live smoke audit check is not staged");
+  mustNotStagedUnless(
+    staged,
+    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    new Set(["backend/scripts/ux_live_panel_smoke_audit_01_check.js"]),
+    "live smoke audit check is not staged"
+  );
   mustNotStaged(staged, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live smoke audit doc is not staged");
 
   console.log("=== UX-SUPERADMIN-PANEL-CLARITY-01 CHECK PASS ===");

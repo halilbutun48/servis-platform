@@ -187,12 +187,15 @@ function main() {
 
   const staged = stagedNames();
   const stagedAllowed = new Set([
+    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "backend/scripts/ux_room_panel_clarity_01_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
@@ -220,7 +223,9 @@ function main() {
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",

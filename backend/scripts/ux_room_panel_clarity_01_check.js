@@ -180,6 +180,8 @@ function main() {
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",

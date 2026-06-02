@@ -187,6 +187,7 @@ function main() {
 
   const staged = stagedNames();
   const stagedAllowed = new Set([
+    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "web/src/index.css",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/DriversPanel.jsx",
@@ -213,6 +214,7 @@ function main() {
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
+    "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within room critical fix validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");

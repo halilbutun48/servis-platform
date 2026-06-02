@@ -222,6 +222,8 @@ function main() {
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "web/src/layout/AppShell.jsx",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
