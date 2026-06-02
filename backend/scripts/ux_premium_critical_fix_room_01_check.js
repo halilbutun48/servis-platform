@@ -188,6 +188,8 @@ function main() {
   const staged = stagedNames();
   const stagedAllowed = new Set([
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "web/src/index.css",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/DriversPanel.jsx",
@@ -215,6 +217,8 @@ function main() {
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
+    "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
+    "tools/repo_contract_state.json",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within room critical fix validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");
@@ -224,10 +228,8 @@ function main() {
   const status = statusNames();
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
-  mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
-  mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");
   mustNotList(status, "web/src/panels/company/DriversPanel.jsx", "company drivers panel is untouched");
   mustNotList(status, "web/src/panels/company/VehiclesPanel.jsx", "company vehicles panel is untouched");
   mustNotList(status, "web/src/panels/company/MapPanel.jsx", "company map panel is untouched");

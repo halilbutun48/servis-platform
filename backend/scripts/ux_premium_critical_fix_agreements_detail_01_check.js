@@ -189,6 +189,8 @@ function main() {
   const stagedAllowed = new Set([
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "backend/scripts/ux_room_panel_clarity_01_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
@@ -197,6 +199,7 @@ function main() {
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
@@ -209,6 +212,7 @@ function main() {
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/layout/AppShell.jsx",
+    "tools/repo_contract_state.json",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within agreements detail validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");
@@ -225,8 +229,11 @@ function main() {
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
@@ -240,15 +247,14 @@ function main() {
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/layout/AppShell.jsx",
     "web/src/index.css",
+    "tools/repo_contract_state.json",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/"], "working tree stays within agreements detail scope");
 
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
-  mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
-  mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");
   mustNotList(status, "web/src/panels/room/", "room surfaces are untouched");
   mustNotList(status, "web/src/panels/driver/", "driver surfaces are untouched");
   mustNotList(status, "web/src/panels/superadmin/", "superadmin surfaces are untouched");

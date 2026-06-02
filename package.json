@@ -139,6 +139,7 @@
     "check:uxpanelstandardarchitecture01": "node backend/scripts/ux_panel_standard_architecture_01_check.js",
     "check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js",
     "check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "check:uxsmokepassminusevidence01": "node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs",
     "check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js",
     "check:uxparentpersonelliveerrorclarity01": "node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",

@@ -497,6 +497,8 @@ function main() {
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "web/src/layout/AppShell.jsx",
     "web/src/components/AgreementOpsBridgeCard.jsx",
@@ -504,6 +506,7 @@ function main() {
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -512,6 +515,7 @@ function main() {
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
+    "tools/repo_contract_state.json",
     "web/src/index.css",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/DriversPanel.jsx",
@@ -543,10 +547,13 @@ function main() {
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
+    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "web/src/layout/AppShell.jsx",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -572,15 +579,17 @@ function main() {
     "web/src/panels/shared/ReportsPanel.jsx",
     "web/src/panels/superadmin/UsersPanel.jsx",
   ]);
-  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/"], "working tree stays within panel standard architecture scope");
+  allWithin(
+    status,
+    exactAllowed,
+    ["backend/artifacts/runtime-data/", "tools/repo_contract_state.json"],
+    "working tree stays within panel standard architecture scope",
+  );
 
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
-  mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
-  mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");
-
   console.log("=== UX-PANEL-STANDARD-ARCHITECTURE-01 CHECK PASS ===");
 }
 

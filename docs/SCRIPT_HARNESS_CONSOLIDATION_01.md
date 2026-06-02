@@ -5,15 +5,15 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `328`
-- Toplam executable tracked file: `1104`
-- Combined registry row: `1432`
-- Root/backend/web/mobile package dağılımı: root `171`, backend `669`, web `88`, mobile `201`
+- Toplam package script entry: `329`
+- Toplam executable tracked file: `1105`
+- Combined registry row: `1434`
+- Root/backend/web/mobile package dağılımı: root `172`, backend `670`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `36`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
-- UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
-- UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
+- UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
+- UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
 - Super Admin clarity milestone: `UX-SUPERADMIN-PANEL-CLARITY-01`
 - Super Admin clarity docs: `docs/UX_SUPERADMIN_PANEL_CLARITY_01.md`
@@ -33,9 +33,12 @@ Repo: `servis-platform`
 - Parent / Personel live error clarity docs: `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md`
 - Panel standard architecture milestone: `UX-PANEL-STANDARD-ARCHITECTURE-01`
 - Panel standard architecture docs: `docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md`
+- PASS-minus evidence milestone: `UX-SMOKE-PASS-MINUS-EVIDENCE-01`
+- PASS-minus evidence docs: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
+- PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `371`
-- ACTIVE_CORE: `135`
+- ACTIVE: `372`
+- ACTIVE_CORE: `136`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -63,9 +66,9 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 371 |
+| ACTIVE | 372 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 135 |
+| ACTIVE_CORE | 136 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -226,6 +229,7 @@ Repo: `servis-platform`
 | root:check:uxpanelstandardarchitecture01 | package.json | root | node backend/scripts/ux_panel_standard_architecture_01_check.js | core | ACTIVE_CORE |  | UX-PANEL-STANDARD-ARCHITECTURE-01 |  | Breaks canonical verification chain |  |
 | root:check:finaluxsmoke01 | package.json | root | node backend/scripts/final_ux_smoke_01_check.js | core | ACTIVE_CORE |  | FINAL-UX-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxlivepanelsmokeaudit01 | package.json | root | node backend/scripts/ux_live_panel_smoke_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXLIVEPANELSMOKEAUDIT-01 |  | Breaks canonical verification chain |  |
+| root:check:uxsmokepassminusevidence01 | package.json | root | node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js | core | ACTIVE_CORE |  | UX-SMOKE-PASS-MINUS-EVIDENCE-01 |  | Breaks canonical verification chain |  |
 | root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
 | root:check:uxlivepanelpremiumsmoke01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01_check.js | core | ACTIVE_CORE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxparentpersonelliveerrorclarity01 | package.json | root | node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js | core | ACTIVE_CORE |  | UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 |  | Breaks canonical verification chain |  |
@@ -641,7 +645,7 @@ Repo: `servis-platform`
 | sefer_score_01_check.js | backend/scripts/sefer_score_01_check.js | backend | root:check:seferscore01 | review | NEEDS_REVIEW |  | SEFER-SCORE-01-CHECK |  | Owner or chain unclear |  |
 | session_safe_panels_cleanup_hotfix_check.mjs | backend/scripts/session_safe_panels_cleanup_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | SESSION-SAFE-PANELS-CLEANUP-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | shift_dispatch_approval_fix_01_check.js | backend/scripts/shift_dispatch_approval_fix_01_check.js | backend | root:check:shiftdispatchapprovalfix01 | review | NEEDS_REVIEW |  | SHIFT-DISPATCH-APPROVAL-FIX-01-CHECK |  | Owner or chain unclear |  |
-| smoke.js | backend/scripts/smoke.js | backend | backend:current:surface, backend:m91:smoke, backend:m91:smoke:agreement, backend:m91:smoke:route-preview, backend:smoke, root:check:e2esmoke01, root:check:finaluxsmoke01, root:check:m95e26, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:smoke:m98e4, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | SMOKE |  | Owner or chain unclear |  |
+| smoke.js | backend/scripts/smoke.js | backend | backend:current:surface, backend:m91:smoke, backend:m91:smoke:agreement, backend:m91:smoke:route-preview, backend:smoke, root:check:e2esmoke01, root:check:finaluxsmoke01, root:check:m95e26, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxsmokepassminusevidence01, root:smoke:m98e4, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | SMOKE |  | Owner or chain unclear |  |
 | step06_stabil_check.js | backend/scripts/step06_stabil_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-06-STABIL-CHECK |  | Owner or chain unclear |  |
 | step1_security_foundation_check.js | backend/scripts/step1_security_foundation_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-SECURITY-FOUNDATION-CHECK |  | Owner or chain unclear |  |
 | step1_totp_stepup_check.js | backend/scripts/step1_totp_stepup_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-TOTP-STEPUP-CHECK |  | Owner or chain unclear |  |
@@ -678,6 +682,7 @@ Repo: `servis-platform`
 | ux_panel_structure_02b_check.js | backend/scripts/ux_panel_structure_02b_check.js | backend | root:check:uxpanelstructure02b | product | ACTIVE |  | UX-PANEL-STRUCTURE-02-B-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_tabs_functional_02b_fix_01_check.js | backend/scripts/ux_panel_tabs_functional_02b_fix_01_check.js | backend | root:check:uxpaneltabsfix01 | product | ACTIVE |  | UX-PANEL-TABS-FUNCTIONAL-02-B-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_parent_personel_live_error_clarity_01_check.js | backend/scripts/ux_parent_personel_live_error_clarity_01_check.js | backend | root:check:uxparentpersonelliveerrorclarity01 | product | ACTIVE |  | UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_premium_critical_fix_agreements_detail_01_check.js | backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js | backend | root:check:uxpremiumcriticalfixagreementsdetail01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_premium_critical_fix_room_01_check.js | backend/scripts/ux_premium_critical_fix_room_01_check.js | backend | root:check:uxpremiumcriticalfixroom01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_driver_vehicle_link_dedup_01_check.js | backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | backend | root:check:uxroomdrivervehiclelinkdedup01 | product | ACTIVE |  | UX-ROOM-DRIVER-VEHICLE-LINK-DEDUP-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_panel_tabs_01_check.js | backend/scripts/ux_room_ops_panel_tabs_01_check.js | backend | root:check:uxroomopspaneltabs01 | product | ACTIVE |  | UX-ROOM-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -688,6 +693,7 @@ Repo: `servis-platform`
 | ux_route_impact_preview_compact_01_check.js | backend/scripts/ux_route_impact_preview_compact_01_check.js | backend | root:check:uxrouteimpactpreviewcompact01 | product | ACTIVE |  | UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_school_organization_panels_01_check.js | backend/scripts/ux_school_organization_panels_01_check.js | backend | root:check:uxschoolorganizationpanels01 | product | ACTIVE |  | UX-SCHOOL-ORGANIZATION-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_sefer_abi_launcher_01_check.js | backend/scripts/ux_sefer_abi_launcher_01_check.js | backend | root:check:uxseferabilauncher01 | product | ACTIVE |  | UX-SEFER-ABI-LAUNCHER-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_smoke_pass_minus_evidence_01_check.js | backend/scripts/ux_smoke_pass_minus_evidence_01_check.js | backend | root:check:uxsmokepassminusevidence01 | product | ACTIVE |  | UX-SMOKE-PASS-MINUS-EVIDENCE-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_audit_panel_01_check.js | backend/scripts/ux_superadmin_audit_panel_01_check.js | backend | root:check:uxsuperadminauditpanel01 | product | ACTIVE |  | UX-SUPERADMIN-AUDIT-PANEL-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_commercial_flow_01_check.js | backend/scripts/ux_superadmin_commercial_flow_01_check.js | backend | root:check:uxsuperadmincommercialflow01 | product | ACTIVE |  | UX-SUPERADMIN-COMMERCIAL-FLOW-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_field_acceptance_center_01_check.js | backend/scripts/ux_superadmin_field_acceptance_center_01_check.js | backend | root:check:uxsuperadminfieldacceptancecenter01 | product | ACTIVE |  | UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -933,7 +939,6 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| ux_premium_critical_fix_agreements_detail_01_check.js | backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js | backend | root:check:uxpremiumcriticalfixagreementsdetail01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01-CHECK |  | Owner or chain unclear | product check/helper |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

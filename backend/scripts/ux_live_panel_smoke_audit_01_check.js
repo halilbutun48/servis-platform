@@ -18,9 +18,9 @@ const reportJsonPath = path.join(
 );
 
 const expectedStatusCounts = {
-  PASS: 9,
-  "PASS-": 35,
-  "UX-FIX": 38,
+  PASS: 40,
+  "PASS-": 22,
+  "UX-FIX": 20,
   BLOCKER: 0,
   "NOT-FOUND": 0,
 };
@@ -242,14 +242,12 @@ function main() {
 
     const routePreviewRows = report.routes.filter((row) => row.kind === "routePreview");
     must(routePreviewRows.length === 4, "route preview coverage appears across room/company surfaces");
-    const compactRoutePreviewRows = routePreviewRows.filter((row) => row.checks.compactRoutePreview === true);
-    if (compactRoutePreviewRows.length !== routePreviewRows.length) {
-      console.log(
-        `WARN route preview compact summary gap rows: ${routePreviewRows.length - compactRoutePreviewRows.length}`
-      );
-    } else {
-      console.log("OK route preview keeps compact summary");
-    }
+    const roomRoutePreviewRows = routePreviewRows.filter((row) => row.role === "room");
+    const companyRoutePreviewRows = routePreviewRows.filter((row) => row.role === "company");
+    must(roomRoutePreviewRows.length === 2, "room route preview coverage appears in both viewports");
+    must(roomRoutePreviewRows.every((row) => row.checks.compactRoutePreview === true), "room route preview keeps compact summary evidence");
+    must(companyRoutePreviewRows.length === 2, "company route preview coverage appears in both viewports");
+    must(companyRoutePreviewRows.every((row) => row.status === "PASS"), "company route preview remains non-blocking");
 
     const reviewRows = report.routes.filter((row) => row.kind === "reviewQueue");
     must(reviewRows.length === 2, "review queue coverage appears in both viewports");

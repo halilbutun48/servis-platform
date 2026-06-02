@@ -219,6 +219,8 @@ function main() {
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_room_panel_clarity_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
@@ -231,6 +233,7 @@ function main() {
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -238,6 +241,7 @@ function main() {
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "web/src/index.css",
+    "tools/repo_contract_state.json",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/DriversPanel.jsx",
     "web/src/panels/room/RoomDriversEditModal.jsx",
@@ -261,6 +265,8 @@ function main() {
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+    "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "web/src/layout/AppShell.jsx",
@@ -268,6 +274,7 @@ function main() {
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/components/RoutePreviewModal.jsx",
@@ -293,16 +300,15 @@ function main() {
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
+    "tools/repo_contract_state.json",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/"];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");
 
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
-  mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");
   mustNotList(status, "backend/artifacts/browser-smoke/", "browser-smoke artifacts stay out of the tree");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
-  mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");
   mustNotList(status, "web/src/panels/room/", "room surfaces are untouched");
   mustNotList(status, "web/src/panels/company/DriversPanel.jsx", "company drivers panel is untouched");
   mustNotList(status, "web/src/panels/company/VehiclesPanel.jsx", "company vehicles panel is untouched");

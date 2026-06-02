@@ -89,6 +89,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
+- `check:uxsmokepassminusevidence01` -> `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
 - `check:uxroompanelclarity01` -> `node backend\scripts\ux_room_panel_clarity_01_check.js`
 - `check:uxpremiumcriticalfixroom01` -> `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - `check:uxcompanymobileactionclarity01` -> `node backend\scripts\ux_company_mobile_action_clarity_01_check.js`
@@ -241,6 +242,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Browser-smoke report'u route, panel, tab, drawer, CTA ve mobile/desktop coverage görünürlüğü sağlar; `PASS`, `PASS-`, `UX-FIX`, `BLOCKER`, `AUTH-BLOCKED` ve `NOT-FOUND` sınıfları görünür kalır.
 - `BLOCKER` ve `NOT-FOUND` kapatıcıdır; `AUTH-BLOCKED` report-only auth/session notudur.
 - Bu check ürün/business flow değiştirmez; yalnızca coverage görünürlüğü, bucket doğruluğu ve okunabilirlik sorunlarını sınıflandırır.
+
+### UX-SMOKE-PASS-MINUS-EVIDENCE-01 [CHECK]
+- `check:uxsmokepassminusevidence01` PASS- bucket'ını hardcoded launcher-secondary baseline yerine evidence-based kılar.
+- PASS- için kabul edilen kanıtlar: review queue action eksikliği, room route preview kısa karar kartı, company vardiya -> sözleşme taslağı geçişi, commercial accepted/applied bucket, uzun live-map yüzeyleri ve parent console noise.
+- `Sefer Abi launcher secondary copilot olarak görünür.` tek başına PASS- nedeni değildir; `Harita / canlı takip dili görünür.` tek başına PASS- nedeni değildir.
+- Bu check ürün/business flow değiştirmez; yalnızca smoke classification standardını netleştirir.
+- Doküman: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
 
 ### UX-LIVE-PANEL-PREMIUM-SMOKE-01 [SMOKE]
 - `smoke:uxlivepanelpremium01` Playwright tabanlı canlı tarayıcı smoke runner'ıdır; desktop ve mobile viewport'ta public, room, company, super admin, driver, personel ve parent panellerini screenshot, console error ve page error sinyalleriyle toplar.

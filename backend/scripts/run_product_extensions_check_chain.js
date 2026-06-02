@@ -117,6 +117,7 @@ const steps = [
   'check:uxpanelstandardarchitecture01',
   'check:finaluxsmoke01',
   'check:uxlivepanelsmokeaudit01',
+  'check:uxsmokepassminusevidence01',
   'check:uxlivepanelpremiumsmoke01',
   'check:uxparentpersonelliveerrorclarity01',
   'check:livetrackingfinal01',
