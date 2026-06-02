@@ -195,6 +195,11 @@ function main() {
     "web/src/panels/room/RoomDriversStatusTable.jsx",
     "web/src/panels/room/ShiftsPanel.jsx",
     "web/src/panels/room/roomShiftsPanelSections.jsx",
+    "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "web/src/layout/AppShell.jsx",
+    "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/panels/company/AgreementsPanel.jsx",
+    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "package.json",
@@ -218,11 +223,14 @@ function main() {
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");
-  mustNotList(status, "backend/scripts/ux_live_panel_smoke_audit_01_check.js", "live panel smoke audit check is untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");
-  mustNotList(status, "web/src/panels/company/", "company surfaces are untouched");
+  mustNotList(status, "web/src/panels/company/DriversPanel.jsx", "company drivers panel is untouched");
+  mustNotList(status, "web/src/panels/company/VehiclesPanel.jsx", "company vehicles panel is untouched");
+  mustNotList(status, "web/src/panels/company/MapPanel.jsx", "company map panel is untouched");
+  mustNotList(status, "web/src/panels/company/CheckinPanel.jsx", "company check-in panel is untouched");
+  mustNotList(status, "web/src/panels/company/OffersPanel.jsx", "company offers panel is untouched");
   mustNotList(status, "web/src/panels/parent/", "parent surfaces are untouched");
   mustNotList(status, "web/src/panels/personel/", "personel surfaces are untouched");
   mustNotList(status, "web/src/panels/superadmin/", "superadmin surfaces are untouched");

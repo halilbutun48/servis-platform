@@ -15,6 +15,7 @@ export default function AppShell({ path, children }) {
   const isSchool = role === "COMPANY" && me?.companyKind === "SCHOOL";
   const isOrganization = role === "COMPANY" && me?.companyKind === "ORGANIZATION";
   const isTabletOpsRole = role === "ROOM" || role === "COMPANY";
+  const isAgreementsDetailRoute = /\/(company|organization|school)\/agreements(?:\?|$)/.test(String(path || ""));
   const stepUpProvider = getStepUpProvider();
   const shouldShowStepUpCard = isStepUpEnabled() && stepUpProvider !== "none";
 
@@ -23,7 +24,7 @@ export default function AppShell({ path, children }) {
   const isFluid = fluidPath.includes("/map") || /\/(copilot|natural-copilot)$/.test(fluidPath);
 
   return (
-    <div className={isTabletOpsRole ? "shell shell--tablet-ops" : "shell"} data-role={role}>
+    <div className={`${isTabletOpsRole ? "shell shell--tablet-ops" : "shell"}${isAgreementsDetailRoute ? " shell--agreements-detail" : ""}`} data-role={role}>
       <NavDock role={role} path={path} me={me} />
       <div className="shellMain">
         <div className="shellTop">

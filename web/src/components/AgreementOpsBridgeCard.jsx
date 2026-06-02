@@ -43,7 +43,7 @@ export default function AgreementOpsBridgeCard({
   onOpenPreview,
   emptyText = "Bu sözleşmeye bağlı üretilmiş vardiya henüz yok.",
 }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(true);
 
   if (!agreement) return null;
 
@@ -93,6 +93,9 @@ export default function AgreementOpsBridgeCard({
       <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
         {summarySentence}
       </div>
+      <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+        Bu alan önizlemedir; işlem başlatmaz.
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 12 }}>
         <SummaryChip label="Durum" value={routeStateLabel} tone={hasLastShift ? "good" : "warn"} />
@@ -102,6 +105,13 @@ export default function AgreementOpsBridgeCard({
       </div>
 
       <div className="row" style={{ marginTop: 12, gap: 8, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          className="btn sm primary"
+          onClick={() => setDetailsOpen(true)}
+        >
+          Detayı aç
+        </button>
         <button
           type="button"
           className="btn primary"

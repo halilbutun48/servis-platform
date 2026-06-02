@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `327`
-- Toplam executable tracked file: `1103`
-- Combined registry row: `1430`
-- Root/backend/web/mobile package dağılımı: root `170`, backend `668`, web `88`, mobile `201`
+- Toplam package script entry: `328`
+- Toplam executable tracked file: `1104`
+- Combined registry row: `1432`
+- Root/backend/web/mobile package dağılımı: root `171`, backend `669`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `35`
+- Docs indexed: `36`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -26,12 +26,15 @@ Repo: `servis-platform`
 - Room critical fix command: `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - Company mobile action clarity milestone: `UX-COMPANY-MOBILE-ACTION-CLARITY-01`
 - Company mobile action clarity docs: `docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md`
+- Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
+- Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
+- Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
 - Parent / Personel live error clarity milestone: `UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01`
 - Parent / Personel live error clarity docs: `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md`
 - Panel standard architecture milestone: `UX-PANEL-STANDARD-ARCHITECTURE-01`
 - Panel standard architecture docs: `docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `370`
+- ACTIVE: `371`
 - ACTIVE_CORE: `135`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
@@ -48,7 +51,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `509`
+- NEEDS_REVIEW: `510`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `60`
@@ -60,7 +63,7 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 370 |
+| ACTIVE | 371 |
 | ACTIVE_BACKEND_LINT | 2 |
 | ACTIVE_CORE | 135 |
 | ACTIVE_RELEASE_ONLY | 274 |
@@ -69,7 +72,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 9 |
-| NEEDS_REVIEW | 509 |
+| NEEDS_REVIEW | 510 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -201,6 +204,7 @@ Repo: `servis-platform`
 | root:check:uxroomdrivervehiclelinkdedup01 | package.json | root | node backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXROOMDRIVERVEHICLELINKDEDUP-01 |  | Owner or chain unclear |  |
 | root:check:uxroomshiftstabs01 | package.json | root | node backend/scripts/ux_room_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxpremiumcriticalfixroom01 | package.json | root | node backend/scripts/ux_premium_critical_fix_room_01_check.js | core | ACTIVE_CORE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01 |  | Breaks canonical verification chain |  |
+| root:check:uxpremiumcriticalfixagreementsdetail01 | package.json | root | node backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js | review | NEEDS_REVIEW |  | UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01 |  | Owner or chain unclear |  |
 | root:check:uxschoolorganizationpanels01 | package.json | root | node backend/scripts/ux_school_organization_panels_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXSCHOOLORGANIZATIONPANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyshiftstabs01 | package.json | root | node backend/scripts/ux_company_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanymobileactionclarity01 | package.json | root | node backend/scripts/ux_company_mobile_action_clarity_01_check.js | core | ACTIVE_CORE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01 |  | Breaks canonical verification chain |  |
@@ -674,6 +678,7 @@ Repo: `servis-platform`
 | ux_panel_structure_02b_check.js | backend/scripts/ux_panel_structure_02b_check.js | backend | root:check:uxpanelstructure02b | product | ACTIVE |  | UX-PANEL-STRUCTURE-02-B-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_tabs_functional_02b_fix_01_check.js | backend/scripts/ux_panel_tabs_functional_02b_fix_01_check.js | backend | root:check:uxpaneltabsfix01 | product | ACTIVE |  | UX-PANEL-TABS-FUNCTIONAL-02-B-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_parent_personel_live_error_clarity_01_check.js | backend/scripts/ux_parent_personel_live_error_clarity_01_check.js | backend | root:check:uxparentpersonelliveerrorclarity01 | product | ACTIVE |  | UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_premium_critical_fix_room_01_check.js | backend/scripts/ux_premium_critical_fix_room_01_check.js | backend | root:check:uxpremiumcriticalfixroom01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_driver_vehicle_link_dedup_01_check.js | backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | backend | root:check:uxroomdrivervehiclelinkdedup01 | product | ACTIVE |  | UX-ROOM-DRIVER-VEHICLE-LINK-DEDUP-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_panel_tabs_01_check.js | backend/scripts/ux_room_ops_panel_tabs_01_check.js | backend | root:check:uxroomopspaneltabs01 | product | ACTIVE |  | UX-ROOM-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_relationship_polish_01_check.js | backend/scripts/ux_room_ops_relationship_polish_01_check.js | backend | root:check:uxroomopsrelationshippolish01 | product | ACTIVE |  | UX-ROOM-OPS-RELATIONSHIP-POLISH-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -816,9 +821,9 @@ Repo: `servis-platform`
 | admin_logs.js | backend/src/routes/admin_logs.js | backend |  | review | NEEDS_REVIEW |  | ADMIN-LOGS |  | Owner or chain unclear |  |
 | agreementExtendNegotiationRouter.js | backend/src/routes/agreementExtendNegotiationRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-EXTEND-NEGOTIATION-ROUTER |  | Owner or chain unclear |  |
 | agreementRouteRefreshRouter.js | backend/src/routes/agreementRouteRefreshRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-ROUTER |  | Owner or chain unclear |  |
-| agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
+| agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
 | agreementsHelpers.js | backend/src/routes/agreementsHelpers.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENTS-HELPERS |  | Owner or chain unclear |  |
-| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:cop03b, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
+| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:cop03b, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
 | auth.js | backend/src/routes/auth.js | backend | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
 | auth_step2.js | backend/src/routes/auth_step2.js | backend |  | review | NEEDS_REVIEW |  | AUTH-STEP-2 |  | Owner or chain unclear |  |
 | availability.js | backend/src/routes/availability.js | backend | mobile:check:m96a | review | NEEDS_REVIEW |  | AVAILABILITY |  | Owner or chain unclear |  |
@@ -831,14 +836,14 @@ Repo: `servis-platform`
 | companyPersonels.js | backend/src/routes/companyPersonels.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-PERSONELS |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | drivers.js | backend/src/routes/drivers.js | backend |  | review | NEEDS_REVIEW |  | DRIVERS |  | Owner or chain unclear |  |
-| eta.js | backend/src/routes/eta.js | backend | mobile:check:m49, mobile:check:m49.1, mobile:check:m95b, root:check:etaosrm01, root:check:etaosrm02, root:check:etasanity01, root:check:pay01c | review | NEEDS_REVIEW |  | ETA |  | Owner or chain unclear |  |
+| eta.js | backend/src/routes/eta.js | backend | mobile:check:m49, mobile:check:m49.1, mobile:check:m95b, root:check:etaosrm01, root:check:etaosrm02, root:check:etasanity01, root:check:pay01c, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | ETA |  | Owner or chain unclear |  |
 | fieldAcceptance.js | backend/src/routes/fieldAcceptance.js | backend |  | review | NEEDS_REVIEW |  | FIELD-ACCEPTANCE |  | Owner or chain unclear |  |
 | geocode.js | backend/src/routes/geocode.js | backend |  | review | NEEDS_REVIEW |  | GEOCODE |  | Owner or chain unclear |  |
 | gps.js | backend/src/routes/gps.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend |  | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
@@ -928,7 +933,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| ux_premium_critical_fix_room_01_check.js | backend/scripts/ux_premium_critical_fix_room_01_check.js | backend | root:check:uxpremiumcriticalfixroom01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_premium_critical_fix_agreements_detail_01_check.js | backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js | backend | root:check:uxpremiumcriticalfixagreementsdetail01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01-CHECK |  | Owner or chain unclear | product check/helper |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

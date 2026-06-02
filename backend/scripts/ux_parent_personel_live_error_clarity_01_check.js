@@ -221,10 +221,13 @@ function main() {
     "backend/scripts/ux_room_panel_clarity_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "web/src/layout/AppShell.jsx",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -239,17 +242,18 @@ function main() {
     "web/src/panels/room/RoomDriversStatusTable.jsx",
     "web/src/panels/room/ShiftsPanel.jsx",
     "web/src/panels/room/roomShiftsPanelSections.jsx",
+    "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/panels/company/AgreementsPanel.jsx",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within parent/personel live error clarity validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");
   mustNotList(staged, "backend/artifacts/browser-smoke/", "browser-smoke artifacts are not staged");
   mustNotList(staged, "debug.log", "debug.log is not staged");
 
-  const status = statusNames().filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md");
+  const status = statusNames().filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md" && file !== "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md" && file !== "web/src/components/AgreementOpsBridgeCard.jsx" && file !== "web/src/panels/company/AgreementsPanel.jsx");
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");
-  mustNotList(status, "backend/scripts/ux_live_panel_smoke_audit_01_check.js", "live panel smoke audit check is untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");

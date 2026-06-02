@@ -92,6 +92,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxroompanelclarity01` -> `node backend\scripts\ux_room_panel_clarity_01_check.js`
 - `check:uxpremiumcriticalfixroom01` -> `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - `check:uxcompanymobileactionclarity01` -> `node backend\scripts\ux_company_mobile_action_clarity_01_check.js`
+- `check:uxpremiumcriticalfixagreementsdetail01` -> `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
 - `check:uxparentpersonelliveerrorclarity01` -> `node backend\scripts\ux_parent_personel_live_error_clarity_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
 - `check:routechangefinal01` -> `node backend\scripts\route_change_final_01_check.js`
@@ -1073,6 +1074,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - `Dispatch apply` CTA görünür kalır; `Detayı aç` CTA okunur ve tıklanabilir olur; sürücü listesinde `Sürücü kaydı`, `Düşük canlılık` ve `Çevrim dışı` gibi güvenli metinler korunur.
 - Mobilde `NavDock` ve floating assistant ile çakışmayı azaltmak için `roomCriticalFixScope` / `roomActionCTA` safe-area standardı kullanılır.
 - Doküman: `docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md`
+- Bu milestone yeni business flow, backend route/write-path, browser-smoke artifact veya runner/coverage policy açmaz.
+
+### UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01 [CHECK]
+- `check:uxpremiumcriticalfixagreementsdetail01` `Company / Sözleşmeler`, `Organization / Sözleşmeler` ve `School / Sözleşmeler` yüzeylerinde detail CTA ve okunabilirlik satırlarını küçük, kontrollü bir agreements detail dalgasında kapatır.
+- `Detayı aç`, `Taslağı incele` ve `Önizlemeyi aç` CTA'ları görünür kalır; operasyon bağlantısı ve okunabilir detay alanı readonly preview sınırını açıkça gösterir.
+- Mobilde `NavDock` ve floating assistant ile çakışmayı azaltmak için `companyActionClarityScope` / `AgreementOpsBridgeCard` safe-area ve z-index standardı kullanılır.
+- Doküman: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Bu milestone yeni business flow, backend route/write-path, browser-smoke artifact veya runner/coverage policy açmaz.
 
 ### UX-COMPANY-SHIFTS-TABS-01 [CHECK]

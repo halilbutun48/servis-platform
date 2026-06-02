@@ -495,8 +495,13 @@ function main() {
     "backend/scripts/ux_room_panel_clarity_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "web/src/layout/AppShell.jsx",
+    "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/panels/company/AgreementsPanel.jsx",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -529,11 +534,15 @@ function main() {
   const exactAllowed = new Set([
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_room_panel_clarity_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "web/src/layout/AppShell.jsx",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
@@ -544,6 +553,8 @@ function main() {
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "web/src/index.css",
+    "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/DriversPanel.jsx",
     "web/src/panels/room/RoomDriversEditModal.jsx",
@@ -563,7 +574,6 @@ function main() {
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");
-  mustNotList(status, "backend/scripts/ux_live_panel_smoke_audit_01_check.js", "live panel smoke audit check is untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");

@@ -117,6 +117,7 @@
     "check:uxroomdrivervehiclelinkdedup01": "node backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js",
     "check:uxroomshiftstabs01": "node backend/scripts/ux_room_shifts_tabs_01_check.js",
     "check:uxpremiumcriticalfixroom01": "node backend/scripts/ux_premium_critical_fix_room_01_check.js",
+    "check:uxpremiumcriticalfixagreementsdetail01": "node backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
     "check:uxschoolorganizationpanels01": "node backend/scripts/ux_school_organization_panels_01_check.js",
     "check:uxcompanyshiftstabs01": "node backend/scripts/ux_company_shifts_tabs_01_check.js",
     "check:uxcompanymobileactionclarity01": "node backend/scripts/ux_company_mobile_action_clarity_01_check.js",

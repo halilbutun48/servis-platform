@@ -240,6 +240,27 @@ export default function AgreementsPanel() {
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
   }, [startDate, durationDays]);
 
+  useEffect(() => {
+    const syncDetailMode = () => {
+      try {
+        if (typeof window === "undefined") return;
+        const hash = String(window.location.hash || "");
+        const query = hash.includes("?") ? hash.slice(hash.indexOf("?") + 1) : "";
+        const detailMode = new URLSearchParams(query).get("detail");
+        if (detailMode === "bridge") {
+          setViewMode("bridge");
+        }
+      } catch {
+        // no-op: best effort only
+      }
+    };
+
+    syncDetailMode();
+    if (typeof window === "undefined") return undefined;
+    window.addEventListener("hashchange", syncDetailMode);
+    return () => window.removeEventListener("hashchange", syncDetailMode);
+  }, []);
+
   const loadRooms = useCallback(async (signal) => {
     if (!token) return;
     setRoomErr("");
@@ -377,6 +398,27 @@ export default function AgreementsPanel() {
     setViewMode("wizard");
   }, []);
 
+  useLayoutEffect(() => {
+    const scrollToTop = () => {
+      try {
+        if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+          window.scrollTo({ top: 0, behavior: "auto" });
+        }
+      } catch {
+        // no-op: best effort only
+      }
+    };
+
+    scrollToTop();
+    if (typeof window === "undefined") return undefined;
+
+    const handleHashChange = () => scrollToTop();
+    window.addEventListener("hashchange", handleHashChange);
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, []);
+
   async function handleWizardCreated(detail = null) {
     await load();
     const createdIds = Array.isArray(detail?.createdIds) ? detail.createdIds.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0) : [];
@@ -411,6 +453,21 @@ export default function AgreementsPanel() {
     setRouteRefreshLaunch(launch);
     setRouteRefreshNonce((n) => n + 1);
     setGuidedOpen(true);
+  }
+
+  function openAgreementBridgeView() {
+    try {
+      if (typeof window !== "undefined" && typeof window.document?.querySelector === "function") {
+        const anchor = window.document.querySelector(".companyActionCTA");
+        if (anchor && typeof anchor.scrollIntoView === "function") {
+          anchor.scrollIntoView({ block: "start", behavior: "auto" });
+        } else if (typeof window.scrollTo === "function") {
+          window.scrollTo({ top: 0, behavior: "auto" });
+        }
+      }
+    } catch {
+      // best effort only
+    }
   }
 
   async function acceptRouteRefreshCounter(requestId) {
@@ -1142,7 +1199,7 @@ export default function AgreementsPanel() {
               title="Operasyon bağlantısı"
               subtitle="Seçili sözleşmenin ürettiği vardiya ve önizleme bağlantısı ikinci katmanda."
               badge={selectedAgreementRow.a?.id ? `#${selectedAgreementRow.a.id}` : "Seçili"}
-              defaultOpen={false}
+              defaultOpen={true}
               compact
             >
               <AgreementOpsBridgeCard
@@ -1236,32 +1293,56 @@ export default function AgreementsPanel() {
         ) : null}
 
         {viewMode === "list" ? (
-          <div className="tableWrap">
-          <CompanyAgreementsSelectedSummarySection
-            selectedLabel={selectedAgreementCopilotContext?.label || ""}
-            selectedSummary={selectedAgreementCopilotContext?.summary || ""}
-            visibleCount={filteredRows.length}
-            totalCount={rows.length}
-            filterValue={filterQ}
-            onClearFilter={() => setFilterQ("")}
-          />
-          <table className="tbl" style={{ minWidth: 980, marginTop: 10 }}>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Durum</th>
-                <th>Oda</th>
-                <th>Tarih</th>
-                <th>Günler</th>
-                <th>Saat</th>
-                <th>Dir/Pat</th>
-                <th>Şirket Teklifi</th>
-                <th>Oda Karşı Teklifi</th>
-                <th>Vardiyalar</th>
-                <th>Aksiyonlar</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <div className="card companyActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+              <div style={{ fontWeight: 900 }}>Detay ve önizleme</div>
+              <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+                Seçili sözleşmenin operasyon bağlantısı ve okunabilir detayları burada açılır. Bu alan önizlemedir; işlem başlatmaz.
+              </div>
+              <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                <button type="button" className="btn sm primary" onClick={openAgreementBridgeView}>
+                  Detayı aç
+                </button>
+              </div>
+            </div>
+            {selectedAgreementRow?.a ? (
+              <div style={{ marginTop: 12 }}>
+                <AgreementOpsBridgeCard
+                  agreement={selectedAgreementRow.a}
+                  room={selectedAgreementRow.room}
+                  bridge={selectedAgreementBridge}
+                  onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
+                  onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
+                  emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
+                />
+              </div>
+            ) : null}
+            <div className="tableWrap">
+            <CompanyAgreementsSelectedSummarySection
+              selectedLabel={selectedAgreementCopilotContext?.label || ""}
+              selectedSummary={selectedAgreementCopilotContext?.summary || ""}
+              visibleCount={filteredRows.length}
+              totalCount={rows.length}
+              filterValue={filterQ}
+              onClearFilter={() => setFilterQ("")}
+            />
+            <table className="tbl" style={{ minWidth: 980, marginTop: 10 }}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Durum</th>
+                  <th>Oda</th>
+                  <th>Tarih</th>
+                  <th>Günler</th>
+                  <th>Saat</th>
+                  <th>Dir/Pat</th>
+                  <th>Şirket Teklifi</th>
+                  <th>Oda Karşı Teklifi</th>
+                  <th>Vardiyalar</th>
+                  <th>Aksiyonlar</th>
+                </tr>
+              </thead>
+              <tbody>
               {filteredRows.map(({ a, room }) => (
                 <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
                   <td className="muted">
@@ -1348,9 +1429,10 @@ export default function AgreementsPanel() {
                   <td colSpan={11} className="muted">{rows.length ? 'Filtreye uyan sözleşme yok.' : 'Kayıt yok.'}</td>
                 </tr>
               ) : null}
-            </tbody>
-          </table>
-          </div>
+              </tbody>
+            </table>
+            </div>
+          </>
         ) : null}
 
         <GuidedPlanModal

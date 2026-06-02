@@ -14,6 +14,7 @@ const shouldWriteDoc = args.includes("--write-doc");
 const workingTreeCompatFiles = [
   "backend/scripts/ux_panel_standard_architecture_01_check.js",
   "backend/scripts/ux_premium_critical_fix_room_01_check.js",
+  "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
 ];
 
 const selectedDocs = [
@@ -30,6 +31,7 @@ const selectedDocs = [
   "docs/LEAD_CAPTURE_01.md",
   "docs/ONBOARDING_REVIEW_01.md",
   "docs/AGREEMENT_SOURCE_SHIFT_LINEAGE_01.md",
+  "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
   "docs/BOARDING_OPS_01A_ROUTE_IMPACT_PREVIEW.md",
   "docs/BOARDING_CHANGE_REQUEST_ENTRY_01.md",
   "docs/SHIFT_DISPATCH_APPROVAL_FIX_01.md",
@@ -146,6 +148,7 @@ function slugToMilestone(slug) {
     [/uxdensity0?1/i, "UX-DENSITY-01"],
     [/uxpanelstandardarchitecture0?1/i, "UX-PANEL-STANDARD-ARCHITECTURE-01"],
     [/uxpremiumcriticalfixroom0?1/i, "UX-PREMIUM-CRITICAL-FIX-ROOM-01"],
+    [/uxpremiumcriticalfixagreementsdetail0?1/i, "UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01"],
     [/uxlivepanelpremiumsmoke0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
     [/uxlivepanelpremium0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
     [/uxcompanymobileactionclarity0?1/i, "UX-COMPANY-MOBILE-ACTION-CLARITY-01"],
@@ -1192,6 +1195,9 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Room critical fix command: \`node backend\\scripts\\ux_premium_critical_fix_room_01_check.js\``);
   out.push(`- Company mobile action clarity milestone: \`UX-COMPANY-MOBILE-ACTION-CLARITY-01\``);
   out.push(`- Company mobile action clarity docs: \`docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md\``);
+  out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
+  out.push(`- Agreements detail docs: \`docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md\``);
+  out.push(`- Agreements detail command: \`node backend\\scripts\\ux_premium_critical_fix_agreements_detail_01_check.js\``);
   out.push(`- Parent / Personel live error clarity milestone: \`UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01\``);
   out.push(`- Parent / Personel live error clarity docs: \`docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md\``);
   out.push(`- Panel standard architecture milestone: \`UX-PANEL-STANDARD-ARCHITECTURE-01\``);
@@ -1405,10 +1411,11 @@ function verifyDoc(docText, summary) {
     "docs/UX_SUPERADMIN_PANEL_CLARITY_01.md",
   "docs/ROOM_VEHICLE_DRIVER_UPPERCASE_NORMALIZATION_01.md",
   "docs/UX_ROOM_PANEL_CLARITY_01.md",
-  "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
-  "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
-  "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
-  "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
+    "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "UX-PANEL-STANDARD-ARCHITECTURE-01",
     "check:uxpanelstandardarchitecture01",
     "node backend\\scripts\\ux_panel_standard_architecture_01_check.js",
@@ -1416,6 +1423,10 @@ function verifyDoc(docText, summary) {
     "check:uxpremiumcriticalfixroom01",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "node backend\\scripts\\ux_premium_critical_fix_room_01_check.js",
+    "UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01",
+    "check:uxpremiumcriticalfixagreementsdetail01",
+    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "node backend\\scripts\\ux_premium_critical_fix_agreements_detail_01_check.js",
     "node backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "node backend/scripts/ux_live_panel_premium_smoke_01.mjs",
     "node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",

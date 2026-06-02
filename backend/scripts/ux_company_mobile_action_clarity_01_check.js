@@ -220,7 +220,12 @@ function main() {
     "backend/scripts/ux_room_panel_clarity_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "web/src/layout/AppShell.jsx",
+    "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/panels/company/AgreementsPanel.jsx",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
@@ -252,9 +257,13 @@ function main() {
     "backend/scripts/verify_chain_01_product_extensions_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
+    "web/src/layout/AppShell.jsx",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/components/RoutePreviewModal.jsx",
@@ -300,7 +309,6 @@ function main() {
   mustNotList(status, "web/src/components/ShiftReassignModal.jsx", "shift reassign modal is untouched");
   mustNotList(status, "backend/scripts/ux_room_panel_clarity_01_check.js", "room clarity check is untouched");
   mustNotList(status, "docs/UX_ROOM_PANEL_CLARITY_01.md", "room clarity doc is untouched");
-  mustNotList(status, "backend/scripts/ux_live_panel_smoke_audit_01_check.js", "live panel smoke audit check is untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
 
   console.log("=== UX-COMPANY-MOBILE-ACTION-CLARITY-01 CHECK PASS ===");

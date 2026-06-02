@@ -100,6 +100,7 @@ const steps = [
   'check:uxschoolorganizationpanels01',
   'check:uxcompanyshiftstabs01',
   'check:uxcompanymobileactionclarity01',
+  'check:uxpremiumcriticalfixagreementsdetail01',
   'check:uxcompanyopspaneltabs01',
   'check:uxcompanyqualitytabs01',
   'check:uxcompanypanelssmoke01',

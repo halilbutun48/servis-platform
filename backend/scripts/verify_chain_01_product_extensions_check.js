@@ -151,6 +151,7 @@ function main() {
   must(pkg, '"check:uxroomopsrelationshippolish01"', 'package.json exposes check:uxroomopsrelationshippolish01');
   must(pkg, '"check:uxroomshiftstabs01"', 'package.json exposes check:uxroomshiftstabs01');
   must(pkg, '"check:uxpremiumcriticalfixroom01": "node backend/scripts/ux_premium_critical_fix_room_01_check.js"', 'package.json exposes check:uxpremiumcriticalfixroom01');
+  must(pkg, '"check:uxpremiumcriticalfixagreementsdetail01": "node backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js"', 'package.json exposes check:uxpremiumcriticalfixagreementsdetail01');
   must(pkg, '"check:uxschoolorganizationpanels01"', 'package.json exposes check:uxschoolorganizationpanels01');
   must(pkg, '"check:uxcompanyshiftstabs01"', 'package.json exposes check:uxcompanyshiftstabs01');
   must(pkg, '"check:uxcompanymobileactionclarity01": "node backend/scripts/ux_company_mobile_action_clarity_01_check.js"', 'package.json exposes check:uxcompanymobileactionclarity01');
@@ -268,6 +269,7 @@ function main() {
     'check:uxschoolorganizationpanels01',
     'check:uxcompanyshiftstabs01',
     'check:uxcompanymobileactionclarity01',
+    'check:uxpremiumcriticalfixagreementsdetail01',
     'check:uxcompanyopspaneltabs01',
     'check:uxcompanypanelssmoke01',
     'check:uxpaneltabsfix01',
