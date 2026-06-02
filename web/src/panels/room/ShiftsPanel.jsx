@@ -887,7 +887,7 @@ async function decideExtend(shiftId, decision) {
   }
 
   return (
-    <div>
+    <div className="roomCriticalFixScope">
       <RoomShiftsOverviewSection
         err={err}
         pendingCount={tabCounts.pending}
@@ -995,4 +995,3 @@ async function decideExtend(shiftId, decision) {
     </div>
   );
 }
-

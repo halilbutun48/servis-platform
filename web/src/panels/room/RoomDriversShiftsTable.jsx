@@ -18,8 +18,8 @@ export default function RoomDriversShiftsTable({
           <tr>
             <th>Sürücü</th>
             <th>Araç</th>
-            <th>Current</th>
-            <th>Next</th>
+            <th>Mevcut</th>
+            <th>Sonraki</th>
           </tr>
         </thead>
         <tbody>
@@ -49,7 +49,7 @@ export default function RoomDriversShiftsTable({
               >
                 <td>
                   <b>{d.fullName}</b>
-                  <div className="muted" style={{ fontSize: 12 }}>#{d.id}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>Sürücü kaydı</div>
                   {hasRegionOwnership(d) ? <div className="muted" style={{ fontSize: 12 }}>{formatRegionOwnership(d)}</div> : null}
                 </td>
                 <td className="muted">{bv ? bv.plate : "-"}</td>

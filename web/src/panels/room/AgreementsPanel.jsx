@@ -987,7 +987,7 @@ export default function AgreementsPanel() {
 
 
   return (
-    <div className="card">
+    <div className="card roomCriticalFixScope">
       <div className="topbar">
         <div>
           <div className="title">Room / Sözleşmeler</div>
@@ -1293,7 +1293,7 @@ export default function AgreementsPanel() {
                     <td>
                       <button
                         type="button"
-                        className="btn sm ghost"
+                        className="btn sm ghost roomActionCTA"
                         disabled={!agreementPreviewShiftId(a)}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1403,7 +1403,7 @@ export default function AgreementsPanel() {
                     <td>
                       <button
                         type="button"
-                        className="btn sm ghost"
+                        className="btn sm ghost roomActionCTA"
                         disabled={!agreementPreviewShiftId(a)}
                         onClick={(e) => {
                           e.stopPropagation();

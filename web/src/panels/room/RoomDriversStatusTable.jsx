@@ -36,7 +36,7 @@ export default function RoomDriversStatusTable({
             <th>Konum</th>
           </tr>
           <tr>
-            <th><input value={statusColFilter.driver} onChange={(e) => setStatusColFilter((p) => ({ ...p, driver: e.target.value }))} placeholder="Ad / kod / id" /></th>
+            <th><input value={statusColFilter.driver} onChange={(e) => setStatusColFilter((p) => ({ ...p, driver: e.target.value }))} placeholder="Ad / kod" /></th>
             <th><input value={statusColFilter.phone} onChange={(e) => setStatusColFilter((p) => ({ ...p, phone: e.target.value }))} placeholder="Telefon" /></th>
             <th>
               <select value={statusColFilter.connection} onChange={(e) => setStatusColFilter((p) => ({ ...p, connection: e.target.value }))}>
@@ -59,10 +59,10 @@ export default function RoomDriversStatusTable({
               <select value={statusColFilter.gps} onChange={(e) => setStatusColFilter((p) => ({ ...p, gps: e.target.value }))}>
                 <option value="ALL">Hepsi</option>
                 <option value="LIVE">Canlı</option>
-                <option value="STALE">Pasif</option>
+                <option value="STALE">Düşük canlılık</option>
                 <option value="WAITING">Bekliyor</option>
-                <option value="OFFLINE">Kapalı</option>
-                <option value="IDLE">GPS pasif</option>
+                <option value="OFFLINE">Çevrim dışı</option>
+                <option value="IDLE">Konum bekliyor</option>
               </select>
             </th>
             <th className="muted">Görüntü</th>
@@ -85,7 +85,7 @@ export default function RoomDriversStatusTable({
               >
                 <td>
                   <b>{d.fullName}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
-                  <div className="muted">#{d.id}</div>
+                  <div className="muted">Sürücü kaydı</div>
                   {hasRegionOwnership(d) ? <div className="muted" style={{ fontSize: 12 }}>{formatRegionOwnership(d)}</div> : null}
                 </td>
                 <td>{d.phone}</td>
@@ -95,7 +95,7 @@ export default function RoomDriversStatusTable({
                 </td>
                 <td>
                   <span className="pill" data-status={assignmentBadgeStatus(ops)}>{ops.assignmentLabel}</span>
-                  <div className="muted">{d?.currentShift ? `Current #${d.currentShift.id}` : d?.nextShift ? `Next #${d.nextShift.id}` : '-'}</div>
+                  <div className="muted">{d?.currentShift ? "Mevcut vardiya" : d?.nextShift ? "Sonraki vardiya" : '-'}</div>
                 </td>
                 <td className="muted">{bv ? bv.plate : '-'}</td>
                 <td>

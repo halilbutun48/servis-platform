@@ -71,6 +71,15 @@ function gpsBadgeStatus(ops, stat) {
   if (ops.gpsUiState === "OFFLINE") return "STALE";
   return "PASSIVE";
 }
+
+function roomDriverUiLabel(ui) {
+  const text = String(ui || "").toUpperCase();
+  if (text === "LIVE") return "Canlı";
+  if (text === "STALE") return "Düşük canlılık";
+  if (text === "OFFLINE") return "Çevrim dışı";
+  return text || "-";
+}
+
 function getErrMsg(err) {
   const payload = err?.payload || null;
   if (payload?.message) return String(payload.message);
@@ -259,7 +268,7 @@ export default function DriversPanel() {
     const bv = boundVehicleByDriverId.get(Number(driverId)) ?? null;
     if (!bv) return null;
     const ui = uiStatusFromVehicle(bv);
-    return { ui, pillKey: pillKeyFromUi(ui), vehicle: bv };
+    return { ui, uiLabel: roomDriverUiLabel(ui), pillKey: pillKeyFromUi(ui), vehicle: bv };
   }, [boundVehicleByDriverId]);
 
   function driverOps(d) {
@@ -495,7 +504,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       scopeKey: '/room/drivers',
       entityType: 'driver',
       entityId: Number(focusDriver?.id || 1105) || 1105,
-      label: focusDriver?.fullName || `Sürücü #${focusDriver?.id || '-'}`,
+      label: focusDriver?.fullName || "Sürücü kaydı",
       summary: [focusDriver?.fullName, boundVehicle?.plate, ops?.assignmentState].filter(Boolean).join(' • '),
       fields: [
         { label: 'Ad Soyad', value: focusDriver?.fullName || '-', help: 'Seçili sürücüyü gösterir.' },
@@ -543,7 +552,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
   }, [filteredDrivers, visibleStatusDrivers, boundVehicleByDriverId]);
 
   return (
-    <div>
+    <div className="roomCriticalFixScope">
       <div className="card">
         <h3>Drivers</h3>
         <div className="muted">ROOM: sürücü yönetimi + operasyon + bağlantı</div>
@@ -573,7 +582,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             {focusVehicle
-              ? `Readonly özet • ${focusStat ? `Durum: ${focusStat.ui}` : "Eşleşme okunuyor"}`
+              ? `Readonly özet • ${focusStat ? `Durum: ${focusStat.uiLabel}` : "Eşleşme okunuyor"}`
               : "Araç bağlantısını Araçlar ekranında yönet."}
           </div>
           <button type="button" className="btn sm ghost" style={{ marginTop: 8 }} onClick={() => navigate("/room/vehicles")}>
@@ -614,9 +623,9 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
             <label className="muted">GPS</label>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} disabled={busy}>
               <option value="ALL">Hepsi</option>
-              <option value="LIVE">ONLINE</option>
-              <option value="STALE">STALE</option>
-              <option value="OFFLINE">OFFLINE</option>
+              <option value="LIVE">Canlı</option>
+              <option value="STALE">Düşük canlılık</option>
+              <option value="OFFLINE">Çevrim dışı</option>
             </select>
           </div>
 
@@ -630,7 +639,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
 
           <div className="muted" style={{ marginLeft: "auto" }}>
-            Toplam {counts.total} • Araca bağlı {counts.bound} • Boşta {counts.free} • Bağlı {counts.connected} • Atanmış {counts.assigned} • Aktif {counts.active} • GPS canlı {counts.live} • STALE {counts.stale} • OFFLINE {counts.offline}
+            Toplam {counts.total} • Araca bağlı {counts.bound} • Boşta {counts.free} • Bağlı {counts.connected} • Atanmış {counts.assigned} • Aktif {counts.active} • GPS canlı {counts.live} • Düşük canlılık {counts.stale} • Çevrim dışı {counts.offline}
           </div>
         </div>
         <ListSelectionBanner
@@ -718,7 +727,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
             {issuedCreds ? (
               <div className="card" style={{ marginBottom: 12, borderLeft: "5px solid #2563eb" }}>
                 <h3 style={{ marginTop: 0 }}>Giriş Bilgileri</h3>
-                <div><b>Sürücü:</b> {issuedCreds.fullName || `#${issuedCreds.driverId}`}</div>
+                <div><b>Sürücü:</b> {issuedCreds.fullName || "Sürücü kaydı"}</div>
                 <div style={{ marginTop: 8 }}><b>Sürücü Kodu:</b> {issuedCreds.driverCode || "-"}</div>
                 <div style={{ marginTop: 4 }}><b>Geçici PIN:</b> {issuedCreds.temporaryPin || "-"}</div>
                 <div className="muted" style={{ marginTop: 8 }}>
@@ -735,7 +744,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
               <table className="tbl" style={{ whiteSpace: "nowrap", fontSize: 12 }}>
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Kayıt</th>
                     <th>Ad Soyad</th>
                     <th>Telefon</th>
                     <th>Sürücü Kodu</th>
@@ -763,7 +772,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
 
                     return (
                       <tr key={d.id} data-selected={Number(focusDriverId || 0) === Number(d.id || 0) ? "true" : undefined} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
-                        <td>{d.id}</td>
+                        <td title={`Sürücü kaydı ${d.id}`}>Sürücü kaydı</td>
                         <td><b>{d.fullName}</b></td>
                         <td>{d.phone}</td>
                         <td className="muted">
@@ -774,7 +783,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                         <td className="muted">{bv ? bv.plate : "-"}</td>
                         <td>
                           {stat ? (
-                            <span className="pill" data-status={stat.pillKey}>{stat.ui}</span>
+                            <span className="pill" data-status={stat.pillKey}>{stat.uiLabel}</span>
                           ) : (
                             <span className="muted">-</span>
                           )}

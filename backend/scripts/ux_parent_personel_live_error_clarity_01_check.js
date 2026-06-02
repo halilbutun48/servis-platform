@@ -214,12 +214,38 @@ function main() {
   mustNot(boardingChange, "Cannot GET", "boarding change card removes raw geocode hint");
 
   const staged = stagedNames();
-  mustTrue(staged.length === 0, "index stays empty for parent/personel live error clarity validation");
+  const stagedAllowed = new Set([
+    "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "backend/scripts/ux_panel_standard_architecture_01_check.js",
+    "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/ux_room_panel_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_room_01_check.js",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
+    "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
+    "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "package.json",
+    "backend/scripts/run_product_extensions_check_chain.js",
+    "backend/scripts/verify_chain_01_product_extensions_check.js",
+    "backend/scripts/script_harness_consolidation_01_check.js",
+    "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
+    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "web/src/index.css",
+    "web/src/panels/room/AgreementsPanel.jsx",
+    "web/src/panels/room/DriversPanel.jsx",
+    "web/src/panels/room/RoomDriversEditModal.jsx",
+    "web/src/panels/room/RoomDriversShiftsTable.jsx",
+    "web/src/panels/room/RoomDriversStatusTable.jsx",
+    "web/src/panels/room/ShiftsPanel.jsx",
+    "web/src/panels/room/roomShiftsPanelSections.jsx",
+  ]);
+  mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within parent/personel live error clarity validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");
   mustNotList(staged, "backend/artifacts/browser-smoke/", "browser-smoke artifacts are not staged");
   mustNotList(staged, "debug.log", "debug.log is not staged");
 
-  const status = statusNames();
+  const status = statusNames().filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md");
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");

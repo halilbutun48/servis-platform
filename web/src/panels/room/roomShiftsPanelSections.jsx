@@ -115,7 +115,7 @@ export function RoomDispatchPoolSummary({
   const dispatchApplyMessage = !suggestions.length
     ? "Önce bölme önizlemesi oluştur."
     : dispatchApplyIssue?.state?.message || "Tüm öneriler hazır.";
-  const showDispatchApplyAction = suggestions.length > 0;
+  const showDispatchApplyAction = Boolean(data);
 
   return (
     <div className="card" style={{ padding: 10 }}>
@@ -156,7 +156,7 @@ export function RoomDispatchPoolSummary({
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <button
                 type="button"
-                className="btn"
+                className="btn roomActionCTA"
                 disabled={busy || !dispatchCanApply}
                 onClick={() => autoSplitApprove(shift)}
               >

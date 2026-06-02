@@ -150,6 +150,7 @@ function main() {
   must(pkg, '"check:uxroomopspaneltabs01"', 'package.json exposes check:uxroomopspaneltabs01');
   must(pkg, '"check:uxroomopsrelationshippolish01"', 'package.json exposes check:uxroomopsrelationshippolish01');
   must(pkg, '"check:uxroomshiftstabs01"', 'package.json exposes check:uxroomshiftstabs01');
+  must(pkg, '"check:uxpremiumcriticalfixroom01": "node backend/scripts/ux_premium_critical_fix_room_01_check.js"', 'package.json exposes check:uxpremiumcriticalfixroom01');
   must(pkg, '"check:uxschoolorganizationpanels01"', 'package.json exposes check:uxschoolorganizationpanels01');
   must(pkg, '"check:uxcompanyshiftstabs01"', 'package.json exposes check:uxcompanyshiftstabs01');
   must(pkg, '"check:uxcompanymobileactionclarity01": "node backend/scripts/ux_company_mobile_action_clarity_01_check.js"', 'package.json exposes check:uxcompanymobileactionclarity01');
@@ -263,6 +264,7 @@ function main() {
     'check:uxroomopspaneltabs01',
     'check:uxroomopsrelationshippolish01',
     'check:uxroomshiftstabs01',
+    'check:uxpremiumcriticalfixroom01',
     'check:uxschoolorganizationpanels01',
     'check:uxcompanyshiftstabs01',
     'check:uxcompanymobileactionclarity01',
@@ -386,6 +388,10 @@ function main() {
   must(guide, 'check:uxroomopsrelationshippolish01', 'script guide exposes check:uxroomopsrelationshippolish01');
   must(guide, 'UX-ROOM-SHIFTS-TABS-01', 'script guide mentions UX-ROOM-SHIFTS-TABS-01');
   must(guide, 'check:uxroomshiftstabs01', 'script guide exposes check:uxroomshiftstabs01');
+  must(guide, 'UX-PREMIUM-CRITICAL-FIX-ROOM-01', 'script guide mentions UX-PREMIUM-CRITICAL-FIX-ROOM-01');
+  must(guide, 'check:uxpremiumcriticalfixroom01', 'script guide exposes check:uxpremiumcriticalfixroom01');
+  must(guide, 'node backend\\scripts\\ux_premium_critical_fix_room_01_check.js', 'script guide includes room critical fix command');
+  must(guide, 'docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md', 'script guide includes room critical fix doc');
   must(guide, 'UX-SCHOOL-ORGANIZATION-PANELS-01', 'script guide mentions UX-SCHOOL-ORGANIZATION-PANELS-01');
   must(guide, 'check:uxschoolorganizationpanels01', 'script guide exposes check:uxschoolorganizationpanels01');
   must(guide, 'UX-COMPANY-SHIFTS-TABS-01', 'script guide mentions UX-COMPANY-SHIFTS-TABS-01');

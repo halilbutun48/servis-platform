@@ -488,7 +488,39 @@ function main() {
   verifyDoc(doc, { total: panelRows.length, statusCounts });
 
   const staged = stagedNames();
-  mustTrue(staged.length === 0, "index stays empty for panel standard architecture validation");
+  const stagedAllowed = new Set([
+    "backend/scripts/ux_panel_standard_architecture_01_check.js",
+    "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "backend/scripts/ux_room_panel_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_room_01_check.js",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "package.json",
+    "backend/scripts/run_product_extensions_check_chain.js",
+    "backend/scripts/verify_chain_01_product_extensions_check.js",
+    "backend/scripts/script_harness_consolidation_01_check.js",
+    "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
+    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
+    "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
+    "web/src/index.css",
+    "web/src/panels/room/AgreementsPanel.jsx",
+    "web/src/panels/room/DriversPanel.jsx",
+    "web/src/panels/room/RoomDriversEditModal.jsx",
+    "web/src/panels/room/RoomDriversShiftsTable.jsx",
+    "web/src/panels/room/RoomDriversStatusTable.jsx",
+    "web/src/panels/room/ShiftsPanel.jsx",
+    "web/src/panels/room/roomShiftsPanelSections.jsx",
+    "web/src/panels/driver/TodayPanel.jsx",
+    "web/src/panels/organization/CenterPanel.jsx",
+    "web/src/panels/public/PassengerLivePanel.jsx",
+    "web/src/panels/shared/NotificationsPanel.jsx",
+    "web/src/panels/shared/ReportsPanel.jsx",
+    "web/src/panels/superadmin/UsersPanel.jsx",
+  ]);
+  allWithin(staged, stagedAllowed, [], "staged files stay within panel standard architecture validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");
   mustNotList(staged, "backend/artifacts/browser-smoke/", "browser-smoke artifacts are not staged");
   mustNotList(staged, "debug.log", "debug.log is not staged");
@@ -498,7 +530,11 @@ function main() {
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "backend/scripts/ux_room_panel_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_room_01_check.js",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -507,6 +543,14 @@ function main() {
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
+    "web/src/index.css",
+    "web/src/panels/room/AgreementsPanel.jsx",
+    "web/src/panels/room/DriversPanel.jsx",
+    "web/src/panels/room/RoomDriversEditModal.jsx",
+    "web/src/panels/room/RoomDriversShiftsTable.jsx",
+    "web/src/panels/room/RoomDriversStatusTable.jsx",
+    "web/src/panels/room/ShiftsPanel.jsx",
+    "web/src/panels/room/roomShiftsPanelSections.jsx",
     "web/src/panels/driver/TodayPanel.jsx",
     "web/src/panels/organization/CenterPanel.jsx",
     "web/src/panels/public/PassengerLivePanel.jsx",

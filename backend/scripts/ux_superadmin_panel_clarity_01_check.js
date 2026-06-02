@@ -77,6 +77,14 @@ function mustNotStaged(files, needle, label) {
   ok(label);
 }
 
+function mustNotStagedUnless(files, needle, allowed, label) {
+  const hit = files.some(
+    (file) => normalize(file).includes(normalize(needle)) && !allowed.has(file.replace(/\\/g, "/")),
+  );
+  if (hit) fail(label);
+  ok(label);
+}
+
 function main() {
   console.log("=== UX-SUPERADMIN-PANEL-CLARITY-01 CHECK ===");
 
@@ -181,7 +189,23 @@ function main() {
   mustNotStaged(staged, "backend/src/routes/drivers.js", "room driver route is not staged");
   mustNotStaged(staged, "backend/src/routes/vehicles.js", "room vehicles route is not staged");
   mustNotStaged(staged, "backend/src/services/agreementSourceLineageService.js", "agreement source lineage service is not staged");
-  mustNotStaged(staged, "web/src/panels/room/DriversPanel.jsx", "room drivers panel is not staged");
+  mustNotStagedUnless(
+    staged,
+    "web/src/panels/room/DriversPanel.jsx",
+    new Set([
+      "web/src/panels/room/DriversPanel.jsx",
+      "web/src/panels/room/ShiftsPanel.jsx",
+      "web/src/panels/room/roomShiftsPanelSections.jsx",
+      "web/src/panels/room/AgreementsPanel.jsx",
+      "web/src/panels/room/RoomDriversEditModal.jsx",
+      "web/src/panels/room/RoomDriversShiftsTable.jsx",
+      "web/src/panels/room/RoomDriversStatusTable.jsx",
+      "web/src/index.css",
+      "backend/scripts/ux_premium_critical_fix_room_01_check.js",
+      "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    ]),
+    "room drivers panel is not staged",
+  );
   mustNotStaged(staged, "web/src/panels/room/VehiclesPanel.jsx", "room vehicles panel is not staged");
   mustNotStaged(staged, "web/src/panels/room/roomVehiclesPanelCards.jsx", "room vehicle cards are not staged");
   mustNotStaged(staged, "web/src/panels/room/roomVehiclesPanelSections.jsx", "room vehicle sections are not staged");

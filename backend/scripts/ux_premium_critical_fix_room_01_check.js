@@ -1,0 +1,249 @@
+#!/usr/bin/env node
+
+import fs from "node:fs";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const root = path.resolve(__dirname, "../..");
+
+function read(rel) {
+  return fs.readFileSync(path.join(root, rel), "utf8");
+}
+
+function exists(rel) {
+  return fs.existsSync(path.join(root, rel));
+}
+
+function normalize(text) {
+  return String(text || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function ok(label) {
+  console.log(`OK ${label}`);
+}
+
+function fail(label) {
+  throw new Error(`FAIL ${label}`);
+}
+
+function must(text, needle, label) {
+  if (normalize(text).includes(normalize(needle))) ok(label);
+  else fail(label);
+}
+
+function mustNot(text, needle, label) {
+  if (normalize(text).includes(normalize(needle))) fail(label);
+  else ok(label);
+}
+
+function gitLines(args) {
+  const out = execFileSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return String(out || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function stagedNames() {
+  return gitLines(["diff", "--cached", "--name-only"]).map((line) => line.replace(/\\/g, "/"));
+}
+
+function statusNames() {
+  const out = execFileSync("git", ["status", "--short", "--untracked-files=all"], {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return String(out || "")
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => line.slice(3).trim().replace(/\\/g, "/"))
+    .filter(Boolean);
+}
+
+function mustNotList(files, needle, label) {
+  if (files.some((file) => normalize(file).includes(normalize(needle)))) fail(label);
+  ok(label);
+}
+
+function main() {
+  console.log("=== UX-PREMIUM-CRITICAL-FIX-ROOM-01 CHECK ===");
+
+  const pkg = read("package.json");
+  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
+  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
+  const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
+  const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
+  const doc = read("docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md");
+
+  const shiftsPanel = read("web/src/panels/room/ShiftsPanel.jsx");
+  const shiftsSections = read("web/src/panels/room/roomShiftsPanelSections.jsx");
+  const agreementsPanel = read("web/src/panels/room/AgreementsPanel.jsx");
+  const driversPanel = read("web/src/panels/room/DriversPanel.jsx");
+  const statusTable = read("web/src/panels/room/RoomDriversStatusTable.jsx");
+  const shiftsTable = read("web/src/panels/room/RoomDriversShiftsTable.jsx");
+  const editModal = read("web/src/panels/room/RoomDriversEditModal.jsx");
+  const css = read("web/src/index.css");
+
+  mustTrue(exists("backend/scripts/ux_premium_critical_fix_room_01_check.js"), "room critical fix check exists");
+  mustTrue(exists("docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md"), "room critical fix doc exists");
+
+  must(pkg, '"check:uxpremiumcriticalfixroom01": "node backend/scripts/ux_premium_critical_fix_room_01_check.js"', "package.json exposes room critical fix check");
+  must(runner, "check:uxpremiumcriticalfixroom01", "product extensions runner includes room critical fix check");
+  must(verify, "check:uxpremiumcriticalfixroom01", "verify chain includes room critical fix check");
+
+  must(harnessCheck, "UX-PREMIUM-CRITICAL-FIX-ROOM-01", "script harness check knows room critical fix milestone");
+  must(harnessCheck, "check:uxpremiumcriticalfixroom01", "script harness check knows room critical fix alias");
+  must(harnessCheck, "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md", "script harness check knows room critical fix doc");
+  must(harnessDoc, "UX-PREMIUM-CRITICAL-FIX-ROOM-01", "script harness doc lists room critical fix milestone");
+  must(harnessDoc, "check:uxpremiumcriticalfixroom01", "script harness doc lists room critical fix alias");
+  must(harnessDoc, "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md", "script harness doc lists room critical fix doc");
+
+  must(guide, "UX-PREMIUM-CRITICAL-FIX-ROOM-01", "milestone guide mentions room critical fix milestone");
+  must(guide, "check:uxpremiumcriticalfixroom01", "milestone guide exposes room critical fix check");
+  must(guide, "node backend\\scripts\\ux_premium_critical_fix_room_01_check.js", "milestone guide includes room critical fix command");
+  must(guide, "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md", "milestone guide includes room critical fix doc");
+
+  must(doc, "UX-PREMIUM-CRITICAL-FIX-ROOM-01", "room critical fix doc title present");
+  must(doc, "Room / Vardiyalar", "room critical fix doc covers shifts surface");
+  must(doc, "Room / Sözleşmeler", "room critical fix doc covers agreements surface");
+  must(doc, "Room / Sürücüler", "room critical fix doc covers drivers surface");
+  must(doc, "Dispatch apply button not visible", "room critical fix doc tracks dispatch apply family");
+  must(doc, "Detayı aç", "room critical fix doc tracks detail CTA family");
+  must(doc, "hash copy", "room critical fix doc tracks hash cleanup family");
+  must(doc, "roomCriticalFixScope", "room critical fix doc keeps room safe-area scope");
+  must(doc, "roomActionCTA", "room critical fix doc keeps CTA scope");
+  must(doc, "NavDock", "room critical fix doc keeps mobile intercept note");
+  must(doc, "safe-area", "room critical fix doc keeps safe-area note");
+  must(doc, "Sürücü kaydı", "room critical fix doc keeps safe driver wording");
+  must(doc, "Düşük canlılık", "room critical fix doc keeps safe live wording");
+  must(doc, "Çevrim dışı", "room critical fix doc keeps offline wording");
+  must(doc, "Bu milestone yeni business flow eklemez.", "room critical fix doc keeps no-business-flow boundary");
+  must(doc, "Backend route/write-path değişmez.", "room critical fix doc keeps backend boundary");
+  must(doc, "Schema/migration yok.", "room critical fix doc keeps schema boundary");
+  must(doc, "Runtime-data commit dışı kalır.", "room critical fix doc keeps runtime-data boundary");
+  must(doc, "Browser-smoke artifact commit dışı kalır.", "room critical fix doc keeps browser artifact boundary");
+  must(doc, "Playwright runner policy değişmez.", "room critical fix doc keeps runner boundary");
+  must(doc, "Coverage matrix fail policy değişmez.", "room critical fix doc keeps coverage boundary");
+
+  must(shiftsPanel, "roomCriticalFixScope", "room shifts panel uses room critical fix scope");
+  must(shiftsSections, "showDispatchApplyAction = Boolean(data)", "room shifts dispatch action remains visible");
+  must(shiftsSections, "roomActionCTA", "room shifts dispatch CTA uses room action class");
+  must(shiftsSections, "Önizlemeyi Uygula: Böl & Onayla", "room shifts dispatch CTA label present");
+
+  must(agreementsPanel, "roomCriticalFixScope", "room agreements panel uses room critical fix scope");
+  must(agreementsPanel, "roomActionCTA", "room agreements detail CTA uses room action class");
+  must(agreementsPanel, "Detayı aç", "room agreements detail CTA label present");
+
+  must(driversPanel, "roomCriticalFixScope", "room drivers panel uses room critical fix scope");
+  must(driversPanel, "roomDriverUiLabel", "room drivers panel keeps safe UI label helper");
+  must(driversPanel, "Sürücü kaydı", "room drivers panel uses safe driver label");
+  must(driversPanel, "Düşük canlılık", "room drivers panel uses safe live wording");
+  must(driversPanel, "Çevrim dışı", "room drivers panel uses safe offline wording");
+  must(driversPanel, "Kayıt", "room drivers panel uses safe table header");
+  must(driversPanel, "uiLabel", "room drivers panel renders safe status label");
+  mustNot(driversPanel, "hash", "room drivers panel removes visible hash copy");
+  mustNot(driversPanel, "Sürücü #", "room drivers panel removes visible driver hash copy");
+
+  must(statusTable, "Ad / kod", "room drivers status table uses safe filter placeholder");
+  must(statusTable, "Düşük canlılık", "room drivers status table uses safe live wording");
+  must(statusTable, "Çevrim dışı", "room drivers status table uses safe offline wording");
+  must(statusTable, "Konum bekliyor", "room drivers status table uses safe waiting wording");
+  must(statusTable, "Sürücü kaydı", "room drivers status table uses safe record label");
+  must(statusTable, "Mevcut vardiya", "room drivers status table uses safe current shift wording");
+  must(statusTable, "Sonraki vardiya", "room drivers status table uses safe next shift wording");
+  mustNot(statusTable, "#${d.id}", "room drivers status table removes visible id hash copy");
+
+  must(shiftsTable, "Mevcut", "room drivers shifts table keeps safe current header");
+  must(shiftsTable, "Sonraki", "room drivers shifts table keeps safe next header");
+  must(shiftsTable, "Sürücü kaydı", "room drivers shifts table uses safe record label");
+  mustNot(shiftsTable, "#${d.id}", "room drivers shifts table removes visible id hash copy");
+
+  must(editModal, "Sürücü kaydı", "room drivers edit modal uses safe backup label");
+  mustNot(editModal, "(#", "room drivers edit modal removes id hash suffix");
+
+  must(css, ".roomCriticalFixScope", "global css keeps room critical fix scope");
+  must(css, ".roomActionCTA", "global css keeps room action cta scope");
+  must(css, "z-index: 4305", "global css keeps room action z-index clearance");
+  must(css, "scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom))", "global css keeps room action scroll margin");
+  must(css, "padding-bottom: calc(240px + env(safe-area-inset-bottom))", "global css keeps room mobile bottom clearance");
+  must(css, "padding-bottom: calc(200px + env(safe-area-inset-bottom))", "global css keeps room mid-size bottom clearance");
+
+  const staged = stagedNames();
+  const stagedAllowed = new Set([
+    "web/src/index.css",
+    "web/src/panels/room/AgreementsPanel.jsx",
+    "web/src/panels/room/DriversPanel.jsx",
+    "web/src/panels/room/RoomDriversEditModal.jsx",
+    "web/src/panels/room/RoomDriversShiftsTable.jsx",
+    "web/src/panels/room/RoomDriversStatusTable.jsx",
+    "web/src/panels/room/ShiftsPanel.jsx",
+    "web/src/panels/room/roomShiftsPanelSections.jsx",
+    "backend/scripts/ux_premium_critical_fix_room_01_check.js",
+    "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "package.json",
+    "backend/scripts/run_product_extensions_check_chain.js",
+    "backend/scripts/verify_chain_01_product_extensions_check.js",
+    "backend/scripts/script_harness_consolidation_01_check.js",
+    "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
+    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "backend/scripts/ux_room_panel_clarity_01_check.js",
+    "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/ux_panel_standard_architecture_01_check.js",
+  ]);
+  mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within room critical fix validation");
+  mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");
+  mustNotList(staged, "backend/artifacts/browser-smoke/", "browser-smoke artifacts are not staged");
+  mustNotList(staged, "debug.log", "debug.log is not staged");
+
+  const status = statusNames();
+  mustNotList(status, "backend/src/routes/", "backend routes are untouched");
+  mustNotList(status, "backend/src/services/", "backend services are untouched");
+  mustNotList(status, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "premium smoke runner is untouched");
+  mustNotList(status, "backend/scripts/ux_live_panel_smoke_audit_01_check.js", "live panel smoke audit check is untouched");
+  mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
+  mustNotList(status, "Prisma/", "schema/migration files are untouched");
+  mustNotList(status, "tools/repo_contract_state.json", "repo contract state is untouched");
+  mustNotList(status, "web/src/panels/company/", "company surfaces are untouched");
+  mustNotList(status, "web/src/panels/parent/", "parent surfaces are untouched");
+  mustNotList(status, "web/src/panels/personel/", "personel surfaces are untouched");
+  mustNotList(status, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
+  mustNotList(status, "web/src/panels/driver/CheckinPanel.jsx", "driver check-in surface is untouched");
+  mustNotList(status, "web/src/panels/driver/RoutePanel.jsx", "driver route surface is untouched");
+  mustNotList(status, "web/src/panels/driver/TodayPanel.jsx", "driver today surface is untouched");
+  mustNotList(status, "web/src/panels/room/VehiclesPanel.jsx", "room vehicles surface is untouched");
+  mustNotList(status, "web/src/panels/room/roomVehiclesPanel", "room vehicles helpers are untouched");
+  mustNotList(status, "web/src/panels/shared/PanelKvkkHint.jsx", "shared KVKK hint is untouched");
+
+  console.log("=== UX-PREMIUM-CRITICAL-FIX-ROOM-01 CHECK PASS ===");
+}
+
+function mustTrue(cond, label) {
+  if (cond) ok(label);
+  else fail(label);
+}
+
+try {
+  main();
+} catch (err) {
+  console.error(String(err?.stack || err?.message || err));
+  process.exit(1);
+}

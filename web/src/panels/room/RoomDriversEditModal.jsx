@@ -55,7 +55,7 @@ export default function RoomDriversEditModal({
                 .filter((x) => Number(x.id) !== Number(editForm.id))
                 .map((d) => (
                   <option key={d.id} value={String(d.id)}>
-                    {d.fullName} (#{d.id})
+                    {d.fullName || "Sürücü kaydı"}
                   </option>
                 ))}
             </select>

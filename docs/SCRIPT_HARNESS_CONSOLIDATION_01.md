@@ -1,16 +1,16 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-05-31
+Tarih: 2026-06-02
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `326`
-- Toplam executable tracked file: `1102`
-- Combined registry row: `1428`
-- Root/backend/web/mobile package dağılımı: root `169`, backend `667`, web `88`, mobile `201`
+- Toplam package script entry: `327`
+- Toplam executable tracked file: `1103`
+- Combined registry row: `1430`
+- Root/backend/web/mobile package dağılımı: root `170`, backend `668`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `34`
+- Docs indexed: `35`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -21,6 +21,9 @@ Repo: `servis-platform`
 - Room vehicle/driver uppercase docs: `docs/ROOM_VEHICLE_DRIVER_UPPERCASE_NORMALIZATION_01.md`
 - Room panel clarity milestone: `UX-ROOM-PANEL-CLARITY-01`
 - Room panel clarity docs: `docs/UX_ROOM_PANEL_CLARITY_01.md`
+- Room critical fix milestone: `UX-PREMIUM-CRITICAL-FIX-ROOM-01`
+- Room critical fix docs: `docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md`
+- Room critical fix command: `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - Company mobile action clarity milestone: `UX-COMPANY-MOBILE-ACTION-CLARITY-01`
 - Company mobile action clarity docs: `docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md`
 - Parent / Personel live error clarity milestone: `UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01`
@@ -28,8 +31,8 @@ Repo: `servis-platform`
 - Panel standard architecture milestone: `UX-PANEL-STANDARD-ARCHITECTURE-01`
 - Panel standard architecture docs: `docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `369`
-- ACTIVE_CORE: `134`
+- ACTIVE: `370`
+- ACTIVE_CORE: `135`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -57,9 +60,9 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 369 |
+| ACTIVE | 370 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 134 |
+| ACTIVE_CORE | 135 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -197,6 +200,7 @@ Repo: `servis-platform`
 | root:check:uxroomopsrelationshippolish01 | package.json | root | node backend/scripts/ux_room_ops_relationship_polish_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMOPSRELATIONSHIPPOLISH-01 |  | Breaks canonical verification chain |  |
 | root:check:uxroomdrivervehiclelinkdedup01 | package.json | root | node backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXROOMDRIVERVEHICLELINKDEDUP-01 |  | Owner or chain unclear |  |
 | root:check:uxroomshiftstabs01 | package.json | root | node backend/scripts/ux_room_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
+| root:check:uxpremiumcriticalfixroom01 | package.json | root | node backend/scripts/ux_premium_critical_fix_room_01_check.js | core | ACTIVE_CORE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01 |  | Breaks canonical verification chain |  |
 | root:check:uxschoolorganizationpanels01 | package.json | root | node backend/scripts/ux_school_organization_panels_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXSCHOOLORGANIZATIONPANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyshiftstabs01 | package.json | root | node backend/scripts/ux_company_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanymobileactionclarity01 | package.json | root | node backend/scripts/ux_company_mobile_action_clarity_01_check.js | core | ACTIVE_CORE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01 |  | Breaks canonical verification chain |  |
@@ -862,7 +866,7 @@ Repo: `servis-platform`
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
 | index.js | backend/src/routes/shifts/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | people.js | backend/src/routes/shifts/people.js | backend |  | review | NEEDS_REVIEW |  | PEOPLE |  | Owner or chain unclear |  |
-| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroompanelclarity01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
+| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomvehicledriveruppercase01, root:check:uxpremiumcriticalfixroom01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroompanelclarity01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
 | roomReassignNotifications.js | backend/src/routes/shifts/roomReassignNotifications.js | backend |  | review | NEEDS_REVIEW |  | ROOM-REASSIGN-NOTIFICATIONS |  | Owner or chain unclear |  |
 | roomShared.js | backend/src/routes/shifts/roomShared.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SHARED |  | Owner or chain unclear |  |
 | schemas.js | backend/src/routes/shifts/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
@@ -924,6 +928,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| ux_premium_critical_fix_room_01_check.js | backend/scripts/ux_premium_critical_fix_room_01_check.js | backend | root:check:uxpremiumcriticalfixroom01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01-CHECK |  | Owner or chain unclear | product check/helper |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

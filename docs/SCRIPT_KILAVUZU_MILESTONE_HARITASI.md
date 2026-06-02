@@ -90,6 +90,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
 - `check:uxroompanelclarity01` -> `node backend\scripts\ux_room_panel_clarity_01_check.js`
+- `check:uxpremiumcriticalfixroom01` -> `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - `check:uxcompanymobileactionclarity01` -> `node backend\scripts\ux_company_mobile_action_clarity_01_check.js`
 - `check:uxparentpersonelliveerrorclarity01` -> `node backend\scripts\ux_parent_personel_live_error_clarity_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
@@ -1066,6 +1067,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:uxroomshiftstabs01` `Room / Vardiyalar` ekranını üç gerçek taba böler: `Bekleyen Talepler`, `Sözleşmeden Üretilen` ve `Diğer Vardiyalar`.
 - Üstteki KPI bandı açık kalır; `Bekleyen Talepler` ile `Tüm Vardiyalar` gibi tek uzun akış yerine seçili tabın içeriği tek başına render edilir.
 - Bu düzeltme `UX-PANEL-STRUCTURE-02`, `UX-PANEL-STRUCTURE-02B`, `UX-ROOM-OPS-PANEL-TABS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+### UX-PREMIUM-CRITICAL-FIX-ROOM-01 [CHECK]
+- `check:uxpremiumcriticalfixroom01` `Room / Vardiyalar`, `Room / Sözleşmeler` ve `Room / Sürücüler` yüzeylerinde kritik smoke satırlarını küçük, kontrol edilebilir bir room dalgasında kapatır.
+- `Dispatch apply` CTA görünür kalır; `Detayı aç` CTA okunur ve tıklanabilir olur; sürücü listesinde `Sürücü kaydı`, `Düşük canlılık` ve `Çevrim dışı` gibi güvenli metinler korunur.
+- Mobilde `NavDock` ve floating assistant ile çakışmayı azaltmak için `roomCriticalFixScope` / `roomActionCTA` safe-area standardı kullanılır.
+- Doküman: `docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md`
+- Bu milestone yeni business flow, backend route/write-path, browser-smoke artifact veya runner/coverage policy açmaz.
 
 ### UX-COMPANY-SHIFTS-TABS-01 [CHECK]
 - `check:uxcompanyshiftstabs01` `Company / Vardiyalar` ekranını track-only yapıda dört gerçek taba böler: `Market`, `Bekleyen`, `Sözleşmeden Üretilen` ve `Diğer Vardiyalar`.

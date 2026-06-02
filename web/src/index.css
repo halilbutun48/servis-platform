@@ -181,6 +181,16 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom));
 }
 
+.roomCriticalFixScope {
+  min-width: 0;
+}
+
+.roomCriticalFixScope .roomActionCTA {
+  position: relative;
+  z-index: 4305;
+  scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom));
+}
+
 .roomCommercialWorkspaceFull > * {
   width: 100%;
   min-width: 0;
@@ -1137,6 +1147,9 @@ button, input, select, textarea, .btn, .secondary {
   .companyActionClarityScope {
     padding-bottom: calc(240px + env(safe-area-inset-bottom));
   }
+  .roomCriticalFixScope {
+    padding-bottom: calc(240px + env(safe-area-inset-bottom));
+  }
 }
 
 @media (min-width: 641px) and (max-width: 900px) {
@@ -1229,6 +1242,9 @@ button, input, select, textarea, .btn, .secondary {
     height: min(42vh, 360px);
   }
   .companyActionClarityScope {
+    padding-bottom: calc(200px + env(safe-area-inset-bottom));
+  }
+  .roomCriticalFixScope {
     padding-bottom: calc(200px + env(safe-area-inset-bottom));
   }
 }
@@ -1514,4 +1530,3 @@ button, input, select, textarea, .btn, .secondary {
 .listSelectionBanner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1px solid rgba(83,177,253,0.24); background: rgba(83,177,253,0.08); border-radius: 14px; margin-top: 10px; }
 .listSelectionBannerTitle { font-size: 14px; color: #f8fafc; }
 .listSelectionBannerMeta { font-size: 12px; color: #c8d6f6; margin-top: 4px; }
-

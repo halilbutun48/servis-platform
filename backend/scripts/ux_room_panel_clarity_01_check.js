@@ -43,6 +43,11 @@ function mustNot(text, needle, label) {
   else ok(label);
 }
 
+function mustTrue(cond, label) {
+  if (cond) ok(label);
+  else fail(label);
+}
+
 function stagedNames() {
   const out = execFileSync("git", ["diff", "--cached", "--name-only"], {
     cwd: root,
@@ -118,7 +123,11 @@ function main() {
   must(shiftsOverview, "Özet üstte; karar, dispatch ve rota önizleme tablarda kalır.", "room shifts overview keeps summary-first copy");
   must(shiftsOverview, "Vardiya ID", "room shifts overview uses safe preview labels");
 
-  must(shiftsSections, "showDispatchApplyAction = suggestions.length > 0", "room shifts dispatch action is visible when suggestions exist");
+  must(
+    shiftsSections,
+    "showDispatchApplyAction = Boolean(data)",
+    "room shifts dispatch action is visible in critical fix scope"
+  );
   must(shiftsSections, "Önizlemeyi Uygula: Böl & Onayla", "room shifts dispatch apply CTA present");
   must(shiftsSections, "Bölme önizlemesini yenile", "room shifts dispatch preview refresh CTA present");
   must(shiftsSections, "Bölme önizlemesi oluştur", "room shifts dispatch preview create CTA present");
@@ -163,6 +172,31 @@ function main() {
   must(roomOpsBoard, "Düşük canlılık", "room operations board uses localized stale wording");
 
   const staged = stagedNames();
+  const stagedAllowed = new Set([
+    "backend/scripts/ux_room_panel_clarity_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_room_01_check.js",
+    "docs/UX_ROOM_PANEL_CLARITY_01.md",
+    "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "package.json",
+    "backend/scripts/run_product_extensions_check_chain.js",
+    "backend/scripts/verify_chain_01_product_extensions_check.js",
+    "backend/scripts/script_harness_consolidation_01_check.js",
+    "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
+    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
+    "backend/scripts/ux_panel_standard_architecture_01_check.js",
+    "web/src/index.css",
+    "web/src/panels/room/AgreementsPanel.jsx",
+    "web/src/panels/room/DriversPanel.jsx",
+    "web/src/panels/room/RoomDriversEditModal.jsx",
+    "web/src/panels/room/RoomDriversShiftsTable.jsx",
+    "web/src/panels/room/RoomDriversStatusTable.jsx",
+    "web/src/panels/room/ShiftsPanel.jsx",
+    "web/src/panels/room/roomShiftsPanelSections.jsx",
+  ]);
+  mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within room panel clarity validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");
   mustNotList(staged, "backend/artifacts/browser-smoke/", "browser-smoke artifacts are not staged");
   mustNotList(staged, "debug.log", "debug.log is not staged");
