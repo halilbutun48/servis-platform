@@ -27,6 +27,7 @@ PASS- yalnızca evidence varsa verilir.
 Kabul edilen PASS- kanıtları:
 - review queue action eksikliği,
 - room route preview kısa karar kartı,
+- room dispatch apply evidence,
 - company vardiya -> sözleşme taslağı geçişi,
 - commercial accepted/applied bucket görünürlüğü,
 - uzun live-map yüzeyleri,
@@ -42,9 +43,9 @@ Bu milestone'un referans aldığı canlı smoke snapshot:
 
 | Metric | Value |
 | --- | ---: |
-| PASS | `40` |
-| PASS- | `22` |
-| UX-FIX | `20` |
+| PASS | `59` |
+| PASS- | `23` |
+| UX-FIX | `0` |
 | BLOCKER | `0` |
 | AUTH-BLOCKED | `0` |
 | NOT-FOUND | `0` |
@@ -56,6 +57,7 @@ Bu milestone'un referans aldığı canlı smoke snapshot:
 | Route / yüzey | Role | Viewport | PASS- evidence | Not |
 | --- | --- | --- | --- | --- |
 | `/#/superadmin/onboarding-review` | superadmin | desktop + mobile | review actions incomplete | Read-only review queue, write flow değil. |
+| `/#/room/shifts` | room | desktop | dispatch apply button enabled on seeded selection | Enable edilmiş dispatch aksiyonu görünür; PASS- fakat evidence-based. |
 | `/#/room/operation-health` | room | desktop + mobile | route preview compact card | Mobile click fail olsa bile kompakt karar kartı görünür. |
 | `/#/room/commercial-flow` | room | desktop + mobile | commercial accepted/applied bucket | Ticari bucket görünürlüğü evidence sağlar. |
 | `/#/company/shifts` | company | desktop + mobile | convertToAgreement draft transition | Dönüşüm akışı liste ekranında kalmaz. |
@@ -63,6 +65,7 @@ Bu milestone'un referans aldığı canlı smoke snapshot:
 | `/#/school/commercial-flow` | school | desktop + mobile | commercial accepted/applied bucket | Ticari bucket görünürlüğü evidence sağlar. |
 | `/#/organization/commercial-flow` | organization | desktop + mobile | commercial accepted/applied bucket | Ticari bucket görünürlüğü evidence sağlar. |
 | `/#/room/live` / `/#/room/map` | room | mobile | long live-map surface | Desktop yüzeyler PASS kalabilir. |
+| `/#/company/map` | company | desktop | console noise | Console error count 1. |
 | `/#/company/map` | company | mobile | long live-map surface | Desktop yüzey PASS kalabilir. |
 | `/#/personel/live` | personel | mobile | long live-map surface | Desktop yüzey PASS kalabilir. |
 | `/#/parent/live` | parent | desktop + mobile | console noise | UI kırığı değil; gürültü sinyali. |

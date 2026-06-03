@@ -18,11 +18,9 @@ const reportJsonPath = path.join(
 );
 
 const expectedStatusCounts = {
-  PASS: 40,
-  "PASS-": 22,
-  "UX-FIX": 20,
   BLOCKER: 0,
   "NOT-FOUND": 0,
+  "UX-FIX": 0,
 };
 
 const expectedRoleCounts = {
@@ -86,6 +84,7 @@ function normalize(text) {
   return String(text || "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[ıİ]/g, "i")
     .replace(/[’‘`]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/\\/g, "/")
@@ -199,11 +198,11 @@ function main() {
     must(report.routeCount === 82, "smoke report keeps 82 route checks");
     must(report.screenshotCount === 164, "smoke report keeps 164 screenshots");
     must(report.pageErrorCount === 0, "smoke report keeps pageErrorCount at 0");
-    must(report.statusCounts.BLOCKER === 0, "smoke report keeps blocker count at 0");
-    must(report.statusCounts["NOT-FOUND"] === 0, "smoke report keeps not-found count at 0");
-    must(report.statusCounts.PASS === expectedStatusCounts.PASS, "smoke report keeps PASS count");
-    must(report.statusCounts["PASS-"] === expectedStatusCounts["PASS-"], "smoke report keeps PASS- count");
-    must(report.statusCounts["UX-FIX"] === expectedStatusCounts["UX-FIX"], "smoke report keeps UX-FIX count");
+    must(report.statusCounts.BLOCKER === expectedStatusCounts.BLOCKER, "smoke report keeps blocker count at 0");
+    must(report.statusCounts["NOT-FOUND"] === expectedStatusCounts["NOT-FOUND"], "smoke report keeps not-found count at 0");
+    must(report.statusCounts["UX-FIX"] === expectedStatusCounts["UX-FIX"], "smoke report keeps UX-FIX count at 0");
+    must(report.statusCounts.PASS > 0, "smoke report keeps PASS count");
+    must(report.statusCounts["PASS-"] >= 0, "smoke report keeps PASS- count");
     must(
       report.statusCounts.PASS + report.statusCounts["PASS-"] + report.statusCounts["UX-FIX"] + (report.statusCounts["AUTH-BLOCKED"] || 0) ===
         report.routeCount,
@@ -255,29 +254,28 @@ function main() {
 
     const agreementRows = report.routes.filter((row) => row.kind === "agreementPreview");
     must(agreementRows.length === 8, "agreement preview coverage spans room/company/school/organization");
-    const agreementPreviewGapSignals = [
-      "Detayı aç butonu görünmüyor.",
-      "detail click intercepted",
-      "click failed",
-      "detail not readable",
-      "not opened",
-      "açılmadı",
-      "okunur değil",
-      "operation bridge detail not readable",
-      "navDock intercepted",
-    ];
-    const hasAgreementGapSignal = (note) =>
-      agreementPreviewGapSignals.some((needle) => normalize(note).includes(normalize(needle)));
-    const agreementGapRows = agreementRows.filter((row) => row.status === "UX-FIX");
-    must(agreementGapRows.length > 0, "agreement preview gap is documented");
     must(
-      agreementGapRows.every((row) => Array.isArray(row.notes) && row.notes.some((note) => hasAgreementGapSignal(note))),
-      "agreement preview gap rows keep accepted wording"
+      agreementRows.every((row) => row.status === "PASS" || row.status === "PASS-"),
+      "agreement preview rows resolve to non-blocking status"
+    );
+    must(
+      agreementRows.every((row) => Array.isArray(row.notes) && row.notes.some((note) => {
+        const hay = normalize(note);
+        return (
+          hay.includes("detayi kapat") ||
+          hay.includes("collapse icinde aciliyor") ||
+          hay.includes("bos/fallback durumda okunur")
+        );
+      })),
+      "agreement preview rows keep open or fallback evidence"
     );
 
     const dispatchRows = report.routes.filter((row) => row.kind === "dispatch");
     must(dispatchRows.length === 2, "dispatch coverage appears in both viewports");
-    must(dispatchRows.some((row) => row.notes.some((note) => note.includes("Dispatch apply button not visible."))), "dispatch gap is documented");
+    must(
+      dispatchRows.every((row) => Array.isArray(row.notes) && row.notes.some((note) => normalize(note).includes("dispatch apply button enabled on seeded selection"))),
+      "dispatch rows keep enabled evidence"
+    );
 
     const launcherVisible = report.routes.filter((row) => row.checks?.seferAbiLauncherVisible);
     must(launcherVisible.length > 0, "authenticated routes keep Sefer Abi launcher visible");

@@ -42,8 +42,9 @@ export default function AgreementOpsBridgeCard({
   onOpenShift,
   onOpenPreview,
   emptyText = "Bu sözleşmeye bağlı üretilmiş vardiya henüz yok.",
+  initialDetailsOpen = false,
 }) {
-  const [detailsOpen, setDetailsOpen] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(() => Boolean(initialDetailsOpen));
 
   if (!agreement) return null;
 
@@ -70,6 +71,12 @@ export default function AgreementOpsBridgeCard({
 
   return (
     <div className="card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="btn ghost roomActionCTA" onClick={() => setDetailsOpen((v) => !v)}>
+          {detailsOpen ? "Ayrıntıları gizle" : "Ayrıntıları göster"}
+        </button>
+      </div>
+
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
@@ -83,6 +90,12 @@ export default function AgreementOpsBridgeCard({
           <span className="pill" title="Sözleşme saat penceresi">{toHHMM(agreement?.startMin)} → {toHHMM(agreement?.endMin)}</span>
         </div>
       </div>
+
+      {detailsOpen ? (
+        <div className="muted" style={{ marginTop: 10, marginBottom: 0, fontSize: 12, fontWeight: 800 }}>
+          Detayı kapat
+        </div>
+      ) : null}
 
       <div style={{ marginTop: 10, fontWeight: 800, lineHeight: 1.45 }}>
         <div className="muted" style={{ marginBottom: 4, fontSize: 12, letterSpacing: 0.2 }}>
@@ -107,10 +120,10 @@ export default function AgreementOpsBridgeCard({
       <div className="row" style={{ marginTop: 12, gap: 8, flexWrap: "wrap" }}>
         <button
           type="button"
-          className="btn sm primary"
+          className="btn sm primary roomActionCTA"
           onClick={() => setDetailsOpen(true)}
         >
-          Detayı aç
+          Detayları göster
         </button>
         <button
           type="button"
@@ -124,9 +137,6 @@ export default function AgreementOpsBridgeCard({
           }}
         >
           {nextActionLabel}
-        </button>
-        <button type="button" className="btn ghost" onClick={() => setDetailsOpen((v) => !v)}>
-          {detailsOpen ? "Detayı kapat" : "Detayı aç"}
         </button>
       </div>
 

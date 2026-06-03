@@ -1091,6 +1091,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Doküman: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Bu milestone yeni business flow, backend route/write-path, browser-smoke artifact veya runner/coverage policy açmaz.
 
+### UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01 [CHECK]
+- `check:uxpremiumcriticaluxfixcleanup01` evidence-based smoke classification sonrası kalan kritik `UX-FIX` satırlarını sıfırlayan cleanup dalgasıdır.
+- `node backend\scripts\ux_premium_critical_uxfix_cleanup_01_check.js` bu cleanup dalgasının resmi doğrulama girişidir.
+- `Super Admin Audit`, `Room / Vardiyalar`, `Room / Sözleşmeler`, `Room / Araçlar`, `Room / Sürücüler`, `Company / Sözleşmeler`, `School / Sözleşmeler`, `Organization / Sözleşmeler`, `Driver / Rota` ve `Driver / Check-in` yüzeylerinde güvenli wording korunur.
+- `Sistem kanıtı`, `Okuma kodu`, `GPS durumu`, `Yeni cihaz erişim kodu`, `Sürücü kaydı`, `Düşük canlılık`, `Çevrim dışı` ve `Önizlemeyi Uygula: Böl & Onayla` metinleri kullanıcı-facing güvenli sınır olarak tutulur.
+- Doküman: `docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md`
+- Bu milestone yeni business flow, backend route/write-path, browser-smoke artifact veya runner/coverage policy açmaz; PASS-minus evidence standardı korunur.
+
 ### UX-COMPANY-SHIFTS-TABS-01 [CHECK]
 - `check:uxcompanyshiftstabs01` `Company / Vardiyalar` ekranını track-only yapıda dört gerçek taba böler: `Market`, `Bekleyen`, `Sözleşmeden Üretilen` ve `Diğer Vardiyalar`.
 - `Oluşturma`, `Liste` ve `Planlama Merkezi` tekrarları bu ekrandan kaldırılır; üstte yalnızca takip özet bandı ve kompakt filtre kalır.

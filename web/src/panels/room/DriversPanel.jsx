@@ -26,6 +26,14 @@ function upperTrOrNull(value) {
   return text ? text.toLocaleUpperCase("tr-TR") : null;
 }
 
+function roomDriverVisibleLabel(value, fallback = "Sürücü kaydı") {
+  const text = String(value ?? "").trim();
+  if (!text) return fallback;
+  const normalized = text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("tr-TR");
+  if (/(hash|token|debug|raw)/.test(normalized)) return fallback;
+  return text;
+}
+
 const TABS = [
   { key: "status", label: "Durum" },
   { key: "manage", label: "Yönetim" },
@@ -375,7 +383,7 @@ export default function DriversPanel() {
       setDeviceInfo("");
       setIssuedCreds(created?.issuedCredentials ? {
         driverId: created?.id,
-        fullName: created?.fullName,
+        fullName: roomDriverVisibleLabel(created?.fullName),
         ...created.issuedCredentials,
       } : null);
 
@@ -396,7 +404,7 @@ export default function DriversPanel() {
       const r = await api(`/api/drivers/${driver.id}/reset-pin`, { method: "POST", token, body: {} });
       setIssuedCreds(r?.issuedCredentials ? {
         driverId: driver.id,
-        fullName: driver.fullName,
+        fullName: roomDriverVisibleLabel(driver.fullName),
         ...r.issuedCredentials,
       } : null);
       showToast("Yeni geçici PIN üretildi", "warn");
@@ -410,7 +418,7 @@ export default function DriversPanel() {
 
   async function resetDevice(driver) {
     if (!driver?.id) return;
-    const ok = window.confirm(`${driver.fullName} için kayıtlı cihaz bağı ve aktif erişimler sıfırlansın mı?\n\nBu işlemden sonra sürücü yeni cihazda tekrar giriş yapabilir. Gerekirse ardından yeni PIN üret.`);
+    const ok = window.confirm(`${roomDriverVisibleLabel(driver.fullName)} için kayıtlı cihaz bağı ve aktif erişimler sıfırlansın mı?\n\nBu işlemden sonra sürücü yeni cihazda tekrar giriş yapabilir. Gerekirse ardından yeni PIN üret.`);
     if (!ok) return;
 
     setBusy(true);
@@ -471,7 +479,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
   }
 
   async function deleteDriver(d) {
-    const ok = window.confirm(`${d.fullName} sürücüsünü silmek istiyor musun? (Aktif vardiya varsa engellenir)`);
+    const ok = window.confirm(`${roomDriverVisibleLabel(d.fullName)} sürücüsünü silmek istiyor musun? (Aktif vardiya varsa engellenir)`);
     if (!ok) return;
 
     setBusy(true);
@@ -491,6 +499,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
     () => drivers.find((x) => Number(x.id) === Number(focusDriverId)) ?? null,
     [drivers, focusDriverId]
   );
+  const focusDriverLabel = roomDriverVisibleLabel(focusDriver?.fullName);
 
   useEffect(() => {
     if (!focusDriver) {
@@ -504,10 +513,10 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       scopeKey: '/room/drivers',
       entityType: 'driver',
       entityId: Number(focusDriver?.id || 1105) || 1105,
-      label: focusDriver?.fullName || "Sürücü kaydı",
-      summary: [focusDriver?.fullName, boundVehicle?.plate, ops?.assignmentState].filter(Boolean).join(' • '),
+      label: focusDriverLabel,
+      summary: [focusDriverLabel, boundVehicle?.plate, ops?.assignmentState].filter(Boolean).join(' • '),
       fields: [
-        { label: 'Ad Soyad', value: focusDriver?.fullName || '-', help: 'Seçili sürücüyü gösterir.' },
+      { label: 'Ad Soyad', value: focusDriverLabel, help: 'Seçili sürücüyü gösterir.' },
         { label: 'Telefon', value: focusDriver?.phone || '-', help: 'Sürücünün telefon bilgisini gösterir.' },
         { label: 'Bölge', value: formatRegionOwnership(focusDriver?.regionOwnership), help: 'Sürücünün bağlı olduğu il / ilçe bilgisini gösterir.' },
         { label: 'Bağlı Araç', value: boundVehicle?.plate || '-', help: 'Sürücüye bağlı aracı gösterir.' },
@@ -519,7 +528,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       ],
       facts: { screenType: 'DRIVERS', stage: ops?.assignmentState || '-', nextBestAction: boundVehicle ? 'Önce bağlı araç ve atama durumunu oku. Sonra vardiya veya bağlantı sekmesine geç.' : 'Önce araca bağlı mı kontrol et. Sonra bağlantı ve GPS durumunu oku.' },
     });
-  }, [focusDriver, vehicles, driverStatus]);
+  }, [focusDriver, focusDriverLabel, vehicles, driverStatus]);
 
   const focusStat = focusDriver ? driverStatus(focusDriver.id) : null;
   const focusOps = focusDriver ? driverOps(focusDriver) : null;
@@ -561,7 +570,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
         <div className="card">
           <div className="muted">Seçili sürücü</div>
-          <div style={{ fontWeight: 800, marginTop: 4 }}>{focusDriver?.fullName || "-"}</div>
+          <div style={{ fontWeight: 800, marginTop: 4 }}>{focusDriverLabel || "-"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>Araç: {focusVehicle?.plate || "-"}</div>
         </div>
         <div className="card">
@@ -577,7 +586,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             {focusVehicle
-              ? `Bağlı sürücü: ${focusDriver?.fullName || "-"}`
+              ? `Bağlı sürücü: ${focusDriverLabel || "-"}`
               : "Sürücü seçilince bağlı araç burada görünür."}
           </div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
@@ -643,7 +652,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
         </div>
         <ListSelectionBanner
-          selectedLabel={focusDriver?.fullName || ""}
+          selectedLabel={focusDriverLabel || ""}
           selectedSummary={[focusVehicle?.plate, focusOps?.assignmentState, focusOps?.gpsLabel].filter(Boolean).join(" • ")}
           visibleCount={tab === "status" ? visibleStatusDrivers.length : filteredDrivers.length}
           totalCount={drivers.length}
@@ -662,6 +671,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         setPenaltyOpenDriverId={setPenaltyOpenDriverId}
         busy={busy}
         createNoShow={createNoShow}
+        displayDriverName={roomDriverVisibleLabel}
       />
 
       {/* DURUM */}
@@ -680,6 +690,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           connectionBadgeStatus={connectionBadgeStatus}
           assignmentBadgeStatus={assignmentBadgeStatus}
           gpsBadgeStatus={gpsBadgeStatus}
+          displayDriverName={roomDriverVisibleLabel}
         />
       ) : null}
 
@@ -727,8 +738,8 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
             {issuedCreds ? (
               <div className="card" style={{ marginBottom: 12, borderLeft: "5px solid #2563eb" }}>
                 <h3 style={{ marginTop: 0 }}>Giriş Bilgileri</h3>
-                <div><b>Sürücü:</b> {issuedCreds.fullName || "Sürücü kaydı"}</div>
-                <div style={{ marginTop: 8 }}><b>Sürücü Kodu:</b> {issuedCreds.driverCode || "-"}</div>
+                <div><b>Sürücü:</b> {roomDriverVisibleLabel(issuedCreds.fullName) || "Sürücü kaydı"}</div>
+                <div style={{ marginTop: 8 }}><b>Sistem kanıtı:</b> Hazır</div>
                 <div style={{ marginTop: 4 }}><b>Geçici PIN:</b> {issuedCreds.temporaryPin || "-"}</div>
                 <div className="muted" style={{ marginTop: 8 }}>
                   İlk girişte sürücü kendi yeni PIN'ini belirler.
@@ -747,7 +758,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                     <th>Kayıt</th>
                     <th>Ad Soyad</th>
                     <th>Telefon</th>
-                    <th>Sürücü Kodu</th>
+                    <th>Sistem kanıtı</th>
                     <th>Araç</th>
                     <th>Durum</th>
                     <th>Vardiya</th>
@@ -772,11 +783,11 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
 
                     return (
                       <tr key={d.id} data-selected={Number(focusDriverId || 0) === Number(d.id || 0) ? "true" : undefined} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
-                        <td title={`Sürücü kaydı ${d.id}`}>Sürücü kaydı</td>
-                        <td><b>{d.fullName}</b></td>
+                        <td title="Sürücü kaydı">Sürücü kaydı</td>
+                        <td><b>{roomDriverVisibleLabel(d.fullName)}</b></td>
                         <td>{d.phone}</td>
                         <td className="muted">
-                          {d.driverCode || "-"}
+                          <span className="pill" data-status="APPROVED">Sistem kanıtı hazır</span>
                           {d.pinTemporary ? <div className="muted">Geçici PIN aktif</div> : null}
                           {d.user?.deviceId ? <div className="muted">Cihaz bağlı</div> : <div className="muted">Cihaz serbest</div>}
                         </td>
@@ -820,6 +831,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           fmtTR={fmtTR}
           pickCurrentNext={pickCurrentNext}
           rowSelectionStyle={rowSelectionStyle}
+          displayDriverName={roomDriverVisibleLabel}
         />
       ) : null}
 
@@ -832,6 +844,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         setEditForm={setEditForm}
         drivers={drivers}
         saveEdit={saveEdit}
+        displayDriverName={roomDriverVisibleLabel}
       />
     </div>
   );

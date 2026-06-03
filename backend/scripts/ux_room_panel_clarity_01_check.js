@@ -119,7 +119,8 @@ function main() {
   must(shiftsPanel, "Sürücü ID", "room shifts panel uses safe driver id labels");
   must(shiftsPanel, "Sözleşme ID", "room shifts panel uses safe agreement id labels");
 
-  must(shiftsOverview, "Room / Vardiyalar", "room shifts overview title present");
+  must(shiftsOverview, "Vardiya Özeti", "room shifts overview title present");
+  mustNot(shiftsOverview, "Shifts (ROOM) · Room / Vardiyalar", "room shifts overview removes duplicate legacy title");
   must(shiftsOverview, "Özet üstte; karar, dispatch ve rota önizleme tablarda kalır.", "room shifts overview keeps summary-first copy");
   must(shiftsOverview, "Vardiya ID", "room shifts overview uses safe preview labels");
 

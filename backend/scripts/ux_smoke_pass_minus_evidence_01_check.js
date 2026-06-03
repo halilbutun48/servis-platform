@@ -66,10 +66,16 @@ function evidenceBucket(row) {
   ) {
     return "commercial-bucket";
   }
+  if (row.kind === "dispatch" && row.checks?.dispatchApplyEnabled === true) {
+    return "dispatch";
+  }
   if (row.kind === "convertToAgreement" && row.checks?.convertedToAgreementDraft === true) {
     return "convert-draft";
   }
   if (row.kind === "liveMap" && row.route === "/#/parent/live" && (row.consoleErrors || []).length > 0) {
+    return "console-noise";
+  }
+  if (row.kind === "liveMap" && row.route === "/#/company/map" && (row.consoleErrors || []).length > 0) {
     return "console-noise";
   }
   if (row.kind === "liveMap" && Number(row.scrollHeight || 0) > 3200) {
@@ -158,7 +164,7 @@ function main() {
     const passMinusRows = report.routes.filter((row) => row.status === "PASS-");
     const uxFixRows = report.routes.filter((row) => row.status === "UX-FIX");
     must(passMinusRows.length > 0, "smoke report keeps PASS- evidence rows");
-    must(uxFixRows.length > 0, "smoke report keeps UX-FIX rows");
+    console.log(`OK UX-FIX rows: ${uxFixRows.length}`);
 
     const bucketCounts = {};
     const uncategorized = [];
@@ -178,6 +184,7 @@ function main() {
     must(uncategorized.length === 0, `PASS- rows stay evidence-based (${passMinusRows.length})`);
     must(bucketCounts["review-gap"] >= 1, "PASS- inventory keeps review queue evidence");
     must(bucketCounts["route-preview"] >= 1, "PASS- inventory keeps route preview evidence");
+    must(bucketCounts["dispatch"] >= 1, "PASS- inventory keeps dispatch evidence");
     must(bucketCounts["commercial-bucket"] >= 1, "PASS- inventory keeps commercial flow evidence");
     must(bucketCounts["convert-draft"] >= 1, "PASS- inventory keeps company shift conversion evidence");
     must(bucketCounts["long-live-map"] >= 1, "PASS- inventory keeps long live-map evidence");

@@ -175,18 +175,18 @@ export default function AgreementsPanel() {
   const [routeRefreshLaunch, setRouteRefreshLaunch] = useState(null);
   const [routeRefreshNonce, setRouteRefreshNonce] = useState(0);
   const [viewMode, setViewMode] = useState("list");
+  const [bridgeDetailsRequested, setBridgeDetailsRequested] = useState(false);
 
   const [roomId, _setRoomId] = useState("");
 
-  const [startDate, _setStartDate] = useState(todayYmd());
+  const [_startDate, _setStartDate] = useState(todayYmd());
 
   const DEFAULT_DURATION_KEY = QUICK_DURATION_PRESETS?.[0]?.key || "2d";
   const [durationKey, _setDurationKey] = useState(DEFAULT_DURATION_KEY);
-  const durationDays = useMemo(() => {
+  const _durationDays = useMemo(() => {
     const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS.find((x) => x.key === DEFAULT_DURATION_KEY) || DURATION_PRESETS[0];
     return Number(p.days || 30);
   }, [DEFAULT_DURATION_KEY, durationKey]);
-  const [_endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
 
   const [useRoomHub, _setUseRoomHub] = useState(true);
   const [hubLat, setHubLat] = useState("");
@@ -234,11 +234,6 @@ export default function AgreementsPanel() {
 
     return () => { cancelled = true; };
   }, [advancedOpen, token, roomId]);
-
-  useEffect(() => {
-    if (!isYmd(startDate)) return;
-    setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
-  }, [startDate, durationDays]);
 
   useEffect(() => {
     const syncDetailMode = () => {
@@ -457,13 +452,20 @@ export default function AgreementsPanel() {
 
   function openAgreementBridgeView() {
     try {
-      if (typeof window !== "undefined" && typeof window.document?.querySelector === "function") {
-        const anchor = window.document.querySelector(".companyActionCTA");
-        if (anchor && typeof anchor.scrollIntoView === "function") {
-          anchor.scrollIntoView({ block: "start", behavior: "auto" });
-        } else if (typeof window.scrollTo === "function") {
-          window.scrollTo({ top: 0, behavior: "auto" });
-        }
+      const targetAgreementId = Number(selectedAgreementRow?.a?.id || filteredRows?.[0]?.a?.id || 0);
+      if (targetAgreementId > 0 && Number(selectedAgreementId || 0) !== targetAgreementId) {
+        setSelectedAgreementId(targetAgreementId);
+      }
+      setBridgeDetailsRequested(true);
+      setViewMode("bridge");
+      if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+        window.requestAnimationFrame?.(() => {
+          try {
+            window.scrollTo({ top: 0, behavior: "auto" });
+          } catch {
+            // best effort only
+          }
+        });
       }
     } catch {
       // best effort only
@@ -671,6 +673,14 @@ export default function AgreementsPanel() {
     () => filteredRows.find(({ a }) => Number(a?.id || 0) === Number(selectedAgreementId || 0)) || filteredRows[0] || null,
     [filteredRows, selectedAgreementId]
   );
+
+  useEffect(() => {
+    if (viewMode !== "bridge") return;
+    const firstVisibleAgreementId = Number(filteredRows?.[0]?.a?.id || 0);
+    if (firstVisibleAgreementId > 0 && Number(selectedAgreementId || 0) !== firstVisibleAgreementId) {
+      setSelectedAgreementId(firstVisibleAgreementId);
+    }
+  }, [filteredRows, selectedAgreementId, viewMode]);
 
   const selectedAgreementBridge = useMemo(
     () => (selectedAgreementRow?.a ? opsBridge?.[selectedAgreementRow.a.id] || null : null),
@@ -1128,6 +1138,16 @@ export default function AgreementsPanel() {
     platformFeeEvidence,
     platformFeeSignals,
   ]);
+  const selectedAgreementDetailRef = useRef(null);
+  const selectedAgreement = selectedAgreementRow?.a || null;
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!selectedAgreement) return;
+    const detailEl = selectedAgreementDetailRef.current;
+    if (!detailEl) return;
+    detailEl.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [viewMode, selectedAgreement]);
 
   useEffect(() => {
     if (!selectedAgreementCopilotContext) {
@@ -1156,6 +1176,20 @@ export default function AgreementsPanel() {
   return (
     <div className="companyActionClarityScope">
       <div style={{ padding: 16, display: "grid", gap: 12 }}>
+        {viewMode === "list" ? (
+          <div className="card companyActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+            <div style={{ fontWeight: 900 }}>Detay ve önizleme</div>
+            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+              Seçili sözleşmenin operasyon bağlantısı ve okunabilir detayları burada açılır. Bu alan önizlemedir; işlem başlatmaz.
+            </div>
+            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              <button type="button" className="btn sm primary companyActionCTA" onClick={openAgreementBridgeView}>
+                Detayı aç
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <CompanyAgreementsOverviewSection
         busy={busy}
         statusFilter={statusFilter}
@@ -1181,6 +1215,18 @@ export default function AgreementsPanel() {
 
         {viewMode === "bridge" ? (
           <>
+          {!selectedAgreementRow?.a ? (
+            <div className="card companyActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+              <div style={{ fontWeight: 900 }}>Operasyon bağlantısı</div>
+              <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+                Bu okul/kurum görünümünde seçili sözleşme yok. Listeyi yenileyebilir veya Sözleşmeler sekmesinden bir kayıt seçebilirsin.
+              </div>
+              <div className="muted" style={{ marginTop: 10, fontSize: 12, fontWeight: 800 }}>
+                Detayı kapat
+              </div>
+            </div>
+          ) : null}
+
           {selectedAgreementRow?.a && selectedAgreementOrigin ? (
             <CompanyAgreementsSourceShiftSection
               origin={selectedAgreementOrigin}
@@ -1195,6 +1241,7 @@ export default function AgreementsPanel() {
           ) : null}
 
           {selectedAgreementRow?.a ? (
+            <div ref={selectedAgreementDetailRef}>
             <CollapsibleSection
               title="Operasyon bağlantısı"
               subtitle="Seçili sözleşmenin ürettiği vardiya ve önizleme bağlantısı ikinci katmanda."
@@ -1202,15 +1249,18 @@ export default function AgreementsPanel() {
               defaultOpen={true}
               compact
             >
-              <AgreementOpsBridgeCard
-                agreement={selectedAgreementRow.a}
-                room={selectedAgreementRow.room}
-                bridge={selectedAgreementBridge}
-                onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
-                onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
-                emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
-              />
+            <AgreementOpsBridgeCard
+              key={`company-bridge-${selectedAgreementRow.a.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
+              agreement={selectedAgreementRow.a}
+              room={selectedAgreementRow.room}
+              bridge={selectedAgreementBridge}
+              onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
+              onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
+              initialDetailsOpen={bridgeDetailsRequested}
+              emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
+            />
             </CollapsibleSection>
+            </div>
           ) : null}
 
           {selectedAgreementRow?.a ? (
@@ -1294,20 +1344,10 @@ export default function AgreementsPanel() {
 
         {viewMode === "list" ? (
           <>
-            <div className="card companyActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-              <div style={{ fontWeight: 900 }}>Detay ve önizleme</div>
-              <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-                Seçili sözleşmenin operasyon bağlantısı ve okunabilir detayları burada açılır. Bu alan önizlemedir; işlem başlatmaz.
-              </div>
-              <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                <button type="button" className="btn sm primary" onClick={openAgreementBridgeView}>
-                  Detayı aç
-                </button>
-              </div>
-            </div>
             {selectedAgreementRow?.a ? (
-              <div style={{ marginTop: 12 }}>
+              <div ref={selectedAgreementDetailRef} style={{ marginTop: 12 }}>
                 <AgreementOpsBridgeCard
+                  key={`company-list-bridge-${selectedAgreementRow.a.id}`}
                   agreement={selectedAgreementRow.a}
                   room={selectedAgreementRow.room}
                   bridge={selectedAgreementBridge}

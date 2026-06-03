@@ -178,6 +178,14 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 .companyActionClarityScope .btn.sm.primary {
   position: relative;
   z-index: 4305;
+  scroll-margin-top: calc(120px + env(safe-area-inset-top));
+  scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom));
+}
+
+.companyActionClarityScope .companyActionCTA {
+  position: relative;
+  z-index: 4305;
+  scroll-margin-top: calc(120px + env(safe-area-inset-top));
   scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom));
 }
 
@@ -188,6 +196,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 .roomCriticalFixScope .roomActionCTA {
   position: relative;
   z-index: 4305;
+  scroll-margin-top: calc(120px + env(safe-area-inset-top));
   scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom));
 }
 
@@ -1118,6 +1127,12 @@ button, input, select, textarea, .btn, .secondary {
     border-bottom: 1px solid #22314f;
     padding: 10px 12px;
   }
+  .shell--agreements-detail .navDock {
+    display: none;
+  }
+  .shell--agreements-detail .shellContent {
+    padding-top: 0;
+  }
   .shellTop {
     flex-direction: column;
     align-items: flex-start;
@@ -1246,6 +1261,13 @@ button, input, select, textarea, .btn, .secondary {
   }
   .roomCriticalFixScope {
     padding-bottom: calc(200px + env(safe-area-inset-bottom));
+  }
+  .shell--agreements-detail .companyActionClarityScope .btn.primary,
+  .shell--agreements-detail .companyActionClarityScope .btn.sm.primary,
+  .shell--agreements-detail .companyActionClarityScope .companyActionCTA,
+  .shell--agreements-detail .roomCriticalFixScope .roomActionCTA {
+    scroll-margin-top: calc(320px + env(safe-area-inset-top));
+    scroll-margin-bottom: calc(260px + env(safe-area-inset-bottom));
   }
 }
 

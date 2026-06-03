@@ -8,6 +8,7 @@ export default function RoomDriversShiftsTable({
   fmtTR,
   pickCurrentNext,
   rowSelectionStyle,
+  displayDriverName,
 }) {
   return (
     <div className="card">
@@ -48,7 +49,7 @@ export default function RoomDriversShiftsTable({
                 style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}
               >
                 <td>
-                  <b>{d.fullName}</b>
+                  <b>{displayDriverName?.(d.fullName) || d.fullName || "Sürücü kaydı"}</b>
                   <div className="muted" style={{ fontSize: 12 }}>Sürücü kaydı</div>
                   {hasRegionOwnership(d) ? <div className="muted" style={{ fontSize: 12 }}>{formatRegionOwnership(d)}</div> : null}
                 </td>

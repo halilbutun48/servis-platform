@@ -15,13 +15,14 @@ export default function AppShell({ path, children }) {
   const isSchool = role === "COMPANY" && me?.companyKind === "SCHOOL";
   const isOrganization = role === "COMPANY" && me?.companyKind === "ORGANIZATION";
   const isTabletOpsRole = role === "ROOM" || role === "COMPANY";
-  const isAgreementsDetailRoute = /\/(company|organization|school)\/agreements(?:\?|$)/.test(String(path || ""));
+  const isAgreementsDetailRoute = /\/(company|organization|school|room)\/agreements(?:\?|$)/.test(String(path || ""));
   const stepUpProvider = getStepUpProvider();
   const shouldShowStepUpCard = isStepUpEnabled() && stepUpProvider !== "none";
 
   // Map and Copilot pages should be fluid (full width). Everything else is centered for readability.
   const fluidPath = String(path || "");
   const isFluid = fluidPath.includes("/map") || /\/(copilot|natural-copilot)$/.test(fluidPath);
+  const shellHeadline = /\/room\/shifts(?:\?|$)/.test(fluidPath) ? "Vardiyalar" : BRAND_NAME;
 
   return (
     <div className={`${isTabletOpsRole ? "shell shell--tablet-ops" : "shell"}${isAgreementsDetailRoute ? " shell--agreements-detail" : ""}`} data-role={role}>
@@ -30,7 +31,7 @@ export default function AppShell({ path, children }) {
         <div className="shellTop">
           <div className="shellTopBrand"><BrandMark compact subtitle="Operasyon paneli" /></div>
           <div className="shellTopMeta">
-            <div className="title">{BRAND_NAME}</div>
+            <div className="title">{shellHeadline}</div>
             <div className="muted">
               {isSchool ? "Okul operasyonu" : isOrganization ? "Kurum operasyonu" : "Personel servis operasyonu"}
             </div>

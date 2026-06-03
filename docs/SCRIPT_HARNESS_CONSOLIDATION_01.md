@@ -1,18 +1,18 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-02
+Tarih: 2026-06-03
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `329`
+- Toplam package script entry: `330`
 - Toplam executable tracked file: `1105`
-- Combined registry row: `1434`
-- Root/backend/web/mobile package dağılımı: root `172`, backend `670`, web `88`, mobile `201`
+- Combined registry row: `1435`
+- Root/backend/web/mobile package dağılımı: root `173`, backend `670`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `36`
+- Docs indexed: `37`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
-- UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
+- UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
 - Super Admin clarity milestone: `UX-SUPERADMIN-PANEL-CLARITY-01`
@@ -29,6 +29,9 @@ Repo: `servis-platform`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
+- UX cleanup milestone: `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01`
+- UX cleanup docs: `docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md`
+- UX cleanup command: `node backend\scripts\ux_premium_critical_uxfix_cleanup_01_check.js`
 - Parent / Personel live error clarity milestone: `UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01`
 - Parent / Personel live error clarity docs: `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md`
 - Panel standard architecture milestone: `UX-PANEL-STANDARD-ARCHITECTURE-01`
@@ -38,7 +41,7 @@ Repo: `servis-platform`
 - PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
 - ACTIVE: `372`
-- ACTIVE_CORE: `136`
+- ACTIVE_CORE: `138`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -54,7 +57,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `510`
+- NEEDS_REVIEW: `509`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `60`
@@ -68,14 +71,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 372 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 136 |
+| ACTIVE_CORE | 138 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 9 |
-| NEEDS_REVIEW | 510 |
+| NEEDS_REVIEW | 509 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -207,7 +210,8 @@ Repo: `servis-platform`
 | root:check:uxroomdrivervehiclelinkdedup01 | package.json | root | node backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXROOMDRIVERVEHICLELINKDEDUP-01 |  | Owner or chain unclear |  |
 | root:check:uxroomshiftstabs01 | package.json | root | node backend/scripts/ux_room_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXROOMSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxpremiumcriticalfixroom01 | package.json | root | node backend/scripts/ux_premium_critical_fix_room_01_check.js | core | ACTIVE_CORE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01 |  | Breaks canonical verification chain |  |
-| root:check:uxpremiumcriticalfixagreementsdetail01 | package.json | root | node backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js | review | NEEDS_REVIEW |  | UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01 |  | Owner or chain unclear |  |
+| root:check:uxpremiumcriticalfixagreementsdetail01 | package.json | root | node backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js | core | ACTIVE_CORE |  | UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01 |  | Breaks canonical verification chain |  |
+| root:check:uxpremiumcriticaluxfixcleanup01 | package.json | root | node backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js | core | ACTIVE_CORE |  | UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01 |  | Breaks canonical verification chain |  |
 | root:check:uxschoolorganizationpanels01 | package.json | root | node backend/scripts/ux_school_organization_panels_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXSCHOOLORGANIZATIONPANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyshiftstabs01 | package.json | root | node backend/scripts/ux_company_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanymobileactionclarity01 | package.json | root | node backend/scripts/ux_company_mobile_action_clarity_01_check.js | core | ACTIVE_CORE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01 |  | Breaks canonical verification chain |  |

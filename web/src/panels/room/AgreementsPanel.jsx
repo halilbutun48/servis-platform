@@ -83,11 +83,10 @@ const ROOM_AGREEMENT_TABS = [
   { key: "other", label: "Diğer Sözleşmeler" },
 ];
 
-function resolveRoomAgreementsDefaultTab({ routeRefreshPendingCount, pendingCount, extendCount, otherCount }) {
+function resolveRoomAgreementsDefaultTab({ routeRefreshPendingCount, pendingCount, extendCount }) {
   if (routeRefreshPendingCount > 0) return "route";
   if (pendingCount > 0) return "bridge";
   if (extendCount > 0) return "extend";
-  if (otherCount > 0) return "other";
   return "bridge";
 }
 
@@ -128,6 +127,7 @@ export default function AgreementsPanel() {
   const [selectedAgreementId, setSelectedAgreementId] = useState(null);
   const [filterQ, setFilterQ] = useState("");
   const [viewMode, setViewMode] = useState("bridge");
+  const [bridgeDetailsRequested, setBridgeDetailsRequested] = useState(false);
   const viewModeInitializedRef = useRef(false);
 
   const approveTarget = useMemo(() => pending.find((x) => x.id === approveId), [pending, approveId]);
@@ -662,6 +662,14 @@ export default function AgreementsPanel() {
     });
   }
 
+  function openAgreementDetail(agreement) {
+    const id = Number(agreement?.id || 0);
+    if (!id) return;
+    setSelectedAgreementId(id);
+    setBridgeDetailsRequested(true);
+    setViewMode("bridge");
+  }
+
   function agreementPreviewShiftId(agreement) {
     const agreementId = Number(agreement?.id || 0);
     const bridge = agreementId > 0 ? opsBridge?.[String(agreementId)] || null : null;
@@ -780,6 +788,12 @@ export default function AgreementsPanel() {
     if (!token) return;
     loadAll();
   }, [loadAll, token]);
+
+  useEffect(() => {
+    if (viewMode !== "bridge") {
+      setBridgeDetailsRequested(false);
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     if (viewModeInitializedRef.current) return;
@@ -1032,6 +1046,43 @@ export default function AgreementsPanel() {
         <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
       </div>
 
+      {viewMode === "bridge" ? (
+        <div style={{ display: "grid", gap: 12 }}>
+          {!bridgeDetailsRequested ? (
+            <div className="card roomCriticalFixScope" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+              <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
+              <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+                Detayları aç ile köprü kartını genişlet; ardından Vardiyaya git veya Rota Önizleme ile ilerle.
+              </div>
+              <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="btn sm primary roomActionCTA"
+                  onClick={() => setBridgeDetailsRequested(true)}
+                >
+                  Detayı aç
+                </button>
+              </div>
+            </div>
+          ) : null}
+          {copilotAgreementTarget ? (
+            <AgreementOpsBridgeCard
+              key={`room-bridge-${copilotAgreementTarget.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
+              agreement={copilotAgreementTarget}
+              bridge={opsBridge?.[copilotAgreementTarget.id] || null}
+              onOpenShift={openAgreementShift}
+              onOpenPreview={openAgreementPreview}
+              initialDetailsOpen={bridgeDetailsRequested}
+            />
+          ) : (
+            <div className="card muted">Operasyon köprüsü için bir sözleşme seç.</div>
+          )}
+          <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
+            İpucu: Detayı aç ile köprü kartını genişlet; ardından Vardiyaya git veya Rota Önizleme ile ilerle.
+          </div>
+        </div>
+      ) : null}
+
       <PanelSegmentTabs
         tabs={roomAgreementTabs}
         value={viewMode}
@@ -1041,17 +1092,6 @@ export default function AgreementsPanel() {
 
       {viewMode === "bridge" ? (
         <div style={{ display: "grid", gap: 12 }}>
-          {copilotAgreementTarget ? (
-            <AgreementOpsBridgeCard
-              agreement={copilotAgreementTarget}
-              bridge={opsBridge?.[copilotAgreementTarget.id] || null}
-              onOpenShift={openAgreementShift}
-              onOpenPreview={openAgreementPreview}
-            />
-          ) : (
-            <div className="card muted">Operasyon köprüsü için bir sözleşme seç.</div>
-          )}
-
           {copilotAgreementTarget ? (
             <div style={{ display: "grid", gap: 8 }}>
               <CollapsibleSection
@@ -1293,6 +1333,16 @@ export default function AgreementsPanel() {
                     <td>
                       <button
                         type="button"
+                        className="btn sm primary roomActionCTA"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAgreementDetail(a);
+                        }}
+                      >
+                        Detayı aç
+                      </button>
+                      <button
+                        type="button"
                         className="btn sm ghost roomActionCTA"
                         disabled={!agreementPreviewShiftId(a)}
                         onClick={(e) => {
@@ -1300,7 +1350,7 @@ export default function AgreementsPanel() {
                           openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme ID ${a.id} — Rota Önizleme` });
                         }}
                       >
-                        Detayı aç
+                        Rota Önizle
                       </button>
                       <button
                         type="button"
@@ -1403,6 +1453,16 @@ export default function AgreementsPanel() {
                     <td>
                       <button
                         type="button"
+                        className="btn sm primary roomActionCTA"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAgreementDetail(a);
+                        }}
+                      >
+                        Detayı aç
+                      </button>
+                      <button
+                        type="button"
                         className="btn sm ghost roomActionCTA"
                         disabled={!agreementPreviewShiftId(a)}
                         onClick={(e) => {
@@ -1410,7 +1470,7 @@ export default function AgreementsPanel() {
                           openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme ID ${a.id} — Rota Önizleme` });
                         }}
                       >
-                        Detayı aç
+                        Rota Önizle
                       </button>
                     </td>
                   </tr>

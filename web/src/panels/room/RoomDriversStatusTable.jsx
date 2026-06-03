@@ -16,6 +16,7 @@ export default function RoomDriversStatusTable({
   connectionBadgeStatus,
   assignmentBadgeStatus,
   gpsBadgeStatus,
+  displayDriverName,
 }) {
   return (
     <div className="card">
@@ -84,7 +85,7 @@ export default function RoomDriversStatusTable({
                 style={rowSelectionStyle(isSelected)}
               >
                 <td>
-                  <b>{d.fullName}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
+                  <b>{displayDriverName?.(d.fullName) || d.fullName || "Sürücü kaydı"}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
                   <div className="muted">Sürücü kaydı</div>
                   {hasRegionOwnership(d) ? <div className="muted" style={{ fontSize: 12 }}>{formatRegionOwnership(d)}</div> : null}
                 </td>

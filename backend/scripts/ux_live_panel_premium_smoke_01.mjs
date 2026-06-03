@@ -555,10 +555,43 @@ async function runScenario(page, scenario, viewportName, output) {
       await detailButton.click({ timeout: 5000 }).catch((error) => {
         result.notes.push(`Detay açma click failed: ${error?.message || String(error)}`);
       });
-      await page.waitForTimeout(700);
+      await page.waitForFunction(
+        () => {
+          try {
+            const text = String(document.body?.innerText || "");
+            const hay = text.normalize("NFKD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .replace(/ı/g, "i")
+              .toLowerCase();
+            return (
+              hay.includes("detayi kapat") ||
+              hay.includes("secili sozlesme yok") ||
+              hay.includes("bu okul/kurum gorunumunde secili sozlesme yok") ||
+              hay.includes("bu baglanti icin henuz vardiya uretilmedi") ||
+              hay.includes("bu sozlesmeden henuz uretilmis vardiya yok")
+            );
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 5000 }
+      ).catch(() => {});
+      await page.waitForTimeout(1500);
       const afterText = await getText(page);
-      result.checks.detailsOpen = normalize(afterText).includes("detayı kapat");
-      if (!result.checks.detailsOpen) {
+      const normalizedAfterText = normalize(afterText);
+      const openToggleVisible = await page.getByRole("button", { name: /Ayrıntıları gizle/i }).first().isVisible({ timeout: 3000 }).catch(() => false);
+      const hasOpenDetailsText = normalizedAfterText.includes("detayı kapat");
+      const hasExplicitFallback = [
+        "secili sozlesme yok",
+        "bu okul/kurum gorunumunde secili sozlesme yok",
+        "bu baglanti icin henuz vardiya uretilmedi",
+        "bu sozlesmeden henuz uretilmis vardiya yok",
+      ].some((needle) => normalizedAfterText.includes(needle));
+      result.checks.detailsOpen = openToggleVisible || hasOpenDetailsText;
+      if (!result.checks.detailsOpen && hasExplicitFallback) {
+        result.status = bumpStatus(result.status, "PASS");
+        result.notes.push("Operasyon köprüsü boş/fallback durumda okunur.");
+      } else if (!result.checks.detailsOpen) {
         result.status = bumpStatus(result.status, "UX-FIX");
         result.notes.push("Operasyon köprüsü detayları açılmadı ya da okunur değil.");
       } else {

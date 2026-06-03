@@ -893,6 +893,8 @@ async function decideExtend(shiftId, decision) {
         pendingCount={tabCounts.pending}
         contractCount={tabCounts.contract}
         otherCount={tabCounts.other}
+        copilotShift={copilotShift}
+        autoSplitApprove={autoSplitApprove}
         onGoPending={() => selectShiftsTab("pending")}
         onGoContract={() => selectShiftsTab("contract")}
         onGoOther={() => selectShiftsTab("other")}
