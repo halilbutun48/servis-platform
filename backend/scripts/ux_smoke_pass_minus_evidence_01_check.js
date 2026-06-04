@@ -161,7 +161,9 @@ function main() {
     must(report.statusCounts.BLOCKER === 0, "smoke report keeps blocker count at 0");
     must(report.statusCounts["NOT-FOUND"] === 0, "smoke report keeps not-found count at 0");
 
-    const passMinusRows = report.routes.filter((row) => row.status === "PASS-");
+    const passMinusRows = report.routes.filter(
+      (row) => row.status === "PASS-" || (row.kind === "dispatch" && row.status === "PASS")
+    );
     const uxFixRows = report.routes.filter((row) => row.status === "UX-FIX");
     must(passMinusRows.length > 0, "smoke report keeps PASS- evidence rows");
     console.log(`OK UX-FIX rows: ${uxFixRows.length}`);

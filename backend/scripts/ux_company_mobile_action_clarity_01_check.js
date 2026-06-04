@@ -162,6 +162,9 @@ function main() {
     "web/src/panels/shared/PanelKvkkHint.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
     "web/src/utils/regionOwnership.js",
+    "web/src/layout/NavDock.jsx",
+    "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+    "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
   ];
 
   mustTrue(exists("backend/scripts/ux_company_mobile_action_clarity_01_check.js"), "company mobile action clarity check exists");

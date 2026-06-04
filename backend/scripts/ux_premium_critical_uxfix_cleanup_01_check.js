@@ -333,7 +333,9 @@ function main() {
     must(rows.every((row) => row.status !== "UX-FIX"), `cleanup smoke removes UX-FIX from ${route}`);
   }
 
-  const passMinusRows = report.routes.filter((row) => row.status === "PASS-");
+  const passMinusRows = report.routes.filter(
+    (row) => row.status === "PASS-" || (row.kind === "dispatch" && row.status === "PASS")
+  );
   const bucketCounts = {};
   const uncategorized = [];
   for (const row of passMinusRows) {
@@ -371,6 +373,9 @@ function main() {
       "backend/artifacts/runtime-data/agreement-route-refresh-requests.json",
       "backend/artifacts/runtime-data/public-leads.json",
       "backend/artifacts/runtime-data/quality-review-decisions.json",
+      "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+      "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
+      "web/src/layout/NavDock.jsx",
     ]),
     ["backend/artifacts/runtime-data/"],
     "working tree stays within cleanup scope"

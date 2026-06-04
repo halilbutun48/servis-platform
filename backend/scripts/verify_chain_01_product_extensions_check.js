@@ -170,6 +170,7 @@ function main() {
   must(pkg, '"check:uxpanellayoutwidth02cfix02"', 'package.json exposes check:uxpanellayoutwidth02cfix02');
   must(pkg, '"check:uxpanellayoutwidth02cfix03"', 'package.json exposes check:uxpanellayoutwidth02cfix03');
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
+  must(pkg, '"check:uxmobilewebshellclarity01": "node backend/scripts/ux_mobile_web_shell_clarity_01_check.js"', 'package.json exposes check:uxmobilewebshellclarity01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
   must(pkg, '"check:uxpanelstandardarchitecture01": "node backend/scripts/ux_panel_standard_architecture_01_check.js"', 'package.json exposes check:uxpanelstandardarchitecture01');
   must(pkg, '"check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js"', 'package.json exposes check:finaluxsmoke01');
@@ -284,6 +285,7 @@ function main() {
     'check:uxpanellayoutwidth02cfix02',
     'check:uxpanellayoutwidth02cfix03',
     'check:uxnav01',
+    'check:uxmobilewebshellclarity01',
     'check:uxdensity01',
     'check:uxpanelstandardarchitecture01',
     'check:finaluxsmoke01',
@@ -415,12 +417,18 @@ function main() {
   must(harnessCheck, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness check knows cleanup milestone');
   must(harnessCheck, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness check knows cleanup alias');
   must(harnessCheck, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness check knows cleanup doc');
+  must(harnessCheck, 'UX-MOBILE-WEB-SHELL-CLARITY-01', 'script harness check knows mobile web shell clarity milestone');
+  must(harnessCheck, 'check:uxmobilewebshellclarity01', 'script harness check knows mobile web shell clarity alias');
+  must(harnessCheck, 'docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md', 'script harness check knows mobile web shell clarity doc');
   must(harnessDoc, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness doc lists parent/personel live error clarity milestone');
   must(harnessDoc, 'check:uxparentpersonelliveerrorclarity01', 'script harness doc lists parent/personel live error clarity alias');
   must(harnessDoc, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness doc lists parent/personel live error clarity doc');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
+  must(harnessDoc, 'UX-MOBILE-WEB-SHELL-CLARITY-01', 'script harness doc lists mobile web shell clarity milestone');
+  must(harnessDoc, 'check:uxmobilewebshellclarity01', 'script harness doc lists mobile web shell clarity alias');
+  must(harnessDoc, 'docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md', 'script harness doc lists mobile web shell clarity doc');
   must(guide, 'UX-COMPANY-OPS-PANEL-TABS-01', 'script guide mentions UX-COMPANY-OPS-PANEL-TABS-01');
   must(guide, 'check:uxcompanyopspaneltabs01', 'script guide exposes check:uxcompanyopspaneltabs01');
   must(guide, 'UX-COMPANY-QUALITY-PANEL-TABS-01', 'script guide mentions UX-COMPANY-QUALITY-PANEL-TABS-01');
@@ -440,6 +448,10 @@ function main() {
   must(guide, 'check:uxpanellayoutwidth02cfix02', 'script guide exposes check:uxpanellayoutwidth02cfix02');
   must(guide, 'check:uxpanellayoutwidth02cfix03', 'script guide exposes check:uxpanellayoutwidth02cfix03');
   must(guide, 'check:uxnav01', 'script guide exposes check:uxnav01');
+  must(guide, 'UX-MOBILE-WEB-SHELL-CLARITY-01', 'script guide mentions mobile web shell clarity milestone');
+  must(guide, 'check:uxmobilewebshellclarity01', 'script guide exposes check:uxmobilewebshellclarity01');
+  must(guide, 'node backend\\scripts\\ux_mobile_web_shell_clarity_01_check.js', 'script guide includes mobile web shell clarity command');
+  must(guide, 'docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md', 'script guide includes mobile web shell clarity doc');
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
   must(guide, 'FINAL-UX-SMOKE-01', 'script guide mentions FINAL-UX-SMOKE-01');
   must(guide, 'check:finaluxsmoke01', 'script guide exposes check:finaluxsmoke01');

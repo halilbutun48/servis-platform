@@ -113,6 +113,7 @@ const steps = [
   'check:uxpanellayoutwidth02cfix02',
   'check:uxpanellayoutwidth02cfix03',
   'check:uxnav01',
+  'check:uxmobilewebshellclarity01',
   'check:uxdensity01',
   'check:uxpanelstandardarchitecture01',
   'check:finaluxsmoke01',

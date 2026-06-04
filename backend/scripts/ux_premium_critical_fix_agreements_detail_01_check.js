@@ -265,6 +265,9 @@ function main() {
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/layout/AppShell.jsx",
+    "web/src/layout/NavDock.jsx",
+    "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+    "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
     "tools/repo_contract_state.json",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within agreements detail validation");
@@ -285,11 +288,13 @@ function main() {
     "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
     "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
+    "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -299,6 +304,7 @@ function main() {
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/layout/AppShell.jsx",
+    "web/src/layout/NavDock.jsx",
     "web/src/index.css",
     "tools/repo_contract_state.json",
   ]);

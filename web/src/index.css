@@ -348,8 +348,9 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .barFill { height: 100%; background: #3a66ff; }
 
 /* --- App shell + nav dock --- */
-.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; min-height: 100dvh; }
-@media (max-width: 900px){ .shell { grid-template-columns: 1fr; } .navDock { position: sticky; top: 0; z-index: 10; } }
+.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; min-height: 100dvh; position: relative; }
+.shellTopMenu { display: none; }
+.navDockBackdrop { display: none; }
 
 .navDock {
   --nav-item-height: 44px;
@@ -1119,24 +1120,17 @@ button, input, select, textarea, .btn, .secondary {
   .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
   .row { flex-direction: column; }
   .shell { grid-template-columns: 1fr; }
-  .navDock {
-    position: sticky;
-    top: 0;
-    z-index: 9;
-    border-right: 0;
-    border-bottom: 1px solid #22314f;
-    padding: 10px 12px;
-  }
-  .shell--agreements-detail .navDock {
-    display: none;
-  }
-  .shell--agreements-detail .shellContent {
-    padding-top: 0;
-  }
   .shellTop {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+  .shellTopMenu {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
   }
   .shellTopMeta {
     display: grid;
@@ -1144,7 +1138,53 @@ button, input, select, textarea, .btn, .secondary {
     width: 100%;
   }
   .shellTopLogout { align-self: flex-start; }
+  .shell--agreements-detail .shellContent {
+    padding-top: 0;
+  }
   .shellContent { padding: 12px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .shell--has-copilot-fab .shellContent {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+  .navDock {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(86vw, 360px);
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-right: 1px solid #22314f;
+    border-bottom: 0;
+    padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+    transform: translateX(-102%);
+    transition: transform .22s ease, box-shadow .22s ease;
+    z-index: 4400;
+    will-change: transform;
+  }
+  .navDock--mobileOpen {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .navDock--mobileClosed {
+    transform: translateX(-102%);
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .navDockBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    border: 0;
+    padding: 0;
+    background: rgba(2, 6, 23, .56);
+    backdrop-filter: blur(2px);
+    z-index: 4390;
+  }
+  .shell--agreements-detail .navDock.navDock--mobileOpen {
+    display: flex;
+  }
   .card { padding: 14px; }
   .tbl { min-width: 640px; }
   .modal-backdrop { align-items: flex-end; padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
@@ -1193,6 +1233,7 @@ button, input, select, textarea, .btn, .secondary {
     padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
   }
   .shellTopBrand { width: 100%; }
+  .shellTopBrand .muted { display: none; }
   .shellTopMeta {
     display: grid;
     gap: 2px;
@@ -1200,22 +1241,33 @@ button, input, select, textarea, .btn, .secondary {
   }
   .shellTopMeta .title { font-size: 18px; line-height: 1.15; }
   .shellTopMeta .muted { font-size: 12px; }
+  .shellTopMeta .muted + .muted { display: none; }
   .shellTopLogout { align-self: flex-start; }
 
-  .navDock {
-    padding: 8px 10px;
+  .shellTopMenu {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
   }
-  .navDockBrand { display: none; }
+  .navDock {
+    padding: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));
+  }
+  .navDockBrand { display: grid; }
   .navDockTitle { margin-bottom: 0; }
-  .navDockBrandName { display: none; }
+  .navDockBrandName { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
   .navDockRole { font-size: 16px; font-weight: 800; margin-top: 0; text-transform: none; letter-spacing: 0; }
   .navSection { margin-bottom: 0; }
-  .navSectionTitle { display: none; }
+  .navSectionTitle { display: inline-flex; }
   .navDockItems { gap: 8px; }
   .navLabel { font-size: 13px; }
   .navBadge { font-size: 11px; padding: 2px 7px; }
 
   .shellContent { padding: 10px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .shell--has-copilot-fab .shellContent {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
   .card { padding: 12px; border-radius: 12px; }
   .title { font-size: 18px; }
   .panelTitle { font-size: 18px; }
@@ -1538,6 +1590,7 @@ button, input, select, textarea, .btn, .secondary {
     padding: 11px 12px 11px 10px;
     gap: 8px;
   }
+  .copilotFabSubtitle { display: none; }
   .copilotFabStatus { display: none; }
 }
 

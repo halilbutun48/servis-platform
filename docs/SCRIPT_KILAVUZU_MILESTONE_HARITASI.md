@@ -86,6 +86,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcopilotterminal01` -> `node backend\scripts\ux_copilot_terminal_01_check.js`
 - `check:seferabiterminalhumanize01` -> `node backend\scripts\sefer_abi_terminal_humanize_01_check.js`
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
+- `check:uxmobilewebshellclarity01` -> `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
@@ -173,6 +174,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxnav01` NavDock premium visual polish check.
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` drawer bozulmaz.
 - Menü kartları, aktif durum, badge hizası ve focus/hover affordance'ları daha premium görünür; route ve davranış değişmez.
+
+### UX-MOBILE-WEB-SHELL-CLARITY-01 [CHECK]
+- `check:uxmobilewebshellclarity01` mobil web shell için off-canvas drawer, backdrop ve content-first yerleşim standardını doğrular.
+- Mobilde `shellTopMenu` ile menü açılır; `navDockBackdrop` ve `navDock--mobileOpen` / `navDock--mobileClosed` sınıflarıyla sidebar default kapalı kalır.
+- `shell--has-copilot-fab` safe-area padding'i korur; copilot launcher alt CTA'ları örtmez.
+- Desktop davranışı değişmez; `Sefer Abi Terminali` ve `Sefer Abi’ye Sor` standardı korunur.
+- Doküman: `docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md`
+- Komut: `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
 
 ### UX-DENSITY-01 [CHECK]
 - `check:uxdensity01` panel/card density ve premium dashboard polish check.

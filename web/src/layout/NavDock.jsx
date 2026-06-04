@@ -19,12 +19,15 @@ function roleTitle(role, me) {
   return role || "-";
 }
 
-function Item({ label, path, active, badge }) {
+function Item({ label, path, active, badge, onSelect }) {
   return (
     <button
       type="button"
       className={active ? "navItem active" : "navItem"}
-      onClick={() => navigate(path)}
+      onClick={() => {
+        navigate(path);
+        onSelect?.();
+      }}
       aria-current={active ? "page" : undefined}
       aria-label={label}
       title={label}
@@ -35,7 +38,7 @@ function Item({ label, path, active, badge }) {
   );
 }
 
-function Section({ title, items, path }) {
+function Section({ title, items, path, onItemSelect }) {
   const isActive = (p) => path === p || String(path || "").startsWith(p + "?");
   if (!items?.length) return null;
   return (
@@ -43,14 +46,14 @@ function Section({ title, items, path }) {
       {title ? <div className="navSectionTitle">{title}</div> : null}
       <div className="navDockItems">
         {items.map((it) => (
-          <Item key={it.path} label={it.label} path={it.path} active={isActive(it.path)} badge={it.badge} />
+          <Item key={it.path} label={it.label} path={it.path} active={isActive(it.path)} badge={it.badge} onSelect={onItemSelect} />
         ))}
       </div>
     </div>
   );
 }
 
-export default function NavDock({ role, path, me }) {
+export default function NavDock({ role, path, me, mobileOpen = false, onMobileClose }) {
   const LS_ADV = "psv1:nav:advanced";
   const advancedTitle = "SİSTEM";
   const [showAdvanced, setShowAdvanced] = useState(() => {
@@ -255,33 +258,52 @@ export default function NavDock({ role, path, me }) {
   }, [role, me]);
 
   const hasAdvanced = cfg.advanced.length > 0;
+  const handleMobileSelect = () => {
+    onMobileClose?.();
+  };
 
   return (
-    <div className="navDock" role="navigation" aria-label="Sol menü">
-      <div className="navDockBrand"><BrandMark compact subtitle="Operasyon menüsü" /></div>
-      <div className="navDockTitle">
-        <div className="navDockBrandName">{BRAND_NAME}</div>
-        <div className="navDockRole">
-          {roleTitle(role, me)}
+    <>
+      {mobileOpen ? (
+        <button
+          type="button"
+          className="navDockBackdrop"
+          onClick={handleMobileSelect}
+          aria-label="Menüyü kapat"
+          title="Menüyü kapat"
+        />
+      ) : null}
+      <div
+        id="shell-nav-dock"
+        className={`navDock${mobileOpen ? " navDock--mobileOpen" : " navDock--mobileClosed"}`}
+        role="navigation"
+        aria-label="Sol menü"
+      >
+        <div className="navDockBrand"><BrandMark compact subtitle="Operasyon menüsü" /></div>
+        <div className="navDockTitle">
+          <div className="navDockBrandName">{BRAND_NAME}</div>
+          <div className="navDockRole">
+            {roleTitle(role, me)}
+          </div>
         </div>
+
+        {cfg.sections.map((s) => (
+          <Section key={s.title || "main"} title={s.title} items={s.items} path={path} onItemSelect={handleMobileSelect} />
+        ))}
+
+        {hasAdvanced ? (
+          <div className="navAdvanced">
+            <button type="button" className="navToggle" onClick={toggleAdvanced}>
+              {showAdvanced ? `${advancedTitle} ▾` : `${advancedTitle} ▸`}
+            </button>
+            {showAdvanced ? <Section title={null} items={cfg.advanced} path={path} onItemSelect={handleMobileSelect} /> : null}
+          </div>
+        ) : null}
+
+        {cfg.copilotSection ? (
+          <Section key="copilot" title={cfg.copilotSection.title} items={cfg.copilotSection.items} path={path} onItemSelect={handleMobileSelect} />
+        ) : null}
       </div>
-
-      {cfg.sections.map((s) => (
-        <Section key={s.title || "main"} title={s.title} items={s.items} path={path} />
-      ))}
-
-      {hasAdvanced ? (
-        <div className="navAdvanced">
-          <button type="button" className="navToggle" onClick={toggleAdvanced}>
-            {showAdvanced ? `${advancedTitle} ▾` : `${advancedTitle} ▸`}
-          </button>
-          {showAdvanced ? <Section title={null} items={cfg.advanced} path={path} /> : null}
-        </div>
-      ) : null}
-
-      {cfg.copilotSection ? (
-        <Section key="copilot" title={cfg.copilotSection.title} items={cfg.copilotSection.items} path={path} />
-      ) : null}
-    </div>
+    </>
   );
 }

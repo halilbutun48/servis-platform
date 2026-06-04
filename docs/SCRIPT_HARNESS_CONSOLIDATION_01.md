@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `330`
-- Toplam executable tracked file: `1106`
-- Combined registry row: `1436`
-- Root/backend/web/mobile package dağılımı: root `173`, backend `671`, web `88`, mobile `201`
+- Toplam package script entry: `331`
+- Toplam executable tracked file: `1107`
+- Combined registry row: `1438`
+- Root/backend/web/mobile package dağılımı: root `174`, backend `672`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `37`
+- Docs indexed: `38`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -26,6 +26,9 @@ Repo: `servis-platform`
 - Room critical fix command: `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - Company mobile action clarity milestone: `UX-COMPANY-MOBILE-ACTION-CLARITY-01`
 - Company mobile action clarity docs: `docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md`
+- Mobile web shell clarity milestone: `UX-MOBILE-WEB-SHELL-CLARITY-01`
+- Mobile web shell clarity docs: `docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md`
+- Mobile web shell clarity command: `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -40,8 +43,8 @@ Repo: `servis-platform`
 - PASS-minus evidence docs: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
 - PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `373`
-- ACTIVE_CORE: `138`
+- ACTIVE: `374`
+- ACTIVE_CORE: `139`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -69,9 +72,9 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 373 |
+| ACTIVE | 374 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 138 |
+| ACTIVE_CORE | 139 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -215,6 +218,7 @@ Repo: `servis-platform`
 | root:check:uxschoolorganizationpanels01 | package.json | root | node backend/scripts/ux_school_organization_panels_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXSCHOOLORGANIZATIONPANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyshiftstabs01 | package.json | root | node backend/scripts/ux_company_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanymobileactionclarity01 | package.json | root | node backend/scripts/ux_company_mobile_action_clarity_01_check.js | core | ACTIVE_CORE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01 |  | Breaks canonical verification chain |  |
+| root:check:uxmobilewebshellclarity01 | package.json | root | node backend/scripts/ux_mobile_web_shell_clarity_01_check.js | core | ACTIVE_CORE |  | UX-MOBILE-WEB-SHELL-CLARITY-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyopspaneltabs01 | package.json | root | node backend/scripts/ux_company_ops_panel_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYOPSPANELTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyqualitytabs01 | package.json | root | node backend/scripts/ux_company_quality_panel_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYQUALITYTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanypanelsfinalpolish01 | package.json | root | node backend/scripts/ux_company_panels_final_polish_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
@@ -674,6 +678,7 @@ Repo: `servis-platform`
 | ux_live_panel_premium_smoke_01.mjs | backend/scripts/ux_live_panel_premium_smoke_01.mjs | backend | root:check:uxlivepanelpremiumsmoke01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Owner or chain unclear |  |
 | ux_live_panel_premium_smoke_01_check.js | backend/scripts/ux_live_panel_premium_smoke_01_check.js | backend | root:check:uxlivepanelpremiumsmoke01 | product | ACTIVE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_live_panel_smoke_audit_01_check.js | backend/scripts/ux_live_panel_smoke_audit_01_check.js | backend | root:check:uxlivepanelsmokeaudit01 | product | ACTIVE |  | UX-LIVE-PANEL-SMOKE-AUDIT-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_mobile_web_shell_clarity_01_check.js | backend/scripts/ux_mobile_web_shell_clarity_01_check.js | backend | root:check:uxmobilewebshellclarity01 | product | ACTIVE |  | UX-MOBILE-WEB-SHELL-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_nav_01_premium_navdock_check.js | backend/scripts/ux_nav_01_premium_navdock_check.js | backend | root:check:uxnav01 | product | ACTIVE |  | UX-NAV-01-PREMIUM-NAVDOCK-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_inventory_02a_check.js | backend/scripts/ux_panel_inventory_02a_check.js | backend | root:check:uxpanelinventory02a | product | ACTIVE |  | UX-PANEL-INVENTORY-02-A-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_layout_width_02c_fix_01_check.js | backend/scripts/ux_panel_layout_width_02c_fix_01_check.js | backend | root:check:uxpanellayoutwidth02cfix01 | product | ACTIVE |  | UX-PANEL-LAYOUT-WIDTH-02-C-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
