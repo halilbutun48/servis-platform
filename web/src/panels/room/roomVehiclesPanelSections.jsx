@@ -10,6 +10,7 @@ import {
   hasGpsFix,
   setSelMany,
 } from "./roomVehiclesPanelUtils";
+import { getGpsReliabilityLabel } from "../../utils/etaSanity";
 import {
   RoomTelematicsDeviceRow,
   RoomVehicleAssignmentRow,
@@ -323,9 +324,9 @@ export function RoomVehicleStatusSection({
           <label className="muted">Durum</label>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} disabled={busy}>
             <option value="ALL">Hepsi</option>
-            <option value="LIVE">ONLINE</option>
-            <option value="STALE">STALE</option>
-            <option value="OFFLINE">OFFLINE</option>
+            <option value="LIVE">Canlı</option>
+            <option value="STALE">Güncel değil</option>
+            <option value="OFFLINE">Çevrim dışı</option>
           </select>
         </div>
         <div className="muted" style={{ marginLeft: "auto" }}>
@@ -368,12 +369,12 @@ export function RoomVehicleStatusSection({
                   {!hasGps ? <div className="muted" style={{ fontSize: 12 }}>📡 GPS yok</div> : null}
                 </td>
                 <td>
-                  <span className="pill" data-status={pillKey}>{ui}</span>
+                  <span className="pill" data-status={pillKey}>{getGpsReliabilityLabel(v.gpsLast?.status || v.gpsState?.lastUiStatus || ui || "-")}</span>
                 </td>
                 <td className="muted">{gpsAtLabel(v)}</td>
                 <td className="muted">{v.gpsLast?.speed != null ? `${v.gpsLast.speed} km/h` : "-"}</td>
                 <td className="muted">{hasGps ? `${v.gpsLast.lat.toFixed(4)}, ${v.gpsLast.lng.toFixed(4)}` : "📡 GPS yok"}</td>
-                <td className="muted">{v.gpsLast?.status ? String(v.gpsLast.status) : "-"}</td>
+                <td className="muted">{getGpsReliabilityLabel(v.gpsLast?.status || v.gpsState?.lastUiStatus || v.gpsState?.status || "-")}</td>
               </tr>
             );
           })}
@@ -688,7 +689,7 @@ export function RoomVehicleTelematicsSection({
             </button>
           </form>
           <div className="muted" style={{ fontSize: 12 }}>
-            Not: Create / update / rotate işlemleri step-up write guard altındadır. Ham token sadece create/rotate anında bir kez gösterilir.
+            Not: Create / update / rotate işlemleri step-up write guard altındadır. Erişim kodu yalnızca create/rotate anında bir kez gösterilir.
           </div>
         </div>
         <RoomDeviceTokenRevealCard tokenReveal={tokenReveal} copyToken={copyToken} />
@@ -736,7 +737,7 @@ export function RoomVehicleTelematicsSection({
           </table>
         ) : null}
         <div className="muted" style={{ marginTop: 12, fontSize: 12, display: "grid", gap: 4 }}>
-          <div><code>POST /api/telematics/push</code> → device token ile direkt cihaz push</div>
+          <div><code>POST /api/telematics/push</code> → cihaz erişim kodu ile direkt cihaz push</div>
           <div><code>POST /api/telematics/vendor/:provider</code> → vendor cloud webhook</div>
         </div>
       </div>

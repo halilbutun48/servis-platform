@@ -11,7 +11,7 @@ export function formatRegionOwnership(input) {
 
   const parts = [];
   if (regionName) parts.push(regionName);
-  else if (regionId) parts.push(`#${regionId}`);
+  else if (regionId) parts.push(`Bölge ID ${regionId}`);
   if (district) parts.push(district);
 
   if (!parts.length) return "Bölge: -";

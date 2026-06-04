@@ -9,6 +9,8 @@ export function RoomShiftsOverviewSection({
   pendingCount = 0,
   contractCount = 0,
   otherCount = 0,
+  copilotShift = null,
+  autoSplitApprove = null,
   onGoPending = null,
   onGoContract = null,
   onGoOther = null,
@@ -17,7 +19,7 @@ export function RoomShiftsOverviewSection({
     <>
       <div className="card" style={{ display: "grid", gap: 12 }}>
         <FlowSummaryStrip
-          title="Shifts (ROOM) · Room / Vardiyalar"
+          title="Vardiya Özeti"
           description="Özet üstte; karar, dispatch ve rota önizleme tablarda kalır."
           statusText={pendingCount > 0 ? `${pendingCount} bekleyen karar` : "Akış dengede"}
           tone={pendingCount > 0 ? "warn" : "good"}
@@ -28,6 +30,27 @@ export function RoomShiftsOverviewSection({
           ]}
         />
         <div className="panelMeta">Firma talebi → Room onayı → operasyon takibi aynı akışta okunur.</div>
+        {copilotShift ? (
+          <div className="card roomActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)", marginTop: 2 }}>
+            <div style={{ fontWeight: 900 }}>Dispatch önizleme</div>
+            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+              Seçili vardiya için önizleme ve uygulama akışı burada görünür. Aynı planı tek adımda uygulayabilirsin.
+            </div>
+            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn sm primary roomActionCTA"
+                disabled={!autoSplitApprove}
+                onClick={() => autoSplitApprove?.(copilotShift)}
+              >
+                Önizlemeyi Uygula: Böl & Onayla
+              </button>
+              <span className="muted" style={{ fontSize: 12 }}>
+                Dispatch önizleme kartı aşağıda da kalır; bu üst CTA yalnızca erişimi görünür kılar.
+              </span>
+            </div>
+          </div>
+        ) : null}
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <button type="button" className="btn sm" onClick={onGoPending}>Bekleyen Talepler</button>
           <button type="button" className="btn sm" onClick={onGoContract}>Sözleşmeden Üretilen</button>

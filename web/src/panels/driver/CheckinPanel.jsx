@@ -137,7 +137,7 @@ export default function DriverCheckinPanel() {
   async function onCameraDetected(rawValue) {
     const parsed = extractCheckinToken(rawValue);
     if (!parsed) {
-      setErr("QR içinde geçerli psv1 token bulunamadı.");
+      setErr("QR içinde geçerli kod bulunamadı.");
       return;
     }
     setTokenValue(parsed);
@@ -211,14 +211,14 @@ export default function DriverCheckinPanel() {
 
             <form onSubmit={onScan} style={{ display: "grid", gap: 10, marginTop: 14 }}>
               <label className="col">
-                <span className="muted">Token</span>
-                <input value={tokenValue} onChange={(e) => setTokenValue(e.target.value)} placeholder="psv1:..." />
+                <span className="muted">Okuma kodu</span>
+                <input value={tokenValue} onChange={(e) => setTokenValue(e.target.value)} placeholder="Örn. ABC123" />
               </label>
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                 <button type="button" className="btn" onClick={() => setCameraOpen((p) => !p)}>
                   {cameraOpen ? "Kamerayı kapat" : "Kamera ile tara"}
                 </button>
-                <span className="muted">Kamera okursa token otomatik gönderilir.</span>
+                <span className="muted">Kamera okursa kod otomatik gönderilir.</span>
               </div>
               <label className="col">
                 <span className="muted">Device ID (opsiyonel)</span>

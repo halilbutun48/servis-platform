@@ -154,6 +154,7 @@ function main() {
     "web/src/panels/driver/RoutePanel.jsx",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/ShiftsPanel.jsx",
+    "web/src/panels/room/RoomDriversQuickPenaltyCard.jsx",
     "web/src/panels/room/VehiclesPanel.jsx",
     "web/src/panels/room/roomShiftsOverviewSection.jsx",
     "web/src/panels/room/roomVehiclesPanelCards.jsx",

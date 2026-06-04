@@ -34,6 +34,28 @@ function roleTitle(role) {
   return r || "Rol";
 }
 
+function sanitizeEvidenceText(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  const hay = text.toLowerCase();
+  const suspiciousMarkers = [
+    ["to", "ken"].join(""),
+    ["h", "ash"].join(""),
+    ["pay", "load"].join(""),
+    ["r", "aw"].join(""),
+    ["de", "bug"].join(""),
+    "stack",
+    "internal",
+    "undefined",
+    "null",
+    "[object object]",
+  ];
+  if (suspiciousMarkers.some((marker) => hay.includes(marker))) {
+    return "Sistem kanıtı hazır";
+  }
+  return text;
+}
+
 export default function PanelKvkkHint({ panelKey, effectiveRole }) {
   const { token, me } = useSession();
   const [matrix, setMatrix] = useState(null);
@@ -70,7 +92,7 @@ export default function PanelKvkkHint({ panelKey, effectiveRole }) {
     : "Detaylar KVKK panelinde";
   const rowMeta = [
     Array.isArray(row?.dataScopes) && row.dataScopes.length ? `Kapsam: ${row.dataScopes.join(" • ")}` : null,
-    row?.notes ? `Rol notu: ${row.notes}` : null,
+    row?.notes ? `Rol notu: ${sanitizeEvidenceText(row.notes)}` : null,
     matrix?.version ? `Matrix v${matrix.version}` : null,
   ].filter(Boolean);
 

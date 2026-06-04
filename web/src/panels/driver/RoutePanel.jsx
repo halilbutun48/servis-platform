@@ -779,7 +779,7 @@ async function undoLast() {
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <h3>Sonraki Durak</h3>
-              <div className="muted">Araç: {data?.vehicle?.plate || "-"} • GPS: {data?.last?.status || "-"}</div>
+              <div className="muted">Araç: {data?.vehicle?.plate || "-"} • GPS durumu: {gpsStatusText}</div>
             </div>
             {shift?.status === "APPROVED" ? (
               <button type="button" disabled={busy} onClick={startShift} style={{ fontWeight: 900 }}>
@@ -903,5 +903,4 @@ async function undoLast() {
     </div>
   );
 }
-
 

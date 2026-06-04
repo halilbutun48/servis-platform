@@ -125,6 +125,7 @@ function main() {
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
+    "backend/scripts/ux_room_shifts_tabs_01_check.js",
     "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
@@ -144,10 +145,14 @@ function main() {
     "web/src/panels/driver/RoutePanel.jsx",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/ShiftsPanel.jsx",
+    "web/src/panels/room/RoomDriversQuickPenaltyCard.jsx",
     "web/src/panels/room/VehiclesPanel.jsx",
     "web/src/panels/room/roomShiftsOverviewSection.jsx",
     "web/src/panels/room/roomVehiclesPanelCards.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/panels/shared/PanelKvkkHint.jsx",
+    "web/src/panels/superadmin/AuditLogsPanel.jsx",
+    "web/src/utils/regionOwnership.js",
   ];
 
   mustTrue(exists("docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md"), "parent/personel live error clarity doc exists");

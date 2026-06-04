@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-03
+Tarih: 2026-06-04
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
 - Toplam package script entry: `330`
-- Toplam executable tracked file: `1105`
-- Combined registry row: `1435`
-- Root/backend/web/mobile package dağılımı: root `173`, backend `670`, web `88`, mobile `201`
+- Toplam executable tracked file: `1106`
+- Combined registry row: `1436`
+- Root/backend/web/mobile package dağılımı: root `173`, backend `671`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `37`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
@@ -40,7 +40,7 @@ Repo: `servis-platform`
 - PASS-minus evidence docs: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
 - PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `372`
+- ACTIVE: `373`
 - ACTIVE_CORE: `138`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
@@ -69,7 +69,7 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 372 |
+| ACTIVE | 373 |
 | ACTIVE_BACKEND_LINT | 2 |
 | ACTIVE_CORE | 138 |
 | ACTIVE_RELEASE_ONLY | 274 |
@@ -688,6 +688,7 @@ Repo: `servis-platform`
 | ux_parent_personel_live_error_clarity_01_check.js | backend/scripts/ux_parent_personel_live_error_clarity_01_check.js | backend | root:check:uxparentpersonelliveerrorclarity01 | product | ACTIVE |  | UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_premium_critical_fix_agreements_detail_01_check.js | backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js | backend | root:check:uxpremiumcriticalfixagreementsdetail01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_premium_critical_fix_room_01_check.js | backend/scripts/ux_premium_critical_fix_room_01_check.js | backend | root:check:uxpremiumcriticalfixroom01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_premium_critical_uxfix_cleanup_01_check.js | backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js | backend | root:check:uxpremiumcriticaluxfixcleanup01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_driver_vehicle_link_dedup_01_check.js | backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | backend | root:check:uxroomdrivervehiclelinkdedup01 | product | ACTIVE |  | UX-ROOM-DRIVER-VEHICLE-LINK-DEDUP-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_panel_tabs_01_check.js | backend/scripts/ux_room_ops_panel_tabs_01_check.js | backend | root:check:uxroomopspaneltabs01 | product | ACTIVE |  | UX-ROOM-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_relationship_polish_01_check.js | backend/scripts/ux_room_ops_relationship_polish_01_check.js | backend | root:check:uxroomopsrelationshippolish01 | product | ACTIVE |  | UX-ROOM-OPS-RELATIONSHIP-POLISH-01-CHECK |  | Owner or chain unclear | product check/helper |

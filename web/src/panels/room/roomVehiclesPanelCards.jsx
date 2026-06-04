@@ -6,13 +6,15 @@ export function RoomDeviceTokenRevealCard({ tokenReveal, copyToken }) {
   return (
     <div className="card" style={{ marginTop: 12, padding: "10px 12px", borderLeft: "6px solid" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <b>{tokenReveal.kind === "rotate" ? "Yeni device token" : "Yeni device token (ilk ve tek gösterim)"}</b>
+        <b>{tokenReveal.kind === "rotate" ? "Yeni cihaz erişim kodu" : "Yeni cihaz erişim kodu (ilk ve tek gösterim)"}</b>
         <button type="button" onClick={() => copyToken(tokenReveal.token)}>Kopyala</button>
       </div>
       <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-        Device #{tokenReveal.id || "-"}{tokenReveal.serial ? ` • ${tokenReveal.serial}` : ""}
+        Cihaz #{tokenReveal.id || "-"}{tokenReveal.serial ? ` • ${tokenReveal.serial}` : ""}
       </div>
-      <textarea readOnly value={tokenReveal.token} rows={4} style={{ marginTop: 8, width: "100%" }} />
+      <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+        Kod panoya kopyalanmaya hazır. Ham metin kullanıcıya gösterilmez.
+      </div>
     </div>
   );
 }

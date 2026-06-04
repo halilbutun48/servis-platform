@@ -37,7 +37,7 @@ export default function CameraQrScannerCard({ open, onClose, onDetected }) {
       setErr("");
       if (!supported) {
         setStatus("Fallback mod");
-        setErr(`${unsupportedReason} Manuel token girişi ile devam edebilirsin.`);
+        setErr(`${unsupportedReason} Manuel kod girişi ile devam edebilirsin.`);
         return;
       }
 
@@ -112,7 +112,7 @@ export default function CameraQrScannerCard({ open, onClose, onDetected }) {
           <div style={{ width: "100%", minHeight: 220, background: "#050913", borderRadius: 14, border: "1px dashed #7f8ca8", padding: 18, display: "grid", alignContent: "center", gap: 8 }}>
             <div className="title" style={{ fontSize: 18 }}>Bu cihazda kamera scan fallback modda</div>
             <div className="muted">En stabil kombinasyon: Mobil Chrome + HTTPS veya localhost + arka kamera izni.</div>
-            <div className="muted">Masaüstü tarayıcıda destek yoksa token alanına yapıştırıp manuel okutma ile devam et.</div>
+            <div className="muted">Masaüstü tarayıcıda destek yoksa kod alanına yapıştırıp manuel okutma ile devam et.</div>
           </div>
         )}
         <div className="muted">

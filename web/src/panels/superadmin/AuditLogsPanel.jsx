@@ -36,6 +36,15 @@ function summarizeAuditMeta(meta) {
   return parts.length ? parts.join(" • ") : "Sistem kanıtı hazır";
 }
 
+function summarizeAuditAction(action) {
+  const text = String(action || "").trim();
+  if (!text) return "-";
+  if (/(token|hash|payload|raw|debug|stack|internal|undefined|null|\[object object\])/i.test(text)) {
+    return "Güvenlik olayı";
+  }
+  return text.length > 120 ? `${text.slice(0, 117)}…` : text;
+}
+
 export default function AuditLogsPanel() {
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -164,7 +173,7 @@ export default function AuditLogsPanel() {
                 {x.actorUserId ? ` #${x.actorUserId}` : ""}
               </div>
             </div>
-            <div style={{ wordBreak: "break-word" }}>{x.action}</div>
+            <div style={{ wordBreak: "break-word" }}>{summarizeAuditAction(x.action)}</div>
             <div>{x.entity}</div>
             <div>{x.entityId ?? "-"}</div>
             <div className="saMeta">{summarizeAuditMeta(x.meta)}</div>

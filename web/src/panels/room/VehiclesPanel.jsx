@@ -949,7 +949,7 @@ async function checkAvailabilityAll(onlySelected = false) {
       {tab === "telematics" ? (
         <CollapsibleSection
           title="Telematics detayları"
-          subtitle="Cihaz yönetimi, token görünürlüğü ve rotasyon akışı."
+          subtitle="Cihaz yönetimi, erişim görünürlüğü ve rotasyon akışı."
           badge={telematicsCounts[Number(focusVehicleId)] || 0}
           defaultOpen
           compact

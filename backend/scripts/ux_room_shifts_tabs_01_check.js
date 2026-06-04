@@ -112,7 +112,8 @@ function main() {
   mustNotContains(mainSections, "Tüm Vardiyalar", "Room Shifts main sections remove old all-rows label");
   mustNotContains(mainSections, "Sadece sözleşmeli vardiyalar", "Room Shifts main sections remove contract-only checkbox label");
 
-  mustContains(overview, "Shifts (ROOM)", "Room Shifts overview keeps panel title");
+  mustContains(overview, "Vardiya Özeti", "Room Shifts overview keeps panel title");
+  mustNotContains(overview, "Shifts (ROOM) · Room / Vardiyalar", "Room Shifts overview removes duplicated title");
   mustContains(overview, "pendingCount", "Room Shifts overview keeps pending count");
   mustContains(overview, "contractCount", "Room Shifts overview keeps contract count");
   mustContains(overview, "otherCount", "Room Shifts overview keeps other count");

@@ -10,7 +10,7 @@ export const KVKK_MATRIX_ROWS = [
     dataScopes: ["system", "company", "school-domain", "organization-domain", "room"],
     canView: ["kvkk-summary", "consent-records", "audit-trail", "retention-policy"],
     canWrite: ["policy-config", "retention-run", "user-status"],
-    notes: "Sistem geneli görünürlük vardır; yine de şifre, token, TOTP secret ve ham kişisel veri export'u varsayılan olarak dışarı açılmaz.",
+    notes: "Sistem geneli görünürlük vardır; yine de şifre, TOTP secret ve ham kişisel veri export'u varsayılan olarak dışarı açılmaz.",
   },
   {
     role: "ROOM",

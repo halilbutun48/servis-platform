@@ -11,6 +11,7 @@ export default function RoomDriversQuickPenaltyCard({
   setPenaltyOpenDriverId,
   busy,
   createNoShow,
+  displayDriverName,
 }) {
   return (
     <div className="card">
@@ -34,7 +35,7 @@ export default function RoomDriversQuickPenaltyCard({
               paddingRight: 8,
             }}
           >
-            <b>{d.fullName}</b>
+            <b>{displayDriverName?.(d.fullName) || d.fullName || "Sürücü kaydı"}</b>
             <span className="muted">{d.phone || "-"}</span>
             <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
             <button
