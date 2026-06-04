@@ -521,6 +521,21 @@ export default function CompanyOperationsPanel() {
       {decisionNotice ? <div className="card" style={{ borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{decisionNotice}</div> : null}
       {decisionError ? <div className="card err">{decisionError}</div> : null}
 
+      <PanelSegmentTabs
+        ariaLabel="Şirket operasyon sekmeleri"
+        tabs={[
+          { key: "summary", label: "Özet", badge: tabCounts.summary || 0 },
+          { key: "cluster", label: "Servis Kümesi", badge: tabCounts.cluster || 0 },
+          { key: "personel", label: "Personel", badge: tabCounts.personel || 0 },
+          { key: "serviceTimes", label: "Servis Zamanları", badge: tabCounts.serviceTimes || 0 },
+          { key: "exceptions", label: "İstisnalar / Değişiklikler", badge: tabCounts.exceptions || 0 },
+          { key: "notifications", label: "Bildirimler", badge: tabCounts.notifications || 0 },
+        ]}
+        value={activeTab}
+        onChange={(tab) => setActiveTab(String(tab || "summary"))}
+        compact
+      />
+
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Personel" value={metricValue(personels.length)} note="Şirket kapsamındaki personel kaydı" />
         <MiniStat title="Servis durumu" value={metricValue(todayShiftCount)} note={`Aktif ${todayActiveCount} • Onaylı ${todayApprovedCount}`} />
@@ -542,21 +557,6 @@ export default function CompanyOperationsPanel() {
           </div>
         </div>
       ) : null}
-
-      <PanelSegmentTabs
-        ariaLabel="Şirket operasyon sekmeleri"
-        tabs={[
-          { key: "summary", label: "Özet", badge: tabCounts.summary || 0 },
-          { key: "cluster", label: "Servis Kümesi", badge: tabCounts.cluster || 0 },
-          { key: "personel", label: "Personel", badge: tabCounts.personel || 0 },
-          { key: "serviceTimes", label: "Servis Zamanları", badge: tabCounts.serviceTimes || 0 },
-          { key: "exceptions", label: "İstisnalar / Değişiklikler", badge: tabCounts.exceptions || 0 },
-          { key: "notifications", label: "Bildirimler", badge: tabCounts.notifications || 0 },
-        ]}
-        value={activeTab}
-        onChange={(tab) => setActiveTab(String(tab || "summary"))}
-        compact
-      />
 
       {activeTab === "summary" ? (
         <div role="tabpanel" aria-label="Özet" style={{ display: "grid", gap: 12, minWidth: 0 }}>

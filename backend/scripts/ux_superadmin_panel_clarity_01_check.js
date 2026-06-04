@@ -134,11 +134,10 @@ function main() {
   ordered(overview, [
     "SystemModeSummaryBand",
     "Kritik geri bildirim",
-    "Hızlı erişim",
-    "Özet",
-    "Bölüm rehberi",
     "Alt detay alanları",
     "PanelSegmentTabs",
+    "Hızlı erişim",
+    "Bölüm rehberi",
   ], "overview remains summary-first");
 
   must(observability, "Canlı Sağlık ve Risk Özeti", "live monitoring title present");

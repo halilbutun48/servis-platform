@@ -5,15 +5,15 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `331`
-- Toplam executable tracked file: `1107`
-- Combined registry row: `1438`
-- Root/backend/web/mobile package dağılımı: root `174`, backend `672`, web `88`, mobile `201`
+- Toplam package script entry: `334`
+- Toplam executable tracked file: `1110`
+- Combined registry row: `1444`
+- Root/backend/web/mobile package dağılımı: root `177`, backend `675`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `38`
+- Docs indexed: `39`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
-- UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
+- UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
 - Super Admin clarity milestone: `UX-SUPERADMIN-PANEL-CLARITY-01`
 - Super Admin clarity docs: `docs/UX_SUPERADMIN_PANEL_CLARITY_01.md`
@@ -29,6 +29,12 @@ Repo: `servis-platform`
 - Mobile web shell clarity milestone: `UX-MOBILE-WEB-SHELL-CLARITY-01`
 - Mobile web shell clarity docs: `docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md`
 - Mobile web shell clarity command: `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
+- Mobile all roles panel fix milestone: `UX-MOBILE-ALL-ROLES-PANEL-FIX-01`
+- Mobile all roles panel fix docs: `docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md`
+- Mobile all roles panel fix command: `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
+- Mobile all roles panel audit milestone: `UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01`
+- Mobile all roles panel audit docs: `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`
+- Mobile all roles panel audit command: `node backend\scripts\ux_mobile_all_roles_panel_audit_01.mjs`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -43,8 +49,8 @@ Repo: `servis-platform`
 - PASS-minus evidence docs: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
 - PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `374`
-- ACTIVE_CORE: `139`
+- ACTIVE: `376`
+- ACTIVE_CORE: `140`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `9`
@@ -60,11 +66,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `509`
+- NEEDS_REVIEW: `512`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `60`
-- Eski sistem term eşleşmesi: `258`
+- Eski sistem term eşleşmesi: `259`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -72,16 +78,16 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 374 |
+| ACTIVE | 376 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 139 |
+| ACTIVE_CORE | 140 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 9 |
-| NEEDS_REVIEW | 509 |
+| NEEDS_REVIEW | 512 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -237,8 +243,11 @@ Repo: `servis-platform`
 | root:check:uxpanelstandardarchitecture01 | package.json | root | node backend/scripts/ux_panel_standard_architecture_01_check.js | core | ACTIVE_CORE |  | UX-PANEL-STANDARD-ARCHITECTURE-01 |  | Breaks canonical verification chain |  |
 | root:check:finaluxsmoke01 | package.json | root | node backend/scripts/final_ux_smoke_01_check.js | core | ACTIVE_CORE |  | FINAL-UX-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxlivepanelsmokeaudit01 | package.json | root | node backend/scripts/ux_live_panel_smoke_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXLIVEPANELSMOKEAUDIT-01 |  | Breaks canonical verification chain |  |
+| root:check:uxmobileallrolespanelfix01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXMOBILEALLROLESPANELFIX-01 |  | Owner or chain unclear |  |
+| root:check:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js | core | ACTIVE_CORE |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:uxsmokepassminusevidence01 | package.json | root | node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js | core | ACTIVE_CORE |  | UX-SMOKE-PASS-MINUS-EVIDENCE-01 |  | Breaks canonical verification chain |  |
 | root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
+| root:smoke:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs | review | NEEDS_REVIEW |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Owner or chain unclear |  |
 | root:check:uxlivepanelpremiumsmoke01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01_check.js | core | ACTIVE_CORE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxparentpersonelliveerrorclarity01 | package.json | root | node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js | core | ACTIVE_CORE |  | UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 |  | Breaks canonical verification chain |  |
 | root:check:docsstate01 | package.json | root | node backend/scripts/docs_state_01_recent_product_closure_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-DOCSSTATE-01 |  | Breaks canonical verification chain |  |
@@ -678,6 +687,9 @@ Repo: `servis-platform`
 | ux_live_panel_premium_smoke_01.mjs | backend/scripts/ux_live_panel_premium_smoke_01.mjs | backend | root:check:uxlivepanelpremiumsmoke01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Owner or chain unclear |  |
 | ux_live_panel_premium_smoke_01_check.js | backend/scripts/ux_live_panel_premium_smoke_01_check.js | backend | root:check:uxlivepanelpremiumsmoke01 | product | ACTIVE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_live_panel_smoke_audit_01_check.js | backend/scripts/ux_live_panel_smoke_audit_01_check.js | backend | root:check:uxlivepanelsmokeaudit01 | product | ACTIVE |  | UX-LIVE-PANEL-SMOKE-AUDIT-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_mobile_all_roles_panel_audit_01.mjs | backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs | backend | root:check:uxmobileallrolespanelaudit01, root:smoke:uxmobileallrolespanelaudit01 | review | NEEDS_REVIEW |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Owner or chain unclear |  |
+| ux_mobile_all_roles_panel_audit_01_check.js | backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js | backend | root:check:uxmobileallrolespanelaudit01 | product | ACTIVE |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_mobile_all_roles_panel_fix_01_check.js | backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js | backend | root:check:uxmobileallrolespanelfix01 | product | ACTIVE |  | UX-MOBILE-ALL-ROLES-PANEL-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_mobile_web_shell_clarity_01_check.js | backend/scripts/ux_mobile_web_shell_clarity_01_check.js | backend | root:check:uxmobilewebshellclarity01 | product | ACTIVE |  | UX-MOBILE-WEB-SHELL-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_nav_01_premium_navdock_check.js | backend/scripts/ux_nav_01_premium_navdock_check.js | backend | root:check:uxnav01 | product | ACTIVE |  | UX-NAV-01-PREMIUM-NAVDOCK-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_panel_inventory_02a_check.js | backend/scripts/ux_panel_inventory_02a_check.js | backend | root:check:uxpanelinventory02a | product | ACTIVE |  | UX-PANEL-INVENTORY-02-A-CHECK |  | Owner or chain unclear | product check/helper |
@@ -750,7 +762,7 @@ Repo: `servis-platform`
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
 | service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
-| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:cop04b, root:check:uiactionwiringaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01 | review | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
+| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:cop04b, root:check:uiactionwiringaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:uxmobileallrolespanelaudit01 | review | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
 | google.js | backend/src/auth/google.js | backend |  | review | NEEDS_REVIEW |  | GOOGLE |  | Owner or chain unclear |  |
 | jwt.js | backend/src/auth/jwt.js | backend |  | review | NEEDS_REVIEW |  | JWT |  | Owner or chain unclear |  |

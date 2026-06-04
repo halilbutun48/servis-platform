@@ -236,6 +236,21 @@ export default function SuperAdminOperationsPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
+      <PanelSegmentTabs
+        ariaLabel="Denetim bölümleri"
+        compact
+        tabs={[
+          { key: "summary", label: "Özet", badge: tabCounts.summary || 0 },
+          { key: "access", label: "Yetki & Erişim", badge: tabCounts.access || 0 },
+          { key: "proof", label: "Servis Kanıtı", badge: tabCounts.proof || 0 },
+          { key: "kvkk", label: "KVKK & Uyumluluk", badge: tabCounts.kvkk || 0 },
+          { key: "audit", label: "Audit / Log Kayıtları", badge: tabCounts.audit || 0 },
+          { key: "risk", label: "Riskler & Kararlar", badge: tabCounts.risk || 0 },
+        ]}
+        value={activeTab}
+        onChange={setActiveTab}
+      />
+
       <div className="card" style={{ padding: 12, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
         <div style={{ minWidth: 0 }}>
           <div className="panelSectionTitle">STEP_UP_REQUIRED · KVKK sınırı aktif</div>
@@ -261,21 +276,6 @@ export default function SuperAdminOperationsPanel() {
         <MiniStat title="Şüpheli / tekrar eden işlem" value={metricValue(repeatedActions.length)} note="Tekrarlayan action grupları" tone={repeatedActions.length > 0 ? "warn" : "normal"} />
         <MiniStat title="KVKK eşleşmeleri" value={metricValue(kvkkMatchCount)} note="Rol / scope eşleşmeleri" />
       </div>
-
-      <PanelSegmentTabs
-        ariaLabel="Denetim bölümleri"
-        compact
-        tabs={[
-          { key: "summary", label: "Özet", badge: tabCounts.summary || 0 },
-          { key: "access", label: "Yetki & Erişim", badge: tabCounts.access || 0 },
-          { key: "proof", label: "Servis Kanıtı", badge: tabCounts.proof || 0 },
-          { key: "kvkk", label: "KVKK & Uyumluluk", badge: tabCounts.kvkk || 0 },
-          { key: "audit", label: "Audit / Log Kayıtları", badge: tabCounts.audit || 0 },
-          { key: "risk", label: "Riskler & Kararlar", badge: tabCounts.risk || 0 },
-        ]}
-        value={activeTab}
-        onChange={setActiveTab}
-      />
 
       {activeTab === "summary" ? (
         <div role="tabpanel" aria-label="Özet" style={{ display: "grid", gap: 12 }}>

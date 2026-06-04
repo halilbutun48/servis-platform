@@ -234,6 +234,20 @@ function main() {
     "web/src/panels/shared/PanelKvkkHint.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
     "web/src/utils/regionOwnership.js",
+    "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
+    "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
+    "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
+    "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",
+    "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
+    "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "web/src/panels/superadmin/OperationsPanel.jsx",
+    "web/src/panels/superadmin/SuperAdminPanel.jsx",
+    "web/src/panels/company/OperationsPanel.jsx",
+    "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
+    "web/src/panels/personel/LivePanel.jsx",
+    "web/src/panels/room/CommercialFlowPanel.jsx",
+    "web/src/panels/school/OperationsPanel.jsx",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within room panel clarity validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");

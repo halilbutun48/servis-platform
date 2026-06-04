@@ -107,6 +107,19 @@ export default function CompanyShiftsPanelTrackView(props) {
 
   return (
     <>
+      <PanelSegmentTabs
+        ariaLabel="Company shifts bölümleri"
+        tabs={[
+          { key: "market", label: "Market", badge: trackCounts.market },
+          { key: "pending", label: "Bekleyen", badge: trackCounts.pending },
+          { key: "contract", label: "Sözleşmeden Üretilen", badge: trackCounts.contract },
+          { key: "other", label: "Diğer Vardiyalar", badge: trackCounts.other },
+        ]}
+        value={trackTab}
+        onChange={setTrackTab}
+        compact
+      />
+
       <div
         className="card"
         style={{
@@ -135,18 +148,6 @@ export default function CompanyShiftsPanelTrackView(props) {
       </div>
 
       <div className="card" style={{ marginTop: 10 }}>
-        <PanelSegmentTabs
-          ariaLabel="Company shifts bölümleri"
-          tabs={[
-            { key: "market", label: "Market", badge: trackCounts.market },
-            { key: "pending", label: "Bekleyen", badge: trackCounts.pending },
-            { key: "contract", label: "Sözleşmeden Üretilen", badge: trackCounts.contract },
-            { key: "other", label: "Diğer Vardiyalar", badge: trackCounts.other },
-          ]}
-          value={trackTab}
-          onChange={setTrackTab}
-          compact
-        />
         <div className="muted" style={{ marginTop: 6 }}>
           Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Sözleşmeden Üretilen: agreement / contract bağlı vardiyalar • Diğer Vardiyalar: sözleşmesiz vardiyalar
         </div>

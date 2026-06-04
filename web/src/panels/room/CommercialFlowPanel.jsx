@@ -640,27 +640,27 @@ export default function CommercialFlowPanel() {
 
   return (
       <div className="roomCommercialWorkspaceFull">
-        <PanelChrome
-          title="Ticari Akışım"
-          subtitle="Room için ticari görünüm artık kısa özet + sekmeli bölümlerle açılıyor. Hakediş, sözleşme, teklif, kalite, ödeme ve geçmiş ayrı okunur; kritik özet hep açık kalır."
-          actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
-          style={{ width: "100%" }}
-        />
+      <PanelChrome
+        title="Ticari Akışım"
+        subtitle="Room için ticari görünüm artık kısa özet + sekmeli bölümlerle açılıyor. Hakediş, sözleşme, teklif, kalite, ödeme ve geçmiş ayrı okunur; kritik özet hep açık kalır."
+        actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
+        style={{ width: "100%" }}
+      />
 
-        <FlowSummaryStrip summary={summary} selectedItem={selectedItem} selectedSummaryText={selectedSummaryText} />
+      <PanelSegmentTabs
+        ariaLabel="Ticari akış bölümleri"
+        tabs={tabs}
+        value={viewMode}
+        onChange={setViewMode}
+      />
+
+      <FlowSummaryStrip summary={summary} selectedItem={selectedItem} selectedSummaryText={selectedSummaryText} />
 
         {err ? <div style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, width: "100%" }}>
         {cards.map((card) => <MetricCard key={card.title} {...card} />)}
         </div>
-
-        <PanelSegmentTabs
-          ariaLabel="Ticari akış bölümleri"
-          tabs={tabs}
-          value={viewMode}
-          onChange={setViewMode}
-        />
 
         <div className="roomCommercialWorkspaceFullSplit">
           <div style={{ display: "grid", gap: 14, minWidth: 0 }}>

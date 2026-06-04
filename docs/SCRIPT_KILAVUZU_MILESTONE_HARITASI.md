@@ -87,6 +87,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:seferabiterminalhumanize01` -> `node backend\scripts\sefer_abi_terminal_humanize_01_check.js`
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
 - `check:uxmobilewebshellclarity01` -> `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
+- `check:uxmobileallrolespanelfix01` -> `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
@@ -183,6 +184,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md`
 - Komut: `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
 
+### UX-MOBILE-ALL-ROLES-PANEL-FIX-01 [CHECK]
+- `check:uxmobileallrolespanelfix01` mobil web shell düzeltmesi sonrası tüm rol panellerini first viewport, drawer, launcher, overflow ve sticky tab açıları açısından tek tek daraltır.
+- Panel tabları ilk viewport'a çekilir; `first viewport` içeriği, ana CTA tıklanabilirliği ve `Sefer Abi` launcher kapatma riski birlikte okunur.
+- Yatay taşma, sticky header / tab yoğunluğu ve empty / loading / error okunabilirliği rol bazında yeniden düzenlenir.
+- UX-FIX 0, BLOCKER 0 ve NOT-FOUND 0 korunur; PASS- 19 hedeflenir ve mümkünse azaltılır.
+- Doküman: `docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md`
+- Komut: `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
+
 ### UX-DENSITY-01 [CHECK]
 - `check:uxdensity01` panel/card density ve premium dashboard polish check.
 - Ortak kart, başlık, badge, chip, buton ve tablo yoğunluğu daha tutarlı hale gelir; ürün davranışı değişmez.
@@ -251,6 +260,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Browser-smoke report'u route, panel, tab, drawer, CTA ve mobile/desktop coverage görünürlüğü sağlar; `PASS`, `PASS-`, `UX-FIX`, `BLOCKER`, `AUTH-BLOCKED` ve `NOT-FOUND` sınıfları görünür kalır.
 - `BLOCKER` ve `NOT-FOUND` kapatıcıdır; `AUTH-BLOCKED` report-only auth/session notudur.
 - Bu check ürün/business flow değiştirmez; yalnızca coverage görünürlüğü, bucket doğruluğu ve okunabilirlik sorunlarını sınıflandırır.
+
+### UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 [CHECK]
+- `check:uxmobileallrolespanelaudit01` mobil shell düzeltmesi sonrası tüm rol panellerini mobile-first okunabilirlik matrisiyle tekrar gezerek panel bazlı CTA, drawer, launcher, overflow ve tab sinyallerini görünür hale getirir.
+- Check script: `node backend\scripts\ux_mobile_all_roles_panel_audit_01_check.js`
+- Smoke runner: `node backend\scripts\ux_mobile_all_roles_panel_audit_01.mjs`
+- Browser-smoke report'u route, panel, first viewport, drawer, CTA ve mobile/desktop coverage görünürlüğü sağlar; `PASS`, `PASS-`, `UX-FIX`, `BLOCKER`, `AUTH-BLOCKED` ve `NOT-FOUND` sınıfları görünür kalır.
+- `BLOCKER` ve `NOT-FOUND` kapatıcıdır; `AUTH-BLOCKED` report-only auth/session notudur.
+- Bu check ürün/business flow değiştirmez; yalnızca mobile usability görünürlüğü, bucket doğruluğu ve okunabilirlik sorunlarını sınıflandırır.
 
 ### UX-SMOKE-PASS-MINUS-EVIDENCE-01 [CHECK]
 - `check:uxsmokepassminusevidence01` PASS- bucket'ını hardcoded launcher-secondary baseline yerine evidence-based kılar.

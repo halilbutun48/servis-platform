@@ -434,6 +434,14 @@ export default function PersonelLivePanel() {
       </div>
       {err ? <div className="card err">{err}</div> : null}
 
+      <PanelSegmentTabs
+        ariaLabel="Personel canlı takip bölümleri"
+        tabs={PERSONEL_LIVE_TABS}
+        value={viewMode}
+        onChange={setViewMode}
+        compact
+      />
+
       <BoardingChangeRequestEntryCard
       token={token}
       mode="PERSONEL"
@@ -602,14 +610,6 @@ export default function PersonelLivePanel() {
             ) : null}
 
             {!recommended && geoErr ? <div className="muted" style={{ marginTop: 8 }}>Konum durumu: {geoErr}</div> : null}
-
-            <PanelSegmentTabs
-              ariaLabel="Personel canlı takip bölümleri"
-              tabs={PERSONEL_LIVE_TABS}
-              value={viewMode}
-              onChange={setViewMode}
-              compact
-            />
 
             {viewMode === "timeline" ? (
               <div style={{ marginTop: 10 }}>

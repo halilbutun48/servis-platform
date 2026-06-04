@@ -16,6 +16,8 @@ const workingTreeCompatFiles = [
   "backend/scripts/ux_premium_critical_fix_room_01_check.js",
   "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
   "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+  "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
+  "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
 ];
 
 const selectedDocs = [
@@ -51,6 +53,7 @@ const selectedDocs = [
   "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
   "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
   "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
+  "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
   "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
   "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
   "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
@@ -149,6 +152,7 @@ function slugToMilestone(slug) {
     [/uxcopilotsmartchips0?1/i, "UX-COPILOT-SMART-CHIPS-01"],
     [/uxnav0?1/i, "UX-NAV-01"],
     [/uxmobilewebshellclarity0?1/i, "UX-MOBILE-WEB-SHELL-CLARITY-01"],
+    [/uxmobileallrolespanelaudit0?1/i, "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01"],
     [/uxdensity0?1/i, "UX-DENSITY-01"],
     [/uxpanelstandardarchitecture0?1/i, "UX-PANEL-STANDARD-ARCHITECTURE-01"],
     [/uxpremiumcriticalfixroom0?1/i, "UX-PREMIUM-CRITICAL-FIX-ROOM-01"],
@@ -191,7 +195,7 @@ function statusFromPackage(pkg, name) {
     if (["verify:snapshot", "verify:docs", "verify:hot", "verify:web-contract", "verify:milestones", "verify:milestones:live"].includes(name)) {
       return "ACTIVE_RELEASE_ONLY";
     }
-    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:roomvehicledriveruppercase01", "check:uxroompanelclarity01", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxpremiumcriticalfixroom01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxpremiumcriticaluxfixcleanup01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxmobilewebshellclarity01", "check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01", "check:uxlivepanelsmokeaudit01", "check:uxsmokepassminusevidence01", "check:uxlivepanelpremiumsmoke01", "check:uxparentpersonelliveerrorclarity01", "check:copliveaccept01", "check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01", "check:uxsuperadminpanelclarity01", "check:uxcontractconversionopsbridgeclarity01", "check:shiftdispatchapprovalfix01", "check:publiclanding01"].includes(name)) {
+    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:roomvehicledriveruppercase01", "check:uxroompanelclarity01", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxpremiumcriticalfixroom01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxpremiumcriticaluxfixcleanup01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxmobilewebshellclarity01", "check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01", "check:uxlivepanelsmokeaudit01", "check:uxmobileallrolespanelaudit01", "check:uxsmokepassminusevidence01", "check:uxlivepanelpremiumsmoke01", "check:uxparentpersonelliveerrorclarity01", "check:copliveaccept01", "check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01", "check:uxsuperadminpanelclarity01", "check:uxcontractconversionopsbridgeclarity01", "check:shiftdispatchapprovalfix01", "check:publiclanding01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["smoke:m98e4", "smoke:uxlivepanelpremium01"].includes(name)) return "MANUAL_SMOKE";
@@ -1188,7 +1192,7 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Docs indexed: \`${summary.byDomain.docs}\``);
   out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01\``);
   out.push(`- UX preview milestones: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01\` -> \`UX-LIVE-PANEL-COVERAGE-MATRIX-01\` -> \`UX-SMOKE-PASS-MINUS-EVIDENCE-01\` -> \`UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01\` -> \`UX-LIVE-PANEL-PREMIUM-SMOKE-01\``);
-  out.push(`- UX preview docs: \`docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md\`, \`docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md\`, \`docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md\`, \`docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md\``);
+  out.push(`- UX preview docs: \`docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md\`, \`docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md\`, \`docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md\`, \`docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md\`, \`docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md\``);
   out.push(`- UX preview check alias: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK\``);
   out.push(`- Super Admin clarity milestone: \`UX-SUPERADMIN-PANEL-CLARITY-01\``);
   out.push(`- Super Admin clarity docs: \`docs/UX_SUPERADMIN_PANEL_CLARITY_01.md\``);
@@ -1204,6 +1208,12 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Mobile web shell clarity milestone: \`UX-MOBILE-WEB-SHELL-CLARITY-01\``);
   out.push(`- Mobile web shell clarity docs: \`docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md\``);
   out.push(`- Mobile web shell clarity command: \`node backend\\scripts\\ux_mobile_web_shell_clarity_01_check.js\``);
+  out.push(`- Mobile all roles panel fix milestone: \`UX-MOBILE-ALL-ROLES-PANEL-FIX-01\``);
+  out.push(`- Mobile all roles panel fix docs: \`docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md\``);
+  out.push(`- Mobile all roles panel fix command: \`node backend\\scripts\\ux_mobile_all_roles_panel_fix_01_check.js\``);
+  out.push(`- Mobile all roles panel audit milestone: \`UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01\``);
+  out.push(`- Mobile all roles panel audit docs: \`docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md\``);
+  out.push(`- Mobile all roles panel audit command: \`node backend\\scripts\\ux_mobile_all_roles_panel_audit_01.mjs\``);
   out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
   out.push(`- Agreements detail docs: \`docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md\``);
   out.push(`- Agreements detail command: \`node backend\\scripts\\ux_premium_critical_fix_agreements_detail_01_check.js\``);
@@ -1435,6 +1445,14 @@ function verifyDoc(docText, summary) {
     "check:uxmobilewebshellclarity01",
     "node backend\\scripts\\ux_mobile_web_shell_clarity_01_check.js",
     "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
+    "UX-MOBILE-ALL-ROLES-PANEL-FIX-01",
+    "check:uxmobileallrolespanelfix01",
+    "node backend\\scripts\\ux_mobile_all_roles_panel_fix_01_check.js",
+    "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
+    "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01",
+    "check:uxmobileallrolespanelaudit01",
+    "node backend\\scripts\\ux_mobile_all_roles_panel_audit_01.mjs",
+    "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",

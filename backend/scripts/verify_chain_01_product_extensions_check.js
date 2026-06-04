@@ -171,12 +171,15 @@ function main() {
   must(pkg, '"check:uxpanellayoutwidth02cfix03"', 'package.json exposes check:uxpanellayoutwidth02cfix03');
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
   must(pkg, '"check:uxmobilewebshellclarity01": "node backend/scripts/ux_mobile_web_shell_clarity_01_check.js"', 'package.json exposes check:uxmobilewebshellclarity01');
+  must(pkg, '"check:uxmobileallrolespanelfix01": "node backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js"', 'package.json exposes check:uxmobileallrolespanelfix01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
   must(pkg, '"check:uxpanelstandardarchitecture01": "node backend/scripts/ux_panel_standard_architecture_01_check.js"', 'package.json exposes check:uxpanelstandardarchitecture01');
   must(pkg, '"check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js"', 'package.json exposes check:finaluxsmoke01');
   must(pkg, '"check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js"', 'package.json exposes check:uxlivepanelsmokeaudit01');
+  must(pkg, '"check:uxmobileallrolespanelaudit01": "node backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js"', 'package.json exposes check:uxmobileallrolespanelaudit01');
   must(pkg, '"check:uxsmokepassminusevidence01": "node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js"', 'package.json exposes check:uxsmokepassminusevidence01');
   must(pkg, '"smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs"', 'package.json exposes smoke:uxlivepanelpremium01');
+  must(pkg, '"smoke:uxmobileallrolespanelaudit01": "node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs"', 'package.json exposes smoke:uxmobileallrolespanelaudit01');
   must(pkg, '"check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js"', 'package.json exposes check:uxlivepanelpremiumsmoke01');
   must(pkg, '"check:uxparentpersonelliveerrorclarity01": "node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js"', 'package.json exposes check:uxparentpersonelliveerrorclarity01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
@@ -286,10 +289,12 @@ function main() {
     'check:uxpanellayoutwidth02cfix03',
     'check:uxnav01',
     'check:uxmobilewebshellclarity01',
+    'check:uxmobileallrolespanelfix01',
     'check:uxdensity01',
     'check:uxpanelstandardarchitecture01',
     'check:finaluxsmoke01',
     'check:uxlivepanelsmokeaudit01',
+    'check:uxmobileallrolespanelaudit01',
     'check:uxsmokepassminusevidence01',
     'check:uxlivepanelpremiumsmoke01',
     'check:uxparentpersonelliveerrorclarity01',
@@ -414,21 +419,33 @@ function main() {
   must(harnessCheck, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness check knows parent/personel live error clarity milestone');
   must(harnessCheck, 'check:uxparentpersonelliveerrorclarity01', 'script harness check knows parent/personel live error clarity alias');
   must(harnessCheck, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness check knows parent/personel live error clarity doc');
+  must(harnessCheck, 'UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01', 'script harness check knows mobile all roles panel audit milestone');
+  must(harnessCheck, 'check:uxmobileallrolespanelaudit01', 'script harness check knows mobile all roles panel audit alias');
+  must(harnessCheck, 'docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md', 'script harness check knows mobile all roles panel audit doc');
   must(harnessCheck, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness check knows cleanup milestone');
   must(harnessCheck, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness check knows cleanup alias');
   must(harnessCheck, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness check knows cleanup doc');
   must(harnessCheck, 'UX-MOBILE-WEB-SHELL-CLARITY-01', 'script harness check knows mobile web shell clarity milestone');
   must(harnessCheck, 'check:uxmobilewebshellclarity01', 'script harness check knows mobile web shell clarity alias');
   must(harnessCheck, 'docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md', 'script harness check knows mobile web shell clarity doc');
+  must(harnessCheck, 'UX-MOBILE-ALL-ROLES-PANEL-FIX-01', 'script harness check knows mobile all roles panel fix milestone');
+  must(harnessCheck, 'check:uxmobileallrolespanelfix01', 'script harness check knows mobile all roles panel fix alias');
+  must(harnessCheck, 'docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md', 'script harness check knows mobile all roles panel fix doc');
   must(harnessDoc, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness doc lists parent/personel live error clarity milestone');
   must(harnessDoc, 'check:uxparentpersonelliveerrorclarity01', 'script harness doc lists parent/personel live error clarity alias');
   must(harnessDoc, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness doc lists parent/personel live error clarity doc');
+  must(harnessDoc, 'UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01', 'script harness doc lists mobile all roles panel audit milestone');
+  must(harnessDoc, 'check:uxmobileallrolespanelaudit01', 'script harness doc lists mobile all roles panel audit alias');
+  must(harnessDoc, 'docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md', 'script harness doc lists mobile all roles panel audit doc');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
   must(harnessDoc, 'UX-MOBILE-WEB-SHELL-CLARITY-01', 'script harness doc lists mobile web shell clarity milestone');
   must(harnessDoc, 'check:uxmobilewebshellclarity01', 'script harness doc lists mobile web shell clarity alias');
   must(harnessDoc, 'docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md', 'script harness doc lists mobile web shell clarity doc');
+  must(harnessDoc, 'UX-MOBILE-ALL-ROLES-PANEL-FIX-01', 'script harness doc lists mobile all roles panel fix milestone');
+  must(harnessDoc, 'check:uxmobileallrolespanelfix01', 'script harness doc lists mobile all roles panel fix alias');
+  must(harnessDoc, 'docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md', 'script harness doc lists mobile all roles panel fix doc');
   must(guide, 'UX-COMPANY-OPS-PANEL-TABS-01', 'script guide mentions UX-COMPANY-OPS-PANEL-TABS-01');
   must(guide, 'check:uxcompanyopspaneltabs01', 'script guide exposes check:uxcompanyopspaneltabs01');
   must(guide, 'UX-COMPANY-QUALITY-PANEL-TABS-01', 'script guide mentions UX-COMPANY-QUALITY-PANEL-TABS-01');
@@ -452,12 +469,19 @@ function main() {
   must(guide, 'check:uxmobilewebshellclarity01', 'script guide exposes check:uxmobilewebshellclarity01');
   must(guide, 'node backend\\scripts\\ux_mobile_web_shell_clarity_01_check.js', 'script guide includes mobile web shell clarity command');
   must(guide, 'docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md', 'script guide includes mobile web shell clarity doc');
+  must(guide, 'UX-MOBILE-ALL-ROLES-PANEL-FIX-01', 'script guide mentions mobile all roles panel fix milestone');
+  must(guide, 'check:uxmobileallrolespanelfix01', 'script guide exposes check:uxmobileallrolespanelfix01');
+  must(guide, 'node backend\\scripts\\ux_mobile_all_roles_panel_fix_01_check.js', 'script guide includes mobile all roles panel fix command');
+  must(guide, 'docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md', 'script guide includes mobile all roles panel fix doc');
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
   must(guide, 'FINAL-UX-SMOKE-01', 'script guide mentions FINAL-UX-SMOKE-01');
   must(guide, 'check:finaluxsmoke01', 'script guide exposes check:finaluxsmoke01');
   must(guide, 'UX-LIVE-PANEL-COVERAGE-MATRIX-01', 'script guide mentions UX-LIVE-PANEL-COVERAGE-MATRIX-01');
   must(guide, 'check:uxlivepanelsmokeaudit01', 'script guide exposes check:uxlivepanelsmokeaudit01');
   must(guide, 'node backend\\scripts\\ux_live_panel_smoke_audit_01_check.js', 'script guide includes live panel smoke audit command');
+  must(guide, 'UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01', 'script guide mentions UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01');
+  must(guide, 'check:uxmobileallrolespanelaudit01', 'script guide exposes check:uxmobileallrolespanelaudit01');
+  must(guide, 'node backend\\scripts\\ux_mobile_all_roles_panel_audit_01.mjs', 'script guide includes mobile all roles panel audit command');
   must(guide, 'UX-SMOKE-PASS-MINUS-EVIDENCE-01', 'script guide mentions UX-SMOKE-PASS-MINUS-EVIDENCE-01');
   must(guide, 'check:uxsmokepassminusevidence01', 'script guide exposes check:uxsmokepassminusevidence01');
   must(guide, 'node backend\\scripts\\ux_smoke_pass_minus_evidence_01_check.js', 'script guide includes PASS-minus evidence command');

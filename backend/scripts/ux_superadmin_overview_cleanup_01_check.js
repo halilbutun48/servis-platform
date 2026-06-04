@@ -92,11 +92,10 @@ function main() {
   ordered(panel, [
     'SystemModeSummaryBand',
     'Kritik geri bildirim',
-    'Hızlı erişim',
-    'Özet',
-    'Bölüm rehberi',
     'Alt detay alanları',
     'PanelSegmentTabs',
+    'Hızlı erişim',
+    'Bölüm rehberi',
   ], 'overview dashboard order');
 
   must(pkg, '"check:uxsuperadminoverviewcleanup01"', 'package.json exposes check:uxsuperadminoverviewcleanup01');

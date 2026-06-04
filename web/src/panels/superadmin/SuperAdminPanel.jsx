@@ -330,6 +330,51 @@ export default function SuperAdminPanel() {
         </div>
       ) : null}
 
+      <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div className="panelSectionTitle">Alt detay alanları</div>
+          <div className="panelMeta" style={{ marginTop: 4 }}>
+              Geri bildirimler, demo hesapları ve sistem detayları ana dashboardu şişirmeden burada tutulur.
+          </div>
+          </div>
+          <div className="panelMeta">
+            {feedbackBusy ? "Geri bildirimler yenileniyor..." : feedbackSummary.total ? `Toplam geri bildirim: ${feedbackSummary.total}` : "Geri bildirim yok"}
+          </div>
+        </div>
+
+        <PanelSegmentTabs
+          tabs={DETAIL_TABS}
+          value={activeDetailTab}
+          onChange={setActiveDetailTab}
+          ariaLabel="Süper Yönetici detay alanları"
+          compact
+        />
+
+        <div style={{ minWidth: 0 }}>
+          {activeDetailTab === "feedbacks" ? (
+            <FeedbackLoopSection
+              title="Gelen geri bildirimler"
+              subtitle="Sahadan gelen notları ve yıldızlı değerlendirmeleri Super Admin buradan okur ve durumlarını günceller."
+              mode="review"
+              compact
+            />
+          ) : null}
+
+          {activeDetailTab === "demo" ? <DemoAccountsBody /> : null}
+
+          {activeDetailTab === "system" ? (
+            <SystemDetailsBody me={me} stats={stats} feedbackCount={feedbackSummary.active} />
+          ) : null}
+
+          {feedbackErr && activeDetailTab === "feedbacks" ? (
+            <div className="panelMeta" style={{ marginTop: 10, color: "#fca5a5", whiteSpace: "pre-wrap" }}>
+              {feedbackErr}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
       <div
         style={{
           display: "grid",
@@ -395,51 +440,6 @@ export default function SuperAdminPanel() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <div>
-            <div className="panelSectionTitle">Alt detay alanları</div>
-          <div className="panelMeta" style={{ marginTop: 4 }}>
-              Geri bildirimler, demo hesapları ve sistem detayları ana dashboardu şişirmeden burada tutulur.
-          </div>
-          </div>
-          <div className="panelMeta">
-            {feedbackBusy ? "Geri bildirimler yenileniyor..." : feedbackSummary.total ? `Toplam geri bildirim: ${feedbackSummary.total}` : "Geri bildirim yok"}
-          </div>
-        </div>
-
-        <PanelSegmentTabs
-          tabs={DETAIL_TABS}
-          value={activeDetailTab}
-          onChange={setActiveDetailTab}
-          ariaLabel="Süper Yönetici detay alanları"
-          compact
-        />
-
-        <div style={{ minWidth: 0 }}>
-          {activeDetailTab === "feedbacks" ? (
-            <FeedbackLoopSection
-              title="Gelen geri bildirimler"
-              subtitle="Sahadan gelen notları ve yıldızlı değerlendirmeleri Super Admin buradan okur ve durumlarını günceller."
-              mode="review"
-              compact
-            />
-          ) : null}
-
-          {activeDetailTab === "demo" ? <DemoAccountsBody /> : null}
-
-          {activeDetailTab === "system" ? (
-            <SystemDetailsBody me={me} stats={stats} feedbackCount={feedbackSummary.active} />
-          ) : null}
-
-          {feedbackErr && activeDetailTab === "feedbacks" ? (
-            <div className="panelMeta" style={{ marginTop: 10, color: "#fca5a5", whiteSpace: "pre-wrap" }}>
-              {feedbackErr}
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

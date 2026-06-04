@@ -440,6 +440,13 @@ export default function SchoolOperationsPanel() {
       {decisionNotice ? <div className="card" style={{ borderColor: "rgba(18, 183, 106, 0.28)", background: "rgba(18, 183, 106, 0.08)" }}>{decisionNotice}</div> : null}
       {decisionError ? <div className="card err">{decisionError}</div> : null}
 
+      <PanelSegmentTabs
+        ariaLabel="Okul Operasyon Paneli bölümleri"
+        tabs={tabItems}
+        value={activeTab}
+        onChange={setActiveTab}
+      />
+
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Öğrenci servis atamaları" value={metricValue(students.length)} note="Öğrenci envanteri" />
         <MiniStat title="Veli bağlantıları" value={metricValue(invites.length)} note="Aktif ve geçmiş erişim" />
@@ -448,13 +455,6 @@ export default function SchoolOperationsPanel() {
         <MiniStat title="Servise bindi / okula ulaştı" value={metricValue(boardedRows.length)} note="Canlı durum bildirimleri" />
         <MiniStat title="Veli bildirim geçmişi" value={metricValue(parentNotificationRows.length)} note="Son kayıtlar" />
       </div>
-
-      <PanelSegmentTabs
-        ariaLabel="Okul Operasyon Paneli bölümleri"
-        tabs={tabItems}
-        value={activeTab}
-        onChange={setActiveTab}
-      />
 
       {activeTab === "summary" ? (
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
