@@ -19,11 +19,11 @@ export {
   RoomStatusPill,
 };
 
-export function RoomPendingSection({ pendingStatus, setPendingStatus, pendingQ, setPendingQ, pendingFiltered, ...props }) {
+export function RoomPendingSection({ showTitle = true, pendingStatus, setPendingStatus, pendingQ, setPendingQ, pendingFiltered, ...props }) {
   return (
-    <div className="card">
-      <h3>Bekleyen Talepler</h3>
-      <div className="muted" style={{ marginBottom: 8 }}>Firma talebi, Room onayı ve karar bekleyen vardiyalar.</div>
+    <div className="card roomShiftsSectionCard">
+      {showTitle ? <h3>Bekleyen Talepler</h3> : null}
+      {showTitle ? <div className="muted roomShiftsSectionSubtitle">Firma talebi, Room onayı ve karar bekleyen vardiyalar.</div> : null}
       <div className="toolbarLeft" style={{ marginBottom: 10 }}>
         <select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}>
           <option value="OPEN">Açık (DRAFT + REQUESTED)</option>
@@ -118,7 +118,7 @@ export function RoomDispatchPoolSummary({
   const showDispatchApplyAction = Boolean(data);
 
   return (
-    <div className="card" style={{ padding: 10 }}>
+    <div className="card roomShiftsDispatchPoolCard" style={{ padding: 10 }}>
       <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <div className="muted"><b>Room havuz özeti</b></div>
         <button
@@ -153,7 +153,7 @@ export function RoomDispatchPoolSummary({
           </div>
 
           {showDispatchApplyAction ? (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <div className="roomShiftsDispatchApplyRow">
               <button
                 type="button"
                 className="btn roomActionCTA"
@@ -162,14 +162,12 @@ export function RoomDispatchPoolSummary({
               >
                 Önizlemeyi Uygula: Böl & Onayla
               </button>
-              <div className="muted" style={{ fontSize: 12 }}>
+              <div className="roomShiftsDispatchApplyHint">
                 Önizleme ile aynı bölme planı uygulanır; seçtiğin araç ve şoför eşleşmeleri kullanılır.
               </div>
-              {!dispatchCanApply ? (
-                <div className="muted" style={{ color: "#b42318", fontSize: 12 }}>{dispatchApplyMessage}</div>
-              ) : (
-                <div className="muted" style={{ color: "#166534", fontSize: 12 }}>Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.</div>
-              )}
+              <div className={`roomShiftsDispatchApplyState ${dispatchCanApply ? "roomShiftsDispatchApplyState--ok" : "roomShiftsDispatchApplyState--error"}`}>
+                {!dispatchCanApply ? dispatchApplyMessage : "Tüm öneriler hazır. Önizlemeyi uygulayabilirsin."}
+              </div>
             </div>
           ) : null}
 
@@ -246,6 +244,7 @@ export function RoomDispatchPoolSummary({
   );
 }
 export function RoomFinalListSection({
+  showTitle = true,
   title = "Vardiyalar",
   description = "",
   listQ,
@@ -258,9 +257,9 @@ export function RoomFinalListSection({
   ...props
 }) {
   return (
-    <div className="card">
-      <h3>{title}</h3>
-      {description ? <div className="muted" style={{ marginBottom: 8 }}>{description}</div> : null}
+    <div className="card roomShiftsSectionCard">
+      {showTitle ? <h3>{title}</h3> : null}
+      {showTitle && description ? <div className="muted roomShiftsSectionSubtitle">{description}</div> : null}
       <div className="toolbarLeft" style={{ marginBottom: 10 }}>
         <input value={listQ} onChange={(e) => setListQ(e.target.value)} placeholder={searchPlaceholder} style={{ minWidth: 320 }} />
         <button type="button" className="btn sm" onClick={() => { setListQ(""); }}>Temizle</button>

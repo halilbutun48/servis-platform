@@ -887,7 +887,7 @@ async function decideExtend(shiftId, decision) {
   }
 
   return (
-    <div className="roomCriticalFixScope">
+    <div className="roomCriticalFixScope roomShiftsDensityScope">
       <RoomShiftsOverviewSection
         err={err}
         pendingCount={tabCounts.pending}
@@ -895,9 +895,6 @@ async function decideExtend(shiftId, decision) {
         otherCount={tabCounts.other}
         copilotShift={copilotShift}
         autoSplitApprove={autoSplitApprove}
-        onGoPending={() => selectShiftsTab("pending")}
-        onGoContract={() => selectShiftsTab("contract")}
-        onGoOther={() => selectShiftsTab("other")}
       />
 
       <RoomShiftsMainSections

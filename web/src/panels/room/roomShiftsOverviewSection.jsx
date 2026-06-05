@@ -11,14 +11,18 @@ export function RoomShiftsOverviewSection({
   otherCount = 0,
   copilotShift = null,
   autoSplitApprove = null,
-  onGoPending = null,
-  onGoContract = null,
-  onGoOther = null,
 }) {
+  const showDispatchApplyAction = Boolean(
+    autoSplitApprove &&
+      copilotShift &&
+      Number(copilotShift.splitRootId || 0) > 0
+  );
+
   return (
     <>
       <div className="card" style={{ display: "grid", gap: 12 }}>
         <FlowSummaryStrip
+          className="roomShiftsOverviewStrip"
           title="Vardiya Özeti"
           description="Özet üstte; karar, dispatch ve rota önizleme tablarda kalır."
           statusText={pendingCount > 0 ? `${pendingCount} bekleyen karar` : "Akış dengede"}
@@ -29,36 +33,19 @@ export function RoomShiftsOverviewSection({
             `Diğer ${otherCount}`,
           ]}
         />
-        <div className="panelMeta">Firma talebi → Room onayı → operasyon takibi aynı akışta okunur.</div>
-        {copilotShift ? (
-          <div className="card roomActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)", marginTop: 2 }}>
-            <div style={{ fontWeight: 900 }}>Dispatch önizleme</div>
-            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-              Seçili vardiya için önizleme ve uygulama akışı burada görünür. Aynı planı tek adımda uygulayabilirsin.
-            </div>
-            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className="btn sm primary roomActionCTA"
-                disabled={!autoSplitApprove}
-                onClick={() => autoSplitApprove?.(copilotShift)}
-              >
-                Önizlemeyi Uygula: Böl & Onayla
-              </button>
-              <span className="muted" style={{ fontSize: 12 }}>
-                Dispatch önizleme kartı aşağıda da kalır; bu üst CTA yalnızca erişimi görünür kılar.
-              </span>
+        {showDispatchApplyAction ? (
+          <div className="roomShiftsDispatchApplyRow">
+            <button type="button" className="btn sm primary roomActionCTA" onClick={() => autoSplitApprove(copilotShift)}>
+              Önizlemeyi Uygula: Böl & Onayla
+            </button>
+            <div className="roomShiftsDispatchApplyHint">
+              Seçili split vardiyada görünür; seçili vardiya yoksa öne çıkmaz.
             </div>
           </div>
         ) : null}
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <button type="button" className="btn sm" onClick={onGoPending}>Bekleyen Talepler</button>
-          <button type="button" className="btn sm" onClick={onGoContract}>Sözleşmeden Üretilen</button>
-          <button type="button" className="btn sm" onClick={onGoOther}>Diğer Vardiyalar</button>
-        </div>
       </div>
 
-      {err ? <div className="card err">{err}</div> : null}
+      {err ? <div className="roomInlineNotice roomInlineNotice--error">{err}</div> : null}
     </>
   );
 }

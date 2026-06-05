@@ -139,7 +139,7 @@ function main() {
   const driverCheckin = read("web/src/panels/driver/CheckinPanel.jsx");
   const driverRoute = read("web/src/panels/driver/RoutePanel.jsx");
   const roomShiftsPanel = read("web/src/panels/room/ShiftsPanel.jsx");
-  const roomShiftsOverview = read("web/src/panels/room/roomShiftsOverviewSection.jsx");
+  const roomShiftsPanelSections = read("web/src/panels/room/roomShiftsPanelSections.jsx");
   const roomAgreements = read("web/src/panels/room/AgreementsPanel.jsx");
   const agreementOpsBridge = read("web/src/components/AgreementOpsBridgeCard.jsx");
   const roomVehiclesPanel = read("web/src/panels/room/VehiclesPanel.jsx");
@@ -205,6 +205,9 @@ function main() {
     "web/src/panels/room/ShiftsPanel.jsx",
     "web/src/panels/room/VehiclesPanel.jsx",
     "web/src/panels/room/roomShiftsOverviewSection.jsx",
+    "web/src/panels/room/roomShiftsMainSections.jsx",
+    "web/src/panels/room/roomShiftsPanelSections.jsx",
+    "web/src/panels/room/roomShiftsPanelRows.jsx",
     "web/src/panels/room/roomVehiclesPanelCards.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
     "web/src/panels/room/RoomDriversQuickPenaltyCard.jsx",
@@ -277,7 +280,7 @@ function main() {
   mustContains(driverCheckin, "Okuma kodu", "cleanup driver check-in keeps safe code wording");
   mustContains(driverRoute, "GPS durumu", "cleanup driver route keeps safe GPS wording");
   mustContains(roomShiftsPanel, "copilotShift={copilotShift}", "cleanup room shifts keeps dispatch preview wiring");
-  mustContains(roomShiftsOverview, "Önizlemeyi Uygula: Böl & Onayla", "cleanup room shifts keeps visible dispatch CTA");
+  mustContains(roomShiftsPanelSections, "Önizlemeyi Uygula: Böl & Onayla", "cleanup room shifts keeps visible dispatch CTA in lower surface");
   mustContains(roomAgreements, "Rota Önizleme", "cleanup room agreements keeps detail preview wording");
   mustContains(agreementOpsBridge, "Detayları göster", "cleanup agreements bridge keeps visible detail wording");
   mustContains(roomVehiclesPanel, "erişim görünürlüğü", "cleanup room vehicles keeps access visibility wording");
@@ -386,6 +389,8 @@ function main() {
       "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
       "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
       "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
+      "backend/scripts/ux_room_shifts_density_dedup_01_check.js",
+      "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
       "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
       "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
       "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",

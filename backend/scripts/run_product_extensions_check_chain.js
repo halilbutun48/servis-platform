@@ -96,6 +96,7 @@ const steps = [
   'check:uxroomopspaneltabs01',
   'check:uxroomopsrelationshippolish01',
   'check:uxroomshiftstabs01',
+  'check:uxroomshiftsdensitydedup01',
   'check:uxpremiumcriticalfixroom01',
   'check:uxschoolorganizationpanels01',
   'check:uxcompanyshiftstabs01',

@@ -200,6 +200,139 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom));
 }
 
+.roomShiftsDensityScope {
+  min-width: 0;
+}
+
+.roomShiftsDensityScope .roomShiftsOverviewStrip,
+.roomShiftsDensityScope .roomShiftsTabCard,
+.roomShiftsDensityScope .roomShiftsSectionCard,
+.roomShiftsDensityScope .roomShiftsDispatchPoolCard {
+  min-width: 0;
+}
+
+.roomShiftsDensityScope .roomShiftsOverviewStrip {
+  padding: 10px 12px;
+  gap: 8px;
+}
+
+.roomShiftsDensityScope .roomShiftsOverviewStrip .panelSectionTitle {
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.roomShiftsDensityScope .roomShiftsOverviewStrip .panelMeta {
+  font-size: 12px;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.roomShiftsDensityScope .roomShiftsOverviewStrip .flow-summary-steps {
+  gap: 6px;
+}
+
+.roomShiftsDensityScope .roomShiftsOverviewStrip .flow-summary-chip {
+  min-height: 24px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.roomShiftsDensityScope .roomShiftsTabCard {
+  padding: 10px 10px 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.roomShiftsDensityScope .roomShiftsTabHint {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.roomShiftsDensityScope .roomShiftsSectionCard {
+  padding: 12px;
+}
+
+.roomShiftsDensityScope .roomShiftsSectionSubtitle {
+  margin-bottom: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.roomShiftsDensityScope .roomShiftsDispatchPoolCard {
+  padding: 10px;
+}
+
+.roomShiftsDensityScope .roomShiftsDispatchPoolCard .roomActionCTA {
+  min-height: 36px;
+}
+
+.roomShiftsDensityScope .roomShiftsDispatchPoolCard .row {
+  gap: 6px;
+}
+
+.roomShiftsDensityScope .roomShiftsDispatchPoolCard .muted {
+  line-height: 1.35;
+}
+
+.roomShiftsDensityScope .roomShiftsDispatchApplyRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.roomShiftsDensityScope .roomShiftsDispatchApplyHint,
+.roomShiftsDensityScope .roomShiftsDispatchApplyState {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.roomShiftsDensityScope .roomShiftsDispatchApplyState--ok {
+  color: #166534;
+}
+
+.roomShiftsDensityScope .roomShiftsDispatchApplyState--error {
+  color: #b42318;
+}
+
+.roomShiftsDensityScope .roomInlineNotice {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  background: rgba(148, 163, 184, .08);
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.roomShiftsDensityScope .roomInlineNotice--warn {
+  border-color: rgba(245, 158, 11, .28);
+  background: rgba(245, 158, 11, .12);
+  color: #fde68a;
+}
+
+.roomShiftsDensityScope .roomInlineNotice--error {
+  border-color: rgba(180, 35, 24, .32);
+  background: rgba(180, 35, 24, .12);
+  color: #ffb4b4;
+}
+
+.roomShiftsDensityScope .listSelectionBanner {
+  padding: 10px 12px;
+  gap: 10px;
+}
+
+.roomShiftsDensityScope .listSelectionBannerTitle {
+  font-size: 13px;
+}
+
+.roomShiftsDensityScope .listSelectionBannerMeta {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .roomCommercialWorkspaceFull > * {
   width: 100%;
   min-width: 0;
@@ -1319,6 +1452,18 @@ button, input, select, textarea, .btn, .secondary {
   }
   .roomCriticalFixScope {
     padding-bottom: calc(200px + env(safe-area-inset-bottom));
+  }
+  .roomShiftsDensityScope .roomShiftsOverviewStrip .panelMeta {
+    display: none;
+  }
+  .roomShiftsDensityScope .roomShiftsTabHint {
+    display: none;
+  }
+  .roomShiftsDensityScope .roomShiftsDispatchApplyHint {
+    display: none;
+  }
+  .roomShiftsDensityScope .roomShiftsDispatchPoolCard .roomActionCTA {
+    min-height: 40px;
   }
   .shell--agreements-detail .companyActionClarityScope .btn.primary,
   .shell--agreements-detail .companyActionClarityScope .btn.sm.primary,

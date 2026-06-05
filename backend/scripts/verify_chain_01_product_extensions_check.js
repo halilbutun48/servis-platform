@@ -150,6 +150,7 @@ function main() {
   must(pkg, '"check:uxroomopspaneltabs01"', 'package.json exposes check:uxroomopspaneltabs01');
   must(pkg, '"check:uxroomopsrelationshippolish01"', 'package.json exposes check:uxroomopsrelationshippolish01');
   must(pkg, '"check:uxroomshiftstabs01"', 'package.json exposes check:uxroomshiftstabs01');
+  must(pkg, '"check:uxroomshiftsdensitydedup01": "node backend/scripts/ux_room_shifts_density_dedup_01_check.js"', 'package.json exposes check:uxroomshiftsdensitydedup01');
   must(pkg, '"check:uxpremiumcriticalfixroom01": "node backend/scripts/ux_premium_critical_fix_room_01_check.js"', 'package.json exposes check:uxpremiumcriticalfixroom01');
   must(pkg, '"check:uxpremiumcriticalfixagreementsdetail01": "node backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js"', 'package.json exposes check:uxpremiumcriticalfixagreementsdetail01');
   must(pkg, '"check:uxpremiumcriticaluxfixcleanup01": "node backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js"', 'package.json exposes check:uxpremiumcriticaluxfixcleanup01');
@@ -271,6 +272,7 @@ function main() {
     'check:uxroomopspaneltabs01',
     'check:uxroomopsrelationshippolish01',
     'check:uxroomshiftstabs01',
+    'check:uxroomshiftsdensitydedup01',
     'check:uxpremiumcriticalfixroom01',
     'check:uxschoolorganizationpanels01',
     'check:uxcompanyshiftstabs01',
@@ -401,6 +403,9 @@ function main() {
   must(guide, 'check:uxroomopsrelationshippolish01', 'script guide exposes check:uxroomopsrelationshippolish01');
   must(guide, 'UX-ROOM-SHIFTS-TABS-01', 'script guide mentions UX-ROOM-SHIFTS-TABS-01');
   must(guide, 'check:uxroomshiftstabs01', 'script guide exposes check:uxroomshiftstabs01');
+  must(guide, 'UX-ROOM-SHIFTS-DENSITY-DEDUP-01', 'script guide mentions UX-ROOM-SHIFTS-DENSITY-DEDUP-01');
+  must(guide, 'check:uxroomshiftsdensitydedup01', 'script guide exposes check:uxroomshiftsdensitydedup01');
+  must(guide, 'node backend\\scripts\\ux_room_shifts_density_dedup_01_check.js', 'script guide includes room shifts density dedup command');
   must(guide, 'UX-PREMIUM-CRITICAL-FIX-ROOM-01', 'script guide mentions UX-PREMIUM-CRITICAL-FIX-ROOM-01');
   must(guide, 'check:uxpremiumcriticalfixroom01', 'script guide exposes check:uxpremiumcriticalfixroom01');
   must(guide, 'node backend\\scripts\\ux_premium_critical_fix_room_01_check.js', 'script guide includes room critical fix command');
@@ -431,6 +436,9 @@ function main() {
   must(harnessCheck, 'UX-MOBILE-ALL-ROLES-PANEL-FIX-01', 'script harness check knows mobile all roles panel fix milestone');
   must(harnessCheck, 'check:uxmobileallrolespanelfix01', 'script harness check knows mobile all roles panel fix alias');
   must(harnessCheck, 'docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md', 'script harness check knows mobile all roles panel fix doc');
+  must(harnessCheck, 'UX-ROOM-SHIFTS-DENSITY-DEDUP-01', 'script harness check knows room shifts density dedup milestone');
+  must(harnessCheck, 'check:uxroomshiftsdensitydedup01', 'script harness check knows room shifts density dedup alias');
+  must(harnessCheck, 'docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md', 'script harness check knows room shifts density dedup doc');
   must(harnessDoc, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness doc lists parent/personel live error clarity milestone');
   must(harnessDoc, 'check:uxparentpersonelliveerrorclarity01', 'script harness doc lists parent/personel live error clarity alias');
   must(harnessDoc, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness doc lists parent/personel live error clarity doc');
@@ -446,6 +454,9 @@ function main() {
   must(harnessDoc, 'UX-MOBILE-ALL-ROLES-PANEL-FIX-01', 'script harness doc lists mobile all roles panel fix milestone');
   must(harnessDoc, 'check:uxmobileallrolespanelfix01', 'script harness doc lists mobile all roles panel fix alias');
   must(harnessDoc, 'docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md', 'script harness doc lists mobile all roles panel fix doc');
+  must(harnessDoc, 'UX-ROOM-SHIFTS-DENSITY-DEDUP-01', 'script harness doc lists room shifts density dedup milestone');
+  must(harnessDoc, 'check:uxroomshiftsdensitydedup01', 'script harness doc lists room shifts density dedup alias');
+  must(harnessDoc, 'docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md', 'script harness doc lists room shifts density dedup doc');
   must(guide, 'UX-COMPANY-OPS-PANEL-TABS-01', 'script guide mentions UX-COMPANY-OPS-PANEL-TABS-01');
   must(guide, 'check:uxcompanyopspaneltabs01', 'script guide exposes check:uxcompanyopspaneltabs01');
   must(guide, 'UX-COMPANY-QUALITY-PANEL-TABS-01', 'script guide mentions UX-COMPANY-QUALITY-PANEL-TABS-01');

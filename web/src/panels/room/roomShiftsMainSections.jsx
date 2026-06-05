@@ -100,7 +100,7 @@ export function RoomShiftsMainSections({
 
   return (
     <>
-      <div className="card" style={{ marginTop: 10 }}>
+      <div className="card roomShiftsTabCard" style={{ marginTop: 10 }}>
         <PanelSegmentTabs
           ariaLabel="Room shifts bölümleri"
           tabs={[
@@ -112,7 +112,7 @@ export function RoomShiftsMainSections({
           onChange={onChangeTab}
           compact
         />
-        <div className="muted" style={{ marginTop: 6 }}>
+        <div className="muted roomShiftsTabHint" style={{ marginTop: 6 }}>
           {activeLabel === "Bekleyen Talepler"
             ? "Firma talebi, Room onayı ve karar bekleyen vardiyalar."
             : activeLabel === "Sözleşmeden Üretilen"
@@ -123,6 +123,7 @@ export function RoomShiftsMainSections({
 
       {activeTab === "pending" ? (
         <RoomPendingSection
+          showTitle={false}
           pendingStatus={pendingStatus}
           setPendingStatus={setPendingStatus}
           pendingQ={pendingQ}
@@ -168,6 +169,7 @@ export function RoomShiftsMainSections({
         />
       ) : activeTab === "contract" ? (
         <RoomFinalListSection
+          showTitle={false}
           title="Sözleşmeden Üretilen"
           description="Agreement / contract bağlantılı vardiyalar burada görünür."
           listQ={contractQ}
@@ -193,6 +195,7 @@ export function RoomShiftsMainSections({
         />
       ) : activeTab === "other" ? (
         <RoomFinalListSection
+          showTitle={false}
           title="Diğer Vardiyalar"
           description="Sözleşmeye bağlı olmayan normal / guided / manuel vardiyalar burada görünür."
           listQ={otherQ}

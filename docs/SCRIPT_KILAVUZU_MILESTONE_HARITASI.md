@@ -93,6 +93,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
 - `check:uxsmokepassminusevidence01` -> `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
 - `check:uxroompanelclarity01` -> `node backend\scripts\ux_room_panel_clarity_01_check.js`
+- `check:uxroomshiftstabs01` -> `node backend\scripts\ux_room_shifts_tabs_01_check.js`
+- `check:uxroomshiftsdensitydedup01` -> `node backend\scripts\ux_room_shifts_density_dedup_01_check.js`
 - `check:uxpremiumcriticalfixroom01` -> `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - `check:uxcompanymobileactionclarity01` -> `node backend\scripts\ux_company_mobile_action_clarity_01_check.js`
 - `check:uxpremiumcriticalfixagreementsdetail01` -> `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -1102,6 +1104,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:uxroomshiftstabs01` `Room / Vardiyalar` ekranını üç gerçek taba böler: `Bekleyen Talepler`, `Sözleşmeden Üretilen` ve `Diğer Vardiyalar`.
 - Üstteki KPI bandı açık kalır; `Bekleyen Talepler` ile `Tüm Vardiyalar` gibi tek uzun akış yerine seçili tabın içeriği tek başına render edilir.
 - Bu düzeltme `UX-PANEL-STRUCTURE-02`, `UX-PANEL-STRUCTURE-02B`, `UX-ROOM-OPS-PANEL-TABS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+### UX-ROOM-SHIFTS-DENSITY-DEDUP-01 [CHECK]
+- `check:uxroomshiftsdensitydedup01` `Room / Vardiyalar` ekranındaki üst başlık, summary bandı ve tab row tekrarını sadeleştirir; aktif içerik yine tab'a göre değişir.
+- Üst özet tek band olarak kalır; dispatch preview üstte dominant bir kart olarak görünmez ve yalnız alt yüzeyde, seçili akış içinde okunur.
+- `Önizlemeyi Uygula: Böl & Onayla` ve bölme önizleme akışı backend dispatch flow'u değiştirmeden alt yüzeyde korunur.
+- `no route apply addition`, `no payment/settlement`, `no schema changes` ve `UX-FIX 0 / BLOCKER 0 / NOT-FOUND 0` sınırları korunur.
+- Komut: `node backend\scripts\ux_room_shifts_density_dedup_01_check.js`
+- Doküman: `docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md`
 
 ### UX-PREMIUM-CRITICAL-FIX-ROOM-01 [CHECK]
 - `check:uxpremiumcriticalfixroom01` `Room / Vardiyalar`, `Room / Sözleşmeler` ve `Room / Sürücüler` yüzeylerinde kritik smoke satırlarını küçük, kontrol edilebilir bir room dalgasında kapatır.
