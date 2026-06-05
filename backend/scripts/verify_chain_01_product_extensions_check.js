@@ -182,6 +182,7 @@ function main() {
   must(pkg, '"smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs"', 'package.json exposes smoke:uxlivepanelpremium01');
   must(pkg, '"smoke:uxmobileallrolespanelaudit01": "node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs"', 'package.json exposes smoke:uxmobileallrolespanelaudit01');
   must(pkg, '"check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js"', 'package.json exposes check:uxlivepanelpremiumsmoke01');
+  must(pkg, '"check:mobilewebfinal01": "node backend/scripts/mobile_web_final_01_check.js"', 'package.json exposes check:mobilewebfinal01');
   must(pkg, '"check:uxparentpersonelliveerrorclarity01": "node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js"', 'package.json exposes check:uxparentpersonelliveerrorclarity01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
@@ -299,6 +300,7 @@ function main() {
     'check:uxmobileallrolespanelaudit01',
     'check:uxsmokepassminusevidence01',
     'check:uxlivepanelpremiumsmoke01',
+    'check:mobilewebfinal01',
     'check:uxparentpersonelliveerrorclarity01',
     'check:livetrackingfinal01',
     'check:driverflowfinal01',
@@ -427,6 +429,9 @@ function main() {
   must(harnessCheck, 'UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01', 'script harness check knows mobile all roles panel audit milestone');
   must(harnessCheck, 'check:uxmobileallrolespanelaudit01', 'script harness check knows mobile all roles panel audit alias');
   must(harnessCheck, 'docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md', 'script harness check knows mobile all roles panel audit doc');
+  must(harnessCheck, 'MOBILE-WEB-FINAL-01', 'script harness check knows mobile web final milestone');
+  must(harnessCheck, 'check:mobilewebfinal01', 'script harness check knows mobile web final alias');
+  must(harnessCheck, 'docs/MOBILE_WEB_FINAL_01.md', 'script harness check knows mobile web final doc');
   must(harnessCheck, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness check knows cleanup milestone');
   must(harnessCheck, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness check knows cleanup alias');
   must(harnessCheck, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness check knows cleanup doc');
@@ -445,6 +450,9 @@ function main() {
   must(harnessDoc, 'UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01', 'script harness doc lists mobile all roles panel audit milestone');
   must(harnessDoc, 'check:uxmobileallrolespanelaudit01', 'script harness doc lists mobile all roles panel audit alias');
   must(harnessDoc, 'docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md', 'script harness doc lists mobile all roles panel audit doc');
+  must(harnessDoc, 'MOBILE-WEB-FINAL-01', 'script harness doc lists mobile web final milestone');
+  must(harnessDoc, 'check:mobilewebfinal01', 'script harness doc lists mobile web final alias');
+  must(harnessDoc, 'docs/MOBILE_WEB_FINAL_01.md', 'script harness doc lists mobile web final doc');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
@@ -500,6 +508,10 @@ function main() {
   must(guide, 'UX-LIVE-PANEL-PREMIUM-SMOKE-01', 'script guide mentions UX-LIVE-PANEL-PREMIUM-SMOKE-01');
   must(guide, 'check:uxlivepanelpremiumsmoke01', 'script guide exposes check:uxlivepanelpremiumsmoke01');
   must(guide, 'node backend\\scripts\\ux_live_panel_premium_smoke_01.mjs', 'script guide includes premium smoke command');
+  must(guide, 'MOBILE-WEB-FINAL-01', 'script guide mentions MOBILE-WEB-FINAL-01');
+  must(guide, 'check:mobilewebfinal01', 'script guide exposes check:mobilewebfinal01');
+  must(guide, 'node backend\\scripts\\mobile_web_final_01_check.js', 'script guide includes mobile web final command');
+  must(guide, 'docs/MOBILE_WEB_FINAL_01.md', 'script guide includes mobile web final doc');
   must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
   must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');
   must(guide, 'node backend\\scripts\\ux_parent_personel_live_error_clarity_01_check.js', 'script guide includes parent/personel live error clarity command');

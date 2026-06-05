@@ -243,6 +243,8 @@ function main() {
     "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",
     "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
     "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
+    "backend/scripts/mobile_web_final_01_check.js",
+    "docs/MOBILE_WEB_FINAL_01.md",
     "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "web/src/panels/superadmin/OperationsPanel.jsx",

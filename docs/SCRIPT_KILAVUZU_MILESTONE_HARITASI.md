@@ -286,6 +286,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Panel sınıfları `PASS`, `PASS-`, `UX-FIX`, `BLOCKER`, `AUTH-BLOCKED` ve `NOT-FOUND` olarak raporlanır.
 - Bu milestone yalnızca canlı UX smoke ve premium panel okunabilirlik audit'i yapar; payment / billing / contract execute, invite send, user create, supplier verification auto ve settlement execute açılmaz.
 
+### MOBILE-WEB-FINAL-01 [CHECK]
+- `check:mobilewebfinal01` final mobile acceptance audit'idir; mobile shell, all-roles audit ve premium smoke snapshot'larını tek kabul raporunda birleştirir.
+- Check script: `node backend\scripts\mobile_web_final_01_check.js`
+- Final doc: `docs/MOBILE_WEB_FINAL_01.md`
+- Bu check ürün/business flow değiştirmez; yalnızca mevcut mobile kabul sonucunu, PASS- backlog'unu ve commit dışı artifact sınırlarını doğrular.
+- Kabul koşulları: `UX-FIX 0`, `BLOCKER 0`, `NOT-FOUND 0`; `AUTH-BLOCKED` yalnızca report-only not olabilir.
+- `PASS-` kalan satırlar final risk/backlog olarak raporlanır; Sefer Abi launcher / NavDock / sticky tab / horizontal overflow rulings bu belgede açıkça görünür.
+- Browser-smoke commit dışı kalır; backend route / service / schema bu milestone ile değişmez.
+
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
 - `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.
