@@ -83,8 +83,10 @@ function main() {
   must(pkg, '"check:publiclandingplatformfirst01": "node backend/scripts/public_landing_platform_first_01_check.js"', 'package.json exposes check:publiclandingplatformfirst01');
   must(pkg, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', 'package.json exposes check:leadcapture01');
   must(pkg, '"check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js"', 'package.json exposes check:onboardingreview01');
+  must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
+  must(pkg, '"smoke:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01.mjs"', 'package.json exposes smoke:productflowbuttonaudit01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
   must(pkg, '"check:docsstate01"', 'package.json keeps check:docsstate01');
   must(pkg, '"check:op04"', 'package.json keeps check:op04');
@@ -198,6 +200,7 @@ function main() {
     'check:publiclandingplatformfirst01',
     'check:leadcapture01',
     'check:onboardingreview01',
+    'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
     'check:pay01e',
@@ -323,6 +326,9 @@ function main() {
   must(guide, 'ONBOARDING-REVIEW-01', 'script guide mentions onboarding review milestone');
   must(guide, 'check:onboardingreview01', 'script guide exposes onboarding review check');
   must(guide, 'node backend\\scripts\\onboarding_review_01_check.js', 'script guide includes onboarding review command');
+  must(guide, 'PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide mentions product flow button audit milestone');
+  must(guide, 'check:productflowbuttonaudit01', 'script guide exposes product flow button audit check');
+  must(guide, 'node backend\\scripts\\product_flow_button_audit_01_check.js', 'script guide includes product flow button audit command');
   must(guide, 'QLT-PAY-BRIDGE-01', 'script guide mentions QLT-PAY-BRIDGE-01');
   must(guide, 'check:qltpaybridge01', 'script guide exposes check:qltpaybridge01');
   must(guide, 'check:seferscore01', 'script guide exposes check:seferscore01');

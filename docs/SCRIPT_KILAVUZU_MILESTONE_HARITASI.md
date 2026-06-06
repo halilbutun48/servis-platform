@@ -893,7 +893,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
   - `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
   - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
-- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ... -> RELEASE-CANDIDATE-01`
+- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ... -> RELEASE-CANDIDATE-01`
 
 ### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
 - Check script: `check:publiclanding01`
@@ -918,6 +918,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\onboarding_review_01_check.js`
 - Ana konu: public lead kayıtlarını Super Admin insan inceleme kuyruğuna taşımak; RECEIVED / IN_REVIEW / NEEDS_INFO / APPROVED_FOR_INVITE / REJECTED durumlarıyla ilerlemek; inceleme notu ve operasyon notu eklemek; invite, kullanıcı, ödeme, fatura, sözleşme, settlement ve supplier verification execute akışlarını açmamak.
 - Not: `APPROVED_FOR_INVITE` yalnızca sonraki invite adımı için hazırlıktır; bu milestone içinde kullanıcı oluşturma veya davet gönderimi yapılmaz.
+
+### PRODUCT-FLOW-BUTTON-AUDIT-01 — kritik CTA ve button audit [CHECK]
+- Check script: `check:productflowbuttonaudit01`
+- Komut: `node backend\scripts\product_flow_button_audit_01_check.js`
+- Smoke: `node backend\scripts\product_flow_button_audit_01.mjs`
+- Ana konu: public landing CTA'ları, onboarding review action strip, company / room vardiya ve sözleşme preview-butons, parent / personel canlı takip navigasyonları, superadmin commercial-core hakediş hazırlığı ve trust-quality readonly kartları için görünürlük, tıklanabilirlik, disabled-state açıklığı ve preview/detail açılışını audit etmek; API boundary'yi write akışına çevirmemek.
+- Not: bu milestone gerçek write flow açmaz; public lead submit validation ile sınırda kalır, review ve live takip butonları sadece görünürlük / tıklanabilirlik açısından kontrol edilir, settlement execute ve ödeme başlatma smoke içinde çalıştırılmaz.
 
 ### AGREEMENT-SOURCE-SHIFT-LINEAGE-01 — agreement source lineage preview [CHECK]
 - Check script: `check:agreementsourceshiftlineage01`

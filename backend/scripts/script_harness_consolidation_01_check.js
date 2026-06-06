@@ -17,10 +17,13 @@ const workingTreeCompatFiles = [
   "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
   "backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js",
   "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+  "backend/scripts/product_flow_button_audit_01_check.js",
+  "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_shifts_density_dedup_01_check.js",
   "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
   "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
+  "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
   "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
 ];
 
@@ -37,6 +40,7 @@ const selectedDocs = [
   "docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md",
   "docs/LEAD_CAPTURE_01.md",
   "docs/ONBOARDING_REVIEW_01.md",
+  "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
   "docs/AGREEMENT_SOURCE_SHIFT_LINEAGE_01.md",
   "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
   "docs/BOARDING_OPS_01A_ROUTE_IMPACT_PREVIEW.md",
@@ -158,6 +162,7 @@ function slugToMilestone(slug) {
     [/uxcopilotsmartchips0?1/i, "UX-COPILOT-SMART-CHIPS-01"],
     [/uxnav0?1/i, "UX-NAV-01"],
     [/uxmobilewebshellclarity0?1/i, "UX-MOBILE-WEB-SHELL-CLARITY-01"],
+    [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
   [/uxmobileoverflowminimapreadability0?1/i, "UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01"], // check:uxmobileoverflowminimapreadability01
     [/uxmobileallrolespanelaudit0?1/i, "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01"],
     [/uxdensity0?1/i, "UX-DENSITY-01"],
@@ -1191,7 +1196,7 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Root/backend/web/mobile package dağılımı: root \`${summary.byDomain.root}\`, backend \`${summary.byDomain.backend}\`, web \`${summary.byDomain.web}\`, mobile \`${summary.byDomain.mobile}\``);
   out.push(`- Tools executable dağılımı: tools \`${summary.byDomain.tools}\``);
   out.push(`- Docs indexed: \`${summary.byDomain.docs}\``);
-  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01\``);
+  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...\``);
   out.push(`- UX preview milestones: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01\` -> \`UX-LIVE-PANEL-COVERAGE-MATRIX-01\` -> \`UX-SMOKE-PASS-MINUS-EVIDENCE-01\` -> \`UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01\` -> \`UX-LIVE-PANEL-PREMIUM-SMOKE-01\``);
   out.push(`- UX preview docs: \`docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md\`, \`docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md\`, \`docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md\`, \`docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md\`, \`docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md\``);
   out.push(`- UX preview check alias: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK\``);
@@ -1237,7 +1242,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- PASS-minus evidence milestone: \`UX-SMOKE-PASS-MINUS-EVIDENCE-01\``);
   out.push(`- PASS-minus evidence docs: \`docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md\``);
   out.push(`- PASS-minus evidence command: \`node backend\\scripts\\ux_smoke_pass_minus_evidence_01_check.js\``);
-  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md\`, \`docs/LEAD_CAPTURE_01.md\`, \`docs/ONBOARDING_REVIEW_01.md\``);
+  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md\`, \`docs/LEAD_CAPTURE_01.md\`, \`docs/ONBOARDING_REVIEW_01.md\`, \`docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md\``);
+  out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
+  out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
+  out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);
   out.push(`- ACTIVE: \`${summary.statusCounts.ACTIVE || 0}\``);
   out.push(`- ACTIVE_CORE: \`${summary.statusCounts.ACTIVE_CORE || 0}\``);
   out.push(`- ACTIVE_WEB_LINT: \`${summary.statusCounts.ACTIVE_WEB_LINT || 0}\``);
@@ -1418,6 +1426,8 @@ function verifyDoc(docText, summary) {
     "check:publiclandingplatformfirst01",
     "check:leadcapture01",
     "check:onboardingreview01",
+    "check:productflowbuttonaudit01",
+    "smoke:productflowbuttonaudit01",
     "check:uxrouteimpactpreviewcompact01",
     "check:uxlivepanelsmokeaudit01",
     "check:uxsmokepassminusevidence01",
@@ -1429,6 +1439,7 @@ function verifyDoc(docText, summary) {
     "PUBLIC-LANDING-PLATFORM-FIRST-01",
     "LEAD-CAPTURE-01",
     "ONBOARDING-REVIEW-01",
+    "PRODUCT-FLOW-BUTTON-AUDIT-01",
     "UX-ROUTE-IMPACT-PREVIEW-COMPACT-01",
     "UX-LIVE-PANEL-COVERAGE-MATRIX-01",
     "UX-SMOKE-PASS-MINUS-EVIDENCE-01",
@@ -1438,10 +1449,15 @@ function verifyDoc(docText, summary) {
     "run_product_extensions_check_chain.js",
     "verify_chain_01_product_extensions_check.js",
     "public_landing_platform_first_01_check.js",
+    "node backend\\scripts\\product_flow_button_audit_01_check.js",
+    "node backend\\scripts\\product_flow_button_audit_01.mjs",
+    "product_flow_button_audit_01_check.js",
+    "product_flow_button_audit_01.mjs",
     "docs/PUBLIC_LANDING_01.md",
     "docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md",
     "docs/LEAD_CAPTURE_01.md",
     "docs/ONBOARDING_REVIEW_01.md",
+    "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
     "docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md",
   "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md",
   "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
