@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  12,
-    "currentWarningHotFileCount":  5,
+    "currentWarningHotFileCount":  6,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -192,6 +192,10 @@
                                                        "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs":  {
                                                                                                                    "class":  "safe-candidate-review",
                                                                                                                    "note":  "mobile all-roles audit runner; controlled cleanup adayi"
+                                                                                                               },
+                                                       "backend/scripts/product_flow_button_audit_01.mjs":  {
+                                                                                                                   "class":  "safe-candidate-review",
+                                                                                                                   "note":  "product flow audit runner; controlled cleanup adayi"
                                                                                                                },
                                                        "backend/scripts/script_harness_consolidation_01_check.js":  {
                                                                                                              "class":  "safe-candidate-review",
