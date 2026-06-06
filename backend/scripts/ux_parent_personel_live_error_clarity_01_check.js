@@ -292,6 +292,8 @@ function main() {
     "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
     "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",
     "backend/scripts/ux_room_shifts_density_dedup_01_check.js",
+    "backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js",
+    "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
     "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
     "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
     "web/src/layout/AppShell.jsx",
@@ -301,6 +303,7 @@ function main() {
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
     "docs/MOBILE_WEB_FINAL_01.md",
@@ -322,7 +325,14 @@ function main() {
     "web/src/panels/room/roomShiftsPanelRows.jsx",
     "web/src/panels/room/roomShiftsPanelSections.jsx",
     "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/components/map/ReadableMiniRouteMap.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
+    "web/src/panels/company/companyShiftsPanelSections.jsx",
+    "web/src/panels/organization/CenterPanel.jsx",
+    "web/src/panels/organization/PlansPanel.jsx",
+    "web/src/panels/organization/organizationPlansShared.jsx",
+    "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
+    "web/src/panels/school/OperationsPanel.jsx",
     "tools/repo_contract_state.json",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within parent/personel live error clarity validation");
@@ -332,7 +342,7 @@ function main() {
 
   const status = statusNames()
     .filter((file) => !cleanupScopeFiles.includes(file))
-    .filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md" && file !== "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md" && file !== "web/src/components/AgreementOpsBridgeCard.jsx" && file !== "web/src/panels/company/AgreementsPanel.jsx");
+    .filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md" && file !== "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md" && file !== "web/src/components/AgreementOpsBridgeCard.jsx" && file !== "web/src/panels/company/AgreementsPanel.jsx" && file !== "web/src/panels/company/companyShiftsPanelSections.jsx");
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");

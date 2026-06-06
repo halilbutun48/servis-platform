@@ -216,9 +216,14 @@ function main() {
     "web/src/layout/AppShell.jsx",
     "web/src/layout/NavDock.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
+    "web/src/panels/company/companyShiftsPanelSections.jsx",
     "web/src/panels/driver/CheckinPanel.jsx",
     "web/src/panels/driver/RoutePanel.jsx",
+    "web/src/components/map/ReadableMiniRouteMap.jsx",
     "web/src/index.css",
+    "web/src/panels/organization/CenterPanel.jsx",
+    "web/src/panels/organization/PlansPanel.jsx",
+    "web/src/panels/organization/organizationPlansShared.jsx",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/DriversPanel.jsx",
     "web/src/panels/room/RoomDriversEditModal.jsx",
@@ -233,6 +238,7 @@ function main() {
     "web/src/panels/room/roomShiftsPanelSections.jsx",
     "web/src/panels/room/roomVehiclesPanelCards.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
     "web/src/panels/shared/PanelKvkkHint.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
     "web/src/utils/regionOwnership.js",
@@ -244,6 +250,7 @@ function main() {
     "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
     "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
     "backend/scripts/mobile_web_final_01_check.js",
+    "backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js",
     "docs/MOBILE_WEB_FINAL_01.md",
     "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
@@ -254,6 +261,7 @@ function main() {
     "web/src/panels/personel/LivePanel.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
+    "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within room panel clarity validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");

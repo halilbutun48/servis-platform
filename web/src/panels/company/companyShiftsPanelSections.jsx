@@ -295,28 +295,30 @@ export function CompanyMarketSection({
           />
 
           {marketItems.length ? (
-            <table className="tbl" style={{ marginTop: 10 }}>
-              <thead>
-                <tr>
-                  <th>ID</th><th>Durum</th><th>Başlangıç</th><th>Bitiş</th><th>Teklifler</th>
-                </tr>
-              </thead>
-              <tbody>
-                {marketItems.map((shift) => (
-                  <CompanyMarketRow
-                    key={shift.id}
-                    shift={shift}
-                    busy={busy}
-                    fmtTR={fmtTR}
-                    copilotShiftId={copilotShiftId}
-                    onFocusShift={onFocusShift}
-                    onOpenOfferModal={onOpenOfferModal}
-                    onOpenOffersModal={onOpenOffersModal}
-                    computePackageShiftIds={computePackageShiftIds}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="tableWrap">
+              <table className="tbl" style={{ marginTop: 10 }}>
+                <thead>
+                  <tr>
+                    <th>ID</th><th>Durum</th><th>Başlangıç</th><th>Bitiş</th><th>Teklifler</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {marketItems.map((shift) => (
+                    <CompanyMarketRow
+                      key={shift.id}
+                      shift={shift}
+                      busy={busy}
+                      fmtTR={fmtTR}
+                      copilotShiftId={copilotShiftId}
+                      onFocusShift={onFocusShift}
+                      onOpenOfferModal={onOpenOfferModal}
+                      onOpenOffersModal={onOpenOffersModal}
+                      computePackageShiftIds={computePackageShiftIds}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="muted">Market shift yok.</div>
           )}
@@ -378,35 +380,37 @@ export function CompanyPendingSection({
           />
 
           {pendingItems.length ? (
-            <table className="tbl" style={{ marginTop: 10 }}>
-              <thead>
-                <tr>
-                  <th>ID</th><th>Durum</th><th>Oda</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Pazarlık</th><th>İptal</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingItems.map((shift) => (
-                  <CompanyPendingRow
-                    key={shift.id}
-                    shift={shift}
-                    busy={busy}
-                    fmtTR={fmtTR}
-                    copilotShiftId={copilotShiftId}
-                    onFocusShift={onFocusShift}
-                    roomsById={roomsById}
-                    agreementConversion={agreementConversionByShift?.[String(Number(shift.id || 0))] || null}
-                    renderRoomOfferSummary={renderRoomOfferSummary}
-                    renderCompanyOfferSummary={renderCompanyOfferSummary}
-                    onOpenOffersModal={onOpenOffersModal}
-                    onCancelMyRequest={onCancelMyRequest}
-                    onOpenExtendModal={onOpenExtendModal}
-                    onOpenPreview={onOpenPreview}
-                    onOpenOpsEvents={onOpenOpsEvents}
-                    onConvertShiftToAgreement={onConvertShiftToAgreement}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="tableWrap">
+              <table className="tbl" style={{ marginTop: 10 }}>
+                <thead>
+                  <tr>
+                    <th>ID</th><th>Durum</th><th>Oda</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Pazarlık</th><th>İptal</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingItems.map((shift) => (
+                    <CompanyPendingRow
+                      key={shift.id}
+                      shift={shift}
+                      busy={busy}
+                      fmtTR={fmtTR}
+                      copilotShiftId={copilotShiftId}
+                      onFocusShift={onFocusShift}
+                      roomsById={roomsById}
+                      agreementConversion={agreementConversionByShift?.[String(Number(shift.id || 0))] || null}
+                      renderRoomOfferSummary={renderRoomOfferSummary}
+                      renderCompanyOfferSummary={renderCompanyOfferSummary}
+                      onOpenOffersModal={onOpenOffersModal}
+                      onCancelMyRequest={onCancelMyRequest}
+                      onOpenExtendModal={onOpenExtendModal}
+                      onOpenPreview={onOpenPreview}
+                      onOpenOpsEvents={onOpenOpsEvents}
+                      onConvertShiftToAgreement={onConvertShiftToAgreement}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="muted">Bekleyen talep yok.</div>
           )}
@@ -470,35 +474,37 @@ function CompanyStatusListSection({
           />
 
           {items.length ? (
-            <table className="tbl" style={{ marginTop: 10 }}>
-              <thead>
-                <tr>
-                  <th>ID</th><th>Durum</th><th>Oda</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Atanan Araç</th><th>Sürücü</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((shift) => (
-                  <CompanyFinalListRow
-                    key={shift.id}
-                    shift={shift}
-                    busy={busy}
-                    fmtTR={fmtTR}
-                    copilotShiftId={copilotShiftId}
-                    onFocusShift={onFocusShift}
-                    roomsById={roomsById}
-                    agreementConversion={agreementConversionByShift?.[String(Number(shift.id || 0))] || null}
-                    renderRoomOfferSummary={renderRoomOfferSummary}
-                    renderCompanyOfferSummary={renderCompanyOfferSummary}
-                    onOpenVehicleDetail={onOpenVehicleDetail}
-                    onOpenDriverDetail={onOpenDriverDetail}
-                    onOpenExtendModal={onOpenExtendModal}
-                    onOpenPreview={onOpenPreview}
-                    onOpenOpsEvents={onOpenOpsEvents}
-                    onConvertShiftToAgreement={onConvertShiftToAgreement}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="tableWrap">
+              <table className="tbl" style={{ marginTop: 10 }}>
+                <thead>
+                  <tr>
+                    <th>ID</th><th>Durum</th><th>Oda</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Atanan Araç</th><th>Sürücü</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((shift) => (
+                    <CompanyFinalListRow
+                      key={shift.id}
+                      shift={shift}
+                      busy={busy}
+                      fmtTR={fmtTR}
+                      copilotShiftId={copilotShiftId}
+                      onFocusShift={onFocusShift}
+                      roomsById={roomsById}
+                      agreementConversion={agreementConversionByShift?.[String(Number(shift.id || 0))] || null}
+                      renderRoomOfferSummary={renderRoomOfferSummary}
+                      renderCompanyOfferSummary={renderCompanyOfferSummary}
+                      onOpenVehicleDetail={onOpenVehicleDetail}
+                      onOpenDriverDetail={onOpenDriverDetail}
+                      onOpenExtendModal={onOpenExtendModal}
+                      onOpenPreview={onOpenPreview}
+                      onOpenOpsEvents={onOpenOpsEvents}
+                      onConvertShiftToAgreement={onConvertShiftToAgreement}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="muted">{emptyLabel}</div>
           )}

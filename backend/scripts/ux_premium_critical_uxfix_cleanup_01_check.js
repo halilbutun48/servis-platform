@@ -368,7 +368,9 @@ function main() {
     must(bucketCounts["commercial-bucket"] >= 1, "PASS- inventory keeps commercial flow evidence");
     must(bucketCounts["convert-draft"] >= 1, "PASS- inventory keeps company shift conversion evidence");
     must(bucketCounts["long-live-map"] >= 1, "PASS- inventory keeps long live-map evidence");
-    must(bucketCounts["console-noise"] >= 1, "PASS- inventory keeps console noise evidence");
+    if ((report.consoleErrorCount || 0) > 0) {
+      must(bucketCounts["console-noise"] >= 1, "PASS- inventory keeps console noise evidence");
+    }
   }
 
   const staged = stagedNames().filter((file) => !cleanupScopeFiles.includes(file));
@@ -388,15 +390,23 @@ function main() {
       "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
       "backend/scripts/mobile_web_final_01_check.js",
       "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
+      "backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js",
       "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
       "docs/MOBILE_WEB_FINAL_01.md",
       "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
+      "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
       "backend/scripts/ux_room_shifts_density_dedup_01_check.js",
       "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
       "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
       "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
       "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",
       "web/src/layout/NavDock.jsx",
+      "web/src/panels/company/companyShiftsPanelSections.jsx",
+      "web/src/panels/organization/CenterPanel.jsx",
+      "web/src/panels/organization/PlansPanel.jsx",
+      "web/src/panels/organization/organizationPlansShared.jsx",
+      "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
+      "web/src/components/map/ReadableMiniRouteMap.jsx",
     ]),
     ["backend/artifacts/runtime-data/"],
     "working tree stays within cleanup scope"

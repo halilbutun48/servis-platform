@@ -125,37 +125,39 @@ export default function OrganizationCenterPanel() {
           </button>
         </div>
 
-        <table className="table" style={{ marginTop: 12 }}>
-          <thead>
-            <tr>
-              <th>Plan</th>
-              <th>Tarih</th>
-              <th>Durum</th>
-              <th>Konum</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {plans.map((p) => (
-              <tr key={p.id}>
-                <td>{p.title || `Plan #${p.id}`}</td>
-                <td>{fmtDateOnly(p.planDate)}</td>
-                <td><span className="pill">{statusLabel(p.status)}</span></td>
-                <td>{p?.stops?.length || 0}</td>
-                <td>
-                  <button type="button" className="btn sm" onClick={() => openPlan(p.id)}>
-                    Aç
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {!plans.length ? (
+        <div className="tableWrap">
+          <table className="table" style={{ marginTop: 12 }}>
+            <thead>
               <tr>
-                <td colSpan={5} className="muted">Henüz plan yok.</td>
+                <th>Plan</th>
+                <th>Tarih</th>
+                <th>Durum</th>
+                <th>Konum</th>
+                <th></th>
               </tr>
-            ) : null}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {plans.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.title || `Plan #${p.id}`}</td>
+                  <td>{fmtDateOnly(p.planDate)}</td>
+                  <td><span className="pill">{statusLabel(p.status)}</span></td>
+                  <td>{p?.stops?.length || 0}</td>
+                  <td>
+                    <button type="button" className="btn sm" onClick={() => openPlan(p.id)}>
+                      Aç
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!plans.length ? (
+                <tr>
+                  <td colSpan={5} className="muted">Henüz plan yok.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

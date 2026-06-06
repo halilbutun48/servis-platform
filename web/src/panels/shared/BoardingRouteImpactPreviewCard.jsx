@@ -6,6 +6,7 @@ import {
   boardingChangePreviewStateNote,
   boardingChangePreviewStateTone,
 } from "./boardingChangeUi";
+import ReadableMiniRouteMap from "../../components/map/ReadableMiniRouteMap";
 import { resolvePersonDisplayLabel } from "../../utils/labels";
 import { formatDateTimeTR } from "../../utils/time";
 import { useRef, useState } from "react";
@@ -79,11 +80,11 @@ function getStopLabel(stop, fallback = "") {
   );
 }
 
-function sameStop(a, b) {
-  const left = getStopCoord(a);
-  const right = getStopCoord(b);
-  if (!left || !right) return false;
-  return Math.abs(left.lat - right.lat) < 1e-6 && Math.abs(left.lng - right.lng) < 1e-6;
+function routeLabelForIndex(index, total) {
+  if (total <= 1) return "1";
+  if (index === 0) return "S";
+  if (index === total - 1) return "E";
+  return String(index);
 }
 
 function findStopByLabel(stops = [], label = "") {
@@ -156,159 +157,73 @@ function buildMapModel(request = null, preview = null) {
     })
     .filter(Boolean);
 
+  const totalRouteStops = routeStops.length;
+  const routePoints = routeStops.map((stop, index) => ({
+    ...stop,
+    label: routeLabelForIndex(index, totalRouteStops),
+    tooltip: stop.label,
+    kind: totalRouteStops <= 1 ? "route" : (index === 0 ? "start" : index === totalRouteStops - 1 ? "end" : "route"),
+  }));
+
   const assignedStop = findAssignedStop(request, preview);
   const requestedStop = findRequestedStop(request, preview);
 
   const currentPoint = assignedStop && getStopCoord(assignedStop)
-    ? { ...getStopCoord(assignedStop), label: getStopLabel(assignedStop, preview?.oldStopLabel || "Eski durak"), role: "current" }
+    ? {
+      ...getStopCoord(assignedStop),
+      label: "Eski",
+      tooltip: getStopLabel(assignedStop, preview?.oldStopLabel || "Eski durak"),
+      role: "current",
+      kind: "current",
+    }
     : null;
   const requestedPoint = requestedStop && getStopCoord(requestedStop)
-    ? { ...getStopCoord(requestedStop), label: getStopLabel(requestedStop, preview?.newStopLabel || "Yeni durak"), role: "requested" }
+    ? {
+      ...getStopCoord(requestedStop),
+      label: "Yeni",
+      tooltip: getStopLabel(requestedStop, preview?.newStopLabel || "Yeni durak"),
+      role: "requested",
+      kind: "requested",
+    }
     : null;
 
   const allPoints = [
-    ...routeStops,
+    ...routePoints,
     currentPoint,
     requestedPoint,
   ].filter((point) => point && Number.isFinite(point.lat) && Number.isFinite(point.lng));
 
   return {
     routeStops,
+    routePoints,
     currentPoint,
     requestedPoint,
+    linePoints: routePoints.length >= 2 ? routePoints : (currentPoint && requestedPoint ? [currentPoint, requestedPoint] : []),
+    markers: [
+      ...routePoints,
+      currentPoint,
+      requestedPoint,
+    ].filter(Boolean),
     allPoints,
     hasCoordinates: allPoints.length > 0,
     oldStopLabel: firstText(preview?.oldStopLabel, getStopLabel(currentPoint, "")),
     newStopLabel: firstText(preview?.newStopLabel, getStopLabel(requestedPoint, "")),
-    routeNote: routeStops.length >= 2 ? "Duraklar ve rota çizgisi gösterilir." : "Koordinat varsa tekil durak marker'ı gösterilir.",
+    routeNote: routePoints.length >= 2
+      ? "Leaflet mini-harita: rota çizgisi ve duraklar tile arka plan üzerinde gösterilir."
+      : "Leaflet mini-harita: koordinat varsa tekil nokta tile arka planında gösterilir.",
+    legendItems: routePoints.length > 1
+      ? [
+        { label: "S", text: "Başlangıç" },
+        { label: "1..N", text: "Ara duraklar" },
+        { label: "E", text: "Bitiş" },
+        { label: "Eski", text: "Mevcut durak" },
+        { label: "Yeni", text: "Talep edilen durak" },
+      ]
+      : [
+        { label: "Eski", text: "Mevcut durak" },
+        { label: "Yeni", text: "Talep edilen durak" },
+      ],
   };
-}
-
-function MiniMapPreview({ model }) {
-  if (!model?.hasCoordinates) {
-    return (
-      <div style={{
-        padding: 12,
-        borderRadius: 12,
-        border: "1px solid rgba(255,255,255,0.08)",
-        background: "rgba(255,255,255,0.03)",
-      }}>
-        <div style={{ fontWeight: 800 }}>Harita önizlemesi için durak koordinatı eksik.</div>
-        <div className="panelMeta" style={{ marginTop: 6 }}>Bu değişiklik için rota etkisi metinsel olarak önizleniyor.</div>
-        <div className="panelMeta" style={{ marginTop: 6 }}>
-          Eski durak: {model?.oldStopLabel || "-"} • Yeni/alternatif durak: {model?.newStopLabel || "-"}
-        </div>
-      </div>
-    );
-  }
-
-  const pad = 18;
-  const w = 320;
-  const h = 160;
-  const minLat = Math.min(...model.allPoints.map((p) => p.lat));
-  const maxLat = Math.max(...model.allPoints.map((p) => p.lat));
-  const minLng = Math.min(...model.allPoints.map((p) => p.lng));
-  const maxLng = Math.max(...model.allPoints.map((p) => p.lng));
-  const latSpan = Math.max(0.0001, maxLat - minLat);
-  const lngSpan = Math.max(0.0001, maxLng - minLng);
-
-  const scale = (point) => ({
-    x: pad + ((point.lng - minLng) / lngSpan) * (w - pad * 2),
-    y: h - pad - ((point.lat - minLat) / latSpan) * (h - pad * 2),
-  });
-
-  const routePoints = model.routeStops.map((point) => ({ ...point, ...scale(point) }));
-  const currentPoint = model.currentPoint ? { ...model.currentPoint, ...scale(model.currentPoint) } : null;
-  const requestedPoint = model.requestedPoint ? { ...model.requestedPoint, ...scale(model.requestedPoint) } : null;
-  const linePoints = routePoints.length >= 2
-    ? routePoints
-    : (currentPoint && requestedPoint ? [currentPoint, requestedPoint] : []);
-
-  return (
-    <div style={{
-      borderRadius: 12,
-      overflow: "hidden",
-      border: "1px solid rgba(255,255,255,0.08)",
-      background: "rgba(255,255,255,0.03)",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", padding: "10px 12px", flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontWeight: 800 }}>Mini harita önizlemesi</div>
-          <div className="panelMeta" style={{ marginTop: 4 }}>Readonly önizleme — rota uygulanmaz</div>
-        </div>
-        <span className="pill" data-status="INFO">Sadece etki analizi</span>
-      </div>
-
-      <div style={{ position: "relative", padding: 0 }}>
-        <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: 160, display: "block", background: "linear-gradient(180deg, rgba(15,23,42,0.92), rgba(17,24,39,0.82))" }}>
-          <defs>
-            <pattern id="routePreviewGrid" width="24" height="24" patternUnits="userSpaceOnUse">
-              <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect x="0" y="0" width={w} height={h} fill="url(#routePreviewGrid)" />
-
-          {linePoints.length >= 2 ? (
-            <polyline
-              points={linePoints.map((point) => `${point.x},${point.y}`).join(" ")}
-              fill="none"
-              stroke="rgba(96,165,250,0.9)"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ) : null}
-
-          {routePoints.map((point, index) => (
-            <g key={point.id || `${point.label}-${index}`}>
-              <circle cx={point.x} cy={point.y} r="5" fill="rgba(255,255,255,0.80)" stroke="rgba(15,23,42,0.75)" strokeWidth="2" />
-              <circle cx={point.x} cy={point.y} r="10" fill="transparent" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-              <text x={point.x + 8} y={point.y - 8} fontSize="10" fill="rgba(255,255,255,0.82)">
-                {point.index}
-              </text>
-            </g>
-          ))}
-
-          {currentPoint ? (
-            <g>
-              <circle cx={currentPoint.x} cy={currentPoint.y} r="9" fill="rgba(245,158,11,0.96)" stroke="rgba(255,255,255,0.8)" strokeWidth="2" />
-              <text x={currentPoint.x} y={currentPoint.y + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="white">M</text>
-            </g>
-          ) : null}
-
-          {requestedPoint ? (
-            <g>
-              <circle cx={requestedPoint.x} cy={requestedPoint.y} r="9" fill="rgba(59,130,246,0.96)" stroke="rgba(255,255,255,0.8)" strokeWidth="2" />
-              <text x={requestedPoint.x} y={requestedPoint.y + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="white">Y</text>
-            </g>
-          ) : null}
-
-          {currentPoint && requestedPoint && !(sameStop(currentPoint, requestedPoint)) ? (
-            <line
-              x1={currentPoint.x}
-              y1={currentPoint.y}
-              x2={requestedPoint.x}
-              y2={requestedPoint.y}
-              stroke="rgba(34,197,94,0.72)"
-              strokeWidth="2"
-              strokeDasharray="6 5"
-            />
-          ) : null}
-        </svg>
-
-        <div style={{ position: "absolute", left: 10, top: 10 }}>
-          <span className="pill" data-status="INFO">Readonly önizleme — rota uygulanmaz</span>
-        </div>
-      </div>
-
-      <div style={{ padding: 12, display: "grid", gap: 6 }}>
-        <div className="panelMeta">{model.routeNote}</div>
-        <div className="panelMeta">
-          Eski durak: {model.oldStopLabel || "-"} • Yeni/alternatif durak: {model.newStopLabel || "-"}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function StatTile({ label, value, note, dense = false }) {
@@ -574,7 +489,18 @@ export default function BoardingRouteImpactPreviewCard({
               <StatTile dense label="Km/süre hesap açıklaması" value={`${formatNumber(preview.currentDistanceKm, 2)} km / ${formatNumber(preview.currentDurationMin)} dk`} note={`Önizleme: ${formatNumber(preview.previewDistanceKm, 2)} km / ${formatNumber(preview.previewDurationMin)} dk`} />
             </div>
 
-            <MiniMapPreview model={mapModel} />
+            {/* compact mini map height: 160 */}
+            <ReadableMiniRouteMap
+              title="Mini harita önizlemesi"
+              subtitle="Readonly önizleme — rota uygulanmaz"
+              linePoints={mapModel.linePoints}
+              markers={mapModel.markers}
+              legendItems={mapModel.legendItems}
+              fallbackText="Harita önizlemesi için durak koordinatı eksik. Harita için yeterli koordinat yok. Rota etkisi metinsel olarak önizleniyor."
+              footerText={`Bu değişiklik için rota etkisi metinsel olarak önizleniyor. • Eski durak: ${mapModel.oldStopLabel || "-"} • Yeni/alternatif durak: ${mapModel.newStopLabel || "-"}`}
+              height={160}
+              minHeight={160}
+            />
 
             {warnings.length ? (
               <div style={{ marginTop: 2, padding: 12, borderRadius: 12, border: "1px solid rgba(245, 158, 11, 0.28)", background: "rgba(245, 158, 11, 0.10)" }}>

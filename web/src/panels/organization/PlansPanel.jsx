@@ -349,17 +349,8 @@ export default function OrganizationPlansPanel() {
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "280px minmax(0,1fr) 250px",
-          gap: 12,
-          marginTop: 12,
-          alignItems: "start",
-          width: "100%",
-        }}
-      >
-        <div className="card" style={{ alignSelf: "start" }}>
+      <div className="organizationPlansLayout" style={{ display: "grid", gap: 12, alignItems: "start", width: "100%" }}>
+        <div className="card" style={{ alignSelf: "start", minWidth: 0 }}>
           <div className="title">Kayıtlı Planlar</div>
           <div className="muted" style={{ marginBottom: 10 }}>
             Eski planı seçip inceleyebilirsin. Yeni plan oluşturma artık Planlama Merkezi&apos;ndedir.
@@ -674,7 +665,7 @@ export default function OrganizationPlansPanel() {
           ) : null}
         </div>
 
-        <div style={{ position: "sticky", top: 12, alignSelf: "start", display: "grid", gap: 12 }}>
+        <div className="organizationPlansSidebar">
           <SummaryCard
             current={current}
             summary={summary}

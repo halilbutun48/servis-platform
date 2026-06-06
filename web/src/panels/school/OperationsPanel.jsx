@@ -508,7 +508,7 @@ export default function SchoolOperationsPanel() {
 
       {activeTab === "students" ? (
         <SectionCard title="Öğrenci servisleri" subtitle="Öğrenci servis atamaları ve kısa biniş özeti">
-          <div style={{ overflowX: "auto" }}>
+          <div className="tableWrap">
             <table className="tbl" style={{ whiteSpace: "nowrap" }}>
               <thead>
                 <tr>
@@ -538,7 +538,7 @@ export default function SchoolOperationsPanel() {
       {activeTab === "parent" ? (
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
           <SectionCard title="Veli bağlantıları" subtitle="Geçerli ve geçmiş erişim kayıtları">
-            <div style={{ overflowX: "auto" }}>
+            <div className="tableWrap">
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
                   <tr>
@@ -629,7 +629,7 @@ export default function SchoolOperationsPanel() {
           </SectionCard>
 
           <SectionCard title="Riskli / onay bekleyen istekler" subtitle="Konumlu veya açık biniş değişikliği kayıtları">
-            <div style={{ overflowX: "auto" }}>
+            <div className="tableWrap">
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
                   <tr>
@@ -708,7 +708,7 @@ export default function SchoolOperationsPanel() {
           </SectionCard>
 
           <SectionCard title="Kabul edilen değişiklikler" subtitle={boardingChangeApplyBoundaryNote()}>
-            <div style={{ overflowX: "auto" }}>
+            <div className="tableWrap">
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
                   <tr>
@@ -790,7 +790,7 @@ export default function SchoolOperationsPanel() {
           </SectionCard>
 
           <SectionCard title="Geçmiş günlük değişiklikler" subtitle="Karar bekleyen veya sonuçlanan operasyon istekleri">
-            <div style={{ overflowX: "auto" }}>
+            <div className="tableWrap">
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
                   <tr>

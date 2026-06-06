@@ -34,22 +34,24 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
         <button type="button" className="btn sm" onClick={() => { setPendingQ(""); setPendingStatus("OPEN"); }}>Temizle</button>
       </div>
       {pendingFiltered.length ? (
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Şirket</th>
-              <th>Başlangıç</th>
-              <th>Bitiş</th>
-              <th>Harita</th>
-              <th>Teklif / Pazarlık</th>
-              <th>Araç + şoför</th>
-              <th>Kabul Et</th>
-              <th>Reddet</th>
-            </tr>
-          </thead>
-          <tbody>{pendingFiltered.map((shift) => <RoomPendingShiftRow key={shift.id} shift={shift} {...props} />)}</tbody>
-        </table>
+        <div className="tableWrap">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Şirket</th>
+                <th>Başlangıç</th>
+                <th>Bitiş</th>
+                <th>Harita</th>
+                <th>Teklif / Pazarlık</th>
+                <th>Araç + şoför</th>
+                <th>Kabul Et</th>
+                <th>Reddet</th>
+              </tr>
+            </thead>
+            <tbody>{pendingFiltered.map((shift) => <RoomPendingShiftRow key={shift.id} shift={shift} {...props} />)}</tbody>
+          </table>
+        </div>
       ) : (
         <div className="muted">Bekleyen talep yok.</div>
       )}
@@ -274,23 +276,25 @@ export function RoomFinalListSection({
         helper="Copilot seçili vardiyayı kullanır."
       />
       {listFiltered.length ? (
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Durum</th>
-              <th>Şirket</th>
-              <th>Teklifler</th>
-              <th>Araç</th>
-              <th>Sürücü</th>
-              <th>Başlangıç</th>
-              <th>Bitiş</th>
-              <th>Uzatma</th>
-              <th>Operasyon</th>
-            </tr>
-          </thead>
-          <tbody>{listFiltered.map((shift) => <RoomAllShiftRow key={shift.id} shift={shift} {...props} />)}</tbody>
-        </table>
+        <div className="tableWrap">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Durum</th>
+                <th>Şirket</th>
+                <th>Teklifler</th>
+                <th>Araç</th>
+                <th>Sürücü</th>
+                <th>Başlangıç</th>
+                <th>Bitiş</th>
+                <th>Uzatma</th>
+                <th>Operasyon</th>
+              </tr>
+            </thead>
+            <tbody>{listFiltered.map((shift) => <RoomAllShiftRow key={shift.id} shift={shift} {...props} />)}</tbody>
+          </table>
+        </div>
       ) : (
         <div className="muted">{emptyText}</div>
       )}

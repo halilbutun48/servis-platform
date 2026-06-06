@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from "react";
+import ReadableMiniRouteMap from "../../components/map/ReadableMiniRouteMap";
 
 export const fieldLabelStyle = {
   display: "grid",
@@ -47,7 +48,7 @@ function Pill({ children }) {
 
 export function SummaryCard({ current, summary, onGoPlanning }) {
   return (
-    <div className="card">
+    <div className="card" style={{ minWidth: 0 }}>
       <div className="title">Özet ve Aksiyonlar</div>
       <div className="muted" style={{ marginBottom: 10 }}>
         Yeni üretim akışı artık <b>Planlama Merkezi</b> içinden yürür. Bu ekran eski
@@ -75,80 +76,67 @@ export function SummaryCard({ current, summary, onGoPlanning }) {
   );
 }
 
-export function MiniMapPreview({ stops }) {
-  const pts = (stops || [])
-    .map((s) => ({ name: s.name || "", lat: Number(s.lat), lng: Number(s.lng) }))
-    .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng));
+function buildPlanMapModel(stops = []) {
+  const validStops = (Array.isArray(stops) ? stops : [])
+    .map((stop, index) => {
+      const lat = Number(stop?.lat ?? stop?.latitude ?? stop?.y);
+      const lng = Number(stop?.lng ?? stop?.lon ?? stop?.longitude ?? stop?.x);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      return {
+        id: String(stop?.id ?? index),
+        index,
+        lat,
+        lng,
+        name: stop?.name || stop?.label || stop?.title || `Durak ${index + 1}`,
+      };
+    })
+    .filter(Boolean);
 
-  if (!pts.length) {
-    return (
-      <div className="card">
-        <div className="title">Mini Harita Önizleme</div>
-        <div className="muted">Koordinatlı konum ekleyin.</div>
-      </div>
-    );
-  }
-
-  const minLat = Math.min(...pts.map((p) => p.lat));
-  const maxLat = Math.max(...pts.map((p) => p.lat));
-  const minLng = Math.min(...pts.map((p) => p.lng));
-  const maxLng = Math.max(...pts.map((p) => p.lng));
-
-  const pad = 18;
-  const w = 260;
-  const h = 180;
-  const latSpan = Math.max(0.0001, maxLat - minLat);
-  const lngSpan = Math.max(0.0001, maxLng - minLng);
-
-  const scaled = pts.map((p, i) => ({
-    ...p,
-    x: pad + ((p.lng - minLng) / lngSpan) * (w - pad * 2),
-    y: h - pad - ((p.lat - minLat) / latSpan) * (h - pad * 2),
-    i,
+  const total = validStops.length;
+  const markers = validStops.map((stop, index) => ({
+    ...stop,
+    label: total <= 1 ? "1" : (index === 0 ? "S" : index === total - 1 ? "E" : String(index)),
+    tooltip: stop.name,
+    kind: total <= 1 ? "route" : (index === 0 ? "start" : index === total - 1 ? "end" : "route"),
   }));
 
-  const poly = scaled.map((p) => `${p.x},${p.y}`).join(" ");
+  const legendItems = total > 1
+    ? [
+      { label: "S", text: "Başlangıç" },
+      { label: "1..N", text: "Ara duraklar" },
+      { label: "E", text: "Bitiş" },
+    ]
+    : [
+      { label: "1", text: "Tek durak" },
+    ];
+
+  const first = validStops[0]?.name || "-";
+  const last = validStops.at(-1)?.name || "-";
+
+  return {
+    linePoints: markers,
+    markers,
+    legendItems,
+    footerText: total
+      ? `Konum sırası çizgisel önizleme. Başlangıç: ${first} • Bitiş: ${last} • Duraklar tile arka plan üzerinde görünür.`
+      : "",
+  };
+}
+
+export function MiniMapPreview({ stops }) {
+  const model = buildPlanMapModel(stops);
 
   return (
-    <div className="card">
-      <div className="title">Mini Harita Önizleme</div>
-      <div className="muted" style={{ marginBottom: 8 }}>
-        Konum sırası çizgisel önizleme.
-      </div>
-
-      <svg
-        viewBox={`0 0 ${w} ${h}`}
-        style={{
-          width: "100%",
-          height: 180,
-          display: "block",
-          borderRadius: 12,
-          background: "rgba(255,255,255,.03)",
-          border: "1px solid rgba(255,255,255,.08)",
-        }}
-      >
-        <polyline
-          points={poly}
-          fill="none"
-          stroke="rgba(91,140,255,.8)"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {scaled.map((p) => (
-          <g key={p.i}>
-            <circle cx={p.x} cy={p.y} r={p.i === 0 ? 6 : 5} fill={p.i === 0 ? "#5b8cff" : "rgba(255,255,255,.92)"} />
-            <text x={p.x + 8} y={p.y - 8} fontSize="10" fill="rgba(255,255,255,.82)">
-              {p.i + 1}
-            </text>
-          </g>
-        ))}
-      </svg>
-
-      <div className="muted" style={{ marginTop: 8 }}>
-        Başlangıç: {scaled[0]?.name || "-"} • Bitiş: {scaled.at(-1)?.name || "-"}
-      </div>
-    </div>
+    <ReadableMiniRouteMap
+      title="Mini Harita Önizleme"
+      subtitle="Kurum planı durakları gerçek Leaflet tile arka planında gösterilir."
+      linePoints={model.linePoints}
+      markers={model.markers}
+      legendItems={model.legendItems}
+      fallbackText="Koordinatlı konum ekleyin."
+      footerText={model.footerText || "Koordinat ekleyince burada tile arka planlı mini harita görünür."}
+      height={230}
+    />
   );
 }
 

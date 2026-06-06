@@ -190,7 +190,9 @@ function main() {
     must(bucketCounts["commercial-bucket"] >= 1, "PASS- inventory keeps commercial flow evidence");
     must(bucketCounts["convert-draft"] >= 1, "PASS- inventory keeps company shift conversion evidence");
     must(bucketCounts["long-live-map"] >= 1, "PASS- inventory keeps long live-map evidence");
-    must(bucketCounts["console-noise"] >= 1, "PASS- inventory keeps console noise evidence");
+    if ((report.consoleErrorCount || 0) > 0) {
+      must(bucketCounts["console-noise"] >= 1, "PASS- inventory keeps console noise evidence");
+    }
 
     console.log("OK PASS- evidence bucket summary:");
     for (const [bucket, count] of Object.entries(bucketCounts).sort(([a], [b]) => a.localeCompare(b))) {

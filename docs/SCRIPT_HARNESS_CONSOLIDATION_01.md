@@ -1,16 +1,16 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-05
+Tarih: 2026-06-06
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `336`
-- Toplam executable tracked file: `1112`
-- Combined registry row: `1448`
-- Root/backend/web/mobile package dağılımı: root `179`, backend `677`, web `88`, mobile `201`
+- Toplam package script entry: `337`
+- Toplam executable tracked file: `1113`
+- Combined registry row: `1450`
+- Root/backend/web/mobile package dağılımı: root `180`, backend `678`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `40`
+- Docs indexed: `41`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -35,6 +35,9 @@ Repo: `servis-platform`
 - Mobile all roles panel fix milestone: `UX-MOBILE-ALL-ROLES-PANEL-FIX-01`
 - Mobile all roles panel fix docs: `docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md`
 - Mobile all roles panel fix command: `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
+- Mobile overflow mini-map readability milestone: `UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01`
+- Mobile overflow mini-map readability docs: `docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md`
+- Mobile overflow mini-map readability command: `node backend\scripts\ux_mobile_overflow_minimap_readability_01_check.js`
 - Mobile all roles panel audit milestone: `UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01`
 - Mobile all roles panel audit docs: `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`
 - Mobile all roles panel audit command: `node backend\scripts\ux_mobile_all_roles_panel_audit_01.mjs`
@@ -55,7 +58,7 @@ Repo: `servis-platform`
 - PASS-minus evidence docs: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
 - PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`
-- ACTIVE: `377`
+- ACTIVE: `378`
 - ACTIVE_CORE: `142`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
@@ -72,11 +75,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `513`
+- NEEDS_REVIEW: `514`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `60`
-- Eski sistem term eşleşmesi: `261`
+- Eski sistem term eşleşmesi: `262`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -84,7 +87,7 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 377 |
+| ACTIVE | 378 |
 | ACTIVE_BACKEND_LINT | 2 |
 | ACTIVE_CORE | 142 |
 | ACTIVE_RELEASE_ONLY | 274 |
@@ -93,7 +96,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 9 |
-| NEEDS_REVIEW | 513 |
+| NEEDS_REVIEW | 514 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -251,6 +254,7 @@ Repo: `servis-platform`
 | root:check:finaluxsmoke01 | package.json | root | node backend/scripts/final_ux_smoke_01_check.js | core | ACTIVE_CORE |  | FINAL-UX-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxlivepanelsmokeaudit01 | package.json | root | node backend/scripts/ux_live_panel_smoke_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXLIVEPANELSMOKEAUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:uxmobileallrolespanelfix01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXMOBILEALLROLESPANELFIX-01 |  | Owner or chain unclear |  |
+| root:check:uxmobileoverflowminimapreadability01 | package.json | root | node backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js | review | NEEDS_REVIEW |  | UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01 |  | Owner or chain unclear |  |
 | root:check:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js | core | ACTIVE_CORE |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:uxsmokepassminusevidence01 | package.json | root | node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js | core | ACTIVE_CORE |  | UX-SMOKE-PASS-MINUS-EVIDENCE-01 |  | Breaks canonical verification chain |  |
 | root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
@@ -971,6 +975,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| ux_mobile_overflow_minimap_readability_01_check.js | backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js | backend | root:check:uxmobileoverflowminimapreadability01 | product | ACTIVE |  | UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

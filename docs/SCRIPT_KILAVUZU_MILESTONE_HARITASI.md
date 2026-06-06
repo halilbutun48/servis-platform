@@ -88,6 +88,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
 - `check:uxmobilewebshellclarity01` -> `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
 - `check:uxmobileallrolespanelfix01` -> `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
+- `check:uxmobileoverflowminimapreadability01` -> `node backend\scripts\ux_mobile_overflow_minimap_readability_01_check.js`
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
@@ -1101,6 +1102,7 @@ Bu bant güncel doğrulanmış üst hattır.
 
 ### ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01 [CHECK]
 - `check:roomvehicledriveruppercase01` Room araç/sürücü create ve edit akışlarında plaka, ad soyad, cihaz bilgisi ve ilgili güvenli alanların uppercase normalize edildiğini doğrular.
+- Komut: `node backend\scripts\room_vehicle_driver_uppercase_normalization_01_check.js`
 - Plaka girişi live input ve payload tarafında uppercase tutulur; backend create/update payload'ları mevcut endpoint contract'ını genişletmeden güvenli normalize helper ile işler.
 - Bu check, `UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-01`, `UX-ROOM-OPS-PANEL-TABS-01`, `UX-ROOM-SHIFTS-TABS-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; business flow veya şema değişikliği açmaz.
 
@@ -1135,7 +1137,6 @@ Bu bant güncel doğrulanmış üst hattır.
 - Mobilde `NavDock` ve floating assistant ile çakışmayı azaltmak için `companyActionClarityScope` / `AgreementOpsBridgeCard` safe-area ve z-index standardı kullanılır.
 - Doküman: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Bu milestone yeni business flow, backend route/write-path, browser-smoke artifact veya runner/coverage policy açmaz.
-
 ### UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01 [CHECK]
 - `check:uxpremiumcriticaluxfixcleanup01` evidence-based smoke classification sonrası kalan kritik `UX-FIX` satırlarını sıfırlayan cleanup dalgasıdır.
 - `node backend\scripts\ux_premium_critical_uxfix_cleanup_01_check.js` bu cleanup dalgasının resmi doğrulama girişidir.
@@ -1153,6 +1154,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:uxcompanymobileactionclarity01` `Company / Vardiyalar`, `Company / Sözleşmeler`, `Company / Ticari Akış` ve sözleşme taslak / önizleme yüzeylerinde mobile-safe ana aksiyonların görünür ve tıklanabilir kalmasını doğrular.
 - `Vardiyayı sözleşmeye dönüştür` akışı görünür primary CTA olarak korunur; `Taslağı incele` ve `Sözleşmeden üretilen vardiyaya git` gibi etiketler readonly preview ile gerçek akış ayrımını netleştirir.
 - `NavDock`, floating assistant/drawer ve alt sabit alanlar için safe-area + z-index hizası korunur; bu düzenleme backend route/write-path, schema ve runner policy'yi değiştirmez.
+
+### UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01 [CHECK]
+- `check:uxmobileoverflowminimapreadability01` `Room / Vardiyalar`, `School / Operasyon Paneli` ve `Organization / Planlama` yüzeylerinde mobil tablo/card taşma parity'sini korurken mini-map okunabilirliğini yükseltir.
+- `tableWrap`, `organizationPlansLayout` ve `organizationPlansSidebar` ile school ve organization yüzeyleri küçük ekranda tek kolona iner; boarding route impact ve organization plan mini-map legend/chip dili okunur kalır.
+- Bu düzenleme backend route/write-path, schema ve runner policy'yi değiştirmez; `Sefer Abi` launcher / drawer standardı korunur.
+- Doküman: `docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md`
+- Komut: `node backend\scripts\ux_mobile_overflow_minimap_readability_01_check.js`
 
 ### UX-COMPANY-OPS-PANEL-TABS-01 [CHECK]
 - `check:uxcompanyopspaneltabs01` `Company / Operasyon Paneli`'ni summary-first + functional tab standardına taşır; `Özet`, `Servis Kümesi`, `Personel`, `Servis Zamanları`, `İstisnalar / Değişiklikler` ve `Bildirimler` aynı anda alt alta görünmez.

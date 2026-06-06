@@ -1357,7 +1357,6 @@ export default function AgreementsPanel() {
                 />
               </div>
             ) : null}
-            <div className="tableWrap">
             <CompanyAgreementsSelectedSummarySection
               selectedLabel={selectedAgreementCopilotContext?.label || ""}
               selectedSummary={selectedAgreementCopilotContext?.summary || ""}
@@ -1366,58 +1365,59 @@ export default function AgreementsPanel() {
               filterValue={filterQ}
               onClearFilter={() => setFilterQ("")}
             />
-            <table className="tbl" style={{ minWidth: 980, marginTop: 10 }}>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Durum</th>
-                  <th>Oda</th>
-                  <th>Tarih</th>
-                  <th>Günler</th>
-                  <th>Saat</th>
-                  <th>Dir/Pat</th>
-                  <th>Şirket Teklifi</th>
-                  <th>Oda Karşı Teklifi</th>
-                  <th>Vardiyalar</th>
-                  <th>Aksiyonlar</th>
-                </tr>
-              </thead>
-              <tbody>
-              {filteredRows.map(({ a, room }) => (
-                <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
-                  <td className="muted">
-                    <div>#{a.id}</div>
-                    {agreementOrigins?.[String(a.id)]?.sourceShiftId ? (
-                      <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>Kaynak vardiya #{agreementOrigins[String(a.id)].sourceShiftId}</div>
-                    ) : null}
-                    <CommercialReadonlySummary item={a.commercialBackbone} compact />
-                  </td>
-                  <td><CompanyAgreementStatusPill status={a.status} /><CompanyAgreementExtendPill extendStatus={a.extendStatus} requestedEndDate={a.extendRequestedEndDate} /></td>
-                  <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
-                  <td className="muted">
-                    {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
-                  </td>
-                  <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
-                  <td className="muted">
-                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)}
-                  </td>
-                  <td className="muted">{a.direction}/{a.pattern}</td>
-                  <td className="muted" title={a.companyOfferNote ? `📝 ${a.companyOfferNote}` : ""}>
-                    {a.companyOfferAmount != null ? `₺${a.companyOfferAmount}` : "-"}
-                    {a.companyOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
-                  </td>
-                  <td className="muted" title={a.roomOfferNote ? `📝 ${a.roomOfferNote}` : ""}>
-                    {a.roomOfferAmount != null ? `₺${a.roomOfferAmount}` : "-"}
-                    {a.roomOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
-                  </td>
-                  <td><CompanyAgreementShiftSummary st={shiftStats?.[a.id]} /></td>
-                  <td>
-                    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                      {String(a.status || "").toUpperCase() === "COUNTERED" ? (
-                        <>
-                          <button type="button" disabled={busy} onClick={() => acceptCounter(a.id)}>
-                            Kabul Et
-                          </button>
+            <div className="tableWrap">
+              <table className="tbl" style={{ minWidth: 980, marginTop: 10 }}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Durum</th>
+                    <th>Oda</th>
+                    <th>Tarih</th>
+                    <th>Günler</th>
+                    <th>Saat</th>
+                    <th>Dir/Pat</th>
+                    <th>Şirket Teklifi</th>
+                    <th>Oda Karşı Teklifi</th>
+                    <th>Vardiyalar</th>
+                    <th>Aksiyonlar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {filteredRows.map(({ a, room }) => (
+                  <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
+                    <td className="muted">
+                      <div>#{a.id}</div>
+                      {agreementOrigins?.[String(a.id)]?.sourceShiftId ? (
+                        <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>Kaynak vardiya #{agreementOrigins[String(a.id)].sourceShiftId}</div>
+                      ) : null}
+                      <CommercialReadonlySummary item={a.commercialBackbone} compact />
+                    </td>
+                    <td><CompanyAgreementStatusPill status={a.status} /><CompanyAgreementExtendPill extendStatus={a.extendStatus} requestedEndDate={a.extendRequestedEndDate} /></td>
+                    <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
+                    <td className="muted">
+                      {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
+                    </td>
+                    <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
+                    <td className="muted">
+                      {toHHMM(a.startMin)} → {toHHMM(a.endMin)}
+                    </td>
+                    <td className="muted">{a.direction}/{a.pattern}</td>
+                    <td className="muted" title={a.companyOfferNote ? `📝 ${a.companyOfferNote}` : ""}>
+                      {a.companyOfferAmount != null ? `₺${a.companyOfferAmount}` : "-"}
+                      {a.companyOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
+                    </td>
+                    <td className="muted" title={a.roomOfferNote ? `📝 ${a.roomOfferNote}` : ""}>
+                      {a.roomOfferAmount != null ? `₺${a.roomOfferAmount}` : "-"}
+                      {a.roomOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
+                    </td>
+                    <td><CompanyAgreementShiftSummary st={shiftStats?.[a.id]} /></td>
+                    <td>
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        {String(a.status || "").toUpperCase() === "COUNTERED" ? (
+                          <>
+                            <button type="button" disabled={busy} onClick={() => acceptCounter(a.id)}>
+                              Kabul Et
+                            </button>
                           <button type="button" className="btn" disabled={busy} onClick={() => askCompanyCounter(a)}>
                             Yeni Teklif Gönder
                           </button>

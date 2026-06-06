@@ -146,9 +146,8 @@ function main() {
   assertRows(
     allRolesReport,
     "mobile all-roles audit report",
-    { PASS: 70, "PASS-": 12, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
+    { PASS: 71, "PASS-": 11, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
     [
-      { route: "/#/superadmin", viewport: "mobile" },
       { route: "/#/superadmin/trust-quality", viewport: "mobile" },
       { route: "/#/room/agreements", viewport: "mobile" },
       { route: "/#/company/shifts", viewport: "mobile" },
@@ -166,7 +165,7 @@ function main() {
   assertRows(
     premiumReport,
     "mobile premium smoke report",
-    { PASS: 63, "PASS-": 19, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
+    { PASS: 67, "PASS-": 15, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
     [
       { route: "/#/superadmin/onboarding-review", viewport: "desktop" },
       { route: "/#/superadmin/onboarding-review", viewport: "mobile" },
@@ -183,10 +182,6 @@ function main() {
       { route: "/#/organization/commercial-flow", viewport: "desktop" },
       { route: "/#/organization/commercial-flow", viewport: "mobile" },
       { route: "/#/personel/live", viewport: "mobile" },
-      { route: "/#/parent/live", viewport: "desktop" },
-      { route: "/#/parent", viewport: "desktop" },
-      { route: "/#/parent/live", viewport: "mobile" },
-      { route: "/#/parent", viewport: "mobile" },
     ]
   );
 

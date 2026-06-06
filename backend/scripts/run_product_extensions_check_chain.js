@@ -116,6 +116,7 @@ const steps = [
   'check:uxnav01',
   'check:uxmobilewebshellclarity01',
   'check:uxmobileallrolespanelfix01',
+    'check:uxmobileoverflowminimapreadability01',
   'check:uxdensity01',
   'check:uxpanelstandardarchitecture01',
   'check:finaluxsmoke01',
