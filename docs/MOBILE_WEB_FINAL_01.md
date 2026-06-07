@@ -29,36 +29,32 @@ Bu milestone:
 
 - Komut: `npm run smoke:uxmobileallrolespanelaudit01`
 - Rapor: `backend/artifacts/browser-smoke/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01/report.json`
-- Snapshot: `PASS 70 / PASS- 12 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- Snapshot: `PASS 74 / PASS- 8 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 
 ### Premium Smoke
 
 - Komut: `npm run smoke:uxlivepanelpremium01`
 - Rapor: `backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/report.json`
-- Snapshot: `PASS 63 / PASS- 19 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- Snapshot: `PASS 67 / PASS- 15 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 
 ## 3) All-Roles PASS- Final Risk List
 
-Bu 12 satır backlog'a gider; final blocker değildir:
+Bu 8 satır backlog'a gider; final blocker değildir:
 
 | Route | Role | Viewport | Bucket / not |
 | --- | --- | --- | --- |
 | `/#/superadmin` | superadmin | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
 | `/#/superadmin/trust-quality` | superadmin | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
 | `/#/room/agreements` | room | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
-| `/#/company/shifts` | company | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür; sözleşme dönüşüm notu var |
-| `/#/school/shifts` | school | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
-| `/#/organization/shifts` | organization | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
+| `/#/room/operation-health` | room | mobile | launcher görünür, summary-first risk paneli okunur |
 | `/#/driver/today` | driver | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
 | `/#/driver/route` | driver | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
 | `/#/driver/map` | driver | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
 | `/#/driver/checkin` | driver | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
-| `/#/parent/live` | parent | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
-| `/#/parent` | parent | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
 
 ## 4) Premium PASS- Evidence List
 
-Bu 19 satır final risk / backlog olarak kalır; release blocker değildir.
+Bu 15 satır final risk / backlog olarak kalır; release blocker değildir.
 
 | Route | Role | Viewport | Evidence bucket | Not |
 | --- | --- | --- | --- | --- |
@@ -77,10 +73,6 @@ Bu 19 satır final risk / backlog olarak kalır; release blocker değildir.
 | `/#/organization/commercial-flow` | organization | desktop | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/organization/commercial-flow` | organization | mobile | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/personel/live` | personel | mobile | long-live-map | Harita / canlı takip dili görünür. |
-| `/#/parent/live` | parent | desktop | console-noise | Console error sinyali var; blocker değil. |
-| `/#/parent` | parent | desktop | console-noise | Console error sinyali var; blocker değil. |
-| `/#/parent/live` | parent | mobile | console-noise | Console error sinyali var; blocker değil. |
-| `/#/parent` | parent | mobile | console-noise | Console error sinyali var; blocker değil. |
 
 ## 5) Special Ruling
 

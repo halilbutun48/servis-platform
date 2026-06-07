@@ -1,5 +1,6 @@
 import { CompanyFinalListRow, CompanyMarketRow, CompanyPendingRow } from "./companyShiftsPanelRows";
 import { CompanyDriverDetailGrid, CompanyOfferDecisionCard, CompanyOfferRoomCard, CompanyVehicleDetailGrid, OfferSignalPill } from "./companyShiftsPanelCards";
+import { CompanyMarketShiftCard, CompanyPendingShiftCard, CompanyFinalShiftCard } from "./companyShiftsPanelMobileCards";
 import { CompanyAccordionHeader, CompanyMarketFilters, CompanyPendingFilters, CompanyStatusFilters } from "./companyShiftsPanelFilters";
 
 export { AgreementBadge } from "./companyShiftsPanelRows";
@@ -295,7 +296,8 @@ export function CompanyMarketSection({
           />
 
           {marketItems.length ? (
-            <div className="tableWrap">
+            <>
+              <div className="tableWrap desktopShiftTable shiftsDesktopTable shiftsDesktopTable--company-market">
               <table className="tbl" style={{ marginTop: 10 }}>
                 <thead>
                   <tr>
@@ -318,7 +320,23 @@ export function CompanyMarketSection({
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+              <div className="mobileShiftCards shiftsMobileCards">
+                {marketItems.map((shift) => (
+                  <CompanyMarketShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    busy={busy}
+                    fmtTR={fmtTR}
+                    copilotShiftId={copilotShiftId}
+                    onFocusShift={onFocusShift}
+                    onOpenOfferModal={onOpenOfferModal}
+                    onOpenOffersModal={onOpenOffersModal}
+                    computePackageShiftIds={computePackageShiftIds}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <div className="muted">Market shift yok.</div>
           )}
@@ -380,7 +398,8 @@ export function CompanyPendingSection({
           />
 
           {pendingItems.length ? (
-            <div className="tableWrap">
+            <>
+              <div className="tableWrap desktopShiftTable shiftsDesktopTable shiftsDesktopTable--company-pending">
               <table className="tbl" style={{ marginTop: 10 }}>
                 <thead>
                   <tr>
@@ -410,7 +429,30 @@ export function CompanyPendingSection({
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+              <div className="mobileShiftCards shiftsMobileCards">
+                {pendingItems.map((shift) => (
+                  <CompanyPendingShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    busy={busy}
+                    fmtTR={fmtTR}
+                    copilotShiftId={copilotShiftId}
+                    onFocusShift={onFocusShift}
+                    roomsById={roomsById}
+                    agreementConversion={agreementConversionByShift?.[String(Number(shift.id || 0))] || null}
+                    renderRoomOfferSummary={renderRoomOfferSummary}
+                    renderCompanyOfferSummary={renderCompanyOfferSummary}
+                    onOpenOffersModal={onOpenOffersModal}
+                    onCancelMyRequest={onCancelMyRequest}
+                    onOpenExtendModal={onOpenExtendModal}
+                    onOpenPreview={onOpenPreview}
+                    onOpenOpsEvents={onOpenOpsEvents}
+                    onConvertShiftToAgreement={onConvertShiftToAgreement}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <div className="muted">Bekleyen talep yok.</div>
           )}
@@ -447,6 +489,7 @@ function CompanyStatusListSection({
   onOpenPreview,
   onOpenOpsEvents,
   onConvertShiftToAgreement,
+  rightContent = null,
   emptyLabel,
   searchPlaceholder,
 }) {
@@ -460,6 +503,7 @@ function CompanyStatusListSection({
         onOpen={() => onSetOpen(true)}
         onClose={() => onSetOpen(false)}
         onToggle={onToggle}
+        rightContent={rightContent}
       />
 
       {accOpen ? (
@@ -474,7 +518,8 @@ function CompanyStatusListSection({
           />
 
           {items.length ? (
-            <div className="tableWrap">
+            <>
+              <div className="tableWrap desktopShiftTable shiftsDesktopTable shiftsDesktopTable--company-status">
               <table className="tbl" style={{ marginTop: 10 }}>
                 <thead>
                   <tr>
@@ -504,7 +549,30 @@ function CompanyStatusListSection({
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+              <div className="mobileShiftCards shiftsMobileCards">
+                {items.map((shift) => (
+                  <CompanyFinalShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    busy={busy}
+                    fmtTR={fmtTR}
+                    copilotShiftId={copilotShiftId}
+                    onFocusShift={onFocusShift}
+                    roomsById={roomsById}
+                    agreementConversion={agreementConversionByShift?.[String(Number(shift.id || 0))] || null}
+                    renderRoomOfferSummary={renderRoomOfferSummary}
+                    renderCompanyOfferSummary={renderCompanyOfferSummary}
+                    onOpenVehicleDetail={onOpenVehicleDetail}
+                    onOpenDriverDetail={onOpenDriverDetail}
+                    onOpenExtendModal={onOpenExtendModal}
+                    onOpenPreview={onOpenPreview}
+                    onOpenOpsEvents={onOpenOpsEvents}
+                    onConvertShiftToAgreement={onConvertShiftToAgreement}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <div className="muted">{emptyLabel}</div>
           )}
@@ -600,6 +668,31 @@ export function CompanyOtherSection({
   onOpenOpsEvents,
   onConvertShiftToAgreement,
 }) {
+  const featuredShift = (otherItems || []).find((shift) => {
+    const conv = agreementConversionByShift?.[String(Number(shift?.id || 0))] || null;
+    const convState = String(conv?.state || "");
+    return Number(shift?.roomId || 0) > 0
+      && !Number(shift?.agreementId || 0)
+      && convState !== "pending"
+      && convState !== "linked";
+  }) || (otherItems || []).find((shift) => Number(shift?.roomId || 0) > 0) || otherItems?.[0] || null;
+  const rightContent = featuredShift ? (
+    <>
+      <button type="button" className="btn sm" disabled={busy} onClick={() => onOpenPreview(featuredShift.id)}>
+        Harita / Navigasyon Önizle
+      </button>
+      <button
+        type="button"
+        className="btn sm primary"
+        disabled={busy || !Number(featuredShift?.roomId || 0)}
+        title={!Number(featuredShift?.roomId || 0) ? "Önce room seçili olmalı. Sonra taslak Company Sözleşmeler ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
+        onClick={() => onConvertShiftToAgreement(featuredShift)}
+      >
+        Sözleşmeye Dönüştür
+      </button>
+    </>
+  ) : null;
+
   return (
     <CompanyStatusListSection
       sectionRef={sectionRef}
@@ -628,6 +721,7 @@ export function CompanyOtherSection({
       onOpenPreview={onOpenPreview}
       onOpenOpsEvents={onOpenOpsEvents}
       onConvertShiftToAgreement={onConvertShiftToAgreement}
+      rightContent={rightContent}
       emptyLabel="Diğer vardiya yok."
       searchPlaceholder="Ara (id / durum / plaka / sürücü / not)"
     />

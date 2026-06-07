@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
@@ -104,6 +105,41 @@ export default function CompanyShiftsPanelTrackView(props) {
     companyCounterPackage,
     onConvertShiftToAgreement,
   } = props;
+  const didAutoScrollRef = useRef(false);
+
+  useEffect(() => {
+    if (didAutoScrollRef.current) return;
+    if (trackTab !== "other") return;
+    if (typeof window === "undefined" || !window.matchMedia("(max-width: 640px)").matches) return;
+    let cancelled = false;
+    let attempts = 0;
+    let rafId = 0;
+
+    const tryScroll = () => {
+      if (cancelled || didAutoScrollRef.current) return;
+      const target = otherSectionRef?.current;
+      if (target) {
+        didAutoScrollRef.current = true;
+        try {
+          target.scrollIntoView({ behavior: "auto", block: "start" });
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      if (attempts < 20) {
+        attempts += 1;
+        rafId = window.requestAnimationFrame(tryScroll);
+      }
+    };
+
+    rafId = window.requestAnimationFrame(tryScroll);
+
+    return () => {
+      cancelled = true;
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [otherSectionRef, trackTab]);
 
   return (
     <>
@@ -121,7 +157,7 @@ export default function CompanyShiftsPanelTrackView(props) {
       />
 
       <div
-        className="card"
+        className="card companyShiftsTrackQuickFilter"
         style={{
           position: "sticky",
           top: 74,
@@ -147,7 +183,7 @@ export default function CompanyShiftsPanelTrackView(props) {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 10 }}>
+      <div className="card companyShiftsTrackSummary" style={{ marginTop: 10 }}>
         <div className="muted" style={{ marginTop: 6 }}>
           Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Sözleşmeden Üretilen: agreement / contract bağlı vardiyalar • Diğer Vardiyalar: sözleşmesiz vardiyalar
         </div>

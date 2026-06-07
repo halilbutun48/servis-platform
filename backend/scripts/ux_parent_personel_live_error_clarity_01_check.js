@@ -143,6 +143,7 @@ function main() {
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
     "web/src/panels/company/companyShiftsPanelFilters.jsx",
+    "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
     "web/src/panels/superadmin/OperationsPanel.jsx",

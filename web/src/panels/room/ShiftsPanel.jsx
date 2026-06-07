@@ -135,6 +135,7 @@ async function decideExtend(shiftId, decision) {
   const checkAvailabilityForShiftRef = useRef(null);
   const vehiclesForRoomRef = useRef(null);
   const loadPoolSummaryRef = useRef(null);
+  const loadDispatchPreviewRef = useRef(null);
   const poolSummaryRef = useRef(poolSummary);
 
   // M16: Haritada önizleme (modal)
@@ -669,6 +670,13 @@ async function decideExtend(shiftId, decision) {
   );
 
   useEffect(() => {
+    const sid = Number(copilotShift?.id || 0);
+    const status = String(copilotShift?.status || "").toUpperCase();
+    if (!sid || !["DRAFT", "REQUESTED"].includes(status)) return;
+    loadDispatchPreviewRef.current?.(copilotShift, { force: false });
+  }, [copilotShift]);
+
+  useEffect(() => {
     if (!copilotShift) {
       clearCopilotSelection('/room/shifts');
       return;
@@ -697,6 +705,7 @@ async function decideExtend(shiftId, decision) {
   checkAvailabilityForShiftRef.current = checkAvailabilityForShift;
   vehiclesForRoomRef.current = vehiclesForRoom;
   loadPoolSummaryRef.current = loadPoolSummary;
+  loadDispatchPreviewRef.current = loadDispatchPreview;
   poolSummaryRef.current = poolSummary;
 
   // M14: bekleyen listede seçimler değiştikçe availability güncelle (throttle)
@@ -789,7 +798,10 @@ async function decideExtend(shiftId, decision) {
     if (!sid) return null;
     if (!force) {
       const cached = dispatchPreview[sid];
-      if (cached?.status === "ok" && cached?.data) return cached.data;
+      if (cached?.status === "ok" && cached?.data) {
+        hydrateDispatchSelections(sid, cached.data?.suggestions || []);
+        return cached.data;
+      }
       if (dispatchInflight.current.has(sid)) return null;
     }
     dispatchInflight.current.add(sid);

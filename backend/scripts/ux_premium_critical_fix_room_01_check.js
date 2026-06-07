@@ -110,6 +110,8 @@ function main() {
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
+    "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
     "backend/scripts/ux_room_shifts_tabs_01_check.js",

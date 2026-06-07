@@ -20,8 +20,14 @@ const workingTreeCompatFiles = [
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
+  "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+  "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
   "backend/scripts/ux_room_shifts_density_dedup_01_check.js",
+  "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
+  "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
   "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
+  "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
+  "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
   "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
   "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
   "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
@@ -62,6 +68,8 @@ const selectedDocs = [
   "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
   "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
   "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
+  "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
+  "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
   "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
   "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
   "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
@@ -163,7 +171,9 @@ function slugToMilestone(slug) {
     [/uxnav0?1/i, "UX-NAV-01"],
     [/uxmobilewebshellclarity0?1/i, "UX-MOBILE-WEB-SHELL-CLARITY-01"],
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
-  [/uxmobileoverflowminimapreadability0?1/i, "UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01"], // check:uxmobileoverflowminimapreadability01
+    [/uxroomcompanyshiftsmobilecardfix0?1/i, "UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01"], // check:uxroomcompanyshiftsmobilecardfix01
+    [/uxshiftsresponsivelayoutfix0?1/i, "UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01"], // check:uxshiftsresponsivelayoutfix01
+    [/uxmobileoverflowminimapreadability0?1/i, "UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01"], // check:uxmobileoverflowminimapreadability01
     [/uxmobileoverflowminimappolish0?2/i, "UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02"], // check:uxmobileoverflowminimappolish02
     [/uxmobileallrolespanelaudit0?1/i, "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01"],
     [/uxdensity0?1/i, "UX-DENSITY-01"],
@@ -1221,6 +1231,12 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Mobile all roles panel fix milestone: \`UX-MOBILE-ALL-ROLES-PANEL-FIX-01\``);
   out.push(`- Mobile all roles panel fix docs: \`docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md\``);
   out.push(`- Mobile all roles panel fix command: \`node backend\\scripts\\ux_mobile_all_roles_panel_fix_01_check.js\``);
+  out.push(`- Room / Company shifts mobile card fix milestone: \`UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01\``);
+  out.push(`- Room / Company shifts mobile card fix docs: \`docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md\``);
+  out.push(`- Room / Company shifts mobile card fix command: \`node backend\\scripts\\ux_room_company_shifts_mobile_card_fix_01_check.js\``);
+  out.push(`- Shifts responsive layout fix milestone: \`UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01\``);
+  out.push(`- Shifts responsive layout fix docs: \`docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md\``);
+  out.push(`- Shifts responsive layout fix command: \`node backend\\scripts\\ux_shifts_responsive_layout_fix_01_check.js\``);
   out.push(`- Mobile overflow mini-map readability milestone: \`UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01\``);
   out.push(`- Mobile overflow mini-map readability docs: \`docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md\``);
   out.push(`- Mobile overflow mini-map readability command: \`node backend\\scripts\\ux_mobile_overflow_minimap_readability_01_check.js\``);
@@ -1475,15 +1491,19 @@ function verifyDoc(docText, summary) {
   "node backend\\scripts\\ux_room_shifts_density_dedup_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
-    "UX-MOBILE-WEB-SHELL-CLARITY-01",
-    "check:uxmobilewebshellclarity01",
-    "node backend\\scripts\\ux_mobile_web_shell_clarity_01_check.js",
-    "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
-    "UX-MOBILE-ALL-ROLES-PANEL-FIX-01",
-    "check:uxmobileallrolespanelfix01",
-    "node backend\\scripts\\ux_mobile_all_roles_panel_fix_01_check.js",
-    "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
-    "UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01",
+  "UX-MOBILE-WEB-SHELL-CLARITY-01",
+  "check:uxmobilewebshellclarity01",
+  "node backend\\scripts\\ux_mobile_web_shell_clarity_01_check.js",
+  "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
+  "UX-MOBILE-ALL-ROLES-PANEL-FIX-01",
+  "check:uxmobileallrolespanelfix01",
+  "node backend\\scripts\\ux_mobile_all_roles_panel_fix_01_check.js",
+  "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
+  "UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01",
+  "check:uxroomcompanyshiftsmobilecardfix01",
+  "node backend\\scripts\\ux_room_company_shifts_mobile_card_fix_01_check.js",
+  "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
+  "UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01",
     "check:uxmobileoverflowminimapreadability01",
     "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
     "UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02",

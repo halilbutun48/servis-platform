@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `340`
-- Toplam executable tracked file: `1116`
-- Combined registry row: `1456`
-- Root/backend/web/mobile package dağılımı: root `183`, backend `681`, web `88`, mobile `201`
+- Toplam package script entry: `342`
+- Toplam executable tracked file: `1118`
+- Combined registry row: `1460`
+- Root/backend/web/mobile package dağılımı: root `185`, backend `683`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `42`
+- Docs indexed: `44`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -35,6 +35,12 @@ Repo: `servis-platform`
 - Mobile all roles panel fix milestone: `UX-MOBILE-ALL-ROLES-PANEL-FIX-01`
 - Mobile all roles panel fix docs: `docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md`
 - Mobile all roles panel fix command: `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
+- Room / Company shifts mobile card fix milestone: `UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01`
+- Room / Company shifts mobile card fix docs: `docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md`
+- Room / Company shifts mobile card fix command: `node backend\scripts\ux_room_company_shifts_mobile_card_fix_01_check.js`
+- Shifts responsive layout fix milestone: `UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01`
+- Shifts responsive layout fix docs: `docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md`
+- Shifts responsive layout fix command: `node backend\scripts\ux_shifts_responsive_layout_fix_01_check.js`
 - Mobile overflow mini-map readability milestone: `UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01`
 - Mobile overflow mini-map readability docs: `docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md`
 - Mobile overflow mini-map readability command: `node backend\scripts\ux_mobile_overflow_minimap_readability_01_check.js`
@@ -64,7 +70,7 @@ Repo: `servis-platform`
 - Public lead audit check: `check:productflowbuttonaudit01`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
-- ACTIVE: `379`
+- ACTIVE: `381`
 - ACTIVE_CORE: `143`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
@@ -81,7 +87,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `517`
+- NEEDS_REVIEW: `519`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `61`
@@ -93,7 +99,7 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 379 |
+| ACTIVE | 381 |
 | ACTIVE_BACKEND_LINT | 2 |
 | ACTIVE_CORE | 143 |
 | ACTIVE_RELEASE_ONLY | 274 |
@@ -102,7 +108,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 517 |
+| NEEDS_REVIEW | 519 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -261,6 +267,8 @@ Repo: `servis-platform`
 | root:check:finaluxsmoke01 | package.json | root | node backend/scripts/final_ux_smoke_01_check.js | core | ACTIVE_CORE |  | FINAL-UX-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxlivepanelsmokeaudit01 | package.json | root | node backend/scripts/ux_live_panel_smoke_audit_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXLIVEPANELSMOKEAUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:uxmobileallrolespanelfix01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXMOBILEALLROLESPANELFIX-01 |  | Owner or chain unclear |  |
+| root:check:uxroomcompanyshiftsmobilecardfix01 | package.json | root | node backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js | review | NEEDS_REVIEW |  | UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01 |  | Owner or chain unclear |  |
+| root:check:uxshiftsresponsivelayoutfix01 | package.json | root | node backend/scripts/ux_shifts_responsive_layout_fix_01_check.js | review | NEEDS_REVIEW |  | UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01 |  | Owner or chain unclear |  |
 | root:check:uxmobileoverflowminimapreadability01 | package.json | root | node backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js | review | NEEDS_REVIEW |  | UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01 |  | Owner or chain unclear |  |
 | root:check:uxmobileoverflowminimappolish02 | package.json | root | node backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js | review | NEEDS_REVIEW |  | UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02 |  | Owner or chain unclear |  |
 | root:check:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js | core | ACTIVE_CORE |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Breaks canonical verification chain |  |
@@ -921,12 +929,12 @@ Repo: `servis-platform`
 | rooms.js | backend/src/routes/rooms.js | backend |  | review | NEEDS_REVIEW |  | ROOMS |  | Owner or chain unclear |  |
 | routeTemplates.js | backend/src/routes/routeTemplates.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-TEMPLATES |  | Owner or chain unclear |  |
 | schoolParentInvites.js | backend/src/routes/schoolParentInvites.js | backend |  | review | NEEDS_REVIEW |  | SCHOOL-PARENT-INVITES |  | Owner or chain unclear |  |
-| company.js | backend/src/routes/shifts/company.js | backend | root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
+| company.js | backend/src/routes/shifts/company.js | backend | root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01, root:check:uxroomcompanyshiftsmobilecardfix01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/shifts/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
 | index.js | backend/src/routes/shifts/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | people.js | backend/src/routes/shifts/people.js | backend |  | review | NEEDS_REVIEW |  | PEOPLE |  | Owner or chain unclear |  |
-| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomvehicledriveruppercase01, root:check:uxpremiumcriticalfixroom01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroompanelclarity01, root:check:uxroomshiftsdensitydedup01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
+| room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomvehicledriveruppercase01, root:check:uxpremiumcriticalfixroom01, root:check:uxroomcompanyshiftsmobilecardfix01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroompanelclarity01, root:check:uxroomshiftsdensitydedup01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
 | roomReassignNotifications.js | backend/src/routes/shifts/roomReassignNotifications.js | backend |  | review | NEEDS_REVIEW |  | ROOM-REASSIGN-NOTIFICATIONS |  | Owner or chain unclear |  |
 | roomShared.js | backend/src/routes/shifts/roomShared.js | backend |  | review | NEEDS_REVIEW |  | ROOM-SHARED |  | Owner or chain unclear |  |
 | schemas.js | backend/src/routes/shifts/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
@@ -988,6 +996,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| ux_room_company_shifts_mobile_card_fix_01_check.js | backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js | backend | root:check:uxroomcompanyshiftsmobilecardfix01 | product | ACTIVE |  | UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_shifts_responsive_layout_fix_01_check.js | backend/scripts/ux_shifts_responsive_layout_fix_01_check.js | backend | root:check:uxshiftsresponsivelayoutfix01 | product | ACTIVE |  | UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

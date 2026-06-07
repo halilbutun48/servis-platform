@@ -1,14 +1,14 @@
 export function CompanyAccordionHeader({ title, count, description, accOpen, onOpen, onClose, onToggle, rightContent = null }) {
   return (
-    <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-      <div className="row" style={{ alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <div className="row companyAccordionHeader" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="row companyAccordionHeaderMain" style={{ alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <h3 style={{ margin: 0 }}>{title}</h3>
         <span className="pill" data-status="COUNT" title="Filtrelere göre görünen kayıt sayısı">
           {count}
         </span>
-        <span className="muted">{description}</span>
+        <span className="muted companyAccordionHeaderDescription">{description}</span>
       </div>
-      <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+      <div className="row companyAccordionHeaderActions" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
         {rightContent}
         <button type="button" className="btn sm" disabled={accOpen} onClick={onOpen}>Aç</button>
         <button type="button" className="btn sm" disabled={!accOpen} onClick={onClose}>Kapat</button>

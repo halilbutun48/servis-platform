@@ -15,7 +15,8 @@ export function RoomShiftsOverviewSection({
   const showDispatchApplyAction = Boolean(
     autoSplitApprove &&
       copilotShift &&
-      Number(copilotShift.splitRootId || 0) > 0
+      Number(copilotShift.roomId || 0) > 0 &&
+      !["SPLIT", "DONE"].includes(String(copilotShift.status || "").toUpperCase())
   );
 
   return (

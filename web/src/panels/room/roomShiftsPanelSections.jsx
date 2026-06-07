@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 import { buildCapacityMeta, formatShiftDateTimeTR as fmtTR } from "./roomShiftsPanelUtils";
 import { displayStatusLabel } from "../../utils/displayStatus";
@@ -10,6 +11,7 @@ import {
   RoomStatusPill,
   RoomDispatchSuggestionCard,
 } from "./roomShiftsPanelCards";
+import { RoomPendingShiftCard, RoomAllShiftCard } from "./roomShiftsPanelMobileCards";
 
 export {
   AgreementBadge,
@@ -34,7 +36,8 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
         <button type="button" className="btn sm" onClick={() => { setPendingQ(""); setPendingStatus("OPEN"); }}>Temizle</button>
       </div>
       {pendingFiltered.length ? (
-        <div className="tableWrap">
+        <>
+          <div className="tableWrap desktopShiftTable shiftsDesktopTable shiftsDesktopTable--room-pending">
           <table className="tbl">
             <thead>
               <tr>
@@ -51,7 +54,11 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
             </thead>
             <tbody>{pendingFiltered.map((shift) => <RoomPendingShiftRow key={shift.id} shift={shift} {...props} />)}</tbody>
           </table>
-        </div>
+          </div>
+          <div className="mobileShiftCards shiftsMobileCards">
+            {pendingFiltered.map((shift) => <RoomPendingShiftCard key={shift.id} shift={shift} {...props} />)}
+          </div>
+        </>
       ) : (
         <div className="muted">Bekleyen talep yok.</div>
       )}
@@ -91,6 +98,13 @@ export function RoomDispatchPoolSummary({
   const dState = dispatchPreview[sid] || null;
   const dData = dState?.data || null;
   const suggestions = Array.isArray(dData?.suggestions) ? dData.suggestions : [];
+  const requestedDispatchPreviewRef = useRef(new Set());
+  useEffect(() => {
+    if (!capacityMeta?.dispatchRequired || !sid) return;
+    if (requestedDispatchPreviewRef.current.has(sid)) return;
+    requestedDispatchPreviewRef.current.add(sid);
+    loadDispatchPreview(shift, { force: false });
+  }, [capacityMeta?.dispatchRequired, loadDispatchPreview, shift, sid]);
   const dispatchSelStates = getDispatchSelectionStates({
     shift,
     suggestions,
@@ -298,7 +312,8 @@ export function RoomFinalListSection({
         helper="Copilot seçili vardiyayı kullanır."
       />
       {listFiltered.length ? (
-        <div className="tableWrap">
+        <>
+          <div className="tableWrap desktopShiftTable shiftsDesktopTable shiftsDesktopTable--room-final">
           <table className="tbl">
             <thead>
               <tr>
@@ -316,7 +331,11 @@ export function RoomFinalListSection({
             </thead>
             <tbody>{listFiltered.map((shift) => <RoomAllShiftRow key={shift.id} shift={shift} {...props} />)}</tbody>
           </table>
-        </div>
+          </div>
+          <div className="mobileShiftCards shiftsMobileCards">
+            {listFiltered.map((shift) => <RoomAllShiftCard key={shift.id} shift={shift} {...props} />)}
+          </div>
+        </>
       ) : (
         <div className="muted">{emptyText}</div>
       )}

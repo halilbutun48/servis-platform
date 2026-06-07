@@ -190,6 +190,37 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   scroll-margin-bottom: calc(220px + env(safe-area-inset-bottom));
 }
 
+.companyShiftsTrackCounts {
+  min-width: 0;
+}
+
+.companyShiftsTrackCountCard {
+  min-width: 170px;
+  flex: 1 1 170px;
+}
+
+.companyShiftsTrackCountLabel {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #a9b7d6;
+}
+
+.companyShiftsTrackCountValue {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #f4f7ff;
+  margin-top: 6px;
+}
+
+.companyShiftsTrackCountNote {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #98a2b3;
+  margin-top: 6px;
+}
+
 .roomCriticalFixScope {
   min-width: 0;
 }
@@ -333,6 +364,330 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   font-size: 11px;
   line-height: 1.35;
 }
+
+.desktopShiftTable,
+.shiftsDesktopTable {
+  display: block;
+  min-width: 0;
+}
+
+.mobileShiftCards,
+.shiftsMobileCards {
+  display: none;
+  min-width: 0;
+}
+
+.shiftCard,
+.shiftMobileCard {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.shiftCardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.shiftCardHeaderMain {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.shiftCardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.shiftCardTitle {
+  color: #f4f7ff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.shiftCardSelectionHint {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(58, 102, 255, .18);
+  background: rgba(58, 102, 255, .10);
+  color: #dbe4ff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.shiftCardSelectionHint[data-selected="true"] {
+  border-color: rgba(96, 165, 250, .48);
+  background: rgba(61, 122, 255, .16);
+}
+
+.shiftCardMetaGrid,
+.shiftMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.shiftCardField {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(58, 102, 255, .14);
+  background: rgba(255, 255, 255, .02);
+}
+
+.shiftCardField--wide {
+  grid-column: 1 / -1;
+}
+
+.shiftCardFieldLabel {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #a9b7d6;
+}
+
+.shiftCardFieldValue {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #e7eefc;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.shiftCardValueStack {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shiftCardSubtle {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #98a2b3;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.shiftCardSection,
+.shiftActionGroup {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, .16);
+  min-width: 0;
+}
+
+.shiftCardSectionTitle {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #dbe4ff;
+}
+
+.shiftCardInfoBlock {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.shiftCardInfoTitle {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f4f7ff;
+  min-width: 0;
+}
+
+.shiftCardInfoRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.shiftCardControlGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  min-width: 0;
+}
+
+.shiftCardControl {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.shiftCardControl select,
+.shiftCardControl input {
+  width: 100%;
+}
+
+.shiftCardActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+}
+
+.shiftCardActions > * {
+  min-width: 0;
+}
+
+.shiftCardActionNote {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #98a2b3;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.shiftCardInlineLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #9ecbff;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+  text-align: left;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.shiftCardNestedCard,
+.shiftNestedCard {
+  overflow-x: visible;
+}
+
+.shiftCard .card {
+  overflow-x: visible;
+}
+
+.shiftsDesktopTable {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shiftsDesktopTable > :is(.tbl, .table) {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.shiftsDesktopTable > :is(.tbl, .table) th,
+.shiftsDesktopTable > :is(.tbl, .table) td {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) th:nth-child(1),
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) td:nth-child(1) { min-width: 150px; }
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) th:nth-child(2),
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) td:nth-child(2) { min-width: 220px; }
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) th:nth-child(5),
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) td:nth-child(5) { min-width: 160px; }
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) th:nth-child(6),
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) td:nth-child(6) { min-width: 240px; }
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) th:nth-child(7),
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) td:nth-child(7) { min-width: 240px; }
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) th:nth-child(8),
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) td:nth-child(8),
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) th:nth-child(9),
+.shiftsDesktopTable--room-pending > :is(.tbl, .table) td:nth-child(9) { min-width: 112px; }
+
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(1),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(1) { min-width: 150px; }
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(2),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(2) { min-width: 110px; }
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(3),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(3) { min-width: 220px; }
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(4),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(4) { min-width: 220px; }
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(5),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(5) { min-width: 150px; }
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(6),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(6) { min-width: 150px; }
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(7),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(7),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(8),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(8) { min-width: 120px; }
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(9),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(9) { min-width: 140px; }
+.shiftsDesktopTable--room-final > :is(.tbl, .table) th:nth-child(10),
+.shiftsDesktopTable--room-final > :is(.tbl, .table) td:nth-child(10) { min-width: 180px; }
+
+.shiftsDesktopTable--company-market > :is(.tbl, .table) th:nth-child(1),
+.shiftsDesktopTable--company-market > :is(.tbl, .table) td:nth-child(1) { min-width: 150px; }
+.shiftsDesktopTable--company-market > :is(.tbl, .table) th:nth-child(4),
+.shiftsDesktopTable--company-market > :is(.tbl, .table) td:nth-child(4) { min-width: 120px; }
+.shiftsDesktopTable--company-market > :is(.tbl, .table) th:nth-child(5),
+.shiftsDesktopTable--company-market > :is(.tbl, .table) td:nth-child(5) { min-width: 180px; }
+
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) th:nth-child(1),
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) td:nth-child(1) { min-width: 150px; }
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) th:nth-child(3),
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) td:nth-child(3) { min-width: 220px; }
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) th:nth-child(4),
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) td:nth-child(4) { min-width: 220px; }
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) th:nth-child(5),
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) td:nth-child(5) { min-width: 220px; }
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) th:nth-child(6),
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) td:nth-child(6) { min-width: 180px; }
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) th:nth-child(7),
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) td:nth-child(7) { min-width: 112px; }
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) th:nth-child(10),
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) td:nth-child(10) { min-width: 140px; }
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) th:nth-child(11),
+.shiftsDesktopTable--company-pending > :is(.tbl, .table) td:nth-child(11) { min-width: 180px; }
+
+.shiftsDesktopTable--company-status > :is(.tbl, .table) th:nth-child(1),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) td:nth-child(1) { min-width: 150px; }
+.shiftsDesktopTable--company-status > :is(.tbl, .table) th:nth-child(3),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) td:nth-child(3) { min-width: 220px; }
+.shiftsDesktopTable--company-status > :is(.tbl, .table) th:nth-child(4),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) td:nth-child(4) { min-width: 220px; }
+.shiftsDesktopTable--company-status > :is(.tbl, .table) th:nth-child(5),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) td:nth-child(5) { min-width: 220px; }
+.shiftsDesktopTable--company-status > :is(.tbl, .table) th:nth-child(6),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) td:nth-child(6),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) th:nth-child(7),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) td:nth-child(7) { min-width: 150px; }
+.shiftsDesktopTable--company-status > :is(.tbl, .table) th:nth-child(10),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) td:nth-child(10) { min-width: 140px; }
+.shiftsDesktopTable--company-status > :is(.tbl, .table) th:nth-child(11),
+.shiftsDesktopTable--company-status > :is(.tbl, .table) td:nth-child(11) { min-width: 180px; }
 
 .roomCommercialWorkspaceFull > * {
   width: 100%;
@@ -1241,7 +1596,7 @@ button, input, select, textarea, .btn, .secondary {
   min-width: 0;
   white-space: normal;
   overflow-wrap: anywhere;
-  word-break: break-word;
+  word-break: normal;
   vertical-align: top;
 }
 
@@ -1386,10 +1741,62 @@ button, input, select, textarea, .btn, .secondary {
   .flow-summary-status { align-self: flex-start; }
   .system-mode-summary-head { flex-direction: column; }
   .companyActionClarityScope {
+    display: flex;
+    flex-direction: column;
     padding-bottom: calc(240px + env(safe-area-inset-bottom));
+  }
+  .companyShiftsTrackBlock {
+    order: 1;
+  }
+  .companyShiftsIntroBlock {
+    order: 2;
+  }
+  .companyShiftsTrackCounts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px !important;
+  }
+  .companyShiftsTrackQuickFilter,
+  .companyShiftsTrackSummary {
+    display: none;
+  }
+  .companyAccordionHeaderDescription {
+    display: none;
+  }
+  .companyAccordionHeaderMain,
+  .companyAccordionHeaderActions {
+    flex-direction: row;
+    align-items: center;
+  }
+  .companyAccordionHeaderActions {
+    justify-content: flex-start;
+  }
+  .companyAccordionHeaderActions .btn {
+    min-height: 36px;
+    padding: 0 10px;
+  }
+  .companyShiftsTrackCountCard {
+    min-width: 0;
+    padding: 10px 12px;
+  }
+  .companyShiftsTrackCountValue {
+    font-size: 18px;
+    margin-top: 4px;
+  }
+  .companyShiftsTrackCountNote {
+    display: none;
   }
   .roomCriticalFixScope {
     padding-bottom: calc(240px + env(safe-area-inset-bottom));
+  }
+  .desktopShiftTable,
+  .shiftsDesktopTable {
+    display: none;
+  }
+  .mobileShiftCards,
+  .shiftsMobileCards {
+    display: grid;
+    gap: 10px;
   }
   .tableWrap {
     overflow-x: auto;
@@ -1522,6 +1929,13 @@ button, input, select, textarea, .btn, .secondary {
   }
   .roomShiftsDensityScope .roomShiftsDispatchPoolCard .roomActionCTA {
     min-height: 40px;
+  }
+  .shiftCardMetaGrid,
+  .shiftMetaGrid {
+    grid-template-columns: 1fr;
+  }
+  .shiftCardControlGrid {
+    grid-template-columns: 1fr;
   }
   .shell--agreements-detail .companyActionClarityScope .btn.primary,
   .shell--agreements-detail .companyActionClarityScope .btn.sm.primary,

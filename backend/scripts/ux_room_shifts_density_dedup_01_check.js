@@ -105,7 +105,9 @@ function main() {
   mustContains(overview, "Vardiya Özeti", "room shifts overview keeps title");
   mustContains(overview, "Özet üstte; karar, dispatch ve rota önizleme tablarda kalır.", "room shifts overview keeps summary-first copy");
   mustContains(overview, "autoSplitApprove", "room shifts overview keeps apply wiring");
-  mustContains(overview, "splitRootId", "room shifts overview keeps split gating");
+  mustContains(overview, "Number(copilotShift.roomId || 0) > 0", "room shifts overview keeps room-based apply gating");
+  mustContains(overview, "![\"SPLIT\", \"DONE\"].includes", "room shifts overview keeps visibility guard");
+  mustNotContains(overview, "splitRootId", "room shifts overview no longer ties apply action to split packages");
   mustContains(overview, "Önizlemeyi Uygula: Böl & Onayla", "room shifts overview keeps compact dispatch CTA");
   mustContains(overview, "roomShiftsDispatchApplyRow", "room shifts overview keeps inline dispatch apply row");
   mustContains(overview, "roomShiftsDispatchApplyHint", "room shifts overview keeps compact dispatch hint");

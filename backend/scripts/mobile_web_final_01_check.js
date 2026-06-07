@@ -109,8 +109,8 @@ function main() {
   mustContains(guide, "docs/MOBILE_WEB_FINAL_01.md", "milestone guide includes mobile web final doc");
 
   mustContains(doc, "MOBILE-WEB-FINAL-01", "mobile final doc title present");
-  mustContains(doc, "PASS 70 / PASS- 12 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps all-roles snapshot");
-  mustContains(doc, "PASS 63 / PASS- 19 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps premium snapshot");
+  mustContains(doc, "PASS 74 / PASS- 8 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps all-roles snapshot");
+  mustContains(doc, "PASS 67 / PASS- 15 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps premium snapshot");
   mustContains(doc, "PASS- remaining routes", "mobile final doc keeps final risk wording");
   mustContains(doc, "final risk", "mobile final doc keeps final risk wording");
   mustContains(doc, "backlog", "mobile final doc keeps backlog wording");
@@ -146,19 +146,16 @@ function main() {
   assertRows(
     allRolesReport,
     "mobile all-roles audit report",
-    { PASS: 71, "PASS-": 11, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
+    { PASS: 74, "PASS-": 8, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
     [
+      { route: "/#/superadmin", viewport: "mobile" },
       { route: "/#/superadmin/trust-quality", viewport: "mobile" },
       { route: "/#/room/agreements", viewport: "mobile" },
-      { route: "/#/company/shifts", viewport: "mobile" },
-      { route: "/#/school/shifts", viewport: "mobile" },
-      { route: "/#/organization/shifts", viewport: "mobile" },
+      { route: "/#/room/operation-health", viewport: "mobile" },
       { route: "/#/driver/today", viewport: "mobile" },
       { route: "/#/driver/route", viewport: "mobile" },
       { route: "/#/driver/map", viewport: "mobile" },
       { route: "/#/driver/checkin", viewport: "mobile" },
-      { route: "/#/parent/live", viewport: "mobile" },
-      { route: "/#/parent", viewport: "mobile" },
     ]
   );
 

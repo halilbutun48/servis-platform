@@ -88,6 +88,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
 - `check:uxmobilewebshellclarity01` -> `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
 - `check:uxmobileallrolespanelfix01` -> `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
+- `check:uxroomcompanyshiftsmobilecardfix01` -> `node backend\scripts\ux_room_company_shifts_mobile_card_fix_01_check.js`
+- `check:uxshiftsresponsivelayoutfix01` -> `node backend\scripts\ux_shifts_responsive_layout_fix_01_check.js`
 - `check:uxmobileoverflowminimapreadability01` -> `node backend\scripts\ux_mobile_overflow_minimap_readability_01_check.js`
 - `check:uxdensity01` -> `node backend\scripts\ux_density_01_panel_card_density_check.js`
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
@@ -194,6 +196,23 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - UX-FIX 0, BLOCKER 0 ve NOT-FOUND 0 korunur; PASS- 19 hedeflenir ve mümkünse azaltılır.
 - Doküman: `docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md`
 - Komut: `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
+
+### UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01 [CHECK]
+- `check:uxroomcompanyshiftsmobilecardfix01` `Room / Vardiyalar` ve `Company / Vardiyalar` yüzeylerinde mobil tablo baskısını kaldırıp card/list standardına geçer.
+- `desktopShiftTable` desktop'ta korunur; `mobileShiftCards` mobilde görünür olur ve `tableWrap` yalnızca masaüstü tablo kabuğu olarak kalır.
+- `Vardiya ID`, `Durum badge`, `Şirket / Oda`, `Araç`, `Sürücü`, `Başlangıç`, `Bitiş`, `Teklif / sözleşme özeti`, `Ödeme / hakediş`, `Rota Önizleme`, `İşlem Kaydı`, `Atamayı Değiştir` ve `Süre Uzat` kart içinde okunur kalır.
+- `word-break: normal`, `overflow-wrap: anywhere`, body/page `overflow-x: hidden` ve Sefer Abi launcher safe-area padding standardı korunur.
+- Bu düzenleme backend route/write-path, schema modeli, Playwright runner policy ve Coverage matrix check'i değiştirmez; browser-smoke scope dışıdır.
+- Doküman: `docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md`
+- Komut: `node backend\scripts\ux_room_company_shifts_mobile_card_fix_01_check.js`
+
+### UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01 [CHECK]
+- `check:uxshiftsresponsivelayoutfix01` `Room / Vardiyalar` ve `Company / Vardiyalar` masaüstü tablolarını responsive genişlik ve mobil card/list standardına hizalar.
+- `shiftsDesktopTable` masaüstünde `table-layout: auto` ile geniş kolonları sıkıştırmadan gösterir; `shiftsMobileCards` ise mobilde card/list görünümünü açık tutar.
+- Desktop'ta `word-break: normal` ve `overflow-wrap: break-word` korunur; mobilde launcher clearance ve safe-area padding standardı değişmez.
+- Bu düzenleme backend route/write-path, schema modeli, Playwright runner policy ve Coverage matrix check'i değiştirmez; yeni business flow eklemez.
+- Doküman: `docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md`
+- Komut: `node backend\scripts\ux_shifts_responsive_layout_fix_01_check.js`
 
 ### UX-DENSITY-01 [CHECK]
 - `check:uxdensity01` panel/card density ve premium dashboard polish check.

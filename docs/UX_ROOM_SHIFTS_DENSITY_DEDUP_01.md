@@ -8,7 +8,7 @@ Bu milestone ile:
 - one tab row korunur.
 - active content that actually changes by tab kalır.
 - dispatch preview should not dominate when no shift is selected.
-- seçili split vardiyada kompakt `Önizlemeyi Uygula: Böl & Onayla` CTA'sı inline satır olarak görünür kalır.
+- seçili room vardiyada kompakt `Önizlemeyi Uygula: Böl & Onayla` CTA'sı inline satır olarak görünür kalır.
 - `Bölme modu aktif` uyarısı full-width band yerine compact inline notice olur.
 - sekmeden sonra tekrar eden `Diğer Vardiyalar` heading'i içerik alanında görünmez.
 - backend dispatch flow unchanged.
@@ -32,7 +32,7 @@ Bu milestone ile:
 - Üst özet, tek bir summary band olarak kalır ve mobile viewport'ta kompakt görünür.
 - Tab değişince aktif içerik gerçekten değişir.
 - Dispatch preview, üst hero kart olarak domine etmez.
-- `Önizlemeyi Uygula: Böl & Onayla` akışı seçili split vardiyada görünür olur ama no shift selected durumda baskın olmaz.
+- `Önizlemeyi Uygula: Böl & Onayla` akışı seçili room vardiyada görünür olur ama no shift selected durumda baskın olmaz.
 - `Bölme modu aktif` uyarısı inline/chip kart içinde kalır.
 - `Diğer Vardiyalar` başlığı tab etiketinden sonra ikinci kez görünmez.
 - UX-FIX 0 korunur.
