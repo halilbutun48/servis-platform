@@ -1169,6 +1169,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Doküman: `docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md`
 - Komut: `node backend\scripts\ux_mobile_overflow_minimap_readability_01_check.js`
 
+### UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02 [CHECK]
+- `check:uxmobileoverflowminimappolish02` `Room / Vardiyalar`, `Company / Vardiyalar` ve `Organization / Planlama` yüzeylerinde desktop taşma artıklarını kapatır, mini-map modal açılışını daha net hale getirir.
+- `ReadableMiniRouteMap` içinde `Haritayı büyüt` / `Haritayı kapat` akışı korunur; `MapContainer`, `TileLayer`, `fitBounds` ve `tileerror` fallback davranışı görünür kalır.
+- `tableWrap`, `organizationPlansLayout` ve `organizationPlansSidebar` küçük ekranda taşmayı kontrollü tutar; sabit genişlikli input ve tablo ayarları responsive hale gelir.
+- Bu düzenleme backend route/write-path, schema ve runner policy'yi değiştirmez; `Sefer Abi` görünür dili sade ve operasyon odaklı kalır.
+- Doküman: `docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md`
+- Komut: `node backend\scripts\ux_mobile_overflow_minimap_polish_02_check.js`
+
 ### UX-COMPANY-OPS-PANEL-TABS-01 [CHECK]
 - `check:uxcompanyopspaneltabs01` `Company / Operasyon Paneli`'ni summary-first + functional tab standardına taşır; `Özet`, `Servis Kümesi`, `Personel`, `Servis Zamanları`, `İstisnalar / Değişiklikler` ve `Bildirimler` aynı anda alt alta görünmez.
 - `check:uxcompanypanelssmoke01` aynı panel için kısa smoke alias'ıdır; üst KPI bandı, kritik bildirim bandı ve bildirim CTA'sı açık kalırken detaylar yalnızca ilgili sekmede render edilir.

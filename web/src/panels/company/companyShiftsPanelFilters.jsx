@@ -28,7 +28,7 @@ export function CompanyMarketFilters({ marketQ, onChangeMarketQ, marketFocusIds,
           placeholder="Ara (id / durum)"
           value={marketQ}
           onChange={(e) => onChangeMarketQ(e.target.value)}
-          style={{ minWidth: 220 }}
+          style={{ width: "min(100%, 220px)" }}
         />
         {marketFocusIds.length ? (
           <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -46,7 +46,7 @@ export function CompanyPendingFilters({ pendingQ, onChangePendingQ, pendingFocus
     <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
       <div />
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <input placeholder="Ara (id / durum / not / oda)" value={pendingQ} onChange={(e) => onChangePendingQ(e.target.value)} style={{ minWidth: 240 }} />
+        <input placeholder="Ara (id / durum / not / oda)" value={pendingQ} onChange={(e) => onChangePendingQ(e.target.value)} style={{ width: "min(100%, 240px)" }} />
         {pendingFocusIds.length ? (
           <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span>Filtre: {(pendingFocusIds || []).map((id) => "#" + id).join(" ")}</span>
@@ -74,7 +74,7 @@ export function CompanyStatusFilters({ status, onChangeStatus, q, onChangeQ, onC
           <option value="DONE">Tamamlandı</option>
           <option value="REJECTED">Reddedildi</option>
         </select>
-        <input placeholder={searchPlaceholder} value={q} onChange={(e) => onChangeQ(e.target.value)} style={{ minWidth: 240 }} />
+        <input placeholder={searchPlaceholder} value={q} onChange={(e) => onChangeQ(e.target.value)} style={{ width: "min(100%, 240px)" }} />
         <button type="button" onClick={onClearFilters}>Temizle</button>
       </div>
     </div>

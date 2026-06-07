@@ -150,6 +150,7 @@ function main() {
     "web/src/index.css",
     "web/src/layout/AppShell.jsx",
     "web/src/panels/company/OperationsPanel.jsx",
+    "web/src/panels/company/companyShiftsPanelFilters.jsx",
     "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
@@ -177,6 +178,8 @@ function main() {
     "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
     "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
     "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",
+    "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
+    "docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md",
   ];
 
   mustTrue(exists("backend/scripts/ux_company_mobile_action_clarity_01_check.js"), "company mobile action clarity check exists");

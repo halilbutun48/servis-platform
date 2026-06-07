@@ -164,6 +164,7 @@ function slugToMilestone(slug) {
     [/uxmobilewebshellclarity0?1/i, "UX-MOBILE-WEB-SHELL-CLARITY-01"],
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
   [/uxmobileoverflowminimapreadability0?1/i, "UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01"], // check:uxmobileoverflowminimapreadability01
+    [/uxmobileoverflowminimappolish0?2/i, "UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02"], // check:uxmobileoverflowminimappolish02
     [/uxmobileallrolespanelaudit0?1/i, "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01"],
     [/uxdensity0?1/i, "UX-DENSITY-01"],
     [/uxroomshiftsdensitydedup0?1/i, "UX-ROOM-SHIFTS-DENSITY-DEDUP-01"],
@@ -1223,6 +1224,9 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Mobile overflow mini-map readability milestone: \`UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01\``);
   out.push(`- Mobile overflow mini-map readability docs: \`docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md\``);
   out.push(`- Mobile overflow mini-map readability command: \`node backend\\scripts\\ux_mobile_overflow_minimap_readability_01_check.js\``);
+  out.push(`- Mobile overflow mini-map polish milestone: \`UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02\``);
+  out.push(`- Mobile overflow mini-map polish docs: \`docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md\``);
+  out.push(`- Mobile overflow mini-map polish command: \`node backend\\scripts\\ux_mobile_overflow_minimap_polish_02_check.js\``);
   out.push(`- Mobile all roles panel audit milestone: \`UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01\``);
   out.push(`- Mobile all roles panel audit docs: \`docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md\``);
   out.push(`- Mobile all roles panel audit command: \`node backend\\scripts\\ux_mobile_all_roles_panel_audit_01.mjs\``);
@@ -1479,6 +1483,13 @@ function verifyDoc(docText, summary) {
     "check:uxmobileallrolespanelfix01",
     "node backend\\scripts\\ux_mobile_all_roles_panel_fix_01_check.js",
     "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
+    "UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01",
+    "check:uxmobileoverflowminimapreadability01",
+    "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
+    "UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02",
+    "check:uxmobileoverflowminimappolish02",
+    "docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md",
+    "node backend\\scripts\\ux_mobile_overflow_minimap_polish_02_check.js",
     "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01",
     "check:uxmobileallrolespanelaudit01",
     "node backend\\scripts\\ux_mobile_all_roles_panel_audit_01.mjs",

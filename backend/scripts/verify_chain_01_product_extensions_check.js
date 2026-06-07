@@ -176,6 +176,7 @@ function main() {
   must(pkg, '"check:uxmobilewebshellclarity01": "node backend/scripts/ux_mobile_web_shell_clarity_01_check.js"', 'package.json exposes check:uxmobilewebshellclarity01');
   must(pkg, '"check:uxmobileallrolespanelfix01": "node backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js"', 'package.json exposes check:uxmobileallrolespanelfix01');
   must(pkg, '"check:uxmobileoverflowminimapreadability01": "node backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js"', 'package.json exposes check:uxmobileoverflowminimapreadability01');
+  must(pkg, '"check:uxmobileoverflowminimappolish02": "node backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js"', 'package.json exposes check:uxmobileoverflowminimappolish02');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
   must(pkg, '"check:uxpanelstandardarchitecture01": "node backend/scripts/ux_panel_standard_architecture_01_check.js"', 'package.json exposes check:uxpanelstandardarchitecture01');
   must(pkg, '"check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js"', 'package.json exposes check:finaluxsmoke01');
@@ -298,6 +299,7 @@ function main() {
     'check:uxmobilewebshellclarity01',
     'check:uxmobileallrolespanelfix01',
     'check:uxmobileoverflowminimapreadability01',
+    'check:uxmobileoverflowminimappolish02',
     'check:uxdensity01',
     'check:uxpanelstandardarchitecture01',
     'check:finaluxsmoke01',
@@ -432,6 +434,10 @@ function main() {
   must(guide, 'check:uxmobileoverflowminimapreadability01', 'script guide exposes check:uxmobileoverflowminimapreadability01');
   must(guide, 'node backend\\scripts\\ux_mobile_overflow_minimap_readability_01_check.js', 'script guide includes mobile overflow mini-map readability command');
   must(guide, 'docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md', 'script guide includes mobile overflow mini-map readability doc');
+  must(guide, 'UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02', 'script guide mentions UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02');
+  must(guide, 'check:uxmobileoverflowminimappolish02', 'script guide exposes check:uxmobileoverflowminimappolish02');
+  must(guide, 'node backend\\scripts\\ux_mobile_overflow_minimap_polish_02_check.js', 'script guide includes mobile overflow mini-map polish command');
+  must(guide, 'docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md', 'script guide includes mobile overflow mini-map polish doc');
   must(guide, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script guide mentions cleanup milestone');
   must(guide, 'check:uxpremiumcriticaluxfixcleanup01', 'script guide exposes cleanup check');
   must(guide, 'node backend\\scripts\\ux_premium_critical_uxfix_cleanup_01_check.js', 'script guide includes cleanup command');
@@ -457,6 +463,9 @@ function main() {
   must(harnessCheck, 'UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01', 'script harness check knows mobile overflow mini-map readability milestone');
   must(harnessCheck, 'check:uxmobileoverflowminimapreadability01', 'script harness check knows mobile overflow mini-map readability alias');
   must(harnessCheck, 'docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md', 'script harness check knows mobile overflow mini-map readability doc');
+  must(harnessCheck, 'UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02', 'script harness check knows mobile overflow mini-map polish milestone');
+  must(harnessCheck, 'check:uxmobileoverflowminimappolish02', 'script harness check knows mobile overflow mini-map polish alias');
+  must(harnessCheck, 'docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md', 'script harness check knows mobile overflow mini-map polish doc');
   must(harnessCheck, 'UX-ROOM-SHIFTS-DENSITY-DEDUP-01', 'script harness check knows room shifts density dedup milestone');
   must(harnessCheck, 'check:uxroomshiftsdensitydedup01', 'script harness check knows room shifts density dedup alias');
   must(harnessCheck, 'docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md', 'script harness check knows room shifts density dedup doc');
@@ -481,6 +490,9 @@ function main() {
   must(harnessDoc, 'UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01', 'script harness doc lists mobile overflow mini-map readability milestone');
   must(harnessDoc, 'check:uxmobileoverflowminimapreadability01', 'script harness doc lists mobile overflow mini-map readability alias');
   must(harnessDoc, 'docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md', 'script harness doc lists mobile overflow mini-map readability doc');
+  must(harnessDoc, 'UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02', 'script harness doc lists mobile overflow mini-map polish milestone');
+  must(harnessDoc, 'check:uxmobileoverflowminimappolish02', 'script harness doc lists mobile overflow mini-map polish alias');
+  must(harnessDoc, 'docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md', 'script harness doc lists mobile overflow mini-map polish doc');
   must(harnessDoc, 'UX-ROOM-SHIFTS-DENSITY-DEDUP-01', 'script harness doc lists room shifts density dedup milestone');
   must(harnessDoc, 'check:uxroomshiftsdensitydedup01', 'script harness doc lists room shifts density dedup alias');
   must(harnessDoc, 'docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md', 'script harness doc lists room shifts density dedup doc');

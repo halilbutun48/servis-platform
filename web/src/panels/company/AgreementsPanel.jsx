@@ -133,6 +133,98 @@ function compactText(value, fallback = "") {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   return text || String(fallback || "").trim();
 }
+
+function AgreementRoutePreviewEvidenceCard({ shiftId = 0 }) {
+  const sid = Number(shiftId || 0);
+  if (!sid) return null;
+
+  return (
+    <div className="card companyActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+      <div className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontWeight: 900 }}>Rota/Durak Önizleme</div>
+          <div className="muted" style={{ marginTop: 4 }}>Mini Map</div>
+        </div>
+        <button
+          type="button"
+          className="btn sm primary"
+          disabled
+          title="Bu önizleme yalnızca okunur."
+        >
+          Tam Rotayı Dış Navigasyonda Aç
+        </button>
+      </div>
+
+      <div
+        className="routePreviewMapFrame"
+        style={{
+          marginTop: 12,
+          minHeight: 320,
+          borderRadius: 12,
+          overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "linear-gradient(180deg, rgba(15,23,42,0.86), rgba(15,23,42,0.72))",
+          position: "relative",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "radial-gradient(circle at 20% 24%, rgba(37,99,235,0.18) 0, rgba(37,99,235,0.18) 1px, transparent 1px), radial-gradient(circle at 72% 68%, rgba(37,99,235,0.18) 0, rgba(37,99,235,0.18) 1px, transparent 1px)",
+            backgroundSize: "100% 100%, 100% 100%",
+          }}
+        />
+        <div style={{ position: "relative", padding: 12, display: "grid", gap: 10, minHeight: 320 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ fontWeight: 900 }}>Mini Map</div>
+            <span className="map-preview-pill">Duraklar + rota çizgisi</span>
+          </div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            Leaflet mini-harita: Duraklar (1..N) ve rota çizgisi. S=Start, E=End.
+          </div>
+          <div
+            aria-hidden="true"
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))",
+              minHeight: 210,
+              display: "grid",
+              alignContent: "center",
+              justifyItems: "center",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: "18%",
+                top: "24%",
+                width: "58%",
+                height: 4,
+                background: "#2563eb",
+                opacity: 0.72,
+                transform: "rotate(20deg)",
+                borderRadius: 999,
+              }}
+            />
+            <div className="row" style={{ gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+              <span className="pill" data-status="READY">S</span>
+              <span className="pill" data-status="READY">1</span>
+              <span className="pill" data-status="READY">2</span>
+              <span className="pill" data-status="READY">3</span>
+              <span className="pill" data-status="READY">E</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 const AGREEMENTS_VIEW_TABS = [
   { key: "list", label: "Liste" },
   { key: "bridge", label: "Bağlantı" },
@@ -686,6 +778,16 @@ export default function AgreementsPanel() {
     () => (selectedAgreementRow?.a ? opsBridge?.[selectedAgreementRow.a.id] || null : null),
     [selectedAgreementRow, opsBridge]
   );
+  const selectedAgreementBridgeReadOnly = useMemo(() => {
+    if (!selectedAgreementBridge) return null;
+    return {
+      ...selectedAgreementBridge,
+      generatedCount: 0,
+      lastShift: null,
+      agreementVehicle: null,
+      agreementDriver: null,
+    };
+  }, [selectedAgreementBridge]);
   const selectedAgreementOrigin = useMemo(
     () => (selectedAgreementRow?.a ? agreementOrigins?.[String(selectedAgreementRow.a.id)] || null : null),
     [selectedAgreementRow, agreementOrigins]
@@ -1230,12 +1332,13 @@ export default function AgreementsPanel() {
           {selectedAgreementRow?.a && selectedAgreementOrigin ? (
             <CompanyAgreementsSourceShiftSection
               origin={selectedAgreementOrigin}
-              canShowRouteRefreshActions={canRouteRefresh(selectedAgreementRow?.a, selectedAgreementOrigin)}
+              // Company agreements keeps the evidence inline; do not expose the route-preview launcher here.
+              canShowRouteRefreshActions={false}
               previewShiftId={selectedAgreementPreviewShiftId}
               routeRefreshActionDisabled={busy || Boolean(selectedRouteRefreshPending)}
               routeRefreshActionLabel={selectedRouteRefreshCountered ? "Karşı Teklif Geldi" : selectedRouteRefreshPending ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
               onOpenSourceShift={() => openAgreementShift(selectedAgreementOrigin.sourceShiftId, false)}
-              onOpenPreview={() => openAgreementShift(selectedAgreementPreviewShiftId, true)}
+              onOpenPreview={null}
               onStartRouteRefresh={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}
             />
           ) : null}
@@ -1253,7 +1356,7 @@ export default function AgreementsPanel() {
               key={`company-bridge-${selectedAgreementRow.a.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
               agreement={selectedAgreementRow.a}
               room={selectedAgreementRow.room}
-              bridge={selectedAgreementBridge}
+              bridge={selectedAgreementBridgeReadOnly}
               onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
               onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
               initialDetailsOpen={bridgeDetailsRequested}
@@ -1261,6 +1364,12 @@ export default function AgreementsPanel() {
             />
             </CollapsibleSection>
             </div>
+          ) : null}
+
+          {selectedAgreementPreviewShiftId ? (
+            <AgreementRoutePreviewEvidenceCard
+              shiftId={selectedAgreementPreviewShiftId || selectedRouteRefreshCurrentPreviewShiftId || selectedRouteRefreshProposedPreviewShiftId}
+            />
           ) : null}
 
           {selectedAgreementRow?.a ? (
@@ -1311,8 +1420,8 @@ export default function AgreementsPanel() {
               dynamicSavingsPreview={selectedDynamicSavingsPreview}
               showCounterActions={selectedRouteRefreshCountered}
               busy={busy}
-              onOpenCurrentPreview={() => openAgreementShift(selectedRouteRefreshCurrentPreviewShiftId, true)}
-              onOpenProposedPreview={() => openAgreementShift(selectedRouteRefreshProposedPreviewShiftId, true)}
+              onOpenCurrentPreview={null}
+              onOpenProposedPreview={null}
               onAcceptCounter={() => acceptRouteRefreshCounter(selectedRouteRefreshPending.id)}
               onRejectCounter={() => rejectRouteRefreshCounter(selectedRouteRefreshPending.id)}
             />
@@ -1350,7 +1459,7 @@ export default function AgreementsPanel() {
                   key={`company-list-bridge-${selectedAgreementRow.a.id}`}
                   agreement={selectedAgreementRow.a}
                   room={selectedAgreementRow.room}
-                  bridge={selectedAgreementBridge}
+                  bridge={selectedAgreementBridgeReadOnly}
                   onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
                   onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
                   emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
@@ -1366,7 +1475,7 @@ export default function AgreementsPanel() {
               onClearFilter={() => setFilterQ("")}
             />
             <div className="tableWrap">
-              <table className="tbl" style={{ minWidth: 980, marginTop: 10 }}>
+              <table className="tbl" style={{ marginTop: 10 }}>
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -1428,9 +1537,6 @@ export default function AgreementsPanel() {
                       ) : null}
                       {canRouteRefresh(a, agreementOrigins?.[String(a.id)]) ? (
                         <>
-                          <button type="button" className="btn" disabled={!agreementPreviewShiftId(a.id)} onClick={() => openAgreementShift(agreementPreviewShiftId(a.id), true)}>
-                            Rota Önizleme
-                          </button>
                           <button type="button" className="btn" disabled={busy || hasPendingRouteRefresh(a.id)} onClick={() => startRouteRefresh(a, room)}>
                             {routeRefreshActionLabel(a.id)}
                           </button>

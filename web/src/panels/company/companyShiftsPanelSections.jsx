@@ -145,7 +145,7 @@ export function CompanyExtendModal({ extendModal, busy, onClose, onChange, onSub
       <hr />
 
       <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
-        <div className="col" style={{ minWidth: 240 }}>
+        <div className="col" style={{ width: "min(100%, 240px)" }}>
           <label className="muted">Yeni Bitiş (Istanbul)</label>
           <input
             type="datetime-local"
@@ -153,7 +153,7 @@ export function CompanyExtendModal({ extendModal, busy, onClose, onChange, onSub
             onChange={(e) => onChange({ endLocal: e.target.value })}
           />
         </div>
-        <div className="col" style={{ flex: 1, minWidth: 260 }}>
+        <div className="col" style={{ flex: "1 1 260px", minWidth: 0 }}>
           <label className="muted">Not (opsiyonel)</label>
           <input
             value={extendModal.note}
@@ -190,7 +190,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
           placeholder="Room ara"
           value={offerModal.q}
           onChange={(e) => onChange({ q: e.target.value })}
-          style={{ minWidth: 220 }}
+          style={{ width: "min(100%, 220px)" }}
         />
         <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input
@@ -227,7 +227,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
       <hr />
 
       <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
-        <div className="col" style={{ minWidth: 180 }}>
+        <div className="col" style={{ width: "min(100%, 180px)" }}>
           <label className="muted">Company Tutar (₺) (opsiyonel)</label>
           <input
             value={offerModal.amountCompany}
@@ -235,7 +235,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
             placeholder="örn 25000"
           />
         </div>
-        <div className="col" style={{ flex: 1, minWidth: 240 }}>
+        <div className="col" style={{ flex: "1 1 240px", minWidth: 0 }}>
           <label className="muted">Not (opsiyonel)</label>
           <input
             value={offerModal.noteCompany}

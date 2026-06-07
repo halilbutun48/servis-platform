@@ -30,7 +30,7 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
           <option value="REQUESTED">Bekliyor</option>
           <option value="DRAFT">Taslak</option>
         </select>
-        <input value={pendingQ} onChange={(e) => setPendingQ(e.target.value)} placeholder="Ara (id / şirket / plaka / sürücü / not)" style={{ minWidth: 280 }} />
+        <input value={pendingQ} onChange={(e) => setPendingQ(e.target.value)} placeholder="Ara (id / şirket / plaka / sürücü / not)" style={{ width: "min(100%, 280px)" }} />
         <button type="button" className="btn sm" onClick={() => { setPendingQ(""); setPendingStatus("OPEN"); }}>Temizle</button>
       </div>
       {pendingFiltered.length ? (
@@ -258,14 +258,36 @@ export function RoomFinalListSection({
   searchPlaceholder = "Ara (id / şirket / plaka / sürücü / not)",
   ...props
 }) {
+  const splitEligibleShift = Number(copilotShift?.splitRootId || 0) > 0
+    ? copilotShift
+    : (Array.isArray(items) ? items.find((shift) => Number(shift?.splitRootId || 0) > 0) || null : null);
+
   return (
     <div className="card roomShiftsSectionCard">
       {showTitle ? <h3>{title}</h3> : null}
       {showTitle && description ? <div className="muted roomShiftsSectionSubtitle">{description}</div> : null}
       <div className="toolbarLeft" style={{ marginBottom: 10 }}>
-        <input value={listQ} onChange={(e) => setListQ(e.target.value)} placeholder={searchPlaceholder} style={{ minWidth: 320 }} />
+        <input value={listQ} onChange={(e) => setListQ(e.target.value)} placeholder={searchPlaceholder} style={{ width: "min(100%, 320px)" }} />
         <button type="button" className="btn sm" onClick={() => { setListQ(""); }}>Temizle</button>
       </div>
+      {splitEligibleShift ? (
+        <div className="roomShiftsDispatchApplyRow" style={{ marginBottom: 10 }}>
+          <button
+            type="button"
+            className="btn roomActionCTA"
+            disabled
+            title={`Bu önizleme ayrı onay akışından uygulanır. Split vardiya #${splitEligibleShift.id} hazır`}
+          >
+            Önizlemeyi Uygula: Böl &amp; Onayla
+          </button>
+          <div className="roomShiftsDispatchApplyHint">
+            Önizleme ile aynı bölme planı uygulanır; seçtiğin araç ve şoför eşleşmeleri kullanılır.
+          </div>
+          <div className="roomShiftsDispatchApplyState roomShiftsDispatchApplyState--ok">
+            Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.
+          </div>
+        </div>
+      ) : null}
       <ListSelectionBanner
         selectedLabel={copilotShift ? `Vardiya ID ${copilotShift.id}` : ""}
         selectedSummary={copilotShift ? [displayStatusLabel(copilotShift?.status) || "-", fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(" • ") : ""}

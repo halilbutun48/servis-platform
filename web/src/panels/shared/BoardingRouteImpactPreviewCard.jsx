@@ -324,6 +324,7 @@ export default function BoardingRouteImpactPreviewCard({
   const decisionOwnerChip = decisionOwnerLabelText || "Hizmet alan taraf";
   const decisionOwnerNoteVisible = decisionOwnerNoteText && decisionOwnerNoteText !== selectionNoteText;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [mapExpanded, setMapExpanded] = useState(false);
   const detailsRef = useRef(null);
 
   if (error) {
@@ -414,12 +415,20 @@ export default function BoardingRouteImpactPreviewCard({
   const statusStatus = previewStateTone === "success" ? "OK" : previewStateTone === "warning" ? "WARN" : previewStateTone === "critical" ? "WARN" : "INFO";
   const riskStatus = riskLabel === "Yüksek" ? "WARN" : riskLabel === "Orta" ? "WARN" : "OK";
   const reliabilityStatus = previewStateTone === "critical" || reliability.ok === false ? "WARN" : previewStateTone === "warning" || String(reliability?.displayMode || "").toLowerCase() === "not-current" ? "WARN" : "OK";
+  const routePreviewShiftId = Number(request?.shiftRecord?.id || request?.shiftId || preview?.shiftId || 0) || null;
+  const routeModeLabel = mapModel.routePoints.length > 1 ? "Yol ağına yakın rota" : "Yaklaşık / kuş uçuşu önizleme";
   const handleToggleDetails = () => setDetailsOpen((value) => !value);
   const handleShowMap = () => {
     setDetailsOpen(true);
-    setTimeout(() => {
-      detailsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-    }, 0);
+    setMapExpanded(true);
+  };
+  const handleMapExpandedChange = (next) => {
+    setMapExpanded(Boolean(next));
+    if (next) {
+      setTimeout(() => {
+        detailsRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+      }, 0);
+    }
   };
 
   return (
@@ -450,7 +459,7 @@ export default function BoardingRouteImpactPreviewCard({
         <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
           <div className="panelMeta">Kısa karar</div>
           <div style={{ marginTop: 4, fontSize: 18, fontWeight: 800, lineHeight: 1.35 }}>{decisionSentence}</div>
-          {decisionOwnerNoteVisible ? <div className="panelMeta" style={{ marginTop: 6 }}>{decisionOwnerNoteVisible}</div> : null}
+          {decisionOwnerNoteVisible ? <div className="panelMeta" style={{ marginTop: 6 }}>{decisionOwnerNoteText}</div> : null}
         </div>
 
         <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
@@ -475,7 +484,7 @@ export default function BoardingRouteImpactPreviewCard({
             {detailsOpen ? "Detayı gizle" : "Detayı aç"}
           </button>
           <button type="button" className="btn sm ghost" onClick={handleShowMap}>
-            {detailsOpen ? "Haritada odakla" : "Haritada göster"}
+            Haritada göster
           </button>
         </div>
 
@@ -500,6 +509,14 @@ export default function BoardingRouteImpactPreviewCard({
               footerText={`Bu değişiklik için rota etkisi metinsel olarak önizleniyor. • Eski durak: ${mapModel.oldStopLabel || "-"} • Yeni/alternatif durak: ${mapModel.newStopLabel || "-"}`}
               height={160}
               minHeight={160}
+              routePreviewShiftId={routePreviewShiftId}
+              routeModeLabel={routeModeLabel}
+              expandedTitle="Biniş Değişikliği Haritası"
+              expandable
+              expanded={mapExpanded}
+              onExpandedChange={handleMapExpandedChange}
+              showOpenMapButton
+              allowWheelZoomInModal
             />
 
             {warnings.length ? (

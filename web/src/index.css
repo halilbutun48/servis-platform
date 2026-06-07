@@ -1225,21 +1225,24 @@ button, input, select, textarea, .btn, .secondary {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: clip;
+  overflow-y: visible;
   padding-bottom: 8px;
 }
 
 .tableWrap > :is(.tbl, .table) {
-  width: max-content;
-  min-width: 100%;
-  table-layout: auto;
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
 }
 
 .tableWrap > :is(.tbl, .table) th,
 .tableWrap > :is(.tbl, .table) td {
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  vertical-align: top;
 }
 
 
@@ -1387,6 +1390,11 @@ button, input, select, textarea, .btn, .secondary {
   }
   .roomCriticalFixScope {
     padding-bottom: calc(240px + env(safe-area-inset-bottom));
+  }
+  .tableWrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

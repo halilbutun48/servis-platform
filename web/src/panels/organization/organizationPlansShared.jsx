@@ -123,7 +123,7 @@ function buildPlanMapModel(stops = []) {
   };
 }
 
-export function MiniMapPreview({ stops }) {
+export function MiniMapPreview({ stops, shiftId = null }) {
   const model = buildPlanMapModel(stops);
 
   return (
@@ -136,6 +136,11 @@ export function MiniMapPreview({ stops }) {
       fallbackText="Koordinatlı konum ekleyin."
       footerText={model.footerText || "Koordinat ekleyince burada tile arka planlı mini harita görünür."}
       height={230}
+      routePreviewShiftId={shiftId}
+      routeModeLabel={shiftId ? "Yol ağına yakın rota" : "Yaklaşık / kuş uçuşu önizleme"}
+      expandedTitle="Kurum Planı Haritası"
+      expandable
+      showOpenMapButton
     />
   );
 }

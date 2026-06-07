@@ -672,7 +672,7 @@ export default function OrganizationPlansPanel() {
             busy={busy}
             onGoPlanning={() => navigate("/organization")}
           />
-          <MiniMapPreview stops={current.stops} />
+          <MiniMapPreview stops={current.stops} shiftId={current.publishedShiftId} />
         </div>
       </div>
     </div>

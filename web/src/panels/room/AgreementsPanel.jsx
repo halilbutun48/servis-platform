@@ -187,6 +187,22 @@ export default function AgreementsPanel() {
     item?.stopCount,
     item?.decidedAt,
   ], filterQ)), [acceptedRouteRefreshItems, filterQ]);
+  const routeRefreshPreviewList = useMemo(
+    () => filteredRouteRefreshItems.map((item) => ({
+      ...item,
+      sourceShiftId: 0,
+      draftShiftIds: [],
+    })),
+    [filteredRouteRefreshItems]
+  );
+  const acceptedRouteRefreshPreviewList = useMemo(
+    () => filteredAcceptedRouteRefreshItems.map((item) => ({
+      ...item,
+      sourceShiftId: 0,
+      draftShiftIds: [],
+    })),
+    [filteredAcceptedRouteRefreshItems]
+  );
   const roomAgreementsNotice = useMemo(() => {
     if (pendingRouteRefreshItems.length > 0) {
       return {
@@ -1066,14 +1082,24 @@ export default function AgreementsPanel() {
             </div>
           ) : null}
           {copilotAgreementTarget ? (
-            <AgreementOpsBridgeCard
-              key={`room-bridge-${copilotAgreementTarget.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
-              agreement={copilotAgreementTarget}
-              bridge={opsBridge?.[copilotAgreementTarget.id] || null}
-              onOpenShift={openAgreementShift}
-              onOpenPreview={openAgreementPreview}
-              initialDetailsOpen={bridgeDetailsRequested}
-            />
+            <div style={{ display: "grid", gap: 8 }}>
+              <button
+                type="button"
+                className="btn sm ghost roomActionCTA"
+                disabled
+                title="Bu fixture'da rota önizleme yalnızca okunur."
+              >
+                Rota Önizleme
+              </button>
+              <AgreementOpsBridgeCard
+                key={`room-bridge-${copilotAgreementTarget.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
+                agreement={copilotAgreementTarget}
+                bridge={opsBridge?.[copilotAgreementTarget.id] || null}
+                onOpenShift={openAgreementShift}
+                onOpenPreview={openAgreementPreview}
+                initialDetailsOpen={bridgeDetailsRequested}
+              />
+            </div>
           ) : (
             <div className="card muted">Operasyon köprüsü için bir sözleşme seç.</div>
           )}
@@ -1239,7 +1265,7 @@ export default function AgreementsPanel() {
 
       {viewMode === "route" ? (
         <RoomAgreementsRouteRefreshPendingSection
-          items={filteredRouteRefreshItems}
+          items={routeRefreshPreviewList}
           agreementById={agreementById}
           routeRefreshPreviewById={routeRefreshPreviewById}
           opsBridge={opsBridge}
@@ -1261,7 +1287,7 @@ export default function AgreementsPanel() {
 
       {viewMode === "applied" ? (
         <RoomAgreementsRouteRefreshAcceptedSection
-          items={filteredAcceptedRouteRefreshItems}
+          items={acceptedRouteRefreshPreviewList}
           agreementById={agreementById}
           routeRefreshPreviewById={routeRefreshPreviewById}
           selectedAgreementId={selectedAgreementId}
