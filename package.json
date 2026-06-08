@@ -34,6 +34,8 @@
     "check:publiclandingfinalpromise01": "node backend/scripts/public_landing_final_promise_01_check.js",
     "check:leadcapture01": "node backend/scripts/lead_capture_01_check.js",
     "check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js",
+    "check:onboardingreviewfinal01": "node backend/scripts/onboarding_review_final_audit_01_check.js",
+    "check:onboardingreviewfinalaudit01": "node backend/scripts/onboarding_review_final_audit_01_check.js",
     "check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js",
     "check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js",
     "check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js",

@@ -21,6 +21,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `LEAD-CAPTURE-01` kontrollü public lead toplama akışını açar; otomatik üyelik, ödeme ve davet gönderimi kapalı kalır.
 - `PUBLIC-LANDING-01 final promise check` public marketing claim guard'ını kilitler; underpromise/overdeliver ve premium/ikincil operasyon copilot hizasını `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md` içinde sabitler.
 - `ONBOARDING-REVIEW-01` lead başvurularını insan inceleme kuyruğuna taşır; `APPROVED_FOR_INVITE` yalnızca sonraki invite adımı için hazırlıktır.
+- `ONBOARDING-REVIEW-01 final audit` bu kuyruğun güven sınırını kilitler; `APPROVED_FOR_INVITE` yalnızca invite hazırlığıdır ve `docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md` içinde yaşar.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

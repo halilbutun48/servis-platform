@@ -76,10 +76,6 @@ function gitLines(args) {
     .filter(Boolean);
 }
 
-function stagedNames() {
-  return gitLines(["diff", "--cached", "--name-only"]).map((line) => line.replace(/\\/g, "/")).filter(Boolean);
-}
-
 function main() {
   console.log("=== UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02 CHECK ===");
 

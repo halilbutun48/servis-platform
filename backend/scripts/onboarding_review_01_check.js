@@ -138,6 +138,7 @@ must(spec, "kontrollü lead inceleme kuyruğu", "project spec records controlled
 must(milestoneDoc, "insan inceleme kuyruğu", "onboarding review doc states human review queue");
 must(milestoneDoc, "APPROVED_FOR_INVITE", "onboarding review doc lists invite-ready status");
 must(milestoneDoc, "invite, kullanıcı, ödeme, fatura, sözleşme", "onboarding review doc keeps boundaries");
+must(milestoneDoc, "ONBOARDING-REVIEW-01 FINAL AUDIT", "onboarding review doc references final audit");
 
 must(routeMounts, 'app.use("/api/admin/public-leads"', "admin route mounts public lead review queue");
 must(server, "publicLeadReviewRouter", "server wires public lead review router");

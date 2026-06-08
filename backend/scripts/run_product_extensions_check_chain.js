@@ -19,6 +19,7 @@ const steps = [
   'check:publiclandingfinalpromise01',
   'check:leadcapture01',
   'check:onboardingreview01',
+  'check:onboardingreviewfinalaudit01',
   'check:productflowbuttonaudit01',
   'check:agreementsourceshiftlineage01',
   'check:marketplacefreetooperate01',

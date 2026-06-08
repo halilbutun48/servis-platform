@@ -41,3 +41,6 @@ Bu milestone, `LEAD-CAPTURE-01` ile toplanan public başvuruları otomatik üyel
 - Bu ekran otomatik davet göndermez.
 - Bu ekran otomatik ödeme veya fatura başlatmaz.
 - Bu ekran sadece insan inceleme kararını ve notu kaydeder.
+
+## Sonraki kilit
+- `ONBOARDING-REVIEW-01 FINAL AUDIT` bu kuyruğun güven sınırını, human approval / guard / audit log çizgisini bir kez daha sabitler.

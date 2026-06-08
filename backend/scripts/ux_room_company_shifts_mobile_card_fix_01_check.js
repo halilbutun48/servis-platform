@@ -70,10 +70,6 @@ function gitLines(args) {
     .filter(Boolean);
 }
 
-function stagedNames() {
-  return gitLines(["diff", "--cached", "--name-only"]).map((line) => line.replace(/\\/g, "/"));
-}
-
 function statusNames() {
   const out = execFileSync("git", ["status", "--short", "--untracked-files=all"], {
     cwd: root,
@@ -253,6 +249,8 @@ function main() {
     "backend/scripts/ux_brand_login_premium_01_check.js",
     "backend/scripts/ux_room_panel_clarity_01_check.js",
     "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
+    "backend/scripts/onboarding_review_01_check.js",
+    "backend/scripts/onboarding_review_final_audit_01_check.js",
     "backend/scripts/public_landing_platform_first_01_check.js",
     "backend/scripts/public_landing_final_promise_01_check.js",
     "backend/scripts/quality_gate_final_01_check.js",
@@ -265,6 +263,8 @@ function main() {
     "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
     "docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md",
     "docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md",
+    "docs/ONBOARDING_REVIEW_01.md",
+    "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_BRAND_LOGIN_PREMIUM_01.md",
     "docs/PUBLIC_LANDING_01.md",
