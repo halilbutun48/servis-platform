@@ -33,6 +33,7 @@ import CompanyAgreementsSelectedSummarySection, {
   CompanyAgreementShiftSummary,
   CompanyAgreementStatusPill,
 } from "./companyAgreementsSelectedSummarySection";
+import CompanyAgreementsMobileCards from "./companyAgreementsMobileCards";
 import CompanyAgreementsSourceShiftSection from "./companyAgreementsSourceShiftSection";
 import { consumeAgreementPrefill } from "../../utils/agreementPrefill";
 import { getAgreementOrigins } from "../../utils/agreementOriginLink";
@@ -1474,7 +1475,27 @@ export default function AgreementsPanel() {
               filterValue={filterQ}
               onClearFilter={() => setFilterQ("")}
             />
-            <div className="tableWrap">
+            <CompanyAgreementsMobileCards
+              rows={filteredRows}
+              selectedAgreementId={selectedAgreementId}
+              shiftStats={shiftStats}
+              agreementOrigins={agreementOrigins}
+              busy={busy}
+              canRouteRefresh={canRouteRefresh}
+              hasPendingRouteRefresh={hasPendingRouteRefresh}
+              routeRefreshActionLabel={routeRefreshActionLabel}
+              onSelectAgreement={setSelectedAgreementId}
+              onAcceptCounter={acceptCounter}
+              onRejectCounter={rejectCounter}
+              onAskCompanyCounter={askCompanyCounter}
+              onCancelAgreement={cancelAgreement}
+              onAcceptExtendCounter={acceptExtendCounter}
+              onRejectExtendCounter={rejectExtendCounter}
+              onExtendByDays={extendByDays}
+              onAskExtend={askExtend}
+              onStartRouteRefresh={startRouteRefresh}
+            />
+            <div className="tableWrap desktopShiftTable companyAgreementsDesktopList" style={{ marginTop: 10 }}>
               <table className="tbl" style={{ marginTop: 10 }}>
                 <thead>
                   <tr>
