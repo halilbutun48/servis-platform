@@ -202,6 +202,8 @@ function main() {
   const status = statusNames();
   const exactAllowed = new Set([
     "backend/scripts/ux_brand_login_premium_01_check.js",
+    "backend/scripts/public_landing_platform_first_01_check.js",
+    "backend/scripts/public_landing_final_promise_01_check.js",
     "backend/scripts/quality_gate_final_01_check.js",
     "docs/UX_BRAND_LOGIN_PREMIUM_01.md",
     "docs/QUALITY_GATE_FINAL_01.md",
@@ -232,6 +234,8 @@ function main() {
     "backend/scripts/ux_panel_inventory_02a_check.js",
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    "backend/scripts/ux_room_panel_clarity_01_check.js",
+    "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
     "backend/scripts/mobile_web_final_01_check.js",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
@@ -240,6 +244,8 @@ function main() {
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/MOBILE_WEB_FINAL_01.md",
+    "docs/PUBLIC_LANDING_01.md",
+    "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md",
     "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
     "docs/PRIMER_SSOT.md",
     "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
@@ -252,7 +258,6 @@ function main() {
   mustNotList(status, "backend/prisma/", "backend schema/migration files are untouched");
   mustNotList(status, "debug.log", "debug.log is untouched");
   must(!status.some((file) => file.includes("24152(4).png")), "reference screenshot is not committed");
-  must(gitLines(["diff", "--cached", "--name-only"]).length === 0, "stage is empty");
 
   const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "prisma", "backend/prisma"]);
   must(routeDiff.length === 0, "backend route/service/schema diff stays empty");

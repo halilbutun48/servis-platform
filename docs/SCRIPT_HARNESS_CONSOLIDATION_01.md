@@ -5,13 +5,13 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `348`
-- Toplam executable tracked file: `1124`
-- Combined registry row: `1472`
-- Root/backend/web/mobile package dağılımı: root `191`, backend `689`, web `88`, mobile `201`
+- Toplam package script entry: `349`
+- Toplam executable tracked file: `1125`
+- Combined registry row: `1474`
+- Root/backend/web/mobile package dağılımı: root `192`, backend `690`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `46`
-- Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
+- Docs indexed: `47`
+- Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
@@ -81,12 +81,12 @@ Repo: `servis-platform`
 - PASS-minus evidence milestone: `UX-SMOKE-PASS-MINUS-EVIDENCE-01`
 - PASS-minus evidence docs: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
 - PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
-- Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`, `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`
+- Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`, `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`
 - Public lead audit check: `check:productflowbuttonaudit01`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `385`
-- ACTIVE_CORE: `147`
+- ACTIVE_CORE: `148`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -102,11 +102,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `523`
+- NEEDS_REVIEW: `524`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `276`
+- Eski sistem term eşleşmesi: `277`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -116,14 +116,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 385 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 147 |
+| ACTIVE_CORE | 148 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 523 |
+| NEEDS_REVIEW | 524 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -169,6 +169,7 @@ Repo: `servis-platform`
 | root:check:roadmaplockaimarketplace01 | package.json | root | node backend/scripts/roadmap_lock_ai_marketplace_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ROADMAPLOCKAIMARKETPLACE-01 |  | Owner or chain unclear |  |
 | root:check:publiclanding01 | package.json | root | node backend/scripts/public_landing_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PUBLICLANDING-01 |  | Breaks canonical verification chain |  |
 | root:check:publiclandingplatformfirst01 | package.json | root | node backend/scripts/public_landing_platform_first_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-PUBLICLANDINGPLATFORMFIRST-01 |  | Breaks canonical verification chain |  |
+| root:check:publiclandingfinalpromise01 | package.json | root | node backend/scripts/public_landing_final_promise_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
 | root:check:leadcapture01 | package.json | root | node backend/scripts/lead_capture_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-LEADCAPTURE-01 |  | Breaks canonical verification chain |  |
 | root:check:onboardingreview01 | package.json | root | node backend/scripts/onboarding_review_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ONBOARDINGREVIEW-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
@@ -695,6 +696,7 @@ Repo: `servis-platform`
 | qlt_04a_quality_layout_polish_check.js | backend/scripts/qlt_04a_quality_layout_polish_check.js | backend | root:check:qlt04a | product | ACTIVE |  | QLT-04-A-QUALITY-LAYOUT-POLISH-CHECK |  | Owner or chain unclear | product check/helper |
 | qlt_04b_compact_signal_list_check.js | backend/scripts/qlt_04b_compact_signal_list_check.js | backend | root:check:qlt04b | product | ACTIVE |  | QLT-04-B-COMPACT-SIGNAL-LIST-CHECK |  | Owner or chain unclear | product check/helper |
 | qlt_pay_bridge_01_check.js | backend/scripts/qlt_pay_bridge_01_check.js | backend | root:check:qltpaybridge01 | product | ACTIVE |  | QLT-PAY-BRIDGE-01-CHECK |  | Owner or chain unclear | product check/helper |
+| quality_gate_final_01_check.js | backend/scripts/quality_gate_final_01_check.js | backend | root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | relative_import_integrity_check.js | backend/scripts/relative_import_integrity_check.js | backend |  | verify:repo | ACTIVE_CORE |  | RELATIVE-IMPORT-INTEGRITY-CHECK |  | Owner or chain unclear | canonical runner |
 | repo_audit.js | backend/scripts/repo_audit.js | backend | root:audit:repo | verify:repo | ACTIVE_CORE |  | REPO-AUDIT |  | Owner or chain unclear | canonical runner |
 | repo_deep_audit.js | backend/scripts/repo_deep_audit.js | backend |  | review | NEEDS_REVIEW |  | REPO-DEEP-AUDIT |  | Owner or chain unclear |  |
@@ -950,7 +952,7 @@ Repo: `servis-platform`
 | personels.js | backend/src/routes/personels.js | backend |  | review | NEEDS_REVIEW |  | PERSONELS |  | Owner or chain unclear |  |
 | pilotLaunchGate.js | backend/src/routes/pilotLaunchGate.js | backend |  | review | NEEDS_REVIEW |  | PILOT-LAUNCH-GATE |  | Owner or chain unclear |  |
 | planBuilder.js | backend/src/routes/planBuilder.js | backend |  | review | NEEDS_REVIEW |  | PLAN-BUILDER |  | Owner or chain unclear |  |
-| public.js | backend/src/routes/public.js | backend | root:check:publiclanding01, root:check:publiclandingplatformfirst01 | review | NEEDS_REVIEW |  | PUBLIC |  | Owner or chain unclear |  |
+| public.js | backend/src/routes/public.js | backend | root:check:publiclanding01, root:check:publiclandingfinalpromise01, root:check:publiclandingplatformfirst01 | review | NEEDS_REVIEW |  | PUBLIC |  | Owner or chain unclear |  |
 | publicLeadReview.js | backend/src/routes/publicLeadReview.js | backend |  | review | NEEDS_REVIEW |  | PUBLIC-LEAD-REVIEW |  | Owner or chain unclear |  |
 | reports.js | backend/src/routes/reports.js | backend |  | review | NEEDS_REVIEW |  | REPORTS |  | Owner or chain unclear |  |
 | requests.js | backend/src/routes/requests.js | backend |  | review | NEEDS_REVIEW |  | REQUESTS |  | Owner or chain unclear |  |
@@ -1024,7 +1026,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| quality_gate_final_01_check.js | backend/scripts/quality_gate_final_01_check.js | backend | root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| public_landing_final_promise_01_check.js | backend/scripts/public_landing_final_promise_01_check.js | backend | root:check:publiclandingfinalpromise01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

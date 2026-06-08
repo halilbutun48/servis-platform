@@ -19,6 +19,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `ROADMAP-LOCK-AI-MARKETPLACE-01` docs-only roadmap kilidi alınmıştır; Sefer Abi ürünün ana farkıdır ve runtime davranışı değiştirilmeden yol haritası docs üzerinden sabitlenir. Detay dokümanı: `docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md`. Public landing ve public vitrin copy'sinde ise SeferPakt platform-first anlatılır, Sefer Abi ikincil operasyon copilot'u olarak konumlanır.
 - `PUBLIC-LANDING-01` public vitrin / tanıtım yüzeyi açılmıştır; route `/#/landing` üzerinden çalışır ve public CTA'lar kontrollü lead formuna bağlanır.
 - `LEAD-CAPTURE-01` kontrollü public lead toplama akışını açar; otomatik üyelik, ödeme ve davet gönderimi kapalı kalır.
+- `PUBLIC-LANDING-01 final promise check` public marketing claim guard'ını kilitler; underpromise/overdeliver ve premium/ikincil operasyon copilot hizasını `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md` içinde sabitler.
 - `ONBOARDING-REVIEW-01` lead başvurularını insan inceleme kuyruğuna taşır; `APPROVED_FOR_INVITE` yalnızca sonraki invite adımı için hazırlıktır.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`

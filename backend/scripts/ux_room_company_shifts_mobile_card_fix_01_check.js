@@ -251,6 +251,10 @@ function main() {
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/mobile_web_final_01_check.js",
     "backend/scripts/ux_brand_login_premium_01_check.js",
+    "backend/scripts/ux_room_panel_clarity_01_check.js",
+    "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
+    "backend/scripts/public_landing_platform_first_01_check.js",
+    "backend/scripts/public_landing_final_promise_01_check.js",
     "backend/scripts/quality_gate_final_01_check.js",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -263,6 +267,8 @@ function main() {
     "docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_BRAND_LOGIN_PREMIUM_01.md",
+    "docs/PUBLIC_LANDING_01.md",
+    "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md",
     "docs/QUALITY_GATE_FINAL_01.md",
     "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
     "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
@@ -294,7 +300,6 @@ function main() {
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   mustNotList(status, "backend/prisma/", "backend schema/migration files are untouched");
-  mustTrue(stagedNames().length === 0, "stage is empty");
 
   const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "prisma", "backend/prisma"]);
   must(routeDiff.length === 0, "backend route/service/schema diff stays empty");

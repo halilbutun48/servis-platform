@@ -31,6 +31,7 @@
     "check:roadmaplockaimarketplace01": "node backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
     "check:publiclanding01": "node backend/scripts/public_landing_01_check.js",
     "check:publiclandingplatformfirst01": "node backend/scripts/public_landing_platform_first_01_check.js",
+    "check:publiclandingfinalpromise01": "node backend/scripts/public_landing_final_promise_01_check.js",
     "check:leadcapture01": "node backend/scripts/lead_capture_01_check.js",
     "check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js",
     "check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js",

@@ -72,17 +72,19 @@ const landing = read("web/src/panels/public/PublicLandingPage.jsx");
 
 must(pkg, '"check:publiclandingplatformfirst01": "node backend/scripts/public_landing_platform_first_01_check.js"', "package.json exposes check:publiclandingplatformfirst01");
 must(runner, "check:publiclandingplatformfirst01", "product extensions runner includes public landing platform-first check");
+must(runner, "check:publiclandingfinalpromise01", "product extensions runner includes public landing final promise check");
 must(verifyChain, '"check:publiclandingplatformfirst01": "node backend/scripts/public_landing_platform_first_01_check.js"', "verify chain exposes public landing platform-first check");
+must(verifyChain, '"check:publiclandingfinalpromise01": "node backend/scripts/public_landing_final_promise_01_check.js"', "verify chain exposes public landing final promise check");
 ordered(
   runner,
-  ["check:roadmaplockaimarketplace01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:leadcapture01", "check:onboardingreview01"],
+  ["check:roadmaplockaimarketplace01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01"],
   "public landing platform-first chain order follows public landing"
 );
 
 must(guide, "PUBLIC-LANDING-PLATFORM-FIRST-01", "script guide mentions public landing platform-first milestone");
 must(guide, "check:publiclandingplatformfirst01", "script guide exposes public landing platform-first check");
 must(guide, "node backend\\scripts\\public_landing_platform_first_01_check.js", "script guide includes public landing platform-first command");
-must(guide, "PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01", "script guide keeps public lead order");
+must(guide, "PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01", "script guide keeps public lead order");
 
 must(primer, "public vitrin copy'sinde ise SeferPakt platform-first anlatılır", "primer records platform-first landing guidance");
 must(primer, "Sefer Abi ikincil operasyon copilot'u olarak konumlanır", "primer records secondary copilot position");
@@ -98,7 +100,7 @@ must(landingDocLegacy, "PUBLIC-LANDING-PLATFORM-FIRST-01", "public landing doc r
 must(landingDocLegacy, "Platform-first copy", "public landing doc keeps platform-first section");
 must(landingDocLegacy, "Sefer Abi ikincil, opsiyonel operasyon copilot'u olarak anılır", "public landing doc keeps copilot note");
 must(landingDocLegacy, "Public landing bir AI platformu değildir", "public landing doc states non-AI positioning");
-must(landingDocLegacy, "PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01", "public landing doc keeps public lead order");
+must(landingDocLegacy, "PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01", "public landing doc keeps public lead order");
 
 must(landingDoc, "PUBLIC-LANDING-PLATFORM-FIRST-01", "platform-first doc title present");
 must(landingDoc, "Servis tedarikinden saha denetimine, sözleşmeden hakedişe tek kurumsal platform.", "platform-first doc hero title present");

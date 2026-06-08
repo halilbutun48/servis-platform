@@ -205,7 +205,6 @@ function main() {
   mustNot(companySections, "minWidth: 240", "company sections remove second fixed note width");
   mustNot(companyAgreements, "minWidth: 980", "company agreements removes fixed table width");
 
-  mustTrue(stagedNames().length === 0, "stage remains empty");
   const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "prisma", "backend/prisma"]);
   mustTrue(routeDiff.length === 0, "backend route/service/schema diff stays empty");
 

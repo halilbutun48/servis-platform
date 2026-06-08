@@ -85,6 +85,7 @@ function main() {
   must(pkg, '"check:roadmaplockaimarketplace01": "node backend/scripts/roadmap_lock_ai_marketplace_01_check.js"', 'package.json exposes check:roadmaplockaimarketplace01');
   must(pkg, '"check:publiclanding01": "node backend/scripts/public_landing_01_check.js"', 'package.json exposes check:publiclanding01');
   must(pkg, '"check:publiclandingplatformfirst01": "node backend/scripts/public_landing_platform_first_01_check.js"', 'package.json exposes check:publiclandingplatformfirst01');
+  must(pkg, '"check:publiclandingfinalpromise01": "node backend/scripts/public_landing_final_promise_01_check.js"', 'package.json exposes check:publiclandingfinalpromise01');
   must(pkg, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', 'package.json exposes check:leadcapture01');
   must(pkg, '"check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js"', 'package.json exposes check:onboardingreview01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
@@ -223,6 +224,7 @@ function main() {
     'check:roadmaplockaimarketplace01',
     'check:publiclanding01',
     'check:publiclandingplatformfirst01',
+    'check:publiclandingfinalpromise01',
     'check:leadcapture01',
     'check:onboardingreview01',
     'check:productflowbuttonaudit01',
@@ -352,6 +354,9 @@ function main() {
   must(guide, 'PUBLIC-LANDING-PLATFORM-FIRST-01', 'script guide mentions public landing platform-first milestone');
   must(guide, 'check:publiclandingplatformfirst01', 'script guide exposes public landing platform-first check');
   must(guide, 'node backend\\scripts\\public_landing_platform_first_01_check.js', 'script guide includes public landing platform-first command');
+  must(guide, 'PUBLIC-LANDING-01 FINAL PROMISE CHECK', 'script guide mentions public landing final promise milestone');
+  must(guide, 'check:publiclandingfinalpromise01', 'script guide exposes public landing final promise check');
+  must(guide, 'node backend\\scripts\\public_landing_final_promise_01_check.js', 'script guide includes public landing final promise command');
   must(guide, 'LEAD-CAPTURE-01', 'script guide mentions lead capture milestone');
   must(guide, 'check:leadcapture01', 'script guide exposes lead capture check');
   must(guide, 'node backend\\scripts\\lead_capture_01_check.js', 'script guide includes lead capture command');
@@ -488,6 +493,11 @@ function main() {
   must(guide, 'check:uxpremiumcriticaluxfixcleanup01', 'script guide exposes cleanup check');
   must(guide, 'node backend\\scripts\\ux_premium_critical_uxfix_cleanup_01_check.js', 'script guide includes cleanup command');
   must(guide, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script guide includes cleanup doc');
+  must(harnessCheck, 'docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md', 'script harness check knows public landing final promise doc');
+  must(harnessCheck, 'check:publiclandingfinalpromise01', 'script harness check knows public landing final promise alias');
+  must(harnessCheck, 'PUBLIC-LANDING-01 FINAL PROMISE CHECK', 'script harness check knows public landing final promise milestone');
+  must(harnessDoc, 'public_landing_final_promise_01_check.js', 'script harness doc lists public landing final promise check');
+  must(harnessDoc, 'docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md', 'script harness doc lists public landing final promise doc');
   must(harnessCheck, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness check knows parent/personel live error clarity milestone');
   must(harnessCheck, 'check:uxparentpersonelliveerrorclarity01', 'script harness check knows parent/personel live error clarity alias');
   must(harnessCheck, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness check knows parent/personel live error clarity doc');

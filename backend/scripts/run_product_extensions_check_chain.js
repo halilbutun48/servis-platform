@@ -16,6 +16,7 @@ const steps = [
   'check:roadmaplockaimarketplace01',
   'check:publiclanding01',
   'check:publiclandingplatformfirst01',
+  'check:publiclandingfinalpromise01',
   'check:leadcapture01',
   'check:onboardingreview01',
   'check:productflowbuttonaudit01',

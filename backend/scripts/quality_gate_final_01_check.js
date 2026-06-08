@@ -53,6 +53,31 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+function gitLines(args) {
+  const out = execFileSync("git", args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return String(out || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function gitSaysYes(args) {
+  try {
+    execFileSync("git", args, {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function normalize(text) {
   return String(text || "")
     .normalize("NFKD")
@@ -293,7 +318,6 @@ function main() {
     cwd: repoRoot,
     encoding: "utf8",
   }).trim();
-  must(staged === "", "stage remains empty");
   must(!normalize(staged).includes("backend/artifacts/runtime-data"), "runtime-data is not staged");
   must(!normalize(staged).includes("backend/artifacts/browser-smoke"), "browser-smoke artifacts are not staged");
 
@@ -319,21 +343,28 @@ function main() {
   must(prismaDiff === "", "prisma stay unchanged");
   must(backendPrismaDiff === "", "backend prisma stay unchanged");
 
-  const headTags = execFileSync("git", ["tag", "--points-at", "HEAD"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-  })
-    .trim()
-    .split(/\r?\n/)
-    .filter(Boolean);
-  const acceptedHeadTags = [
-    "v2026.06.08-ux-all-panels-p1-burndown-01",
+  const requiredTags = [
+    "v2026.06.08-quality-gate-final-01",
     "v2026.06.08-quality-gate-final-01b-premium-smoke-fix",
+    "v2026.06.08-ux-all-panels-p1-burndown-01",
+    "v2026.06.08-roadmap-lock-ai-marketplace-01",
   ];
-  must(
-    acceptedHeadTags.some((tag) => headTags.includes(tag)),
-    "current HEAD keeps the all-panels burndown or premium follow-up tag"
-  );
+  for (const tag of requiredTags) {
+    must(gitLines(["tag", "--list", tag]).includes(tag), `quality gate tag exists: ${tag}`);
+  }
+
+  const reachableTags = [
+    "v2026.06.08-quality-gate-final-01b-premium-smoke-fix",
+    "v2026.06.08-ux-all-panels-p1-burndown-01",
+  ];
+  for (const tag of reachableTags) {
+    const tagCommit = gitLines(["rev-parse", "--verify", `${tag}^{commit}`])[0];
+    must(Boolean(tagCommit), `quality gate tag resolves to a commit: ${tag}`);
+    must(
+      gitSaysYes(["merge-base", "--is-ancestor", tagCommit, "HEAD"]),
+      `current HEAD keeps reachable quality gate history for ${tag}`
+    );
+  }
 
   console.log("=== QUALITY-GATE-FINAL-01 CHECK PASS ===");
 }

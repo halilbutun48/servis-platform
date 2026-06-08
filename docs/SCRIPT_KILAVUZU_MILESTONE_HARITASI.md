@@ -931,7 +931,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
   - `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
   - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
-- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ... -> RELEASE-CANDIDATE-01`
+- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ... -> RELEASE-CANDIDATE-01`
 
 ### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
 - Check script: `check:publiclanding01`
@@ -944,6 +944,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\public_landing_platform_first_01_check.js`
 - Ana konu: public landing copy'sini SeferPakt kurumsal servis operasyon ve tedarik platformu olarak konumlamak; Sefer Abi'yi opsiyonel operasyon copilot'u olarak ikincil anlatmak; ana CTA hiyerarşisini platform-first tutmak; AI / autopilot / otomatik karar algısını zayıflatmak; lead capture ve onboarding review akışlarını bozmamak.
 - Not: bu milestone sadece public metin / konumlandırma hizasıdır; lead capture ve review akışları ayrı milestone'larda çalışır.
+
+### PUBLIC-LANDING-01 FINAL PROMISE CHECK — public marketing promise guard [CHECK]
+- Check script: `check:publiclandingfinalpromise01`
+- Komut: `node backend\scripts\public_landing_final_promise_01_check.js`
+- Ana konu: public landing için underpromise / overdeliver güven stratejisini kilitlemek; SeferPakt'i platform-first, Sefer Abi'yi premium ve ikincil operasyon copilot'u olarak tutmak; public vaatleri testle kanıtlanmış kabiliyetlerle sınırlamak; human approval, guard ve audit log sınırlarını görünür kılmak; AI / autopilot / her şeyi yapay zekâ yapar algısını zayıflatmak.
+- Not: bu check yalnız public marketing claim hizasıdır; lead capture, onboarding review ve runtime davranış açmaz.
+- Doküman: `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md`
 
 ### LEAD-CAPTURE-01 — kontrollü public lead toplama [CHECK]
 - Check script: `check:leadcapture01`
