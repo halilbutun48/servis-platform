@@ -109,7 +109,7 @@ function main() {
   mustContains(guide, "docs/MOBILE_WEB_FINAL_01.md", "milestone guide includes mobile web final doc");
 
   mustContains(doc, "MOBILE-WEB-FINAL-01", "mobile final doc title present");
-  mustContains(doc, "PASS 72 / PASS- 10 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps all-roles snapshot");
+  mustContains(doc, "PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps all-roles snapshot");
   mustContains(doc, "PASS 67 / PASS- 15 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps premium snapshot");
   mustContains(doc, "PASS- remaining routes", "mobile final doc keeps final risk wording");
   mustContains(doc, "final risk", "mobile final doc keeps final risk wording");
@@ -147,19 +147,8 @@ function main() {
   assertRows(
     allRolesReport,
     "mobile all-roles audit report",
-    { PASS: 72, "PASS-": 10, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
-    [
-      { route: "/#/superadmin", viewport: "mobile" },
-      { route: "/#/superadmin/trust-quality", viewport: "mobile" },
-      { route: "/#/room/agreements", viewport: "mobile" },
-      { route: "/#/room/operation-health", viewport: "mobile" },
-      { route: "/#/school/agreements", viewport: "mobile" },
-      { route: "/#/organization/agreements", viewport: "mobile" },
-      { route: "/#/driver/today", viewport: "mobile" },
-      { route: "/#/driver/route", viewport: "mobile" },
-      { route: "/#/driver/map", viewport: "mobile" },
-      { route: "/#/driver/checkin", viewport: "mobile" },
-    ]
+    { PASS: 82, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
+    []
   );
 
   assertRows(

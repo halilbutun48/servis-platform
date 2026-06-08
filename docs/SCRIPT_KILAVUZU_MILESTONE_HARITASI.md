@@ -326,6 +326,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `PASS-` kalan satırlar final risk/backlog olarak raporlanır; Sefer Abi launcher / NavDock / sticky tab / horizontal overflow rulings bu belgede açıkça görünür.
 - Browser-smoke commit dışı kalır; backend route / service / schema bu milestone ile değişmez.
 
+### QUALITY-GATE-FINAL-01 [CHECK]
+- `check:qualitygatefinal01` all-panels reality audit, mobile all-roles audit, premium smoke ve product-flow button audit snapshot'larını tek release gate raporunda toplar.
+- Check script: `node backend\scripts\quality_gate_final_01_check.js`
+- Final doc: `docs/QUALITY_GATE_FINAL_01.md`
+- `UX-FIX > 0`, `BLOCKER > 0` ve `NOT-FOUND > 0` kapatıcıdır; `AUTH-BLOCKED` report-only not olabilir.
+- All-panels reality audit için `PASS- 0` korunur; mobile all-roles audit'teki `PASS- 37`, premium smoke'taki `PASS- 15` ve product-flow button audit'teki `PASS- 10` evidence / coverage notları olarak ayrı belgelenir, tek başına release blocker sayılmaz.
+- Browser-smoke ve çalışma alanı artefact'leri commit dışı kalır; backend route / service / schema katmanı bu gate ile değişmez.
+
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
 - `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.

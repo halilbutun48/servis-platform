@@ -24,6 +24,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
   "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
   "backend/scripts/ux_room_shifts_density_dedup_01_check.js",
+  "backend/scripts/quality_gate_final_01_check.js",
   "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
   "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
   "web/src/panels/company/companyAgreementsMobileCards.jsx",
@@ -33,6 +34,7 @@ const workingTreeCompatFiles = [
   "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
   "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
   "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
+  "docs/QUALITY_GATE_FINAL_01.md",
   "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
 ];
 
@@ -192,6 +194,7 @@ function slugToMilestone(slug) {
   [/uxpremiumcriticaluxfixcleanup0?1/i, "UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01"],
     [/uxlivepanelpremiumsmoke0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
     [/uxlivepanelpremium0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
+    [/qualitygatefinal0?1/i, "QUALITY-GATE-FINAL-01"],
     [/uxsmokepassminusevidence0?1/i, "UX-SMOKE-PASS-MINUS-EVIDENCE-01"],
     [/uxcompanymobileactionclarity0?1/i, "UX-COMPANY-MOBILE-ACTION-CLARITY-01"],
     [/uxparentpersonelliveerrorclarity0?1/i, "UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01"],
@@ -219,7 +222,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:leadcapture01", "check:onboardingreview01", "check:productflowbuttonaudit01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:leadcapture01", "check:onboardingreview01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1269,6 +1272,9 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Mobile web final acceptance milestone: \`MOBILE-WEB-FINAL-01\``);
   out.push(`- Mobile web final acceptance docs: \`docs/MOBILE_WEB_FINAL_01.md\``);
   out.push(`- Mobile web final acceptance command: \`node backend\\scripts\\mobile_web_final_01_check.js\``);
+  out.push(`- Quality gate final milestone: \`QUALITY-GATE-FINAL-01\``);
+  out.push(`- Quality gate final docs: \`docs/QUALITY_GATE_FINAL_01.md\``);
+  out.push(`- Quality gate final command: \`node backend\\scripts\\quality_gate_final_01_check.js\``);
   out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
   out.push(`- Agreements detail docs: \`docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md\``);
   out.push(`- Agreements detail command: \`node backend\\scripts\\ux_premium_critical_fix_agreements_detail_01_check.js\``);
@@ -1542,6 +1548,10 @@ function verifyDoc(docText, summary) {
     "check:mobilewebfinal01",
     "node backend\\scripts\\mobile_web_final_01_check.js",
     "docs/MOBILE_WEB_FINAL_01.md",
+    "QUALITY-GATE-FINAL-01",
+    "check:qualitygatefinal01",
+    "node backend\\scripts\\quality_gate_final_01_check.js",
+    "docs/QUALITY_GATE_FINAL_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",

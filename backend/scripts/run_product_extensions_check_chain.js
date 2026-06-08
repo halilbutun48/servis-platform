@@ -136,6 +136,7 @@ const steps = [
   'check:uxparentpersonelliveerrorclarity01',
   'check:livetrackingfinal01',
   'check:driverflowfinal01',
+  'check:qualitygatefinal01',
 ];
 
 function runStep(scriptName) {

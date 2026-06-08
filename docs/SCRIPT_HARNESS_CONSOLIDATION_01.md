@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `345`
-- Toplam executable tracked file: `1119`
-- Combined registry row: `1464`
-- Root/backend/web/mobile package dağılımı: root `188`, backend `684`, web `88`, mobile `201`
+- Toplam package script entry: `348`
+- Toplam executable tracked file: `1124`
+- Combined registry row: `1472`
+- Root/backend/web/mobile package dağılımı: root `191`, backend `689`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `46`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -65,6 +65,9 @@ Repo: `servis-platform`
 - Mobile web final acceptance milestone: `MOBILE-WEB-FINAL-01`
 - Mobile web final acceptance docs: `docs/MOBILE_WEB_FINAL_01.md`
 - Mobile web final acceptance command: `node backend\scripts\mobile_web_final_01_check.js`
+- Quality gate final milestone: `QUALITY-GATE-FINAL-01`
+- Quality gate final docs: `docs/QUALITY_GATE_FINAL_01.md`
+- Quality gate final command: `node backend\scripts\quality_gate_final_01_check.js`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -82,8 +85,8 @@ Repo: `servis-platform`
 - Public lead audit check: `check:productflowbuttonaudit01`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
-- ACTIVE: `382`
-- ACTIVE_CORE: `146`
+- ACTIVE: `385`
+- ACTIVE_CORE: `147`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -99,11 +102,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `519`
+- NEEDS_REVIEW: `523`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `274`
+- Eski sistem term eşleşmesi: `276`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -111,16 +114,16 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 382 |
+| ACTIVE | 385 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 146 |
+| ACTIVE_CORE | 147 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 519 |
+| NEEDS_REVIEW | 523 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -287,9 +290,11 @@ Repo: `servis-platform`
 | root:check:uxmobileoverflowminimapreadability01 | package.json | root | node backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js | review | NEEDS_REVIEW |  | UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01 |  | Owner or chain unclear |  |
 | root:check:uxmobileoverflowminimappolish02 | package.json | root | node backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js | review | NEEDS_REVIEW |  | UX-MOBILE-OVERFLOW-MINIMAP-POLISH-02 |  | Owner or chain unclear |  |
 | root:check:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js | core | ACTIVE_CORE |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Breaks canonical verification chain |  |
+| root:check:uxallpanelsrealityaudit01 | package.json | root | node backend/scripts/ux_all_panels_reality_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXALLPANELSREALITYAUDIT-01 |  | Owner or chain unclear |  |
 | root:check:uxsmokepassminusevidence01 | package.json | root | node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js | core | ACTIVE_CORE |  | UX-SMOKE-PASS-MINUS-EVIDENCE-01 |  | Breaks canonical verification chain |  |
 | root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
 | root:smoke:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs | review | NEEDS_REVIEW |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Owner or chain unclear |  |
+| root:smoke:uxallpanelsrealityaudit01 | package.json | root | node backend/scripts/ux_all_panels_reality_audit_01.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-UXALLPANELSREALITYAUDIT-01 |  | Owner or chain unclear |  |
 | root:smoke:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Loses manual smoke entrypoint |  |
 | root:check:uxlivepanelpremiumsmoke01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01_check.js | core | ACTIVE_CORE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:mobilewebfinal01 | package.json | root | node backend/scripts/mobile_web_final_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
@@ -298,6 +303,7 @@ Repo: `servis-platform`
 | root:check:e2esmoke01 | package.json | root | node backend/scripts/e2e_smoke_01_demo_acceptance_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-E-2-ESMOKE-01 |  | Breaks canonical verification chain |  |
 | root:check:fieldlaunch01 | package.json | root | node backend/scripts/field_launch_pack_01_readiness_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-FIELDLAUNCH-01 |  | Breaks canonical verification chain |  |
 | root:check:verifychain01 | package.json | root | node backend/scripts/verify_chain_01_product_extensions_check.js | verify-core | ACTIVE_CORE |  | VERIFY-CHAIN-01 |  | Breaks canonical verification chain |  |
+| root:check:qualitygatefinal01 | package.json | root | node backend/scripts/quality_gate_final_01_check.js | core | ACTIVE_CORE |  | QUALITY-GATE-FINAL-01 |  | Breaks canonical verification chain |  |
 | root:check:op01 | package.json | root | node backend/scripts/op_01_operation_proof_service_proof_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-01 |  | Breaks canonical verification chain |  |
 | root:check:op02 | package.json | root | node backend/scripts/op_02_manual_operator_proof_note_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-02 |  | Breaks canonical verification chain |  |
 | root:check:op03 | package.json | root | node backend/scripts/op_03_web_operation_proof_card_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-03 |  | Breaks canonical verification chain |  |
@@ -718,10 +724,15 @@ Repo: `servis-platform`
 | ui_action_wiring_audit_01_check.js | backend/scripts/ui_action_wiring_audit_01_check.js | backend | root:check:uiactionwiringaudit01 | review | NEEDS_REVIEW |  | UI-ACTION-WIRING-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ui_route_resilience_hotfix_check.js | backend/scripts/ui_route_resilience_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | UI-ROUTE-RESILIENCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | username_first_login_hotfix_check.js | backend/scripts/username_first_login_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | USERNAME-FIRST-LOGIN-HOTFIX-CHECK |  | Owner or chain unclear |  |
+| ux_all_panels_reality_audit_01.mjs | backend/scripts/ux_all_panels_reality_audit_01.mjs | backend | root:check:uxallpanelsrealityaudit01, root:smoke:uxallpanelsrealityaudit01 | review | NEEDS_REVIEW |  | UX-ALL-PANELS-REALITY-AUDIT-01 |  | Owner or chain unclear |  |
+| ux_all_panels_reality_audit_01_check.js | backend/scripts/ux_all_panels_reality_audit_01_check.js | backend | root:check:uxallpanelsrealityaudit01 | product | ACTIVE |  | UX-ALL-PANELS-REALITY-AUDIT-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_brand_login_premium_01_check.js | backend/scripts/ux_brand_login_premium_01_check.js | backend | root:check:uxbrandloginpremium01 | product | ACTIVE |  | UX-BRAND-LOGIN-PREMIUM-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_collapsible_panels_01_check.js | backend/scripts/ux_collapsible_panels_01_check.js | backend | root:check:uxcollapsiblepanels01 | product | ACTIVE |  | UX-COLLAPSIBLE-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_company_agreements_mobile_parity_01_check.js | backend/scripts/ux_company_agreements_mobile_parity_01_check.js | backend | root:check:uxcompanyagreementsmobileparity01 | product | ACTIVE |  | UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_mobile_action_clarity_01_check.js | backend/scripts/ux_company_mobile_action_clarity_01_check.js | backend | root:check:uxcompanymobileactionclarity01 | product | ACTIVE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_ops_panel_tabs_01_check.js | backend/scripts/ux_company_ops_panel_tabs_01_check.js | backend | root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelssmoke01 | product | ACTIVE |  | UX-COMPANY-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_panels_final_polish_01_check.js | backend/scripts/ux_company_panels_final_polish_01_check.js | backend | root:check:uxcompanypanelsfinalpolish01 | product | ACTIVE |  | FINAL |  | Owner or chain unclear | product check/helper |
+| ux_company_personel_access_mobile_parity_01_check.js | backend/scripts/ux_company_personel_access_mobile_parity_01_check.js | backend | root:check:uxcompanypersonelaccessmobileparity01 | product | ACTIVE |  | UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_quality_panel_tabs_01_check.js | backend/scripts/ux_company_quality_panel_tabs_01_check.js | backend | root:check:uxcompanyqualitytabs01 | product | ACTIVE |  | UX-COMPANY-QUALITY-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_shifts_tabs_01_check.js | backend/scripts/ux_company_shifts_tabs_01_check.js | backend | root:check:uxcompanyshiftstabs01 | product | ACTIVE |  | UX-COMPANY-SHIFTS-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_contract_conversion_ops_bridge_clarity_01_check.js | backend/scripts/ux_contract_conversion_ops_bridge_clarity_01_check.js | backend | root:check:uxcontractconversionopsbridgeclarity01 | product | ACTIVE |  | UX-CONTRACT-CONVERSION-OPS-BRIDGE-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -814,7 +825,7 @@ Repo: `servis-platform`
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
 | service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
-| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:cop04b, root:check:productflowbuttonaudit01, root:check:uiactionwiringaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
+| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:cop04b, root:check:productflowbuttonaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
 | google.js | backend/src/auth/google.js | backend |  | review | NEEDS_REVIEW |  | GOOGLE |  | Owner or chain unclear |  |
 | jwt.js | backend/src/auth/jwt.js | backend |  | review | NEEDS_REVIEW |  | JWT |  | Owner or chain unclear |  |
@@ -1013,7 +1024,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| ux_company_agreements_mobile_parity_01_check.js | backend/scripts/ux_company_agreements_mobile_parity_01_check.js | backend | root:check:uxcompanyagreementsmobileparity01 | product | ACTIVE |  | UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
+| quality_gate_final_01_check.js | backend/scripts/quality_gate_final_01_check.js | backend | root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1491,8 +1502,8 @@ Repo: `servis-platform`
 | check_m71_workflow_loadsummary_hotfix_repo_contract.ps1 | tools/checks/living/hotfixes/check_m71_workflow_loadsummary_hotfix_repo_contract.ps1 | tools |  | release | ACTIVE_RELEASE_ONLY |  | CHECK-M-71-WORKFLOW-LOADSUMMARY-HOTFIX-REPO-CONTRACT |  | Owner or chain unclear | canonical living hotfix |
 | check_m72_georeview_token_hotfix_repo_contract.ps1 | tools/checks/living/hotfixes/check_m72_georeview_token_hotfix_repo_contract.ps1 | tools |  | release | ACTIVE_RELEASE_ONLY |  | CHECK-M-72-GEOREVIEW-TOKEN-HOTFIX-REPO-CONTRACT |  | Owner or chain unclear | canonical living hotfix |
 | export_shareable_repo_bundle.ps1 | tools/export_shareable_repo_bundle.ps1 | tools |  | review | NEEDS_REVIEW |  | EXPORT-SHAREABLE-REPO-BUNDLE |  | Owner or chain unclear |  |
-| gate.cmd | tools/gate.cmd | tools | backend:m90b1check, mobile:check:m9, root:check:paysafe01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
-| gate.ps1 | tools/gate.ps1 | tools | backend:m90b1check, mobile:check:m9, root:check:paysafe01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
+| gate.cmd | tools/gate.cmd | tools | backend:m90b1check, mobile:check:m9, root:check:paysafe01, root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
+| gate.ps1 | tools/gate.ps1 | tools | backend:m90b1check, mobile:check:m9, root:check:paysafe01, root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
 | pack.cmd | tools/pack.cmd | tools | backend:m83check, backend:m90c7check, mobile:check:m10, mobile:check:m99a, root:check:fieldlaunch01 | review | NEEDS_REVIEW |  | PACK |  | Owner or chain unclear |  |
 | pack.ps1 | tools/pack.ps1 | tools | backend:m83check, backend:m90c7check, mobile:check:m10, mobile:check:m99a, root:check:fieldlaunch01 | review | NEEDS_REVIEW |  | PACK |  | Owner or chain unclear |  |
 | pack_docs_ssot.ps1 | tools/pack_docs_ssot.ps1 | tools |  | manual | MANUAL_RELEASE_TOOL |  | PACK-DOCS-SSOT |  | Loses operator release tool | release tool |

@@ -199,6 +199,7 @@ function main() {
   must(pkg, '"check:uxparentpersonelliveerrorclarity01": "node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js"', 'package.json exposes check:uxparentpersonelliveerrorclarity01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
+  must(pkg, '"check:qualitygatefinal01": "node backend/scripts/quality_gate_final_01_check.js"', 'package.json exposes check:qualitygatefinal01');
   must(companyAgreementsPanel, 'CompanyAgreementsMobileCards', 'company agreements panel wires mobile cards');
   must(companyAgreementsPanel, 'desktopShiftTable companyAgreementsDesktopList', 'company agreements panel keeps desktop table wrapper');
   must(companyAgreementsMobileCards, 'CompanyAgreementMobileCard', 'company agreements mobile cards file exports card');
@@ -340,6 +341,7 @@ function main() {
     'check:uxparentpersonelliveerrorclarity01',
     'check:livetrackingfinal01',
     'check:driverflowfinal01',
+    'check:qualitygatefinal01',
 ], 'product extensions runner order');
 
   must(guide, 'check:product-extensions', 'script guide exposes check:product-extensions');
@@ -495,6 +497,9 @@ function main() {
   must(harnessCheck, 'MOBILE-WEB-FINAL-01', 'script harness check knows mobile web final milestone');
   must(harnessCheck, 'check:mobilewebfinal01', 'script harness check knows mobile web final alias');
   must(harnessCheck, 'docs/MOBILE_WEB_FINAL_01.md', 'script harness check knows mobile web final doc');
+  must(harnessCheck, 'QUALITY-GATE-FINAL-01', 'script harness check knows quality gate final milestone');
+  must(harnessCheck, 'check:qualitygatefinal01', 'script harness check knows quality gate final alias');
+  must(harnessCheck, 'docs/QUALITY_GATE_FINAL_01.md', 'script harness check knows quality gate final doc');
   must(harnessCheck, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness check knows cleanup milestone');
   must(harnessCheck, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness check knows cleanup alias');
   must(harnessCheck, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness check knows cleanup doc');
@@ -531,6 +536,9 @@ function main() {
   must(harnessDoc, 'MOBILE-WEB-FINAL-01', 'script harness doc lists mobile web final milestone');
   must(harnessDoc, 'check:mobilewebfinal01', 'script harness doc lists mobile web final alias');
   must(harnessDoc, 'docs/MOBILE_WEB_FINAL_01.md', 'script harness doc lists mobile web final doc');
+  must(harnessDoc, 'QUALITY-GATE-FINAL-01', 'script harness doc lists quality gate final milestone');
+  must(harnessDoc, 'check:qualitygatefinal01', 'script harness doc lists quality gate final alias');
+  must(harnessDoc, 'docs/QUALITY_GATE_FINAL_01.md', 'script harness doc lists quality gate final doc');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
@@ -617,6 +625,10 @@ function main() {
   must(guide, 'check:mobilewebfinal01', 'script guide exposes check:mobilewebfinal01');
   must(guide, 'node backend\\scripts\\mobile_web_final_01_check.js', 'script guide includes mobile web final command');
   must(guide, 'docs/MOBILE_WEB_FINAL_01.md', 'script guide includes mobile web final doc');
+  must(guide, 'QUALITY-GATE-FINAL-01', 'script guide mentions QUALITY-GATE-FINAL-01');
+  must(guide, 'check:qualitygatefinal01', 'script guide exposes check:qualitygatefinal01');
+  must(guide, 'node backend\\scripts\\quality_gate_final_01_check.js', 'script guide includes quality gate final command');
+  must(guide, 'docs/QUALITY_GATE_FINAL_01.md', 'script guide includes quality gate final doc');
   must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
   must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');
   must(guide, 'node backend\\scripts\\ux_parent_personel_live_error_clarity_01_check.js', 'script guide includes parent/personel live error clarity command');
