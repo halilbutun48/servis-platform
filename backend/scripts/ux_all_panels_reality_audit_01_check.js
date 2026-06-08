@@ -75,8 +75,8 @@ function main() {
     must(Array.isArray(report.coverageSources) && report.coverageSources.includes("backend/scripts/ux_all_panels_reality_audit_01.mjs"), "report coverage includes the new runner");
     must(report.routeCount === 82, "report keeps 82 route checks");
     must(report.screenshotCount === 164, "report keeps 164 screenshots");
-    must(report.statusCounts.PASS === 72, "report keeps PASS 72");
-    must(report.statusCounts["PASS-"] === 10, "report keeps PASS- 10");
+    must(report.statusCounts.PASS === 82, "report keeps PASS 82");
+    must(report.statusCounts["PASS-"] === 0, "report keeps PASS- 0");
     must(report.statusCounts["UX-FIX"] === 0, "report keeps UX-FIX 0");
     must(report.statusCounts.BLOCKER === 0, "report keeps BLOCKER 0");
     must(report.statusCounts["AUTH-BLOCKED"] === 0, "report keeps AUTH-BLOCKED 0");
@@ -86,22 +86,21 @@ function main() {
     must(summary.horizontalOverflowIssueCount === 0, "summary keeps horizontal overflow at 0");
     must(summary.primaryActionClickableIssueCount === 0, "summary keeps primary action clickable issues at 0");
     must(summary.launcherOverlapIssueCount === 0, "summary keeps launcher overlap at 0");
-    must(summary.mobileDrawerIssueCount === 4, "summary keeps mobile drawer issues at 4");
-    must(summary.stickyHeaderTabIssueCount === 7, "summary keeps sticky header / tab issues at 7");
+    must(summary.mobileDrawerIssueCount === 0, "summary keeps mobile drawer issues at 0");
+    must(summary.stickyHeaderTabIssueCount === 0, "summary keeps sticky header / tab issues at 0");
     must(summary.emptyLoadingErrorUnreadableCount === 0, "summary keeps unreadable empty/loading/error surfaces at 0");
     must(summary.networkErrorCount === 0, "summary keeps network errors at 0");
     must(summary.primaryActionVisibleCount === 74, "summary keeps 74 visible primary-action rows");
     must(summary.primaryActionMissingByDesignCount === 8, "summary keeps 8 by-design CTA-light rows");
     must(summary.launcherVisibleAuthCount === 76, "summary keeps launcher visible on all authenticated rows");
-    must(summary.driverMobileDrawerRoutes?.length === 4, "summary lists 4 driver mobile drawer issue rows");
-    must(summary.stickyHeaderRoutes?.length === 7, "summary lists 7 sticky-header rows");
+    must(summary.driverMobileDrawerRoutes?.length === 0, "summary lists no driver mobile drawer issue rows");
+    must(summary.stickyHeaderRoutes?.length === 0, "summary lists no sticky-header rows");
     must(countWhere(rows, (row) => row.checks?.horizontalOverflowControlled === false) === 0, "rows keep horizontal overflow clean");
     must(countWhere(rows, (row) => row.checks?.launcherDoesNotCoverPrimaryAction === false) === 0, "rows keep launcher overlap clean");
     must(countWhere(rows, (row) => row.checks?.primaryActionClickable === false) === 0, "rows keep primary action clickable");
 
     const nonPassRows = rows.filter((row) => row.status !== "PASS");
-    must(nonPassRows.length === 10, "report keeps 10 non-PASS rows");
-    must(nonPassRows.every((row) => row.status === "PASS-"), "all non-PASS rows are PASS-");
+    must(nonPassRows.length === 0, "report keeps 0 non-PASS rows");
   } else {
     console.warn(`WARN audit report missing; run npm run smoke:uxallpanelsrealityaudit01 to refresh ${reportJsonPath}.`);
   }

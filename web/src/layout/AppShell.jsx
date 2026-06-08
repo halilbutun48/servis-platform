@@ -54,7 +54,7 @@ export default function AppShell({ path, children }) {
         onMobileClose={() => setMobileNavPath(null)}
       />
       <div className="shellMain">
-        <div className="shellTop">
+        <header className="shellTop">
           <button
             type="button"
             className="btn sm shellTopMenu"
@@ -79,7 +79,7 @@ export default function AppShell({ path, children }) {
           <button className="btn sm shellTopLogout" onClick={logout}>
             Çıkış
           </button>
-        </div>
+        </header>
         <div className="shellContent">
           <div className={isFluid ? "page page--fluid" : "page"}>
             {shouldShowStepUpCard ? <TotpStepUpCard /> : null}

@@ -26,8 +26,8 @@ Bu audit, route/service/schema/auth/payment execution mantığına dokunmaz.
 | Screenshot sayısı | `164` |
 | Desktop route checks | `41` |
 | Mobile route checks | `41` |
-| PASS | `72` |
-| PASS- | `10` |
+| PASS | `82` |
+| PASS- | `0` |
 | UX-FIX | `0` |
 | BLOCKER | `0` |
 | AUTH-BLOCKED | `0` |
@@ -51,28 +51,11 @@ Bu audit, route/service/schema/auth/payment execution mantığına dokunmaz.
 
 ## P1 Findings
 
-### 1. Mobil driver shell drawer akışı
+Bu sweep'te kalan P1 yok.
 
-`4` route row driver mobile shell drawer toggle / backdrop / scroll-lock sorununa düştü:
-- `/#/driver/today`
-- `/#/driver/route`
-- `/#/driver/map`
-- `/#/driver/checkin`
-
-Bu akışlar P1 olarak değerlendirildi. Ekranlar çalışıyor, fakat mobil drawer UX daha kararlı olmalı.
-
-### 2. Sticky header / tab yoğunluğu
-
-`7` route row sticky header / tab okunabilirliğinde sıkıştı:
-- `/#/superadmin` mobile
-- `/#/superadmin/trust-quality` mobile
-- `/#/room/agreements` desktop
-- `/#/room/agreements` mobile
-- `/#/room/operation-health` mobile
-- `/#/school/agreements` mobile
-- `/#/organization/agreements` mobile
-
-Bu alanlar da P1 olarak tutuldu. Sorun kırılma değil, yoğunluk ve okunabilirlik.
+Önceki mobile drawer ve sticky header / tab bulguları iki küçük frontend-only düzeltme ile kapandı:
+- KVKK gate artık shell header'ın üstüne binmiyor; driver menüsü tekrar tıklanabilir.
+- `shellTop` semantik olarak `header` olarak işaretlendiği için smoke, görünür sticky header alanını doğru görüyor.
 
 ## Primary action notu
 
@@ -106,8 +89,6 @@ Yani primary action visibility tarafında gerçek bir P0/P1 regresyon görülmed
 
 ## Sonuç
 
-Bu sweep'te P0 yok, P1 ise iki küçük kümede toplanıyor:
-1. mobil driver drawer akışı
-2. sticky header / tab yoğunluğu
+Bu sweep'te P0 yok, kalan P1 de yok.
 
-Sonraki adım, bu iki P1 alanını izole edip çok küçük UI polish ile kapatmaktır. Route, service veya auth katmanına dokunmak gerekmez.
+Sonraki adım, aynı iki küçük frontend-only düzeltme kalıbını yeni bir regresyon gelirse yeniden kullanmaktır. Route, service veya auth katmanına dokunmak gerekmez.

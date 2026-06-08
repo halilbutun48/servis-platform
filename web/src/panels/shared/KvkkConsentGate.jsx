@@ -63,7 +63,8 @@ export default function KvkkConsentGate() {
         position: "fixed",
         inset: 0,
         background: "rgba(0,0,0,0.55)",
-        zIndex: 50,
+        // Keep the shell header and menu reachable while the consent gate blocks content below it.
+        zIndex: 4,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
