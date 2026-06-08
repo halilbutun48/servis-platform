@@ -399,6 +399,9 @@ function main() {
     "web/src/panels/organization/CenterPanel.jsx",
     "web/src/panels/company/CompanyShiftsPanelIntro.jsx",
     "web/src/panels/company/ShiftsPanel.jsx",
+    "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
+    "docs/PRIMER_SSOT.md",
+    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
     "tools/repo_contract_state.json",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within agreements detail scope");

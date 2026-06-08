@@ -16,7 +16,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Refresh rotasyonu fail-closed; telematics vendor webhook HMAC + timestamp + replay guard ile korunur; `x-greenpack` sadece explicit local-test override olarak kalır.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
 - Repo check chain sonucu: `PASS 21 / FAIL 0`; selected milestone static set: `PASS 92 / FAIL 0 / SKIP 78`.
-- `ROADMAP-LOCK-AI-MARKETPLACE-01` docs-only roadmap kilidi alınmıştır; Sefer Abi ürünün ana farkıdır ve runtime davranışı değiştirilmeden yol haritası docs üzerinden sabitlenir. Public landing ve public vitrin copy'sinde ise SeferPakt platform-first anlatılır, Sefer Abi ikincil operasyon copilot'u olarak konumlanır.
+- `ROADMAP-LOCK-AI-MARKETPLACE-01` docs-only roadmap kilidi alınmıştır; Sefer Abi ürünün ana farkıdır ve runtime davranışı değiştirilmeden yol haritası docs üzerinden sabitlenir. Detay dokümanı: `docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md`. Public landing ve public vitrin copy'sinde ise SeferPakt platform-first anlatılır, Sefer Abi ikincil operasyon copilot'u olarak konumlanır.
 - `PUBLIC-LANDING-01` public vitrin / tanıtım yüzeyi açılmıştır; route `/#/landing` üzerinden çalışır ve public CTA'lar kontrollü lead formuna bağlanır.
 - `LEAD-CAPTURE-01` kontrollü public lead toplama akışını açar; otomatik üyelik, ödeme ve davet gönderimi kapalı kalır.
 - `ONBOARDING-REVIEW-01` lead başvurularını insan inceleme kuyruğuna taşır; `APPROVED_FOR_INVITE` yalnızca sonraki invite adımı için hazırlıktır.

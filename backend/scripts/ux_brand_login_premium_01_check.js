@@ -240,6 +240,9 @@ function main() {
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/MOBILE_WEB_FINAL_01.md",
+    "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
+    "docs/PRIMER_SSOT.md",
+    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "working tree stays within brand/login premium scope");

@@ -284,6 +284,9 @@ function main() {
     "web/src/state/sessionProvider.jsx",
     "web/src/panels/room/ShiftsPanel.jsx",
     "web/src/panels/room/roomShiftsOverviewSection.jsx",
+    "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
+    "docs/PRIMER_SSOT.md",
+    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within room/company shifts mobile card fix scope");

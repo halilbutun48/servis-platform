@@ -273,6 +273,9 @@ function main() {
     "backend/artifacts/runtime-data/agreement-route-refresh-requests.json",
     "backend/artifacts/runtime-data/public-leads.json",
     "backend/artifacts/runtime-data/quality-review-decisions.json",
+    "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
+    "docs/PRIMER_SSOT.md",
+    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
     "tools/repo_contract_state.json",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within mobile web shell clarity scope");

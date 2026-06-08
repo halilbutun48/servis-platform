@@ -431,9 +431,12 @@ function main() {
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_brand_login_premium_01_check.js",
     "backend/scripts/ux_company_personel_access_mobile_parity_01_check.js",
+    "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md",
     "docs/UX_BRAND_LOGIN_PREMIUM_01.md",
+    "docs/PRIMER_SSOT.md",
+    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
     "tools/repo_contract_state.json",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];
