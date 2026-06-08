@@ -20,6 +20,7 @@ const steps = [
   'check:leadcapture01',
   'check:onboardingreview01',
   'check:onboardingreviewfinalaudit01',
+  'check:invitebasedmembership01',
   'check:productflowbuttonaudit01',
   'check:agreementsourceshiftlineage01',
   'check:marketplacefreetooperate01',

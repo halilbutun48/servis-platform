@@ -147,6 +147,7 @@ ordered(
     "check:leadcapture01",
     "check:onboardingreview01",
     "check:onboardingreviewfinalaudit01",
+    "check:invitebasedmembership01",
     "check:productflowbuttonaudit01",
   ],
   "onboarding review final audit stays after review and before product flow audit"
@@ -156,14 +157,21 @@ must(guide, "ONBOARDING-REVIEW-01 FINAL AUDIT", "script guide mentions onboardin
 must(guide, "check:onboardingreviewfinalaudit01", "script guide exposes onboarding review final audit check");
 must(guide, "node backend\\scripts\\onboarding_review_final_audit_01_check.js", "script guide includes onboarding review final audit command");
 must(guide, "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md", "script guide includes onboarding review final audit doc");
-must(guide, "PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> PRODUCT-FLOW-BUTTON-AUDIT-01", "script guide keeps public lead order");
+must(guide, "INVITE-BASED-MEMBERSHIP-01", "script guide mentions invite-based membership milestone");
+must(guide, "check:invitebasedmembership01", "script guide exposes invite-based membership check");
+must(guide, "node backend\\scripts\\invite_based_membership_01_check.js", "script guide includes invite-based membership command");
+must(guide, "docs/INVITE_BASED_MEMBERSHIP_01.md", "script guide includes invite-based membership doc");
+must(guide, "PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01", "script guide keeps public lead order");
 
 must(primer, "ONBOARDING-REVIEW-01 final audit", "primer mentions onboarding review final audit");
 must(primer, "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md", "primer links onboarding review final audit doc");
+must(primer, "INVITE-BASED-MEMBERSHIP-01", "primer mentions invite-based membership milestone");
+must(primer, "docs/INVITE_BASED_MEMBERSHIP_01.md", "primer links invite-based membership doc");
 
 must(roadmap, "AI Promise Strategy / Güven Stratejisi", "roadmap keeps trust strategy section");
 must(roadmap, "Public marketing claim guard", "roadmap keeps marketing claim guard");
 must(roadmap, "ONBOARDING-REVIEW-01 final audit", "roadmap keeps onboarding review final audit order");
+must(roadmap, "INVITE-BASED-MEMBERSHIP-01", "roadmap keeps invite-based membership order");
 
 must(baseDoc, "ONBOARDING-REVIEW-01", "base onboarding doc still exists");
 must(baseDoc, "APPROVED_FOR_INVITE", "base onboarding doc keeps invite-ready state");
@@ -194,6 +202,10 @@ must(finalDoc, "guard", "final audit doc keeps guard wording");
 must(finalDoc, "audit log", "final audit doc keeps audit log wording");
 must(finalDoc, "Sefer Abi içeride daha fazlasını yaparsa bu güveni artırır.", "final audit doc keeps overdeliver trust sentence");
 must(finalDoc, "APPROVED_FOR_INVITE", "final audit doc keeps invite-ready status boundary");
+must(finalDoc, "INVITE-BASED-MEMBERSHIP-01", "final audit doc points to invite-based membership next milestone");
+must(finalDoc, "public lead otomatik kullanıcı / account olmaz", "final audit doc keeps public lead account boundary");
+must(finalDoc, "invite draft", "final audit doc mentions invite draft boundary");
+must(finalDoc, "pending invite", "final audit doc mentions pending invite boundary");
 must(finalDoc, "AI runtime capability ekleme", "final audit doc excludes runtime capability work");
 must(finalDoc, "UI feature ekleme", "final audit doc excludes UI feature work");
 must(finalDoc, "backend route/service/schema değiştirme", "final audit doc excludes backend changes");

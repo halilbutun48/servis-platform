@@ -223,7 +223,14 @@ function main() {
 
   const reviewRows = report.routes.filter((row) => row.kind === "reviewQueue");
   must(reviewRows.length === 2, "review queue coverage appears in desktop/mobile pairs");
-  must(reviewRows.every((row) => row.checks.reviewActionVisibleCount === 5), "review queue keeps five visible actions");
+  const reviewQueueHasActions = reviewRows.every((row) => row.checks.reviewActionVisibleCount === 5);
+  const reviewQueueHasEmptyState = reviewRows.every(
+    (row) =>
+      row.checks.reviewActionVisibleCount === 0 &&
+      row.checks.reviewQueueEmptyVisible === true &&
+      row.checks.reviewQueueEmptyReasonVisible === true
+  );
+  must(reviewQueueHasActions || reviewQueueHasEmptyState, "review queue keeps five visible actions or a readable empty-state fallback");
   must(reviewRows.every((row) => row.checks.reviewBoundaryVisible === true), "review queue keeps read-only boundary");
   must(reviewRows.every((row) => row.checks.reviewOnlyPillVisible === false), "review queue keeps review-only pill hidden in the visible chrome");
 

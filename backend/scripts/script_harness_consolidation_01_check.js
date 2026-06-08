@@ -20,6 +20,8 @@ const workingTreeCompatFiles = [
   "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
+  "backend/scripts/invite_based_membership_01_check.js",
+  "docs/INVITE_BASED_MEMBERSHIP_01.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
   "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
@@ -1224,7 +1226,7 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Root/backend/web/mobile package dağılımı: root \`${summary.byDomain.root}\`, backend \`${summary.byDomain.backend}\`, web \`${summary.byDomain.web}\`, mobile \`${summary.byDomain.mobile}\``);
   out.push(`- Tools executable dağılımı: tools \`${summary.byDomain.tools}\``);
   out.push(`- Docs indexed: \`${summary.byDomain.docs}\``);
-  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...\``);
+  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...\``);
   out.push(`- UX preview milestones: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01\` -> \`UX-LIVE-PANEL-COVERAGE-MATRIX-01\` -> \`UX-SMOKE-PASS-MINUS-EVIDENCE-01\` -> \`UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01\` -> \`UX-LIVE-PANEL-PREMIUM-SMOKE-01\``);
   out.push(`- UX preview docs: \`docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md\`, \`docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md\`, \`docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md\`, \`docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md\`, \`docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md\``);
   out.push(`- UX preview check alias: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK\``);
@@ -1446,6 +1448,7 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push("## 14) Notes");
   out.push("");
   out.push("- Bu doküman repo harness envanterini tek yerde toplar.");
+  out.push("- Invite membership doc: `docs/INVITE_BASED_MEMBERSHIP_01.md`");
   out.push("- Safe cleanup bu turda yalnızca saf alias wrapper dosyalarında yapıldı.");
   out.push("- Legacy alias girişleri docs ve chain referansları nedeniyle korunuyor.");
   out.push("");
@@ -1479,6 +1482,7 @@ function verifyDoc(docText, summary) {
     "check:leadcapture01",
     "check:onboardingreview01",
     "check:onboardingreviewfinalaudit01",
+    "check:invitebasedmembership01",
     "check:productflowbuttonaudit01",
     "smoke:productflowbuttonaudit01",
     "check:uxrouteimpactpreviewcompact01",
@@ -1493,6 +1497,7 @@ function verifyDoc(docText, summary) {
     "LEAD-CAPTURE-01",
     "ONBOARDING-REVIEW-01",
     "ONBOARDING-REVIEW-01 FINAL AUDIT",
+    "INVITE-BASED-MEMBERSHIP-01",
     "PRODUCT-FLOW-BUTTON-AUDIT-01",
     "UX-ROUTE-IMPACT-PREVIEW-COMPACT-01",
     "UX-LIVE-PANEL-COVERAGE-MATRIX-01",
@@ -1504,6 +1509,10 @@ function verifyDoc(docText, summary) {
     "verify_chain_01_product_extensions_check.js",
     "public_landing_platform_first_01_check.js",
     "onboarding_review_final_audit_01_check.js",
+    "invite_based_membership_01_check.js",
+    "docs/INVITE_BASED_MEMBERSHIP_01.md",
+    "check:invitebasedmembership01",
+    "INVITE-BASED-MEMBERSHIP-01",
     "node backend\\scripts\\product_flow_button_audit_01_check.js",
     "node backend\\scripts\\product_flow_button_audit_01.mjs",
     "product_flow_button_audit_01_check.js",

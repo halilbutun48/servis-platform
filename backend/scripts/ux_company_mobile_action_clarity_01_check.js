@@ -149,6 +149,8 @@ function main() {
     "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "package.json",
+    "backend/scripts/invite_based_membership_01_check.js",
+    "docs/INVITE_BASED_MEMBERSHIP_01.md",
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/panels/company/companyAgreementsMobileCards.jsx",
     "web/src/components/checkin/CameraQrScannerCard.jsx",

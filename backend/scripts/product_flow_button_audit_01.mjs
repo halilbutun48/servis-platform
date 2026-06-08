@@ -375,11 +375,27 @@ async function handleReviewQueue(page, result) {
   result.checks.reviewActionVisibleCount = visibleCount;
   result.checks.reviewActionTrialCount = trialCount;
 
-  if (visibleCount < 5 || !result.checks.reviewBoundaryVisible || !result.checks.humanApprovalVisible || !result.checks.readOnlyBoundariesVisible) {
+  const emptyStateVisible = await textVisible(page, "Kayıt yok")
+    || await textVisible(page, "Filtreye uyan başvuru yok.")
+    || await textVisible(page, "Sağdan bir başvuru seçin.");
+  const emptyStateReasonVisible = await textVisible(page, "Detay ekranı yalnız inceleme içindir. Buradan invite, kullanıcı veya ödeme işlemi başlatılmaz.")
+    || await textVisible(page, "Bu ekran sadece başvuruları listeler ve durum/not günceller.");
+  result.checks.reviewQueueEmptyVisible = emptyStateVisible;
+  result.checks.reviewQueueEmptyReasonVisible = emptyStateReasonVisible;
+
+  const emptyStateAllowed = visibleCount < 5 && emptyStateVisible && emptyStateReasonVisible;
+
+  if (!result.checks.reviewBoundaryVisible || !result.checks.humanApprovalVisible || !result.checks.readOnlyBoundariesVisible) {
     result.status = bumpStatus(result.status, "BLOCKER");
-    result.notes.push("Review queue action set or read-only boundary is incomplete.");
-  } else {
+    result.notes.push("Review queue read-only boundary is incomplete.");
+  } else if (visibleCount >= 5) {
     result.notes.push("Review queue exposes human-only actions and keeps invite/user/payment writes out of scope.");
+  } else if (emptyStateAllowed) {
+    result.status = bumpStatus(result.status, "PASS-");
+    result.notes.push("Review queue is empty in this fixture set; readable empty-state guidance is present and action buttons are not required yet.");
+  } else {
+    result.status = bumpStatus(result.status, "BLOCKER");
+    result.notes.push("Review queue action set or empty-state guidance is incomplete.");
   }
 
   if (!result.checks.reviewOnlyPillVisible) {

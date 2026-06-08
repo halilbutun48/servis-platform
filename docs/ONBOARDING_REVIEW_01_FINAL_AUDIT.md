@@ -21,10 +21,13 @@ Bu doküman, `PUBLIC-LANDING-01 FINAL PROMISE CHECK` ile kilitlenen public vaat 
 - `LEAD-CAPTURE-01`
 - `ONBOARDING-REVIEW-01`
 - `ONBOARDING-REVIEW-01 FINAL AUDIT`
+- `INVITE-BASED-MEMBERSHIP-01`
 - `PRODUCT-FLOW-BUTTON-AUDIT-01`
 
 ## Review sınırı
 - `APPROVED_FOR_INVITE` yalnızca sonraki invite adımı için hazırlıktır.
+- `INVITE-BASED-MEMBERSHIP-01` sonraki kontrollü adımdır; public lead otomatik kullanıcı / account olmaz.
+- Invite draft / pending invite yalnızca güvenli planlama sınırında kalır.
 - Bu milestone içinde kullanıcı oluşturma, davet gönderimi, ödeme, fatura, sözleşme, settlement veya supplier verification execute açılmaz.
 - AI runtime capability ekleme.
 - UI feature ekleme.

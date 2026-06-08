@@ -89,6 +89,7 @@ function main() {
   must(pkg, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', 'package.json exposes check:leadcapture01');
   must(pkg, '"check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js"', 'package.json exposes check:onboardingreview01');
   must(pkg, '"check:onboardingreviewfinalaudit01": "node backend/scripts/onboarding_review_final_audit_01_check.js"', 'package.json exposes check:onboardingreviewfinalaudit01');
+  must(pkg, '"check:invitebasedmembership01": "node backend/scripts/invite_based_membership_01_check.js"', 'package.json exposes check:invitebasedmembership01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
@@ -229,6 +230,7 @@ function main() {
     'check:leadcapture01',
     'check:onboardingreview01',
     'check:onboardingreviewfinalaudit01',
+    'check:invitebasedmembership01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
@@ -369,7 +371,11 @@ function main() {
   must(guide, 'check:onboardingreviewfinalaudit01', 'script guide exposes onboarding review final audit check');
   must(guide, 'node backend\\scripts\\onboarding_review_final_audit_01_check.js', 'script guide includes onboarding review final audit command');
   must(guide, 'docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md', 'script guide includes onboarding review final audit doc');
-  must(guide, 'PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide keeps public lead order');
+  must(guide, 'INVITE-BASED-MEMBERSHIP-01', 'script guide mentions invite-based membership milestone');
+  must(guide, 'check:invitebasedmembership01', 'script guide exposes invite-based membership check');
+  must(guide, 'node backend\\scripts\\invite_based_membership_01_check.js', 'script guide includes invite-based membership command');
+  must(guide, 'docs/INVITE_BASED_MEMBERSHIP_01.md', 'script guide includes invite-based membership doc');
+  must(guide, 'PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide keeps public lead order');
   must(guide, 'PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide mentions product flow button audit milestone');
   must(guide, 'check:productflowbuttonaudit01', 'script guide exposes product flow button audit check');
   must(guide, 'node backend\\scripts\\product_flow_button_audit_01_check.js', 'script guide includes product flow button audit command');
@@ -510,6 +516,12 @@ function main() {
   must(harnessCheck, 'ONBOARDING-REVIEW-01 FINAL AUDIT', 'script harness check knows onboarding review final audit milestone');
   must(harnessDoc, 'onboarding_review_final_audit_01_check.js', 'script harness doc lists onboarding review final audit check');
   must(harnessDoc, 'docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md', 'script harness doc lists onboarding review final audit doc');
+  must(harnessCheck, 'check:invitebasedmembership01', 'script harness check knows invite-based membership alias');
+  must(harnessCheck, 'invite_based_membership_01_check.js', 'script harness check knows invite-based membership file');
+  must(harnessCheck, 'INVITE-BASED-MEMBERSHIP-01', 'script harness check knows invite-based membership milestone');
+  must(harnessDoc, 'root:check:invitebasedmembership01', 'script harness doc lists invite-based membership root check');
+  must(harnessDoc, 'invite_based_membership_01_check.js', 'script harness doc lists invite-based membership check');
+  must(harnessDoc, 'INVITE-BASED-MEMBERSHIP-01', 'script harness doc lists invite-based membership milestone');
   must(harnessCheck, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness check knows parent/personel live error clarity milestone');
   must(harnessCheck, 'check:uxparentpersonelliveerrorclarity01', 'script harness check knows parent/personel live error clarity alias');
   must(harnessCheck, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness check knows parent/personel live error clarity doc');

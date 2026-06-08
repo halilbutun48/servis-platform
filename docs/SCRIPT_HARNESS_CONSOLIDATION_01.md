@@ -5,13 +5,13 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `351`
-- Toplam executable tracked file: `1126`
-- Combined registry row: `1477`
-- Root/backend/web/mobile package dağılımı: root `194`, backend `691`, web `88`, mobile `201`
+- Toplam package script entry: `352`
+- Toplam executable tracked file: `1127`
+- Combined registry row: `1479`
+- Root/backend/web/mobile package dağılımı: root `195`, backend `692`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `48`
-- Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
+- Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
@@ -102,7 +102,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `525`
+- NEEDS_REVIEW: `527`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `61`
@@ -123,7 +123,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 525 |
+| NEEDS_REVIEW | 527 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -174,6 +174,7 @@ Repo: `servis-platform`
 | root:check:onboardingreview01 | package.json | root | node backend/scripts/onboarding_review_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ONBOARDINGREVIEW-01 |  | Breaks canonical verification chain |  |
 | root:check:onboardingreviewfinal01 | package.json | root | node backend/scripts/onboarding_review_final_audit_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
 | root:check:onboardingreviewfinalaudit01 | package.json | root | node backend/scripts/onboarding_review_final_audit_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
+| root:check:invitebasedmembership01 | package.json | root | node backend/scripts/invite_based_membership_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-INVITEBASEDMEMBERSHIP-01 |  | Owner or chain unclear |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
 | root:check:marketplacefreetooperate01 | package.json | root | node backend/scripts/marketplace_free_to_operate_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-MARKETPLACEFREETOOPERATE-01 |  | Owner or chain unclear |  |
@@ -675,6 +676,7 @@ Repo: `servis-platform`
 | menu_readiness_cleanup_check.mjs | backend/scripts/menu_readiness_cleanup_check.mjs | backend |  | review | NEEDS_REVIEW |  | MENU-READINESS-CLEANUP-CHECK |  | Owner or chain unclear |  |
 | mobile_web_final_01_check.js | backend/scripts/mobile_web_final_01_check.js | backend | root:check:mobilewebfinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | onboarding_review_01_check.js | backend/scripts/onboarding_review_01_check.js | backend | root:check:onboardingreview01 | review | NEEDS_REVIEW |  | ONBOARDING-REVIEW-01-CHECK |  | Owner or chain unclear |  |
+| onboarding_review_final_audit_01_check.js | backend/scripts/onboarding_review_final_audit_01_check.js | backend | root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | op_01_operation_proof_service_proof_check.js | backend/scripts/op_01_operation_proof_service_proof_check.js | backend | root:check:op01 | product | ACTIVE |  | OP-01-OPERATION-PROOF-SERVICE-PROOF-CHECK |  | Owner or chain unclear | product check/helper |
 | op_02_manual_operator_proof_note_check.js | backend/scripts/op_02_manual_operator_proof_note_check.js | backend | root:check:op02 | product | ACTIVE |  | OP-02-MANUAL-OPERATOR-PROOF-NOTE-CHECK |  | Owner or chain unclear | product check/helper |
 | op_03_web_operation_proof_card_check.js | backend/scripts/op_03_web_operation_proof_card_check.js | backend | root:check:op03 | product | ACTIVE |  | OP-03-WEB-OPERATION-PROOF-CARD-CHECK |  | Owner or chain unclear | product check/helper |
@@ -939,7 +941,7 @@ Repo: `servis-platform`
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend |  | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
@@ -1029,7 +1031,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| onboarding_review_final_audit_01_check.js | backend/scripts/onboarding_review_final_audit_01_check.js | backend | root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| invite_based_membership_01_check.js | backend/scripts/invite_based_membership_01_check.js | backend | root:check:invitebasedmembership01 | review | NEEDS_REVIEW |  | INVITE-BASED-MEMBERSHIP-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -2034,5 +2036,6 @@ Repo: `servis-platform`
 ## 14) Notes
 
 - Bu doküman repo harness envanterini tek yerde toplar.
+- Invite membership doc: `docs/INVITE_BASED_MEMBERSHIP_01.md`
 - Safe cleanup bu turda yalnızca saf alias wrapper dosyalarında yapıldı.
 - Legacy alias girişleri docs ve chain referansları nedeniyle korunuyor.
