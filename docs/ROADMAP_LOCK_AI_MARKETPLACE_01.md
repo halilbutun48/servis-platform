@@ -220,6 +220,7 @@ Kullanıcının sadece onaylayacağı hedef doğru; ancak onaydan önce Sefer Ab
 - "Underpromise, overdeliver" ilkesi uygulanır.
 - SeferPakt AI kabiliyetlerini pazarlarken abartılı ve kanıtlanmamış otomasyon iddiaları kurmaz.
 - Kullanıcıya vaat edilen şey, ürünün kesin olarak yaptığı, testle kanıtlanmış ve milestone, check, smoke, acceptance ile kanıtlanmış kabiliyetlerden oluşur.
+- Vaat edilen kabiliyet testle kanıtlanmış olmalı; Sefer Abi içeride daha fazlasını yaparsa bu güveni artırır.
 - Sefer Abi'nin iç ürün hedefi maksimum güçlü operasyon AI'ıdır.
 - Public vaatler yalnızca milestone, check, smoke, acceptance ve human approval guard ile kanıtlanmış kabiliyetlerden oluşur.
 - Eğer ürün vaat ettiğinden daha azını yaparsa güven zedelenir.
@@ -366,6 +367,18 @@ Kullanılmayacak cümleler:
 - "AI sürücünün yerine tüm görevi tamamlar."
 - "Kanıtları otomatik oluşturur."
 - "İnsan onayı olmadan rota/servis/görev kararlarını verir."
+
+## Invite-based membership guard
+- `INVITE-BASED-MEMBERSHIP-01` `ONBOARDING-REVIEW-01 FINAL AUDIT` sonrasında gelir.
+- Public lead'ler otomatik olarak kullanıcı hesabına dönüşmez.
+- İnsan onayı olmadan kullanıcı oluşturma yok.
+- Self-service signup veya automatic membership açılmaz.
+- Automatic company / room membership açılmaz.
+- Payment, billing, collection, settlement ve contract execute açılmaz.
+- Verified supplier veya supplier verification auto akışı açılmaz.
+- Email, SMS ve push açılmaz.
+- Human approval, guard ve audit log zorunludur.
+- Invite draft / pending invite yalnızca güvenli user-creation altyapısı zaten varsa planlanır; bu roadmap/check runtime davranış açmaz.
 
 ## Roadmap sırası
 ### A) MARKETPLACE TEMELİ

@@ -131,6 +131,7 @@ function main() {
   must(roadmap, 'AI Promise Strategy / Güven Stratejisi', 'roadmap doc contains AI promise strategy section');
   must(roadmap, 'Underpromise, overdeliver', 'roadmap doc contains underpromise overdeliver principle');
   must(roadmap, 'testle kanıtlanmış', 'roadmap doc contains test-proven capability wording');
+  must(roadmap, 'Vaat edilen kabiliyet testle kanıtlanmış olmalı; Sefer Abi içeride daha fazlasını yaparsa bu güveni artırır.', 'roadmap doc contains explicit trust principle sentence');
   must(roadmap, 'güven stratejisi', 'roadmap doc contains trust strategy wording');
   must(roadmap, 'kanıtlanmış kabiliyet', 'roadmap doc contains proven capability wording');
   must(roadmap, 'public vaat', 'roadmap doc contains public promise wording');
@@ -141,6 +142,20 @@ function main() {
   must(roadmap, 'Sefer Abi içeride daha fazlasını yaparsa bu güveni artırır.', 'roadmap doc contains overdeliver trust sentence');
   must(roadmap, 'Sefer Abi, SeferPakt içindeki tüm operasyonu anlayan, öneren, hazırlayan, sesli/yazılı komut alan, Excel/OSRM/teklif/kalite/risk/saha verilerini analiz eden maksimum güçlü operasyon AI katmanıdır.', 'roadmap doc contains public marketing guard promise');
   must(roadmap, 'Public marketing claim guard', 'roadmap doc contains marketing claim guard');
+  must(roadmap, 'Invite-based membership guard', 'roadmap doc contains invite-based membership guard section');
+  must(roadmap, 'Public lead\'ler otomatik olarak kullanıcı hesabına dönüşmez', 'roadmap doc keeps public lead account boundary');
+  must(roadmap, 'İnsan onayı olmadan kullanıcı oluşturma yok', 'roadmap doc excludes user creation without human approval');
+  must(roadmap, 'invite draft', 'roadmap doc keeps invite draft wording');
+  must(roadmap, 'pending invite', 'roadmap doc keeps pending invite wording');
+  must(roadmap, 'human approval', 'roadmap doc keeps human approval wording for invite membership');
+  must(roadmap, 'guard', 'roadmap doc keeps guard wording for invite membership');
+  must(roadmap, 'audit log', 'roadmap doc keeps audit log wording for invite membership');
+  must(roadmap, 'Self-service signup', 'roadmap doc excludes self-service signup');
+  must(roadmap, 'automatic membership', 'roadmap doc excludes automatic membership');
+  must(roadmap, 'Automatic company / room membership açılmaz', 'roadmap doc excludes automatic company and room membership');
+  must(roadmap, 'Payment, billing, collection, settlement ve contract execute açılmaz', 'roadmap doc excludes payment and contract execute');
+  must(roadmap, 'Verified supplier veya supplier verification auto akışı açılmaz', 'roadmap doc excludes supplier verification auto');
+  must(roadmap, 'Email, SMS ve push açılmaz', 'roadmap doc excludes email sms and push');
   must(roadmap, 'Marketplace write boundary', 'roadmap doc contains marketplace write boundary');
   must(roadmap, 'Her yeni milestone acceptance standardı', 'roadmap doc contains milestone acceptance standard');
   must(roadmap, 'Final hardening / release - en son', 'roadmap doc keeps final hardening as last line of roadmap order');
@@ -178,6 +193,7 @@ function main() {
     'Sefer Abi güvenli aksiyon modeli',
     'Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard\'lı uygula -> Audit log yaz',
     'Public marketing claim guard',
+    'Invite-based membership guard',
     'Roadmap sırası',
     'A) MARKETPLACE TEMELİ',
     'PUBLIC-LANDING-01 final promise check',
