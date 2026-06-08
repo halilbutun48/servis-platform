@@ -20,6 +20,12 @@ Snapshot summary:
 - premium smoke: PASS 67 / PASS- 15 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
 - product-flow button audit: PASS 8 / PASS- 10 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
 
+## Premium Acceptance
+
+- Premium smoke final kabul icin `UX-FIX = 0` sarttir.
+- `PASS-` kalabilir; ama `UX-FIX`, `BLOCKER`, ve `NOT-FOUND` 0 olmali.
+- Bu follow-up, premium smoke UX-FIX bulgularini sifirlamak icin yapildi.
+
 ## PASS- Notes
 
 - all-panels reality audit PASS- is `0`.

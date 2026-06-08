@@ -326,7 +326,14 @@ function main() {
     .trim()
     .split(/\r?\n/)
     .filter(Boolean);
-  must(headTags.includes("v2026.06.08-ux-all-panels-p1-burndown-01"), "current HEAD keeps the all-panels burndown tag");
+  const acceptedHeadTags = [
+    "v2026.06.08-ux-all-panels-p1-burndown-01",
+    "v2026.06.08-quality-gate-final-01b-premium-smoke-fix",
+  ];
+  must(
+    acceptedHeadTags.some((tag) => headTags.includes(tag)),
+    "current HEAD keeps the all-panels burndown or premium follow-up tag"
+  );
 
   console.log("=== QUALITY-GATE-FINAL-01 CHECK PASS ===");
 }
