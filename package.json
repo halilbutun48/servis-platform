@@ -124,6 +124,8 @@
     "check:uxschoolorganizationpanels01": "node backend/scripts/ux_school_organization_panels_01_check.js",
     "check:uxcompanyshiftstabs01": "node backend/scripts/ux_company_shifts_tabs_01_check.js",
     "check:uxcompanymobileactionclarity01": "node backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "check:uxcompanypersonelaccessmobileparity01": "node backend/scripts/ux_company_personel_access_mobile_parity_01_check.js",
+    "check:uxcompanyagreementsmobileparity01": "node backend/scripts/ux_company_agreements_mobile_parity_01_check.js",
     "check:uxmobilewebshellclarity01": "node backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
     "check:uxcompanyopspaneltabs01": "node backend/scripts/ux_company_ops_panel_tabs_01_check.js",
     "check:uxcompanyqualitytabs01": "node backend/scripts/ux_company_quality_panel_tabs_01_check.js",

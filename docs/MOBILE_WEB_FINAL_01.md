@@ -29,7 +29,7 @@ Bu milestone:
 
 - Komut: `npm run smoke:uxmobileallrolespanelaudit01`
 - Rapor: `backend/artifacts/browser-smoke/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01/report.json`
-- Snapshot: `PASS 74 / PASS- 8 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- Snapshot: `PASS 72 / PASS- 10 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 
 ### Premium Smoke
 
@@ -39,7 +39,7 @@ Bu milestone:
 
 ## 3) All-Roles PASS- Final Risk List
 
-Bu 8 satır backlog'a gider; final blocker değildir:
+Bu 11 satır backlog'a gider; final blocker değildir:
 
 | Route | Role | Viewport | Bucket / not |
 | --- | --- | --- | --- |
@@ -47,6 +47,8 @@ Bu 8 satır backlog'a gider; final blocker değildir:
 | `/#/superadmin/trust-quality` | superadmin | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
 | `/#/room/agreements` | room | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
 | `/#/room/operation-health` | room | mobile | launcher görünür, summary-first risk paneli okunur |
+| `/#/school/agreements` | school | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
+| `/#/organization/agreements` | organization | mobile | sticky header / tab yoğunluğu, Sefer Abi launcher görünür |
 | `/#/driver/today` | driver | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
 | `/#/driver/route` | driver | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
 | `/#/driver/map` | driver | mobile | NavDock aç/kapat akışı riskli; launcher görünür |
@@ -78,6 +80,7 @@ Bu 15 satır final risk / backlog olarak kalır; release blocker değildir.
 
 - Sefer Abi launcher secondary copilot olarak kalabilir; ana aksiyonları kapatırsa backlog olur.
 - NavDock mobile drawer content'i kapatmamalı; driver / parent mobil satırları bu yüzden backlog'ta.
+- Company / Personel Erişimi mobile parity ayrı milestone olarak `UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01` ve `check:uxcompanypersonelaccessmobileparity01` ile takip edilir.
 - horizontal overflow final kabulde `0`; şu an blocker değil.
 - Sticky header / tab yoğunluğu backlog kalır; sticky tabs final risk olarak özellikle superadmin, room agreements, company shifts, school shifts ve organization shifts mobil satırlarında.
 

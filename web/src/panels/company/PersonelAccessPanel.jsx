@@ -37,10 +37,75 @@ function maskFallback(text) {
 function copyText(value) {
   try {
     if (!value) return;
-    navigator.clipboard.writeText(String(value));
+    void navigator.clipboard.writeText(String(value));
   } catch {
     // clipboard copy is best-effort
   }
+}
+
+function AccessCardField({ label, value }) {
+  return (
+    <div className="personelAccessCardField">
+      <div className="personelAccessCardFieldLabel">{label}</div>
+      <div className="personelAccessCardFieldValue">{value}</div>
+    </div>
+  );
+}
+
+function PersonelAccessMobileCard({ row, saving, onRevoke }) {
+  const lastState = row.consumedAt
+    ? `Kullanıldı: ${fmtTR(row.consumedAt)}`
+    : row.revokedAt
+      ? `İptal: ${fmtTR(row.revokedAt)}`
+      : "Aktif erişim";
+
+  return (
+    <article className="card personelAccessMobileCard">
+      <div className="personelAccessMobileCardHeader">
+        <div style={{ minWidth: 0 }}>
+          <div className="personelAccessMobileCardTitle">{row.personelName}</div>
+          <div className="personelAccessMobileCardMeta">{row.personelMeta}</div>
+        </div>
+        <span className="pill" data-status={statusTone(row.status)}>{statusLabel(row.status)}</span>
+      </div>
+
+      <div className="personelAccessMobileCardGrid">
+        <AccessCardField label="Kullanıcı kodu" value={<code>{row.codeMasked}</code>} />
+        <AccessCardField label="Geçerlilik" value={fmtTR(row.expiresAt)} />
+        <AccessCardField label="Oluşturuldu" value={fmtTR(row.createdAt)} />
+        <AccessCardField label="Son durum" value={lastState} />
+      </div>
+
+      <div className="personelAccessMobileCardNote">
+        Ham PIN listede gösterilmez. Raw değerler yalnızca üretim anında görünür.
+      </div>
+
+      <div className="toolbar personelAccessMobileCardActions">
+        <button
+          type="button"
+          className="btn sm"
+          disabled={saving || row.status !== "ACTIVE"}
+          onClick={() => onRevoke(row.id)}
+        >
+          İptal et
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function PersonelAccessMobileCards({ rows, saving, onRevoke }) {
+  if (!rows.length) {
+    return <div className="card personelAccessMobileEmpty">Henüz personel erişimi yok.</div>;
+  }
+
+  return (
+    <div className="personelAccessMobileCards">
+      {rows.map((row) => (
+        <PersonelAccessMobileCard key={row.id} row={row} saving={saving} onRevoke={onRevoke} />
+      ))}
+    </div>
+  );
 }
 
 export default function PersonelAccessPanel() {
@@ -95,6 +160,7 @@ export default function PersonelAccessPanel() {
       personelMeta: item?.personel?.phoneMasked || item?.personel?.kind || "-",
       codeMasked: item?.accessCodeMasked || maskFallback(item?.personelId),
       status: item?.status || "ACTIVE",
+      createdAt: item?.createdAt || null,
       expiresAt: item?.expiresAt || null,
       consumedAt: item?.consumedAt || null,
       revokedAt: item?.revokedAt || null,
@@ -145,7 +211,7 @@ export default function PersonelAccessPanel() {
   }
 
   return (
-    <div className="wrap wrap--fluid" style={{ display: "grid", gap: 12, minWidth: 0 }}>
+    <div className="wrap wrap--fluid personelAccessScope" style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
         title="Personel erişimi"
         subtitle={
@@ -165,12 +231,12 @@ export default function PersonelAccessPanel() {
       {err ? <div className="card err">{err}</div> : null}
 
       {lastCreated ? (
-        <div className="card" style={{ border: "1px solid rgba(83,177,253,0.28)", background: "linear-gradient(180deg, rgba(83,177,253,0.08), rgba(255,255,255,0.02))" }}>
+        <div className="card personelAccessProofCard">
           <div className="panelSectionTitle">Tek seferlik bilgi kartı</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Bu kod ve PIN yalnızca şimdi gösterilir. Sonradan tekrar görüntülemek yerine yeni erişim üret.
           </div>
-          <div className="grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginTop: 12 }}>
+          <div className="personelAccessProofGrid">
             <div className="card" style={{ margin: 0 }}>
               <div className="panelMeta">Kullanıcı kodu</div>
               <div style={{ fontWeight: 900, marginTop: 6, wordBreak: "break-all" }}>{lastCreated.accessCode || "-"}</div>
@@ -185,7 +251,7 @@ export default function PersonelAccessPanel() {
               <div className="panelMeta" style={{ marginTop: 4 }}>{fmtTR(lastCreated.createdAt || lastCreated.expiresAt)}</div>
             </div>
           </div>
-          <div className="toolbar" style={{ marginTop: 12, gap: 8, flexWrap: "wrap" }}>
+          <div className="toolbar personelAccessProofActions">
             <button type="button" className="btn sm" onClick={() => copyText(lastCreated.accessCode)}>Kodu kopyala</button>
             <button type="button" className="btn sm" onClick={() => copyText(lastCreated.pin)}>PIN'i kopyala</button>
             <button type="button" className="btn sm" onClick={() => copyText(`${lastCreated.accessCode || ""}${lastCreated.pin || ""}`)}>Birlikte kopyala</button>
@@ -193,8 +259,8 @@ export default function PersonelAccessPanel() {
         </div>
       ) : null}
 
-      <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 380px) minmax(0, 1fr)", gap: 12, alignItems: "start" }}>
-        <div className="card">
+      <div className="personelAccessLayout">
+        <div className="card personelAccessCreateCard">
           <div className="panelSectionTitle">Personel erişimi oluştur</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Personele 7 gün geçerli kullanıcı kodu ve geçici PIN ver. Raw değerler yalnızca üretim anında gösterilir.
@@ -230,13 +296,13 @@ export default function PersonelAccessPanel() {
           </form>
         </div>
 
-        <div className="card" style={{ overflowX: "auto" }}>
+        <div className="card personelAccessDesktopList">
           <div className="panelSectionTitle">Erişim listesi</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Maskelenmiş kod, durum, son tarih ve iptal aksiyonu gösterilir. Ham PIN listede gösterilmez.
           </div>
 
-          <table className="tbl" style={{ marginTop: 12, whiteSpace: "nowrap" }}>
+          <table className="tbl personelAccessDesktopTable" style={{ marginTop: 12, whiteSpace: "nowrap" }}>
             <thead>
               <tr>
                 <th>Personel</th>
@@ -284,6 +350,8 @@ export default function PersonelAccessPanel() {
             </tbody>
           </table>
         </div>
+
+        <PersonelAccessMobileCards rows={rows} saving={saving} onRevoke={onRevoke} />
       </div>
     </div>
   );
