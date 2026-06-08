@@ -244,10 +244,13 @@ function main() {
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    "backend/scripts/ux_company_agreements_mobile_parity_01_check.js",
+    "backend/scripts/ux_company_personel_access_mobile_parity_01_check.js",
     "backend/scripts/ux_room_shifts_density_dedup_01_check.js",
     "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/mobile_web_final_01_check.js",
+    "backend/scripts/ux_brand_login_premium_01_check.js",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
     "backend/scripts/script_harness_consolidation_01_check.js",
@@ -255,24 +258,33 @@ function main() {
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
+    "docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md",
+    "docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md",
+    "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
+    "docs/UX_BRAND_LOGIN_PREMIUM_01.md",
     "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
     "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
     "docs/MOBILE_WEB_FINAL_01.md",
     "package.json",
     "tools/repo_contract_state.json",
     "web/src/index.css",
+    "web/src/App.jsx",
+    "web/src/components/BrandMark.jsx",
     "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
     "web/src/panels/company/companyShiftsPanelFilters.jsx",
     "web/src/panels/room/roomShiftsPanelSections.jsx",
     "web/src/panels/company/companyShiftsPanelSections.jsx",
     "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
     "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
+    "web/src/panels/company/companyAgreementsMobileCards.jsx",
+    "web/src/panels/company/PersonelAccessPanel.jsx",
+    "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/state/sessionProvider.jsx",
     "web/src/panels/room/ShiftsPanel.jsx",
     "web/src/panels/room/roomShiftsOverviewSection.jsx",
   ]);
 
-  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "working tree stays within room/company shifts mobile card fix scope");
+  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within room/company shifts mobile card fix scope");
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");

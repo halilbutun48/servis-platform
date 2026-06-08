@@ -138,3 +138,5 @@ Repo: `servis-platform`
 - AI/Copilot yeni capability eklemez.
 - Playwright runner policy ve coverage matrix fail policy değişmez.
 - Teknik/debug/raw/null/undefined görünür metinler ana ekranda kalmamalıdır.
+
+

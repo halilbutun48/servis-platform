@@ -9,6 +9,25 @@ import BrandMark from "./components/BrandMark";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { startLiveWs, stopLiveWs } from "./live/ws";
 
+const LOGIN_HIGHLIGHTS = [
+  {
+    title: "Servis tedarikinden vardiyaya tek akış",
+    body: "Talep, planlama ve saha akışı aynı yüzeyde ilerler; ekipler rol bazlı yönlendirilir.",
+  },
+  {
+    title: "Canlı GPS, kanıt ve kalite kontrolü",
+    body: "Konum, durum ve kanıt sinyalleri tek bakışta görünür, iş akışı bölünmez.",
+  },
+  {
+    title: "Hakediş ve maliyet riskleri için güvenli önizleme",
+    body: "Ödeme ve uyum sinyalleri kilit akışları bozmadan readonly önizlenir.",
+  },
+  {
+    title: "Sefer Abi ile rol bazlı operasyon desteği",
+    body: "Her role uygun rehber ve kısayol seti, panel karmaşasını azaltır.",
+  },
+];
+
 // ROOM
 const RoomMapPanel = lazy(() => import("./panels/room/MapPanel"));
 const VehiclesPanel = lazy(() => import("./panels/room/VehiclesPanel"));
@@ -96,6 +115,49 @@ function roleDefaultPath(me) {
   return "/";
 }
 
+function fallbackCopilotPath(path) {
+  const clean = String(path || "").split("?")[0];
+  if (clean.startsWith("/room")) return "/room/copilot";
+  if (clean.startsWith("/company")) return "/company/copilot";
+  if (clean.startsWith("/school")) return "/school/copilot";
+  if (clean.startsWith("/organization")) return "/organization/copilot";
+  if (clean.startsWith("/driver")) return "/driver/copilot";
+  if (clean.startsWith("/personel")) return "/personel/copilot";
+  if (clean.startsWith("/parent")) return "/parent/copilot";
+  return "/superadmin/copilot";
+}
+
+function SessionLoadingCard({ path }) {
+  return (
+    <div className="authPage">
+      <div className="authShell">
+        <section className="card authPanelCard">
+          <BrandMark compact subtitle="Oturum hazırlanıyor" centered />
+          <div className="authPanelHeader">
+            <div className="authPanelKicker">Yükleniyor</div>
+            <div className="authPanelTitle">Oturum bilgileri doğrulanıyor</div>
+            <div className="authPanelLead">
+              Sefer Abi kısayolu hazır; ana panel birkaç saniye sonra açılacak.
+            </div>
+          </div>
+
+          <button
+            className="authSubmit authLoadingLauncher"
+            type="button"
+            onClick={() => navigate(fallbackCopilotPath(path))}
+          >
+            Sefer Abi’ye Sor
+          </button>
+
+          <div className="authDemoFoot">
+            Oturum doğrulaması tamamlanana kadar bu geçici yüzey görünür.
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function LoginCard() {
   const { setToken } = useSession();
   const [identifier, setIdentifier] = useState("room@demo.com");
@@ -118,38 +180,106 @@ function LoginCard() {
   }
 
   return (
-    <div className="wrap">
-      <div className="card">
-        <BrandMark subtitle="Personel servis operasyonunu sadeleştirir." centered />
-      </div>
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <div className="title">Giriş</div>
-        <form onSubmit={onLogin} style={{ display: "grid", gap: 8, marginTop: 8, maxWidth: 420 }}>
-          <label className="muted">
-            Kullanıcı Adı, E-posta veya Sürücü Kodu
-            <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="halil.butun, room@demo.com veya SRC-000001" />
-          </label>
-          <label className="muted">
-            Şifre veya PIN
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </label>
-
-          <button type="submit" disabled={busy}>
-            {busy ? "..." : "Giriş"}
-          </button>
-
-          {err ? (
-            <div className="muted" style={{ color: "crimson" }}>
-              {err}
+    <div className="authPage">
+      <div className="authShell">
+        <section className="card authHeroCard">
+          <div className="authHeroSurface">
+            <div className="authHeroIntro">
+              <div className="authKickerRow">
+                <span className="authKickerPill">Final marka sistemi</span>
+                <span className="authKickerPill authKickerPill--ghost">SP + kalkan + iş birliği</span>
+              </div>
+              <BrandMark
+                variant="login"
+                subtitle="Servis tedarikinden vardiyaya tek akış."
+                centered
+              />
+              <h1 className="authHeroTitle">Operasyon akışını tek girişte topla.</h1>
+              <p className="authHeroLead">
+                Canlı GPS, kanıt ve kalite kontrolü aynı yerde; hakediş ve maliyet riskleri için güvenli önizleme,
+                Sefer Abi ile rol bazlı operasyon desteğiyle birlikte sunulur.
+              </p>
+              <div className="authHeroPills" aria-label="Login promise highlights">
+                <span className="authHeroMiniPill">Güvenli giriş</span>
+                <span className="authHeroMiniPill">Rol bazlı akış</span>
+                <span className="authHeroMiniPill">Demo hazırlıklı</span>
+                <span className="authHeroMiniPill">Mobil dostu</span>
+              </div>
             </div>
-          ) : null}
-        </form>
 
-        <hr style={{ margin: "12px 0" }} />
-        <div className="muted">
-          Demo kullanıcılar: room@demo.com, company@demo.com, school@demo.com, organization@demo.com, driver@demo.com, personel@demo.com (şifre: demo123). Sürücü için ayrıca Sürücü Kodu + PIN girişi de desteklenir.
-        </div>
+            <div className="authHighlightsGrid">
+              {LOGIN_HIGHLIGHTS.map((item) => (
+                <article key={item.title} className="authHighlightCard">
+                  <div className="authHighlightTitle">{item.title}</div>
+                  <div className="authHighlightBody">{item.body}</div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="card authPanelCard">
+          <BrandMark compact subtitle="Kurumsal giriş ve demo oturumu" centered />
+          <div className="authPanelHeader">
+            <div className="authPanelKicker">Giriş</div>
+            <div className="authPanelTitle">SeferPakt hesabınla devam et</div>
+            <div className="authPanelLead">
+              Rolüne uygun panele geçmek için kullanıcı adı, e-posta ya da sürücü kodunu kullanabilirsin.
+            </div>
+          </div>
+
+          <form className="authForm" onSubmit={onLogin}>
+            <label className="authField">
+              <span>Kullanıcı Adı, E-posta veya Sürücü Kodu</span>
+              <input
+                autoComplete="username"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="halil.butun, room@demo.com veya SRC-000001"
+              />
+            </label>
+            <label className="authField">
+              <span>Şifre veya PIN</span>
+              <input
+                autoComplete="current-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </label>
+
+            <button className="authSubmit" type="submit" disabled={busy}>
+              {busy ? "Giriş yapılıyor..." : "Giriş yap"}
+            </button>
+
+            {err ? (
+              <div className="authError" role="alert">
+                {err}
+              </div>
+            ) : null}
+          </form>
+
+          <details className="authDemoDetails">
+            <summary>Demo erişim bilgileri: demo kullanıcılar için</summary>
+            <div className="authDemoDetailsBody">
+              <div className="authDemoSummary">
+                Demo kullanıcılar ve demo hesapları varsayılan olarak kapalı bir açıklama alanında tutulur; ana giriş aksiyonunu
+                gölgelememeleri için ikincil öncelikte sunulur.
+              </div>
+              <ul className="authDemoList">
+                <li><strong>Room:</strong> room@demo.com / demo123</li>
+                <li><strong>Company:</strong> company@demo.com / demo123</li>
+                <li><strong>School:</strong> school@demo.com / demo123</li>
+                <li><strong>Organization:</strong> organization@demo.com / demo123</li>
+                <li><strong>Driver:</strong> driver@demo.com / demo123</li>
+                <li><strong>Personel:</strong> personel@demo.com / demo123</li>
+              </ul>
+              <div className="authDemoFoot">
+                Sürücü akışında ayrıca Sürücü Kodu + PIN girişi desteklenir.
+              </div>
+            </div>
+          </details>
+        </section>
       </div>
     </div>
   );
@@ -182,7 +312,7 @@ export default function App() {
       if (cleanPath === "/public/passenger-live" || cleanPath === "/public/personel-live") return { layout: false, node: <PassengerLivePanel path={path} /> };
       return { layout: false, node: <LoginCard /> };
     }
-    if (!me) return { layout: false, node: <div style={{ padding: 16 }}>Loading...</div> };
+    if (!me) return { layout: false, node: <SessionLoadingCard path={cleanPath} /> };
 
     if (me.requirePasswordChange && cleanPath !== "/auth/change-password") {
       navigate("/auth/change-password");

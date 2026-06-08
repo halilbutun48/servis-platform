@@ -120,6 +120,8 @@ function main() {
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/ux_company_agreements_mobile_parity_01_check.js",
+    "backend/scripts/ux_company_personel_access_mobile_parity_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "backend/scripts/ux_panel_inventory_02a_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
@@ -137,11 +139,15 @@ function main() {
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md",
+    "docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md",
     "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "package.json",
     "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/panels/company/companyAgreementsMobileCards.jsx",
+    "web/src/panels/company/PersonelAccessPanel.jsx",
     "web/src/components/checkin/CameraQrScannerCard.jsx",
     "web/src/index.css",
     "web/src/layout/AppShell.jsx",
@@ -352,7 +358,9 @@ function main() {
     "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
     "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
     "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
+    "backend/scripts/ux_brand_login_premium_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
+    "docs/UX_BRAND_LOGIN_PREMIUM_01.md",
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
@@ -373,6 +381,8 @@ function main() {
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/components/map/ReadableMiniRouteMap.jsx",
+    "web/src/App.jsx",
+    "web/src/components/BrandMark.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/panels/organization/PlansPanel.jsx",
     "web/src/panels/organization/organizationPlansShared.jsx",
@@ -388,7 +398,7 @@ function main() {
     "web/src/panels/company/ShiftsPanel.jsx",
     "tools/repo_contract_state.json",
   ]);
-  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/"], "working tree stays within agreements detail scope");
+  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within agreements detail scope");
 
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");

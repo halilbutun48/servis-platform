@@ -60,6 +60,10 @@ function main() {
   const backlog = read('docs/NEXT_BACKLOG_V1.md');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
+  const companyAgreementsMobileParityDoc = read('docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md');
+  const companyAgreementsPanel = read('web/src/panels/company/AgreementsPanel.jsx');
+  const companyAgreementsMobileCards = read('web/src/panels/company/companyAgreementsMobileCards.jsx');
+  const css = read('web/src/index.css');
 
   must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json exposes check:product-extensions');
   must(pkg, '"check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js"', 'package.json exposes check:verifychain01');
@@ -159,6 +163,8 @@ function main() {
   must(pkg, '"check:uxschoolorganizationpanels01"', 'package.json exposes check:uxschoolorganizationpanels01');
   must(pkg, '"check:uxcompanyshiftstabs01"', 'package.json exposes check:uxcompanyshiftstabs01');
   must(pkg, '"check:uxcompanymobileactionclarity01": "node backend/scripts/ux_company_mobile_action_clarity_01_check.js"', 'package.json exposes check:uxcompanymobileactionclarity01');
+  must(pkg, '"check:uxcompanypersonelaccessmobileparity01": "node backend/scripts/ux_company_personel_access_mobile_parity_01_check.js"', 'package.json exposes check:uxcompanypersonelaccessmobileparity01');
+  must(pkg, '"check:uxcompanyagreementsmobileparity01": "node backend/scripts/ux_company_agreements_mobile_parity_01_check.js"', 'package.json exposes check:uxcompanyagreementsmobileparity01');
   must(pkg, '"check:uxcompanyopspaneltabs01"', 'package.json exposes check:uxcompanyopspaneltabs01');
   must(pkg, '"check:uxcompanyqualitytabs01"', 'package.json exposes check:uxcompanyqualitytabs01');
   must(pkg, '"check:uxcompanypanelsfinalpolish01"', 'package.json exposes check:uxcompanypanelsfinalpolish01');
@@ -173,6 +179,7 @@ function main() {
   must(pkg, '"check:uxpanellayoutwidth02cfix02"', 'package.json exposes check:uxpanellayoutwidth02cfix02');
   must(pkg, '"check:uxpanellayoutwidth02cfix03"', 'package.json exposes check:uxpanellayoutwidth02cfix03');
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
+  must(pkg, '"check:uxbrandloginpremium01": "node backend/scripts/ux_brand_login_premium_01_check.js"', 'package.json exposes check:uxbrandloginpremium01');
   must(pkg, '"check:uxmobilewebshellclarity01": "node backend/scripts/ux_mobile_web_shell_clarity_01_check.js"', 'package.json exposes check:uxmobilewebshellclarity01');
   must(pkg, '"check:uxmobileallrolespanelfix01": "node backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js"', 'package.json exposes check:uxmobileallrolespanelfix01');
   must(pkg, '"check:uxroomcompanyshiftsmobilecardfix01": "node backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js"', 'package.json exposes check:uxroomcompanyshiftsmobilecardfix01');
@@ -192,6 +199,20 @@ function main() {
   must(pkg, '"check:uxparentpersonelliveerrorclarity01": "node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js"', 'package.json exposes check:uxparentpersonelliveerrorclarity01');
   must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
+  must(companyAgreementsPanel, 'CompanyAgreementsMobileCards', 'company agreements panel wires mobile cards');
+  must(companyAgreementsPanel, 'desktopShiftTable companyAgreementsDesktopList', 'company agreements panel keeps desktop table wrapper');
+  must(companyAgreementsMobileCards, 'CompanyAgreementMobileCard', 'company agreements mobile cards file exports card');
+  must(companyAgreementsMobileCards, 'Teklif özeti', 'company agreements mobile cards file keeps offer summary section');
+  must(companyAgreementsMobileCards, 'Operasyon / uzatma', 'company agreements mobile cards file keeps operation section');
+  must(css, '.companyAgreementsMobileCards', 'global css defines company agreements mobile cards');
+  must(css, '.companyAgreementsDesktopList', 'global css defines company agreements desktop list');
+  must(css, '.companyAgreementsMobileCard', 'global css defines company agreements mobile card');
+  must(companyAgreementsMobileParityDoc, 'UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01', 'company agreements mobile parity doc title present');
+  must(companyAgreementsMobileParityDoc, 'Company / Sözleşmeler', 'company agreements mobile parity doc mentions company agreements scope');
+  must(companyAgreementsMobileParityDoc, 'Room / Sözleşmeler', 'company agreements mobile parity doc mentions room reference scope');
+  must(companyAgreementsMobileParityDoc, 'mobileShiftCards', 'company agreements mobile parity doc mentions mobile cards');
+  must(companyAgreementsMobileParityDoc, 'desktopShiftTable', 'company agreements mobile parity doc keeps desktop table wording');
+  must(companyAgreementsMobileParityDoc, 'Sefer Abi launcher', 'company agreements mobile parity doc keeps launcher clearance wording');
 
   ordered(runner, [
     'check:op04',
@@ -285,7 +306,9 @@ function main() {
     'check:uxschoolorganizationpanels01',
     'check:uxcompanyshiftstabs01',
     'check:uxcompanymobileactionclarity01',
+    'check:uxcompanypersonelaccessmobileparity01',
     'check:uxpremiumcriticalfixagreementsdetail01',
+    'check:uxcompanyagreementsmobileparity01',
     'check:uxcompanyopspaneltabs01',
     'check:uxcompanyqualitytabs01',
     'check:uxcompanypanelssmoke01',
@@ -298,6 +321,7 @@ function main() {
     'check:uxpanellayoutwidth02cfix02',
     'check:uxpanellayoutwidth02cfix03',
     'check:uxnav01',
+    'check:uxbrandloginpremium01',
     'check:uxmobilewebshellclarity01',
     'check:uxmobileallrolespanelfix01',
     'check:uxroomcompanyshiftsmobilecardfix01',
@@ -434,6 +458,14 @@ function main() {
   must(guide, 'UX-COMPANY-MOBILE-ACTION-CLARITY-01', 'script guide mentions UX-COMPANY-MOBILE-ACTION-CLARITY-01');
   must(guide, 'check:uxcompanymobileactionclarity01', 'script guide exposes check:uxcompanymobileactionclarity01');
   must(guide, 'node backend\\scripts\\ux_company_mobile_action_clarity_01_check.js', 'script guide includes company mobile action clarity command');
+  must(guide, 'UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01', 'script guide mentions UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01');
+  must(guide, 'check:uxcompanypersonelaccessmobileparity01', 'script guide exposes check:uxcompanypersonelaccessmobileparity01');
+  must(guide, 'node backend\\scripts\\ux_company_personel_access_mobile_parity_01_check.js', 'script guide includes company personel access command');
+  must(guide, 'docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md', 'script guide includes company personel access doc');
+  must(guide, 'UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01', 'script guide mentions UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01');
+  must(guide, 'check:uxcompanyagreementsmobileparity01', 'script guide exposes check:uxcompanyagreementsmobileparity01');
+  must(guide, 'node backend\\scripts\\ux_company_agreements_mobile_parity_01_check.js', 'script guide includes company agreements mobile parity command');
+  must(guide, 'docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md', 'script guide includes company agreements mobile parity doc');
   must(guide, 'UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01', 'script guide mentions UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01');
   must(guide, 'check:uxroomcompanyshiftsmobilecardfix01', 'script guide exposes check:uxroomcompanyshiftsmobilecardfix01');
   must(guide, 'node backend\\scripts\\ux_room_company_shifts_mobile_card_fix_01_check.js', 'script guide includes room/company shifts mobile card fix command');
@@ -466,6 +498,9 @@ function main() {
   must(harnessCheck, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness check knows cleanup milestone');
   must(harnessCheck, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness check knows cleanup alias');
   must(harnessCheck, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness check knows cleanup doc');
+  must(harnessCheck, 'UX-BRAND-LOGIN-PREMIUM-01', 'script harness check knows brand/login premium milestone');
+  must(harnessCheck, 'check:uxbrandloginpremium01', 'script harness check knows brand/login premium alias');
+  must(harnessCheck, 'docs/UX_BRAND_LOGIN_PREMIUM_01.md', 'script harness check knows brand/login premium doc');
   must(harnessCheck, 'UX-MOBILE-WEB-SHELL-CLARITY-01', 'script harness check knows mobile web shell clarity milestone');
   must(harnessCheck, 'check:uxmobilewebshellclarity01', 'script harness check knows mobile web shell clarity alias');
   must(harnessCheck, 'docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md', 'script harness check knows mobile web shell clarity doc');
@@ -499,6 +534,9 @@ function main() {
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
+  must(harnessDoc, 'UX-BRAND-LOGIN-PREMIUM-01', 'script harness doc lists brand/login premium milestone');
+  must(harnessDoc, 'check:uxbrandloginpremium01', 'script harness doc lists brand/login premium alias');
+  must(harnessDoc, 'docs/UX_BRAND_LOGIN_PREMIUM_01.md', 'script harness doc lists brand/login premium doc');
   must(harnessDoc, 'UX-MOBILE-WEB-SHELL-CLARITY-01', 'script harness doc lists mobile web shell clarity milestone');
   must(harnessDoc, 'check:uxmobilewebshellclarity01', 'script harness doc lists mobile web shell clarity alias');
   must(harnessDoc, 'docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md', 'script harness doc lists mobile web shell clarity doc');
@@ -539,6 +577,10 @@ function main() {
   must(guide, 'check:uxpanellayoutwidth02cfix02', 'script guide exposes check:uxpanellayoutwidth02cfix02');
   must(guide, 'check:uxpanellayoutwidth02cfix03', 'script guide exposes check:uxpanellayoutwidth02cfix03');
   must(guide, 'check:uxnav01', 'script guide exposes check:uxnav01');
+  must(guide, 'UX-BRAND-LOGIN-PREMIUM-01', 'script guide mentions brand/login premium milestone');
+  must(guide, 'check:uxbrandloginpremium01', 'script guide exposes brand/login premium check');
+  must(guide, 'node backend\\scripts\\ux_brand_login_premium_01_check.js', 'script guide includes brand/login premium command');
+  must(guide, 'docs/UX_BRAND_LOGIN_PREMIUM_01.md', 'script guide includes brand/login premium doc');
   must(guide, 'UX-MOBILE-WEB-SHELL-CLARITY-01', 'script guide mentions mobile web shell clarity milestone');
   must(guide, 'check:uxmobilewebshellclarity01', 'script guide exposes check:uxmobilewebshellclarity01');
   must(guide, 'node backend\\scripts\\ux_mobile_web_shell_clarity_01_check.js', 'script guide includes mobile web shell clarity command');

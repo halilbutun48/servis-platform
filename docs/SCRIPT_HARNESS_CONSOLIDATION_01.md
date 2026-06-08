@@ -1,16 +1,16 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-07
+Tarih: 2026-06-08
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `342`
-- Toplam executable tracked file: `1118`
-- Combined registry row: `1460`
-- Root/backend/web/mobile package dağılımı: root `185`, backend `683`, web `88`, mobile `201`
+- Toplam package script entry: `345`
+- Toplam executable tracked file: `1119`
+- Combined registry row: `1464`
+- Root/backend/web/mobile package dağılımı: root `188`, backend `684`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `44`
+- Docs indexed: `46`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -29,6 +29,18 @@ Repo: `servis-platform`
 - Room critical fix command: `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - Company mobile action clarity milestone: `UX-COMPANY-MOBILE-ACTION-CLARITY-01`
 - Company mobile action clarity docs: `docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md`
+- Company personel access mobile parity milestone: `UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01`
+- Company personel access mobile parity alias: `check:uxcompanypersonelaccessmobileparity01`
+- Company personel access mobile parity docs: `docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md`
+- Company personel access mobile parity command: `node backend\scripts\ux_company_personel_access_mobile_parity_01_check.js`
+- Company agreements mobile parity milestone: `UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01`
+- Company agreements mobile parity alias: `check:uxcompanyagreementsmobileparity01`
+- Company agreements mobile parity docs: `docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md`
+- Company agreements mobile parity command: `node backend\scripts\ux_company_agreements_mobile_parity_01_check.js`
+- Brand login premium milestone: `UX-BRAND-LOGIN-PREMIUM-01`
+- Brand login premium alias: `check:uxbrandloginpremium01`
+- Brand login premium docs: `docs/UX_BRAND_LOGIN_PREMIUM_01.md`
+- Brand login premium command: `node backend\scripts\ux_brand_login_premium_01_check.js`
 - Mobile web shell clarity milestone: `UX-MOBILE-WEB-SHELL-CLARITY-01`
 - Mobile web shell clarity docs: `docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md`
 - Mobile web shell clarity command: `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
@@ -70,8 +82,8 @@ Repo: `servis-platform`
 - Public lead audit check: `check:productflowbuttonaudit01`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
-- ACTIVE: `381`
-- ACTIVE_CORE: `143`
+- ACTIVE: `382`
+- ACTIVE_CORE: `146`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -91,7 +103,7 @@ Repo: `servis-platform`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `20`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `264`
+- Eski sistem term eşleşmesi: `274`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -99,9 +111,9 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| ACTIVE | 381 |
+| ACTIVE | 382 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 143 |
+| ACTIVE_CORE | 146 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -247,6 +259,8 @@ Repo: `servis-platform`
 | root:check:uxschoolorganizationpanels01 | package.json | root | node backend/scripts/ux_school_organization_panels_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXSCHOOLORGANIZATIONPANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyshiftstabs01 | package.json | root | node backend/scripts/ux_company_shifts_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYSHIFTSTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanymobileactionclarity01 | package.json | root | node backend/scripts/ux_company_mobile_action_clarity_01_check.js | core | ACTIVE_CORE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01 |  | Breaks canonical verification chain |  |
+| root:check:uxcompanypersonelaccessmobileparity01 | package.json | root | node backend/scripts/ux_company_personel_access_mobile_parity_01_check.js | core | ACTIVE_CORE |  | UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01 |  | Breaks canonical verification chain |  |
+| root:check:uxcompanyagreementsmobileparity01 | package.json | root | node backend/scripts/ux_company_agreements_mobile_parity_01_check.js | core | ACTIVE_CORE |  | UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01 |  | Breaks canonical verification chain |  |
 | root:check:uxmobilewebshellclarity01 | package.json | root | node backend/scripts/ux_mobile_web_shell_clarity_01_check.js | core | ACTIVE_CORE |  | UX-MOBILE-WEB-SHELL-CLARITY-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyopspaneltabs01 | package.json | root | node backend/scripts/ux_company_ops_panel_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYOPSPANELTABS-01 |  | Breaks canonical verification chain |  |
 | root:check:uxcompanyqualitytabs01 | package.json | root | node backend/scripts/ux_company_quality_panel_tabs_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXCOMPANYQUALITYTABS-01 |  | Breaks canonical verification chain |  |
@@ -262,6 +276,7 @@ Repo: `servis-platform`
 | root:check:uxpanellayoutwidth02cfix02 | package.json | root | node backend/scripts/ux_panel_layout_width_02c_fix_02_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXPANELLAYOUTWIDTH-02-CFIX-02 |  | Breaks canonical verification chain |  |
 | root:check:uxpanellayoutwidth02cfix03 | package.json | root | node backend/scripts/ux_panel_layout_width_02c_fix_03_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXPANELLAYOUTWIDTH-02-CFIX-03 |  | Breaks canonical verification chain |  |
 | root:check:uxnav01 | package.json | root | node backend/scripts/ux_nav_01_premium_navdock_check.js | core | ACTIVE_CORE |  | UX-NAV-01 |  | Breaks canonical verification chain |  |
+| root:check:uxbrandloginpremium01 | package.json | root | node backend/scripts/ux_brand_login_premium_01_check.js | core | ACTIVE_CORE |  | UX-BRAND-LOGIN-PREMIUM-01 |  | Breaks canonical verification chain |  |
 | root:check:uxdensity01 | package.json | root | node backend/scripts/ux_density_01_panel_card_density_check.js | core | ACTIVE_CORE |  | UX-DENSITY-01 |  | Breaks canonical verification chain |  |
 | root:check:uxpanelstandardarchitecture01 | package.json | root | node backend/scripts/ux_panel_standard_architecture_01_check.js | core | ACTIVE_CORE |  | UX-PANEL-STANDARD-ARCHITECTURE-01 |  | Breaks canonical verification chain |  |
 | root:check:finaluxsmoke01 | package.json | root | node backend/scripts/final_ux_smoke_01_check.js | core | ACTIVE_CORE |  | FINAL-UX-SMOKE-01 |  | Breaks canonical verification chain |  |
@@ -740,6 +755,7 @@ Repo: `servis-platform`
 | ux_premium_critical_fix_agreements_detail_01_check.js | backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js | backend | root:check:uxpremiumcriticalfixagreementsdetail01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_premium_critical_fix_room_01_check.js | backend/scripts/ux_premium_critical_fix_room_01_check.js | backend | root:check:uxpremiumcriticalfixroom01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-FIX-ROOM-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_premium_critical_uxfix_cleanup_01_check.js | backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js | backend | root:check:uxpremiumcriticaluxfixcleanup01 | product | ACTIVE |  | UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_room_company_shifts_mobile_card_fix_01_check.js | backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js | backend | root:check:uxroomcompanyshiftsmobilecardfix01 | product | ACTIVE |  | UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_driver_vehicle_link_dedup_01_check.js | backend/scripts/ux_room_driver_vehicle_link_dedup_01_check.js | backend | root:check:uxroomdrivervehiclelinkdedup01 | product | ACTIVE |  | UX-ROOM-DRIVER-VEHICLE-LINK-DEDUP-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_panel_tabs_01_check.js | backend/scripts/ux_room_ops_panel_tabs_01_check.js | backend | root:check:uxroomopspaneltabs01 | product | ACTIVE |  | UX-ROOM-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_room_ops_relationship_polish_01_check.js | backend/scripts/ux_room_ops_relationship_polish_01_check.js | backend | root:check:uxroomopsrelationshippolish01 | product | ACTIVE |  | UX-ROOM-OPS-RELATIONSHIP-POLISH-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -750,6 +766,7 @@ Repo: `servis-platform`
 | ux_route_impact_preview_compact_01_check.js | backend/scripts/ux_route_impact_preview_compact_01_check.js | backend | root:check:uxrouteimpactpreviewcompact01 | product | ACTIVE |  | UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_school_organization_panels_01_check.js | backend/scripts/ux_school_organization_panels_01_check.js | backend | root:check:uxschoolorganizationpanels01 | product | ACTIVE |  | UX-SCHOOL-ORGANIZATION-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_sefer_abi_launcher_01_check.js | backend/scripts/ux_sefer_abi_launcher_01_check.js | backend | root:check:uxseferabilauncher01 | product | ACTIVE |  | UX-SEFER-ABI-LAUNCHER-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_shifts_responsive_layout_fix_01_check.js | backend/scripts/ux_shifts_responsive_layout_fix_01_check.js | backend | root:check:uxshiftsresponsivelayoutfix01 | product | ACTIVE |  | UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_smoke_pass_minus_evidence_01_check.js | backend/scripts/ux_smoke_pass_minus_evidence_01_check.js | backend | root:check:uxsmokepassminusevidence01 | product | ACTIVE |  | UX-SMOKE-PASS-MINUS-EVIDENCE-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_audit_panel_01_check.js | backend/scripts/ux_superadmin_audit_panel_01_check.js | backend | root:check:uxsuperadminauditpanel01 | product | ACTIVE |  | UX-SUPERADMIN-AUDIT-PANEL-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_superadmin_commercial_flow_01_check.js | backend/scripts/ux_superadmin_commercial_flow_01_check.js | backend | root:check:uxsuperadmincommercialflow01 | product | ACTIVE |  | UX-SUPERADMIN-COMMERCIAL-FLOW-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -884,7 +901,7 @@ Repo: `servis-platform`
 | admin_logs.js | backend/src/routes/admin_logs.js | backend |  | review | NEEDS_REVIEW |  | ADMIN-LOGS |  | Owner or chain unclear |  |
 | agreementExtendNegotiationRouter.js | backend/src/routes/agreementExtendNegotiationRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-EXTEND-NEGOTIATION-ROUTER |  | Owner or chain unclear |  |
 | agreementRouteRefreshRouter.js | backend/src/routes/agreementRouteRefreshRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-ROUTER |  | Owner or chain unclear |  |
-| agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
+| agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
 | agreementsHelpers.js | backend/src/routes/agreementsHelpers.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENTS-HELPERS |  | Owner or chain unclear |  |
 | ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:cop03b, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
 | auth.js | backend/src/routes/auth.js | backend | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
@@ -906,7 +923,7 @@ Repo: `servis-platform`
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend |  | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
@@ -929,7 +946,7 @@ Repo: `servis-platform`
 | rooms.js | backend/src/routes/rooms.js | backend |  | review | NEEDS_REVIEW |  | ROOMS |  | Owner or chain unclear |  |
 | routeTemplates.js | backend/src/routes/routeTemplates.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-TEMPLATES |  | Owner or chain unclear |  |
 | schoolParentInvites.js | backend/src/routes/schoolParentInvites.js | backend |  | review | NEEDS_REVIEW |  | SCHOOL-PARENT-INVITES |  | Owner or chain unclear |  |
-| company.js | backend/src/routes/shifts/company.js | backend | root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01, root:check:uxroomcompanyshiftsmobilecardfix01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
+| company.js | backend/src/routes/shifts/company.js | backend | root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanyagreementsmobileparity01, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanypersonelaccessmobileparity01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01, root:check:uxroomcompanyshiftsmobilecardfix01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/shifts/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
 | index.js | backend/src/routes/shifts/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
@@ -996,8 +1013,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| ux_room_company_shifts_mobile_card_fix_01_check.js | backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js | backend | root:check:uxroomcompanyshiftsmobilecardfix01 | product | ACTIVE |  | UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
-| ux_shifts_responsive_layout_fix_01_check.js | backend/scripts/ux_shifts_responsive_layout_fix_01_check.js | backend | root:check:uxshiftsresponsivelayoutfix01 | product | ACTIVE |  | UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_company_agreements_mobile_parity_01_check.js | backend/scripts/ux_company_agreements_mobile_parity_01_check.js | backend | root:check:uxcompanyagreementsmobileparity01 | product | ACTIVE |  | UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1021,7 +1037,7 @@ Repo: `servis-platform`
 | api.js | web/src/api.js | web | mobile:check:m95e2, mobile:check:m95e6, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
 | uiSurface.js | web/src/components/copilot/uiSurface.js | web |  | review | NEEDS_REVIEW |  | UI-SURFACE |  | Owner or chain unclear |  |
 | stopTimelineUtils.js | web/src/components/stopTimelineUtils.js | web |  | review | NEEDS_REVIEW |  | STOP-TIMELINE-UTILS |  | Owner or chain unclear |  |
-| brand.js | web/src/config/brand.js | web | root:check:brand, root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
+| brand.js | web/src/config/brand.js | web | root:check:brand, root:check:docsbrandcleanup01, root:check:uxbrandloginpremium01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
 | screenRegistry.js | web/src/copilot/screenRegistry.js | web |  | review | NEEDS_REVIEW |  | SCREEN-REGISTRY |  | Owner or chain unclear |  |
 | logger.js | web/src/lib/logger.js | web |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
@@ -1264,7 +1280,7 @@ Repo: `servis-platform`
 | useMobileAppLifecycle.js | mobile/src/app/useMobileAppLifecycle.js | mobile |  | review | NEEDS_REVIEW |  | USE-MOBILE-APP-LIFECYCLE |  | Owner or chain unclear |  |
 | api.js | mobile/src/lib/api.js | mobile | mobile:check:m95e2, mobile:check:m95e6, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
 | backgroundGps.js | mobile/src/lib/backgroundGps.js | mobile |  | review | NEEDS_REVIEW |  | BACKGROUND-GPS |  | Owner or chain unclear |  |
-| brand.js | mobile/src/lib/brand.js | mobile | root:check:brand, root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
+| brand.js | mobile/src/lib/brand.js | mobile | root:check:brand, root:check:docsbrandcleanup01, root:check:uxbrandloginpremium01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
 | gps.js | mobile/src/lib/gps.js | mobile | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
 | logger.js | mobile/src/lib/logger.js | mobile |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
 | navigation.js | mobile/src/lib/navigation.js | mobile | mobile:check:m95e22b | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
@@ -1626,7 +1642,7 @@ Repo: `servis-platform`
 | Auth / login / role access | Mobile login, step-up, KVKK | backend/src/routes/personelAccess.js; backend/src/routes/live.js; auth / step-up services | mobile/src/screens/LoginScreen.js; mobile/src/screens/ForcePasswordChangeScreen.js; mobile/src/screens/PinChangeScreen.js; web/src/panels/shared/KvkkPanel.jsx; web/src/panels/shared/KvkkConsentGate.jsx; web/src/panels/shared/TotpStepUpCard.jsx | check:m98e2e; check:m98e2b; check:m98e2d; check:m98e5; check:m99kvkk01; check:m99ux01 | static + auth-session + device | PARTIAL_COVERAGE | No single canonical end-to-end login/role smoke; browser/device split stays manual. | M98 / M99 | MISSING_FUTURE_MILESTONE: SECURITY-KVKK-FINAL-01 |
 | Super Admin | Super Admin panels | backend/src/routes/live.js; backend/src/routes/company.js; backend/src/routes/organization.js; backend/src/routes/requests.js | web/src/panels/superadmin/SuperAdminPanel.jsx; UsersPanel.jsx; RoomsPanel.jsx; RegionsPanel.jsx; CompaniesPanel.jsx; CommercialCorePanel.jsx; AuditLogsPanel.jsx; LogExportPanel.jsx; TrustQualityPanel.jsx; FieldAcceptanceCenter.jsx | check:web01b; check:uxsuperadminoverviewcleanup01; check:uxsuperadminpanelclarity01; check:uxsuperadminlabelpolish01; check:uxsuperadminlivemonitoring01; check:uxsuperadminauditpanel01; check:uxsuperadminqualitypanel01; check:uxsuperadmincommercialflow01; check:uxsuperadminfielddispatchdiscovery01; check:uxsuperadminfieldacceptancecenter01; check:cop04bfix01; check:cop04bfix04; check:copliveaccept01; check:finaluxsmoke01 | static | COVERED_ACTIVE | None on the current static/product chain. | M97 / M99 / COP-04B | None |
 | Room / Oda | Room panels | backend/src/routes/shifts/room.js; backend/src/routes/requests.js; backend/src/routes/live.js; backend/src/routes/agreements.js | web/src/panels/room/roomOperationsBoard.jsx; roomShiftsMainSections.jsx; AgreementsPanel.jsx; ShiftsPanel.jsx; DriversPanel.jsx; MapPanel.jsx; VehiclesPanel.jsx; CommercialFlowPanel.jsx; CheckinPanel.jsx; HubPanel.jsx; OperationHealthPanel.jsx | check:uxroomopspaneltabs01; check:uxroomopsrelationshippolish01; check:uxroomshiftstabs01; check:uxroomvehiclestelematicsfix; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:routechangefinal01; check:finaluxsmoke01 | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS / ROUTE-CHANGE-FINAL | None |
-| Company / Firma | Company panels | backend/src/routes/shifts/company.js; backend/src/routes/agreements.js; backend/src/routes/company.js; backend/src/routes/requests.js; backend/src/routes/personelAccess.js | web/src/panels/company/OperationsPanel.jsx; ShiftsPanel.jsx; AgreementsPanel.jsx; AgreementWizard.jsx; AgreementWizardModal.jsx; GuidedPlanModal.jsx; guidedPlanModalShell.jsx; CommercialFlowPanel.jsx; ServiceEvaluationPanel.jsx; MapPanel.jsx; WorkflowPanel.jsx; RoutePreviewModal.jsx; AgreementOpsBridgeCard.jsx; PersonelAccessPanel.jsx; PassengerLinksPanel.jsx; HubPanel.jsx; CompanyShiftsPanel* | check:uxcompanyshiftstabs01; check:uxcompanymobileactionclarity01; check:uxcompanyopspaneltabs01; check:uxcompanyqualitytabs01; check:uxcompanypanelssmoke01; check:routechangefinal01; check:boardingops01b; check:boardingops01c | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | ROUTE-CHANGE-FINAL / BOARDING-OPS | None |
+| Company / Firma | Company panels | backend/src/routes/shifts/company.js; backend/src/routes/agreements.js; backend/src/routes/company.js; backend/src/routes/requests.js; backend/src/routes/personelAccess.js | web/src/panels/company/OperationsPanel.jsx; ShiftsPanel.jsx; AgreementsPanel.jsx; AgreementWizard.jsx; AgreementWizardModal.jsx; GuidedPlanModal.jsx; guidedPlanModalShell.jsx; CommercialFlowPanel.jsx; ServiceEvaluationPanel.jsx; MapPanel.jsx; WorkflowPanel.jsx; RoutePreviewModal.jsx; AgreementOpsBridgeCard.jsx; PersonelAccessPanel.jsx; PassengerLinksPanel.jsx; HubPanel.jsx; CompanyShiftsPanel* | check:uxcompanyshiftstabs01; check:uxcompanymobileactionclarity01; check:uxcompanypersonelaccessmobileparity01; check:uxcompanyopspaneltabs01; check:uxcompanyqualitytabs01; check:uxcompanypanelssmoke01; check:routechangefinal01; check:boardingops01b; check:boardingops01c | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | ROUTE-CHANGE-FINAL / BOARDING-OPS | None |
 | School / Okul | School panels | backend/src/routes/schoolParentInvites.js; backend/src/routes/requests.js; backend/src/routes/shifts/room.js | web/src/panels/school/OperationsPanel.jsx; ParentInvitePanel.jsx | check:uxschoolorganizationpanels01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:finaluxsmoke01 | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS / FINAL-UX-SMOKE | None |
 | Organization / Kurum | Organization panels | backend/src/routes/organization.js | web/src/panels/organization/PlansPanel.jsx; CenterPanel.jsx; organizationPlansShared.jsx | check:uxnav01; check:routechangefinal01; check:finaluxsmoke01; check:web01b | static | PARTIAL_COVERAGE | Dedicated organization flow smoke is narrower than company/room coverage. | UX-NAV / ROUTE-CHANGE-FINAL | MISSING_FUTURE_MILESTONE: ORG-CONTEXT-FINAL-01 |
 | Driver / Sürücü | Driver panels | backend/src/routes/driver.js; backend/src/routes/shifts/driver.js; backend/src/routes/live.js | web/src/panels/driver/TodayPanel.jsx; RoutePanel.jsx; MapPanel.jsx; CheckinPanel.jsx; PinChangePanel.jsx | check:driverflowfinal01; check:boardingops01c; check:etasanity01; check:etaosrm01; check:etaosrm02; check:m95e20; check:m95e23b; check:m98e3; check:m98e4 | static + device + manual | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS-01C / ETA | None |

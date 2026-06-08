@@ -86,6 +86,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxcopilotterminal01` -> `node backend\scripts\ux_copilot_terminal_01_check.js`
 - `check:seferabiterminalhumanize01` -> `node backend\scripts\sefer_abi_terminal_humanize_01_check.js`
 - `check:uxnav01` -> `node backend\scripts\ux_nav_01_premium_navdock_check.js`
+- `check:uxbrandloginpremium01` -> `node backend\scripts\ux_brand_login_premium_01_check.js`
 - `check:uxmobilewebshellclarity01` -> `node backend\scripts\ux_mobile_web_shell_clarity_01_check.js`
 - `check:uxmobileallrolespanelfix01` -> `node backend\scripts\ux_mobile_all_roles_panel_fix_01_check.js`
 - `check:uxroomcompanyshiftsmobilecardfix01` -> `node backend\scripts\ux_room_company_shifts_mobile_card_fix_01_check.js`
@@ -100,7 +101,9 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxroomshiftsdensitydedup01` -> `node backend\scripts\ux_room_shifts_density_dedup_01_check.js`
 - `check:uxpremiumcriticalfixroom01` -> `node backend\scripts\ux_premium_critical_fix_room_01_check.js`
 - `check:uxcompanymobileactionclarity01` -> `node backend\scripts\ux_company_mobile_action_clarity_01_check.js`
+- `check:uxcompanypersonelaccessmobileparity01` -> `node backend\scripts\ux_company_personel_access_mobile_parity_01_check.js`
 - `check:uxpremiumcriticalfixagreementsdetail01` -> `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
+- `check:uxcompanyagreementsmobileparity01` -> `node backend\scripts\ux_company_agreements_mobile_parity_01_check.js`
 - `check:uxparentpersonelliveerrorclarity01` -> `node backend\scripts\ux_parent_personel_live_error_clarity_01_check.js`
 - `check:copliveaccept01` -> `node backend\scripts\cop_live_accept_01_check.js`
 - `check:routechangefinal01` -> `node backend\scripts\route_change_final_01_check.js`
@@ -180,6 +183,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:uxnav01` NavDock premium visual polish check.
 - Sol menüdeki terminal label `Sefer Abi Terminali` kalır; sağ alttaki `Sefer Abi’ye Sor` drawer bozulmaz.
 - Menü kartları, aktif durum, badge hizası ve focus/hover affordance'ları daha premium görünür; route ve davranış değişmez.
+
+### UX-BRAND-LOGIN-PREMIUM-01 [CHECK]
+- `check:uxbrandloginpremium01` SeferPakt login ve marka katmanını, kullanıcı tarafından seçilen referans logodan kırpılmış asset’lerle premium hale getirir.
+- `seferpakt-lockup.png`, `seferpakt-app-icon.png` ve `seferpakt-favicon.png` kırpılmış assetleri kullanılır; yeni logo çizimi veya pano screenshot'u commit edilmez.
+- Login ekranı iki kolon premium shell düzenini korur; demo erişim bilgileri collapsible kalır ve ana giriş aksiyonunu gölgelemez.
+- AppShell ve NavDock markalama alanları aynı lockup standardını kullanır; mobile drawer davranışı değişmez.
+- Doküman: `docs/UX_BRAND_LOGIN_PREMIUM_01.md`
+- Komut: `node backend\scripts\ux_brand_login_premium_01_check.js`
 
 ### UX-MOBILE-WEB-SHELL-CLARITY-01 [CHECK]
 - `check:uxmobilewebshellclarity01` mobil web shell için off-canvas drawer, backdrop ve content-first yerleşim standardını doğrular.
@@ -1180,6 +1191,21 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:uxcompanymobileactionclarity01` `Company / Vardiyalar`, `Company / Sözleşmeler`, `Company / Ticari Akış` ve sözleşme taslak / önizleme yüzeylerinde mobile-safe ana aksiyonların görünür ve tıklanabilir kalmasını doğrular.
 - `Vardiyayı sözleşmeye dönüştür` akışı görünür primary CTA olarak korunur; `Taslağı incele` ve `Sözleşmeden üretilen vardiyaya git` gibi etiketler readonly preview ile gerçek akış ayrımını netleştirir.
 - `NavDock`, floating assistant/drawer ve alt sabit alanlar için safe-area + z-index hizası korunur; bu düzenleme backend route/write-path, schema ve runner policy'yi değiştirmez.
+
+### UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01 [CHECK]
+- `check:uxcompanypersonelaccessmobileparity01` `Company / Personel Erişimi` ve `Organization / Personel Erişimi` yüzeylerinde mobilde tek kolon, kart/list ve güvenli kullanıcı kodu görüntüsünü doğrular.
+- `PersonelAccessPanel.jsx` erişim listesi kart/list standardını kullanır; ham PIN listede gösterilmez ve desktop iki kolon korunur.
+- `Sefer Abi` launcher son kartı kapatmaz; authenticated shell mobile'da kompakt kalır.
+- Doküman: `docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md`
+- Komut: `node backend\scripts\ux_company_personel_access_mobile_parity_01_check.js`
+
+### UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01 [CHECK]
+- `check:uxcompanyagreementsmobileparity01` `Company / Sözleşmeler` yüzeyinde mobile parity sağlar; `desktopShiftTable` masaüstünde korunur, `mobileShiftCards` küçük ekranda aktif olur.
+- `Room / Sözleşmeler` yalnızca referans yüzeydir; bu milestone room ekranını değiştirmez ve oradaki tablo / card dili kıyas referansı olarak kalır.
+- `Sefer Abi launcher` safe-area ve bottom clearance korunur; sözleşme kart aksiyonları alt sabit alanın altında sıkışmaz.
+- Bu düzenleme backend route/write-path, schema ve browser-smoke sınırlarını açmaz.
+- Doküman: `docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md`
+- Komut: `node backend\scripts\ux_company_agreements_mobile_parity_01_check.js`
 
 ### UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01 [CHECK]
 - `check:uxmobileoverflowminimapreadability01` `Room / Vardiyalar`, `School / Operasyon Paneli` ve `Organization / Planlama` yüzeylerinde mobil tablo/card taşma parity'sini korurken mini-map okunabilirliğini yükseltir.

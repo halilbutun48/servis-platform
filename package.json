@@ -141,6 +141,7 @@
     "check:uxpanellayoutwidth02cfix02": "node backend/scripts/ux_panel_layout_width_02c_fix_02_check.js",
     "check:uxpanellayoutwidth02cfix03": "node backend/scripts/ux_panel_layout_width_02c_fix_03_check.js",
     "check:uxnav01": "node backend/scripts/ux_nav_01_premium_navdock_check.js",
+    "check:uxbrandloginpremium01": "node backend/scripts/ux_brand_login_premium_01_check.js",
     "check:uxdensity01": "node backend/scripts/ux_density_01_panel_card_density_check.js",
     "check:uxpanelstandardarchitecture01": "node backend/scripts/ux_panel_standard_architecture_01_check.js",
     "check:finaluxsmoke01": "node backend/scripts/final_ux_smoke_01_check.js",
