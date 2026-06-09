@@ -5,13 +5,13 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `352`
-- Toplam executable tracked file: `1127`
-- Combined registry row: `1479`
-- Root/backend/web/mobile package dağılımı: root `195`, backend `692`, web `88`, mobile `201`
+- Toplam package script entry: `353`
+- Toplam executable tracked file: `1128`
+- Combined registry row: `1481`
+- Root/backend/web/mobile package dağılımı: root `196`, backend `693`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `48`
-- Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
+- Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
@@ -81,12 +81,15 @@ Repo: `servis-platform`
 - PASS-minus evidence milestone: `UX-SMOKE-PASS-MINUS-EVIDENCE-01`
 - PASS-minus evidence docs: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
 - PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
-- Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`, `docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md`, `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`
+- Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`, `docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md`, `docs/INVITE_BASED_MEMBERSHIP_01.md`, `docs/VERIFIED_SUPPLIER_01.md`, `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`
+- Verified supplier milestone: `VERIFIED-SUPPLIER-01`
+- Verified supplier check: `check:verifiedsupplier01`
+- Verified supplier docs: `docs/VERIFIED_SUPPLIER_01.md`
 - Public lead audit check: `check:productflowbuttonaudit01`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `385`
-- ACTIVE_CORE: `150`
+- ACTIVE_CORE: `152`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -116,7 +119,7 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 385 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 150 |
+| ACTIVE_CORE | 152 |
 | ACTIVE_RELEASE_ONLY | 274 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -174,7 +177,8 @@ Repo: `servis-platform`
 | root:check:onboardingreview01 | package.json | root | node backend/scripts/onboarding_review_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-ONBOARDINGREVIEW-01 |  | Breaks canonical verification chain |  |
 | root:check:onboardingreviewfinal01 | package.json | root | node backend/scripts/onboarding_review_final_audit_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
 | root:check:onboardingreviewfinalaudit01 | package.json | root | node backend/scripts/onboarding_review_final_audit_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
-| root:check:invitebasedmembership01 | package.json | root | node backend/scripts/invite_based_membership_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-INVITEBASEDMEMBERSHIP-01 |  | Owner or chain unclear |  |
+| root:check:invitebasedmembership01 | package.json | root | node backend/scripts/invite_based_membership_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-INVITEBASEDMEMBERSHIP-01 |  | Breaks canonical verification chain |  |
+| root:check:verifiedsupplier01 | package.json | root | node backend/scripts/verified_supplier_01_check.js | verify-core | ACTIVE_CORE |  | VERIFIED-SUPPLIER-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
 | root:check:marketplacefreetooperate01 | package.json | root | node backend/scripts/marketplace_free_to_operate_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-MARKETPLACEFREETOOPERATE-01 |  | Owner or chain unclear |  |
@@ -477,6 +481,7 @@ Repo: `servis-platform`
 | fullcheck.js | backend/scripts/fullcheck.js | backend | backend:fullcheck | review | NEEDS_REVIEW |  | FULLCHECK |  | Owner or chain unclear |  |
 | guided_7x21_and_agreement_contract_check.js | backend/scripts/guided_7x21_and_agreement_contract_check.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-7-X-21-AND-AGREEMENT-CONTRACT-CHECK |  | Owner or chain unclear |  |
 | guided_offer_agreement_skip_check.js | backend/scripts/guided_offer_agreement_skip_check.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-OFFER-AGREEMENT-SKIP-CHECK |  | Owner or chain unclear |  |
+| invite_based_membership_01_check.js | backend/scripts/invite_based_membership_01_check.js | backend | root:check:invitebasedmembership01 | review | NEEDS_REVIEW |  | INVITE-BASED-MEMBERSHIP-01-CHECK |  | Owner or chain unclear |  |
 | lead_capture_01_check.js | backend/scripts/lead_capture_01_check.js | backend | root:check:leadcapture01 | review | NEEDS_REVIEW |  | LEAD-CAPTURE-01-CHECK |  | Owner or chain unclear |  |
 | live_gate_readiness_hotfix_check.mjs | backend/scripts/live_gate_readiness_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | LIVE-GATE-READINESS-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | live_tracking_final_01_acceptance_check.js | backend/scripts/live_tracking_final_01_acceptance_check.js | backend | root:check:livetrackingfinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
@@ -1031,7 +1036,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| invite_based_membership_01_check.js | backend/scripts/invite_based_membership_01_check.js | backend | root:check:invitebasedmembership01 | review | NEEDS_REVIEW |  | INVITE-BASED-MEMBERSHIP-01-CHECK |  | Owner or chain unclear |  |
+| verified_supplier_01_check.js | backend/scripts/verified_supplier_01_check.js | backend | root:check:verifiedsupplier01 | product-extensions | NEEDS_REVIEW |  | VERIFIED-SUPPLIER-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

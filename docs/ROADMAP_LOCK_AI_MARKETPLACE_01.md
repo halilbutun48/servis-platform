@@ -380,6 +380,17 @@ Kullanılmayacak cümleler:
 - Human approval, guard ve audit log zorunludur.
 - Invite draft / pending invite yalnızca güvenli user-creation altyapısı zaten varsa planlanır; bu roadmap/check runtime davranış açmaz.
 
+## Verified supplier guard
+- `VERIFIED-SUPPLIER-01` `INVITE-BASED-MEMBERSHIP-01` sonrasında gelir; tedarikçi doğrulama public/self-service bir otomasyon olarak açılmaz.
+- Public/self-service tedarikçi doğrulaması yok.
+- Bu milestone, public lead veya supplier application verisini insan onaylı ve kanıt-temelli doğrulama hazırlığına taşır; otomatik verified supplier iddiası kurmaz.
+- İnsan onaylı ve kanıt-temelli tedarikçi doğrulama hazırlığı.
+- Doğrulama checklisti ticari unvan, yetkili kişi, araç kapasitesi, araç tipi uygunluğu, sürücü uygunluğu, hizmet bölgesi, KVKK / sözleşme / operasyon taahhüdü, geçmiş kalite / saha kanıtı ve eksik bilgi notu etrafında toplanır.
+- Human approval, guard ve audit log zorunludur.
+- Payment, billing, collection, settlement, contract execute, offer ranking, marketplace auto-selection, email, SMS ve push açılmaz.
+- Prisma/migration, backend route/service/schema veya UI feature genişlemesi açılmaz.
+- Detay dokümanı: `docs/VERIFIED_SUPPLIER_01.md`
+
 ## Roadmap sırası
 ### A) MARKETPLACE TEMELİ
 - PUBLIC-LANDING-01 final promise check

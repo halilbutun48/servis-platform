@@ -155,7 +155,7 @@ function main() {
   must(inviteDoc, "no email", "invite membership doc excludes email");
   must(inviteDoc, "no SMS", "invite membership doc excludes SMS");
   must(inviteDoc, "no push", "invite membership doc excludes push");
-  must(inviteDoc, "no Prisma/migration", "invite membership doc excludes prisma migration");
+  must(inviteDoc, "no schema change", "invite membership doc excludes schema change");
   must(inviteDoc, "no runtime feature", "invite membership doc excludes runtime feature");
   must(inviteDoc, "human approval", "invite membership doc keeps human approval wording");
   must(inviteDoc, "guard", "invite membership doc keeps guard wording");

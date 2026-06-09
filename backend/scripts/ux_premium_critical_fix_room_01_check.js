@@ -313,6 +313,8 @@ function main() {
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
     "docs/MOBILE_WEB_FINAL_01.md",
+    "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
+    "backend/scripts/verified_supplier_01_check.js",
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
     "web/src/panels/personel/LivePanel.jsx",
@@ -326,6 +328,8 @@ function main() {
     "backend/scripts/script_harness_consolidation_01_check.js",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
+    "docs/VERIFIED_SUPPLIER_01.md",
     "package.json",
     "web/src/index.css",
   ]);

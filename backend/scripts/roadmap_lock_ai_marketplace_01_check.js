@@ -156,6 +156,18 @@ function main() {
   must(roadmap, 'Payment, billing, collection, settlement ve contract execute açılmaz', 'roadmap doc excludes payment and contract execute');
   must(roadmap, 'Verified supplier veya supplier verification auto akışı açılmaz', 'roadmap doc excludes supplier verification auto');
   must(roadmap, 'Email, SMS ve push açılmaz', 'roadmap doc excludes email sms and push');
+  must(roadmap, 'Verified supplier guard', 'roadmap doc contains verified supplier guard section');
+  must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap doc keeps verified supplier milestone');
+  must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap doc links verified supplier doc');
+  must(roadmap, 'public lead veya supplier application verisini insan onaylı ve kanıt-temelli doğrulama hazırlığına taşır; otomatik verified supplier iddiası kurmaz', 'roadmap doc keeps human-approved verified supplier wording');
+  must(roadmap, 'Doğrulama checklisti ticari unvan, yetkili kişi, araç kapasitesi, araç tipi uygunluğu, sürücü uygunluğu, hizmet bölgesi, KVKK / sözleşme / operasyon taahhüdü, geçmiş kalite / saha kanıtı ve eksik bilgi notu etrafında toplanır.', 'roadmap doc keeps verification checklist wording');
+  must(roadmap, 'insan onaylı ve kanıt-temelli tedarikçi doğrulama hazırlığı', 'roadmap doc keeps evidence-based supplier verification wording');
+  must(roadmap, 'public/self-service bir otomasyon olarak açılmaz', 'roadmap doc excludes public self-service supplier verification');
+  must(roadmap, 'human approval', 'roadmap doc keeps human approval wording for verified supplier');
+  must(roadmap, 'guard', 'roadmap doc keeps guard wording for verified supplier');
+  must(roadmap, 'audit log', 'roadmap doc keeps audit log wording for verified supplier');
+  must(roadmap, 'Prisma/migration, backend route/service/schema veya UI feature genişlemesi açılmaz.', 'roadmap doc excludes runtime and UI expansions');
+  must(roadmap, 'Payment, billing, collection, settlement, contract execute, offer ranking, marketplace auto-selection, email, SMS ve push açılmaz.', 'roadmap doc excludes payment and notification actions');
   must(roadmap, 'Marketplace write boundary', 'roadmap doc contains marketplace write boundary');
   must(roadmap, 'Her yeni milestone acceptance standardı', 'roadmap doc contains milestone acceptance standard');
   must(roadmap, 'Final hardening / release - en son', 'roadmap doc keeps final hardening as last line of roadmap order');
@@ -194,6 +206,7 @@ function main() {
     'Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard\'lı uygula -> Audit log yaz',
     'Public marketing claim guard',
     'Invite-based membership guard',
+    'Verified supplier guard',
     'Roadmap sırası',
     'A) MARKETPLACE TEMELİ',
     'PUBLIC-LANDING-01 final promise check',

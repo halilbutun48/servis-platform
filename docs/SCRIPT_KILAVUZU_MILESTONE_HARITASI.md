@@ -931,7 +931,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
   - `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
   - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
-- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ... -> RELEASE-CANDIDATE-01`
+- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ... -> RELEASE-CANDIDATE-01`
 
 ### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
 - Check script: `check:publiclanding01`
@@ -977,6 +977,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - Ana konu: `ONBOARDING-REVIEW-01 FINAL AUDIT` sonrasında public lead'i self-service signup açmadan invite draft / pending invite ile insan onaylı üyelik hazırlığına taşımak; public lead'lerin otomatik kullanıcı hesabına dönüşmemesini; automatic company / room membership, payment, contract execute, supplier verification auto ve email / SMS / push akışlarını açmamayı doğrulamak.
 - Not: bu check runtime feature açmaz; backend route/service/schema ve marketing sayfası değişikliği yoktur.
 - Doküman: `docs/INVITE_BASED_MEMBERSHIP_01.md`
+
+### VERIFIED-SUPPLIER-01 — insan onaylı tedarikçi doğrulama hazırlığı [CHECK]
+- Check script: `check:verifiedsupplier01`
+- Komut: `node backend\scripts\verified_supplier_01_check.js`
+- Ana konu: `INVITE-BASED-MEMBERSHIP-01` sonrasında public lead / supplier application verisini otomatik verified supplier'a çevirmeden insan onaylı ve kanıt-temelli doğrulama hazırlığına taşımak; ticari unvan, yetkili kişi, araç kapasitesi, araç tipi uygunluğu, sürücü uygunluğu, hizmet bölgesi, KVKK / sözleşme / operasyon taahhüdü, geçmiş kalite / saha kanıtı ve eksik bilgi notu üzerinden ilerlemek; payment, contract execute, offer ranking, marketplace auto-selection, email / SMS / push ve schema değişikliği genişlemesi açmamayı doğrulamak.
+- Not: bu check runtime feature açmaz; backend route/service/schema, UI feature ve marketing sayfası değişikliği yoktur.
+- Doküman: `docs/VERIFIED_SUPPLIER_01.md`
 
 ### PRODUCT-FLOW-BUTTON-AUDIT-01 — kritik CTA ve button audit [CHECK]
 - Check script: `check:productflowbuttonaudit01`

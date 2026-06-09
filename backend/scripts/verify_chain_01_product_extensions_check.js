@@ -57,6 +57,11 @@ function main() {
   const pkg = read('package.json');
   const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
+  const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
+  const primer = read('docs/PRIMER_SSOT.md');
+  const finalAuditDoc = read('docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md');
+  const inviteDoc = read('docs/INVITE_BASED_MEMBERSHIP_01.md');
+  const verifiedDoc = read('docs/VERIFIED_SUPPLIER_01.md');
   const backlog = read('docs/NEXT_BACKLOG_V1.md');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
@@ -90,6 +95,7 @@ function main() {
   must(pkg, '"check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js"', 'package.json exposes check:onboardingreview01');
   must(pkg, '"check:onboardingreviewfinalaudit01": "node backend/scripts/onboarding_review_final_audit_01_check.js"', 'package.json exposes check:onboardingreviewfinalaudit01');
   must(pkg, '"check:invitebasedmembership01": "node backend/scripts/invite_based_membership_01_check.js"', 'package.json exposes check:invitebasedmembership01');
+  must(pkg, '"check:verifiedsupplier01": "node backend/scripts/verified_supplier_01_check.js"', 'package.json exposes check:verifiedsupplier01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
@@ -231,6 +237,7 @@ function main() {
     'check:onboardingreview01',
     'check:onboardingreviewfinalaudit01',
     'check:invitebasedmembership01',
+    'check:verifiedsupplier01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
@@ -375,7 +382,11 @@ function main() {
   must(guide, 'check:invitebasedmembership01', 'script guide exposes invite-based membership check');
   must(guide, 'node backend\\scripts\\invite_based_membership_01_check.js', 'script guide includes invite-based membership command');
   must(guide, 'docs/INVITE_BASED_MEMBERSHIP_01.md', 'script guide includes invite-based membership doc');
-  must(guide, 'PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide keeps public lead order');
+  must(guide, 'VERIFIED-SUPPLIER-01', 'script guide mentions verified supplier milestone');
+  must(guide, 'check:verifiedsupplier01', 'script guide exposes verified supplier check');
+  must(guide, 'node backend\\scripts\\verified_supplier_01_check.js', 'script guide includes verified supplier command');
+  must(guide, 'docs/VERIFIED_SUPPLIER_01.md', 'script guide includes verified supplier doc');
+  must(guide, 'PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide keeps public lead order');
   must(guide, 'PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide mentions product flow button audit milestone');
   must(guide, 'check:productflowbuttonaudit01', 'script guide exposes product flow button audit check');
   must(guide, 'node backend\\scripts\\product_flow_button_audit_01_check.js', 'script guide includes product flow button audit command');
@@ -522,6 +533,71 @@ function main() {
   must(harnessDoc, 'root:check:invitebasedmembership01', 'script harness doc lists invite-based membership root check');
   must(harnessDoc, 'invite_based_membership_01_check.js', 'script harness doc lists invite-based membership check');
   must(harnessDoc, 'INVITE-BASED-MEMBERSHIP-01', 'script harness doc lists invite-based membership milestone');
+  must(harnessCheck, 'check:verifiedsupplier01', 'script harness check knows verified supplier alias');
+  must(harnessCheck, 'verified_supplier_01_check.js', 'script harness check knows verified supplier file');
+  must(harnessCheck, 'VERIFIED-SUPPLIER-01', 'script harness check knows verified supplier milestone');
+  must(harnessDoc, 'root:check:verifiedsupplier01', 'script harness doc lists verified supplier root check');
+  must(harnessDoc, 'verified_supplier_01_check.js', 'script harness doc lists verified supplier check');
+  must(harnessDoc, 'docs/VERIFIED_SUPPLIER_01.md', 'script harness doc lists verified supplier doc');
+  must(harnessDoc, 'VERIFIED-SUPPLIER-01', 'script harness doc lists verified supplier milestone');
+  must(primer, 'INVITE-BASED-MEMBERSHIP-01', 'primer mentions invite-based membership milestone');
+  must(primer, 'docs/INVITE_BASED_MEMBERSHIP_01.md', 'primer links invite-based membership doc');
+  must(primer, 'insan onaylı davetli üyelik', 'primer keeps invite-based membership summary');
+  must(primer, 'VERIFIED-SUPPLIER-01', 'primer mentions verified supplier milestone');
+  must(primer, 'docs/VERIFIED_SUPPLIER_01.md', 'primer links verified supplier doc');
+  must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
+  must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
+  must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');
+  must(roadmap, 'human approval', 'roadmap keeps human approval wording for verified supplier');
+  must(roadmap, 'guard', 'roadmap keeps guard wording for verified supplier');
+  must(roadmap, 'audit log', 'roadmap keeps audit log wording for verified supplier');
+  must(finalAuditDoc, 'INVITE-BASED-MEMBERSHIP-01', 'final audit doc points to invite-based membership next milestone');
+  must(finalAuditDoc, 'public lead otomatik kullanıcı / account olmaz', 'final audit doc keeps public lead account boundary');
+  must(finalAuditDoc, 'invite draft', 'final audit doc mentions invite draft boundary');
+  must(finalAuditDoc, 'pending invite', 'final audit doc mentions pending invite boundary');
+  must(finalAuditDoc, 'human approval', 'final audit doc keeps human approval wording');
+  must(finalAuditDoc, 'guard', 'final audit doc keeps guard wording');
+  must(finalAuditDoc, 'audit log', 'final audit doc keeps audit log wording');
+  must(finalAuditDoc, 'supplier verification execute açılmaz', 'final audit doc keeps supplier verification execute boundary');
+  must(inviteDoc, 'INVITE-BASED-MEMBERSHIP-01', 'invite membership doc title present');
+  must(inviteDoc, 'insan onaylı davetli üyelik', 'invite membership doc describes human-approved invite flow');
+  must(inviteDoc, 'ONBOARDING-REVIEW-01 FINAL AUDIT', 'invite membership doc anchors after onboarding final audit');
+  must(inviteDoc, 'invite draft', 'invite membership doc mentions invite draft');
+  must(inviteDoc, 'pending invite', 'invite membership doc mentions pending invite');
+  must(inviteDoc, 'public leads do not automatically become users/accounts', 'invite membership doc keeps public lead boundary');
+  must(inviteDoc, 'no self-service signup', 'invite membership doc excludes self-service signup');
+  must(inviteDoc, 'no automatic membership', 'invite membership doc excludes automatic membership');
+  must(inviteDoc, 'no automatic company / room membership', 'invite membership doc excludes automatic company/room membership');
+  must(inviteDoc, 'no user creation without human approval', 'invite membership doc requires human approval for user creation');
+  must(inviteDoc, 'no payment', 'invite membership doc excludes payment');
+  must(inviteDoc, 'no contract execute', 'invite membership doc excludes contract execute');
+  must(inviteDoc, 'no supplier verification auto', 'invite membership doc excludes supplier verification auto');
+  must(inviteDoc, 'no email', 'invite membership doc excludes email');
+  must(inviteDoc, 'no SMS', 'invite membership doc excludes SMS');
+  must(inviteDoc, 'no push', 'invite membership doc excludes push');
+  must(inviteDoc, 'no schema change', 'invite membership doc excludes schema change');
+  must(inviteDoc, 'no runtime feature', 'invite membership doc excludes runtime feature');
+  must(inviteDoc, 'human approval', 'invite membership doc keeps human approval wording');
+  must(inviteDoc, 'guard', 'invite membership doc keeps guard wording');
+  must(inviteDoc, 'audit log', 'invite membership doc keeps audit log wording');
+  must(inviteDoc, 'VERIFIED-SUPPLIER-01', 'invite membership doc points to verified supplier milestone');
+  must(verifiedDoc, '# VERIFIED-SUPPLIER-01', 'verified supplier doc title present');
+  must(verifiedDoc, 'insan onaylı tedarikçi doğrulama hazırlığı', 'verified supplier doc describes human-approved verification prep');
+  must(verifiedDoc, 'checklist', 'verified supplier doc contains checklist section');
+  must(verifiedDoc, 'VERIFICATION_NOT_STARTED', 'verified supplier doc contains status vocabulary');
+  must(verifiedDoc, 'VERIFICATION_APPROVED', 'verified supplier doc contains approval status vocabulary');
+  must(verifiedDoc, 'VERIFICATION_REVOKED', 'verified supplier doc contains revoked status vocabulary');
+  must(verifiedDoc, 'human approval', 'verified supplier doc keeps human approval wording');
+  must(verifiedDoc, 'guard', 'verified supplier doc keeps guard wording');
+  must(verifiedDoc, 'audit log', 'verified supplier doc keeps audit log wording');
+  must(verifiedDoc, 'no runtime feature', 'verified supplier doc excludes runtime feature');
+  must(verifiedDoc, 'no UI feature', 'verified supplier doc excludes UI feature');
+  must(verifiedDoc, 'schema değişikliği yok.', 'verified supplier doc excludes schema change');
+  must(verifiedDoc, 'no payment/billing', 'verified supplier doc excludes payment/billing');
+  must(verifiedDoc, 'no contract execute', 'verified supplier doc excludes contract execute');
+  must(verifiedDoc, 'no offer ranking', 'verified supplier doc excludes offer ranking');
+  must(verifiedDoc, 'no marketplace auto-selection', 'verified supplier doc excludes marketplace auto-selection');
+  must(verifiedDoc, 'no email/SMS/push', 'verified supplier doc excludes email/sms/push');
   must(harnessCheck, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script harness check knows parent/personel live error clarity milestone');
   must(harnessCheck, 'check:uxparentpersonelliveerrorclarity01', 'script harness check knows parent/personel live error clarity alias');
   must(harnessCheck, 'docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md', 'script harness check knows parent/personel live error clarity doc');

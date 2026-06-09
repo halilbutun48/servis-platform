@@ -37,7 +37,7 @@ Bu milestone, `ONBOARDING-REVIEW-01 FINAL AUDIT` sonrasında public lead'i otoma
 - `no email`
 - `no SMS`
 - `no push`
-- `no Prisma/migration`
+- `no schema change`
 - `no runtime feature`
 
 ## Out-of-scope
@@ -51,7 +51,7 @@ Bu milestone, `ONBOARDING-REVIEW-01 FINAL AUDIT` sonrasında public lead'i otoma
 - Supplier verification auto / verified supplier auto flow
 - Email / SMS / push
 - Backend route/service/schema değişikliği
-- Prisma schema / migration değişikliği
+- schema değişikliği
 - UI/runtime feature açılması
 
 ## Not
