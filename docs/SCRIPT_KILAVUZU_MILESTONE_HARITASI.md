@@ -472,7 +472,12 @@ Bu bant güncel doğrulanmış üst hattır.
 
 ### M44 — Telematics [PACK]
 - Pack: `tools/pack_m44_telematics.ps1`
+- Milestone: `M44-TELEMATICS-T1-T5`
 - Amaç: araç GPS/telematics temel omurgası.
+- Komut: `node backend\scripts\m44_telematics_t1_t5_check.js`
+- Check: `check:m44telematicst1t5`
+- Doküman: `docs/M44_TELEMATICS_T1_T5.md`
+- Not: `M44-T1/T5` compatibility alias'ı backlog / registry / state tarafında korunur; bu check canonical read-only baseline'ı görünür kılar.
 
 ### M45 — Retention + Backup [PACK]
 - Pack: `tools/pack_m45_retention_backup.ps1`

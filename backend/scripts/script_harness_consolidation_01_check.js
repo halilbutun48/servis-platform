@@ -23,9 +23,11 @@ const workingTreeCompatFiles = [
   "backend/scripts/invite_based_membership_01_check.js",
   "backend/scripts/verified_supplier_01_check.js",
   "backend/scripts/ux_marketplace_panels_01_check.js",
+  "backend/scripts/m44_telematics_t1_t5_check.js",
   "docs/INVITE_BASED_MEMBERSHIP_01.md",
   "docs/VERIFIED_SUPPLIER_01.md",
   "docs/UX_MARKETPLACE_PANELS_01.md",
+  "docs/M44_TELEMATICS_T1_T5.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
   "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
@@ -48,6 +50,7 @@ const workingTreeCompatFiles = [
   "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md",
   "docs/VERIFIED_SUPPLIER_01.md",
   "docs/UX_MARKETPLACE_PANELS_01.md",
+  "docs/M44_TELEMATICS_T1_T5.md",
 ];
 
 const selectedDocs = [
@@ -192,6 +195,7 @@ function slugToMilestone(slug) {
     [/uxnav0?1/i, "UX-NAV-01"],
     [/uxbrandloginpremium0?1/i, "UX-BRAND-LOGIN-PREMIUM-01"],
     [/uxmobilewebshellclarity0?1/i, "UX-MOBILE-WEB-SHELL-CLARITY-01"],
+    [/m44telematicst1t5/i, "M44-TELEMATICS-T1-T5"],
     [/verifiedsupplier0?1/i, "VERIFIED-SUPPLIER-01"],
     [/uxmarketplacepanels0?1/i, "UX-MARKETPLACE-PANELS-01"], // check:uxmarketplacepanels01
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
@@ -238,7 +242,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -671,11 +675,11 @@ const coverageMatrix = [
     rolePanel: "Driver live map and telematics surfaces",
     backendRouteService: "backend/src/scripts/m44_telematics_check.js; ETA / OSRM helpers",
     frontendSurface: "web/src/lib/markers/vehicleMarkerC.js; web/src/components/map/markers.css; web/src/panels/room/useRoomVehicleTelematics.js",
-    currentCheckScript: "check:m44_telematics_check; check:uxroomvehiclestelematicsfix; check:etaosrm01; check:etaosrm02; check:etasanity01",
+    currentCheckScript: "check:m44telematicst1t5; check:m44_telematics_check; check:uxroomvehiclestelematicsfix; check:etaosrm01; check:etaosrm02; check:etasanity01",
     checkType: "static + release-only",
     coverageStatus: "COVERED_ACTIVE",
     missingGap: "None on the current static/product chain.",
-    ownerMilestone: "M44 / ETA",
+    ownerMilestone: "M44-TELEMATICS-T1-T5",
     requiredNextAction: "None",
   },
   {
@@ -1055,14 +1059,14 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
       fileEntries.push(entry);
       continue;
     }
-    if (/^backend\/scripts\/(?:boarding_ops_01a|boarding_ops_01b|boarding_ops_01c|route_change_final_01|dynamic_savings_01_check|cop_live_accept_01|final_ux_smoke_01|driver_flow_final_01|live_tracking_final_01|eta_sanity_01|eta_osrm_01|eta_osrm_02|e2e_smoke_01|field_launch_pack_01|ux_.*_check|cop_.*_check|m9\d|m8\d|m7\d|m6\d|m5\d|m4\d|m3\d|m2\d|m1\d|m0check|m10check|m11check|m12check|m13check|m14check|m15check|m16check|m17check|m18check|m19check|m20check|m21check|m22check|m23check|m24check|m25check|m26check|m27check|m28check|m29check|m30check|m31check|m32check|m33check|m34check|m35check|m36check|m37check|m38check|m39check|m40check|m41check|m42_optional_check|m43_google_auth_invite_gate_check|m44_telematics_check|m45_backup_create|m45_backup_restore|m45_retention_backup_check|m46_.*|m47_.*|m48_.*|m49_.*|m50_.*|m51_53_.*|m54_.*|m55_.*|m56_.*|m57_.*|m58_.*|m59_.*|m60_.*|m61_.*|m62_.*|m63_.*|m64_.*|m65_.*|m66_.*|m67_.*|m68_.*|m69_.*|m70_.*|m71_.*|m72_.*|m73_.*|m74_.*|m75_.*|m76_.*|m77_.*|m78_.*|m79_.*|m80_.*|m81_.*|m82_.*|m83_.*|m84_.*|m85_.*|m86_.*|m87_.*|m88_.*|m89_.*|m90_.*|m91_.*|m92_.*|m94_.*|m95_.*|m96_.*|m97_.*|m98_.*|m99_.*|op_.*|pay_.*|qlt_.*)\./i.test(relPath)) {
+    if (/^backend\/scripts\/(?:boarding_ops_01a|boarding_ops_01b|boarding_ops_01c|route_change_final_01|dynamic_savings_01_check|cop_live_accept_01|final_ux_smoke_01|driver_flow_final_01|live_tracking_final_01|eta_sanity_01|eta_osrm_01|eta_osrm_02|e2e_smoke_01|field_launch_pack_01|ux_.*_check|cop_.*_check|m9\d|m8\d|m7\d|m6\d|m5\d|m4\d|m3\d|m2\d|m1\d|m0check|m10check|m11check|m12check|m13check|m14check|m15check|m16check|m17check|m18check|m19check|m20check|m21check|m22check|m23check|m24check|m25check|m26check|m27check|m28check|m29check|m30check|m31check|m32check|m33check|m34check|m35check|m36check|m37check|m38check|m39check|m40check|m41check|m42_optional_check|m43_google_auth_invite_gate_check|m44_telematics_check|m44_telematics_t1_t5_check|m45_backup_create|m45_backup_restore|m45_retention_backup_check|m46_.*|m47_.*|m48_.*|m49_.*|m50_.*|m51_53_.*|m54_.*|m55_.*|m56_.*|m57_.*|m58_.*|m59_.*|m60_.*|m61_.*|m62_.*|m63_.*|m64_.*|m65_.*|m66_.*|m67_.*|m68_.*|m69_.*|m70_.*|m71_.*|m72_.*|m73_.*|m74_.*|m75_.*|m76_.*|m77_.*|m78_.*|m79_.*|m80_.*|m81_.*|m82_.*|m83_.*|m84_.*|m85_.*|m86_.*|m87_.*|m88_.*|m89_.*|m90_.*|m91_.*|m92_.*|m94_.*|m95_.*|m96_.*|m97_.*|m98_.*|m99_.*|op_.*|pay_.*|qlt_.*)\./i.test(relPath)) {
       entry.status = "ACTIVE";
       entry.chain = "product";
       entry.notes.push("product check/helper");
       if (/^backend\/scripts\/m9\d/.test(relPath) || /^backend\/scripts\/m8\d/.test(relPath)) {
         entry.chain = "release";
       }
-      if (/^backend\/scripts\/m0check|m1check|m2check|m3check|m4check|m5check|m6check|m7check|m8check|m9check|m10check|m11check|m12check|m13check|m14check|m15check|m16check|m17check|m18check|m19check|m20check|m21check|m22check|m23check|m24check|m25check|m26check|m27check|m28check|m29check|m30check|m31check|m32check|m33check|m34check|m35check|m36check|m37check|m38check|m39check|m40check|m41check|m42_optional_check|m43_google_auth_invite_gate_check|m44_telematics_check|m45_backup_create|m45_backup_restore/i.test(relPath)) {
+      if (/^backend\/scripts\/m0check|m1check|m2check|m3check|m4check|m5check|m6check|m7check|m8check|m9check|m10check|m11check|m12check|m13check|m14check|m15check|m16check|m17check|m18check|m19check|m20check|m21check|m22check|m23check|m24check|m25check|m26check|m27check|m28check|m29check|m30check|m31check|m32check|m33check|m34check|m35check|m36check|m37check|m38check|m39check|m40check|m41check|m42_optional_check|m43_google_auth_invite_gate_check|m44_telematics_check|m44_telematics_t1_t5_check|m45_backup_create|m45_backup_restore/i.test(relPath)) {
         entry.status = "ACTIVE_RELEASE_ONLY";
       }
       fileEntries.push(entry);
@@ -1311,6 +1315,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Marketplace panels milestone: \`UX-MARKETPLACE-PANELS-01\``);
   out.push(`- Marketplace panels check: \`check:uxmarketplacepanels01\``);
   out.push(`- Marketplace panels docs: \`docs/UX_MARKETPLACE_PANELS_01.md\``);
+  out.push(`- Telematics baseline milestone: \`M44-TELEMATICS-T1-T5\``);
+  out.push(`- Telematics baseline check: \`check:m44telematicst1t5\``);
+  out.push(`- Telematics baseline docs: \`docs/M44_TELEMATICS_T1_T5.md\``);
+  out.push(`- Telematics baseline command: \`node backend\\scripts\\m44_telematics_t1_t5_check.js\``);
   out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
   out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
   out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);

@@ -84,7 +84,6 @@ function main() {
   must(pkg, '"check:uxsuperadminfielddispatchdiscovery01"', 'package.json exposes check:uxsuperadminfielddispatchdiscovery01');
   must(pkg, '"check:uxsuperadminfieldacceptancecenter01"', 'package.json exposes check:uxsuperadminfieldacceptancecenter01');
   must(pkg, '"check:paysafe01"', 'package.json keeps check:paysafe01');
-  must(pkg, '"check:pay01e"', 'package.json keeps check:pay01e');
   must(pkg, '"check:qltpaybridge01": "node backend/scripts/qlt_pay_bridge_01_check.js"', 'package.json exposes check:qltpaybridge01');
   must(pkg, '"check:seferscore01": "node backend/scripts/sefer_score_01_check.js"', 'package.json exposes check:seferscore01');
   must(pkg, '"check:roadmaplockaimarketplace01": "node backend/scripts/roadmap_lock_ai_marketplace_01_check.js"', 'package.json exposes check:roadmaplockaimarketplace01');
@@ -100,6 +99,8 @@ function main() {
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
+  must(pkg, '"check:m44telematicst1t5": "node backend/scripts/m44_telematics_t1_t5_check.js"', 'package.json exposes check:m44telematicst1t5');
+  must(pkg, '"check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js"', 'package.json exposes check:pay01e');
   must(pkg, '"smoke:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01.mjs"', 'package.json exposes smoke:productflowbuttonaudit01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
   must(pkg, '"check:docsstate01"', 'package.json keeps check:docsstate01');
@@ -243,6 +244,7 @@ function main() {
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
+    'check:m44telematicst1t5',
     'check:pay01e',
     'check:paysafe01',
     'check:web01a',
@@ -403,6 +405,10 @@ function main() {
   must(guide, 'check:agreementsourceshiftlineage01', 'script guide exposes check:agreementsourceshiftlineage01');
   must(guide, 'MARKETPLACE-FREE-TO-OPERATE-01', 'script guide mentions MARKETPLACE-FREE-TO-OPERATE-01');
   must(guide, 'check:marketplacefreetooperate01', 'script guide exposes check:marketplacefreetooperate01');
+  must(guide, 'M44-TELEMATICS-T1-T5', 'script guide mentions M44 telematics T1/T5 milestone');
+  must(guide, 'check:m44telematicst1t5', 'script guide exposes M44 telematics T1/T5 check');
+  must(guide, 'node backend\\scripts\\m44_telematics_t1_t5_check.js', 'script guide includes M44 telematics T1/T5 command');
+  must(guide, 'docs/M44_TELEMATICS_T1_T5.md', 'script guide includes M44 telematics T1/T5 doc');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
   must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
@@ -553,6 +559,14 @@ function main() {
   must(harnessDoc, 'ux_marketplace_panels_01_check.js', 'script harness doc lists marketplace panels check');
   must(harnessDoc, 'docs/UX_MARKETPLACE_PANELS_01.md', 'script harness doc lists marketplace panels doc');
   must(harnessDoc, 'UX-MARKETPLACE-PANELS-01', 'script harness doc lists marketplace panels milestone');
+  must(harnessCheck, 'check:m44telematicst1t5', 'script harness check knows M44 telematics T1/T5 alias');
+  must(harnessCheck, 'm44_telematics_t1_t5_check.js', 'script harness check knows M44 telematics T1/T5 file');
+  must(harnessCheck, 'docs/M44_TELEMATICS_T1_T5.md', 'script harness check knows M44 telematics T1/T5 doc');
+  must(harnessCheck, 'M44-TELEMATICS-T1-T5', 'script harness check knows M44 telematics T1/T5 milestone');
+  must(harnessDoc, 'root:check:m44telematicst1t5', 'script harness doc lists M44 telematics T1/T5 root check');
+  must(harnessDoc, 'm44_telematics_t1_t5_check.js', 'script harness doc lists M44 telematics T1/T5 check');
+  must(harnessDoc, 'docs/M44_TELEMATICS_T1_T5.md', 'script harness doc lists M44 telematics T1/T5 doc');
+  must(harnessDoc, 'M44-TELEMATICS-T1-T5', 'script harness doc lists M44 telematics T1/T5 milestone');
   must(primer, 'INVITE-BASED-MEMBERSHIP-01', 'primer mentions invite-based membership milestone');
   must(primer, 'docs/INVITE_BASED_MEMBERSHIP_01.md', 'primer links invite-based membership doc');
   must(primer, 'insan onaylı davetli üyelik', 'primer keeps invite-based membership summary');
@@ -561,6 +575,9 @@ function main() {
   must(primer, 'UX-MARKETPLACE-PANELS-01', 'primer mentions marketplace panels milestone');
   must(primer, 'docs/UX_MARKETPLACE_PANELS_01.md', 'primer links marketplace panels doc');
   must(primer, 'marketplace readiness center', 'primer keeps marketplace readiness wording');
+  must(primer, 'M44-TELEMATICS-T1-T5', 'primer mentions M44 telematics T1/T5 milestone');
+  must(primer, 'check:m44telematicst1t5', 'primer exposes M44 telematics T1/T5 canonical check');
+  must(primer, 'docs/M44_TELEMATICS_T1_T5.md', 'primer links M44 telematics T1/T5 doc');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');
@@ -581,6 +598,7 @@ function main() {
   must(roadmap, 'Prisma/schema/migration', 'roadmap excludes Prisma/schema/migration for marketplace panels');
   must(roadmap, 'runtime-data/browser-smoke commit dışı', 'roadmap keeps runtime-data/browser-smoke out of scope for marketplace panels');
   must(roadmap, 'docs/UX_MARKETPLACE_PANELS_01.md', 'roadmap links marketplace panels doc');
+  must(roadmap, 'M44-TELEMATICS-T1-T5', 'roadmap keeps M44 telematics T1/T5 milestone');
   must(finalAuditDoc, 'INVITE-BASED-MEMBERSHIP-01', 'final audit doc points to invite-based membership next milestone');
   must(finalAuditDoc, 'public lead otomatik kullanıcı / account olmaz', 'final audit doc keeps public lead account boundary');
   must(finalAuditDoc, 'invite draft', 'final audit doc mentions invite draft boundary');

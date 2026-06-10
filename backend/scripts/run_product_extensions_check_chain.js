@@ -26,6 +26,7 @@ const steps = [
   'check:productflowbuttonaudit01',
   'check:agreementsourceshiftlineage01',
   'check:marketplacefreetooperate01',
+  'check:m44telematicst1t5',
   'check:pay01e',
   'check:paysafe01',
   'check:web01a',

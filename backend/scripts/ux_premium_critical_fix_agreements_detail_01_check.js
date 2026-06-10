@@ -281,6 +281,9 @@ function main() {
     "backend/scripts/quality_gate_final_01_check.js",
     "backend/scripts/ux_brand_login_premium_01_check.js",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    "backend/scripts/m44_telematics_t1_t5_check.js",
+    "docs/DB_SCHEMA_V1.md",
+    "docs/M44_TELEMATICS_T1_T5.md",
     "docs/PRIMER_SSOT.md",
     "docs/PUBLIC_LANDING_01.md",
     "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md",
@@ -440,6 +443,9 @@ function main() {
     "docs/VERIFIED_SUPPLIER_01.md",
     "backend/scripts/invite_based_membership_01_check.js",
     "docs/INVITE_BASED_MEMBERSHIP_01.md",
+    "backend/scripts/m44_telematics_t1_t5_check.js",
+    "docs/DB_SCHEMA_V1.md",
+    "docs/M44_TELEMATICS_T1_T5.md",
     "tools/repo_contract_state.json",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within agreements detail scope");

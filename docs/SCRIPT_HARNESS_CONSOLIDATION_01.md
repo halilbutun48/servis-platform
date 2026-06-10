@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-09
+Tarih: 2026-06-10
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `354`
-- Toplam executable tracked file: `1129`
-- Combined registry row: `1483`
-- Root/backend/web/mobile package dağılımı: root `197`, backend `694`, web `88`, mobile `201`
+- Toplam package script entry: `355`
+- Toplam executable tracked file: `1130`
+- Combined registry row: `1485`
+- Root/backend/web/mobile package dağılımı: root `198`, backend `695`, web `88`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `48`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -88,17 +88,21 @@ Repo: `servis-platform`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
+- Telematics baseline milestone: `M44-TELEMATICS-T1-T5`
+- Telematics baseline check: `check:m44telematicst1t5`
+- Telematics baseline docs: `docs/M44_TELEMATICS_T1_T5.md`
+- Telematics baseline command: `node backend\scripts\m44_telematics_t1_t5_check.js`
 - Public lead audit check: `check:productflowbuttonaudit01`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `386`
-- ACTIVE_CORE: `153`
+- ACTIVE_CORE: `154`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
 - MANUAL_BROWSER_SMOKE: `0`
 - MANUAL_RELEASE_TOOL: `14`
-- ACTIVE_RELEASE_ONLY: `274`
+- ACTIVE_RELEASE_ONLY: `275`
 - REQUIRES_ENV: `7`
 - REQUIRES_BROWSER: `0`
 - REQUIRES_AUTH_SESSION: `11`
@@ -122,8 +126,8 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 386 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 153 |
-| ACTIVE_RELEASE_ONLY | 274 |
+| ACTIVE_CORE | 154 |
+| ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
@@ -186,6 +190,7 @@ Repo: `servis-platform`
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
 | root:check:marketplacefreetooperate01 | package.json | root | node backend/scripts/marketplace_free_to_operate_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-MARKETPLACEFREETOOPERATE-01 |  | Owner or chain unclear |  |
+| root:check:m44telematicst1t5 | package.json | root | node backend/scripts/m44_telematics_t1_t5_check.js | core | ACTIVE_CORE |  | M44-TELEMATICS-T1-T5 |  | Breaks canonical verification chain |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -761,6 +766,7 @@ Repo: `servis-platform`
 | ux_live_panel_premium_smoke_01.mjs | backend/scripts/ux_live_panel_premium_smoke_01.mjs | backend | root:check:uxlivepanelpremiumsmoke01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Owner or chain unclear |  |
 | ux_live_panel_premium_smoke_01_check.js | backend/scripts/ux_live_panel_premium_smoke_01_check.js | backend | root:check:uxlivepanelpremiumsmoke01 | product | ACTIVE |  | UX-LIVE-PANEL-PREMIUM-SMOKE-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_live_panel_smoke_audit_01_check.js | backend/scripts/ux_live_panel_smoke_audit_01_check.js | backend | root:check:uxlivepanelsmokeaudit01 | product | ACTIVE |  | UX-LIVE-PANEL-SMOKE-AUDIT-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_marketplace_panels_01_check.js | backend/scripts/ux_marketplace_panels_01_check.js | backend | root:check:uxmarketplacepanels01 | product-extensions | ACTIVE |  | UX-MARKETPLACE-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_mobile_all_roles_panel_audit_01.mjs | backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs | backend | root:check:uxmobileallrolespanelaudit01, root:smoke:uxmobileallrolespanelaudit01 | review | NEEDS_REVIEW |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Owner or chain unclear |  |
 | ux_mobile_all_roles_panel_audit_01_check.js | backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js | backend | root:check:uxmobileallrolespanelaudit01 | product | ACTIVE |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_mobile_all_roles_panel_fix_01_check.js | backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js | backend | root:check:uxmobileallrolespanelfix01 | product | ACTIVE |  | UX-MOBILE-ALL-ROLES-PANEL-FIX-01-CHECK |  | Owner or chain unclear | product check/helper |
@@ -987,7 +993,7 @@ Repo: `servis-platform`
 | shiftsCompanyStopsRouter.js | backend/src/routes/shifts/shiftsCompanyStopsRouter.js | backend |  | review | NEEDS_REVIEW |  | SHIFTS-COMPANY-STOPS-ROUTER |  | Owner or chain unclear |  |
 | shiftsRoomDispatchRouter.js | backend/src/routes/shifts/shiftsRoomDispatchRouter.js | backend |  | review | NEEDS_REVIEW |  | SHIFTS-ROOM-DISPATCH-ROUTER |  | Owner or chain unclear |  |
 | ssotAlignment.js | backend/src/routes/ssotAlignment.js | backend |  | review | NEEDS_REVIEW |  | SSOT-ALIGNMENT |  | Owner or chain unclear |  |
-| telematics.js | backend/src/routes/telematics.js | backend | root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | TELEMATICS |  | Owner or chain unclear |  |
+| telematics.js | backend/src/routes/telematics.js | backend | root:check:m44telematicst1t5, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | TELEMATICS |  | Owner or chain unclear |  |
 | trustQuality.js | backend/src/routes/trustQuality.js | backend |  | review | NEEDS_REVIEW |  | TRUST-QUALITY |  | Owner or chain unclear |  |
 | vehicles.js | backend/src/routes/vehicles.js | backend | backend:bench:gps:300:auto:panels, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | VEHICLES |  | Owner or chain unclear |  |
 | server.js | backend/src/server.js | backend | backend:dev, backend:start | review | NEEDS_REVIEW |  | SERVER |  | Owner or chain unclear |  |
@@ -1041,7 +1047,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| ux_marketplace_panels_01_check.js | backend/scripts/ux_marketplace_panels_01_check.js | backend | root:check:uxmarketplacepanels01 | product-extensions | ACTIVE |  | UX-MARKETPLACE-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
+| m44_telematics_t1_t5_check.js | backend/scripts/m44_telematics_t1_t5_check.js | backend | root:check:m44telematicst1t5 | product | ACTIVE_RELEASE_ONLY |  | M-44-TELEMATICS-T-1-T-5-CHECK |  | Owner or chain unclear | product check/helper |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1684,7 +1690,7 @@ Repo: `servis-platform`
 | Commercial / Payment Preview | Company/room commercial panels | backend/src/scripts/pay_*.js; backend/src/scripts/op_04*.js; payment readiness helpers | web/src/panels/company/CommercialFlowPanel.jsx; web/src/panels/room/CommercialFlowPanel.jsx; web/src/panels/superadmin/CommercialCorePanel.jsx | check:pay01a; check:pay01b; check:pay01c; check:pay01d; check:pay01e; check:paysafe01; check:op04; check:qlt01; check:qlt02; check:qlt03; check:qlt04 | static + release-only | COVERED_ACTIVE | Execute/write actions remain deliberately forbidden. | PAY / QLT / OP | None |
 | Quality / Evidence | Company/superadmin quality views | backend/src/scripts/qlt_*.js; backend/src/scripts/op_*.js; evidence helpers | web/src/panels/company/ServiceEvaluationPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx; web/src/panels/shared/ReportsPanel.jsx | check:qlt01; check:qlt02; check:qlt03; check:qlt04; check:qlt04a; check:qlt04b; check:op01; check:op02; check:op03; check:op04 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | QLT / OP | None |
 | Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
-| Telematics / Safe Drive | Driver live map and telematics surfaces | backend/src/scripts/m44_telematics_check.js; ETA / OSRM helpers | web/src/lib/markers/vehicleMarkerC.js; web/src/components/map/markers.css; web/src/panels/room/useRoomVehicleTelematics.js | check:m44_telematics_check; check:uxroomvehiclestelematicsfix; check:etaosrm01; check:etaosrm02; check:etasanity01 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | M44 / ETA | None |
+| Telematics / Safe Drive | Driver live map and telematics surfaces | backend/src/scripts/m44_telematics_check.js; ETA / OSRM helpers | web/src/lib/markers/vehicleMarkerC.js; web/src/components/map/markers.css; web/src/panels/room/useRoomVehicleTelematics.js | check:m44telematicst1t5; check:m44_telematics_check; check:uxroomvehiclestelematicsfix; check:etaosrm01; check:etaosrm02; check:etasanity01 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | M44-TELEMATICS-T1-T5 | None |
 | Performance / Reliability | Repo audit / hot file hygiene | backend/scripts/repo_audit.js; m90c6-m90c10 repo hygiene gates | none | check:product-extensions; check:verifychain01; check:finaluxsmoke01; verify:final; m90_c6/m90_c7/m90_c8/m90_c9/m90_c10 chain | release-only | COVERED_RELEASE_ONLY | These are intentionally release gates, not commit-time smoke. | M90C / verify:final | None |
 | Brand / Docs / Release | Docs, pack/export, closure tooling | tools/pack.ps1; tools/export_shareable_repo_bundle.ps1; docs-state and closure helpers | README.md; docs/*.md; tools/README.md; tools/wrappers/README.md | check:brand; check:docsstate01; check:m99ux01; check:m99kvkk01; check:finaluxsmoke01; verify:final; verify:snapshot | release-only + manual-release | COVERED_RELEASE_ONLY | No safe evidence-free pack/export path is intended. | M90/M99/FINAL | None |
 

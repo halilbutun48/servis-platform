@@ -254,6 +254,7 @@ Davranış:
 ## M44 — GpsDevice
 
 Telematics için araça bağlı cihaz kaydı eklenmiştir. Minimum alanlar:
+- `model GpsDevice`
 - `id`
 - `vehicleId`
 - `vendor`
