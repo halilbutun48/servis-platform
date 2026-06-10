@@ -100,6 +100,7 @@ function main() {
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
   must(pkg, '"check:m44telematicst1t5": "node backend/scripts/m44_telematics_t1_t5_check.js"', 'package.json exposes check:m44telematicst1t5');
+  must(pkg, '"check:telematicsproviderhub01": "node backend/scripts/telematics_provider_hub_01_check.js"', 'package.json exposes check:telematicsproviderhub01');
   must(pkg, '"check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js"', 'package.json exposes check:pay01e');
   must(pkg, '"smoke:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01.mjs"', 'package.json exposes smoke:productflowbuttonaudit01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
@@ -245,6 +246,7 @@ function main() {
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
     'check:m44telematicst1t5',
+    'check:telematicsproviderhub01',
     'check:pay01e',
     'check:paysafe01',
     'check:web01a',
@@ -409,6 +411,11 @@ function main() {
   must(guide, 'check:m44telematicst1t5', 'script guide exposes M44 telematics T1/T5 check');
   must(guide, 'node backend\\scripts\\m44_telematics_t1_t5_check.js', 'script guide includes M44 telematics T1/T5 command');
   must(guide, 'docs/M44_TELEMATICS_T1_T5.md', 'script guide includes M44 telematics T1/T5 doc');
+  must(guide, 'TELEMATICS-PROVIDER-HUB-01', 'script guide mentions telematics provider hub milestone');
+  must(guide, 'check:telematicsproviderhub01', 'script guide exposes telematics provider hub check');
+  must(guide, 'node backend\\scripts\\telematics_provider_hub_01_check.js', 'script guide includes telematics provider hub command');
+  must(guide, 'docs/TELEMATICS_PROVIDER_HUB_01.md', 'script guide includes telematics provider hub doc');
+  ordered(guide, ['M44-TELEMATICS-T1-T5', 'TELEMATICS-PROVIDER-HUB-01', 'SAFE-DRIVE-01'], 'script guide keeps telematics provider hub after M44 before safe drive');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
   must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
@@ -567,6 +574,13 @@ function main() {
   must(harnessDoc, 'm44_telematics_t1_t5_check.js', 'script harness doc lists M44 telematics T1/T5 check');
   must(harnessDoc, 'docs/M44_TELEMATICS_T1_T5.md', 'script harness doc lists M44 telematics T1/T5 doc');
   must(harnessDoc, 'M44-TELEMATICS-T1-T5', 'script harness doc lists M44 telematics T1/T5 milestone');
+  must(harnessCheck, 'check:telematicsproviderhub01', 'script harness check knows telematics provider hub alias');
+  must(harnessCheck, 'telematics_provider_hub_01_check.js', 'script harness check knows telematics provider hub file');
+  must(harnessCheck, 'TELEMATICS-PROVIDER-HUB-01', 'script harness check knows telematics provider hub milestone');
+  must(harnessDoc, 'root:check:telematicsproviderhub01', 'script harness doc lists telematics provider hub root check');
+  must(harnessDoc, 'telematics_provider_hub_01_check.js', 'script harness doc lists telematics provider hub check');
+  must(harnessDoc, 'docs/TELEMATICS_PROVIDER_HUB_01.md', 'script harness doc lists telematics provider hub doc');
+  must(harnessDoc, 'TELEMATICS-PROVIDER-HUB-01', 'script harness doc lists telematics provider hub milestone');
   must(primer, 'INVITE-BASED-MEMBERSHIP-01', 'primer mentions invite-based membership milestone');
   must(primer, 'docs/INVITE_BASED_MEMBERSHIP_01.md', 'primer links invite-based membership doc');
   must(primer, 'insan onaylı davetli üyelik', 'primer keeps invite-based membership summary');
@@ -578,6 +592,9 @@ function main() {
   must(primer, 'M44-TELEMATICS-T1-T5', 'primer mentions M44 telematics T1/T5 milestone');
   must(primer, 'check:m44telematicst1t5', 'primer exposes M44 telematics T1/T5 canonical check');
   must(primer, 'docs/M44_TELEMATICS_T1_T5.md', 'primer links M44 telematics T1/T5 doc');
+  must(primer, 'TELEMATICS-PROVIDER-HUB-01', 'primer mentions telematics provider hub milestone');
+  must(primer, 'docs/TELEMATICS_PROVIDER_HUB_01.md', 'primer links telematics provider hub doc');
+  must(primer, 'provider-agnostic telematics hub', 'primer keeps telematics provider hub wording');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');
@@ -599,6 +616,9 @@ function main() {
   must(roadmap, 'runtime-data/browser-smoke commit dışı', 'roadmap keeps runtime-data/browser-smoke out of scope for marketplace panels');
   must(roadmap, 'docs/UX_MARKETPLACE_PANELS_01.md', 'roadmap links marketplace panels doc');
   must(roadmap, 'M44-TELEMATICS-T1-T5', 'roadmap keeps M44 telematics T1/T5 milestone');
+  must(roadmap, 'TELEMATICS-PROVIDER-HUB-01', 'roadmap keeps telematics provider hub milestone');
+  must(roadmap, 'provider-agnostic GPS provider hub', 'roadmap keeps provider-agnostic telematics hub wording');
+  ordered(roadmap, ['M44-TELEMATICS-T1-T5', 'TELEMATICS-PROVIDER-HUB-01', 'SAFE-DRIVE-01', 'OFFER-RANKING-QUALITY-01'], 'roadmap keeps telematics provider hub before safe drive and offer ranking');
   must(finalAuditDoc, 'INVITE-BASED-MEMBERSHIP-01', 'final audit doc points to invite-based membership next milestone');
   must(finalAuditDoc, 'public lead otomatik kullanıcı / account olmaz', 'final audit doc keeps public lead account boundary');
   must(finalAuditDoc, 'invite draft', 'final audit doc mentions invite draft boundary');

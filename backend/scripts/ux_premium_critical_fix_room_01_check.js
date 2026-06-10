@@ -143,6 +143,8 @@ function main() {
     "web/src/panels/company/AgreementsPanel.jsx",
     "docs/DB_SCHEMA_V1.md",
     "docs/M44_TELEMATICS_T1_T5.md",
+    "backend/scripts/telematics_provider_hub_01_check.js",
+    "docs/TELEMATICS_PROVIDER_HUB_01.md",
     "web/src/panels/driver/CheckinPanel.jsx",
     "web/src/panels/driver/RoutePanel.jsx",
     "web/src/panels/room/AgreementsPanel.jsx",

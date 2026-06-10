@@ -479,6 +479,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - Doküman: `docs/M44_TELEMATICS_T1_T5.md`
 - Not: `M44-T1/T5` compatibility alias'ı backlog / registry / state tarafında korunur; bu check canonical read-only baseline'ı görünür kılar.
 
+### TELEMATICS-PROVIDER-HUB-01 — provider-agnostic GPS provider hub / readiness UX [CHECK]
+- Check: `check:telematicsproviderhub01`
+- Komut: `node backend\scripts\telematics_provider_hub_01_check.js`
+- Ana konu: M44 baseline sonrası provider-agnostic telematics hub; GPS provider adapter, vehicle tracking software, normalized telematics event, provider registry, user GPS integration flow, test bağlantısı ve cihaz eşleştirme görünürlüğü.
+- Not: gerçek provider entegrasyonu, secret/API key/token repo'ya yazımı, backend route/service/schema ve Prisma/schema/migration açılmaz; readonly T1-T5 boundary korunur.
+- Doküman: `docs/TELEMATICS_PROVIDER_HUB_01.md`
+
 ### M45 — Retention + Backup [PACK]
 - Pack: `tools/pack_m45_retention_backup.ps1`
 - Amaç: retention/backup altyapısı.
@@ -936,7 +943,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
   - `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
   - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
-- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ... -> RELEASE-CANDIDATE-01`
+- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> M44-TELEMATICS-T1-T5 -> TELEMATICS-PROVIDER-HUB-01 -> SAFE-DRIVE-01 -> OFFER-RANKING-QUALITY-01 -> ... -> RELEASE-CANDIDATE-01`
 
 ### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
 - Check script: `check:publiclanding01`

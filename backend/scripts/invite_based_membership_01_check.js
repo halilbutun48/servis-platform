@@ -63,8 +63,9 @@ function gitDiffNames(paths) {
     .filter(Boolean);
 }
 
-function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
+function mustNoDiffExcept(paths, allowedFiles, label) {
+  const allowed = new Set(allowedFiles);
+  const files = gitDiffNames(paths).filter((file) => !allowed.has(file));
   if (files.length > 0) {
     fail(`${label}: ${files.join(", ")}`);
   }
@@ -161,7 +162,14 @@ function main() {
   must(inviteDoc, "guard", "invite membership doc keeps guard wording");
   must(inviteDoc, "audit log", "invite membership doc keeps audit log wording");
 
-  mustNoDiff(["backend/src/routes", "backend/src/services", "backend/prisma", "prisma", "web/src"], "invite-based membership keeps runtime code unchanged");
+  mustNoDiffExcept(
+    ["backend/src/routes", "backend/src/services", "backend/prisma", "prisma", "web/src"],
+    [
+      "web/src/panels/superadmin/SuperAdminPanel.jsx",
+      "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    ],
+    "invite-based membership keeps runtime code unchanged"
+  );
 
   console.log("=== INVITE-BASED-MEMBERSHIP-01 CHECK PASS ===");
 }

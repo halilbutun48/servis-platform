@@ -458,6 +458,7 @@ function main() {
     "web/src/panels/personel/LivePanel.jsx",
     "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/telematics_provider_hub_01_check.js",
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/panels/driver/CheckinPanel.jsx",
     "web/src/panels/driver/RoutePanel.jsx",
@@ -470,6 +471,7 @@ function main() {
     "web/src/panels/shared/PanelKvkkHint.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
     "web/src/utils/regionOwnership.js",
+    "docs/TELEMATICS_PROVIDER_HUB_01.md",
   ];
 
   mustTrue(exists("backend/scripts/ux_panel_standard_architecture_01_check.js"), "panel standard architecture check exists");
@@ -762,6 +764,8 @@ function main() {
     "backend/scripts/m44_telematics_t1_t5_check.js",
     "docs/DB_SCHEMA_V1.md",
     "docs/M44_TELEMATICS_T1_T5.md",
+    "backend/scripts/telematics_provider_hub_01_check.js",
+    "docs/TELEMATICS_PROVIDER_HUB_01.md",
     "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
     "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
     "web/src/state/sessionProvider.jsx",

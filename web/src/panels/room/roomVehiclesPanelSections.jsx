@@ -23,6 +23,33 @@ import {
 } from "./roomVehiclesPanelCards";
 import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 
+const TELEMATICS_PROVIDER_STATES = [
+  "NOT_CONNECTED",
+  "CONFIG_REQUIRED",
+  "TESTING",
+  "READY",
+  "ACTIVE",
+  "ERROR",
+  "DISABLED",
+];
+
+const TELEMATICS_MATCH_STATES = [
+  "MATCHED",
+  "NEEDS_REVIEW",
+  "UNMATCHED",
+  "DUPLICATE_MATCH",
+  "DISABLED",
+];
+
+const TELEMATICS_CONNECTION_TYPES = [
+  "hazır sağlayıcı adapter",
+  "API polling",
+  "webhook push",
+  "Excel/CSV import",
+  "device ID / IMEI / plate mapping",
+  "özel entegrasyon talebi",
+];
+
 
 export function RoomVehicleManageSection({
   showArchived,
@@ -645,8 +672,70 @@ export function RoomVehicleTelematicsSection({
   rotateDeviceToken,
 }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1.45fr", gap: 12, alignItems: "start" }}>
-      <div className="card">
+    <div style={{ display: "grid", gap: 12 }}>
+      <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
+        <div>
+          <h3 style={{ marginBottom: 6 }}>GPS Eşleştirme / Telematik Bağlantısı</h3>
+          <div className="muted">ROOM &gt; Vehicles içindeki telematics alanı, Ayarlar / Telematik Entegrasyonları akışının operasyonel yansımasıdır.</div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+          <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
+            <div className="panelSectionTitle">Kullanıcı GPS entegrasyon akışı</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>
+              Ayarlar / Telematik Entegrasyonları → provider seç → test bağlantısı → cihaz eşleştirme → eşleşmeyen cihazlar → onay → readonly telematics signals.
+            </div>
+            <div style={{ display: "grid", gap: 4, marginTop: 8 }}>
+              <div className="panelMeta" style={{ fontSize: 12 }}>• test bağlantısı</div>
+              <div className="panelMeta" style={{ fontSize: 12 }}>• cihaz eşleştirme</div>
+              <div className="panelMeta" style={{ fontSize: 12 }}>• plaka / IMEI / deviceId mapping</div>
+              <div className="panelMeta" style={{ fontSize: 12 }}>• eşleşmeyen cihazlar</div>
+              <div className="panelMeta" style={{ fontSize: 12 }}>• entegrasyon durumu</div>
+            </div>
+          </div>
+
+          <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
+            <div className="panelSectionTitle">Bağlantı tipleri</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+              {TELEMATICS_CONNECTION_TYPES.map((label) => (
+                <span key={label} className="pill" data-status="ROLE">{label}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+          {TELEMATICS_PROVIDER_STATES.map((label) => (
+            <div key={label} style={{ padding: 10, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
+              <div className="panelMeta" style={{ fontSize: 12 }}>Provider status</div>
+              <div style={{ marginTop: 6 }}>
+                <span className="pill" data-status="INFO">{label}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+          {TELEMATICS_MATCH_STATES.map((label) => (
+            <div key={label} style={{ padding: 10, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
+              <div className="panelMeta" style={{ fontSize: 12 }}>Vehicle match</div>
+              <div style={{ marginTop: 6 }}>
+                <span className="pill" data-status={label === "DISABLED" ? "WARN" : "ROLE"}>{label}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
+          Safe boundary: GPS bağlandı diye ödeme/hakediş değişmez, sözleşme değişmez, tedarikçi otomatik elenmez, sürücü/araç ataması otomatik değişmez ve SMS/e-posta/push otomatik gönderilmez.
+        </div>
+        <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
+          secret/API key/token repo'ya yazılmaz; readonly telematics signals only.
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1.45fr", gap: 12, alignItems: "start" }}>
+        <div className="card">
         <h3>Telematics cihaz yönetimi</h3>
         <div className="muted">ROOM &gt; Vehicles içinde araç bazlı GPS cihazı yönetimi</div>
         <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
@@ -741,6 +830,7 @@ export function RoomVehicleTelematicsSection({
           <div><code>POST /api/telematics/vendor/:provider</code> → vendor cloud webhook</div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

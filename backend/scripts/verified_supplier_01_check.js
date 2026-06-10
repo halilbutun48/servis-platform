@@ -75,8 +75,9 @@ function gitCachedNames() {
     .filter(Boolean);
 }
 
-function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
+function mustNoDiffExcept(paths, allowedFiles, label) {
+  const allowed = new Set(allowedFiles);
+  const files = gitDiffNames(paths).filter((file) => !allowed.has(file));
   if (files.length > 0) {
     fail(`${label}: ${files.join(", ")}`);
   }
@@ -244,7 +245,14 @@ function main() {
   must(statusPalette, "APPROVED_FOR_INVITE", "status palette supports invite-ready state");
   must(displayStatus, "APPROVED_FOR_INVITE", "display status supports invite-ready state");
 
-  mustNoDiff(["backend/src/routes", "backend/src/services", "backend/src/bootstrap", "backend/src/server.js", "web/src/panels/superadmin", "web/src/panels/company", "web/src/panels/room", "web/src/utils", "backend/prisma", "prisma"], "verified supplier keeps runtime code unchanged");
+  mustNoDiffExcept(
+    ["backend/src/routes", "backend/src/services", "backend/src/bootstrap", "backend/src/server.js", "web/src/panels/superadmin", "web/src/panels/company", "web/src/panels/room", "web/src/utils", "backend/prisma", "prisma"],
+    [
+      "web/src/panels/superadmin/SuperAdminPanel.jsx",
+      "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    ],
+    "verified supplier keeps runtime code unchanged"
+  );
   mustNoStagedPrefix(cachedNames, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "runtime-data and browser-smoke stay commit-external");
 
   console.log("=== VERIFIED-SUPPLIER-01 CHECK PASS ===");

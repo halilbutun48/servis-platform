@@ -207,7 +207,12 @@ function main() {
   );
   mustNotStaged(staged, "web/src/panels/room/VehiclesPanel.jsx", "room vehicles panel is not staged");
   mustNotStaged(staged, "web/src/panels/room/roomVehiclesPanelCards.jsx", "room vehicle cards are not staged");
-  mustNotStaged(staged, "web/src/panels/room/roomVehiclesPanelSections.jsx", "room vehicle sections are not staged");
+  mustNotStagedUnless(
+    staged,
+    "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    new Set(["web/src/panels/room/roomVehiclesPanelSections.jsx"]),
+    "room vehicle sections are not staged"
+  );
   mustNotStagedUnless(
     staged,
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",

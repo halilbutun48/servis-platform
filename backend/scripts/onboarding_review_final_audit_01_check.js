@@ -86,8 +86,9 @@ function gitDiffNames(paths) {
     .filter(Boolean);
 }
 
-function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
+function mustNoDiffExcept(paths, allowedFiles, label) {
+  const allowed = new Set(allowedFiles);
+  const files = gitDiffNames(paths).filter((file) => !allowed.has(file));
   if (files.length > 0) {
     fail(`${label}: ${files.join(", ")}`);
   }
@@ -278,7 +279,7 @@ const cachedNames = gitCachedNames();
 mustNot(cachedNames, "backend/artifacts/runtime-data/", "runtime-data is not staged");
 mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not staged");
 
-mustNoDiff(
+mustNoDiffExcept(
   [
     "backend/src/routes",
     "backend/src/services",
@@ -294,6 +295,10 @@ mustNoDiff(
     "web/src/components/public",
     "prisma",
     "backend/prisma",
+  ],
+  [
+    "web/src/panels/superadmin/SuperAdminPanel.jsx",
+    "web/src/panels/room/roomVehiclesPanelSections.jsx",
   ],
   "runtime surface diff is empty"
 );

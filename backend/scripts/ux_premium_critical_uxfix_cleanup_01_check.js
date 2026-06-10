@@ -185,6 +185,8 @@ function main() {
     "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
     "docs/DB_SCHEMA_V1.md",
     "docs/M44_TELEMATICS_T1_T5.md",
+    "backend/scripts/telematics_provider_hub_01_check.js",
+    "docs/TELEMATICS_PROVIDER_HUB_01.md",
     "backend/scripts/verified_supplier_01_check.js",
     "docs/VERIFIED_SUPPLIER_01.md",
     "docs/INVITE_BASED_MEMBERSHIP_01.md",
