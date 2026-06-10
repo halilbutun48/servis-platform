@@ -391,6 +391,14 @@ Kullanılmayacak cümleler:
 - Prisma/migration, backend route/service/schema veya UI feature genişlemesi açılmaz.
 - Detay dokümanı: `docs/VERIFIED_SUPPLIER_01.md`
 
+## Marketplace panels guard
+- `UX-MARKETPLACE-PANELS-01` `VERIFIED-SUPPLIER-01` sonrasında gelir; marketplace readiness center, status-first ve human approval çizgisini docs/check olarak kilitler.
+- Başvuru alındı, İncelemede, Davete hazır, Davet hazırlandı, Doğrulama bekliyor, Doğrulama incelemede, Doğrulandı, Eksik bilgi ve Reddedildi durumları açık görünür.
+- Hazırla, İncele, Önizle, Onaya sun dili kullanılır.
+- Marketplace auto-selection yok; offer ranking, payment/billing, contract/agreement execute, email/SMS/push ve AI runtime action açılmaz.
+- Backend route/service/schema, Prisma/schema/migration ve runtime-data/browser-smoke commit dışı kalır.
+- Detay dokümanı: `docs/UX_MARKETPLACE_PANELS_01.md`
+
 ## Roadmap sırası
 ### A) MARKETPLACE TEMELİ
 - PUBLIC-LANDING-01 final promise check

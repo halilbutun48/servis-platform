@@ -148,6 +148,8 @@ ordered(
     "check:onboardingreview01",
     "check:onboardingreviewfinalaudit01",
     "check:invitebasedmembership01",
+    "check:verifiedsupplier01",
+    "check:uxmarketplacepanels01",
     "check:productflowbuttonaudit01",
   ],
   "onboarding review final audit stays after review and before product flow audit"
@@ -161,7 +163,7 @@ must(guide, "INVITE-BASED-MEMBERSHIP-01", "script guide mentions invite-based me
 must(guide, "check:invitebasedmembership01", "script guide exposes invite-based membership check");
 must(guide, "node backend\\scripts\\invite_based_membership_01_check.js", "script guide includes invite-based membership command");
 must(guide, "docs/INVITE_BASED_MEMBERSHIP_01.md", "script guide includes invite-based membership doc");
-must(guide, "PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01", "script guide keeps public lead order");
+must(guide, "PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01", "script guide keeps public lead order");
 
 must(primer, "ONBOARDING-REVIEW-01 final audit", "primer mentions onboarding review final audit");
 must(primer, "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md", "primer links onboarding review final audit doc");

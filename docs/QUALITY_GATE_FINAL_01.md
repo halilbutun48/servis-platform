@@ -11,14 +11,14 @@ Repo: `servis-platform`
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | all-panels reality audit | `82` | `0` | `0` | `0` | `0` | `0` |
 | mobile all-roles audit | `82` | `0` | `0` | `0` | `0` | `0` |
-| premium smoke | `67` | `15` | `0` | `0` | `0` | `0` |
-| product-flow button audit | `8` | `10` | `0` | `0` | `0` | `0` |
+| premium smoke | `66` | `16` | `0` | `0` | `0` | `0` |
+| product-flow button audit | `10` | `8` | `0` | `0` | `0` | `0` |
 
 Snapshot summary:
 - all-panels reality audit: PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
 - mobile all-roles audit: PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
-- premium smoke: PASS 67 / PASS- 15 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
-- product-flow button audit: PASS 8 / PASS- 10 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
+- premium smoke: PASS 66 / PASS- 16 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
+- product-flow button audit: PASS 10 / PASS- 8 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0
 
 ## Premium Acceptance
 
@@ -31,9 +31,9 @@ Snapshot summary:
 - all-panels reality audit PASS- is `0`.
 - mobile all-roles audit PASS- is `0`.
 - `UX-SMOKE-PASS-MINUS-EVIDENCE-01` keeps the premium PASS- evidence taxonomy stable.
-- premium smoke PASS- `15` are documented in `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`.
+- premium smoke PASS- `16` are documented in `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`.
 - `PRODUCT-FLOW-BUTTON-AUDIT-01` keeps the readonly button audit evidence stable.
-- product-flow button audit PASS- `10` are documented in `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`.
+- product-flow button audit PASS- `8` are documented in `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`.
 - These PASS- rows are evidence / coverage notes, not write-flow openings.
 
 ## Release Blockers

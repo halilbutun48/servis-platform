@@ -22,8 +22,10 @@ const workingTreeCompatFiles = [
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
   "backend/scripts/verified_supplier_01_check.js",
+  "backend/scripts/ux_marketplace_panels_01_check.js",
   "docs/INVITE_BASED_MEMBERSHIP_01.md",
   "docs/VERIFIED_SUPPLIER_01.md",
+  "docs/UX_MARKETPLACE_PANELS_01.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
   "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
@@ -45,6 +47,7 @@ const workingTreeCompatFiles = [
   "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md",
   "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md",
   "docs/VERIFIED_SUPPLIER_01.md",
+  "docs/UX_MARKETPLACE_PANELS_01.md",
 ];
 
 const selectedDocs = [
@@ -190,6 +193,7 @@ function slugToMilestone(slug) {
     [/uxbrandloginpremium0?1/i, "UX-BRAND-LOGIN-PREMIUM-01"],
     [/uxmobilewebshellclarity0?1/i, "UX-MOBILE-WEB-SHELL-CLARITY-01"],
     [/verifiedsupplier0?1/i, "VERIFIED-SUPPLIER-01"],
+    [/uxmarketplacepanels0?1/i, "UX-MARKETPLACE-PANELS-01"], // check:uxmarketplacepanels01
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
     [/uxroomcompanyshiftsmobilecardfix0?1/i, "UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01"], // check:uxroomcompanyshiftsmobilecardfix01
     [/uxshiftsresponsivelayoutfix0?1/i, "UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01"], // check:uxshiftsresponsivelayoutfix01
@@ -234,7 +238,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -242,7 +246,7 @@ function statusFromPackage(pkg, name) {
     if (["verify:snapshot", "verify:docs", "verify:hot", "verify:web-contract", "verify:milestones", "verify:milestones:live"].includes(name)) {
       return "ACTIVE_RELEASE_ONLY";
     }
-    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:roomvehicledriveruppercase01", "check:uxroompanelclarity01", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxroomshiftsdensitydedup01", "check:uxpremiumcriticalfixroom01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxcompanypersonelaccessmobileparity01", "check:uxcompanyagreementsmobileparity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:productflowbuttonaudit01", "check:uxpremiumcriticaluxfixcleanup01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxbrandloginpremium01", "check:uxmobilewebshellclarity01", "check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01", "check:uxlivepanelsmokeaudit01", "check:uxmobileallrolespanelaudit01", "check:uxsmokepassminusevidence01", "check:uxlivepanelpremiumsmoke01", "check:mobilewebfinal01", "check:uxparentpersonelliveerrorclarity01", "check:copliveaccept01", "check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01", "check:uxsuperadminpanelclarity01", "check:uxcontractconversionopsbridgeclarity01", "check:shiftdispatchapprovalfix01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01"].includes(name)) {
+    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:roomvehicledriveruppercase01", "check:uxroompanelclarity01", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxroomshiftsdensitydedup01", "check:uxpremiumcriticalfixroom01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxcompanypersonelaccessmobileparity01", "check:uxcompanyagreementsmobileparity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxmarketplacepanels01", "check:productflowbuttonaudit01", "check:uxpremiumcriticaluxfixcleanup01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxbrandloginpremium01", "check:uxmobilewebshellclarity01", "check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01", "check:uxlivepanelsmokeaudit01", "check:uxmobileallrolespanelaudit01", "check:uxsmokepassminusevidence01", "check:uxlivepanelpremiumsmoke01", "check:mobilewebfinal01", "check:uxparentpersonelliveerrorclarity01", "check:copliveaccept01", "check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01", "check:uxsuperadminpanelclarity01", "check:uxcontractconversionopsbridgeclarity01", "check:shiftdispatchapprovalfix01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["smoke:m98e4", "smoke:uxlivepanelpremium01", "smoke:productflowbuttonaudit01"].includes(name)) return "MANUAL_SMOKE";
@@ -788,7 +792,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:productflowbuttonaudit01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1104,7 +1108,7 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
     entry.commandRefs = [...new Set(entry.commandRefs)].sort();
     if (entry.commandRefs.some((ref) => ref.startsWith("root:verify:repo") || ref.startsWith("backend:repo:check"))) {
       entry.chain = "verify:repo";
-    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:productflowbuttonaudit01"))) {
+    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01"))) {
       entry.chain = "product-extensions";
     } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:scriptharnessconsolidation01"))) {
       entry.chain = "product-extensions";
@@ -1230,7 +1234,7 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Root/backend/web/mobile package dağılımı: root \`${summary.byDomain.root}\`, backend \`${summary.byDomain.backend}\`, web \`${summary.byDomain.web}\`, mobile \`${summary.byDomain.mobile}\``);
   out.push(`- Tools executable dağılımı: tools \`${summary.byDomain.tools}\``);
   out.push(`- Docs indexed: \`${summary.byDomain.docs}\``);
-  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...\``);
+  out.push(`- Public lead milestones: \`PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...\``);
   out.push(`- UX preview milestones: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01\` -> \`UX-LIVE-PANEL-COVERAGE-MATRIX-01\` -> \`UX-SMOKE-PASS-MINUS-EVIDENCE-01\` -> \`UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01\` -> \`UX-LIVE-PANEL-PREMIUM-SMOKE-01\``);
   out.push(`- UX preview docs: \`docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md\`, \`docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md\`, \`docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md\`, \`docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md\`, \`docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md\``);
   out.push(`- UX preview check alias: \`UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK\``);
@@ -1300,10 +1304,13 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- PASS-minus evidence milestone: \`UX-SMOKE-PASS-MINUS-EVIDENCE-01\``);
   out.push(`- PASS-minus evidence docs: \`docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md\``);
   out.push(`- PASS-minus evidence command: \`node backend\\scripts\\ux_smoke_pass_minus_evidence_01_check.js\``);
-  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md\`, \`docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md\`, \`docs/LEAD_CAPTURE_01.md\`, \`docs/ONBOARDING_REVIEW_01.md\`, \`docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md\`, \`docs/INVITE_BASED_MEMBERSHIP_01.md\`, \`docs/VERIFIED_SUPPLIER_01.md\`, \`docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md\``);
+  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md\`, \`docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md\`, \`docs/LEAD_CAPTURE_01.md\`, \`docs/ONBOARDING_REVIEW_01.md\`, \`docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md\`, \`docs/INVITE_BASED_MEMBERSHIP_01.md\`, \`docs/VERIFIED_SUPPLIER_01.md\`, \`docs/UX_MARKETPLACE_PANELS_01.md\`, \`docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md\``);
   out.push(`- Verified supplier milestone: \`VERIFIED-SUPPLIER-01\``);
   out.push(`- Verified supplier check: \`check:verifiedsupplier01\``);
   out.push(`- Verified supplier docs: \`docs/VERIFIED_SUPPLIER_01.md\``);
+  out.push(`- Marketplace panels milestone: \`UX-MARKETPLACE-PANELS-01\``);
+  out.push(`- Marketplace panels check: \`check:uxmarketplacepanels01\``);
+  out.push(`- Marketplace panels docs: \`docs/UX_MARKETPLACE_PANELS_01.md\``);
   out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
   out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
   out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);
@@ -1490,6 +1497,7 @@ function verifyDoc(docText, summary) {
     "check:onboardingreview01",
     "check:onboardingreviewfinalaudit01",
     "check:invitebasedmembership01",
+    "check:uxmarketplacepanels01",
     "check:productflowbuttonaudit01",
     "smoke:productflowbuttonaudit01",
     "check:uxrouteimpactpreviewcompact01",
@@ -1522,13 +1530,17 @@ function verifyDoc(docText, summary) {
     "INVITE-BASED-MEMBERSHIP-01",
     "verified_supplier_01_check.js",
     "docs/VERIFIED_SUPPLIER_01.md",
+    "docs/UX_MARKETPLACE_PANELS_01.md",
     "check:verifiedsupplier01",
     "VERIFIED-SUPPLIER-01",
+    "root:check:uxmarketplacepanels01",
     "root:check:verifiedsupplier01",
+    "node backend\\scripts\\ux_marketplace_panels_01_check.js",
     "node backend\\scripts\\verified_supplier_01_check.js",
     "Verified supplier milestone",
     "Verified supplier check",
     "Verified supplier docs",
+    "UX-MARKETPLACE-PANELS-01",
     "node backend\\scripts\\product_flow_button_audit_01_check.js",
     "node backend\\scripts\\product_flow_button_audit_01.mjs",
     "product_flow_button_audit_01_check.js",

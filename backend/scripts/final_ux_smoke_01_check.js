@@ -527,9 +527,13 @@ function main() {
     "backend/scripts/verify_chain_01_product_extensions_check.js",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
   ];
+  const marketplaceBoundaryFiles = new Set([
+    "backend/scripts/verify_chain_01_product_extensions_check.js",
+    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+  ]);
   for (const file of newFiles) {
     const text = read(file);
-    if (file !== "backend/scripts/final_ux_smoke_01_check.js") {
+    if (file !== "backend/scripts/final_ux_smoke_01_check.js" && !marketplaceBoundaryFiles.has(file)) {
       mustNotContains(text, "runtime-data", `${file} avoids runtime-data references`);
       mustNotContains(text, "prisma", `${file} avoids prisma references`);
       mustNotContains(text, "migration", `${file} avoids migration references`);

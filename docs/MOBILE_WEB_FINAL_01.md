@@ -35,7 +35,7 @@ Bu milestone:
 
 - Komut: `npm run smoke:uxlivepanelpremium01`
 - Rapor: `backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/report.json`
-- Snapshot: `PASS 67 / PASS- 15 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- Snapshot: `PASS 66 / PASS- 16 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 
 ## 3) All-Roles PASS- Final Risk List
 
@@ -47,7 +47,7 @@ Bu snapshot'ta PASS- satırı yoktur; backlog boş kalmıştır.
 
 ## 4) Premium PASS- Evidence List
 
-Bu 15 satır final risk / backlog olarak kalır; release blocker değildir.
+Bu 16 satır final risk / backlog olarak kalır; release blocker değildir.
 
 | Route | Role | Viewport | Evidence bucket | Not |
 | --- | --- | --- | --- | --- |
@@ -66,6 +66,7 @@ Bu 15 satır final risk / backlog olarak kalır; release blocker değildir.
 | `/#/organization/commercial-flow` | organization | desktop | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/organization/commercial-flow` | organization | mobile | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/personel/live` | personel | mobile | long-live-map | Harita / canlı takip dili görünür. |
+| `/#/parent/live` | parent | mobile | long-live-map | Harita / canlı takip dili görünür. |
 
 ## 5) Special Ruling
 

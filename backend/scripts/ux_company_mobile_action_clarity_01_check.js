@@ -193,7 +193,10 @@ function main() {
     "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
     "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",
     "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
+    "backend/scripts/final_ux_smoke_01_check.js",
     "docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md",
+    "backend/scripts/ux_marketplace_panels_01_check.js",
+    "docs/UX_MARKETPLACE_PANELS_01.md",
   ];
 
   mustTrue(exists("backend/scripts/ux_company_mobile_action_clarity_01_check.js"), "company mobile action clarity check exists");
@@ -328,7 +331,9 @@ function main() {
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js",
     "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
+    "backend/scripts/final_ux_smoke_01_check.js",
     "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+    "backend/scripts/ux_marketplace_panels_01_check.js",
     "backend/scripts/mobile_web_final_01_check.js",
     "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
     "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
@@ -343,8 +348,10 @@ function main() {
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
+    "docs/QUALITY_GATE_FINAL_01.md",
     "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
+    "docs/UX_MARKETPLACE_PANELS_01.md",
     "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",

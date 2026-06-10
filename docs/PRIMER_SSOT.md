@@ -24,6 +24,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `ONBOARDING-REVIEW-01 final audit` bu kuyruğun güven sınırını kilitler; `APPROVED_FOR_INVITE` yalnızca invite hazırlığıdır ve `docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md` içinde yaşar.
 - `INVITE-BASED-MEMBERSHIP-01` insan onaylı davetli üyelik kilitler; public lead doğrudan user/account olmaz, self-service signup ve automatic membership açılmaz, invite draft / pending invite sadece güvenli sınırda planlanır. Detay: `docs/INVITE_BASED_MEMBERSHIP_01.md`
 - `VERIFIED-SUPPLIER-01` insan onaylı, kanıt-temelli tedarikçi doğrulama hazırlığını kilitler; public lead / supplier application otomatik verified supplier olmaz, detay: `docs/VERIFIED_SUPPLIER_01.md`
+- `UX-MARKETPLACE-PANELS-01` verified supplier ve invite/onboarding sonrasında marketplace readiness center'ı docs/check kilidi olarak sabitler; status-first, human approval ve readiness preview dilini korur, marketplace auto-selection / offer ranking / payment / contract execute açmaz. Detay: `docs/UX_MARKETPLACE_PANELS_01.md`
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

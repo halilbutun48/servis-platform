@@ -22,6 +22,7 @@ const steps = [
   'check:onboardingreviewfinalaudit01',
   'check:invitebasedmembership01',
   'check:verifiedsupplier01',
+  'check:uxmarketplacepanels01',
   'check:productflowbuttonaudit01',
   'check:agreementsourceshiftlineage01',
   'check:marketplacefreetooperate01',

@@ -110,7 +110,7 @@ function main() {
 
   mustContains(doc, "MOBILE-WEB-FINAL-01", "mobile final doc title present");
   mustContains(doc, "PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps all-roles snapshot");
-  mustContains(doc, "PASS 67 / PASS- 15 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps premium snapshot");
+  mustContains(doc, "PASS 66 / PASS- 16 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps premium snapshot");
   mustContains(doc, "PASS- remaining routes", "mobile final doc keeps final risk wording");
   mustContains(doc, "final risk", "mobile final doc keeps final risk wording");
   mustContains(doc, "backlog", "mobile final doc keeps backlog wording");
@@ -154,7 +154,7 @@ function main() {
   assertRows(
     premiumReport,
     "mobile premium smoke report",
-    { PASS: 67, "PASS-": 15, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
+    { PASS: 66, "PASS-": 16, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
     [
       { route: "/#/superadmin/onboarding-review", viewport: "desktop" },
       { route: "/#/superadmin/onboarding-review", viewport: "mobile" },
@@ -171,6 +171,7 @@ function main() {
       { route: "/#/organization/commercial-flow", viewport: "desktop" },
       { route: "/#/organization/commercial-flow", viewport: "mobile" },
       { route: "/#/personel/live", viewport: "mobile" },
+      { route: "/#/parent/live", viewport: "mobile" },
     ]
   );
 

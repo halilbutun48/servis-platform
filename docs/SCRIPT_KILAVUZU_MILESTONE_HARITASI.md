@@ -931,7 +931,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
   - `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
   - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
-- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ... -> RELEASE-CANDIDATE-01`
+- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ... -> RELEASE-CANDIDATE-01`
 
 ### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
 - Check script: `check:publiclanding01`
@@ -984,6 +984,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - Ana konu: `INVITE-BASED-MEMBERSHIP-01` sonrasında public lead / supplier application verisini otomatik verified supplier'a çevirmeden insan onaylı ve kanıt-temelli doğrulama hazırlığına taşımak; ticari unvan, yetkili kişi, araç kapasitesi, araç tipi uygunluğu, sürücü uygunluğu, hizmet bölgesi, KVKK / sözleşme / operasyon taahhüdü, geçmiş kalite / saha kanıtı ve eksik bilgi notu üzerinden ilerlemek; payment, contract execute, offer ranking, marketplace auto-selection, email / SMS / push ve schema değişikliği genişlemesi açmamayı doğrulamak.
 - Not: bu check runtime feature açmaz; backend route/service/schema, UI feature ve marketing sayfası değişikliği yoktur.
 - Doküman: `docs/VERIFIED_SUPPLIER_01.md`
+
+### UX-MARKETPLACE-PANELS-01 — marketplace readiness / supplier review lock [CHECK]
+- Check script: `check:uxmarketplacepanels01`
+- Komut: `node backend\scripts\ux_marketplace_panels_01_check.js`
+- Ana konu: `VERIFIED-SUPPLIER-01` sonrasında marketplace readiness center'ı docs/check kilidi olarak sabitlemek; status-first, human approval, invite/onboarding/verified supplier bağlamını görünür tutmak; super admin / company / room shared readiness card ve empty state ile readonly preview sunmak; marketplace auto-selection, offer ranking, payment/billing, contract/agreement execute, email/SMS/push, AI runtime action, backend route/service/schema ve Prisma genişlemesi açmamak.
+- Not: bu milestone docs/check kilididir; runtime flow açmaz, runtime-data/browser-smoke commit dışı kalır.
+- Doküman: `docs/UX_MARKETPLACE_PANELS_01.md`
 
 ### PRODUCT-FLOW-BUTTON-AUDIT-01 — kritik CTA ve button audit [CHECK]
 - Check script: `check:productflowbuttonaudit01`

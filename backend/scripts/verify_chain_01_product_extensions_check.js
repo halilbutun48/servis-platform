@@ -96,6 +96,7 @@ function main() {
   must(pkg, '"check:onboardingreviewfinalaudit01": "node backend/scripts/onboarding_review_final_audit_01_check.js"', 'package.json exposes check:onboardingreviewfinalaudit01');
   must(pkg, '"check:invitebasedmembership01": "node backend/scripts/invite_based_membership_01_check.js"', 'package.json exposes check:invitebasedmembership01');
   must(pkg, '"check:verifiedsupplier01": "node backend/scripts/verified_supplier_01_check.js"', 'package.json exposes check:verifiedsupplier01');
+  must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
@@ -238,6 +239,7 @@ function main() {
     'check:onboardingreviewfinalaudit01',
     'check:invitebasedmembership01',
     'check:verifiedsupplier01',
+    'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
@@ -386,7 +388,11 @@ function main() {
   must(guide, 'check:verifiedsupplier01', 'script guide exposes verified supplier check');
   must(guide, 'node backend\\scripts\\verified_supplier_01_check.js', 'script guide includes verified supplier command');
   must(guide, 'docs/VERIFIED_SUPPLIER_01.md', 'script guide includes verified supplier doc');
-  must(guide, 'PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide keeps public lead order');
+  must(guide, 'UX-MARKETPLACE-PANELS-01', 'script guide mentions marketplace panels milestone');
+  must(guide, 'check:uxmarketplacepanels01', 'script guide exposes marketplace panels check');
+  must(guide, 'node backend\\scripts\\ux_marketplace_panels_01_check.js', 'script guide includes marketplace panels command');
+  must(guide, 'docs/UX_MARKETPLACE_PANELS_01.md', 'script guide includes marketplace panels doc');
+  must(guide, 'PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide keeps public lead order');
   must(guide, 'PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide mentions product flow button audit milestone');
   must(guide, 'check:productflowbuttonaudit01', 'script guide exposes product flow button audit check');
   must(guide, 'node backend\\scripts\\product_flow_button_audit_01_check.js', 'script guide includes product flow button audit command');
@@ -540,17 +546,41 @@ function main() {
   must(harnessDoc, 'verified_supplier_01_check.js', 'script harness doc lists verified supplier check');
   must(harnessDoc, 'docs/VERIFIED_SUPPLIER_01.md', 'script harness doc lists verified supplier doc');
   must(harnessDoc, 'VERIFIED-SUPPLIER-01', 'script harness doc lists verified supplier milestone');
+  must(harnessCheck, 'check:uxmarketplacepanels01', 'script harness check knows marketplace panels alias');
+  must(harnessCheck, 'ux_marketplace_panels_01_check.js', 'script harness check knows marketplace panels file');
+  must(harnessCheck, 'UX-MARKETPLACE-PANELS-01', 'script harness check knows marketplace panels milestone');
+  must(harnessDoc, 'root:check:uxmarketplacepanels01', 'script harness doc lists marketplace panels root check');
+  must(harnessDoc, 'ux_marketplace_panels_01_check.js', 'script harness doc lists marketplace panels check');
+  must(harnessDoc, 'docs/UX_MARKETPLACE_PANELS_01.md', 'script harness doc lists marketplace panels doc');
+  must(harnessDoc, 'UX-MARKETPLACE-PANELS-01', 'script harness doc lists marketplace panels milestone');
   must(primer, 'INVITE-BASED-MEMBERSHIP-01', 'primer mentions invite-based membership milestone');
   must(primer, 'docs/INVITE_BASED_MEMBERSHIP_01.md', 'primer links invite-based membership doc');
   must(primer, 'insan onaylı davetli üyelik', 'primer keeps invite-based membership summary');
   must(primer, 'VERIFIED-SUPPLIER-01', 'primer mentions verified supplier milestone');
   must(primer, 'docs/VERIFIED_SUPPLIER_01.md', 'primer links verified supplier doc');
+  must(primer, 'UX-MARKETPLACE-PANELS-01', 'primer mentions marketplace panels milestone');
+  must(primer, 'docs/UX_MARKETPLACE_PANELS_01.md', 'primer links marketplace panels doc');
+  must(primer, 'marketplace readiness center', 'primer keeps marketplace readiness wording');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');
   must(roadmap, 'human approval', 'roadmap keeps human approval wording for verified supplier');
   must(roadmap, 'guard', 'roadmap keeps guard wording for verified supplier');
   must(roadmap, 'audit log', 'roadmap keeps audit log wording for verified supplier');
+  must(roadmap, 'Marketplace panels guard', 'roadmap keeps marketplace panels guard section');
+  must(roadmap, 'UX-MARKETPLACE-PANELS-01', 'roadmap keeps marketplace panels milestone');
+  must(roadmap, 'marketplace readiness center', 'roadmap keeps marketplace readiness wording');
+  must(roadmap, 'Hazırla, İncele, Önizle, Onaya sun', 'roadmap keeps human approval wording for marketplace panels');
+  must(roadmap, 'Marketplace auto-selection yok', 'roadmap excludes marketplace auto-selection');
+  must(roadmap, 'offer ranking', 'roadmap excludes offer ranking for marketplace panels');
+  must(roadmap, 'payment/billing', 'roadmap excludes payment/billing for marketplace panels');
+  must(roadmap, 'contract/agreement execute', 'roadmap excludes contract execute for marketplace panels');
+  must(roadmap, 'email/SMS/push', 'roadmap excludes email/SMS/push for marketplace panels');
+  must(roadmap, 'AI runtime action', 'roadmap excludes AI runtime action for marketplace panels');
+  must(roadmap, 'backend route/service/schema', 'roadmap excludes backend route/service/schema for marketplace panels');
+  must(roadmap, 'Prisma/schema/migration', 'roadmap excludes Prisma/schema/migration for marketplace panels');
+  must(roadmap, 'runtime-data/browser-smoke commit dışı', 'roadmap keeps runtime-data/browser-smoke out of scope for marketplace panels');
+  must(roadmap, 'docs/UX_MARKETPLACE_PANELS_01.md', 'roadmap links marketplace panels doc');
   must(finalAuditDoc, 'INVITE-BASED-MEMBERSHIP-01', 'final audit doc points to invite-based membership next milestone');
   must(finalAuditDoc, 'public lead otomatik kullanıcı / account olmaz', 'final audit doc keeps public lead account boundary');
   must(finalAuditDoc, 'invite draft', 'final audit doc mentions invite draft boundary');
