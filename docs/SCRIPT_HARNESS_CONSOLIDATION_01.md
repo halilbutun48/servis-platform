@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `356`
-- Toplam executable tracked file: `1131`
-- Combined registry row: `1487`
-- Root/backend/web/mobile package dağılımı: root `199`, backend `696`, web `88`, mobile `201`
+- Toplam package script entry: `357`
+- Toplam executable tracked file: `1133`
+- Combined registry row: `1490`
+- Root/backend/web/mobile package dağılımı: root `200`, backend `697`, web `89`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `48`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -96,11 +96,15 @@ Repo: `servis-platform`
 - Telematics provider hub check: `check:telematicsproviderhub01`
 - Telematics provider hub docs: `docs/TELEMATICS_PROVIDER_HUB_01.md`
 - Telematics provider hub command: `node backend\scripts\telematics_provider_hub_01_check.js`
+- Safe drive milestone: `SAFE-DRIVE-01`
+- Safe drive check: `check:safedrive01`
+- Safe drive docs: `docs/SAFE_DRIVE_01.md`
+- Safe drive command: `node backend\scripts\safe_drive_01_check.js`
 - Public lead audit check: `check:productflowbuttonaudit01`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `386`
-- ACTIVE_CORE: `155`
+- ACTIVE_CORE: `156`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -116,11 +120,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `528`
+- NEEDS_REVIEW: `530`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `21`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `282`
+- Eski sistem term eşleşmesi: `287`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -130,14 +134,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 386 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 155 |
+| ACTIVE_CORE | 156 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 528 |
+| NEEDS_REVIEW | 530 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -196,6 +200,7 @@ Repo: `servis-platform`
 | root:check:marketplacefreetooperate01 | package.json | root | node backend/scripts/marketplace_free_to_operate_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-MARKETPLACEFREETOOPERATE-01 |  | Owner or chain unclear |  |
 | root:check:m44telematicst1t5 | package.json | root | node backend/scripts/m44_telematics_t1_t5_check.js | core | ACTIVE_CORE |  | M44-TELEMATICS-T1-T5 |  | Breaks canonical verification chain |  |
 | root:check:telematicsproviderhub01 | package.json | root | node backend/scripts/telematics_provider_hub_01_check.js | core | ACTIVE_CORE |  | TELEMATICS-PROVIDER-HUB-01 |  | Breaks canonical verification chain |  |
+| root:check:safedrive01 | package.json | root | node backend/scripts/safe_drive_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-SAFEDRIVE-01 |  | Breaks canonical verification chain |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -748,6 +753,7 @@ Repo: `servis-platform`
 | step1_totp_stepup_check.js | backend/scripts/step1_totp_stepup_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-TOTP-STEPUP-CHECK |  | Owner or chain unclear |  |
 | superadmin_menu_copilot_sadelestirme_check.js | backend/scripts/superadmin_menu_copilot_sadelestirme_check.js | backend |  | review | NEEDS_REVIEW |  | SUPERADMIN-MENU-COPILOT-SADELESTIRME-CHECK |  | Owner or chain unclear |  |
 | superadmin_menu_turkce_hotfix_check.js | backend/scripts/superadmin_menu_turkce_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | SUPERADMIN-MENU-TURKCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
+| telematics_provider_hub_01_check.js | backend/scripts/telematics_provider_hub_01_check.js | backend | root:check:telematicsproviderhub01 | review | NEEDS_REVIEW |  | TELEMATICS-PROVIDER-HUB-01-CHECK |  | Owner or chain unclear |  |
 | ui_action_wiring_audit_01_check.js | backend/scripts/ui_action_wiring_audit_01_check.js | backend | root:check:uiactionwiringaudit01 | review | NEEDS_REVIEW |  | UI-ACTION-WIRING-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ui_route_resilience_hotfix_check.js | backend/scripts/ui_route_resilience_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | UI-ROUTE-RESILIENCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | username_first_login_hotfix_check.js | backend/scripts/username_first_login_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | USERNAME-FIRST-LOGIN-HOTFIX-CHECK |  | Owner or chain unclear |  |
@@ -1053,7 +1059,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| telematics_provider_hub_01_check.js | backend/scripts/telematics_provider_hub_01_check.js | backend | root:check:telematicsproviderhub01 | review | NEEDS_REVIEW |  | TELEMATICS-PROVIDER-HUB-01-CHECK |  | Owner or chain unclear |  |
+| safe_drive_01_check.js | backend/scripts/safe_drive_01_check.js | backend | root:check:safedrive01 | review | NEEDS_REVIEW |  | SAFE-DRIVE-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1146,6 +1152,7 @@ Repo: `servis-platform`
 | uiDataCache.js | web/src/utils/uiDataCache.js | web |  | review | NEEDS_REVIEW |  | UI-DATA-CACHE |  | Owner or chain unclear |  |
 | uiStatus.js | web/src/utils/uiStatus.js | web |  | review | NEEDS_REVIEW |  | UI-STATUS |  | Owner or chain unclear |  |
 | vite.config.js | web/vite.config.js | web |  | review | NEEDS_REVIEW |  | VITE-CONFIG |  | Owner or chain unclear |  |
+| safeDriveSummary.js | web/src/utils/safeDriveSummary.js | web |  | review | NEEDS_REVIEW |  | SAFE-DRIVE-SUMMARY |  | Owner or chain unclear |  |
 
 ### Mobile
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1697,7 +1704,7 @@ Repo: `servis-platform`
 | Quality / Evidence | Company/superadmin quality views | backend/src/scripts/qlt_*.js; backend/src/scripts/op_*.js; evidence helpers | web/src/panels/company/ServiceEvaluationPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx; web/src/panels/shared/ReportsPanel.jsx | check:qlt01; check:qlt02; check:qlt03; check:qlt04; check:qlt04a; check:qlt04b; check:op01; check:op02; check:op03; check:op04 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | QLT / OP | None |
 | Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
 | Telematics / Provider Hub | Super Admin GPS readiness / Room vehicle mapping | docs/TELEMATICS_PROVIDER_HUB_01.md; backend/scripts/telematics_provider_hub_01_check.js | web/src/panels/superadmin/SuperAdminPanel.jsx; web/src/panels/room/roomVehiclesPanelSections.jsx | check:telematicsproviderhub01; check:m44telematicst1t5; check:uxroomvehiclestelematicsfix | static | COVERED_ACTIVE | None on the current static/product chain. | TELEMATICS-PROVIDER-HUB-01 | None |
-| Telematics / Safe Drive | Driver live map and telematics surfaces | backend/src/scripts/m44_telematics_check.js; ETA / OSRM helpers | web/src/lib/markers/vehicleMarkerC.js; web/src/components/map/markers.css; web/src/panels/room/useRoomVehicleTelematics.js | check:m44telematicst1t5; check:m44_telematics_check; check:uxroomvehiclestelematicsfix; check:etaosrm01; check:etaosrm02; check:etasanity01 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | M44-TELEMATICS-T1-T5 | None |
+| Telematics / Safe Drive | Driver live map and telematics surfaces | docs/SAFE_DRIVE_01.md; backend/scripts/safe_drive_01_check.js; ETA / OSRM helpers | web/src/utils/safeDriveSummary.js; web/src/panels/shared/SafeDriveSummaryCard.jsx; web/src/panels/driver/RoutePanel.jsx; web/src/panels/driver/MapPanel.jsx; web/src/panels/company/MapPanel.jsx; web/src/panels/room/MapPanel.jsx | check:safedrive01; check:telematicsproviderhub01; check:m44telematicst1t5; check:etaosrm01; check:etaosrm02; check:etasanity01 | static | COVERED_ACTIVE | None on the current static/product chain. | SAFE-DRIVE-01 | None |
 | Performance / Reliability | Repo audit / hot file hygiene | backend/scripts/repo_audit.js; m90c6-m90c10 repo hygiene gates | none | check:product-extensions; check:verifychain01; check:finaluxsmoke01; verify:final; m90_c6/m90_c7/m90_c8/m90_c9/m90_c10 chain | release-only | COVERED_RELEASE_ONLY | These are intentionally release gates, not commit-time smoke. | M90C / verify:final | None |
 | Brand / Docs / Release | Docs, pack/export, closure tooling | tools/pack.ps1; tools/export_shareable_repo_bundle.ps1; docs-state and closure helpers | README.md; docs/*.md; tools/README.md; tools/wrappers/README.md | check:brand; check:docsstate01; check:m99ux01; check:m99kvkk01; check:finaluxsmoke01; verify:final; verify:snapshot | release-only + manual-release | COVERED_RELEASE_ONLY | No safe evidence-free pack/export path is intended. | M90/M99/FINAL | None |
 

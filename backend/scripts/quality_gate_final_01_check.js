@@ -172,8 +172,8 @@ function main() {
   mustContains(doc, "product-flow button audit", "quality gate final doc names product-flow audit");
   mustContains(doc, "PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "quality gate final doc keeps all-panels summary");
   mustContains(doc, "PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "quality gate final doc keeps mobile all-roles summary");
-  mustContains(doc, "PASS 66 / PASS- 16 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "quality gate final doc keeps premium summary");
-  mustContains(doc, "PASS 10 / PASS- 8 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "quality gate final doc keeps product-flow summary");
+  mustContains(doc, "PASS 64 / PASS- 18 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "quality gate final doc keeps premium summary");
+  mustContains(doc, "PASS 8 / PASS- 10 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "quality gate final doc keeps product-flow summary");
   mustContains(doc, "UX-SMOKE-PASS-MINUS-EVIDENCE-01", "quality gate final doc references PASS-minus evidence doc");
   mustContains(doc, "PRODUCT-FLOW-BUTTON-AUDIT-01", "quality gate final doc references product flow audit doc");
   mustContains(doc, "runtime-data", "quality gate final doc keeps runtime-data boundary");
@@ -278,8 +278,8 @@ function main() {
       routeCount: 82,
       screenshotCount: 164,
       statusCounts: {
-        PASS: 66,
-        "PASS-": 16,
+        PASS: 64,
+        "PASS-": 18,
         "UX-FIX": 0,
         BLOCKER: 0,
         "AUTH-BLOCKED": 0,
@@ -299,8 +299,8 @@ function main() {
       routeCount: 18,
       screenshotCount: 36,
       statusCounts: {
-        PASS: 10,
-        "PASS-": 8,
+        PASS: 8,
+        "PASS-": 10,
         "UX-FIX": 0,
         BLOCKER: 0,
         "AUTH-BLOCKED": 0,

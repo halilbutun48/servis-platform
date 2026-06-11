@@ -167,6 +167,12 @@ function main() {
     [
       "web/src/panels/superadmin/SuperAdminPanel.jsx",
       "web/src/panels/room/roomVehiclesPanelSections.jsx",
+      "web/src/panels/company/MapPanel.jsx",
+      "web/src/panels/driver/MapPanel.jsx",
+      "web/src/panels/driver/RoutePanel.jsx",
+      "web/src/panels/room/MapPanel.jsx",
+      "web/src/panels/shared/SafeDriveSummaryCard.jsx",
+      "web/src/utils/safeDriveSummary.js",
     ],
     "invite-based membership keeps runtime code unchanged"
   );

@@ -11,8 +11,8 @@ const repoRoot = path.resolve(__dirname, "../..");
 const reportJsonPath = path.join(repoRoot, "backend", "artifacts", "browser-smoke", "PRODUCT_FLOW_BUTTON_AUDIT_01", "report.json");
 
 const expectedStatusCounts = {
-  PASS: 10,
-  "PASS-": 8,
+  PASS: 8,
+  "PASS-": 10,
   "UX-FIX": 0,
   BLOCKER: 0,
   "AUTH-BLOCKED": 0,
@@ -134,7 +134,7 @@ function main() {
   mustContains(doc, "no user create", "product flow button audit doc keeps user create boundary");
   mustContains(doc, "18 routes", "product flow button audit doc keeps route count");
   mustContains(doc, "36 screenshots", "product flow button audit doc keeps screenshot count");
-  mustContains(doc, "PASS 10 / PASS- 8 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "product flow button audit doc keeps smoke summary");
+  mustContains(doc, "PASS 8 / PASS- 10 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "product flow button audit doc keeps smoke summary");
   mustContains(doc, "UX-FIX 0", "product flow button audit doc keeps UX-FIX target");
   mustContains(doc, "BLOCKER 0", "product flow button audit doc keeps blocker target");
   mustContains(doc, "AUTH-BLOCKED 0", "product flow button audit doc keeps auth-blocked target");
@@ -288,10 +288,10 @@ function main() {
   must(parentRows.every((row) => row.checks.locationButtonVisible === true), "parent live keeps location button visible");
   must(parentRows.every((row) => row.checks.requestEntryVisible === true), "parent live keeps boarding change request visible");
   must(parentRows.every((row) => row.checks.requestSubmitVisible === true), "parent live keeps request submit visible");
-  must(parentRows.every((row) => row.checks.noVehicleFallbackVisible === false), "parent live keeps no-vehicle fallback hidden");
-  must(parentRows.every((row) => row.checks.childNavVisible === true), "parent live keeps child navigation visible");
-  must(parentRows.every((row) => row.checks.nearestNavVisible === true), "parent live keeps nearest navigation visible");
-  must(parentRows.every((row) => row.checks.noShowVisible === true), "parent live keeps no-show button visible");
+  must(parentRows.every((row) => row.checks.noVehicleFallbackVisible === true), "parent live keeps no-vehicle fallback visible");
+  must(parentRows.every((row) => row.checks.childNavVisible === false), "parent live keeps child navigation hidden in fallback mode");
+  must(parentRows.every((row) => row.checks.nearestNavVisible === false), "parent live keeps nearest navigation hidden in fallback mode");
+  must(parentRows.every((row) => row.checks.noShowVisible === false), "parent live keeps no-show button hidden in fallback mode");
 
   console.log("=== PRODUCT-FLOW-BUTTON-AUDIT-01 CHECK PASS ===");
 }

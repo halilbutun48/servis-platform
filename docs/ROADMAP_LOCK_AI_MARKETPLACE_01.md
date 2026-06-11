@@ -411,7 +411,7 @@ Kullanılmayacak cümleler:
 - M44-TELEMATICS-T1-T5
 - TELEMATICS-PROVIDER-HUB-01
 - `TELEMATICS-PROVIDER-HUB-01` provider-agnostic GPS provider hub / readiness UX halkasıdır; Ayarlar / Telematik Entegrasyonları, provider registry ve readonly telematics signals çizgisini korur.
-- SAFE-DRIVE-01
+- `SAFE-DRIVE-01` M44 + telematics provider hub sonrası readonly safe-drive risk summary katmanıdır; `Güvenli sürüş özeti`, `Risk sinyali`, `Kontrol edilmeli` ve `İnsan onayı gerekir` çizgisini korur; rota uygulaması, sürücü/araç ataması, ödeme/hakediş ve otomatik yönlendirme açmaz.
 - OFFER-RANKING-QUALITY-01
 
 ### C) COPILOT STRATEJİ VE GUARDRAIL

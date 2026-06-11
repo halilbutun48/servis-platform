@@ -27,6 +27,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `UX-MARKETPLACE-PANELS-01` verified supplier ve invite/onboarding sonrasında marketplace readiness center'ı docs/check kilidi olarak sabitler; status-first, human approval ve readiness preview dilini korur, marketplace auto-selection / offer ranking / payment / contract execute açmaz. Detay: `docs/UX_MARKETPLACE_PANELS_01.md`
 - `M44-TELEMATICS-T1-T5` read-only telematics / risk / quality baseline'ını kilitler; canonical check `check:m44telematicst1t5`, detay: `docs/M44_TELEMATICS_T1_T5.md`.
 - `TELEMATICS-PROVIDER-HUB-01` M44 sonrası provider-agnostic telematics hub / readiness UX kilididir; Ayarlar / Telematik Entegrasyonları, test bağlantısı, cihaz eşleştirme, provider registry ve readonly telematics signals çizgisini korur; gerçek provider entegrasyonu açmaz. Detay: `docs/TELEMATICS_PROVIDER_HUB_01.md`
+- `SAFE-DRIVE-01` M44 + telematics provider hub sonrası readonly safe-drive risk summary katmanıdır; `Güvenli sürüş özeti`, `Risk sinyali`, `Kontrol edilmeli` ve `İnsan onayı gerekir` çizgisini korur; rota uygulaması, sürücü/araç ataması, ödeme/hakediş ve otomatik yönlendirme açmaz. Detay: `docs/SAFE_DRIVE_01.md`
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

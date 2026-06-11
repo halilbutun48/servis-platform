@@ -9,6 +9,7 @@ import { nowIsoTR } from "../../utils/time";
 import PanelChrome from "../../components/PanelChrome";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
+import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 
 
@@ -165,6 +166,28 @@ export default function DriverMapPanel() {
     gpsAge,
     vehicleCount: vehicles.length,
   }), [selectedVehicle, activeShift, nextStop, routeEta, stats, gpsStatusText, gpsAge, vehicles.length]);
+  const safeDriveSummaryParams = useMemo(() => ({
+    gpsStatus: gpsStatusText,
+    gpsLast: selectedVehicle?.gpsLast,
+    gpsSourceLabel,
+    speedKmh: selectedVehicle?.gpsLast?.speed || selectedVehicle?.speed || selectedVehicle?.speedKmh,
+    speedLimitKmh: selectedVehicle?.speedLimitKmh,
+    routeProgressState: activeShift?.status || selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus,
+    nextStopName: nextStop?.name,
+    proofStatus: routeProofText,
+    providerStatus: selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus,
+    providerLabel: gpsSourceLabel,
+    selectedVehicle,
+    selectedShift: activeShift,
+    nextStop,
+  }), [
+    gpsStatusText,
+    selectedVehicle,
+    activeShift,
+    nextStop,
+    gpsSourceLabel,
+    routeProofText,
+  ]);
   const copilotSelection = useMemo(() => {
     const routeLabel = activeShift?.id ? `Vardiya #${activeShift.id}` : "Canlı rota";
     return {
@@ -293,6 +316,7 @@ export default function DriverMapPanel() {
           <div className="muted" style={{ marginBottom: 6 }}>Adım adım takip</div>
           <StopTimeline stops={stops} nextStopId={nextStop?.id ?? null} compact={false} onSelect={(s) => focusStop(s)} />
         </div>
+        <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} style={{ marginTop: 10 }} />
       </div>
 
       <MapView

@@ -101,6 +101,7 @@ function main() {
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes check:marketplacefreetooperate01');
   must(pkg, '"check:m44telematicst1t5": "node backend/scripts/m44_telematics_t1_t5_check.js"', 'package.json exposes check:m44telematicst1t5');
   must(pkg, '"check:telematicsproviderhub01": "node backend/scripts/telematics_provider_hub_01_check.js"', 'package.json exposes check:telematicsproviderhub01');
+  must(pkg, '"check:safedrive01": "node backend/scripts/safe_drive_01_check.js"', 'package.json exposes check:safedrive01');
   must(pkg, '"check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js"', 'package.json exposes check:pay01e');
   must(pkg, '"smoke:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01.mjs"', 'package.json exposes smoke:productflowbuttonaudit01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
@@ -247,6 +248,7 @@ function main() {
     'check:marketplacefreetooperate01',
     'check:m44telematicst1t5',
     'check:telematicsproviderhub01',
+    'check:safedrive01',
     'check:pay01e',
     'check:paysafe01',
     'check:web01a',
@@ -415,6 +417,13 @@ function main() {
   must(guide, 'check:telematicsproviderhub01', 'script guide exposes telematics provider hub check');
   must(guide, 'node backend\\scripts\\telematics_provider_hub_01_check.js', 'script guide includes telematics provider hub command');
   must(guide, 'docs/TELEMATICS_PROVIDER_HUB_01.md', 'script guide includes telematics provider hub doc');
+  must(guide, 'SAFE-DRIVE-01', 'script guide mentions safe drive milestone');
+  must(guide, 'check:safedrive01', 'script guide exposes safe drive check');
+  must(guide, 'node backend\\scripts\\safe_drive_01_check.js', 'script guide includes safe drive command');
+  must(guide, 'docs/SAFE_DRIVE_01.md', 'script guide includes safe drive doc');
+  must(guide, 'Güvenli sürüş özeti', 'script guide keeps safe drive copy');
+  must(guide, 'Risk sinyali', 'script guide keeps risk signal wording');
+  must(guide, 'İnsan onayı gerekir', 'script guide keeps human approval wording');
   ordered(guide, ['M44-TELEMATICS-T1-T5', 'TELEMATICS-PROVIDER-HUB-01', 'SAFE-DRIVE-01'], 'script guide keeps telematics provider hub after M44 before safe drive');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
@@ -577,10 +586,22 @@ function main() {
   must(harnessCheck, 'check:telematicsproviderhub01', 'script harness check knows telematics provider hub alias');
   must(harnessCheck, 'telematics_provider_hub_01_check.js', 'script harness check knows telematics provider hub file');
   must(harnessCheck, 'TELEMATICS-PROVIDER-HUB-01', 'script harness check knows telematics provider hub milestone');
+  must(harnessCheck, 'check:safedrive01', 'script harness check knows safe drive alias');
+  must(harnessCheck, 'safe_drive_01_check.js', 'script harness check knows safe drive file');
+  must(harnessCheck, 'SAFE-DRIVE-01', 'script harness check knows safe drive milestone');
+  must(harnessCheck, 'docs/SAFE_DRIVE_01.md', 'script harness check knows safe drive doc');
+  must(harnessCheck, 'web/src/utils/safeDriveSummary.js', 'script harness check knows safe drive helper');
+  must(harnessCheck, 'web/src/panels/shared/SafeDriveSummaryCard.jsx', 'script harness check knows safe drive card');
   must(harnessDoc, 'root:check:telematicsproviderhub01', 'script harness doc lists telematics provider hub root check');
   must(harnessDoc, 'telematics_provider_hub_01_check.js', 'script harness doc lists telematics provider hub check');
   must(harnessDoc, 'docs/TELEMATICS_PROVIDER_HUB_01.md', 'script harness doc lists telematics provider hub doc');
   must(harnessDoc, 'TELEMATICS-PROVIDER-HUB-01', 'script harness doc lists telematics provider hub milestone');
+  must(harnessDoc, 'root:check:safedrive01', 'script harness doc lists safe drive root check');
+  must(harnessDoc, 'safe_drive_01_check.js', 'script harness doc lists safe drive check');
+  must(harnessDoc, 'docs/SAFE_DRIVE_01.md', 'script harness doc lists safe drive doc');
+  must(harnessDoc, 'SAFE-DRIVE-01', 'script harness doc lists safe drive milestone');
+  must(harnessDoc, 'web/src/utils/safeDriveSummary.js', 'script harness doc lists safe drive helper');
+  must(harnessDoc, 'web/src/panels/shared/SafeDriveSummaryCard.jsx', 'script harness doc lists safe drive card');
   must(primer, 'INVITE-BASED-MEMBERSHIP-01', 'primer mentions invite-based membership milestone');
   must(primer, 'docs/INVITE_BASED_MEMBERSHIP_01.md', 'primer links invite-based membership doc');
   must(primer, 'insan onaylı davetli üyelik', 'primer keeps invite-based membership summary');
@@ -595,6 +616,10 @@ function main() {
   must(primer, 'TELEMATICS-PROVIDER-HUB-01', 'primer mentions telematics provider hub milestone');
   must(primer, 'docs/TELEMATICS_PROVIDER_HUB_01.md', 'primer links telematics provider hub doc');
   must(primer, 'provider-agnostic telematics hub', 'primer keeps telematics provider hub wording');
+  must(primer, 'SAFE-DRIVE-01', 'primer mentions safe drive milestone');
+  must(primer, 'docs/SAFE_DRIVE_01.md', 'primer links safe drive doc');
+  must(primer, 'readonly safe-drive risk summary', 'primer keeps safe drive wording');
+  must(primer, 'Güvenli sürüş özeti', 'primer keeps safe drive copy');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');
@@ -618,6 +643,8 @@ function main() {
   must(roadmap, 'M44-TELEMATICS-T1-T5', 'roadmap keeps M44 telematics T1/T5 milestone');
   must(roadmap, 'TELEMATICS-PROVIDER-HUB-01', 'roadmap keeps telematics provider hub milestone');
   must(roadmap, 'provider-agnostic GPS provider hub', 'roadmap keeps provider-agnostic telematics hub wording');
+  must(roadmap, 'readonly safe-drive risk summary', 'roadmap keeps safe drive summary wording');
+  must(roadmap, 'İnsan onayı gerekir', 'roadmap keeps human approval wording');
   ordered(roadmap, ['M44-TELEMATICS-T1-T5', 'TELEMATICS-PROVIDER-HUB-01', 'SAFE-DRIVE-01', 'OFFER-RANKING-QUALITY-01'], 'roadmap keeps telematics provider hub before safe drive and offer ranking');
   must(finalAuditDoc, 'INVITE-BASED-MEMBERSHIP-01', 'final audit doc points to invite-based membership next milestone');
   must(finalAuditDoc, 'public lead otomatik kullanıcı / account olmaz', 'final audit doc keeps public lead account boundary');

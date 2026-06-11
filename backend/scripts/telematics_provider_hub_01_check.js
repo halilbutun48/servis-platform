@@ -174,7 +174,7 @@ function main() {
   must(superAdmin, "ACTIVE", "super admin panel keeps active status");
   must(superAdmin, "ERROR", "super admin panel keeps error status");
   must(superAdmin, "DISABLED", "super admin panel keeps disabled status");
-  must(superAdmin, "secret/API key/token repo'ya yazılmaz", "super admin panel keeps secret boundary wording");
+  must(superAdmin, "gizli erişim bilgileri repo'ya yazılmaz; gerçek sağlayıcı entegrasyonu bu sürümde yoktur; yalnızca salt-okunur telematik sinyaller gösterilir.", "super admin panel keeps secret boundary wording");
   must(superAdmin, "readonly telematics signals", "super admin panel keeps readonly telematics signals wording");
 
   must(roomTelematics, "GPS Eşleştirme / Telematik Bağlantısı", "room vehicles telematics section exposes provider hub readiness card");

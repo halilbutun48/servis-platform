@@ -13,6 +13,7 @@ import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 
 function toNum(v) {
   const n = typeof v === "number" ? v : Number(v);
@@ -307,6 +308,25 @@ export default function RoomMapPanel() {
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
+  const safeDriveSummaryParams = useMemo(
+    () => ({
+      gpsStatus: uiStatusFromVehicle(selected),
+      gpsAge: gpsAgeLabel(selected),
+      gpsLast: selected?.gpsLast,
+      gpsSourceLabel: selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel,
+      speedKmh: selected?.gpsLast?.speed || selected?.speed || selected?.speedKmh,
+      speedLimitKmh: selected?.speedLimitKmh,
+      routeProgressState: selectedShift?.status || selected?.gpsState?.lastUiStatus || selected?.gpsState?.lastStatus,
+      nextStopName: selectedNext?.name,
+      proofStatus: selectedShift?.operationProofStatus || selectedShift?.proofStatus || selected?.operationProofStatus || selected?.proofStatus,
+      providerStatus: selected?.gpsState?.lastUiStatus || selected?.gpsState?.lastStatus,
+      providerLabel: selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel,
+      selectedVehicle: selected,
+      selectedShift,
+      nextStop: selectedNext,
+    }),
+    [selected, selectedShift, selectedNext]
+  );
   const selectedRiskLines = useMemo(() => {
     const lines = [];
     if (!selected) return ["Araç seçilmedi"];
@@ -775,6 +795,8 @@ export default function RoomMapPanel() {
                 </div>
               </div>
 
+              <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} style={{ marginBottom: 10 }} />
+
               <MapView
                 vehicles={vehicles}
                 stops={showStops ? selectedStops : []}
@@ -836,5 +858,4 @@ export default function RoomMapPanel() {
     </div>
   );
 }
-
 

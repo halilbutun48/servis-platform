@@ -486,6 +486,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Not: gerçek provider entegrasyonu, secret/API key/token repo'ya yazımı, backend route/service/schema ve Prisma/schema/migration açılmaz; readonly T1-T5 boundary korunur.
 - Doküman: `docs/TELEMATICS_PROVIDER_HUB_01.md`
 
+### SAFE-DRIVE-01 — readonly safe-drive risk summary / recommendation layer [CHECK]
+- Check: `check:safedrive01`
+- Komut: `node backend\scripts\safe_drive_01_check.js`
+- Ana konu: M44-TELEMATICS-T1-T5 ve TELEMATICS-PROVIDER-HUB-01 sonrası GPS güvenilirliği, hız riski, rota ilerleme sinyali, kanıt / check-in durumu ve operasyon kontrol önerisini readonly toplar.
+- Copy: `Güvenli sürüş özeti`, `Risk sinyali`, `Kontrol edilmeli`, `İnsan onayı gerekir`
+- Not: rota uygulanmaz, sürücü/araç ataması değiştirilmez, ödeme/hakediş başlatılmaz, sözleşme bağlanmaz, otomatik yönlendirme verilmez.
+- Doküman: `docs/SAFE_DRIVE_01.md`
+
 ### M45 — Retention + Backup [PACK]
 - Pack: `tools/pack_m45_retention_backup.ps1`
 - Amaç: retention/backup altyapısı.

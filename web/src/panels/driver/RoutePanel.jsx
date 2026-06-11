@@ -13,6 +13,7 @@ import { nowIsoTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
 import { boardingChangeRouteRefreshLabel, boardingChangeRouteRefreshNote } from "../shared/boardingChangeUi";
+import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
 
 function getQueryParam(name) {
@@ -123,6 +124,31 @@ export default function RoutePanel() {
     gpsAge,
     vehicleCount,
   }), [selectedVehicle, shift, nextStop, routeEta, routeSummary, gpsStatusText, gpsAge, vehicleCount]);
+  const safeDriveSummaryParams = useMemo(() => ({
+    gpsStatus: gpsStatusText,
+    gpsLast: data?.last || selectedVehicle?.gpsLast,
+    gpsSourceLabel,
+    speedKmh: data?.liveLocation?.speed || selectedVehicle?.gpsLast?.speed || selectedVehicle?.speed || selectedVehicle?.speedKmh,
+    speedLimitKmh: selectedVehicle?.speedLimitKmh,
+    routeProgressState: data?.liveLocation?.routeProgressState || data?.liveLocation?.officialSource || shift?.status || data?.progress?.state,
+    nextStopName: nextStop?.name,
+    proofStatus: routeProofText,
+    providerStatus: selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus,
+    providerLabel: gpsSourceLabel,
+    selectedVehicle,
+    selectedShift: shift,
+    nextStop,
+  }), [
+    gpsStatusText,
+    data?.last,
+    data?.liveLocation,
+    data?.progress,
+    selectedVehicle,
+    shift,
+    nextStop,
+    gpsSourceLabel,
+    routeProofText,
+  ]);
   const selectedStop = useMemo(
     () => orderedStops.find((stop) => Number(stop?.id || 0) === Number(selectedStopId || 0)) || null,
     [orderedStops, selectedStopId]
@@ -608,6 +634,7 @@ async function undoLast() {
         <div className="muted">
           Faz 1/Faz 2: <b>Rota sırası</b> + <b>sıradaki durak</b> + <b>dış navigasyon</b>. (Kısayol: <b>Enter</b>)
         </div>
+        <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} style={{ marginTop: 10 }} />
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -903,4 +930,3 @@ async function undoLast() {
     </div>
   );
 }
-

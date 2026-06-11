@@ -250,6 +250,9 @@ function main() {
     [
       "web/src/panels/superadmin/SuperAdminPanel.jsx",
       "web/src/panels/room/roomVehiclesPanelSections.jsx",
+      "web/src/panels/company/MapPanel.jsx",
+      "web/src/panels/room/MapPanel.jsx",
+      "web/src/utils/safeDriveSummary.js",
     ],
     "verified supplier keeps runtime code unchanged"
   );

@@ -15,6 +15,7 @@ import { getCompanyMapShifts, getCompanyVehicles } from "../../utils/companyData
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
+import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 
 function asNum(v) {
   const n = Number(String(v ?? "").replace(",", "."));
@@ -373,6 +374,25 @@ export default function CompanyMapPanel() {
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
+  const safeDriveSummaryParams = useMemo(
+    () => ({
+      gpsStatus: uiStatusFromVehicle(selected),
+      gpsAge: gpsAgeLabel(selected),
+      gpsLast: selected?.gpsLast,
+      gpsSourceLabel: selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel,
+      speedKmh: selected?.gpsLast?.speed || selected?.speed || selected?.speedKmh,
+      speedLimitKmh: selected?.speedLimitKmh,
+      routeProgressState: selectedShift?.status || selected?.gpsState?.lastUiStatus || selected?.gpsState?.lastStatus,
+      nextStopName: selectedNext?.name,
+      proofStatus: selectedShift?.operationProofStatus || selectedShift?.proofStatus || selected?.operationProofStatus || selected?.proofStatus,
+      providerStatus: selected?.gpsState?.lastUiStatus || selected?.gpsState?.lastStatus,
+      providerLabel: selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel,
+      selectedVehicle: selected,
+      selectedShift,
+      nextStop: selectedNext,
+    }),
+    [selected, selectedShift, selectedNext]
+  );
 
   const copilotSummary = useMemo(() => {
     if (!selected) return null;
@@ -732,6 +752,8 @@ export default function CompanyMapPanel() {
               Seçili araç + tüm rota. Yol ağına yakın önizleme varsa otomatik kullanılır.
             </div>
           </div>
+
+          <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} style={{ marginBottom: 10 }} />
 
           <MapView
             vehicles={vehicles}

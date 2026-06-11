@@ -35,7 +35,7 @@ Bu milestone:
 
 - Komut: `npm run smoke:uxlivepanelpremium01`
 - Rapor: `backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/report.json`
-- Snapshot: `PASS 66 / PASS- 16 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- Snapshot: `PASS 64 / PASS- 18 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 
 ## 3) All-Roles PASS- Final Risk List
 
@@ -57,16 +57,18 @@ Bu 16 satır final risk / backlog olarak kalır; release blocker değildir.
 | `/#/room/operation-health` | room | desktop | route-preview | Kısa karar kartı görünür. |
 | `/#/room/commercial-flow` | room | mobile | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/room/operation-health` | room | mobile | route-preview | Kısa karar kartı görünür. |
+| `/#/room/live` | room | mobile | long-live-map | Harita / canlı takip dili görünür. |
+| `/#/room/map` | room | mobile | long-live-map | Harita / canlı takip dili görünür. |
 | `/#/company/shifts` | company | desktop | convert-draft | Sözleşme taslak geçişi görünür. |
 | `/#/company/commercial-flow` | company | desktop | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/company/shifts` | company | mobile | convert-draft | Sözleşme taslak geçişi görünür. |
 | `/#/company/commercial-flow` | company | mobile | commercial-bucket | Accepted/applied bucket görünür. |
+| `/#/company/map` | company | mobile | long-live-map | Harita / canlı takip dili görünür. |
 | `/#/school/commercial-flow` | school | desktop | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/school/commercial-flow` | school | mobile | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/organization/commercial-flow` | organization | desktop | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/organization/commercial-flow` | organization | mobile | commercial-bucket | Accepted/applied bucket görünür. |
 | `/#/personel/live` | personel | mobile | long-live-map | Harita / canlı takip dili görünür. |
-| `/#/parent/live` | parent | mobile | long-live-map | Harita / canlı takip dili görünür. |
 
 ## 5) Special Ruling
 

@@ -36,7 +36,7 @@ Bu milestone, kritik product-flow CTA ve button yüzeylerini yalnızca okuma ve 
 
 - `18 routes`
 - `36 screenshots`
-- `PASS 10 / PASS- 8 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- `PASS 8 / PASS- 10 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 - Desktop ve mobile viewport birlikte test edilir.
 
 ## Komutlar

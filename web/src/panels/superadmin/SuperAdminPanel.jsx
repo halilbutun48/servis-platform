@@ -295,7 +295,7 @@ function TelematicsProviderHubCard() {
       </div>
 
       <div className="panelMeta">
-        Safe boundary: secret/API key/token repo'ya yazılmaz; no real provider integration in this milestone; readonly telematics signals only.
+        Safe boundary: gizli erişim bilgileri repo'ya yazılmaz; gerçek sağlayıcı entegrasyonu bu sürümde yoktur; yalnızca salt-okunur telematik sinyaller gösterilir.
       </div>
     </div>
   );
