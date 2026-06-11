@@ -12,6 +12,7 @@ import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCar
 import QualityReviewHistoryCard from "../../components/QualityReviewHistoryCard";
 import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
 
 function Card({ title, subtitle, children, className = "", style }) {
   return (
@@ -301,6 +302,17 @@ export default function TrustQualityPanel() {
           steps={["1. Kanıt", "2. Taslak skor", "3. İnceleme", "4. Denetim izi", "Kesin puan yok"]}
           statusText="Kesin puan yok"
           tone="warn"
+        />
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <OfferQualityRankingCard
+          title="Teklif kalite karşılaştırma rayı"
+          subtitle="Super Admin denetim görünümünde teklif satırı yerine kalite, güven, telematics ve evidence/check-in sinyalleri readonly okunur."
+          offers={[]}
+          summaryParams={{ role: "SUPER_ADMIN", scopeLabel: "Super Admin denetim görünümü" }}
+          maxRows={2}
+          style={{ padding: 14 }}
         />
       </div>
 

@@ -10,12 +10,13 @@ Tarama kapsamı:
 - `web/src/panels/**/*.jsx`
 - `web/src/components/**/*.jsx`
 - `web/src/components/PanelChrome.jsx`
+- `web/src/panels/shared/OfferQualityRankingCard.jsx`
 - `web/src/index.css`
 - `web/src/layout/NavDock.jsx`
 - `web/src/App.jsx` route/menu bağlantıları
 
 Özet envanter:
-  - `119` panel-related JSX dosyası: `web/src/panels/**/*.jsx`
+  - `120` panel-related JSX dosyası: `web/src/panels/**/*.jsx`
 - `62` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
 - `99` gerçek route surface + `/` root redirect ile `100` unique route literal
 

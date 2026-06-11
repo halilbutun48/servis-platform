@@ -392,6 +392,7 @@ function main() {
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/offer_ranking_quality_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
     "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
@@ -417,6 +418,7 @@ function main() {
     "docs/UX_BRAND_LOGIN_PREMIUM_01.md",
     "docs/PUBLIC_LANDING_01.md",
     "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md",
+    "docs/OFFER_RANKING_QUALITY_01.md",
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
     "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
@@ -447,6 +449,8 @@ function main() {
     "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
     "web/src/panels/company/companyShiftsPanelSections.jsx",
     "web/src/panels/company/companyShiftsPanelFilters.jsx",
+    "web/src/panels/company/WorkflowPanel.jsx",
+    "web/src/panels/company/companyShiftsPanelCards.jsx",
     "web/src/layout/AppShell.jsx",
     "web/src/state/sessionProvider.jsx",
     "web/src/layout/NavDock.jsx",
@@ -454,6 +458,8 @@ function main() {
     "web/src/panels/organization/CenterPanel.jsx",
     "web/src/panels/company/CompanyShiftsPanelIntro.jsx",
     "web/src/panels/company/ShiftsPanel.jsx",
+    "web/src/panels/shared/OfferQualityRankingCard.jsx",
+    "web/src/panels/superadmin/TrustQualityPanel.jsx",
     "web/src/copilot/screenRegistry.js",
     "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
     "docs/PRIMER_SSOT.md",
@@ -469,11 +475,13 @@ function main() {
     "docs/TELEMATICS_PROVIDER_HUB_01.md",
     "backend/src/ai/jobGuide/screenCatalog.js",
     "web/src/copilot/screenRegistry.js",
+    "web/src/panels/room/OffersPanel.jsx",
     "web/src/panels/room/roomVehiclesPanelRows.jsx",
     "web/src/panels/room/useRoomVehicleTelematics.js",
     "web/src/panels/superadmin/TelematicsHubPanel.jsx",
     "docs/UX_PANEL_REALITY_AUDIT_02C.md",
     "tools/repo_contract_state.json",
+    "web/src/utils/offerQualityRanking.js",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within agreements detail scope");
 
@@ -481,9 +489,12 @@ function main() {
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
-  mustNotList(status, "web/src/panels/room/", "room surfaces are untouched");
+  const statusWithoutOffers = status.filter((file) => file !== "web/src/panels/room/OffersPanel.jsx");
+  const statusWithoutTrustQuality = statusWithoutOffers.filter((file) => file !== "web/src/panels/superadmin/TrustQualityPanel.jsx");
+
+  mustNotList(statusWithoutTrustQuality, "web/src/panels/room/", "room surfaces are untouched");
   mustNotList(status, "web/src/panels/driver/", "driver surfaces are untouched");
-  mustNotList(status, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
+  mustNotList(statusWithoutTrustQuality, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
 
   console.log("=== UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01 CHECK PASS ===");
 }

@@ -29,6 +29,7 @@ const steps = [
   'check:m44telematicst1t5',
   'check:telematicsproviderhub01',
   'check:safedrive01',
+  'check:offerrankingquality01',
   'check:pay01e',
   'check:paysafe01',
   'check:web01a',

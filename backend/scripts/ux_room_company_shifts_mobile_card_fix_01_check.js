@@ -237,6 +237,7 @@ function main() {
     "backend/scripts/ux_panel_inventory_02a_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "backend/scripts/offer_ranking_quality_01_check.js",
     "backend/scripts/safe_drive_01_check.js",
     "docs/SAFE_DRIVE_01.md",
     "web/src/panels/company/MapPanel.jsx",
@@ -276,6 +277,7 @@ function main() {
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "docs/UX_PANEL_REALITY_AUDIT_02C.md",
     "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
+    "docs/OFFER_RANKING_QUALITY_01.md",
     "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
     "docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md",
     "docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md",
@@ -308,6 +310,8 @@ function main() {
     "web/src/panels/company/companyShiftsPanelSections.jsx",
     "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
     "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
+    "web/src/panels/company/WorkflowPanel.jsx",
+    "web/src/panels/company/companyShiftsPanelCards.jsx",
     "web/src/panels/company/companyAgreementsMobileCards.jsx",
     "web/src/panels/company/PersonelAccessPanel.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
@@ -346,6 +350,10 @@ function main() {
     "web/src/panels/room/roomVehiclesPanelRows.jsx",
     "web/src/panels/room/useRoomVehicleTelematics.js",
     "web/src/panels/superadmin/TelematicsHubPanel.jsx",
+    "web/src/panels/superadmin/TrustQualityPanel.jsx",
+    "web/src/panels/room/OffersPanel.jsx",
+    "web/src/panels/shared/OfferQualityRankingCard.jsx",
+    "web/src/utils/offerQualityRanking.js",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within room/company shifts mobile card fix scope");

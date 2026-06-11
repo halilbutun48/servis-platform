@@ -1,6 +1,6 @@
 // web/src/panels/room/OffersPanel.jsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../api";
+import { api, getToken } from "../../api";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
@@ -8,6 +8,8 @@ import { rowSelectionStyle } from "../../utils/listUi";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
+import { fetchProviderScoreMap } from "../../utils/providerScores";
+import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -133,6 +135,7 @@ export default function RoomOffersPanel() {
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [roomScores, setRoomScores] = useState({});
 
   // ✅ M46: bulk/package counter (select many offers -> one counter)
   const [sel, setSel] = useState({}); // { [offerId]: true }
@@ -247,6 +250,31 @@ export default function RoomOffersPanel() {
     if (!focusedOffer) return [];
     return packageOfferIdsByKey.get(minutePackageKey(focusedOffer)) || [Number(focusedOffer.id)];
   }, [focusedOffer, packageOfferIdsByKey]);
+
+  const roomScoreIds = useMemo(
+    () => Array.from(new Set((filtered || []).map((offer) => Number(offer?.room?.id || offer?.roomId || 0)).filter((id) => Number.isFinite(id) && id > 0))).slice(0, 24),
+    [filtered]
+  );
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!roomScoreIds.length) {
+        if (alive) setRoomScores({});
+        return;
+      }
+      try {
+        const scores = await fetchProviderScoreMap(roomScoreIds, getToken());
+        if (!alive) return;
+        setRoomScores(scores || {});
+      } catch {
+        if (alive) setRoomScores({});
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [roomScoreIds]);
 
   function setPackageSelection(offerIds, checked = true) {
     const ids = Array.from(new Set((offerIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
@@ -484,6 +512,16 @@ export default function RoomOffersPanel() {
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
+
+      <OfferQualityRankingCard
+        title="Kalite karşılaştırması"
+        subtitle="Room tarafında teklifler quality, trust, telematics, evidence/check-in ve operasyon riskiyle readonly okunur."
+        offers={filtered}
+        roomScores={roomScores}
+        summaryParams={{ role: "ROOM", scopeLabel: "Room teklif karşılaştırması" }}
+        maxRows={4}
+        style={{ padding: 14 }}
+      />
 
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>

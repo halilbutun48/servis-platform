@@ -11,6 +11,7 @@ import { getCompanyOffers, getCompanyRooms, getCompanyWorkflowSummary } from "..
 import { clearUiDataCache } from "../../utils/uiDataCache";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
+import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
 const GEOREVIEW_OPEN_MODE_KEY = "psv1:georeview:openMode:v1";
@@ -267,7 +268,7 @@ function rankOffersWithRecommendation(items, roomScores = {}) {
 function RecommendationBadge({ reason = "" }) {
   return (
     <span
-      title={reason || "Bu vardiya için otomatik öne çıktı"}
+      title={reason || "Bu vardiya kalite karşılaştırmasında üstte görünüyor"}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -282,7 +283,7 @@ function RecommendationBadge({ reason = "" }) {
         whiteSpace: "nowrap",
       }}
     >
-      Önerilen
+      Üstte
     </span>
   );
 }
@@ -811,24 +812,37 @@ export default function WorkflowPanel() {
             <div className="muted">Toplam: {offersFiltered.length}</div>
           </div>
 
+          <div style={{ marginTop: 10 }}>
+            <OfferQualityRankingCard
+              title="Kalite karşılaştırması"
+              subtitle="Kalite, güven, telematics, evidence/check-in ve operasyon riski readonly okunur; otomatik winner seçilmez."
+              offers={offersFiltered}
+              roomScores={roomScores}
+              me={me}
+              summaryParams={{ role: "COMPANY", companyId: me?.companyId, scopeLabel: "Company teklif karşılaştırması" }}
+              maxRows={4}
+              style={{ padding: 14 }}
+            />
+          </div>
+
           <div className="card" style={{ marginTop: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
-            <div style={{ fontWeight: 800, marginBottom: 6 }}>Karar Özeti</div>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>Kalite Karşılaştırması Özeti</div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <OfferSignalPill label="Karşı teklif" value={String(offersDecisionSummary.countered)} tone={offersDecisionSummary.countered ? "warn" : "neutral"} />
               <OfferSignalPill label="Açık teklif" value={String(offersDecisionSummary.open)} tone={offersDecisionSummary.open ? "neutral" : "good"} />
-              <OfferSignalPill label="Önerilen" value={String(offersDecisionCards.filter((o) => o.__recommended).length)} tone={offersDecisionCards.some((o) => o.__recommended) ? "good" : "neutral"} />
+              <OfferSignalPill label="Üstte" value={String(offersDecisionCards.filter((o) => o.__recommended).length)} tone={offersDecisionCards.some((o) => o.__recommended) ? "good" : "neutral"} />
               <OfferSignalPill label="Toplam" value={String(offersFiltered.length)} tone="neutral" />
             </div>
             <div className="muted" style={{ marginTop: 8 }}>
-              Otomatik öneri sırası: karar verilebilirlik → room puanı → fiyat farkı → güncellik. Son kararı yine sen verirsin.
+              Kalite sırası: karar verilebilirlik → room puanı → fiyat farkı → güncellik. Bu satır sadece karar desteğidir.
             </div>
             {recommendedOffer ? (
               <div className="row" style={{ marginTop: 10, gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
                 <div className="muted">
-                  Öne çıkan teklif: Vardiya #{recommendedOfferShiftId || "-"} • {String(recommendedOffer.__recommendationShort || recommendedOffer.__recommendationReason || "Otomatik öneri")}
+                  Öne çıkan kalite satırı: Vardiya #{recommendedOfferShiftId || "-"} • {String(recommendedOffer.__recommendationShort || recommendedOffer.__recommendationReason || "Kalite karşılaştırması")}
                 </div>
                 <button type="button" className="btn sm" onClick={() => goCompanyShift(recommendedOfferShiftId)}>
-                  Önerilen shift’e git
+                  Shift’i incele
                 </button>
               </div>
             ) : null}
@@ -884,7 +898,7 @@ export default function WorkflowPanel() {
                       </div>
                     </div>
                     <button type="button" className="btn sm" onClick={() => goCompanyShift(o.shiftId)}>
-                      {isRecommended ? "Önerilen shift’e git" : "Shift’e git"}
+                      {isRecommended ? "Shift’i incele" : "Shift’e git"}
                     </button>
                   </div>
 
@@ -901,7 +915,7 @@ export default function WorkflowPanel() {
                   <div className="muted" style={{ marginTop: 4 }}>{gap.note}</div>
                   {isRecommended ? (
                     <div className="muted" style={{ marginTop: 6, color: "#b2ddff" }}>
-                      <b>Neden önerildi?</b> {recommendationShort || recommendationReason || "Bu shift için otomatik öne çıktı."}
+                      <b>Neden üstte?</b> {recommendationShort || recommendationReason || "Bu shift kalite karşılaştırmasında üstte çıktı."}
                     </div>
                   ) : null}
                   {note ? (

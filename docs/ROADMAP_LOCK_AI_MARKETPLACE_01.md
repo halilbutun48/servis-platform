@@ -412,7 +412,7 @@ Kullanılmayacak cümleler:
 - TELEMATICS-PROVIDER-HUB-01
 - `TELEMATICS-PROVIDER-HUB-01` provider-agnostic GPS provider hub / readiness UX halkasıdır; Ayarlar / Telematik Entegrasyonları, provider registry ve readonly telematics signals çizgisini korur.
 - `SAFE-DRIVE-01` M44 + telematics provider hub sonrası readonly safe-drive risk summary katmanıdır; `Güvenli sürüş özeti`, `Risk sinyali`, `Kontrol edilmeli` ve `İnsan onayı gerekir` çizgisini korur; rota uygulaması, sürücü/araç ataması, ödeme/hakediş ve otomatik yönlendirme açmaz.
-- OFFER-RANKING-QUALITY-01
+- `OFFER-RANKING-QUALITY-01` readonly offer quality comparison katmanıdır; Company / Room / Super Admin yüzeylerinde kalite, güven, telematics, evidence/check-in ve operasyon riski birlikte okunur; auto-selection / auto-accept / contract execute / payment/hakediş execute / AI runtime action açmaz. Detay: `docs/OFFER_RANKING_QUALITY_01.md`
 
 ### C) COPILOT STRATEJİ VE GUARDRAIL
 - COPILOT-ROLE-TASK-MATRIX-01

@@ -5,7 +5,7 @@ import { displayStatusLabel } from "../../utils/displayStatus";
 function RecommendationBadge({ reason = "" }) {
   return (
     <span
-      title={reason || "Bu vardiya için otomatik öne çıktı"}
+      title={reason || "Bu vardiya kalite karşılaştırmasında üstte görünüyor"}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -20,7 +20,7 @@ function RecommendationBadge({ reason = "" }) {
         whiteSpace: "nowrap",
       }}
     >
-      Önerilen
+      Üstte
     </span>
   );
 }
@@ -138,7 +138,7 @@ export function CompanyOfferDecisionCard({
             Harita / Navigasyon Önizle
           </button>
           <button type="button" disabled={busy || !canAccept} onClick={() => onAcceptOffer(offer.id)}>
-            {isRecommended ? "Önerileni Kabul Et" : "Kabul Et"}
+            {isRecommended ? "İnceleyip Kabul Et" : "Kabul Et"}
           </button>
           {packageSize > 1 ? (
             <button
@@ -147,7 +147,7 @@ export function CompanyOfferDecisionCard({
               title={`Pakete uygula (${packageSize} shift)`}
               onClick={() => onAcceptOfferPackage(offer.roomId)}
             >
-              {isRecommended ? "Önerileni Pakete Uygula" : "Paketi Kabul Et"}
+              {isRecommended ? "İnceleyip Pakete Uygula" : "Paketi Kabul Et"}
             </button>
           ) : null}
         </div>
@@ -163,7 +163,7 @@ export function CompanyOfferDecisionCard({
       <div className="muted" style={{ marginTop: 8 }}>{gap.note}</div>
       {isRecommended ? (
         <div className="muted" style={{ marginTop: 6, color: "#b2ddff" }}>
-          <b>Neden önerildi?</b> {recommendationShort || recommendationReason || "Bu vardiya için otomatik öne çıktı."}
+          <b>Neden üstte?</b> {recommendationShort || recommendationReason || "Bu vardiya kalite karşılaştırmasında üstte çıktı."}
         </div>
       ) : null}
       {note ? (

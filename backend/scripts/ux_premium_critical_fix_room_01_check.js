@@ -409,7 +409,8 @@ function main() {
   mustNotList(status, "web/src/panels/personel/", "personel surfaces are untouched");
   const superadminStatus = status.filter((file) =>
     file !== "web/src/panels/superadmin/SuperAdminPanel.jsx" &&
-    file !== "web/src/panels/superadmin/TelematicsHubPanel.jsx"
+    file !== "web/src/panels/superadmin/TelematicsHubPanel.jsx" &&
+    file !== "web/src/panels/superadmin/TrustQualityPanel.jsx"
   );
   mustNotList(superadminStatus, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
   mustNotList(status, "web/src/panels/driver/CheckinPanel.jsx", "driver check-in surface is untouched");

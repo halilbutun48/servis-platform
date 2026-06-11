@@ -2,6 +2,7 @@ import { CompanyFinalListRow, CompanyMarketRow, CompanyPendingRow } from "./comp
 import { CompanyDriverDetailGrid, CompanyOfferDecisionCard, CompanyOfferRoomCard, CompanyVehicleDetailGrid, OfferSignalPill } from "./companyShiftsPanelCards";
 import { CompanyMarketShiftCard, CompanyPendingShiftCard, CompanyFinalShiftCard } from "./companyShiftsPanelMobileCards";
 import { CompanyAccordionHeader, CompanyMarketFilters, CompanyPendingFilters, CompanyStatusFilters } from "./companyShiftsPanelFilters";
+import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
 
 export { AgreementBadge } from "./companyShiftsPanelRows";
 
@@ -41,26 +42,38 @@ export function CompanyOffersDecisionModal({
         </button>
       </div>
 
+      <div style={{ marginTop: 10 }}>
+        <OfferQualityRankingCard
+          title="Kalite karşılaştırması"
+          subtitle="Kalite, güven, telematics, evidence/check-in ve operasyon riski readonly okunur; otomatik winner seçilmez."
+          offers={items}
+          roomScores={roomScores}
+          summaryParams={{ role: "COMPANY", shiftId: offersModal.shiftId, scopeLabel: "Company teklif karşılaştırması" }}
+          maxRows={4}
+          style={{ padding: 14 }}
+        />
+      </div>
+
       <div className="card" style={{ marginTop: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
-        <div style={{ fontWeight: 800, marginBottom: 6 }}>Karar Özeti</div>
+        <div style={{ fontWeight: 800, marginBottom: 6 }}>Kalite Karşılaştırması Özeti</div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <OfferSignalPill label="Karşı teklif" value={String(counteredCount)} tone={counteredCount ? "warn" : "neutral"} />
           <OfferSignalPill label="Açık teklif" value={String(openCount)} tone="neutral" />
-          <OfferSignalPill label="Önerilen" value={String(recommendedCount)} tone={hasRecommended ? "good" : "neutral"} />
+          <OfferSignalPill label="Üstte" value={String(recommendedCount)} tone={hasRecommended ? "good" : "neutral"} />
           <OfferSignalPill label="Toplam" value={String(items.length)} tone="neutral" />
         </div>
         <div className="muted" style={{ marginTop: 8 }}>
-          Otomatik öneri sırası: karar verilebilirlik → room puanı → fiyat farkı → güncellik. Son karar yine sende.
+          Kalite sırası: karar verilebilirlik → room puanı → fiyat farkı → güncellik. Bu satır sadece karar desteğidir.
         </div>
         {recommendedOffer ? (
           <div className="row" style={{ marginTop: 10, gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
             <div className="muted">
-              Öne çıkan teklif: {String(recommendedOffer.__recommendationShort || recommendedOffer.__recommendationReason || "Otomatik öneri")}
+              Öne çıkan kalite satırı: {String(recommendedOffer.__recommendationShort || recommendedOffer.__recommendationReason || "Kalite karşılaştırması")}
             </div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               {recommendedCanAccept ? (
                 <button type="button" disabled={busy} onClick={() => onAcceptOffer(recommendedOffer.id)}>
-                  Önerileni Kabul Et
+                  İnceleyip Kabul Et
                 </button>
               ) : null}
               {recommendedCanAccept && packageSize > 1 ? (
@@ -70,7 +83,7 @@ export function CompanyOffersDecisionModal({
                   title={`Pakete uygula (${packageSize} shift)`}
                   onClick={() => onAcceptOfferPackage(recommendedOffer.roomId)}
                 >
-                  Önerileni Pakete Uygula
+                  İnceleyip Pakete Uygula
                 </button>
               ) : null}
             </div>

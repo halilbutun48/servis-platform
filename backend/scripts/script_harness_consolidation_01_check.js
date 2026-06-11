@@ -26,14 +26,18 @@ const workingTreeCompatFiles = [
   "backend/scripts/m44_telematics_t1_t5_check.js",
   "backend/scripts/telematics_provider_hub_01_check.js",
   "backend/scripts/safe_drive_01_check.js",
+  "backend/scripts/offer_ranking_quality_01_check.js",
   "web/src/utils/safeDriveSummary.js",
+  "web/src/utils/offerQualityRanking.js",
   "web/src/panels/shared/SafeDriveSummaryCard.jsx",
+  "web/src/panels/shared/OfferQualityRankingCard.jsx",
   "docs/INVITE_BASED_MEMBERSHIP_01.md",
   "docs/VERIFIED_SUPPLIER_01.md",
   "docs/UX_MARKETPLACE_PANELS_01.md",
   "docs/M44_TELEMATICS_T1_T5.md",
   "docs/TELEMATICS_PROVIDER_HUB_01.md",
   "docs/SAFE_DRIVE_01.md",
+  "docs/OFFER_RANKING_QUALITY_01.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
   "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
@@ -59,6 +63,7 @@ const workingTreeCompatFiles = [
   "docs/M44_TELEMATICS_T1_T5.md",
   "docs/TELEMATICS_PROVIDER_HUB_01.md",
   "docs/SAFE_DRIVE_01.md",
+  "docs/OFFER_RANKING_QUALITY_01.md",
 ];
 
 const selectedDocs = [
@@ -205,6 +210,7 @@ function slugToMilestone(slug) {
     [/uxmobilewebshellclarity0?1/i, "UX-MOBILE-WEB-SHELL-CLARITY-01"],
     [/m44telematicst1t5/i, "M44-TELEMATICS-T1-T5"],
     [/telematicsproviderhub0?1/i, "TELEMATICS-PROVIDER-HUB-01"],
+    [/offerrankingquality0?1/i, "OFFER-RANKING-QUALITY-01"], // check:offerrankingquality01
     [/verifiedsupplier0?1/i, "VERIFIED-SUPPLIER-01"],
     [/uxmarketplacepanels0?1/i, "UX-MARKETPLACE-PANELS-01"], // check:uxmarketplacepanels01
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
@@ -251,7 +257,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -701,6 +707,18 @@ const coverageMatrix = [
     coverageStatus: "COVERED_ACTIVE",
     missingGap: "None on the current static/product chain.",
     ownerMilestone: "SAFE-DRIVE-01",
+    requiredNextAction: "None",
+  },
+  {
+    function: "Offer Ranking Quality / Readonly Comparison",
+    rolePanel: "Company / room / super admin offer comparison surfaces",
+    backendRouteService: "docs/OFFER_RANKING_QUALITY_01.md; backend/scripts/offer_ranking_quality_01_check.js",
+    frontendSurface: "web/src/utils/offerQualityRanking.js; web/src/panels/shared/OfferQualityRankingCard.jsx; web/src/panels/company/WorkflowPanel.jsx; web/src/panels/company/companyShiftsPanelSections.jsx; web/src/panels/room/OffersPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx",
+    currentCheckScript: "check:offerrankingquality01",
+    checkType: "static",
+    coverageStatus: "COVERED_ACTIVE",
+    missingGap: "Readonly comparison only; auto-select and auto-accept stay blocked.",
+    ownerMilestone: "OFFER-RANKING-QUALITY-01",
     requiredNextAction: "None",
   },
   {
@@ -1348,6 +1366,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Safe drive check: \`check:safedrive01\``);
   out.push(`- Safe drive docs: \`docs/SAFE_DRIVE_01.md\``);
   out.push(`- Safe drive command: \`node backend\\scripts\\safe_drive_01_check.js\``);
+  out.push(`- Offer ranking quality milestone: \`OFFER-RANKING-QUALITY-01\``);
+  out.push(`- Offer ranking quality check: \`check:offerrankingquality01\``);
+  out.push(`- Offer ranking quality docs: \`docs/OFFER_RANKING_QUALITY_01.md\``);
+  out.push(`- Offer ranking quality command: \`node backend\\scripts\\offer_ranking_quality_01_check.js\``);
   out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
   out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
   out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);
@@ -1568,12 +1590,20 @@ function verifyDoc(docText, summary) {
     "verified_supplier_01_check.js",
     "docs/VERIFIED_SUPPLIER_01.md",
     "docs/UX_MARKETPLACE_PANELS_01.md",
+    "OFFER-RANKING-QUALITY-01",
+    "check:offerrankingquality01",
+    "offer_ranking_quality_01_check.js",
+    "docs/OFFER_RANKING_QUALITY_01.md",
+    "web/src/utils/offerQualityRanking.js",
+    "web/src/panels/shared/OfferQualityRankingCard.jsx",
     "check:verifiedsupplier01",
     "VERIFIED-SUPPLIER-01",
     "root:check:uxmarketplacepanels01",
     "root:check:verifiedsupplier01",
+    "root:check:offerrankingquality01",
     "node backend\\scripts\\ux_marketplace_panels_01_check.js",
     "node backend\\scripts\\verified_supplier_01_check.js",
+    "node backend\\scripts\\offer_ranking_quality_01_check.js",
     "Verified supplier milestone",
     "Verified supplier check",
     "Verified supplier docs",

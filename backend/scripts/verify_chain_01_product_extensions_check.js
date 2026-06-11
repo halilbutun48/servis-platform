@@ -102,6 +102,7 @@ function main() {
   must(pkg, '"check:m44telematicst1t5": "node backend/scripts/m44_telematics_t1_t5_check.js"', 'package.json exposes check:m44telematicst1t5');
   must(pkg, '"check:telematicsproviderhub01": "node backend/scripts/telematics_provider_hub_01_check.js"', 'package.json exposes check:telematicsproviderhub01');
   must(pkg, '"check:safedrive01": "node backend/scripts/safe_drive_01_check.js"', 'package.json exposes check:safedrive01');
+  must(pkg, '"check:offerrankingquality01": "node backend/scripts/offer_ranking_quality_01_check.js"', 'package.json exposes check:offerrankingquality01');
   must(pkg, '"check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js"', 'package.json exposes check:pay01e');
   must(pkg, '"smoke:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01.mjs"', 'package.json exposes smoke:productflowbuttonaudit01');
   must(pkg, '"check:cop02a"', 'package.json keeps check:cop02a');
@@ -249,6 +250,7 @@ function main() {
     'check:m44telematicst1t5',
     'check:telematicsproviderhub01',
     'check:safedrive01',
+    'check:offerrankingquality01',
     'check:pay01e',
     'check:paysafe01',
     'check:web01a',

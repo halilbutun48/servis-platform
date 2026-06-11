@@ -494,6 +494,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - Not: rota uygulanmaz, sürücü/araç ataması değiştirilmez, ödeme/hakediş başlatılmaz, sözleşme bağlanmaz, otomatik yönlendirme verilmez.
 - Doküman: `docs/SAFE_DRIVE_01.md`
 
+### OFFER-RANKING-QUALITY-01 — readonly offer quality comparison / human approval boundary [CHECK]
+- Check: `check:offerrankingquality01`
+- Komut: `node backend\scripts\offer_ranking_quality_01_check.js`
+- Ana konu: Company / Room / Super Admin yüzeylerinde readonly offer quality comparison; kalite, güven, telematics, evidence/check-in ve operasyon riski birlikte okunur.
+- Not: auto-selection, auto-accept, contract execute, payment/hakediş execute ve AI runtime action açılmaz; winner otomasyonu yoktur.
+- Doküman: `docs/OFFER_RANKING_QUALITY_01.md`
+
 ### M45 — Retention + Backup [PACK]
 - Pack: `tools/pack_m45_retention_backup.ps1`
 - Amaç: retention/backup altyapısı.

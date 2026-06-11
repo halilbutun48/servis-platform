@@ -176,11 +176,18 @@ function main() {
       "web/src/panels/room/roomVehiclesPanelSections.jsx",
       "web/src/panels/room/useRoomVehicleTelematics.js",
       "web/src/panels/company/MapPanel.jsx",
+      "web/src/panels/company/WorkflowPanel.jsx",
+      "web/src/panels/company/companyShiftsPanelCards.jsx",
+      "web/src/panels/company/companyShiftsPanelSections.jsx",
       "web/src/panels/driver/MapPanel.jsx",
       "web/src/panels/driver/RoutePanel.jsx",
       "web/src/panels/room/MapPanel.jsx",
+      "web/src/panels/room/OffersPanel.jsx",
       "web/src/panels/shared/SafeDriveSummaryCard.jsx",
+      "web/src/panels/shared/OfferQualityRankingCard.jsx",
       "web/src/utils/safeDriveSummary.js",
+      "web/src/utils/offerQualityRanking.js",
+      "web/src/panels/superadmin/TrustQualityPanel.jsx",
     ],
     "invite-based membership keeps runtime code unchanged"
   );
