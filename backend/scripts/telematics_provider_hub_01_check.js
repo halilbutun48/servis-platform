@@ -38,6 +38,11 @@ function must(text, needle, label) {
   else fail(label);
 }
 
+function mustNot(text, needle, label) {
+  if (normalize(text).includes(normalize(needle))) fail(label);
+  else ok(label);
+}
+
 function ordered(text, needles, label) {
   const haystack = normalize(text);
   let cursor = 0;
@@ -93,13 +98,19 @@ function main() {
   const runner = read("backend/scripts/run_product_extensions_check_chain.js");
   const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
-  const primer = read("docs/PRIMER_SSOT.md");
-  const roadmap = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
   const doc = read("docs/TELEMATICS_PROVIDER_HUB_01.md");
-  const superAdmin = read("web/src/panels/superadmin/SuperAdminPanel.jsx");
+  const navDock = read("web/src/layout/NavDock.jsx");
+  const app = read("web/src/App.jsx");
+  const superAdminOverview = read("web/src/panels/superadmin/SuperAdminPanel.jsx");
+  const telematicsHubPanel = read("web/src/panels/superadmin/TelematicsHubPanel.jsx");
   const roomTelematics = read("web/src/panels/room/roomVehiclesPanelSections.jsx");
+  const roomRows = read("web/src/panels/room/roomVehiclesPanelRows.jsx");
+  const roomHook = read("web/src/panels/room/useRoomVehicleTelematics.js");
+  const vehiclesPanel = read("web/src/panels/room/VehiclesPanel.jsx");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
+  const screenRegistry = read("web/src/copilot/screenRegistry.js");
+  const screenCatalog = read("backend/src/ai/jobGuide/screenCatalog.js");
   const cachedNames = gitCachedNames();
 
   must(pkg, '"check:telematicsproviderhub01": "node backend/scripts/telematics_provider_hub_01_check.js"', "package.json exposes telematics provider hub check");
@@ -112,38 +123,21 @@ function main() {
   must(guide, "docs/TELEMATICS_PROVIDER_HUB_01.md", "milestone guide includes telematics provider hub doc");
   ordered(guide, ["M44-TELEMATICS-T1-T5", "TELEMATICS-PROVIDER-HUB-01", "SAFE-DRIVE-01"], "milestone guide keeps telematics provider hub after M44 before safe drive");
 
-  must(primer, "TELEMATICS-PROVIDER-HUB-01", "primer mentions telematics provider hub milestone");
-  must(primer, "docs/TELEMATICS_PROVIDER_HUB_01.md", "primer links telematics provider hub doc");
-  must(primer, "provider-agnostic telematics hub", "primer keeps telematics hub wording");
-  must(primer, "readonly telematics signals", "primer keeps readonly telematics wording");
-
-  must(roadmap, "TELEMATICS-PROVIDER-HUB-01", "roadmap keeps telematics provider hub milestone");
-  must(roadmap, "provider-agnostic GPS provider hub", "roadmap keeps provider-agnostic telematics hub wording");
-  ordered(roadmap, ["M44-TELEMATICS-T1-T5", "TELEMATICS-PROVIDER-HUB-01", "SAFE-DRIVE-01", "OFFER-RANKING-QUALITY-01"], "roadmap keeps telematics hub before safe drive and offer ranking");
-
   must(doc, "# TELEMATICS-PROVIDER-HUB-01", "telematics provider hub doc title present");
-  must(doc, "provider-agnostic", "telematics provider hub doc keeps provider-agnostic wording");
-  must(doc, "GPS provider adapter", "telematics provider hub doc keeps GPS provider adapter wording");
-  must(doc, "vehicle tracking software", "telematics provider hub doc keeps vehicle tracking software wording");
-  must(doc, "normalized telematics event", "telematics provider hub doc keeps normalized event wording");
-  must(doc, "provider registry", "telematics provider hub doc keeps provider registry wording");
-  must(doc, "webhook", "telematics provider hub doc keeps webhook wording");
-  must(doc, "polling", "telematics provider hub doc keeps polling wording");
-  must(doc, "file/CSV/Excel import", "telematics provider hub doc keeps file import wording");
-  must(doc, "deviceId / IMEI / plate mapping", "telematics provider hub doc keeps device mapping wording");
-  must(doc, "no provider secret in repo", "telematics provider hub doc keeps provider secret boundary");
-  must(doc, "no real provider integration in this milestone", "telematics provider hub doc keeps no real provider boundary");
+  must(doc, "Telematik / GPS Sağlayıcıları", "telematics provider hub doc keeps super admin route label");
+  must(doc, "provider katalogu", "telematics provider hub doc keeps provider catalog wording");
+  must(doc, "adapter şablonları", "telematics provider hub doc keeps adapter template wording");
+  must(doc, "security / KVKK", "telematics provider hub doc keeps security wording");
+  must(doc, "room self-service", "telematics provider hub doc keeps room self-service wording");
+  must(doc, "LIVE / STALE / OFFLINE", "telematics provider hub doc keeps freshness wording");
+  must(doc, "plate / IMEI / deviceId / externalDeviceId / serial", "telematics provider hub doc keeps room matching fields");
+  must(doc, "secret/token/API key", "telematics provider hub doc keeps secret boundary wording");
+  must(doc, "no real provider integration", "telematics provider hub doc keeps no real provider boundary");
+  must(doc, "no webhook ingest", "telematics provider hub doc keeps webhook ingest boundary");
+  must(doc, "no polling job", "telematics provider hub doc keeps polling boundary");
+  must(doc, "no TCP bridge", "telematics provider hub doc keeps TCP bridge boundary");
   must(doc, "no Prisma/schema/migration", "telematics provider hub doc keeps Prisma boundary");
-  must(doc, "readonly T1-T5 boundary", "telematics provider hub doc keeps readonly boundary");
-  must(doc, "kullanıcı GPS entegrasyon akışı", "telematics provider hub doc keeps user GPS flow");
-  must(doc, "Ayarlar / Telematik Entegrasyonları", "telematics provider hub doc keeps settings screen wording");
-  must(doc, "test bağlantısı", "telematics provider hub doc keeps connection test wording");
-  must(doc, "cihaz eşleştirme", "telematics provider hub doc keeps device matching wording");
-  must(doc, "plaka / IMEI / deviceId mapping", "telematics provider hub doc keeps plate IMEI deviceId mapping wording");
-  must(doc, "eşleşmeyen cihazlar", "telematics provider hub doc keeps unmatched devices wording");
-  must(doc, "entegrasyon durumu", "telematics provider hub doc keeps integration status wording");
-  must(doc, "secret/API key/token repo'ya yazılmaz", "telematics provider hub doc keeps secret boundary wording");
-  must(doc, "readonly telematics signals", "telematics provider hub doc keeps readonly telematics signals wording");
+  must(doc, "no backend route/service/schema", "telematics provider hub doc keeps backend boundary");
   must(doc, "NOT_CONNECTED", "telematics provider hub doc keeps integration statuses");
   must(doc, "CONFIG_REQUIRED", "telematics provider hub doc keeps config required status");
   must(doc, "TESTING", "telematics provider hub doc keeps testing status");
@@ -155,42 +149,68 @@ function main() {
   must(doc, "NEEDS_REVIEW", "telematics provider hub doc keeps needs review status");
   must(doc, "UNMATCHED", "telematics provider hub doc keeps unmatched status");
   must(doc, "DUPLICATE_MATCH", "telematics provider hub doc keeps duplicate match status");
+  must(navDock, "Entegrasyonlar", "nav dock exposes integrations section");
+  must(navDock, "Telematik / GPS Sağlayıcıları", "nav dock exposes telematics provider hub route");
+  must(navDock, "Başvuru İncelemesi", "nav dock exposes onboarding review route");
 
-  must(superAdmin, "Telematik / GPS Sağlayıcıları", "super admin panel exposes telematics provider hub card");
-  must(superAdmin, "Ayarlar / Telematik Entegrasyonları", "super admin panel keeps settings screen wording");
-  must(superAdmin, "test bağlantısı", "super admin panel keeps connection test wording");
-  must(superAdmin, "provider registry", "super admin panel keeps provider registry wording");
-  must(superAdmin, "provider key/name", "super admin panel keeps provider key/name wording");
-  must(superAdmin, "last data time", "super admin panel keeps last data time wording");
-  must(superAdmin, "data delay", "super admin panel keeps data delay wording");
-  must(superAdmin, "matched vehicle count", "super admin panel keeps matched vehicle count wording");
-  must(superAdmin, "unmatched device count", "super admin panel keeps unmatched device count wording");
-  must(superAdmin, "error count", "super admin panel keeps error count wording");
-  must(superAdmin, "health status", "super admin panel keeps health status wording");
-  must(superAdmin, "NOT_CONNECTED", "super admin panel keeps integration statuses");
-  must(superAdmin, "CONFIG_REQUIRED", "super admin panel keeps config required status");
-  must(superAdmin, "TESTING", "super admin panel keeps testing status");
-  must(superAdmin, "READY", "super admin panel keeps ready status");
-  must(superAdmin, "ACTIVE", "super admin panel keeps active status");
-  must(superAdmin, "ERROR", "super admin panel keeps error status");
-  must(superAdmin, "DISABLED", "super admin panel keeps disabled status");
-  must(superAdmin, "gizli erişim bilgileri repo'ya yazılmaz; gerçek sağlayıcı entegrasyonu bu sürümde yoktur; yalnızca salt-okunur telematik sinyaller gösterilir.", "super admin panel keeps secret boundary wording");
-  must(superAdmin, "readonly telematics signals", "super admin panel keeps readonly telematics signals wording");
+  must(app, 'if (path === "/superadmin/telematics") return { layout: true, node: <SuperTelematicsHubPanel /> };', "App routes telematics hub panel");
+  must(app, 'if (path === "/superadmin") return { layout: true, node: <SuperAdminPanel /> };', "App keeps super admin overview route");
+  must(app, 'if (path === "/superadmin/onboarding-review") return { layout: true, node: <SuperPublicLeadReviewPanel /> };', "App keeps onboarding review route");
+  must(app, 'if (path === "/superadmin/public-leads") return { layout: true, node: <SuperPublicLeadReviewPanel /> };', "App keeps public leads alias");
 
-  must(roomTelematics, "GPS Eşleştirme / Telematik Bağlantısı", "room vehicles telematics section exposes provider hub readiness card");
-  must(roomTelematics, "Ayarlar / Telematik Entegrasyonları", "room vehicles telematics section keeps settings screen wording");
-  must(roomTelematics, "test bağlantısı", "room vehicles telematics section keeps connection test wording");
-  must(roomTelematics, "cihaz eşleştirme", "room vehicles telematics section keeps device matching wording");
-  must(roomTelematics, "plaka / IMEI / deviceId mapping", "room vehicles telematics section keeps plate IMEI deviceId mapping wording");
-  must(roomTelematics, "eşleşmeyen cihazlar", "room vehicles telematics section keeps unmatched devices wording");
-  must(roomTelematics, "entegrasyon durumu", "room vehicles telematics section keeps integration status wording");
-  must(roomTelematics, "secret/API key/token repo'ya yazılmaz", "room vehicles telematics section keeps secret boundary wording");
-  must(roomTelematics, "readonly telematics signals", "room vehicles telematics section keeps readonly telematics signals wording");
-  must(roomTelematics, "MATCHED", "room vehicles telematics section keeps matched status");
-  must(roomTelematics, "NEEDS_REVIEW", "room vehicles telematics section keeps needs review status");
-  must(roomTelematics, "UNMATCHED", "room vehicles telematics section keeps unmatched status");
-  must(roomTelematics, "DUPLICATE_MATCH", "room vehicles telematics section keeps duplicate match status");
-  must(roomTelematics, "DISABLED", "room vehicles telematics section keeps disabled status");
+  must(superAdminOverview, "Entegrasyonlar özeti", "super admin overview keeps integrations summary");
+  must(superAdminOverview, 'navigate("/superadmin/telematics")', "super admin overview links to telematics hub");
+  must(superAdminOverview, "Başvuru İncelemesi", "super admin overview keeps onboarding quick access");
+  mustNot(superAdminOverview, "TelematicsProviderHubCard", "super admin overview no longer renders the old telematics hub card");
+  mustNot(superAdminOverview, "goToTelematicsHub", "super admin overview no longer scrolls to telematics hub");
+  mustNot(superAdminOverview, "telematicsHubRef", "super admin overview no longer keeps telematics ref");
+
+  must(telematicsHubPanel, "Telematik / GPS Sağlayıcıları", "telematics hub panel title present");
+  must(telematicsHubPanel, "Provider kataloğu", "telematics hub panel keeps provider catalog wording");
+  must(telematicsHubPanel, "Bağlantı tipleri", "telematics hub panel keeps connection type wording");
+  must(telematicsHubPanel, "Template readiness", "telematics hub panel keeps readiness wording");
+  must(telematicsHubPanel, "Güvenlik / KVKK", "telematics hub panel keeps security wording");
+  must(telematicsHubPanel, "secret/token policy", "telematics hub panel keeps secret policy wording");
+  must(telematicsHubPanel, "webhook signature requirement", "telematics hub panel keeps webhook signature wording");
+  must(telematicsHubPanel, "rate limit", "telematics hub panel keeps rate limit wording");
+  must(telematicsHubPanel, "IP allowlist", "telematics hub panel keeps IP allowlist wording");
+  must(telematicsHubPanel, "KVKK / veri minimizasyonu", "telematics hub panel keeps KVKK wording");
+  must(telematicsHubPanel, "raw payload masking", "telematics hub panel keeps payload masking wording");
+  must(telematicsHubPanel, "Custom provider review", "telematics hub panel keeps review wording");
+  must(telematicsHubPanel, "Room self-service notu", "telematics hub panel keeps room self-service note");
+  must(telematicsHubPanel, "onboarding-review", "telematics hub panel links review queue");
+  must(telematicsHubPanel, "Genel Bakış", "telematics hub panel keeps overview fallback wording");
+  must(telematicsHubPanel, "Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar", "telematics hub panel keeps room self-service boundary");
+
+  must(roomTelematics, "GPS Eşleştirme / Telematik Bağlantısı", "room telematics keeps matching title");
+  must(roomTelematics, "Onaylı provider kataloğu", "room telematics keeps approved provider catalog wording");
+  must(roomTelematics, "Provider kataloğu ve güvenlik kuralları Super Admin tarafından yönetilir.", "room telematics keeps super admin boundary note");
+  must(roomTelematics, "Eşleştirme hazırlığı", "room telematics keeps preparation CTA");
+  must(roomTelematics, "Test eşleştirme", "room telematics keeps test CTA");
+  must(roomTelematics, "IMEI", "room telematics keeps imei field");
+  must(roomTelematics, "deviceId", "room telematics keeps deviceId field");
+  must(roomTelematics, "externalDeviceId", "room telematics keeps externalDeviceId field");
+  must(roomTelematics, "Serial", "room telematics keeps serial field");
+  must(roomTelematics, "LIVE / STALE / OFFLINE", "room telematics keeps freshness status wording");
+  must(roomTelematics, "Secret/token/API key görünmez.", "room telematics keeps secret boundary wording");
+  must(roomTelematics, "RoomTelematicsReadinessCard", "room telematics keeps readiness card");
+  must(roomTelematics, "Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar", "room telematics keeps room self-service wording");
+  must(roomTelematics, "Plaka", "room telematics keeps plate field");
+  must(roomTelematics, "Provider", "room telematics keeps provider field");
+
+  must(roomRows, "İnceleme için hazırla", "room telematics rows keep review action");
+  mustNot(roomRows, "Token rotate", "room telematics rows no longer show token rotate wording");
+  mustNot(roomRows, "Device ekle", "room telematics rows no longer show device ekle wording");
+
+  must(roomHook, "Eşleştirme hazırlığı kaydedildi", "room telematics hook keeps matching prep toast");
+  must(roomHook, "İnceleme için hazırlandı", "room telematics hook keeps review toast");
+  mustNot(roomHook, "tokenReveal", "room telematics hook no longer exposes token reveal state");
+  mustNot(roomHook, "copyToken", "room telematics hook no longer exposes token copy flow");
+
+  must(vehiclesPanel, "GPS eşleştirme detayları", "vehicles panel keeps updated telematics tab title");
+  must(vehiclesPanel, "Onaylı provider, matching alanları ve son veri görünümü.", "vehicles panel keeps updated telematics subtitle");
+  mustNot(vehiclesPanel, "tokenReveal", "vehicles panel no longer wires token reveal");
+  mustNot(vehiclesPanel, "copyToken", "vehicles panel no longer wires token copy");
 
   must(harnessCheck, "check:telematicsproviderhub01", "script harness check knows telematics provider hub alias");
   must(harnessCheck, "telematics_provider_hub_01_check.js", "script harness check knows telematics provider hub file");
@@ -199,6 +219,11 @@ function main() {
   must(harnessDoc, "telematics_provider_hub_01_check.js", "script harness doc lists telematics provider hub check");
   must(harnessDoc, "docs/TELEMATICS_PROVIDER_HUB_01.md", "script harness doc lists telematics provider hub doc");
   must(harnessDoc, "TELEMATICS-PROVIDER-HUB-01", "script harness doc lists telematics provider hub milestone");
+
+  must(screenRegistry, "/superadmin/telematics", "screen registry includes telematics hub route");
+  must(screenRegistry, "Telematik / GPS Sağlayıcıları", "screen registry keeps telematics hub label");
+  must(screenCatalog, "/superadmin/telematics", "screen catalog includes telematics hub route");
+  must(screenCatalog, "Telematik / GPS Sağlayıcıları", "screen catalog keeps telematics hub label");
 
   mustNoDiff(["backend/src/routes", "backend/src/services", "backend/prisma", "prisma"], "backend route/service/schema and Prisma diff stays empty");
   mustNoStagedPrefix(cachedNames, ["backend/src/routes/", "backend/src/services/", "backend/prisma/", "prisma/"], "backend route/service/schema and Prisma stay unstaged");

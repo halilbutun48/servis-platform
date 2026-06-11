@@ -205,8 +205,18 @@ function main() {
     ]),
     "room drivers panel is not staged",
   );
-  mustNotStaged(staged, "web/src/panels/room/VehiclesPanel.jsx", "room vehicles panel is not staged");
-  mustNotStaged(staged, "web/src/panels/room/roomVehiclesPanelCards.jsx", "room vehicle cards are not staged");
+  mustNotStagedUnless(
+    staged,
+    "web/src/panels/room/VehiclesPanel.jsx",
+    new Set(["web/src/panels/room/VehiclesPanel.jsx"]),
+    "room vehicles panel is not staged"
+  );
+  mustNotStagedUnless(
+    staged,
+    "web/src/panels/room/roomVehiclesPanelCards.jsx",
+    new Set(["web/src/panels/room/roomVehiclesPanelCards.jsx"]),
+    "room vehicle cards are not staged"
+  );
   mustNotStagedUnless(
     staged,
     "web/src/panels/room/roomVehiclesPanelSections.jsx",

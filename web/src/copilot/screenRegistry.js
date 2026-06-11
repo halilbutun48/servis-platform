@@ -123,6 +123,7 @@ const REGISTRY = {
     { id: 6111, path: "/superadmin/ssot-alignment", label: "Sistem Standartları" },
     { id: 6112, path: "/superadmin/commercial-core", label: "Ticari Akış" },
     { id: 6113, path: "/superadmin/trust-quality", label: "Güven ve Kalite" },
+    { id: 6120, path: "/superadmin/telematics", label: "Telematik / GPS Sağlayıcıları" },
     { id: 6118, path: "/superadmin/onboarding-review", label: "Başvuru İncelemesi" },
     { id: 6114, path: "/superadmin/copilot", label: COPILOT_MENU_LABEL },
     { id: 6115, path: "/superadmin/logexport", label: "Log Dışa Aktarımı" },

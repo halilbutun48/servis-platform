@@ -160,7 +160,9 @@ function main() {
     "web/src/panels/room/MapPanel.jsx",
     "web/src/panels/room/roomShiftsOverviewSection.jsx",
     "web/src/panels/room/roomVehiclesPanelCards.jsx",
+    "web/src/panels/room/roomVehiclesPanelRows.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/panels/room/useRoomVehicleTelematics.js",
     "web/src/panels/shared/SafeDriveSummaryCard.jsx",
     "web/src/panels/shared/PanelKvkkHint.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
@@ -342,6 +344,7 @@ function main() {
     "web/src/panels/school/OperationsPanel.jsx",
     "web/src/panels/superadmin/OperationsPanel.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
+    "web/src/panels/superadmin/TelematicsHubPanel.jsx",
     "tools/repo_contract_state.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -354,6 +357,38 @@ function main() {
     "package.json",
     "web/src/index.css",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    "backend/scripts/invite_based_membership_01_check.js",
+    "backend/scripts/onboarding_review_final_audit_01_check.js",
+    "backend/scripts/public_landing_final_promise_01_check.js",
+    "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
+    "backend/scripts/telematics_provider_hub_01_check.js",
+    "backend/scripts/ux_brand_login_premium_01_check.js",
+    "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+    "backend/scripts/ux_panel_inventory_02a_check.js",
+    "backend/scripts/ux_panel_standard_architecture_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "backend/scripts/ux_premium_critical_fix_room_01_check.js",
+    "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
+    "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    "backend/scripts/ux_room_panel_clarity_01_check.js",
+    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
+    "backend/scripts/verified_supplier_01_check.js",
+    "backend/src/ai/jobGuide/screenCatalog.js",
+    "docs/TELEMATICS_PROVIDER_HUB_01.md",
+    "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
+    "docs/UX_PANEL_REALITY_AUDIT_02C.md",
+    "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
+    "web/src/App.jsx",
+    "web/src/copilot/screenRegistry.js",
+    "web/src/layout/NavDock.jsx",
+    "web/src/panels/room/VehiclesPanel.jsx",
+    "web/src/panels/room/roomVehiclesPanelCards.jsx",
+    "web/src/panels/room/roomVehiclesPanelRows.jsx",
+    "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/panels/room/useRoomVehicleTelematics.js",
+    "web/src/panels/superadmin/SuperAdminPanel.jsx",
+    "web/src/panels/superadmin/TelematicsHubPanel.jsx",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within room critical fix validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");
@@ -372,7 +407,11 @@ function main() {
   mustNotList(status, "web/src/panels/company/OffersPanel.jsx", "company offers panel is untouched");
   mustNotList(status, "web/src/panels/parent/", "parent surfaces are untouched");
   mustNotList(status, "web/src/panels/personel/", "personel surfaces are untouched");
-  mustNotList(status, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
+  const superadminStatus = status.filter((file) =>
+    file !== "web/src/panels/superadmin/SuperAdminPanel.jsx" &&
+    file !== "web/src/panels/superadmin/TelematicsHubPanel.jsx"
+  );
+  mustNotList(superadminStatus, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
   mustNotList(status, "web/src/panels/driver/CheckinPanel.jsx", "driver check-in surface is untouched");
   mustNotList(status, "web/src/panels/driver/RoutePanel.jsx", "driver route surface is untouched");
   mustNotList(status, "web/src/panels/driver/TodayPanel.jsx", "driver today surface is untouched");

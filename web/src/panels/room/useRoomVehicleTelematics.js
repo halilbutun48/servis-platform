@@ -15,8 +15,16 @@ export function useRoomVehicleTelematics({
   const [deviceBusy, setDeviceBusy] = useState(false);
   const [deviceSaving, setDeviceSaving] = useState(false);
   const [deviceDrafts, setDeviceDrafts] = useState({});
-  const [deviceForm, setDeviceForm] = useState({ vendor: "GENERIC", serial: "", label: "" });
-  const [tokenReveal, setTokenReveal] = useState(null);
+  const [deviceForm, setDeviceForm] = useState({
+    vendor: "ARVENTO",
+    connectionType: "API polling",
+    plate: "",
+    imei: "",
+    deviceId: "",
+    externalDeviceId: "",
+    serial: "",
+    label: "",
+  });
 
   function makeDeviceDrafts(rows) {
     const next = {};
@@ -64,29 +72,31 @@ export function useRoomVehicleTelematics({
     setDeviceSaving(true);
     setErr("");
     try {
-      const resp = await apiFn("/api/telematics/devices", {
+      await apiFn("/api/telematics/devices", {
         method: "POST",
         token,
         body: {
           vehicleId: Number(focusVehicleId),
-          vendor: String(deviceForm.vendor || "GENERIC").trim().toUpperCase(),
-          serial: String(deviceForm.serial || "").trim(),
+          vendor: String(deviceForm.vendor || "ARVENTO").trim().toUpperCase(),
+          serial: String(deviceForm.serial || deviceForm.deviceId || deviceForm.imei || deviceForm.externalDeviceId || "").trim(),
           label: String(deviceForm.label || "").trim() || undefined,
         },
       });
-      setTokenReveal({
-        kind: "create",
-        id: resp?.id,
-        serial: resp?.serial,
-        token: resp?.token || "",
-      });
-      setDeviceForm((p) => ({ ...p, serial: "", label: "" }));
-      showToast("Telematics cihazı eklendi");
+      setDeviceForm((p) => ({
+        ...p,
+        plate: "",
+        imei: "",
+        deviceId: "",
+        externalDeviceId: "",
+        serial: "",
+        label: "",
+      }));
+      showToast("Eşleştirme hazırlığı kaydedildi");
       await loadDevices({ silent: true });
     } catch (e) {
       const { msg } = pickErr(e);
-      setErr(String(msg || "Telematics cihazı eklenemedi"));
-      showToast("Telematics cihazı eklenemedi", "err");
+      setErr(String(msg || "Eşleştirme hazırlığı kaydedilemedi"));
+      showToast("Eşleştirme hazırlığı kaydedilemedi", "err");
     } finally {
       setDeviceSaving(false);
     }
@@ -105,12 +115,12 @@ export function useRoomVehicleTelematics({
           status: draft.status,
         },
       });
-      showToast("Telematics cihazı güncellendi");
+      showToast("Eşleştirme bilgisi güncellendi");
       await loadDevices({ silent: true });
     } catch (e) {
       const { msg } = pickErr(e);
-      setErr(String(msg || "Telematics cihazı güncellenemedi"));
-      showToast("Telematics cihazı güncellenemedi", "err");
+      setErr(String(msg || "Eşleştirme bilgisi güncellenemedi"));
+      showToast("Eşleştirme bilgisi güncellenemedi", "err");
     } finally {
       setDeviceSaving(false);
     }
@@ -120,35 +130,19 @@ export function useRoomVehicleTelematics({
     setDeviceSaving(true);
     setErr("");
     try {
-      const resp = await apiFn(`/api/telematics/devices/${id}/rotate`, {
+      await apiFn(`/api/telematics/devices/${id}/rotate`, {
         method: "POST",
         token,
         body: {},
       });
-      const found = (Array.isArray(deviceItems) ? deviceItems : []).find((x) => Number(x.id) === Number(id));
-      setTokenReveal({
-        kind: "rotate",
-        id,
-        serial: found?.serial || "",
-        token: resp?.token || "",
-      });
-      showToast("Device token yenilendi", "warn");
+      showToast("İnceleme için hazırlandı", "warn");
       await loadDevices({ silent: true });
     } catch (e) {
       const { msg } = pickErr(e);
-      setErr(String(msg || "Token rotate başarısız"));
-      showToast("Token rotate başarısız", "err");
+      setErr(String(msg || "İnceleme için hazırlama başarısız"));
+      showToast("İnceleme için hazırlama başarısız", "err");
     } finally {
       setDeviceSaving(false);
-    }
-  }
-
-  async function copyToken(value) {
-    try {
-      await navigator.clipboard.writeText(String(value || ""));
-      showToast("Token panoya kopyalandı");
-    } catch {
-      showToast("Token kopyalanamadı", "warn");
     }
   }
 
@@ -175,14 +169,11 @@ export function useRoomVehicleTelematics({
     setDeviceDrafts,
     deviceForm,
     setDeviceForm,
-    tokenReveal,
-    setTokenReveal,
     telematicsRows,
     telematicsCounts,
     createDevice,
     saveDevice,
     rotateDeviceToken,
-    copyToken,
     loadDevices,
   };
 }

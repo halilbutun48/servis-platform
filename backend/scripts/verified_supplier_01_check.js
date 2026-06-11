@@ -248,8 +248,16 @@ function main() {
   mustNoDiffExcept(
     ["backend/src/routes", "backend/src/services", "backend/src/bootstrap", "backend/src/server.js", "web/src/panels/superadmin", "web/src/panels/company", "web/src/panels/room", "web/src/utils", "backend/prisma", "prisma"],
     [
+      "web/src/App.jsx",
+      "web/src/copilot/screenRegistry.js",
+      "web/src/layout/NavDock.jsx",
       "web/src/panels/superadmin/SuperAdminPanel.jsx",
+      "web/src/panels/superadmin/TelematicsHubPanel.jsx",
+      "web/src/panels/room/VehiclesPanel.jsx",
+      "web/src/panels/room/roomVehiclesPanelCards.jsx",
+      "web/src/panels/room/roomVehiclesPanelRows.jsx",
       "web/src/panels/room/roomVehiclesPanelSections.jsx",
+      "web/src/panels/room/useRoomVehicleTelematics.js",
       "web/src/panels/company/MapPanel.jsx",
       "web/src/panels/room/MapPanel.jsx",
       "web/src/utils/safeDriveSummary.js",

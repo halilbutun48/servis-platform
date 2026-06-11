@@ -30,15 +30,15 @@ Repo: `servis-platform`
 
 ## 2) Audit Summary
 
-- Panel yüzey sayısı: `63`
-- PASS: `19`
+- Panel yüzey sayısı: `64`
+- PASS: `20`
 - PASS-: `20`
 - UX-FIX: `24`
 - DEFER: `0`
 
 ### Role Summary
 
-- Super Admin: total `17`, PASS `5`, PASS- `9`, UX-FIX `3`, DEFER `0`
+- Super Admin: total `18`, PASS `6`, PASS- `9`, UX-FIX `3`, DEFER `0`
 - Room: total `10`, PASS `4`, PASS- `2`, UX-FIX `4`, DEFER `0`
 - Company: total `14`, PASS `1`, PASS- `6`, UX-FIX `7`, DEFER `0`
 - Driver: total `5`, PASS `1`, PASS- `1`, UX-FIX `3`, DEFER `0`
@@ -114,6 +114,7 @@ Repo: `servis-platform`
 | `web/src/panels/superadmin/RoomsPanel.jsx` | Super Admin | Var | Yok | Var | Kısmi/Belirsiz | Yok | Yok | Var | Temiz | PASS- |
 | `web/src/panels/superadmin/SsotAlignmentPanel.jsx` | Super Admin | Var | Yok | Var | Kısmi/Belirsiz | Yok | Yok | Var | Temiz | PASS- |
 | `web/src/panels/superadmin/SuperAdminPanel.jsx` | Super Admin | Var | Var | Var | Net | Var | Var | Var | Risk | UX-FIX |
+| `web/src/panels/superadmin/TelematicsHubPanel.jsx` | Super Admin | Var | Var | Var | Kısmi/Belirsiz | Yok | Var | Yok | Temiz | PASS |
 | `web/src/panels/superadmin/TrustQualityPanel.jsx` | Super Admin | Var | Var | Var | Net | Var | Var | Var | Temiz | PASS |
 | `web/src/panels/superadmin/UsersPanel.jsx` | Super Admin | Var | Var | Var | Kısmi/Belirsiz | Var | Var | Var | Temiz | PASS |
 

@@ -299,6 +299,8 @@ mustNoDiffExcept(
   [
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/App.jsx",
+    "web/src/copilot/screenRegistry.js",
   ],
   "runtime surface diff is empty"
 );

@@ -1,19 +1,58 @@
-import { hasGpsFix, VEHICLE_TEMPLATES_TR, VEHICLE_TYPES } from "./roomVehiclesPanelUtils";
+import { hasGpsFix, gpsAtLabel, VEHICLE_TEMPLATES_TR, VEHICLE_TYPES } from "./roomVehiclesPanelUtils";
+import { getGpsReliabilityLabel, normalizeGpsFreshness } from "../../utils/etaSanity";
 import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 
-export function RoomDeviceTokenRevealCard({ tokenReveal, copyToken }) {
-  if (!tokenReveal?.token) return null;
+export function RoomTelematicsReadinessCard({ focusVehicle, loadDevices, deviceBusy, deviceSaving }) {
+  const freshness = normalizeGpsFreshness(focusVehicle || {});
   return (
-    <div className="card" style={{ marginTop: 12, padding: "10px 12px", borderLeft: "6px solid" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <b>{tokenReveal.kind === "rotate" ? "Yeni cihaz erişim kodu" : "Yeni cihaz erişim kodu (ilk ve tek gösterim)"}</b>
-        <button type="button" onClick={() => copyToken(tokenReveal.token)}>Kopyala</button>
+    <div className="card" style={{ margin: 0, padding: 14, display: "grid", gap: 10 }}>
+      <div>
+        <div className="panelSectionTitle">Hazırlık notu</div>
+        <div className="panelMeta" style={{ marginTop: 6 }}>
+          Provider kataloğu ve güvenlik kuralları Super Admin tarafından yönetilir.
+        </div>
       </div>
-      <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-        Cihaz #{tokenReveal.id || "-"}{tokenReveal.serial ? ` • ${tokenReveal.serial}` : ""}
+      <div className="panelMeta">
+        Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
       </div>
-      <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-        Kod panoya kopyalanmaya hazır. Ham metin kullanıcıya gösterilmez.
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <span className="pill" data-status={freshness.status === "OFFLINE" ? "WARN" : freshness.status === "STALE" ? "INFO" : "OK"}>
+          {freshness.status}
+        </span>
+        <span className="pill" data-status="ROLE">
+          {getGpsReliabilityLabel(focusVehicle)}
+        </span>
+      </div>
+      <div className="panelMeta">
+        Son veri zamanı: <b>{gpsAtLabel(focusVehicle)}</b>
+      </div>
+      <div className="panelMeta">
+        Secret/token/API key görünmez. Ham payload ve endpoint metinleri bu ekranda yer almaz.
+      </div>
+      <button type="button" disabled={deviceBusy || deviceSaving} onClick={() => loadDevices()}>
+        Test eşleştirme
+      </button>
+      <div className="panelMeta" style={{ fontSize: 12 }}>
+        Yalnızca onaylı provider kataloğu üzerinden self-service eşleştirme yapılır.
+      </div>
+      <div className="panelMeta" style={{ fontSize: 12 }}>
+        Yeni cihaz erişim kodu create/rotate akışında yönetilir.
+      </div>
+    </div>
+  );
+}
+
+export function RoomDeviceTokenRevealCard() {
+  return (
+    <div className="card" style={{ margin: 0, padding: 14, display: "grid", gap: 10 }}>
+      <div>
+        <div className="panelSectionTitle">Yeni cihaz erişim kodu</div>
+        <div className="panelMeta" style={{ marginTop: 6 }}>
+          Erişim kodu yalnızca create/rotate anında bir kez gösterilir.
+        </div>
+      </div>
+      <div className="panelMeta">
+        Secret/token/API key görünmez. Ham payload ve endpoint metinleri bu ekranda yer almaz.
       </div>
     </div>
   );

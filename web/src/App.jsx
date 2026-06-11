@@ -102,6 +102,7 @@ const SuperPilotLaunchGatePanel = lazy(() => import("./panels/superadmin/PilotLa
 const SuperOperationVerificationPanel = lazy(() => import("./panels/superadmin/OperationVerificationPanel"));
 const SuperOperationsPanel = lazy(() => import("./panels/superadmin/OperationsPanel"));
 const SuperPublicLeadReviewPanel = lazy(() => import("./panels/superadmin/PublicLeadReviewPanel"));
+const SuperTelematicsHubPanel = lazy(() => import("./panels/superadmin/TelematicsHubPanel"));
 
 function roleDefaultPath(me) {
   if (me?.requirePasswordChange) return "/auth/change-password";
@@ -418,6 +419,7 @@ export default function App() {
 
     // SUPER_ADMIN
     if (path === "/superadmin") return { layout: true, node: <SuperAdminPanel /> };
+    if (path === "/superadmin/telematics") return { layout: true, node: <SuperTelematicsHubPanel /> };
     if (path === "/superadmin/companies") return { layout: true, node: <SuperCompaniesPanel /> };
     if (path === "/superadmin/rooms") return { layout: true, node: <SuperRoomsPanel /> };
     if (path === "/superadmin/users") return { layout: true, node: <SuperUsersPanel /> };

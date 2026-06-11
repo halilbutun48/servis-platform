@@ -358,13 +358,11 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     setDeviceDrafts,
     deviceForm,
     setDeviceForm,
-    tokenReveal,
     telematicsRows = [],
     telematicsCounts = {},
     createDevice,
     saveDevice,
     rotateDeviceToken,
-    copyToken,
     loadDevices,
   } = useRoomVehicleTelematics({
     tab,
@@ -948,12 +946,15 @@ async function checkAvailabilityAll(onlySelected = false) {
       {/* TELEMATICS */}
       {tab === "telematics" ? (
         <CollapsibleSection
-          title="Telematics detayları"
-          subtitle="Cihaz yönetimi, erişim görünürlüğü ve rotasyon akışı."
+          title="GPS eşleştirme detayları"
+          subtitle="Onaylı provider, matching alanları ve son veri görünümü."
           badge={telematicsCounts[Number(focusVehicleId)] || 0}
           defaultOpen
           compact
         >
+          <div className="muted" style={{ marginBottom: 8, fontSize: 12 }}>
+            Erişim görünürlüğü güvenli sınırda tutulur.
+          </div>
           <RoomVehicleTelematicsSection
             focusVehicleId={focusVehicleId}
             setFocusVehicleId={setFocusVehicleId}
@@ -966,8 +967,6 @@ async function checkAvailabilityAll(onlySelected = false) {
             setDeviceForm={setDeviceForm}
             focusArchived={focusArchived}
             createDevice={createDevice}
-            tokenReveal={tokenReveal}
-            copyToken={copyToken}
             focusVehicle={focusVehicle}
             telematicsCounts={telematicsCounts}
             loadDevices={loadDevices}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
@@ -52,8 +52,8 @@ const MENU_GUIDE = [
   { title: "Sistem Standartları", desc: "Resmi doküman, paket ve çalışma hattının aynı kurala göre ilerlediğini gösterir." },
   { title: "Ticari Akış", desc: "Talep, teklif, pazarlık ve sözleşme adımlarını tek akışta özetler." },
   { title: "Güven ve Kalite", desc: "Kalite, hizmet değerlendirme ve güven görünümü." },
-  { title: "Telematik / GPS Sağlayıcıları", desc: "Provider registry, cihaz eşleştirme ve readonly telematics signals görünürlüğü." },
-  { title: "Başvuru İncelemesi", desc: "Public lead başvurularını insan onayıyla sıraya alır." },
+  { title: "Telematik / GPS Sağlayıcıları", desc: "Platform provider kataloğu, adapter şablonları ve güvenlik kuralları." },
+  { title: "Başvuru İncelemesi", desc: "Public lead inceleme kuyruğu ve invite readiness." },
   { title: "Yardımcı", desc: "Yardımcı cevabın yapısını ve geri bildirim akışını gösterir." },
   { title: "Sahaya Çıkış Kontrolü", desc: "Canlıya çıkmadan önce son kontrol kapısı." },
   { title: "KVKK", desc: "Veri koruma ve uyum yüzeyi." },
@@ -199,104 +199,31 @@ function SystemDetailsBody({ me, stats, feedbackCount }) {
   );
 }
 
-const TELEMATICS_PROVIDER_STATUSES = [
-  "NOT_CONNECTED",
-  "CONFIG_REQUIRED",
-  "TESTING",
-  "READY",
-  "ACTIVE",
-  "ERROR",
-  "DISABLED",
+const TELEMATICS_OVERVIEW_BULLETS = [
+  "GPS sağlayıcı kataloğu hazır",
+  "Room eşleştirme self-service",
+  "Provider yönetimi nav menüde",
 ];
 
-const TELEMATICS_MATCH_STATUSES = [
-  "MATCHED",
-  "NEEDS_REVIEW",
-  "UNMATCHED",
-  "DUPLICATE_MATCH",
-  "DISABLED",
-];
-
-const TELEMATICS_REGISTRY_FIELDS = [
-  "provider key/name",
-  "supported connection type",
-  "connection status",
-  "last data time",
-  "data delay",
-  "matched vehicle count",
-  "unmatched device count",
-  "error count",
-  "health status",
-];
-
-const TELEMATICS_FLOW_STEPS = [
-  "Ayarlar / Telematik Entegrasyonları",
-  "GPS sağlayıcı seçimi",
-  "bağlantı tipi seçimi",
-  "test bağlantısı",
-  "örnek veri normalizasyonu",
-  "cihaz eşleştirme",
-  "eşleşmeyen cihazlar",
-  "onay",
-  "ACTIVE + readonly telematics signals",
-];
-
-function TelematicsProviderHubCard() {
+function TelematicsOverviewSummaryCard() {
   return (
-    <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
+    <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
       <div>
-        <div className="panelSectionTitle">Telematik / GPS Sağlayıcıları</div>
+        <div className="panelSectionTitle">Entegrasyonlar özeti</div>
         <div className="panelMeta" style={{ marginTop: 6 }}>
-          Provider-agnostic telematics hub, Ayarlar / Telematik Entegrasyonları ve ROOM eşleştirme görünürlüğünü tek readonly kartta toplar.
+          Telematik teknik detayları ana dashboard yerine ayrı ekranda açılır.
         </div>
       </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-        <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, background: "rgba(255,255,255,0.02)" }}>
-          <div className="panelSectionTitle">User GPS entegrasyon akışı</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            Ayarlar / Telematik Entegrasyonları → sağlayıcı seç → bağlantı tipi seç → test bağlantısı → cihaz eşleştirme → onay → ACTIVE.
+      <div style={{ display: "grid", gap: 6 }}>
+        {TELEMATICS_OVERVIEW_BULLETS.map((item) => (
+          <div key={item} className="panelMeta" style={{ fontSize: 13, lineHeight: 1.45 }}>
+            • {item}
           </div>
-          <div style={{ display: "grid", gap: 4, marginTop: 8 }}>
-            {TELEMATICS_FLOW_STEPS.map((step) => (
-              <div key={step} className="panelMeta" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                • {step}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, background: "rgba(255,255,255,0.02)" }}>
-          <div className="panelSectionTitle">Provider registry</div>
-          <div style={{ display: "grid", gap: 4, marginTop: 8 }}>
-            {TELEMATICS_REGISTRY_FIELDS.map((field) => (
-              <div key={field} className="panelMeta" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                • {field}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {TELEMATICS_PROVIDER_STATUSES.map((status) => (
-          <Pill key={status} status="INFO">
-            {status}
-          </Pill>
         ))}
       </div>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {TELEMATICS_MATCH_STATUSES.map((status) => (
-          <Pill key={status} status={status === "DISABLED" ? "WARN" : "ROLE"}>
-            {status}
-          </Pill>
-        ))}
-      </div>
-
-      <div className="panelMeta">
-        Safe boundary: gizli erişim bilgileri repo'ya yazılmaz; gerçek sağlayıcı entegrasyonu bu sürümde yoktur; yalnızca salt-okunur telematik sinyaller gösterilir.
-      </div>
+      <button className="btn sm primary" onClick={() => navigate("/superadmin/telematics")}>
+        Telematik / GPS Sağlayıcıları
+      </button>
     </div>
   );
 }
@@ -319,7 +246,6 @@ export default function SuperAdminPanel() {
   const [feedbackBusy, setFeedbackBusy] = useState(false);
   const [feedbackErr, setFeedbackErr] = useState("");
   const [activeDetailTab, setActiveDetailTab] = useState("system");
-  const telematicsHubRef = useRef(null);
 
   const loadStats = useCallback(async () => {
     if (!token) return;
@@ -394,10 +320,6 @@ export default function SuperAdminPanel() {
     const latestAt = feedbackItems[0]?.updatedAt || feedbackItems[0]?.createdAt || null;
     return { total, active, latestAt };
   }, [feedbackItems]);
-
-  const goToTelematicsHub = useCallback(() => {
-    telematicsHubRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   return (
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
@@ -511,14 +433,12 @@ export default function SuperAdminPanel() {
             <button className="btn sm" onClick={() => navigate("/superadmin/pilot-launch-gate")}>Sahaya Çıkış Kontrolü</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/operation-verification")}>Operasyon Doğrulama</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Dışa Aktarımı</button>
-            <button className="btn sm" onClick={goToTelematicsHub}>Telematik / GPS Sağlayıcıları</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/telematics")}>Telematik / GPS Sağlayıcıları</button>
           </div>
           {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
         </div>
 
-        <div ref={telematicsHubRef}>
-          <TelematicsProviderHubCard />
-        </div>
+        <TelematicsOverviewSummaryCard />
 
         <div className="card" style={{ padding: 14 }}>
           <div className="panelSectionTitle" style={{ marginBottom: 8 }}>Özet</div>

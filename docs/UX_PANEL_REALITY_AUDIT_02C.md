@@ -15,7 +15,7 @@ Tarama kapsamı:
 - `web/src/components/CollapsibleSection.jsx`
 
 Static reality summary:
-- `105` panel-related JSX dosyası repo envanterinde var.
+- `106` panel-related JSX dosyası repo envanterinde var.
 - `12` yüzey `PanelSegmentTabs` kullanıyor.
 - `18` yüzey bu reality audit tablosunda tek tek sınıflandırıldı.
 - 0 code-confirmed cosmetic-only tab bulundu.

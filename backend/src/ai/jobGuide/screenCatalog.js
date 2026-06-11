@@ -602,6 +602,27 @@ const SUPER_ADMIN = [
     chatQuestions: ['Açık kalite sinyallerini göster', 'Bu sağlayıcı neden daha iyi görünüyor?', 'Risk nedenini açıkla', 'Kanıt durumunu kontrol et'],
     screenMenus: [{ label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Kalite ve güven kontrolünü role surface tarafında desteklemek için açılır.' }],
   }),
+  screen(6120, '/superadmin/telematics', 'Telematik / GPS Sağlayıcıları', {
+    menuPurpose: 'Platform provider kataloğu, adapter şablonları ve güvenlik kurallarını görmek için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce provider kataloğunu ve template readiness durumunu oku.',
+    nextStep: 'Gerekirse özel provider talebini incele veya başvuru incelemesine geç.',
+    doNotDo: 'Room adına cihaz eşleştirme veya secret yönetimi yapma.',
+    stepByStep: [
+      'Provider kataloğunu oku.',
+      'Connection type ve security requirement alanlarını kontrol et.',
+      'Readiness ve custom review durumunu gözden geçir.',
+      'Gerekirse Başvuru İncelemesi ekranına geç.',
+    ],
+    commonMistakes: ['Room matching ile platform catalog yönetimini karıştırmak.', 'Secret/token görünür sanmak.', 'Raw payload göstermeye çalışmak.'],
+    doneChecklist: ['Provider kataloğu okundu.', 'Security ve readiness sınırları netleşti.'],
+    buttonGuides: [
+      button('Başvuru İncelemesi', 'Özel provider veya invite readiness incelemesine geçer.', 'İnceleme kuyruğuna geçmek için kullan.', 'Başvuru inceleme ekranı açılır.'),
+      button('Genel Bakış', 'Ana özet ekranına geri döner.', 'Sade dashboard görünümüne dönmek için kullan.', 'Genel Bakış açılır.'),
+    ],
+    screenMenus: [{ label: 'Başvuru İncelemesi', path: '/superadmin/onboarding-review', purpose: 'Özel provider veya invite readiness incelemesine geçmek için açılır.' }],
+    simpleTerms: pickTerms(['telematics', 'gps']),
+  }),
   screen(6115, '/superadmin/logexport', 'Log Dışa Aktarımı', {
     menuPurpose: 'İşlem kayıtlarını güvenli şekilde dışa aktarmak için kullanılır.',
     forWhom: 'Super admin içindir.',

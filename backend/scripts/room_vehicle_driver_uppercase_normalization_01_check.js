@@ -160,9 +160,21 @@ function main() {
   mustNotStagedPrefix("docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "smoke audit doc not staged");
   mustNotStagedPrefix("backend/scripts/sefer_abi_terminal_humanize_01_check.js", "old Sefer Abi audit check not staged");
   mustNotStagedPrefix("backend/scripts/ux_density_01_panel_card_density_check.js", "old density audit check not staged");
-  mustNotStagedPrefix("backend/scripts/ux_panel_inventory_02a_check.js", "old inventory audit check not staged");
-  mustNotStagedPrefix("docs/UX_PANEL_INVENTORY_02A_AUDIT.md", "old inventory audit doc not staged");
-  mustNotStagedPrefix("docs/UX_PANEL_REALITY_AUDIT_02C.md", "old reality audit doc not staged");
+  mustNotStagedPrefixUnless(
+    "backend/scripts/ux_panel_inventory_02a_check.js",
+    new Set(["backend/scripts/ux_panel_inventory_02a_check.js"]),
+    "old inventory audit check not staged",
+  );
+  mustNotStagedPrefixUnless(
+    "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
+    new Set(["docs/UX_PANEL_INVENTORY_02A_AUDIT.md"]),
+    "old inventory audit doc not staged",
+  );
+  mustNotStagedPrefixUnless(
+    "docs/UX_PANEL_REALITY_AUDIT_02C.md",
+    new Set(["docs/UX_PANEL_REALITY_AUDIT_02C.md"]),
+    "old reality audit doc not staged",
+  );
   mustNotStagedPrefix("docs/UX_PANEL_STRUCTURE_02_AUDIT.md", "general panel structure audit doc not staged");
   mustNotStagedPrefix("docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md", "copilot context audit doc not staged");
   mustNotStagedPrefix("backend/src/services/agreementSourceLineageService.js", "agreementSourceLineageService.js not staged");

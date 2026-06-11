@@ -274,6 +274,7 @@ function main() {
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "docs/INVITE_BASED_MEMBERSHIP_01.md",
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
+    "docs/UX_PANEL_REALITY_AUDIT_02C.md",
     "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
     "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
     "docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md",
@@ -326,6 +327,8 @@ function main() {
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+    "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
+    "backend/src/ai/jobGuide/screenCatalog.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
@@ -335,6 +338,14 @@ function main() {
     "docs/INVITE_BASED_MEMBERSHIP_01.md",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "web/src/App.jsx",
+    "web/src/copilot/screenRegistry.js",
+    "web/src/layout/NavDock.jsx",
+    "web/src/panels/room/VehiclesPanel.jsx",
+    "web/src/panels/room/roomVehiclesPanelCards.jsx",
+    "web/src/panels/room/roomVehiclesPanelRows.jsx",
+    "web/src/panels/room/useRoomVehicleTelematics.js",
+    "web/src/panels/superadmin/TelematicsHubPanel.jsx",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within room/company shifts mobile card fix scope");

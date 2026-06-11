@@ -232,12 +232,19 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
         ],
       });
       sections.push({
+        title: "Entegrasyonlar",
+        items: [
+          { label: "Telematik / GPS Sağlayıcıları", path: "/superadmin/telematics" },
+        ],
+      });
+      sections.push({
         title: "Kontrol ve İzleme",
         items: [
           { label: "İşlem Kayıtları", path: "/superadmin/audit" },
           { label: "Canlı İzleme", path: "/superadmin/observability" },
           { label: "Denetim Paneli", path: "/superadmin/operations" },
           { label: "Kabul Merkezi", path: "/superadmin/acceptance" },
+          { label: "Başvuru İncelemesi", path: "/superadmin/onboarding-review" },
           { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification" },
           { label: "Sahaya Çıkış Kontrolü", path: "/superadmin/pilot-launch-gate" },
         ],

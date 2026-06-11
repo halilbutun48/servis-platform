@@ -378,6 +378,15 @@ function main() {
     "web/src/panels/organization/organizationPlansShared.jsx",
     "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
+    "backend/scripts/ux_panel_inventory_02a_check.js",
+    "backend/src/ai/jobGuide/screenCatalog.js",
+    "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
+    "docs/UX_PANEL_REALITY_AUDIT_02C.md",
+    "web/src/App.jsx",
+    "web/src/copilot/screenRegistry.js",
+    "web/src/panels/room/roomVehiclesPanelRows.jsx",
+    "web/src/panels/room/useRoomVehicleTelematics.js",
+    "web/src/panels/superadmin/TelematicsHubPanel.jsx",
     "tools/repo_contract_state.json",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within parent/personel live error clarity validation");

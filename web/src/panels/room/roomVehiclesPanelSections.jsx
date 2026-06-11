@@ -17,11 +17,21 @@ import {
   RoomVehicleAvailabilityRow,
 } from "./roomVehiclesPanelRows";
 import {
-  RoomDeviceTokenRevealCard,
+  RoomTelematicsReadinessCard,
   RoomVehicleEditModal,
   RoomVehicleLinkSection,
 } from "./roomVehiclesPanelCards";
 import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
+
+const TELEMATICS_PROVIDER_OPTIONS = [
+  { value: "ARVENTO", label: "Arvento" },
+  { value: "MOBILIZ", label: "Mobiliz" },
+  { value: "FILOBIL", label: "Filobil" },
+  { value: "GENERIC_API", label: "Generic API" },
+  { value: "WEBHOOK", label: "Webhook" },
+  { value: "CSV_IMPORT", label: "Excel/CSV import" },
+  { value: "CUSTOM_REQUEST", label: "Özel entegrasyon talebi" },
+];
 
 const TELEMATICS_PROVIDER_STATES = [
   "NOT_CONNECTED",
@@ -42,12 +52,11 @@ const TELEMATICS_MATCH_STATES = [
 ];
 
 const TELEMATICS_CONNECTION_TYPES = [
-  "hazır sağlayıcı adapter",
   "API polling",
-  "webhook push",
+  "Webhook push",
   "Excel/CSV import",
-  "device ID / IMEI / plate mapping",
-  "özel entegrasyon talebi",
+  "Özel entegrasyon talebi",
+  "TCP/device bridge",
 ];
 
 
@@ -660,8 +669,6 @@ export function RoomVehicleTelematicsSection({
   setDeviceForm,
   focusArchived,
   createDevice,
-  tokenReveal,
-  copyToken,
   focusVehicle,
   telematicsCounts,
   loadDevices,
@@ -671,26 +678,28 @@ export function RoomVehicleTelematicsSection({
   saveDevice,
   rotateDeviceToken,
 }) {
+  const readyIdentifier = String(deviceForm.serial || deviceForm.deviceId || deviceForm.imei || deviceForm.externalDeviceId || "").trim();
+
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
         <div>
           <h3 style={{ marginBottom: 6 }}>GPS Eşleştirme / Telematik Bağlantısı</h3>
-          <div className="muted">ROOM &gt; Vehicles içindeki telematics alanı, Ayarlar / Telematik Entegrasyonları akışının operasyonel yansımasıdır.</div>
+          <div className="muted">
+            Provider kataloğu ve güvenlik kuralları Super Admin tarafından yönetilir. Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
+          </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
           <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
-            <div className="panelSectionTitle">Kullanıcı GPS entegrasyon akışı</div>
+            <div className="panelSectionTitle">Onaylı provider kataloğu</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              Ayarlar / Telematik Entegrasyonları → provider seç → test bağlantısı → cihaz eşleştirme → eşleşmeyen cihazlar → onay → readonly telematics signals.
+              Room yalnızca platformun izin verdiği provider listesini görür.
             </div>
-            <div style={{ display: "grid", gap: 4, marginTop: 8 }}>
-              <div className="panelMeta" style={{ fontSize: 12 }}>• test bağlantısı</div>
-              <div className="panelMeta" style={{ fontSize: 12 }}>• cihaz eşleştirme</div>
-              <div className="panelMeta" style={{ fontSize: 12 }}>• plaka / IMEI / deviceId mapping</div>
-              <div className="panelMeta" style={{ fontSize: 12 }}>• eşleşmeyen cihazlar</div>
-              <div className="panelMeta" style={{ fontSize: 12 }}>• entegrasyon durumu</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+              {TELEMATICS_PROVIDER_OPTIONS.map((item) => (
+                <span key={item.value} className="pill" data-status="ROLE">{item.label}</span>
+              ))}
             </div>
           </div>
 
@@ -698,7 +707,7 @@ export function RoomVehicleTelematicsSection({
             <div className="panelSectionTitle">Bağlantı tipleri</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               {TELEMATICS_CONNECTION_TYPES.map((label) => (
-                <span key={label} className="pill" data-status="ROLE">{label}</span>
+                <span key={label} className="pill" data-status="INFO">{label}</span>
               ))}
             </div>
           </div>
@@ -727,61 +736,147 @@ export function RoomVehicleTelematicsSection({
         </div>
 
         <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
-          Safe boundary: GPS bağlandı diye ödeme/hakediş değişmez, sözleşme değişmez, tedarikçi otomatik elenmez, sürücü/araç ataması otomatik değişmez ve SMS/e-posta/push otomatik gönderilmez.
-        </div>
-        <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
-          secret/API key/token repo'ya yazılmaz; readonly telematics signals only.
+          LIVE / STALE / OFFLINE durumu ve son veri zamanı liste satırlarında okunur. Secret/token/API key görünmez. Raw payload bu ekranda yer almaz.
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1.45fr", gap: 12, alignItems: "start" }}>
-        <div className="card">
-        <h3>Telematics cihaz yönetimi</h3>
-        <div className="muted">ROOM &gt; Vehicles içinde araç bazlı GPS cihazı yönetimi</div>
-        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+        <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
           <div>
-            <label className="muted">Araç</label>
-            <select
-              value={String(focusVehicleId || "")}
-              onChange={(e) => {
-                const nextId = Number(e.target.value || 0);
-                setFocusVehicleId(nextId);
-                setErr("");
-              }}
-              disabled={busy || deviceBusy || deviceSaving}
-            >
-              {items.map((v) => (
-                <option key={v.id} value={v.id} disabled={Boolean(v.archivedAt)}>
-                  {v.plate} (#{v.id}){hasRegionOwnership(v) ? ` • ${formatRegionOwnership(v).replace(/^Bölge:\s*/, "")}` : ""}{v.archivedAt ? " • Arşivde" : ""}
-                </option>
-              ))}
-            </select>
+            <div className="panelSectionTitle">Eşleştirme hazırlığı</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>
+              Araç, provider ve matching alanlarını doldurup ready duruma al.
+            </div>
           </div>
           <form onSubmit={createDevice} style={{ display: "grid", gap: 10 }}>
             <div>
-              <label className="muted">Provider</label>
-              <select value={deviceForm.vendor} onChange={(e) => setDeviceForm((p) => ({ ...p, vendor: e.target.value }))} disabled={deviceSaving || focusArchived}>
-                <option value="GENERIC">GENERIC</option>
-                <option value="TRACCAR">TRACCAR</option>
+              <label className="muted">Araç</label>
+              <select
+                value={String(focusVehicleId || "")}
+                onChange={(e) => {
+                  const nextId = Number(e.target.value || 0);
+                  setFocusVehicleId(nextId);
+                  setErr("");
+                }}
+                disabled={busy || deviceBusy || deviceSaving}
+              >
+                {items.map((v) => (
+                  <option key={v.id} value={v.id} disabled={Boolean(v.archivedAt)}>
+                    {v.plate} (#{v.id}){hasRegionOwnership(v) ? ` • ${formatRegionOwnership(v).replace(/^Bölge:\s*/, "")}` : ""}{v.archivedAt ? " • Arşivde" : ""}
+                  </option>
+                ))}
               </select>
             </div>
+
+            <div>
+              <label className="muted">Plaka</label>
+              <input value={focusVehicle?.plate || "-"} disabled />
+            </div>
+
+            <div>
+              <label className="muted">Provider</label>
+              <select
+                value={deviceForm.vendor}
+                onChange={(e) => setDeviceForm((p) => ({ ...p, vendor: e.target.value }))}
+                disabled={deviceSaving || focusArchived}
+              >
+                {TELEMATICS_PROVIDER_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="muted">Connection tipi</label>
+              <select
+                value={deviceForm.connectionType}
+                onChange={(e) => setDeviceForm((p) => ({ ...p, connectionType: e.target.value }))}
+                disabled={deviceSaving || focusArchived}
+              >
+                {TELEMATICS_CONNECTION_TYPES.map((label) => (
+                  <option key={label} value={label}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="muted">IMEI</label>
+              <input
+                value={deviceForm.imei}
+                onChange={(e) => setDeviceForm((p) => ({ ...p, imei: e.target.value }))}
+                placeholder="örn: 356123456789012"
+                disabled={deviceSaving || focusArchived}
+              />
+            </div>
+
+            <div>
+              <label className="muted">deviceId</label>
+              <input
+                value={deviceForm.deviceId}
+                onChange={(e) => setDeviceForm((p) => ({ ...p, deviceId: e.target.value }))}
+                placeholder="örn: DEV-34-0001"
+                disabled={deviceSaving || focusArchived}
+              />
+            </div>
+
+            <div>
+              <label className="muted">externalDeviceId</label>
+              <input
+                value={deviceForm.externalDeviceId}
+                onChange={(e) => setDeviceForm((p) => ({ ...p, externalDeviceId: e.target.value }))}
+                placeholder="örn: EXT-0001"
+                disabled={deviceSaving || focusArchived}
+              />
+            </div>
+
             <div>
               <label className="muted">Serial</label>
-              <input value={deviceForm.serial} onChange={(e) => setDeviceForm((p) => ({ ...p, serial: e.target.value }))} placeholder="örn: TRK-34-0001" disabled={deviceSaving || focusArchived} />
+              <input
+                value={deviceForm.serial}
+                onChange={(e) => setDeviceForm((p) => ({ ...p, serial: e.target.value }))}
+                placeholder="örn: TRK-34-0001"
+                disabled={deviceSaving || focusArchived}
+              />
             </div>
+
             <div>
-              <label className="muted">Label (opsiyonel)</label>
-              <input value={deviceForm.label} onChange={(e) => setDeviceForm((p) => ({ ...p, label: e.target.value }))} placeholder="örn: Ön cam cihazı" disabled={deviceSaving || focusArchived} />
+              <label className="muted">Not / etiket</label>
+              <input
+                value={deviceForm.label}
+                onChange={(e) => setDeviceForm((p) => ({ ...p, label: e.target.value }))}
+                placeholder="örn: Ön cam cihazı"
+                disabled={deviceSaving || focusArchived}
+              />
             </div>
-            <button type="submit" disabled={deviceSaving || focusArchived || !focusVehicleId || !String(deviceForm.serial || "").trim()}>
-              Device ekle
-            </button>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="submit"
+                disabled={deviceSaving || focusArchived || !focusVehicleId || !readyIdentifier}
+              >
+                Eşleştirme hazırlığı
+              </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={deviceBusy || deviceSaving}
+                onClick={() => loadDevices()}
+              >
+                Test eşleştirme
+              </button>
+            </div>
           </form>
-          <div className="muted" style={{ fontSize: 12 }}>
-            Not: Create / update / rotate işlemleri step-up write guard altındadır. Erişim kodu yalnızca create/rotate anında bir kez gösterilir.
+          <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
+            Not: Gizli token, API key ve platform endpoint metni bu ekranda gösterilmez. Erişim kodu yalnızca create/rotate anında bir kez gösterilir.
           </div>
         </div>
-        <RoomDeviceTokenRevealCard tokenReveal={tokenReveal} copyToken={copyToken} />
+
+        <RoomTelematicsReadinessCard
+          focusVehicle={focusVehicle}
+          loadDevices={loadDevices}
+          deviceBusy={deviceBusy}
+          deviceSaving={deviceSaving}
+        />
       </div>
 
       <div className="card">
@@ -791,7 +886,7 @@ export function RoomVehicleTelematicsSection({
             <div className="muted">Seçili araç: <b>{focusVehicle?.plate || "-"}</b> • Toplam cihaz: {telematicsCounts[Number(focusVehicleId)] || 0}</div>
           </div>
           <button type="button" disabled={deviceBusy || deviceSaving} onClick={() => loadDevices()}>
-            Yenile
+            Test eşleştirme
           </button>
         </div>
         {focusArchived ? <div className="card" style={{ marginTop: 12 }}>Arşivli araçta telematics yönetimi kapalıdır.</div> : null}
@@ -800,8 +895,8 @@ export function RoomVehicleTelematicsSection({
           <table className="tbl" style={{ marginTop: 12 }}>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Vendor</th>
+                <th>Plaka</th>
+                <th>Provider</th>
                 <th>Serial</th>
                 <th>Label</th>
                 <th>Durum</th>
@@ -825,12 +920,7 @@ export function RoomVehicleTelematicsSection({
             </tbody>
           </table>
         ) : null}
-        <div className="muted" style={{ marginTop: 12, fontSize: 12, display: "grid", gap: 4 }}>
-          <div><code>POST /api/telematics/push</code> → cihaz erişim kodu ile direkt cihaz push</div>
-          <div><code>POST /api/telematics/vendor/:provider</code> → vendor cloud webhook</div>
-        </div>
       </div>
-    </div>
     </div>
   );
 }

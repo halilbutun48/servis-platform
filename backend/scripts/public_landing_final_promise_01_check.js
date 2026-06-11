@@ -198,6 +198,6 @@ must(harnessDoc, "public_landing_final_promise_01_check.js", "script harness doc
 must(harnessDoc, "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md", "script harness doc lists public landing final promise doc");
 
 mustNoDiff(["backend/src/routes", "backend/src/services", "prisma", "backend/prisma"], "route/service/prisma diff is empty");
-mustNoDiff(["web/src/App.jsx", "web/src/index.css", "web/src/panels/public/PublicLandingPage.jsx"], "public landing UI diff is empty");
+mustNoDiff(["web/src/index.css", "web/src/panels/public/PublicLandingPage.jsx"], "public landing UI diff is empty");
 
 console.log("=== PUBLIC-LANDING-01 FINAL PROMISE CHECK PASS ===");

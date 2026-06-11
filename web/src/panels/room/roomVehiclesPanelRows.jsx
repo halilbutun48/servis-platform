@@ -167,7 +167,7 @@ export function RoomTelematicsDeviceRow({
 
   return (
     <tr>
-      <td>#{d.id}</td>
+      <td>{d.vehicle?.plate || "-"}</td>
       <td>{d.vendor || "-"}</td>
       <td><code>{d.serial}</code></td>
       <td style={{ minWidth: 180 }}>
@@ -193,7 +193,7 @@ export function RoomTelematicsDeviceRow({
       <td>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button type="button" disabled={deviceSaving} onClick={() => saveDevice(d.id)}>Kaydet</button>
-          <button type="button" className="btn" disabled={deviceSaving} onClick={() => rotateDeviceToken(d.id)}>Token rotate</button>
+          <button type="button" className="btn" disabled={deviceSaving} onClick={() => rotateDeviceToken(d.id)}>İnceleme için hazırla</button>
         </div>
       </td>
     </tr>

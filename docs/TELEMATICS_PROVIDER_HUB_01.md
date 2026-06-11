@@ -1,79 +1,29 @@
-# TELEMATICS-PROVIDER-HUB-01 — provider-agnostic GPS provider hub / readiness UX
+# TELEMATICS-PROVIDER-HUB-01 — Telematik / GPS Sağlayıcıları
 
-Tarih: 2026-06-10
+Tarih: 2026-06-11
 Repo: `servis-platform`
 
-Bu doküman, `M44-TELEMATICS-T1-T5` baseline sonrasında provider-agnostic GPS provider hub ve kullanıcı GPS entegrasyon readiness UX'ini docs/check kilidi olarak sabitler. Gerçek provider entegrasyonu açmaz; adapter contract, normalized telematics event sözleşmesi, provider registry görünürlüğü ve readonly telematics signals sınırını korur.
+Bu doküman, `SUPERADMIN-ROOM-TELEMATICS-NAV-UX-01` kapsamındaki telematics sınırını kilitler. Amaç; `provider katalogu`, `adapter şablonları`, `security / KVKK` ve `room self-service` çizgisini aynı anda korumak, ama gerçek ingest yolunu bu milestone dışında bırakmaktır.
 
-## Amaç
-- `provider-agnostic` telematics mimarisini görünür kılmak.
-- Her yeni GPS sağlayıcısı için core kodu bozmadan `GPS provider adapter` eklenebilmesini hedeflemek.
-- `vehicle tracking software` kaynaklarını da aynı normalized sözleşmeye çevirebilmek.
-- `normalized telematics event` hedef alanlarını ve provider registry görünürlüğünü kilitlemek.
-- Kullanıcının kendi GPS sistemini güvenli şekilde bağlama akışını görünür kılmak.
-- Bu milestone docs/check kilididir; runtime ingest açmaz.
+## Scope
+- `provider katalogu`
+- `adapter şablonları`
+- `security / KVKK`
+- `room self-service`
 
-## Provider registry
-- provider key/name
-- supported connection type
-- connection status: `NOT_CONNECTED / CONFIG_REQUIRED / TESTING / READY / ACTIVE / ERROR / DISABLED`
-- last data time
-- data delay
-- matched vehicle count
-- unmatched device count
-- error count
-- health status
+## Super Admin yüzeyi
+- `Telematik / GPS Sağlayıcıları` ekranı provider katalogu ve adapter şablonlarını yönetir.
+- Platform; provider kataloğu, bağlantı tipi, template readiness, `security / KVKK`, signature requirement, `rate limit`, `IP allowlist`, `KVKK / veri minimizasyonu` ve `raw payload masking` kurallarını görünür tutar.
+- `Başvuru İncelemesi` ekranı özel provider veya invite readiness inceleme kuyruğunu yönetir.
+- `LIVE / STALE / OFFLINE` görünümü ve provider health sinyalleri açık kalır.
 
-## Normalized telematics event
-- providerId
-- providerName
-- externalDeviceId
-- imei, varsa
-- plate, varsa
-- vehicleId, eşleşmişse
-- driverId, eşleşmişse
-- lat
-- lng
-- speed
-- speedLimit, varsa
-- heading, varsa
-- altitude, varsa
-- ignition, varsa
-- odometer, varsa
-- eventTime
-- receivedAt
-- sourceType: `webhook / polling / file / manual / tcp-bridge`
-- rawEventRef veya masked raw reference
-- confidence
-- quality flags
-- stale/offline/live status
-- error/warning notes
+## Room yüzeyi
+- `room self-service` akışı yalnızca onaylı provider kataloğu üzerinden çalışır.
+- Matching alanları: `plate / IMEI / deviceId / externalDeviceId / serial`.
+- Room yüzeyinde `Secret/token/API key` görünmez.
+- Son veri zamanı, cihaz eşleştirme durumu ve readiness notu görünür.
 
-## Adapter contract
-- provider payload'ını okur.
-- field mapping yapar.
-- timestamp normalize eder.
-- lat/lng doğrular.
-- speed/heading/ignition gibi sinyalleri normalize eder.
-- plate/device/IMEI eşleşmesini çözer.
-- hatalı veya eksik eventleri safe fallback ile işaretler.
-- SeferPakt normalized telematics event formatına çevirir.
-
-## Kullanıcı GPS entegrasyon akışı
-1. Kullanıcı `Ayarlar / Telematik Entegrasyonları` ekranına girer.
-2. GPS sağlayıcısını seçer.
-3. Bağlantı tipini seçer: hazır sağlayıcı adapter, API polling, webhook push, file/CSV/Excel import, deviceId / IMEI / plate mapping veya özel entegrasyon talebi.
-4. Gerekli bağlantı bilgilerini girer.
-5. `secret/API key/token repo'ya yazılmaz`; güvenli secret/env mantığı kullanılır.
-6. Sistem `test bağlantısı` yapar.
-7. Gelen örnek veri normalize edilir.
-8. Araçlar `plaka / IMEI / deviceId mapping` ile eşleştirilir.
-9. `eşleşmeyen cihazlar` kullanıcıya gösterilir.
-10. Kullanıcı eşleşmeleri onaylar.
-11. Entegrasyon aktif edilir.
-12. GPS verisi canlı takip, LIVE/STALE/OFFLINE, hız riski, rota ilerleme, kanıt/check-in ve saha kalite sinyallerine `readonly telematics signals` olarak beslenir.
-
-## Entegrasyon durumu
+## Durum sözlüğü
 - `NOT_CONNECTED`
 - `CONFIG_REQUIRED`
 - `TESTING`
@@ -82,42 +32,30 @@ Bu doküman, `M44-TELEMATICS-T1-T5` baseline sonrasında provider-agnostic GPS p
 - `ERROR`
 - `DISABLED`
 
-## Araç eşleştirme durumu
+## Eşleşme sözlüğü
 - `MATCHED`
 - `NEEDS_REVIEW`
 - `UNMATCHED`
 - `DUPLICATE_MATCH`
 - `DISABLED`
 
-## Super Admin readiness UX
-- `Telematik / GPS Sağlayıcıları` kartı provider registry görünürlüğü verir.
-- `provider registry` alanları, connection status, last data time, data delay ve health status tek bakışta görünür.
-- `Ayarlar / Telematik Entegrasyonları` akışı, test bağlantısı ve cihaz eşleştirme adımlarını açıklar.
-- `readonly telematics signals` ve integration status vocabulary görünür kalır.
-
-## Room / Vehicles mapping UX
-- `GPS Eşleştirme / Telematik Bağlantısı` kartı araç bazlı eşleşme durumunu gösterir.
-- `cihaz eşleştirme`, `plaka / IMEI / deviceId mapping` ve `eşleşmeyen cihazlar` burada okunur.
-- ROOM yüzeyi, provider-hub readiness bilgisini operasyonel görünürlük olarak kullanır; write aksiyonu açmaz.
-
-## Güvenli sınır
-- `no provider secret in repo`
-- `no real provider integration in this milestone`
+## Boundary
+- `no real provider integration`
+- `no webhook ingest`
+- `no polling job`
+- `no TCP bridge`
 - `no Prisma/schema/migration`
-- `backend route/service/schema yok`
-- `Prisma/schema/migration yok`
+- `no backend route/service/schema`
 - `runtime-data/browser-smoke commit dışı`
-- `readonly T1-T5 boundary`
-- GPS provider secret, API key, token repo'ya yazılmaz.
-- Public endpoint, rate limit ve signature validation ayrı milestone'a bırakılır.
 
-## Kanonik bağlantılar
-- `M44-TELEMATICS-T1-T5`
-- `TELEMATICS-PROVIDER-HUB-01`
-- `SAFE-DRIVE-01`
-- `OFFER-RANKING-QUALITY-01`
+## Kanonik akış
+1. User `Telematik / GPS Sağlayıcıları` ekranında provider katalogu ve adapter şablonlarını görür.
+2. Gerekirse `Başvuru İncelemesi` ekranına geçer.
+3. Room `room self-service` yüzeyinde `plate / IMEI / deviceId / externalDeviceId / serial` ile araç eşleştirmesi yapar.
+4. `LIVE / STALE / OFFLINE` ve son veri zamanı görünür kalır.
+5. `Secret/token/API key` hiçbir yerde yüzeye çıkmaz.
+6. Bu milestone gerçek ingest açmaz.
 
 ## Komutlar
 - Check: `node backend\scripts\telematics_provider_hub_01_check.js`
-- Script alias: `check:telematicsproviderhub01`
-- Bu milestone runtime ingest veya backend write-path açmaz.
+- Alias: `check:telematicsproviderhub01`
