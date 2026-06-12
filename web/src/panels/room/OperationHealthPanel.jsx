@@ -171,7 +171,7 @@ export default function OperationHealthPanel() {
         cachedGet(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
         cachedGet(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
         cachedGet(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
-        cachedGet("/api/requests", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
+        api("/api/requests", { token }).catch(() => []),
       ]);
       setSummary(s || null);
       setDrivers(Array.isArray(d?.items) ? d.items : []);
