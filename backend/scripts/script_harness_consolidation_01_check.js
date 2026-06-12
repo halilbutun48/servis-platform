@@ -29,8 +29,10 @@ const workingTreeCompatFiles = [
   "backend/scripts/offer_ranking_quality_01_check.js",
   "backend/scripts/copilot_role_task_matrix_01_check.js",
   "backend/scripts/copilot_ai_action_roadmap_01_check.js",
+  "backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js",
   "backend/src/ai/chat/copilotRoleTaskMatrix.js",
   "backend/src/ai/chat/copilotAiActionRoadmap.js",
+  "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
   "web/src/utils/safeDriveSummary.js",
   "web/src/utils/offerQualityRanking.js",
   "web/src/panels/shared/SafeDriveSummaryCard.jsx",
@@ -44,6 +46,7 @@ const workingTreeCompatFiles = [
   "docs/OFFER_RANKING_QUALITY_01.md",
   "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
   "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
+  "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
   "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
@@ -245,6 +248,7 @@ function slugToMilestone(slug) {
     [/roomvehicledriveruppercase0?1/i, "ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01"],
     [/uxcontractconversionopsbridgeclarity0?1/i, "UX-CONTRACT-CONVERSION-AND-OPS-BRIDGE-CLARITY-01"],
     [/copilotaiactionroadmap0?1/i, "COPILOT-AI-ACTION-ROADMAP-01"], // check:copilotairoadmap01
+    [/copilotdemand(?:to)?agreement0?1/i, "COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01"], // check:copilotdemandagreement01
     [/final/i, "FINAL"],
     [/verifychain0?1/i, "VERIFY-CHAIN-01"],
     [/productextensions/i, "PRODUCT-EXTENSIONS"],
@@ -267,7 +271,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:copilotairoadmap01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1388,6 +1392,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot AI action roadmap check: \`check:copilotairoadmap01\``);
   out.push(`- Copilot AI action roadmap docs: \`docs/COPILOT_AI_ACTION_ROADMAP_01.md\``);
   out.push(`- Copilot AI action roadmap command: \`node backend\\scripts\\copilot_ai_action_roadmap_01_check.js\``);
+  out.push(`- Copilot demand-to-agreement roadmap milestone: \`COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01\``);
+  out.push(`- Copilot demand-to-agreement roadmap check: \`check:copilotdemandagreement01\``);
+  out.push(`- Copilot demand-to-agreement roadmap docs: \`docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md\``);
+  out.push(`- Copilot demand-to-agreement roadmap command: \`node backend\\scripts\\copilot_demand_to_agreement_roadmap_01_check.js\``);
   out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
   out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
   out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);
@@ -1731,6 +1739,11 @@ function verifyDoc(docText, summary) {
     "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
     "node backend\\scripts\\copilot_ai_action_roadmap_01_check.js",
     "backend/src/ai/chat/copilotAiActionRoadmap.js",
+    "COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01",
+    "check:copilotdemandagreement01",
+    "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
+    "node backend\\scripts\\copilot_demand_to_agreement_roadmap_01_check.js",
+    "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
     "Duplicate / overlap groups",
     "Product coverage rows",
     "REMOVED:",

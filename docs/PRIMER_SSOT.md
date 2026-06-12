@@ -31,6 +31,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `OFFER-RANKING-QUALITY-01` readonly offer quality comparison katmanıdır; Company / Room / Super Admin yüzeylerinde kalite, güven, telematics, evidence/check-in ve operasyon riski birlikte okunur; auto-selection / auto-accept / contract execute / payment/hakediş execute / AI runtime action açmaz. Detay: `docs/OFFER_RANKING_QUALITY_01.md`
 - `COPILOT-ROLE-TASK-MATRIX-01` Sefer Abi / Copilot rol/task matrix ve guardrail katmanını docs/check olarak kilitler; `check:copilotroletaskmatrix01` ve `docs/COPILOT_ROLE_TASK_MATRIX_01.md` ile yaşar.
 - `COPILOT-AI-ACTION-ROADMAP-01` Sefer Abi için future-only AI action phase modelini docs/check olarak kilitler; `check:copilotairoadmap01` ve `docs/COPILOT_AI_ACTION_ROADMAP_01.md` ile yaşar.
+- `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` Sefer Abi için future-only talep -> teklif -> sözleşme hazırlık yol haritasını docs/check olarak kilitler; `check:copilotdemandagreement01` ve `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md` ile yaşar.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
