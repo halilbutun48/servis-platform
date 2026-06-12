@@ -12,15 +12,15 @@ export const COMPANY_DATA_TAKE = {
 };
 
 export const COMPANY_DATA_TTL = {
-  rooms: 45000,
-  vehicles: 30000,
-  shifts: 20000,
-  mapShifts: 12000,
-  agreements: 20000,
-  offers: 20000,
-  trustQuality: 25000,
-  trustQualityTemplate: 60000,
-  personels: 25000,
+  rooms: 10 * 60 * 1000,
+  vehicles: 10 * 60 * 1000,
+  shifts: 10 * 60 * 1000,
+  mapShifts: 10 * 60 * 1000,
+  agreements: 10 * 60 * 1000,
+  offers: 10 * 60 * 1000,
+  trustQuality: 10 * 60 * 1000,
+  trustQualityTemplate: 10 * 60 * 1000,
+  personels: 10 * 60 * 1000,
 };
 
 function cleanParams(params = {}) {

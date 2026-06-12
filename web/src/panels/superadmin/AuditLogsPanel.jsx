@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "../../api";
 import { formatDateTimeTR } from "../../utils/time";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function fmt(ts) {
   try {
@@ -71,7 +71,7 @@ export default function AuditLogsPanel() {
       if (entity) qs.set("entity", entity);
       if (action.trim()) qs.set("action", action.trim());
       if (actorEmail.trim()) qs.set("actorEmail", actorEmail.trim());
-      const r = await api(`/api/admin/audit-logs?${qs.toString()}`);
+      const r = await cachedGet(`/api/admin/audit-logs?${qs.toString()}`, { ttlMs: 10 * 60 * 1000, delayMs: 120 });
       setItems(r.items || []);
     } catch (e) {
       setErr(e?.message || String(e));

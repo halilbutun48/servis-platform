@@ -10,6 +10,7 @@ import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import RoomOperationsBoard from "./roomOperationsBoard";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import { boardingChangeApplySuccessNote } from "../shared/boardingChangeUi";
+import { cachedGet } from "../../utils/uiDataCache";
 
 const ENTRY_HINT_KEY = "room:operationHealthHint";
 
@@ -161,16 +162,16 @@ export default function OperationHealthPanel() {
     try {
       const today = new Date().toISOString().slice(0, 10);
       const [s, d, i] = await Promise.all([
-        api("/api/observability/room/summary", { token }),
-        api("/api/observability/room/drivers", { token }),
-        api("/api/observability/room/issues", { token }),
+        cachedGet("/api/observability/room/summary", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/observability/room/drivers", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/observability/room/issues", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
       ]);
       const [driverSignals, shiftSummary, vehicleSummary, driverSummary, requestsResp] = await Promise.all([
-        api("/api/drivers?take=200", { token }).catch(() => []),
-        api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-        api(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-        api(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
-        api("/api/requests", { token }).catch(() => []),
+        cachedGet("/api/drivers?take=200", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
+        cachedGet(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
+        cachedGet(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
+        cachedGet(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
+        cachedGet("/api/requests", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
       ]);
       setSummary(s || null);
       setDrivers(Array.isArray(d?.items) ? d.items : []);

@@ -1,6 +1,5 @@
 // web/src/panels/room/MapPanel.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
@@ -14,6 +13,7 @@ import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function toNum(v) {
   const n = typeof v === "number" ? v : Number(v);
@@ -183,7 +183,7 @@ export default function RoomMapPanel() {
     setErr("");
     setBusy(true);
     try {
-      const r = await api("/api/vehicles", { token });
+      const r = await cachedGet("/api/vehicles", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 });
       const items = Array.isArray(r) ? r : [];
       setVehicles(items);
 
@@ -456,7 +456,7 @@ export default function RoomMapPanel() {
         return;
       }
       try {
-        const r = await api(`/api/shifts/${selectedShift.id}/route-preview`, { token });
+        const r = await cachedGet(`/api/shifts/${selectedShift.id}/route-preview`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 });
         const pts = Array.isArray(r?.path?.points) ? r.path.points : [];
         if (alive) {
           setRoutePreview({

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
@@ -13,6 +12,7 @@ import QualityReviewHistoryCard from "../../components/QualityReviewHistoryCard"
 import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function Card({ title, subtitle, children, className = "", style }) {
   return (
@@ -208,10 +208,10 @@ export default function TrustQualityPanel() {
     (async () => {
       try {
         const [m, summaryPayload, evaluationTemplate, providerTemplate, proofPayload, draftPayload, decisionPayload, historyPayload] = await Promise.all([
-          api("/api/trust-quality/manifest", { token }),
-          getCompanyTrustQualitySummary(token, { ttlMs: 25000 }),
-          getTrustQualityTemplate(token, { ttlMs: 25000 }),
-          api("/api/trust-quality/provider-signal-template", { token }),
+          cachedGet("/api/trust-quality/manifest", { token, ttlMs: 10 * 60 * 1000, delayMs: 90 }),
+          getCompanyTrustQualitySummary(token, { ttlMs: 10 * 60 * 1000 }),
+          getTrustQualityTemplate(token, { ttlMs: 10 * 60 * 1000 }),
+          cachedGet("/api/trust-quality/provider-signal-template", { token, ttlMs: 10 * 60 * 1000, delayMs: 90 }),
           getQualityProofSignalSummary({}, { token }).catch(() => null),
           getQualityDraftScoreSummary({}, { token }).catch(() => null),
           getQualityReviewDecisionSummary({}, { token }).catch(() => null),

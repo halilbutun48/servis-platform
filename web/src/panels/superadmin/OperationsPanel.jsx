@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, getOperationProofSummary } from "../../api";
+import { getOperationProofSummary } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
@@ -9,6 +9,7 @@ import PanelKvkkHint from "../shared/PanelKvkkHint";
 import { countBy, filterNotificationDigest, fmtTR, normalizeNotificationDigest, topRepeatedValues } from "../shared/operationsDigestUtils";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildOperationsCopilotFacts } from "../../utils/copilotFacts";
+import { cachedGet } from "../../utils/uiDataCache";
 
 const LOGIN_AUDIT_RE = /(LOGIN|SIGNIN|SIGN-IN|AUTH|STEP_UP|TOTP|PIN)/i;
 
@@ -121,10 +122,10 @@ export default function SuperAdminOperationsPanel() {
     setErr("");
     try {
       const [manifestResp, surfaceResp, auditResp, notifResp, opProofResp] = await Promise.all([
-        api("/api/operation-verification/manifest", { token }),
-        api("/api/operation-verification/role-surface?role=SUPER_ADMIN", { token }),
-        api("/api/admin/audit-logs?take=200", { token }),
-        api("/api/notifications/my", { token }).catch(() => []),
+        cachedGet("/api/operation-verification/manifest", { token, ttlMs: 10 * 60 * 1000, delayMs: 90 }),
+        cachedGet("/api/operation-verification/role-surface?role=SUPER_ADMIN", { token, ttlMs: 10 * 60 * 1000, delayMs: 90 }),
+        cachedGet("/api/admin/audit-logs?take=200", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/notifications/my", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
         getOperationProofSummary({}, { token }).catch(() => null),
       ]);
       setManifest(manifestResp || null);

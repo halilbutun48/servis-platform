@@ -9,6 +9,7 @@ import CollapsibleSection from "../../components/CollapsibleSection";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { isoFromTRDateInput, isoFromTRLocalInput, toDatetimeLocalTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { cachedGet } from "../../utils/uiDataCache";
 import {
   VEHICLE_TEMPLATES_TR,
   TABS,
@@ -175,8 +176,12 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   async function load(opts = {}) {
     try {
       const includeArchived = opts.includeArchived ?? showArchived;
+      const force = Boolean(opts.force);
       const path = includeArchived ? "/api/vehicles?includeArchived=1" : "/api/vehicles";
-      const [v, d] = await Promise.all([api(path, { token }), api("/api/drivers", { token })]);
+      const [v, d] = await Promise.all([
+        cachedGet(path, { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/drivers", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+      ]);
 
       const vv = normalizeList(v);
       const dd = normalizeList(d);
@@ -303,7 +308,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
       setTemplateId("");
       setPlate("");
       showToast("Araç eklendi");
-      await load();
+      await load({ force: true });
     } catch (e2) {
       const { msg } = pickErr(e2);
       setErr(String(msg));
@@ -431,7 +436,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
       });
       showToast("Sürücü bağlandı");
       setBindSel((p) => ({ ...p, [vehicleId]: "" }));
-      await load();
+      await load({ force: true });
     } catch (e) {
       const { msg, code, status, payload } = pickErr(e);
 
@@ -468,7 +473,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
         body: { driverId: null },
       });
       showToast("Bağlantı kaldırıldı", "warn");
-      await load();
+      await load({ force: true });
     } catch (e) {
       const { msg, status } = pickErr(e);
       if (Number(status) === 409) setErr(`Uygun değil (409): ${msg}`);
@@ -511,7 +516,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
 
       showToast("Transfer tamamlandı", "warn");
       setBindSel((p) => ({ ...p, [toVehicleId]: "" }));
-      await load();
+      await load({ force: true });
     } catch (e) {
       const { msg, status } = pickErr(e);
       if (Number(status) === 409) setErr(`Uygun değil (409): ${msg}`);
@@ -590,7 +595,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
 
       setEditOpen(false);
       showToast("Araç güncellendi");
-      await load();
+      await load({ force: true });
     } catch (e) {
       const { msg } = pickErr(e);
       setErr(String(msg));
@@ -617,7 +622,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
       if (resp?.archived === true) showToast("Arşivlendi (shift bağlı)", "warn");
       else showToast("Silindi");
 
-      await load();
+      await load({ force: true });
     } catch (e) {
       const { msg } = pickErr(e);
       setErr(String(msg));

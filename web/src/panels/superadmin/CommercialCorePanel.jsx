@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../api";
 import { Card, fmtBps, fmtDateTime, InputRow, stripHtmlNoise } from "./commercialCorePanelShared";
 import { readOptional } from "./commercialCorePanelOptionalStates";
 import { buildPaymentSourceQuery } from "./commercialCorePanelUtils";
@@ -15,6 +14,7 @@ import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import { getOperationProofSummary, getPaymentBackboneReadinessPreview } from "../../api";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function MetricTile({ title, value, help, tone = "normal" }) {
   const borderColor =
@@ -103,11 +103,11 @@ export default function CommercialCorePanel() {
 
   const load = useCallback(async () => {
     if (!token) return;
-    setErr("");
-    try {
+      setErr("");
+      try {
       const [m, l, pbRes, cfgRes, accountStatusRes, settlementStatusRes, settlementQueueRes, previewRes, opProofRes] = await Promise.all([
-        api("/api/commercial-core/manifest").catch(() => null),
-        api("/api/commercial-core/lifecycle-template").catch(() => null),
+        cachedGet("/api/commercial-core/manifest", { token, ttlMs: 10 * 60 * 1000, delayMs: 90 }).catch(() => null),
+        cachedGet("/api/commercial-core/lifecycle-template", { token, ttlMs: 10 * 60 * 1000, delayMs: 90 }).catch(() => null),
         readOptional("/api/commercial-core/payment-backbone/status", "paymentBackbone"),
         readOptional("/api/commercial-core/payment-backbone/settings", "settings"),
         readOptional("/api/commercial-core/payment-backbone/accounts/status", "accountStatus"),
@@ -163,7 +163,7 @@ export default function CommercialCorePanel() {
           readOptional("/api/commercial-core/payment-backbone/required/status", "requiredStatus"),
           readOptional("/api/commercial-core/payment-backbone/required/candidates?take=12", "requiredCandidates"),
           readOptional("/api/commercial-core/payment-backbone/accounts/candidates?take=12", "accountCandidates"),
-          api("/api/rooms?take=200").catch(() => ({ items: [] })),
+          cachedGet("/api/rooms?take=200", { token, ttlMs: 10 * 60 * 1000, delayMs: 90 }).catch(() => ({ items: [] })),
         ]);
         const pilot = pilotRes?.data || null;
         const pilotItems = pilotCandidatesRes?.ok ? (pilotCandidatesRes?.data?.items || []) : [];

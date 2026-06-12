@@ -20,6 +20,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
   "backend/scripts/copilot_excel_demand_import_01_check.js",
   "backend/scripts/address_geocoding_confidence_01_check.js",
+  "backend/scripts/copilot_stop_route_draft_01_check.js",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
@@ -39,6 +40,7 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
   "backend/src/ai/chat/copilotExcelDemandImportPolicy.js",
   "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
+  "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
   "web/src/utils/safeDriveSummary.js",
   "web/src/utils/offerQualityRanking.js",
   "web/src/panels/shared/SafeDriveSummaryCard.jsx",
@@ -263,6 +265,7 @@ function slugToMilestone(slug) {
     [/copilothumanapproval0?1/i, "COPILOT-HUMAN-APPROVAL-01"], // check:copilothumanapproval01
     [/copilotexceldemandimport0?1/i, "COPILOT-EXCEL-DEMAND-IMPORT-01"], // check:copilotexceldemandimport01
     [/addressgeocodingconfidence0?1/i, "ADDRESS-GEOCODING-CONFIDENCE-01"], // check:addressgeocodingconfidence01
+    [/copilotstoproutedraft0?1/i, "COPILOT-STOP-ROUTE-DRAFT-01"], // check:copilotstoproutedraft01
     [/final/i, "FINAL"],
     [/verifychain0?1/i, "VERIFY-CHAIN-01"],
     [/productextensions/i, "PRODUCT-EXTENSIONS"],
@@ -285,7 +288,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -863,7 +866,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1421,6 +1424,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot Excel demand import check: \`check:copilotexceldemandimport01\``);
   out.push(`- Copilot Excel demand import docs: \`docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md\``);
   out.push(`- Copilot Excel demand import command: \`node backend\\scripts\\copilot_excel_demand_import_01_check.js\``);
+  out.push(`- Copilot stop/route draft milestone: \`COPILOT-STOP-ROUTE-DRAFT-01\``);
+  out.push(`- Copilot stop/route draft check: \`check:copilotstoproutedraft01\``);
+  out.push(`- Copilot stop/route draft docs: \`docs/COPILOT_STOP_ROUTE_DRAFT_01.md\``);
+  out.push(`- Copilot stop/route draft command: \`node backend\\scripts\\copilot_stop_route_draft_01_check.js\``);
+  out.push(`- Copilot stop/route draft helper: \`backend/src/ai/chat/copilotStopRouteDraftPolicy.js\``);
   out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
   out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
   out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);
@@ -1783,6 +1791,11 @@ function verifyDoc(docText, summary) {
     "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
     "node backend\\scripts\\copilot_excel_demand_import_01_check.js",
     "backend/src/ai/chat/copilotExcelDemandImportPolicy.js",
+    "COPILOT-STOP-ROUTE-DRAFT-01",
+    "check:copilotstoproutedraft01",
+    "docs/COPILOT_STOP_ROUTE_DRAFT_01.md",
+    "node backend\\scripts\\copilot_stop_route_draft_01_check.js",
+    "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
     "ADDRESS-GEOCODING-CONFIDENCE-01",
     "check:addressgeocodingconfidence01",
     "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",

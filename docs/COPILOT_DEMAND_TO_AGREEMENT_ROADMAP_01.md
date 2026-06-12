@@ -33,6 +33,7 @@ Repo: `servis-platform`
 
 ### STAGE 3 - Stop / Route Draft Readiness
 - Stop / route taslak hazırlığına yönlendirir.
+- Bu stage `COPILOT-STOP-ROUTE-DRAFT-01` ile ayrı docs/check katmanı olarak kilitlenir; inbound / outbound direction modelini, hub readiness'i ve capacity readiness'i okur.
 - OSRM / rota sinyali ileride kullanılabilir ama bu milestone’da route apply yok.
 - Taslak / önizleme / kontrol edilmeli dili kullanır.
 

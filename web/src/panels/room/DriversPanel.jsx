@@ -15,6 +15,7 @@ import RoomDriversShiftsTable from "./RoomDriversShiftsTable";
 import RoomDriversEditModal from "./RoomDriversEditModal";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function upperTr(value) {
   const text = String(value ?? "").trim();
@@ -167,15 +168,27 @@ export default function DriversPanel() {
     });
   }
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts = {}) => {
+    const force = Boolean(opts?.force);
     setErr("");
     try {
       // Drivers router now returns boundVehicle/currentShift/nextShift too,
       // but UI also works even if those fields are missing (fallback via /api/vehicles).
-      const [d, v] = await Promise.all([api("/api/drivers", { token }), api("/api/vehicles", { token })]);
+      const [d, v] = await Promise.all([
+        cachedGet("/api/drivers", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/vehicles", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+      ]);
       setDrivers(Array.isArray(d) ? d : []);
       setVehicles(Array.isArray(v) ? v : []);
-      const penaltyPairs = await Promise.all((Array.isArray(d) ? d.slice(0, 8) : []).map(async (row) => { try { const r = await api(`/api/penalties/drivers/${row.id}`, { token }); const items = Array.isArray(r?.items) ? r.items : []; return [Number(row.id), items.find((x) => x?.isActive || x?.effectiveStatus === "ACTIVE") || items[0] || null]; } catch { return [Number(row.id), null]; } }));
+      const penaltyPairs = await Promise.all((Array.isArray(d) ? d.slice(0, 8) : []).map(async (row) => {
+        try {
+          const r = await cachedGet(`/api/penalties/drivers/${row.id}`, { token, force, ttlMs: 10 * 60 * 1000, delayMs: 80 });
+          const items = Array.isArray(r?.items) ? r.items : [];
+          return [Number(row.id), items.find((x) => x?.isActive || x?.effectiveStatus === "ACTIVE") || items[0] || null];
+        } catch {
+          return [Number(row.id), null];
+        }
+      }));
       setPenaltiesByDriverId(Object.fromEntries(penaltyPairs));
 
       setFocusDriverId((prev) => prev || (Array.isArray(d) && d.length ? Number(d[0].id) : prev));
@@ -196,7 +209,7 @@ export default function DriversPanel() {
     return () => clearInterval(timer);
   }, [token, load]);
 
-  useAutoReload("drivers", load);
+  useAutoReload("drivers", () => load());
   useAutoReload("vehicles", (detail) => {
     const m = detail?.payload?.msg;
     const ev = m?._event;
@@ -388,7 +401,7 @@ export default function DriversPanel() {
       } : null);
 
       showToast("Sürücü eklendi");
-      await load();
+      await load({ force: true });
     } catch (e2) {
       setErr(getErrMsg(e2));
     } finally {
@@ -408,7 +421,7 @@ export default function DriversPanel() {
         ...r.issuedCredentials,
       } : null);
       showToast("Yeni geçici PIN üretildi", "warn");
-      await load();
+      await load({ force: true });
     } catch (e) {
       setErr(getErrMsg(e));
     } finally {
@@ -427,7 +440,7 @@ export default function DriversPanel() {
       const r = await api(`/api/drivers/${driver.id}/reset-device`, { method: "POST", token, body: {} });
       setIssuedCreds(null);
       showToast(r?.hadDeviceBinding ? "Cihaz bağı sıfırlandı" : "Kayıtlı cihaz bağı yoktu, erişim sıfırlandı", "warn");
-      await load();
+      await load({ force: true });
     } catch (e) {
       setErr(getErrMsg(e));
     } finally {
@@ -470,7 +483,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
 
       setEditOpen(false);
       showToast("Güncellendi");
-      await load();
+      await load({ force: true });
     } catch (e) {
       setErr(getErrMsg(e));
     } finally {
@@ -487,7 +500,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
     try {
       await api(`/api/drivers/${d.id}`, { method: "DELETE", token });
       showToast("Silindi");
-      await load();
+      await load({ force: true });
     } catch (e) {
       setErr(getErrMsg(e));
     } finally {
@@ -543,7 +556,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       await api.post('/api/penalties/no-show', { driverId: Number(driver.id), durationDays: Number(payload.durationDays || 1), reason: payload.reason || '' }, { token });
       setPenaltyOpenDriverId(0);
       showToast('Gelmedi kaydı eklendi', 'warn');
-      await load();
+      await load({ force: true });
     } catch (e) {
       setErr(getErrMsg(e));
     } finally {

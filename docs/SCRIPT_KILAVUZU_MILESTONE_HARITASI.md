@@ -192,6 +192,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-EXCEL-DEMAND-IMPORT-01`, `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` ve `COPILOT-ROLE-TASK-MATRIX-01` guardrail hattıyla birlikte okunur; runtime geocode, tool execution, write-action dispatcher, provider credential management, user/account/admin write-action ve KVKK / data safety sınırlarını açmaz.
 - Sonraki güvenli hatlar: `COPILOT-STOP-ROUTE-DRAFT-01`, `OSRM-ROUTE-DRAFT-FROM-EXCEL-01`, `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01`, `COPILOT-DEMAND-INTAKE-01`.
 
+### COPILOT-STOP-ROUTE-DRAFT-01 [CHECK]
+- `check:copilotstoproutedraft01` stop / route draft readiness, inbound / outbound direction model, hub readiness, capacity readiness ve human review gate docs/check olarak kilitler; runtime stop create, route draft apply, OSRM execute ve driver / vehicle assignment açmaz.
+- Check script: `node backend\scripts\copilot_stop_route_draft_01_check.js`
+- Doküman: `docs/COPILOT_STOP_ROUTE_DRAFT_01.md`
+- Static helper: `backend/src/ai/chat/copilotStopRouteDraftPolicy.js`
+- Bu check, `COPILOT-EXCEL-DEMAND-IMPORT-01`, `ADDRESS-GEOCODING-CONFIDENCE-01`, `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`, `COPILOT-HUMAN-APPROVAL-01` ve `COPILOT-ROLE-TASK-MATRIX-01` guardrail hattıyla birlikte okunur; runtime stop create, route draft apply, route apply, dispatch apply ve runtime AI action açmaz.
+- Sonraki güvenli hatlar: `OSRM-ROUTE-DRAFT-FROM-EXCEL-01`, `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01`, `COPILOT-DEMAND-INTAKE-01`.
+
 ### ETA-SANITY-01 [CHECK]
 - `check:etasanity01` canlı takipte GPS stale/offline/unknown durumunda ETA’yı güvenli ve kesin olmayan ifadelerle gösterir.
 - Room, Company, Parent, Personel ve Driver canlı yüzeyleri ile Copilot yardım metinleri aynı güvenli ETA / GPS mantığına bağlanır.

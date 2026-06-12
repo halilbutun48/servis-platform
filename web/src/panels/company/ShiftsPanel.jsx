@@ -301,8 +301,8 @@ useEffect(() => {
     setErr("");
     try {
       const [sh, agreementsResp] = await Promise.all([
-        getCompanyShifts(token, { signal, ttlMs: 25000, take: 32 }),
-        getCompanyAgreements(token, { signal, take: 200, ttlMs: 8000, delayMs: 90 }).catch(() => ({ items: [] })),
+        getCompanyShifts(token, { signal, ttlMs: 25000, take: 32, delayMs: 20 }),
+        getCompanyAgreements(token, { signal, take: 200, ttlMs: 8000, delayMs: 20 }).catch(() => ({ items: [] })),
       ]);
       if (signal?.aborted) return;
 
@@ -324,12 +324,12 @@ useEffect(() => {
   const loadRef = useRef(load);
 loadRef.current = load;
 
-useEffect(() => {
+  useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
     const timer = setTimeout(() => {
       if (!cancelled) loadRef.current(controller.signal, { withReferences: false });
-    }, 320);
+    }, 0);
     return () => {
       cancelled = true;
       controller.abort();

@@ -78,6 +78,7 @@ const steps = [
   'check:copilothumanapproval01',
   'check:copilotexceldemandimport01',
   'check:addressgeocodingconfidence01',
+  'check:copilotstoproutedraft01',
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
   'check:uxcopilotterminal01',

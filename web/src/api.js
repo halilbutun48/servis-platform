@@ -1,6 +1,10 @@
 //web/src/api.js
 import { getApiErrorInfo, getApiErrorMessage } from "./utils/apiContract";
 import { makeHttpError } from "./utils/apiContract";
+import { cachedGet, clearUiDataCache } from "./utils/uiDataCache";
+
+const DEFAULT_READ_TTL_MS = 10 * 60 * 1000;
+const DEFAULT_READ_DELAY_MS = 80;
 
 export function getToken() {
   return (localStorage.getItem("token") || "").trim();
@@ -38,6 +42,7 @@ function buildQueryString(params = {}) {
 }
 
 export async function api(path, { method = "GET", body, token, signal } = {}) {
+  const verb = String(method || "GET").toUpperCase();
   const headers = { "Content-Type": "application/json" };
 
   const t = ((token ?? getToken()) || "").trim();
@@ -65,7 +70,11 @@ export async function api(path, { method = "GET", body, token, signal } = {}) {
     throw makeHttpError(res.status, txt || res.statusText);
   }
 
-  return ct.includes("application/json") ? res.json() : res.text();
+  const result = ct.includes("application/json") ? await res.json() : await res.text();
+  if (verb !== "GET") {
+    clearUiDataCache();
+  }
+  return result;
 }
 // ✅ convenience helpers (SuperAdmin panelleri api.get/post/put/del kullanıyor)
 api.get = (path, opts = {}) => api(path, { ...opts, method: "GET" });
@@ -82,7 +91,7 @@ export async function submitPublicLead(payload = {}) {
 
 export async function listPublicLeadReviewQueue(params = {}, { token } = {}) {
   const qs = buildQueryString(params);
-  return api(`/api/admin/public-leads${qs}`, { token });
+  return cachedGet(`/api/admin/public-leads${qs}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function updatePublicLeadReviewStatus(leadId, payload = {}, { token } = {}) {
@@ -115,12 +124,12 @@ export async function createBoardingChangeRequest(payload = {}, { token } = {}) 
 
 export async function getBoardingChangeRequestContext(params = {}, { token } = {}) {
   const qs = buildQueryString(params);
-  return api(`/api/requests/context${qs}`, { token });
+  return cachedGet(`/api/requests/context${qs}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function listMyBoardingChangeRequests(params = {}, { token } = {}) {
   const qs = buildQueryString(params);
-  return api(`/api/requests/mine${qs}`, { token });
+  return cachedGet(`/api/requests/mine${qs}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function login(identifier, password) {
@@ -152,7 +161,7 @@ export async function login(identifier, password) {
 
 
 export async function getTotpStatus(token) {
-  return api("/api/auth/totp/status", { token });
+  return cachedGet("/api/auth/totp/status", { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function setupTotp(token) {
@@ -205,7 +214,7 @@ export async function changePassword({ currentPassword, newPassword, confirmPass
 }
 
 export async function listPersonelAccessInvites(token, take = 100) {
-  return api(`/api/company/personel-invites?take=${encodeURIComponent(String(take || 100))}`, { token });
+  return cachedGet(`/api/company/personel-invites?take=${encodeURIComponent(String(take || 100))}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function createPersonelAccessInvite({ token, personelId }) {
@@ -225,7 +234,7 @@ export async function revokePersonelAccessInvite({ token, id }) {
 }
 
 export async function getPersonelInviteInfo(tokenValue) {
-  return api(`/api/auth/personel-invite/info?token=${encodeURIComponent(String(tokenValue || ""))}`);
+  return cachedGet(`/api/auth/personel-invite/info?token=${encodeURIComponent(String(tokenValue || ""))}`, { ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function acceptPersonelInvite(body) {
@@ -236,7 +245,7 @@ export async function acceptPersonelInvite(body) {
 }
 
 export async function getOperationProofSummary(params = {}, { token } = {}) {
-  return api(`/api/operation-proof/summary${buildQueryString(params)}`, { token });
+  return cachedGet(`/api/operation-proof/summary${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function postOperationProofManualNote(payload, { token } = {}) {
@@ -256,7 +265,7 @@ export function normalizeOperationProofErrorMessage(error, fallbackMessage = "İ
 }
 
 export async function getQualityProofSignalSummary(params = {}, { token } = {}) {
-  return api(`/api/trust-quality/proof-signals/summary${buildQueryString(params)}`, { token });
+  return cachedGet(`/api/trust-quality/proof-signals/summary${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export function normalizeQualityProofError(error, fallbackMessage = "İşlem başarısız.") {
@@ -268,7 +277,7 @@ export function normalizeQualityProofErrorMessage(error, fallbackMessage = "İş
 }
 
 export async function getQualityDraftScoreSummary(params = {}, { token } = {}) {
-  return api(`/api/trust-quality/draft-score/summary${buildQueryString(params)}`, { token });
+  return cachedGet(`/api/trust-quality/draft-score/summary${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export function normalizeQualityDraftError(error, fallbackMessage = "İşlem başarısız.") {
@@ -280,7 +289,7 @@ export function normalizeQualityDraftErrorMessage(error, fallbackMessage = "İş
 }
 
 export async function getQualityReviewDecisionSummary(params = {}, { token } = {}) {
-  return api(`/api/trust-quality/review-decision/summary${buildQueryString(params)}`, { token });
+  return cachedGet(`/api/trust-quality/review-decision/summary${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function postQualityReviewDecision(payload, { token } = {}) {
@@ -292,28 +301,28 @@ export async function postQualityReviewDecision(payload, { token } = {}) {
 }
 
 export async function getQualityReviewDecisionHistory(params = {}, { token } = {}) {
-  return api(`/api/trust-quality/review-decision/history${buildQueryString(params)}`, { token });
+  return cachedGet(`/api/trust-quality/review-decision/history${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function getPaymentBackboneReadinessPreview(params = {}, { token } = {}) {
-  return api(`/api/commercial-core/payment-backbone/readiness/preview${buildQueryString(params)}`, { token });
+  return cachedGet(`/api/commercial-core/payment-backbone/readiness/preview${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function getPaymentBackboneReadinessPreviewCsv(params = {}, { token } = {}) {
-  return api(`/api/commercial-core/payment-backbone/readiness/preview.csv${buildQueryString(params)}`, { token });
+  return cachedGet(`/api/commercial-core/payment-backbone/readiness/preview.csv${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function getAgreementQualityPaymentBridgePreview(agreementId, { token, signal } = {}) {
-  return api(`/api/agreements/${Number(agreementId)}/quality-payment-bridge`, { token, signal });
+  return cachedGet(`/api/agreements/${Number(agreementId)}/quality-payment-bridge`, { token, signal, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
 export async function getAgreementSeferScorePreview(agreementId, { token, signal } = {}) {
-  const payload = await api(`/api/agreements/${Number(agreementId)}/sefer-score-preview`, { token, signal });
+  const payload = await cachedGet(`/api/agreements/${Number(agreementId)}/sefer-score-preview`, { token, signal, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
   return payload?.seferScorePreview ?? payload;
 }
 
 export async function getAgreementPlatformFeePreview(agreementId, { token, signal } = {}) {
-  const payload = await api(`/api/agreements/${Number(agreementId)}/platform-fee-preview`, { token, signal });
+  const payload = await cachedGet(`/api/agreements/${Number(agreementId)}/platform-fee-preview`, { token, signal, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
   return payload?.platformFeePreview ?? payload;
 }
 

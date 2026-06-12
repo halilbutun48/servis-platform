@@ -1,7 +1,8 @@
 // web/src/state/sessionProvider.jsx
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, clearToken, getToken, setToken } from "../api";
 import { startLiveWs, stopLiveWs } from "../live/ws";
+import { clearUiDataCache } from "../utils/uiDataCache";
 import { SessionCtx } from "./sessionContext";
 
 const SESSION_CACHE_KEY = "personel_servis_cached_session";
@@ -69,8 +70,13 @@ export function SessionProvider({ children }) {
   const [token, setTok] = useState(initialToken);
   const [me, setMe] = useState(() => readCachedSession(initialToken));
   const [authErr, setAuthErr] = useState("");
+  const prevTokenRef = useRef(initialToken);
 
   useEffect(() => {
+    if (prevTokenRef.current !== token) {
+      clearUiDataCache();
+      prevTokenRef.current = token;
+    }
     if (token) setToken(token);
   }, [token]);
 
@@ -81,6 +87,7 @@ export function SessionProvider({ children }) {
       // no-op: best effort logout cleanup
     }
     clearToken();
+    clearUiDataCache();
     clearCachedSession();
     setTok("");
     setMe(null);

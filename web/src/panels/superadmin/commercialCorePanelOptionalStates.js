@@ -1,4 +1,4 @@
-import { api } from "../../api";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function buildOptionalEndpointState(kind, status) {
   const baseCards = { commercialSources: 0, agreementSources: 0, shiftSeriesSources: 0, settlementPlans: 0, paymentAccounts: 0, commissionRules: 0 };
@@ -267,7 +267,7 @@ function buildRateLimitedOptionalState(kind) {
 
 export async function readOptional(path, fallbackKind) {
   try {
-    const result = await api(path);
+    const result = await cachedGet(path, { ttlMs: 10 * 60 * 1000, delayMs: 90 });
     return { ok: true, data: result };
   } catch (e) {
     const status = Number(e?.status || 0);

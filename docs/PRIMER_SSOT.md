@@ -35,6 +35,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `COPILOT-HUMAN-APPROVAL-01` Sefer Abi için kritik işlemlerde human approval / confirmation modelini docs/check olarak kilitler; `check:copilothumanapproval01` ve `docs/COPILOT_HUMAN_APPROVAL_01.md` ile yaşar.
 - `COPILOT-EXCEL-DEMAND-IMPORT-01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check kilididir; `check:copilotexceldemandimport01` ve `docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md` ile yaşar.
 - `ADDRESS-GEOCODING-CONFIDENCE-01` servis adresi kalite sözlüğü, geocoding readiness modeli, confidence bands, risk sınıfları ve human-review gate docs/check kilididir; `check:addressgeocodingconfidence01` ve `docs/ADDRESS_GEOCODING_CONFIDENCE_01.md` ile yaşar; Excel demand import sonrası stop/route draft hattına güvenli giriş kapısıdır.
+- `COPILOT-STOP-ROUTE-DRAFT-01` stop / route draft readiness docs/check kilididir; `check:copilotstoproutedraft01` ve `docs/COPILOT_STOP_ROUTE_DRAFT_01.md` ile yaşar; inbound / outbound direction model, hub readiness, capacity readiness ve human review gate'i kilitler.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

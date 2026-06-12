@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `365`
-- Toplam executable tracked file: `1148`
-- Combined registry row: `1513`
-- Root/backend/web/mobile package dağılımı: root `208`, backend `711`, web `90`, mobile `201`
+- Toplam package script entry: `366`
+- Toplam executable tracked file: `1150`
+- Combined registry row: `1516`
+- Root/backend/web/mobile package dağılımı: root `209`, backend `713`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -127,6 +127,11 @@ Repo: `servis-platform`
 - Copilot Excel demand import check: `check:copilotexceldemandimport01`
 - Copilot Excel demand import docs: `docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md`
 - Copilot Excel demand import command: `node backend\scripts\copilot_excel_demand_import_01_check.js`
+- Copilot stop/route draft milestone: `COPILOT-STOP-ROUTE-DRAFT-01`
+- Copilot stop/route draft check: `check:copilotstoproutedraft01`
+- Copilot stop/route draft docs: `docs/COPILOT_STOP_ROUTE_DRAFT_01.md`
+- Copilot stop/route draft command: `node backend\scripts\copilot_stop_route_draft_01_check.js`
+- Copilot stop/route draft helper: `backend/src/ai/chat/copilotStopRouteDraftPolicy.js`
 - Address geocoding confidence milestone: `ADDRESS-GEOCODING-CONFIDENCE-01`
 - Address geocoding confidence check: `check:addressgeocodingconfidence01`
 - Address geocoding confidence docs: `docs/ADDRESS_GEOCODING_CONFIDENCE_01.md`
@@ -136,7 +141,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `387`
-- ACTIVE_CORE: `164`
+- ACTIVE_CORE: `165`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -152,11 +157,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `544`
+- NEEDS_REVIEW: `546`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `294`
+- Eski sistem term eşleşmesi: `296`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -166,14 +171,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 387 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 164 |
+| ACTIVE_CORE | 165 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 544 |
+| NEEDS_REVIEW | 546 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -240,6 +245,7 @@ Repo: `servis-platform`
 | root:check:copilothumanapproval01 | package.json | root | node backend/scripts/copilot_human_approval_01_check.js | core | ACTIVE_CORE |  | COPILOT-HUMAN-APPROVAL-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotexceldemandimport01 | package.json | root | node backend/scripts/copilot_excel_demand_import_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-EXCEL-DEMAND-IMPORT-01 |  | Breaks canonical verification chain |  |
 | root:check:addressgeocodingconfidence01 | package.json | root | node backend/scripts/address_geocoding_confidence_01_check.js | verify-core | ACTIVE_CORE |  | ADDRESS-GEOCODING-CONFIDENCE-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotstoproutedraft01 | package.json | root | node backend/scripts/copilot_stop_route_draft_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-STOP-ROUTE-DRAFT-01 |  | Breaks canonical verification chain |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -480,6 +486,7 @@ Repo: `servis-platform`
 | _repoContractState.js | backend/scripts/_repoContractState.js | backend |  | helper | ACTIVE |  | REPO-CONTRACT-STATE |  | Owner or chain unclear | internal helper |
 | _static_milestone_check.js | backend/scripts/_static_milestone_check.js | backend |  | helper | ACTIVE |  | STATIC-MILESTONE-CHECK |  | Owner or chain unclear | internal helper |
 | _totp_harness.js | backend/scripts/_totp_harness.js | backend |  | helper | ACTIVE |  | TOTP-HARNESS |  | Owner or chain unclear | internal helper |
+| address_geocoding_confidence_01_check.js | backend/scripts/address_geocoding_confidence_01_check.js | backend | root:check:addressgeocodingconfidence01 | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-01-CHECK |  | Owner or chain unclear |  |
 | agreement_source_shift_lineage_01_check.js | backend/scripts/agreement_source_shift_lineage_01_check.js | backend | root:check:agreementsourceshiftlineage01 | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT-LINEAGE-01-CHECK |  | Owner or chain unclear |  |
 | audit_logs_session_hotfix_check.mjs | backend/scripts/audit_logs_session_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | AUDIT-LOGS-SESSION-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_dev_toggle_01_check.js | backend/scripts/auth_stepup_dev_toggle_01_check.js | backend | root:check:authstepupdevtoggle01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-DEV-TOGGLE-01-CHECK |  | Owner or chain unclear |  |
@@ -874,6 +881,7 @@ Repo: `servis-platform`
 | verify_chain_01_product_extensions_check.js | backend/scripts/verify_chain_01_product_extensions_check.js | backend | root:check:verifychain01 | product-extensions | ACTIVE_CORE |  | VERIFY-CHAIN-01-PRODUCT-EXTENSIONS-CHECK |  | Owner or chain unclear | canonical runner |
 | web_01a_flow_summary_polish_check.js | backend/scripts/web_01a_flow_summary_polish_check.js | backend | root:check:web01a | review | NEEDS_REVIEW |  | WEB-01-A-FLOW-SUMMARY-POLISH-CHECK |  | Owner or chain unclear |  |
 | web_01b_superadmin_system_mode_summary_check.js | backend/scripts/web_01b_superadmin_system_mode_summary_check.js | backend | root:check:web01b | review | NEEDS_REVIEW |  | WEB-01-B-SUPERADMIN-SYSTEM-MODE-SUMMARY-CHECK |  | Owner or chain unclear |  |
+| addressGeocodingConfidencePolicy.js | backend/src/ai/chat/addressGeocodingConfidencePolicy.js | backend |  | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-POLICY |  | Owner or chain unclear |  |
 | answerQualityPolicy.js | backend/src/ai/chat/answerQualityPolicy.js | backend |  | review | NEEDS_REVIEW |  | ANSWER-QUALITY-POLICY |  | Owner or chain unclear |  |
 | contextResolver.js | backend/src/ai/chat/contextResolver.js | backend |  | review | NEEDS_REVIEW |  | CONTEXT-RESOLVER |  | Owner or chain unclear |  |
 | copilotAiActionRoadmap.js | backend/src/ai/chat/copilotAiActionRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP |  | Owner or chain unclear |  |
@@ -1112,8 +1120,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| address_geocoding_confidence_01_check.js | backend/scripts/address_geocoding_confidence_01_check.js | backend | root:check:addressgeocodingconfidence01 | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-01-CHECK |  | Owner or chain unclear |  |
-| addressGeocodingConfidencePolicy.js | backend/src/ai/chat/addressGeocodingConfidencePolicy.js | backend |  | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-POLICY |  | Owner or chain unclear |  |
+| copilot_stop_route_draft_01_check.js | backend/scripts/copilot_stop_route_draft_01_check.js | backend | root:check:copilotstoproutedraft01 | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-01-CHECK |  | Owner or chain unclear |  |
+| copilotStopRouteDraftPolicy.js | backend/src/ai/chat/copilotStopRouteDraftPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-POLICY |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
