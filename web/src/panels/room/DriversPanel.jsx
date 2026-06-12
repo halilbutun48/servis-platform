@@ -175,14 +175,14 @@ export default function DriversPanel() {
       const [d, v] = await Promise.all([api("/api/drivers", { token }), api("/api/vehicles", { token })]);
       setDrivers(Array.isArray(d) ? d : []);
       setVehicles(Array.isArray(v) ? v : []);
-      const penaltyPairs = await Promise.all((Array.isArray(d) ? d.slice(0, 20) : []).map(async (row) => { try { const r = await api(`/api/penalties/drivers/${row.id}`, { token }); const items = Array.isArray(r?.items) ? r.items : []; return [Number(row.id), items.find((x) => x?.isActive || x?.effectiveStatus === "ACTIVE") || items[0] || null]; } catch { return [Number(row.id), null]; } }));
+      const penaltyPairs = await Promise.all((Array.isArray(d) ? d.slice(0, 8) : []).map(async (row) => { try { const r = await api(`/api/penalties/drivers/${row.id}`, { token }); const items = Array.isArray(r?.items) ? r.items : []; return [Number(row.id), items.find((x) => x?.isActive || x?.effectiveStatus === "ACTIVE") || items[0] || null]; } catch { return [Number(row.id), null]; } }));
       setPenaltiesByDriverId(Object.fromEntries(penaltyPairs));
 
-      if (!focusDriverId && Array.isArray(d) && d.length) setFocusDriverId(Number(d[0].id));
+      setFocusDriverId((prev) => prev || (Array.isArray(d) && d.length ? Number(d[0].id) : prev));
     } catch (e) {
       setErr(getErrMsg(e));
     }
-  }, [token, focusDriverId]);
+  }, [token]);
 
   useEffect(() => {
     load();

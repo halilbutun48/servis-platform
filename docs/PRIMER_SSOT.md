@@ -32,6 +32,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `COPILOT-ROLE-TASK-MATRIX-01` Sefer Abi / Copilot rol/task matrix ve guardrail katmanını docs/check olarak kilitler; `check:copilotroletaskmatrix01` ve `docs/COPILOT_ROLE_TASK_MATRIX_01.md` ile yaşar.
 - `COPILOT-AI-ACTION-ROADMAP-01` Sefer Abi için future-only AI action phase modelini docs/check olarak kilitler; `check:copilotairoadmap01` ve `docs/COPILOT_AI_ACTION_ROADMAP_01.md` ile yaşar.
 - `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` Sefer Abi için future-only talep -> teklif -> sözleşme hazırlık yol haritasını docs/check olarak kilitler; `check:copilotdemandagreement01` ve `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md` ile yaşar.
+- `COPILOT-HUMAN-APPROVAL-01` Sefer Abi için kritik işlemlerde human approval / confirmation modelini docs/check olarak kilitler; `check:copilothumanapproval01` ve `docs/COPILOT_HUMAN_APPROVAL_01.md` ile yaşar.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

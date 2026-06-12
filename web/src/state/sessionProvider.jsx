@@ -38,6 +38,32 @@ function clearCachedSession() {
   }
 }
 
+function decodeJwtClaims(token) {
+  const safeToken = String(token || "").trim();
+  if (!safeToken) return null;
+  try {
+    const parts = safeToken.split(".");
+    if (parts.length < 2) return null;
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payload.padEnd(payload.length + ((4 - (payload.length % 4)) % 4), "=");
+    const parsed = JSON.parse(globalThis.atob(padded));
+    const role = String(parsed?.role || "").trim().toUpperCase();
+    const userId = Number(parsed?.userId || parsed?.sub || 0) || null;
+    if (!role && !userId) return null;
+    return {
+      id: userId,
+      userId,
+      role: role || null,
+      sv: Number(parsed?.sv || 0) || 0,
+      stepUpUntil: Number(parsed?.stepUpUntil || 0) || 0,
+      requirePasswordChange: false,
+      requirePinChange: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function SessionProvider({ children }) {
   const initialToken = getToken();
   const [token, setTok] = useState(initialToken);
@@ -76,6 +102,13 @@ export function SessionProvider({ children }) {
       setAuthErr(String(e?.message || e));
 
       if (status === 429) {
+        const cached = readCachedSession(t);
+        const fallback = cached || decodeJwtClaims(t);
+        if (fallback) {
+          setMe(fallback);
+          setAuthErr("");
+          writeCachedSession(t, fallback);
+        }
         return;
       }
 

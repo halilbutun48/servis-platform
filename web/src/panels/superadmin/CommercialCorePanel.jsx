@@ -102,93 +102,112 @@ export default function CommercialCorePanel() {
   const [okMsg, setOkMsg] = useState("");
 
   const load = useCallback(async () => {
+    if (!token) return;
     setErr("");
     try {
-      const [m, l, pbRes, cfgRes, pilotRes, pilotCandidatesRes, requiredRes, requiredCandidatesRes, accountStatusRes, accountCandidatesRes, settlementStatusRes, settlementQueueRes, reconciliationStatusRes, reconciliationQueueRes, paymentSourcesRes, roomRes, previewRes, opProofRes] = await Promise.all([
-        api("/api/commercial-core/manifest"),
-        api("/api/commercial-core/lifecycle-template"),
+      const [m, l, pbRes, cfgRes, accountStatusRes, settlementStatusRes, settlementQueueRes, previewRes, opProofRes] = await Promise.all([
+        api("/api/commercial-core/manifest").catch(() => null),
+        api("/api/commercial-core/lifecycle-template").catch(() => null),
         readOptional("/api/commercial-core/payment-backbone/status", "paymentBackbone"),
         readOptional("/api/commercial-core/payment-backbone/settings", "settings"),
-        readOptional("/api/commercial-core/payment-backbone/pilot/status", "pilotStatus"),
-        readOptional("/api/commercial-core/payment-backbone/pilot/candidates?take=30", "pilotCandidates"),
-        readOptional("/api/commercial-core/payment-backbone/required/status", "requiredStatus"),
-        readOptional("/api/commercial-core/payment-backbone/required/candidates?take=30", "requiredCandidates"),
         readOptional("/api/commercial-core/payment-backbone/accounts/status", "accountStatus"),
-        readOptional("/api/commercial-core/payment-backbone/accounts/candidates?take=30", "accountCandidates"),
         readOptional("/api/commercial-core/payment-backbone/settlement/status", "settlementStatus"),
-        readOptional("/api/commercial-core/payment-backbone/settlement/queue?take=40", "settlementQueue"),
-        readOptional("/api/commercial-core/payment-backbone/reconciliation/status", "reconciliationStatus"),
-        readOptional("/api/commercial-core/payment-backbone/reconciliation/queue?take=40", "reconciliationQueue"),
-        readOptional(`/api/commercial-core/payment-backbone/sources?${buildPaymentSourceQuery(paymentSourceFilters, 20).toString()}`, "paymentSources"),
-        readOptional("/api/rooms?take=500", "rooms"),
+        readOptional("/api/commercial-core/payment-backbone/settlement/queue?take=20", "settlementQueue"),
         getPaymentBackboneReadinessPreview({}, { token }).catch(() => null),
         getOperationProofSummary({}, { token }).catch(() => null),
       ]);
+      const reasons = [];
       const pb = pbRes?.data || null;
       const cfg = cfgRes?.data || null;
-      const pilot = pilotRes?.data || null;
-      const pilotItems = pilotCandidatesRes?.ok ? (pilotCandidatesRes?.data?.items || []) : [];
-      const required = requiredRes?.data || null;
-      const requiredItems = requiredCandidatesRes?.ok ? (requiredCandidatesRes?.data?.items || []) : [];
       const accounts = accountStatusRes?.data || null;
-      const accountItems = accountCandidatesRes?.ok ? (accountCandidatesRes?.data?.items || []) : [];
       const settlement = settlementStatusRes?.data || null;
       const settlementItems = settlementQueueRes?.ok ? (settlementQueueRes?.data?.items || []) : [];
-      const reconciliation = reconciliationStatusRes?.data || null;
-      const reconciliationItems = reconciliationQueueRes?.ok ? (reconciliationQueueRes?.data?.items || []) : [];
-      const paymentSourcesData = paymentSourcesRes?.data || null;
-      const paymentSourceItems = paymentSourcesRes?.ok ? (paymentSourcesData?.items || []) : [];
-      const roomItems = roomRes?.ok ? (roomRes?.data?.items || []) : [];
+
       setManifest(m || null);
       setLifecycle(l || null);
       setPaymentBackbone(pb);
       setSettings(cfg);
-      setPilotStatus(pilot);
-      setPilotCandidatesMeta(pilotCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (pilotCandidatesRes?.data || { endpointStatus: "missing", summary: "Opsiyonel pilot aday endpointi okunamadı." }));
-      setPilotCandidates(pilotItems);
-      setRequiredStatus(required);
-      setRequiredCandidatesMeta(requiredCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (requiredCandidatesRes?.data || { endpointStatus: "missing", summary: "Zorunlu rollout aday endpointi okunamadı." }));
-      setRequiredCandidates(requiredItems);
       setAccountStatus(accounts);
-      setAccountCandidatesMeta(accountCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (accountCandidatesRes?.data || { endpointStatus: "missing", summary: "Ödeme hesabı aday endpointi okunamadı." }));
-      setAccountCandidates(accountItems);
       setSettlementStatus(settlement);
       setSettlementQueueMeta(settlementQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (settlementQueueRes?.data || { endpointStatus: "missing", summary: "Settlement operasyon kuyruğu endpointi okunamadı." }));
       setSettlementQueue(settlementItems);
-      setReconciliationStatus(reconciliation);
-      setReconciliationQueueMeta(reconciliationQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (reconciliationQueueRes?.data || { endpointStatus: "missing", summary: "Settlement mutabakat kuyruğu endpointi okunamadı." }));
-      setReconciliationQueue(reconciliationItems);
-      setPaymentSourcesMeta(paymentSourcesRes?.ok ? { endpointStatus: "ok", total: paymentSourcesData?.summary?.total ?? paymentSourceItems.length, summary: paymentSourcesData?.summary?.total != null ? `${paymentSourcesData.summary.total} kaynak` : "" } : (paymentSourcesRes?.data || { endpointStatus: "missing", summary: "Ödeme kaynakları endpointi okunamadı." }));
-      setPaymentSources(paymentSourceItems);
       setPaymentPreviewSummary(previewRes?.data || previewRes || null);
       setOperationProofSummary(opProofRes?.data || opProofRes || null);
-      setRooms(roomItems);
       setGlobalForm({
         paymentMode: cfg?.globalRule?.paymentMode || "OFF",
         commissionBps: Number(cfg?.globalRule?.commissionBps || 0),
         note: cfg?.globalRule?.note || "",
       });
-      if (!pbRes?.ok || !cfgRes?.ok || !pilotRes?.ok || !pilotCandidatesRes?.ok || !requiredRes?.ok || !requiredCandidatesRes?.ok || !accountStatusRes?.ok || !accountCandidatesRes?.ok || !settlementStatusRes?.ok || !settlementQueueRes?.ok || !reconciliationStatusRes?.ok || !reconciliationQueueRes?.ok || !paymentSourcesRes?.ok) {
-        const reasons = [];
-        if (!pbRes?.ok) reasons.push(pbRes?.status === 403 ? "payment backbone özeti step-up bekliyor" : "payment backbone özeti endpointi bulunamadı");
-        if (!cfgRes?.ok) reasons.push(cfgRes?.status === 403 ? "ticari ayarlar step-up bekliyor" : "ticari ayarlar endpointi bulunamadı");
-        if (!pilotRes?.ok) reasons.push(pilotRes?.status === 403 ? "opsiyonel ödeme pilot özeti step-up bekliyor" : "opsiyonel ödeme pilot özeti endpointi bulunamadı");
-        if (!pilotCandidatesRes?.ok) reasons.push(pilotCandidatesRes?.status === 403 ? "opsiyonel ödeme pilot aday listesi step-up bekliyor" : "opsiyonel ödeme pilot aday listesi endpointi bulunamadı");
-        if (!requiredRes?.ok) reasons.push(requiredRes?.status === 403 ? "zorunlu ödeme rollout özeti step-up bekliyor" : "zorunlu ödeme rollout özeti endpointi bulunamadı");
-        if (!requiredCandidatesRes?.ok) reasons.push(requiredCandidatesRes?.status === 403 ? "zorunlu ödeme rollout aday listesi step-up bekliyor" : "zorunlu ödeme rollout aday listesi endpointi bulunamadı");
-        if (!accountStatusRes?.ok) reasons.push(accountStatusRes?.status === 403 ? "Ödeme hesabı hazırlık özeti step-up bekliyor" : "Ödeme hesabı hazırlık özeti endpointi bulunamadı");
-        if (!accountCandidatesRes?.ok) reasons.push(accountCandidatesRes?.status === 403 ? "Ödeme hesabı aday listesi step-up bekliyor" : "Ödeme hesabı aday listesi endpointi bulunamadı");
-        if (!settlementStatusRes?.ok) reasons.push(settlementStatusRes?.status === 403 ? "Settlement operasyon özeti step-up bekliyor" : "Settlement operasyon özeti endpointi bulunamadı");
-        if (!settlementQueueRes?.ok) reasons.push(settlementQueueRes?.status === 403 ? "Settlement operasyon kuyruğu step-up bekliyor" : "Settlement operasyon kuyruğu endpointi bulunamadı");
-        if (!reconciliationStatusRes?.ok) reasons.push(reconciliationStatusRes?.status === 403 ? "Settlement mutabakat özeti step-up bekliyor" : "Settlement mutabakat özeti endpointi bulunamadı");
-        if (!reconciliationQueueRes?.ok) reasons.push(reconciliationQueueRes?.status === 403 ? "Settlement mutabakat kuyruğu step-up bekliyor" : "Settlement mutabakat kuyruğu endpointi bulunamadı");
-        if (!paymentSourcesRes?.ok) reasons.push(paymentSourcesRes?.status === 403 ? "Ödeme kaynakları step-up bekliyor" : "Ödeme kaynakları endpointi bulunamadı");
-        setErr(reasons.join(" • "));
+
+      if (pbRes?.status && pbRes.status !== 429 && !pbRes?.ok) reasons.push(pbRes.status === 403 ? "payment backbone özeti step-up bekliyor" : "payment backbone özeti endpointi bulunamadı");
+      if (cfgRes?.status && cfgRes.status !== 429 && !cfgRes?.ok) reasons.push(cfgRes.status === 403 ? "ticari ayarlar step-up bekliyor" : "ticari ayarlar endpointi bulunamadı");
+      if (accountStatusRes?.status && accountStatusRes.status !== 429 && !accountStatusRes?.ok) reasons.push(accountStatusRes.status === 403 ? "Ödeme hesabı hazırlık özeti step-up bekliyor" : "Ödeme hesabı hazırlık özeti endpointi bulunamadı");
+      if (settlementStatusRes?.status && settlementStatusRes.status !== 429 && !settlementStatusRes?.ok) reasons.push(settlementStatusRes.status === 403 ? "Settlement operasyon özeti step-up bekliyor" : "Settlement operasyon özeti endpointi bulunamadı");
+      if (settlementQueueRes?.status && settlementQueueRes.status !== 429 && !settlementQueueRes?.ok) reasons.push(settlementQueueRes.status === 403 ? "Settlement operasyon kuyruğu step-up bekliyor" : "Settlement operasyon kuyruğu endpointi bulunamadı");
+
+      if (viewTab === "billing" || viewTab === "commission") {
+        const paymentSourcesRes = await readOptional(`/api/commercial-core/payment-backbone/sources?${buildPaymentSourceQuery(paymentSourceFilters, 20).toString()}`, "paymentSources");
+        const paymentSourcesData = paymentSourcesRes?.data || null;
+        const paymentSourceItems = paymentSourcesRes?.ok ? (paymentSourcesData?.items || []) : [];
+        setPaymentSources(paymentSourceItems);
+        setPaymentSourcesMeta(paymentSourcesRes?.ok ? { endpointStatus: "ok", total: paymentSourcesData?.summary?.total ?? paymentSourceItems.length, summary: paymentSourcesData?.summary?.total != null ? `${paymentSourcesData.summary.total} kaynak` : "" } : (paymentSourcesData || { endpointStatus: "missing", summary: "Ödeme kaynakları endpointi okunamadı." }));
+        if (paymentSourcesRes?.status && paymentSourcesRes.status !== 429 && !paymentSourcesRes?.ok) {
+          reasons.push(paymentSourcesRes.status === 403 ? "Ödeme kaynakları step-up bekliyor" : "Ödeme kaynakları endpointi bulunamadı");
+        }
       }
+
+      if (viewTab === "prep") {
+        const [pilotRes, pilotCandidatesRes, requiredRes, requiredCandidatesRes, accountCandidatesRes, roomRes] = await Promise.all([
+          readOptional("/api/commercial-core/payment-backbone/pilot/status", "pilotStatus"),
+          readOptional("/api/commercial-core/payment-backbone/pilot/candidates?take=12", "pilotCandidates"),
+          readOptional("/api/commercial-core/payment-backbone/required/status", "requiredStatus"),
+          readOptional("/api/commercial-core/payment-backbone/required/candidates?take=12", "requiredCandidates"),
+          readOptional("/api/commercial-core/payment-backbone/accounts/candidates?take=12", "accountCandidates"),
+          api("/api/rooms?take=200").catch(() => ({ items: [] })),
+        ]);
+        const pilot = pilotRes?.data || null;
+        const pilotItems = pilotCandidatesRes?.ok ? (pilotCandidatesRes?.data?.items || []) : [];
+        const required = requiredRes?.data || null;
+        const requiredItems = requiredCandidatesRes?.ok ? (requiredCandidatesRes?.data?.items || []) : [];
+        const accountItems = accountCandidatesRes?.ok ? (accountCandidatesRes?.data?.items || []) : [];
+        const roomItems = roomRes?.ok ? (roomRes?.data?.items || []) : [];
+
+        setPilotStatus(pilot);
+        setPilotCandidatesMeta(pilotCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (pilotCandidatesRes?.data || { endpointStatus: "missing", summary: "Opsiyonel pilot aday endpointi okunamadı." }));
+        setPilotCandidates(pilotItems);
+        setRequiredStatus(required);
+        setRequiredCandidatesMeta(requiredCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (requiredCandidatesRes?.data || { endpointStatus: "missing", summary: "Zorunlu rollout aday endpointi okunamadı." }));
+        setRequiredCandidates(requiredItems);
+        setAccountCandidatesMeta(accountCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (accountCandidatesRes?.data || { endpointStatus: "missing", summary: "Ödeme hesabı aday endpointi okunamadı." }));
+        setAccountCandidates(accountItems);
+        setRooms(roomItems);
+
+        if (pilotCandidatesRes?.status && pilotCandidatesRes.status !== 429 && !pilotCandidatesRes?.ok) reasons.push(pilotCandidatesRes.status === 403 ? "opsiyonel ödeme pilot aday listesi step-up bekliyor" : "opsiyonel ödeme pilot aday listesi endpointi bulunamadı");
+        if (requiredCandidatesRes?.status && requiredCandidatesRes.status !== 429 && !requiredCandidatesRes?.ok) reasons.push(requiredCandidatesRes.status === 403 ? "zorunlu ödeme rollout aday listesi step-up bekliyor" : "zorunlu ödeme rollout aday listesi endpointi bulunamadı");
+        if (accountCandidatesRes?.status && accountCandidatesRes.status !== 429 && !accountCandidatesRes?.ok) reasons.push(accountCandidatesRes.status === 403 ? "Ödeme hesabı aday listesi step-up bekliyor" : "Ödeme hesabı aday listesi endpointi bulunamadı");
+      }
+
+      if (viewTab === "risk") {
+        const [reconciliationStatusRes, reconciliationQueueRes] = await Promise.all([
+          readOptional("/api/commercial-core/payment-backbone/reconciliation/status", "reconciliationStatus"),
+          readOptional("/api/commercial-core/payment-backbone/reconciliation/queue?take=20", "reconciliationQueue"),
+        ]);
+        const reconciliation = reconciliationStatusRes?.data || null;
+        const reconciliationItems = reconciliationQueueRes?.ok ? (reconciliationQueueRes?.data?.items || []) : [];
+
+        setReconciliationStatus(reconciliation);
+        setReconciliationQueueMeta(reconciliationQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (reconciliationQueueRes?.data || { endpointStatus: "missing", summary: "Settlement mutabakat kuyruğu endpointi okunamadı." }));
+        setReconciliationQueue(reconciliationItems);
+
+        if (reconciliationStatusRes?.status && reconciliationStatusRes.status !== 429 && !reconciliationStatusRes?.ok) reasons.push(reconciliationStatusRes.status === 403 ? "Settlement mutabakat özeti step-up bekliyor" : "Settlement mutabakat özeti endpointi bulunamadı");
+        if (reconciliationQueueRes?.status && reconciliationQueueRes.status !== 429 && !reconciliationQueueRes?.ok) reasons.push(reconciliationQueueRes.status === 403 ? "Settlement mutabakat kuyruğu step-up bekliyor" : "Settlement mutabakat kuyruğu endpointi bulunamadı");
+      }
+
+      if (reasons.length) setErr(reasons.join(" • "));
     } catch (e) {
       setErr(stripHtmlNoise(e?.message || String(e)));
     }
-  }, [paymentSourceFilters, token]);
+  }, [paymentSourceFilters, token, viewTab]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

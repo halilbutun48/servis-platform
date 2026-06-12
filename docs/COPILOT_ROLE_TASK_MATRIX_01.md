@@ -14,6 +14,7 @@ Repo: `servis-platform`
 - Bu milestone runtime AI action açmaz; tool execution, otomatik işlem, ödeme, sözleşme, teklif kabulü, rota apply, SMS / e-posta / push, provider credential, driver / vehicle assignment veya user / account write-action açmaz.
 - `COPILOT-AI-ACTION-ROADMAP-01` bu rol/task baseline üzerine kurulan future-only phase roadmap'tir; burada açılmayan execution alanları orada da açılmaz.
 - `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` bu baseline üzerine kurulan future-only talep -> teklif -> sözleşme hazırlık roadmap'idir; runtime AI action açmaz ve `Kullanıcı onaylarsa` bile yalnız hazırlık / öneri sınırında kalır.
+- `COPILOT-HUMAN-APPROVAL-01` bu baseline üzerine kurulan future-safe confirmation roadmap'idir; kritik işlemlerde insan onayı / confirmation modelini ayrı docs/check katmanı olarak kilitler.
 
 ## Canonical action model
 Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard'lı uygula -> Audit log yaz

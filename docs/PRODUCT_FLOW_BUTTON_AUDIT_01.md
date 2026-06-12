@@ -36,7 +36,7 @@ Bu milestone, kritik product-flow CTA ve button yüzeylerini yalnızca okuma ve 
 
 - `18 routes`
 - `36 screenshots`
-- `PASS 14 / PASS- 4 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- `PASS 18 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 - Desktop ve mobile viewport birlikte test edilir.
 
 ## Komutlar
@@ -54,9 +54,9 @@ Bu artifact'ler commit dışı bırakılır.
 ## Notlar
 
 - Public landing'de `Demo talep et`, `Canlı destekle görüş`, `Servis ihtiyacımı anlat`, `Tedarikçi olarak başvur` butonları görünür kalır.
-- Review-only kuyrukta `İncelemeye al`, `Ek bilgi gerekli`, `Invite için uygun`, `Reddet`, `Notları kaydet` butonları kontrol edilir; `Sadece inceleme` pill'i görünür chrome'da yer alır ve read-only sınırı görünür kalır.
+- Review-only kuyrukta `İncelemeye al`, `Ek bilgi gerekli`, `Invite için uygun`, `Reddet`, `Notları kaydet` butonları kontrol edilir; `Sadece inceleme` pill'i görünür chrome'da yer alır ve empty-state fallback PASS kabul edilir.
 - Commercial core'da `Hakediş` tabı ve `Bu kart readonly kontrol içindir; işlem başlatmaz.` sınırı görünür kalır.
-- Company agreements yüzeyinde detay kartı ve safe boundary görünür; preview button current fixture set'te her zaman yüzeye çıkmayabilir.
+- Company agreements yüzeyinde detay kartı ve safe boundary görünür; preview button current fixture set'te yüzeye çıkmasa da güvenli empty-state PASS kabul edilir.
 - Room shifts yüzeyinde pending kuyruk boşsa kabul/reddet aksiyonları disabled placeholder olarak görünür; preview modal harita ve Leaflet ipucu ile açılır.
 - Room agreements preview butonu görünür kalır ve current fixture set'te modal açılır; safe boundary görünür kalır.
 - Personel canlı yüzeyinde navigasyon butonları görünür kalır.

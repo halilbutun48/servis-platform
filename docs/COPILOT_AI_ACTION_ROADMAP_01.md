@@ -15,6 +15,7 @@ Repo: `servis-platform`
 - Kullanıcıya önce okuma, açıklama, öneri ve hazırlık sağlar; kritik işler için insan onayını korur.
 - Public promise overclaim yapmaz.
 - Bu roadmap demand-to-agreement hazırlık hattına zemin hazırlar; sonraki future-only halka `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`'dir.
+- İnsan onayı / confirmation modeli ayrı docs/check katmanı `COPILOT-HUMAN-APPROVAL-01` ile kilitlenir.
 - Bu doküman docs/check kilididir; runtime davranış, backend route, service, schema veya Prisma açmaz.
 
 ## PHASE modeli

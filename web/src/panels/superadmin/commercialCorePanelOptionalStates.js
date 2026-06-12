@@ -242,6 +242,29 @@ function buildOptionalEndpointState(kind, status) {
   };
 }
 
+function buildRateLimitedOptionalState(kind) {
+  const base = buildOptionalEndpointState(kind, 404);
+  const summaryByKind = {
+    paymentBackbone: "İstek sınırı aşıldı; ticari omurga özeti geçici olarak ertelendi.",
+    settings: "İstek sınırı aşıldı; ticari ayarlar geçici olarak ertelendi.",
+    pilotStatus: "İstek sınırı aşıldı; pilot özeti geçici olarak ertelendi.",
+    pilotCandidates: "İstek sınırı aşıldı; pilot aday listesi geçici olarak ertelendi.",
+    requiredStatus: "İstek sınırı aşıldı; zorunlu rollout özeti geçici olarak ertelendi.",
+    requiredCandidates: "İstek sınırı aşıldı; zorunlu rollout aday listesi geçici olarak ertelendi.",
+    accountStatus: "İstek sınırı aşıldı; ödeme hesabı hazırlığı geçici olarak ertelendi.",
+    accountCandidates: "İstek sınırı aşıldı; ödeme hesabı aday listesi geçici olarak ertelendi.",
+    settlementStatus: "İstek sınırı aşıldı; settlement operasyon özeti geçici olarak ertelendi.",
+    settlementQueue: "İstek sınırı aşıldı; settlement operasyon kuyruğu geçici olarak ertelendi.",
+    reconciliationStatus: "İstek sınırı aşıldı; settlement mutabakat özeti geçici olarak ertelendi.",
+    reconciliationQueue: "İstek sınırı aşıldı; settlement mutabakat kuyruğu geçici olarak ertelendi.",
+  };
+  return {
+    ...base,
+    endpointStatus: "limited",
+    summary: summaryByKind[kind] || "İstek sınırı aşıldı; bu bölümün verileri geçici olarak ertelendi.",
+  };
+}
+
 export async function readOptional(path, fallbackKind) {
   try {
     const result = await api(path);
@@ -250,6 +273,9 @@ export async function readOptional(path, fallbackKind) {
     const status = Number(e?.status || 0);
     if (status === 403 || status === 404) {
       return { ok: false, data: buildOptionalEndpointState(fallbackKind, status), status };
+    }
+    if (status === 429) {
+      return { ok: false, data: buildRateLimitedOptionalState(fallbackKind), status };
     }
     throw e;
   }

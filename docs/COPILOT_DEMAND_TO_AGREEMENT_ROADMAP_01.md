@@ -14,6 +14,7 @@ Repo: `servis-platform`
 - Bu milestone runtime AI action açmaz.
 - Public promise overclaim yazmaz.
 - Backend route/service/schema ve Prisma açmaz.
+- Kritik onay modeli ayrı docs/check katmanı `COPILOT-HUMAN-APPROVAL-01` ile kilitlenir.
 
 ## Demand-to-agreement lifecycle
 

@@ -81,6 +81,7 @@ async function main() {
     'backend/artifacts/runtime-data/agreement-route-refresh-requests.json',
     'backend/artifacts/runtime-data/public-leads.json',
     'backend/artifacts/runtime-data/quality-review-decisions.json',
+    'backend/artifacts/runtime-data/region-failover-drill-state.json',
   ];
   const dirtyRuntimeData = dirtyRuntimeDataPaths(statusText);
   const dirtyRuntimeDataSet = new Set(dirtyRuntimeData);

@@ -171,6 +171,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
 - Bu check, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01`, `OFFER-RANKING-QUALITY-01`, `SAFE-DRIVE-01`, `TELEMATICS-PROVIDER-HUB-01`, `VERIFIED-SUPPLIER-01` ve `UX-MARKETPLACE-PANELS-01` guardrail hattıyla birlikte okunur; tool execution, RFQ send, offer accept/reject, agreement/contract execute, dispatch apply ve runtime AI action açmaz.
 
+### COPILOT-HUMAN-APPROVAL-01 [CHECK]
+- `check:copilothumanapproval01` Sefer Abi için kritik işlemlerde insan onayı / confirmation modelini docs/check olarak kilitler; READ / EXPLAIN / RECOMMEND / PREPARE / DRAFT / RISK_SUMMARY / NEXT_STEP sınırını görünür kılar, runtime AI action açmaz.
+- Check script: `node backend\scripts\copilot_human_approval_01_check.js`
+- Doküman: `docs/COPILOT_HUMAN_APPROVAL_01.md`
+- Bu check, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; voice command alone critical actions execute ettirmez, tool execution / write-action dispatcher / safe autopilot real action açmaz.
+
 ### ETA-SANITY-01 [CHECK]
 - `check:etasanity01` canlı takipte GPS stale/offline/unknown durumunda ETA’yı güvenli ve kesin olmayan ifadelerle gösterir.
 - Room, Company, Parent, Personel ve Driver canlı yüzeyleri ile Copilot yardım metinleri aynı güvenli ETA / GPS mantığına bağlanır.

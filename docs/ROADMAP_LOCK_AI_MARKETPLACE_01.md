@@ -421,7 +421,7 @@ Kullanılmayacak cümleler:
 - COPILOT-AI-ACTION-ROADMAP-01: future-only phase model olarak READ / EXPLAIN, RECOMMEND, PREPARE ve HUMAN_APPROVAL_REQUIRED aşamalarını açar; GUARDED_EXECUTION ve AUDIT_AND_MONITOR future-only kalır, runtime AI action açılmaz.
 - COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01
 - COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01: future-only talep -> teklif -> sözleşme hazırlık hattı olarak kilitlenir; runtime AI action açılmaz.
-- COPILOT-HUMAN-APPROVAL-01
+- COPILOT-HUMAN-APPROVAL-01: kritik işlemler için human approval / confirmation modelini docs/check olarak kilitler; READ / EXPLAIN / RECOMMEND / PREPARE / DRAFT / RISK_SUMMARY / NEXT_STEP sınırını görünür kılar, runtime AI action açmaz.
 
 ### D) EXCEL / ADRES / OSRM ROTA TASLAĞI HATTI
 - COPILOT-EXCEL-DEMAND-IMPORT-01

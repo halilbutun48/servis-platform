@@ -656,9 +656,37 @@ async function decideExtend(shiftId, decision) {
     setShiftsTab(defaultShiftsTab);
   }, [defaultShiftsTab]);
 
+  const activeTabFiltered = useMemo(() => {
+    if (shiftsTab === "pending") return pendingFiltered;
+    if (shiftsTab === "contract") return contractFiltered;
+    return otherFiltered;
+  }, [shiftsTab, pendingFiltered, contractFiltered, otherFiltered]);
+
+  const preferredCopilotShift = useMemo(() => {
+    const orderedPools = [
+      activeTabFiltered,
+      ...(shiftsTab === "pending"
+        ? [contractFiltered, otherFiltered]
+        : shiftsTab === "contract"
+          ? [pendingFiltered, otherFiltered]
+          : [pendingFiltered, contractFiltered]),
+    ];
+    const seen = new Set();
+    for (const pool of orderedPools) {
+      for (const shift of pool) {
+        const sid = Number(shift?.id || 0);
+        if (!sid || seen.has(sid)) continue;
+        seen.add(sid);
+        const capacityMeta = buildCapacityMeta({ shift, vehicle: null, roomVehicles: vehiclesForRoom(shift?.roomId) });
+        if (capacityMeta.dispatchRequired) return shift;
+      }
+    }
+    return activeTabFiltered[0] || pendingFiltered[0] || contractFiltered[0] || otherFiltered[0] || null;
+  }, [activeTabFiltered, shiftsTab, pendingFiltered, contractFiltered, otherFiltered, vehiclesForRoom]);
+
   const copilotShiftId = useMemo(
-    () => Number(focusedTrackShiftId || 0) || Number((shiftsTab === "pending" ? pendingFiltered[0] : shiftsTab === "contract" ? contractFiltered[0] : otherFiltered[0])?.id || 0) || null,
-    [focusedTrackShiftId, shiftsTab, pendingFiltered, contractFiltered, otherFiltered]
+    () => Number(focusedTrackShiftId || 0) || Number(preferredCopilotShift?.id || 0) || null,
+    [focusedTrackShiftId, preferredCopilotShift]
   );
   const copilotShift = useMemo(
     () => items.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0))

@@ -702,13 +702,13 @@ export default function AgreementsPanel() {
   }
 
   useEffect(() => {
-    if (!token || !routeRefreshItems.length) {
+    if (!token || !routeRefreshItems.length || viewMode !== "route") {
       setRouteRefreshPreviewById({});
       return;
     }
     const controller = new AbortController();
     let cancelled = false;
-    const items = routeRefreshItems.slice(0, 12);
+    const items = routeRefreshItems.slice(0, 4);
     const loadingMap = Object.fromEntries(items.map((item) => [String(item.id), { loading: true, current: null, proposed: null, err: "" }]));
     setRouteRefreshPreviewById(loadingMap);
     (async () => {
@@ -743,7 +743,7 @@ export default function AgreementsPanel() {
       cancelled = true;
       controller.abort();
     };
-  }, [token, routeRefreshItems]);
+  }, [token, routeRefreshItems, viewMode]);
 
   const loadAll = useCallback(async () => {
     if (!token) return;
@@ -1048,9 +1048,16 @@ export default function AgreementsPanel() {
             <div style={{ fontWeight: 900 }}>{roomAgreementsNotice.title}</div>
             <div className="muted" style={{ marginTop: 4 }}>{roomAgreementsNotice.detail}</div>
           </div>
-          <button type="button" className="btn sm primary" onClick={() => setViewMode(roomAgreementsNotice.actionTab)}>
-            {roomAgreementsNotice.actionLabel}
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {copilotAgreementTarget ? (
+              <button type="button" className="btn sm" onClick={() => openAgreementDetail(copilotAgreementTarget)}>
+                Detayı aç
+              </button>
+            ) : null}
+            <button type="button" className="btn sm primary" onClick={() => setViewMode(roomAgreementsNotice.actionTab)}>
+              {roomAgreementsNotice.actionLabel}
+            </button>
+          </div>
         </div>
       ) : null}
 
