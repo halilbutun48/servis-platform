@@ -152,6 +152,7 @@ export default function RoomMapPanel() {
 
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
 
   const [q, setQ] = useState("");
   const [onlyActive, setOnlyActive] = useState(false);
@@ -164,6 +165,19 @@ export default function RoomMapPanel() {
   const [mapTab, setMapTab] = useState("map");
   const mapTabRefs = useRef({});
   const didMapTabMountRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 768px)");
+    const sync = () => setIsCompactViewport(Boolean(mq.matches));
+    sync();
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", sync);
+      return () => mq.removeEventListener("change", sync);
+    }
+    mq.addListener(sync);
+    return () => mq.removeListener(sync);
+  }, []);
 
   async function load() {
     setErr("");
@@ -606,6 +620,10 @@ export default function RoomMapPanel() {
     );
   }
 
+  const mapGridStyle = { ["--mapH"]: isCompactViewport ? "min(360px, calc(100vh - 440px))" : "min(700px, calc(100vh - 300px))" };
+  const listCardHeight = isCompactViewport ? "calc(var(--mapH) + 170px)" : "calc(var(--mapH) + 285px)";
+  const vehiclesCardHeight = isCompactViewport ? "min(520px, calc(100vh - 360px))" : "min(760px, calc(100vh - 330px))";
+
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
@@ -664,11 +682,11 @@ export default function RoomMapPanel() {
           subtitle="Büyük harita + canlı araç listesi."
           badge={`${cards.length}`}
         >
-          <div className="grid mapGrid" style={{ ["--mapH"]: "min(700px, calc(100vh - 300px))" }}>
+          <div className="grid mapGrid" style={mapGridStyle}>
             {renderVehicleListCard({
               title: "Canlı Liste",
               subtitle: "Satıra tıkla → sağda timeline + harita.",
-              cardHeight: "calc(var(--mapH) + 285px)",
+              cardHeight: listCardHeight,
             })}
 
             <div className="col" style={{ gap: 10 }}>
@@ -823,7 +841,7 @@ export default function RoomMapPanel() {
             {renderVehicleListCard({
               title: "Canlı Araçlar",
               subtitle: "Satıra tıkla → sağdaki detay değişsin.",
-              cardHeight: "min(760px, calc(100vh - 330px))",
+              cardHeight: vehiclesCardHeight,
             })}
             <div className="col" style={{ gap: 10 }}>
               <div className="card">
@@ -858,4 +876,3 @@ export default function RoomMapPanel() {
     </div>
   );
 }
-

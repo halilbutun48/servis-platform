@@ -253,6 +253,7 @@ function main() {
       "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
       "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
       "backend/scripts/ux_room_panel_clarity_01_check.js",
+      "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
       "backend/scripts/verified_supplier_01_check.js",
       "backend/scripts/verify_chain_01_product_extensions_check.js",
       "docs/INVITE_BASED_MEMBERSHIP_01.md",
@@ -260,6 +261,7 @@ function main() {
       "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
       "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
       "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+      "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
       "docs/VERIFIED_SUPPLIER_01.md",
       "package.json",
       "web/src/App.jsx",
@@ -272,10 +274,13 @@ function main() {
     "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
     "web/src/panels/company/companyShiftsPanelFilters.jsx",
     "web/src/panels/company/companyAgreementsMobileCards.jsx",
+    "web/src/panels/company/CommercialFlowPanel.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
     "web/src/panels/superadmin/OperationsPanel.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
+    "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
+    "web/src/panels/parent/LivePanel.jsx",
     "web/src/panels/personel/LivePanel.jsx",
     "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
@@ -433,6 +438,7 @@ function main() {
     must(rows.every((row) => row.status !== "UX-FIX"), `cleanup smoke removes UX-FIX from ${route}`);
   }
 
+  const actualPassMinusRows = report.routes.filter((row) => row.status === "PASS-");
   const passMinusRows = report.routes.filter(
     (row) => row.status === "PASS-" || (row.kind === "dispatch" && row.status === "PASS")
   );
@@ -447,9 +453,9 @@ function main() {
     bucketCounts[bucket] = (bucketCounts[bucket] || 0) + 1;
   }
 
-  must(uncategorized.length === 0, `PASS- rows stay evidence-based (${passMinusRows.length})`);
+  must(uncategorized.length === 0, `PASS-minus inventory stays evidence-based (${passMinusRows.length})`);
 
-  if (passMinusRows.length > 0) {
+  if (actualPassMinusRows.length > 0) {
     must(bucketCounts["review-gap"] >= 1, "PASS- inventory keeps review queue evidence");
     must(bucketCounts["route-preview"] >= 1, "PASS- inventory keeps route preview evidence");
     must(bucketCounts["dispatch"] >= 1, "PASS- inventory keeps dispatch evidence");

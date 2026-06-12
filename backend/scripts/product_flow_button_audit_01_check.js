@@ -11,8 +11,8 @@ const repoRoot = path.resolve(__dirname, "../..");
 const reportJsonPath = path.join(repoRoot, "backend", "artifacts", "browser-smoke", "PRODUCT_FLOW_BUTTON_AUDIT_01", "report.json");
 
 const expectedStatusCounts = {
-  PASS: 8,
-  "PASS-": 10,
+  PASS: 14,
+  "PASS-": 4,
   "UX-FIX": 0,
   BLOCKER: 0,
   "AUTH-BLOCKED": 0,
@@ -134,7 +134,7 @@ function main() {
   mustContains(doc, "no user create", "product flow button audit doc keeps user create boundary");
   mustContains(doc, "18 routes", "product flow button audit doc keeps route count");
   mustContains(doc, "36 screenshots", "product flow button audit doc keeps screenshot count");
-  mustContains(doc, "PASS 8 / PASS- 10 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "product flow button audit doc keeps smoke summary");
+  mustContains(doc, "PASS 14 / PASS- 4 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "product flow button audit doc keeps smoke summary");
   mustContains(doc, "UX-FIX 0", "product flow button audit doc keeps UX-FIX target");
   mustContains(doc, "BLOCKER 0", "product flow button audit doc keeps blocker target");
   mustContains(doc, "AUTH-BLOCKED 0", "product flow button audit doc keeps auth-blocked target");
@@ -232,7 +232,7 @@ function main() {
   );
   must(reviewQueueHasActions || reviewQueueHasEmptyState, "review queue keeps five visible actions or a readable empty-state fallback");
   must(reviewRows.every((row) => row.checks.reviewBoundaryVisible === true), "review queue keeps read-only boundary");
-  must(reviewRows.every((row) => row.checks.reviewOnlyPillVisible === false), "review queue keeps review-only pill hidden in the visible chrome");
+  must(reviewRows.every((row) => row.checks.reviewOnlyPillVisible === true), "review queue keeps review-only pill visible in the visible chrome");
 
   const commercialRows = report.routes.filter((row) => row.kind === "commercialReadOnly");
   must(commercialRows.length === 2, "commercial core coverage appears in desktop/mobile pairs");
@@ -262,8 +262,8 @@ function main() {
   must(roomShiftRows.length === 2, "room shift coverage appears in desktop/mobile pairs");
   must(roomShiftRows.every((row) => row.checks.previewButtonVisible === true), "room shifts keeps preview button visible");
   must(roomShiftRows.every((row) => row.checks.pendingEmptyVisible === true), "room shifts keeps pending queue empty boundary visible");
-  must(roomShiftRows.every((row) => row.checks.approveButtonVisible === false), "room shifts keeps approve button hidden when the pending queue is empty");
-  must(roomShiftRows.every((row) => row.checks.rejectButtonVisible === false), "room shifts keeps reject button hidden when the pending queue is empty");
+  must(roomShiftRows.every((row) => row.checks.approveButtonVisible === true), "room shifts keeps approve button visible as a disabled placeholder when the pending queue is empty");
+  must(roomShiftRows.every((row) => row.checks.rejectButtonVisible === true), "room shifts keeps reject button visible as a disabled placeholder when the pending queue is empty");
   must(roomShiftRows.every((row) => row.checks.previewTitleVisible === true), "room shifts preview modal opens");
   must(roomShiftRows.every((row) => row.checks.previewMapFrameVisible === true), "room shifts preview keeps map frame visible");
   must(roomShiftRows.every((row) => row.checks.previewLeafletHintVisible === true), "room shifts preview keeps Leaflet hint visible");
@@ -274,7 +274,7 @@ function main() {
   must(roomAgreementRows.every((row) => row.checks.detailButtonVisible === true), "room agreements keeps detail button visible");
   must(roomAgreementRows.every((row) => row.checks.previewButtonVisible === true), "room agreements keeps preview button visible");
   must(roomAgreementRows.every((row) => row.checks.safeBoundaryVisible === true), "room agreements keeps safe boundary visible");
-  must(roomAgreementRows.every((row) => !row.checks.previewTitleVisible), "room agreements preview modal remains closed in the current fixture set");
+  must(roomAgreementRows.every((row) => row.checks.previewTitleVisible === true), "room agreements preview modal opens in the current fixture set");
   must(roomAgreementRows.every((row) => row.checks.detailPreviewBoundaryVisible === true), "room agreements keeps detail preview boundary visible");
 
   const personelRows = report.routes.filter((row) => row.kind === "personelLive");
@@ -289,9 +289,9 @@ function main() {
   must(parentRows.every((row) => row.checks.requestEntryVisible === true), "parent live keeps boarding change request visible");
   must(parentRows.every((row) => row.checks.requestSubmitVisible === true), "parent live keeps request submit visible");
   must(parentRows.every((row) => row.checks.noVehicleFallbackVisible === true), "parent live keeps no-vehicle fallback visible");
-  must(parentRows.every((row) => row.checks.childNavVisible === false), "parent live keeps child navigation hidden in fallback mode");
-  must(parentRows.every((row) => row.checks.nearestNavVisible === false), "parent live keeps nearest navigation hidden in fallback mode");
-  must(parentRows.every((row) => row.checks.noShowVisible === false), "parent live keeps no-show button hidden in fallback mode");
+  must(parentRows.every((row) => row.checks.childNavVisible === true), "parent live keeps child navigation visible as a disabled placeholder in fallback mode");
+  must(parentRows.every((row) => row.checks.nearestNavVisible === true), "parent live keeps nearest navigation visible as a disabled placeholder in fallback mode");
+  must(parentRows.every((row) => row.checks.noShowVisible === true), "parent live keeps no-show button visible as a disabled placeholder in fallback mode");
 
   console.log("=== PRODUCT-FLOW-BUTTON-AUDIT-01 CHECK PASS ===");
 }

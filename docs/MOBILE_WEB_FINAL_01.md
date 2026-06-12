@@ -20,8 +20,8 @@ Bu milestone:
 - backend route / service davranışını değiştirmez,
 - schema / migration açmaz,
 - runtime-data veya browser-smoke artifact'lerini commit'e almaz,
-- `PASS-` bucket'ını accept etmeye zorlamaz; onları final risk / backlog olarak raporlar.
-- PASS- remaining routes final risk backlog olarak kalır.
+- `PASS-` bucket'ını accept etmeye zorlamaz; bu snapshot'ta PASS- kalmazsa backlog boş sayılır.
+- PASS- remaining routes yok; final risk backlog boş.
 
 ## 2) Smoke Snapshot
 
@@ -35,7 +35,7 @@ Bu milestone:
 
 - Komut: `npm run smoke:uxlivepanelpremium01`
 - Rapor: `backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01/report.json`
-- Snapshot: `PASS 64 / PASS- 18 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
+- Snapshot: `PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 
 ## 3) All-Roles PASS- Final Risk List
 
@@ -47,28 +47,11 @@ Bu snapshot'ta PASS- satırı yoktur; backlog boş kalmıştır.
 
 ## 4) Premium PASS- Evidence List
 
-Bu 16 satır final risk / backlog olarak kalır; release blocker değildir.
+Bu snapshot'ta PASS- satırı yoktur; backlog boş kalır.
 
 | Route | Role | Viewport | Evidence bucket | Not |
 | --- | --- | --- | --- | --- |
-| `/#/superadmin/onboarding-review` | superadmin | desktop | review-gap | Review actions incomplete; read-only queue. |
-| `/#/superadmin/onboarding-review` | superadmin | mobile | review-gap | Review actions incomplete; read-only queue. |
-| `/#/room/commercial-flow` | room | desktop | commercial-bucket | Accepted/applied bucket görünür. |
-| `/#/room/operation-health` | room | desktop | route-preview | Kısa karar kartı görünür. |
-| `/#/room/commercial-flow` | room | mobile | commercial-bucket | Accepted/applied bucket görünür. |
-| `/#/room/operation-health` | room | mobile | route-preview | Kısa karar kartı görünür. |
-| `/#/room/live` | room | mobile | long-live-map | Harita / canlı takip dili görünür. |
-| `/#/room/map` | room | mobile | long-live-map | Harita / canlı takip dili görünür. |
-| `/#/company/shifts` | company | desktop | convert-draft | Sözleşme taslak geçişi görünür. |
-| `/#/company/commercial-flow` | company | desktop | commercial-bucket | Accepted/applied bucket görünür. |
-| `/#/company/shifts` | company | mobile | convert-draft | Sözleşme taslak geçişi görünür. |
-| `/#/company/commercial-flow` | company | mobile | commercial-bucket | Accepted/applied bucket görünür. |
-| `/#/company/map` | company | mobile | long-live-map | Harita / canlı takip dili görünür. |
-| `/#/school/commercial-flow` | school | desktop | commercial-bucket | Accepted/applied bucket görünür. |
-| `/#/school/commercial-flow` | school | mobile | commercial-bucket | Accepted/applied bucket görünür. |
-| `/#/organization/commercial-flow` | organization | desktop | commercial-bucket | Accepted/applied bucket görünür. |
-| `/#/organization/commercial-flow` | organization | mobile | commercial-bucket | Accepted/applied bucket görünür. |
-| `/#/personel/live` | personel | mobile | long-live-map | Harita / canlı takip dili görünür. |
+| _Yok_ | _Yok_ | _Yok_ | `PASS- remaining routes` yok; final risk backlog boş. | _Yok_ |
 
 ## 5) Special Ruling
 
@@ -93,4 +76,4 @@ Bu 16 satır final risk / backlog olarak kalır; release blocker değildir.
 ## 7) Sonuç
 
 UX-FIX, BLOCKER ve NOT-FOUND `0` olduğu için final mobile acceptance kabul edilebilir.
-`PASS-` satırları backlog ve final risk olarak ayrı raporlanır; release blocker değildir.
+`PASS-` satırı yok; final risk backlog boş.

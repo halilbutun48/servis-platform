@@ -70,9 +70,15 @@ export default function AgreementOpsBridgeCard({
       : emptyText || "Bu bağlantı için henüz vardiya üretilmedi. Taslak detayını görmek için detayı aç.";
 
   return (
-    <div className="card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
+    <div className="card" data-role="agreement-ops-bridge-card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
       <div style={{ marginBottom: 12 }}>
-        <button type="button" className="btn ghost roomActionCTA" onClick={() => setDetailsOpen((v) => !v)}>
+        <button
+          type="button"
+          className="btn ghost roomActionCTA"
+          onClick={() => setDetailsOpen((v) => !v)}
+          aria-label={detailsOpen ? "Detayı gizle" : "Detayı aç"}
+          title={detailsOpen ? "Detayı gizle" : "Detayı aç"}
+        >
           {detailsOpen ? "Ayrıntıları gizle" : "Ayrıntıları göster"}
         </button>
       </div>
@@ -113,7 +119,7 @@ export default function AgreementOpsBridgeCard({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 12 }}>
         <SummaryChip label="Durum" value={routeStateLabel} tone={hasLastShift ? "good" : "warn"} />
         <SummaryChip label="Etki" value={generatedCount ? `${generatedCount} vardiya` : "Henüz yok"} />
-        <SummaryChip label="Risk" value={riskLabel} tone={hasLastShift ? "good" : "warn"} />
+        <SummaryChip label="Denge" value={riskLabel} tone={hasLastShift ? "good" : "warn"} />
         <SummaryChip label="Sıradaki işlem" value={nextActionLabel} tone={hasLastShift ? "good" : "warn"} />
       </div>
 

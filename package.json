@@ -167,6 +167,7 @@
     "check:uxmobileallrolespanelaudit01": "node backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
     "check:uxallpanelsrealityaudit01": "node backend/scripts/ux_all_panels_reality_audit_01_check.js",
     "check:uxsmokepassminusevidence01": "node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
+    "check:uxsmokepassminuszero01": "node backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
     "smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs",
     "smoke:uxmobileallrolespanelaudit01": "node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
     "smoke:uxallpanelsrealityaudit01": "node backend/scripts/ux_all_panels_reality_audit_01.mjs",

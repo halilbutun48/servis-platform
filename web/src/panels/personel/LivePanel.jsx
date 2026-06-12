@@ -156,6 +156,7 @@ const PERSONEL_LIVE_TABS = [
 
 export default function PersonelLivePanel() {
   const { token } = useSession();
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
 
   const [myShift, setMyShift] = useState(null);
   const [eta, setEta] = useState(null);
@@ -199,6 +200,19 @@ export default function PersonelLivePanel() {
 
   const loadAllRef = useRef(loadAll);
   loadAllRef.current = loadAll;
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 768px)");
+    const sync = () => setIsCompactViewport(Boolean(mq.matches));
+    sync();
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", sync);
+      return () => mq.removeEventListener("change", sync);
+    }
+    mq.addListener(sync);
+    return () => mq.removeListener(sync);
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -443,20 +457,21 @@ export default function PersonelLivePanel() {
       />
 
       <BoardingChangeRequestEntryCard
-      token={token}
-      mode="PERSONEL"
-      entryMode="full"
-      shift={myShift}
-      myPos={myPos}
-      stops={stops}
+        token={token}
+        mode="PERSONEL"
+        entryMode="full"
+        compact={isCompactViewport}
+        shift={myShift}
+        myPos={myPos}
+        stops={stops}
       selectedStop={selectedStop || nextStop}
         heading="Biniş değişikliği talebi"
         intro="Bugün binmeyeceğim, başka durak ya da farklı konum/not talebini burada oluştur."
         onRequestCreated={loadAll}
       />
 
-      <div className="grid mapGrid" style={{ ["--mapH"]: "min(520px, calc(100vh - 420px))" }}>
-        <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>
+      <div className="grid mapGrid" style={{ ["--mapH"]: isCompactViewport ? "min(340px, calc(100vh - 520px))" : "min(520px, calc(100vh - 420px))" }}>
+        <div className="card mapAsideCard" style={{ height: isCompactViewport ? "calc(var(--mapH) + 170px)" : "calc(var(--mapH) + 285px)" }}>
           <div className="title" style={{ fontSize: 16 }}>
             Şu anki durum
           </div>

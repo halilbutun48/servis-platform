@@ -5,15 +5,15 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `361`
+- Toplam package script entry: `362`
 - Toplam executable tracked file: `1141`
-- Combined registry row: `1502`
-- Root/backend/web/mobile package dağılımı: root `204`, backend `704`, web `90`, mobile `201`
+- Combined registry row: `1503`
+- Root/backend/web/mobile package dağılımı: root `205`, backend `704`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
-- UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
-- UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
+- UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
+- UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
 - UX preview check alias: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01-CHECK`
 - Super Admin clarity milestone: `UX-SUPERADMIN-PANEL-CLARITY-01`
 - Super Admin clarity docs: `docs/UX_SUPERADMIN_PANEL_CLARITY_01.md`
@@ -81,6 +81,9 @@ Repo: `servis-platform`
 - PASS-minus evidence milestone: `UX-SMOKE-PASS-MINUS-EVIDENCE-01`
 - PASS-minus evidence docs: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
 - PASS-minus evidence command: `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
+- PASS-minus zero milestone: `UX-SMOKE-PASS-MINUS-ZERO-01`
+- PASS-minus zero docs: `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`
+- PASS-minus zero command: `node backend\scripts\ux_smoke_pass_minus_zero_01_check.js`
 - Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`, `docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md`, `docs/INVITE_BASED_MEMBERSHIP_01.md`, `docs/VERIFIED_SUPPLIER_01.md`, `docs/UX_MARKETPLACE_PANELS_01.md`, `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`
 - Verified supplier milestone: `VERIFIED-SUPPLIER-01`
 - Verified supplier check: `check:verifiedsupplier01`
@@ -120,7 +123,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `386`
-- ACTIVE_CORE: `160`
+- ACTIVE_CORE: `161`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -150,7 +153,7 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 386 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 160 |
+| ACTIVE_CORE | 161 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -339,6 +342,7 @@ Repo: `servis-platform`
 | root:check:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js | core | ACTIVE_CORE |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:uxallpanelsrealityaudit01 | package.json | root | node backend/scripts/ux_all_panels_reality_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-UXALLPANELSREALITYAUDIT-01 |  | Owner or chain unclear |  |
 | root:check:uxsmokepassminusevidence01 | package.json | root | node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js | core | ACTIVE_CORE |  | UX-SMOKE-PASS-MINUS-EVIDENCE-01 |  | Breaks canonical verification chain |  |
+| root:check:uxsmokepassminuszero01 | package.json | root | node backend/scripts/ux_smoke_pass_minus_zero_01_check.js | core | ACTIVE_CORE |  | UX-SMOKE-PASS-MINUS-ZERO-01 |  | Breaks canonical verification chain |  |
 | root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
 | root:smoke:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs | review | NEEDS_REVIEW |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Owner or chain unclear |  |
 | root:smoke:uxallpanelsrealityaudit01 | package.json | root | node backend/scripts/ux_all_panels_reality_audit_01.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-UXALLPANELSREALITYAUDIT-01 |  | Owner or chain unclear |  |
@@ -507,6 +511,7 @@ Repo: `servis-platform`
 | cop_04b_panel_context_audit_check.js | backend/scripts/cop_04b_panel_context_audit_check.js | backend | root:check:cop04b | product | ACTIVE |  | COP-04-B-PANEL-CONTEXT-AUDIT-CHECK |  | Owner or chain unclear | product check/helper |
 | cop_live_accept_01_check.js | backend/scripts/cop_live_accept_01_check.js | backend | root:check:copliveaccept01 | product | ACTIVE |  | COP-LIVE-ACCEPT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | copilot_ai_action_roadmap_01_check.js | backend/scripts/copilot_ai_action_roadmap_01_check.js | backend | root:check:copilotairoadmap01 | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
+| copilot_demand_to_agreement_roadmap_01_check.js | backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js | backend | root:check:copilotdemandagreement01 | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
 | copilot_role_task_matrix_01_check.js | backend/scripts/copilot_role_task_matrix_01_check.js | backend | root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX-01-CHECK |  | Owner or chain unclear |  |
 | docs_ssot_brand_artifact_cleanup_01_check.js | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | backend | root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01-CHECK |  | Owner or chain unclear |  |
 | docs_ssot_pack_check.js | backend/scripts/docs_ssot_pack_check.js | backend |  | verify:repo | ACTIVE_CORE |  | DOCS-SSOT-PACK-CHECK |  | Owner or chain unclear | canonical runner |
@@ -771,7 +776,7 @@ Repo: `servis-platform`
 | sefer_score_01_check.js | backend/scripts/sefer_score_01_check.js | backend | root:check:seferscore01 | review | NEEDS_REVIEW |  | SEFER-SCORE-01-CHECK |  | Owner or chain unclear |  |
 | session_safe_panels_cleanup_hotfix_check.mjs | backend/scripts/session_safe_panels_cleanup_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | SESSION-SAFE-PANELS-CLEANUP-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | shift_dispatch_approval_fix_01_check.js | backend/scripts/shift_dispatch_approval_fix_01_check.js | backend | root:check:shiftdispatchapprovalfix01 | review | NEEDS_REVIEW |  | SHIFT-DISPATCH-APPROVAL-FIX-01-CHECK |  | Owner or chain unclear |  |
-| smoke.js | backend/scripts/smoke.js | backend | backend:current:surface, backend:m91:smoke, backend:m91:smoke:agreement, backend:m91:smoke:route-preview, backend:smoke, root:check:e2esmoke01, root:check:finaluxsmoke01, root:check:m95e26, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxsmokepassminusevidence01, root:smoke:m98e4, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | SMOKE |  | Owner or chain unclear |  |
+| smoke.js | backend/scripts/smoke.js | backend | backend:current:surface, backend:m91:smoke, backend:m91:smoke:agreement, backend:m91:smoke:route-preview, backend:smoke, root:check:e2esmoke01, root:check:finaluxsmoke01, root:check:m95e26, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxsmokepassminusevidence01, root:check:uxsmokepassminuszero01, root:smoke:m98e4, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | SMOKE |  | Owner or chain unclear |  |
 | step06_stabil_check.js | backend/scripts/step06_stabil_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-06-STABIL-CHECK |  | Owner or chain unclear |  |
 | step1_security_foundation_check.js | backend/scripts/step1_security_foundation_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-SECURITY-FOUNDATION-CHECK |  | Owner or chain unclear |  |
 | step1_totp_stepup_check.js | backend/scripts/step1_totp_stepup_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-TOTP-STEPUP-CHECK |  | Owner or chain unclear |  |
@@ -853,6 +858,7 @@ Repo: `servis-platform`
 | answerQualityPolicy.js | backend/src/ai/chat/answerQualityPolicy.js | backend |  | review | NEEDS_REVIEW |  | ANSWER-QUALITY-POLICY |  | Owner or chain unclear |  |
 | contextResolver.js | backend/src/ai/chat/contextResolver.js | backend |  | review | NEEDS_REVIEW |  | CONTEXT-RESOLVER |  | Owner or chain unclear |  |
 | copilotAiActionRoadmap.js | backend/src/ai/chat/copilotAiActionRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP |  | Owner or chain unclear |  |
+| copilotDemandToAgreementRoadmap.js | backend/src/ai/chat/copilotDemandToAgreementRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP |  | Owner or chain unclear |  |
 | copilotRoleTaskMatrix.js | backend/src/ai/chat/copilotRoleTaskMatrix.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX |  | Owner or chain unclear |  |
 | etaSanity.js | backend/src/ai/chat/etaSanity.js | backend |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
 | goldenQuestionPack.js | backend/src/ai/chat/goldenQuestionPack.js | backend |  | review | NEEDS_REVIEW |  | GOLDEN-QUESTION-PACK |  | Owner or chain unclear |  |
@@ -1084,9 +1090,7 @@ Repo: `servis-platform`
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
-| z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| copilot_demand_to_agreement_roadmap_01_check.js | backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js | backend | root:check:copilotdemandagreement01 | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
-| copilotDemandToAgreementRoadmap.js | backend/src/ai/chat/copilotDemandToAgreementRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP |  | Owner or chain unclear |  |
+| z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

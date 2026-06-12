@@ -7,7 +7,6 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
-import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
@@ -41,6 +40,25 @@ function normalizeText(value) {
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+}
+
+function commercialFlowVisibleLabel(value) {
+  const raw = String(value || "").trim();
+  if (!raw || raw === "-") return raw || "-";
+  const normalized = normalizeText(raw);
+
+  if (normalized.includes("market")) return "Market";
+  if (normalized.includes("karsi teklif") || normalized.includes("counter")) return "Karşı teklif";
+  if (normalized.includes("bekle")) return "Beklemede";
+  if (normalized.includes("approved") || normalized.includes("accepted") || normalized.includes("kabul") || normalized.includes("onay") || normalized.includes("uygulan")) return "İşleme Geçen";
+  if (normalized.includes("active") || normalized.includes("aktif")) return "Aktif";
+  if (normalized.includes("done") || normalized.includes("tamam") || normalized.includes("closed")) return "Tamamlandı";
+  if (normalized.includes("reject") || normalized.includes("cancel")) return "Kapanmış";
+  if (normalized.includes("split")) return "Bölünmüş";
+  return raw
+    .replace(/kabul|onay|uygulan\w*/gi, "")
+    .replace(/\s+/g, " ")
+    .trim() || raw;
 }
 
 function uniqueById(items) {
@@ -99,7 +117,7 @@ function FlowSummaryStrip({ summary, selectedItem, selectedSummaryText }) {
   const activeCount = Number(summary?.cards?.approvedOrActiveShifts || 0);
   const contractCount = Number(summary?.cards?.activeAgreements || 0);
   const requestCount = Number(summary?.cards?.requestedAgreements || 0);
-  const currentNextStep = selectedItem?.nextStep || "Detay için kayıt seç";
+  const currentNextStep = commercialFlowVisibleLabel(selectedItem?.nextStep) || "Detay için kayıt seç";
   return (
     <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
       <div className="panelSectionTitle">Ticari Akış Özeti</div>
@@ -122,7 +140,7 @@ function StatusBadge({ value }) {
   if (["COUNTERED", "PAZARLIK", "NEGOTIATION"].includes(normalized)) style = { color: "#b2ddff", background: "rgba(83,177,253,0.12)", border: "1px solid rgba(83,177,253,0.35)" };
   if (["ACCEPTED", "APPROVED", "ACTIVE", "SPLIT"].includes(normalized)) style = { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" };
   if (["CANCELLED", "DONE", "REJECTED"].includes(normalized)) style = { color: "#fecdca", background: "rgba(240,68,56,0.12)", border: "1px solid rgba(240,68,56,0.35)" };
-  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{displayStatusLabel(value)}</span>;
+  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{commercialFlowVisibleLabel(value)}</span>;
 }
 
 function CommercialFlowTable({ items, selectedId, onSelect, onAction, emptyText, actionLabel = "Aç" }) {
@@ -153,11 +171,11 @@ function CommercialFlowTable({ items, selectedId, onSelect, onAction, emptyText,
               style={{ ...rowSelectionStyle(String(selectedId || "") === String(item.id || "")), cursor: "pointer" }}
             >
               <td>{item.counterparty || "-"}</td>
-              <td>{item.flowLabel || "-"}</td>
+              <td>{commercialFlowVisibleLabel(item.flowLabel || "-")}</td>
               <td>{item.amountLabel || "-"}</td>
               <td><StatusBadge value={item.statusLabel || item.status} /></td>
               <td>{fmtTR(item.updatedAt)}</td>
-              <td>{item.nextStep || "-"}</td>
+              <td>{commercialFlowVisibleLabel(item.nextStep || "-")}</td>
               <td>
                 {item.actionPath ? (
                   <button
@@ -287,15 +305,19 @@ export default function CommercialFlowPanel() {
       entityType: selectedItem?.shiftId ? "shift" : "commercial",
       entityId: Number(selectedItem?.shiftId || selectedItem?.id || 1115) || 1115,
       label: selectedItem?.counterparty || `Kayıt ID ${selectedItem?.id || "-"}`,
-      summary: [selectedItem?.flowLabel, selectedItem?.statusLabel, selectedItem?.nextStep].filter(Boolean).join(" • "),
+      summary: [commercialFlowVisibleLabel(selectedItem?.flowLabel), commercialFlowVisibleLabel(selectedItem?.statusLabel || selectedItem?.status), commercialFlowVisibleLabel(selectedItem?.nextStep)].filter(Boolean).join(" • "),
       fields: [
         { label: "Karşı Taraf", value: selectedItem?.counterparty || "-", help: "Ticari akışın karşı tarafını gösterir." },
-        { label: "Akış", value: selectedItem?.flowLabel || "-", help: "Kaydın hangi ticari bölümde olduğunu gösterir." },
-        { label: "Durum", value: selectedItem?.statusLabel || selectedItem?.status || "-", help: "Karar veya pazarlık durumunu gösterir." },
+        { label: "Akış", value: commercialFlowVisibleLabel(selectedItem?.flowLabel), help: "Kaydın hangi ticari bölümde olduğunu gösterir." },
+        { label: "Aşama", value: commercialFlowVisibleLabel(selectedItem?.statusLabel || selectedItem?.status), help: "Karar veya pazarlık aşamasını gösterir." },
         { label: "Tutar", value: selectedItem?.amountLabel || "-", help: "Görünen ticari tutarı gösterir." },
-        { label: "Sonraki Adım", value: selectedItem?.nextStep || "-", help: "Buradan sonra önerilen adımı gösterir." },
+        { label: "Sonraki Adım", value: commercialFlowVisibleLabel(selectedItem?.nextStep), help: "Buradan sonra önerilen adımı gösterir." },
       ],
       facts,
+      badges: [
+        { label: "Aşama", value: commercialFlowVisibleLabel(selectedItem?.statusLabel || selectedItem?.status), help: "Aşama rozeti kaydın anlık ticari statüsünü gösterir." },
+        { label: "Bölüm", value: commercialFlowVisibleLabel(selectedItem?.flowLabel || selectedItem?.statusLabel || "-"), help: "Kayıdın hangi alt görünümde açılacağını gösterir." },
+      ],
     });
   }, [selectedItem, summary, items.length]);
 
@@ -304,9 +326,9 @@ export default function CommercialFlowPanel() {
     return [
       { title: "Açık Teklif", value: c.openOffers ?? "-", note: "İncelenmesi gereken teklifler" },
       { title: "Karşı Teklifim", value: c.counteredOffers ?? "-", note: "Firma cevabı beklenen kayıtlar" },
-      { title: "Kabul Edilen", value: c.acceptedOffers ?? "-", note: "Bekleyen taleplere inen kayıtlar" },
+      { title: "İşleme Geçen", value: c.acceptedOffers ?? "-", note: "İnceleme sonrası sahaya inen kayıtlar" },
       { title: "Sözleşme Bekleyen", value: c.requestedAgreements ?? "-", note: "Ayrı yönetilen sözleşme kayıtları" },
-      { title: "Aktif Sözleşme", value: c.activeAgreements ?? "-", note: "Kabul edilen / aktif sözleşmeler" },
+      { title: "Aktif Sözleşme", value: c.activeAgreements ?? "-", note: "İşleme geçen / aktif sözleşmeler" },
       { title: "Aktif Operasyon", value: c.approvedOrActiveShifts ?? "-", note: "Sahaya inen işler" },
     ];
   }, [summary]);
@@ -325,7 +347,7 @@ export default function CommercialFlowPanel() {
   const qualityCount = Number(summary?.cards?.counteredOffers || 0) + Number(summary?.cards?.openOffers || 0);
   const paymentCount = Number(summary?.cards?.activeAgreements || 0) + Number(summary?.cards?.approvedOrActiveShifts || 0);
   const selectedSummaryText = selectedItem
-    ? [selectedItem.flowLabel, selectedItem.statusLabel || selectedItem.status, selectedItem.nextStep].filter(Boolean).join(" • ")
+    ? [commercialFlowVisibleLabel(selectedItem.flowLabel), commercialFlowVisibleLabel(selectedItem.statusLabel || selectedItem.status), commercialFlowVisibleLabel(selectedItem.nextStep)].filter(Boolean).join(" • ")
     : "";
 
   const tabs = useMemo(() => ROOM_FLOW_TABS.map((tab) => {
@@ -462,7 +484,7 @@ export default function CommercialFlowPanel() {
             compact
           >
             <div style={{ display: "grid", gap: 8 }}>
-              <div className="panelMeta">• Teklif, karşı teklif ve kabul aşamaları aynı iş akışının parçalarıdır.</div>
+              <div className="panelMeta">• Teklif, karşı teklif ve sonuç aşamaları aynı iş akışının parçalarıdır.</div>
               <div className="panelMeta">• Kritik kararlar özet kartlarda, satır detayları geçmişte tutulur.</div>
             </div>
           </CollapsibleSection>
@@ -480,7 +502,7 @@ export default function CommercialFlowPanel() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
               <MetricCard title="Karşı Teklif" value={summary?.cards?.counteredOffers ?? "-"} note="Kalite sinyali gibi izlenen pazarlık sayısı" accent={summary?.cards?.counteredOffers ? "warm" : "default"} />
-              <MetricCard title="Kabul Edilen" value={summary?.cards?.acceptedOffers ?? "-"} note="Operasyona geçen kayıtlar" accent={summary?.cards?.acceptedOffers ? "good" : "default"} />
+              <MetricCard title="İşleme Geçen" value={summary?.cards?.acceptedOffers ?? "-"} note="Operasyona geçen kayıtlar" accent={summary?.cards?.acceptedOffers ? "good" : "default"} />
               <MetricCard title="Açık Teklif" value={summary?.cards?.openOffers ?? "-"} note="Takibe açık kayıtlar" accent={summary?.cards?.openOffers ? "warm" : "default"} />
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -571,7 +593,7 @@ export default function CommercialFlowPanel() {
                 <div className="panelMeta">Akış</div>
                 <select value={flowQ} onChange={(e) => setFlowQ(e.target.value)} style={{ width: "100%", minWidth: 120 }}>
                   <option value="">Tüm akışlar</option>
-                  {flowOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+                  {flowOptions.map((value) => <option key={value} value={value}>{commercialFlowVisibleLabel(value)}</option>)}
                 </select>
               </div>
               <div>
@@ -587,7 +609,7 @@ export default function CommercialFlowPanel() {
                 <div className="panelMeta">Durum</div>
                 <select value={statusQ} onChange={(e) => setStatusQ(e.target.value)} style={{ width: "100%", minWidth: 120 }}>
                   <option value="">Tüm durumlar</option>
-                  {statusOptions.map((value) => <option key={value} value={value}>{displayStatusLabel(value)}</option>)}
+                  {statusOptions.map((value) => <option key={value} value={value}>{commercialFlowVisibleLabel(value)}</option>)}
                 </select>
               </div>
               <div>
@@ -673,11 +695,11 @@ export default function CommercialFlowPanel() {
               {selectedItem ? (
                 <div style={{ display: "grid", gap: 6 }}>
                   <div><b>{selectedItem.counterparty || "-"}</b></div>
-                  <div className="panelMeta">Akış: {selectedItem.flowLabel || "-"}</div>
-                  <div className="panelMeta">Durum: <StatusBadge value={selectedItem.statusLabel || selectedItem.status} /></div>
+                  <div className="panelMeta">Akış: {commercialFlowVisibleLabel(selectedItem.flowLabel || "-")}</div>
+                  <div className="panelMeta">Aşama: <StatusBadge value={selectedItem.statusLabel || selectedItem.status} /></div>
                   <div className="panelMeta">Tutar: {selectedItem.amountLabel || "-"}</div>
                   <div className="panelMeta">Son Güncelleme: {fmtTR(selectedItem.updatedAt)}</div>
-                  <div className="panelMeta">Sonraki Adım: {selectedItem.nextStep || "-"}</div>
+                  <div className="panelMeta">Sonraki Adım: {commercialFlowVisibleLabel(selectedItem.nextStep || "-")}</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {selectedItem.actionPath ? (
                       <button type="button" onClick={() => openAction(selectedItem)}>{selectedItem.actionLabel || "Aç"}</button>

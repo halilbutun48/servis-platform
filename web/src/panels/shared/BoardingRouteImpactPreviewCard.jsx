@@ -262,7 +262,7 @@ function previewStatusTonePreview(item = null, preview = null) {
 function compactCapacityLabel(capacity = {}) {
   const status = String(capacity?.status || "").toUpperCase();
   if (status === "OK") return "Uygun";
-  if (status === "NEAR") return "Riskli";
+  if (status === "NEAR") return "Sınırda";
   if (status === "OVER") return "Yetersiz";
   return "Bilinmiyor";
 }
@@ -434,6 +434,7 @@ export default function BoardingRouteImpactPreviewCard({
   return (
     <div
       className="card"
+      data-role="boarding-route-impact-preview"
       style={{
         borderColor: tone.border,
         background: "rgba(255,255,255,0.03)",
@@ -472,7 +473,7 @@ export default function BoardingRouteImpactPreviewCard({
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <span className="pill" data-status="INFO">Kapasite: {capacityLabel}</span>
           <span className="pill" data-status={reliabilityStatus}>Güvenilirlik: {reliabilityLabel}</span>
-          <span className="pill" data-status={riskStatus}>Risk: {riskLabel}</span>
+          <span className="pill" data-status={riskStatus}>Denge: {riskLabel}</span>
           <span className="pill" data-status="INFO">Bekleyen taraf: {decisionOwnerChip}</span>
           {selectionTime ? <span className="panelMeta">Zaman: {formatSelectionTime(selectionTime) || "-"}</span> : null}
         </div>
@@ -480,8 +481,14 @@ export default function BoardingRouteImpactPreviewCard({
         {previewStateNote ? <div className="panelMeta">{previewStateNote}</div> : null}
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" className="btn sm" onClick={handleToggleDetails}>
-            {detailsOpen ? "Detayı gizle" : "Detayı aç"}
+          <button
+            type="button"
+            className="btn sm"
+            onClick={handleToggleDetails}
+            aria-label={detailsOpen ? "Detayı gizle" : "Detayı aç"}
+            title={detailsOpen ? "Detayı gizle" : "Detayı aç"}
+          >
+            {detailsOpen ? "Ayrıntıları gizle" : "Ayrıntıları aç"}
           </button>
           <button type="button" className="btn sm ghost" onClick={handleShowMap}>
             Haritada göster
@@ -531,9 +538,9 @@ export default function BoardingRouteImpactPreviewCard({
             ) : null}
 
             <div style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
-              <div className="panelMeta">Sıradaki önerilen işlem</div>
-              <div style={{ marginTop: 4, fontWeight: 700 }}>{String(preview.nextBestAction || "Önizlemeyi doğrula.")}</div>
-            </div>
+            <div className="panelMeta">Sıradaki önerilen işlem</div>
+            <div style={{ marginTop: 4, fontWeight: 700 }}>{String(preview.nextBestAction || "Önizlemeyi doğrula.")}</div>
+          </div>
 
             <div className="panelMeta">Hesap özeti: {detailsHint}</div>
           </div>

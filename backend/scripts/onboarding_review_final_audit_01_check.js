@@ -298,6 +298,7 @@ mustNoDiffExcept(
   ],
   [
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
+    "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
     "web/src/panels/superadmin/TrustQualityPanel.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
     "web/src/App.jsx",

@@ -1083,14 +1083,6 @@ export default function AgreementsPanel() {
           ) : null}
           {copilotAgreementTarget ? (
             <div style={{ display: "grid", gap: 8 }}>
-              <button
-                type="button"
-                className="btn sm ghost roomActionCTA"
-                disabled
-                title="Bu fixture'da rota önizleme yalnızca okunur."
-              >
-                Rota Önizleme
-              </button>
               <AgreementOpsBridgeCard
                 key={`room-bridge-${copilotAgreementTarget.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
                 agreement={copilotAgreementTarget}

@@ -481,6 +481,7 @@ function main() {
     "web/src/panels/company/WorkflowPanel.jsx",
     "web/src/panels/company/companyShiftsPanelCards.jsx",
     "web/src/panels/company/CommercialFlowPanel.jsx",
+    "web/src/panels/company/companyAgreementsSourceShiftSection.jsx",
     "web/src/components/BrandMark.jsx",
     "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
     "web/src/panels/shared/OfferQualityRankingCard.jsx",
@@ -496,6 +497,7 @@ function main() {
     "web/src/panels/shared/ReportsPanel.jsx",
     "web/src/panels/superadmin/UsersPanel.jsx",
     "web/src/panels/superadmin/TrustQualityPanel.jsx",
+    "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
     "web/src/utils/copilotFacts.js",
     "web/src/utils/liveTrackingCopy.js",
     "web/src/utils/offerQualityRanking.js",
@@ -539,6 +541,8 @@ function main() {
     "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
     "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
     "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
+    "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
+    "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");

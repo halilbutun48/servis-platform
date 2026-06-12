@@ -206,6 +206,7 @@ function main() {
   must(pkg, '"check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js"', 'package.json exposes check:uxlivepanelsmokeaudit01');
   must(pkg, '"check:uxmobileallrolespanelaudit01": "node backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js"', 'package.json exposes check:uxmobileallrolespanelaudit01');
   must(pkg, '"check:uxsmokepassminusevidence01": "node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js"', 'package.json exposes check:uxsmokepassminusevidence01');
+  must(pkg, '"check:uxsmokepassminuszero01": "node backend/scripts/ux_smoke_pass_minus_zero_01_check.js"', 'package.json exposes check:uxsmokepassminuszero01');
   must(pkg, '"smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs"', 'package.json exposes smoke:uxlivepanelpremium01');
   must(pkg, '"smoke:uxmobileallrolespanelaudit01": "node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs"', 'package.json exposes smoke:uxmobileallrolespanelaudit01');
   must(pkg, '"check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js"', 'package.json exposes check:uxlivepanelpremiumsmoke01');
@@ -363,6 +364,7 @@ function main() {
     'check:uxpremiumcriticaluxfixcleanup01',
     'check:uxsmokepassminusevidence01',
     'check:uxlivepanelpremiumsmoke01',
+    'check:uxsmokepassminuszero01',
     'check:mobilewebfinal01',
     'check:uxparentpersonelliveerrorclarity01',
     'check:livetrackingfinal01',
@@ -828,6 +830,10 @@ function main() {
   must(guide, 'check:uxsmokepassminusevidence01', 'script guide exposes check:uxsmokepassminusevidence01');
   must(guide, 'node backend\\scripts\\ux_smoke_pass_minus_evidence_01_check.js', 'script guide includes PASS-minus evidence command');
   must(guide, 'docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md', 'script guide includes PASS-minus evidence doc');
+  must(guide, 'UX-SMOKE-PASS-MINUS-ZERO-01', 'script guide mentions PASS-minus zero milestone');
+  must(guide, 'check:uxsmokepassminuszero01', 'script guide exposes PASS-minus zero check');
+  must(guide, 'node backend\\scripts\\ux_smoke_pass_minus_zero_01_check.js', 'script guide includes PASS-minus zero command');
+  must(guide, 'docs/UX_SMOKE_PASS_MINUS_ZERO_01.md', 'script guide includes PASS-minus zero doc');
   must(guide, 'UX-LIVE-PANEL-PREMIUM-SMOKE-01', 'script guide mentions UX-LIVE-PANEL-PREMIUM-SMOKE-01');
   must(guide, 'check:uxlivepanelpremiumsmoke01', 'script guide exposes check:uxlivepanelpremiumsmoke01');
   must(guide, 'node backend\\scripts\\ux_live_panel_premium_smoke_01.mjs', 'script guide includes premium smoke command');

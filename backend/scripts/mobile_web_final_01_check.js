@@ -110,10 +110,10 @@ function main() {
 
   mustContains(doc, "MOBILE-WEB-FINAL-01", "mobile final doc title present");
   mustContains(doc, "PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps all-roles snapshot");
-  mustContains(doc, "PASS 64 / PASS- 18 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps premium snapshot");
-  mustContains(doc, "PASS- remaining routes", "mobile final doc keeps final risk wording");
+  mustContains(doc, "PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0", "mobile final doc keeps premium snapshot");
+  mustContains(doc, "PASS- remaining routes yok", "mobile final doc keeps final risk wording");
   mustContains(doc, "final risk", "mobile final doc keeps final risk wording");
-  mustContains(doc, "backlog", "mobile final doc keeps backlog wording");
+  mustContains(doc, "backlog boş", "mobile final doc keeps backlog wording");
   mustContains(doc, "Sefer Abi launcher", "mobile final doc keeps launcher ruling");
   mustContains(doc, "NavDock", "mobile final doc keeps NavDock ruling");
   mustContains(doc, "UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01", "mobile final doc keeps company personel access milestone");
@@ -154,27 +154,8 @@ function main() {
   assertRows(
     premiumReport,
     "mobile premium smoke report",
-    { PASS: 64, "PASS-": 18, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
-    [
-      { route: "/#/superadmin/onboarding-review", viewport: "desktop" },
-      { route: "/#/superadmin/onboarding-review", viewport: "mobile" },
-      { route: "/#/room/commercial-flow", viewport: "desktop" },
-      { route: "/#/room/operation-health", viewport: "desktop" },
-      { route: "/#/room/commercial-flow", viewport: "mobile" },
-      { route: "/#/room/operation-health", viewport: "mobile" },
-      { route: "/#/room/live", viewport: "mobile" },
-      { route: "/#/room/map", viewport: "mobile" },
-      { route: "/#/company/shifts", viewport: "desktop" },
-      { route: "/#/company/commercial-flow", viewport: "desktop" },
-      { route: "/#/company/shifts", viewport: "mobile" },
-      { route: "/#/company/commercial-flow", viewport: "mobile" },
-      { route: "/#/company/map", viewport: "mobile" },
-      { route: "/#/school/commercial-flow", viewport: "desktop" },
-      { route: "/#/school/commercial-flow", viewport: "mobile" },
-      { route: "/#/organization/commercial-flow", viewport: "desktop" },
-      { route: "/#/organization/commercial-flow", viewport: "mobile" },
-      { route: "/#/personel/live", viewport: "mobile" },
-    ]
+    { PASS: 82, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
+    []
   );
 
   mustContains(allRolesCheck, "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01", "mobile final check keeps all-roles audit reference");

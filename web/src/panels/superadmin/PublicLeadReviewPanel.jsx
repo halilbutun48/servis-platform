@@ -287,6 +287,7 @@ export default function PublicLeadReviewPanel() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span className="pill" data-status="INFO">Sadece inceleme</span>
             <span className="pill" data-status="INFO">KVKK kontrollü</span>
             <span className="pill" data-status="WARN">İnsan onayı gerekli</span>
             <span className="pill" data-status="INFO">Read-only sınırları açık</span>

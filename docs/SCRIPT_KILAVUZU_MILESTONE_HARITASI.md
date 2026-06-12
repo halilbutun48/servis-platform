@@ -96,6 +96,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:finaluxsmoke01` -> `node backend\scripts\final_ux_smoke_01_check.js`
 - `check:uxlivepanelsmokeaudit01` -> `node backend\scripts\ux_live_panel_smoke_audit_01_check.js`
 - `check:uxsmokepassminusevidence01` -> `node backend\scripts\ux_smoke_pass_minus_evidence_01_check.js`
+- `check:uxsmokepassminuszero01` -> `node backend\scripts\ux_smoke_pass_minus_zero_01_check.js`
 - `check:uxroompanelclarity01` -> `node backend\scripts\ux_room_panel_clarity_01_check.js`
 - `check:uxroomshiftstabs01` -> `node backend\scripts\ux_room_shifts_tabs_01_check.js`
 - `check:uxroomshiftsdensitydedup01` -> `node backend\scripts\ux_room_shifts_density_dedup_01_check.js`
@@ -326,6 +327,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `Sefer Abi launcher secondary copilot olarak görünür.` tek başına PASS- nedeni değildir; `Harita / canlı takip dili görünür.` tek başına PASS- nedeni değildir.
 - Bu check ürün/business flow değiştirmez; yalnızca smoke classification standardını netleştirir.
 - Doküman: `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`
+
+### UX-SMOKE-PASS-MINUS-ZERO-01 [CHECK]
+- `check:uxsmokepassminuszero01` premium smoke raporunda `PASS- 0` hedefini zorunlu kılar.
+- Hedef sınıflar: `PASS- 0`, `BLOCKER 0`, `AUTH-BLOCKED 0` ve `NOT-FOUND 0`.
+- `UX-FIX` satırları ayrı backlog olarak raporlanabilir; zero snapshot standardı yalnızca `PASS-` sınıfını sıfırlar.
+- Bu check ürün/business flow değiştirmez; yalnızca premium smoke PASS- sınıfını sıfıra indiren son kabul standardını doğrular.
+- Doküman: `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`
 
 ### UX-LIVE-PANEL-PREMIUM-SMOKE-01 [SMOKE]
 - `smoke:uxlivepanelpremium01` Playwright tabanlı canlı tarayıcı smoke runner'ıdır; desktop ve mobile viewport'ta public, room, company, super admin, driver, personel ve parent panellerini screenshot, console error ve page error sinyalleriyle toplar.

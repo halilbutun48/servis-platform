@@ -60,7 +60,16 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
           </div>
         </>
       ) : (
-        <div className="muted">Bekleyen talep yok.</div>
+        <div className="card" style={{ padding: 12, display: "grid", gap: 10 }}>
+          <div className="muted">Bekleyen talep yok.</div>
+          <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
+            Bekleyen kayıt oluşunca Kabul Et ve Reddet aksiyonları burada görünür.
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" className="btn sm" disabled>Kabul Et</button>
+            <button type="button" className="btn sm" disabled>Reddet</button>
+          </div>
+        </div>
       )}
     </div>
   );

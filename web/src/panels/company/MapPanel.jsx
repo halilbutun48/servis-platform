@@ -138,6 +138,7 @@ export default function CompanyMapPanel() {
 
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
 
   const [shifts, setShifts] = useState([]);
 
@@ -149,6 +150,19 @@ export default function CompanyMapPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [routePreview, setRoutePreview] = useState({ points: [], source: "ESTIMATED" });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 768px)");
+    const sync = () => setIsCompactViewport(Boolean(mq.matches));
+    sync();
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", sync);
+      return () => mq.removeEventListener("change", sync);
+    }
+    mq.addListener(sync);
+    return () => mq.removeListener(sync);
+  }, []);
 
   const loadVehicles = useCallback(async (signal) => {
     const r = await getCompanyVehicles(token, { signal, take: 20, onlyActive: true, ttlMs: 45000 });
@@ -523,8 +537,8 @@ export default function CompanyMapPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      <div className="grid mapGrid" style={{ ["--mapH"]: "min(700px, calc(100vh - 300px))" }}>
-        <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>
+      <div className="grid mapGrid" style={{ ["--mapH"]: isCompactViewport ? "min(360px, calc(100vh - 440px))" : "min(700px, calc(100vh - 300px))" }}>
+        <div className="card mapAsideCard" style={{ height: isCompactViewport ? "calc(var(--mapH) + 170px)" : "calc(var(--mapH) + 285px)" }}>
           <div className="title" style={{ fontSize: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
             <span>Canlı Liste</span>
             <span className="muted" style={{ fontSize: 12 }}>{cards.length} kayıt</span>

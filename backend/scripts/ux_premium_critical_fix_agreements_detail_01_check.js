@@ -453,6 +453,8 @@ function main() {
     "web/src/App.jsx",
     "web/src/components/BrandMark.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
+    "web/src/panels/company/CommercialFlowPanel.jsx",
+    "web/src/panels/company/companyAgreementsSourceShiftSection.jsx",
     "web/src/panels/organization/PlansPanel.jsx",
     "web/src/panels/organization/organizationPlansShared.jsx",
     "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
@@ -469,6 +471,8 @@ function main() {
     "web/src/panels/company/ShiftsPanel.jsx",
     "web/src/panels/shared/OfferQualityRankingCard.jsx",
     "web/src/panels/superadmin/TrustQualityPanel.jsx",
+    "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
+    "web/src/panels/parent/LivePanel.jsx",
     "web/src/copilot/screenRegistry.js",
     "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
     "docs/PRIMER_SSOT.md",
@@ -491,6 +495,8 @@ function main() {
     "docs/UX_PANEL_REALITY_AUDIT_02C.md",
     "tools/repo_contract_state.json",
     "web/src/utils/offerQualityRanking.js",
+    "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
+    "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within agreements detail scope");
 
@@ -499,7 +505,7 @@ function main() {
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   const statusWithoutOffers = status.filter((file) => file !== "web/src/panels/room/OffersPanel.jsx");
-  const statusWithoutTrustQuality = statusWithoutOffers.filter((file) => file !== "web/src/panels/superadmin/TrustQualityPanel.jsx");
+  const statusWithoutTrustQuality = statusWithoutOffers.filter((file) => file !== "web/src/panels/superadmin/TrustQualityPanel.jsx" && file !== "web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
 
   mustNotList(statusWithoutTrustQuality, "web/src/panels/room/", "room surfaces are untouched");
   mustNotList(status, "web/src/panels/driver/", "driver surfaces are untouched");

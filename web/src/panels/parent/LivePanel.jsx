@@ -562,6 +562,26 @@ export default function ParentLivePanel() {
 
         {!vehicles.length ? <div className="muted" style={{ marginTop: 12 }}>{PARENT_MISSING_SERVICE_COPY} {PARENT_MISSING_SERVICE_DETAIL_COPY}<span style={{ display: "none" }}>{parentNoVehicleDetail}</span></div> : null}
 
+        {!selectedVehicle ? (
+          <div className="card" style={{ marginTop: 12, padding: 12 }}>
+            <div className="title">Çocuk durağı ve yaklaşım</div>
+            <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>
+              Aktif servis seçilmediği için canlı yönlendirme butonları pasif kalır. Planlı servis açılınca çocuğun durağı, en yakın durak ve no-show aksiyonları burada görünür.
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+              <button type="button" className="btn" disabled title="Aktif servis yok">
+                Çocuğun durağına git
+              </button>
+              <button type="button" className="btn" disabled title="Aktif servis yok">
+                En yakın durağa git
+              </button>
+              <button type="button" className="btn" disabled title="Aktif servis yok">
+                Bugün gelmiyor
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {selectedVehicle ? (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>

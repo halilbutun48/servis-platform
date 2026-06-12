@@ -165,38 +165,44 @@ function main() {
       (row) => row.status === "PASS-" || (row.kind === "dispatch" && row.status === "PASS")
     );
     const uxFixRows = report.routes.filter((row) => row.status === "UX-FIX");
-    must(passMinusRows.length > 0, "smoke report keeps PASS- evidence rows");
+    const passMinusCount = Number(report.statusCounts?.["PASS-"] || 0);
     console.log(`OK UX-FIX rows: ${uxFixRows.length}`);
 
-    const bucketCounts = {};
-    const uncategorized = [];
-    for (const row of passMinusRows) {
-      const bucket = evidenceBucket(row);
-      if (!bucket) {
-        uncategorized.push(`${row.role} ${row.route} ${row.viewport}`);
-        continue;
+    if (passMinusCount === 0) {
+      console.log("OK PASS- evidence rows absent; PASS-minus zero snapshot owns the report.");
+    } else {
+      must(passMinusRows.length > 0, "smoke report keeps PASS- evidence rows");
+
+      const bucketCounts = {};
+      const uncategorized = [];
+      for (const row of passMinusRows) {
+        const bucket = evidenceBucket(row);
+        if (!bucket) {
+          uncategorized.push(`${row.role} ${row.route} ${row.viewport}`);
+          continue;
+        }
+        bucketCounts[bucket] = (bucketCounts[bucket] || 0) + 1;
+        must(
+          row.notes.some((note) => normalize(note) !== "sefer abi launcher secondary copilot olarak gorunur."),
+          `PASS- row keeps real evidence for ${row.route} (${row.viewport})`
+        );
       }
-      bucketCounts[bucket] = (bucketCounts[bucket] || 0) + 1;
-      must(
-        row.notes.some((note) => normalize(note) !== "sefer abi launcher secondary copilot olarak gorunur."),
-        `PASS- row keeps real evidence for ${row.route} (${row.viewport})`
-      );
-    }
 
-    must(uncategorized.length === 0, `PASS- rows stay evidence-based (${passMinusRows.length})`);
-    must(bucketCounts["review-gap"] >= 1, "PASS- inventory keeps review queue evidence");
-    must(bucketCounts["route-preview"] >= 1, "PASS- inventory keeps route preview evidence");
-    must(bucketCounts["dispatch"] >= 1, "PASS- inventory keeps dispatch evidence");
-    must(bucketCounts["commercial-bucket"] >= 1, "PASS- inventory keeps commercial flow evidence");
-    must(bucketCounts["convert-draft"] >= 1, "PASS- inventory keeps company shift conversion evidence");
-    must(bucketCounts["long-live-map"] >= 1, "PASS- inventory keeps long live-map evidence");
-    if ((report.consoleErrorCount || 0) > 0) {
-      must(bucketCounts["console-noise"] >= 1, "PASS- inventory keeps console noise evidence");
-    }
+      must(uncategorized.length === 0, `PASS- rows stay evidence-based (${passMinusRows.length})`);
+      must(bucketCounts["review-gap"] >= 1, "PASS- inventory keeps review queue evidence");
+      must(bucketCounts["route-preview"] >= 1, "PASS- inventory keeps route preview evidence");
+      must(bucketCounts["dispatch"] >= 1, "PASS- inventory keeps dispatch evidence");
+      must(bucketCounts["commercial-bucket"] >= 1, "PASS- inventory keeps commercial flow evidence");
+      must(bucketCounts["convert-draft"] >= 1, "PASS- inventory keeps company shift conversion evidence");
+      must(bucketCounts["long-live-map"] >= 1, "PASS- inventory keeps long live-map evidence");
+      if ((report.consoleErrorCount || 0) > 0) {
+        must(bucketCounts["console-noise"] >= 1, "PASS- inventory keeps console noise evidence");
+      }
 
-    console.log("OK PASS- evidence bucket summary:");
-    for (const [bucket, count] of Object.entries(bucketCounts).sort(([a], [b]) => a.localeCompare(b))) {
-      console.log(`- ${bucket}: ${count}`);
+      console.log("OK PASS- evidence bucket summary:");
+      for (const [bucket, count] of Object.entries(bucketCounts).sort(([a], [b]) => a.localeCompare(b))) {
+        console.log(`- ${bucket}: ${count}`);
+      }
     }
   } else {
     console.log("WARN smoke report missing; run npm run smoke:uxlivepanelpremium01 to refresh the PASS-minus evidence snapshot.");

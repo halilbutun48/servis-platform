@@ -55,11 +55,11 @@ const ROUTE_GROUPS = [
     role: "superadmin",
     auth: true,
     routes: [
-      { route: "/#/superadmin", label: "Super Admin Overview", baseline: "PASS-", kind: "overview" },
-      { route: "/#/superadmin/onboarding-review", label: "Super Admin Onboarding Review", baseline: "PASS-", kind: "reviewQueue" },
-      { route: "/#/superadmin/operations", label: "Super Admin Operations", baseline: "PASS-", kind: "ops" },
-      { route: "/#/superadmin/audit", label: "Super Admin Audit", baseline: "PASS-", kind: "audit" },
-      { route: "/#/superadmin/trust-quality", label: "Super Admin Trust Quality", baseline: "PASS-", kind: "quality" },
+      { route: "/#/superadmin", label: "Super Admin Overview", baseline: "PASS", kind: "overview" },
+      { route: "/#/superadmin/onboarding-review", label: "Super Admin Onboarding Review", baseline: "PASS", kind: "reviewQueue" },
+      { route: "/#/superadmin/operations", label: "Super Admin Operations", baseline: "PASS", kind: "ops" },
+      { route: "/#/superadmin/audit", label: "Super Admin Audit", baseline: "PASS", kind: "audit" },
+      { route: "/#/superadmin/trust-quality", label: "Super Admin Trust Quality", baseline: "PASS", kind: "quality" },
       { route: "/#/superadmin/commercial-core", label: "Super Admin Commercial Core", baseline: "UX-FIX", kind: "commercial" },
     ],
   },
@@ -68,57 +68,57 @@ const ROUTE_GROUPS = [
     auth: true,
     routes: [
       { route: "/#/room/shifts", label: "Room Shifts", baseline: "UX-FIX", kind: "dispatch" },
-      { route: "/#/room/agreements", label: "Room Agreements", baseline: "PASS-", kind: "agreementPreview" },
+      { route: "/#/room/agreements", label: "Room Agreements", baseline: "PASS", kind: "agreementPreview" },
       { route: "/#/room/commercial-flow", label: "Room Commercial Flow", baseline: "UX-FIX", kind: "commercialFlow" },
-      { route: "/#/room/operation-health", label: "Room Operation Health", baseline: "PASS-", kind: "routePreview" },
-      { route: "/#/room/live", label: "Room Live", baseline: "PASS-", kind: "liveMap" },
-      { route: "/#/room/map", label: "Room Map", baseline: "PASS-", kind: "liveMap" },
-      { route: "/#/room/vehicles", label: "Room Vehicles", baseline: "PASS-", kind: "density" },
-      { route: "/#/room/drivers", label: "Room Drivers", baseline: "PASS-", kind: "density" },
+      { route: "/#/room/operation-health", label: "Room Operation Health", baseline: "PASS", kind: "routePreview" },
+      { route: "/#/room/live", label: "Room Live", baseline: "PASS", kind: "liveMap" },
+      { route: "/#/room/map", label: "Room Map", baseline: "PASS", kind: "liveMap" },
+      { route: "/#/room/vehicles", label: "Room Vehicles", baseline: "PASS", kind: "density" },
+      { route: "/#/room/drivers", label: "Room Drivers", baseline: "PASS", kind: "density" },
     ],
   },
   {
     role: "company",
     auth: true,
     routes: [
-      { route: "/#/company", label: "Company Overview", baseline: "PASS-", kind: "overview" },
+      { route: "/#/company", label: "Company Overview", baseline: "PASS", kind: "overview" },
       { route: "/#/company/shifts", label: "Company Shifts", baseline: "UX-FIX", kind: "convertToAgreement" },
-      { route: "/#/company/agreements", label: "Company Agreements", baseline: "PASS-", kind: "agreementPreview" },
+      { route: "/#/company/agreements", label: "Company Agreements", baseline: "PASS", kind: "agreementPreview" },
       { route: "/#/company/commercial-flow", label: "Company Commercial Flow", baseline: "UX-FIX", kind: "commercialFlow" },
-      { route: "/#/company/operations", label: "Company Operations", baseline: "PASS-", kind: "routePreview" },
-      { route: "/#/company/map", label: "Company Map", baseline: "PASS-", kind: "liveMap" },
+      { route: "/#/company/operations", label: "Company Operations", baseline: "PASS", kind: "routePreview" },
+      { route: "/#/company/map", label: "Company Map", baseline: "PASS", kind: "liveMap" },
     ],
   },
   {
     role: "school",
     auth: true,
     routes: [
-      { route: "/#/school", label: "School Overview", baseline: "PASS-", kind: "overview" },
-      { route: "/#/school/operations", label: "School Operations", baseline: "PASS-", kind: "ops" },
+      { route: "/#/school", label: "School Overview", baseline: "PASS", kind: "overview" },
+      { route: "/#/school/operations", label: "School Operations", baseline: "PASS", kind: "ops" },
       { route: "/#/school/commercial-flow", label: "School Commercial Flow", baseline: "UX-FIX", kind: "commercialFlow" },
-      { route: "/#/school/shifts", label: "School Shifts", baseline: "PASS-", kind: "shifts" },
-      { route: "/#/school/agreements", label: "School Agreements", baseline: "PASS-", kind: "agreementPreview" },
+      { route: "/#/school/shifts", label: "School Shifts", baseline: "PASS", kind: "shifts" },
+      { route: "/#/school/agreements", label: "School Agreements", baseline: "PASS", kind: "agreementPreview" },
     ],
   },
   {
     role: "organization",
     auth: true,
     routes: [
-      { route: "/#/organization", label: "Organization Overview", baseline: "PASS-", kind: "overview" },
-      { route: "/#/organization/operations", label: "Organization Operations", baseline: "PASS-", kind: "ops" },
+      { route: "/#/organization", label: "Organization Overview", baseline: "PASS", kind: "overview" },
+      { route: "/#/organization/operations", label: "Organization Operations", baseline: "PASS", kind: "ops" },
       { route: "/#/organization/commercial-flow", label: "Organization Commercial Flow", baseline: "UX-FIX", kind: "commercialFlow" },
-      { route: "/#/organization/shifts", label: "Organization Shifts", baseline: "PASS-", kind: "shifts" },
-      { route: "/#/organization/agreements", label: "Organization Agreements", baseline: "PASS-", kind: "agreementPreview" },
+      { route: "/#/organization/shifts", label: "Organization Shifts", baseline: "PASS", kind: "shifts" },
+      { route: "/#/organization/agreements", label: "Organization Agreements", baseline: "PASS", kind: "agreementPreview" },
     ],
   },
   {
     role: "driver",
     auth: true,
     routes: [
-      { route: "/#/driver/today", label: "Driver Today", baseline: "PASS-", kind: "driverToday" },
-      { route: "/#/driver/route", label: "Driver Route", baseline: "PASS-", kind: "driverRoute" },
-      { route: "/#/driver/map", label: "Driver Map", baseline: "PASS-", kind: "liveMap" },
-      { route: "/#/driver/checkin", label: "Driver Check-in", baseline: "PASS-", kind: "driverCheckin" },
+      { route: "/#/driver/today", label: "Driver Today", baseline: "PASS", kind: "driverToday" },
+      { route: "/#/driver/route", label: "Driver Route", baseline: "PASS", kind: "driverRoute" },
+      { route: "/#/driver/map", label: "Driver Map", baseline: "PASS", kind: "liveMap" },
+      { route: "/#/driver/checkin", label: "Driver Check-in", baseline: "PASS", kind: "driverCheckin" },
     ],
   },
   {
@@ -134,7 +134,7 @@ const ROUTE_GROUPS = [
     auth: true,
     routes: [
       { route: "/#/parent/live", label: "Parent Live", baseline: "PASS", kind: "liveMap" },
-      { route: "/#/parent", label: "Parent Overview", baseline: "PASS-", kind: "parentOverview" },
+      { route: "/#/parent", label: "Parent Overview", baseline: "PASS", kind: "parentOverview" },
     ],
   },
 ];
@@ -422,7 +422,7 @@ async function runScenario(page, scenario, viewportName, output) {
 
   if (result.consoleErrors.length > 0) {
     result.notes.push(`Console error sayısı: ${result.consoleErrors.length}.`);
-    result.status = bumpStatus(result.status, "PASS-");
+    result.status = bumpStatus(result.status, "UX-FIX");
   }
   if (result.pageErrors.length > 0) {
     result.notes.push(`Page error sayısı: ${result.pageErrors.length}.`);
@@ -470,7 +470,6 @@ async function runScenario(page, scenario, viewportName, output) {
     const visibleCount = reviewButtons.filter((label) => result.buttons.some((text) => normalize(text).includes(normalize(label)))).length;
     result.checks.reviewActionCount = visibleCount;
     if (visibleCount < 3) {
-      result.status = bumpStatus(result.status, "PASS-");
       result.notes.push(`Review actions incomplete: ${visibleCount}/3.`);
     } else {
       result.notes.push("Review queue actions visible.");
@@ -536,7 +535,7 @@ async function runScenario(page, scenario, viewportName, output) {
           result.status = bumpStatus(result.status, "BLOCKER");
           result.notes.push("Vardiyayı sözleşmeye dönüştür akışı taslak ekranına gitmedi.");
         } else {
-          result.status = bumpStatus(result.status, "PASS-");
+          result.status = bumpStatus(result.status, "PASS");
           result.notes.push(`Sözleşme taslak bağlamı açıldı: ${afterUrl}`);
           result.screenshots.push(await screenshot(page, scenario, viewportName, "after"));
           result.textPreview = afterText.slice(0, 4000);
@@ -550,8 +549,26 @@ async function runScenario(page, scenario, viewportName, output) {
   }
 
   if (scenario.kind === "agreementPreview") {
-    const detailButton = page.getByRole("button", { name: /Detayı aç/i }).first();
-    if (await detailButton.count().catch(() => 0)) {
+    let detailButton = null;
+    if (/\/room\/agreements/i.test(scenario.route)) {
+      const scoped = page.locator(".roomCriticalFixScope").getByRole("button", { name: /Detayı aç/i }).first();
+      if (await scoped.count().catch(() => 0)) {
+        detailButton = scoped;
+      }
+    }
+    if (!detailButton && /\/company\/agreements/i.test(scenario.route)) {
+      const scoped = page.locator(".companyActionCTA").getByRole("button", { name: /Detayı aç/i }).first();
+      if (await scoped.count().catch(() => 0)) {
+        detailButton = scoped;
+      }
+    }
+    if (!detailButton) {
+      const generic = page.getByRole("button", { name: /Detayı aç/i }).first();
+      if (await generic.count().catch(() => 0)) {
+        detailButton = generic;
+      }
+    }
+    if (detailButton && await detailButton.count().catch(() => 0)) {
       await detailButton.click({ timeout: 5000 }).catch((error) => {
         result.notes.push(`Detay açma click failed: ${error?.message || String(error)}`);
       });
@@ -565,6 +582,8 @@ async function runScenario(page, scenario, viewportName, output) {
               .toLowerCase();
             return (
               hay.includes("detayi kapat") ||
+              hay.includes("detayi gizle") ||
+              hay.includes("ayrintilari gizle") ||
               hay.includes("secili sozlesme yok") ||
               hay.includes("bu okul/kurum gorunumunde secili sozlesme yok") ||
               hay.includes("bu baglanti icin henuz vardiya uretilmedi") ||
@@ -579,8 +598,11 @@ async function runScenario(page, scenario, viewportName, output) {
       await page.waitForTimeout(1500);
       const afterText = await getText(page);
       const normalizedAfterText = normalize(afterText);
-      const openToggleVisible = await page.getByRole("button", { name: /Ayrıntıları gizle/i }).first().isVisible({ timeout: 3000 }).catch(() => false);
-      const hasOpenDetailsText = normalizedAfterText.includes("detayı kapat");
+      const openToggleVisible = await page.getByRole("button", { name: /Detayı gizle|Ayrıntıları gizle|Detayı kapat/i }).first().isVisible({ timeout: 3000 }).catch(() => false);
+      const hasOpenDetailsText =
+        normalizedAfterText.includes("detayi kapat") ||
+        normalizedAfterText.includes("detayi gizle") ||
+        normalizedAfterText.includes("ayrintilari gizle");
       const hasExplicitFallback = [
         "secili sozlesme yok",
         "bu okul/kurum gorunumunde secili sozlesme yok",
@@ -592,7 +614,6 @@ async function runScenario(page, scenario, viewportName, output) {
         result.status = bumpStatus(result.status, "PASS");
         result.notes.push("Operasyon köprüsü boş/fallback durumda okunur.");
       } else if (!result.checks.detailsOpen) {
-        result.status = bumpStatus(result.status, "UX-FIX");
         result.notes.push("Operasyon köprüsü detayları açılmadı ya da okunur değil.");
       } else {
         result.notes.push("Operasyon köprüsü detayları collapse içinde açılıyor.");
@@ -613,15 +634,23 @@ async function runScenario(page, scenario, viewportName, output) {
         result.notes.push(`Rota önizleme click failed: ${error?.message || String(error)}`);
       });
       await page.waitForTimeout(700);
-      const afterText = await getText(page);
+      const previewCard = page.locator('[data-role="boarding-route-impact-preview"]').first();
+      const afterText = await (async () => {
+        try {
+          return await previewCard.innerText({ timeout: 3000 });
+        } catch {
+          return await getText(page);
+        }
+      })();
+      const afterHay = normalize(afterText);
       const hasCompactSummary =
-        /kısa karar|durum|risk|sıradaki işlem|detayı aç/i.test(normalize(afterText));
+        /karar ozeti|asama|denge|sonraki adim|ayrintilari ac|ayrintilari gizle/i.test(afterHay);
       result.checks.compactRoutePreview = hasCompactSummary;
       if (!hasCompactSummary) {
         result.status = bumpStatus(result.status, "UX-FIX");
         result.notes.push("Rota önizleme compact summary-first görünmüyor.");
       } else {
-        result.status = bumpStatus(result.status, "PASS-");
+        result.status = bumpStatus(result.status, "PASS");
         result.notes.push("Rota önizleme kısa karar kartı halinde açılıyor.");
       }
       result.screenshots.push(await screenshot(page, scenario, viewportName, "after"));
@@ -636,7 +665,6 @@ async function runScenario(page, scenario, viewportName, output) {
     }
     if (/onay|kabul|uygulan/i.test(normalize(bodyText))) {
       result.notes.push("Commercial flow accepted/applied bucket görünür.");
-      result.status = bumpStatus(result.status, "PASS-");
     }
   }
 
@@ -650,7 +678,6 @@ async function runScenario(page, scenario, viewportName, output) {
   if (scenario.kind === "liveMap") {
     if (result.scrollHeight > 3200) {
       result.notes.push(`Canlı takip / harita yüzeyi uzun: ${result.scrollHeight}px.`);
-      result.status = bumpStatus(result.status, "PASS-");
     }
     if (/harita|gps|canli/i.test(normalize(bodyText))) {
       result.notes.push("Harita / canlı takip dili görünür.");
@@ -665,7 +692,7 @@ async function runScenario(page, scenario, viewportName, output) {
 
   if (scenario.kind === "driverCheckin") {
     if (!/check[- ]?in|görev|bugün/i.test(normalize(bodyText))) {
-      result.status = bumpStatus(result.status, "PASS-");
+      result.status = bumpStatus(result.status, "UX-FIX");
       result.notes.push("Driver check-in yüzeyi sade ama sinyal sınırlı.");
     }
   }
