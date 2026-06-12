@@ -15,6 +15,7 @@ Repo: `servis-platform`
 - `COPILOT-AI-ACTION-ROADMAP-01` bu rol/task baseline üzerine kurulan future-only phase roadmap'tir; burada açılmayan execution alanları orada da açılmaz.
 - `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` bu baseline üzerine kurulan future-only talep -> teklif -> sözleşme hazırlık roadmap'idir; runtime AI action açmaz ve `Kullanıcı onaylarsa` bile yalnız hazırlık / öneri sınırında kalır.
 - `COPILOT-HUMAN-APPROVAL-01` bu baseline üzerine kurulan future-safe confirmation roadmap'idir; kritik işlemlerde insan onayı / confirmation modelini ayrı docs/check katmanı olarak kilitler.
+- `COPILOT-EXCEL-DEMAND-IMPORT-01` bu baseline üzerine kurulan future-only Excel/CSV demand import readiness roadmap'idir; runtime import execute açmaz ve yalnız hazırlık / önizleme sınırında kalır.
 
 ## Canonical action model
 Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard'lı uygula -> Audit log yaz

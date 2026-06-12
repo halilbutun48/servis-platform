@@ -50,6 +50,7 @@
     "check:copilotairoadmap01": "node backend/scripts/copilot_ai_action_roadmap_01_check.js",
     "check:copilotdemandagreement01": "node backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js",
     "check:copilothumanapproval01": "node backend/scripts/copilot_human_approval_01_check.js",
+    "check:copilotexceldemandimport01": "node backend/scripts/copilot_excel_demand_import_01_check.js",
     "check:mobiletext01": "npm --prefix mobile run check:mobiletext01",
     "check:m95e23c": "npm --prefix web run check:m95e23c",
     "check:m98e4b": "node backend/scripts/m98_e4b_personel_invite_router_mount_check.js",

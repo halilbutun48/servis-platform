@@ -27,6 +27,7 @@ Repo: `servis-platform`
 ### STAGE 2 - Data Readiness
 - Adres / durak / kişi / kapasite / zaman penceresi / şirket konumu eksiklerini kontrol eder.
 - Excel/CSV hazırlığı için ileride checklist oluşturur.
+- Excel/CSV hazırlığı için ileride checklist oluşturur; bu readiness hattı `COPILOT-EXCEL-DEMAND-IMPORT-01` ile ayrı kilitlenir.
 - Runtime import veya kayıt yok.
 
 ### STAGE 3 - Stop / Route Draft Readiness

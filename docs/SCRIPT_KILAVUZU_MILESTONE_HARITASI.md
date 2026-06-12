@@ -177,6 +177,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_HUMAN_APPROVAL_01.md`
 - Bu check, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; voice command alone critical actions execute ettirmez, tool execution / write-action dispatcher / safe autopilot real action açmaz.
 
+### COPILOT-EXCEL-DEMAND-IMPORT-01 [CHECK]
+- `check:copilotexceldemandimport01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check olarak kilitler; runtime import execute, file upload endpoint ve DB write açmaz.
+- Check script: `node backend\scripts\copilot_excel_demand_import_01_check.js`
+- Doküman: `docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md`
+- Bu check, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01`, `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` ve `COPILOT-HUMAN-APPROVAL-01` guardrail hattıyla birlikte okunur; runtime import execute, tool execution, write-action dispatcher ve geocode commit açmaz.
+- Handoff hattı: `ADDRESS-GEOCODING-CONFIDENCE-01`, `COPILOT-STOP-ROUTE-DRAFT-01`, `OSRM-ROUTE-DRAFT-FROM-EXCEL-01`, `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01`, `COPILOT-DEMAND-INTAKE-01`.
+
 ### ETA-SANITY-01 [CHECK]
 - `check:etasanity01` canlı takipte GPS stale/offline/unknown durumunda ETA’yı güvenli ve kesin olmayan ifadelerle gösterir.
 - Room, Company, Parent, Personel ve Driver canlı yüzeyleri ile Copilot yardım metinleri aynı güvenli ETA / GPS mantığına bağlanır.

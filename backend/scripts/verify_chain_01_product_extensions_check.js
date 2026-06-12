@@ -297,6 +297,7 @@ function main() {
   'check:copilotairoadmap01',
   'check:copilotdemandagreement01',
   'check:copilothumanapproval01',
+  'check:copilotexceldemandimport01',
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
     'check:uxcopilotterminal01',

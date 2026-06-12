@@ -33,6 +33,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `COPILOT-AI-ACTION-ROADMAP-01` Sefer Abi için future-only AI action phase modelini docs/check olarak kilitler; `check:copilotairoadmap01` ve `docs/COPILOT_AI_ACTION_ROADMAP_01.md` ile yaşar.
 - `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` Sefer Abi için future-only talep -> teklif -> sözleşme hazırlık yol haritasını docs/check olarak kilitler; `check:copilotdemandagreement01` ve `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md` ile yaşar.
 - `COPILOT-HUMAN-APPROVAL-01` Sefer Abi için kritik işlemlerde human approval / confirmation modelini docs/check olarak kilitler; `check:copilothumanapproval01` ve `docs/COPILOT_HUMAN_APPROVAL_01.md` ile yaşar.
+- `COPILOT-EXCEL-DEMAND-IMPORT-01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check kilididir; `check:copilotexceldemandimport01` ve `docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md` ile yaşar.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

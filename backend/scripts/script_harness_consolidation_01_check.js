@@ -18,6 +18,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/ux_company_agreements_mobile_parity_01_check.js",
   "backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js",
   "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+  "backend/scripts/copilot_excel_demand_import_01_check.js",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
@@ -35,6 +36,7 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/copilotAiActionRoadmap.js",
   "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
   "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
+  "backend/src/ai/chat/copilotExcelDemandImportPolicy.js",
   "web/src/utils/safeDriveSummary.js",
   "web/src/utils/offerQualityRanking.js",
   "web/src/panels/shared/SafeDriveSummaryCard.jsx",
@@ -50,6 +52,7 @@ const workingTreeCompatFiles = [
   "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
   "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
   "docs/COPILOT_HUMAN_APPROVAL_01.md",
+  "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
   "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
@@ -65,6 +68,7 @@ const workingTreeCompatFiles = [
   "docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md",
   "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
   "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
+  "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
   "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
   "docs/QUALITY_GATE_FINAL_01.md",
   "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
@@ -254,6 +258,7 @@ function slugToMilestone(slug) {
     [/copilotaiactionroadmap0?1/i, "COPILOT-AI-ACTION-ROADMAP-01"], // check:copilotairoadmap01
     [/copilotdemand(?:to)?agreement0?1/i, "COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01"], // check:copilotdemandagreement01
     [/copilothumanapproval0?1/i, "COPILOT-HUMAN-APPROVAL-01"], // check:copilothumanapproval01
+    [/copilotexceldemandimport0?1/i, "COPILOT-EXCEL-DEMAND-IMPORT-01"], // check:copilotexceldemandimport01
     [/final/i, "FINAL"],
     [/verifychain0?1/i, "VERIFY-CHAIN-01"],
     [/productextensions/i, "PRODUCT-EXTENSIONS"],
@@ -276,7 +281,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -697,7 +702,7 @@ const coverageMatrix = [
     rolePanel: "Copilot drawer and terminal",
     backendRouteService: "backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/chat/copilotHumanApprovalPolicy.js; backend/src/ai/jobGuide/screenCatalog.js",
     frontendSurface: "web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx",
-    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
+    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
     checkType: "static",
     coverageStatus: "COVERED_ACTIVE",
     missingGap: "None on the current static/product chain.",
@@ -854,7 +859,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1408,6 +1413,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot human approval check: \`check:copilothumanapproval01\``);
   out.push(`- Copilot human approval docs: \`docs/COPILOT_HUMAN_APPROVAL_01.md\``);
   out.push(`- Copilot human approval command: \`node backend\\scripts\\copilot_human_approval_01_check.js\``);
+  out.push(`- Copilot Excel demand import milestone: \`COPILOT-EXCEL-DEMAND-IMPORT-01\``);
+  out.push(`- Copilot Excel demand import check: \`check:copilotexceldemandimport01\``);
+  out.push(`- Copilot Excel demand import docs: \`docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md\``);
+  out.push(`- Copilot Excel demand import command: \`node backend\\scripts\\copilot_excel_demand_import_01_check.js\``);
   out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
   out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
   out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);
@@ -1765,6 +1774,11 @@ function verifyDoc(docText, summary) {
     "docs/COPILOT_HUMAN_APPROVAL_01.md",
     "node backend\\scripts\\copilot_human_approval_01_check.js",
     "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
+    "COPILOT-EXCEL-DEMAND-IMPORT-01",
+    "check:copilotexceldemandimport01",
+    "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
+    "node backend\\scripts\\copilot_excel_demand_import_01_check.js",
+    "backend/src/ai/chat/copilotExcelDemandImportPolicy.js",
     "Duplicate / overlap groups",
     "Product coverage rows",
     "REMOVED:",
