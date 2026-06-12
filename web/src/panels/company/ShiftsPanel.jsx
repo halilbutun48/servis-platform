@@ -301,7 +301,7 @@ useEffect(() => {
     setErr("");
     try {
       const [sh, agreementsResp] = await Promise.all([
-        getCompanyShifts(token, { signal, ttlMs: 25000, take: 32, delayMs: 20 }),
+        getCompanyShifts(token, { signal, ttlMs: 25000, take: 32 }),
         getCompanyAgreements(token, { signal, take: 200, ttlMs: 8000, delayMs: 20 }).catch(() => ({ items: [] })),
       ]);
       if (signal?.aborted) return;
