@@ -2,6 +2,16 @@ import { pickTerms } from "./glossary.js";
 import { button, inferGuideKeyFromScreen, screen } from "./screenCatalog.shared.js";
 import { COMPANY, ROOM } from './screenCatalog.roomCompany.js';
 
+// Copilot role/task matrix route anchors:
+// /superadmin/trust-quality
+// /room/offers
+// /company/agreements
+// /driver/today
+// /personel/live
+// /parent/live
+// /school/operations
+// /organization/operations
+
 function firstNonEmpty(...values) {
   for (const value of values) {
     if (value == null) continue;

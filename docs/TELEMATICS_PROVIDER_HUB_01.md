@@ -10,6 +10,7 @@ Bu doküman, `SUPERADMIN-ROOM-TELEMATICS-NAV-UX-01` kapsamındaki telematics sı
 - `adapter şablonları`
 - `security / KVKK`
 - `room self-service`
+- readonly telematics
 
 ## Super Admin yüzeyi
 - `Telematik / GPS Sağlayıcıları` ekranı provider katalogu ve adapter şablonlarını yönetir.

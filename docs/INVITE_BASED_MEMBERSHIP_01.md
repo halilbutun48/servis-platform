@@ -20,6 +20,7 @@ Bu milestone, `ONBOARDING-REVIEW-01 FINAL AUDIT` sonrasında public lead'i otoma
 
 ## Güvenli sınır
 - `human approval`
+- `human onaylı` davet hazırlığı
 - `guard`
 - `audit log`
 - `invite draft`

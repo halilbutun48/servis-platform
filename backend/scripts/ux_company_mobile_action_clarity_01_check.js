@@ -526,6 +526,9 @@ function main() {
     "backend/scripts/public_landing_final_promise_01_check.js",
     "backend/scripts/onboarding_review_01_check.js",
     "backend/scripts/onboarding_review_final_audit_01_check.js",
+    "backend/scripts/copilot_role_task_matrix_01_check.js",
+    "backend/src/ai/chat/copilotRoleTaskMatrix.js",
+    "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");

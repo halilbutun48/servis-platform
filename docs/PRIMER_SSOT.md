@@ -29,6 +29,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `TELEMATICS-PROVIDER-HUB-01` M44 sonrası provider-agnostic telematics hub / readiness UX kilididir; Ayarlar / Telematik Entegrasyonları, test bağlantısı, cihaz eşleştirme, provider registry ve readonly telematics signals çizgisini korur; gerçek provider entegrasyonu açmaz. Detay: `docs/TELEMATICS_PROVIDER_HUB_01.md`
 - `SAFE-DRIVE-01` M44 + telematics provider hub sonrası readonly safe-drive risk summary katmanıdır; `Güvenli sürüş özeti`, `Risk sinyali`, `Kontrol edilmeli` ve `İnsan onayı gerekir` çizgisini korur; rota uygulaması, sürücü/araç ataması, ödeme/hakediş ve otomatik yönlendirme açmaz. Detay: `docs/SAFE_DRIVE_01.md`
 - `OFFER-RANKING-QUALITY-01` readonly offer quality comparison katmanıdır; Company / Room / Super Admin yüzeylerinde kalite, güven, telematics, evidence/check-in ve operasyon riski birlikte okunur; auto-selection / auto-accept / contract execute / payment/hakediş execute / AI runtime action açmaz. Detay: `docs/OFFER_RANKING_QUALITY_01.md`
+- `COPILOT-ROLE-TASK-MATRIX-01` Sefer Abi / Copilot rol/task matrix ve guardrail katmanını docs/check olarak kilitler; `check:copilotroletaskmatrix01` ve `docs/COPILOT_ROLE_TASK_MATRIX_01.md` ile yaşar.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

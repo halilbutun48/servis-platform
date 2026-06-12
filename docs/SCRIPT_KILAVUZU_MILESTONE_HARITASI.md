@@ -152,6 +152,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Sağ alttaki `Sefer Abi’ye Sor` quick-help drawer ayrıdır; terminal yalnızca geniş analiz yüzeyidir.
 - Terminal starter chips readonly analiz sorularını öne çıkarır.
 
+### COPILOT-ROLE-TASK-MATRIX-01 [CHECK]
+- `check:copilotroletaskmatrix01` Sefer Abi / Copilot rol/task matrix ve guardrail katmanını statik docs/check olarak kilitler.
+- Check script: `node backend\scripts\copilot_role_task_matrix_01_check.js`
+- Doküman: `docs/COPILOT_ROLE_TASK_MATRIX_01.md`
+- Bu check, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-TERMINAL-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; runtime AI action açmaz.
+
 ### ETA-SANITY-01 [CHECK]
 - `check:etasanity01` canlı takipte GPS stale/offline/unknown durumunda ETA’yı güvenli ve kesin olmayan ifadelerle gösterir.
 - Room, Company, Parent, Personel ve Driver canlı yüzeyleri ile Copilot yardım metinleri aynı güvenli ETA / GPS mantığına bağlanır.

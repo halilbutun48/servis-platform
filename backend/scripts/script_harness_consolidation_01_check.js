@@ -27,6 +27,8 @@ const workingTreeCompatFiles = [
   "backend/scripts/telematics_provider_hub_01_check.js",
   "backend/scripts/safe_drive_01_check.js",
   "backend/scripts/offer_ranking_quality_01_check.js",
+  "backend/scripts/copilot_role_task_matrix_01_check.js",
+  "backend/src/ai/chat/copilotRoleTaskMatrix.js",
   "web/src/utils/safeDriveSummary.js",
   "web/src/utils/offerQualityRanking.js",
   "web/src/panels/shared/SafeDriveSummaryCard.jsx",
@@ -38,6 +40,7 @@ const workingTreeCompatFiles = [
   "docs/TELEMATICS_PROVIDER_HUB_01.md",
   "docs/SAFE_DRIVE_01.md",
   "docs/OFFER_RANKING_QUALITY_01.md",
+  "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
   "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
@@ -112,6 +115,7 @@ const selectedDocs = [
   "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
   "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
   "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
+  "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
   "docs/COP_LIVE_ACCEPT_01_MATRIX.md",
   "tools/README.md",
   "tools/wrappers/README.md",
@@ -211,6 +215,7 @@ function slugToMilestone(slug) {
     [/m44telematicst1t5/i, "M44-TELEMATICS-T1-T5"],
     [/telematicsproviderhub0?1/i, "TELEMATICS-PROVIDER-HUB-01"],
     [/offerrankingquality0?1/i, "OFFER-RANKING-QUALITY-01"], // check:offerrankingquality01
+    [/copilotroletaskmatrix0?1/i, "COPILOT-ROLE-TASK-MATRIX-01"], // check:copilotroletaskmatrix01
     [/verifiedsupplier0?1/i, "VERIFIED-SUPPLIER-01"],
     [/uxmarketplacepanels0?1/i, "UX-MARKETPLACE-PANELS-01"], // check:uxmarketplacepanels01
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
@@ -257,7 +262,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -676,9 +681,9 @@ const coverageMatrix = [
   {
     function: "Sefer Abi / Copilot",
     rolePanel: "Copilot drawer and terminal",
-    backendRouteService: "backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/jobGuide/screenCatalog.js",
+    backendRouteService: "backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/jobGuide/screenCatalog.js",
     frontendSurface: "web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx",
-    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
+    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
     checkType: "static",
     coverageStatus: "COVERED_ACTIVE",
     missingGap: "None on the current static/product chain.",
@@ -1370,6 +1375,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Offer ranking quality check: \`check:offerrankingquality01\``);
   out.push(`- Offer ranking quality docs: \`docs/OFFER_RANKING_QUALITY_01.md\``);
   out.push(`- Offer ranking quality command: \`node backend\\scripts\\offer_ranking_quality_01_check.js\``);
+  out.push(`- Copilot role/task matrix milestone: \`COPILOT-ROLE-TASK-MATRIX-01\``);
+  out.push(`- Copilot role/task matrix check: \`check:copilotroletaskmatrix01\``);
+  out.push(`- Copilot role/task matrix docs: \`docs/COPILOT_ROLE_TASK_MATRIX_01.md\``);
+  out.push(`- Copilot role/task matrix command: \`node backend\\scripts\\copilot_role_task_matrix_01_check.js\``);
   out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
   out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
   out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);

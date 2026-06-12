@@ -354,6 +354,9 @@ function main() {
     "web/src/panels/room/OffersPanel.jsx",
     "web/src/panels/shared/OfferQualityRankingCard.jsx",
     "web/src/utils/offerQualityRanking.js",
+    "backend/scripts/copilot_role_task_matrix_01_check.js",
+    "backend/src/ai/chat/copilotRoleTaskMatrix.js",
+    "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within room/company shifts mobile card fix scope");

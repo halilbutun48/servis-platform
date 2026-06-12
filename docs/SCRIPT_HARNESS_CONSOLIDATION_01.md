@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `358`
-- Toplam executable tracked file: `1135`
-- Combined registry row: `1493`
-- Root/backend/web/mobile package dağılımı: root `201`, backend `698`, web `90`, mobile `201`
+- Toplam package script entry: `359`
+- Toplam executable tracked file: `1137`
+- Combined registry row: `1496`
+- Root/backend/web/mobile package dağılımı: root `202`, backend `700`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `48`
+- Docs indexed: `49`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -104,11 +104,15 @@ Repo: `servis-platform`
 - Offer ranking quality check: `check:offerrankingquality01`
 - Offer ranking quality docs: `docs/OFFER_RANKING_QUALITY_01.md`
 - Offer ranking quality command: `node backend\scripts\offer_ranking_quality_01_check.js`
+- Copilot role/task matrix milestone: `COPILOT-ROLE-TASK-MATRIX-01`
+- Copilot role/task matrix check: `check:copilotroletaskmatrix01`
+- Copilot role/task matrix docs: `docs/COPILOT_ROLE_TASK_MATRIX_01.md`
+- Copilot role/task matrix command: `node backend\scripts\copilot_role_task_matrix_01_check.js`
 - Public lead audit check: `check:productflowbuttonaudit01`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `386`
-- ACTIVE_CORE: `157`
+- ACTIVE_CORE: `158`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -124,11 +128,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `532`
+- NEEDS_REVIEW: `534`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `291`
+- Eski sistem term eşleşmesi: `293`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -138,14 +142,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 386 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 157 |
+| ACTIVE_CORE | 158 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 532 |
+| NEEDS_REVIEW | 534 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -206,6 +210,7 @@ Repo: `servis-platform`
 | root:check:telematicsproviderhub01 | package.json | root | node backend/scripts/telematics_provider_hub_01_check.js | core | ACTIVE_CORE |  | TELEMATICS-PROVIDER-HUB-01 |  | Breaks canonical verification chain |  |
 | root:check:safedrive01 | package.json | root | node backend/scripts/safe_drive_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-SAFEDRIVE-01 |  | Breaks canonical verification chain |  |
 | root:check:offerrankingquality01 | package.json | root | node backend/scripts/offer_ranking_quality_01_check.js | core | ACTIVE_CORE |  | OFFER-RANKING-QUALITY-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotroletaskmatrix01 | package.json | root | node backend/scripts/copilot_role_task_matrix_01_check.js | core | ACTIVE_CORE |  | COPILOT-ROLE-TASK-MATRIX-01 |  | Breaks canonical verification chain |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -705,6 +710,7 @@ Repo: `servis-platform`
 | marketplace_free_to_operate_01_check.js | backend/scripts/marketplace_free_to_operate_01_check.js | backend | root:check:marketplacefreetooperate01 | review | NEEDS_REVIEW |  | MARKETPLACE-FREE-TO-OPERATE-01-CHECK |  | Owner or chain unclear |  |
 | menu_readiness_cleanup_check.mjs | backend/scripts/menu_readiness_cleanup_check.mjs | backend |  | review | NEEDS_REVIEW |  | MENU-READINESS-CLEANUP-CHECK |  | Owner or chain unclear |  |
 | mobile_web_final_01_check.js | backend/scripts/mobile_web_final_01_check.js | backend | root:check:mobilewebfinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| offer_ranking_quality_01_check.js | backend/scripts/offer_ranking_quality_01_check.js | backend | root:check:offerrankingquality01 | review | NEEDS_REVIEW |  | OFFER-RANKING-QUALITY-01-CHECK |  | Owner or chain unclear |  |
 | onboarding_review_01_check.js | backend/scripts/onboarding_review_01_check.js | backend | root:check:onboardingreview01 | review | NEEDS_REVIEW |  | ONBOARDING-REVIEW-01-CHECK |  | Owner or chain unclear |  |
 | onboarding_review_final_audit_01_check.js | backend/scripts/onboarding_review_final_audit_01_check.js | backend | root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | op_01_operation_proof_service_proof_check.js | backend/scripts/op_01_operation_proof_service_proof_check.js | backend | root:check:op01 | product | ACTIVE |  | OP-01-OPERATION-PROOF-SERVICE-PROOF-CHECK |  | Owner or chain unclear | product check/helper |
@@ -901,7 +907,7 @@ Repo: `servis-platform`
 | shiftCompletionMonitor.js | backend/src/jobs/shiftCompletionMonitor.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-COMPLETION-MONITOR |  | Owner or chain unclear |  |
 | documents.js | backend/src/kvkk/documents.js | backend |  | review | NEEDS_REVIEW |  | DOCUMENTS |  | Owner or chain unclear |  |
 | enforcement.js | backend/src/kvkk/enforcement.js | backend |  | review | NEEDS_REVIEW |  | ENFORCEMENT |  | Owner or chain unclear |  |
-| matrix.js | backend/src/kvkk/matrix.js | backend |  | review | NEEDS_REVIEW |  | MATRIX |  | Owner or chain unclear |  |
+| matrix.js | backend/src/kvkk/matrix.js | backend | root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | MATRIX |  | Owner or chain unclear |  |
 | retention.js | backend/src/kvkk/retention.js | backend |  | review | NEEDS_REVIEW |  | RETENTION |  | Owner or chain unclear |  |
 | jsonFileStore.js | backend/src/lib/jsonFileStore.js | backend |  | review | NEEDS_REVIEW |  | JSON-FILE-STORE |  | Owner or chain unclear |  |
 | logger.js | backend/src/lib/logger.js | backend |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
@@ -1059,13 +1065,14 @@ Repo: `servis-platform`
 | hash.js | backend/src/telematics/hash.js | backend |  | review | NEEDS_REVIEW |  | HASH |  | Owner or chain unclear |  |
 | providers.js | backend/src/telematics/providers.js | backend |  | review | NEEDS_REVIEW |  | PROVIDERS |  | Owner or chain unclear |  |
 | service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
-| tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
+| tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
 | responseCache.js | backend/src/utils/responseCache.js | backend |  | review | NEEDS_REVIEW |  | RESPONSE-CACHE |  | Owner or chain unclear |  |
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| offer_ranking_quality_01_check.js | backend/scripts/offer_ranking_quality_01_check.js | backend | root:check:offerrankingquality01 | review | NEEDS_REVIEW |  | OFFER-RANKING-QUALITY-01-CHECK |  | Owner or chain unclear |  |
+| copilot_role_task_matrix_01_check.js | backend/scripts/copilot_role_task_matrix_01_check.js | backend | root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX-01-CHECK |  | Owner or chain unclear |  |
+| copilotRoleTaskMatrix.js | backend/src/ai/chat/copilotRoleTaskMatrix.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1143,6 +1150,7 @@ Repo: `servis-platform`
 | liveTrackingCopy.js | web/src/utils/liveTrackingCopy.js | web |  | review | NEEDS_REVIEW |  | LIVE-TRACKING-COPY |  | Owner or chain unclear |  |
 | navigation.js | web/src/utils/navigation.js | web | mobile:check:m95e22b | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
 | notificationV1.js | web/src/utils/notificationV1.js | web |  | review | NEEDS_REVIEW |  | NOTIFICATION-V-1 |  | Owner or chain unclear |  |
+| offerQualityRanking.js | web/src/utils/offerQualityRanking.js | web |  | review | NEEDS_REVIEW |  | OFFER-QUALITY-RANKING |  | Owner or chain unclear |  |
 | offlineQueue.js | web/src/utils/offlineQueue.js | web |  | review | NEEDS_REVIEW |  | OFFLINE-QUEUE |  | Owner or chain unclear |  |
 | paths.js | web/src/utils/paths.js | web |  | review | NEEDS_REVIEW |  | PATHS |  | Owner or chain unclear |  |
 | providerScores.js | web/src/utils/providerScores.js | web |  | review | NEEDS_REVIEW |  | PROVIDER-SCORES |  | Owner or chain unclear |  |
@@ -1159,7 +1167,6 @@ Repo: `servis-platform`
 | uiDataCache.js | web/src/utils/uiDataCache.js | web |  | review | NEEDS_REVIEW |  | UI-DATA-CACHE |  | Owner or chain unclear |  |
 | uiStatus.js | web/src/utils/uiStatus.js | web |  | review | NEEDS_REVIEW |  | UI-STATUS |  | Owner or chain unclear |  |
 | vite.config.js | web/vite.config.js | web |  | review | NEEDS_REVIEW |  | VITE-CONFIG |  | Owner or chain unclear |  |
-| offerQualityRanking.js | web/src/utils/offerQualityRanking.js | web |  | review | NEEDS_REVIEW |  | OFFER-QUALITY-RANKING |  | Owner or chain unclear |  |
 
 ### Mobile
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1709,7 +1716,7 @@ Repo: `servis-platform`
 | Dynamic Savings / Readonly Preview | Company/room agreements and commercial flow | backend/src/services/boardingRouteImpactPreview.js; backend/src/services/agreementRouteChangePreview.js; route preview helpers | web/src/panels/shared/DynamicSavingsPreviewCard.jsx; web/src/panels/company/AgreementsPanel.jsx; web/src/panels/room/AgreementsPanel.jsx; web/src/panels/company/companyAgreementsRouteRefreshPendingSection.jsx; web/src/panels/room/roomAgreementsPanelSections.jsx | check:dynamicsavings01; check:routechangefinal01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:copliveaccept01 | static | COVERED_ACTIVE | None on the current static/product chain. Preview-only by design. | DYNAMIC-SAVINGS-01 | None |
 | Commercial / Payment Preview | Company/room commercial panels | backend/src/scripts/pay_*.js; backend/src/scripts/op_04*.js; payment readiness helpers | web/src/panels/company/CommercialFlowPanel.jsx; web/src/panels/room/CommercialFlowPanel.jsx; web/src/panels/superadmin/CommercialCorePanel.jsx | check:pay01a; check:pay01b; check:pay01c; check:pay01d; check:pay01e; check:paysafe01; check:op04; check:qlt01; check:qlt02; check:qlt03; check:qlt04 | static + release-only | COVERED_ACTIVE | Execute/write actions remain deliberately forbidden. | PAY / QLT / OP | None |
 | Quality / Evidence | Company/superadmin quality views | backend/src/scripts/qlt_*.js; backend/src/scripts/op_*.js; evidence helpers | web/src/panels/company/ServiceEvaluationPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx; web/src/panels/shared/ReportsPanel.jsx | check:qlt01; check:qlt02; check:qlt03; check:qlt04; check:qlt04a; check:qlt04b; check:op01; check:op02; check:op03; check:op04 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | QLT / OP | None |
-| Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
+| Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
 | Telematics / Provider Hub | Super Admin GPS readiness / Room vehicle mapping | docs/TELEMATICS_PROVIDER_HUB_01.md; backend/scripts/telematics_provider_hub_01_check.js | web/src/panels/superadmin/SuperAdminPanel.jsx; web/src/panels/room/roomVehiclesPanelSections.jsx | check:telematicsproviderhub01; check:m44telematicst1t5; check:uxroomvehiclestelematicsfix | static | COVERED_ACTIVE | None on the current static/product chain. | TELEMATICS-PROVIDER-HUB-01 | None |
 | Telematics / Safe Drive | Driver live map and telematics surfaces | docs/SAFE_DRIVE_01.md; backend/scripts/safe_drive_01_check.js; ETA / OSRM helpers | web/src/utils/safeDriveSummary.js; web/src/panels/shared/SafeDriveSummaryCard.jsx; web/src/panels/driver/RoutePanel.jsx; web/src/panels/driver/MapPanel.jsx; web/src/panels/company/MapPanel.jsx; web/src/panels/room/MapPanel.jsx | check:safedrive01; check:telematicsproviderhub01; check:m44telematicst1t5; check:etaosrm01; check:etaosrm02; check:etasanity01 | static | COVERED_ACTIVE | None on the current static/product chain. | SAFE-DRIVE-01 | None |
 | Offer Ranking Quality / Readonly Comparison | Company / room / super admin offer comparison surfaces | docs/OFFER_RANKING_QUALITY_01.md; backend/scripts/offer_ranking_quality_01_check.js | web/src/utils/offerQualityRanking.js; web/src/panels/shared/OfferQualityRankingCard.jsx; web/src/panels/company/WorkflowPanel.jsx; web/src/panels/company/companyShiftsPanelSections.jsx; web/src/panels/room/OffersPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx | check:offerrankingquality01 | static | COVERED_ACTIVE | Readonly comparison only; auto-select and auto-accept stay blocked. | OFFER-RANKING-QUALITY-01 | None |

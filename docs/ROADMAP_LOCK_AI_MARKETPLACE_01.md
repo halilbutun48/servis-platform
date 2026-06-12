@@ -416,6 +416,7 @@ Kullanılmayacak cümleler:
 
 ### C) COPILOT STRATEJİ VE GUARDRAIL
 - COPILOT-ROLE-TASK-MATRIX-01
+- COPILOT-ROLE-TASK-MATRIX-01: Sefer Abi / Copilot role/task matrix ve guardrail katmanını statik docs/check olarak kilitler; runtime AI action açmaz.
 - COPILOT-AI-ACTION-ROADMAP-01
 - COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01
 - COPILOT-HUMAN-APPROVAL-01
