@@ -73,6 +73,7 @@ const steps = [
   'check:cop04bfix07',
   'check:cop04bfix08',
   'check:copilotroletaskmatrix01',
+  'check:copilotairoadmap01',
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
   'check:uxcopilotterminal01',

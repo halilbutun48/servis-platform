@@ -355,8 +355,11 @@ function main() {
     "web/src/panels/shared/OfferQualityRankingCard.jsx",
     "web/src/utils/offerQualityRanking.js",
     "backend/scripts/copilot_role_task_matrix_01_check.js",
+    "backend/scripts/copilot_ai_action_roadmap_01_check.js",
     "backend/src/ai/chat/copilotRoleTaskMatrix.js",
+    "backend/src/ai/chat/copilotAiActionRoadmap.js",
     "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
+    "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within room/company shifts mobile card fix scope");

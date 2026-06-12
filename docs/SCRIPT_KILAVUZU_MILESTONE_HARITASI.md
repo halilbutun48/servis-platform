@@ -158,6 +158,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_ROLE_TASK_MATRIX_01.md`
 - Bu check, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-TERMINAL-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; runtime AI action açmaz.
 
+### COPILOT-AI-ACTION-ROADMAP-01 [CHECK]
+- `check:copilotairoadmap01` Sefer Abi için future-only AI action phase modelini docs/check olarak kilitler; runtime AI action açmaz.
+- Check script: `node backend\scripts\copilot_ai_action_roadmap_01_check.js`
+- Doküman: `docs/COPILOT_AI_ACTION_ROADMAP_01.md`
+- Bu check, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-TERMINAL-01`, `COPILOT-ROLE-TASK-MATRIX-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; tool execution, write-action dispatcher ve runtime AI action açmaz.
+
 ### ETA-SANITY-01 [CHECK]
 - `check:etasanity01` canlı takipte GPS stale/offline/unknown durumunda ETA’yı güvenli ve kesin olmayan ifadelerle gösterir.
 - Room, Company, Parent, Personel ve Driver canlı yüzeyleri ile Copilot yardım metinleri aynı güvenli ETA / GPS mantığına bağlanır.

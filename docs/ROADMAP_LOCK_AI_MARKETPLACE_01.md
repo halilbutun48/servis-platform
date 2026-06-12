@@ -418,6 +418,7 @@ Kullanılmayacak cümleler:
 - COPILOT-ROLE-TASK-MATRIX-01
 - COPILOT-ROLE-TASK-MATRIX-01: Sefer Abi / Copilot role/task matrix ve guardrail katmanını statik docs/check olarak kilitler; runtime AI action açmaz.
 - COPILOT-AI-ACTION-ROADMAP-01
+- COPILOT-AI-ACTION-ROADMAP-01: future-only phase model olarak READ / EXPLAIN, RECOMMEND, PREPARE ve HUMAN_APPROVAL_REQUIRED aşamalarını açar; GUARDED_EXECUTION ve AUDIT_AND_MONITOR future-only kalır, runtime AI action açılmaz.
 - COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01
 - COPILOT-HUMAN-APPROVAL-01
 

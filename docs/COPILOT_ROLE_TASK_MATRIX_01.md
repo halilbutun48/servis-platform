@@ -12,6 +12,7 @@ Repo: `servis-platform`
 - Sefer Abi / Copilot için rol bazlı görev matrisini kilitler.
 - Her rol için hangi ekran ve veri sinyallerinin okunabildiğini, hangi özetlerin sunulabildiğini, hangi önerilerin verilebildiğini, hangi taslakların hazırlanabildiğini ve hangi aksiyonların asla başlatılamayacağını repo içinde sabitler.
 - Bu milestone runtime AI action açmaz; tool execution, otomatik işlem, ödeme, sözleşme, teklif kabulü, rota apply, SMS / e-posta / push, provider credential, driver / vehicle assignment veya user / account write-action açmaz.
+- `COPILOT-AI-ACTION-ROADMAP-01` bu rol/task baseline üzerine kurulan future-only phase roadmap'tir; burada açılmayan execution alanları orada da açılmaz.
 
 ## Canonical action model
 Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard'lı uygula -> Audit log yaz

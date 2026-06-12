@@ -341,6 +341,10 @@ function main() {
     "web/src/panels/room/useRoomVehicleTelematics.js",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/superadmin/TelematicsHubPanel.jsx",
+    "backend/scripts/copilot_ai_action_roadmap_01_check.js",
+    "backend/src/ai/chat/copilotAiActionRoadmap.js",
+    "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
+    "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
   ]);
   mustTrue(staged.every((file) => stagedAllowed.has(file)), "staged files stay within room panel clarity validation");
   mustNotList(staged, "backend/artifacts/runtime-data/", "runtime-data is not staged");

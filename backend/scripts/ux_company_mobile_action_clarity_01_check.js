@@ -298,6 +298,7 @@ function main() {
   const staged = stagedNames().filter((file) => !cleanupScopeFiles.includes(file));
   const stagedAllowed = new Set([
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/copilot_ai_action_roadmap_01_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_room_panel_clarity_01_check.js",
@@ -321,6 +322,8 @@ function main() {
     "docs/PRIMER_SSOT.md",
     "docs/PUBLIC_LANDING_01.md",
     "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md",
+    "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
+    "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
     "docs/ONBOARDING_REVIEW_01.md",
     "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md",
     "docs/INVITE_BASED_MEMBERSHIP_01.md",
@@ -385,6 +388,7 @@ function main() {
     "backend/scripts/script_harness_consolidation_01_check.js",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "backend/src/ai/chat/copilotAiActionRoadmap.js",
     "backend/scripts/product_flow_button_audit_01_check.js",
     "backend/scripts/product_flow_button_audit_01.mjs",
     "web/src/index.css",
@@ -527,8 +531,11 @@ function main() {
     "backend/scripts/onboarding_review_01_check.js",
     "backend/scripts/onboarding_review_final_audit_01_check.js",
     "backend/scripts/copilot_role_task_matrix_01_check.js",
+    "backend/scripts/copilot_ai_action_roadmap_01_check.js",
     "backend/src/ai/chat/copilotRoleTaskMatrix.js",
+    "backend/src/ai/chat/copilotAiActionRoadmap.js",
     "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
+    "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");
