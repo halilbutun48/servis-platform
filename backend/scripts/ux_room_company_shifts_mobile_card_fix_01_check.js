@@ -374,6 +374,10 @@ function main() {
     "backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js",
     "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
     "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
+    "backend/scripts/copilot_human_approval_01_check.js",
+    "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
+    "docs/COPILOT_HUMAN_APPROVAL_01.md",
+    "backend/scripts/sefer_abi_terminal_humanize_01_check.js",
     "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
     "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
   ]);

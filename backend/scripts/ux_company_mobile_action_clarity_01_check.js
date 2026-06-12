@@ -541,6 +541,9 @@ function main() {
     "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
     "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
     "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
+    "backend/scripts/copilot_human_approval_01_check.js",
+    "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
+    "docs/COPILOT_HUMAN_APPROVAL_01.md",
     "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
     "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
   ]);
