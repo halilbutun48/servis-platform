@@ -16,6 +16,7 @@ Repo: `servis-platform`
 - `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` bu baseline üzerine kurulan future-only talep -> teklif -> sözleşme hazırlık roadmap'idir; runtime AI action açmaz ve `Kullanıcı onaylarsa` bile yalnız hazırlık / öneri sınırında kalır.
 - `COPILOT-HUMAN-APPROVAL-01` bu baseline üzerine kurulan future-safe confirmation roadmap'idir; kritik işlemlerde insan onayı / confirmation modelini ayrı docs/check katmanı olarak kilitler.
 - `COPILOT-EXCEL-DEMAND-IMPORT-01` bu baseline üzerine kurulan future-only Excel/CSV demand import readiness roadmap'idir; runtime import execute açmaz ve yalnız hazırlık / önizleme sınırında kalır.
+- `ADDRESS-GEOCODING-CONFIDENCE-01` bu baseline üzerine kurulan address quality / geocoding readiness roadmap'idir; address quality dictionary, confidence bands, risk sınıfları, human-review gate ve KVKK / data safety boundary'yi docs/check olarak kilitler; runtime geocode açmaz.
 
 ## Canonical action model
 Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard'lı uygula -> Audit log yaz

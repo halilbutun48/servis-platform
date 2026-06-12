@@ -344,6 +344,9 @@ function main() {
     "docs/COPILOT_HUMAN_APPROVAL_01.md",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
     "docs/INVITE_BASED_MEMBERSHIP_01.md",
+    "backend/scripts/address_geocoding_confidence_01_check.js",
+    "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
+    "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
   ]);

@@ -547,6 +547,9 @@ function main() {
     "backend/scripts/copilot_human_approval_01_check.js",
     "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
     "docs/COPILOT_HUMAN_APPROVAL_01.md",
+    "backend/scripts/address_geocoding_confidence_01_check.js",
+    "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
+    "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
     "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
     "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
   ]);

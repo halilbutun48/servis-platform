@@ -12,6 +12,7 @@ Repo: `servis-platform`
 ## Amaç
 - `COPILOT-ROLE-TASK-MATRIX-01` ve `COPILOT-AI-ACTION-ROADMAP-01` sonrasında Sefer Abi için talep -> teklif -> sözleşme -> operasyon hazırlığı yol haritasını kilitler.
 - Bu milestone runtime AI action açmaz.
+- `ADDRESS-GEOCODING-CONFIDENCE-01` bu yol haritasına güvenli adres readiness girişi sağlar; geocoding confidence, human review gate ve KVKK / data safety boundary readiness'i ayrı docs/check katmanı olarak kilitler.
 - Public promise overclaim yazmaz.
 - Backend route/service/schema ve Prisma açmaz.
 - Kritik onay modeli ayrı docs/check katmanı `COPILOT-HUMAN-APPROVAL-01` ile kilitlenir.
