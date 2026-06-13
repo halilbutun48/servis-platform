@@ -202,6 +202,7 @@ function main() {
   const status = statusNames();
   const exactAllowed = new Set([
     "backend/scripts/ux_brand_login_premium_01_check.js",
+    "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
     "backend/scripts/onboarding_review_01_check.js",
     "backend/scripts/onboarding_review_final_audit_01_check.js",
     "backend/scripts/public_landing_platform_first_01_check.js",
@@ -226,6 +227,9 @@ function main() {
     "backend/scripts/osrm_route_draft_from_excel_01_check.js",
     "backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js",
     "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
+    "backend/scripts/copilot_route_review_human_approval_01_check.js",
+    "backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js",
+    "docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md",
     "web/src/panels/company/companyAgreementsSourceShiftSection.jsx",
     "web/src/panels/company/companyAgreementsMobileCards.jsx",
     "web/src/panels/company/WorkflowPanel.jsx",

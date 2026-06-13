@@ -429,6 +429,7 @@ Kullanılmayacak cümleler:
 - COPILOT-STOP-ROUTE-DRAFT-01
 - OSRM-ROUTE-DRAFT-FROM-EXCEL-01
 - COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01
+- route review insan onayı kapısı OSRM sonrası ayrı docs/check katmanı olarak kilitlenir.
 
 ### E) COPILOT OPERASYON AKIŞI
 - COPILOT-DEMAND-INTAKE-01

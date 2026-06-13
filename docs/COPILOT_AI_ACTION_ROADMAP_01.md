@@ -19,6 +19,7 @@ Repo: `servis-platform`
 - Bu roadmap Excel demand import readiness hattına da zemin hazırlar; sonraki future-only halkalar `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`, `COPILOT-HUMAN-APPROVAL-01` ve `COPILOT-EXCEL-DEMAND-IMPORT-01`'dir.
 - Bu roadmap stop-route draft readiness hattına da zemin hazırlar; sonraki future-only halka `COPILOT-STOP-ROUTE-DRAFT-01`'dir.
 - Bu roadmap future-only OSRM route draft readiness hattına da zemin hazırlar; sonraki future-only halka `OSRM-ROUTE-DRAFT-FROM-EXCEL-01`'dir.
+- Bu roadmap future-only route review human approval hattına da zemin hazırlar; sonraki future-only halka `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01`'dir.
 - Bu doküman docs/check kilididir; runtime davranış, backend route, service, schema veya Prisma açmaz.
 
 ## PHASE modeli

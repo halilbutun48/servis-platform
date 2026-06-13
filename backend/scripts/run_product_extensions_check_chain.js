@@ -80,6 +80,7 @@ const steps = [
   'check:addressgeocodingconfidence01',
   'check:copilotstoproutedraft01',
   'check:osrmroutedraftfromexcel01',
+  'check:copilotroutereviewhumanapproval01',
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
   'check:uxcopilotterminal01',

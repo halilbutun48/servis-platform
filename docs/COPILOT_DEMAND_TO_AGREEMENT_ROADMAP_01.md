@@ -14,6 +14,7 @@ Repo: `servis-platform`
 - Bu milestone runtime AI action açmaz.
 - `ADDRESS-GEOCODING-CONFIDENCE-01` bu yol haritasına güvenli adres readiness girişi sağlar; geocoding confidence, human review gate ve KVKK / data safety boundary readiness'i ayrı docs/check katmanı olarak kilitler.
 - `OSRM-ROUTE-DRAFT-FROM-EXCEL-01` bu yol haritasına stop/route draft sonrası güvenli OSRM hazırlık girişi sağlar; route preview readiness, human review gate ve OSRM risk sınıfları ayrı docs/check katmanı olarak kilitlenir.
+- `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01` bu yol haritasında OSRM sonrası route review / human review kapısını ayrı docs/check katmanı olarak kilitler; route preview, route apply ve dispatch execute açmaz.
 - Public promise overclaim yazmaz.
 - Backend route/service/schema ve Prisma açmaz.
 - Kritik onay modeli ayrı docs/check katmanı `COPILOT-HUMAN-APPROVAL-01` ile kilitlenir.

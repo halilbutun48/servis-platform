@@ -234,6 +234,7 @@ function main() {
   const exactAllowed = new Set([
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
+    "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
     "backend/scripts/ux_panel_inventory_02a_check.js",
     "backend/scripts/ux_panel_standard_architecture_01_check.js",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
@@ -252,6 +253,9 @@ function main() {
     "backend/scripts/osrm_route_draft_from_excel_01_check.js",
     "backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js",
     "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
+    "backend/scripts/copilot_route_review_human_approval_01_check.js",
+    "backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js",
+    "docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md",
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",

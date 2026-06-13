@@ -938,8 +938,7 @@ async function main() {
     }
   }
 
-  const browser = await chromium.launch({ headless: HEADLESS, slowMo: SLOW_MO });
-  const browserVersion = browser.version();
+  let browserVersion = "";
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -965,52 +964,61 @@ async function main() {
   };
 
   for (const group of ROUTE_GROUPS) {
-    let authState = { role: group.role, token: null, loginInfo: null, error: null };
-    if (group.auth) {
-      authState = await loginRole(group.role);
-      report.authResults.push(authState);
-      if (authState.error) {
-        report.totalLoginFailures += 1;
-        console.log(`AUTH ${group.role}: ${authState.error}`);
-      } else {
-        console.log(`AUTH ${group.role}: ok`);
-      }
-    }
+    // Fresh browser per role group keeps Chromium from accumulating buffer pressure
+    // across the long audit sequence and avoids false NOT-FOUND blanks.
+    const browser = await chromium.launch({ headless: HEADLESS, slowMo: SLOW_MO });
+    if (!browserVersion) browserVersion = browser.version();
 
-    for (const viewport of VIEWPORTS) {
-      const context = await browser.newContext({
-        viewport: { width: viewport.width, height: viewport.height },
-        deviceScaleFactor: viewport.deviceScaleFactor,
-        isMobile: viewport.isMobile,
-        hasTouch: viewport.hasTouch,
-        locale: "tr-TR",
-        timezoneId: "Europe/Istanbul",
-      });
-
-      if (authState.token) {
-        await context.addInitScript((token) => {
-          localStorage.setItem("token", token);
-        }, authState.token);
+    try {
+      let authState = { role: group.role, token: null, loginInfo: null, error: null };
+      if (group.auth) {
+        authState = await loginRole(group.role);
+        report.authResults.push(authState);
+        if (authState.error) {
+          report.totalLoginFailures += 1;
+          console.log(`AUTH ${group.role}: ${authState.error}`);
+        } else {
+          console.log(`AUTH ${group.role}: ok`);
+        }
       }
 
-      for (const scenario of group.routes) {
-        const page = await context.newPage();
-        const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
-        report.routeCount += 1;
-        report.screenshotCount += row.screenshots.length;
-        report.consoleErrorCount += row.consoleErrors.length;
-        report.pageErrorCount += row.pageErrors.length;
-        report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
-        report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
-        console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
-        await page.close().catch(() => {});
-      }
+      for (const viewport of VIEWPORTS) {
+        const context = await browser.newContext({
+          viewport: { width: viewport.width, height: viewport.height },
+          deviceScaleFactor: viewport.deviceScaleFactor,
+          isMobile: viewport.isMobile,
+          hasTouch: viewport.hasTouch,
+          locale: "tr-TR",
+          timezoneId: "Europe/Istanbul",
+        });
 
-      await context.close().catch(() => {});
+        if (authState.token) {
+          await context.addInitScript((token) => {
+            localStorage.setItem("token", token);
+          }, authState.token);
+        }
+
+        for (const scenario of group.routes) {
+          const page = await context.newPage();
+          const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
+          report.routeCount += 1;
+          report.screenshotCount += row.screenshots.length;
+          report.consoleErrorCount += row.consoleErrors.length;
+          report.pageErrorCount += row.pageErrors.length;
+          report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
+          report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
+          console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
+          await page.close().catch(() => {});
+        }
+
+        await context.close().catch(() => {});
+      }
+    } finally {
+      await browser.close().catch(() => {});
     }
   }
 
-  await browser.close().catch(() => {});
+  report.browserVersion = browserVersion || report.browserVersion;
 
   const md = renderMarkdown(report);
   await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
