@@ -430,6 +430,8 @@ Kullanılmayacak cümleler:
 - OSRM-ROUTE-DRAFT-FROM-EXCEL-01
 - COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01
 - route review insan onayı kapısı OSRM sonrası ayrı docs/check katmanı olarak kilitlenir.
+- EXCEL-TO-ROUTE-READINESS-REDTEAM-01
+- EXCEL-TO-ROUTE-READINESS-REDTEAM-01: E bloğu için static red-team / kırma testi kilididir; runtime AI action açmaz ve route review sonrası guardrail stres testini docs/check olarak taşır.
 
 ### E) COPILOT OPERASYON AKIŞI
 - COPILOT-DEMAND-INTAKE-01

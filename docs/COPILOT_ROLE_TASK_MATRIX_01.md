@@ -20,6 +20,7 @@ Repo: `servis-platform`
 - `COPILOT-STOP-ROUTE-DRAFT-01` bu baseline üzerine kurulan stop / route draft readiness roadmap'idir; inbound / outbound direction model, hub readiness, capacity readiness ve human review gate'i docs/check olarak kilitler; runtime stop create, route apply ve driver / vehicle assignment açmaz.
 - `OSRM-ROUTE-DRAFT-FROM-EXCEL-01` bu baseline üzerine kurulan future-only OSRM route draft readiness roadmap'idir; Excel/import, address confidence ve stop/route draft hattını gerçek OSRM execution öncesi sınıflandırır; runtime OSRM call, route preview, route apply ve geocode execute açmaz.
 - `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01` bu baseline üzerine kurulan future-safe route review human approval roadmap'idir; OSRM sonrası route preview değil review/readiness kapısını kilitler; runtime route preview, route apply, dispatch apply ve agreement execute açmaz.
+- `EXCEL-TO-ROUTE-READINESS-REDTEAM-01` bu baseline üzerine kurulan static red-team Excel-to-route roadmap'idir; route review sonrası kırma testi / guardrail stres testi katmanını docs/check olarak kilitler; runtime AI action açmaz.
 
 ## Canonical action model
 Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard'lı uygula -> Audit log yaz

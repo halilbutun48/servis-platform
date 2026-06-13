@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `368`
-- Toplam executable tracked file: `1154`
-- Combined registry row: `1522`
-- Root/backend/web/mobile package dağılımı: root `211`, backend `717`, web `90`, mobile `201`
+- Toplam package script entry: `369`
+- Toplam executable tracked file: `1156`
+- Combined registry row: `1525`
+- Root/backend/web/mobile package dağılımı: root `212`, backend `719`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -142,6 +142,11 @@ Repo: `servis-platform`
 - Copilot route review human approval docs: `docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md`
 - Copilot route review human approval command: `node backend\scripts\copilot_route_review_human_approval_01_check.js`
 - Copilot route review human approval helper: `backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js`
+- Excel to route readiness red-team milestone: `EXCEL-TO-ROUTE-READINESS-REDTEAM-01`
+- Excel to route readiness red-team check: `check:exceltoroutereadinessredteam01`
+- Excel to route readiness red-team docs: `docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md`
+- Excel to route readiness red-team command: `node backend\scripts\excel_to_route_readiness_redteam_01_check.js`
+- Excel to route readiness red-team helper: `backend/src/ai/chat/excelToRouteReadinessRedteamPack.js`
 - Address geocoding confidence milestone: `ADDRESS-GEOCODING-CONFIDENCE-01`
 - Address geocoding confidence check: `check:addressgeocodingconfidence01`
 - Address geocoding confidence docs: `docs/ADDRESS_GEOCODING_CONFIDENCE_01.md`
@@ -151,7 +156,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `167`
+- ACTIVE_CORE: `168`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -167,11 +172,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `549`
+- NEEDS_REVIEW: `551`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `300`
+- Eski sistem term eşleşmesi: `301`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -181,14 +186,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 167 |
+| ACTIVE_CORE | 168 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 549 |
+| NEEDS_REVIEW | 551 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -258,6 +263,7 @@ Repo: `servis-platform`
 | root:check:copilotstoproutedraft01 | package.json | root | node backend/scripts/copilot_stop_route_draft_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-STOP-ROUTE-DRAFT-01 |  | Breaks canonical verification chain |  |
 | root:check:osrmroutedraftfromexcel01 | package.json | root | node backend/scripts/osrm_route_draft_from_excel_01_check.js | verify-core | ACTIVE_CORE |  | OSRM-ROUTE-DRAFT-FROM-EXCEL-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotroutereviewhumanapproval01 | package.json | root | node backend/scripts/copilot_route_review_human_approval_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01 |  | Breaks canonical verification chain |  |
+| root:check:exceltoroutereadinessredteam01 | package.json | root | node backend/scripts/excel_to_route_readiness_redteam_01_check.js | verify-core | ACTIVE_CORE |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01 |  | Breaks canonical verification chain |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -550,6 +556,7 @@ Repo: `servis-platform`
 | copilot_excel_demand_import_01_check.js | backend/scripts/copilot_excel_demand_import_01_check.js | backend | root:check:copilotexceldemandimport01 | review | NEEDS_REVIEW |  | COPILOT-EXCEL-DEMAND-IMPORT-01-CHECK |  | Owner or chain unclear |  |
 | copilot_human_approval_01_check.js | backend/scripts/copilot_human_approval_01_check.js | backend | root:check:copilothumanapproval01 | review | NEEDS_REVIEW |  | COPILOT-HUMAN-APPROVAL-01-CHECK |  | Owner or chain unclear |  |
 | copilot_role_task_matrix_01_check.js | backend/scripts/copilot_role_task_matrix_01_check.js | backend | root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX-01-CHECK |  | Owner or chain unclear |  |
+| copilot_route_review_human_approval_01_check.js | backend/scripts/copilot_route_review_human_approval_01_check.js | backend | root:check:copilotroutereviewhumanapproval01 | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01-CHECK |  | Owner or chain unclear |  |
 | copilot_stop_route_draft_01_check.js | backend/scripts/copilot_stop_route_draft_01_check.js | backend | root:check:copilotstoproutedraft01 | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-01-CHECK |  | Owner or chain unclear |  |
 | docs_ssot_brand_artifact_cleanup_01_check.js | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | backend | root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01-CHECK |  | Owner or chain unclear |  |
 | docs_ssot_pack_check.js | backend/scripts/docs_ssot_pack_check.js | backend |  | verify:repo | ACTIVE_CORE |  | DOCS-SSOT-PACK-CHECK |  | Owner or chain unclear | canonical runner |
@@ -903,6 +910,7 @@ Repo: `servis-platform`
 | copilotExcelDemandImportPolicy.js | backend/src/ai/chat/copilotExcelDemandImportPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-EXCEL-DEMAND-IMPORT-POLICY |  | Owner or chain unclear |  |
 | copilotHumanApprovalPolicy.js | backend/src/ai/chat/copilotHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
 | copilotRoleTaskMatrix.js | backend/src/ai/chat/copilotRoleTaskMatrix.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX |  | Owner or chain unclear |  |
+| copilotRouteReviewHumanApprovalPolicy.js | backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
 | copilotStopRouteDraftPolicy.js | backend/src/ai/chat/copilotStopRouteDraftPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-POLICY |  | Owner or chain unclear |  |
 | etaSanity.js | backend/src/ai/chat/etaSanity.js | backend |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
 | goldenQuestionPack.js | backend/src/ai/chat/goldenQuestionPack.js | backend |  | review | NEEDS_REVIEW |  | GOLDEN-QUESTION-PACK |  | Owner or chain unclear |  |
@@ -1136,8 +1144,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| copilot_route_review_human_approval_01_check.js | backend/scripts/copilot_route_review_human_approval_01_check.js | backend | root:check:copilotroutereviewhumanapproval01 | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01-CHECK |  | Owner or chain unclear |  |
-| copilotRouteReviewHumanApprovalPolicy.js | backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
+| excel_to_route_readiness_redteam_01_check.js | backend/scripts/excel_to_route_readiness_redteam_01_check.js | backend | root:check:exceltoroutereadinessredteam01 | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01-CHECK |  | Owner or chain unclear |  |
+| excelToRouteReadinessRedteamPack.js | backend/src/ai/chat/excelToRouteReadinessRedteamPack.js | backend |  | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-PACK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1991,6 +1999,7 @@ Repo: `servis-platform`
 | backend/scripts/cop_04b_fix_08_parent_live_context_check.js | OperationProof | ACTIVE |
 | backend/scripts/cop_live_accept_01_check.js | OperationProof | ACTIVE |
 | backend/scripts/copilot_role_task_matrix_01_check.js | Hub | NEEDS_REVIEW |
+| backend/scripts/copilot_route_review_human_approval_01_check.js | Vardis, Hub | NEEDS_REVIEW |
 | backend/scripts/copilot_stop_route_draft_01_check.js | Hub | NEEDS_REVIEW |
 | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | Vardis, Hub | NEEDS_REVIEW |
 | backend/scripts/eta_osrm_01_route_eta_service_check.js | OperationProof | NEEDS_REVIEW |
@@ -2003,7 +2012,6 @@ Repo: `servis-platform`
 | backend/scripts/m21check.js | Hub | ACTIVE_RELEASE_ONLY |
 | backend/scripts/m22check.js | Hub | ACTIVE_RELEASE_ONLY |
 | backend/scripts/m23check.js | Hub | ACTIVE_RELEASE_ONLY |
-| backend/scripts/m26check.js | Hub | ACTIVE_RELEASE_ONLY |
 
 ## 11) Cleanup Raporu
 

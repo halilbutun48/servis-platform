@@ -23,6 +23,8 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_stop_route_draft_01_check.js",
   "backend/scripts/osrm_route_draft_from_excel_01_check.js",
   "backend/scripts/copilot_route_review_human_approval_01_check.js",
+  "backend/scripts/excel_to_route_readiness_redteam_01_check.js",
+  "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
@@ -41,6 +43,7 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
   "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
   "backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js",
+  "backend/src/ai/chat/excelToRouteReadinessRedteamPack.js",
   "backend/src/ai/chat/copilotExcelDemandImportPolicy.js",
   "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
   "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
@@ -61,6 +64,7 @@ const workingTreeCompatFiles = [
   "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
   "docs/COPILOT_HUMAN_APPROVAL_01.md",
   "docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md",
+  "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
   "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
   "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
@@ -254,6 +258,7 @@ function slugToMilestone(slug) {
     [/uxpanelstandardarchitecture0?1/i, "UX-PANEL-STANDARD-ARCHITECTURE-01"],
     [/uxpremiumcriticalfixroom0?1/i, "UX-PREMIUM-CRITICAL-FIX-ROOM-01"],
     [/uxpremiumcriticalfixagreementsdetail0?1/i, "UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01"],
+    [/exceltoroutereadinessredteam0?1/i, "EXCEL-TO-ROUTE-READINESS-REDTEAM-01"], // check:exceltoroutereadinessredteam01
     [/uxcompanyagreementsmobileparity0?1/i, "UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01"], // check:uxcompanyagreementsmobileparity01
     [/uxcompanypersonelaccessmobileparity0?1/i, "UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01"], // check:uxcompanypersonelaccessmobileparity01
   [/uxpremiumcriticaluxfixcleanup0?1/i, "UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01"],
@@ -296,7 +301,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -876,7 +881,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1449,6 +1454,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot route review human approval docs: \`docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md\``);
   out.push(`- Copilot route review human approval command: \`node backend\\scripts\\copilot_route_review_human_approval_01_check.js\``);
   out.push(`- Copilot route review human approval helper: \`backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js\``);
+  out.push(`- Excel to route readiness red-team milestone: \`EXCEL-TO-ROUTE-READINESS-REDTEAM-01\``);
+  out.push(`- Excel to route readiness red-team check: \`check:exceltoroutereadinessredteam01\``);
+  out.push(`- Excel to route readiness red-team docs: \`docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md\``);
+  out.push(`- Excel to route readiness red-team command: \`node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js\``);
+  out.push(`- Excel to route readiness red-team helper: \`backend/src/ai/chat/excelToRouteReadinessRedteamPack.js\``);
   out.push(`- Address geocoding confidence milestone: \`ADDRESS-GEOCODING-CONFIDENCE-01\``);
   out.push(`- Address geocoding confidence check: \`check:addressgeocodingconfidence01\``);
   out.push(`- Address geocoding confidence docs: \`docs/ADDRESS_GEOCODING_CONFIDENCE_01.md\``);
@@ -1816,6 +1826,11 @@ function verifyDoc(docText, summary) {
     "docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md",
     "node backend\\scripts\\copilot_route_review_human_approval_01_check.js",
     "backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js",
+    "EXCEL-TO-ROUTE-READINESS-REDTEAM-01",
+    "check:exceltoroutereadinessredteam01",
+    "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
+    "node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js",
+    "backend/src/ai/chat/excelToRouteReadinessRedteamPack.js",
     "COPILOT-EXCEL-DEMAND-IMPORT-01",
     "check:copilotexceldemandimport01",
     "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",

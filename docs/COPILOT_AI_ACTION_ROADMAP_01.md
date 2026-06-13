@@ -20,6 +20,7 @@ Repo: `servis-platform`
 - Bu roadmap stop-route draft readiness hattına da zemin hazırlar; sonraki future-only halka `COPILOT-STOP-ROUTE-DRAFT-01`'dir.
 - Bu roadmap future-only OSRM route draft readiness hattına da zemin hazırlar; sonraki future-only halka `OSRM-ROUTE-DRAFT-FROM-EXCEL-01`'dir.
 - Bu roadmap future-only route review human approval hattına da zemin hazırlar; sonraki future-only halka `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01`'dir.
+- Bu roadmap route review sonrası static red-team Excel-to-route hattına da zemin hazırlar; sonraki future-only halka `EXCEL-TO-ROUTE-READINESS-REDTEAM-01`'dir; bu katman runtime AI action açmaz.
 - Bu doküman docs/check kilididir; runtime davranış, backend route, service, schema veya Prisma açmaz.
 
 ## PHASE modeli
