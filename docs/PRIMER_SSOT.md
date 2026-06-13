@@ -36,6 +36,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `COPILOT-EXCEL-DEMAND-IMPORT-01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check kilididir; `check:copilotexceldemandimport01` ve `docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md` ile yaşar.
 - `ADDRESS-GEOCODING-CONFIDENCE-01` servis adresi kalite sözlüğü, geocoding readiness modeli, confidence bands, risk sınıfları ve human-review gate docs/check kilididir; `check:addressgeocodingconfidence01` ve `docs/ADDRESS_GEOCODING_CONFIDENCE_01.md` ile yaşar; Excel demand import sonrası stop/route draft hattına güvenli giriş kapısıdır.
 - `COPILOT-STOP-ROUTE-DRAFT-01` stop / route draft readiness docs/check kilididir; `check:copilotstoproutedraft01` ve `docs/COPILOT_STOP_ROUTE_DRAFT_01.md` ile yaşar; inbound / outbound direction model, hub readiness, capacity readiness ve human review gate'i kilitler.
+- `OSRM-ROUTE-DRAFT-FROM-EXCEL-01` Excel/import → address confidence → stop/route draft hattından gelen veriyi gerçek OSRM hazırlık katmanına bağlayan docs/check kilididir; `check:osrmroutedraftfromexcel01` ve `docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md` ile yaşar; runtime OSRM call, route preview ve route apply açmaz.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`

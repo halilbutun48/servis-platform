@@ -53,6 +53,7 @@
     "check:copilotexceldemandimport01": "node backend/scripts/copilot_excel_demand_import_01_check.js",
     "check:addressgeocodingconfidence01": "node backend/scripts/address_geocoding_confidence_01_check.js",
     "check:copilotstoproutedraft01": "node backend/scripts/copilot_stop_route_draft_01_check.js",
+    "check:osrmroutedraftfromexcel01": "node backend/scripts/osrm_route_draft_from_excel_01_check.js",
     "check:mobiletext01": "npm --prefix mobile run check:mobiletext01",
     "check:m95e23c": "npm --prefix web run check:m95e23c",
     "check:m98e4b": "node backend/scripts/m98_e4b_personel_invite_router_mount_check.js",

@@ -21,6 +21,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_excel_demand_import_01_check.js",
   "backend/scripts/address_geocoding_confidence_01_check.js",
   "backend/scripts/copilot_stop_route_draft_01_check.js",
+  "backend/scripts/osrm_route_draft_from_excel_01_check.js",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
@@ -41,6 +42,7 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/copilotExcelDemandImportPolicy.js",
   "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
   "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
+  "backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js",
   "web/src/utils/safeDriveSummary.js",
   "web/src/utils/offerQualityRanking.js",
   "web/src/panels/shared/SafeDriveSummaryCard.jsx",
@@ -57,6 +59,7 @@ const workingTreeCompatFiles = [
   "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
   "docs/COPILOT_HUMAN_APPROVAL_01.md",
   "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
+  "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
   "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
   "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
@@ -266,6 +269,7 @@ function slugToMilestone(slug) {
     [/copilotexceldemandimport0?1/i, "COPILOT-EXCEL-DEMAND-IMPORT-01"], // check:copilotexceldemandimport01
     [/addressgeocodingconfidence0?1/i, "ADDRESS-GEOCODING-CONFIDENCE-01"], // check:addressgeocodingconfidence01
     [/copilotstoproutedraft0?1/i, "COPILOT-STOP-ROUTE-DRAFT-01"], // check:copilotstoproutedraft01
+    [/osrmroutedraftfromexcel0?1/i, "OSRM-ROUTE-DRAFT-FROM-EXCEL-01"], // check:osrmroutedraftfromexcel01
     [/final/i, "FINAL"],
     [/verifychain0?1/i, "VERIFY-CHAIN-01"],
     [/productextensions/i, "PRODUCT-EXTENSIONS"],
@@ -288,7 +292,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -859,6 +863,7 @@ function replacementFor(entry, duplicateMap) {
   if (entry.fullKey === "mobile:build:internal:android") return "build:preview:android";
   if (entry.fullKey === "mobile:build:internal:ios") return "build:preview:ios";
   if (entry.fullKey === "mobile:check:m96bnotifications") return "check:m96b";
+  if (entry.fullKey === "root:check:osrmroutedraftfromexcel01") return "verify-core";
   if (entry.fullKey === "root:check:uxroomagreementstabs01") return "check:uxpanelrealitycleanup02d";
   return "";
 }
@@ -866,7 +871,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1129,7 +1134,7 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
       fileEntries.push(entry);
       continue;
     }
-    if (/^backend\/scripts\/(?:boarding_ops_01a|boarding_ops_01b|boarding_ops_01c|route_change_final_01|dynamic_savings_01_check|cop_live_accept_01|final_ux_smoke_01|driver_flow_final_01|live_tracking_final_01|eta_sanity_01|eta_osrm_01|eta_osrm_02|e2e_smoke_01|field_launch_pack_01|ux_.*_check|cop_.*_check|m9\d|m8\d|m7\d|m6\d|m5\d|m4\d|m3\d|m2\d|m1\d|m0check|m10check|m11check|m12check|m13check|m14check|m15check|m16check|m17check|m18check|m19check|m20check|m21check|m22check|m23check|m24check|m25check|m26check|m27check|m28check|m29check|m30check|m31check|m32check|m33check|m34check|m35check|m36check|m37check|m38check|m39check|m40check|m41check|m42_optional_check|m43_google_auth_invite_gate_check|m44_telematics_check|m44_telematics_t1_t5_check|m45_backup_create|m45_backup_restore|m45_retention_backup_check|m46_.*|m47_.*|m48_.*|m49_.*|m50_.*|m51_53_.*|m54_.*|m55_.*|m56_.*|m57_.*|m58_.*|m59_.*|m60_.*|m61_.*|m62_.*|m63_.*|m64_.*|m65_.*|m66_.*|m67_.*|m68_.*|m69_.*|m70_.*|m71_.*|m72_.*|m73_.*|m74_.*|m75_.*|m76_.*|m77_.*|m78_.*|m79_.*|m80_.*|m81_.*|m82_.*|m83_.*|m84_.*|m85_.*|m86_.*|m87_.*|m88_.*|m89_.*|m90_.*|m91_.*|m92_.*|m94_.*|m95_.*|m96_.*|m97_.*|m98_.*|m99_.*|op_.*|pay_.*|qlt_.*)\./i.test(relPath)) {
+    if (/^backend\/scripts\/(?:boarding_ops_01a|boarding_ops_01b|boarding_ops_01c|route_change_final_01|dynamic_savings_01_check|cop_live_accept_01|final_ux_smoke_01|driver_flow_final_01|live_tracking_final_01|eta_sanity_01|eta_osrm_01|eta_osrm_02|e2e_smoke_01|field_launch_pack_01|ux_.*_check|cop_.*_check|osrm_.*_check|m9\d|m8\d|m7\d|m6\d|m5\d|m4\d|m3\d|m2\d|m1\d|m0check|m10check|m11check|m12check|m13check|m14check|m15check|m16check|m17check|m18check|m19check|m20check|m21check|m22check|m23check|m24check|m25check|m26check|m27check|m28check|m29check|m30check|m31check|m32check|m33check|m34check|m35check|m36check|m37check|m38check|m39check|m40check|m41check|m42_optional_check|m43_google_auth_invite_gate_check|m44_telematics_check|m44_telematics_t1_t5_check|m45_backup_create|m45_backup_restore|m45_retention_backup_check|m46_.*|m47_.*|m48_.*|m49_.*|m50_.*|m51_53_.*|m54_.*|m55_.*|m56_.*|m57_.*|m58_.*|m59_.*|m60_.*|m61_.*|m62_.*|m63_.*|m64_.*|m65_.*|m66_.*|m67_.*|m68_.*|m69_.*|m70_.*|m71_.*|m72_.*|m73_.*|m74_.*|m75_.*|m76_.*|m77_.*|m78_.*|m79_.*|m80_.*|m81_.*|m82_.*|m83_.*|m84_.*|m85_.*|m86_.*|m87_.*|m88_.*|m89_.*|m90_.*|m91_.*|m92_.*|m94_.*|m95_.*|m96_.*|m97_.*|m98_.*|m99_.*|op_.*|pay_.*|qlt_.*)\./i.test(relPath)) {
       entry.status = "ACTIVE";
       entry.chain = "product";
       entry.notes.push("product check/helper");
@@ -1429,6 +1434,16 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot stop/route draft docs: \`docs/COPILOT_STOP_ROUTE_DRAFT_01.md\``);
   out.push(`- Copilot stop/route draft command: \`node backend\\scripts\\copilot_stop_route_draft_01_check.js\``);
   out.push(`- Copilot stop/route draft helper: \`backend/src/ai/chat/copilotStopRouteDraftPolicy.js\``);
+  out.push(`- Copilot OSRM route draft from Excel milestone: \`OSRM-ROUTE-DRAFT-FROM-EXCEL-01\``);
+  out.push(`- Copilot OSRM route draft from Excel check: \`check:osrmroutedraftfromexcel01\``);
+  out.push(`- Copilot OSRM route draft from Excel docs: \`docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md\``);
+  out.push(`- Copilot OSRM route draft from Excel command: \`node backend\\scripts\\osrm_route_draft_from_excel_01_check.js\``);
+  out.push(`- Copilot OSRM route draft from Excel helper: \`backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js\``);
+  out.push(`- Address geocoding confidence milestone: \`ADDRESS-GEOCODING-CONFIDENCE-01\``);
+  out.push(`- Address geocoding confidence check: \`check:addressgeocodingconfidence01\``);
+  out.push(`- Address geocoding confidence docs: \`docs/ADDRESS_GEOCODING_CONFIDENCE_01.md\``);
+  out.push(`- Address geocoding confidence command: \`node backend\\scripts\\address_geocoding_confidence_01_check.js\``);
+  out.push(`- Address geocoding confidence helper: \`backend/src/ai/chat/addressGeocodingConfidencePolicy.js\``);
   out.push(`- Public lead audit check: \`check:productflowbuttonaudit01\``);
   out.push(`- Public lead audit smoke: \`smoke:productflowbuttonaudit01\``);
   out.push(`- Public lead audit commands: \`node backend\\scripts\\product_flow_button_audit_01_check.js\`, \`node backend\\scripts\\product_flow_button_audit_01.mjs\``);
@@ -1796,6 +1811,11 @@ function verifyDoc(docText, summary) {
     "docs/COPILOT_STOP_ROUTE_DRAFT_01.md",
     "node backend\\scripts\\copilot_stop_route_draft_01_check.js",
     "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
+    "OSRM-ROUTE-DRAFT-FROM-EXCEL-01",
+    "check:osrmroutedraftfromexcel01",
+    "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
+    "node backend\\scripts\\osrm_route_draft_from_excel_01_check.js",
+    "backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js",
     "ADDRESS-GEOCODING-CONFIDENCE-01",
     "check:addressgeocodingconfidence01",
     "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",

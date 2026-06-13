@@ -553,6 +553,9 @@ function main() {
     "backend/scripts/address_geocoding_confidence_01_check.js",
     "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
     "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
+    "backend/scripts/osrm_route_draft_from_excel_01_check.js",
+    "backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js",
+    "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
     "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
     "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
   ]);

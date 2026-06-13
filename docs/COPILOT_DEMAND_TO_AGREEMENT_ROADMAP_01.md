@@ -13,6 +13,7 @@ Repo: `servis-platform`
 - `COPILOT-ROLE-TASK-MATRIX-01` ve `COPILOT-AI-ACTION-ROADMAP-01` sonrasında Sefer Abi için talep -> teklif -> sözleşme -> operasyon hazırlığı yol haritasını kilitler.
 - Bu milestone runtime AI action açmaz.
 - `ADDRESS-GEOCODING-CONFIDENCE-01` bu yol haritasına güvenli adres readiness girişi sağlar; geocoding confidence, human review gate ve KVKK / data safety boundary readiness'i ayrı docs/check katmanı olarak kilitler.
+- `OSRM-ROUTE-DRAFT-FROM-EXCEL-01` bu yol haritasına stop/route draft sonrası güvenli OSRM hazırlık girişi sağlar; route preview readiness, human review gate ve OSRM risk sınıfları ayrı docs/check katmanı olarak kilitlenir.
 - Public promise overclaim yazmaz.
 - Backend route/service/schema ve Prisma açmaz.
 - Kritik onay modeli ayrı docs/check katmanı `COPILOT-HUMAN-APPROVAL-01` ile kilitlenir.
@@ -36,6 +37,12 @@ Repo: `servis-platform`
 - Bu stage `COPILOT-STOP-ROUTE-DRAFT-01` ile ayrı docs/check katmanı olarak kilitlenir; inbound / outbound direction modelini, hub readiness'i ve capacity readiness'i okur.
 - OSRM / rota sinyali ileride kullanılabilir ama bu milestone’da route apply yok.
 - Taslak / önizleme / kontrol edilmeli dili kullanır.
+
+### STAGE 3B - OSRM Route Draft Readiness
+- Stop / route draft sonrası gelen veriyi OSRM readiness katmanında sınıflandırır.
+- Bu stage `OSRM-ROUTE-DRAFT-FROM-EXCEL-01` ile ayrı docs/check katmanı olarak kilitlenir; route preview readiness, manual review list ve KVKK / data safety boundary okunur.
+- Runtime OSRM call yok.
+- Route preview, route apply ve DB write yok.
 
 ### STAGE 4 - RFQ / Offer Prep
 - Talebi teklif istemeye hazır hale getirir.
