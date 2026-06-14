@@ -362,6 +362,12 @@ function main() {
     "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
+    "backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js",
+    "backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js",
+    "backend/src/ai/chat/answerQualityPolicy.js",
+    "backend/src/ai/chat/helpComposer.js",
+    "backend/src/ai/chat/intentRouter.js",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "working tree stays within brand/login premium scope");

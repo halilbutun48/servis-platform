@@ -1,3 +1,8 @@
+import {
+  detectCopilotEBlockRuntimeAnswerTopic,
+  getCopilotEBlockRuntimeAnswerTopicMeta,
+} from './copilotEBlockRuntimeAnswerIntegration.js';
+
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
 }
@@ -9,7 +14,6 @@ function normalizeLooseText(value) {
     .replace(/\s+/g, ' ')
     .trim();
 }
-
 function uniqueStrings(list) {
   const seen = new Set();
   const out = [];
@@ -68,6 +72,8 @@ export function hasExplicitRoleBoundarySignal({ questionType, activeTopic, messa
 
 export function workflowTopicChipSet({ activeTopic = '', questionType = '', screenPath = '' } = {}) {
   const topic = String(activeTopic || questionType || '');
+  const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(topic || detectCopilotEBlockRuntimeAnswerTopic({ questionType, screenPath }));
+  if (helperTopicMeta?.chips?.length) return [...helperTopicMeta.chips];
   const path = normalizeText(screenPath);
   const paymentBridgeTopics = new Set(['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'QUALITY_SIGNAL', 'TRUST_QUALITY']);
   const paymentBridgeChips = ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?'];
@@ -297,6 +303,18 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
 
 export function workflowActionSpec({ activeTopic = '', questionType = '' } = {}) {
   const topic = String(activeTopic || questionType || '');
+  const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(topic || detectCopilotEBlockRuntimeAnswerTopic({ questionType }));
+  if (helperTopicMeta) {
+    return {
+      guideLabel: helperTopicMeta.guideLabel,
+      jobType: helperTopicMeta.jobType,
+      guideLevel: helperTopicMeta.guideLevel,
+      reason: helperTopicMeta.why,
+      askLabel: helperTopicMeta.askLabel,
+      askQuery: helperTopicMeta.askQuery,
+      askReason: helperTopicMeta.askReason,
+    };
+  }
   switch (topic) {
     case 'SHIFT_BLOCKED':
     case 'WHY_BLOCKED':

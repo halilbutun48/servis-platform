@@ -432,6 +432,8 @@ Kullanılmayacak cümleler:
 - route review insan onayı kapısı OSRM sonrası ayrı docs/check katmanı olarak kilitlenir.
 - EXCEL-TO-ROUTE-READINESS-REDTEAM-01
 - EXCEL-TO-ROUTE-READINESS-REDTEAM-01: E bloğu için static red-team / kırma testi kilididir; runtime AI action açmaz ve route review sonrası guardrail stres testini docs/check olarak taşır.
+- COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01
+- COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01: Excel/import, address/geocode, OSRM ve route-review intent'leri için güvenli runtime-answer helper katmanıdır; runtime AI action, tool execution, write-action dispatcher, route apply, geocode execute, OSRM call ve fake success açmaz.
 
 ### E) COPILOT OPERASYON AKIŞI
 - COPILOT-DEMAND-INTAKE-01

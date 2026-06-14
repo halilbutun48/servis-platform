@@ -564,6 +564,13 @@ function main() {
     "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
     "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
     "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
+    "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
+    "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
+    "backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js",
+    "backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js",
+    "backend/src/ai/chat/answerQualityPolicy.js",
+    "backend/src/ai/chat/helpComposer.js",
+    "backend/src/ai/chat/intentRouter.js",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");

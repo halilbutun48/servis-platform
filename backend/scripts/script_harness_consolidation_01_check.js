@@ -24,7 +24,9 @@ const workingTreeCompatFiles = [
   "backend/scripts/osrm_route_draft_from_excel_01_check.js",
   "backend/scripts/copilot_route_review_human_approval_01_check.js",
   "backend/scripts/excel_to_route_readiness_redteam_01_check.js",
+  "backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
+  "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
@@ -44,6 +46,7 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
   "backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js",
   "backend/src/ai/chat/excelToRouteReadinessRedteamPack.js",
+  "backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js",
   "backend/src/ai/chat/copilotExcelDemandImportPolicy.js",
   "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
   "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
@@ -65,6 +68,7 @@ const workingTreeCompatFiles = [
   "docs/COPILOT_HUMAN_APPROVAL_01.md",
   "docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
+  "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
   "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
   "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
@@ -279,6 +283,7 @@ function slugToMilestone(slug) {
     [/addressgeocodingconfidence0?1/i, "ADDRESS-GEOCODING-CONFIDENCE-01"], // check:addressgeocodingconfidence01
     [/copilotstoproutedraft0?1/i, "COPILOT-STOP-ROUTE-DRAFT-01"], // check:copilotstoproutedraft01
     [/osrmroutedraftfromexcel0?1/i, "OSRM-ROUTE-DRAFT-FROM-EXCEL-01"], // check:osrmroutedraftfromexcel01
+    [/copilot[_-]?e[_-]?block[_-]?runtime[_-]?answer[_-]?integration0?1/i, "COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01"], // check:copiloteblockruntimeanswerintegration01
     [/final/i, "FINAL"],
     [/verifychain0?1/i, "VERIFY-CHAIN-01"],
     [/productextensions/i, "PRODUCT-EXTENSIONS"],
@@ -301,7 +306,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -309,7 +314,7 @@ function statusFromPackage(pkg, name) {
     if (["verify:snapshot", "verify:docs", "verify:hot", "verify:web-contract", "verify:milestones", "verify:milestones:live"].includes(name)) {
       return "ACTIVE_RELEASE_ONLY";
     }
-    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:roomvehicledriveruppercase01", "check:uxroompanelclarity01", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxroomshiftsdensitydedup01", "check:uxpremiumcriticalfixroom01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxcompanypersonelaccessmobileparity01", "check:uxcompanyagreementsmobileparity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxmarketplacepanels01", "check:productflowbuttonaudit01", "check:uxpremiumcriticaluxfixcleanup01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxbrandloginpremium01", "check:uxmobilewebshellclarity01", "check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01", "check:uxlivepanelsmokeaudit01", "check:uxmobileallrolespanelaudit01", "check:uxsmokepassminusevidence01", "check:uxsmokepassminuszero01", "check:uxlivepanelpremiumsmoke01", "check:mobilewebfinal01", "check:uxparentpersonelliveerrorclarity01", "check:copliveaccept01", "check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01", "check:uxsuperadminpanelclarity01", "check:uxcontractconversionopsbridgeclarity01", "check:shiftdispatchapprovalfix01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01"].includes(name)) {
+    if (["audit:repo", "check:brand", "check:docsstate01", "check:docsbrandcleanup01", "check:e2esmoke01", "check:fieldlaunch01", "check:op01", "check:op02", "check:op03", "check:op04", "check:qlt01", "check:qlt02", "check:qlt03", "check:qlt04", "check:qlt04a", "check:qlt04b", "check:pay01a", "check:pay01b", "check:pay01c", "check:pay01d", "check:pay01e", "check:paysafe01", "check:uxcollapsiblepanels01", "check:uxpanelstructure02", "check:uxpanelinventory02a", "check:uxpanelstructure02b", "check:uxroomvehiclestelematicsfix", "check:roomvehicledriveruppercase01", "check:uxroompanelclarity01", "check:uxroomopspaneltabs01", "check:uxroomopsrelationshippolish01", "check:uxroomshiftstabs01", "check:uxroomshiftsdensitydedup01", "check:uxpremiumcriticalfixroom01", "check:uxschoolorganizationpanels01", "check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxcompanypersonelaccessmobileparity01", "check:uxcompanyagreementsmobileparity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxmarketplacepanels01", "check:productflowbuttonaudit01", "check:uxpremiumcriticaluxfixcleanup01", "check:uxcompanyopspaneltabs01", "check:uxcompanyqualitytabs01", "check:uxcompanypanelsfinalpolish01", "check:uxcompanypanelssmoke01", "check:uxpaneltabsfix01", "check:uxlivemaptabsfix01", "check:uxlivemaptabssimplify01", "check:uxpanelreality02c", "check:uxpanelrealitycleanup02d", "check:uxpanellayoutwidth02cfix01", "check:uxpanellayoutwidth02cfix02", "check:uxpanellayoutwidth02cfix03", "check:uxnav01", "check:uxbrandloginpremium01", "check:uxmobilewebshellclarity01", "check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01", "check:uxlivepanelsmokeaudit01", "check:uxmobileallrolespanelaudit01", "check:uxsmokepassminusevidence01", "check:uxsmokepassminuszero01", "check:uxlivepanelpremiumsmoke01", "check:mobilewebfinal01", "check:uxparentpersonelliveerrorclarity01", "check:copliveaccept01", "check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:boardingops01b", "check:boardingops01c", "check:routechangefinal01", "check:dynamicsavings01", "check:etasanity01", "check:etaosrm01", "check:etaosrm02", "check:livetrackingfinal01", "check:driverflowfinal01", "check:cop01a", "check:cop01b", "check:cop01c", "check:cop01d", "check:cop01e", "check:cop02a", "check:cop02b", "check:cop02bfix01", "check:cop03a", "check:cop03afix01", "check:cop03afix02", "check:cop03b", "check:cop03c", "check:cop03cfix01", "check:cop03cfix02", "check:cop03cfix03", "check:cop04a", "check:cop04afix01", "check:cop04afix02", "check:cop04afix03", "check:cop04afix04", "check:cop04b", "check:cop04bfix01", "check:cop04bfix02", "check:cop04bfix03", "check:cop04bfix04", "check:cop04bfix05", "check:cop04bfix06", "check:cop04bfix07", "check:cop04bfix08", "check:copiloteblockruntimeanswerintegration01", "check:uxcopilotsmartchips01", "check:uxcopilotpersona01", "check:uxcopilotterminal01", "check:uxseferabilauncher01", "check:uxsuperadminpanelclarity01", "check:uxcontractconversionopsbridgeclarity01", "check:shiftdispatchapprovalfix01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["smoke:m98e4", "smoke:uxlivepanelpremium01", "smoke:productflowbuttonaudit01"].includes(name)) return "MANUAL_SMOKE";
@@ -722,7 +727,7 @@ const coverageMatrix = [
     rolePanel: "Copilot drawer and terminal",
     backendRouteService: "backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/chat/copilotHumanApprovalPolicy.js; backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js; backend/src/ai/jobGuide/screenCatalog.js",
     frontendSurface: "web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx",
-    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
+    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copiloteblockruntimeanswerintegration01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
     checkType: "static",
     coverageStatus: "COVERED_ACTIVE",
     missingGap: "None on the current static/product chain.",
@@ -874,6 +879,7 @@ function replacementFor(entry, duplicateMap) {
   if (entry.fullKey === "mobile:check:m96bnotifications") return "check:m96b";
   if (entry.fullKey === "root:check:osrmroutedraftfromexcel01") return "verify-core";
   if (entry.fullKey === "root:check:copilotroutereviewhumanapproval01") return "verify-core";
+  if (entry.fullKey === "root:check:copiloteblockruntimeanswerintegration01") return "verify-core";
   if (entry.fullKey === "root:check:uxroomagreementstabs01") return "check:uxpanelrealitycleanup02d";
   return "";
 }
@@ -881,7 +887,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1459,6 +1465,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Excel to route readiness red-team docs: \`docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md\``);
   out.push(`- Excel to route readiness red-team command: \`node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js\``);
   out.push(`- Excel to route readiness red-team helper: \`backend/src/ai/chat/excelToRouteReadinessRedteamPack.js\``);
+  out.push(`- Copilot E-block runtime answer integration milestone: \`COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01\``);
+  out.push(`- Copilot E-block runtime answer integration check: \`check:copiloteblockruntimeanswerintegration01\``);
+  out.push(`- Copilot E-block runtime answer integration docs: \`docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md\``);
+  out.push(`- Copilot E-block runtime answer integration command: \`node backend\\scripts\\copilot_e_block_runtime_answer_integration_01_check.js\``);
+  out.push(`- Copilot E-block runtime answer integration helper: \`backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js\``);
   out.push(`- Address geocoding confidence milestone: \`ADDRESS-GEOCODING-CONFIDENCE-01\``);
   out.push(`- Address geocoding confidence check: \`check:addressgeocodingconfidence01\``);
   out.push(`- Address geocoding confidence docs: \`docs/ADDRESS_GEOCODING_CONFIDENCE_01.md\``);
@@ -1831,6 +1842,11 @@ function verifyDoc(docText, summary) {
     "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
     "node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js",
     "backend/src/ai/chat/excelToRouteReadinessRedteamPack.js",
+    "COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01",
+    "check:copiloteblockruntimeanswerintegration01",
+    "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
+    "node backend\\scripts\\copilot_e_block_runtime_answer_integration_01_check.js",
+    "backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js",
     "COPILOT-EXCEL-DEMAND-IMPORT-01",
     "check:copilotexceldemandimport01",
     "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",

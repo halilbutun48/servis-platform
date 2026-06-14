@@ -82,6 +82,7 @@ const steps = [
   'check:osrmroutedraftfromexcel01',
   'check:copilotroutereviewhumanapproval01',
   'check:exceltoroutereadinessredteam01',
+  'check:copiloteblockruntimeanswerintegration01',
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
   'check:uxcopilotterminal01',

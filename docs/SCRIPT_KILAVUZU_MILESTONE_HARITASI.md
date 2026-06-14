@@ -224,6 +224,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-EXCEL-DEMAND-IMPORT-01`, `ADDRESS-GEOCODING-CONFIDENCE-01`, `COPILOT-STOP-ROUTE-DRAFT-01`, `OSRM-ROUTE-DRAFT-FROM-EXCEL-01`, `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01`, `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` ve `COPILOT-ROLE-TASK-MATRIX-01` guardrail hattıyla birlikte okunur; fake success, hallucination, KVKK/cross-tenant leke, route apply, geocode execute, OSRM call ve runtime AI action açmaz.
 - Sonraki kontrollü hatlar: `COPILOT-DEMAND-INTAKE-01`, `COPILOT-RFQ-PREP-01`, `COPILOT-DISPATCH-ACTION-PREP-01`, `VOICE-AUTOPILOT-SAFETY-REDTEAM-01`, `SEFER-ABI-AI-REDTEAM-STRESS-01`.
 
+### COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01 [CHECK]
+- `check:copiloteblockruntimeanswerintegration01` Excel/import, address/geocode, OSRM ve route-review intent'leri için güvenli runtime-answer helper katmanını kilitler; runtime AI action, tool execution, write-action dispatcher, geocode execute, OSRM call, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\copilot_e_block_runtime_answer_integration_01_check.js`
+- Doküman: `docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md`
+- Static helper: `backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js`
+- Bu check, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01`, `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`, `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-EXCEL-DEMAND-IMPORT-01`, `ADDRESS-GEOCODING-CONFIDENCE-01`, `COPILOT-STOP-ROUTE-DRAFT-01`, `OSRM-ROUTE-DRAFT-FROM-EXCEL-01`, `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01` ve `EXCEL-TO-ROUTE-READINESS-REDTEAM-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, route apply, geocode execute, OSRM call ve fake success açmaz.
+- Sonraki güvenli hatlar: `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+
 ### ETA-SANITY-01 [CHECK]
 - `check:etasanity01` canlı takipte GPS stale/offline/unknown durumunda ETA’yı güvenli ve kesin olmayan ifadelerle gösterir.
 - Room, Company, Parent, Personel ve Driver canlı yüzeyleri ile Copilot yardım metinleri aynı güvenli ETA / GPS mantığına bağlanır.

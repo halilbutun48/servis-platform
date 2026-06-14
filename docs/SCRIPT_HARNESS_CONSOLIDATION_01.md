@@ -5,9 +5,9 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `369`
-- Toplam executable tracked file: `1156`
-- Combined registry row: `1525`
+- Toplam package script entry: `370`
+- Toplam executable tracked file: `1158`
+- Combined registry row: `1528`
 - Root/backend/web/mobile package dağılımı: root `212`, backend `719`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
@@ -147,6 +147,11 @@ Repo: `servis-platform`
 - Excel to route readiness red-team docs: `docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md`
 - Excel to route readiness red-team command: `node backend\scripts\excel_to_route_readiness_redteam_01_check.js`
 - Excel to route readiness red-team helper: `backend/src/ai/chat/excelToRouteReadinessRedteamPack.js`
+- Copilot E-block runtime answer integration milestone: `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01`
+- Copilot E-block runtime answer integration check: `check:copiloteblockruntimeanswerintegration01`
+- Copilot E-block runtime answer integration docs: `docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md`
+- Copilot E-block runtime answer integration command: `node backend\scripts\copilot_e_block_runtime_answer_integration_01_check.js`
+- Copilot E-block runtime answer integration helper: `backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js`
 - Address geocoding confidence milestone: `ADDRESS-GEOCODING-CONFIDENCE-01`
 - Address geocoding confidence check: `check:addressgeocodingconfidence01`
 - Address geocoding confidence docs: `docs/ADDRESS_GEOCODING_CONFIDENCE_01.md`

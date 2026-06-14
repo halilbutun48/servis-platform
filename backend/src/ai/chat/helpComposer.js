@@ -8,6 +8,12 @@ import { analyzeScreenState } from './screenStateAnalyzer.js';
 import { createSelectedRuntimeHelpers } from './helpComposerSelectedRuntime.js';
 import { createEntityRuntimeHelpers } from './helpComposerEntityRuntime.js';
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from './etaSanity.js';
+import {
+  detectCopilotEBlockRuntimeAnswerTopic,
+  getCopilotEBlockRuntimeAnswerTopicMeta,
+  isJobTypeEntityMismatchError,
+  listCopilotEBlockRuntimeAnswerTopics,
+} from './copilotEBlockRuntimeAnswerIntegration.js';
 
 function pickTerms(simpleTerms, limit = 3) {
   return (Array.isArray(simpleTerms) ? simpleTerms : []).slice(0, limit).map((row) => `${row.term}: ${row.meaning}`);
@@ -98,6 +104,12 @@ const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
   'SAFE_NEXT_STEP',
   'FIRST_CONTROL',
 ]);
+
+const COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS = new Set(listCopilotEBlockRuntimeAnswerTopics());
+
+function isCopilotEBlockRuntimeAnswerTopic(topic) {
+  return COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS.has(String(topic || ''));
+}
 
 const WORKFLOW_SURFACE_HINTS = [
   '/shifts',
@@ -591,7 +603,8 @@ function topicLabelForContext(topic) {
     MISSING_DATA: 'Eksik veri',
     CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
   };
-  return firstNonEmpty(labels[String(topic || '')], '');
+  const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(topic);
+  return firstNonEmpty(labels[String(topic || '')], helperTopicMeta?.label || '', '');
 }
 
 const WORKFLOW_TOPICS = new Set([
@@ -621,6 +634,7 @@ const WORKFLOW_TOPICS = new Set([
   'BOARDING_CHANGE_REQUEST_ENTRY',
   'BOARDING_CHANGE_APPLICATION',
   'BOARDING_ROUTE_IMPACT_PREVIEW',
+  ...listCopilotEBlockRuntimeAnswerTopics(),
 ]);
 
 function isWorkflowTopic(topic) {
@@ -634,11 +648,13 @@ function hasDynamicSavingsSignal(text) {
 function shouldUseWorkflowGuide({ questionType, activeTopic }) {
   const type = String(questionType || '');
   if (type === 'SCREEN_PURPOSE') return false;
-  if (isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(type)) return true;
+  if (isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(type) || isCopilotEBlockRuntimeAnswerTopic(activeTopic) || isCopilotEBlockRuntimeAnswerTopic(type)) return true;
   return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
 }
 
 function detectContextTopic({ message, questionType, screenPath, screenContext, sourceScreenContext, analysis }) {
+  const explicitCopilotTopic = detectCopilotEBlockRuntimeAnswerTopic({ message, questionType, screenPath });
+  if (explicitCopilotTopic) return explicitCopilotTopic;
   const text = normalizeText(message);
   const path = normalizeText(screenPath);
   const selectedText = normalizeText(firstNonEmpty(
@@ -1047,6 +1063,7 @@ function buildContextPriorityDecision({
   const recentMessages = Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages.slice(-6) : [];
   const recentUserMessage = [...recentMessages].reverse().find((row) => normalizeText(row?.role) === 'user' || normalizeText(row?.role) === 'assistant');
   const activeTopic = detectContextTopic({ message, questionType, screenPath, screenContext, sourceScreenContext, analysis });
+  const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(activeTopic);
   const workflowQuestion = isWorkflowDiagnosticQuestionType(questionType) || isWorkflowTopic(activeTopic);
   const isFollowUp = Boolean(looksLikeShortFollowUp(message) || (conversationState?.lastQuestionType && recentMessages.length) || /^(neden|niye|peki|tamam|devam|şimdi|simdi|burada|bunda|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta)/.test(normalizeText(message)));
   const sameRecordLikely = Boolean(
@@ -1188,6 +1205,7 @@ function buildContextPriorityDecision({
     diagnosticPrioritySummary ? `En olası neden: ${diagnosticPrioritySummary}` : '',
     liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
     visibleActionSimulation ? `Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(visibleActionSimulation))}` : '',
+    helperTopicMeta?.why || '',
     topicWhy[activeTopic],
     roleBoundary,
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
@@ -1242,6 +1260,7 @@ function buildContextPriorityDecision({
     selectedRecordMismatchLead,
     operationHealthAdvice,
     visibleActionSimulation,
+    helperTopicMeta?.advice || '',
     topicAdvice[activeTopic],
     analysis?.nextBestAction,
     analysis?.safestNextStep,
@@ -1255,6 +1274,7 @@ function buildContextPriorityDecision({
     operationHealthAdvice,
     visibleActionSimulation,
     diagnosticPrioritySummary ? `Öncelik: ${diagnosticPrioritySummary}` : '',
+    helperTopicMeta?.advice || '',
     topicAdvice[activeTopic],
     analysis?.nextBestAction,
     analysis?.safestNextStep,
@@ -2845,6 +2865,72 @@ function shiftMissingDataReply(context) {
   return `Ana blokaj: ${blockers[0]} ${more.length ? `Diğer dikkatler: ${more.join(' • ')}` : ''} Şimdi yap: ${shiftNextStep(context)}`.trim();
 }
 
+function composeCopilotEBlockRuntimeAnswerReply({ questionType, message, screenDefinition, sourceScreenDefinition, contextPriority = null }) {
+  const screenPath = firstNonEmpty(screenDefinition?.path, sourceScreenDefinition?.path, '');
+  const topicId = firstNonEmpty(
+    questionType,
+    contextPriority?.activeTopic,
+    detectCopilotEBlockRuntimeAnswerTopic({ message, questionType, screenPath }),
+  );
+  const topicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(topicId);
+  if (!topicMeta) return '';
+  const screenLabel = firstNonEmpty(screenDefinition?.label, sourceScreenDefinition?.label, 'bu ekran');
+  const why = firstNonEmpty(topicMeta.why, 'Bu isteği güvenli sınırda okudum.');
+  const advice = firstNonEmpty(topicMeta.advice, 'İnsan onayını ve eksik veriyi kontrol et.');
+  const screenLead = `Şu an ${screenLabel} ekranındasın.`;
+
+  switch (topicId) {
+    case 'EXCEL_ROUTE_PREVIEW':
+      return `Şimdi: Doğrudan rota oluşturamam. ${screenLead} Excel’den satırları yorumlayabilirim ama otomatik import, DB write, rota oluşturma, route apply ve OSRM çağrısı başlatmam. Yapabileceğim güvenli şeyler: kolonları yorumlamak, eksik adresleri bulmak, adres güvenini açıklamak, durak / rota readiness çıkarmak ve insan onayı checklist’i hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Excel satırlarını, eksik adresleri ve insan onayını kontrol et.`;
+    case 'ADDRESS_GEOCODE_PREVIEW':
+      return `Şimdi: Doğrudan geocode yapamam. ${screenLead} Adresleri yorumlayabilirim ama otomatik geocode, lat/lng yazma ve route apply başlatmam. Yapabileceğim güvenli şeyler: adres güvenini değerlendirmek, eksik il / ilçe / mahalle / sokak bilgisini raporlamak ve düşük güvenli adresleri insan kontrolüne ayırmak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik adres alanlarını ve insan kontrolünü sırala.`;
+    case 'OSRM_ROUTE_DRAFT_PREVIEW':
+      return `Şimdi: OSRM çağrısı yapamam. ${screenLead} Mesafe / süre önizlemesini ve rota taslağını yorumlayabilirim ama OSRM çağrısı, route preview üretimi ve route apply başlatmam. Yapabileceğim güvenli şeyler: address readiness, durak listesi ve insan onayı kontrolünü sıralamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önce adres readiness ve durak listesi kontrol et.`;
+    case 'ROUTE_REVIEW_HUMAN_APPROVAL':
+      return `Şimdi: Bu rota için gerçek uygulama başlatamam. ${screenLead} Önce insan onayı gerekir; ben yalnızca preview ve risk özeti okuyabilirim. Yapabileceğim güvenli şeyler: preview, risk özeti, geri alma notu ve onay durumunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Preview, risk özeti ve onay durumunu kontrol et.`;
+    case 'ROUTE_APPLY_BLOCKED':
+      return `Şimdi: Rotayı uygulayamam. ${screenLead} route apply, dispatch apply ve günlük atamaya işleme kapalı. Yapabileceğim güvenli şeyler: preview, risk özeti, insan onayı ve geri alma notunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Uygulama yerine preview ve onay durumunu kontrol et.`;
+    case 'IMPORT_WRITE_BLOCKED':
+      return `Şimdi: Bu Excel’i sisteme kaydedemem. ${screenLead} Toplu yazma, DB write ve personel oluşturma kapalı. Yapabileceğim güvenli şeyler: eksik kolonları bulmak, KVKK sınırını kontrol etmek ve insan onayı checklist’i hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik kolonları ve insan onayını kontrol et.`;
+    case 'FAKE_SUCCESS_REQUEST_BLOCKED':
+      return `Şimdi: Yapmış gibi söyleyemem. ${screenLead} Sahte başarı üretmem; yalnızca gerçekten doğrulanmış sinyali paylaşırım. Yapabileceğim güvenli şeyler: gerçekten yapılanı, eksik kalanları ve sonraki doğru adımı açıkça ayırmak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Gerçek sinyali ve eksik kalan adımı açıkça ayır.`;
+    default:
+      return `Şimdi: ${screenLead} ${why} Öneri: ${advice} Sıradaki doğru işlem: İnsan onayını ve eksik veriyi kontrol et.`;
+  }
+}
+
+function buildCopilotEBlockRuntimeAnswerGuide({ topicMeta, guideLevel, screenDefinition, sourceScreenDefinition }) {
+  const screenLabel = firstNonEmpty(screenDefinition?.label, sourceScreenDefinition?.label, 'bu ekran');
+  const why = firstNonEmpty(topicMeta?.why, '');
+  const advice = firstNonEmpty(topicMeta?.advice, '');
+  const blocked = Array.isArray(topicMeta?.blockedActions) ? topicMeta.blockedActions : [];
+  const neverAutomate = Array.isArray(topicMeta?.neverAutomate) ? topicMeta.neverAutomate : [];
+  const chips = Array.isArray(topicMeta?.chips) ? [...topicMeta.chips] : [];
+  return {
+    jobTitle: firstNonEmpty(topicMeta?.label, `${screenLabel} rehberi`),
+    jobPurpose: why || advice,
+    plainSummary: why || advice || `${screenLabel} için güvenli hazırlık rehberi.`,
+    summary: why || advice || `${screenLabel} için güvenli hazırlık rehberi.`,
+    whatToDoNow: advice || 'İnsan onayını ve eksik veriyi kontrol et.',
+    whatToDoNext: advice || 'İnsan onayını ve eksik veriyi kontrol et.',
+    doNotDo: blocked.length ? blocked.join(' • ') : neverAutomate.join(' • '),
+    stepByStep: [why, advice].filter(Boolean),
+    commonMistakes: neverAutomate.length ? [...neverAutomate] : [],
+    doneChecklist: advice ? [advice] : [],
+    simpleTerms: chips,
+    screenExplanation: why || advice || `${screenLabel} için güvenli hazırlık rehberi.`,
+    menuPurpose: screenDefinition?.menuPurpose || sourceScreenDefinition?.menuPurpose || null,
+    buttonGuides: [],
+    screenMenus: [],
+    quickActions: [],
+    ifStuck: [],
+    copyOutputs: [],
+    whyBlocked: why,
+    lockedActionReasons: blocked,
+    guideLevel,
+  };
+}
+
 function composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false, userRole = '', screenPath = '', contextPriority = null }) {
   const hasScreenContext = !preferEntityContext && (entityType === 'screen' || Boolean(screenContext?.path || screenDefinition?.path));
   const analysis = hasScreenContext ? analyzeScreenState({ screenContext, screenDefinition, conversationState }) : null;
@@ -2872,6 +2958,14 @@ function composeReply({ questionType, replyMode, guide, message, context, entity
     const parentLiveNoSelectionReply = buildParentLiveNoSelectionReply({ screenContext, sourceScreenContext, screenPath });
     if (parentLiveNoSelectionReply) return toReply(parentLiveNoSelectionReply);
   }
+  const eBlockReply = composeCopilotEBlockRuntimeAnswerReply({
+    questionType,
+    message,
+    screenDefinition,
+    sourceScreenDefinition,
+    contextPriority,
+  });
+  if (eBlockReply) return toReply(eBlockReply);
   {
     const selectedDiagnosticPath = selectedDiagnosticSurfacePath(screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext);
     const selectedDiagnosticText = normalizeText(message);
@@ -3717,7 +3811,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       reply,
       replyMode,
       questionType,
-      questionLabel: questionTypeLabel(questionType),
+      questionLabel: questionTypeLabel(questionType, contextPriority?.activeTopic || questionType || ''),
       suggestedChips: ['Bu ekran ne için?', 'Şimdi ne yapmalıyım?', 'Bugün ekranına nasıl dönerim?'],
       quickActions,
       linkedGuides: [makeLinkedGuide('Check-in ekran rehberi', 'ROLE_HELP_GUIDE', 'Kısa ekran rehberini açar.')],
@@ -3757,15 +3851,29 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const preferEntityContext = prefersSelectedEntity(questionType, requestEntityType, context);
   const answerEntityType = preferEntityContext ? String(resolvedEntityType || context?.type || entityType || requestEntityType) : requestEntityType;
   const answerEntityId = preferEntityContext ? Number(resolvedEntityId || context?.id || entityId || requestEntityId || 0) : requestEntityId;
-  const guide = buildJobGuideResponse({
-    jobType: selectGuideJobType({ entityType: answerEntityType, questionType, message: effectiveMessage, screenPath }),
-    guideLevel: replyMode,
-    context: answerEntityType === 'screen' ? effectiveScreenDefinition : context,
-    entityType: answerEntityType,
-    entityId: answerEntityId,
-    user,
-    screenContext: effectiveScreenContext,
-  });
+  const guideJobType = selectGuideJobType({ entityType: answerEntityType, questionType, message: effectiveMessage, screenPath });
+  let guide;
+  try {
+    guide = buildJobGuideResponse({
+      jobType: guideJobType,
+      guideLevel: replyMode,
+      context: answerEntityType === 'screen' ? effectiveScreenDefinition : context,
+      entityType: answerEntityType,
+      entityId: answerEntityId,
+      user,
+      screenContext: effectiveScreenContext,
+    });
+  } catch (err) {
+    const helperTopicId = firstNonEmpty(questionType, contextPriority?.activeTopic, detectCopilotEBlockRuntimeAnswerTopic({ message: effectiveMessage, questionType, screenPath }));
+    const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(helperTopicId);
+    if (!isJobTypeEntityMismatchError(err) || !helperTopicMeta) throw err;
+    guide = buildCopilotEBlockRuntimeAnswerGuide({
+      topicMeta: helperTopicMeta,
+      guideLevel: replyMode,
+      screenDefinition: effectiveScreenDefinition,
+      sourceScreenDefinition: screenDefinition,
+    });
+  }
 
   const rawReply = composeReply({
     questionType,
@@ -3963,11 +4071,12 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const reply = polishReply({ reply: rawReply, questionType, screenDefinition: effectiveScreenDefinition, roleMode });
   const qualityHints = buildQualityHints({ reply, questionType, quickActions: finalQuickActions, intentConfidence: intentMeta?.confidence, roleMode });
   const uncertaintyMeta = buildUncertaintyMeta({ questionType, intentConfidence: intentMeta?.confidence, qualityHints, screenDefinition: effectiveScreenDefinition, quickActions: finalQuickActions, roleMode });
-  const questionLabel = questionTypeLabel(questionType);
+  const questionLabel = questionTypeLabel(questionType, contextPriority?.activeTopic || questionType || '');
   const routePlan = buildRoutePlan({ questionType, quickActions: finalQuickActions, screenDefinition: effectiveScreenDefinition, continuity });
   const responseSections = buildResponseSections({
     questionType,
     questionLabel,
+    activeTopic: contextPriority?.activeTopic || '',
     quickActions: finalQuickActions,
     suggestedChips: visibleSuggestedChips,
     qualityHints,
@@ -4381,7 +4490,7 @@ function buildUncertaintyMeta({ questionType, intentConfidence, qualityHints, sc
   };
 }
 
-function questionTypeLabel(questionType) {
+function questionTypeLabel(questionType, activeTopic = '') {
   const labels = {
     NEXT_SCREEN: 'Nereye gitmeliyim',
     GO_TO: 'Hızlı geçiş',
@@ -4405,7 +4514,8 @@ function questionTypeLabel(questionType) {
     LOCATION_HELP: 'Konum neden görünmüyor',
     ROLE_HELP: 'Bu rolde ne yapabilirim',
   };
-  return labels[String(questionType || '')] || 'Copilot yardımı';
+  const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(activeTopic || questionType || '');
+  return firstNonEmpty(labels[String(activeTopic || questionType || '')], helperTopicMeta?.label || labels[String(questionType || '')], 'Copilot yardımı');
 }
 
 function buildRoutePlan({ questionType, quickActions, screenDefinition, continuity }) {
@@ -4434,8 +4544,10 @@ function buildRoutePlan({ questionType, quickActions, screenDefinition, continui
   };
 }
 
-function responseWhyText(questionType, screenDefinition) {
+function responseWhyText(questionType, screenDefinition, activeTopic = '') {
   const screenLabel = String(screenDefinition?.label || 'bu ekran');
+  const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(activeTopic || questionType || '');
+  if (helperTopicMeta?.why) return helperTopicMeta.why;
   if (questionType === 'NEXT_SCREEN' || questionType === 'GO_TO') return `${screenLabel} ekranında sonraki doğru adımı bulmaya odaklandım.`;
   if (questionType === 'FIRST_CONTROL') return `${screenLabel} ekranında önce bakılması gereken noktayı öne çıkardım.`;
   if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
@@ -4449,7 +4561,7 @@ function responseWhyText(questionType, screenDefinition) {
   return `${screenLabel} ekranını ve seçili kaydı birlikte dikkate aldım.`;
 }
 
-function buildResponseSections({ questionType, questionLabel, quickActions, suggestedChips, qualityHints, uncertaintyMeta, screenDefinition, roleMode, continuity, routePlan }) {
+function buildResponseSections({ questionType, questionLabel, activeTopic = '', quickActions, suggestedChips, qualityHints, uncertaintyMeta, screenDefinition, roleMode, continuity, routePlan }) {
   const sections = [];
   const primaryAction = Array.isArray(quickActions) ? quickActions[0] : null;
   if (primaryAction?.label) {
@@ -4463,7 +4575,7 @@ function buildResponseSections({ questionType, questionLabel, quickActions, sugg
   sections.push({
     kind: 'WHY',
     title: 'Bunu neden söyledim',
-    text: responseWhyText(questionType, screenDefinition),
+    text: responseWhyText(questionType, screenDefinition, activeTopic),
     hint: questionLabel || 'Copilot yardımı',
   });
   if (uncertaintyMeta?.needsVerification && uncertaintyMeta?.verifyText) {
