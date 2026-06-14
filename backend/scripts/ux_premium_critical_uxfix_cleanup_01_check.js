@@ -591,6 +591,12 @@ function main() {
       "web/src/panels/superadmin/TelematicsHubPanel.jsx",
       "web/src/panels/superadmin/TrustQualityPanel.jsx",
       "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
+      "backend/src/ai/chat/copilotGuidedTaskEngine.js",
+      "backend/src/ai/chat/goldenQuestionPack.js",
+      "backend/src/ai/chat/qualityScorer.js",
+      "backend/scripts/copilot_guided_task_engine_01_check.js",
+      "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+      "web/src/utils/uiDataCache.js",
     ]), 
     ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"],
     "working tree stays within cleanup scope"

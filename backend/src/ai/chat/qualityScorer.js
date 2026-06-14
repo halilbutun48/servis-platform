@@ -39,7 +39,10 @@ export function scoreGoldenQuestionPack() {
       context: row?.context || null,
       entityLabel: row?.screenContext?.selectedLabel || row?.screenContext?.label || '',
       scope: { roleMode: ['DRIVER', 'PERSONEL', 'PARENT'].includes(String(row?.role || '')) ? 'SIMPLE' : 'OPERATIONS' },
-      conversationState: { lastScreenPath: row?.path || '' },
+      conversationState: {
+        lastScreenPath: row?.path || '',
+        ...(row?.conversationState && typeof row.conversationState === 'object' ? row.conversationState : {}),
+      },
       screenContext,
       screenDefinition,
     });

@@ -434,6 +434,8 @@ Kullanılmayacak cümleler:
 - EXCEL-TO-ROUTE-READINESS-REDTEAM-01: E bloğu için static red-team / kırma testi kilididir; runtime AI action açmaz ve route review sonrası guardrail stres testini docs/check olarak taşır.
 - COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01
 - COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01: Excel/import, address/geocode, OSRM ve route-review intent'leri için güvenli runtime-answer helper katmanıdır; runtime AI action, tool execution, write-action dispatcher, route apply, geocode execute, OSRM call ve fake success açmaz.
+- COPILOT-GUIDED-TASK-ENGINE-01
+- COPILOT-GUIDED-TASK-ENGINE-01: Türkçe semantic intent family roadmap'idir; exact phrase matching'e bağlı kalmadan guideline, synonym ve typo toleransı sunar; runtime AI action, tool execution, write-action dispatcher, OSRM/geocode call ve route apply açmaz.
 
 ### E) COPILOT OPERASYON AKIŞI
 - COPILOT-DEMAND-INTAKE-01

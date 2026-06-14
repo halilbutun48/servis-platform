@@ -22,6 +22,7 @@ Repo: `servis-platform`
 - `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01` bu baseline üzerine kurulan future-safe route review human approval roadmap'idir; OSRM sonrası route preview değil review/readiness kapısını kilitler; runtime route preview, route apply, dispatch apply ve agreement execute açmaz.
 - `EXCEL-TO-ROUTE-READINESS-REDTEAM-01` bu baseline üzerine kurulan static red-team Excel-to-route roadmap'idir; route review sonrası kırma testi / guardrail stres testi katmanını docs/check olarak kilitler; runtime AI action açmaz.
 - `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01` bu baseline üzerine kurulan answer-only helper roadmap'idir; Excel/import, address/geocode, OSRM ve route-review sorularını güvenli açıklama / önizleme katmanında tutar; runtime AI action, tool execution ve write-action dispatcher açmaz.
+- `COPILOT-GUIDED-TASK-ENGINE-01` bu baseline üzerine kurulan semantic intent family roadmap'idir; exact phrase matching yerine role + screen + task family + synonym + typo toleransı kullanır; runtime AI action, tool execution, write-action dispatcher, OSRM/geocode call ve route apply açmaz.
 
 ## Canonical action model
 Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard'lı uygula -> Audit log yaz

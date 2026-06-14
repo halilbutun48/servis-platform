@@ -14,6 +14,11 @@ import {
   isJobTypeEntityMismatchError,
   listCopilotEBlockRuntimeAnswerTopics,
 } from './copilotEBlockRuntimeAnswerIntegration.js';
+import {
+  buildCopilotGuidedTaskEngineGuide,
+  composeCopilotGuidedTaskEngineReply,
+  detectCopilotGuidedTaskEngineProgressCommand,
+} from './copilotGuidedTaskEngine.js';
 
 function pickTerms(simpleTerms, limit = 3) {
   return (Array.isArray(simpleTerms) ? simpleTerms : []).slice(0, limit).map((row) => `${row.term}: ${row.meaning}`);
@@ -215,6 +220,7 @@ function selectedDiagnosticTheme(message) {
   if (/(servis|servisim|öğrencimin servisi|ogrencimin servisi|çocuğumun servisi|cocugumun servisi).*(görünmüyor|gorunmuyor|yok|nerede|neden görünmüyor|neden gorunmuyor|ne zaman|geliyor)/.test(text)) return 'LOCATION_HELP';
   if (/(görev|gorev|rota|sonraki durak|durak).*(başlamıyor|baslamiyor|başlayamıyor|baslayamiyor|görünmüyor|gorunmuyor|bekliyor|yok)/.test(text)) return 'SHIFT_BLOCKED';
   if (/(sürücünün|surucunun).*(telefon gps|telefon gps['’]i|telefon gps’i).*(neden).*(devrede|aktif|açık|acik)/.test(text) || /(telefon gps|cihaz gps).*(neden).*(devrede|aktif|açık|acik)/.test(text)) return 'DRIVER_PHONE_GPS';
+  if (/(puan|sefer\s*puan[ıi]|kalite\s*puan[ıi]|tedarikç[iı]\s*puan[ıi]|sağlayıc[ıi]\s*puan[ıi]).*(ödeme|odeme|teklif).*(sıralama|siralam|etkili|etkiliyor|etkisi)/.test(text)) return 'SEFER_SCORE_PREVIEW';
   if (/(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|kanıt|kanit|proof|komisyon|kalite|quality).*(neden).*(eksik|kontrol gerekli|hazır değil|hazir degil|risk|riskli|başlatılam|baslatilam)/.test(text) || /(kanıt eksik|kanit eksik|kanıtlar eksik|kanitlar eksik|hakediş eksik|hakedis eksik)/.test(text)) return 'PAYMENT_MISSING';
   if (/(hakediş|hakedis|ödeme|odeme|settlement|tahsilat|fatura|kanıt|kanit|proof|komisyon|kalite|quality).*(başlatılabilir|baslatilabilir|güvenli mi|guvenli mi|hazır mı|hazir mi|hazır değil|hazir degil|hazırlık|hazirlik|etkiliyor|etkisi)/.test(text) || /(kalite.*hakediş|kalite.*hakedis|hakediş.*kalite|hakedis.*kalite).*(etkiliyor|etkisi|güvenli mi|guvenli mi)/.test(text)) return 'PAYMENT_READINESS';
   if (/(lisans ücreti|lisans ucreti|başarı payı|basari payi|mevcut sözleşmeden pay|mevcut sozlesmeden pay|platform fee|free-to-operate|seferpakt kaynaklı|seferpakt kaynakli|source lineage|kaynak vardiya|market shift|organization plan|kaynak zinciri|seçili teklif|secili teklif|hangi vardiyadan geldi|mevcut sözleşme mi|mevcut sozlesme mi|pay alacak mı|pay alacak mi|pay alınır mı|pay alinır mı|pay doğmaz|pay dogmaz|0 tl lisans)/.test(text)) return 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW';
@@ -481,6 +487,7 @@ export function normalizeEverydayQuestion(message) {
   if (/(nereye bakcam|nereye bakicam|nereye bakca[mn]|nereye bak[iı]y[ıi]m|nereye bakay[ıi]m|ilk nereyi kontrol edeyim|once nereye bakayim|önce nereye bakayım|ilk nereyi inceleyeyim)/.test(text)) return 'İlk neye bakayım?';
   if (/(nereye g[eé]c(e|ey)im|nereye geç(e|ey)im|nereye git(sem|meliyim|ceyim|ceğim)|hangi ekrana gideyim|hangi tarafa geceyim|hangi tarafa geçeyim|sonra nereye geceyim|sonra nereye geçeyim|sonra nereye gideyim)/.test(text)) return 'Şimdi hangi ekrana gitmeliyim?';
   if (/(niye pasif|neden pasif|basam[iı]yorum|t[ıi]klan[mıi]yor|olmadi|olmad[ıi]|olmuyor|takildi|tak[ıi]ld[ıi]|patladi|patlad[ıi]|kitlendi|ilerlemiyor|tak[ıi]l[ıi]yor)/.test(text)) return 'Bu neden olmuyor?';
+  if (/(bu\s+kayitta|secili\s+kayitta|ayni\s+kayitta|ayni\s+satirda|bu\s+satirda)/.test(text) && /(ne eksik|eksigi ne|eksik ne var|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(text)) return raw;
   if (/(ne eksik|eksi[gğ]i ne|eksik ne var|hangi alan boş|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(text)) return 'Hazır mı?';
   if (/(atamaya hazir mi|atamaya haz[ıi]r m[ıi])/i.test(text)) return 'Atamaya hazır mı?';
   if (/(hazir mi|haz[ıi]r m[ıi])/i.test(text)) return 'Hazır mı?';
@@ -518,6 +525,10 @@ function splitCompoundQuestion(message) {
 export function extractPrimaryConcern(message) {
   const raw = String(message || '').trim();
   if (!raw) return raw;
+  const rawNormalized = normalizeText(raw);
+  if (/(bu\s+kayitta|secili\s+kayitta|ayni\s+kayitta|ayni\s+satirda|bu\s+satirda)/.test(rawNormalized) && /(ne eksik|eksigi ne|eksik ne var|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(rawNormalized)) {
+    return raw;
+  }
   const parts = splitCompoundQuestion(raw);
   if (parts.length <= 1 && raw.length < 96) return normalizeEverydayQuestion(raw);
   const candidates = (parts.length ? parts : [raw]).map((part, idx) => {
@@ -543,6 +554,7 @@ export function extractPrimaryConcern(message) {
 function looksLikeShortFollowUp(message) {
   const text = normalizeText(message);
   if (!text) return false;
+  if (detectCopilotGuidedTaskEngineProgressCommand(text)) return true;
   if (text.length > 72) return false;
   return /(peki|tamam|o zaman|devam|devam et|ee sonra|e sonra|sonra\??|simdi\??|şimdi\??|neden\??|niye\??|bunda\??|burada\??|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta|neye basayim|neye basayım|hangi ekrana|hangi ekrana gideyim|bu işlem bende görünmüyor|bu islem bende gorunmuyor|bende çıkmıyor|bende cikmiyor|burda takıldı|burada takildi|sorun kimde|kim onaylayacak|bunu kim yapabilir|tamam bunu nasıl düzeltirim|tamam bunu nasil duzeltirim|aynı kayıt için devam et|ayni kayit icin devam et|önce neyi kontrol edeyim|once neyi kontrol edeyim|bu yüzden mi başlamıyor|bu yuzden mi baslamiyor)/.test(text)
     || matchesStandalonePhrase(text, ['bura ne', 'burası ne', 'burasi ne', 'bu ne', 'ne bu', 'burda ne var', 'burada ne var', 'burası ne işe yarıyor', 'burasi ne ise yariyor', 'bu ekran ne', 'ne yapayım', 'ne yapayim', 'şimdi ne', 'simdi ne']);
@@ -669,6 +681,24 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   const theme = selectedDiagnosticTheme(message);
   if (theme) return theme;
   if (questionType === 'SCREEN_PURPOSE') return 'SCREEN_PURPOSE';
+  if (
+    path.includes('/trust-quality')
+    && /(servis|hizmet)\s+kanıt(?:ı|i).*?(ne\s+işe\s+yarar|ne\s+işe\s+yariyor|ne\s+işe\s+yarıyor|ne\s+demek|ne\s+icin|ne\s+için)|kanıt(?:ı|i)\s+ne\s+işe\s+yarar|kanit(?:i|i)\s+ne\s+ise\s+yarar|kanıt(?:ı|i)\s+ne\s+demek/i.test(text)
+  ) {
+    return 'SCREEN_PURPOSE';
+  }
+  if (
+    path.includes('/organization/shifts')
+    && /(organizasyon\s+plan|organization\s+plan).*(kaynak\s+kanıt|kaynak\s+kanit|sayılır\s+mi|sayilir\s+mi|tek\s+başına|tek\s+basina)|kaynak\s+kanıtı\s+sayılır\s+mi|kaynak\s+kaniti\s+sayilir\s+mi/.test(text)
+  ) {
+    return 'PAYMENT_READINESS';
+  }
+  if (
+    (path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core'))
+    && /(puan|sefer\s*puan[ıi]|kalite\s*puan[ıi]|tedarikç[iı]\s*puan[ıi]|sağlayıc[ıi]\s*puan[ıi]).*(ödeme|odeme|teklif).*(sıralama|siralam|etkili|etkiliyor|etkisi)/.test(text)
+  ) {
+    return 'SEFER_SCORE_PREVIEW';
+  }
   if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core')) && hasSeferScoreSignal(text)) return 'SEFER_SCORE_PREVIEW';
   if (path.includes('/trust-quality') || /(kalite|saglayıcı|sağlayıcı|saglayici|provider)/.test(text)) return /(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text) ? 'QUALITY_SIGNAL' : 'TRUST_QUALITY';
   if ((path.includes('/agreements') || path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core'))
@@ -765,6 +795,7 @@ function buildContextualSuggestedChips({
   roleMode,
   screenPath,
   context,
+  guidedTaskMeta = null,
   sourceScreenContext = null,
   _screenDefinition,
   screenQuestions = [],
@@ -814,7 +845,7 @@ function buildContextualSuggestedChips({
   );
   const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType) || boardingPreviewTopic || boardingApplicationTopic || routeRefreshTopic || dynamicSavingsTopic;
   const workflowChipTopic = boardingApplicationTopic ? 'BOARDING_CHANGE_APPLICATION' : boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : dynamicSavingsTopic ? 'DYNAMIC_SAVINGS_PREVIEW' : routeRefreshTopic ? 'AGREEMENT_ROUTE_REFRESH' : activeTopic;
-  if (workflowTopic) chips.push(...workflowTopicChipSet({ activeTopic: workflowChipTopic, questionType, screenPath }));
+  if (workflowTopic) chips.push(...workflowTopicChipSet({ activeTopic: workflowChipTopic, questionType, screenPath, guidedTaskMeta }));
   if (hasSelectedRecord && !workflowTopic && !path.includes('/parent/live')) {
     chips.push('Seçili kaydı aç', 'Başlatma zamanını kontrol et', 'Eksik veriyi göster', 'Yetki sınırını açıkla');
   }
@@ -949,7 +980,7 @@ function buildContextualSuggestedChips({
 
   const fallback = uniqueStrings([
     ...(Array.isArray(screenQuestions) ? screenQuestions : []).slice(0, 2),
-    ...buildSuggestedChips({ entityType, questionType, roleMode, screenPath, context }).slice(0, 2),
+    ...buildSuggestedChips({ entityType, questionType, roleMode, screenPath, context, guidedTaskMeta }).slice(0, 2),
   ]).filter(Boolean);
   const filteredFallback = workflowTopic
     ? filterWorkflowGenericChips(fallback, { activeTopic, questionType })
@@ -987,6 +1018,8 @@ function resolveFollowUpContextQuestion({
   const raw = String(message || '').trim();
   const hasConversationAnchor = Boolean(conversationState?.lastQuestionType) || (Array.isArray(conversationState?.recentMessages) && conversationState.recentMessages.length > 0);
   if (!hasConversationAnchor || !looksLikeShortFollowUp(raw)) return raw;
+  const guidedProgress = detectCopilotGuidedTaskEngineProgressCommand(raw, conversationState);
+  if (guidedProgress?.command) return raw;
   const text = normalizeText(raw);
   const selectedLabel = firstNonEmpty(
     screenContext?.selectedLabel,
@@ -1045,6 +1078,7 @@ function buildContextPriorityDecision({
   analysis,
   entityType,
   context,
+  guidedTaskMeta = null,
 }) {
   const selectedLabel = firstNonEmpty(
     screenContext?.selectedLabel,
@@ -1064,8 +1098,12 @@ function buildContextPriorityDecision({
   const recentUserMessage = [...recentMessages].reverse().find((row) => normalizeText(row?.role) === 'user' || normalizeText(row?.role) === 'assistant');
   const activeTopic = detectContextTopic({ message, questionType, screenPath, screenContext, sourceScreenContext, analysis });
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(activeTopic);
-  const workflowQuestion = isWorkflowDiagnosticQuestionType(questionType) || isWorkflowTopic(activeTopic);
-  const isFollowUp = Boolean(looksLikeShortFollowUp(message) || (conversationState?.lastQuestionType && recentMessages.length) || /^(neden|niye|peki|tamam|devam|şimdi|simdi|burada|bunda|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta)/.test(normalizeText(message)));
+  const guidedTopicLabel = firstNonEmpty(guidedTaskMeta?.label, '');
+  const guidedTopicSummary = firstNonEmpty(guidedTaskMeta?.summary, guidedTaskMeta?.jobPurpose, '');
+  const guidedTopicAdvice = firstNonEmpty(guidedTaskMeta?.advice, '');
+  const guidedTopicWhy = firstNonEmpty(guidedTaskMeta?.safeBoundary, guidedTaskMeta?.why, '');
+  const workflowQuestion = Boolean(guidedTaskMeta?.familyId) || isWorkflowDiagnosticQuestionType(questionType) || isWorkflowTopic(activeTopic);
+  const isFollowUp = Boolean(looksLikeShortFollowUp(message) || guidedTaskMeta?.progressCommand || (conversationState?.lastQuestionType && recentMessages.length) || /^(neden|niye|peki|tamam|devam|şimdi|simdi|burada|bunda|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta)/.test(normalizeText(message)));
   const sameRecordLikely = Boolean(
     selectedLabel && conversationState?.lastSelectedLabel && normalizeText(selectedLabel) === normalizeText(conversationState.lastSelectedLabel),
   ) || Boolean(
@@ -1201,6 +1239,7 @@ function buildContextPriorityDecision({
   };
   const whyCandidate = firstNonEmpty(
     selectedRecordMismatchLead,
+    guidedTopicWhy,
     operationHealthLead,
     diagnosticPrioritySummary ? `En olası neden: ${diagnosticPrioritySummary}` : '',
     liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
@@ -1218,6 +1257,7 @@ function buildContextPriorityDecision({
   );
   const missingInfo = firstNonEmpty(
     selectedRecordMismatchLead,
+    guidedTopicLabel ? `${guidedTopicLabel} için eksik bilgiyi kontrol et.` : '',
     diagnosticPrioritySummary ? `Öncelik: ${diagnosticPrioritySummary}` : '',
     liveFactConfidenceSummary ? `Sinyal özeti: ${liveFactConfidenceSummary}` : '',
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
@@ -1258,6 +1298,7 @@ function buildContextPriorityDecision({
   };
   const bestNextAction = firstNonEmpty(
     selectedRecordMismatchLead,
+    guidedTopicAdvice,
     operationHealthAdvice,
     visibleActionSimulation,
     helperTopicMeta?.advice || '',
@@ -1271,6 +1312,7 @@ function buildContextPriorityDecision({
   );
   const advice = firstNonEmpty(
     selectedRecordMismatchLead,
+    guidedTopicAdvice,
     operationHealthAdvice,
     visibleActionSimulation,
     diagnosticPrioritySummary ? `Öncelik: ${diagnosticPrioritySummary}` : '',
@@ -1283,13 +1325,14 @@ function buildContextPriorityDecision({
     selectedLabel ? `Önce ${selectedLabel} kaydını aç.` : '',
     'Önce ilgili satırı seç.',
   );
-  const topicLabel = topicLabelForContext(activeTopic);
+  const topicLabel = firstNonEmpty(guidedTopicLabel, topicLabelForContext(activeTopic), '');
   const contextualSuggestedChips = buildContextualSuggestedChips({
     entityType,
     questionType,
     roleMode,
     screenPath,
     context,
+    guidedTaskMeta,
     sourceScreenContext,
     _screenDefinition: screenDefinition,
     screenQuestions: Array.isArray(screenDefinition?.chatQuestions) ? screenDefinition.chatQuestions : [],
@@ -1302,6 +1345,8 @@ function buildContextPriorityDecision({
     roleBoundary,
   });
   const followUpPrompt = firstNonEmpty(
+    guidedTaskMeta?.clarificationQuestion || '',
+    guidedTaskMeta?.chips?.[0] || '',
     needsSelection ? 'Önce ilgili satırı seç' : '',
     isFollowUp && !workflowQuestion ? 'İlgili kayıtla devam et' : '',
     visibleActionSimulation,
@@ -1333,32 +1378,43 @@ function buildContextPriorityDecision({
       'Bu sözleşme için bugünkü üretim kaydı okunuyor.',
     )
     : 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.';
-  const summaryLead = workflowQuestion
-    ? (contractWorkflowQuestion
-      ? pickWorkflowVisibleReply(
+  const summaryLead = guidedTaskMeta?.familyId
+    ? firstNonEmpty(
+      selectedRecordMismatchLead,
+      guidedTopicSummary ? `Bu iş: ${guidedTopicSummary}` : '',
+      guidedTopicLabel,
+      guidedTopicWhy,
+      roleBoundary,
+      evidenceConfidence,
+      topicLabel,
+      '',
+    )
+    : workflowQuestion
+      ? (contractWorkflowQuestion
+        ? pickWorkflowVisibleReply(
+          selectedRecordMismatchLead,
+          contractNowLead,
+          contractWhyLead,
+          roleBoundary,
+          'Ekrandaki sinyale göre konuşuyorum.',
+        )
+        : pickWorkflowVisibleReply(
+          selectedRecordMismatchLead,
+          diagnosticPrioritySummary ? `Ekrandaki sinyale göre: ${diagnosticPrioritySummary}` : '',
+          liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
+          evidenceConfidence,
+          roleBoundary,
+          'Ekrandaki sinyale göre konuşuyorum.',
+        ))
+      : firstNonEmpty(
         selectedRecordMismatchLead,
-        contractNowLead,
-        contractWhyLead,
-        roleBoundary,
-        'Ekrandaki sinyale göre konuşuyorum.',
-      )
-      : pickWorkflowVisibleReply(
-        selectedRecordMismatchLead,
-        diagnosticPrioritySummary ? `Ekrandaki sinyale göre: ${diagnosticPrioritySummary}` : '',
+        diagnosticPrioritySummary,
         liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
         evidenceConfidence,
         roleBoundary,
-        'Ekrandaki sinyale göre konuşuyorum.',
-      ))
-    : firstNonEmpty(
-    selectedRecordMismatchLead,
-    diagnosticPrioritySummary,
-    liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
-    evidenceConfidence,
-    roleBoundary,
-    topicLabel,
-    '',
-  );
+        topicLabel,
+        '',
+      );
   return {
     activeTopic,
     activeTopicLabel: topicLabel,
@@ -1384,6 +1440,15 @@ function buildContextPriorityDecision({
     summaryLead,
     selectedRecordMismatchLead,
     contextualSuggestedChips,
+    guidedTaskMeta,
+    guidedTaskFamilyId: guidedTaskMeta?.familyId || '',
+    guidedTaskLabel: guidedTopicLabel || '',
+    guidedTaskSummary: guidedTopicSummary || '',
+    guidedTaskAdvice: guidedTopicAdvice || '',
+    guidedTaskWhy: guidedTopicWhy || '',
+    guidedTaskProgressCommand: guidedTaskMeta?.progressCommand || '',
+    guidedTaskProgressRaw: guidedTaskMeta?.progressRaw || '',
+    guidedTaskQuestionType: guidedTaskMeta?.questionType || '',
     selectedLabel,
     selectedSummary,
     lastConcern,
@@ -2642,7 +2707,8 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
     const driversMenu = findMenu(screenDefinition, ['sürücü', 'driver'], ['/drivers']);
     const agreementsMenu = findMenu(screenDefinition, ['sözleşme', 'agreement'], ['/agreements']);
     const hasSelection = Boolean(context?.selectedLabel || context?.selectedSummary || context?.selectedEntityId || context?.selectedEntityType || context?.id);
-    const workflowQuestion = isWorkflowTopic(context?.activeTopic) || isWorkflowDiagnosticQuestionType(questionType);
+    const guidedTaskMeta = context?.guidedTaskMeta || null;
+    const workflowQuestion = Boolean(guidedTaskMeta?.familyId) || isWorkflowTopic(context?.activeTopic) || isWorkflowDiagnosticQuestionType(questionType);
     const workflowAction = workflowQuestion ? workflowActionSpec({ activeTopic: context?.activeTopic, questionType }) : null;
     rows.push(currentScreenAction(screenDefinition, context, 'Aynı konuşmayı seçili vardiya ile ekranda sürdürür.'));
     if (Number(context?.openOfferCount || 0) > 0 || ['GO_TO', 'WHY_BLOCKED'].includes(questionType)) rows.push(menuAction(offersMenu, context, 'Teklif kararını kapatmak için ilgili listeyi açar.', { accent: 'primary' }));
@@ -2932,6 +2998,7 @@ function buildCopilotEBlockRuntimeAnswerGuide({ topicMeta, guideLevel, screenDef
 }
 
 function composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false, userRole = '', screenPath = '', contextPriority = null }) {
+  guide = guide || {};
   const hasScreenContext = !preferEntityContext && (entityType === 'screen' || Boolean(screenContext?.path || screenDefinition?.path));
   const analysis = hasScreenContext ? analyzeScreenState({ screenContext, screenDefinition, conversationState }) : null;
   const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: firstNonEmpty(contextPriority?.activeTopic, selectedDiagnosticTheme(message), '') });
@@ -2950,6 +3017,23 @@ function composeReply({ questionType, replyMode, guide, message, context, entity
       guide?.summary,
       'Bu ekran için kısa rehber.',
     ));
+  const guidedTaskReply = contextPriority?.guidedTaskMeta?.familyId
+    ? composeCopilotGuidedTaskEngineReply({
+      questionType,
+      message,
+      screenDefinition,
+      sourceScreenDefinition,
+      screenContext,
+      sourceScreenContext,
+      roleMode,
+      userRole,
+      screenPath,
+      conversationState,
+      contextPriority,
+      entityType,
+    })
+    : '';
+  if (guidedTaskReply) return toReply(guidedTaskReply);
   const selectedRecordDiagnosticReply = composeSelectedRecordDiagnosticReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, conversationState });
   if (selectedRecordDiagnosticReply) return toReply(selectedRecordDiagnosticReply);
   {
@@ -3298,6 +3382,7 @@ function composeGeneralProductGuideReply({
     analysis,
     entityType,
     context,
+    guidedTaskMeta: context?.guidedTaskMeta || null,
   });
   const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: resolvedContextPriority.activeTopic });
   const parentLiveNoVehicleReply = buildParentLiveNoVehicleReply({
@@ -3751,11 +3836,17 @@ function composeGeneralProductGuideReply({
 
 export function buildChatHelpResponse({ entityType, entityId, user, message, context, entityLabel, scope, conversationState, screenContext, screenDefinition, sourceEntityType, sourceEntityId, resolvedEntityType, resolvedEntityId }) {
   const roleMode = String(scope?.roleMode || 'OPERATIONS');
+  const userRole = String(user?.role || scope?.role || '').trim();
   const requestEntityType = String(sourceEntityType || entityType || 'screen');
   const requestEntityId = Number(sourceEntityId || entityId || 0);
   const rawMessage = extractUserQuestion(message);
+  const rawMessageNormalized = normalizeText(rawMessage);
+  const preserveSelectedRecordMissingDataIntent = requestEntityType === 'shift'
+    && String(screenContext?.path || screenDefinition?.path || '').includes('/room/shifts')
+    && /(bu\s+kayitta|secili\s+kayitta|ayni\s+kayitta|ayni\s+satirda|bu\s+satirda).*(ne eksik|eksigi ne|eksik ne var|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(rawMessageNormalized);
   const expandedMessage = expandFollowUpMessage(rawMessage, conversationState, screenContext);
-  const effectiveMessage = extractPrimaryConcern(expandedMessage);
+  // const effectiveMessage = extractPrimaryConcern(expandedMessage);
+  const effectiveMessage = preserveSelectedRecordMissingDataIntent ? rawMessage : extractPrimaryConcern(expandedMessage);
   const effectiveScreenDefinition = requestEntityType === 'screen'
     ? resolveReferencedScreenDefinition(user, screenContext, screenDefinition, firstNonEmpty(rawMessage, effectiveMessage))
     : screenDefinition;
@@ -3763,10 +3854,36 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const screenPath = effectiveScreenDefinition?.path || effectiveScreenContext?.path || '';
   const continuity = buildContinuityMeta({ message: rawMessage, conversationState, screenContext: effectiveScreenContext, requestEntityType, requestEntityId, screenPath });
   const continuityMeta = continuity;
-  const intentMeta = detectQuestionIntent(effectiveMessage, { entityType: requestEntityType, screenPath, roleMode, conversationState, originalMessage: rawMessage });
-  const questionType = intentMeta.questionType;
-  const replyMode = resolveReplyMode(effectiveMessage, questionType, roleMode);
-  const userRole = String(user?.role || scope?.role || '').trim();
+  const intentMeta = detectQuestionIntent(effectiveMessage, { entityType: requestEntityType, screenPath, sourceScreenPath: firstNonEmpty(screenContext?.path, ''), roleMode, userRole, conversationState, originalMessage: rawMessage });
+  let resolvedIntentMeta = intentMeta;
+  let guidedTaskMeta = resolvedIntentMeta.guidedTaskMeta || null;
+  let questionType = resolvedIntentMeta.questionType;
+  if (preserveSelectedRecordMissingDataIntent) {
+    resolvedIntentMeta = {
+      ...resolvedIntentMeta,
+      questionType: 'MISSING_DATA_HELP',
+      guidedTaskMeta: null,
+      matchedSignals: ['MISSING_DATA_HELP', 'selected-record-missing-data'],
+    };
+    guidedTaskMeta = null;
+    questionType = 'MISSING_DATA_HELP';
+  }
+  if (
+    screenPath === '/superadmin/commercial-core'
+    && /(csv|taslak|önizleme|onizleme).*(ne\s+işe\s+yarıyor|ne\s+işe\s+yariyor|ne\s+işe\s+yarar|ne\s+için|ne\s+icin|ne\s+demek)/.test(String(rawMessage || '').toLocaleLowerCase('tr-TR'))
+  ) {
+    resolvedIntentMeta = {
+      ...resolvedIntentMeta,
+      questionType: 'SCREEN_PURPOSE',
+      guidedTaskMeta: null,
+      matchedSignals: Array.isArray(resolvedIntentMeta.matchedSignals)
+        ? resolvedIntentMeta.matchedSignals.filter((signal) => signal !== 'ROUTE_PREP_EXCEL' && signal !== 'EXCEL_ROUTE_PREVIEW')
+        : resolvedIntentMeta.matchedSignals,
+    };
+    guidedTaskMeta = null;
+    questionType = 'SCREEN_PURPOSE';
+  }
+  const replyMode = resolveReplyMode(effectiveMessage, questionType, roleMode, guidedTaskMeta);
   const contextPriority = buildContextPriorityDecision({
     message: rawMessage,
     conversationState,
@@ -3781,6 +3898,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     analysis: null,
     entityType: requestEntityType,
     context,
+    guidedTaskMeta,
   });
 
   if (roleMode === 'SIMPLE' && String(screenPath || '') === '/driver/checkin' && questionType === 'TERM_HELP' && /check[- ]?in|doğrulama|dogrulama/i.test(String(effectiveMessage || ''))) {
@@ -3811,7 +3929,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       reply,
       replyMode,
       questionType,
-      questionLabel: questionTypeLabel(questionType, contextPriority?.activeTopic || questionType || ''),
+      questionLabel: questionTypeLabel(questionType, contextPriority?.activeTopic || questionType || '', contextPriority?.activeTopicLabel || ''),
       suggestedChips: ['Bu ekran ne için?', 'Şimdi ne yapmalıyım?', 'Bugün ekranına nasıl dönerim?'],
       quickActions,
       linkedGuides: [makeLinkedGuide('Check-in ekran rehberi', 'ROLE_HELP_GUIDE', 'Kısa ekran rehberini açar.')],
@@ -3844,6 +3962,18 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
         lastSelectedEntityId: Number(continuity?.currentEntityId || 0) || null,
         lastSelectedLabel: continuity?.anchorLabel || '',
         lastContinuityMeta: continuityMeta,
+        lastGuidedTaskIntent: guidedTaskMeta?.questionType || '',
+        lastGuidedTaskStepIndex: guidedTaskMeta?.progressCommand ? Number(conversationState?.lastGuidedTaskStepIndex || 0) + 1 : 0,
+        lastGuidedTaskStepNo: guidedTaskMeta?.progressCommand ? Number(conversationState?.lastGuidedTaskStepNo || 0) + 1 : 0,
+        lastGuidedTaskRole: userRole || roleMode || '',
+        lastGuidedTaskEntryScreenPath: screenPath || '',
+        lastGuidedTaskEntryScreenLabel: effectiveScreenDefinition?.label || effectiveScreenContext?.label || '',
+        lastGuidedTaskProgressCommand: guidedTaskMeta?.progressCommand || '',
+        lastGuidedTaskHumanApprovalRequiredAt: guidedTaskMeta?.replyMode === 'BLOCKED' ? new Date().toISOString() : null,
+        lastGuidedTaskFlowId: guidedTaskMeta?.familyId || '',
+        lastGuidedTaskQuestionType: guidedTaskMeta?.questionType || questionType || '',
+        lastGuidedTaskProgressRaw: guidedTaskMeta?.progressRaw || '',
+        lastGuidedTaskClarificationQuestion: guidedTaskMeta?.clarificationQuestion || '',
         recentMessages: Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages.slice(-8) : [],
       },
     };
@@ -3851,18 +3981,33 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const preferEntityContext = prefersSelectedEntity(questionType, requestEntityType, context);
   const answerEntityType = preferEntityContext ? String(resolvedEntityType || context?.type || entityType || requestEntityType) : requestEntityType;
   const answerEntityId = preferEntityContext ? Number(resolvedEntityId || context?.id || entityId || requestEntityId || 0) : requestEntityId;
-  const guideJobType = selectGuideJobType({ entityType: answerEntityType, questionType, message: effectiveMessage, screenPath });
+  const guideJobType = selectGuideJobType({ entityType: answerEntityType, questionType, message: effectiveMessage, screenPath, guidedTaskMeta });
   let guide;
   try {
-    guide = buildJobGuideResponse({
-      jobType: guideJobType,
-      guideLevel: replyMode,
-      context: answerEntityType === 'screen' ? effectiveScreenDefinition : context,
-      entityType: answerEntityType,
-      entityId: answerEntityId,
-      user,
-      screenContext: effectiveScreenContext,
-    });
+    guide = guidedTaskMeta?.familyId
+      ? buildCopilotGuidedTaskEngineGuide({
+        questionType,
+        message: effectiveMessage,
+        screenDefinition: effectiveScreenDefinition,
+        sourceScreenDefinition: screenDefinition,
+        screenContext: effectiveScreenContext,
+        sourceScreenContext: screenContext,
+        userRole,
+        roleMode,
+        screenPath,
+        conversationState,
+        activeTopic: questionType,
+        entityType: answerEntityType,
+      })
+      : buildJobGuideResponse({
+        jobType: guideJobType,
+        guideLevel: replyMode,
+        context: answerEntityType === 'screen' ? effectiveScreenDefinition : context,
+        entityType: answerEntityType,
+        entityId: answerEntityId,
+        user,
+        screenContext: effectiveScreenContext,
+      });
   } catch (err) {
     const helperTopicId = firstNonEmpty(questionType, contextPriority?.activeTopic, detectCopilotEBlockRuntimeAnswerTopic({ message: effectiveMessage, questionType, screenPath }));
     const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(helperTopicId);
@@ -3874,6 +4019,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       sourceScreenDefinition: screenDefinition,
     });
   }
+  guide = guide || {};
 
   const rawReply = composeReply({
     questionType,
@@ -3894,10 +4040,10 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     contextPriority,
   });
   const screenActions = roleMode === 'SIMPLE' ? [] : screenMenuActions(effectiveScreenDefinition);
-  const guideActions = Array.isArray(guide.quickActions) ? guide.quickActions : [];
+  const guideActions = Array.isArray(guide?.quickActions) ? guide.quickActions : [];
   const entityActions = entityActionPlan({
     entityType: answerEntityType,
-    context: { ...context, activeTopic: contextPriority?.activeTopic || '' },
+    context: { ...context, activeTopic: contextPriority?.activeTopic || '', guidedTaskMeta: contextPriority?.guidedTaskMeta || null },
     screenDefinition: effectiveScreenDefinition,
     roleMode,
     questionType,
@@ -4071,7 +4217,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const reply = polishReply({ reply: rawReply, questionType, screenDefinition: effectiveScreenDefinition, roleMode });
   const qualityHints = buildQualityHints({ reply, questionType, quickActions: finalQuickActions, intentConfidence: intentMeta?.confidence, roleMode });
   const uncertaintyMeta = buildUncertaintyMeta({ questionType, intentConfidence: intentMeta?.confidence, qualityHints, screenDefinition: effectiveScreenDefinition, quickActions: finalQuickActions, roleMode });
-  const questionLabel = questionTypeLabel(questionType, contextPriority?.activeTopic || questionType || '');
+  const questionLabel = questionTypeLabel(questionType, contextPriority?.activeTopic || questionType || '', contextPriority?.activeTopicLabel || '');
   const routePlan = buildRoutePlan({ questionType, quickActions: finalQuickActions, screenDefinition: effectiveScreenDefinition, continuity });
   const responseSections = buildResponseSections({
     questionType,
@@ -4123,6 +4269,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
             : baseContextSummary,
       ].filter(Boolean).join(' ').trim();
   const actionPlanLabel = actionPlanLabelForRoleMode(roleMode, answerEntityType);
+  const responseQuestionType = contextPriority?.activeTopic === 'MISSING_DATA' || preserveSelectedRecordMissingDataIntent
+    ? 'MISSING_DATA_HELP'
+    : questionType;
 
   return {
     ok: true,
@@ -4148,12 +4297,12 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
         contextPriority?.activeTopicLabel,
         reply,
       )
-      : firstNonEmpty(guide.plainSummary, guide.summary, reply),
+    : firstNonEmpty(guide.plainSummary, guide.summary, reply),
     contextSummary,
     reply,
     replyMode,
-    questionType,
-    questionLabel,
+    questionType: responseQuestionType,
+    questionLabel: questionTypeLabel(responseQuestionType, contextPriority?.activeTopic || responseQuestionType || '', contextPriority?.activeTopicLabel || ''),
     suggestedChips: visibleSuggestedChips,
     contextualSuggestedChips: visibleSuggestedChips,
     quickActions: finalQuickActions,
@@ -4178,7 +4327,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     bestNextAction: contextPriority?.bestNextAction || '',
     conversationState: {
       ...(conversationState && typeof conversationState === 'object' ? conversationState : {}),
-      lastQuestionType: questionType,
+      lastQuestionType: responseQuestionType,
       lastGuideJobType: guide?.jobType || null,
       lastEntityType: entityType,
       lastEntityId: Number(entityId),
@@ -4195,6 +4344,18 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       lastSelectedEntityId: Number(continuity?.currentEntityId || 0) || null,
       lastSelectedLabel: continuity?.anchorLabel || '',
       lastContinuityMeta: continuityMeta,
+      lastGuidedTaskIntent: guidedTaskMeta?.questionType || '',
+      lastGuidedTaskStepIndex: guidedTaskMeta?.progressCommand ? Number(conversationState?.lastGuidedTaskStepIndex || 0) + 1 : 0,
+      lastGuidedTaskStepNo: guidedTaskMeta?.progressCommand ? Number(conversationState?.lastGuidedTaskStepNo || 0) + 1 : 0,
+      lastGuidedTaskRole: userRole || roleMode || '',
+      lastGuidedTaskEntryScreenPath: screenPath || '',
+      lastGuidedTaskEntryScreenLabel: effectiveScreenDefinition?.label || effectiveScreenContext?.label || '',
+      lastGuidedTaskProgressCommand: guidedTaskMeta?.progressCommand || '',
+      lastGuidedTaskHumanApprovalRequiredAt: guidedTaskMeta?.replyMode === 'BLOCKED' ? new Date().toISOString() : (conversationState?.lastGuidedTaskHumanApprovalRequiredAt || null),
+      lastGuidedTaskFlowId: guidedTaskMeta?.familyId || '',
+      lastGuidedTaskQuestionType: guidedTaskMeta?.questionType || questionType || '',
+      lastGuidedTaskProgressRaw: guidedTaskMeta?.progressRaw || '',
+      lastGuidedTaskClarificationQuestion: guidedTaskMeta?.clarificationQuestion || '',
       recentMessages: Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages.slice(-8) : [],
     },
   };
@@ -4432,7 +4593,8 @@ function ensureActionLead(reply, questionType, screenDefinition, roleMode = 'OPE
 function buildQualityHints({ reply, questionType, quickActions, intentConfidence, roleMode }) {
   const text = normalizeReplySurface(reply);
   const actionReady = /(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk bakılacak yer\s|İlk kontrol:|İlk kontrol\s)/.test(text)
-    || String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY';
+    || String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
+    || String(questionType || '') === 'DETAIL_FLOW';
   const concise = text.length <= (roleMode === 'SIMPLE' ? 360 : 720);
   const hasSupportAction = (Array.isArray(quickActions) ? quickActions : []).some((row) => ['ASK', 'OPEN_ROUTE', 'OPEN_GUIDE'].includes(String(row?.actionKind || '')));
   return {
@@ -4490,7 +4652,7 @@ function buildUncertaintyMeta({ questionType, intentConfidence, qualityHints, sc
   };
 }
 
-function questionTypeLabel(questionType, activeTopic = '') {
+function questionTypeLabel(questionType, activeTopic = '', activeTopicLabel = '') {
   const labels = {
     NEXT_SCREEN: 'Nereye gitmeliyim',
     GO_TO: 'Hızlı geçiş',
@@ -4515,7 +4677,7 @@ function questionTypeLabel(questionType, activeTopic = '') {
     ROLE_HELP: 'Bu rolde ne yapabilirim',
   };
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(activeTopic || questionType || '');
-  return firstNonEmpty(labels[String(activeTopic || questionType || '')], helperTopicMeta?.label || labels[String(questionType || '')], 'Copilot yardımı');
+  return firstNonEmpty(activeTopicLabel, labels[String(activeTopic || questionType || '')], helperTopicMeta?.label || labels[String(questionType || '')], 'Copilot yardımı');
 }
 
 function buildRoutePlan({ questionType, quickActions, screenDefinition, continuity }) {

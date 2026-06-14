@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  12,
-    "currentWarningHotFileCount":  7,
+    "currentWarningHotFileCount":  8,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -188,6 +188,10 @@
                                                                                                              "class":  "safe-candidate-review",
                                                                                                              "note":  "copilot acceptance pack; kontrollu inceleme adayi"
                                                                                                          },
+                                                       "backend/src/ai/chat/intentRouter.js":  {
+                                                                                                    "class":  "safe-candidate-review",
+                                                                                                    "note":  "guided-task routing grew past warning threshold; kontrollu cleanup adayi"
+                                                                                                },
                                                        "backend/scripts/bench_gps_publish_only.js":  {
                                                                                                            "class":  "justified-exception",
                                                                                                            "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"

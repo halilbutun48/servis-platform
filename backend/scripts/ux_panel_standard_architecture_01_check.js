@@ -858,6 +858,12 @@ function main() {
     "web/src/panels/room/useRoomVehicleTelematics.js",
     "web/src/panels/superadmin/TelematicsHubPanel.jsx",
     "web/src/utils/offerQualityRanking.js",
+    "backend/src/ai/chat/copilotGuidedTaskEngine.js",
+    "backend/src/ai/chat/goldenQuestionPack.js",
+    "backend/src/ai/chat/qualityScorer.js",
+    "backend/scripts/copilot_guided_task_engine_01_check.js",
+    "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+    "web/src/utils/uiDataCache.js",
   ]);
   allWithin(
     status,

@@ -1,9 +1,11 @@
 import { filterWorkflowGenericChips, workflowTopicChipSet } from './answerQualityPolicy.js';
+import { detectCopilotGuidedTaskEngineIntent } from './copilotGuidedTaskEngine.js';
 import {
   detectCopilotEBlockRuntimeAnswerTopic,
   getCopilotEBlockRuntimeAnswerTopicMeta,
   listCopilotEBlockRuntimeAnswerTopics,
 } from './copilotEBlockRuntimeAnswerIntegration.js';
+import { uniqueStrings } from './replyShapes.js';
 
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
@@ -98,6 +100,58 @@ function hasBoardingChangeRequestEntrySignal(text) {
     'konum paylaşmadım',
     'konum paylasmadim',
   ]);
+}
+
+function isGenericStatusHelpQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  if (!/(?:\bne durumda\b|\bdurumu ne(?:\s+demek)?\b|\bdurum ne(?:\s+demek)?\b)/.test(value)) return false;
+  if (/(hangi olaydan|nereden geldi|kaynak|sorumlu kim|kimde|hangi rol|hangi kayıttan|bu bildirim|bildirim kaynağı)/.test(value)) return false;
+  return true;
+}
+
+function isExplicitNextScreenQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return /(hangi\s+ekran|hangi\s+menü|hangi\s+menu|nereye\s+geçeyim|nereye\s+geceyim|nereye\s+gitmeliyim|sonraki\s+ekran|sonra\s+nereye|hangi\s+yere\s+geçeyim|hangi\s+yere\s+geceyim|hangi\s+ekranda\s+devam|en\s+doğru\s+ekran|en\s+dogru\s+ekran|mobilde\s+bu\s+iş\s+nereden\s+yapılır|mobilde\s+bu\s+is\s+nereden\s+yapilir)/.test(value);
+}
+
+function isExplicitBadgeHelpQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return /(bu\s+rozet\s+ne\s+demek|bu\s+badge\s+ne\s+demek|durum\s+rozeti\s+ne\s+demek|bu\s+etiket\s+ne\s+demek)/.test(value);
+}
+
+function isExplicitSafeNextStepQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return /(en\s+risksiz\s+sonraki\s+adım|en\s+risksiz\s+sonraki\s+adim|en\s+güvenli\s+sonraki\s+adım|en\s+guvenli\s+sonraki\s+adim|en\s+güvenli\s+ne\s+yapayım|en\s+guvenli\s+ne\s+yapayim)/.test(value);
+}
+
+function isExplicitNextStepQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return matchesStandalonePhrase(value, [
+    'sıradaki doğru işlem ne',
+    'siradaki dogru islem ne',
+    'sıradaki işlem ne',
+    'siradaki islem ne',
+    'sonraki adım ne',
+    'sonraki adim ne',
+    'şimdi ne yapayım',
+    'simdi ne yapayim',
+    'ne yapayım',
+    'ne yapayim',
+  ]);
+}
+
+function isShiftReadinessQuestion(text, screenPath = '', entityType = '') {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  if (!/(hazır\s*m[ıi]|hazir\s*m[ıi]|hazırlık|hazirlik|atamaya\s+hazır\s*m[ıi]|atamaya\s+hazir\s*m[ıi]|ilerlemeye\s+hazır\s*m[ıi]|ilerlemeye\s+hazir\s*m[ıi]|bu\s+kayıt\s+hazır\s*m[ıi]|bu\s+kayit\s+hazir\s*m[ıi])/.test(value)) return false;
+  if (pathHas(screenPath, ['/room/shifts'])) return true;
+  if (pathHas(screenPath, ['/company/shifts', '/organization/shifts']) && String(entityType || '').toLowerCase() === 'shift') return true;
+  return false;
 }
 
 function pathHas(path, parts) {
@@ -264,18 +318,288 @@ function normalizeIntentArgs(entityTypeOrOptions = 'screen', screenPath = '') {
     return {
       entityType: String(entityTypeOrOptions.entityType || 'screen'),
       screenPath: String(entityTypeOrOptions.screenPath || ''),
+      sourceScreenPath: String(entityTypeOrOptions.sourceScreenPath || ''),
       roleMode: String(entityTypeOrOptions.roleMode || 'OPERATIONS'),
+      userRole: String(entityTypeOrOptions.userRole || entityTypeOrOptions.role || ''),
       conversationState: entityTypeOrOptions.conversationState || null,
       originalMessage: String(entityTypeOrOptions.originalMessage || ''),
     };
   }
-  return { entityType: String(entityTypeOrOptions || 'screen'), screenPath: String(screenPath || ''), roleMode: 'OPERATIONS', conversationState: null, originalMessage: '' };
+  return { entityType: String(entityTypeOrOptions || 'screen'), screenPath: String(screenPath || ''), sourceScreenPath: '', roleMode: 'OPERATIONS', userRole: '', conversationState: null, originalMessage: '' };
 }
 
 export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', screenPath = '') {
   const text = normalizeText(message);
   const options = normalizeIntentArgs(entityTypeOrOptions, screenPath);
   if (!text) return { questionType: 'OPEN', confidence: 0.42, matchedSignals: [], preferRoute: false, routeRequest: false };
+
+  if (
+    pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements'])
+    && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|uygulanan rota|rota geçmişi|rota gecmisi|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(text)
+  ) {
+    return {
+      questionType: 'AGREEMENT_ROUTE_REFRESH',
+      confidence: 0.92,
+      matchedSignals: ['AGREEMENT_ROUTE_REFRESH', 'agreement-route-refresh-path'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements'])
+    && /(hangi\s+vardiyadan\s+geldi|source\s+lineage|kaynak\s+zinciri|seferpakt\s+kaynaklı|seferpakt\s+kaynakli|mevcut\s+sözleşmeden\s+pay|mevcut\s+sozlesmeden\s+pay|pay\s+alacak\s+mi|pay\s+alacak\s+mı|pay\s+alinır\s+mi|pay\s+alınır\s+mi|pay\s+doğmaz|pay\s+dogmaz)/.test(text)
+  ) {
+    return {
+      questionType: 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW',
+      confidence: 0.88,
+      matchedSignals: ['MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'marketplace-source-lineage'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements'])
+    && /(puan|sefer\s*puan[ıi]|kalite\s*puan[ıi]|tedarikç[iı]\s*puan[ıi]|sağlayıc[ıi]\s*puan[ıi]).*(ödeme|odeme|teklif).*(sıralama|siralam|etkili|etkiliyor|etkisi)/.test(text)
+  ) {
+    return {
+      questionType: 'SEFER_SCORE_PREVIEW',
+      confidence: 0.88,
+      matchedSignals: ['SEFER_SCORE_PREVIEW', 'sefer-score-boundary'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements'])
+    && (
+      /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya|shift).*(üretildi|uretildi|oluştu|olustu)/.test(text)
+      || /(bugün|bugun).*(vardiya|shift).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme|contract)/.test(text)
+      || (pathHas(options.screenPath, ['/room/agreements']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya|shift).*(üretildi|uretildi|oluştu|olustu)/.test(text))
+      || (/(sözleşme|sozlesme|contract)/.test(text) && /(vardiya|shift)/.test(text))
+    )
+  ) {
+    return {
+      questionType: pathHas(options.screenPath, ['/room/agreements']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya|shift).*(üretildi|uretildi|oluştu|olustu)/.test(text)
+        ? 'READINESS_CHECK'
+        : 'CONTRACT_TO_SHIFT',
+      confidence: 0.94,
+      matchedSignals: [pathHas(options.screenPath, ['/room/agreements']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya|shift).*(üretildi|uretildi|oluştu|olustu)/.test(text) ? 'READINESS_CHECK' : 'CONTRACT_TO_SHIFT', 'contract-shift-agreements-path'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/superadmin/operations', '/superadmin/pilot-launch-gate', '/company/operations', '/school/operations', '/organization/operations'])
+    && matchesStandalonePhrase(text, ['ne yapayım', 'ne yapayim', 'şimdi ne yapayım', 'simdi ne yapayim'])
+    && !/(yapt[ıi]m\s+de|gerc(?:e)?kten\s+yapma|fake\s+success|sahte\s+basari|olmu[şs]\s+gibi|başarm[ıi]ş\s+gibi|basarm[ıi]s\s+gibi|uydur|rot[aı]y[ıi]\s+uygula|bunu\s+sisteme\s+uygula|bu\s+excel)/.test(text)
+  ) {
+    return {
+      questionType: 'NEXT_STEP',
+      confidence: 0.9,
+      matchedSignals: ['NEXT_STEP', 'operations-next-step-path'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/personel/live', '/personel/my', '/parent/live'])
+    && /(servis|servisim|öğrencimin servisi|ogrencimin servisi|çocuğumun servisi|cocugumun servisi|konum|gps|harita).*(görünmüyor|gorunmuyor|nerede|yok|ne zaman|geliyor)/.test(text)
+  ) {
+    return {
+      questionType: 'LOCATION_HELP',
+      confidence: 0.96,
+      matchedSignals: ['LOCATION_HELP', 'live-service-visibility-path'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/room/shifts'])
+    && /(vardiya|shift|görev|gorev|rota|durak).*(başlayamıyor|baslayamiyor|başlamıyor|baslamiyor|başlatamıyor|baslatamiyor|görünmüyor|gorunmuyor|bekliyor|takıldı|takildi|eksik|kapalı|kapali|neden|niye)/.test(text)
+  ) {
+    return {
+      questionType: 'WHY_BLOCKED',
+      confidence: 0.9,
+      matchedSignals: ['WHY_BLOCKED', 'room-shifts-blocked-surface'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/company/shifts', '/organization/shifts', '/driver/today', '/driver/route', '/driver/map'])
+    && /(vardiya|shift|görev|gorev|rota|durak).*(başlayamıyor|baslayamiyor|başlamıyor|baslamiyor|başlatamıyor|baslatamiyor|görünmüyor|gorunmuyor|bekliyor|takıldı|takildi|eksik|kapalı|kapali|neden|niye)/.test(text)
+  ) {
+    return {
+      questionType: 'SHIFT_BLOCKED',
+      confidence: 0.95,
+      matchedSignals: ['SHIFT_BLOCKED', 'shift-blocked-surface'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (isExplicitNextScreenQuestion(text)) {
+    return {
+      questionType: 'NEXT_SCREEN',
+      confidence: 0.96,
+      matchedSignals: ['NEXT_SCREEN', 'explicit-next-screen'],
+      preferRoute: true,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    hasImperativeNavigation(text)
+    && mentionsScreenWord(text)
+    && !/(istiyorum|isterim|istiyor|iste[ıi]yorum|yapmak istiyorum|yapmak istiorum|planlamak istiyorum|oluşturmak istiyorum|olusturmak istiyorum|açmak istiyorum|acmak istiyorum|başlatmak istiyorum|baslatmak istiyorum|kurmak istiyorum|hazırlamak istiyorum|hazirlamak istiyorum|adım adım|adim adim|nasıl yaparım|nasil yaparim)/.test(text)
+  ) {
+    return {
+      questionType: 'GO_TO',
+      confidence: 0.94,
+      matchedSignals: ['GO_TO', 'imperative-go-to'],
+      preferRoute: true,
+      routeRequest: true,
+    };
+  }
+
+  if (isShiftReadinessQuestion(text, options.screenPath, options.entityType)) {
+    return {
+      questionType: pathHas(options.screenPath, ['/room/shifts']) ? 'CONTRACT_TO_SHIFT' : 'READINESS_CHECK',
+      confidence: pathHas(options.screenPath, ['/room/shifts']) ? 0.88 : 0.84,
+      matchedSignals: [pathHas(options.screenPath, ['/room/shifts']) ? 'CONTRACT_TO_SHIFT' : 'READINESS_CHECK', 'explicit-shift-readiness'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (isExplicitSafeNextStepQuestion(text)) {
+    return {
+      questionType: 'SAFE_NEXT_STEP',
+      confidence: 0.92,
+      matchedSignals: ['SAFE_NEXT_STEP', 'explicit-safe-next-step'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  const shiftSurfacePath = String(options.sourceScreenPath || options.screenPath || '');
+  if (isExplicitNextStepQuestion(text) && !pathHas(shiftSurfacePath, ['/company/shifts', '/room/shifts', '/organization/shifts', '/superadmin/operations'])) {
+    return {
+      questionType: 'NEXT_STEP',
+      confidence: 0.92,
+      matchedSignals: ['NEXT_STEP', 'explicit-next-step'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (isExplicitBadgeHelpQuestion(text)) {
+    return {
+      questionType: 'BADGE_HELP',
+      confidence: 0.9,
+      matchedSignals: ['BADGE_HELP', 'explicit-badge-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (String(options.roleMode || '').toUpperCase() === 'SIMPLE' && /^(şimdi\s+ne\s+yapayım|simdi\s+ne\s+yapayim|ne\s+yapayım|ne\s+yapayim)\??$/i.test(text)) {
+    return {
+      questionType: 'NEXT_STEP',
+      confidence: 0.96,
+      matchedSignals: ['NEXT_STEP', 'simple-next-step'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (isGenericStatusHelpQuestion(text)) {
+    return {
+      questionType: 'STATUS_HELP',
+      confidence: 0.88,
+      matchedSignals: ['STATUS_HELP', 'generic-status-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (pathHas(options.screenPath, ['/superadmin/commercial-core', '/commercial-core']) && /(csv|taslak|önizleme|onizleme).*(ne\s+işe\s+yarıyor|ne\s+işe\s+yariyor|ne\s+işe\s+yariyor|ne\s+işe\s+yarar|ne\s+için|ne\s+icin|ne\s+demek)/.test(text)) {
+    return {
+      questionType: 'SCREEN_PURPOSE',
+      confidence: 0.82,
+      matchedSignals: ['SCREEN_PURPOSE', 'commercial-core-preview-purpose'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/trust-quality'])
+    && /(servis|hizmet)\s+kanıt(?:ı|i).*?(ne\s+işe\s+yarar|ne\s+işe\s+yariyor|ne\s+işe\s+yarıyor|ne\s+demek|ne\s+icin|ne\s+için)|kanıt(?:ı|i)\s+ne\s+işe\s+yarar|kanit(?:i|i)\s+ne\s+ise\s+yarar|kanıt(?:ı|i)\s+ne\s+demek/.test(text)
+  ) {
+    return {
+      questionType: 'SCREEN_PURPOSE',
+      confidence: 0.86,
+      matchedSignals: ['SCREEN_PURPOSE', 'trust-quality-purpose'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/organization/shifts'])
+    && /(organizasyon\s+plan|organization\s+plan).*(kaynak\s+kanıt|kaynak\s+kanit|sayılır\s+mi|sayilir\s+mi|tek\s+başına|tek\s+basina)|kaynak\s+kanıtı\s+sayılır\s+mi|kaynak\s+kaniti\s+sayilir\s+mi/.test(text)
+  ) {
+    return {
+      questionType: 'PAYMENT_READINESS',
+      confidence: 0.84,
+      matchedSignals: ['PAYMENT_READINESS', 'organization-plan-source-lineage'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    pathHas(options.screenPath, ['/organization/shifts'])
+    && /(sözleşme|sozlesme).*(vardiya|shift).*(ilişki|iliski|bağlantı|baglanti)/.test(text)
+  ) {
+    return {
+      questionType: 'SCREEN_PURPOSE',
+      confidence: 0.86,
+      matchedSignals: ['SCREEN_PURPOSE', 'organization-shift-contract-purpose'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  const guidedTaskMeta = detectCopilotGuidedTaskEngineIntent({
+    message,
+    originalMessage: options.originalMessage,
+    screenPath: options.screenPath,
+    sourceScreenPath: options.sourceScreenPath,
+    roleMode: options.roleMode,
+    userRole: options.userRole,
+    conversationState: options.conversationState,
+    entityType: options.entityType,
+    questionType: '',
+  });
+  if (guidedTaskMeta) {
+    return {
+      questionType: guidedTaskMeta.questionType || 'OPEN',
+      confidence: Number(guidedTaskMeta.confidence || 0.96),
+      matchedSignals: Array.isArray(guidedTaskMeta.matchedSignals) ? [...guidedTaskMeta.matchedSignals] : [guidedTaskMeta.familyId || guidedTaskMeta.questionType || 'guided-task'],
+      preferRoute: Boolean(guidedTaskMeta.preferRoute),
+      routeRequest: Boolean(guidedTaskMeta.routeRequest),
+      guidedTaskMeta,
+    };
+  }
   const helperTopic = detectCopilotEBlockRuntimeAnswerTopic({
     message: [message, options.originalMessage].filter(Boolean).join(' '),
     screenPath: options.screenPath,
@@ -455,8 +779,9 @@ export function detectQuestionType(message, entityTypeOrOptions = 'screen', scre
   return detectQuestionIntent(message, entityTypeOrOptions, screenPath).questionType;
 }
 
-export function resolveReplyMode(message, questionType, roleMode = 'OPERATIONS') {
+export function resolveReplyMode(message, questionType, roleMode = 'OPERATIONS', guidedTaskMeta = null) {
   const text = normalizeText(message);
+  if (guidedTaskMeta?.guideLevel) return guidedTaskMeta.guideLevel;
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(String(questionType || detectCopilotEBlockRuntimeAnswerTopic({ message }) || ''));
   if (helperTopicMeta?.guideLevel) return helperTopicMeta.guideLevel;
   if (questionType === 'DETAIL_FLOW' || hasAny(text, ['adım adım', 'adim adim', 'madde madde', 'tek tek'])) return 'STEP_BY_STEP';
@@ -465,8 +790,9 @@ export function resolveReplyMode(message, questionType, roleMode = 'OPERATIONS')
   return 'SHORT';
 }
 
-export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN', message = '', screenPath = '' }) {
+export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN', message = '', screenPath = '', guidedTaskMeta = null }) {
   const text = normalizeText(message);
+  if (guidedTaskMeta?.jobType) return guidedTaskMeta.jobType;
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(String(questionType || detectCopilotEBlockRuntimeAnswerTopic({ message, screenPath }) || ''));
   if (helperTopicMeta?.jobType) return helperTopicMeta.jobType;
   if (String(questionType || '') === 'BOARDING_CHANGE_APPLICATION' || hasAny(text, ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlenebilir', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'sürücü rota ekranında görünür', 'surucu rota ekraninda gorunur', 'rota güncellemesi bekliyor', 'rota guncellemesi bekliyor', 'günlük değişiklik rotada görünüyor', 'gunluk degisiklik rotada gorunuyor', 'sürücüye gönderildi mi', 'surucuye gonderildi mi', 'driver route refresh', 'mobile route update', 'rotasına yansıdı mı', 'rotasina yansidi mi', 'stopassignment'])) return 'ASSIGNMENT_READINESS_GUIDE';
@@ -672,8 +998,17 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
   return Array.from(new Set(chips.concat(['Bu rolde ne yapabilirim?']))).slice(0, 6);
 }
 
-export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPEN', roleMode = 'OPERATIONS', screenPath = '', context = null }) {
+export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPEN', roleMode = 'OPERATIONS', screenPath = '', context = null, guidedTaskMeta = null }) {
   const base = [];
+  if (guidedTaskMeta?.chips?.length) {
+    return [...guidedTaskMeta.chips];
+  }
+  if (guidedTaskMeta?.clarificationQuestion) {
+    return uniqueStrings([
+      guidedTaskMeta.clarificationQuestion,
+      ...(guidedTaskMeta.progressCommand ? ['Devam et'] : []),
+    ]);
+  }
   const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   const boardingApplicationContext = Boolean(

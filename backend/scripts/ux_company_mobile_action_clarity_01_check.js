@@ -571,6 +571,12 @@ function main() {
     "backend/src/ai/chat/answerQualityPolicy.js",
     "backend/src/ai/chat/helpComposer.js",
     "backend/src/ai/chat/intentRouter.js",
+    "backend/src/ai/chat/copilotGuidedTaskEngine.js",
+    "backend/src/ai/chat/goldenQuestionPack.js",
+    "backend/src/ai/chat/qualityScorer.js",
+    "backend/scripts/copilot_guided_task_engine_01_check.js",
+    "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+    "web/src/utils/uiDataCache.js",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");

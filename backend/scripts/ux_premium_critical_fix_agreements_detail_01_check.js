@@ -525,6 +525,12 @@ function main() {
     "web/src/utils/offerQualityRanking.js",
     "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
     "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
+    "backend/src/ai/chat/copilotGuidedTaskEngine.js",
+    "backend/src/ai/chat/goldenQuestionPack.js",
+    "backend/src/ai/chat/qualityScorer.js",
+    "backend/scripts/copilot_guided_task_engine_01_check.js",
+    "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+    "web/src/utils/uiDataCache.js",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within agreements detail scope");
 

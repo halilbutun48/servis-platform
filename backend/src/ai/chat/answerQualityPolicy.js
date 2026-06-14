@@ -70,7 +70,14 @@ export function hasExplicitRoleBoundarySignal({ questionType, activeTopic, messa
   return /(yetki|erişim|erisim|izin|rol|kvkk|göremez|goremeyebilir|görünmeyebilir|gorunmeyebilir|görünmüyor|gorunmuyor|403|401|permission denied|erişim kapalı|erisim kapali)/.test(text);
 }
 
-export function workflowTopicChipSet({ activeTopic = '', questionType = '', screenPath = '' } = {}) {
+export function workflowTopicChipSet({ activeTopic = '', questionType = '', screenPath = '', guidedTaskMeta = null } = {}) {
+  if (guidedTaskMeta?.chips?.length) return [...guidedTaskMeta.chips];
+  if (guidedTaskMeta?.clarificationQuestion) {
+    return uniqueStrings([
+      guidedTaskMeta.clarificationQuestion,
+      ...(guidedTaskMeta.progressCommand ? ['Devam et'] : []),
+    ]);
+  }
   const topic = String(activeTopic || questionType || '');
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(topic || detectCopilotEBlockRuntimeAnswerTopic({ questionType, screenPath }));
   if (helperTopicMeta?.chips?.length) return [...helperTopicMeta.chips];
@@ -301,7 +308,18 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   }
 }
 
-export function workflowActionSpec({ activeTopic = '', questionType = '' } = {}) {
+export function workflowActionSpec({ activeTopic = '', questionType = '', guidedTaskMeta = null } = {}) {
+  if (guidedTaskMeta?.jobType) {
+    return {
+      guideLabel: guidedTaskMeta.clarificationQuestion ? guidedTaskMeta.clarificationQuestion : guidedTaskMeta.label,
+      jobType: guidedTaskMeta.jobType,
+      guideLevel: guidedTaskMeta.guideLevel,
+      reason: guidedTaskMeta.safeBoundary || guidedTaskMeta.riskNote || guidedTaskMeta.advice || '',
+      askLabel: guidedTaskMeta.clarificationQuestion ? 'Netleştir' : (guidedTaskMeta.chips?.[0] || 'İlgili adımı sor'),
+      askQuery: guidedTaskMeta.clarificationQuestion || guidedTaskMeta.chips?.[0] || '',
+      askReason: guidedTaskMeta.clarificationQuestion ? 'Kısa netleştirme sorusu sorar.' : 'Bir sonraki güvenli adımı sorar.',
+    };
+  }
   const topic = String(activeTopic || questionType || '');
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(topic || detectCopilotEBlockRuntimeAnswerTopic({ questionType }));
   if (helperTopicMeta) {

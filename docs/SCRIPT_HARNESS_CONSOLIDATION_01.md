@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-13
+Tarih: 2026-06-14
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `370`
-- Toplam executable tracked file: `1158`
-- Combined registry row: `1528`
-- Root/backend/web/mobile package dağılımı: root `212`, backend `719`, web `90`, mobile `201`
+- Toplam package script entry: `371`
+- Toplam executable tracked file: `1160`
+- Combined registry row: `1531`
+- Root/backend/web/mobile package dağılımı: root `214`, backend `723`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -152,6 +152,11 @@ Repo: `servis-platform`
 - Copilot E-block runtime answer integration docs: `docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md`
 - Copilot E-block runtime answer integration command: `node backend\scripts\copilot_e_block_runtime_answer_integration_01_check.js`
 - Copilot E-block runtime answer integration helper: `backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js`
+- Copilot guided task engine milestone: `COPILOT-GUIDED-TASK-ENGINE-01`
+- Copilot guided task engine check: `check:copilotguidedtaskengine01`
+- Copilot guided task engine docs: `docs/COPILOT_GUIDED_TASK_ENGINE_01.md`
+- Copilot guided task engine command: `node backend\scripts\copilot_guided_task_engine_01_check.js`
+- Copilot guided task engine helper: `backend/src/ai/chat/copilotGuidedTaskEngine.js`
 - Address geocoding confidence milestone: `ADDRESS-GEOCODING-CONFIDENCE-01`
 - Address geocoding confidence check: `check:addressgeocodingconfidence01`
 - Address geocoding confidence docs: `docs/ADDRESS_GEOCODING_CONFIDENCE_01.md`
@@ -161,7 +166,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `168`
+- ACTIVE_CORE: `170`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -177,11 +182,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `551`
+- NEEDS_REVIEW: `555`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `301`
+- Eski sistem term eşleşmesi: `304`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -191,14 +196,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 168 |
+| ACTIVE_CORE | 170 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 551 |
+| NEEDS_REVIEW | 555 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -269,6 +274,8 @@ Repo: `servis-platform`
 | root:check:osrmroutedraftfromexcel01 | package.json | root | node backend/scripts/osrm_route_draft_from_excel_01_check.js | verify-core | ACTIVE_CORE |  | OSRM-ROUTE-DRAFT-FROM-EXCEL-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotroutereviewhumanapproval01 | package.json | root | node backend/scripts/copilot_route_review_human_approval_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01 |  | Breaks canonical verification chain |  |
 | root:check:exceltoroutereadinessredteam01 | package.json | root | node backend/scripts/excel_to_route_readiness_redteam_01_check.js | verify-core | ACTIVE_CORE |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01 |  | Breaks canonical verification chain |  |
+| root:check:copiloteblockruntimeanswerintegration01 | package.json | root | node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotguidedtaskengine01 | package.json | root | node backend/scripts/copilot_guided_task_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-GUIDED-TASK-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -558,6 +565,7 @@ Repo: `servis-platform`
 | cop_live_accept_01_check.js | backend/scripts/cop_live_accept_01_check.js | backend | root:check:copliveaccept01 | product | ACTIVE |  | COP-LIVE-ACCEPT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | copilot_ai_action_roadmap_01_check.js | backend/scripts/copilot_ai_action_roadmap_01_check.js | backend | root:check:copilotairoadmap01 | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
 | copilot_demand_to_agreement_roadmap_01_check.js | backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js | backend | root:check:copilotdemandagreement01 | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
+| copilot_e_block_runtime_answer_integration_01_check.js | backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js | backend | root:check:copiloteblockruntimeanswerintegration01 | review | NEEDS_REVIEW |  | COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01-CHECK |  | Owner or chain unclear |  |
 | copilot_excel_demand_import_01_check.js | backend/scripts/copilot_excel_demand_import_01_check.js | backend | root:check:copilotexceldemandimport01 | review | NEEDS_REVIEW |  | COPILOT-EXCEL-DEMAND-IMPORT-01-CHECK |  | Owner or chain unclear |  |
 | copilot_human_approval_01_check.js | backend/scripts/copilot_human_approval_01_check.js | backend | root:check:copilothumanapproval01 | review | NEEDS_REVIEW |  | COPILOT-HUMAN-APPROVAL-01-CHECK |  | Owner or chain unclear |  |
 | copilot_role_task_matrix_01_check.js | backend/scripts/copilot_role_task_matrix_01_check.js | backend | root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX-01-CHECK |  | Owner or chain unclear |  |
@@ -572,6 +580,7 @@ Repo: `servis-platform`
 | eta_osrm_01_route_eta_service_check.js | backend/scripts/eta_osrm_01_route_eta_service_check.js | backend | root:check:etaosrm01 | review | NEEDS_REVIEW |  | ETA-OSRM-01-ROUTE-ETA-SERVICE-CHECK |  | Owner or chain unclear |  |
 | eta_osrm_02_api_eta_bridge_check.js | backend/scripts/eta_osrm_02_api_eta_bridge_check.js | backend | root:check:etaosrm02 | review | NEEDS_REVIEW |  | ETA-OSRM-02-API-ETA-BRIDGE-CHECK |  | Owner or chain unclear |  |
 | eta_sanity_01_live_tracking_check.js | backend/scripts/eta_sanity_01_live_tracking_check.js | backend | root:check:etasanity01 | review | NEEDS_REVIEW |  | ETA-SANITY-01-LIVE-TRACKING-CHECK |  | Owner or chain unclear |  |
+| excel_to_route_readiness_redteam_01_check.js | backend/scripts/excel_to_route_readiness_redteam_01_check.js | backend | root:check:exceltoroutereadinessredteam01 | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01-CHECK |  | Owner or chain unclear |  |
 | field_launch_pack_01_readiness_check.js | backend/scripts/field_launch_pack_01_readiness_check.js | backend | root:check:fieldlaunch01 | review | NEEDS_REVIEW |  | FIELD-LAUNCH-PACK-01-READINESS-CHECK |  | Owner or chain unclear |  |
 | final_ux_smoke_01_check.js | backend/scripts/final_ux_smoke_01_check.js | backend | root:check:finaluxsmoke01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | fullcheck.js | backend/scripts/fullcheck.js | backend | backend:fullcheck | review | NEEDS_REVIEW |  | FULLCHECK |  | Owner or chain unclear |  |
@@ -912,12 +921,14 @@ Repo: `servis-platform`
 | contextResolver.js | backend/src/ai/chat/contextResolver.js | backend |  | review | NEEDS_REVIEW |  | CONTEXT-RESOLVER |  | Owner or chain unclear |  |
 | copilotAiActionRoadmap.js | backend/src/ai/chat/copilotAiActionRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP |  | Owner or chain unclear |  |
 | copilotDemandToAgreementRoadmap.js | backend/src/ai/chat/copilotDemandToAgreementRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP |  | Owner or chain unclear |  |
+| copilotEBlockRuntimeAnswerIntegration.js | backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-EBLOCK-RUNTIME-ANSWER-INTEGRATION |  | Owner or chain unclear |  |
 | copilotExcelDemandImportPolicy.js | backend/src/ai/chat/copilotExcelDemandImportPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-EXCEL-DEMAND-IMPORT-POLICY |  | Owner or chain unclear |  |
 | copilotHumanApprovalPolicy.js | backend/src/ai/chat/copilotHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
 | copilotRoleTaskMatrix.js | backend/src/ai/chat/copilotRoleTaskMatrix.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX |  | Owner or chain unclear |  |
 | copilotRouteReviewHumanApprovalPolicy.js | backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
 | copilotStopRouteDraftPolicy.js | backend/src/ai/chat/copilotStopRouteDraftPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-POLICY |  | Owner or chain unclear |  |
 | etaSanity.js | backend/src/ai/chat/etaSanity.js | backend |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
+| excelToRouteReadinessRedteamPack.js | backend/src/ai/chat/excelToRouteReadinessRedteamPack.js | backend |  | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-PACK |  | Owner or chain unclear |  |
 | goldenQuestionPack.js | backend/src/ai/chat/goldenQuestionPack.js | backend |  | review | NEEDS_REVIEW |  | GOLDEN-QUESTION-PACK |  | Owner or chain unclear |  |
 | helpComposer.js | backend/src/ai/chat/helpComposer.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER |  | Owner or chain unclear |  |
 | helpComposerEntityRuntime.js | backend/src/ai/chat/helpComposerEntityRuntime.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-ENTITY-RUNTIME |  | Owner or chain unclear |  |
@@ -1059,7 +1070,7 @@ Repo: `servis-platform`
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotdemandagreement01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend |  | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
@@ -1149,8 +1160,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| excel_to_route_readiness_redteam_01_check.js | backend/scripts/excel_to_route_readiness_redteam_01_check.js | backend | root:check:exceltoroutereadinessredteam01 | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01-CHECK |  | Owner or chain unclear |  |
-| excelToRouteReadinessRedteamPack.js | backend/src/ai/chat/excelToRouteReadinessRedteamPack.js | backend |  | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-PACK |  | Owner or chain unclear |  |
+| copilot_guided_task_engine_01_check.js | backend/scripts/copilot_guided_task_engine_01_check.js | backend | root:check:copilotguidedtaskengine01 | review | NEEDS_REVIEW |  | COPILOT-GUIDED-TASK-ENGINE-01-CHECK |  | Owner or chain unclear |  |
+| copilotGuidedTaskEngine.js | backend/src/ai/chat/copilotGuidedTaskEngine.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-GUIDED-TASK-ENGINE |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1241,7 +1252,7 @@ Repo: `servis-platform`
 | statusBadge.js | web/src/utils/statusBadge.js | web |  | review | NEEDS_REVIEW |  | STATUS-BADGE |  | Owner or chain unclear |  |
 | statusPalette.js | web/src/utils/statusPalette.js | web |  | review | NEEDS_REVIEW |  | STATUS-PALETTE |  | Owner or chain unclear |  |
 | stepUp.js | web/src/utils/stepUp.js | web | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | STEP-UP |  | Owner or chain unclear |  |
-| time.js | web/src/utils/time.js | web | mobile:check:m81.2, mobile:check:m95e18, root:check:m95export01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | TIME |  | Owner or chain unclear |  |
+| time.js | web/src/utils/time.js | web | mobile:check:m81.2, mobile:check:m95e18, root:check:copiloteblockruntimeanswerintegration01, root:check:m95export01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | TIME |  | Owner or chain unclear |  |
 | uiDataCache.js | web/src/utils/uiDataCache.js | web |  | review | NEEDS_REVIEW |  | UI-DATA-CACHE |  | Owner or chain unclear |  |
 | uiStatus.js | web/src/utils/uiStatus.js | web |  | review | NEEDS_REVIEW |  | UI-STATUS |  | Owner or chain unclear |  |
 | vite.config.js | web/vite.config.js | web |  | review | NEEDS_REVIEW |  | VITE-CONFIG |  | Owner or chain unclear |  |
@@ -1794,7 +1805,7 @@ Repo: `servis-platform`
 | Dynamic Savings / Readonly Preview | Company/room agreements and commercial flow | backend/src/services/boardingRouteImpactPreview.js; backend/src/services/agreementRouteChangePreview.js; route preview helpers | web/src/panels/shared/DynamicSavingsPreviewCard.jsx; web/src/panels/company/AgreementsPanel.jsx; web/src/panels/room/AgreementsPanel.jsx; web/src/panels/company/companyAgreementsRouteRefreshPendingSection.jsx; web/src/panels/room/roomAgreementsPanelSections.jsx | check:dynamicsavings01; check:routechangefinal01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:copliveaccept01 | static | COVERED_ACTIVE | None on the current static/product chain. Preview-only by design. | DYNAMIC-SAVINGS-01 | None |
 | Commercial / Payment Preview | Company/room commercial panels | backend/src/scripts/pay_*.js; backend/src/scripts/op_04*.js; payment readiness helpers | web/src/panels/company/CommercialFlowPanel.jsx; web/src/panels/room/CommercialFlowPanel.jsx; web/src/panels/superadmin/CommercialCorePanel.jsx | check:pay01a; check:pay01b; check:pay01c; check:pay01d; check:pay01e; check:paysafe01; check:op04; check:qlt01; check:qlt02; check:qlt03; check:qlt04 | static + release-only | COVERED_ACTIVE | Execute/write actions remain deliberately forbidden. | PAY / QLT / OP | None |
 | Quality / Evidence | Company/superadmin quality views | backend/src/scripts/qlt_*.js; backend/src/scripts/op_*.js; evidence helpers | web/src/panels/company/ServiceEvaluationPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx; web/src/panels/shared/ReportsPanel.jsx | check:qlt01; check:qlt02; check:qlt03; check:qlt04; check:qlt04a; check:qlt04b; check:op01; check:op02; check:op03; check:op04 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | QLT / OP | None |
-| Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/chat/copilotHumanApprovalPolicy.js; backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
+| Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/chat/copilotHumanApprovalPolicy.js; backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copiloteblockruntimeanswerintegration01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
 | Telematics / Provider Hub | Super Admin GPS readiness / Room vehicle mapping | docs/TELEMATICS_PROVIDER_HUB_01.md; backend/scripts/telematics_provider_hub_01_check.js | web/src/panels/superadmin/SuperAdminPanel.jsx; web/src/panels/room/roomVehiclesPanelSections.jsx | check:telematicsproviderhub01; check:m44telematicst1t5; check:uxroomvehiclestelematicsfix | static | COVERED_ACTIVE | None on the current static/product chain. | TELEMATICS-PROVIDER-HUB-01 | None |
 | Telematics / Safe Drive | Driver live map and telematics surfaces | docs/SAFE_DRIVE_01.md; backend/scripts/safe_drive_01_check.js; ETA / OSRM helpers | web/src/utils/safeDriveSummary.js; web/src/panels/shared/SafeDriveSummaryCard.jsx; web/src/panels/driver/RoutePanel.jsx; web/src/panels/driver/MapPanel.jsx; web/src/panels/company/MapPanel.jsx; web/src/panels/room/MapPanel.jsx | check:safedrive01; check:telematicsproviderhub01; check:m44telematicst1t5; check:etaosrm01; check:etaosrm02; check:etasanity01 | static | COVERED_ACTIVE | None on the current static/product chain. | SAFE-DRIVE-01 | None |
 | Offer Ranking Quality / Readonly Comparison | Company / room / super admin offer comparison surfaces | docs/OFFER_RANKING_QUALITY_01.md; backend/scripts/offer_ranking_quality_01_check.js | web/src/utils/offerQualityRanking.js; web/src/panels/shared/OfferQualityRankingCard.jsx; web/src/panels/company/WorkflowPanel.jsx; web/src/panels/company/companyShiftsPanelSections.jsx; web/src/panels/room/OffersPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx | check:offerrankingquality01 | static | COVERED_ACTIVE | Readonly comparison only; auto-select and auto-accept stay blocked. | OFFER-RANKING-QUALITY-01 | None |

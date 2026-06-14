@@ -6,9 +6,11 @@ const failures = new Map();
 const queue = [];
 let active = 0;
 let cacheVersion = 0;
+let nextNetworkAt = 0;
 const DEFAULT_TTL_MS = 8000;
 const FAILURE_TTL_MS = 2000;
 const MAX_CONCURRENT = 1;
+const AUTH_REQUEST_GAP_MS = 500;
 const STORAGE_PREFIX = "ui-data-cache:v1:";
 
 function bumpCacheVersion() {
@@ -130,6 +132,31 @@ function hydrateError(record) {
   if (record?.text) err.text = String(record.text);
   if (record?.payload !== undefined) err.payload = record.payload;
   return err;
+}
+
+function waitMs(ms, signal) {
+  const timeoutMs = Math.max(0, Number(ms || 0) || 0);
+  if (!timeoutMs) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, timeoutMs);
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener?.("abort", onAbort);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal?.addEventListener?.("abort", onAbort, { once: true });
+  });
+}
+
+async function waitForRequestGap(token, signal) {
+  const scope = String(token || "").trim();
+  if (!scope) return;
+  const now = Date.now();
+  const waitFor = Math.max(0, nextNetworkAt - now);
+  if (waitFor > 0) {
+    await waitMs(waitFor, signal);
+  }
+  nextNetworkAt = Date.now() + AUTH_REQUEST_GAP_MS;
 }
 
 function readCache(key) {
@@ -261,16 +288,9 @@ export async function cachedGet(url, { token, ttlMs = DEFAULT_TTL_MS, force = fa
   }
   const promise = schedule(async () => {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    await waitForRequestGap(token, signal);
     if (Number(delayMs || 0) > 0) {
-      await new Promise((resolve, reject) => {
-        const timer = setTimeout(resolve, Number(delayMs || 0));
-        const onAbort = () => {
-          clearTimeout(timer);
-          signal?.removeEventListener?.("abort", onAbort);
-          reject(new DOMException("Aborted", "AbortError"));
-        };
-        signal?.addEventListener?.("abort", onAbort, { once: true });
-      });
+      await waitMs(delayMs, signal);
     }
     try {
       failures.delete(key);
@@ -281,6 +301,10 @@ export async function cachedGet(url, { token, ttlMs = DEFAULT_TTL_MS, force = fa
       return json ?? null;
     } catch (error) {
       if (error?.name === "AbortError") throw error;
+      const retryAfterSec = Number(error?.payload?.retryAfterSec || error?.retryAfterSec || 0) || 0;
+      if (Number(error?.status || 0) === 429 && retryAfterSec > 0) {
+        nextNetworkAt = Math.max(nextNetworkAt, Date.now() + (retryAfterSec * 1000));
+      }
       if (requestVersion === cacheVersion) {
         writeFailure(key, error, FAILURE_TTL_MS);
       }

@@ -283,6 +283,7 @@ async function main() {
     'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
     'backend/src/ai/chat/excelToRouteReadinessRedteamPack.js',
     'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md',
+    'tools/repo_contract_state.json',
     'docs/PRIMER_SSOT.md',
     'docs/COPILOT_AI_ACTION_ROADMAP_01.md',
     'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md',
@@ -298,7 +299,18 @@ async function main() {
     'backend/scripts/ux_premium_critical_fix_room_01_check.js',
     'backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js',
     'backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js',
+    'backend/src/ai/chat/copilotGuidedTaskEngine.js',
+    'backend/src/ai/chat/goldenQuestionPack.js',
+    'backend/src/ai/chat/qualityScorer.js',
+    'backend/scripts/copilot_guided_task_engine_01_check.js',
+    'backend/scripts/onboarding_review_final_audit_01_check.js',
+    'backend/scripts/invite_based_membership_01_check.js',
+    'backend/scripts/verified_supplier_01_check.js',
+    'docs/COPILOT_GUIDED_TASK_ENGINE_01.md',
+    'backend/scripts/product_flow_button_audit_01.mjs',
+    'web/src/panels/parent/LivePanel.jsx',
     'backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs',
+    'web/src/utils/uiDataCache.js',
   ]);
 
   allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log'], 'working tree stays within route review scope');

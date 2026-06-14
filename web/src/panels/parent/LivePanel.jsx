@@ -558,9 +558,13 @@ export default function ParentLivePanel() {
           compact
           onRequestCreated={loadAll}
         />
-        {!vehicles.length ? <span style={{ display: "none" }}>{PARENT_LIVE_NO_VEHICLE_HINT}</span> : null}
-
-        {!vehicles.length ? <div className="muted" style={{ marginTop: 12 }}>{PARENT_MISSING_SERVICE_COPY} {PARENT_MISSING_SERVICE_DETAIL_COPY}<span style={{ display: "none" }}>{parentNoVehicleDetail}</span></div> : null}
+        {!vehicles.length ? (
+          <div className="muted" style={{ marginTop: 12, lineHeight: 1.5 }}>
+            <div style={{ fontWeight: 700 }}>{PARENT_LIVE_NO_VEHICLE_HINT}</div>
+            <div style={{ marginTop: 4 }}>{PARENT_MISSING_SERVICE_COPY} {PARENT_MISSING_SERVICE_DETAIL_COPY}</div>
+            <div style={{ marginTop: 4, fontSize: 12 }}>{parentNoVehicleDetail}</div>
+          </div>
+        ) : null}
 
         {!selectedVehicle ? (
           <div className="card" style={{ marginTop: 12, padding: 12 }}>

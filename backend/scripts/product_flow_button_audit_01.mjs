@@ -276,6 +276,50 @@ async function textVisible(page, needle) {
   }
 }
 
+async function fetchJson(pathname, token) {
+  const response = await fetch(`${API_BASE_URL}${pathname}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const text = await response.text();
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+  return { ok: response.ok, status: response.status, json, text };
+}
+
+async function selectParentLiveNoVehicleChild(page, token) {
+  if (!token) return false;
+  try {
+    const childrenResp = await fetchJson("/api/parent/children", token);
+    const children = Array.isArray(childrenResp.json?.items) ? childrenResp.json.items : [];
+    if (children.length < 2) return false;
+
+    for (const child of children) {
+      const liveResp = await fetchJson(`/api/parent/live/vehicles?childId=${encodeURIComponent(String(child.id))}&take=1`, token);
+      const vehicles = Array.isArray(liveResp.json) ? liveResp.json : Array.isArray(liveResp.json?.items) ? liveResp.json.items : [];
+      if (vehicles.length === 0) {
+        const childSelect = page.getByLabel("Çocuk");
+        await childSelect.selectOption(String(child.id)).catch(async () => {
+          await childSelect.selectOption({ label: `#${child.id} ${child.fullName}` }).catch(() => {});
+        });
+        for (let i = 0; i < 20; i += 1) {
+          if (await textVisible(page, "Bu çocuk için şu an canlı araç görünmüyor.") || await textVisible(page, "Bugün için aktif servis görünmüyor.")) {
+            return true;
+          }
+          await page.waitForTimeout(250);
+        }
+        return true;
+      }
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 async function firstVisibleText(page, needles) {
   for (const needle of needles) {
     if (await textVisible(page, needle)) return needle;
@@ -762,7 +806,8 @@ async function handlePersonelLive(page, result) {
   result.notes.push("Personel live keeps navigation buttons read-only and available.");
 }
 
-async function handleParentLive(page, result) {
+async function handleParentLive(page, result, token = null) {
+  await selectParentLiveNoVehicleChild(page, token);
   result.checks.refreshButtonVisible = await isVisible(page, "button", "Yenile");
   result.checks.locationButtonVisible = await isVisible(page, "button", /^Konumumu (Al|Yenile)$/i);
   result.checks.childNavVisible = await isVisible(page, "button", "Çocuğun durağına git");
@@ -891,7 +936,7 @@ async function runScenario(page, scenario, viewportName, output) {
   } else if (scenario.kind === "personelLive") {
     await handlePersonelLive(page, result);
   } else if (scenario.kind === "parentLive") {
-    await handleParentLive(page, result);
+    await handleParentLive(page, result, scenario.token || null);
   }
 
   if (!result.notes.length) {
@@ -1039,7 +1084,7 @@ async function main() {
 
       for (const scenario of group.routes) {
         const page = await context.newPage();
-        const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
+        const row = await runScenario(page, { ...scenario, role: group.role, token: authState.token }, viewport.name, report.routes);
         report.routeCount += 1;
         report.screenshotCount += row.screenshots.length;
         report.consoleErrorCount += row.consoleErrors.length;

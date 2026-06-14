@@ -303,6 +303,7 @@ mustNoDiffExcept(
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
     "web/src/App.jsx",
     "web/src/copilot/screenRegistry.js",
+    "web/src/utils/uiDataCache.js",
     "web/src/utils/offerQualityRanking.js",
   ],
   "runtime surface diff is empty"

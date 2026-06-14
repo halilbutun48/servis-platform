@@ -327,6 +327,7 @@ function main() {
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
     "web/src/panels/room/useRoomVehicleTelematics.js",
     "docs/UX_PANEL_REALITY_AUDIT_02C.md",
+    "tools/repo_contract_state.json",
     "backend/scripts/invite_based_membership_01_check.js",
     "backend/scripts/onboarding_review_final_audit_01_check.js",
     "backend/scripts/run_product_extensions_check_chain.js",
@@ -368,6 +369,12 @@ function main() {
     "backend/src/ai/chat/answerQualityPolicy.js",
     "backend/src/ai/chat/helpComposer.js",
     "backend/src/ai/chat/intentRouter.js",
+    "backend/src/ai/chat/copilotGuidedTaskEngine.js",
+    "backend/src/ai/chat/goldenQuestionPack.js",
+    "backend/src/ai/chat/qualityScorer.js",
+    "backend/scripts/copilot_guided_task_engine_01_check.js",
+    "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+    "web/src/utils/uiDataCache.js",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "working tree stays within brand/login premium scope");

@@ -134,9 +134,10 @@ function main() {
   must(pkg, '"check:cop04bfix06"', 'package.json keeps check:cop04bfix06');
   must(pkg, '"check:cop04bfix07"', 'package.json keeps check:cop04bfix07');
   must(pkg, '"check:cop04bfix08"', 'package.json keeps check:cop04bfix08');
-  must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
   must(pkg, '"check:exceltoroutereadinessredteam01": "node backend/scripts/excel_to_route_readiness_redteam_01_check.js"', 'package.json keeps check:exceltoroutereadinessredteam01');
   must(pkg, '"check:copiloteblockruntimeanswerintegration01": "node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js"', 'package.json keeps check:copiloteblockruntimeanswerintegration01');
+  must(pkg, '"check:copilotguidedtaskengine01": "node backend/scripts/copilot_guided_task_engine_01_check.js"', 'package.json keeps check:copilotguidedtaskengine01');
+  must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
   must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotpersona01');
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');
   must(pkg, '"check:uxseferabilauncher01"', 'package.json exposes check:uxseferabilauncher01');
@@ -306,6 +307,7 @@ function main() {
   'check:copilotroutereviewhumanapproval01',
   'check:exceltoroutereadinessredteam01',
   'check:copiloteblockruntimeanswerintegration01',
+  'check:copilotguidedtaskengine01',
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
     'check:uxcopilotterminal01',
@@ -477,7 +479,11 @@ function main() {
   must(guide, 'check:copiloteblockruntimeanswerintegration01', 'script guide exposes check:copiloteblockruntimeanswerintegration01');
   must(guide, 'node backend\\scripts\\copilot_e_block_runtime_answer_integration_01_check.js', 'script guide includes e-block runtime answer integration command');
   must(guide, 'docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md', 'script guide includes e-block runtime answer integration doc');
-  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'ETA-SANITY-01'], 'script guide keeps e-block runtime answer integration after redteam');
+  must(guide, 'COPILOT-GUIDED-TASK-ENGINE-01', 'script guide mentions COPILOT-GUIDED-TASK-ENGINE-01');
+  must(guide, 'check:copilotguidedtaskengine01', 'script guide exposes check:copilotguidedtaskengine01');
+  must(guide, 'node backend\\scripts\\copilot_guided_task_engine_01_check.js', 'script guide includes guided task engine command');
+  must(guide, 'docs/COPILOT_GUIDED_TASK_ENGINE_01.md', 'script guide includes guided task engine doc');
+  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'ETA-SANITY-01'], 'script guide keeps guided task engine after e-block runtime answer integration');
   must(guide, 'node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js', 'script guide includes redteam command');
   must(guide, 'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md', 'script guide includes redteam doc');
   must(guide, 'check:uxcopilotpersona01', 'script guide exposes check:uxcopilotpersona01');

@@ -275,6 +275,7 @@ function main() {
       "web/src/panels/shared/OfferQualityRankingCard.jsx",
       "web/src/utils/safeDriveSummary.js",
       "web/src/utils/offerQualityRanking.js",
+      "web/src/utils/uiDataCache.js",
     ],
     "verified supplier keeps runtime code unchanged"
   );

@@ -198,6 +198,7 @@ function main() {
       "web/src/panels/shared/OfferQualityRankingCard.jsx",
       "web/src/utils/safeDriveSummary.js",
       "web/src/utils/offerQualityRanking.js",
+      "web/src/utils/uiDataCache.js",
       "web/src/panels/superadmin/TrustQualityPanel.jsx",
     ],
     "invite-based membership keeps runtime code unchanged"
