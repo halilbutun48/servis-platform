@@ -67,7 +67,11 @@ export function hasExplicitRoleBoundarySignal({ questionType, activeTopic, messa
   const topic = String(activeTopic || '');
   if (['ROLE_HELP', 'WHO_CAN_DO', 'ROLE_BOUNDARY', 'KVKK_VISIBILITY'].includes(String(questionType || ''))) return true;
   if (['ROLE_BOUNDARY', 'WHO_CAN_DO', 'KVKK_VISIBILITY'].includes(topic)) return true;
-  return /(yetki|erişim|erisim|izin|rol|kvkk|göremez|goremeyebilir|görünmeyebilir|gorunmeyebilir|görünmüyor|gorunmuyor|403|401|permission denied|erişim kapalı|erisim kapali)/.test(text);
+  const isLocationTopic = ['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(String(questionType || ''))
+    || ['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(topic);
+  return (isLocationTopic
+    ? /(yetki|erişim|erisim|izin|rol|kvkk|403|401|permission denied|erişim kapalı|erisim kapali)/.test(text)
+    : /(yetki|erişim|erisim|izin|rol|kvkk|göremez|goremeyebilir|görünmeyebilir|gorunmeyebilir|görünmüyor|gorunmuyor|403|401|permission denied|erişim kapalı|erisim kapali)/.test(text));
 }
 
 export function workflowTopicChipSet({ activeTopic = '', questionType = '', screenPath = '', guidedTaskMeta = null } = {}) {

@@ -131,7 +131,7 @@
                                 "policyVersion":  1,
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
-    "currentLargeFileCount":  12,
+    "currentLargeFileCount":  13,
     "currentWarningHotFileCount":  8,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
@@ -188,6 +188,10 @@
                                                                                                              "class":  "safe-candidate-review",
                                                                                                              "note":  "copilot acceptance pack; kontrollu inceleme adayi"
                                                                                                          },
+                                                       "backend/src/ai/chat/copilotGuidedTaskEngine.js":  {
+                                                                                                           "class":  "safe-candidate-review",
+                                                                                                           "note":  "guided task engine static source; controlled cleanup adayi"
+                                                                                                       },
                                                        "backend/src/ai/chat/intentRouter.js":  {
                                                                                                     "class":  "safe-candidate-review",
                                                                                                     "note":  "guided-task routing grew past warning threshold; kontrollu cleanup adayi"

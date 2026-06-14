@@ -59,6 +59,9 @@ function main() {
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
   const primer = read('docs/PRIMER_SSOT.md');
+  const roleMatrix = read('docs/COPILOT_ROLE_TASK_MATRIX_01.md');
+  const aiRoadmap = read('docs/COPILOT_AI_ACTION_ROADMAP_01.md');
+  const guidedDoc = read('docs/COPILOT_GUIDED_TASK_ENGINE_01.md');
   const finalAuditDoc = read('docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md');
   const inviteDoc = read('docs/INVITE_BASED_MEMBERSHIP_01.md');
   const verifiedDoc = read('docs/VERIFIED_SUPPLIER_01.md');
@@ -137,6 +140,7 @@ function main() {
   must(pkg, '"check:exceltoroutereadinessredteam01": "node backend/scripts/excel_to_route_readiness_redteam_01_check.js"', 'package.json keeps check:exceltoroutereadinessredteam01');
   must(pkg, '"check:copiloteblockruntimeanswerintegration01": "node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js"', 'package.json keeps check:copiloteblockruntimeanswerintegration01');
   must(pkg, '"check:copilotguidedtaskengine01": "node backend/scripts/copilot_guided_task_engine_01_check.js"', 'package.json keeps check:copilotguidedtaskengine01');
+  must(pkg, '"check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js"', 'package.json keeps check:seferabireasoningassistant01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
   must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotpersona01');
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');
@@ -308,6 +312,7 @@ function main() {
   'check:exceltoroutereadinessredteam01',
   'check:copiloteblockruntimeanswerintegration01',
   'check:copilotguidedtaskengine01',
+  'check:seferabireasoningassistant01',
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
     'check:uxcopilotterminal01',
@@ -483,7 +488,11 @@ function main() {
   must(guide, 'check:copilotguidedtaskengine01', 'script guide exposes check:copilotguidedtaskengine01');
   must(guide, 'node backend\\scripts\\copilot_guided_task_engine_01_check.js', 'script guide includes guided task engine command');
   must(guide, 'docs/COPILOT_GUIDED_TASK_ENGINE_01.md', 'script guide includes guided task engine doc');
-  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'ETA-SANITY-01'], 'script guide keeps guided task engine after e-block runtime answer integration');
+  must(guide, 'SEFER-ABI-REASONING-ASSISTANT-01', 'script guide mentions SEFER-ABI-REASONING-ASSISTANT-01');
+  must(guide, 'check:seferabireasoningassistant01', 'script guide exposes check:seferabireasoningassistant01');
+  must(guide, 'node backend\\scripts\\sefer_abi_reasoning_assistant_01_check.js', 'script guide includes reasoning assistant command');
+  must(guide, 'docs/SEFER_ABI_REASONING_ASSISTANT_01.md', 'script guide includes reasoning assistant doc');
+  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'ETA-SANITY-01'], 'script guide keeps reasoning assistant after guided task engine');
   must(guide, 'node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js', 'script guide includes redteam command');
   must(guide, 'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md', 'script guide includes redteam doc');
   must(guide, 'check:uxcopilotpersona01', 'script guide exposes check:uxcopilotpersona01');
@@ -652,6 +661,10 @@ function main() {
   must(primer, 'docs/SAFE_DRIVE_01.md', 'primer links safe drive doc');
   must(primer, 'readonly safe-drive risk summary', 'primer keeps safe drive wording');
   must(primer, 'Güvenli sürüş özeti', 'primer keeps safe drive copy');
+  must(roleMatrix, 'SEFER-ABI-REASONING-ASSISTANT-01', 'role/task matrix references reasoning assistant milestone');
+  must(aiRoadmap, 'SEFER-ABI-REASONING-ASSISTANT-01', 'AI action roadmap references reasoning assistant milestone');
+  must(guidedDoc, 'SEFER-ABI-REASONING-ASSISTANT-01', 'guided task engine doc references reasoning assistant milestone');
+  must(guidedDoc, 'Golden pack test/kabul içindir', 'guided task engine doc keeps golden pack test-only wording');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');
@@ -677,6 +690,7 @@ function main() {
   must(roadmap, 'provider-agnostic GPS provider hub', 'roadmap keeps provider-agnostic telematics hub wording');
   must(roadmap, 'readonly safe-drive risk summary', 'roadmap keeps safe drive summary wording');
   must(roadmap, 'İnsan onayı gerekir', 'roadmap keeps human approval wording');
+  must(roadmap, 'SEFER-ABI-REASONING-ASSISTANT-01', 'roadmap keeps reasoning assistant milestone');
   ordered(roadmap, ['M44-TELEMATICS-T1-T5', 'TELEMATICS-PROVIDER-HUB-01', 'SAFE-DRIVE-01', 'OFFER-RANKING-QUALITY-01'], 'roadmap keeps telematics provider hub before safe drive and offer ranking');
   must(finalAuditDoc, 'INVITE-BASED-MEMBERSHIP-01', 'final audit doc points to invite-based membership next milestone');
   must(finalAuditDoc, 'public lead otomatik kullanıcı / account olmaz', 'final audit doc keeps public lead account boundary');

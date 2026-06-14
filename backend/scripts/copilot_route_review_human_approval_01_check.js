@@ -281,8 +281,11 @@ async function main() {
     'docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md',
     'docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md',
     'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
+    'backend/scripts/sefer_abi_reasoning_assistant_01_check.js',
     'backend/src/ai/chat/excelToRouteReadinessRedteamPack.js',
+    'backend/src/ai/chat/seferAbiReasoningAssistant.js',
     'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md',
+    'docs/SEFER_ABI_REASONING_ASSISTANT_01.md',
     'tools/repo_contract_state.json',
     'docs/PRIMER_SSOT.md',
     'docs/COPILOT_AI_ACTION_ROADMAP_01.md',
@@ -307,10 +310,13 @@ async function main() {
     'backend/scripts/invite_based_membership_01_check.js',
     'backend/scripts/verified_supplier_01_check.js',
     'docs/COPILOT_GUIDED_TASK_ENGINE_01.md',
+    'docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md',
+    'docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md',
     'backend/scripts/product_flow_button_audit_01.mjs',
     'web/src/panels/parent/LivePanel.jsx',
     'backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs',
     'web/src/utils/uiDataCache.js',
+    'tools/PRIMER_SNAPSHOT.md',
   ]);
 
   allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log'], 'working tree stays within route review scope');

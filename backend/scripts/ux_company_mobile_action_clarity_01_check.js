@@ -208,6 +208,9 @@ function main() {
     "docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md",
     "backend/scripts/ux_marketplace_panels_01_check.js",
     "docs/UX_MARKETPLACE_PANELS_01.md",
+    "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md",
+    "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md",
+    "tools/PRIMER_SNAPSHOT.md",
   ];
 
   mustTrue(exists("backend/scripts/ux_company_mobile_action_clarity_01_check.js"), "company mobile action clarity check exists");
@@ -571,11 +574,14 @@ function main() {
     "backend/src/ai/chat/answerQualityPolicy.js",
     "backend/src/ai/chat/helpComposer.js",
     "backend/src/ai/chat/intentRouter.js",
+    "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
+    "backend/src/ai/chat/seferAbiReasoningAssistant.js",
     "backend/src/ai/chat/copilotGuidedTaskEngine.js",
     "backend/src/ai/chat/goldenQuestionPack.js",
     "backend/src/ai/chat/qualityScorer.js",
     "backend/scripts/copilot_guided_task_engine_01_check.js",
     "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
+    "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
     "web/src/utils/uiDataCache.js",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];

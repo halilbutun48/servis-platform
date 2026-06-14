@@ -275,6 +275,11 @@ const COP02A_GENERAL_RULES = [
 ];
 
 const INTENT_PRIORITY = [
+  'PRODUCT_OVERVIEW_HELP',
+  'ROLE_EXPLANATION_HELP',
+  'SCREEN_EXPLANATION_HELP',
+  'HOW_TO_HELP',
+  'FIELD_BUTTON_HELP',
   'ROLE_HELP',
   'CHECKLIST_HELP',
   'COMMON_MISTAKE_HELP',
@@ -331,7 +336,59 @@ function normalizeIntentArgs(entityTypeOrOptions = 'screen', screenPath = '') {
 export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', screenPath = '') {
   const text = normalizeText(message);
   const options = normalizeIntentArgs(entityTypeOrOptions, screenPath);
+  const originalText = normalizeText(options.originalMessage || '');
+  const combinedText = originalText && originalText !== text ? `${text} ${originalText}` : text;
   if (!text) return { questionType: 'OPEN', confidence: 0.42, matchedSignals: [], preferRoute: false, routeRequest: false };
+
+  if (/(?:bu program ne|bu program nedir|program ne işe yarar|program ne ise yarar|seferpakt ne işe yarar|seferpakt ne ise yarar|bu sistem ne için kullanılır|bu sistem ne icin kullanilir|sistem ne işe yarar|sistem ne ise yarar|ben bu programla ne yapabilirim)/.test(combinedText)) {
+    return {
+      questionType: 'PRODUCT_OVERVIEW_HELP',
+      confidence: 0.96,
+      matchedSignals: ['PRODUCT_OVERVIEW_HELP', 'product-overview-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (/(?:\b(?:company|room|driver|parent|personel|school|organization|super\s*admin|superadmin|şirket|oda|veli|sürücü|surucu|okul|organizasyon|süper\s*admin)\b.*(?:rol(?:ü|u)|olarak)?\s*(?:ne yapar|ne yapacağım|ne yapacag[ıi]m|ne yapabilirim|ne işe yarar|ne ise yarar|neyi görebilir|neyi gorebilir|ne demek)|\b(?:company|room|driver|parent|personel|school|organization|super\s*admin|superadmin|şirket|oda|veli|sürücü|surucu|okul|organizasyon|süper\s*admin)\b.*(?:ne yapar|ne yapacağım|ne yapacag[ıi]m|ne yapabilirim|ne işe yarar|ne ise yarar|neyi görebilir|neyi gorebilir|ne demek))/.test(combinedText)) {
+    return {
+      questionType: 'ROLE_EXPLANATION_HELP',
+      confidence: 0.94,
+      matchedSignals: ['ROLE_EXPLANATION_HELP', 'role-explanation-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (/(?:bu ekran ne işe yarar|bu ekran ne ise yarar|bu ekran ne demek|burada ne yapıyorum|burada ne yapiyorum|bu panel neyi gösteriyor|bu panel neyi gosteriyor|bu kart ne demek|bu sayfa ne işe yarar|bu sayfa ne ise yarar|ekranın amacı ne|ekranin amaci ne)/.test(originalText) && !/(buton|alan|rozet|badge|sütun|sutun|kolon|terim)/.test(originalText)) {
+    return {
+      questionType: 'SCREEN_EXPLANATION_HELP',
+      confidence: 0.92,
+      matchedSignals: ['SCREEN_EXPLANATION_HELP', 'screen-explanation-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (/(?:vardiya nasıl oluşturulur|vardiya nasil olusturulur|teklif nasıl alınır|teklif nasil alınır|sözleşmeye nasıl geçilir|sozlesmeye nasil gecilir|servisimi nasıl takip ederim|servisimi nasil takip ederim|check-?in nasıl yapılır|check-?in nasil yapilir|nasıl yapılır|nasil yapilir)/.test(combinedText)) {
+    return {
+      questionType: 'HOW_TO_HELP',
+      confidence: 0.95,
+      matchedSignals: ['HOW_TO_HELP', 'how-to-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (/(?:bu buton ne işe yarıyor|bu buton ne ise yariyor|bu buton ne yapıyor|bu buton ne yapiyor|bu alanı nasıl dolduracağım|bu alani nasil dolduracagim|hakediş ne demek|hakedis ne demek|route readiness ne demek|servis kanıtı ne işe yarar|servis kaniti ne ise yarar|bu alan ne demek|bu sütun ne demek|bu sutun ne demek|bu kolon ne demek|bu terim ne demek)/.test(combinedText)) {
+    return {
+      questionType: 'FIELD_BUTTON_HELP',
+      confidence: 0.9,
+      matchedSignals: ['FIELD_BUTTON_HELP', 'field-button-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
 
   if (
     pathHas(options.screenPath, ['/agreements', '/company/agreements', '/room/agreements', '/school/agreements', '/organization/agreements'])
@@ -500,7 +557,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     };
   }
 
-  if (isExplicitBadgeHelpQuestion(text)) {
+  if (isExplicitBadgeHelpQuestion(combinedText)) {
     return {
       questionType: 'BADGE_HELP',
       confidence: 0.9,
@@ -784,6 +841,7 @@ export function resolveReplyMode(message, questionType, roleMode = 'OPERATIONS',
   if (guidedTaskMeta?.guideLevel) return guidedTaskMeta.guideLevel;
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(String(questionType || detectCopilotEBlockRuntimeAnswerTopic({ message }) || ''));
   if (helperTopicMeta?.guideLevel) return helperTopicMeta.guideLevel;
+  if (questionType === 'HOW_TO_HELP') return 'STEP_BY_STEP';
   if (questionType === 'DETAIL_FLOW' || hasAny(text, ['adım adım', 'adim adim', 'madde madde', 'tek tek'])) return 'STEP_BY_STEP';
   if (questionType === 'WHY_BLOCKED' || hasAny(text, ['neden'])) return 'WHY';
   if (roleMode === 'SIMPLE' && questionType !== 'TERM_HELP') return 'SHORT';
@@ -795,6 +853,11 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
   if (guidedTaskMeta?.jobType) return guidedTaskMeta.jobType;
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(String(questionType || detectCopilotEBlockRuntimeAnswerTopic({ message, screenPath }) || ''));
   if (helperTopicMeta?.jobType) return helperTopicMeta.jobType;
+  if (questionType === 'PRODUCT_OVERVIEW_HELP') return 'SCREEN_MENU_GUIDE';
+  if (questionType === 'ROLE_EXPLANATION_HELP') return 'ROLE_HELP_GUIDE';
+  if (questionType === 'SCREEN_EXPLANATION_HELP') return 'SCREEN_MENU_GUIDE';
+  if (questionType === 'HOW_TO_HELP') return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
+  if (questionType === 'FIELD_BUTTON_HELP') return 'BUTTON_ACTION_GUIDE';
   if (String(questionType || '') === 'BOARDING_CHANGE_APPLICATION' || hasAny(text, ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlenebilir', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'sürücü rota ekranında görünür', 'surucu rota ekraninda gorunur', 'rota güncellemesi bekliyor', 'rota guncellemesi bekliyor', 'günlük değişiklik rotada görünüyor', 'gunluk degisiklik rotada gorunuyor', 'sürücüye gönderildi mi', 'surucuye gonderildi mi', 'driver route refresh', 'mobile route update', 'rotasına yansıdı mı', 'rotasina yansidi mi', 'stopassignment'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY' || hasBoardingChangeRequestEntrySignal(text)) {
     return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
@@ -1011,6 +1074,27 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
   }
   const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
+  const teachingQuestionChips = (() => {
+    if (String(questionType || '') === 'PRODUCT_OVERVIEW_HELP') {
+      return ['Bu program ne?', 'SeferPakt ne işe yarar?', 'Rolüme göre anlat', 'Hangi ekranı açmalıyım?', 'Adım adım göster'];
+    }
+    if (String(questionType || '') === 'ROLE_EXPLANATION_HELP') {
+      return ['Bu rol ne yapar?', 'Neyi görebilir?', 'Bu rolde ne yapabilirim?', 'Hangi ekranı açmalıyım?', 'Rolü adım adım anlat'];
+    }
+    if (String(questionType || '') === 'SCREEN_EXPLANATION_HELP') {
+      return ['Bu ekran ne işe yarar?', 'Bu kart ne demek?', 'İlk neye bakayım?', 'Sonraki adım ne?', 'Hangi ekranı açmalıyım?'];
+    }
+    if (String(questionType || '') === 'HOW_TO_HELP') {
+      return ['Adım adım göster', 'İlk kontrolü ver', 'Nasıl yapılır?', 'Hangi ekranı açmalıyım?', 'Daha kısa anlat'];
+    }
+    if (String(questionType || '') === 'FIELD_BUTTON_HELP') {
+      return ['Bu alanı açıkla', 'Bu buton ne yapar?', 'Bu terim ne demek?', 'İlgili ekranı aç', 'Bu kart ne demek?'];
+    }
+    return [];
+  })();
+  if (teachingQuestionChips.length) {
+    return roleMode === 'SIMPLE' ? teachingQuestionChips.slice(0, 4) : teachingQuestionChips.slice(0, 6);
+  }
   const boardingApplicationContext = Boolean(
     context?.structuredFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'
     || context?.liveFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'

@@ -237,7 +237,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Check script: `node backend\scripts\copilot_guided_task_engine_01_check.js`
 - Doküman: `docs/COPILOT_GUIDED_TASK_ENGINE_01.md`
 - Static helper: `backend/src/ai/chat/copilotGuidedTaskEngine.js`
-- Bu check, `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01`, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `UX-COPILOT-SMART-CHIPS-01` hattıyla birlikte okunur; güvenli red / clarification / guided step üretir ama runtime execute açmaz.
+- Bu check, `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01`, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `SEFER-ABI-REASONING-ASSISTANT-01` hattıyla birlikte okunur; güvenli red / clarification / guided step üretir ama runtime execute açmaz.
+- Sonraki güvenli hatlar: `SEFER-ABI-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+
+### SEFER-ABI-REASONING-ASSISTANT-01 [CHECK]
+- `check:seferabireasoningassistant01` role + screen + selected record + conversation state bağlamını reasoning assistant katmanında birleştirir; golden pack’i reply source olarak kullanmaz, runtime AI action, tool execution, write-action dispatcher ve DB write açmaz.
+- Check script: `node backend\scripts\sefer_abi_reasoning_assistant_01_check.js`
+- Doküman: `docs/SEFER_ABI_REASONING_ASSISTANT_01.md`
+- Static helper: `backend/src/ai/chat/seferAbiReasoningAssistant.js`
+- Bu check, `COPILOT-GUIDED-TASK-ENGINE-01`, `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01`, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `UX-COPILOT-SMART-CHIPS-01` hattıyla birlikte okunur; role-aware strategic / planning / operations / driver / personel / parent / school / organization reasoning üretir ama runtime execute açmaz.
 - Sonraki güvenli hatlar: `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
 
 ### ETA-SANITY-01 [CHECK]

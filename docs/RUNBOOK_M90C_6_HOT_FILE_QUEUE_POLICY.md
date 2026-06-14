@@ -9,6 +9,7 @@ Amaç: large/hot file listesini resmi queue politikasına bağlamak ve her dosya
 ## Beklenen sonuç
 - `largeFiles` ve `warningHotFiles` sayısı güncel repo-audit snapshot'ı ile policy içinde birebir eşleşir.
 - Güncel snapshot'ta `backend/scripts/bench_gps_publish_only.js` de justified exception kuyruğunda yer alır.
+- Güncel snapshot'ta `backend/src/ai/chat/copilotGuidedTaskEngine.js` safe candidate review kuyruğundadır.
 - Güncel snapshot'ta `web/src/panels/room/ShiftsPanel.jsx` safe candidate review kuyruğunda yer alır.
 - Güncel snapshot'ta `web/src/utils/copilotFacts.js` safe candidate review kuyruğunda yer alır.
 - Güncel snapshot'ta `mobile/src/screens/driverPremiumUi.js` safe candidate review kuyruğundadır.

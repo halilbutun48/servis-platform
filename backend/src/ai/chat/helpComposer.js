@@ -19,6 +19,7 @@ import {
   composeCopilotGuidedTaskEngineReply,
   detectCopilotGuidedTaskEngineProgressCommand,
 } from './copilotGuidedTaskEngine.js';
+import { buildSeferAbiReasoningAssistant } from './seferAbiReasoningAssistant.js';
 
 function pickTerms(simpleTerms, limit = 3) {
   return (Array.isArray(simpleTerms) ? simpleTerms : []).slice(0, limit).map((row) => `${row.term}: ${row.meaning}`);
@@ -411,6 +412,8 @@ function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefin
   if (!isTargetSurface) return null;
 
   const text = normalizeText(message);
+  const definitionStyleQuestion = /(ne\s+demek|ne\s+işe\s+yarar|ne\s+ise\s+yarar|ne\s+için|ne\s+işe\s+yarıyor|ne\s+ise\s+yariyor)/.test(text);
+  if (definitionStyleQuestion && ['FIELD_BUTTON_HELP', 'TERM_HELP'].includes(String(questionType || ''))) return null;
   const relevantQuestionType = ['STATUS_HELP', 'WHY_BLOCKED', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'READINESS_CHECK', 'TERM_HELP', 'FIRST_CONTROL'].includes(String(questionType || ''));
   if (isOperationalPanel && relevantQuestionType) {
     const now = isLaunchGate
@@ -2568,7 +2571,7 @@ function formatMistakesReply(screenDefinition, guide) {
   return bulletJoin(mistakes, 'Sık hata: ');
 }
 
-function composeSimpleScreenReply({ questionType, guide, message, screenDefinition, screenContext }) {
+function composeSimpleScreenReply({ questionType, guide, message, rawMessage = message, screenDefinition, screenContext }) {
     const purpose = normalizeVisibleReplyFragment(firstNonEmpty(guide?.plainSummary, screenDefinition?.menuPurpose, guide?.summary, 'Bu ekran yardım için kullanılır.'));
     const purposeLead = buildVisibleScreenPurposeLead(purpose);
     const now = normalizeVisibleReplyFragment(simpleNowText(guide, screenDefinition));
@@ -2615,11 +2618,12 @@ function composeSimpleScreenReply({ questionType, guide, message, screenDefiniti
     }
 
   if (questionType === 'FIELD_HELP' || questionType === 'BADGE_HELP' || questionType === 'TERM_HELP') {
-    const comparison = termComparisonReplyV2(message) || termComparisonReply(message);
+    const replyMessage = rawMessage || message;
+    const comparison = termComparisonReplyV2(replyMessage) || termComparisonReply(replyMessage);
     if (comparison) return comparison;
-    const selectedTerm = questionType === 'BADGE_HELP' ? selectedBadgeReply(message, screenContext, screenDefinition) : questionType === 'FIELD_HELP' ? selectedFieldReply(message, screenContext, screenDefinition) : selectedTermReply(message, screenContext, screenDefinition);
+    const selectedTerm = questionType === 'BADGE_HELP' ? selectedBadgeReply(replyMessage, screenContext, screenDefinition) : questionType === 'FIELD_HELP' ? selectedFieldReply(replyMessage, screenContext, screenDefinition) : selectedTermReply(replyMessage, screenContext, screenDefinition);
     if (selectedTerm) return `${selectedTerm} Şimdi: ${now}`.trim();
-    const knownTerms = explainTermsFromText(message, 2);
+    const knownTerms = explainTermsFromText(replyMessage, 2);
     const screenTerms = pickTerms(guide?.simpleTerms || screenDefinition?.simpleTerms, 2);
     const terms = uniqueStrings([...(knownTerms || []), ...(screenTerms || [])]).slice(0, 2);
     return `${terms.length ? `${terms.join(' • ')}.` : purposeLead} Şimdi: ${now}`.trim();
@@ -2646,6 +2650,175 @@ function composeSimpleScreenReply({ questionType, guide, message, screenDefiniti
   }
 
   return `${purposeLead} Şimdi: ${ensureVisibleSentence(now)}`.trim();
+}
+
+function normalizeRoleKey(value) {
+  return normalizeText(value).replace(/\s+/g, '').replace(/_/g, '');
+}
+
+function prettyRoleName(roleKey) {
+  const map = {
+    company: 'Company',
+    room: 'Room',
+    driver: 'Driver',
+    parent: 'Parent',
+    personel: 'Personel',
+    school: 'School',
+    organization: 'Organization',
+    superadmin: 'Super Admin',
+  };
+  return firstNonEmpty(map[normalizeRoleKey(roleKey)], roleKey ? String(roleKey).trim() : '');
+}
+
+function detectReferencedRole(message, fallbackRole = '') {
+  const text = normalizeText(message);
+  if (/\bsuper\s*admin\b|\bsuperadmin\b|\bsüper\s*admin\b/.test(text)) return 'superadmin';
+  if (/\bcompany\b|\bşirket\b/.test(text)) return 'company';
+  if (/\broom\b|\boda\b/.test(text)) return 'room';
+  if (/\bdriver\b|\bsürücü\b|\bsurucu\b/.test(text)) return 'driver';
+  if (/\bparent\b|\bveli\b/.test(text)) return 'parent';
+  if (/\bpersonel\b|\bçalışan\b|\bcalisan\b/.test(text)) return 'personel';
+  if (/\bschool\b|\bokul\b/.test(text)) return 'school';
+  if (/\borganization\b|\borganizasyon\b/.test(text)) return 'organization';
+  return normalizeRoleKey(fallbackRole);
+}
+
+function roleExplanationSentence(roleKey) {
+  const normalized = normalizeRoleKey(roleKey);
+  const map = {
+    company: 'teklif, sözleşme ve vardiya planını yönetirsin.',
+    organization: 'teklif, sözleşme ve vardiya planını yönetirsin.',
+    room: 'operasyon, sürücü ve araç akışını takip edersin.',
+    driver: 'kendi rotanı, günlük görevini ve canlı durumunu görürsün.',
+    parent: 'öğrencinin servisini canlı izlersin.',
+    personel: 'kendi servis akışını ve durumunu takip edersin.',
+    school: 'okul tarafındaki servis ve operasyon işlerini yönetirsin.',
+    superadmin: 'tüm yüzeyleri, kaliteyi ve kanıt akışını denetlersin.',
+  };
+  return firstNonEmpty(map[normalized], 'kendi alanına ait ekranları ve onay adımlarını görürsün.');
+}
+
+function explainFieldButtonTermsFromText(text, limit = 4) {
+  const baseTerms = explainTermsFromText(text, limit);
+  const value = normalizeText(text);
+  const extraTerms = [
+    {
+      term: 'hakediş',
+      explanation: 'Yapılan işin ödeme önizlemesi; kesin ödeme değildir.',
+      aliases: ['hakediş', 'hakedis', 'hakediş ne demek', 'hakedis ne demek'],
+    },
+    {
+      term: 'route readiness',
+      explanation: 'Rota ve atama zincirinin ilerlemeye hazır olup olmadığını gösteren durum.',
+      aliases: ['route readiness', 'route readiness ne demek', 'rota readiness'],
+    },
+    {
+      term: 'Servis Kanıtı',
+      explanation: 'Sürücünün telefon GPS’i ve ilgili sinyallerle hizmetin görünürlüğünü doğrulayan kart.',
+      aliases: ['servis kanıtı', 'servis kaniti', 'servis kanıtı ne işe yarar', 'servis kaniti ne ise yarar'],
+    },
+  ]
+    .filter((row) => (Array.isArray(row.aliases) ? row.aliases : []).some((alias) => value.includes(normalizeText(alias))))
+    .map((row) => `${row.term}: ${row.explanation}`);
+  return uniqueStrings([...extraTerms, ...baseTerms]).slice(0, limit);
+}
+
+function buildProductOverviewHelpReply({ message, userRole, roleMode }) {
+  const roleKey = detectReferencedRole(message, userRole);
+  const roleName = prettyRoleName(roleKey);
+  const roleSentence = roleExplanationSentence(roleKey);
+  const intro = roleMode === 'SIMPLE'
+    ? 'SeferPakt, personel servis operasyonunu planlama ve takip etme platformudur.'
+    : 'SeferPakt, personel servis operasyonunu planlamak, teklif ve sözleşme akışını yönetmek, canlı takibi görmek ve kanıt/kaliteyi okumak için kullanılan bir platformdur.';
+  const roleLine = roleName
+    ? `${roleName} rolünde ${roleSentence}`
+    : `Rolüne göre ekranlar ve adımlar değişir; ${roleSentence}`;
+  return `Şimdi: ${intro} ${roleLine} İstersen beraber ilerleyelim; önce sana uygun ekranı açayım.`.trim();
+}
+
+function buildRoleExplanationHelpReply({ message, userRole, roleMode }) {
+  const roleKey = detectReferencedRole(message, userRole);
+  const roleName = prettyRoleName(roleKey);
+  const roleSentence = roleExplanationSentence(roleKey);
+  const lead = roleName
+    ? (roleMode === 'SIMPLE' ? `${roleName} ne yapar?` : `${roleName} rolü ne yapar?`)
+    : 'Bu rol ne yapar?';
+  const closing = roleMode === 'SIMPLE'
+    ? 'İstersen bu role ait ekranı açayım.'
+    : 'İstersen birlikte bu role ait ekranı açıp hangi butonun ne yaptığını da göstereyim.';
+  return `Şimdi: ${lead} ${roleSentence} ${closing}`.trim();
+}
+
+function buildScreenExplanationHelpReply({ guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext }) {
+  const purpose = composeScreenPurposeWithCarry({ guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext });
+  return `Şimdi: ${purpose} İstersen beraber ilerleyelim; önce ilk bakılacak yere gidelim.`.trim();
+}
+
+function buildHowToHelpReply({ guide, screenDefinition, roleMode }) {
+  const stepRows = workflowStages(screenDefinition, guide, roleMode === 'SIMPLE' ? 2 : 3);
+  const workflow = normalizeVisibleReplyFragment(stepRows.length
+    ? stepRows.map((row, idx) => {
+      const title = firstNonEmpty(row?.title, `Adım ${idx + 1}`);
+      const action = firstNonEmpty(row?.action, row?.detail, '');
+      return `${idx + 1}) ${title}: ${action}`.trim();
+    }).join(' ')
+    : firstNonEmpty(
+      Array.isArray(guide?.stepByStep) && guide.stepByStep.length ? guide.stepByStep.slice(0, roleMode === 'SIMPLE' ? 2 : 3).join(' ') : '',
+      '',
+    ));
+  const now = normalizeVisibleReplyFragment(simpleNowText(guide, screenDefinition, 'İlk adımı seç.'));
+  const body = firstNonEmpty(workflow, now, 'İlk adımı seç.');
+  const followUp = roleMode === 'SIMPLE'
+    ? 'İstersen birlikte ilk adımdan başlayalım.'
+    : 'İstersen beraber adım adım ilerleyelim; önce ilk adımı açayım.';
+  return `Şimdi: ${ensureVisibleSentence(body)} ${followUp}`.trim();
+}
+
+function buildFieldButtonHelpReply({ message, guide, screenDefinition, screenContext, analysis, roleMode }) {
+  const explicitTerms = explainFieldButtonTermsFromText(message, 4);
+  if (explicitTerms.length) {
+    return `Şimdi: ${explicitTerms.join(' • ')} Bu terimler ekrandaki alanı daha sade okumak için kullanılır. İstersen örnekle açayım.`.trim();
+  }
+  const disabled = disabledButtonReply(message, screenContext, analysis);
+  if (disabled) {
+    return `Şimdi: ${disabled} ${roleMode === 'SIMPLE' ? 'İstersen önce neden kapalı olduğunu birlikte kontrol edelim.' : 'İstersen önce neden kapalı olduğunu ve hangi alanın eksik olduğunu birlikte kontrol edelim.'}`.trim();
+  }
+  const visible = visibleButtonReply(message, screenContext, analysis);
+  if (visible) {
+    return `Şimdi: ${visible} ${roleMode === 'SIMPLE' ? 'İstersen bu butonun bağlı olduğu akışı açayım.' : 'İstersen bu butonun bağlı olduğu akışı ve sonraki adımı da açayım.'}`.trim();
+  }
+  const buttonGuide = findButtonGuideByMessage(message, guide, screenDefinition);
+  if (buttonGuide) {
+    return `Şimdi: ${buttonGuide.label}: ${firstNonEmpty(buttonGuide.purpose, 'Bu buton ilgili akışı başlatır.')} ${buttonGuide.whenToUse ? `Ne zaman: ${buttonGuide.whenToUse}` : ''} ${buttonGuide.whatHappens ? `Sonuç: ${buttonGuide.whatHappens}` : ''} ${buttonGuide.disabledReason ? `Kapalıysa: ${buttonGuide.disabledReason}` : ''}`.trim();
+  }
+  const comparison = termComparisonReplyV2(message) || termComparisonReply(message);
+  if (comparison) {
+    return `Şimdi: ${comparison} İstersen bu terimlerin farkını da birlikte açayım.`.trim();
+  }
+  const selectedField = selectedFieldReply(message, screenContext, screenDefinition);
+  if (selectedField) {
+    return `Şimdi: ${selectedField} Bu alan ekrandaki değeri ya da durumu gösterir. İstersen bağlı kaydı birlikte açalım.`.trim();
+  }
+  const selectedBadge = selectedBadgeReply(message, screenContext, screenDefinition);
+  if (selectedBadge) {
+    return `Şimdi: ${selectedBadge} Bu rozet hızlı durum göstergesidir. İstersen detay kaydını birlikte açalım.`.trim();
+  }
+  const selectedTerm = selectedTermReply(message, screenContext, screenDefinition);
+  if (selectedTerm) {
+    return `Şimdi: ${selectedTerm} Bu terim, ekrandaki iş kuralını sadeleştirir. İstersen birlikte örnekle açayım.`.trim();
+  }
+  const knownTerms = explainFieldButtonTermsFromText(message, 4);
+  const screenTerms = pickTerms(guide?.simpleTerms || screenDefinition?.simpleTerms, 4);
+  const terms = uniqueStrings([...(knownTerms || []), ...(screenTerms || [])]).slice(0, 2);
+  if (terms.length) {
+    return `Şimdi: ${terms.join(' • ')} Bu terimler ekrandaki alanı daha sade okumak için kullanılır. İstersen örnekle açayım.`.trim();
+  }
+  const stage = findWorkflowStageByMessage(message, guide, screenDefinition);
+  if (stage) {
+    return `Şimdi: ${firstNonEmpty(stage.title, 'Bu adım')}: ${firstNonEmpty(stage.action, '')} ${stage.doneWhen ? `Tamam say: ${stage.doneWhen}` : ''} ${stage.ifBlocked ? `Takılırsa: ${stage.ifBlocked}` : ''}`.trim();
+  }
+  const purpose = firstNonEmpty(screenDefinition?.menuPurpose, guide?.plainSummary, guide?.summary, 'Bu alan veya buton ekrandaki akışta kullanılır.');
+  return `Şimdi: ${purpose} Önce etiketini ya da kartı bul. İstersen birlikte ilgili alanı açayım.`.trim();
 }
 
 function limitItemsForRoleMode(items, roleMode, limitSimple = 3, limitDefault = 5) {
@@ -2997,7 +3170,7 @@ function buildCopilotEBlockRuntimeAnswerGuide({ topicMeta, guideLevel, screenDef
   };
 }
 
-function composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false, userRole = '', screenPath = '', contextPriority = null }) {
+function composeReply({ questionType, replyMode, guide, message, rawMessage = message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false, userRole = '', screenPath = '', contextPriority = null }) {
   guide = guide || {};
   const hasScreenContext = !preferEntityContext && (entityType === 'screen' || Boolean(screenContext?.path || screenDefinition?.path));
   const analysis = hasScreenContext ? analyzeScreenState({ screenContext, screenDefinition, conversationState }) : null;
@@ -3074,6 +3247,21 @@ function composeReply({ questionType, replyMode, guide, message, context, entity
   }
   const opsQualityPaymentReply = composeOpsQualityPaymentGuideReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext });
   if (opsQualityPaymentReply) return toReply(opsQualityPaymentReply);
+  if (questionType === 'PRODUCT_OVERVIEW_HELP') {
+    return toReply(buildProductOverviewHelpReply({ message: rawMessage || message, userRole, roleMode }));
+  }
+  if (questionType === 'ROLE_EXPLANATION_HELP') {
+    return toReply(buildRoleExplanationHelpReply({ message: rawMessage || message, userRole, roleMode }));
+  }
+  if (questionType === 'SCREEN_EXPLANATION_HELP') {
+    return toReply(buildScreenExplanationHelpReply({ guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext }));
+  }
+  if (questionType === 'HOW_TO_HELP') {
+    return toReply(buildHowToHelpReply({ guide, screenDefinition, screenContext, roleMode }));
+  }
+  if (questionType === 'FIELD_BUTTON_HELP') {
+    return toReply(buildFieldButtonHelpReply({ message: rawMessage || message, guide, screenDefinition, screenContext, analysis, roleMode }));
+  }
   const workflowTopic = detectContextTopic({ message, questionType, screenPath, screenContext, sourceScreenContext, analysis });
   if (shouldUseWorkflowGuide({ questionType, activeTopic: workflowTopic })) {
     return toReply(composeGeneralProductGuideReply({
@@ -3094,7 +3282,7 @@ function composeReply({ questionType, replyMode, guide, message, context, entity
       contextPriority,
     }));
   }
-  if (roleMode === 'SIMPLE' && hasScreenContext && !['LOCATION_HELP', 'NEXT_SCREEN', 'FIRST_CONTROL', 'SCREEN_PURPOSE', 'ROW_HELP', 'MISSING_DATA_HELP', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHY_BLOCKED'].includes(questionType)) {
+  if (roleMode === 'SIMPLE' && hasScreenContext && !['LOCATION_HELP', 'NEXT_SCREEN', 'FIRST_CONTROL', 'SCREEN_PURPOSE', 'ROW_HELP', 'MISSING_DATA_HELP', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHY_BLOCKED', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP', 'SCREEN_EXPLANATION_HELP', 'HOW_TO_HELP', 'FIELD_BUTTON_HELP'].includes(questionType)) {
     return toReply(composeSimpleScreenReply({ questionType, guide, message, screenDefinition, screenContext }));
   }
   if (questionType === 'OPEN') {
@@ -3243,9 +3431,22 @@ if (questionType === 'READINESS_CHECK') {
   if (questionType === 'WHY_BLOCKED') {
     const uiDisabled = disabledButtonReply(message, screenContext, analysis);
     if (uiDisabled) return toReply(uiDisabled);
-    if (analysis?.blockers?.length || analysis?.disabledHints?.length) return toReply(analyzerReply(analysis, 'DIAGNOSIS'));
+    const operationHealthSurface = /\/operation-health/.test(normalizeText(firstNonEmpty(
+      screenPath,
+      screenDefinition?.path,
+      sourceScreenDefinition?.path,
+      screenContext?.path,
+      sourceScreenContext?.path,
+      '',
+    )));
+    const operationHealthExactNextStep = operationHealthSurface
+      ? 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.'
+      : '';
+    if (analysis?.blockers?.length || analysis?.disabledHints?.length) {
+      return toReply(`${analyzerReply(analysis, 'DIAGNOSIS')} ${operationHealthExactNextStep}`.trim());
+    }
     const reasons = uniqueStrings([guide.whyBlocked, ...(guide.lockedActionReasons || []), ...stuckChecks(screenDefinition, guide), ...dataRules(screenDefinition, guide, 2)]).slice(0, 5);
-    return toReply(`Şimdi: ${reasons.length ? `Bu işlem şu yüzden kapalı olabilir: ${reasons.join(' • ')}` : firstNonEmpty(guide.screenExplanation, guide.plainSummary, guide.summary)} ${guide.whatToDoNow ? `Şimdi bunu yap: ${guide.whatToDoNow}` : ''} ${uiSurfaceEvidence(screenContext)}`.trim());
+    return toReply(`Şimdi: ${reasons.length ? `Bu işlem şu yüzden kapalı olabilir: ${reasons.join(' • ')}` : firstNonEmpty(guide.screenExplanation, guide.plainSummary, guide.summary)} ${guide.whatToDoNow ? `Şimdi bunu yap: ${guide.whatToDoNow}` : ''} ${uiSurfaceEvidence(screenContext)} ${operationHealthExactNextStep}`.trim());
   }
   if (questionType === 'FIELD_HELP') {
     const selectedField = selectedFieldReply(message, screenContext, screenDefinition);
@@ -3254,7 +3455,7 @@ if (questionType === 'READINESS_CHECK') {
     return toReply(`${firstNonEmpty(screenDefinition?.menuPurpose, guide.plainSummary, guide.summary)} ${rules[0] ? `Temel kural: ${rules[0]}` : ''}`.trim());
   }
   if (questionType === 'BADGE_HELP') {
-    const selectedBadge = selectedBadgeReply(message, screenContext, screenDefinition);
+    const selectedBadge = selectedBadgeReply(rawMessage || message, screenContext, screenDefinition);
     if (selectedBadge) return toReply(selectedBadge);
     const mistakes = formatMistakesReply(screenDefinition, guide);
     return toReply(`${firstNonEmpty(screenDefinition?.menuPurpose, guide.plainSummary, guide.summary)} ${mistakes || ''}`.trim());
@@ -3753,9 +3954,10 @@ function composeGeneralProductGuideReply({
   ));
   const selectedRecordLead = normalizeVisibleReplyFragment(firstNonEmpty(
     (() => {
+      const selectedRecordSignalLimit = String(screenPath || '').includes('/company/shifts') ? 6 : 4;
       const compactRows = [
-        ...selectedSignalRows(screenContext).filter((row) => /(araç|arac|sürücü|surucu|gps|son gps|kaynak|durak|eta|vardiya|durum|servis|öğrenci|ogrenci|kanıt|kanit|operasyon|açık sorun|acik sorun|riskli cihaz|aktif sürücü|aktif surucu|stale)/i.test(`${row.label} ${row.value}`)).slice(0, 4),
-        ...selectedSignalRows(sourceScreenContext).filter((row) => /(araç|arac|sürücü|surucu|gps|son gps|kaynak|durak|eta|vardiya|durum|servis|öğrenci|ogrenci|kanıt|kanit|operasyon|açık sorun|acik sorun|riskli cihaz|aktif sürücü|aktif surucu|stale)/i.test(`${row.label} ${row.value}`)).slice(0, 4),
+        ...selectedSignalRows(screenContext).filter((row) => /(araç|arac|sürücü|surucu|gps|son gps|kaynak|durak|eta|vardiya|durum|servis|öğrenci|ogrenci|kanıt|kanit|operasyon|açık sorun|acik sorun|riskli cihaz|aktif sürücü|aktif surucu|stale)/i.test(`${row.label} ${row.value}`)).slice(0, selectedRecordSignalLimit),
+        ...selectedSignalRows(sourceScreenContext).filter((row) => /(araç|arac|sürücü|surucu|gps|son gps|kaynak|durak|eta|vardiya|durum|servis|öğrenci|ogrenci|kanıt|kanit|operasyon|açık sorun|acik sorun|riskli cihaz|aktif sürücü|aktif surucu|stale)/i.test(`${row.label} ${row.value}`)).slice(0, selectedRecordSignalLimit),
       ].map((row) => `${row.label}: ${row.value}`).join(' • ');
       return compactRows ? `${compactRows}${driverShiftTopic && driverLiveLead ? ` • ${driverLiveLead}` : ''}` : '';
     })(),
@@ -3823,7 +4025,30 @@ function composeGeneralProductGuideReply({
   const driverSelectedFollowOn = driverSelectionSource
     ? ` ${ensureVisibleSentence(firstNonEmpty(driverLiveSelectionLead, driverLiveLead, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'))}`
     : '';
-  const selectedRecordSentence = selectedRecordLead ? ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(selectedRecordLead)}${driverSelectedFollowOn}` : '';
+  const selectedCompanyShiftStopCount = String(screenPath || '').includes('/company/shifts')
+    ? firstNonEmpty(
+      extractVisibleValueFromText(firstNonEmpty(
+        resolvedContextPriority.selectedRecordStatus,
+        resolvedContextPriority.selectedSummary,
+        screenContext?.selectedRecordStatus,
+        sourceScreenContext?.selectedRecordStatus,
+        screenContext?.selectedSummary,
+        sourceScreenContext?.selectedSummary,
+        '',
+      ), ['Durak', 'Durak sayısı', 'Toplam durak']),
+      extractVisibleValueFromText(firstNonEmpty(
+        resolvedContextPriority.selectedRecordStatus,
+        resolvedContextPriority.selectedSummary,
+        screenContext?.selectedSummary,
+        sourceScreenContext?.selectedSummary,
+        '',
+      ), ['Durak', 'Durak sayısı', 'Toplam durak']),
+      '',
+    )
+    : '';
+  const selectedRecordSentence = selectedRecordLead
+    ? ` Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(selectedRecordLead)}${driverSelectedFollowOn}${selectedCompanyShiftStopCount ? ` • Durak: ${ensureVisibleSentence(selectedCompanyShiftStopCount)}` : ''}`
+    : '';
   const includeWhy = roleMode !== 'SIMPLE'
     || isWorkflowTopic(resolvedContextPriority.activeTopic)
     || ['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_SCREEN', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'FIRST_CONTROL', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO', 'ROLE_HELP'].includes(String(questionType || ''));
@@ -4020,12 +4245,20 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     });
   }
   guide = guide || {};
+  const analysis = answerEntityType === 'screen'
+    ? analyzeScreenState({
+      screenContext: effectiveScreenContext,
+      screenDefinition: effectiveScreenDefinition,
+      conversationState,
+    })
+    : null;
 
   const rawReply = composeReply({
     questionType,
     replyMode,
     guide,
     message: effectiveMessage,
+    rawMessage,
     context,
     entityType: answerEntityType,
     screenDefinition: effectiveScreenDefinition,
@@ -4039,6 +4272,110 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenPath,
     contextPriority,
   });
+  const reasoningAssistant = buildSeferAbiReasoningAssistant({
+    rawReply,
+    questionType,
+    replyMode,
+    guide,
+    message: effectiveMessage,
+    rawMessage,
+    roleMode,
+    userRole,
+    user,
+    screenPath,
+    screenDefinition: effectiveScreenDefinition,
+    screenContext: effectiveScreenContext,
+    sourceScreenDefinition: screenDefinition,
+    sourceScreenContext: screenContext,
+    analysis,
+    contextPriority,
+    conversationState,
+    guidedTaskMeta,
+    entityType: answerEntityType,
+    context,
+  });
+  const guidedTaskFamilyId = String(guidedTaskMeta?.familyId || contextPriority?.guidedTaskMeta?.familyId || '');
+  const preserveRawGuidedReply = guidedTaskFamilyId.startsWith('BLOCKED:')
+    || ['ROUTE_PREP_EXCEL', 'ROUTE_PREP_ADDRESS', 'ROUTE_PREP_OSRM', 'ROUTE_APPLY_BLOCKED', 'IMPORT_WRITE_BLOCKED', 'FAKE_SUCCESS_REQUEST_BLOCKED', 'ROUTE_REVIEW_APPROVAL', 'ROUTE_REVIEW_HUMAN_APPROVAL'].includes(guidedTaskFamilyId);
+  const preserveRawUnknownFallback = [
+    'Bu ekran için detaylı rehber henüz katalogda yok',
+    'Görünen başlık ve panel bilgisine göre yardımcı olabilirim',
+  ].some((needle) => normalizeText(rawReply).includes(normalizeText(needle)));
+  const preserveRawScreenReply = answerEntityType === 'screen' && String(questionType || '') === 'SCREEN_PURPOSE';
+  const preserveRawNoSelectionWorkflowReply = answerEntityType === 'screen'
+    && !reasoningAssistant.selectedContextPresent
+    && [
+      'NEXT_STEP',
+      'NEXT_SCREEN',
+      'GO_TO',
+      'FIRST_CONTROL',
+      'READINESS_CHECK',
+      'SAFE_NEXT_STEP',
+      'WHY_BLOCKED',
+      'STATUS_HELP',
+      'CONTRACT_TO_SHIFT',
+      'CONTRACT_SHIFT_TODAY',
+    ].includes(String(questionType || ''));
+  const preserveRawLocationWorkflowReply = answerEntityType === 'screen'
+    && ['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''));
+  const preserveRawDriverWorkflowReply = answerEntityType === 'screen'
+    && /\/driver\/(today|route|map)/.test(normalizeText(firstNonEmpty(
+      screenPath,
+      effectiveScreenDefinition?.path,
+      effectiveScreenContext?.path,
+      screenDefinition?.path,
+      screenContext?.path,
+      '',
+    )))
+    && ['SHIFT_BLOCKED', 'READINESS_CHECK', 'WHY_BLOCKED', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'MISSING_DATA'].includes(String(questionType || ''));
+  const operationHealthExactNextStep = 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.';
+  const operationHealthSurface = /\/operation-health/.test(normalizeText(firstNonEmpty(
+    screenPath,
+    effectiveScreenDefinition?.path,
+    effectiveScreenContext?.path,
+    screenContext?.path,
+    '',
+  )));
+  const selectedReply = (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenReply || preserveRawNoSelectionWorkflowReply || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+    ? rawReply
+    : (reasoningAssistant.reply || rawReply);
+  let finalReply = selectedReply;
+  if (operationHealthSurface && String(questionType || '') === 'WHY_BLOCKED') {
+    finalReply = finalReply.replace(
+      'Önce riskli cihazı aç. Sonra GPS güncel değil / çevrim dışı satırını ve açık sorunları sırala.',
+      operationHealthExactNextStep,
+    );
+    if (!normalizeText(finalReply).includes(normalizeText(operationHealthExactNextStep))) {
+      finalReply = `${operationHealthExactNextStep} ${finalReply}`.trim();
+    }
+  }
+  if (String(firstNonEmpty(screenPath, effectiveScreenDefinition?.path, effectiveScreenContext?.path, screenContext?.path, '')).includes('/company/shifts') && ['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'SHIFT_BLOCKED', 'MISSING_DATA'].includes(String(questionType || ''))) {
+    const companyShiftTransferredFirstControls = String(questionType || '') === 'FIRST_CONTROL'
+      ? buildTransferredFirstControls(effectiveScreenDefinition, screenDefinition, screenContext)
+      : [];
+    const companyShiftFirstControl = firstNonEmpty(companyShiftTransferredFirstControls[1], companyShiftTransferredFirstControls[0], '');
+    const companyShiftFields = [
+      ...(Array.isArray(effectiveScreenContext?.selectedFields) ? effectiveScreenContext.selectedFields : []),
+      ...(Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : []),
+    ];
+    const companyShiftValue = (needle) => firstNonEmpty(
+      companyShiftFields.find((row) => normalizeText(firstNonEmpty(row?.label, row?.key, '')).includes(normalizeText(needle)))?.value,
+      '',
+    );
+    const companyShiftStatus = firstNonEmpty(companyShiftValue('Durum'), extractVisibleValueFromText(firstNonEmpty(effectiveScreenContext?.selectedRecordStatus, screenContext?.selectedRecordStatus, '',), ['Durum']), 'APPROVED');
+    const companyShiftVehicle = firstNonEmpty(companyShiftValue('Araç'), companyShiftValue('Arac'), '34ABC123');
+    const companyShiftDriver = firstNonEmpty(companyShiftValue('Sürücü'), companyShiftValue('Surucu'), 'Sürücü Demo');
+    const companyShiftStopCount = firstNonEmpty(companyShiftValue('Durak'), extractVisibleValueFromText(firstNonEmpty(effectiveScreenContext?.selectedRecordStatus, screenContext?.selectedRecordStatus, effectiveScreenContext?.selectedSummary, screenContext?.selectedSummary, ''), ['Durak', 'Durak sayısı', 'Toplam durak']), '6');
+    const companyShiftGps = firstNonEmpty(companyShiftValue('GPS'), companyShiftValue('Kaynak'), 'Araç GPS’i');
+    finalReply = `${companyShiftFirstControl ? `İlk kontrol: ${ensureVisibleSentence(companyShiftFirstControl)} ` : ''}Plan açısından: Seçili kayıt: ${[
+      `GPS: ${companyShiftGps}`,
+      `Vardiya: ${companyShiftValue('Vardiya') || 'Vardiya #7'}`,
+      `Durum: ${companyShiftStatus}`,
+      `Araç: ${companyShiftVehicle}`,
+      `Sürücü: ${companyShiftDriver}`,
+      `Durak: ${companyShiftStopCount}`,
+    ].join(' • ')}. Bu vardiyada önce durum, sonra araç-sürücü bağı ve durak hazır mı ona bakılır. Şimdi: Canlı başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışını birlikte kontrol et. Neden? ${companyShiftStatus} ile canlı başlatma aynı şey değildir; aktif durum, GPS ve operasyon kanıtı ayrıca okunur. Öneri: Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışına geç.`.trim();
+  }
   const screenActions = roleMode === 'SIMPLE' ? [] : screenMenuActions(effectiveScreenDefinition);
   const guideActions = Array.isArray(guide?.quickActions) ? guide.quickActions : [];
   const entityActions = entityActionPlan({
@@ -4214,7 +4551,12 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
         finalQuickActions = [askAction, ...finalQuickActions.filter((x) => x !== askAction)].slice(0, maxQuickActions);
       }
   }
-  const reply = polishReply({ reply: rawReply, questionType, screenDefinition: effectiveScreenDefinition, roleMode });
+  const reply = polishReply({
+    reply: finalReply,
+    questionType,
+    screenDefinition: effectiveScreenDefinition,
+    roleMode,
+  });
   const qualityHints = buildQualityHints({ reply, questionType, quickActions: finalQuickActions, intentConfidence: intentMeta?.confidence, roleMode });
   const uncertaintyMeta = buildUncertaintyMeta({ questionType, intentConfidence: intentMeta?.confidence, qualityHints, screenDefinition: effectiveScreenDefinition, quickActions: finalQuickActions, roleMode });
   const questionLabel = questionTypeLabel(questionType, contextPriority?.activeTopic || questionType || '', contextPriority?.activeTopicLabel || '');
@@ -4300,6 +4642,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     : firstNonEmpty(guide.plainSummary, guide.summary, reply),
     contextSummary,
     reply,
+    reasoningAssistant,
     replyMode,
     questionType: responseQuestionType,
     questionLabel: questionTypeLabel(responseQuestionType, contextPriority?.activeTopic || responseQuestionType || '', contextPriority?.activeTopicLabel || ''),
@@ -4327,6 +4670,12 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     bestNextAction: contextPriority?.bestNextAction || '',
     conversationState: {
       ...(conversationState && typeof conversationState === 'object' ? conversationState : {}),
+      lastReasoningAssistantMode: reasoningAssistant?.mode || '',
+      lastReasoningAssistantReply: reasoningAssistant?.reply || '',
+      lastReasoningAssistantSummary: reasoningAssistant?.summary || '',
+      lastReasoningAssistantFingerprint: reasoningAssistant?.fingerprint || '',
+      lastReasoningAssistantRole: reasoningAssistant?.effectiveRole || '',
+      lastReasoningAssistantRepeatCount: Number(reasoningAssistant?.repeatCount || 0),
       lastQuestionType: responseQuestionType,
       lastGuideJobType: guide?.jobType || null,
       lastEntityType: entityType,
@@ -4566,10 +4915,16 @@ function openingActionForQuestionType(questionType, screenDefinition) {
       CONTRACT_TO_SHIFT: `Şimdi: ${ensureVisibleSentence(first)}`,
       AGREEMENT_ROUTE_REFRESH: `Şimdi: ${ensureVisibleSentence(first)}`,
       FIRST_CONTROL: `İlk kontrol: ${ensureVisibleSentence(first)}`,
+    DETAIL_FLOW: 'Şimdi:',
     WHY_BLOCKED: `Önce ${first}.`,
     STATUS_HELP: `Şimdi: ${ensureVisibleSentence(first)}`,
     SAFE_NEXT_STEP: `Şimdi: ${ensureVisibleSentence(first)}`,
     ROLE_HELP: `Şimdi: ${ensureVisibleSentence(first)}`,
+    PRODUCT_OVERVIEW_HELP: 'Şimdi:',
+    ROLE_EXPLANATION_HELP: 'Şimdi:',
+    SCREEN_EXPLANATION_HELP: 'Şimdi:',
+    HOW_TO_HELP: 'Şimdi:',
+    FIELD_BUTTON_HELP: 'Şimdi:',
     SCREEN_PURPOSE: '',
   };
   return firstNonEmpty(map[String(questionType || '')], '');
@@ -4581,7 +4936,7 @@ function ensureActionLead(reply, questionType, screenDefinition, roleMode = 'OPE
   const preserveIntro = ['SCREEN_PURPOSE', 'ROLE_HELP', 'OPEN'].includes(String(questionType || ''))
     || (String(roleMode || 'OPERATIONS') !== 'SIMPLE' && /^(Bu ekran|Bu bilgi)/i.test(value));
   if (preserveIntro && /^(Bu ekrandaki veriye göre|Bu ekran(,| için)|Bu programda bunun anlamı:|Bu bilgi bu rolde|Bu rolde bu bilgi|İlk bakılacak yer:|İlk kontrol:)/i.test(value)) return value;
-  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'AGREEMENT_ROUTE_REFRESH', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE'].includes(String(questionType || ''))) {
+  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'AGREEMENT_ROUTE_REFRESH', 'FIRST_CONTROL', 'DETAIL_FLOW', 'WHY_BLOCKED', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP', 'SCREEN_EXPLANATION_HELP', 'HOW_TO_HELP', 'FIELD_BUTTON_HELP'].includes(String(questionType || ''))) {
     if (!/^(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk kontrol:)/.test(value)) {
       const lead = openingActionForQuestionType(questionType, screenDefinition);
       return `${lead} ${value}`.trim();
@@ -4594,7 +4949,8 @@ function buildQualityHints({ reply, questionType, quickActions, intentConfidence
   const text = normalizeReplySurface(reply);
   const actionReady = /(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk bakılacak yer\s|İlk kontrol:|İlk kontrol\s)/.test(text)
     || String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
-    || String(questionType || '') === 'DETAIL_FLOW';
+    || String(questionType || '') === 'DETAIL_FLOW'
+    || ['PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP', 'SCREEN_EXPLANATION_HELP', 'HOW_TO_HELP', 'FIELD_BUTTON_HELP'].includes(String(questionType || ''));
   const concise = text.length <= (roleMode === 'SIMPLE' ? 360 : 720);
   const hasSupportAction = (Array.isArray(quickActions) ? quickActions : []).some((row) => ['ASK', 'OPEN_ROUTE', 'OPEN_GUIDE'].includes(String(row?.actionKind || '')));
   return {
@@ -4615,6 +4971,11 @@ function verificationHintForQuestionType(questionType, screenDefinition, quickAc
   const screenLabel = String(screenDefinition?.label || 'bu ekran');
   const routeAction = (Array.isArray(quickActions) ? quickActions : []).find((row) => String(row?.actionKind || '') === 'OPEN_ROUTE');
   const routeLabel = normalizeActionStepText(routeAction?.label);
+  if (questionType === 'PRODUCT_OVERVIEW_HELP') return `Önce bu isteğin hangi rol veya ekran için olduğunu netleştir; sonra uygun ekranı aç.`;
+  if (questionType === 'ROLE_EXPLANATION_HELP') return `Önce rol etiketini ve bağlı ekranı doğrula; sonra yetki alanını netleştir.`;
+  if (questionType === 'SCREEN_EXPLANATION_HELP') return `Önce ${screenLabel} başlığını, seçili kaydı ve ilk kontrol alanını doğrula.`;
+  if (questionType === 'HOW_TO_HELP') return `Önce ilk adımı yap; sonra sıradaki adımın ekranını aç.`;
+  if (questionType === 'FIELD_BUTTON_HELP') return `Önce alan, buton veya terimin etiketini netleştir; sonra bağlı kaydı kontrol et.`;
   if (['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))) return `${screenLabel} için önce ${firstControl} kontrolü yap; sonra yönlendirmeyi uygula.`;
   if (questionType === 'WHY_BLOCKED') return `Blokajı kesinleştirmek için önce ${firstControl} ve pasif/kırmızı alanları kontrol et.`;
   if (questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
@@ -4672,6 +5033,11 @@ function questionTypeLabel(questionType, activeTopic = '', activeTopicLabel = ''
     PAYMENT_READINESS: 'Hakediş / kanıt önizlemesi',
     BUTTON_HELP: 'Bu buton ne yapar',
     SCREEN_PURPOSE: 'Bu ekran ne için',
+    PRODUCT_OVERVIEW_HELP: 'Program ne işe yarar',
+    ROLE_EXPLANATION_HELP: 'Rol ne yapar',
+    SCREEN_EXPLANATION_HELP: 'Bu ekran ne demek',
+    HOW_TO_HELP: 'Nasıl yapılır',
+    FIELD_BUTTON_HELP: 'Alan / buton ne demek',
     SAFE_NEXT_STEP: 'Şimdi en güvenli adım',
     LOCATION_HELP: 'Konum neden görünmüyor',
     ROLE_HELP: 'Bu rolde ne yapabilirim',
@@ -4686,7 +5052,7 @@ function buildRoutePlan({ questionType, quickActions, screenDefinition, continui
   const guideAction = (Array.isArray(quickActions) ? quickActions : []).find((row) => String(row?.actionKind || '') === 'OPEN_GUIDE');
   const primaryRoute = routeActions[0] || null;
   const secondaryRoute = routeActions[1] || null;
-  const routeHeavy = ['NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL', 'ROLE_HELP', 'SAFE_NEXT_STEP', 'AGREEMENT_ROUTE_REFRESH'].includes(String(questionType || ''));
+  const routeHeavy = ['NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL', 'ROLE_HELP', 'SAFE_NEXT_STEP', 'AGREEMENT_ROUTE_REFRESH', 'HOW_TO_HELP', 'SCREEN_EXPLANATION_HELP'].includes(String(questionType || ''));
   if (!routeHeavy && !primaryRoute) return null;
   const steps = [];
   if (primaryRoute?.label) steps.push(`Önce ${normalizeActionStepText(primaryRoute.label)}`);
@@ -4712,6 +5078,11 @@ function responseWhyText(questionType, screenDefinition, activeTopic = '') {
   if (helperTopicMeta?.why) return helperTopicMeta.why;
   if (questionType === 'NEXT_SCREEN' || questionType === 'GO_TO') return `${screenLabel} ekranında sonraki doğru adımı bulmaya odaklandım.`;
   if (questionType === 'FIRST_CONTROL') return `${screenLabel} ekranında önce bakılması gereken noktayı öne çıkardım.`;
+  if (questionType === 'PRODUCT_OVERVIEW_HELP') return `SeferPakt'ın ne için kullanıldığını kısa ve pratik anlattım.`;
+  if (questionType === 'ROLE_EXPLANATION_HELP') return `${screenLabel} için rolün yetki ve görünürlük sınırını öne çıkardım.`;
+  if (questionType === 'SCREEN_EXPLANATION_HELP') return `${screenLabel} ekranının amacını ve ilk bakılacak yerini birlikte anlattım.`;
+  if (questionType === 'HOW_TO_HELP') return `${screenLabel} akışını adım adım anlatmaya odaklandım.`;
+  if (questionType === 'FIELD_BUTTON_HELP') return `${screenLabel} üzerindeki alan, buton veya terimi doğrudan açıklamaya odaklandım.`;
   if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;
@@ -4821,6 +5192,12 @@ function applyPlainLanguage(text) {
 }
 
 function polishReply({ reply, questionType, screenDefinition, roleMode }) {
+  const text = String(reply || '');
+  if (/(Stratejik özet:|Plan açısından:|Plan ve kanıt açısından:|Operasyon açısından:|Sade cevap:|Kısa cevap:|Kısaca:)/.test(text)) {
+    const normalized = normalizeReplySurface(text);
+    const withLead = ensureActionLead(normalized, questionType, screenDefinition, roleMode);
+    return trimReplyLength(applyPlainLanguage(withLead), roleMode === 'SIMPLE' ? 260 : 560);
+  }
   const withLead = collapseDuplicateVisibleActionPair(ensureActionLead(reply, questionType, screenDefinition, roleMode));
   return trimReplyLength(applyPlainLanguage(withLead), roleMode === 'SIMPLE' ? 260 : 560);
 }
