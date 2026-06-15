@@ -68,6 +68,7 @@ Repo: `servis-platform`
 
 ## Follow-up reasoning layer
 - `SEFER-ABI-REASONING-ASSISTANT-01` guided task engine üzerine kurulan follow-up reasoning katmanıdır.
+- `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` guided task engine üzerine kurulan all-roles reasoning katmanıdır; role, ekran, niyet ve ilerleme mesajı birlikte okunur.
 - Role + screen + selected record + conversation state ile context-aware reasoning üretir.
 - Golden pack test/kabul içindir, reply source değildir.
 - Runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.

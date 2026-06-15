@@ -85,6 +85,7 @@ const steps = [
   'check:copiloteblockruntimeanswerintegration01',
   'check:copilotguidedtaskengine01',
   'check:seferabireasoningassistant01',
+  'check:seferabiallrolesreasoningassistant01',
   'check:uxcopilotsmartchips01',
   'check:uxcopilotpersona01',
   'check:uxcopilotterminal01',

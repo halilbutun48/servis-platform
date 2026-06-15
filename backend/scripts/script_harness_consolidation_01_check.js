@@ -27,10 +27,12 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js",
   "backend/scripts/copilot_guided_task_engine_01_check.js",
   "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
+  "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
   "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
+  "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
@@ -77,6 +79,7 @@ const workingTreeCompatFiles = [
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
   "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
+  "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
   "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
   "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
   "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
@@ -294,6 +297,7 @@ function slugToMilestone(slug) {
     [/copilot[_-]?e[_-]?block[_-]?runtime[_-]?answer[_-]?integration0?1/i, "COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01"], // check:copiloteblockruntimeanswerintegration01
     [/copilot[_-]?guided[_-]?task[_-]?engine0?1/i, "COPILOT-GUIDED-TASK-ENGINE-01"], // check:copilotguidedtaskengine01
     [/sefer[_-]?abi[_-]?reasoning[_-]?assistant0?1/i, "SEFER-ABI-REASONING-ASSISTANT-01"], // check:seferabireasoningassistant01
+    [/sefer[_-]?abi[_-]?all[_-]?roles[_-]?reasoning[_-]?assistant0?1/i, "SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01"], // check:seferabiallrolesreasoningassistant01
     [/final/i, "FINAL"],
     [/verifychain0?1/i, "VERIFY-CHAIN-01"],
     [/productextensions/i, "PRODUCT-EXTENSIONS"],
@@ -1492,6 +1496,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Sefer Abi reasoning assistant docs: \`docs/SEFER_ABI_REASONING_ASSISTANT_01.md\``);
   out.push(`- Sefer Abi reasoning assistant command: \`node backend\\scripts\\sefer_abi_reasoning_assistant_01_check.js\``);
   out.push(`- Sefer Abi reasoning assistant helper: \`backend/src/ai/chat/seferAbiReasoningAssistant.js\``);
+  out.push(`- Sefer Abi all-roles reasoning assistant milestone: \`SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01\``);
+  out.push(`- Sefer Abi all-roles reasoning assistant check: \`check:seferabiallrolesreasoningassistant01\``);
+  out.push(`- Sefer Abi all-roles reasoning assistant docs: \`docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md\``);
+  out.push(`- Sefer Abi all-roles reasoning assistant command: \`node backend\\scripts\\sefer_abi_all_roles_reasoning_assistant_01_check.js\``);
+  out.push(`- Sefer Abi all-roles reasoning assistant helper: \`backend/src/ai/chat/seferAbiReasoningAssistant.js\``);
   out.push(`- Address geocoding confidence milestone: \`ADDRESS-GEOCODING-CONFIDENCE-01\``);
   out.push(`- Address geocoding confidence check: \`check:addressgeocodingconfidence01\``);
   out.push(`- Address geocoding confidence docs: \`docs/ADDRESS_GEOCODING_CONFIDENCE_01.md\``);

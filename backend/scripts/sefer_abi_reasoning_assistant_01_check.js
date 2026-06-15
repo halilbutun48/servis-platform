@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import {
   buildSeferAbiReasoningAssistant,
+  SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_VERSION,
   getSeferAbiReasoningRoleProfile,
   listSeferAbiReasoningRoles,
 } from '../src/ai/chat/seferAbiReasoningAssistant.js';
@@ -628,7 +629,7 @@ async function main() {
     entityType: 'screen',
   });
   assert(refusal.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE', 'safe refusal mode');
-  must(refusal.reply, 'Bunu gerçekten yapmış gibi söyleyemem', 'safe refusal lead');
+  must(refusal.reply, 'sistem durumu', 'safe refusal lead');
   must(refusal.reply, 'Güvenli alternatif', 'safe refusal alternative');
 
   const integrationUser = { role: 'COMPANY', companyKind: 'SCHOOL' };
@@ -721,12 +722,16 @@ async function main() {
   must(productOverview.reply, 'SeferPakt', 'product overview mentions SeferPakt');
   must(productOverview.reply, 'platform', 'product overview explains platform purpose');
   must(productOverview.reply, 'Company rolünde', 'product overview names the role view');
+  must(productOverview.reply, 'vardiya', 'product overview gives a starting path');
+  must(productOverview.reply, 'teklif', 'product overview keeps the commercial path');
+  must(productOverview.reply, 'bulamadım', 'product overview keeps the safe follow-up line');
 
   const roleExplanation = buildDirectHelpResponse({ message: 'Room rolü ne yapar?', role: 'ROOM' });
   assert(roleExplanation.questionType === 'ROLE_EXPLANATION_HELP', 'role explanation routes to ROLE_EXPLANATION_HELP');
-  must(roleExplanation.reply, 'Room rolü', 'role explanation mentions role name');
+  must(roleExplanation.reply, 'Room rolünde', 'role explanation mentions role name');
   must(roleExplanation.reply, 'operasyon, sürücü ve araç', 'role explanation explains the role');
-  must(roleExplanation.reply, 'İstersen', 'role explanation keeps the follow-up invitation');
+  must(roleExplanation.reply, 'Önce', 'role explanation gives first step');
+  must(roleExplanation.reply, 'bulamadım', 'role explanation keeps the safe follow-up line');
 
   const screenExplanation = buildDirectHelpResponse({
     message: 'Bu ekran ne işe yarar?',
@@ -753,7 +758,8 @@ async function main() {
   });
   assert(screenExplanation.questionType === 'SCREEN_EXPLANATION_HELP', 'screen explanation routes to SCREEN_EXPLANATION_HELP');
   must(screenExplanation.reply, 'Operasyon özetini gösterir', 'screen explanation uses screen purpose');
-  must(screenExplanation.reply, 'İstersen beraber ilerleyelim', 'screen explanation keeps guided follow-up');
+  must(screenExplanation.reply, 'Şu an Super Admin Operations ekranındaysan', 'screen explanation keeps screen context');
+  must(screenExplanation.reply, 'bulamadım', 'screen explanation keeps safe follow-up');
 
   const howToHelp = buildDirectHelpResponse({
     message: 'Vardiya nasıl oluşturulur?',
@@ -777,9 +783,10 @@ async function main() {
     },
   });
   assert(howToHelp.questionType === 'HOW_TO_HELP', 'how-to routes to HOW_TO_HELP');
-  must(howToHelp.reply, 'Şimdi:', 'how-to reply keeps the direct lead');
-  must(howToHelp.reply, 'adım', 'how-to reply stays step-by-step');
-  must(howToHelp.reply, 'İstersen beraber adım adım ilerleyelim', 'how-to reply keeps the guided invitation');
+  must(howToHelp.reply, 'Şu an Company Shifts ekranındaysan', 'how-to reply keeps the screen context');
+  must(howToHelp.reply, 'Önce vardiya satırını aç', 'how-to reply stays step-by-step');
+  must(howToHelp.reply, 'Sonra araç ve sürücüyü bağla', 'how-to reply includes the next step');
+  must(howToHelp.reply, 'bulamadım', 'how-to reply keeps the safe follow-up line');
 
   const fieldButtonTermCases = [
     {
@@ -836,7 +843,8 @@ async function main() {
   });
   assert(buttonHelp.questionType === 'FIELD_BUTTON_HELP', 'button question routes to FIELD_BUTTON_HELP');
   must(buttonHelp.reply, 'Takip', 'button help names the button');
-  must(buttonHelp.reply, 'Vardiya listelerini takip görünümünde açar', 'button help explains the button purpose');
+  must(buttonHelp.reply, 'Vardiya listesini açar', 'button help explains the button purpose');
+  must(buttonHelp.reply, 'bulamadım', 'button help keeps the safe follow-up line');
 
   must(helpComposerSource, 'buildSeferAbiReasoningAssistant', 'help composer keeps reasoning assistant wiring');
   must(helpComposerSource, 'reasoningAssistant.reply || rawReply', 'help composer prefers reasoning assistant reply');
@@ -846,6 +854,17 @@ async function main() {
   assert(Array.isArray(listSeferAbiReasoningRoles()) && listSeferAbiReasoningRoles().length === 8, 'eight reasoning roles listed');
   assert(getSeferAbiReasoningRoleProfile('COMPANY', { companyKind: 'SCHOOL' }).frame === 'Plan ve kanıt açısından:', 'school role profile resolves from company kind');
   assert(getSeferAbiReasoningRoleProfile('COMPANY', { companyKind: 'ORGANIZATION' }).frame === 'Plan ve onay açısından:', 'organization role profile resolves from company kind');
+  assert(buildSeferAbiReasoningAssistant({
+    message: 'Bu kayıt ne?',
+    questionType: 'SCREEN_START',
+    replyMode: 'SHORT',
+    guide: {},
+    userRole: 'COMPANY',
+    user: { role: 'COMPANY' },
+    screenPath: '/company/shifts',
+    screenDefinition: { path: '/company/shifts', label: 'Company Shifts', firstStep: 'Önce vardiya satırını aç.' },
+    screenContext: { path: '/company/shifts', label: 'Company Shifts', selectedSummary: 'Hazır' },
+  }).assistantMilestone === SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_VERSION, 'assistant milestone marker exposed');
 
   mustNoDiff(['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'], 'backend route/service/schema and Prisma diff stays empty');
   assert(cachedNames.length === 0, 'stage stays empty');

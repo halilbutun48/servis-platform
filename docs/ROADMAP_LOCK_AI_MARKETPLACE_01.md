@@ -438,6 +438,8 @@ Kullanılmayacak cümleler:
 - COPILOT-GUIDED-TASK-ENGINE-01: Türkçe semantic intent family roadmap'idir; exact phrase matching'e bağlı kalmadan guideline, synonym ve typo toleransı sunar; runtime AI action, tool execution, write-action dispatcher, OSRM/geocode call ve route apply açmaz.
 - SEFER-ABI-REASONING-ASSISTANT-01
 - SEFER-ABI-REASONING-ASSISTANT-01: role + screen + selected record + conversation state reasoning katmanıdır; golden pack test/kabul içindir, reply source değildir; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01
+- SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01: role + screen + selected record + conversation state + interactionIntentFamily reasoning katmanıdır; golden pack test/kabul içindir, reply source değildir; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 
 ### E) COPILOT OPERASYON AKIŞI
 - COPILOT-DEMAND-INTAKE-01

@@ -193,8 +193,8 @@ function isShortFollowUp(text) {
   const value = normalizeText(text);
   if (!value) return false;
   if (value.length > 72) return false;
-  return /(peki|tamam|o zaman|devam|devam et|ee sonra|e sonra|sonra\??|simdi\??|şimdi\??|neden\??|niye\??|bunda\??|burada\??|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta)/.test(value)
-    || matchesStandalonePhrase(value, ['bura ne', 'burası ne', 'burasi ne', 'bu ne', 'ne bu', 'burda ne var', 'burada ne var', 'burası ne işe yarıyor', 'burasi ne ise yariyor', 'bu ekran ne', 'ne yapayım', 'ne yapayim', 'şimdi ne', 'simdi ne']);
+  return /(peki|tamam|o zaman|devam|devam et|ee sonra|e sonra|sonra\??|simdi\??|şimdi\??|neden\??|niye\??|bunda\??|burada\??|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta|girdim|içine girdim|icine girdim|açtım|actim|yaptım|yaptim|bulamadım|bulamadim|benim yerime|bunu sen yap|teklifi kabul et|aracı ata|araci ata|sözleşmeyi yürürlüğe al|sozlesmeyi yururluge al)/.test(value)
+    || matchesStandalonePhrase(value, ['bura ne', 'burası ne', 'burasi ne', 'bu ne', 'ne bu', 'burda ne var', 'burada ne var', 'burası ne işe yarıyor', 'burasi ne ise yariyor', 'bu ekran ne', 'ne yapayım', 'ne yapayim', 'şimdi ne', 'simdi ne', 'girdim', 'yaptım', 'yaptim', 'bulamadım', 'bulamadim', 'devam et', 'bunu sen yap', 'benim yerime', 'teklifi kabul et', 'aracı ata', 'araci ata', 'sözleşmeyi yürürlüğe al', 'sozlesmeyi yururluge al']);
 }
 
 function lastQuestionType(state) {
@@ -380,7 +380,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     };
   }
 
-  if (/(?:bu buton ne işe yarıyor|bu buton ne ise yariyor|bu buton ne yapıyor|bu buton ne yapiyor|bu alanı nasıl dolduracağım|bu alani nasil dolduracagim|hakediş ne demek|hakedis ne demek|route readiness ne demek|servis kanıtı ne işe yarar|servis kaniti ne ise yarar|bu alan ne demek|bu sütun ne demek|bu sutun ne demek|bu kolon ne demek|bu terim ne demek)/.test(combinedText)) {
+  if (/(?:buton.*(?:ne işe yarıyor|ne ise yariyor|ne yapıyor|ne yapiyor)|bu buton ne işe yarıyor|bu buton ne ise yariyor|bu buton ne yapıyor|bu buton ne yapiyor|bu alanı nasıl dolduracağım|bu alani nasil dolduracagim|hakediş ne demek|hakedis ne demek|route readiness ne demek|servis kanıtı ne işe yarar|servis kaniti ne ise yarar|bu alan ne demek|bu sütun ne demek|bu sutun ne demek|bu kolon ne demek|bu terim ne demek)/.test(combinedText)) {
     return {
       questionType: 'FIELD_BUTTON_HELP',
       confidence: 0.9,
@@ -774,11 +774,60 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   if (/(neden|farkı|farki|ne\s+demek)/.test(text) && pathHas(options.screenPath, ['/agreements', '/hub', '/school/parents', '/access-links', '/checkin', '/notifications', '/logs', '/operation-verification', '/acceptance', '/trust-quality', '/observability'])) addScore(scores, signals, 'SCREEN_PURPOSE', 1, 'special-screen-purpose');
   if (pathHas(options.screenPath, ['/trust-quality']) && /(sağlayıcı|saglayici).*(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 4, 'trust-quality-provider-comparison');
 
-  const shortFollowUp = isShortFollowUp(text);
+  const shortFollowUp = isShortFollowUp(text) || isShortFollowUp(options.originalMessage || '');
   const prevType = lastQuestionType(options.conversationState);
   if (shortFollowUp && prevType) {
+    const followUpText = normalizeLooseText(options.originalMessage || text);
+    if (/(girdim|içine girdim|icine girdim|açtım|actim|geldim|ulaştım|ulastim|ekrana girdim)/.test(followUpText)) {
+      return {
+        questionType: ['NEXT_SCREEN', 'GO_TO'].includes(prevType) ? 'FIRST_CONTROL' : 'NEXT_STEP',
+        confidence: 0.95,
+        matchedSignals: ['NEXT_STEP', 'follow-up-entered'],
+        preferRoute: false,
+        routeRequest: false,
+      };
+    }
+    if (/(yaptım|yaptim|tamamladım|tamamladim|denedim|kontrol ettim|işledim|isledim)/.test(followUpText)) {
+      return {
+        questionType: ['RESULT_CHECK', 'READINESS_CHECK'].includes(prevType) ? 'READINESS_CHECK' : 'NEXT_STEP',
+        confidence: 0.94,
+        matchedSignals: ['READINESS_CHECK', 'follow-up-result'],
+        preferRoute: false,
+        routeRequest: false,
+      };
+    }
+    if (/(bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim|nerede|hangi\s+menü|hangi\s+menu|alternatif\s+yol|menü\s+yolu|menu\s+yolu)/.test(followUpText)) {
+      return {
+        questionType: 'NEXT_SCREEN',
+        confidence: 0.93,
+        matchedSignals: ['NEXT_SCREEN', 'follow-up-missing'],
+        preferRoute: true,
+        routeRequest: false,
+      };
+    }
+    if (/(devam\s+et|aynı\s+kayıtta|ayni\s+kayitta|aynı\s+yerden\s+devam|ayni\s+yerden\s+devam|sürdür|surdur|buradan\s+devam|aynı\s+kayıt\s+için\s+devam|ayni\s+kayit\s+icin\s+devam)/.test(followUpText)) {
+      return {
+        questionType: ['NEXT_SCREEN', 'GO_TO'].includes(prevType) ? 'FIRST_CONTROL' : 'NEXT_STEP',
+        confidence: 0.94,
+        matchedSignals: ['NEXT_STEP', 'follow-up-continue'],
+        preferRoute: false,
+        routeRequest: false,
+      };
+    }
+    if (/(girdim|içine girdim|icine girdim|açtım|actim|geldim|ulaştım|ulastim|ekrana girdim)/.test(text)) {
+      if (['NEXT_STEP', 'FIRST_CONTROL', 'SCREEN_PURPOSE', 'STATUS_HELP', 'READINESS_CHECK', 'WHY_BLOCKED'].includes(prevType)) addScore(scores, signals, 'NEXT_STEP', 7, `follow-up-entered:${prevType}`);
+      if (['NEXT_SCREEN', 'GO_TO'].includes(prevType)) addScore(scores, signals, 'FIRST_CONTROL', 5, `follow-up-entered-route:${prevType}`);
+    }
+    if (/(yaptım|yaptim|tamamladım|tamamladim|denedim|kontrol ettim|işledim|isledim)/.test(text)) {
+      if (['RESULT_CHECK', 'READINESS_CHECK', 'NEXT_STEP', 'WHY_BLOCKED'].includes(prevType)) addScore(scores, signals, 'READINESS_CHECK', 7, `follow-up-result:${prevType}`);
+      if (['RESULT_CHECK', 'NEXT_STEP', 'READINESS_CHECK'].includes(prevType)) addScore(scores, signals, 'NEXT_STEP', 4, `follow-up-result-next:${prevType}`);
+    }
+    if (/(bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim|nerede|hangi\s+menü|hangi\s+menu|alternatif\s+yol|menü\s+yolu|menu\s+yolu)/.test(text)) {
+      if (['NEXT_STEP', 'FIRST_CONTROL', 'SCREEN_PURPOSE', 'NEXT_SCREEN', 'GO_TO', 'STATUS_HELP'].includes(prevType)) addScore(scores, signals, 'NEXT_SCREEN', 7, `follow-up-missing:${prevType}`);
+      if (['NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL'].includes(prevType)) addScore(scores, signals, 'FIRST_CONTROL', 4, `follow-up-missing-control:${prevType}`);
+    }
     if (/(peki|tamam|o zaman|devam|sonra|simdi|şimdi|ee sonra)/.test(text)) {
-      if (['WHY_BLOCKED', 'STATUS_HELP', 'READINESS_CHECK', 'FIRST_CONTROL', 'SCREEN_PURPOSE', 'ROLE_HELP'].includes(prevType)) addScore(scores, signals, 'NEXT_STEP', 6, `follow-up-next:${prevType}`);
+      if (['WHY_BLOCKED', 'STATUS_HELP', 'READINESS_CHECK', 'FIRST_CONTROL', 'SCREEN_PURPOSE', 'ROLE_HELP', 'NEXT_STEP'].includes(prevType)) addScore(scores, signals, 'NEXT_STEP', 6, `follow-up-next:${prevType}`);
       if (['NEXT_SCREEN', 'GO_TO'].includes(prevType)) addScore(scores, signals, 'FIRST_CONTROL', 5, `follow-up-first-control:${prevType}`);
     }
     if (/^(neden|niye)\??$/.test(text) || /(neden böyle|neden boyle|niye böyle|niye boyle)/.test(text)) {

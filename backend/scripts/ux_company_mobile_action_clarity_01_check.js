@@ -575,6 +575,7 @@ function main() {
     "backend/src/ai/chat/helpComposer.js",
     "backend/src/ai/chat/intentRouter.js",
     "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
+    "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
     "backend/src/ai/chat/seferAbiReasoningAssistant.js",
     "backend/src/ai/chat/copilotGuidedTaskEngine.js",
     "backend/src/ai/chat/goldenQuestionPack.js",
@@ -582,6 +583,7 @@ function main() {
     "backend/scripts/copilot_guided_task_engine_01_check.js",
     "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
     "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
+    "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
     "web/src/utils/uiDataCache.js",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];

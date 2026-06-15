@@ -24,6 +24,7 @@ Repo: `servis-platform`
 - `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01` bu baseline üzerine kurulan answer-only helper roadmap'idir; Excel/import, address/geocode, OSRM ve route-review sorularını güvenli açıklama / önizleme katmanında tutar; runtime AI action, tool execution ve write-action dispatcher açmaz.
 - `COPILOT-GUIDED-TASK-ENGINE-01` bu baseline üzerine kurulan semantic intent family roadmap'idir; exact phrase matching yerine role + screen + task family + synonym + typo toleransı kullanır; runtime AI action, tool execution, write-action dispatcher, OSRM/geocode call ve route apply açmaz.
 - `SEFER-ABI-REASONING-ASSISTANT-01` bu baseline üzerine kurulan reasoning assistant roadmap'idir; role + screen + selected record + conversation state ile context-aware reasoning üretir; golden pack test/kabul içindir ve reply source değildir; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` bu baseline üzerine kurulan all-roles reasoning assistant roadmap'idir; role + screen + selected record + conversation state + interactionIntentFamily ile context-aware reasoning üretir; golden pack test/kabul içindir ve reply source değildir; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 
 ## Canonical action model
 Anla -> Analiz et -> En iyi seçenekleri sun -> Riskleri açıkla -> İnsan onayı al -> Guard'lı uygula -> Audit log yaz

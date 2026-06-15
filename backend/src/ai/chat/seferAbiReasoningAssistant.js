@@ -2,6 +2,7 @@ import { hasExplicitRoleBoundarySignal } from './answerQualityPolicy.js';
 import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
 
 export const SEFER_ABI_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-REASONING-ASSISTANT-01';
+export const SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01';
 
 export const SEFER_ABI_REASONING_ASSISTANT_MODES = Object.freeze([
   'PASS_THROUGH',
@@ -9,6 +10,15 @@ export const SEFER_ABI_REASONING_ASSISTANT_MODES = Object.freeze([
   'CLARIFYING_QUESTION',
   'SAFE_REFUSAL_WITH_ALTERNATIVE',
   'REPETITION_CONTROL',
+]);
+
+export const SEFER_ABI_REASONING_ASSISTANT_INTENT_FAMILIES = Object.freeze([
+  'DEFAULT',
+  'CONTINUE_FLOW',
+  'STEP_ENTERED',
+  'RESULT_CHECK',
+  'ALTERNATIVE_PATH',
+  'DELEGATE_SAFE',
 ]);
 
 export const SEFER_ABI_REASONING_ASSISTANT_GUARD_REQUIREMENTS = Object.freeze([
@@ -69,10 +79,13 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'Super admin',
     frame: 'Stratejik özet:',
     tone: 'stratejik',
+    voice: 'audit / kalite / sistem',
+    intro: 'sistem durumu, ticari akış, kalite ve audit / risk sırasını okumak için kullanılır.',
     focus: Object.freeze(['risk', 'audit', 'özet', 'kanıt']),
-    clarifyingQuestion: 'Hangi organizasyon veya kayıt için stratejik özet çıkarayım?',
-    safeAlternative: 'Önce ilgili kayıt, kanıt ve risk satırlarını açalım.',
-    repeatLead: 'Kısaca farklı açıdan:',
+    starterSteps: Object.freeze(['Sistem durumu bandını aç', 'Ticari akışı kontrol et', 'Kalite / kanıt ve audit / risk kartlarını incele']),
+    clarifyingQuestion: 'Hangi kayıt, risk ya da audit satırı için bakayım?',
+    safeAlternative: 'Önce sistem durumu bandını ve ilgili risk kartını aç.',
+    repeatLead: 'Audit açısından kısa not:',
     chips: Object.freeze(['Risk özeti', 'Kanıtı göster', 'Kritik kayıtları sırala', 'Sorumlu rol kim?']),
     maxLength: 440,
   }),
@@ -81,10 +94,13 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'Company',
     frame: 'Plan açısından:',
     tone: 'planlayıcı',
+    voice: 'plan / teklif / sözleşme',
+    intro: 'vardiya, teklif ve sözleşme akışını düzenlemek için kullanılır.',
     focus: Object.freeze(['plan', 'vardiya', 'sözleşme', 'hazırlık']),
-    clarifyingQuestion: 'Hangi sözleşme, vardiya veya plan kaydı için bakayım?',
-    safeAlternative: 'Önce planı, eksik veriyi ve ilgili kaydı birlikte netleştirelim.',
-    repeatLead: 'Kısa plan özeti:',
+    starterSteps: Object.freeze(['Vardiya ya da talebi aç', 'Teklifleri topla', 'Karşılaştırıp sözleşmeye hazırla']),
+    clarifyingQuestion: 'Hangi vardiya, talep ya da sözleşme için bakayım?',
+    safeAlternative: 'Önce vardiya ya da talep ekranını açıp teklifleri ve sözleşme hazırlığını kontrol et.',
+    repeatLead: 'Planı netleştireyim:',
     chips: Object.freeze(['Bugünkü plan', 'Eksik veri', 'Sözleşme / vardiya', 'Hazırlık durumu']),
     maxLength: 420,
   }),
@@ -93,10 +109,13 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'Room',
     frame: 'Operasyon açısından:',
     tone: 'operasyonel',
+    voice: 'araç / sürücü / operasyon',
+    intro: 'araç, sürücü ve operasyon akışını birlikte görmek için kullanılır.',
     focus: Object.freeze(['araç', 'sürücü', 'kapasite', 'kalite']),
-    clarifyingQuestion: 'Hangi kayıt, araç veya sürücü için bakayım?',
-    safeAlternative: 'Önce araç, sürücü ve kapasite sinyallerini birlikte kontrol edelim.',
-    repeatLead: 'Operasyon açısından kısa özet:',
+    starterSteps: Object.freeze(['Teklifleri incele', 'Araç / sürücü uygunluğunu kontrol et', 'Kapasite ve kanıt durumuna bak']),
+    clarifyingQuestion: 'Hangi kayıt için bakayım? Araç, sürücü ya da operasyon kaydı mı?',
+    safeAlternative: 'Önce teklif, araç / sürücü ve kapasite satırlarını kontrol et.',
+    repeatLead: 'Operasyon açısından kısa not:',
     chips: Object.freeze(['Araç / sürücü', 'Kapasite', 'Kalite / risk', 'Operasyon kontrolü']),
     maxLength: 420,
   }),
@@ -105,10 +124,13 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'Driver',
     frame: 'Kısaca:',
     tone: 'saha',
+    voice: 'saha / kısa / rota',
+    intro: 'günün rotasını ve sıradaki durağı güvenli şekilde takip etmek için kullanılır.',
     focus: Object.freeze(['rota', 'check-in', 'güvenli', 'aktif durum']),
-    clarifyingQuestion: 'Hangi rota, araç veya check-in kaydı için bakayım?',
-    safeAlternative: 'Önce aktif rota ve check-in sinyalini birlikte görelim.',
-    repeatLead: 'Kısa cevap:',
+    starterSteps: Object.freeze(['Aktif rotanı aç', 'Sıradaki durağı kontrol et', 'Güvenli yerde işlem yap']),
+    clarifyingQuestion: 'Hangi rota ya da durak için bakayım?',
+    safeAlternative: 'Önce aktif rota ve sıradaki durak sinyalini kontrol et.',
+    repeatLead: 'Kısa saha notu:',
     chips: Object.freeze(['Bugünkü rota', 'Check-in', 'Sonraki durak', 'GPS durumu']),
     maxLength: 280,
   }),
@@ -117,10 +139,13 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'Personel',
     frame: 'Sade cevap:',
     tone: 'basit',
+    voice: 'KVKK / güvenli takip',
+    intro: 'servis durumunu ve biniş bilgisini görmek için kullanılır.',
     focus: Object.freeze(['servis', 'kişisel bilgi', 'takip', 'KVKK']),
-    clarifyingQuestion: 'Hangi servis veya kişisel takip kaydı için bakayım?',
-    safeAlternative: 'Önce servis durumunu ve görünür bilgiyi birlikte kontrol edelim.',
-    repeatLead: 'Kısaca:',
+    starterSteps: Object.freeze(['Servis durumunu / my ride ekranını aç', 'Biniş noktası ve saat bilgisini kontrol et', 'Gerekirse takip sorusuyla ilerle']),
+    clarifyingQuestion: 'Hangi servis kaydı için bakayım?',
+    safeAlternative: 'Önce yetkili servis durumunu ve KVKK kapsamında görünen bilgiyi birlikte kontrol et.',
+    repeatLead: 'Kısa takip notu:',
     chips: Object.freeze(['Servis durumu', 'Kim görebilir?', 'Eksik bilgi', 'Sıradaki adım']),
     maxLength: 280,
   }),
@@ -129,10 +154,13 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'Parent',
     frame: 'Kısa cevap:',
     tone: 'basit',
+    voice: 'çocuk / güvenli takip',
+    intro: 'öğrencinin servis durumunu güvenli takip etmek için kullanılır.',
     focus: Object.freeze(['çocuk', 'servis', 'takip', 'KVKK']),
-    clarifyingQuestion: 'Hangi çocuğun servis kaydı için bakayım?',
-    safeAlternative: 'Önce servis durumunu ve KVKK sınırını birlikte kontrol edelim.',
-    repeatLead: 'Kısaca:',
+    starterSteps: Object.freeze(['Yetkili öğrenci servis görünümünü aç', 'Canlı takip / servis durumu bilgisini kontrol et', 'Gerekirse bulamadım diye daralt']),
+    clarifyingQuestion: 'Hangi öğrenci servisi için bakayım?',
+    safeAlternative: 'Önce yetkili öğrenci servis görünümünü aç.',
+    repeatLead: 'Kısa takip notu:',
     chips: Object.freeze(['Çocuğumun servisi', 'Talep durumu', 'KVKK sınırı', 'Sıradaki adım']),
     maxLength: 280,
   }),
@@ -141,10 +169,13 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'School',
     frame: 'Plan ve kanıt açısından:',
     tone: 'planlayıcı',
+    voice: 'yetki kapsamı / servis özeti',
+    intro: 'servis kanıtı, gecikme ve yetkili okul kayıtlarını okumak için kullanılır.',
     focus: Object.freeze(['plan', 'kanıt', 'servis', 'onay']),
-    clarifyingQuestion: 'Hangi servis planı veya onay kaydı için bakayım?',
-    safeAlternative: 'Önce plan, kanıt ve onay sınırını birlikte açalım.',
-    repeatLead: 'Kısa plan özeti:',
+    starterSteps: Object.freeze(['Servis kanıtı, devam ve gecikme özetine bak', 'Yetkili okul kapsamındaki kayıtları incele', 'Gerekirse onay sorusuna geç']),
+    clarifyingQuestion: 'Hangi servis kanıtı ya da okul kaydı için bakayım?',
+    safeAlternative: 'Önce servis kanıtı ve gecikme özetini aç.',
+    repeatLead: 'Kısa servis özeti:',
     chips: Object.freeze(['Plan', 'Kanıt', 'Onay', 'Servis düzeni']),
     maxLength: 360,
   }),
@@ -153,10 +184,13 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'Organization',
     frame: 'Plan ve onay açısından:',
     tone: 'kurumsal',
+    voice: 'yetki kapsamı / operasyon özeti',
+    intro: 'organizasyon planı, lokasyon ve katılımcı durumunu kontrol etmek için kullanılır.',
     focus: Object.freeze(['plan', 'kanıt', 'servis', 'onay']),
-    clarifyingQuestion: 'Hangi operasyon veya onay kaydı için bakayım?',
-    safeAlternative: 'Önce plan, kanıt ve onay sınırını birlikte açalım.',
-    repeatLead: 'Kısa kurumsal özet:',
+    starterSteps: Object.freeze(['Organizasyon servis planını aç', 'Lokasyon / katılımcı durumunu kontrol et', 'Onay ve operasyon özetine bak']),
+    clarifyingQuestion: 'Hangi plan ya da operasyon kaydı için bakayım?',
+    safeAlternative: 'Önce organizasyon planı ve lokasyon durumunu kontrol et.',
+    repeatLead: 'Kısa operasyon özeti:',
     chips: Object.freeze(['Plan', 'Kanıt', 'Onay', 'Servis düzeni']),
     maxLength: 360,
   }),
@@ -165,9 +199,12 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     label: 'Default',
     frame: 'Kısaca:',
     tone: 'genel',
+    voice: 'başlangıç yolu',
+    intro: 'servis operasyonunu planlamak, takip etmek ve kanıtı okumak için kullanılır.',
     focus: Object.freeze(['durum', 'kanıt', 'sonraki adım']),
+    starterSteps: Object.freeze(['Bugünkü plan / vardiya akışını aç', 'Canlı takip / servis durumuna bak', 'Kanıt / kalite / audit ekranını kontrol et']),
     clarifyingQuestion: 'Hangi kayıt için bakayım?',
-    safeAlternative: 'Önce seçili kayıt ve eksik bilgiyi birlikte netleştirelim.',
+    safeAlternative: 'Önce seçili kayıt ve eksik bilgiyi birlikte netleştir.',
     repeatLead: 'Kısaca farklı açıdan:',
     chips: Object.freeze(['Bu kayıt ne durumda?', 'Şimdi ne yapmalıyım?', 'Burada eksik ne olabilir?', 'Hangi ekrana geçmeliyim?']),
     maxLength: 360,
@@ -245,7 +282,215 @@ function profileForRole(roleKey) {
   return SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES[roleKey] || SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES.DEFAULT;
 }
 
+function roleExplanationSentence(roleKey) {
+  const normalized = String(roleKey || '').trim().toLowerCase();
+  const map = {
+    company: 'teklif, sözleşme ve vardiya planını yönetirsin.',
+    organization: 'teklif, sözleşme ve vardiya planını yönetirsin.',
+    room: 'operasyon, sürücü ve araç akışını takip edersin.',
+    driver: 'kendi rotanı, günlük görevini ve sıradaki durağı görürsün.',
+    parent: 'öğrencinin servisini canlı izlersin.',
+    personel: 'kendi servis akışını ve durumunu takip edersin.',
+    school: 'okul tarafındaki servis ve operasyon işlerini yönetirsin.',
+    super_admin: 'tüm yüzeyleri, kaliteyi ve kanıt akışını denetlersin.',
+  };
+  return firstNonEmpty(map[normalized], 'kendi alanına ait ekranları ve onay adımlarını görürsün.');
+}
+
+export function getSeferAbiReasoningRolePlaybook(role, user = null) {
+  const roleProfile = getSeferAbiReasoningRoleProfile(role, user);
+  return Object.freeze({
+    ...roleProfile,
+    roleSentence: roleExplanationSentence(roleProfile.role),
+    starterSteps: Array.isArray(roleProfile.starterSteps) ? [...roleProfile.starterSteps] : [],
+    safeAlternative: firstNonEmpty(roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik bilgiyi birlikte kontrol et.'),
+    clarifyingQuestion: firstNonEmpty(roleProfile.clarifyingQuestion, 'Hangi kayıt için bakayım?'),
+    repeatLead: firstNonEmpty(roleProfile.repeatLead, 'Kısaca farklı açıdan:'),
+    voice: firstNonEmpty(roleProfile.voice, 'başlangıç yolu'),
+    intro: firstNonEmpty(roleProfile.intro, 'servis operasyonunu planlamak ve takip etmek için kullanılır.'),
+  });
+}
+
+function detectSeferAbiReasoningIntentFamily({
+  message = '',
+  questionType = '',
+  conversationState = null,
+} = {}) {
+  const text = normalizeText(message);
+  const lastQuestionType = String(conversationState?.lastQuestionType || '');
+  if (!text) return 'DEFAULT';
+
+  if (/(bunu\s+sen\s+yap|benim\s+yerime\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|benim\s+ad(?:ı|i)ma\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|sen\s+uygula|sen\s+kaydet|sen\s+oluştur|sen\s+olustur|aracı\s+ata|araci\s+ata|teklifi\s+kabul\s+et|sözleşmeyi\s+yürürlüğe\s+al|sozlesmeyi\s+yururluge\s+al)/.test(text)) return 'DELEGATE_SAFE';
+  if (/(girdim|içine girdim|icine girdim|açtım|actim|geldim|ulaştım|ulastim|buldum\s+gibi|ekrana\s+girdim)/.test(text)) return 'STEP_ENTERED';
+  if (/(yaptım|yaptim|tamamladım|tamamladim|denedim|kontrol ettim|sonucu kontrol ettim|işledim|isledim|oldu\s+mu|doğru\s+mu|dogru\s+mu)/.test(text)) return 'RESULT_CHECK';
+  if (/(bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim|nerede|hangi\s+ekran|hangi\s+menü|hangi\s+menu|alternatif\s+yol|menü\s+yolu|menu\s+yolu)/.test(text)) return 'ALTERNATIVE_PATH';
+  if (/(devam\s+et|aynı\s+kayıtta|ayni\s+kayitta|aynı\s+yerden\s+devam|ayni\s+yerden\s+devam|sürdür|surdur|buradan\s+devam|aynı\s+kayıt\s+için\s+devam|ayni\s+kayit\s+icin\s+devam)/.test(text)) return 'CONTINUE_FLOW';
+  if (questionType === 'PRODUCT_OVERVIEW_HELP') return 'OVERVIEW_START';
+  if (questionType === 'ROLE_EXPLANATION_HELP') return 'ROLE_START';
+  if (questionType === 'SCREEN_EXPLANATION_HELP') return 'SCREEN_START';
+  if (questionType === 'HOW_TO_HELP') return 'STEP_BY_STEP';
+  if (questionType === 'FIELD_BUTTON_HELP') return 'FIELD_BUTTON';
+  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL', 'SAFE_NEXT_STEP'].includes(lastQuestionType)) return 'CONTINUE_FLOW';
+  return 'DEFAULT';
+}
+
+function pickByRepeatCount(items, repeatCount = 0, role = 'DEFAULT') {
+  const source = Array.isArray(items)
+    ? items
+    : (items && typeof items === 'object'
+      ? (Array.isArray(items[role]) && items[role].length ? items[role] : (Array.isArray(items.DEFAULT) ? items.DEFAULT : []))
+      : []);
+  const rows = Array.isArray(source) ? source.filter(Boolean) : [];
+  if (!rows.length) return '';
+  const index = Math.max(0, Math.min(rows.length - 1, Number(repeatCount) || 0));
+  return rows[index] || rows[0] || '';
+}
+
+function buildIntentLead(snapshot) {
+  const family = String(snapshot?.interactionIntentFamily || 'DEFAULT');
+  const roleProfile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
+  const repeatCount = Number(snapshot?.repeatCount || 0);
+  const role = String(roleProfile?.role || snapshot?.effectiveRole || 'DEFAULT');
+  switch (family) {
+    case 'DELEGATE_SAFE':
+      return pickByRepeatCount({
+        SUPER_ADMIN: [
+          'Bu işlemi ben uygulayamam; ama sistem durumu ve audit kontrolünü birlikte açarız.',
+          'Bu adımı ben yürütmem; ama kontrol sırasını göstereyim.',
+          'Bu kararı otomatik veremem; ama risk ve kanıtı birlikte sıralayalım.',
+        ],
+        COMPANY: [
+          'Bunu senin yerine yapamam; ama teklif ve sözleşme hazırlığını adım adım gösteririm.',
+          'Bu işlemi ben uygulayamam; ama plan ekranında neyi kontrol edeceğini söyleyeyim.',
+          'Yürütmeyi ben üstlenemem; ama güvenli hazırlık yolunu çıkarayım.',
+        ],
+        ROOM: [
+          'Bunu ben atayamam; ama araç, sürücü ve kapasite kontrolünü birlikte açarız.',
+          'Bu adımı ben yürütmem; ama operasyon sırasını birlikte netleştiririz.',
+          'İşlemi ben yapamam; ama uygun araç ve sürücü adımını göstereyim.',
+        ],
+        DRIVER: [
+          'Bunu senin yerine işleyemem; ama güvenli saha adımını gösteririm.',
+          'Bu işlemi ben yapmam; ama sıradaki durağı ve güvenli kontrolü söyleyeyim.',
+          'Yürütmeyi ben alamam; ama rota üstündeki doğru kontrolü açayım.',
+        ],
+        PERSONEL: [
+          'KVKK gereği başkasının verisini açıp işleyemem; ama yalnızca yetkili görünümü gösteririm.',
+          'Bu işlemi ben yapamam; ama servis durumunu güvenli biçimde kontrol ederiz.',
+          'İşlem bende kapanmaz; ama yetkili ekrandan hazırlık yolunu göstereyim.',
+        ],
+        PARENT: [
+          'KVKK gereği başkasının öğrenci verisini açıklayamam; ama yetkili servis görünümünü kontrol ederim.',
+          'Bu işlemi ben yapamam; ama çocuğunun servisi için güvenli ekran yolunu gösteririm.',
+          'Yürütmeyi ben üstlenemem; ama yetkili takibi hazırlayalım.',
+        ],
+        SCHOOL: [
+          'Bu kaydı yetki dışı uygulayamam; ama okul kapsamındaki kayıtları güvenli biçimde açarım.',
+          'İşlemi ben yapmam; ama yetkili okul akışını birlikte açarız.',
+          'Bu adımı ben tamamlamam; ama okul yetkisi içindeki kontrol yolunu göstereyim.',
+        ],
+        ORGANIZATION: [
+          'Bu kaydı yetki dışı uygulayamam; ama organizasyon planı ve onay akışını gösteririm.',
+          'Bu işlemi ben yapamam; ama organizasyon kapsamındaki hazırlığı açarım.',
+          'Uygulamayı ben üstlenemem; ama yetki kapsamındaki plan yolunu çıkarayım.',
+        ],
+        DEFAULT: [
+          'Bunu senin yerine yapamam; ama güvenli hazırlık yolunu göstereyim.',
+          'Bu adımı benim yapmam doğru olmaz; ama nereden başlayacağını söyleyeyim.',
+          'İşlemi ben üstlenemem; ama güvenli alternatif adımı çıkarayım.',
+        ],
+      }, repeatCount, role);
+    case 'STEP_ENTERED':
+      return 'Adımı aldın; şimdi sonucu ve sonraki güvenli adımı kontrol edelim.';
+    case 'RESULT_CHECK':
+      return 'Sonucu kontrol edelim; doğruysa bir sonraki adıma geçelim.';
+    case 'ALTERNATIVE_PATH':
+      return 'Bulamadığın yol için alternatif menü ve ekran yolunu bulalım.';
+    case 'CONTINUE_FLOW':
+      return 'Aynı bağlamı sürdürüyorum.';
+    case 'OVERVIEW_START':
+      return 'Önce programın ana işini netleştirelim.';
+    case 'ROLE_START':
+      return 'Önce rolüne göre en doğru başlangıç yolunu seçelim.';
+    case 'SCREEN_START':
+      return 'Önce bu ekranın amacını ve ilk kontrolünü netleştirelim.';
+    case 'STEP_BY_STEP':
+      return 'Adım adım ilerleyelim.';
+    case 'FIELD_BUTTON':
+      return 'Önce alan ya da butonu doğru okuyalım.';
+    default:
+      return '';
+  }
+}
+
+function buildIntentClarifyingQuestion(snapshot) {
+  const family = String(snapshot?.interactionIntentFamily || 'DEFAULT');
+  const roleProfile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
+  switch (family) {
+    case 'STEP_ENTERED':
+      return 'Hangi ekrana girdin?';
+    case 'RESULT_CHECK':
+      return 'Sonucu hangi kayıt için kontrol edeyim?';
+    case 'ALTERNATIVE_PATH':
+      return 'Hangi menüde kaldın?';
+    case 'CONTINUE_FLOW':
+      return 'Aynı kayıtta mı devam edelim?';
+    case 'DELEGATE_SAFE':
+      return 'Hangi adımı güvenli alternatifle hazırlayayım?';
+    case 'OVERVIEW_START':
+      return 'Hangi roldesin?';
+    case 'ROLE_START':
+      return 'Rolünü netleştirir misin?';
+    case 'SCREEN_START':
+      return 'Hangi ekranı açtın?';
+    case 'STEP_BY_STEP':
+      return 'İlk hangi adımı yapmak istiyorsun?';
+    case 'FIELD_BUTTON':
+      return 'Hangi alan ya da buton için bakayım?';
+    default:
+      return firstNonEmpty(roleProfile.clarifyingQuestion, 'Hangi kayıt için bakayım?');
+  }
+}
+
+function buildIntentNextAction(snapshot) {
+  const family = String(snapshot?.interactionIntentFamily || 'DEFAULT');
+  const roleProfile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
+  const starterStep = Array.isArray(roleProfile.starterSteps) ? roleProfile.starterSteps[0] : '';
+  const secondStep = Array.isArray(roleProfile.starterSteps) ? roleProfile.starterSteps[1] : '';
+  switch (family) {
+    case 'STEP_ENTERED':
+      return firstNonEmpty(snapshot?.analysis?.nextBestAction, snapshot?.nextBestAction, starterStep, 'İlk kontrolü aç.');
+    case 'RESULT_CHECK':
+      return firstNonEmpty(snapshot?.analysis?.nextBestAction, snapshot?.nextBestAction, 'Sonucu kontrol et.');
+    case 'ALTERNATIVE_PATH':
+      return firstNonEmpty(snapshot?.analysis?.nextBestAction, snapshot?.nextBestAction, 'Alternatif menü yolunu göster.');
+    case 'CONTINUE_FLOW':
+      return firstNonEmpty(snapshot?.analysis?.nextBestAction, snapshot?.nextBestAction, secondStep, starterStep, snapshot?.safeAlternative, 'Aynı bağlamı sürdür.');
+    case 'DELEGATE_SAFE':
+      return firstNonEmpty(snapshot?.roleProfile?.safeAlternative, snapshot?.safeAlternative, starterStep, 'Güvenli hazırlık adımını göster.');
+    case 'OVERVIEW_START':
+    case 'ROLE_START':
+    case 'SCREEN_START':
+    case 'STEP_BY_STEP':
+    case 'FIELD_BUTTON':
+      return firstNonEmpty(snapshot?.analysis?.nextBestAction, snapshot?.nextBestAction, starterStep, 'İlk kontrolü aç.');
+    default:
+      return firstNonEmpty(
+        snapshot?.analysis?.nextBestAction,
+        snapshot?.analysis?.safestNextStep,
+        snapshot?.contextPriority?.bestNextAction,
+        snapshot?.contextPriority?.followUpPrompt,
+        snapshot?.guide?.whatToDoNow,
+        snapshot?.guide?.whatToDoNext,
+        '',
+      );
+  }
+}
+
 function buildBoundaryText(snapshot) {
+  if (String(snapshot?.interactionIntentFamily || 'DEFAULT') === 'DELEGATE_SAFE') {
+    return buildIntentLead(snapshot);
+  }
   const boundaryBits = uniqueStrings([
     snapshot?.analysis?.compareHint || '',
     snapshot?.analysis?.reasoningLead || '',
@@ -268,6 +513,7 @@ function buildSelectedRecordText(snapshot) {
 
 function buildReasoningLead(snapshot) {
   return firstNonEmpty(
+    buildIntentLead(snapshot),
     snapshot?.analysis?.reasoningLead,
     snapshot?.contextPriority?.summaryLead,
     snapshot?.contextPriority?.selectedRecordMismatchLead,
@@ -283,6 +529,7 @@ function buildReasoningLead(snapshot) {
 
 function buildNextAction(snapshot) {
   return firstNonEmpty(
+    buildIntentNextAction(snapshot),
     snapshot?.analysis?.nextBestAction,
     snapshot?.analysis?.safestNextStep,
     snapshot?.contextPriority?.bestNextAction,
@@ -296,6 +543,7 @@ function buildNextAction(snapshot) {
 function buildClarifyingQuestion(snapshot) {
   const profile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
   return firstNonEmpty(
+    buildIntentClarifyingQuestion(snapshot),
     snapshot?.guidedTaskMeta?.clarificationQuestion,
     snapshot?.contextPriority?.guidedTaskMeta?.clarificationQuestion,
     profile.clarifyingQuestion,
@@ -310,7 +558,7 @@ function detectDangerRequest(snapshot) {
     snapshot?.explicitBoundary
     || snapshot?.analysis?.blockers?.some((row) => /fake success|sahte|yapmış gibi|yapmis gibi|gerçekten yapma|gercekten yapma/i.test(String(row || '')))
     || snapshot?.analysis?.missingData?.some((row) => /fake success|sahte/i.test(String(row || '')))
-    || /(fake success|sahte başarı|sahte basari|yapmış gibi|yapmis gibi|yaptım de|yaptim de|gerçekten yapma|gercekten yapma|otomatik .*?(oluştur|olustur|uygula|yap)|db write|write-action|tool execution|runtime ai action|osrm call|geocode execute|route apply|dispatch apply)/i.test(text)
+    || /(fake success|sahte başarı|sahte basari|yapmış gibi|yapmis gibi|yaptım de|yaptim de|gerçekten yapma|gercekten yapma|otomatik .*?(oluştur|olustur|uygula|yap)|db write|write-action|tool execution|runtime ai action|osrm call|geocode execute|route apply|dispatch apply|bunu\s+sen\s+yap|benim\s+yerime\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|benim\s+ad(?:ı|i)ma\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|teklifi\s+kabul\s+et|aracı\s+ata|araci\s+ata|sözleşmeyi\s+yürürlüğe\s+al|sozlesmeyi\s+yururluge\s+al|sözleşmeyi\s+uygula|sozlesmeyi\s+uygula)/i.test(text)
     || /(^|[\s:])(?:otomatik|auto)(?:[\s:]+.*)?(?:oluştur|olustur|uygula|yap|ekle|kaydet)/i.test(text)
   );
 }
@@ -330,6 +578,13 @@ function buildSuggestedChips(snapshot) {
   const profile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
   const roleChips = Array.isArray(profile.chips) ? profile.chips : [];
   const contextualChips = [];
+  const family = String(snapshot?.interactionIntentFamily || 'DEFAULT');
+  if (family === 'CONTINUE_FLOW') contextualChips.push('Devam et');
+  if (family === 'STEP_ENTERED') contextualChips.push('İlk kontrolü göster');
+  if (family === 'RESULT_CHECK') contextualChips.push('Sonucu kontrol et');
+  if (family === 'ALTERNATIVE_PATH') contextualChips.push('Alternatif yolu göster');
+  if (family === 'DELEGATE_SAFE') contextualChips.push('Güvenli alternatif göster');
+  if (['OVERVIEW_START', 'ROLE_START', 'SCREEN_START', 'STEP_BY_STEP', 'FIELD_BUTTON'].includes(family)) contextualChips.push('Başlangıç adımını aç');
   if (snapshot?.analysis?.nextBestAction) contextualChips.push('Sıradaki adımı göster');
   if (snapshot?.analysis?.blockers?.length) contextualChips.push('Neden takıldı?');
   if (snapshot?.selectedRecordStatus) contextualChips.push('Seçili kayıt özetini göster');
@@ -395,10 +650,11 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     analysis,
     contextPriority,
   });
-  const reasoningLead = buildReasoningLead({ analysis, contextPriority, guide });
-  const nextBestAction = buildNextAction({ analysis, contextPriority, guide });
-  const boundaryText = buildBoundaryText({ analysis, contextPriority, guide });
-  const clarifyingQuestion = buildClarifyingQuestion({ guidedTaskMeta, contextPriority, roleProfile });
+  const interactionIntentFamily = detectSeferAbiReasoningIntentFamily({ message, questionType, conversationState });
+  const reasoningLead = buildReasoningLead({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
+  const nextBestAction = buildNextAction({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
+  const boundaryText = buildBoundaryText({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
+  const clarifyingQuestion = buildClarifyingQuestion({ guidedTaskMeta, contextPriority, roleProfile, interactionIntentFamily });
   const explicitBoundary = hasExplicitRoleBoundarySignal({
     questionType,
     activeTopic: contextPriority?.activeTopic || questionType,
@@ -407,7 +663,6 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     message,
     rawReply,
     analysis,
-    explicitBoundary: Boolean(contextPriority?.roleBoundary),
   });
   const selectedContextPresent = Boolean(
     selectedRecordStatus
@@ -438,6 +693,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     String(contextPriority?.bestNextAction || ''),
     String(analysis?.reasoningLead || ''),
     String(analysis?.nextBestAction || ''),
+    String(interactionIntentFamily || ''),
   ].join('|');
   const fingerprint = simpleHash(fingerprintSource);
   const repeatCount = detectRepetition({ conversationState, fingerprint, normalizedMessage, message });
@@ -448,6 +704,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     || reasoningLead
     || nextBestAction
     || boundaryText
+    || interactionIntentFamily !== 'DEFAULT'
     || guidedTaskMeta?.familyId
     || contextPriority?.guidedTaskMeta?.familyId
     || contextPriority?.needsSelection
@@ -475,10 +732,12 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
   });
   return Object.freeze({
     assistantVersion: SEFER_ABI_REASONING_ASSISTANT_VERSION,
+    assistantMilestone: SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_VERSION,
     mode,
     effectiveRole,
     roleProfile,
     roleMode,
+    interactionIntentFamily,
     questionType: String(questionType || ''),
     replyMode: String(replyMode || ''),
     entityType: String(entityType || 'screen'),
@@ -499,6 +758,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     safeAlternative: firstNonEmpty(
       roleProfile.safeAlternative,
       contextPriority?.followUpPrompt,
+      interactionIntentFamily === 'DELEGATE_SAFE' ? nextBestAction : '',
       nextBestAction,
       'Önce seçili kayıt ve eksik alanı birlikte kontrol edelim.',
     ),
@@ -523,6 +783,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
       analysis,
       mode,
       roleProfile,
+      interactionIntentFamily,
     }),
   });
 }
@@ -564,16 +825,59 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
   const rawReply = limitText(snapshot?.rawReply || '', roleProfile.maxLength);
   if (!rawReply && !snapshot?.hasReasoningSignal && !snapshot?.explicitBoundary && !snapshot?.clarifyingQuestion) return '';
 
-  if (SEFER_ABI_REASONING_ASSISTANT_DIRECT_REPLIES.has(String(snapshot?.questionType || ''))) {
-    return rawReply;
+  if (String(snapshot?.questionType || '') === 'FAKE_SUCCESS_REQUEST_BLOCKED') {
+    const screenLead = `Şu an ${firstNonEmpty(snapshot?.screenLabel, snapshot?.screenContext?.label, snapshot?.sourceScreenContext?.label, 'bu ekran')} ekranındasın.`;
+    return joinReply([
+      'Şimdi: Yapmış gibi söyleyemem.',
+      screenLead,
+      'Sahte başarı üretmem; yalnızca gerçekten doğrulanmış sinyali paylaşırım.',
+      'Yapabileceğim güvenli şeyler: gerçekten yapılanı, eksik kalanları ve sonraki doğru adımı açıkça ayırmak.',
+      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik bilgiyi birlikte kontrol edelim.')}`,
+    ], roleProfile.maxLength);
+  }
+
+  if (String(snapshot?.questionType || '') === 'ROUTE_APPLY_BLOCKED') {
+    const screenLead = `Şu an ${firstNonEmpty(snapshot?.screenLabel, snapshot?.screenContext?.label, snapshot?.sourceScreenContext?.label, 'bu ekran')} ekranındasın.`;
+    return joinReply([
+      'Şimdi: Rotayı uygulayamam.',
+      screenLead,
+      'route apply, dispatch apply ve günlük atamaya işleme kapalı.',
+      'Yapabileceğim güvenli şeyler: preview, risk özeti, insan onayı ve geri alma notunu kontrol etmek.',
+      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce preview, risk özeti ve onay durumunu kontrol et.')}`,
+    ], roleProfile.maxLength);
+  }
+
+  if (String(snapshot?.questionType || '') === 'IMPORT_WRITE_BLOCKED') {
+    const screenLead = `Şu an ${firstNonEmpty(snapshot?.screenLabel, snapshot?.screenContext?.label, snapshot?.sourceScreenContext?.label, 'bu ekran')} ekranındasın.`;
+    return joinReply([
+      'Şimdi: Bu Excel’i sisteme kaydedemem.',
+      screenLead,
+      'Toplu yazma, DB write ve personel oluşturma kapalı.',
+      'Yapabileceğim güvenli şeyler: eksik kolonları bulmak, KVKK sınırını kontrol etmek ve insan onayı checklist’i hazırlamak.',
+      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce eksik kolonları ve insan onayını kontrol et.')}`,
+    ], roleProfile.maxLength);
+  }
+
+  if (String(snapshot?.questionType || '') === 'ROUTE_REVIEW_HUMAN_APPROVAL') {
+    const screenLead = `Şu an ${firstNonEmpty(snapshot?.screenLabel, snapshot?.screenContext?.label, snapshot?.sourceScreenContext?.label, 'bu ekran')} ekranındasın.`;
+    return joinReply([
+      'Şimdi: Bu rota için gerçek uygulama başlatamam.',
+      screenLead,
+      'Önce insan onayı gerekir; ben yalnızca preview ve risk özeti okuyabilirim.',
+      'Yapabileceğim güvenli şeyler: preview, risk özeti, geri alma notu ve onay durumunu kontrol etmek.',
+      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce preview, risk özeti ve onay durumunu kontrol et.')}`,
+    ], roleProfile.maxLength);
   }
 
   if (snapshot.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') {
     return joinReply([
-      'Bunu gerçekten yapmış gibi söyleyemem.',
-      snapshot?.boundaryText || '',
+      firstNonEmpty(snapshot?.boundaryText, buildIntentLead(snapshot), 'Bu işlemi burada yapamam.'),
       `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik bilgiyi birlikte kontrol edelim.')}`,
     ], roleProfile.maxLength);
+  }
+
+  if (SEFER_ABI_REASONING_ASSISTANT_DIRECT_REPLIES.has(String(snapshot?.questionType || ''))) {
+    return rawReply;
   }
 
   if (snapshot.mode === 'CLARIFYING_QUESTION') {

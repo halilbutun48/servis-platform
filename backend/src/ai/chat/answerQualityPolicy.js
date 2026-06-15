@@ -65,13 +65,14 @@ const WORKFLOW_GENERIC_CHIP_BLOCKLIST = [
 export function hasExplicitRoleBoundarySignal({ questionType, activeTopic, message }) {
   const text = normalizeLooseText(message);
   const topic = String(activeTopic || '');
+  if (String(questionType || '') === 'ROLE_EXPLANATION_HELP') return false;
   if (['ROLE_HELP', 'WHO_CAN_DO', 'ROLE_BOUNDARY', 'KVKK_VISIBILITY'].includes(String(questionType || ''))) return true;
   if (['ROLE_BOUNDARY', 'WHO_CAN_DO', 'KVKK_VISIBILITY'].includes(topic)) return true;
   const isLocationTopic = ['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(String(questionType || ''))
     || ['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HELP'].includes(topic);
   return (isLocationTopic
     ? /(yetki|erişim|erisim|izin|rol|kvkk|403|401|permission denied|erişim kapalı|erisim kapali)/.test(text)
-    : /(yetki|erişim|erisim|izin|rol|kvkk|göremez|goremeyebilir|görünmeyebilir|gorunmeyebilir|görünmüyor|gorunmuyor|403|401|permission denied|erişim kapalı|erisim kapali)/.test(text));
+    : /(yetki|erişim|erisim|izin|rol|kvkk|göremez|goremeyebilir|görünmeyebilir|gorunmeyebilir|403|401|permission denied|erişim kapalı|erisim kapali)/.test(text));
 }
 
 export function workflowTopicChipSet({ activeTopic = '', questionType = '', screenPath = '', guidedTaskMeta = null } = {}) {

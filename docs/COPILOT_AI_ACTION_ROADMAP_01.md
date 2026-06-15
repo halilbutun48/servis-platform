@@ -24,6 +24,7 @@ Repo: `servis-platform`
 - Bu roadmap future-only E-BLOCK runtime-answer integration hattına da zemin hazırlar; sonraki future-only halka `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01`'dir; Excel/import, adres/geocode, OSRM ve route-review sorularını answer-only sınırında tutar, runtime AI action açmaz.
 - Bu roadmap semantic intent family katmanına da zemin hazırlar; sonraki future-safe halka `COPILOT-GUIDED-TASK-ENGINE-01`'dir; exact phrase matching'e bağlı kalmadan Türkçe gündelik dil, typo ve synonym varyasyonlarını okur ama runtime AI action açmaz.
 - Bu roadmap reasoning assistant katmanına da zemin hazırlar; sonraki future-safe halka `SEFER-ABI-REASONING-ASSISTANT-01`'dir; role + screen + selected record + conversation state ile context-aware reasoning üretir ama runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- Bu roadmap all-roles reasoning assistant katmanına da zemin hazırlar; sonraki future-safe halka `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`'dir; role + screen + selected record + conversation state + interactionIntentFamily ile context-aware reasoning üretir ama runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - Bu doküman docs/check kilididir; runtime davranış, backend route, service, schema veya Prisma açmaz.
 
 ## PHASE modeli
