@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `372`
-- Toplam executable tracked file: `1162`
-- Combined registry row: `1534`
-- Root/backend/web/mobile package dağılımı: root `215`, backend `725`, web `90`, mobile `201`
+- Toplam package script entry: `373`
+- Toplam executable tracked file: `1163`
+- Combined registry row: `1536`
+- Root/backend/web/mobile package dağılımı: root `216`, backend `726`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -162,6 +162,11 @@ Repo: `servis-platform`
 - Sefer Abi reasoning assistant docs: `docs/SEFER_ABI_REASONING_ASSISTANT_01.md`
 - Sefer Abi reasoning assistant command: `node backend\scripts\sefer_abi_reasoning_assistant_01_check.js`
 - Sefer Abi reasoning assistant helper: `backend/src/ai/chat/seferAbiReasoningAssistant.js`
+- Sefer Abi all-roles reasoning assistant milestone: `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`
+- Sefer Abi all-roles reasoning assistant check: `check:seferabiallrolesreasoningassistant01`
+- Sefer Abi all-roles reasoning assistant docs: `docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md`
+- Sefer Abi all-roles reasoning assistant command: `node backend\scripts\sefer_abi_all_roles_reasoning_assistant_01_check.js`
+- Sefer Abi all-roles reasoning assistant helper: `backend/src/ai/chat/seferAbiReasoningAssistant.js`
 - Address geocoding confidence milestone: `ADDRESS-GEOCODING-CONFIDENCE-01`
 - Address geocoding confidence check: `check:addressgeocodingconfidence01`
 - Address geocoding confidence docs: `docs/ADDRESS_GEOCODING_CONFIDENCE_01.md`
@@ -187,11 +192,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `557`
+- NEEDS_REVIEW: `559`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `304`
+- Eski sistem term eşleşmesi: `306`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -208,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 557 |
+| NEEDS_REVIEW | 559 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -282,6 +287,7 @@ Repo: `servis-platform`
 | root:check:copiloteblockruntimeanswerintegration01 | package.json | root | node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotguidedtaskengine01 | package.json | root | node backend/scripts/copilot_guided_task_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-GUIDED-TASK-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
+| root:check:seferabiallrolesreasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -839,6 +845,7 @@ Repo: `servis-platform`
 | safe_drive_01_check.js | backend/scripts/safe_drive_01_check.js | backend | root:check:safedrive01 | review | NEEDS_REVIEW |  | SAFE-DRIVE-01-CHECK |  | Owner or chain unclear |  |
 | scale_readiness_check.js | backend/scripts/scale_readiness_check.js | backend |  | review | NEEDS_REVIEW |  | SCALE-READINESS-CHECK |  | Owner or chain unclear |  |
 | script_harness_consolidation_01_check.js | backend/scripts/script_harness_consolidation_01_check.js | backend | root:check:scriptharnessconsolidation01 | product-extensions | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01-CHECK |  | Owner or chain unclear | canonical repo harness inventory |
+| sefer_abi_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_reasoning_assistant_01_check.js | backend | root:check:seferabireasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_terminal_humanize_01_check.js | backend/scripts/sefer_abi_terminal_humanize_01_check.js | backend | root:check:seferabiterminalhumanize01 | review | NEEDS_REVIEW |  | SEFER-ABI-TERMINAL-HUMANIZE-01-CHECK |  | Owner or chain unclear |  |
 | sefer_score_01_check.js | backend/scripts/sefer_score_01_check.js | backend | root:check:seferscore01 | review | NEEDS_REVIEW |  | SEFER-SCORE-01-CHECK |  | Owner or chain unclear |  |
 | session_safe_panels_cleanup_hotfix_check.mjs | backend/scripts/session_safe_panels_cleanup_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | SESSION-SAFE-PANELS-CLEANUP-HOTFIX-CHECK |  | Owner or chain unclear |  |
@@ -946,6 +953,7 @@ Repo: `servis-platform`
 | qualityScorer.js | backend/src/ai/chat/qualityScorer.js | backend |  | review | NEEDS_REVIEW |  | QUALITY-SCORER |  | Owner or chain unclear |  |
 | replyShapes.js | backend/src/ai/chat/replyShapes.js | backend |  | review | NEEDS_REVIEW |  | REPLY-SHAPES |  | Owner or chain unclear |  |
 | screenStateAnalyzer.js | backend/src/ai/chat/screenStateAnalyzer.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-STATE-ANALYZER |  | Owner or chain unclear |  |
+| seferAbiReasoningAssistant.js | backend/src/ai/chat/seferAbiReasoningAssistant.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT |  | Owner or chain unclear |  |
 | copyOutputs.js | backend/src/ai/jobGuide/copyOutputs.js | backend |  | review | NEEDS_REVIEW |  | COPY-OUTPUTS |  | Owner or chain unclear |  |
 | glossary.js | backend/src/ai/jobGuide/glossary.js | backend |  | review | NEEDS_REVIEW |  | GLOSSARY |  | Owner or chain unclear |  |
 | index.js | backend/src/ai/jobGuide/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
@@ -1168,8 +1176,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| sefer_abi_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_reasoning_assistant_01_check.js | backend | root:check:seferabireasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
-| seferAbiReasoningAssistant.js | backend/src/ai/chat/seferAbiReasoningAssistant.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT |  | Owner or chain unclear |  |
+| sefer_abi_all_roles_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | backend | root:check:seferabiallrolesreasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
