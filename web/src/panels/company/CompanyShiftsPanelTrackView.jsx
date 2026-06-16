@@ -276,6 +276,7 @@ export default function CompanyShiftsPanelTrackView(props) {
           accOpen={accOpen.other}
           onSetOpen={(next) => setAccOpen((p) => ({ ...p, other: next }))}
           onToggle={() => toggleAcc("other")}
+          featuredShift={props.featuredShift}
           otherItems={otherItems}
           otherStatus={otherStatus}
           onChangeOtherStatus={setOtherStatus}

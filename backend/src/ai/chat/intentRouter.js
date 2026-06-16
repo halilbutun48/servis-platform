@@ -145,6 +145,38 @@ function isExplicitNextStepQuestion(text) {
   ]);
 }
 
+function hasRoleKeyword(text) {
+  return /\b(?:company|room|driver|parent|personel|school|organization|super\s*admin|superadmin|şirket|oda|veli|sürücü|surucu|okul|organizasyon|süper\s*admin)\b/.test(normalizeLooseText(text));
+}
+
+function looksLikeOnboardingStartQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return matchesStandalonePhrase(value, [
+    'ne yapmam lazım',
+    'ne yapmam gerekiyor',
+    'nereden başlamalıyım',
+    'nereden başlamam gerekiyor',
+    'nereden başlayacağım',
+    'başlangıç yolu',
+    'ilk adım ne',
+    'ilk adımı ne',
+    'ilk bakılacak',
+    'nasıl başlayacağım',
+    'nasıl başlamalıyım',
+    'buradan sonra ne yapacağım',
+    'buradan sonra ne yapmam gerekiyor',
+  ]);
+}
+
+function looksLikeScreenStartQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  if (/(bu\s+ekran\s+ne\s+işe\s+yarar|bu\s+ekran\s+ne\s+ise\s+yarar|bu\s+ekran\s+ne\s+işe\s+yarıyor|bu\s+ekran\s+ne\s+ise\s+yarıyor|bu\s+ekran\s+ne\s+için|bu\s+ekran\s+ne\s+icin|bu\s+panel\s+neyi\s+gösteriyor|bu\s+panel\s+neyi\s+gosteriyor|bu\s+panel\s+ne\s+işe\s+yarıyor|bu\s+panel\s+ne\s+ise\s+yarıyor|bu\s+sayfa\s+ne\s+işe\s+yarar|bu\s+sayfa\s+ne\s+ise\s+yarar|bu\s+sayfa\s+ne\s+işe\s+yarıyor|bu\s+sayfa\s+ne\s+ise\s+yarıyor|ekranın\s+amacı\s+ne|ekranin\s+amaci\s+ne|burada\s+ne\s+yapıyorum|burada\s+ne\s+yapiyorum)/.test(value)) return true;
+  return /(plan\s+builder|planlama\s+merkezi|vardiya|teklif|sözleşme|sozlesme|servis\s+durumu|canlı\s+takip|canli\s+takip|harita|rota|kanıt|kanit|audit|konum\s+incele|my\s+ride|plan\s+oluştur|plan\s+olustur)/.test(value)
+    && /(ne\s+işe\s+yarar|ne\s+ise\s+yarar|ne\s+işe\s+yarıyor|ne\s+ise\s+yarıyor|ne\s+yapacağım|ne\s+yapacagım|ne\s+yapmalıyım|ne\s+yapmaliyim|burada\s+ne\s+yapıyorum|burada\s+ne\s+yapiyorum)/.test(value);
+}
+
 function isShiftReadinessQuestion(text, screenPath = '', entityType = '') {
   const value = normalizeLooseText(text);
   if (!value) return false;
@@ -340,7 +372,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   const combinedText = originalText && originalText !== text ? `${text} ${originalText}` : text;
   if (!text) return { questionType: 'OPEN', confidence: 0.42, matchedSignals: [], preferRoute: false, routeRequest: false };
 
-  if (/(?:bu program ne|bu program nedir|program ne işe yarar|program ne ise yarar|seferpakt ne işe yarar|seferpakt ne ise yarar|bu sistem ne için kullanılır|bu sistem ne icin kullanilir|sistem ne işe yarar|sistem ne ise yarar|ben bu programla ne yapabilirim)/.test(combinedText)) {
+  if (/(?:bu program ne|bu program nedir|bu program ne işe yarıyor|bu program ne ise yarıyor|program ne işe yarar|program ne ise yarar|program ne işe yarıyor|program ne ise yarıyor|seferpakt ne işe yarar|seferpakt ne ise yarar|seferpakt ne işe yarıyor|seferpakt ne ise yarıyor|bu sistem ne için kullanılır|bu sistem ne icin kullanilir|bu sistem ne işe yarıyor|bu sistem ne ise yarıyor|sistem ne işe yarar|sistem ne ise yarar|sistem ne işe yarıyor|sistem ne ise yarıyor|ben bu programla ne yapabilirim)/.test(combinedText)) {
     return {
       questionType: 'PRODUCT_OVERVIEW_HELP',
       confidence: 0.96,
@@ -350,31 +382,11 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     };
   }
 
-  if (/(?:\b(?:company|room|driver|parent|personel|school|organization|super\s*admin|superadmin|şirket|oda|veli|sürücü|surucu|okul|organizasyon|süper\s*admin)\b.*(?:rol(?:ü|u)|olarak)?\s*(?:ne yapar|ne yapacağım|ne yapacag[ıi]m|ne yapabilirim|ne işe yarar|ne ise yarar|neyi görebilir|neyi gorebilir|ne demek)|\b(?:company|room|driver|parent|personel|school|organization|super\s*admin|superadmin|şirket|oda|veli|sürücü|surucu|okul|organizasyon|süper\s*admin)\b.*(?:ne yapar|ne yapacağım|ne yapacag[ıi]m|ne yapabilirim|ne işe yarar|ne ise yarar|neyi görebilir|neyi gorebilir|ne demek))/.test(combinedText)) {
+  if (/(?:\b(?:company|room|driver|parent|personel|school|organization|super\s*admin|superadmin|şirket|oda|veli|sürücü|surucu|okul|organizasyon|süper\s*admin)\b.*(?:rol(?:ü|u)|olarak)?\s*(?:ne yapar|ne yapacağım|ne yapacag[ıi]m|ne yapabilirim|ne işe yarar|ne ise yarar|ne işe yarıyor|ne ise yarıyor|neyi görebilir|neyi gorebilir|ne demek)|\b(?:company|room|driver|parent|personel|school|organization|super\s*admin|superadmin|şirket|oda|veli|sürücü|surucu|okul|organizasyon|süper\s*admin)\b.*(?:ne yapar|ne yapacağım|ne yapacag[ıi]m|ne yapabilirim|ne işe yarar|ne ise yarar|ne işe yarıyor|ne ise yarıyor|neyi görebilir|neyi gorebilir|ne demek))/.test(combinedText)) {
     return {
       questionType: 'ROLE_EXPLANATION_HELP',
       confidence: 0.94,
       matchedSignals: ['ROLE_EXPLANATION_HELP', 'role-explanation-help'],
-      preferRoute: false,
-      routeRequest: false,
-    };
-  }
-
-  if (/(?:bu ekran ne işe yarar|bu ekran ne ise yarar|bu ekran ne demek|burada ne yapıyorum|burada ne yapiyorum|bu panel neyi gösteriyor|bu panel neyi gosteriyor|bu kart ne demek|bu sayfa ne işe yarar|bu sayfa ne ise yarar|ekranın amacı ne|ekranin amaci ne)/.test(originalText) && !/(buton|alan|rozet|badge|sütun|sutun|kolon|terim)/.test(originalText)) {
-    return {
-      questionType: 'SCREEN_EXPLANATION_HELP',
-      confidence: 0.92,
-      matchedSignals: ['SCREEN_EXPLANATION_HELP', 'screen-explanation-help'],
-      preferRoute: false,
-      routeRequest: false,
-    };
-  }
-
-  if (/(?:vardiya nasıl oluşturulur|vardiya nasil olusturulur|teklif nasıl alınır|teklif nasil alınır|sözleşmeye nasıl geçilir|sozlesmeye nasil gecilir|servisimi nasıl takip ederim|servisimi nasil takip ederim|check-?in nasıl yapılır|check-?in nasil yapilir|nasıl yapılır|nasil yapilir)/.test(combinedText)) {
-    return {
-      questionType: 'HOW_TO_HELP',
-      confidence: 0.95,
-      matchedSignals: ['HOW_TO_HELP', 'how-to-help'],
       preferRoute: false,
       routeRequest: false,
     };
@@ -385,6 +397,104 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       questionType: 'FIELD_BUTTON_HELP',
       confidence: 0.9,
       matchedSignals: ['FIELD_BUTTON_HELP', 'field-button-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (/(?:bu ekran ne işe yarar|bu ekran ne ise yarar|bu ekran ne işe yarıyor|bu ekran ne ise yarıyor|bu ekran ne demek|burada ne yapıyorum|burada ne yapiyorum|bu panel neyi gösteriyor|bu panel neyi gosteriyor|bu panel ne işe yarıyor|bu panel ne ise yarıyor|bu kart ne demek|bu sayfa ne işe yarar|bu sayfa ne ise yarar|bu sayfa ne işe yarıyor|bu sayfa ne ise yarıyor|ekranın amacı ne|ekranin amaci ne)/.test(originalText) && !/(buton|alan|rozet|badge|sütun|sutun|kolon|terim)/.test(originalText)) {
+    return {
+      questionType: 'SCREEN_EXPLANATION_HELP',
+      confidence: 0.92,
+      matchedSignals: ['SCREEN_EXPLANATION_HELP', 'screen-explanation-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (/(?:buradan\s+sonra\s+ne\s+yapacağım|buradan\s+sonra\s+ne\s+yapacag[ıi]m|buradan\s+sonra\s+ne\s+yapmalıyım|buradan\s+sonra\s+ne\s+yapmaliyim)/.test(combinedText)) {
+    return {
+      questionType: 'NEXT_STEP',
+      confidence: 0.92,
+      matchedSignals: ['NEXT_STEP', 'screen-next-step-guidance'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (/(?:niye\s+pasif|neden\s+pasif|bu\s+neden\s+kapalı|bu\s+neden\s+olmuyor|niye\s+kapalı|niye\s+olmuyor|pasif\s+bu|bu\s+pasif)/.test(combinedText)) {
+    return {
+      questionType: 'WHY_BLOCKED',
+      confidence: 0.92,
+      matchedSignals: ['WHY_BLOCKED', 'blocked-slang'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (
+    /(?:^|[\s"“”‘’'()[\]{}.,!?;:-])(?:bura ne|burası ne|burasi ne|burda ne var|burada ne var|burası ne işe yarıyor|burasi ne ise yariyor|bu ekran ne için var|bu ekran ne için|bu ekran ne icin var|bu ekran ne icin)(?:$|[\s"“”‘’'()[\]{}.,!?;:-])/i.test(combinedText)
+    && !/(buton|alan|rozet|badge|sütun|sutun|kolon|terim)/.test(combinedText)
+  ) {
+    return {
+      questionType: 'SCREEN_PURPOSE',
+      confidence: 0.94,
+      matchedSignals: ['SCREEN_PURPOSE', 'screen-purpose-slang'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (looksLikeScreenStartQuestion(combinedText) || looksLikeScreenStartQuestion(originalText)) {
+    return {
+      questionType: 'SCREEN_EXPLANATION_HELP',
+      confidence: 0.93,
+      matchedSignals: ['SCREEN_EXPLANATION_HELP', 'screen-start-guidance'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (looksLikeOnboardingStartQuestion(combinedText) || looksLikeOnboardingStartQuestion(originalText)) {
+    const roleQuestion = hasRoleKeyword(combinedText) || hasRoleKeyword(originalText);
+    const normalizedRole = normalizeText(options.userRole || options.role || '');
+    if (normalizedRole && normalizedRole !== 'default') {
+      const guidedTaskMeta = detectCopilotGuidedTaskEngineIntent({
+        message,
+        originalMessage: options.originalMessage,
+        screenPath: options.screenPath,
+        sourceScreenPath: options.sourceScreenPath,
+        roleMode: options.roleMode,
+        userRole: options.userRole,
+        conversationState: options.conversationState,
+        entityType: options.entityType,
+        questionType: '',
+      });
+      if (guidedTaskMeta?.familyId) {
+        return {
+          questionType: guidedTaskMeta.questionType || 'OPEN',
+          confidence: Number(guidedTaskMeta.confidence || 0.96),
+          matchedSignals: Array.isArray(guidedTaskMeta.matchedSignals) ? [...guidedTaskMeta.matchedSignals] : [guidedTaskMeta.familyId || guidedTaskMeta.questionType || 'guided-task'],
+          preferRoute: Boolean(guidedTaskMeta.preferRoute),
+          routeRequest: Boolean(guidedTaskMeta.routeRequest),
+          guidedTaskMeta,
+        };
+      }
+    }
+    return {
+      questionType: roleQuestion ? 'ROLE_EXPLANATION_HELP' : 'PRODUCT_OVERVIEW_HELP',
+      confidence: 0.93,
+      matchedSignals: [roleQuestion ? 'ROLE_EXPLANATION_HELP' : 'PRODUCT_OVERVIEW_HELP', 'onboarding-start-guidance'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (/(?:vardiya nasıl oluşturulur|vardiya nasil olusturulur|teklif nasıl alınır|teklif nasil alınır|sözleşmeye nasıl geçilir|sozlesmeye nasil gecilir|servisimi nasıl takip ederim|servisimi nasil takip ederim|check-?in nasıl yapılır|check-?in nasil yapilir|nasıl yapılır|nasil yapilir)/.test(combinedText)) {
+    return {
+      questionType: 'HOW_TO_HELP',
+      confidence: 0.95,
+      matchedSignals: ['HOW_TO_HELP', 'how-to-help'],
       preferRoute: false,
       routeRequest: false,
     };

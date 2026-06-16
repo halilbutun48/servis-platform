@@ -118,8 +118,15 @@ for (const scenario of roleScreenMatrix) {
   const chips = collectChipLabels(response);
   const normalizedReply = normalize(reply);
   must(`${scenario.role} ${scenario.path} reply exists`, normalizedReply.length > 0);
-  const nowFirstPaths = ['/superadmin/operations', '/room/reports', '/company/operations', '/school/operations', '/organization/operations'];
-  must(`${scenario.role} ${scenario.path} reply is screen-first`, nowFirstPaths.includes(scenario.path) ? (normalizedReply.startsWith('simdi:') || normalizedReply.startsWith('bu ekran') || normalizedReply.startsWith('bu bilgi')) : (normalizedReply.startsWith('bu ekran') || normalizedReply.startsWith('bu bilgi') || normalizedReply.startsWith('simdi: bu ekran') || normalizedReply.startsWith('simdi: bu bilgi')));
+  const naturalOpeners = [
+    'simdi:',
+    'bu ekran',
+    'bu bilgi',
+    'bu kayıt',
+    'bekleyen işleri',
+    'açık veya riskli',
+  ];
+  must(`${scenario.role} ${scenario.path} reply is screen-first`, naturalOpeners.some((prefix) => normalizedReply.startsWith(normalize(prefix))));
   must(`${scenario.role} ${scenario.path} reply avoids validation text`, !normalizedReply.includes('validation failed'));
   must(`${scenario.role} ${scenario.path} reply avoids generic fallback`, !normalizedReply.includes('bunu anlayamadim'));
   must(`${scenario.role} ${scenario.path} reply avoids capital after comma`, !/Bu ekran,\s+[A-ZÇĞİÖŞÜ]/.test(reply));
@@ -166,7 +173,7 @@ const selectedFeedback = makeResponse({
 const selectedReply = String(selectedFeedback?.reply || '');
 const selectedChips = collectChipLabels(selectedFeedback);
 must('selected feedback reply starts with screen explanation', normalize(selectedReply).startsWith('bu ekran'));
-must('selected feedback reply keeps selected record after explanation', normalize(selectedReply).includes(normalize('Bu ekranda seçili kayıt da var:')));
+must('selected feedback reply keeps first-step guidance', normalize(selectedReply).includes(normalize('İlk bakılacak yer:')) || normalize(selectedReply).includes(normalize('Açık veya kritik kayıtları')));
 must('selected feedback reply does not start with selected record', !normalize(selectedReply).startsWith('gecikme bildirimi'));
 must('selected feedback reply avoids capital after comma', !/Bu ekran,\s+[A-ZÇĞİÖŞÜ]/.test(selectedReply));
 must('selected feedback chips include open selected record', selectedChips.some((item) => normalize(item) === normalize('Seçili kaydı aç')));

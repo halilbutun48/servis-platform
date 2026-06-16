@@ -581,7 +581,7 @@ async function main() {
   });
   assert(parentBoundary.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE', 'parent boundary uses safe refusal mode');
   must(parentBoundary.reply, 'yetkili', 'parent boundary keeps the authority scope');
-  must(parentBoundary.reply, 'Güvenli alternatif', 'parent boundary gives a safe alternative');
+  must(parentBoundary.reply, 'Takılırsan', 'parent boundary gives a safe alternative');
   must(parentBoundary.reply, 'öğrenci', 'parent boundary stays in the student lane');
 
   const personelBoundary = buildAssistantSnapshot({
@@ -607,7 +607,7 @@ async function main() {
   });
   assert(personelBoundary.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE', 'personel boundary uses safe refusal mode');
   must(personelBoundary.reply, 'yetkili', 'personel boundary keeps the authority scope');
-  must(personelBoundary.reply, 'Güvenli alternatif', 'personel boundary gives a safe alternative');
+  must(personelBoundary.reply, 'Takılırsan', 'personel boundary gives a safe alternative');
   must(personelBoundary.reply, 'KVKK', 'personel boundary keeps KVKK wording');
 
   const assistantStep = buildAssistantSnapshot({

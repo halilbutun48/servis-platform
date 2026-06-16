@@ -730,6 +730,29 @@ loadRef.current = load;
     isSameDayIstanbul,
   }), [otherItemsRaw, otherQ, otherStatus, dayYmd]);
 
+  const featuredTrackShift = useMemo(() => {
+    const allTrackItems = [
+      ...otherItems,
+      ...contractItems,
+      ...pendingItems,
+      ...marketItems,
+      ...items,
+    ];
+
+    const canConvertShift = (shift) => {
+      const sid = Number(shift?.id || 0);
+      if (!sid) return false;
+      const convState = String(agreementConversionByShift?.[String(sid)]?.state || "");
+      return convState !== "pending" && convState !== "linked";
+    };
+
+    return allTrackItems.find((shift) => Number(shift?.id || 0) > 0 && Number(shift?.roomId || 0) > 0 && !Number(shift?.agreementId || 0) && canConvertShift(shift))
+      || allTrackItems.find((shift) => Number(shift?.id || 0) > 0 && Number(shift?.roomId || 0) > 0 && canConvertShift(shift))
+      || allTrackItems.find((shift) => Number(shift?.id || 0) > 0 && Number(shift?.roomId || 0) > 0)
+      || allTrackItems[0]
+      || null;
+  }, [agreementConversionByShift, otherItems, contractItems, pendingItems, marketItems, items]);
+
   const copilotShift = useMemo(() => {
     if (copilotShiftId) {
       return items.find((s) => Number(s?.id || 0) === copilotShiftId) || null;
@@ -946,6 +969,7 @@ loadRef.current = load;
         setOffersCounter={setOffersCounter}
         companyCounterOffer={companyCounterOffer}
         companyCounterPackage={companyCounterPackage}
+        featuredShift={featuredTrackShift}
       />
     </div>
   );

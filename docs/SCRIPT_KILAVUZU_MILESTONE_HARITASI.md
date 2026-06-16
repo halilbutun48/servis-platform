@@ -240,6 +240,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01`, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; güvenli red / clarification / guided step üretir ama runtime execute açmaz.
 - Sonraki güvenli hatlar: `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
 
+### COPILOT-REASONING-ANSWER-COMPOSER-01 [CHECK]
+- `check:copilotreasoninganswercomposer01` Sefer Abi reasoning replies için final reply composer katmanını kilitler; robotik lead marker'ları, tekrarları ve template benzerliğini temizler; strict A-only acceptance'ta Company shifts preview/convert affordance da gerektiği için bu milestone `core composer + required product acceptance support` scope'u ile okunur, ancak runtime AI action, tool execution, write-action dispatcher ve DB write açmaz.
+- Check script: `node backend\scripts\copilot_reasoning_answer_composer_01_check.js`
+- Doküman: `docs/COPILOT_REASONING_ANSWER_COMPOSER_01.md`
+- Static helper: `backend/src/ai/chat/copilotReasoningAnswerComposer.js`
+- Bu check, `COPILOT-GUIDED-TASK-ENGINE-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; final reply'ı role, ekran ve progress-command bağlamında doğal tutar ama runtime execute açmaz.
+- Sonraki güvenli hatlar: `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+
 ### SEFER-ABI-REASONING-ASSISTANT-01 [CHECK]
 - `check:seferabireasoningassistant01` role + screen + selected record + conversation state bağlamını reasoning assistant katmanında birleştirir; golden pack’i reply source olarak kullanmaz, runtime AI action, tool execution, write-action dispatcher ve DB write açmaz.
 - Check script: `node backend\scripts\sefer_abi_reasoning_assistant_01_check.js`

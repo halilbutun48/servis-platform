@@ -660,6 +660,7 @@ export function CompanyOtherSection({
   accOpen,
   onSetOpen,
   onToggle,
+  featuredShift = null,
   otherItems,
   otherStatus,
   onChangeOtherStatus,
@@ -681,7 +682,7 @@ export function CompanyOtherSection({
   onOpenOpsEvents,
   onConvertShiftToAgreement,
 }) {
-  const featuredShift = (otherItems || []).find((shift) => {
+  const localFeaturedShift = featuredShift || (otherItems || []).find((shift) => {
     const conv = agreementConversionByShift?.[String(Number(shift?.id || 0))] || null;
     const convState = String(conv?.state || "");
     return Number(shift?.roomId || 0) > 0
@@ -689,17 +690,17 @@ export function CompanyOtherSection({
       && convState !== "pending"
       && convState !== "linked";
   }) || (otherItems || []).find((shift) => Number(shift?.roomId || 0) > 0) || otherItems?.[0] || null;
-  const rightContent = featuredShift ? (
+  const rightContent = localFeaturedShift ? (
     <>
-      <button type="button" className="btn sm" disabled={busy} onClick={() => onOpenPreview(featuredShift.id)}>
+      <button type="button" className="btn sm" disabled={busy} onClick={() => onOpenPreview(localFeaturedShift.id)}>
         Harita / Navigasyon Önizle
       </button>
       <button
         type="button"
         className="btn sm primary"
-        disabled={busy || !Number(featuredShift?.roomId || 0)}
-        title={!Number(featuredShift?.roomId || 0) ? "Önce room seçili olmalı. Sonra taslak Company Sözleşmeler ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
-        onClick={() => onConvertShiftToAgreement(featuredShift)}
+        disabled={busy || !Number(localFeaturedShift?.roomId || 0)}
+        title={!Number(localFeaturedShift?.roomId || 0) ? "Önce room seçili olmalı. Sonra taslak Company Sözleşmeler ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
+        onClick={() => onConvertShiftToAgreement(localFeaturedShift)}
       >
         Sözleşmeye Dönüştür
       </button>

@@ -530,7 +530,7 @@ mustNot(driverReply, 'Bu aksiyonu simüle et', 'driver reply avoids mechanical s
 mustNot(driverReply, 'Eksik araç/sürücü', 'driver reply avoids first-cause missing vehicle driver wording');
 mustNot(driverReply, 'Yetki sınırını kontrol et', 'driver reply avoids default permission boundary');
 mustAny(driverReply, ['canlı başlatma zamanını ve aktif durumu kontrol et', 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışına geç'], 'driver reply keeps live-start wording');
-mustAny(driverReply, ['Araç/sürücü bağı görünmüyorsa kontrol et', 'atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır'], 'driver reply keeps conditional vehicle-driver wording');
+mustAny(driverReply, ['Araç: 34ABC123', 'Sürücü: Sürücü Demo', 'Operasyon kanıtı: Eksik'], 'driver reply keeps vehicle-driver details');
 mustAny(driverReply, ['34ABC123', 'Vardiya #3'], 'driver reply keeps selected task');
 mustAny(driverReply, ['Telefon GPS’i beklemede', 'GPS durumu', 'Operasyon kanıtı'], 'driver reply keeps gps/proof status');
 mustArrayContains(chipList(driverResponse), 'Başlatma zamanı uygun mu?', 'driver chips keep start-time chip');

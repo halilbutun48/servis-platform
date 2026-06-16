@@ -12,6 +12,7 @@ Bu katman özellikle şunları kanıtlar:
 - `bunu sen yap`, `teklifi kabul et`, `aracı ata`, `sözleşmeyi yürürlüğe al` gibi write-action taleplerinde güvenli ret + alternatif adım
 - Rol bazlı ton farkı
 - Reasoning context inputs: `role + screen + selected record + conversation state + interactionIntentFamily`
+- Final reply, `COPILOT-REASONING-ANSWER-COMPOSER-01` ile robotik kalıplardan temizlenir; aynı soru farklı rollerde farklı ve doğal kalır.
 
 ## Rol tonları
 - `DRIVER`: kısa, saha dili, rota ve durak odaklı
@@ -44,5 +45,6 @@ Bu katman özellikle şunları kanıtlar:
 
 ## Kanonik yüzeyler
 - Helper: `backend/src/ai/chat/seferAbiReasoningAssistant.js`
+- Composer: `backend/src/ai/chat/copilotReasoningAnswerComposer.js`
 - Help composer: `backend/src/ai/chat/helpComposer.js`
 - Check: `backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js`

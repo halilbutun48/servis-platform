@@ -1,5 +1,6 @@
 import { hasExplicitRoleBoundarySignal } from './answerQualityPolicy.js';
 import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
+import { COPILOT_REASONING_ANSWER_COMPOSER_VERSION, composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 
 export const SEFER_ABI_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-REASONING-ASSISTANT-01';
 export const SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01';
@@ -19,6 +20,11 @@ export const SEFER_ABI_REASONING_ASSISTANT_INTENT_FAMILIES = Object.freeze([
   'RESULT_CHECK',
   'ALTERNATIVE_PATH',
   'DELEGATE_SAFE',
+  'OVERVIEW_START',
+  'ROLE_START',
+  'SCREEN_START',
+  'STEP_BY_STEP',
+  'FIELD_BUTTON',
 ]);
 
 export const SEFER_ABI_REASONING_ASSISTANT_GUARD_REQUIREMENTS = Object.freeze([
@@ -260,10 +266,11 @@ function joinReply(parts, maxLength = 360) {
 }
 
 function resolveRoleKey(userRole = '', user = null) {
-  const role = String(userRole || user?.role || '').trim().toUpperCase();
-  const companyKind = String(user?.companyKind || user?.companyType || '').trim().toUpperCase();
+  const role = normalizeText(firstNonEmpty(userRole, user?.role, '')).replace(/\s+/g, '').replace(/_/g, '').toUpperCase();
+  const companyKind = normalizeText(firstNonEmpty(user?.companyKind, user?.companyType, '')).replace(/\s+/g, '').replace(/_/g, '').toUpperCase();
   if (role === 'COMPANY' && companyKind === 'SCHOOL') return 'SCHOOL';
   if (role === 'COMPANY' && companyKind === 'ORGANIZATION') return 'ORGANIZATION';
+  if (role === 'SUPERADMIN') return 'SUPER_ADMIN';
   return role || 'DEFAULT';
 }
 
@@ -321,9 +328,12 @@ function detectSeferAbiReasoningIntentFamily({
   if (!text) return 'DEFAULT';
 
   if (/(bunu\s+sen\s+yap|benim\s+yerime\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|benim\s+ad(?:ı|i)ma\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|sen\s+uygula|sen\s+kaydet|sen\s+oluştur|sen\s+olustur|aracı\s+ata|araci\s+ata|teklifi\s+kabul\s+et|sözleşmeyi\s+yürürlüğe\s+al|sozlesmeyi\s+yururluge\s+al)/.test(text)) return 'DELEGATE_SAFE';
+  if (/(company|room|driver|parent|personel|school|organization|super\s*admin|superadmin|şirket|oda|veli|sürücü|surucu|okul|organizasyon|süper\s*admin)/.test(text) && /(ne\s+yapmam\s+lazım|ne\s+yapmam\s+gerekiyor|nereden\s+başlamalıyım|nereden\s+başlamam\s+gerekiyor|nereden\s+başlayacağım|başlangıç\s+yolu|ilk\s+adım|ilk\s+bakılacak|nasıl\s+başlayacağım|nasıl\s+başlamalıyım|buradan\s+sonra\s+ne\s+yapacağım)/.test(text)) return 'ROLE_START';
+  if (/(plan\s+builder|planlama\s+merkezi|bu\s+ekran|bu\s+panel|bu\s+sayfa|bu\s+kart|ekranın\s+amacı|ekranin\s+amaci|burada\s+ne\s+yapacağım|burada\s+ne\s+yapıyorum|burada\s+ne\s+yapacağım|burada\s+ne\s+yapmalıyım|bu\s+ekran\s+ne\s+için|bu\s+ekran\s+ne\s+icin|bu\s+ekran\s+ne\s+işe\s+yarar|bu\s+ekran\s+ne\s+ise\s+yarar|bu\s+panel\s+neyi\s+gösteriyor|bu\s+panel\s+neyi\s+gosteriyor|bu\s+sayfa\s+ne\s+için|bu\s+sayfa\s+ne\s+icin)/.test(text)) return 'SCREEN_START';
+  if (/(ne\s+yapmam\s+lazım|ne\s+yapmam\s+gerekiyor|nereden\s+başlamalıyım|nereden\s+başlamam\s+gerekiyor|nereden\s+başlayacağım|başlangıç\s+yolu|ilk\s+adım\s+ne|ilk\s+bakılacak|nasıl\s+başlayacağım|nasıl\s+başlamalıyım|buradan\s+sonra\s+ne\s+yapacağım)/.test(text)) return 'OVERVIEW_START';
   if (/(girdim|içine girdim|icine girdim|açtım|actim|geldim|ulaştım|ulastim|buldum\s+gibi|ekrana\s+girdim)/.test(text)) return 'STEP_ENTERED';
   if (/(yaptım|yaptim|tamamladım|tamamladim|denedim|kontrol ettim|sonucu kontrol ettim|işledim|isledim|oldu\s+mu|doğru\s+mu|dogru\s+mu)/.test(text)) return 'RESULT_CHECK';
-  if (/(bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim|nerede|hangi\s+ekran|hangi\s+menü|hangi\s+menu|alternatif\s+yol|menü\s+yolu|menu\s+yolu)/.test(text)) return 'ALTERNATIVE_PATH';
+  if (/(bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim|\bnerede\b|hangi\s+ekran|hangi\s+menü|hangi\s+menu|alternatif\s+yol|menü\s+yolu|menu\s+yolu)/.test(text)) return 'ALTERNATIVE_PATH';
   if (/(devam\s+et|aynı\s+kayıtta|ayni\s+kayitta|aynı\s+yerden\s+devam|ayni\s+yerden\s+devam|sürdür|surdur|buradan\s+devam|aynı\s+kayıt\s+için\s+devam|ayni\s+kayit\s+icin\s+devam)/.test(text)) return 'CONTINUE_FLOW';
   if (questionType === 'PRODUCT_OVERVIEW_HELP') return 'OVERVIEW_START';
   if (questionType === 'ROLE_EXPLANATION_HELP') return 'ROLE_START';
@@ -655,6 +665,21 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
   const nextBestAction = buildNextAction({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const boundaryText = buildBoundaryText({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const clarifyingQuestion = buildClarifyingQuestion({ guidedTaskMeta, contextPriority, roleProfile, interactionIntentFamily });
+  const previousTaskState = firstNonEmpty(
+    conversationState?.lastSelectedLabel,
+    conversationState?.lastSelectedSummary,
+    conversationState?.lastGuidedTaskQuestionType,
+    conversationState?.lastQuestionType,
+    '',
+  );
+  const lastAssistantAnswerType = firstNonEmpty(
+    conversationState?.lastReasoningAssistantMode,
+    conversationState?.lastReasoningMode,
+    '',
+  );
+  const userProgressCommand = ['STEP_ENTERED', 'RESULT_CHECK', 'ALTERNATIVE_PATH', 'CONTINUE_FLOW', 'DELEGATE_SAFE'].includes(String(interactionIntentFamily || ''))
+    ? String(interactionIntentFamily || '')
+    : '';
   const explicitBoundary = hasExplicitRoleBoundarySignal({
     questionType,
     activeTopic: contextPriority?.activeTopic || questionType,
@@ -755,6 +780,11 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     nextBestAction,
     boundaryText,
     clarifyingQuestion,
+    previousTaskState,
+    lastAssistantAnswerType,
+    userProgressCommand,
+    safetyBoundary: firstNonEmpty(boundaryText, roleProfile.safeAlternative, ''),
+    reasoningAnswerComposerVersion: COPILOT_REASONING_ANSWER_COMPOSER_VERSION,
     safeAlternative: firstNonEmpty(
       roleProfile.safeAlternative,
       contextPriority?.followUpPrompt,
@@ -805,7 +835,11 @@ function composeReasoningLead(snapshot) {
   const boundaryText = snapshot?.boundaryText || '';
   const rawReply = limitText(snapshot?.rawReply || '', roleProfile.maxLength);
   const needsPrefix = !textIncludes(rawReply, roleProfile.frame);
-  const prefix = needsPrefix ? roleProfile.frame : '';
+  const simpleRoleMode = String(snapshot?.roleMode || '').toUpperCase() === 'SIMPLE';
+  const hasGuidedTask = Boolean(snapshot?.guidedTaskMeta?.familyId || snapshot?.contextPriority?.guidedTaskMeta?.familyId);
+  const prefix = needsPrefix
+    ? (simpleRoleMode ? 'Şimdi:' : (hasGuidedTask ? 'Şimdi:' : roleProfile.frame))
+    : '';
   const parts = [];
   if (prefix) parts.push(prefix);
   const sharedScreenPrefix = buildSharedScreenPrefix(snapshot);
@@ -911,10 +945,12 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
 
 export function buildSeferAbiReasoningAssistant(options = {}) {
   const snapshot = buildSeferAbiReasoningAssistantContextSnapshot(options);
-  const reply = composeSeferAbiReasoningReply(snapshot);
+  const rawReply = composeSeferAbiReasoningReply(snapshot);
+  const reply = composeCopilotReasoningAnswer({ ...snapshot, rawReply });
   return Object.freeze({
     ...snapshot,
     reply,
+    rawReply,
     summary: firstNonEmpty(
       snapshot.selectedRecordStatus,
       snapshot.reasoningLead,

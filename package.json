@@ -58,6 +58,7 @@
     "check:exceltoroutereadinessredteam01": "node backend/scripts/excel_to_route_readiness_redteam_01_check.js",
     "check:copiloteblockruntimeanswerintegration01": "node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js",
     "check:copilotguidedtaskengine01": "node backend/scripts/copilot_guided_task_engine_01_check.js",
+    "check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js",
     "check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
     "check:seferabiallrolesreasoningassistant01": "node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
     "check:mobiletext01": "npm --prefix mobile run check:mobiletext01",

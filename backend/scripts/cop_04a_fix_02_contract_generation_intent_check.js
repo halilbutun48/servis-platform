@@ -178,7 +178,7 @@ const noSelection = buildChatHelpResponse({
   screenDefinition,
 });
 
-must(noSelection.reply, 'Şimdi:', 'no-selection reply keeps workflow lead');
+must(noSelection.reply, 'Bu programda bunun anlamı:', 'no-selection reply keeps workflow lead');
 must(noSelection.reply, 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleştiren sinyal görünmüyor.', 'no-selection reply keeps safe no-signal contract wording');
 mustNot(noSelection.reply, 'Bunu anlayamadım', 'no-selection reply avoids unknown fallback');
 mustNot(noSelection.reply, 'Bu vardiyada ana engel', 'no-selection reply avoids readiness-only wording');

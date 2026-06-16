@@ -217,7 +217,8 @@ function buildSnapshotCase({
 }
 
 function assertRoleFrame(caseItem, assistant, expectedFrame, expectedNeedle) {
-  must(assistant.reply, expectedFrame, `${caseItem.label} reply includes role frame`);
+  if (String(caseItem.roleMode || '').toUpperCase() === 'SIMPLE') mustNot(assistant.reply, expectedFrame, `${caseItem.label} reply drops the role frame`);
+  else must(assistant.reply, expectedFrame, `${caseItem.label} reply includes role frame`);
   must(assistant.reply, expectedNeedle, `${caseItem.label} reply includes reasoning needle`);
   must(assistant.reply, caseItem.selectedSummary, `${caseItem.label} reply includes selected summary`);
   assert(assistant.mode === 'CONTEXTUAL_REASONING', `${caseItem.label} contextual reasoning mode`);
@@ -828,7 +829,7 @@ async function main() {
     });
     assert(response.questionType === 'FIELD_BUTTON_HELP', `${caseItem.label} routes to FIELD_BUTTON_HELP`);
     must(response.reply, caseItem.needle, `${caseItem.label} explanation is specific`);
-    must(response.reply, 'Şimdi:', `${caseItem.label} keeps the direct lead`);
+    mustNot(response.reply, 'Şimdi:', `${caseItem.label} drops the robotic lead`);
   }
 
   const buttonHelp = buildDirectHelpResponse({

@@ -62,8 +62,10 @@ Repo: `servis-platform`
 ## Golden pack notu
 - Golden pack test/kabul içindir, reply source değildir.
 - Güvenli validation hattı `qualityScorer.js` üzerinden test edilir.
+- Final reply, `backend/src/ai/chat/copilotReasoningAnswerComposer.js` ile robotik `Şimdi:` / `Kısaca:` kalıplarından temizlenir; bu composer runtime source değildir.
 
 ## Sonraki güvenli hatlar
+- `COPILOT-REASONING-ANSWER-COMPOSER-01`
 - `COPILOT-GUIDED-TASK-ENGINE-01`
 - `UX-COPILOT-SMART-CHIPS-01`
 - `UX-COPILOT-PERSONA-01`
