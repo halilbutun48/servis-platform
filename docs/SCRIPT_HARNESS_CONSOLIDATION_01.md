@@ -6,8 +6,8 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `375`
-- Toplam executable tracked file: `1165`
-- Combined registry row: `1540`
+- Toplam executable tracked file: `1167`
+- Combined registry row: `1542`
 - Root/backend/web/mobile package dağılımı: root `218`, backend `728`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
