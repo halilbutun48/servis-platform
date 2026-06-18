@@ -88,6 +88,124 @@ export function buildGuidedPlanModalResetState() {
   };
 }
 
+export function normalizePersistedGuidedPlanDraftState(source = {}) {
+  const defaults = buildGuidedPlanModalResetState();
+  return {
+    step: Math.max(0, Math.min(3, Number(source?.step ?? defaults.step) || 0)),
+    hubLat: source?.hubLat == null ? defaults.hubLat : String(source.hubLat),
+    hubLng: source?.hubLng == null ? defaults.hubLng : String(source.hubLng),
+    addr: source?.addr == null ? defaults.addr : String(source.addr),
+    hubLoaded: Boolean(source?.hubLoaded ?? defaults.hubLoaded),
+    packKey: String(source?.packKey || defaults.packKey || "WK_MORNING_EVENING"),
+    startDate: String(source?.startDate || defaults.startDate || todayYmd()),
+    durationKey: String(source?.durationKey || defaults.durationKey || "1d"),
+    endDate: String(source?.endDate || defaults.endDate || todayYmd()),
+    daysSel: source?.daysSel && typeof source.daysSel === "object" ? source.daysSel : defaults.daysSel,
+    customSlots: Array.isArray(source?.customSlots) && source.customSlots.length ? source.customSlots : defaults.customSlots,
+    draftNote: source?.draftNote == null ? defaults.draftNote : String(source.draftNote),
+    draftAmount: source?.draftAmount == null ? defaults.draftAmount : String(source.draftAmount),
+    orgEstimatedPax: source?.orgEstimatedPax == null ? defaults.orgEstimatedPax : String(source.orgEstimatedPax),
+    orgGatheringName: source?.orgGatheringName == null ? defaults.orgGatheringName : String(source.orgGatheringName),
+    orgReturnType: String(source?.orgReturnType || defaults.orgReturnType || "RETURN_TO_START"),
+    orgDestinations: Array.isArray(source?.orgDestinations) && source.orgDestinations.length ? source.orgDestinations : defaults.orgDestinations,
+    mapPickIdx: (() => {
+      if (source?.mapPickIdx == null) return defaults.mapPickIdx;
+      const n = Number(source.mapPickIdx);
+      return Number.isFinite(n) ? n : defaults.mapPickIdx;
+    })(),
+    mapPickPoint: Array.isArray(source?.mapPickPoint) ? source.mapPickPoint : defaults.mapPickPoint,
+    draftShiftIds: Array.isArray(source?.draftShiftIds) ? source.draftShiftIds.map((x) => Number(x)).filter(Number.isFinite) : defaults.draftShiftIds,
+    draftShifts: Array.isArray(source?.draftShifts) ? source.draftShifts : defaults.draftShifts,
+    osrmResById: source?.osrmResById && typeof source.osrmResById === "object" ? source.osrmResById : defaults.osrmResById,
+    roomQ: source?.roomQ == null ? defaults.roomQ : String(source.roomQ),
+    onlyHubRooms: Boolean(source?.onlyHubRooms ?? defaults.onlyHubRooms),
+    selRoomIds: source?.selRoomIds && typeof source.selRoomIds === "object" ? source.selRoomIds : defaults.selRoomIds,
+    offerAmount: source?.offerAmount == null ? defaults.offerAmount : String(source.offerAmount),
+    offerNote: source?.offerNote == null ? defaults.offerNote : String(source.offerNote),
+    sentOk: Boolean(source?.sentOk ?? defaults.sentOk),
+    offerOutcome: String(source?.offerOutcome || defaults.offerOutcome || "idle"),
+    companyGeoGate:
+      source?.companyGeoGate && typeof source.companyGeoGate === "object"
+        ? source.companyGeoGate
+        : defaults.companyGeoGate,
+  };
+}
+
+const GUIDED_PLAN_MODAL_DRAFT_STORAGE_PREFIX = "psv1:guidedPlanModalDraft:v1";
+
+function normalizeDraftScope(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9._:-]+/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+export function buildGuidedPlanModalPersistenceScope({ persistenceScope, launchContext, routeRefreshMode }) {
+  const base = normalizeDraftScope(persistenceScope || "company-guided-flow") || "company-guided-flow";
+  if (!routeRefreshMode) return `${base}:new-plan`;
+  const agreementId = Number(launchContext?.agreementId || 0) || "na";
+  const roomId = Number(launchContext?.roomId || 0) || "na";
+  const sourceShiftId = Number(launchContext?.sourceShiftId || 0) || "na";
+  return `${base}:route-refresh:${agreementId}:${roomId}:${sourceShiftId}`;
+}
+
+export function buildGuidedPlanModalDraftStorageKey({ me, persistenceScope, launchContext, routeRefreshMode }) {
+  const role = normalizeDraftScope(me?.role || "unknown") || "unknown";
+  const companyKind = normalizeDraftScope(me?.companyKind || "unknown") || "unknown";
+  const companyId = Number(me?.companyId || me?.organizationId || me?.id || 0) || 0;
+  const identity = companyId > 0 ? `company-${companyId}` : `user-${normalizeDraftScope(me?.id || "unknown") || "unknown"}`;
+  const scope = buildGuidedPlanModalPersistenceScope({ persistenceScope, launchContext, routeRefreshMode });
+  return `${GUIDED_PLAN_MODAL_DRAFT_STORAGE_PREFIX}:${role}:${companyKind}:${identity}:${scope}`;
+}
+
+export function readGuidedPlanModalDraftState(storageKey) {
+  try {
+    if (!storageKey) return null;
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const state = parsed.state && typeof parsed.state === "object" ? parsed.state : null;
+    if (!state) return null;
+    return {
+      ts: Number(parsed.ts || 0) || 0,
+      state,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeGuidedPlanModalDraftState(storageKey, state) {
+  try {
+    if (!storageKey) return;
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        version: 1,
+        ts: Date.now(),
+        state,
+      })
+    );
+  } catch {
+    // ignore localStorage errors
+  }
+}
+
+export function clearGuidedPlanModalDraftState(storageKey) {
+  try {
+    if (!storageKey) return;
+    localStorage.removeItem(storageKey);
+  } catch {
+    // ignore localStorage errors
+  }
+}
+
 export function buildGuidedPlanModalRouteRefreshPrefill({ launchContext, currentHubLat, currentHubLng }) {
   const roomId = Number(launchContext?.roomId || 0);
   const nextWeekMask = Number(launchContext?.weekMask || 62) || 62;
@@ -250,14 +368,12 @@ export function packDescForMode(pack, organization) {
   return map[pack?.key] || pack?.desc || "";
 }
 
-export function directionLabel(direction, organization) {
-  if (!organization) return direction || "-";
+export function directionLabel(direction) {
   return String(direction || "").toUpperCase() === "OUTBOUND" ? "Dağıtım / dönüş" : "Toplama / gidiş";
 }
 
-export function patternLabel(pattern, organization) {
-  if (!organization) return pattern || "-";
-  return String(pattern || "").toUpperCase() === "LOOP" ? "Başlangıç noktasına dön" : "Son noktada bitir";
+export function patternLabel(pattern) {
+  return String(pattern || "").toUpperCase() === "LOOP" ? "Başlangıç noktasına dön" : "Tek yön";
 }
 
 export function emptyDestination() {
@@ -309,7 +425,7 @@ export function buildGuidedPlanDraftCompletion({ organization, draftShifts, draf
     .map((s) => Number(s.id))
     .filter(Number.isFinite);
   if ((Array.isArray(draftShiftIds) ? draftShiftIds : []).length && badShiftIds.length) {
-    reasons.push(`Eksik duraklı taslak shift: ${badShiftIds.map((id) => `#${id}`).join(", ")}`);
+    reasons.push(`Eksik duraklı taslak vardiya: ${badShiftIds.map((id) => `#${id}`).join(", ")}`);
   }
   return {
     ready: reasons.length === 0 && (Array.isArray(draftShiftIds) ? draftShiftIds : []).length > 0,
