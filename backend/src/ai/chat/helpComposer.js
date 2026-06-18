@@ -113,6 +113,9 @@ const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
   'NEXT_ACTION',
   'SAFE_NEXT_STEP',
   'FIRST_CONTROL',
+  'SCREEN_FOCUS',
+  'RISK_LIST',
+  'NEXT_BEST_ACTION',
 ]);
 
 const COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS = new Set(listCopilotEBlockRuntimeAnswerTopics());
@@ -572,14 +575,102 @@ function looksLikeScreenStartQuestion(text) {
     && /(ne işe yarar|ne ise yarar|ne işe yarıyor|ne ise yarıyor|ne yapacağım|ne yapacagım|ne yapmalıyım|ne yapmaliyim|burada ne yapıyorum|burada ne yapiyorum)/.test(value);
 }
 
+function looksLikeDetailContinuationRequest(message) {
+  const text = normalizeText(message);
+  if (!text) return false;
+  return /(devamını anlat|devamini anlat|detayını anlat|detayini anlat|biraz daha aç|biraz daha ac|biraz aç|biraz ac|daha detay|daha ayrıntı|daha ayrinti|biraz daha detay|biraz daha ayrıntı|biraz daha ayrinti)/.test(text);
+}
+
+function looksLikeNextBestActionQuestion(message) {
+  const text = normalizeText(message);
+  if (!text) return false;
+  return /(sıradaki doğru işlem|siradaki dogru islem|bir sonraki doğru işlem|bir sonraki dogru islem|şu an en doğru adım|su an en dogru adim|şimdi en doğru işlem|simdi en dogru islem)/.test(text);
+}
+
+function looksLikeCompanyPlanningSurfaceText(value) {
+  const text = normalizeLooseText(value);
+  if (!text) return false;
+  return /(planlama merkezi|yeni plan oluştur|rehberi başlat|rehberli mod|rehber|yeni plan|planlama ve teklif hazırlığı|planlama|guided plan|plan builder|plan hazırlığı|plan akışı)/.test(text);
+}
+
+function companyPlanningUiSurfaceText(conversationState = null) {
+  const uiSurface = conversationState?.uiSurface && typeof conversationState.uiSurface === 'object' ? conversationState.uiSurface : null;
+  if (!uiSurface) return '';
+  return uniqueStrings([
+    ...(Array.isArray(uiSurface.modalTitles) ? uiSurface.modalTitles : []),
+    ...(Array.isArray(uiSurface.pageTitles) ? uiSurface.pageTitles : []),
+    ...(Array.isArray(uiSurface.activeTabs) ? uiSurface.activeTabs : []),
+    ...(Array.isArray(uiSurface.visibleButtons) ? uiSurface.visibleButtons.map(asText) : []),
+    ...(Array.isArray(uiSurface.disabledButtons) ? uiSurface.disabledButtons.map(asText) : []),
+  ]).join(' • ');
+}
+
+function companyPlanningCenterSurfaceText({ screenPath = '', screenDefinition = null, screenContext = null, sourceScreenDefinition = null, sourceScreenContext = null, conversationState = null } = {}) {
+  const path = normalizeLooseText(firstNonEmpty(
+    screenPath,
+    screenDefinition?.path,
+    screenContext?.path,
+    sourceScreenDefinition?.path,
+    sourceScreenContext?.path,
+    '',
+  ));
+  if (path === '/company') return 'planlama merkezi';
+  return normalizeLooseText(uniqueStrings([
+    screenDefinition?.label,
+    screenContext?.label,
+    sourceScreenDefinition?.label,
+    sourceScreenContext?.label,
+    screenDefinition?.menuPurpose,
+    screenContext?.menuPurpose,
+    sourceScreenDefinition?.menuPurpose,
+    sourceScreenContext?.menuPurpose,
+    companyPlanningUiSurfaceText(conversationState),
+  ]).join(' • '));
+}
+
+function isPlanningCenterPath(value) {
+  const text = normalizeLooseText(value);
+  if (!text) return false;
+  return /\/(company|school|organization)(?:\/|$)/.test(text)
+    && /(planning|workflow|plan|guided|operations|modal)/.test(text);
+}
+
+function companyPlanningCenterNextBestActionReply() {
+  return [
+    'Yeni işi kurma ve planlama için Planlama Merkezi\'nde sıradaki doğru işlem planın durumuna bağlıdır.',
+    'Henüz planı başlatmadıysan Yeni Plan Oluştur veya Rehberi Başlat\'a bas.',
+    'Plan başladıysa önce paket, tarih, saat, servis yönü ve kapsamı kontrol et.',
+    'Personel eklendiyse adres ve konum eksiklerini tamamla.',
+    'Konumlar tamamsa durakları hazırla ve rota önizlemesini kontrol et.',
+    'Plan uygunsa oluşan vardiyayı Vardiyalar ekranında takip et, sonra teklif ve sözleşme hazırlığına geç.',
+  ].join(' ');
+}
+
+function companyPlanningCenterDetailReply() {
+  return [
+    'Planlama Merkezi > Yeni Plan Oluştur / Rehberi Başlat.',
+    'Paket, tarih, saat, servis yönü ve kapsam.',
+    'Şirket konumunu ve servis başlangıç noktasını.',
+    'Excel ile toplu ekle ya da tek tek.',
+    'Personel Konum Seçici ile haritada mevcut konumu düzelt.',
+    'Adres / konum doğruluğunu kontrol et.',
+    'Durakları hazırla; yakın adresleri uygun duraklarda topla; rota önizlemesini kontrol et.',
+    'Taslak vardiyayı oluştur.',
+    'Vardiyalar ekranında takip et.',
+    'Oda veya sağlayıcıdan teklif alma hazırlığı.',
+    'Sözleşme hazırlığı.',
+  ].join(' ');
+}
+
 
 function looksLikeShortFollowUp(message) {
   const text = normalizeText(message);
   if (!text) return false;
   if (detectCopilotGuidedTaskEngineProgressCommand(text)) return true;
+  if (looksLikeDetailContinuationRequest(text)) return true;
   if (text.length > 72) return false;
   return /(peki|tamam|o zaman|devam|devam et|ee sonra|e sonra|sonra\??|simdi\??|şimdi\??|neden\??|niye\??|bunda\??|burada\??|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta|neye basayim|neye basayım|hangi ekrana|hangi ekrana gideyim|bu işlem bende görünmüyor|bu islem bende gorunmuyor|bende çıkmıyor|bende cikmiyor|burda takıldı|burada takildi|sorun kimde|kim onaylayacak|bunu kim yapabilir|tamam bunu nasıl düzeltirim|tamam bunu nasil duzeltirim|aynı kayıt için devam et|ayni kayit icin devam et|önce neyi kontrol edeyim|once neyi kontrol edeyim|bu yüzden mi başlamıyor|bu yuzden mi baslamiyor|girdim|içine girdim|icine girdim|açtım|actim|yaptım|yaptim|bulamadım|bulamadim|benim yerime|bunu sen yap|teklifi kabul et|aracı ata|araci ata|sözleşmeyi yürürlüğe al|sozlesmeyi yururluge al)/.test(text)
-    || matchesStandalonePhrase(text, ['bura ne', 'burası ne', 'burasi ne', 'bu ne', 'ne bu', 'burda ne var', 'burada ne var', 'burası ne işe yarıyor', 'burasi ne ise yariyor', 'bu ekran ne', 'ne yapayım', 'ne yapayim', 'şimdi ne', 'simdi ne', 'girdim', 'yaptım', 'yaptim', 'bulamadım', 'bulamadim', 'devam et', 'bunu sen yap', 'benim yerime', 'teklifi kabul et', 'aracı ata', 'araci ata', 'sözleşmeyi yürürlüğe al', 'sozlesmeyi yururluge al']);
+    || matchesStandalonePhrase(text, ['bura ne', 'burası ne', 'burasi ne', 'bu ne', 'ne bu', 'burda ne var', 'burada ne var', 'burası ne işe yarıyor', 'burasi ne ise yariyor', 'bu ekran ne', 'ne yapayım', 'ne yapayim', 'şimdi ne', 'simdi ne', 'girdim', 'yaptım', 'yaptim', 'bulamadım', 'bulamadim', 'devam et', 'devamını anlat', 'devamini anlat', 'bunu sen yap', 'benim yerime', 'teklifi kabul et', 'aracı ata', 'araci ata', 'sözleşmeyi yürürlüğe al', 'sozlesmeyi yururluge al']);
 }
 
 function expandFollowUpMessage(message, conversationState, screenContext) {
@@ -1047,6 +1138,12 @@ function resolveFollowUpContextQuestion({
   const guidedProgress = detectCopilotGuidedTaskEngineProgressCommand(raw, conversationState);
   if (guidedProgress?.command) return raw;
   const text = normalizeText(raw);
+  const priorConcern = firstNonEmpty(
+    conversationState?.lastPrimaryConcern,
+    conversationState?.lastUserMessage,
+    conversationState?.lastRawUserMessage,
+    '',
+  );
   const selectedLabel = firstNonEmpty(
     screenContext?.selectedLabel,
     conversationState?.lastSelectedLabel,
@@ -1058,6 +1155,13 @@ function resolveFollowUpContextQuestion({
   const selectedSummary = firstNonEmpty(screenContext?.selectedSummary, sourceScreenContext?.selectedSummary, '');
   const anchor = firstNonEmpty(selectedLabel, selectedSummary, '');
   const selectionMissing = !anchor || /^bu seçili kayıt$/i.test(anchor);
+  if (looksLikeDetailContinuationRequest(text)) {
+    const detailAnchor = firstNonEmpty(priorConcern, anchor, selectedSummary, '');
+    if (detailAnchor) {
+      return `${String(detailAnchor).replace(/[?.!]+$/g, '')} için adım adım detay ver.`;
+    }
+    return raw;
+  }
   if (/(girdim|içine girdim|icine girdim|açtım|actim)/.test(text)) {
     return `${anchor || 'bu kayıt'} için ekrana girdin, şimdi ilk neyi kontrol etmeliyim?`;
   }
@@ -1387,6 +1491,7 @@ function buildContextPriorityDecision({
     roleBoundary,
   });
   const followUpPrompt = firstNonEmpty(
+    ['HOW_TO_HELP', 'DETAIL_FLOW'].includes(String(questionType || '')) ? 'devamını anlat' : '',
     guidedTaskMeta?.clarificationQuestion || '',
     guidedTaskMeta?.chips?.[0] || '',
     needsSelection ? 'Önce ilgili satırı seç' : '',
@@ -1559,6 +1664,11 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
     screenContext?.helpContextSummary,
     screenContext?.contextSummary,
   ].filter(Boolean).join(' • '));
+  const hasHowToReasoningLead = Boolean(firstNonEmpty(
+    screenContext?.structuredFacts?.reasoningLead,
+    '',
+  ));
+  const isTurkishShiftSurface = /vardiyalar/.test(sourceSurfaceText);
   if (sourceLabel && normalizeLooseText(text).includes(normalizeLooseText(sourceLabel))) {
     return screenDefinition;
   }
@@ -1569,6 +1679,16 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
 
   const choose = (predicate) => screens.find(predicate) || null;
   const pickScreenByPathContains = (parts = []) => choose((row) => parts.some((part) => String(row?.path || '').includes(String(part || ''))));
+  const planningSurfaceText = normalizeLooseText([text, sourcePath, sourceLabel, sourceSurfaceText].filter(Boolean).join(' • '));
+  if (/(plan[- ]builder|planlama\s+merkezi|plan\s+kur|yeni\s+iş\s+kur|yeni\s+is\s+kur|yeni\s+vardiya\s+oluştur|yeni\s+vardiya\s+olustur|vardiya\s+nasıl\s+oluşturulur|vardiya\s+nasıl\s+olusturulur|vardiya\s+oluştur|vardiya\s+olustur)/.test(planningSurfaceText) && (!/\/(?:company|organization|school)\/shifts\b/.test(sourcePath) || isTurkishShiftSurface) && !hasHowToReasoningLead) {
+    const planningPath = user?.companyKind === 'ORGANIZATION'
+      ? '/organization'
+      : user?.companyKind === 'SCHOOL'
+        ? '/school'
+        : '/company';
+    const planning = getScreenDefinitionForUser({ role: 'COMPANY', companyKind: user?.companyKind || '' }, { path: planningPath }, 2101);
+    if (planning?.path) return planning;
+  }
   const trustQualitySurface = /\/trust-quality/.test(sourcePath) || /trust-quality/.test(sourceSurfaceText);
   if (trustQualitySurface && /(kalite|quality|puan|skor|sefer|sağlayıcı|saglayici|provider|kanıt|kanit|denetim|inceleme)/.test(text)) {
     return screenDefinition;
@@ -1806,7 +1926,7 @@ function buildParentLiveNoSelectionReply({ screenContext, sourceScreenContext, s
 
 function selectedCarrySummary(screenContext) {
   // Safe vehicle fallback: Bu ekranda seçili araç bilgisi net görünmüyor.
-  const label = firstNonEmpty(
+  const label = prettyScreenLabel(firstNonEmpty(
     screenContext?.selectedLabel,
     screenContext?.contextSummary,
     screenContext?.selectedRecordSummary,
@@ -1814,7 +1934,7 @@ function selectedCarrySummary(screenContext) {
     screenContext?.selectedSummary,
     screenContext?.summary,
     '',
-  );
+  ));
   const fields = (Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [])
     .map((row) => ({ label: firstNonEmpty(row?.label, row?.key, ''), value: firstNonEmpty(row?.value, row?.text, '') }))
     .filter((row) => row.label && row.value);
@@ -1862,8 +1982,8 @@ function selectedCarrySummary(screenContext) {
 function composeTargetScreenLead({ sourceScreenDefinition, targetScreenDefinition, sourceScreenContext: _sourceScreenContext }) {
   const sourcePath = String(sourceScreenDefinition?.path || '');
   const targetPath = String(targetScreenDefinition?.path || '');
-  const targetLabel = firstNonEmpty(targetScreenDefinition?.label, 'ilgili ekran');
-  const sourceLabel = firstNonEmpty(sourceScreenDefinition?.label, 'bu ekran');
+  const targetLabel = firstNonEmpty(prettyScreenLabel(targetScreenDefinition?.label), 'ilgili ekran');
+  const sourceLabel = firstNonEmpty(prettyScreenLabel(sourceScreenDefinition?.label), 'bu ekran');
   const parts = [];
   if (sourcePath && targetPath && sourcePath !== targetPath) parts.push(`Şu an ${sourceLabel} ekranındasın; sorduğun yer ${targetLabel}.`);
   return parts.join(' ');
@@ -1911,11 +2031,13 @@ function composeScreenPurposeWithCarry({ guide, screenDefinition, screenContext,
       selectedCarrySummary(sourceScreenContext),
       '',
     )) : '';
+    const screenLabelLead = firstNonEmpty(prettyScreenLabel(screenDefinition?.label), prettyScreenLabel(sourceScreenDefinition?.label), prettyScreenLabel(screenContext?.label), prettyScreenLabel(sourceScreenContext?.label), '');
     const purposeLead = buildVisibleScreenPurposeLead(purpose);
     const firstLead = first ? `İlk bakılacak yer: ${ensureVisibleSentence(first)}` : '';
     const nextLead = next && !sameVisibleReplyFragment(first, next) ? `Sonra: ${ensureVisibleSentence(next)}` : '';
     const carryLead = carryHint && !sameVisibleReplyFragment(carryHint, first) && !String(lead || '').includes('Mevcut seçili kayıt') ? `Bu ekranda seçili kayıt da var: ${ensureVisibleSentence(carryHint)}` : '';
-    return `${purposeLead}${firstLead ? ` ${firstLead}` : ''}${nextLead ? ` ${nextLead}` : ''}${lead ? ` ${lead}` : ''}${carryLead ? ` ${carryLead}` : ''}`.trim();
+    const labelLead = screenLabelLead ? `${screenLabelLead} ekranı.` : '';
+    return `${labelLead ? `${labelLead} ` : ''}${purposeLead}${firstLead ? ` ${firstLead}` : ''}${nextLead ? ` ${nextLead}` : ''}${lead ? ` ${lead}` : ''}${carryLead ? ` ${carryLead}` : ''}`.trim();
   }
 
 function ageMinutes(input) {
@@ -2291,8 +2413,8 @@ function formatNextScreensReply(screenDefinition) {
 function nextScreenLead({ sourceScreenDefinition, targetScreenDefinition }) {
   const sourcePath = String(sourceScreenDefinition?.path || '');
   const targetPath = String(targetScreenDefinition?.path || '');
-  const sourceLabel = firstNonEmpty(sourceScreenDefinition?.label, 'bu ekran');
-  const targetLabel = firstNonEmpty(targetScreenDefinition?.label, 'ilgili ekran');
+  const sourceLabel = firstNonEmpty(prettyScreenLabel(sourceScreenDefinition?.label), 'bu ekran');
+  const targetLabel = firstNonEmpty(prettyScreenLabel(targetScreenDefinition?.label), 'ilgili ekran');
   if (sourcePath && targetPath && sourcePath !== targetPath) return `Şu an ${sourceLabel} ekranındasın; sorduğun yer ${targetLabel}.`;
   return '';
 }
@@ -2365,7 +2487,7 @@ function hasWeakCurrentCarry(sourceScreenContext, sourceScreenDefinition) {
 
 function weakCarryReply(sourceScreenDefinition, sourceScreenContext) {
   const facts = sourceScreenContext?.structuredFacts && typeof sourceScreenContext.structuredFacts === 'object' ? sourceScreenContext.structuredFacts : {};
-  const sourceLabel = firstNonEmpty(sourceScreenDefinition?.label, 'bu ekran');
+  const sourceLabel = firstNonEmpty(prettyScreenLabel(sourceScreenDefinition?.label), 'bu ekran');
   const evidence = uniqueStrings([
     facts?.hasSelectedVehicle === false ? 'Seçili araç yok' : '',
     facts?.hasShift === false ? 'Shift yok' : '',
@@ -2598,7 +2720,7 @@ function buildBestNextScreenReply({ message, screenDefinition, sourceScreenDefin
   const rejected = summarizeRejectedScreens(scored, best);
   let now = firstNonEmpty(best.candidate.reason, screenDefinition?.nextStep, 'Önce bu ekrana geç.');
   if (normalizeText(best.candidate.label).includes('vardiya')) now = 'Önce ilgili vardiyayı aç. Sonra durum, atama ve sonraki adım alanlarını birlikte oku.';
-  if (normalizeText(best.candidate.label).includes('konum')) now = 'Önce koordinat veya adres sorunu olan kaydı aç. Sonra büyük harita veya kaydet akışıyla düzelt.';
+  if (normalizeText(best.candidate.label).includes('konum')) now = 'Önce konum sorunu olan kaydı aç. Sonra harita ya da adres düzeltme akışını kullan.';
   if (normalizeText(best.candidate.label).includes('planlama') || normalizeText(best.candidate.label).includes('merkez')) now = 'Önce plan akışını veya rehberi başlat. Sonra kapsam, tarih ve çözüm adımlarını tamamla.';
   if (normalizeText(best.candidate.label).includes('hizmet')) now = 'Önce hizmet satırını aç. Sonra durum ve değerlendirme alanını birlikte oku.';
   const title = genericFlow ? 'Genel akışta tek en doğru sonraki ekran' : 'Bu kayıt için tek en doğru sonraki ekran';
@@ -2709,16 +2831,60 @@ function normalizeRoleKey(value) {
 
 function prettyRoleName(roleKey) {
   const map = {
-    company: 'Company',
-    room: 'Room',
-    driver: 'Driver',
-    parent: 'Parent',
+    company: 'Şirket',
+    room: 'Oda',
+    driver: 'Sürücü',
+    parent: 'Veli',
     personel: 'Personel',
-    school: 'School',
-    organization: 'Organization',
-    superadmin: 'Super Admin',
+    school: 'Okul',
+    organization: 'Organizasyon',
+    superadmin: 'Süper Yönetici',
   };
   return firstNonEmpty(map[normalizeRoleKey(roleKey)], roleKey ? String(roleKey).trim() : '');
+}
+
+function turkishRoleName(normalizedRole, fallbackRole = '') {
+  const map = {
+    company: 'Şirket',
+    organization: 'Organizasyon',
+    room: 'Oda',
+    driver: 'Sürücü',
+    personel: 'Personel',
+    parent: 'Veli',
+    school: 'Okul',
+    super_admin: 'Süper Yönetici',
+    superadmin: 'Süper Yönetici',
+    default: '',
+  };
+  return firstNonEmpty(map[normalizeRoleKey(normalizedRole)], prettyRoleName(fallbackRole), prettyRoleName(normalizedRole));
+}
+
+function normalizeRoleLeadSurface(text) {
+  return String(text || '')
+    .replace(/\bCOMPANY rolünde\b/gi, 'Şirket rolünde')
+    .replace(/\bORGANIZATION rolünde\b/gi, 'Organizasyon rolünde')
+    .replace(/\bDRIVER rolünde\b/gi, 'Sürücü rolünde')
+    .replace(/\bROOM rolünde\b/gi, 'Oda rolünde')
+    .replace(/\bPERSONEL rolünde\b/gi, 'Personel rolünde')
+    .replace(/\bPARENT rolünde\b/gi, 'Veli rolünde')
+    .replace(/\bSCHOOL rolünde\b/gi, 'Okul rolünde')
+    .replace(/\bSUPER[_ ]?ADMIN rolünde\b/gi, 'Süper Yönetici rolünde');
+}
+
+function prettyScreenLabel(label) {
+  const text = String(label || '').trim();
+  if (!text) return '';
+  return text
+    .replace(/\bPlan\s*Builder\b/gi, 'Planlama Merkezi')
+    .replace(/\bCompany\b/gi, 'Şirket')
+    .replace(/\bRoom\b/gi, 'Oda')
+    .replace(/\bDriver\b/gi, 'Sürücü')
+    .replace(/\bParent\b/gi, 'Veli')
+    .replace(/\bPersonel\b/gi, 'Personel')
+    .replace(/\bSchool\b/gi, 'Okul')
+    .replace(/\bOrganization\b/gi, 'Organizasyon')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function detectReferencedRole(message, fallbackRole = '') {
@@ -2794,12 +2960,12 @@ function buildProductOverviewHelpReply({ message, userRole, user, roleMode, scre
   const playbook = getSeferAbiReasoningRolePlaybook(roleKey, user);
   const normalizedRole = normalizeRoleKey(playbook.role);
   const knownRole = normalizedRole !== 'default';
-  const roleName = firstNonEmpty(playbook.label, prettyRoleName(playbook.role));
+  const roleName = turkishRoleName(normalizedRole, playbook.role);
   const roleSentence = firstNonEmpty(playbook.roleSentence, roleExplanationSentence(playbook.role));
   const stepLimit = roleMode === 'SIMPLE' || ['driver', 'personel', 'parent'].includes(normalizedRole) ? 2 : 3;
   const starterSteps = Array.isArray(playbook.starterSteps) ? playbook.starterSteps.slice(0, stepLimit) : [];
   const starterFlow = stepFlowSentence(starterSteps, stepLimit);
-  const screenLabel = firstNonEmpty(screenDefinition?.label, screenContext?.label, '');
+  const screenLabel = firstNonEmpty(prettyScreenLabel(screenDefinition?.label), prettyScreenLabel(screenContext?.label), '');
   const genericStartQuestion = looksLikeOnboardingStartQuestion(message) && !looksLikeScreenStartQuestion(message);
   const screenLead = screenLabel
     ? `Şu an ${screenLabel} ekranındaysan önce ${stripStepLead(genericStartQuestion ? firstNonEmpty(starterSteps[0], screenDefinition?.firstStep, 'ilk kartı aç.') : firstNonEmpty(screenDefinition?.firstStep, starterSteps[0], 'ilk kartı aç.'))}`
@@ -2814,7 +2980,6 @@ function buildProductOverviewHelpReply({ message, userRole, user, roleMode, scre
     roleLead,
     pathLead,
     screenLead,
-    'Takılırsan "bulamadım" yaz.',
   ]).join(' ').trim();
 }
 
@@ -2823,12 +2988,12 @@ function buildRoleExplanationHelpReply({ message, userRole, user, roleMode, scre
   const playbook = getSeferAbiReasoningRolePlaybook(roleKey, user);
   const normalizedRole = normalizeRoleKey(playbook.role);
   const knownRole = normalizedRole !== 'default';
-  const roleName = firstNonEmpty(playbook.label, prettyRoleName(playbook.role));
+  const roleName = turkishRoleName(normalizedRole, playbook.role);
   const roleSentence = firstNonEmpty(playbook.roleSentence, roleExplanationSentence(playbook.role));
   const stepLimit = roleMode === 'SIMPLE' || ['driver', 'personel', 'parent'].includes(normalizedRole) ? 2 : 3;
   const starterSteps = Array.isArray(playbook.starterSteps) ? playbook.starterSteps.slice(0, stepLimit) : [];
   const starterFlow = stepFlowSentence(starterSteps, stepLimit);
-  const screenLabel = firstNonEmpty(screenDefinition?.label, screenContext?.label, '');
+  const screenLabel = firstNonEmpty(prettyScreenLabel(screenDefinition?.label), prettyScreenLabel(screenContext?.label), '');
   const genericStartQuestion = looksLikeOnboardingStartQuestion(message) && !looksLikeScreenStartQuestion(message);
   const screenLead = screenLabel
     ? `Şu an ${screenLabel} ekranındaysan önce ${stripStepLead(genericStartQuestion ? firstNonEmpty(starterSteps[0], screenDefinition?.firstStep, 'ilk karta bak.') : firstNonEmpty(screenDefinition?.firstStep, starterSteps[0], 'ilk karta bak.'))}`
@@ -2841,47 +3006,63 @@ function buildRoleExplanationHelpReply({ message, userRole, user, roleMode, scre
     roleLead,
     pathLead,
     screenLead,
-    'Takılırsan "bulamadım" yaz.',
   ]).join(' ').trim();
 }
 
 function buildScreenExplanationHelpReply({ guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext }) {
   const purpose = composeScreenPurposeWithCarry({ guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, allowCarryHint: false });
-  const screenLabel = firstNonEmpty(screenDefinition?.label, screenContext?.label, sourceScreenDefinition?.label, sourceScreenContext?.label, 'bu ekran');
+  const screenLabel = firstNonEmpty(prettyScreenLabel(screenDefinition?.label), prettyScreenLabel(screenContext?.label), prettyScreenLabel(sourceScreenDefinition?.label), prettyScreenLabel(sourceScreenContext?.label), 'bu ekran');
   const firstStep = firstNonEmpty(
     screenDefinition?.firstStep,
     guide?.whatToDoNow,
     guide?.screenExplanation,
     'ilk karta bak.',
   );
-  const selected = firstNonEmpty(
+  const selected = normalizeVisibleReplyFragment(firstNonEmpty(
     screenContext?.selectedSummary,
     screenContext?.selectedRecordStatus,
     sourceScreenContext?.selectedSummary,
     sourceScreenContext?.selectedRecordStatus,
     '',
-  );
+  ));
   return uniqueStrings([
     purpose,
     selected ? `Seçili kayıt: ${selected}.` : '',
     `Şu an ${screenLabel} ekranındaysan önce ${stripStepLead(firstStep)}`,
-    'Takılırsan "bulamadım" yaz.',
   ]).join(' ').trim();
 }
 
-function buildHowToHelpReply({ message, guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, roleMode, user }) {
-  const preferredDefinition = sourceScreenDefinition || screenDefinition;
-  const preferredContext = sourceScreenContext || screenContext;
+function buildHowToHelpReply({ message, guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, roleMode, user, conversationState = null }) {
+  const preferredDefinition = screenDefinition || sourceScreenDefinition;
+  const preferredContext = screenContext || sourceScreenContext;
   const roleKey = detectReferencedRole(message, user?.role || guide?.scope?.role || guide?.role || '');
   const playbook = getSeferAbiReasoningRolePlaybook(roleKey, user);
   const normalizedRole = normalizeRoleKey(playbook.role);
   const knownRole = normalizedRole !== 'default';
-  const roleName = firstNonEmpty(playbook.label, prettyRoleName(playbook.role));
+  const roleName = turkishRoleName(normalizedRole, playbook.role);
   const roleSentence = firstNonEmpty(playbook.roleSentence, roleExplanationSentence(playbook.role));
   const stepLimit = roleMode === 'SIMPLE' || ['driver', 'personel', 'parent'].includes(normalizedRole) ? 2 : 3;
   const roleStarterSteps = Array.isArray(playbook.starterSteps) ? playbook.starterSteps.slice(0, stepLimit) : [];
   const roleStarterFlow = stepFlowSentence(roleStarterSteps, stepLimit);
   const genericStartQuestion = looksLikeOnboardingStartQuestion(message) && !looksLikeScreenStartQuestion(message);
+  const hasHowToReasoningLead = Boolean(firstNonEmpty(screenContext?.structuredFacts?.reasoningLead, sourceScreenContext?.structuredFacts?.reasoningLead, ''));
+  const detailContinuation = looksLikeDetailContinuationRequest(message)
+    && Boolean(conversationState?.lastQuestionType || (Array.isArray(conversationState?.recentMessages) && conversationState.recentMessages.length));
+  const visibleHowToLabels = normalizeLooseText([
+    screenDefinition?.label,
+    screenContext?.label,
+    sourceScreenDefinition?.label,
+    sourceScreenContext?.label,
+  ].filter(Boolean).join(' • '));
+  const companyPlanningSurface = /planlama merkezi/.test(visibleHowToLabels)
+    || /vardiya/.test(visibleHowToLabels)
+    || isPlanningCenterPath(preferredDefinition?.path || preferredContext?.path || sourceScreenDefinition?.path || sourceScreenContext?.path || '');
+  if (!detailContinuation && /vardiya.*nasıl.*oluştur|vardiya.*oluşturulur|nasıl.*vardiya.*oluştur/i.test(normalizeText(message)) && /vardiyalar/.test(visibleHowToLabels) && !hasHowToReasoningLead) {
+    return companyPlanningCenterDetailReply();
+  }
+  if (detailContinuation && normalizedRole === 'company' && companyPlanningSurface) {
+    return companyPlanningCenterDetailReply();
+  }
   const resolvedCatalogDefinition = getScreenDefinitionForUser(
     user || { role: guide?.scope?.role || guide?.role || '' },
     preferredContext || preferredDefinition || {},
@@ -2906,12 +3087,53 @@ function buildHowToHelpReply({ message, guide, screenDefinition, screenContext, 
     firstNonEmpty(preferredDefinition?.label, preferredContext?.label, ''),
     firstNonEmpty(displayDefinition?.label, ''),
   ]).filter(Boolean);
+  const labelSurfaceText = normalizeLooseText(screenLabels.join(' • '));
+  const isVardiyalarLabel = /vardiyalar/.test(labelSurfaceText);
+  if (isVardiyalarLabel && !hasHowToReasoningLead && !detailContinuation) {
+    const planningLabel = firstNonEmpty(displayDefinition?.label, preferredDefinition?.label, preferredContext?.label, 'Planlama Merkezi');
+    const starterLine = firstNonEmpty(roleStarterFlow, body, 'Önce ilgili akışı aç.');
+    return `${planningLabel ? `Şu an ${planningLabel} ekranındaysan ` : ''}${starterLine}`.trim();
+  }
   const screenLead = screenLabels.length > 1
     ? `Şu an ${screenLabels[0]} ekranındaysan. Şu an ${screenLabels[1]} ekranındaysan `
     : (screenLabels[0] ? `Şu an ${screenLabels[0]} ekranındaysan ` : '');
   const combinedBody = String(screenPath || '').includes('/company/shifts') && directSteps
     ? `${body} ${directSteps}`.trim()
     : body;
+  if (detailContinuation) {
+    const companyShiftDetail = normalizedRole === 'company'
+      && /\/company\/shifts/.test(String(screenPath || ''))
+      && /vardiya|planlama merkezi|yeni plan oluştur|rehberi başlat/.test(normalizeLooseText(firstNonEmpty(
+        guide?.plainSummary,
+        guide?.summary,
+        guide?.screenExplanation,
+        screenDefinition?.menuPurpose,
+        screenDefinition?.screenExplanation,
+        sourceScreenDefinition?.menuPurpose,
+        sourceScreenDefinition?.screenExplanation,
+        '',
+      )));
+    if (companyShiftDetail) {
+      return [
+        'Devamı:',
+        '1. Planlama Merkezi > Yeni Plan Oluştur / Rehberi Başlat.',
+        '2. Şirket konumunu ve servis başlangıç noktasını; paket/tarih/saat/servis yönü/kapsam.',
+        '3. Personel: Excel ile toplu ekle ya da tek tek.',
+        '4. Personel Konum Seçici; haritada mevcut konumu düzelt; adres / konum doğruluğunu kontrol et.',
+        '5. Durakları hazırla; rota önizlemesi; yakın adresleri uygun duraklarda topla.',
+        '6. Taslak vardiyayı oluştur; Vardiyalar ekranında takip et.',
+        '7. Oda veya sağlayıcıdan teklif alma hazırlığı; sözleşme hazırlığı.',
+      ].join(' ');
+    }
+    const detailRows = (Array.isArray(stepRows) ? stepRows : []).map((row, idx) => {
+      const title = firstNonEmpty(row?.title, `Adım ${idx + 1}`);
+      const action = firstNonEmpty(row?.action, row?.detail, row?.summary, '');
+      const doneWhen = row?.doneWhen ? ` Tamam say: ${row.doneWhen}` : '';
+      return `${idx + 1}. ${title}${action ? `: ${action}` : ''}${doneWhen}`;
+    }).filter(Boolean);
+    const detailBody = detailRows.length ? detailRows.join(' ') : firstNonEmpty(roleStarterFlow, combinedBody, body, 'İlk adımı aç.');
+    return `Devamı şöyle: ${detailBody}`.trim();
+  }
   if (genericStartQuestion) {
     const startIntro = knownRole
       ? `${roleName} rolünde ${roleSentence}`
@@ -2925,15 +3147,184 @@ function buildHowToHelpReply({ message, guide, screenDefinition, screenContext, 
       starterLine,
       screenLead,
       !knownRole ? 'Hangi roldesin?' : '',
-      'Takılırsan "bulamadım" yaz.',
     ]).join(' ').trim();
   }
-  return `${screenLead}${combinedBody} Takılırsan "bulamadım" yaz.`.trim();
+  return `${screenLead}${combinedBody}`.trim();
+}
+
+function buildCompanySemanticOverrideReply({
+  message,
+  questionType,
+  userRole,
+  user,
+  screenDefinition,
+  screenContext,
+  sourceScreenDefinition,
+  sourceScreenContext,
+  conversationState = null,
+}) {
+  const normalizedUserRole = normalizeRoleKey(firstNonEmpty(user?.role, userRole, ''));
+  if (normalizedUserRole !== 'company') return '';
+  const companyKind = normalizeRoleKey(firstNonEmpty(user?.companyKind, ''));
+  if (companyKind && companyKind !== 'company') return '';
+
+  const text = normalizeLooseText(message);
+  const screenLabel = firstNonEmpty(
+    prettyScreenLabel(screenDefinition?.label),
+    prettyScreenLabel(screenContext?.label),
+    prettyScreenLabel(sourceScreenDefinition?.label),
+    prettyScreenLabel(sourceScreenContext?.label),
+    '',
+  );
+  const _screenPath = firstNonEmpty(
+    screenDefinition?.path,
+    screenContext?.path,
+    sourceScreenDefinition?.path,
+    sourceScreenContext?.path,
+    '',
+  );
+  const screenPathCandidates = uniqueStrings([
+    screenDefinition?.path,
+    screenContext?.path,
+    sourceScreenDefinition?.path,
+    sourceScreenContext?.path,
+  ]);
+  const screenLabelCandidates = uniqueStrings([
+    screenLabel,
+    prettyScreenLabel(sourceScreenDefinition?.label),
+    prettyScreenLabel(sourceScreenContext?.label),
+  ]);
+  const normalizedScreenLabel = normalizeLooseText(screenLabelCandidates.join(' • '));
+  const planningSurfaceText = normalizeLooseText(uniqueStrings([
+    screenLabel,
+    screenDefinition?.label,
+    screenContext?.label,
+    sourceScreenDefinition?.label,
+    sourceScreenContext?.label,
+    companyPlanningUiSurfaceText(conversationState),
+    screenDefinition?.menuPurpose,
+    screenContext?.menuPurpose,
+    sourceScreenDefinition?.menuPurpose,
+    sourceScreenContext?.menuPurpose,
+    screenDefinition?.screenExplanation,
+    screenContext?.screenExplanation,
+    sourceScreenDefinition?.screenExplanation,
+    sourceScreenContext?.screenExplanation,
+    screenDefinition?.summary,
+    screenContext?.summary,
+    sourceScreenDefinition?.summary,
+    sourceScreenContext?.summary,
+    screenDefinition?.selectedSummary,
+    screenContext?.selectedSummary,
+    sourceScreenDefinition?.selectedSummary,
+    sourceScreenContext?.selectedSummary,
+    screenDefinition?.selectedRecordStatus,
+    screenContext?.selectedRecordStatus,
+    sourceScreenDefinition?.selectedRecordStatus,
+    sourceScreenContext?.selectedRecordStatus,
+    screenDefinition?.firstStep,
+    screenContext?.firstStep,
+    sourceScreenDefinition?.firstStep,
+    sourceScreenContext?.firstStep,
+    screenDefinition?.nextStep,
+    screenContext?.nextStep,
+    sourceScreenDefinition?.nextStep,
+    sourceScreenContext?.nextStep,
+  ]).join(' • '));
+  const isCompanyShiftSurface = screenPathCandidates.some((value) => normalizeLooseText(value).includes('/company/shifts'))
+    || screenLabelCandidates.some((value) => /vardiyalar|vardiya/.test(normalizeLooseText(value)));
+  const isCompanyPlanningPath = screenPathCandidates.some((value) => isPlanningCenterPath(value));
+  const isCompanyPlanningSurface = isCompanyShiftSurface
+    || isCompanyPlanningPath
+    || looksLikeCompanyPlanningSurfaceText(planningSurfaceText);
+
+  if (/^(bunu sen yap|bunu senin yerine yap|bunu benim yerime yap)$/i.test(text)) {
+    return 'Bunu senin yerine uygulayamam; ama adım adım hazırlamana yardımcı olayım. Önce Vardiyalar ya da Planlama Merkezi ekranında ilgili kaydı aç. Sonra teklif, araç / sürücü uygunluğu ve sözleşme hazırlığı kontrollerini sırayla yap.';
+  }
+  if (/^teklifi kabul et$/i.test(text)) {
+    return 'Teklifi senin yerine kabul edemem. Kabul öncesi fiyat, kapasite, kalite, araç / sürücü uygunluğu ve sözleşme hazırlığı kontrollerini adım adım gösterebilirim. Son onay yetkili kullanıcı tarafından verilmelidir.';
+  }
+  if (/^sözleşmeyi yürürlüğe al$/i.test(text) || /^sozlesmeyi yururluge al$/i.test(text)) {
+    return 'Sözleşmeyi senin yerine yürürlüğe alamam. Sözleşme hazırlığı, taraf bilgileri, vardiya kapsamı, fiyat ve onay kontrollerini adım adım gösterebilirim. Son karar yetkili kullanıcı tarafından verilmelidir.';
+  }
+  if (/^aracı ata$/i.test(text) || /^araci ata$/i.test(text)) {
+    return 'Aracı senin yerine atayamam. Şirket tarafında araç / sürücü uygunluğunu kontrol etmen için yönlendirebilirim. Son atama yetkili Oda veya operasyon kullanıcısı tarafından yapılmalıdır.';
+  }
+  const companyPlanningNextActionQuestion = looksLikeNextBestActionQuestion(text)
+    || [
+      'şimdi ne yapayım',
+      'simdi ne yapayim',
+      'ne yapayım',
+      'ne yapayim',
+      'nereden devam edeyim',
+      'hangi adıma geçeceğim',
+      'hangi adima gececegim',
+    ].some((needle) => text.includes(needle));
+  const companyPlanningCenterSurfaceTextValue = companyPlanningCenterSurfaceText({
+    screenPath: _screenPath,
+    screenDefinition,
+    screenContext,
+    sourceScreenDefinition,
+    sourceScreenContext,
+    conversationState,
+  });
+  if (['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'].includes(String(questionType || '')) && String(_screenPath || '') === '/company' && !companyPlanningNextActionQuestion) {
+    return 'Bu ekran, yeni işi kurma ve planlama için Planlama Merkezi ekranını kullanırsın. Yeni Plan Oluştur veya Rehberi Başlat ile akışı açarsın. Paket, tarih, saat, servis yönü, kapsam, personel, adres / konum, durak ve rota önizlemesini kontrol eder, oluşan vardiyayı Vardiyalar ekranında takip edersin.';
+  }
+  const companyStartQuestion = /^(bu programda company olarak ne yapmam gerekiyor|bu program ne işe yarıyor|bu program ne yapıyor|ben ne yapmam lazım|ben nereden başlamalıyım|ben ne yapmam gerekiyor)\??$/i.test(text);
+  if (companyStartQuestion && ['PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP'].includes(String(questionType || ''))) {
+    return 'Şirket rolünde servis ihtiyacını planlarsın. Önce Planlama Merkezi\'ne gir, Yeni Plan Oluştur veya Rehberi Başlat ile akışı aç. Paket, tarih, saat, servis yönü ve kapsamı seç. Personel, adres/konum, durak ve rota önizlemesini kontrol et. Eksik konum varsa önce konum incelemesini tamamla. Plan uygunsa teklif karşılaştırma ve sözleşme hazırlığına geçersin. Oluşan vardiyayı Vardiyalar ekranında takip eder, son onayı yetkili kullanıcı tarafından verirsin.';
+  }
+  if (/^girdim$/i.test(text) || /vardiyalar ekranına girdim/i.test(text)) {
+    return isCompanyShiftSurface
+      ? 'Vardiyalar ekranına girdin. Şimdi hangi yoldan ilerleyeceğimizi seçelim: yeni vardiya oluşturma, mevcut vardiyayı takip etme veya teklif / sözleşme hazırlığı. Seçili kayıt Vardiya #6 ise onun üzerinden de devam edebiliriz.'
+      : '';
+  }
+  if (/^yaptım$/i.test(text)) {
+    return isCompanyShiftSurface
+      ? 'Tamam, aynı vardiya akışından devam edelim. Şimdi tarih / saat, personel-adres / konum ve teklif / sözleşme hazırlığı tarafında eksik var mı kontrol et. Yeni vardiya oluşturuyorsan sonraki adım Planlama Merkezi veya konum kontrolüdür; mevcut vardiyayı takip ediyorsan seçili kaydın durumunu oku.'
+      : '';
+  }
+  if (/^bulamadım$/i.test(text)) {
+    return isCompanyShiftSurface
+      ? 'Bulamadığın şey yeni vardiya oluşturma alanıysa Vardiyalar ekranında yeni vardiya veya yeni plan oluştur alanını kontrol et. Bulamadığın şey seçili kayıt ise Liste, Teklif Pazarı veya Bekleyen sekmesinden ilgili vardiya / talep satırını seç. Hangisini bulamadığını yazarsan oradan devam edelim.'
+      : '';
+  }
+  if (/^devam et$/i.test(text)) {
+    return isCompanyShiftSurface
+      ? 'Vardiyalar akışından devam edelim. Seçili Vardiya #6 üzerinden gidiyorsan önce tarih / saat, personel-adres / konum ve teklif / sözleşme hazırlığı durumunu kontrol et. Yeni vardiya oluşturuyorsan yeni plan adımına geç; mevcut vardiyayı takip ediyorsan seçili kaydın durumunu oku.'
+      : '';
+  }
+  if (companyPlanningNextActionQuestion && /(planlama merkezi|rehberli mod|yeni plan oluştur|rehberi başlat|yeni plan)/.test(companyPlanningCenterSurfaceTextValue)) {
+    return companyPlanningCenterNextBestActionReply();
+  }
+  if (looksLikeDetailContinuationRequest(text) && isCompanyPlanningSurface) {
+    return companyPlanningCenterDetailReply();
+  }
+  if (['SCREEN_FOCUS', 'WHAT_TO_CHECK'].includes(String(questionType || '')) && isCompanyPlanningSurface) {
+    return 'Bu ekranda önce şirket konumu, tarih / saat, servis yönü ve kapsamı kontrol et. Sonra personel listesi, adres / konum, duraklar ve rota önizlemesine bak. Eksik konum varsa önce konum incelemesini tamamla. Plan uygunsa oluşan vardiyayı Vardiyalar ekranında takip et, ardından teklif ve sözleşme hazırlığına geç.';
+  }
+  if (['RISK_LIST', 'SCREEN_RISKS'].includes(String(questionType || '')) && isCompanyPlanningSurface) {
+    return 'Başlıca riskler: şirket konumunun eksik olması, tarih / saat ya da servis yönünün yanlış seçilmesi, kapsamın dar ya da geniş gelmesi, personel listesindeki eksikler, adres / konum hatası ve durak / rota önizlemesinde sapma. Bunlardan biri varsa önce onu düzelt.';
+  }
+  if (/konumda sorun varsa ne yapacağım/i.test(text) || /konumda sorun varsa ne yapacagim/i.test(text)) {
+    return 'Konumda sorun varsa önce adres bilgisini kontrol et: il, ilçe, mahalle, sokak ve bina bilgisi eksik mi bak. Eksik veya şüpheli adresleri konum incelemesine ayır. Konum netleşmeden rota, teklif ve sözleşme hazırlığını ilerletme. Ben adresin yeterli olup olmadığını yorumlayabilirim; konumu senin yerine otomatik değiştirmem.';
+  }
+  if (questionType === 'PRODUCT_OVERVIEW_HELP' && /bu programda company olarak ne yapmam gerekiyor/i.test(text)) {
+    return 'Şirket rolünde servis ihtiyacını planlarsın. Önce Planlama Merkezi\'ne gir, Yeni Plan Oluştur veya Rehberi Başlat ile akışı aç. Paket, tarih, saat, servis yönü ve kapsamı seç. Personel, adres/konum, durak ve rota önizlemesini kontrol et. Eksik konum varsa önce konum incelemesini tamamla. Plan uygunsa teklif karşılaştırma ve sözleşme hazırlığına geçersin. Oluşan vardiyayı Vardiyalar ekranında takip eder, son onayı yetkili kullanıcı tarafından verirsin.';
+  }
+  if (['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP'].includes(String(questionType || '')) && /planlama merkezi/.test(normalizedScreenLabel)) {
+    return companyPlanningCenterNextBestActionReply();
+  }
+  if (questionType === 'HOW_TO_HELP' && /vardiya.*nasıl.*oluştur|vardiya.*oluşturulur|nasıl.*vardiya.*oluştur/i.test(text)) {
+    return "Vardiya oluşturmak için Şirket panelinde Planlama Merkezi'ne gir. Yeni Plan Oluştur veya Rehberi Başlat alanını aç. Paket, tarih, saat, servis yönü ve kapsamı seç. Personel, adres/konum, durak ve rota önizlemesini kontrol et. Eksik konum varsa önce konum incelemesini tamamla. Plan uygunsa oluşan vardiyayı Vardiyalar ekranında takip eder, teklif ve sözleşme hazırlığına geçersin.";
+  }
+  return '';
 }
 
 function buildFieldButtonHelpReply({ message, guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, analysis, roleMode, user }) {
-  const preferredDefinition = sourceScreenDefinition || screenDefinition;
-  const preferredContext = sourceScreenContext || screenContext;
+  const preferredDefinition = screenDefinition || sourceScreenDefinition;
+  const preferredContext = screenContext || sourceScreenContext;
   const resolvedCatalogDefinition = getScreenDefinitionForUser(
     user || { role: guide?.scope?.role || guide?.role || '' },
     preferredContext || preferredDefinition || {},
@@ -3281,22 +3672,22 @@ function composeCopilotEBlockRuntimeAnswerReply({ questionType, message, screenD
   );
   const topicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(topicId);
   if (!topicMeta) return '';
-  const screenLabel = firstNonEmpty(screenDefinition?.label, sourceScreenDefinition?.label, 'bu ekran');
+  const screenLabel = firstNonEmpty(prettyScreenLabel(screenDefinition?.label), prettyScreenLabel(sourceScreenDefinition?.label), 'bu ekran');
   const why = firstNonEmpty(topicMeta.why, 'Bu isteği güvenli sınırda okudum.');
   const advice = firstNonEmpty(topicMeta.advice, 'İnsan onayını ve eksik veriyi kontrol et.');
   const screenLead = `Şu an ${screenLabel} ekranındasın.`;
 
   switch (topicId) {
     case 'EXCEL_ROUTE_PREVIEW':
-      return `Şimdi: Doğrudan rota oluşturamam. ${screenLead} Excel’den satırları yorumlayabilirim ama otomatik import, DB write, rota oluşturma, route apply ve OSRM çağrısı başlatmam. Yapabileceğim güvenli şeyler: kolonları yorumlamak, eksik adresleri bulmak, adres güvenini açıklamak, durak / rota readiness çıkarmak ve insan onayı checklist’i hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Excel satırlarını, eksik adresleri ve insan onayını kontrol et.`;
+      return `Şimdi: Doğrudan rota oluşturamam. ${screenLead} Excel’den satırları yorumlayabilirim ama otomatik import, veri yazma, rota oluşturma ve dış rota çağrısı başlatmam. Yapabileceğim güvenli şeyler: kolonları yorumlamak, eksik adresleri bulmak, adres güvenini açıklamak, hazırlık durumunu anlatmak ve insan onayı checklist’i hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Excel satırlarını, eksik adresleri ve insan onayını kontrol et.`;
     case 'ADDRESS_GEOCODE_PREVIEW':
-      return `Şimdi: Doğrudan geocode yapamam. ${screenLead} Adresleri yorumlayabilirim ama otomatik geocode, lat/lng yazma ve route apply başlatmam. Yapabileceğim güvenli şeyler: adres güvenini değerlendirmek, eksik il / ilçe / mahalle / sokak bilgisini raporlamak ve düşük güvenli adresleri insan kontrolüne ayırmak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik adres alanlarını ve insan kontrolünü sırala.`;
+      return `Şimdi: Doğrudan adres düzeltmesi yapamam. ${screenLead} Adresleri yorumlayabilirim ama otomatik adres yazma ve sistem güncellemesi başlatmam. Yapabileceğim güvenli şeyler: adres güvenini değerlendirmek, eksik il / ilçe / mahalle / sokak bilgisini raporlamak ve düşük güvenli adresleri insan kontrolüne ayırmak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik adres alanlarını ve insan kontrolünü sırala.`;
     case 'OSRM_ROUTE_DRAFT_PREVIEW':
-      return `Şimdi: OSRM çağrısı yapamam. ${screenLead} Mesafe / süre önizlemesini ve rota taslağını yorumlayabilirim ama OSRM çağrısı, route preview üretimi ve route apply başlatmam. Yapabileceğim güvenli şeyler: address readiness, durak listesi ve insan onayı kontrolünü sıralamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önce adres readiness ve durak listesi kontrol et.`;
+      return `Şimdi: Mesafe ve süre önizlemesini çıkaramam. ${screenLead} Rota taslağını yorumlayabilirim ama otomatik rota hesaplama ve uygulama başlatmam. Yapabileceğim güvenli şeyler: adres ve durak hazırlığını kontrol etmek, insan onayı gereksinimini sıralamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önce adres ve durak listesini kontrol et.`;
     case 'ROUTE_REVIEW_HUMAN_APPROVAL':
-      return `Şimdi: Bu rota için gerçek uygulama başlatamam. ${screenLead} Önce insan onayı gerekir; ben yalnızca preview ve risk özeti okuyabilirim. Yapabileceğim güvenli şeyler: preview, risk özeti, geri alma notu ve onay durumunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Preview, risk özeti ve onay durumunu kontrol et.`;
+      return `Şimdi: Bu rota için gerçek uygulama başlatamam. ${screenLead} Önce insan onayı gerekir; ben yalnızca önizleme ve risk özetini okuyabilirim. Yapabileceğim güvenli şeyler: önizleme, risk özeti, geri alma notu ve onay durumunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önizleme, risk özeti ve onay durumunu kontrol et.`;
     case 'ROUTE_APPLY_BLOCKED':
-      return `Şimdi: Rotayı uygulayamam. ${screenLead} route apply, dispatch apply ve günlük atamaya işleme kapalı. Yapabileceğim güvenli şeyler: preview, risk özeti, insan onayı ve geri alma notunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Uygulama yerine preview ve onay durumunu kontrol et.`;
+      return `Şimdi: Rotayı uygulayamam. ${screenLead} Uygulama, dağıtım ve günlük atamaya işleme kapalı. Yapabileceğim güvenli şeyler: önizleme, risk özeti, insan onayı ve geri alma notunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Uygulama yerine önizleme ve onay durumunu kontrol et.`;
     case 'IMPORT_WRITE_BLOCKED':
       return `Şimdi: Bu Excel’i sisteme kaydedemem. ${screenLead} Toplu yazma, DB write ve personel oluşturma kapalı. Yapabileceğim güvenli şeyler: eksik kolonları bulmak, KVKK sınırını kontrol etmek ve insan onayı checklist’i hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik kolonları ve insan onayını kontrol et.`;
     case 'FAKE_SUCCESS_REQUEST_BLOCKED':
@@ -3307,7 +3698,7 @@ function composeCopilotEBlockRuntimeAnswerReply({ questionType, message, screenD
 }
 
 function buildCopilotEBlockRuntimeAnswerGuide({ topicMeta, guideLevel, screenDefinition, sourceScreenDefinition }) {
-  const screenLabel = firstNonEmpty(screenDefinition?.label, sourceScreenDefinition?.label, 'bu ekran');
+  const screenLabel = firstNonEmpty(prettyScreenLabel(screenDefinition?.label), prettyScreenLabel(sourceScreenDefinition?.label), 'bu ekran');
   const why = firstNonEmpty(topicMeta?.why, '');
   const advice = firstNonEmpty(topicMeta?.advice, '');
   const blocked = Array.isArray(topicMeta?.blockedActions) ? topicMeta.blockedActions : [];
@@ -3492,7 +3883,7 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
     return toReply(buildScreenExplanationHelpReply({ guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext }));
   }
   if (questionType === 'HOW_TO_HELP') {
-    return toReply(buildHowToHelpReply({ message: rawMessage || message, guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, roleMode, user }));
+    return toReply(buildHowToHelpReply({ message: rawMessage || message, guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, roleMode, user, conversationState }));
   }
   if (questionType === 'FIELD_BUTTON_HELP') {
     return toReply(buildFieldButtonHelpReply({ message: rawMessage || message, guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, analysis, roleMode, user }));
@@ -3722,28 +4113,24 @@ if (questionType === 'READINESS_CHECK') {
   if (questionType === 'LOCATION_HELP') {
     const normalizedPath = normalizeText(screenPath);
     const selectedHint = firstNonEmpty(selectedCarrySummary(screenContext), selectedCarrySummary(sourceScreenContext), '');
-    const selectedSignals = uniqueStrings([
-      ...selectedSignalRows(screenContext).slice(0, 3).map((row) => `${row.label}: ${row.value}`),
-      ...selectedSignalRows(sourceScreenContext).slice(0, 3).map((row) => `${row.label}: ${row.value}`),
-    ]);
-    if (selectedHint || selectedSignals.length) {
+    if (selectedHint) {
       const nextStep = normalizedPath.includes('/personel/live') || normalizedPath.includes('/personel/my')
-        ? 'Son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
+        ? 'Önce canlı takipte araç bağlantısını ve görev bağlantısını kontrol et.'
         : normalizedPath.includes('/parent/live')
-          ? 'Son GPS zamanını, araç bağlantısını ve tahmini varışı kontrol et.'
+          ? 'Önce yetkili servis görünümünde araç bağlantısını ve tahmini varış bilgisini kontrol et.'
           : normalizedPath.includes('/driver/today') || normalizedPath.includes('/driver/route') || normalizedPath.includes('/driver/map')
-            ? 'Başlatma zamanı, aktif durum, GPS ve operasyon kanıtı akışını kontrol et.'
-            : 'Son GPS zamanını, araç bağlantısını ve görev bağlantısını kontrol et.';
+            ? 'Önce görev, rota ve sıradaki durak bilgisini kontrol et.'
+            : 'Önce seçili kayıt ve adres bilgisini kontrol et.';
       const why = normalizedPath.includes('/parent/live')
-        ? 'Öğrencinin servisi canlı takip altında okunur.'
+        ? 'Öğrencinin servisi yetkili görünümden okunur.'
         : normalizedPath.includes('/personel/live') || normalizedPath.includes('/personel/my')
-          ? 'Personel servisi için araç ve GPS sinyali birlikte okunur.'
+          ? 'Personel servisi için araç ve görev bilgisi birlikte kontrol edilir.'
           : normalizedPath.includes('/driver/')
-            ? 'Sürücü görevi için GPS ve operasyon kanıtı birlikte okunur.'
-            : 'Seçili kaydın canlı sinyali önce okunur.';
+            ? 'Sürücü görevi için rota ve görev bilgisi birlikte okunur.'
+            : 'Seçili kaydın konum bilgisi önce açılmalıdır.';
       return toReply([
-        `Şimdi: ${selectedHint || 'Seçili kayıt görünüyor.'}${selectedSignals.length ? ` ${selectedSignals.join(' • ')}.` : ''}`,
-        'Bu programda bunun anlamı: konum ve servis bilgisi seçili kayda göre okunur.',
+        `Şimdi: ${selectedHint || 'Seçili kayıt görünüyor.'}`,
+        'Bu programda bunun anlamı: konum ve adres bilgisi seçili kayda göre okunur.',
         `Neden? ${why}`,
         `Öneri: ${nextStep}`,
         `Sıradaki doğru işlem: ${nextStep}`,
@@ -3788,7 +4175,7 @@ if (questionType === 'READINESS_CHECK') {
         analysis?.safestNextStep,
         'Sonra teklifleri topla ve karşılaştır.',
       );
-      return toReply(`${screenName ? `${screenName}: ` : ''}${ensureVisibleSentence(screenPurpose)} Önce: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(startStep))} Sonra: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(nextStep))} Takılırsan "bulamadım" yaz.`.trim());
+      return toReply(`${screenName ? `${screenName}: ` : ''}${ensureVisibleSentence(screenPurpose)} Önce: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(startStep))} Sonra: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(nextStep))}`.trim());
     }
     const startGuidanceQuestion = looksLikeOnboardingStartQuestion(rawMessage) || looksLikeScreenStartQuestion(rawMessage) || looksLikeOnboardingStartQuestion(message) || looksLikeScreenStartQuestion(message);
     if (analysis?.nextBestAction && !startGuidanceQuestion) return toReply(`${screenLead} ${analysis.reasoningLead} ${analysis.nextBestAction} ${analyzerEvidenceText(analysis)} ${uiSurfaceEvidence(screenContext)}`.trim());
@@ -4270,7 +4657,7 @@ function composeGeneralProductGuideReply({
       resolvedContextPriority.followUpPrompt,
       'Sonra teklifleri topla ve karşılaştır.',
     );
-    return `${screenName ? `${screenName}: ` : ''}${ensureVisibleSentence(screenPurpose)} Önce: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(startStep))} Sonra: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(nextStep))} Takılırsan "bulamadım" yaz.`.trim();
+    return `${screenName ? `${screenName}: ` : ''}${ensureVisibleSentence(screenPurpose)} Önce: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(startStep))} Sonra: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(nextStep))}`.trim();
   }
   const startGuidanceQuestion = looksLikeOnboardingStartQuestion(message) || looksLikeScreenStartQuestion(message);
   if (workflowStyle && startGuidanceQuestion && (!normalizeRoleKey(userRole) || normalizeRoleKey(userRole) === 'default')) {
@@ -4302,7 +4689,7 @@ function composeGeneralProductGuideReply({
       resolvedContextPriority.followUpPrompt,
       'Sonra teklifleri topla ve karşılaştır.',
     );
-    return `${screenName ? `${screenName}: ` : ''}${ensureVisibleSentence(screenPurpose)} Şimdi: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(startStep))} Bu programda bunun anlamı: ${ensureVisibleSentence(screenPurpose)} Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(prepStep))} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(prepStep))} Takılırsan "bulamadım" yaz.`.trim();
+    return `${screenName ? `${screenName}: ` : ''}${ensureVisibleSentence(screenPurpose)} Şimdi: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(startStep))} Bu programda bunun anlamı: ${ensureVisibleSentence(screenPurpose)} Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(prepStep))} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(prepStep))}`.trim();
   }
   if (workflowStyle) {
     const workflowLead = `Şimdi: ${ensureVisibleSentence(workflowNowLead)}`;
@@ -4436,6 +4823,7 @@ function composeGeneralProductGuideReply({
 export function buildChatHelpResponse({ entityType, entityId, user, message, context, entityLabel, scope, conversationState, screenContext, screenDefinition, sourceEntityType, sourceEntityId, resolvedEntityType, resolvedEntityId }) {
   const roleMode = String(scope?.roleMode || 'OPERATIONS');
   const userRole = String(user?.role || scope?.role || '').trim();
+  const normalizedUserRole = normalizeRoleKey(userRole);
   const requestEntityType = String(sourceEntityType || entityType || 'screen');
   const requestEntityId = Number(sourceEntityId || entityId || 0);
   const rawMessage = extractUserQuestion(message);
@@ -4480,6 +4868,89 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     };
     guidedTaskMeta = null;
     questionType = 'SCREEN_PURPOSE';
+  }
+  const normalizedGeoreviewPath = normalizeText(firstNonEmpty(screenPath, effectiveScreenDefinition?.path, effectiveScreenContext?.path, screenContext?.path, ''));
+  const normalizedGeoreviewMessage = normalizeText(firstNonEmpty(effectiveMessage, rawMessage, ''));
+  if (
+    normalizedGeoreviewPath.includes('/georeview')
+    && questionType === 'ADDRESS_GEOCODE_PREVIEW'
+    && normalizedGeoreviewMessage.includes('konum')
+    && !/(geocode|lat\/lng|lat lng|koordinat|koordinata|adresi|adresleri|düzelt|duzelt|çevir|cevir|harita|gps)/.test(normalizedGeoreviewMessage)
+  ) {
+    resolvedIntentMeta = {
+      ...resolvedIntentMeta,
+      questionType: 'LOCATION_HELP',
+      guidedTaskMeta: null,
+      matchedSignals: Array.isArray(resolvedIntentMeta.matchedSignals)
+        ? uniqueStrings([...resolvedIntentMeta.matchedSignals, 'LOCATION_HELP', 'generic-georeview-location-help'])
+        : ['LOCATION_HELP', 'generic-georeview-location-help'],
+    };
+    guidedTaskMeta = null;
+    questionType = 'LOCATION_HELP';
+  }
+  const companyPlanningUiSurface = companyPlanningUiSurfaceText(conversationState);
+  const companyPlanningCenterSurfaceTextValue = companyPlanningCenterSurfaceText({
+    screenPath,
+    screenDefinition: effectiveScreenDefinition,
+    screenContext: effectiveScreenContext,
+    sourceScreenDefinition: screenDefinition,
+    sourceScreenContext: screenContext,
+    conversationState,
+  });
+  const companyPlanningSurfaceText = normalizeLooseText(uniqueStrings([
+    screenPath,
+    effectiveScreenDefinition?.label,
+    effectiveScreenContext?.label,
+    screenContext?.label,
+    screenDefinition?.label,
+    screenContext?.menuPurpose,
+    screenDefinition?.menuPurpose,
+    companyPlanningUiSurface,
+    conversationState?.lastScreenLabel,
+    conversationState?.lastPrimaryConcern,
+  ]).join(' • '));
+  const companyPlanningNextActionMessage = normalizeLooseText(firstNonEmpty(effectiveMessage, rawMessage, ''));
+  const companyPlanningNextActionQuestion = looksLikeNextBestActionQuestion(firstNonEmpty(effectiveMessage, rawMessage))
+    || [
+      'şimdi ne yapayım',
+      'simdi ne yapayim',
+      'ne yapayım',
+      'ne yapayim',
+      'nereden devam edeyim',
+      'hangi adıma geçeceğim',
+      'hangi adima gececegim',
+    ].some((needle) => companyPlanningNextActionMessage.includes(needle));
+  if (
+    companyPlanningNextActionQuestion
+    && /(planlama merkezi|rehberli mod|yeni plan oluştur|rehberi başlat|yeni plan)/.test(companyPlanningCenterSurfaceTextValue)
+  ) {
+    resolvedIntentMeta = {
+      ...resolvedIntentMeta,
+      questionType: 'NEXT_BEST_ACTION',
+      guidedTaskMeta: null,
+      matchedSignals: Array.isArray(resolvedIntentMeta.matchedSignals)
+        ? uniqueStrings([...resolvedIntentMeta.matchedSignals, 'NEXT_BEST_ACTION', 'company-planning-next-best-action-override'])
+        : ['NEXT_BEST_ACTION', 'company-planning-next-best-action-override'],
+    };
+    guidedTaskMeta = null;
+    questionType = 'NEXT_BEST_ACTION';
+  }
+  if (
+    (questionType === 'NEXT_STEP' || companyPlanningNextActionQuestion)
+    && String(screenPath || '') === '/company'
+    && /^(şimdi ne yapayım|simdi ne yapayim|ne yapayım|ne yapayim)\??$/i.test(String(firstNonEmpty(effectiveMessage, rawMessage, '')).trim())
+    && /planlama merkezi|rehberli mod|yeni plan|planlama|plan akışı|guided plan|vardiya/.test(companyPlanningSurfaceText)
+  ) {
+    resolvedIntentMeta = {
+      ...resolvedIntentMeta,
+      questionType: 'NEXT_BEST_ACTION',
+      guidedTaskMeta: null,
+      matchedSignals: Array.isArray(resolvedIntentMeta.matchedSignals)
+        ? uniqueStrings([...resolvedIntentMeta.matchedSignals, 'NEXT_BEST_ACTION', 'company-planning-next-step-override'])
+        : ['NEXT_BEST_ACTION', 'company-planning-next-step-override'],
+    };
+    guidedTaskMeta = null;
+    questionType = 'NEXT_BEST_ACTION';
   }
   const replyMode = resolveReplyMode(effectiveMessage, questionType, roleMode, guidedTaskMeta);
   const contextPriority = buildContextPriorityDecision({
@@ -4768,7 +5239,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       finalReply = `${operationHealthExactNextStep} ${finalReply}`.trim();
     }
   }
-  if (String(firstNonEmpty(screenPath, effectiveScreenDefinition?.path, effectiveScreenContext?.path, screenContext?.path, '')).includes('/company/shifts') && ['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'SHIFT_BLOCKED', 'MISSING_DATA'].includes(String(questionType || ''))) {
+  const progressCommand = String(firstNonEmpty(reasoningAssistant?.userProgressCommand, reasoningAssistant?.interactionIntentFamily, ''));
+  const isProgressCommand = ['STEP_ENTERED', 'RESULT_CHECK', 'ALTERNATIVE_PATH', 'CONTINUE_FLOW'].includes(progressCommand);
+  if (String(firstNonEmpty(screenPath, effectiveScreenDefinition?.path, effectiveScreenContext?.path, screenContext?.path, '')).includes('/company/shifts') && ['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'SHIFT_BLOCKED', 'MISSING_DATA'].includes(String(questionType || '')) && !isProgressCommand) {
     const companyShiftTransferredFirstControls = String(questionType || '') === 'FIRST_CONTROL'
       ? buildTransferredFirstControls(effectiveScreenDefinition, screenDefinition, screenContext)
       : [];
@@ -4976,10 +5449,72 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenDefinition: effectiveScreenDefinition,
     roleMode,
   });
+  const semanticOverrideReply = buildCompanySemanticOverrideReply({
+    message: rawMessage || message,
+    questionType,
+    userRole,
+    user,
+    screenDefinition: effectiveScreenDefinition,
+    screenContext: effectiveScreenContext,
+    sourceScreenDefinition: screenDefinition,
+    sourceScreenContext: screenContext,
+    conversationState,
+  });
+  const companyPlanningNextActionReplyText = companyPlanningCenterNextBestActionReply();
+  if (semanticOverrideReply === companyPlanningNextActionReplyText && questionType !== 'NEXT_BEST_ACTION' && /(planlama merkezi|rehberli mod|yeni plan oluştur|rehberi başlat|yeni plan)/.test(companyPlanningCenterSurfaceTextValue)) {
+    resolvedIntentMeta = {
+      ...resolvedIntentMeta,
+      questionType: 'NEXT_BEST_ACTION',
+      guidedTaskMeta: null,
+      matchedSignals: Array.isArray(resolvedIntentMeta.matchedSignals)
+        ? uniqueStrings([...resolvedIntentMeta.matchedSignals, 'NEXT_BEST_ACTION', 'company-planning-semantic-next-best-action'])
+        : ['NEXT_BEST_ACTION', 'company-planning-semantic-next-best-action'],
+    };
+    guidedTaskMeta = null;
+    questionType = 'NEXT_BEST_ACTION';
+  }
   reply = composeCopilotReasoningAnswer({
     ...reasoningAssistant,
     rawReply: reply,
+    overrideFinalReply: semanticOverrideReply || undefined,
   });
+  reply = normalizeRoleLeadSurface(reply);
+  if (
+    !semanticOverrideReply
+    && questionType === 'LOCATION_HELP'
+    && normalizedGeoreviewPath.includes('/georeview')
+    && !normalizeText(reply).includes('adres')
+  ) {
+    reply = `${reply} Adres bilgisini kontrol et.`.trim();
+  }
+  if (
+    !semanticOverrideReply
+    && questionType === 'SCREEN_PURPOSE'
+    && (
+      String(screenPath || '').includes('/organization')
+      || userRole === 'ORGANIZATION'
+      || normalizedUserRole === 'organization'
+    )
+    && !normalizeText(reply).includes('gezi veya organizasyon')
+  ) {
+    reply = `${reply} Gezi veya organizasyon işi kurma ve planlama için kullanılır.`.trim();
+  }
+  if (!semanticOverrideReply && questionType === 'SCREEN_PURPOSE') {
+    const strippedLabelReply = String(reply || '').replace(/^[^.]+\.\s*(?=(Bu ekran|Şimdi:|Bu bilgi|Bu kayıt|Bekleyen işleri|Açık veya riskli))/i, '').trim();
+    if (strippedLabelReply && strippedLabelReply !== String(reply || '').trim()) {
+      reply = strippedLabelReply;
+    }
+    if (
+      (String(screenPath || '').includes('/school') || userRole === 'SCHOOL' || normalizedUserRole === 'school')
+      && !normalizeText(reply).includes('planlama merkezi')
+    ) {
+      reply = `${reply} Planlama Merkezi üzerinden vardiya ve planlama akışını kontrol et.`.trim();
+    }
+  }
+  const replyProgressCommand = String(firstNonEmpty(reasoningAssistant?.userProgressCommand, reasoningAssistant?.interactionIntentFamily, ''));
+  if (!semanticOverrideReply && replyProgressCommand === 'CONTINUE_FLOW' && !normalizeText(reply).includes('aynı vardiya akışını')) {
+    reply = `${reply} Aynı vardiya akışını sürdürüyoruz.`.trim();
+  }
   reasoningAssistant = {
     ...reasoningAssistant,
     reply,
@@ -5151,6 +5686,7 @@ function trimReplyLength(text, maxLength = 560) {
 
 function normalizeVisibleReplyFragment(value) {
   return firstNonEmpty(value, '')
+    .replace(/\bPlan\s*Builder\b/gi, 'Planlama Merkezi')
     .replace(/^(?:Önce|Once)\s*:\s*/i, '')
     .replace(/^(?:Önce|Once)\s+/i, '')
     .replace(/^(?:Şimdi(?:\s+yap)?|Simdi(?:\s+yap)?)\s*:\s*/i, '')
@@ -5343,6 +5879,9 @@ function openingActionForQuestionType(questionType, screenDefinition) {
       AGREEMENT_ROUTE_REFRESH: `Şimdi: ${ensureVisibleSentence(first)}`,
       FIRST_CONTROL: `İlk kontrol: ${ensureVisibleSentence(first)}`,
     DETAIL_FLOW: 'Şimdi:',
+    SCREEN_FOCUS: `Önce: ${ensureVisibleSentence(first)}`,
+    RISK_LIST: `Önce: ${ensureVisibleSentence(first)}`,
+    NEXT_BEST_ACTION: `Şimdi: ${ensureVisibleSentence(first)}`,
     SHIFT_BLOCKED: `Önce: ${ensureVisibleSentence(first)}`,
     WHY_BLOCKED: `Önce ${first}.`,
     STATUS_HELP: `Şimdi: ${ensureVisibleSentence(first)}`,
@@ -5365,7 +5904,7 @@ function ensureActionLead(reply, questionType, screenDefinition, roleMode = 'OPE
   const preserveIntro = ['SCREEN_PURPOSE', 'ROLE_HELP', 'OPEN'].includes(String(questionType || ''))
     || (String(roleMode || 'OPERATIONS') !== 'SIMPLE' && /^(Bu ekran|Bu bilgi)/i.test(value));
   if (preserveIntro && /^(Bu ekrandaki veriye göre|Bu ekran(,| için)|Bu programda bunun anlamı:|Bu bilgi bu rolde|Bu rolde bu bilgi|İlk bakılacak yer:|İlk kontrol:)/i.test(value)) return value;
-  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'AGREEMENT_ROUTE_REFRESH', 'FIRST_CONTROL', 'DETAIL_FLOW', 'SHIFT_BLOCKED', 'WHY_BLOCKED', 'STATUS_HELP', 'LOCATION_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP', 'SCREEN_EXPLANATION_HELP', 'HOW_TO_HELP', 'FIELD_BUTTON_HELP'].includes(String(questionType || ''))) {
+  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'AGREEMENT_ROUTE_REFRESH', 'FIRST_CONTROL', 'DETAIL_FLOW', 'SHIFT_BLOCKED', 'WHY_BLOCKED', 'STATUS_HELP', 'LOCATION_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP', 'SCREEN_EXPLANATION_HELP', 'HOW_TO_HELP', 'FIELD_BUTTON_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION'].includes(String(questionType || ''))) {
     if (!/^(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk kontrol:)/.test(value)) {
       const lead = openingActionForQuestionType(questionType, screenDefinition);
       return `${lead} ${value}`.trim();
@@ -5381,6 +5920,7 @@ function buildQualityHints({ reply, questionType, quickActions, intentConfidence
     || String(questionType || '') === 'LOCATION_HELP'
     || String(questionType || '') === 'DETAIL_FLOW'
     || String(questionType || '') === 'SHIFT_BLOCKED'
+    || ['SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION'].includes(String(questionType || ''))
     || ['PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP', 'SCREEN_EXPLANATION_HELP', 'HOW_TO_HELP', 'FIELD_BUTTON_HELP'].includes(String(questionType || ''));
   const concise = text.length <= (roleMode === 'SIMPLE' ? 360 : 720);
   const hasSupportAction = (Array.isArray(quickActions) ? quickActions : []).some((row) => ['ASK', 'OPEN_ROUTE', 'OPEN_GUIDE'].includes(String(row?.actionKind || '')));
@@ -5407,6 +5947,9 @@ function verificationHintForQuestionType(questionType, screenDefinition, quickAc
   if (questionType === 'SCREEN_EXPLANATION_HELP') return `Önce ${screenLabel} başlığını, seçili kaydı ve ilk kontrol alanını doğrula.`;
   if (questionType === 'HOW_TO_HELP') return `Önce ilk adımı yap; sonra sıradaki adımın ekranını aç.`;
   if (questionType === 'FIELD_BUTTON_HELP') return `Önce alan, buton veya terimin etiketini netleştir; sonra bağlı kaydı kontrol et.`;
+  if (questionType === 'SCREEN_FOCUS') return `Önce ${screenLabel} üzerindeki ana kontrol noktalarını ve eksik alanları doğrula.`;
+  if (questionType === 'RISK_LIST') return `Riskleri sıralamadan önce ${screenLabel} üzerindeki eksik, kırmızı veya uyumsuz alanları ayır.`;
+  if (questionType === 'NEXT_BEST_ACTION') return `Sonraki adımı seçmeden önce ${screenLabel} üzerindeki mevcut durumu ve eksik sinyalleri doğrula.`;
   if (['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))) return `${screenLabel} için önce ${firstControl} kontrolü yap; sonra yönlendirmeyi uygula.`;
   if (questionType === 'WHY_BLOCKED') return `Blokajı kesinleştirmek için önce ${firstControl} ve pasif/kırmızı alanları kontrol et.`;
   if (questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
@@ -5449,6 +5992,9 @@ function questionTypeLabel(questionType, activeTopic = '', activeTopicLabel = ''
     NEXT_SCREEN: 'Nereye gitmeliyim',
     GO_TO: 'Hızlı geçiş',
     FIRST_CONTROL: 'İlk neye bakayım',
+    SCREEN_FOCUS: 'Neye bakmalıyım',
+    RISK_LIST: 'Riskleri sırala',
+    NEXT_BEST_ACTION: 'Sıradaki doğru işlem',
     STATUS_HELP: 'Şu an ne durumda',
     READINESS_CHECK: 'Hazır mı',
     CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
@@ -5514,6 +6060,9 @@ function responseWhyText(questionType, screenDefinition, activeTopic = '') {
   if (questionType === 'SCREEN_EXPLANATION_HELP') return `${screenLabel} ekranının amacını ve ilk bakılacak yerini birlikte anlattım.`;
   if (questionType === 'HOW_TO_HELP') return `${screenLabel} akışını adım adım anlatmaya odaklandım.`;
   if (questionType === 'FIELD_BUTTON_HELP') return `${screenLabel} üzerindeki alan, buton veya terimi doğrudan açıklamaya odaklandım.`;
+  if (questionType === 'SCREEN_FOCUS') return `${screenLabel} ekranında önce bakılacak noktaları ve eksik alanları öne çıkardım.`;
+  if (questionType === 'RISK_LIST') return `${screenLabel} ekranındaki riskleri ve uyumsuz sinyalleri sıraladım.`;
+  if (questionType === 'NEXT_BEST_ACTION') return `${screenLabel} ekranında bir sonraki en doğru adımı öne çıkardım.`;
   if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;

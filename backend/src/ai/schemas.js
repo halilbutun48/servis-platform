@@ -65,6 +65,17 @@ const SHORT_FIRST_CONTROL_PHRASES = [
   "once neye bakmaliyim",
 ];
 
+const NEXT_BEST_ACTION_PHRASES = [
+  "sıradaki doğru işlem ne",
+  "siradaki dogru islem ne",
+  "bir sonraki doğru işlem ne",
+  "bir sonraki dogru islem ne",
+  "şu an en doğru adım ne",
+  "su an en dogru adim ne",
+  "şimdi en doğru işlem ne",
+  "simdi en dogru islem ne",
+];
+
 const SHORT_NEXT_STEP_PHRASES = [
   "ne yapayım",
   "ne yapayim",
@@ -74,8 +85,6 @@ const SHORT_NEXT_STEP_PHRASES = [
   "simdi ne yapayim",
   "şimdi ne yapmalıyım",
   "simdi ne yapmaliyim",
-  "sıradaki doğru işlem ne",
-  "siradaki dogru islem ne",
 ];
 
 const CONTRACT_TO_SHIFT_PHRASES = [
@@ -98,7 +107,10 @@ const CONTRACT_TO_SHIFT_PHRASES = [
 function isShortNaturalScreenPrompt(message) {
   const text = normalizeLooseText(message);
   if (!text) return false;
-  return matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES) || matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES) || matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES);
+  return matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)
+    || matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES)
+    || matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES)
+    || matchesStandalonePhrase(text, NEXT_BEST_ACTION_PHRASES);
 }
 
 function isAgreementScreenContext(input) {
@@ -155,6 +167,7 @@ export function normalizeCopilotShortPrompt(message) {
   const text = raw.toLocaleLowerCase("tr-TR");
   if (matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)) return "Bu ekran ne için?";
   if (matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES)) return "İlk neye bakayım?";
+  if (matchesStandalonePhrase(text, NEXT_BEST_ACTION_PHRASES)) return raw;
   if (matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES)) return "Şimdi ne yapayım?";
   return raw;
 }

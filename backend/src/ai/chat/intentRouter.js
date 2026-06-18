@@ -122,6 +122,42 @@ function isExplicitBadgeHelpQuestion(text) {
   return /(bu\s+rozet\s+ne\s+demek|bu\s+badge\s+ne\s+demek|durum\s+rozeti\s+ne\s+demek|bu\s+etiket\s+ne\s+demek)/.test(value);
 }
 
+function isScreenFocusQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return matchesStandalonePhrase(value, [
+    'bu ekranda neye bakmalıyım',
+    'ekranda neye bakmalıyım',
+    'neye bakmalıyım',
+    'önce neye bakmalıyım',
+    'once neye bakmalıyım',
+    'bu ekranda neyi kontrol etmeliyim',
+    'ekranda neyi kontrol etmeliyim',
+    'önce neyi kontrol etmeliyim',
+    'once neyi kontrol etmeliyim',
+  ]);
+}
+
+function isRiskListQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return matchesStandalonePhrase(value, [
+    'riskleri sırala',
+    'riskleri sirala',
+    'risk listesi',
+    'başlıca riskler',
+    'baslica riskler',
+    'en büyük riskler',
+    'en buyuk riskler',
+  ]);
+}
+
+function isNextBestActionQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return /(sıradaki doğru işlem|siradaki dogru islem|bir sonraki doğru işlem|bir sonraki dogru islem|şu an en doğru adım|su an en dogru adim|şimdi en doğru işlem|simdi en dogru islem)/.test(value);
+}
+
 function isExplicitSafeNextStepQuestion(text) {
   const value = normalizeLooseText(text);
   if (!value) return false;
@@ -177,6 +213,12 @@ function looksLikeScreenStartQuestion(text) {
     && /(ne\s+işe\s+yarar|ne\s+ise\s+yarar|ne\s+işe\s+yarıyor|ne\s+ise\s+yarıyor|ne\s+yapacağım|ne\s+yapacagım|ne\s+yapmalıyım|ne\s+yapmaliyim|burada\s+ne\s+yapıyorum|burada\s+ne\s+yapiyorum)/.test(value);
 }
 
+function looksLikeDetailContinuationQuestion(text) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return /(devamını anlat|devamini anlat|detayını anlat|detayini anlat|biraz daha aç|biraz daha ac|biraz aç|biraz ac|daha detay|daha ayrıntı|daha ayrinti|biraz daha detay|biraz daha ayrıntı|biraz daha ayrinti)/.test(value);
+}
+
 function isShiftReadinessQuestion(text, screenPath = '', entityType = '') {
   const value = normalizeLooseText(text);
   if (!value) return false;
@@ -196,6 +238,10 @@ function pathHas(path, parts) {
     }
     return value.includes(needle);
   });
+}
+
+function isPlanningSurfacePath(path) {
+  return pathHas(path, ['/company', '/school', '/organization']);
 }
 
 function countMatches(text, patterns) {
@@ -263,6 +309,9 @@ const BASE_RULES = [
   { type: 'ROLE_HELP', score: 12, patterns: ['bu rolde', 'ne yapabilirim', 'rolümde', 'rolumde', 'yetkim ne', 'rol yardımı', 'rol yardimi', 'bu kullanıcı ne yapabilir', 'hangi yetkiler', 'yetki sınırı', 'rol bazlı', 'kim neyi görebilir', 'kim neyi görür', 'kim yapabilir', 'kim onaylayacak', 'sorumlu kim', 'bu kayıt kimde', 'bu işi kim yapabilir', 'bunu kim yapabilir'], label: 'role-help' },
   { type: 'CHECKLIST_HELP', score: 10, patterns: ['kontrol listesi', 'checklist', 'tek tek kontrol', 'kontrol etmem gerekenler'], label: 'checklist' },
   { type: 'COMMON_MISTAKE_HELP', score: 9, patterns: ['sık hata', 'en sık hata', 'sik hata', 'yaygın hata', 'yaygin hata', 'en çok hata'], label: 'common-mistake' },
+  { type: 'SCREEN_FOCUS', score: 10, patterns: ['bu ekranda neye bakmalıyım', 'ekranda neye bakmalıyım', 'neye bakmalıyım', 'önce neye bakmalıyım', 'bu ekranda neyi kontrol etmeliyim', 'ekranda neyi kontrol etmeliyim', 'önce neyi kontrol etmeliyim'], label: 'screen-focus' },
+  { type: 'RISK_LIST', score: 10, patterns: ['riskleri sırala', 'riskleri sirala', 'risk listesi', 'başlıca riskler', 'baslica riskler', 'en büyük riskler', 'en buyuk riskler'], label: 'risk-list' },
+  { type: 'NEXT_BEST_ACTION', score: 10, patterns: ['sıradaki doğru işlem ne', 'siradaki dogru islem ne', 'bir sonraki doğru işlem ne', 'bir sonraki dogru islem ne', 'şu an en doğru adım ne', 'su an en dogru adim ne', 'şimdi en doğru işlem ne', 'simdi en dogru islem ne'], label: 'next-best-action' },
   { type: 'NEXT_SCREEN', score: 11, patterns: ['hangi ekrana', 'hangi ekrana geçeyim', 'sonra hangi ekrana', 'sonra nereye', 'sonraki ekran', 'hangi menüye', 'en doğru ekran', 'hangi ekranda devam', 'hangi yere geçeyim', 'nereye gitmeliyim', 'nereye geçeyim', 'hangi ekran hangisi', 'mobilde bu iş nereden yapılır'], label: 'next-screen' },
   { type: 'FIRST_CONTROL', score: 9, patterns: ['önce neyi kontrol', 'once neyi kontrol', 'ilk neyi kontrol', 'ilk kontrol', 'ilk bakılacak', 'ilk bakilacak', 'önce neye bakayım', 'once neye bakayim', 'önce neye bakmaliyim', 'once neye bakmaliyim', 'önce neye bakılır', 'once neye bakilir', 'ilk neye bakayım', 'ilk neye bakayim', 'önce nereden bakayım', 'once nereden bakayim'], label: 'first-control' },
   { type: 'DETAIL_FLOW', score: 9, patterns: ['detaylı anlat', 'detayli anlat', 'adım adım detay', 'adim adim detay', 'madde madde', 'tek tek anlat', 'sırayla', 'sirayla', 'guided mode', 'guided modede', 'vardiya nasıl oluştur', 'vardiya nasil olustur', 'nasıl vardiya oluştur', 'nasil vardiya olustur', 'yeni iş nasıl kurulur', 'yeni is nasil kurulur', 'plan nasıl kurulur', 'plan nasil kurulur'], label: 'detail-flow' },
@@ -315,6 +364,9 @@ const INTENT_PRIORITY = [
   'ROLE_HELP',
   'CHECKLIST_HELP',
   'COMMON_MISTAKE_HELP',
+  'SCREEN_FOCUS',
+  'RISK_LIST',
+  'NEXT_BEST_ACTION',
   'NEXT_SCREEN',
   'FIRST_CONTROL',
   'DETAIL_FLOW',
@@ -407,6 +459,41 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       questionType: 'SCREEN_EXPLANATION_HELP',
       confidence: 0.92,
       matchedSignals: ['SCREEN_EXPLANATION_HELP', 'screen-explanation-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (looksLikeDetailContinuationQuestion(originalText) || looksLikeDetailContinuationQuestion(combinedText)) {
+    const lastQuestionType = normalizeText(options.conversationState?.lastQuestionType || options.conversationState?.lastGuidedTaskQuestionType || '');
+    const lastConcern = normalizeText(String(
+      options.conversationState?.lastPrimaryConcern
+      || options.conversationState?.lastUserMessage
+      || options.conversationState?.lastRawUserMessage
+      || '',
+    ));
+    if (/(vardiya.*nasıl.*oluştur|teklif.*nasıl.*alınır|sözleşmeye.*nasıl.*geçilir|servisimi.*nasıl.*takip|check-?in.*nasıl.*yap)/.test(lastConcern) || ['HOW_TO_HELP', 'DETAIL_FLOW'].includes(lastQuestionType)) {
+      return {
+        questionType: 'HOW_TO_HELP',
+        confidence: 0.94,
+        matchedSignals: ['HOW_TO_HELP', 'detail-continuation-follow-up'],
+        preferRoute: false,
+        routeRequest: false,
+      };
+    }
+    if (lastQuestionType) {
+      return {
+        questionType: 'DETAIL_FLOW',
+        confidence: 0.88,
+        matchedSignals: ['DETAIL_FLOW', 'detail-continuation-follow-up'],
+        preferRoute: false,
+        routeRequest: false,
+      };
+    }
+    return {
+      questionType: 'HOW_TO_HELP',
+      confidence: 0.86,
+      matchedSignals: ['HOW_TO_HELP', 'detail-continuation-follow-up'],
       preferRoute: false,
       routeRequest: false,
     };
@@ -646,6 +733,46 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     };
   }
 
+  if (isScreenFocusQuestion(text) || isScreenFocusQuestion(originalText)) {
+    return {
+      questionType: 'SCREEN_FOCUS',
+      confidence: 0.93,
+      matchedSignals: ['SCREEN_FOCUS', 'screen-focus-phrase'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (isRiskListQuestion(text) || isRiskListQuestion(originalText)) {
+    return {
+      questionType: 'RISK_LIST',
+      confidence: 0.93,
+      matchedSignals: ['RISK_LIST', 'risk-list-phrase'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  if (isNextBestActionQuestion(text) || isNextBestActionQuestion(originalText)) {
+    const planningSurfacePath = String(options.sourceScreenPath || options.screenPath || '');
+    if (isPlanningSurfacePath(planningSurfacePath)) {
+      return {
+        questionType: 'NEXT_BEST_ACTION',
+        confidence: 0.93,
+        matchedSignals: ['NEXT_BEST_ACTION', 'next-best-action-phrase'],
+        preferRoute: false,
+        routeRequest: false,
+      };
+    }
+    return {
+      questionType: 'NEXT_STEP',
+      confidence: 0.93,
+      matchedSignals: ['NEXT_STEP', 'next-best-action-phrase'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
   if (isExplicitSafeNextStepQuestion(text)) {
     return {
       questionType: 'SAFE_NEXT_STEP',
@@ -655,7 +782,6 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       routeRequest: false,
     };
   }
-
   const shiftSurfacePath = String(options.sourceScreenPath || options.screenPath || '');
   if (isExplicitNextStepQuestion(text) && !pathHas(shiftSurfacePath, ['/company/shifts', '/room/shifts', '/organization/shifts', '/superadmin/operations'])) {
     return {
@@ -1017,6 +1143,8 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
   if (questionType === 'SCREEN_EXPLANATION_HELP') return 'SCREEN_MENU_GUIDE';
   if (questionType === 'HOW_TO_HELP') return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
   if (questionType === 'FIELD_BUTTON_HELP') return 'BUTTON_ACTION_GUIDE';
+  if (questionType === 'SCREEN_FOCUS' || questionType === 'RISK_LIST') return 'SCREEN_MENU_GUIDE';
+  if (questionType === 'NEXT_BEST_ACTION') return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
   if (String(questionType || '') === 'BOARDING_CHANGE_APPLICATION' || hasAny(text, ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlenebilir', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'sürücü rota ekranında görünür', 'surucu rota ekraninda gorunur', 'rota güncellemesi bekliyor', 'rota guncellemesi bekliyor', 'günlük değişiklik rotada görünüyor', 'gunluk degisiklik rotada gorunuyor', 'sürücüye gönderildi mi', 'surucuye gonderildi mi', 'driver route refresh', 'mobile route update', 'rotasına yansıdı mı', 'rotasina yansidi mi', 'stopassignment'])) return 'ASSIGNMENT_READINESS_GUIDE';
   if (String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY' || hasBoardingChangeRequestEntrySignal(text)) {
     return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
@@ -1051,7 +1179,7 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
 }
 
 function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -1139,7 +1267,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
 }
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -1231,7 +1359,7 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
       ...(guidedTaskMeta.progressCommand ? ['Devam et'] : []),
     ]);
   }
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
+  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   const teachingQuestionChips = (() => {
     if (String(questionType || '') === 'PRODUCT_OVERVIEW_HELP') {
@@ -1253,6 +1381,18 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
   })();
   if (teachingQuestionChips.length) {
     return roleMode === 'SIMPLE' ? teachingQuestionChips.slice(0, 4) : teachingQuestionChips.slice(0, 6);
+  }
+  if (String(questionType || '') === 'SCREEN_FOCUS') {
+    const chips = ['Konum kontrolü', 'Tarih / saat kontrolü', 'Personel ve duraklar', 'Rota önizlemesi'];
+    return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
+  }
+  if (String(questionType || '') === 'RISK_LIST') {
+    const chips = ['Konum riski', 'Tarih / saat riski', 'Personel açığı', 'Rota önizleme riski'];
+    return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
+  }
+  if (String(questionType || '') === 'NEXT_BEST_ACTION') {
+    const chips = ['Eksik konumu düzelt', 'Planı sürdür', 'Vardiyayı takip et', 'Teklif hazırlığı'];
+    return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
   }
   const boardingApplicationContext = Boolean(
     context?.structuredFacts?.screenType === 'BOARDING_CHANGE_APPLICATION'

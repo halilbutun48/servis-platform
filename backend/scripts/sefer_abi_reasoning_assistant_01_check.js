@@ -358,7 +358,7 @@ async function main() {
       screenPath: '/superadmin/operations',
       screenLabel: 'Super Admin Operations',
       message: 'Bu kaydı stratejik özetle.',
-      expectedFrame: 'Stratejik özet:',
+      expectedFrame: 'Sistem açısından:',
       expectedNeedle: 'risk',
       selectedSummary: 'Operasyon riski yüksek',
       selectedRecordStatus: 'Operasyon riski yüksek',
@@ -373,7 +373,7 @@ async function main() {
       screenPath: '/company/agreements',
       screenLabel: 'Company Agreements',
       message: 'Bugünkü planı ve eksik veriyi söyle.',
-      expectedFrame: 'Plan açısından:',
+      expectedFrame: 'Şirket açısından:',
       expectedNeedle: 'plan',
       selectedSummary: 'Plan satırı eksik veri içeriyor',
       selectedRecordStatus: 'Plan satırı eksik veri içeriyor',
@@ -388,7 +388,7 @@ async function main() {
       screenPath: '/room/shifts',
       screenLabel: 'Room Shifts',
       message: 'Bu vardiya neden ilerlemiyor?',
-      expectedFrame: 'Operasyon açısından:',
+      expectedFrame: 'Oda açısından:',
       expectedNeedle: 'araç',
       selectedSummary: 'Vardiya araç ve sürücü bekliyor',
       selectedRecordStatus: 'Vardiya araç ve sürücü bekliyor',
@@ -722,26 +722,28 @@ async function main() {
   assert(productOverview.questionType === 'PRODUCT_OVERVIEW_HELP', 'product overview routes to PRODUCT_OVERVIEW_HELP');
   must(productOverview.reply, 'SeferPakt', 'product overview mentions SeferPakt');
   must(productOverview.reply, 'platform', 'product overview explains platform purpose');
-  must(productOverview.reply, 'Company rolünde', 'product overview names the role view');
+  must(productOverview.reply, 'Şirket rolünde', 'product overview names the role view');
+  mustNot(productOverview.reply, 'Company rolünde', 'product overview avoids the English role name');
   must(productOverview.reply, 'vardiya', 'product overview gives a starting path');
   must(productOverview.reply, 'teklif', 'product overview keeps the commercial path');
-  must(productOverview.reply, 'bulamadım', 'product overview keeps the safe follow-up line');
+  mustNot(productOverview.reply, 'bulamadım', 'product overview drops the safe follow-up line');
 
   const roleExplanation = buildDirectHelpResponse({ message: 'Room rolü ne yapar?', role: 'ROOM' });
   assert(roleExplanation.questionType === 'ROLE_EXPLANATION_HELP', 'role explanation routes to ROLE_EXPLANATION_HELP');
-  must(roleExplanation.reply, 'Room rolünde', 'role explanation mentions role name');
+  must(roleExplanation.reply, 'Oda rolünde', 'role explanation mentions role name');
+  mustNot(roleExplanation.reply, 'Room rolünde', 'role explanation avoids the English role name');
   must(roleExplanation.reply, 'operasyon, sürücü ve araç', 'role explanation explains the role');
   must(roleExplanation.reply, 'Önce', 'role explanation gives first step');
-  must(roleExplanation.reply, 'bulamadım', 'role explanation keeps the safe follow-up line');
+  mustNot(roleExplanation.reply, 'bulamadım', 'role explanation drops the safe follow-up line');
 
   const screenExplanation = buildDirectHelpResponse({
     message: 'Bu ekran ne işe yarar?',
     role: 'SUPER_ADMIN',
     screenPath: '/superadmin/operations',
-    screenLabel: 'Super Admin Operations',
+    screenLabel: 'Süper Yönetici Operasyonlar',
     screenDefinition: {
       path: '/superadmin/operations',
-      label: 'Super Admin Operations',
+      label: 'Süper Yönetici Operasyonlar',
       menuPurpose: 'Operasyon özetini gösterir',
       plainSummary: 'Operasyon özetini gösterir',
       summary: 'Operasyon özetini gösterir',
@@ -751,7 +753,7 @@ async function main() {
     screenContext: {
       ...directHelpScreenContext,
       path: '/superadmin/operations',
-      label: 'Super Admin Operations',
+      label: 'Süper Yönetici Operasyonlar',
       selectedSummary: 'Operasyon özeti hazır.',
       selectedRecordStatus: 'Operasyon özeti hazır.',
     },
@@ -759,17 +761,17 @@ async function main() {
   });
   assert(screenExplanation.questionType === 'SCREEN_EXPLANATION_HELP', 'screen explanation routes to SCREEN_EXPLANATION_HELP');
   must(screenExplanation.reply, 'Operasyon özetini gösterir', 'screen explanation uses screen purpose');
-  must(screenExplanation.reply, 'Şu an Super Admin Operations ekranındaysan', 'screen explanation keeps screen context');
-  must(screenExplanation.reply, 'bulamadım', 'screen explanation keeps safe follow-up');
+  must(screenExplanation.reply, 'Şu an Süper Yönetici Operasyonlar ekranındaysan', 'screen explanation keeps screen context');
+  mustNot(screenExplanation.reply, 'bulamadım', 'screen explanation drops safe follow-up');
 
   const howToHelp = buildDirectHelpResponse({
     message: 'Vardiya nasıl oluşturulur?',
     role: 'COMPANY',
     screenPath: '/company/shifts',
-    screenLabel: 'Company Shifts',
+    screenLabel: 'Vardiyalar',
     screenDefinition: {
       path: '/company/shifts',
-      label: 'Company Shifts',
+      label: 'Vardiyalar',
       menuPurpose: 'Vardiya planlama',
       plainSummary: 'Vardiya planlama',
       summary: 'Vardiya planlama',
@@ -780,14 +782,177 @@ async function main() {
     screenContext: {
       ...directHelpScreenContext,
       path: '/company/shifts',
-      label: 'Company Shifts',
+      label: 'Vardiyalar',
     },
   });
   assert(howToHelp.questionType === 'HOW_TO_HELP', 'how-to routes to HOW_TO_HELP');
-  must(howToHelp.reply, 'Şu an Company Shifts ekranındaysan', 'how-to reply keeps the screen context');
-  must(howToHelp.reply, 'Önce vardiya satırını aç', 'how-to reply stays step-by-step');
-  must(howToHelp.reply, 'Sonra araç ve sürücüyü bağla', 'how-to reply includes the next step');
-  must(howToHelp.reply, 'bulamadım', 'how-to reply keeps the safe follow-up line');
+  must(howToHelp.reply, 'Planlama Merkezi', 'how-to reply starts from the planning center');
+  must(howToHelp.reply, 'Yeni Plan Oluştur', 'how-to reply includes the new plan entry');
+  must(howToHelp.reply, 'Rehberi Başlat', 'how-to reply includes the guide entry');
+  must(howToHelp.reply, 'paket', 'how-to reply includes package selection');
+  must(howToHelp.reply, 'tarih', 'how-to reply includes date selection');
+  must(howToHelp.reply, 'saat', 'how-to reply includes time selection');
+  must(howToHelp.reply, 'servis yönü', 'how-to reply includes direction selection');
+  must(howToHelp.reply, 'kapsam', 'how-to reply includes scope selection');
+  must(howToHelp.reply, 'personel', 'how-to reply includes personnel review');
+  must(howToHelp.reply, 'adres/konum', 'how-to reply includes address/location review');
+  must(howToHelp.reply, 'durak', 'how-to reply includes stop review');
+  must(howToHelp.reply, 'rota önizlemesini', 'how-to reply includes route preview');
+  must(howToHelp.reply, 'oluşan vardiyayı Vardiyalar ekranında takip eder', 'how-to reply uses the shifts screen only for follow-up');
+  mustNot(howToHelp.reply, 'Vardiyalar ekranına gir', 'how-to reply does not start from the shifts screen');
+  mustNot(howToHelp.reply, 'Plan Builder', 'how-to reply avoids English builder jargon');
+  mustNot(howToHelp.reply, 'Company', 'how-to reply avoids English role name');
+  mustNot(howToHelp.reply, 'georeview', 'how-to reply avoids georeview jargon');
+  mustNot(howToHelp.reply, 'matrix', 'how-to reply avoids matrix jargon');
+  mustNot(howToHelp.reply, 'bulamadım', 'how-to reply drops repetitive fallback');
+
+  const companyEnteredReply = buildDirectHelpResponse({
+    message: 'Vardiyalar ekranına girdim',
+    role: 'COMPANY',
+    screenPath: '/company/shifts',
+    screenLabel: 'Vardiyalar',
+    screenDefinition: {
+      path: '/company/shifts',
+      label: 'Vardiyalar',
+      menuPurpose: 'Vardiya planlama ve takip',
+      plainSummary: 'Vardiya planlama ve takip',
+      summary: 'Vardiya planlama ve takip',
+      firstStep: 'Takip edeceğin vardiyayı seç.',
+      nextStep: 'Teklif, detay veya önizlemeyi aç.',
+    },
+    screenContext: {
+      ...directHelpScreenContext,
+      path: '/company/shifts',
+      label: 'Vardiyalar',
+      selectedSummary: 'Aktif vardiya hazır.',
+      selectedRecordStatus: 'Aktif vardiya hazır.',
+    },
+    roleMode: 'OPERATIONS',
+  });
+  must(companyEnteredReply.reply, 'Vardiyalar ekranına girdin', 'company entered reply anchors the screen');
+  must(companyEnteredReply.reply, 'yeni vardiya', 'company entered reply offers creation path');
+  must(companyEnteredReply.reply, 'teklif', 'company entered reply keeps commercial path visible');
+  mustNot(companyEnteredReply.reply, 'GPS', 'company entered reply avoids location drift');
+  mustNot(companyEnteredReply.reply, 'audit', 'company entered reply avoids audit drift');
+
+  const companyDoneReply = buildDirectHelpResponse({
+    message: 'yaptım',
+    role: 'COMPANY',
+    screenPath: '/company/shifts',
+    screenLabel: 'Vardiyalar',
+    conversationState: {
+      lastQuestionType: 'STEP_ENTERED',
+      lastSelectedLabel: 'Aktif vardiya',
+      lastSelectedSummary: 'Aktif vardiya',
+    },
+    screenDefinition: {
+      path: '/company/shifts',
+      label: 'Vardiyalar',
+      menuPurpose: 'Vardiya planlama ve takip',
+      plainSummary: 'Vardiya planlama ve takip',
+      summary: 'Vardiya planlama ve takip',
+      firstStep: 'Takip edeceğin vardiyayı seç.',
+      nextStep: 'Teklif, detay veya önizlemeyi aç.',
+    },
+    screenContext: {
+      ...directHelpScreenContext,
+      path: '/company/shifts',
+      label: 'Vardiyalar',
+      selectedSummary: 'Aktif vardiya hazır.',
+      selectedRecordStatus: 'Aktif vardiya hazır.',
+    },
+    roleMode: 'OPERATIONS',
+  });
+  must(companyDoneReply.reply, 'Tamam, aynı vardiya akışından devam edelim', 'company done reply checks the result');
+  must(companyDoneReply.reply, 'tarih / saat', 'company done reply keeps the flow');
+
+  const companyMissingReply = buildDirectHelpResponse({
+    message: 'bulamadım',
+    role: 'COMPANY',
+    screenPath: '/company/shifts',
+    screenLabel: 'Vardiyalar',
+    screenDefinition: {
+      path: '/company/shifts',
+      label: 'Vardiyalar',
+      menuPurpose: 'Vardiya planlama ve takip',
+      plainSummary: 'Vardiya planlama ve takip',
+      summary: 'Vardiya planlama ve takip',
+      firstStep: 'Takip edeceğin vardiyayı seç.',
+      nextStep: 'Teklif, detay veya önizlemeyi aç.',
+    },
+    screenContext: {
+      ...directHelpScreenContext,
+      path: '/company/shifts',
+      label: 'Vardiyalar',
+      selectedSummary: 'Aktif vardiya hazır.',
+      selectedRecordStatus: 'Aktif vardiya hazır.',
+    },
+    roleMode: 'OPERATIONS',
+  });
+  must(companyMissingReply.reply, 'Bulamadığın şey yeni vardiya oluşturma alanıysa', 'company missing reply offers an alternate menu path');
+  must(companyMissingReply.reply, 'Hangisini bulamadığını yazarsan oradan devam edelim', 'company missing reply uses alternative-path language');
+
+  const companyContinueReply = buildDirectHelpResponse({
+    message: 'devam et',
+    role: 'COMPANY',
+    screenPath: '/company/shifts',
+    screenLabel: 'Vardiyalar',
+    conversationState: {
+      lastQuestionType: 'NEXT_STEP',
+      lastSelectedLabel: 'Aktif vardiya',
+      lastSelectedSummary: 'Aktif vardiya',
+    },
+    screenDefinition: {
+      path: '/company/shifts',
+      label: 'Vardiyalar',
+      menuPurpose: 'Vardiya planlama ve takip',
+      plainSummary: 'Vardiya planlama ve takip',
+      summary: 'Vardiya planlama ve takip',
+      firstStep: 'Takip edeceğin vardiyayı seç.',
+      nextStep: 'Teklif, detay veya önizlemeyi aç.',
+    },
+    screenContext: {
+      ...directHelpScreenContext,
+      path: '/company/shifts',
+      label: 'Vardiyalar',
+      selectedSummary: 'Aktif vardiya hazır.',
+      selectedRecordStatus: 'Aktif vardiya hazır.',
+    },
+    roleMode: 'OPERATIONS',
+  });
+  must(companyContinueReply.reply, 'Vardiyalar akışından devam edelim', 'company continue reply preserves the prior path');
+  must(companyContinueReply.reply, 'Seçili Vardiya #6', 'company continue reply keeps the prior selection');
+  mustNot(companyContinueReply.reply, 'Hangi roldesin?', 'company continue reply does not restart from zero');
+
+  const locationReply = buildDirectHelpResponse({
+    message: 'Konumda sorun varsa ne yapacağım?',
+    role: 'COMPANY',
+    screenPath: '/company/georeview',
+    screenLabel: 'Konum İncele',
+    screenDefinition: {
+      path: '/company/georeview',
+      label: 'Konum İncele',
+      menuPurpose: 'Konum verisini kontrol et',
+      plainSummary: 'Konum verisini kontrol et',
+      summary: 'Konum verisini kontrol et',
+      firstStep: 'Önce hangi kayıt veya kişinin konumunu incelediğini seç.',
+      nextStep: 'Sorunun konum verisi mi, yol hesabı mı, yoksa eşleşme mi olduğunu ayır.',
+    },
+    screenContext: {
+      ...directHelpScreenContext,
+      path: '/company/georeview',
+      label: 'Konum İncele',
+      selectedSummary: 'Konum sorunu olan kayıt hazır.',
+      selectedRecordStatus: 'Konum sorunu olan kayıt hazır.',
+    },
+    roleMode: 'OPERATIONS',
+  });
+  must(locationReply.reply, 'konum', 'location reply stays in plain Turkish');
+  must(locationReply.reply, 'adres', 'location reply keeps the address/control path');
+  mustNot(locationReply.reply, 'geocode', 'location reply avoids geocode jargon');
+  mustNot(locationReply.reply, 'lat/lng', 'location reply avoids lat/lng jargon');
+  mustNot(locationReply.reply, 'route apply', 'location reply avoids route apply jargon');
+  mustNot(locationReply.reply, 'readiness', 'location reply avoids readiness jargon');
 
   const fieldButtonTermCases = [
     {

@@ -129,6 +129,23 @@ function roleLabel(snapshot = {}) {
   return firstNonEmpty(roleProfile(snapshot)?.label, snapshot?.effectiveRole, 'Sefer Abi');
 }
 
+function prettyRoleName(roleKey = '') {
+  const key = String(roleKey || '')
+    .replace(/[_\s]+/g, '')
+    .toLowerCase();
+  const map = {
+    company: 'Şirket',
+    room: 'Oda',
+    driver: 'Sürücü',
+    parent: 'Veli',
+    personel: 'Personel',
+    school: 'Okul',
+    organization: 'Organizasyon',
+    superadmin: 'Süper Yönetici',
+  };
+  return firstNonEmpty(map[key], String(roleKey || '').trim());
+}
+
 function screenLabel(snapshot = {}) {
   return firstNonEmpty(
     snapshot?.screenLabel,
@@ -220,16 +237,13 @@ function buildProgressLead(snapshot = {}, reply = '') {
 function buildDirectQuestionTail(snapshot = {}, reply = '') {
   const questionType = String(snapshot?.questionType || '');
   const replyText = String(reply || '');
-  const progress = progressCommand(snapshot);
   const role = String(roleProfile(snapshot)?.role || '').toUpperCase();
-  const isDirect = COPILOT_REASONING_ANSWER_COMPOSER_DIRECT_QUESTION_TYPES.includes(questionType);
-  const isProgress = COPILOT_REASONING_ANSWER_COMPOSER_PROGRESS_COMMANDS.includes(progress);
 
   if (questionType === 'PRODUCT_OVERVIEW_HELP' && (!role || role === 'DEFAULT') && !containsNormalized(replyText, 'hangi roldesin')) {
     return 'Hangi roldesin?';
   }
 
-  if ((isDirect || isProgress) && !containsNormalized(replyText, 'takılırsan') && !containsNormalized(replyText, 'bulamadım')) {
+  if (questionType === 'FIELD_BUTTON_HELP' && !containsNormalized(replyText, 'takılırsan') && !containsNormalized(replyText, 'bulamadım')) {
     return 'Takılırsan "bulamadım" yaz.';
   }
 
@@ -272,6 +286,7 @@ function buildFallbackReply(snapshot = {}) {
   const screen = screenLabel(snapshot);
   const summary = firstNonEmpty(snapshot?.guide?.plainSummary, snapshot?.guide?.summary, snapshot?.guide?.screenExplanation, '');
   const starterSteps = Array.isArray(profile?.starterSteps) ? profile.starterSteps.filter(Boolean) : [];
+  const safeFollowUp = questionType === 'FIELD_BUTTON_HELP' ? 'Takılırsan "bulamadım" yaz.' : '';
 
   if (questionType === 'PRODUCT_OVERVIEW_HELP') {
     if (!role || role === 'DEFAULT') {
@@ -279,13 +294,13 @@ function buildFallbackReply(snapshot = {}) {
         'SeferPakt, servis operasyonunu planlamak, takip etmek ve kanıtı okumak için kullanılır.',
         'Başlamak için önce bugünkü plan / vardiya akışını aç, sonra canlı takip / servis durumuna bak, ardından kanıt / kalite / audit ekranını kontrol et.',
         'Hangi roldesin?',
-        'Takılırsan "bulamadım" yaz.',
+        safeFollowUp,
       ], profile?.maxLength || 360);
     }
     return joinParts([
       `${label} rolünde ${firstNonEmpty(profile?.intro, 'servis operasyonunu takip etmek için kullanılır.')}`,
       starterSteps.slice(0, 3).join('. '),
-      'Takılırsan "bulamadım" yaz.',
+      safeFollowUp,
     ], profile?.maxLength || 360);
   }
 
@@ -293,7 +308,7 @@ function buildFallbackReply(snapshot = {}) {
     return joinParts([
       `${label} rolünde ${firstNonEmpty(profile?.voice, 'kendi alanındaki servis akışını takip edersin.')}.`,
       starterSteps.slice(0, 2).join('. '),
-      'Takılırsan "bulamadım" yaz.',
+      safeFollowUp,
     ], profile?.maxLength || 360);
   }
 
@@ -301,7 +316,7 @@ function buildFallbackReply(snapshot = {}) {
     return joinParts([
       screen ? `Şu an ${screen} ekranındaysan` : 'Şu ekrandaysan',
       firstNonEmpty(summary, 'önce seçili kayıt ve ilk kontrol alanına bak.'),
-      'Takılırsan "bulamadım" yaz.',
+      safeFollowUp,
     ], profile?.maxLength || 360);
   }
 
@@ -310,14 +325,14 @@ function buildFallbackReply(snapshot = {}) {
       screen ? `Şu an ${screen} ekranındaysan önce doğru kaydı aç.` : 'Önce doğru kaydı aç.',
       firstNonEmpty(snapshot?.analysis?.nextBestAction, profile?.starterSteps?.[0], ''),
       firstNonEmpty(profile?.starterSteps?.[1], ''),
-      'Takılırsan "bulamadım" yaz.',
+      safeFollowUp,
     ], profile?.maxLength || 360);
   }
 
   if (questionType === 'FIELD_BUTTON_HELP') {
     return joinParts([
       firstNonEmpty(snapshot?.rawReply, `${screen || 'Bu ekran'} üzerindeki alanı ya da butonu açıklayalım.`),
-      'Takılırsan "bulamadım" yaz.',
+      safeFollowUp,
     ], profile?.maxLength || 360);
   }
 
@@ -335,14 +350,23 @@ function shouldUseFallback(snapshot = {}, reply = '') {
 
 export function composeCopilotReasoningAnswer(snapshot = {}) {
   const profile = roleProfile(snapshot);
+  const roleName = prettyRoleName(firstNonEmpty(profile?.role, snapshot?.effectiveRole, ''));
   const maxLength = Number(profile?.maxLength || 360);
   const progress = progressCommand(snapshot);
+  const questionType = String(snapshot?.questionType || '');
+  const directRoleLead = ['PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP'].includes(questionType) && roleName && normalizeText(roleName) !== 'default'
+    ? `${roleName} rolünde`
+    : '';
+  const overrideFinalReply = String(firstNonEmpty(snapshot?.overrideFinalReply, '') || '').trim();
   if (privacyBoundaryRequested(snapshot)) {
     return joinParts([
       'KVKK sınırı nedeniyle başkasının verisini paylaşamam.',
       safeAlternative(snapshot),
       'Takılırsan "bulamadım" yaz.',
     ], maxLength);
+  }
+  if (overrideFinalReply) {
+    return limitText(overrideFinalReply, maxLength);
   }
   const rawReplyText = String(snapshot?.rawReply || '');
   const preserveGuidedTaskLead = shouldPreserveGuidedTaskLead(snapshot)
@@ -355,12 +379,16 @@ export function composeCopilotReasoningAnswer(snapshot = {}) {
   const fallback = buildFallbackReply(snapshot);
 
   if (!shouldUseFallback(snapshot, rawReply)) {
-    return limitText(rawReply, maxLength);
+    const directReply = directRoleLead && !containsNormalized(rawReply, roleName)
+      ? joinParts([directRoleLead, rawReply], maxLength)
+      : rawReply;
+    return limitText(directReply, maxLength);
   }
 
   const pieces = [];
   const progressLead = buildProgressLead(snapshot, rawReply);
   if (progressLead) pieces.push(progressLead);
+  if (directRoleLead && !containsNormalized(rawReply, roleName)) pieces.push(directRoleLead);
   if (rawReply) pieces.push(rawReply);
   const tail = buildDirectQuestionTail(snapshot, rawReply);
   if (tail) pieces.push(tail);

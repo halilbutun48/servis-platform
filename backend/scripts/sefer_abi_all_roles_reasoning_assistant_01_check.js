@@ -310,9 +310,9 @@ async function main() {
   mustNot(helpComposerSource, 'goldenQuestionPack', 'help composer does not use golden pack as runtime reply source');
 
   const rolePlaybookCases = [
-    { role: 'SUPER_ADMIN', frame: 'Stratejik özet:', firstStep: 'Sistem durumu bandını aç' },
-    { role: 'COMPANY', frame: 'Plan açısından:', firstStep: 'Vardiya ya da talebi aç' },
-    { role: 'ROOM', frame: 'Operasyon açısından:', firstStep: 'Teklifleri incele' },
+    { role: 'SUPER_ADMIN', frame: 'Sistem açısından:', firstStep: 'Sistem durumu bandını aç' },
+    { role: 'COMPANY', frame: 'Şirket açısından:', firstStep: 'Planlama Merkezi\'ni aç' },
+    { role: 'ROOM', frame: 'Oda açısından:', firstStep: 'Teklifleri incele' },
     { role: 'DRIVER', frame: 'Kısaca:', firstStep: 'Aktif rotanı aç' },
     { role: 'PERSONEL', frame: 'Sade cevap:', firstStep: 'Servis durumunu / my ride ekranını aç' },
     { role: 'PARENT', frame: 'Kısa cevap:', firstStep: 'Yetkili öğrenci servis görünümünü aç' },
@@ -341,20 +341,20 @@ async function main() {
   must(genericOverview.reply, 'SeferPakt', 'generic overview mentions product');
   must(genericOverview.reply, 'planlamak, takip etmek', 'generic overview explains the platform');
   must(genericOverview.reply, 'Hangi roldesin?', 'generic overview asks for role when missing');
-  must(genericOverview.reply, 'bulamadım', 'generic overview keeps safe follow-up line');
+  mustNot(genericOverview.reply, 'bulamadım', 'generic overview drops repetitive fallback');
 
   const companyOverview = buildReply({ message: 'Bu program ne?', role: 'COMPANY' });
   const driverOverview = buildReply({ message: 'Bu program ne?', role: 'DRIVER', roleMode: 'SIMPLE' });
   const roomOverview = buildReply({ message: 'Bu program ne?', role: 'ROOM' });
-  must(companyOverview.reply, 'Company rolünde', 'company overview names the role');
+  must(companyOverview.reply, 'Şirket rolünde', 'company overview names the role');
   must(companyOverview.reply, 'teklif', 'company overview mentions the plan / offer lane');
   must(companyOverview.reply, 'sözleşme', 'company overview mentions contracts');
   must(companyOverview.reply, 'vardiya', 'company overview mentions shifts');
-  must(driverOverview.reply, 'Driver rolünde', 'driver overview names the role');
+  must(driverOverview.reply, 'Sürücü rolünde', 'driver overview names the role');
   must(driverOverview.reply, 'rota', 'driver overview mentions route');
   must(driverOverview.reply, 'durağı', 'driver overview stays field-oriented');
   assert(driverOverview.reply.length <= 320, 'driver overview stays short');
-  must(roomOverview.reply, 'Room rolünde', 'room overview names the role');
+  must(roomOverview.reply, 'Oda rolünde', 'room overview names the role');
   must(roomOverview.reply, 'araç', 'room overview mentions vehicle');
   must(roomOverview.reply, 'sürücü', 'room overview mentions driver');
   must(roomOverview.reply, 'operasyon', 'room overview stays operational');
@@ -363,8 +363,8 @@ async function main() {
 
   const schoolOverview = buildReply({ message: 'Bu program ne?', role: 'COMPANY', companyKind: 'SCHOOL' });
   const organizationOverview = buildReply({ message: 'Bu program ne?', role: 'COMPANY', companyKind: 'ORGANIZATION' });
-  must(schoolOverview.reply, 'School rolünde', 'company+school overview resolves to school');
-  must(organizationOverview.reply, 'Organization rolünde', 'company+organization overview resolves to organization');
+  must(schoolOverview.reply, 'Okul rolünde', 'company+school overview resolves to school');
+  must(organizationOverview.reply, 'Organizasyon rolünde', 'company+organization overview resolves to organization');
   must(schoolOverview.reply, 'kanıt', 'school overview stays within evidence lane');
   must(organizationOverview.reply, 'onay', 'organization overview stays within approval lane');
 
@@ -374,10 +374,10 @@ async function main() {
     roleMode: 'OPERATIONS',
   });
   assert(roleExplanation.questionType === 'ROLE_EXPLANATION_HELP', 'role explanation routes correctly');
-  must(roleExplanation.reply, 'Room rolünde', 'role explanation names the role');
+  must(roleExplanation.reply, 'Oda rolünde', 'role explanation names the role');
   must(roleExplanation.reply, 'operasyon, sürücü ve araç', 'role explanation explains the role');
   must(roleExplanation.reply, 'Önce', 'role explanation gives a first step');
-  must(roleExplanation.reply, 'bulamadım', 'role explanation keeps the safe follow-up line');
+  mustNot(roleExplanation.reply, 'bulamadım', 'role explanation drops repetitive fallback');
 
   const screenExplanation = buildReply({
     message: 'Bu ekran ne işe yarar?',
@@ -393,7 +393,7 @@ async function main() {
   assert(screenExplanation.questionType === 'SCREEN_EXPLANATION_HELP', 'screen explanation routes correctly');
   must(screenExplanation.reply, 'operasyon özetini aç', 'screen explanation keeps the purpose');
   must(screenExplanation.reply, 'Şu an Super Admin Operations ekranındaysan', 'screen explanation keeps the screen context');
-  must(screenExplanation.reply, 'bulamadım', 'screen explanation keeps safe follow-up');
+  mustNot(screenExplanation.reply, 'bulamadım', 'screen explanation drops repetitive fallback');
 
   const howToHelp = buildReply({
     message: 'Vardiya nasıl oluşturulur?',
@@ -407,10 +407,25 @@ async function main() {
     roleMode: 'OPERATIONS',
   });
   assert(howToHelp.questionType === 'HOW_TO_HELP', 'how-to routes correctly');
-  must(howToHelp.reply, 'Şu an Vardiyalar ekranındaysan', 'how-to reply keeps the screen context');
-  must(howToHelp.reply, 'doğru kaydı aç', 'how-to reply keeps the first step');
-  must(howToHelp.reply, 'Teklif, atama, operasyon ve sözleşme rozetlerini', 'how-to reply keeps the next step');
-  must(howToHelp.reply, 'bulamadım', 'how-to reply keeps the safe follow-up line');
+  must(howToHelp.reply, 'Planlama Merkezi', 'how-to reply starts from planning center');
+  must(howToHelp.reply, 'Yeni Plan Oluştur', 'how-to reply includes new plan entry');
+  must(howToHelp.reply, 'Rehberi Başlat', 'how-to reply includes guidance entry');
+  must(howToHelp.reply, 'paket', 'how-to reply includes package selection');
+  must(howToHelp.reply, 'tarih', 'how-to reply includes date selection');
+  must(howToHelp.reply, 'saat', 'how-to reply includes time selection');
+  must(howToHelp.reply, 'servis yönü', 'how-to reply includes direction selection');
+  must(howToHelp.reply, 'kapsam', 'how-to reply includes scope selection');
+  must(howToHelp.reply, 'personel', 'how-to reply includes personnel review');
+  must(howToHelp.reply, 'adres/konum', 'how-to reply includes address/location review');
+  must(howToHelp.reply, 'durak', 'how-to reply includes stop review');
+  must(howToHelp.reply, 'rota önizlemesini', 'how-to reply includes route preview');
+  must(howToHelp.reply, 'oluşan vardiyayı Vardiyalar ekranında takip eder', 'how-to reply uses shifts only for follow-up');
+  mustNot(howToHelp.reply, 'Vardiyalar ekranına gir', 'how-to reply does not start from the shifts screen');
+  mustNot(howToHelp.reply, 'Plan Builder', 'how-to reply avoids English builder jargon');
+  mustNot(howToHelp.reply, 'Company', 'how-to reply avoids English role name');
+  mustNot(howToHelp.reply, 'georeview', 'how-to reply avoids georeview jargon');
+  mustNot(howToHelp.reply, 'matrix', 'how-to reply avoids matrix jargon');
+  mustNot(howToHelp.reply, 'bulamadım', 'how-to reply drops repetitive fallback');
 
   const buttonHelp = buildReply({
     message: 'Bu buton ne işe yarıyor?',
@@ -450,8 +465,8 @@ async function main() {
     },
     roleMode: 'OPERATIONS',
   });
-  must(girdim.reply, 'Önce', 'girdim keeps the flow moving');
-  must(girdim.reply, 'kontrol', 'girdim asks for the first control');
+  must(girdim.reply, 'Vardiyalar ekranına girdin', 'girdim keeps the flow moving');
+  must(girdim.reply, 'yeni vardiya', 'girdim asks for the first control');
 
   const yaptim = buildReply({
     message: 'yaptım',
@@ -475,8 +490,8 @@ async function main() {
     },
     roleMode: 'OPERATIONS',
   });
-  must(yaptim.reply, 'birlikte kontrol et', 'yaptım asks for the result check');
-  must(yaptim.reply, 'birlikte kontrol et', 'yaptım keeps the flow moving');
+  must(yaptim.reply, 'Tamam, aynı vardiya akışından devam edelim', 'yaptım keeps the flow moving');
+  must(yaptim.reply, 'tarih / saat', 'yaptım asks for the result check');
 
   const bulamadim = buildReply({
     message: 'bulamadım',
@@ -500,8 +515,8 @@ async function main() {
     },
     roleMode: 'OPERATIONS',
   });
-  must(bulamadim.reply, 'alternatif', 'bulamadım gives an alternative path');
-  must(bulamadim.reply, 'menü', 'bulamadım names a menu path');
+  must(bulamadim.reply, 'Vardiyalar ekranında yeni vardiya veya yeni plan oluştur alanını kontrol et', 'bulamadım names the entry path');
+  must(bulamadim.reply, 'Bekleyen sekmesinden', 'bulamadım names the alternate path');
 
   const devamEt = buildReply({
     message: 'devam et',
@@ -525,8 +540,8 @@ async function main() {
     },
     roleMode: 'OPERATIONS',
   });
-  must(devamEt.reply, 'Bekleyen işleri kontrol et', 'devam et keeps the current context');
-  must(devamEt.reply, 'İlgili kartı aç', 'devam et asks for the next safe step');
+  must(devamEt.reply, 'Vardiyalar akışından devam edelim', 'devam et keeps the current context');
+  must(devamEt.reply, 'Seçili Vardiya #6', 'devam et asks for the next safe step');
 
   const companyActionRefusal = buildReply({
     message: 'teklifi kabul et',
@@ -539,9 +554,9 @@ async function main() {
     },
     roleMode: 'OPERATIONS',
   });
-  must(companyActionRefusal.reply, 'Bunu senin yerine yapamam', 'action refusal avoids executing the action');
-  must(companyActionRefusal.reply, 'Güvenli alternatif', 'action refusal gives an alternative');
-  must(companyActionRefusal.reply, 'sözleşme', 'company action refusal keeps the contract lane visible');
+  must(companyActionRefusal.reply, 'Teklifi senin yerine kabul edemem', 'action refusal avoids executing the action');
+  must(companyActionRefusal.reply, 'Kabul öncesi', 'action refusal gives the planning lane');
+  must(companyActionRefusal.reply, 'son onay', 'company action refusal keeps the approval boundary visible');
 
   const roomActionRefusal = buildReply({
     message: 'aracı ata',
