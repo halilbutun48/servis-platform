@@ -28,27 +28,27 @@ export function ShiftPeopleSummarySection({
     <div className="card" style={{ margin: 0 }}>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" }}>
         <div style={{ minWidth: 280, flex: 1 }}>
-          <label className="muted">Shift</label>
+          <label className="muted">Vardiya</label>
           <select value={String(selectedShiftId || "")} onChange={(e) => setSelectedShiftId(e.target.value)} disabled={busy}>
             {shiftOptions.map((s) => (
               <option key={s.id} value={String(s.id)}>
-                #{s.id} • {String(s.status)} • Room {s.roomId} • {new Date(s.startAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
+                #{s.id} • {String(s.status)} • Oda {s.roomId} • {new Date(s.startAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
               </option>
             ))}
           </select>
         </div>
 
         <div style={{ minWidth: 140 }}>
-          <label className="muted">maxWalkM</label>
+          <label className="muted">Yürüme sınırı (m)</label>
           <input type="number" value={maxWalkM} onChange={(e) => setMaxWalkM(e.target.value)} disabled={busy} />
         </div>
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
           <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM(String(companyKind === "SCHOOL" ? 50 : 250))}>
-            {companyKind === "SCHOOL" ? "School 50" : "Company 250"}
+            {companyKind === "SCHOOL" ? "Okul 50" : "Şirket 250"}
           </button>
           {companyKind === "SCHOOL" ? null : (
-            <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM("50")}>School 50</button>
+            <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM("50")}>Okul 50</button>
           )}
         </div>
 
@@ -57,7 +57,7 @@ export function ShiftPeopleSummarySection({
             type="button"
             disabled={busy || stopActionBusy || !selectedShiftId}
             onClick={onPrepareDraftStops}
-            title="Önce durak üretir, sonra shift duraklarını çeker"
+            title="Önce durak üretir, sonra vardiya duraklarını alır"
           >
             {stopActionBusy ? "Hazırlanıyor..." : "Durakları Hazırla"}
           </button>
@@ -67,7 +67,7 @@ export function ShiftPeopleSummarySection({
           </button>
 
           <button type="button" className="btn sm" disabled={busy || stopActionBusy || !selectedShiftId} onClick={() => onLoadShiftStops({ quiet: false })}>
-            2. Shiftten Durakları Çek
+            2. Vardiyadan Durakları Çek
           </button>
 
           <button type="button" disabled={busy || stopActionBusy || !selectedShiftId} onClick={onOpenPreview}>
@@ -94,14 +94,14 @@ export function ShiftPeopleSummarySection({
       </div>
 
       <div className="muted" style={{ marginTop: 6 }}>
-        <b>Draft Durak:</b> {draftStopsLength}
+        <b>Taslak durak:</b> {draftStopsLength}
       </div>
 
       {stopSummary ? (
         <div className="card" style={{ marginTop: 10 }}>
-          <div className="muted"><b>Stop Generation Özeti</b></div>
+          <div className="muted"><b>Durak üretim özeti</b></div>
           <div className="muted" style={{ marginTop: 6 }}>
-            maxWalkM: <b>{stopSummary.maxWalkM ?? maxWalkMValue}</b> • Durak (toplanma konumu hariç): <b>{stopSummary.stopCountWithoutHub ?? stopSummary.stopCount}</b> • Durak (toplanma konumu dahil): <b>{stopSummary.stopCountWithHub ?? stopSummary.stopCount}</b>
+            Yürüme sınırı: <b>{stopSummary.maxWalkM ?? maxWalkMValue}</b> • Durak (toplanma konumu hariç): <b>{stopSummary.stopCountWithoutHub ?? stopSummary.stopCount}</b> • Durak (toplanma konumu dahil): <b>{stopSummary.stopCountWithHub ?? stopSummary.stopCount}</b>
           </div>
           <div className="muted" style={{ marginTop: 4 }}>
             Toplam kişi: <b>{stopSummary.totalPeople}</b> • Kapsanan: <b>{stopSummary.coveredCount}</b> • Tekil: <b>{stopSummary.singletonCount}</b> • İncelenecek: <b>{stopSummary.reviewCount}</b> • Dışarıda/atlanan: <b>{stopSummary.skippedCount}</b>
@@ -122,7 +122,7 @@ export function ShiftPeopleSummarySection({
       ) : null}
 
       <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-        Önerilen sıra: <b>Durakları Hazırla</b> kullan. Gerekirse adımları ayrı ayrı da çalıştırabilirsin: <b>1. Durak Üret</b> → <b>2. Shiftten Durakları Çek</b>. Üretim yalnızca koordinatı (lat/lng) olan {whoPlural.toLowerCase()} kayıtlarda çalışır.
+        Önerilen sıra: <b>Durakları Hazırla</b> kullan. Gerekirse adımları ayrı ayrı da çalıştırabilirsin: <b>1. Durak Üret</b> → <b>2. Vardiyadan Durakları Çek</b>. Üretim yalnızca koordinatı olan {whoPlural.toLowerCase()} kayıtlarda çalışır.
         {stopActionBusy ? <span> İşlem sürerken butonlar geçici olarak kilitlenir.</span> : null}
       </div>
     </div>
@@ -150,15 +150,15 @@ export function ShiftPeopleHubSection({
         <div className="card" style={{ margin: 0 }}>
       <h3 style={{ marginTop: 0 }}>Vardiya Toplanma / Dağıtım Konumu</h3>
       <div className="muted" style={{ marginTop: -6 }}>
-        INBOUND: toplanma konumu <b>son durak</b> olur. OUTBOUND: toplanma konumu <b>1. durak</b> olur.
+        Gidiş yönünde toplanma konumu <b>son durak</b> olur. Dönüş yönünde toplanma konumu <b>1. durak</b> olur.
       </div>
 
       <div className="grid" style={{ marginTop: 8 }}>
         <div className="col">
           <label className="muted">Yön</label>
           <select value={hubDirection} onChange={(e) => setHubDirection(e.target.value)} disabled={busy}>
-            <option value="INBOUND">INBOUND (Toplama → Toplanma Konumu)</option>
-            <option value="OUTBOUND">OUTBOUND (Toplanma Konumu → Dağıtım)</option>
+            <option value="INBOUND">Toplama → Toplanma Konumu</option>
+            <option value="OUTBOUND">Toplanma Konumu → Dağıtım</option>
           </select>
         </div>
 
@@ -179,11 +179,11 @@ export function ShiftPeopleHubSection({
         </div>
 
         <div className="col">
-          <label className="muted">Toplanma Konumu Lat</label>
+          <label className="muted">Toplanma konumu enlem</label>
           <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} placeholder="41.0..." disabled={busy} />
         </div>
         <div className="col">
-          <label className="muted">Toplanma Konumu Lng</label>
+          <label className="muted">Toplanma konumu boylam</label>
           <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} placeholder="29.0..." disabled={busy} />
         </div>
 
@@ -238,7 +238,7 @@ export function ShiftPeopleImportSection({
 }) {
   return (
     <div className="card" style={{ margin: 0 }}>
-      <h3 style={{ marginTop: 0 }}>{who} Ekle / Import</h3>
+      <h3 style={{ marginTop: 0 }}>{who} Ekle / İçe aktar</h3>
 
       <form onSubmit={onAddPersonManual} className="grid">
         <div className="col">
@@ -261,11 +261,11 @@ export function ShiftPeopleImportSection({
           </div>
         </div>
         <div className="col">
-          <label className="muted">Lat (ops.)</label>
+          <label className="muted">Enlem (ops.)</label>
           <input value={pLat} onChange={(e) => setPLat(e.target.value)} placeholder="41.0..." disabled={busy} />
         </div>
         <div className="col">
-          <label className="muted">Lng (ops.)</label>
+          <label className="muted">Boylam (ops.)</label>
           <input value={pLng} onChange={(e) => setPLng(e.target.value)} placeholder="29.0..." disabled={busy} />
         </div>
 
@@ -278,21 +278,21 @@ export function ShiftPeopleImportSection({
 
       <div className="card" style={{ marginTop: 10 }}>
         <div className="muted">
-          <b>Excel/CSV Import</b> — kolonlar: <code>name,address,lat,lng</code> (header opsiyonel)
+          <b>Excel/CSV içe aktarma</b> — kolonlar: <code>ad,adres,enlem,boylam</code> (header opsiyonel)
           <div style={{ marginTop: 6, fontSize: 12 }}>
             Excel başlıkları (TR) da olur: <code>ad / ad soyad / adres / enlem / boylam</code>. Dosyada telefon kolonu olsa bile bu adımda kullanılmaz.
           </div>
           <div style={{ marginTop: 6, fontSize: 12 }}>
-            Kural: <b>Ad Soyad</b> zorunlu; ayrıca <b>adres</b> veya birlikte <b>lat/lng</b> olmalı.
+            Kural: <b>Ad Soyad</b> zorunlu; ayrıca <b>adres</b> veya birlikte <b>enlem/boylam</b> olmalı.
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "end", flexWrap: "wrap", marginTop: 8 }}>
           <div style={{ minWidth: 220 }}>
-            <label className="muted">Import modu</label>
+            <label className="muted">İçe aktarma modu</label>
             <select value={importMode} onChange={(e) => setImportMode(e.target.value)} disabled={busy}>
-              <option value="REPLACE">REPLACE — mevcut listeyi değiştir</option>
-              <option value="MERGE">MERGE — mevcut listeyi koru, yenileri ekle</option>
+              <option value="REPLACE">Değiştir — mevcut listeyi yenile</option>
+              <option value="MERGE">Birleştir — mevcut listeyi koru, yenileri ekle</option>
             </select>
           </div>
         </div>
@@ -307,21 +307,21 @@ export function ShiftPeopleImportSection({
 
         {importSummary ? (
           <div className="card" style={{ marginTop: 10 }}>
-            <div className="muted"><b>Import Özeti</b></div>
+            <div className="muted"><b>İçe aktarma özeti</b></div>
             <div className="muted" style={{ marginTop: 6 }}>
-              Toplam: {importSummary.totalRows} • Kabul: {importSummary.acceptedRows} • Shift'e bağlanan: {importSummary.linkedToShift}
+              Toplam: {importSummary.totalRows} • Kabul: {importSummary.acceptedRows} • Vardiyaya bağlanan: {importSummary.linkedToShift}
             </div>
             <div className="muted" style={{ marginTop: 4 }}>
               Oluşan: {importSummary.createdPersonels} • Güncellenen: {importSummary.updatedPersonels} • İncelenecek: {importSummary.needsReviewRows}
             </div>
             <div className="muted" style={{ marginTop: 4 }}>
-              Atlanan: {importSummary.skippedRows} • Failed: {importSummary.failedRows}
+              Atlanan: {importSummary.skippedRows} • Hatalı: {importSummary.failedRows}
             </div>
             {importSummary.needsReviewRows > 0 ? (
               <>
                 <div className="muted" style={{ marginTop: 6 }}>
                   {hideGeoReviewLinks ? (
-                    <>Guided Mode'da tek tıkla Konum Seçici'ye geçebilir, işi bitirince aynı adıma geri dönebilirsin. İstersen burada satır bazlı da düzeltebilirsin.</>
+                    <>Rehberli Mod'da tek tıkla konum seçiciye geçebilir, işi bitirince aynı adıma geri dönebilirsin. İstersen burada satır bazlı da düzeltebilirsin.</>
                   ) : (
                     <>Konum kontrolü gerektiren kayıtlar için <a href={"#" + geoReviewPath}>Konum seçici</a> ekranını kullan.</>
                   )}
@@ -331,7 +331,7 @@ export function ShiftPeopleImportSection({
                     <button type="button" className="btn" onClick={() => onOpenGuidedGeoPicker(null)}>Konum seçiciye git</button>
                   ) : <a className="btn" href={"#" + geoReviewPath}>Konum seçiciye git</a>}
                   <button type="button" className="btn" onClick={onRunImportQuickGeocode} disabled={importQuickBusy || busy}>
-                    {importQuickBusy ? "Çalışıyor..." : "Review kayıtlarını topluca bul"}
+                    {importQuickBusy ? "Çalışıyor..." : "İncelenecek kayıtları topluca bul"}
                   </button>
                 </div>
                 <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
@@ -349,7 +349,7 @@ export function ShiftPeopleImportSection({
 
         {importWarnings?.length ? (
           <div className="card" style={{ marginTop: 10 }}>
-            <div className="muted"><b>Import Uyarıları</b> — {importWarnings.length} kayıt</div>
+            <div className="muted"><b>İçe aktarma uyarıları</b> — {importWarnings.length} kayıt</div>
             <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
               {importWarningSummary.map((item) => (
                 <span key={item.code} className="badge">{warningLabel(item.code)}: {item.count}</span>
@@ -434,9 +434,9 @@ export function ShiftPeopleOverviewSection({
 }) {
   return (
     <>
-      <h3>Shift Tools</h3>
+      <h3>Vardiya araçları</h3>
       <div className="muted">
-        Shift bazlı araçlar: personel ekle/import → durak üret → shift duraklarını çek → rota/durak önizleme (mini-map). “Durakları Hazırla” bu iki adımı sırayla çalıştırır.
+        Vardiya bazlı araçlar: kişi ekle/içe aktar → durak üret → vardiya duraklarını al → rota/durak önizleme. “Durakları Hazırla” bu iki adımı sırayla çalıştırır.
       </div>
 
       {err ? (
@@ -540,7 +540,7 @@ export function ShiftPeopleListSection({
 }) {
   return (
     <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
-      <h3 style={{ marginTop: 0 }}>Shift {who} Listesi</h3>
+      <h3 style={{ marginTop: 0 }}>Vardiya {who} listesi</h3>
       <ShiftPersonelTable
         people={people}
         onRemove={onRemove}

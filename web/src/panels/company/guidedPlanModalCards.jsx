@@ -9,7 +9,7 @@ export function GuidedOrganizationReadinessCard({ orgDraftCompletion, orgEstimat
       <div style={{ fontWeight: 800 }}>{orgDraftCompletion.ready ? "✅ Kurum planı markete gönderime hazır" : "⚠ Kurum planı henüz tam değil"}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {orgDraftCompletion.ready
-          ? `Tahmini kişi: ${Number(orgEstimatedPax || 0) || 0} • Tüm konumlar koordinatlı • Taslak shift'lerde ${orgDraftCompletion.expectedStops} ziyaret noktası hazır.`
+          ? `Tahmini kişi: ${Number(orgEstimatedPax || 0) || 0} • Tüm konumlar koordinatlı • Taslak vardiyalarda ${orgDraftCompletion.expectedStops} ziyaret noktası hazır.`
           : orgDraftCompletion.reasons.join(" • ")}
       </div>
       <div className="muted" style={{ marginTop: 6 }}>Not: Kurum işlerinde plan tam oluşmadan markete düşmez.</div>
@@ -23,10 +23,10 @@ export function GuidedCompanyGeoGateCard({ companyGeoGate }) {
       <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Şirket konumu henüz tam değil" : "✅ Şirket konumu koordinat olarak hazır"}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {companyGeoGate.blocking
-          ? `Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift doğrulanamaz.`
-          : `Kişi kayıtları koordinatlı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}.`}
+          ? `İncelenecek: ${Number(companyGeoGate?.geoStats?.review || 0)} • Hatalı: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak vardiya doğrulanamaz.`
+          : `Kişi kayıtları koordinatlı. İncelenecek: ${Number(companyGeoGate?.geoStats?.review || 0)} • Hatalı: ${Number(companyGeoGate?.geoStats?.failed || 0)}.`}
       </div>
-      <div className="muted" style={{ marginTop: 6 }}>Not: Bu kart sadece koordinat hazırlığını gösterir. Teklif için ayrıca OSRM rota doğrulaması gerekir.</div>
+      <div className="muted" style={{ marginTop: 6 }}>Not: Bu kart sadece koordinat hazırlığını gösterir. Teklif için ayrıca rota doğrulaması gerekir.</div>
     </div>
   );
 }
@@ -41,7 +41,7 @@ export function GuidedOsrmGateCard({ offerOsrmGate }) {
       <div className="muted" style={{ marginTop: 6 }}>
         {offerOsrmGate.blocking
           ? (offerOsrmGate.reasons.join(" • ") || "OSRM doğrulaması tamamlanmadan teklif gönderilemez.")
-          : "Taslak shift'ler rota doğrulamasından geçti; teklif gönderimi açılabilir."}
+          : "Taslak vardiyalar OSRM doğrulamasından geçti; teklif gönderimi açılabilir."}
       </div>
     </div>
   );
@@ -60,7 +60,7 @@ export function GuidedDraftShiftRow({ shift, busy, osrmReorder, openShiftNavigat
       <td className="muted">{base + (hasHub ? 1 : 0)}</td>
       <td>
         <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <button type="button" onClick={() => osrmReorder(shift.id)} disabled={busy}>OSRM ile sırala</button>
+          <button type="button" onClick={() => osrmReorder(shift.id)} disabled={busy}>Rota sırasını oluştur</button>
           <button type="button" onClick={() => openShiftNavigation(shift)} disabled={busy}>Navigasyon</button>
           {state?.ok === true ? (
             <span className="muted">✅</span>
@@ -77,10 +77,10 @@ export function GuidedDraftShiftsCard({ busy, draftShifts, osrmBatch, osrmReorde
   return (
     <div className="card">
       <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ fontWeight: 800 }}>Taslak shift’ler</div>
+        <div style={{ fontWeight: 800 }}>Taslak vardiyalar</div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <button type="button" onClick={osrmReorderAll} disabled={busy || !(draftShifts || []).length}>
-            Hepsini OSRM ile sırala
+            Tüm rotaları sırala
           </button>
         </div>
       </div>
@@ -200,19 +200,19 @@ export function GuidedBulkOffersCard({
           <div className="muted">
             {routeRefreshMode
               ? "Bu güncelleme yalnızca seçili sözleşmenin aynı odasına gider; market teklif akışı kullanılmaz."
-              : "Seçili room’lara tüm taslak shift’ler için teklif gider."}
+              : "Seçili odalara tüm taslak vardiyalar için teklif gider."}
           </div>
         </div>
         {!routeRefreshMode ? (
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => onReloadRooms?.()} disabled={busy || !roomsSupported}>Room’ları yenile</button>
+            <button type="button" onClick={() => onReloadRooms?.()} disabled={busy || !roomsSupported}>Odaları yenile</button>
           </div>
         ) : null}
       </div>
 
       {!routeRefreshMode && !roomsSupported ? (
         <div className="muted" style={{ marginTop: 8, color: "#b85" }}>
-          /api/rooms endpoint bulunamadı. Önce Room directory (M22+) çalışmalı.
+          Oda listesi bulunamadı. Önce oda dizini çalışmalı.
         </div>
       ) : null}
 
@@ -266,10 +266,10 @@ export function GuidedBulkOffersCard({
             <>
               <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label className="muted">Room ara</label>
-                  <input value={roomQ} onChange={(e) => setRoomQ(e.target.value)} placeholder="name contains" disabled={busy} />
-                  <div className="muted" style={{ marginTop: 8 }}>Toplam room: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
-                  <div className="muted" style={{ marginTop: 6 }}>Toplanma Konumu eksik room'lar da listelenir; konum eksikliği teklif engeli değildir.</div>
+                  <label className="muted">Oda ara</label>
+                  <input value={roomQ} onChange={(e) => setRoomQ(e.target.value)} placeholder="ad içerir" disabled={busy} />
+                  <div className="muted" style={{ marginTop: 8 }}>Toplam oda: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
+                  <div className="muted" style={{ marginTop: 6 }}>Toplanma konumu eksik odalar da listelenir; konum eksikliği teklif engeli değildir.</div>
                 </div>
                 <div>
                   <label className="muted">Tutar (₺) (isteğe bağlı)</label>
@@ -293,7 +293,7 @@ export function GuidedBulkOffersCard({
                     />
                   );
                 })}
-                {!roomsFiltered.length ? <div className="muted">Room bulunamadı.</div> : null}
+                {!roomsFiltered.length ? <div className="muted">Oda bulunamadı.</div> : null}
               </div>
             </>
           )}
@@ -331,7 +331,7 @@ export function GuidedBulkOffersCard({
       ) : (
         <div className="muted" style={{ marginTop: 10 }}>
           {offerOutcome === "agreement_covered"
-            ? "Bu plan seçilen room'larda zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; devam etmek için Bitir'e bas."
+            ? "Bu plan seçilen odalarda zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; devam etmek için Bitir'e bas."
             : offerOutcome === "route_refresh_pending"
               ? "Rota güncelleme teklifi aynı odaya gönderildi. Karar gelene kadar bu sözleşmede bekleyen güncelleme olarak kalır."
               : "Teklifler gönderildi. Bu adım tamamlandı; devam etmek için Bitir'e bas."}

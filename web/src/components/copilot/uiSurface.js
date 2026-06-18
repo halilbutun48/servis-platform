@@ -81,6 +81,22 @@ function collectButtons(excludeSelector) {
   return uniqueByLabel(rows).slice(0, 18);
 }
 
+function collectButtonsWithin(root, excludeSelector) {
+  if (!root || typeof root.querySelectorAll !== 'function') return [];
+  const nodes = Array.from(root.querySelectorAll('button,[role="button"],a[href],input[type="button"],input[type="submit"]'));
+  const rows = nodes
+    .filter((el) => !isExcluded(el, excludeSelector))
+    .filter((el) => isVisibleElement(el))
+    .map((el) => {
+      const label = textOf(el);
+      const disabled = Boolean(el.disabled) || String(el.getAttribute?.('aria-disabled') || '').toLowerCase() === 'true';
+      return { label, disabled, reason: disabled ? inferDisabledReason(el, label) : '' };
+    })
+    .filter((row) => row.label && row.label.length <= 80)
+    .filter((row) => !/^(yardım|copilot|sohbet|rehber|gelişmiş|sorunu bul|hızlı cevap|adım adım)$/i.test(row.label));
+  return uniqueByLabel(rows);
+}
+
 function collectTextRows(selector, excludeSelector, limit = 8) {
   const nodes = Array.from(document.querySelectorAll(selector));
   return uniqueByLabel(nodes
@@ -95,13 +111,18 @@ export function captureCopilotUiSurface({ excludeSelector = '.copilotDrawer,.cop
   if (typeof document === 'undefined') {
     return { visibleButtons: [], disabledButtons: [], tableHeaders: [], modalTitles: [], activeTabs: [], pageTitles: [] };
   }
-  const buttons = collectButtons(excludeSelector);
-  const modalTitles = Array.from(document.querySelectorAll('[role="dialog"], [aria-modal="true"], .modal, .dialog'))
+  const modalRoots = Array.from(document.querySelectorAll('[role="dialog"], [aria-modal="true"], .modal, .dialog'))
     .filter((el) => !isExcluded(el, excludeSelector))
     .filter((el) => isVisibleElement(el))
+    ;
+  const modalTitles = modalRoots
     .map((el) => ({ label: textOf(el.querySelector('h1,h2,h3,.modal-title,.dialog-title,[data-dialog-title]') || el) }));
+  const buttons = uniqueByLabel([
+    ...modalRoots.flatMap((root) => collectButtonsWithin(root, excludeSelector)),
+    ...collectButtons(excludeSelector),
+  ]);
   return {
-    visibleButtons: buttons.filter((row) => !row.disabled).slice(0, 12),
+    visibleButtons: buttons.filter((row) => !row.disabled).slice(0, 18),
     disabledButtons: buttons.filter((row) => row.disabled).slice(0, 8),
     tableHeaders: collectTextRows('table th', excludeSelector, 12),
     modalTitles: uniqueByLabel(modalTitles).map((row) => row.label).slice(0, 6),

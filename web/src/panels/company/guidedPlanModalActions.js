@@ -290,7 +290,7 @@ export async function hydrateGuidedDraftPeopleFromSourceShift({ token, sourceShi
 export async function osrmReorderGuidedCore({ token, draftShifts, shiftId }) {
   const sid = Number(shiftId);
   const shift = (draftShifts || []).find((x) => Number(x.id) === sid);
-  if (!shift) return { ok: false, error: "Shift bulunamadı." };
+  if (!shift) return { ok: false, error: "Vardiya bulunamadı." };
 
   const stops = Array.isArray(shift?.stops) ? shift.stops : [];
   if (stops.length < 2) return { ok: false, error: "Sıralama için en az 2 durak gerekir." };
@@ -303,7 +303,7 @@ export async function osrmReorderGuidedCore({ token, draftShifts, shiftId }) {
   const points = [depot, ...stops.map((x) => ({ id: Number(x.id), lat: Number(x.lat), lng: Number(x.lng) }))];
   const table = await api("/api/plan-builder/osrm-table", { token, method: "POST", body: { profile: "driving", points } });
   if (!table?.ok) {
-    return { ok: false, error: "OSRM rota doğrulaması alınamadı. Solver/OSRM hazır değil veya bu taslak için matris üretilemedi." };
+    return { ok: false, error: "OSRM rota doğrulaması alınamadı. Rota motoru hazır değil veya bu taslak için rota verisi üretilemedi." };
   }
 
   const solved = await api("/api/plan-builder/solve-vrp", {

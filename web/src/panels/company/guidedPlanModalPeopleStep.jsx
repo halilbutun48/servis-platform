@@ -53,11 +53,11 @@ export default function GuidedPeopleStopsStep({
     <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
       <div className="muted">{organization ? "3. adım: Konumları ve kişi sayısını son kez kontrol et. Kişi/import bölümü Organization için opsiyoneldir." : `3. adım: ${who} ekle/import → durak üret → önizleme.`}</div>
       {!draftShiftIds.length ? (
-        <div className="card err">Önce taslak shift oluşturmalısın.</div>
+        <div className="card err">Önce taslak vardiya oluşturmalısın.</div>
       ) : (
         <div className="card">
-          <div className="muted">Taslak shift’ler: {draftShiftIds.map((x) => `#${x}`).join(", ")}</div>
-          <div className="muted" style={{ marginTop: 4 }}>Not: Bu adım Shift Tools UI’sinin aynısını kullanır.</div>
+          <div className="muted">Taslak vardiyalar: {draftShiftIds.map((x) => `#${x}`).join(", ")}</div>
+          <div className="muted" style={{ marginTop: 4 }}>Not: Bu adım vardiya kişi düzeninin aynısını kullanır.</div>
         </div>
       )}
 
@@ -92,13 +92,13 @@ export default function GuidedPeopleStopsStep({
         <div className="card" style={{ border: "1px solid #b85" }}>
           <div style={{ fontWeight: 800 }}>⚠ Guided Mode kilidi</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            Review veya eksik koordinatlı kişi varken sonraki adıma geçilmez ve markete gönderim açılmaz.
+            İncelenecek veya eksik koordinatlı kişi varken sonraki adıma geçilmez ve markete gönderim açılmaz.
           </div>
           <div className="muted" style={{ marginTop: 6 }}>
-            Review: <b>{Number(companyGeoGate?.geoStats?.review || 0)}</b> • Failed: <b>{Number(companyGeoGate?.geoStats?.failed || 0)}</b>
+            İncelenecek: <b>{Number(companyGeoGate?.geoStats?.review || 0)}</b> • Hatalı: <b>{Number(companyGeoGate?.geoStats?.failed || 0)}</b>
           </div>
           <div className="muted" style={{ marginTop: 6 }}>
-            Düzeltmeyi bu ekranda yap. Guided Mode içinden dış Geo Review ekranına çıkış kapalı tutulur.
+            Düzeltmeyi bu ekranda yap. Rehberli Mod içinden dış konum inceleme ekranına çıkış kapalı tutulur.
           </div>
         </div>
       ) : null}

@@ -6,6 +6,7 @@ import { copilotSelectionEventName, readCopilotSelection } from "../../utils/cop
 import { companyPath, normalizeCompanyPath } from "../../utils/paths";
 import { buildCopilotStarterChips, COPILOT_PERSONA } from "../../utils/copilotFacts";
 import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
+import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
 import { captureCopilotUiSurface } from "./uiSurface";
 
 const STORAGE_KEY = "psv1:copilot:drawer:v4";
@@ -214,10 +215,21 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const suggestions = useMemo(() => buildSuggestions(currentPath, mode, selection, screenContext, me), [currentPath, mode, selection, screenContext, me]);
   const isCopilotPage = /\/copilot$/.test(currentPath);
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;
+  const [activeOverlayLayer, setActiveOverlayLayer] = useState(() => readPlanCenterOverlayLayer() || "guide");
 
   useEffect(() => { saveDrawerState({ open, mode, size }); }, [open, mode, size]);
   useEffect(() => { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-20))); } catch { /* no-op: history persistence is best effort */ } if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
   useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch { /* no-op: speech synthesis may be unavailable */ } }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    function onLayerChange(event) {
+      const next = String(event?.detail || readPlanCenterOverlayLayer() || "guide").toLowerCase();
+      setActiveOverlayLayer(next === "copilot" ? "copilot" : "guide");
+    }
+    window.addEventListener(planCenterOverlayLayerEventName(), onLayerChange);
+    onLayerChange();
+    return () => window.removeEventListener(planCenterOverlayLayerEventName(), onLayerChange);
+  }, []);
 
   useEffect(() => {
     const evt = copilotSelectionEventName();
@@ -412,11 +424,22 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
 
   if (!token || !me || isCopilotPage) return null;
 
+  function activateCopilotLayer() {
+    setPlanCenterOverlayLayer("copilot");
+  }
+
   return !open ? (
     <button
       type="button"
       className="copilotFab"
-      onClick={() => setOpen(true)}
+      style={{ zIndex: 9135 }}
+      onPointerDownCapture={activateCopilotLayer}
+      onMouseDownCapture={activateCopilotLayer}
+      onFocusCapture={activateCopilotLayer}
+      onClick={() => {
+        activateCopilotLayer();
+        setOpen(true);
+      }}
       title="Sefer Abi’ye Sor — Operasyon yardımcısı"
       aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"
     >
@@ -428,7 +451,13 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       <span className="copilotFabStatus"><span className="copilotFabDot" />hazır</span>
     </button>
   ) : (
-    <aside className="copilotDrawer" style={{ width: dims.width, height: dims.height }}>
+    <aside
+      className="copilotDrawer"
+      style={{ width: dims.width, height: dims.height, zIndex: activeOverlayLayer === "copilot" ? 9130 : 4210 }}
+      onPointerDownCapture={activateCopilotLayer}
+      onMouseDownCapture={activateCopilotLayer}
+      onFocusCapture={activateCopilotLayer}
+    >
       <div className="copilotDrawerHeader">
         <div>
           <div className="copilotDrawerTitle">{COPILOT_PERSONA.drawerTitle}</div>

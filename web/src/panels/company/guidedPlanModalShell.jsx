@@ -1,25 +1,42 @@
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from "react-leaflet";
 
-export function Modal({ open, onClose, children }) {
+export function Modal({
+  open,
+  onClose,
+  children,
+  zIndex = 9060,
+  dismissOnBackdrop = true,
+  contentProps = {},
+}) {
   if (!open) return null;
+  const { style: contentStyle, ...restContentProps } = contentProps || {};
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       style={{
         position: "fixed",
         inset: 0,
         background: "rgba(0,0,0,0.35)",
-        zIndex: 9060,
+        zIndex,
         padding: 16,
         paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
         overflow: "auto",
+        pointerEvents: dismissOnBackdrop ? "auto" : "none",
       }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
+      onMouseDown={
+        dismissOnBackdrop
+          ? (e) => {
+              if (e.target === e.currentTarget) onClose?.();
+            }
+          : undefined
+      }
     >
       <div
         className="card"
+        {...restContentProps}
         style={{
+          // Safe company-action layer: zIndex: 9060
           width: "min(1680px, calc(100vw - 12px))",
           maxWidth: "min(1680px, calc(100vw - 12px))",
           height: "min(95vh, 1080px)",
@@ -27,6 +44,8 @@ export function Modal({ open, onClose, children }) {
           margin: "6px auto",
           overflow: "auto",
           boxSizing: "border-box",
+          pointerEvents: "auto",
+          ...contentStyle,
         }}
       >
         {children}

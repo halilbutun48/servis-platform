@@ -177,7 +177,7 @@ export function GuidedPlanSetupStep({
 
       <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <button type="button" onClick={() => setStep(0)} disabled={busy}>Geri</button>
-        <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0 || Boolean(guidedLimitMessage)}>Taslak shift oluştur</button>
+        <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0 || Boolean(guidedLimitMessage)}>Taslak vardiya oluştur</button>
       </div>
     </div>
   );

@@ -61,6 +61,7 @@
     "check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js",
     "check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
     "check:seferabiallrolesreasoningassistant01": "node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+    "check:plancenterguidedflowpersistence01": "node backend/scripts/plan_center_guided_flow_persistence_01_check.js",
     "check:mobiletext01": "npm --prefix mobile run check:mobiletext01",
     "check:m95e23c": "npm --prefix web run check:m95e23c",
     "check:m98e4b": "node backend/scripts/m98_e4b_personel_invite_router_mount_check.js",

@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
 import { hubLabel, personLabel } from "../../utils/labels";
-import GuidedPlanModal from "./GuidedPlanModal";
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import { formatDateTimeTR } from "../../utils/time";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
@@ -15,6 +14,7 @@ import OfferQualityRankingCard from "../shared/OfferQualityRankingCard";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
 const GEOREVIEW_OPEN_MODE_KEY = "psv1:georeview:openMode:v1";
+const GuidedPlanModal = lazy(() => import("./GuidedPlanModal"));
 
 function readGuidedResume(basePath) {
   try {
@@ -933,19 +933,23 @@ export default function WorkflowPanel() {
         </div>
       ) : null}
 
-      <GuidedPlanModal
-        open={guidedOpen}
-        onClose={() => setGuidedOpen(false)}
-        resumeStep={guidedResumeStep}
-        resumeNonce={guidedResumeNonce}
-        rooms={rooms}
-        roomsSupported={roomsSupported}
-        onReloadRooms={loadRooms}
-        onAfterCreated={() => {
-          loadSummary();
-          navigate(companyPath(me, "/shifts"));
-        }}
-      />
+      {(guidedOpen || guidedResumeStep != null) ? (
+        <Suspense fallback={null}>
+          <GuidedPlanModal
+            open={guidedOpen}
+            onClose={() => setGuidedOpen(false)}
+            resumeStep={guidedResumeStep}
+            resumeNonce={guidedResumeNonce}
+            rooms={rooms}
+            roomsSupported={roomsSupported}
+            onReloadRooms={loadRooms}
+            onAfterCreated={() => {
+              loadSummary();
+              navigate(companyPath(me, "/shifts"));
+            }}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

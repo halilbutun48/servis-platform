@@ -319,10 +319,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       if (typeof r?.lat === "number" && typeof r?.lng === "number") {
         setInfo(`Toplanma konumu bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
       } else {
-        setInfo("Toplanma konumu bulundu. Lat/Lng alanlarını kontrol et.");
+        setInfo("Toplanma konumu bulundu. Enlem/Boylam alanlarını kontrol et.");
       }
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      const m = e?.payload?.error === "notfound" ? "Konum bulunamadı." : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false)
@@ -334,14 +334,14 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setInfo("");
     const sid = Number(selectedShiftId || 0);
     if (!sid) {
-      setErr("Shift seç.");
+      setErr("Vardiya seç.");
       return;
     }
 
     const lat = normalizeCoord(hubLat, "lat");
     const lng = normalizeCoord(hubLng, "lng");
     if (lat == null || lng == null) {
-      setErr("Toplanma Konumu Lat/Lng zorunlu. (Adresten Bul ile doldurabilirsin)");
+      setErr("Toplanma konumu enlem/boylam zorunlu. (Adresten Bul ile doldurabilirsin)");
       return;
     }
 
@@ -416,10 +416,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       if (typeof r?.lat === "number" && typeof r?.lng === "number") {
         setInfo(`Konum bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
       } else {
-        setInfo("Konum bulundu. Lat/Lng alanlarını kontrol et.");
+        setInfo("Konum bulundu. Enlem/Boylam alanlarını kontrol et.");
       }
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      const m = e?.payload?.error === "notfound" ? "Konum bulunamadı." : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false);
@@ -441,7 +441,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       return;
     }
     if ((String(pLat || "").trim() && lat === null) || (String(pLng || "").trim() && lng === null)) {
-      setErr("Lat/Lng sayı olmalı (opsiyonel). Örn: 37.12345 veya 37,12345");
+      setErr("Enlem/Boylam sayı olmalı (opsiyonel). Örn: 37.12345 veya 37,12345");
       return;
     }
 
@@ -534,7 +534,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       const warnings = Array.isArray(firstResp?.warnings) ? firstResp.warnings : [];
       setImportWarnings(warnings);
       const warningCount = warnings.length;
-          setInfo(`Import tamamlandı: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
+          setInfo(`İçe aktarma tamamlandı: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
 
           const fresh = await loadPeopleFromBackendApi(api, token, String(sid));
           setPeople(fresh);
@@ -579,7 +579,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         else if (!r.address && !(typeof r.lat === "number" && typeof r.lng === "number")) {
           localWarnings.push({ rowNo, code: "MISSING_ADDRESS_OR_COORDS", message: "Adres veya geçerli koordinat olmadığı için satır atlandı.", level: "error" });
         } else if ((r.lat == null) !== (r.lng == null)) {
-          localWarnings.push({ rowNo, code: "INVALID_COORD", message: "Enlem/boylam eksik veya geçersiz; adres varsa review akışına düşecek.", level: "warning" });
+          localWarnings.push({ rowNo, code: "INVALID_COORD", message: "Enlem/boylam eksik veya geçersiz; adres varsa inceleme akışına düşecek.", level: "warning" });
         } else if (!(typeof r.lat === "number" && typeof r.lng === "number")) {
           localWarnings.push({ rowNo, code: "GEO_NEEDS_REVIEW", message: "Koordinat eksik; kayıt konum kontrolü gerektiriyor.", level: "warning" });
         }
@@ -678,7 +678,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const roomText = useMemo(() => {
     if (!selectedShift) return "-";
     const r = roomsById?.get ? roomsById.get(Number(selectedShift.roomId)) : null;
-    return r ? `${r.name || r.title || `Room #${r.id}`} (#${r.id})` : `#${selectedShift.roomId}`;
+    return r ? `${r.name || r.title || `Oda #${r.id}`} (#${r.id})` : `#${selectedShift.roomId}`;
   }, [selectedShift, roomsById]);
 
   const importWarningSummary = useMemo(() => summarizeWarnings(importWarnings), [importWarnings]);

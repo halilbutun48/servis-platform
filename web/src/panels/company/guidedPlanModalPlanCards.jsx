@@ -7,7 +7,6 @@ import {
 } from "./guidedPlanModalUtils";
 
 export function GuidedCustomSlotCard({
-  organization,
   busy,
   slot,
   idx,
@@ -63,7 +62,7 @@ export function GuidedCustomSlotCard({
         </label>
 
         <label className="muted">
-          Direction{" "}
+          Yön{" "}
           <select
             value={slot?.direction || "INBOUND"}
             onChange={(e) =>
@@ -71,13 +70,13 @@ export function GuidedCustomSlotCard({
             }
             disabled={busy}
           >
-            <option value="INBOUND">{organization ? "Toplama / gidiş" : "INBOUND"}</option>
-            <option value="OUTBOUND">{organization ? "Dağıtım / dönüş" : "OUTBOUND"}</option>
+            <option value="INBOUND">Toplama / gidiş</option>
+            <option value="OUTBOUND">Dağıtım / dönüş</option>
           </select>
         </label>
 
         <label className="muted">
-          Pattern{" "}
+          Dönüş şekli{" "}
           <select
             value={slot?.pattern || "ONE_WAY"}
             onChange={(e) =>
@@ -85,8 +84,8 @@ export function GuidedCustomSlotCard({
             }
             disabled={busy}
           >
-            <option value="ONE_WAY">{organization ? "Son noktada bitir" : "ONE_WAY"}</option>
-            <option value="LOOP">{organization ? "Başlangıç noktasına dön" : "LOOP"}</option>
+            <option value="ONE_WAY">Tek yön</option>
+            <option value="LOOP">Döngü</option>
           </select>
         </label>
       </div>
@@ -153,7 +152,7 @@ export function GuidedPlanPackCard({
       {pack.key === "CUSTOM" ? (
         <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
           <div className="muted" style={{ fontSize: 12 }}>
-            İpucu: End, Start’tan küçükse “gece vardiyası” sayılır (bir sonraki güne taşar).
+            İpucu: Bitiş, başlangıçtan küçükse “gece vardiyası” sayılır (bir sonraki güne taşar).
           </div>
 
           {(customSlots || []).map((slot, idx) => (
@@ -255,7 +254,7 @@ export function GuidedPlanDatesCard({
               </label>
             ))}
           </div>
-          <div className="muted" style={{ marginTop: 6 }}>{organization ? `Seçilen günler: ${weekMaskToText(weekMask)}` : `Günler: ${weekMaskToText(weekMask)} • weekMask:${weekMask}`}</div>
+        <div className="muted" style={{ marginTop: 6 }}>Seçilen günler: {weekMaskToText(weekMask)}</div>
 
           {eligibleDaysCount === 0 ? (
             <div className="card err" style={{ marginTop: 8 }}>

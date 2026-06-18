@@ -114,10 +114,10 @@ export function buildShiftPeopleTabActions(ctx) {
       if (typeof r?.lat === "number" && typeof r?.lng === "number") {
         setInfo(`Toplanma konumu bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
       } else {
-        setInfo("Toplanma konumu bulundu. Lat/Lng alanlarını kontrol et.");
+        setInfo("Toplanma konumu bulundu. Enlem/Boylam alanlarını kontrol et.");
       }
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      const m = e?.payload?.error === "notfound" ? "Konum bulunamadı." : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false);
@@ -129,14 +129,14 @@ export function buildShiftPeopleTabActions(ctx) {
     setInfo("");
     const sid = Number(selectedShiftId || 0);
     if (!sid) {
-      setErr("Shift seç.");
+      setErr("Vardiya seç.");
       return;
     }
 
     const lat = ctx.normalizeCoord(ctx.hubLat, "lat");
     const lng = ctx.normalizeCoord(ctx.hubLng, "lng");
     if (lat == null || lng == null) {
-      setErr("Toplanma Konumu Lat/Lng zorunlu. (Adresten Bul ile doldurabilirsin)");
+      setErr("Toplanma konumu enlem/boylam zorunlu. (Adresten Bul ile doldurabilirsin)");
       return;
     }
 
@@ -209,10 +209,10 @@ export function buildShiftPeopleTabActions(ctx) {
       if (typeof r?.lat === "number" && typeof r?.lng === "number") {
         setInfo(`Konum bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
       } else {
-        setInfo("Konum bulundu. Lat/Lng alanlarını kontrol et.");
+        setInfo("Konum bulundu. Enlem/Boylam alanlarını kontrol et.");
       }
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      const m = e?.payload?.error === "notfound" ? "Konum bulunamadı." : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false);
@@ -234,7 +234,7 @@ export function buildShiftPeopleTabActions(ctx) {
       return;
     }
     if ((String(ctx.pLat || "").trim() && lat === null) || (String(ctx.pLng || "").trim() && lng === null)) {
-      setErr("Lat/Lng sayı olmalı (opsiyonel). Örn: 37.12345 veya 37,12345");
+      setErr("Enlem/Boylam sayı olmalı (opsiyonel). Örn: 37.12345 veya 37,12345");
       return;
     }
 
@@ -328,7 +328,7 @@ export function buildShiftPeopleTabActions(ctx) {
           const warnings = Array.isArray(firstResp?.warnings) ? firstResp.warnings : [];
           setImportWarnings(warnings);
           const warningCount = warnings.length;
-          setInfo(`Import tamamlandı: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
+          setInfo(`İçe aktarma tamamlandı: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
           const fresh = await loadPeopleFromBackendApi(api, token, String(sid));
           setPeople(fresh);
           return;
@@ -441,7 +441,7 @@ export function buildShiftPeopleTabActions(ctx) {
       if (e?.status === 404) {
         setErr("Adresten Bul başarısız: Adres bulunamadı.");
       } else if (e?.status === 400) {
-        setErr("Adresten Bul başarısız: Geocode isteği eksik veya hatalı.");
+        setErr("Adresten bul başarısız: konum isteği eksik veya hatalı.");
       } else {
         setErr(`Adresten Bul başarısız: ${getApiErrorMessage(e)}`);
       }
@@ -459,7 +459,7 @@ export function buildShiftPeopleTabActions(ctx) {
     });
 
     if (!candidates.length) {
-      setInfo("Toplu geocode için uygun review kaydı yok.");
+      setInfo("Toplu konum bulma için uygun inceleme kaydı yok.");
       setImportQuickStats({ found: 0, notFound: 0, error: 0 });
       return;
     }
@@ -506,7 +506,7 @@ export function buildShiftPeopleTabActions(ctx) {
     setImportQuickStats({ found, notFound, error });
     const remainingReview = nextPeople.filter((p) => p.geoStatus === "NEEDS_REVIEW").length;
     setImportSummary((prev) => (prev ? { ...prev, needsReviewRows: remainingReview } : prev));
-    setInfo(`Toplu geocode tamamlandı: bulundu ${found}, bulunamadı ${notFound}, hata ${error}. Değişiklikleri kalıcı yapmak için Kaydet ile listeyi kaydet.`);
+    setInfo(`Toplu konum bulma tamamlandı: bulundu ${found}, bulunamadı ${notFound}, hata ${error}. Değişiklikleri kalıcı yapmak için Kaydet ile listeyi kaydet.`);
     setImportQuickBusy(false);
   }
 
@@ -526,7 +526,7 @@ export function buildShiftPeopleTabActions(ctx) {
 
     const mw = Number(maxWalkM);
     if (!Number.isFinite(mw) || mw <= 0) {
-      setErr("maxWalkM pozitif sayi olmali.");
+      setErr("Yürüme sınırı pozitif sayı olmalı.");
       return false;
     }
 
@@ -561,8 +561,8 @@ export function buildShiftPeopleTabActions(ctx) {
             }));
             setInfo(
               shiftCount > 1
-                ? `Durak üretimi tamamlandı: ${shiftCount} vardiya için stop üretildi. Sonraki adım: Shiftten Durakları Çek.`
-                : `Durak üretimi tamamlandı: ${Number(firstResp?.stopCount || 0)} durak. Sonraki adım: Shiftten Durakları Çek.`
+                ? `Durak üretimi tamamlandı: ${shiftCount} vardiya için durak üretildi. Sonraki adım: Vardiyadan Durakları Çek.`
+                : `Durak üretimi tamamlandı: ${Number(firstResp?.stopCount || 0)} durak. Sonraki adım: Vardiyadan Durakları Çek.`
             );
             setPeopleBackend("on");
             return true;
@@ -592,7 +592,7 @@ export function buildShiftPeopleTabActions(ctx) {
       peopleInput: ctx.people,
       computeGeoStatus,
     }));
-    setInfo(stops.length ? `Draft durak oluşturuldu: ${stops.length} durak` : "OK koordinatlı kayıt yok - durak oluşturulamadı.");
+    setInfo(stops.length ? `Taslak durak oluşturuldu: ${stops.length} durak` : "Koordinatı uygun kayıt yok - durak oluşturulamadı.");
     return true;
   }
 
@@ -641,10 +641,10 @@ export function buildShiftPeopleTabActions(ctx) {
         peopleInput: ctx.people,
         computeGeoStatus,
       }));
-      setInfo(`Shift durakları yüklendi: ${withHub.length}`);
+      setInfo(`Vardiya durakları yüklendi: ${withHub.length}`);
       return withHub;
     } catch (e) {
-      if (!quiet) setErr(`Shift durakları yüklenemedi: ${getApiErrorMessage(e)}`);
+      if (!quiet) setErr(`Vardiya durakları yüklenemedi: ${getApiErrorMessage(e)}`);
       return null;
     } finally {
       setBusy(false);

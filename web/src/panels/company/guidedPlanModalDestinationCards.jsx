@@ -47,7 +47,7 @@ export function GuidedDestinationRowCard({
 
       <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <label className="muted">Lat (manuel / fallback)</label>
+          <label className="muted">Enlem (manuel / yedek)</label>
           <input
             value={dest?.lat || ""}
             onChange={(e) => setDestinationCoordField(idx, "lat", e.target.value)}
@@ -56,7 +56,7 @@ export function GuidedDestinationRowCard({
           />
         </div>
         <div>
-          <label className="muted">Lng (manuel / fallback)</label>
+          <label className="muted">Boylam (manuel / yedek)</label>
           <input
             value={dest?.lng || ""}
             onChange={(e) => setDestinationCoordField(idx, "lng", e.target.value)}
