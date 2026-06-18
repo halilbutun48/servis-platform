@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-16
+Tarih: 2026-06-18
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `374`
+- Toplam package script entry: `375`
 - Toplam executable tracked file: `1165`
-- Combined registry row: `1539`
-- Root/backend/web/mobile package dağılımı: root `217`, backend `728`, web `90`, mobile `201`
+- Combined registry row: `1540`
+- Root/backend/web/mobile package dağılımı: root `218`, backend `728`, web `90`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -192,11 +192,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `562`
+- NEEDS_REVIEW: `563`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `307`
+- Eski sistem term eşleşmesi: `309`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -213,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 562 |
+| NEEDS_REVIEW | 563 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -289,6 +289,7 @@ Repo: `servis-platform`
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
 | root:check:seferabiallrolesreasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01 |  | Owner or chain unclear |  |
+| root:check:plancenterguidedflowpersistence01 | package.json | root | node backend/scripts/plan_center_guided_flow_persistence_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PLANCENTERGUIDEDFLOWPERSISTENCE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
 | root:check:m98e4b | package.json | root | node backend/scripts/m98_e4b_personel_invite_router_mount_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-M-98-E-4-B |  | Owner or chain unclear |  |
@@ -2033,19 +2034,19 @@ Repo: `servis-platform`
 | backend/scripts/cop_04b_fix_08_parent_live_context_check.js | OperationProof | ACTIVE |
 | backend/scripts/cop_live_accept_01_check.js | OperationProof | ACTIVE |
 | backend/scripts/copilot_guided_task_engine_01_check.js | Yer | NEEDS_REVIEW |
+| backend/scripts/copilot_reasoning_answer_composer_01_check.js | Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_role_task_matrix_01_check.js | Hub | NEEDS_REVIEW |
-| backend/scripts/copilot_route_review_human_approval_01_check.js | Vardis, Hub | NEEDS_REVIEW |
+| backend/scripts/copilot_route_review_human_approval_01_check.js | Vardis, Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_stop_route_draft_01_check.js | Hub | NEEDS_REVIEW |
 | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | Vardis, Hub | NEEDS_REVIEW |
 | backend/scripts/eta_osrm_01_route_eta_service_check.js | OperationProof | NEEDS_REVIEW |
 | backend/scripts/eta_osrm_02_api_eta_bridge_check.js | OperationProof | NEEDS_REVIEW |
+| backend/scripts/excel_to_route_readiness_redteam_01_check.js | Yer | NEEDS_REVIEW |
 | backend/scripts/final_ux_smoke_01_check.js | Hub, Yer, Audit Logs, Log Export, personel-access | NEEDS_REVIEW |
-| backend/scripts/invite_based_membership_01_check.js | Hub | NEEDS_REVIEW |
+| backend/scripts/invite_based_membership_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/m10check.js | Audit Logs | ACTIVE_RELEASE_ONLY |
 | backend/scripts/m19check.js | Hub | ACTIVE_RELEASE_ONLY |
 | backend/scripts/m20check.js | Hub | ACTIVE_RELEASE_ONLY |
-| backend/scripts/m21check.js | Hub | ACTIVE_RELEASE_ONLY |
-| backend/scripts/m22check.js | Hub | ACTIVE_RELEASE_ONLY |
 
 ## 11) Cleanup Raporu
 

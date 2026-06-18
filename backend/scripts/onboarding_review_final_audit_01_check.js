@@ -296,17 +296,19 @@ mustNoDiffExcept(
     "prisma",
     "backend/prisma",
   ],
-  [
-    "web/src/panels/superadmin/SuperAdminPanel.jsx",
-    "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
-    "web/src/panels/superadmin/TrustQualityPanel.jsx",
-    "web/src/panels/room/roomVehiclesPanelSections.jsx",
-    "web/src/App.jsx",
-    "web/src/copilot/screenRegistry.js",
-    "web/src/utils/uiDataCache.js",
-    "web/src/utils/offerQualityRanking.js",
-  ],
-  "runtime surface diff is empty"
+    [
+      "web/src/panels/superadmin/SuperAdminPanel.jsx",
+      "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
+      "web/src/panels/superadmin/TrustQualityPanel.jsx",
+      "web/src/panels/room/roomVehiclesPanelSections.jsx",
+      "web/src/App.jsx",
+      "web/src/copilot/screenRegistry.js",
+      "web/src/utils/uiDataCache.js",
+      "web/src/utils/offerQualityRanking.js",
+      "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+      "web/src/components/copilot/uiSurface.js",
+    ],
+    "runtime surface diff is empty"
 );
 
 console.log("=== ONBOARDING-REVIEW-01 FINAL AUDIT CHECK PASS ===");
