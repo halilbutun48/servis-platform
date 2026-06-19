@@ -226,6 +226,30 @@ async function firstVisibleLocator(page, role, name) {
   return null;
 }
 
+async function waitForFirstVisibleLocator(page, role, name, { timeoutMs = 9000, intervalMs = 150 } = {}) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const locator = await firstVisibleLocator(page, role, name);
+    if (locator) return locator;
+    await page.waitForTimeout(intervalMs);
+  }
+  return null;
+}
+
+async function waitForAnyVisibleLocator(page, role, names, { timeoutMs = 9000, intervalMs = 150 } = {}) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    for (const name of names || []) {
+      const locator = await firstVisibleLocator(page, role, name);
+      if (locator) {
+        return { locator, name };
+      }
+    }
+    await page.waitForTimeout(intervalMs);
+  }
+  return null;
+}
+
 async function firstVisibleButtonByText(page, needle) {
   const target = normalize(needle);
   const locator = page.locator("button");
@@ -482,15 +506,14 @@ async function handleCompanyShifts(page, result) {
   const previewLabel = "Harita / Navigasyon Önizle";
   const convertLabels = ["Sözleşmeye Dönüştür", "Yeniden Dönüştür"];
 
-  result.checks.previewButtonVisible = await isVisible(page, "button", previewLabel);
+  const previewButton = await waitForFirstVisibleLocator(page, "button", previewLabel, { timeoutMs: 9000 });
+  result.checks.previewButtonVisible = Boolean(previewButton);
   result.checks.convertButtonVisible = false;
   result.checks.convertButtonLabel = "";
-  for (const label of convertLabels) {
-    if (await isVisible(page, "button", label)) {
-      result.checks.convertButtonVisible = true;
-      result.checks.convertButtonLabel = label;
-      break;
-    }
+  const convertButton = await waitForAnyVisibleLocator(page, "button", convertLabels, { timeoutMs: 9000 });
+  if (convertButton?.locator) {
+    result.checks.convertButtonVisible = true;
+    result.checks.convertButtonLabel = convertButton.name;
   }
 
   if (!result.checks.previewButtonVisible || !result.checks.convertButtonVisible) {
@@ -503,7 +526,6 @@ async function handleCompanyShifts(page, result) {
   result.checks.convertBoundaryVisible = await textVisible(page, "Vardiyayı sözleşmeye dönüştür: tıkladığında vardiya Company Sözleşmeler ekranında taslak olarak açılır.");
   result.checks.convertDisabledHintVisible = await textVisible(page, "Önce room seçili olmalı. Sonra taslak Company Sözleşmeler ekranında açılır.");
 
-  const previewButton = await firstVisibleLocator(page, "button", previewLabel);
   if (!previewButton) {
     result.status = bumpStatus(result.status, "BLOCKER");
     result.notes.push("Company shift preview button could not be opened.");
