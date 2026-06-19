@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `376`
-- Toplam executable tracked file: `1167`
-- Combined registry row: `1543`
-- Root/backend/web/mobile package dağılımı: root `219`, backend `729`, web `91`, mobile `201`
+- Toplam executable tracked file: `1168`
+- Combined registry row: `1544`
+- Root/backend/web/mobile package dağılımı: root `219`, backend `730`, web `91`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -192,7 +192,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `566`
+- NEEDS_REVIEW: `567`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
@@ -213,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 566 |
+| NEEDS_REVIEW | 567 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -533,6 +533,7 @@ Repo: `servis-platform`
 | _totp_harness.js | backend/scripts/_totp_harness.js | backend |  | helper | ACTIVE |  | TOTP-HARNESS |  | Owner or chain unclear | internal helper |
 | address_geocoding_confidence_01_check.js | backend/scripts/address_geocoding_confidence_01_check.js | backend | root:check:addressgeocodingconfidence01 | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-01-CHECK |  | Owner or chain unclear |  |
 | agreement_source_shift_lineage_01_check.js | backend/scripts/agreement_source_shift_lineage_01_check.js | backend | root:check:agreementsourceshiftlineage01 | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT-LINEAGE-01-CHECK |  | Owner or chain unclear |  |
+| ai03b_paraphrase_intent_audit_01_check.js | backend/scripts/ai03b_paraphrase_intent_audit_01_check.js | backend | root:check:ai03bparaphraseintentaudit01 | review | NEEDS_REVIEW |  | AI-03-B-PARAPHRASE-INTENT-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | audit_logs_session_hotfix_check.mjs | backend/scripts/audit_logs_session_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | AUDIT-LOGS-SESSION-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_dev_toggle_01_check.js | backend/scripts/auth_stepup_dev_toggle_01_check.js | backend | root:check:authstepupdevtoggle01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-DEV-TOGGLE-01-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_provider_local_default_01_check.js | backend/scripts/auth_stepup_provider_local_default_01_check.js | backend | root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01-CHECK |  | Owner or chain unclear |  |
