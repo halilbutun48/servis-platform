@@ -584,7 +584,47 @@ function looksLikeDetailContinuationRequest(message) {
 function looksLikeNextBestActionQuestion(message) {
   const text = normalizeText(message);
   if (!text) return false;
-  return /(sıradaki doğru işlem|siradaki dogru islem|bir sonraki doğru işlem|bir sonraki dogru islem|şu an en doğru adım|su an en dogru adim|şimdi en doğru işlem|simdi en dogru islem)/.test(text);
+  return matchesStandalonePhrase(text, [
+    'sıradaki doğru işlem',
+    'siradaki dogru islem',
+    'bir sonraki doğru işlem',
+    'bir sonraki dogru islem',
+    'bir sonraki adım ne',
+    'bir sonraki adim ne',
+    'şu an en doğru adım',
+    'su an en dogru adim',
+    'şimdi en doğru işlem',
+    'simdi en dogru islem',
+    'bundan sonra ne yapayım',
+    'bundan sonra ne yapmaliyim',
+    'bundan sonra ne yapmalıyım',
+    'nereden devam edeyim',
+    'hangi adıma geçeceğim',
+    'hangi adima gececegim',
+    'devamında ne var',
+    'devaminda ne var',
+    'burada sıradaki adım hangisi',
+    'burada siradaki adim hangisi',
+    'ne ile başlamalıyım',
+    'ne ile baslamaliyim',
+    'bu kayıt için ne yapmam gerekiyor',
+    'bu kayit icin ne yapmam gerekiyor',
+    'sırada hangi işlem var',
+    'sirada hangi islem var',
+    'iş akışında sıradaki adım nedir',
+    'is akisinda siradaki adim nedir',
+    'burada önce neyi tamamlayayım',
+    'burada once neyi tamamlayayim',
+    'burada devam etmek için ne eksik',
+    'burada devam etmek icin ne eksik',
+    'sonra ne olacak',
+    'şimdi hangi butona basacağım',
+    'simdi hangi butona basacagim',
+    'hangi butona basacağım',
+    'hangi butona basacagim',
+    'hangi butona basmalıyım',
+    'hangi butona basmaliyim',
+  ]);
 }
 
 function looksLikeCompanyPlanningSurfaceText(value) {
@@ -5473,6 +5513,22 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     guidedTaskMeta = null;
     questionType = 'NEXT_BEST_ACTION';
   }
+  if (
+    questionType === 'MISSING_DATA_HELP'
+    && companyPlanningNextActionQuestion
+    && /(planlama merkezi|rehberli mod|yeni plan oluştur|rehberi başlat|yeni plan)/.test(companyPlanningCenterSurfaceTextValue)
+  ) {
+    resolvedIntentMeta = {
+      ...resolvedIntentMeta,
+      questionType: 'NEXT_BEST_ACTION',
+      guidedTaskMeta: null,
+      matchedSignals: Array.isArray(resolvedIntentMeta.matchedSignals)
+        ? uniqueStrings([...resolvedIntentMeta.matchedSignals, 'NEXT_BEST_ACTION', 'company-planning-missing-data-next-best-action'])
+        : ['NEXT_BEST_ACTION', 'company-planning-missing-data-next-best-action'],
+    };
+    guidedTaskMeta = null;
+    questionType = 'NEXT_BEST_ACTION';
+  }
   reply = composeCopilotReasoningAnswer({
     ...reasoningAssistant,
     rawReply: reply,
@@ -5573,10 +5629,17 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
             : baseContextSummary,
       ].filter(Boolean).join(' ').trim();
   const actionPlanLabel = actionPlanLabelForRoleMode(roleMode, answerEntityType);
-  const responseQuestionType = contextPriority?.activeTopic === 'MISSING_DATA' || preserveSelectedRecordMissingDataIntent
+  const rawPlanningNextActionMessage = normalizeLooseText(firstNonEmpty(rawMessage, message, ''));
+  const preservePlanningNextBestAction = (
+    companyPlanningNextActionQuestion
+    || rawPlanningNextActionMessage.includes('devam etmek için ne eksik')
+  )
+    && /planlama merkezi/.test(companyPlanningCenterSurfaceTextValue);
+  const responseQuestionType = preservePlanningNextBestAction
+    ? 'NEXT_BEST_ACTION'
+    : contextPriority?.activeTopic === 'MISSING_DATA' || preserveSelectedRecordMissingDataIntent
     ? 'MISSING_DATA_HELP'
     : questionType;
-
   return {
     ok: true,
     provider: 'local-chat-help',

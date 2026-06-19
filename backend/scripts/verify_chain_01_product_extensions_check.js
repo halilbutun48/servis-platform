@@ -143,6 +143,7 @@ function main() {
   must(pkg, '"check:copiloteblockruntimeanswerintegration01": "node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js"', 'package.json keeps check:copiloteblockruntimeanswerintegration01');
   must(pkg, '"check:copilotguidedtaskengine01": "node backend/scripts/copilot_guided_task_engine_01_check.js"', 'package.json keeps check:copilotguidedtaskengine01');
   must(pkg, '"check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js"', 'package.json keeps check:copilotreasoninganswercomposer01');
+  must(pkg, '"check:ai03bparaphraseintentaudit01": "node backend/scripts/ai03b_paraphrase_intent_audit_01_check.js"', 'package.json keeps check:ai03bparaphraseintentaudit01');
   must(pkg, '"check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js"', 'package.json keeps check:seferabireasoningassistant01');
   must(pkg, '"check:seferabiallrolesreasoningassistant01": "node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js"', 'package.json keeps check:seferabiallrolesreasoningassistant01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');

@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-18
+Tarih: 2026-06-19
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `375`
+- Toplam package script entry: `376`
 - Toplam executable tracked file: `1167`
-- Combined registry row: `1542`
-- Root/backend/web/mobile package dağılımı: root `218`, backend `728`, web `90`, mobile `201`
+- Combined registry row: `1543`
+- Root/backend/web/mobile package dağılımı: root `219`, backend `729`, web `91`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -192,11 +192,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `563`
+- NEEDS_REVIEW: `566`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `309`
+- Eski sistem term eşleşmesi: `311`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -213,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 563 |
+| NEEDS_REVIEW | 566 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -285,6 +285,7 @@ Repo: `servis-platform`
 | root:check:copilotroutereviewhumanapproval01 | package.json | root | node backend/scripts/copilot_route_review_human_approval_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01 |  | Breaks canonical verification chain |  |
 | root:check:exceltoroutereadinessredteam01 | package.json | root | node backend/scripts/excel_to_route_readiness_redteam_01_check.js | verify-core | ACTIVE_CORE |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01 |  | Breaks canonical verification chain |  |
 | root:check:copiloteblockruntimeanswerintegration01 | package.json | root | node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01 |  | Breaks canonical verification chain |  |
+| root:check:ai03bparaphraseintentaudit01 | package.json | root | node backend/scripts/ai03b_paraphrase_intent_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BPARAPHRASEINTENTAUDIT-01 |  | Owner or chain unclear |  |
 | root:check:copilotguidedtaskengine01 | package.json | root | node backend/scripts/copilot_guided_task_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-GUIDED-TASK-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
@@ -817,6 +818,7 @@ Repo: `servis-platform`
 | pay_01d_payment_preview_csv_export_check.js | backend/scripts/pay_01d_payment_preview_csv_export_check.js | backend | root:check:pay01d | product | ACTIVE |  | PAY-01-D-PAYMENT-PREVIEW-CSV-EXPORT-CHECK |  | Owner or chain unclear | product check/helper |
 | pay_01e_payment_readonly_closure_check.js | backend/scripts/pay_01e_payment_readonly_closure_check.js | backend | root:check:pay01e | product | ACTIVE |  | PAY-01-E-PAYMENT-READONLY-CLOSURE-CHECK |  | Owner or chain unclear | product check/helper |
 | pay_safe_01_payment_write_gate_check.js | backend/scripts/pay_safe_01_payment_write_gate_check.js | backend | root:check:paysafe01 | product | ACTIVE |  | PAY-SAFE-01-PAYMENT-WRITE-GATE-CHECK |  | Owner or chain unclear | product check/helper |
+| plan_center_guided_flow_persistence_01_check.js | backend/scripts/plan_center_guided_flow_persistence_01_check.js | backend | root:check:plancenterguidedflowpersistence01 | review | NEEDS_REVIEW |  | PLAN-CENTER-GUIDED-FLOW-PERSISTENCE-01-CHECK |  | Owner or chain unclear |  |
 | product_flow_button_audit_01.mjs | backend/scripts/product_flow_button_audit_01.mjs | backend | root:check:productflowbuttonaudit01, root:smoke:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Owner or chain unclear |  |
 | product_flow_button_audit_01_check.js | backend/scripts/product_flow_button_audit_01_check.js | backend | root:check:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | project_spec_v1_future_strengthening_coverage_check.js | backend/scripts/project_spec_v1_future_strengthening_coverage_check.js | backend | backend:spec16check | review | NEEDS_REVIEW |  | PROJECT-SPEC-V-1-FUTURE-STRENGTHENING-COVERAGE-CHECK |  | Owner or chain unclear |  |
@@ -982,7 +984,7 @@ Repo: `servis-platform`
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
 | service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
-| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
+| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
 | google.js | backend/src/auth/google.js | backend |  | review | NEEDS_REVIEW |  | GOOGLE |  | Owner or chain unclear |  |
 | jwt.js | backend/src/auth/jwt.js | backend |  | review | NEEDS_REVIEW |  | JWT |  | Owner or chain unclear |  |
@@ -1071,7 +1073,7 @@ Repo: `servis-platform`
 | agreementRouteRefreshRouter.js | backend/src/routes/agreementRouteRefreshRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-ROUTER |  | Owner or chain unclear |  |
 | agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
 | agreementsHelpers.js | backend/src/routes/agreementsHelpers.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENTS-HELPERS |  | Owner or chain unclear |  |
-| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:cop03b, root:check:copilotairoadmap01, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
+| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:ai03bparaphraseintentaudit01, root:check:cop03b, root:check:copilotairoadmap01, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
 | auth.js | backend/src/routes/auth.js | backend | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
 | auth_step2.js | backend/src/routes/auth_step2.js | backend |  | review | NEEDS_REVIEW |  | AUTH-STEP-2 |  | Owner or chain unclear |  |
 | availability.js | backend/src/routes/availability.js | backend | mobile:check:m96a | review | NEEDS_REVIEW |  | AVAILABILITY |  | Owner or chain unclear |  |
@@ -1261,6 +1263,7 @@ Repo: `servis-platform`
 | offerQualityRanking.js | web/src/utils/offerQualityRanking.js | web |  | review | NEEDS_REVIEW |  | OFFER-QUALITY-RANKING |  | Owner or chain unclear |  |
 | offlineQueue.js | web/src/utils/offlineQueue.js | web |  | review | NEEDS_REVIEW |  | OFFLINE-QUEUE |  | Owner or chain unclear |  |
 | paths.js | web/src/utils/paths.js | web |  | review | NEEDS_REVIEW |  | PATHS |  | Owner or chain unclear |  |
+| planCenterOverlayLayer.js | web/src/utils/planCenterOverlayLayer.js | web |  | review | NEEDS_REVIEW |  | PLAN-CENTER-OVERLAY-LAYER |  | Owner or chain unclear |  |
 | providerScores.js | web/src/utils/providerScores.js | web |  | review | NEEDS_REVIEW |  | PROVIDER-SCORES |  | Owner or chain unclear |  |
 | publicBaseUrl.js | web/src/utils/publicBaseUrl.js | web |  | review | NEEDS_REVIEW |  | PUBLIC-BASE-URL |  | Owner or chain unclear |  |
 | regionOwnership.js | web/src/utils/regionOwnership.js | web |  | review | NEEDS_REVIEW |  | REGION-OWNERSHIP |  | Owner or chain unclear |  |
