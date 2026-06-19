@@ -86,6 +86,7 @@ const steps = [
   'check:copilotguidedtaskengine01',
   'check:copilotreasoninganswercomposer01',
   'check:ai03bparaphraseintentaudit01',
+  'check:ai03bsemanticvisibleaudit01',
   'check:seferabireasoningassistant01',
   'check:seferabiallrolesreasoningassistant01',
   'check:uxcopilotsmartchips01',
