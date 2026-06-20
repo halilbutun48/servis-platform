@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `378`
-- Toplam executable tracked file: `1170`
-- Combined registry row: `1548`
-- Root/backend/web/mobile package dağılımı: root `221`, backend `732`, web `91`, mobile `201`
+- Toplam executable tracked file: `1171`
+- Combined registry row: `1549`
+- Root/backend/web/mobile package dağılımı: root `221`, backend `733`, web `91`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -192,11 +192,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `571`
+- NEEDS_REVIEW: `572`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `312`
+- Eski sistem term eşleşmesi: `313`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -213,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 571 |
+| NEEDS_REVIEW | 572 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -961,6 +961,7 @@ Repo: `servis-platform`
 | helpComposerEntityRuntime.js | backend/src/ai/chat/helpComposerEntityRuntime.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-ENTITY-RUNTIME |  | Owner or chain unclear |  |
 | helpComposerSelectedRuntime.js | backend/src/ai/chat/helpComposerSelectedRuntime.js | backend |  | review | NEEDS_REVIEW |  | HELP-COMPOSER-SELECTED-RUNTIME |  | Owner or chain unclear |  |
 | intentRouter.js | backend/src/ai/chat/intentRouter.js | backend |  | review | NEEDS_REVIEW |  | INTENT-ROUTER |  | Owner or chain unclear |  |
+| intentRouterCore.js | backend/src/ai/chat/intentRouterCore.js | backend |  | review | NEEDS_REVIEW |  | INTENT-ROUTER-CORE |  | Owner or chain unclear |  |
 | osrmRouteDraftFromExcelPolicy.js | backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js | backend |  | review | NEEDS_REVIEW |  | OSRM-ROUTE-DRAFT-FROM-EXCEL-POLICY |  | Owner or chain unclear |  |
 | qualityScorer.js | backend/src/ai/chat/qualityScorer.js | backend |  | review | NEEDS_REVIEW |  | QUALITY-SCORER |  | Owner or chain unclear |  |
 | replyShapes.js | backend/src/ai/chat/replyShapes.js | backend |  | review | NEEDS_REVIEW |  | REPLY-SHAPES |  | Owner or chain unclear |  |
