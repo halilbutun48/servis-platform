@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `377`
+- Toplam package script entry: `378`
 - Toplam executable tracked file: `1169`
-- Combined registry row: `1546`
-- Root/backend/web/mobile package dağılımı: root `220`, backend `731`, web `91`, mobile `201`
+- Combined registry row: `1547`
+- Root/backend/web/mobile package dağılımı: root `221`, backend `731`, web `91`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -287,6 +287,7 @@ Repo: `servis-platform`
 | root:check:copiloteblockruntimeanswerintegration01 | package.json | root | node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01 |  | Breaks canonical verification chain |  |
 | root:check:ai03bparaphraseintentaudit01 | package.json | root | node backend/scripts/ai03b_paraphrase_intent_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BPARAPHRASEINTENTAUDIT-01 |  | Owner or chain unclear |  |
 | root:check:ai03bsemanticvisibleaudit01 | package.json | root | node backend/scripts/ai03b_semantic_visible_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BSEMANTICVISIBLEAUDIT-01 |  | Owner or chain unclear |  |
+| root:check:ai03bsemanticvisiblelivematrix01 | package.json | root | node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BSEMANTICVISIBLELIVEMATRIX-01 |  | Owner or chain unclear |  |
 | root:check:copilotguidedtaskengine01 | package.json | root | node backend/scripts/copilot_guided_task_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-GUIDED-TASK-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
@@ -1186,6 +1187,7 @@ Repo: `servis-platform`
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
 | ai03b_semantic_visible_audit_01_check.js | backend/scripts/ai03b_semantic_visible_audit_01_check.js | backend | root:check:ai03bsemanticvisibleaudit01 | review | NEEDS_REVIEW |  | AI-03-B-SEMANTIC-VISIBLE-AUDIT-01-CHECK |  | Owner or chain unclear |  |
+| ai03b_semantic_visible_live_matrix_01_check.js | backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | backend | root:check:ai03bsemanticvisiblelivematrix01 | review | NEEDS_REVIEW |  | AI-03-B-SEMANTIC-VISIBLE-LIVE-MATRIX-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

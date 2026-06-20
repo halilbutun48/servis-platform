@@ -286,6 +286,7 @@ function main() {
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    "backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
     "backend/scripts/ux_marketplace_panels_01_check.js",
     "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md",
     "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md",

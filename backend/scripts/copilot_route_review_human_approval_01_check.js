@@ -332,6 +332,7 @@ async function main() {
     'backend/scripts/onboarding_review_final_audit_01_check.js',
     'backend/scripts/invite_based_membership_01_check.js',
     'backend/scripts/verified_supplier_01_check.js',
+    'backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js',
     'docs/COPILOT_GUIDED_TASK_ENGINE_01.md',
     'docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md',
     'docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md',

@@ -202,6 +202,7 @@ function main() {
   const status = statusNames();
   const exactAllowed = new Set([
     "backend/scripts/ux_brand_login_premium_01_check.js",
+    "backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
     "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
     "backend/scripts/onboarding_review_01_check.js",
     "backend/scripts/onboarding_review_final_audit_01_check.js",

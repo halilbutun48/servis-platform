@@ -129,6 +129,7 @@ function main() {
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+    "backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
     "backend/scripts/ux_company_agreements_mobile_parity_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",

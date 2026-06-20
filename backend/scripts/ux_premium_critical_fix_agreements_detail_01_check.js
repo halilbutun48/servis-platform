@@ -401,6 +401,7 @@ function main() {
   const status = statusNames().filter((file) => !cleanupScopeFiles.includes(file));
   const exactAllowed = new Set([
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
+    "backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js",
     "backend/scripts/product_flow_button_audit_01_check.js",

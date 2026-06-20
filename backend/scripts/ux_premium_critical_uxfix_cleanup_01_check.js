@@ -518,6 +518,7 @@ function main() {
       "backend/scripts/onboarding_review_final_audit_01_check.js",
       "backend/scripts/quality_gate_final_01_check.js",
       "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
+      "backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
       "backend/scripts/ux_company_personel_access_mobile_parity_01_check.js",
       "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
       "backend/scripts/ux_panel_standard_architecture_01_check.js",
