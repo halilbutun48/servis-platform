@@ -12,6 +12,99 @@ const FAILURE_TTL_MS = 2000;
 const MAX_CONCURRENT = 1;
 const AUTH_REQUEST_GAP_MS = 500;
 const STORAGE_PREFIX = "ui-data-cache:v1:";
+const FETCH_PATCH_FLAG = "__uiDataCacheFetchProxyInstalled__";
+
+function requestPathFromInput(input) {
+  const raw = typeof input === "string" ? input : input?.url || "";
+  if (!raw) return "";
+  try {
+    return new URL(raw, globalThis.location?.href || "http://localhost").pathname;
+  } catch {
+    return raw;
+  }
+}
+
+function isDriverRoutePath(path) {
+  const p = String(path || "");
+  return p === "/api/driver/route/active" || /^\/api\/driver\/shifts\/[^/]+\/route$/.test(p);
+}
+
+function ageSecondsFromIso(iso) {
+  if (!iso) return null;
+  const at = Date.parse(iso);
+  if (!Number.isFinite(at)) return null;
+  return Math.max(0, Math.round((Date.now() - at) / 1000));
+}
+
+function driverRouteUiStatusFromPayload(payload) {
+  const explicit = String(
+    payload?.vehicle?.gpsState?.lastUiStatus ||
+      payload?.last?.status ||
+      payload?.last?.state ||
+      payload?.vehicle?.gpsLast?.status ||
+      payload?.vehicle?.gpsLast?.state ||
+      "",
+  ).trim().toUpperCase();
+
+  if (explicit === "LIVE") return "LIVE";
+  if (explicit === "OFFLINE") return "OFFLINE";
+  if (explicit === "STALE") return "OFFLINE";
+
+  const atIso =
+    payload?.vehicle?.gpsLast?.at ||
+    payload?.vehicle?.gpsLast?.ts ||
+    payload?.last?.at ||
+    payload?.last?.ts ||
+    null;
+
+  const ageSeconds = ageSecondsFromIso(atIso);
+  if (ageSeconds == null) return null;
+  if (ageSeconds >= 20) return "OFFLINE";
+  return "LIVE";
+}
+
+function normalizeDriverRoutePayload(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload;
+  if (!payload.vehicle || typeof payload.vehicle !== "object") return payload;
+
+  const status = driverRouteUiStatusFromPayload(payload);
+  if (!status) return payload;
+
+  const vehicle = { ...payload.vehicle };
+  const gpsState = vehicle.gpsState && typeof vehicle.gpsState === "object" ? { ...vehicle.gpsState } : {};
+  gpsState.lastUiStatus = status;
+  vehicle.gpsState = gpsState;
+
+  return { ...payload, vehicle };
+}
+
+if (typeof globalThis.fetch === "function" && !globalThis[FETCH_PATCH_FLAG]) {
+  const nativeFetch = globalThis.fetch.bind(globalThis);
+  globalThis.fetch = async (...args) => {
+    const response = await nativeFetch(...args);
+    const path = requestPathFromInput(args[0]);
+    if (!isDriverRoutePath(path) || !response?.ok) return response;
+
+    const contentType = String(response.headers?.get?.("content-type") || "");
+    if (!contentType.includes("application/json")) return response;
+
+    try {
+      const payload = await response.clone().json();
+      const normalized = normalizeDriverRoutePayload(payload);
+      if (normalized === payload) return response;
+      const headers = new Headers(response.headers);
+      headers.delete("content-length");
+      return new Response(JSON.stringify(normalized), {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    } catch {
+      return response;
+    }
+  };
+  globalThis[FETCH_PATCH_FLAG] = true;
+}
 
 function bumpCacheVersion() {
   cacheVersion += 1;
