@@ -629,19 +629,20 @@ async function runScenario(page, scenario, viewportName, output) {
 
   if (scenario.kind === "routePreview") {
     const previewButton = page.getByRole("button", { name: /Rota etkisini önizle/i }).first();
+    const previewCard = page.locator('[data-role="boarding-route-impact-preview"]').first();
+    const readPreviewText = async () => {
+      try {
+        return await previewCard.innerText({ timeout: 3000 });
+      } catch {
+        return await getText(page);
+      }
+    };
     if (await previewButton.count().catch(() => 0)) {
       await previewButton.click({ timeout: 5000 }).catch((error) => {
         result.notes.push(`Rota önizleme click failed: ${error?.message || String(error)}`);
       });
       await page.waitForTimeout(700);
-      const previewCard = page.locator('[data-role="boarding-route-impact-preview"]').first();
-      const afterText = await (async () => {
-        try {
-          return await previewCard.innerText({ timeout: 3000 });
-        } catch {
-          return await getText(page);
-        }
-      })();
+      const afterText = await readPreviewText();
       const afterHay = normalize(afterText);
       const hasCompactSummary =
         /karar ozeti|asama|denge|sonraki adim|ayrintilari ac|ayrintilari gizle/i.test(afterHay);
@@ -652,6 +653,23 @@ async function runScenario(page, scenario, viewportName, output) {
       } else {
         result.status = bumpStatus(result.status, "PASS");
         result.notes.push("Rota önizleme kısa karar kartı halinde açılıyor.");
+      }
+      result.screenshots.push(await screenshot(page, scenario, viewportName, "after"));
+      result.textPreview = afterText.slice(0, 4000);
+      result.textLength = afterText.length;
+    } else if (scenario.role === "room") {
+      const afterText = await readPreviewText();
+      const afterHay = normalize(afterText);
+      const hasCompactSummary =
+        /readonly onizleme|bir satir secince rota\/durak etkisi burada gorunur|ozet ustte|ayrintilar tablarda kalir|canli saglik ve risk ozeti/i.test(
+          afterHay
+        );
+      result.checks.compactRoutePreview = hasCompactSummary;
+      if (!hasCompactSummary) {
+        result.status = bumpStatus(result.status, "UX-FIX");
+        result.notes.push("Rota önizleme compact summary-first görünmüyor.");
+      } else {
+        result.notes.push("Rota önizleme kısa karar kartı olarak zaten açık.");
       }
       result.screenshots.push(await screenshot(page, scenario, viewportName, "after"));
       result.textPreview = afterText.slice(0, 4000);
