@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `376`
-- Toplam executable tracked file: `1168`
-- Combined registry row: `1544`
-- Root/backend/web/mobile package dağılımı: root `219`, backend `730`, web `91`, mobile `201`
+- Toplam package script entry: `377`
+- Toplam executable tracked file: `1169`
+- Combined registry row: `1546`
+- Root/backend/web/mobile package dağılımı: root `220`, backend `731`, web `91`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -192,7 +192,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `567`
+- NEEDS_REVIEW: `569`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
@@ -213,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 567 |
+| NEEDS_REVIEW | 569 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -286,6 +286,7 @@ Repo: `servis-platform`
 | root:check:exceltoroutereadinessredteam01 | package.json | root | node backend/scripts/excel_to_route_readiness_redteam_01_check.js | verify-core | ACTIVE_CORE |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01 |  | Breaks canonical verification chain |  |
 | root:check:copiloteblockruntimeanswerintegration01 | package.json | root | node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01 |  | Breaks canonical verification chain |  |
 | root:check:ai03bparaphraseintentaudit01 | package.json | root | node backend/scripts/ai03b_paraphrase_intent_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BPARAPHRASEINTENTAUDIT-01 |  | Owner or chain unclear |  |
+| root:check:ai03bsemanticvisibleaudit01 | package.json | root | node backend/scripts/ai03b_semantic_visible_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BSEMANTICVISIBLEAUDIT-01 |  | Owner or chain unclear |  |
 | root:check:copilotguidedtaskengine01 | package.json | root | node backend/scripts/copilot_guided_task_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-GUIDED-TASK-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
@@ -985,7 +986,7 @@ Repo: `servis-platform`
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
 | service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
-| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
+| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
 | google.js | backend/src/auth/google.js | backend |  | review | NEEDS_REVIEW |  | GOOGLE |  | Owner or chain unclear |  |
 | jwt.js | backend/src/auth/jwt.js | backend |  | review | NEEDS_REVIEW |  | JWT |  | Owner or chain unclear |  |
@@ -1074,7 +1075,7 @@ Repo: `servis-platform`
 | agreementRouteRefreshRouter.js | backend/src/routes/agreementRouteRefreshRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-ROUTER |  | Owner or chain unclear |  |
 | agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
 | agreementsHelpers.js | backend/src/routes/agreementsHelpers.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENTS-HELPERS |  | Owner or chain unclear |  |
-| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:ai03bparaphraseintentaudit01, root:check:cop03b, root:check:copilotairoadmap01, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
+| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:cop03b, root:check:copilotairoadmap01, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
 | auth.js | backend/src/routes/auth.js | backend | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
 | auth_step2.js | backend/src/routes/auth_step2.js | backend |  | review | NEEDS_REVIEW |  | AUTH-STEP-2 |  | Owner or chain unclear |  |
 | availability.js | backend/src/routes/availability.js | backend | mobile:check:m96a | review | NEEDS_REVIEW |  | AVAILABILITY |  | Owner or chain unclear |  |
@@ -1184,6 +1185,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| ai03b_semantic_visible_audit_01_check.js | backend/scripts/ai03b_semantic_visible_audit_01_check.js | backend | root:check:ai03bsemanticvisibleaudit01 | review | NEEDS_REVIEW |  | AI-03-B-SEMANTIC-VISIBLE-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
