@@ -899,6 +899,7 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   ));
   const theme = selectedDiagnosticTheme(message);
   if (theme) return theme;
+  if (isDirectRouteRequest(text) && extractMentionedScreenKind(text)) return 'NEXT_SCREEN';
   if (looksLikeScreenStartQuestion(text)) return 'SCREEN_PURPOSE';
   if (looksLikeOnboardingStartQuestion(text)) return 'FIRST_CONTROL';
   if (questionType === 'SCREEN_PURPOSE') return 'SCREEN_PURPOSE';
@@ -5363,6 +5364,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     && /(bu\s+kayitta|secili\s+kayitta|ayni\s+kayitta|ayni\s+satirda|bu\s+satirda).*(ne eksik|eksigi ne|eksik ne var|hangi alan bos|eksik alan|eksik veri|hangi veri eksik|burda ne eksik|burada ne eksik)/.test(rawMessageNormalized);
   const expandedMessage = expandFollowUpMessage(rawMessage, conversationState, screenContext);
   const effectiveMessage = extractPrimaryConcern(expandedMessage);
+  const intentMessage = isDirectRouteRequest(rawMessage) ? rawMessage : effectiveMessage;
   const effectiveScreenDefinition = requestEntityType === 'screen'
     ? resolveReferencedScreenDefinition(user, screenContext, screenDefinition, firstNonEmpty(rawMessage, effectiveMessage))
     : screenDefinition;
@@ -5370,7 +5372,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const screenPath = effectiveScreenDefinition?.path || effectiveScreenContext?.path || '';
   const continuity = buildContinuityMeta({ message: rawMessage, conversationState, screenContext: effectiveScreenContext, requestEntityType, requestEntityId, screenPath });
   const continuityMeta = continuity;
-  const intentMeta = detectQuestionIntent(effectiveMessage, { entityType: requestEntityType, screenPath, sourceScreenPath: firstNonEmpty(screenContext?.path, ''), roleMode, userRole, conversationState, originalMessage: rawMessage });
+  const intentMeta = detectQuestionIntent(intentMessage, { entityType: requestEntityType, screenPath, sourceScreenPath: firstNonEmpty(screenContext?.path, ''), roleMode, userRole, conversationState, originalMessage: rawMessage });
   let resolvedIntentMeta = intentMeta;
   let guidedTaskMeta = resolvedIntentMeta.guidedTaskMeta || null;
   let questionType = resolvedIntentMeta.questionType;
@@ -6649,6 +6651,7 @@ function buildQualityHints({ reply, questionType, quickActions, intentConfidence
   const actionReady = /(şimdi:|simdi:|şimdi yap:|simdi yap:|önce:|once:|ilk bakılacak yer:|ilk bakilacak yer:|ilk kontrol:|ilk kontrol\s)/.test(normalizedText)
     || String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
     || String(questionType || '') === 'LOCATION_HELP'
+    || ['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))
     || String(questionType || '') === 'DETAIL_FLOW'
     || String(questionType || '') === 'ROLE_HELP'
     || String(questionType || '') === 'WHY_BLOCKED'
@@ -6702,8 +6705,11 @@ function buildUncertaintyMeta({ questionType, intentConfidence, qualityHints, sc
   const actionable = Boolean(qualityHints?.actionable);
   const hasSupportAction = Boolean(qualityHints?.hasSupportAction);
   const concise = Boolean(qualityHints?.concise);
-  const needsVerification = confidence < 0.72 || !actionable || !hasSupportAction;
-  const cautionLevel = confidence >= 0.88 && actionable && hasSupportAction ? 'LOW' : (confidence >= 0.72 && actionable ? 'MEDIUM' : 'HIGH');
+  const ambiguousQuestion = ['SCREEN_PURPOSE', 'OPEN'].includes(String(questionType || ''));
+  const needsVerification = confidence < 0.72 || !actionable || !hasSupportAction || (ambiguousQuestion && confidence <= 0.72);
+  const cautionLevel = confidence >= 0.88 && actionable && hasSupportAction
+    ? 'LOW'
+    : (confidence >= 0.72 && actionable && !(ambiguousQuestion && confidence <= 0.72) ? 'MEDIUM' : 'HIGH');
   const labelMap = { LOW: 'Kararlı öneri', MEDIUM: 'Kontrollü öneri', HIGH: 'Önce kontrol et' };
   const summaryMap = {
     LOW: 'Bu cevap güçlü sinyallere dayanıyor.',
