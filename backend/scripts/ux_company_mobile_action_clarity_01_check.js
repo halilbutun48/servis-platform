@@ -575,6 +575,7 @@ function main() {
     "backend/src/ai/chat/answerQualityPolicy.js",
     "backend/src/ai/chat/helpComposer.js",
     "backend/src/ai/chat/intentRouter.js",
+    "backend/src/ai/chat/intentRouterCore.js",
     "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
     "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
     "backend/src/ai/chat/seferAbiReasoningAssistant.js",

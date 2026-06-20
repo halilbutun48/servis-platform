@@ -276,6 +276,7 @@ async function main() {
     'backend/src/ai/chat/answerQualityPolicy.js',
     'backend/src/ai/chat/helpComposer.js',
     'backend/src/ai/chat/intentRouter.js',
+    'backend/src/ai/chat/intentRouterCore.js',
     'backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js',
     'backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js',
     'docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md',

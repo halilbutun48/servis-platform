@@ -420,6 +420,7 @@ function main() {
     "backend/src/ai/chat/answerQualityPolicy.js",
     "backend/src/ai/chat/helpComposer.js",
     "backend/src/ai/chat/intentRouter.js",
+    "backend/src/ai/chat/intentRouterCore.js",
     "backend/src/ai/chat/copilotGuidedTaskEngine.js",
     "backend/src/ai/chat/goldenQuestionPack.js",
     "backend/src/ai/chat/qualityScorer.js",

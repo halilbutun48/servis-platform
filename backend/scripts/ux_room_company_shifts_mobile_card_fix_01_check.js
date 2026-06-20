@@ -426,6 +426,7 @@ function main() {
     "backend/src/ai/chat/answerQualityPolicy.js",
     "backend/src/ai/chat/helpComposer.js",
     "backend/src/ai/chat/intentRouter.js",
+    "backend/src/ai/chat/intentRouterCore.js",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js",
     "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
