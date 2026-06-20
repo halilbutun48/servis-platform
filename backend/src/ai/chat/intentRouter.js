@@ -1101,6 +1101,12 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     }
   }
 
+  if (isDirectScreenSteer(text) && mentionsScreenWord(text) && !['NEXT_SCREEN', 'GO_TO'].includes(bestType)) {
+    bestType = 'NEXT_SCREEN';
+    bestScore = Math.max(bestScore, 11);
+    signals.NEXT_SCREEN = uniqueStrings([...(signals.NEXT_SCREEN || []), 'direct-screen-route-override']);
+  }
+
   if (bestScore <= 0) {
     if (options.entityType === 'vehicle') bestType = 'LOCATION_HELP';
     else if (options.entityType === 'shift') bestType = 'STATUS_HELP';

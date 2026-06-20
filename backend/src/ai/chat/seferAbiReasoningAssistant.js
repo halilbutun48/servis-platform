@@ -79,6 +79,14 @@ const SEFER_ABI_REASONING_ASSISTANT_DIRECT_REPLIES = new Set([
   'FIELD_BUTTON_HELP',
 ]);
 
+const SEFER_ABI_REASONING_ASSISTANT_NOW_LEAD_STRIP_QUESTION_TYPES = new Set([
+  'SCREEN_FOCUS',
+  'SCREEN_PURPOSE',
+  'SCREEN_EXPLANATION_HELP',
+  'PRODUCT_OVERVIEW_HELP',
+  'ROLE_EXPLANATION_HELP',
+]);
+
 export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
   SUPER_ADMIN: Object.freeze({
     role: 'SUPER_ADMIN',
@@ -754,6 +762,11 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     message,
     analysis,
     contextPriority,
+    screenPath,
+    screenDefinition,
+    screenContext,
+    sourceScreenDefinition,
+    sourceScreenContext,
   });
   return Object.freeze({
     assistantVersion: SEFER_ABI_REASONING_ASSISTANT_VERSION,
@@ -818,10 +831,20 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
   });
 }
 
+function looksLikeRoomShiftClarifyingQuestion(snapshot = {}) {
+  const role = String(firstNonEmpty(snapshot?.effectiveRole, snapshot?.roleProfile?.role, '')).toLowerCase();
+  if (role !== 'room') return false;
+  const screenPath = String(firstNonEmpty(snapshot?.sourceScreenDefinition?.path, snapshot?.sourceScreenContext?.path, snapshot?.screenContext?.path, snapshot?.screenPath, '')).toLowerCase();
+  if (!screenPath.includes('/room/shifts')) return false;
+  const text = normalizeText(firstNonEmpty(snapshot?.message, snapshot?.rawMessage, ''));
+  return /(?:ilgili\s+durumu\s+sor|netleştirmek\s+için\s+ne\s+sorars[ıi]n|netlestirmek\s+icin\s+ne\s+sorars[ıi]n|eksik\s+bilgi\s+ne)/.test(text);
+}
+
 export function detectSeferAbiReasoningMode(snapshot = {}) {
   if (snapshot.explicitBoundary) return 'SAFE_REFUSAL_WITH_ALTERNATIVE';
   const hasGuidedTaskMeta = Boolean(snapshot.guidedTaskMeta?.familyId || snapshot.contextPriority?.guidedTaskMeta?.familyId);
-  if (!hasGuidedTaskMeta && !snapshot.selectedContextPresent && snapshot.clarifyingQuestion && snapshot.contextPriority?.needsSelection) return 'CLARIFYING_QUESTION';
+  if (!hasGuidedTaskMeta && looksLikeRoomShiftClarifyingQuestion(snapshot)) return 'CLARIFYING_QUESTION';
+  if (!hasGuidedTaskMeta && snapshot.clarifyingQuestion && snapshot.contextPriority?.needsSelection && !snapshot.selectedContextPresent) return 'CLARIFYING_QUESTION';
   if (snapshot.repeatCount > 0) return 'REPETITION_CONTROL';
   if (snapshot.hasReasoningSignal) return 'CONTEXTUAL_REASONING';
   return 'PASS_THROUGH';
@@ -837,8 +860,9 @@ function composeReasoningLead(snapshot) {
   const needsPrefix = !textIncludes(rawReply, roleProfile.frame);
   const simpleRoleMode = String(snapshot?.roleMode || '').toUpperCase() === 'SIMPLE';
   const hasGuidedTask = Boolean(snapshot?.guidedTaskMeta?.familyId || snapshot?.contextPriority?.guidedTaskMeta?.familyId);
+  const avoidNowLead = SEFER_ABI_REASONING_ASSISTANT_NOW_LEAD_STRIP_QUESTION_TYPES.has(String(snapshot?.questionType || ''));
   const prefix = needsPrefix
-    ? (simpleRoleMode ? 'Şimdi:' : (hasGuidedTask ? 'Şimdi:' : roleProfile.frame))
+    ? (simpleRoleMode ? (avoidNowLead ? roleProfile.frame : 'Şimdi:') : (hasGuidedTask ? (avoidNowLead ? roleProfile.frame : 'Şimdi:') : roleProfile.frame))
     : '';
   const parts = [];
   if (prefix) parts.push(prefix);
@@ -846,7 +870,7 @@ function composeReasoningLead(snapshot) {
   if (sharedScreenPrefix) parts.push(sharedScreenPrefix);
   if (selectedRecordStatus && !textIncludes(rawReply, selectedRecordStatus)) parts.push(`Seçili kayıt: ${selectedRecordStatus}.`);
   if (reasoningLead && !textIncludes(rawReply, reasoningLead)) parts.push(reasoningLead);
-  if (nextBestAction && !textIncludes(rawReply, nextBestAction)) parts.push(`Şimdi: ${nextBestAction}`);
+  if (nextBestAction && !textIncludes(rawReply, nextBestAction)) parts.push(avoidNowLead ? nextBestAction : `Şimdi: ${nextBestAction}`);
   if (boundaryText && !textIncludes(rawReply, boundaryText)) parts.push(boundaryText);
   if (roleProfile.role === 'PERSONEL' && !textIncludes(rawReply, 'KVKK')) parts.push('Odak: KVKK.');
   if (roleProfile.role === 'PARENT' && !textIncludes(rawReply, 'çocuk')) parts.push('Odak: çocuk.');
@@ -915,12 +939,7 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
   }
 
   if (snapshot.mode === 'CLARIFYING_QUESTION') {
-    const sharedScreenPrefix = buildSharedScreenPrefix(snapshot);
     return joinReply([
-      roleProfile.frame,
-      sharedScreenPrefix,
-      snapshot?.selectedRecordStatus ? `Seçili kayıt: ${snapshot.selectedRecordStatus}.` : '',
-      firstNonEmpty(snapshot?.reasoningLead, ''),
       `Netleştirelim: ${firstNonEmpty(snapshot?.clarifyingQuestion, roleProfile.clarifyingQuestion, 'Hangi kayıt için bakayım?')}`,
       `Alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik alanı birlikte kontrol edelim.')}`,
     ], roleProfile.maxLength);

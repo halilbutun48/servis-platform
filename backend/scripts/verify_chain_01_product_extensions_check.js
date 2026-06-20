@@ -145,6 +145,7 @@ function main() {
   must(pkg, '"check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js"', 'package.json keeps check:copilotreasoninganswercomposer01');
   must(pkg, '"check:ai03bparaphraseintentaudit01": "node backend/scripts/ai03b_paraphrase_intent_audit_01_check.js"', 'package.json keeps check:ai03bparaphraseintentaudit01');
   must(pkg, '"check:ai03bsemanticvisibleaudit01": "node backend/scripts/ai03b_semantic_visible_audit_01_check.js"', 'package.json keeps check:ai03bsemanticvisibleaudit01');
+  must(pkg, '"check:ai03bsemanticvisiblelivematrix01": "node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js"', 'package.json keeps check:ai03bsemanticvisiblelivematrix01');
   must(pkg, '"check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js"', 'package.json keeps check:seferabireasoningassistant01');
   must(pkg, '"check:seferabiallrolesreasoningassistant01": "node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js"', 'package.json keeps check:seferabiallrolesreasoningassistant01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
@@ -321,6 +322,7 @@ function main() {
   'check:copilotreasoninganswercomposer01',
   'check:ai03bparaphraseintentaudit01',
   'check:ai03bsemanticvisibleaudit01',
+  'check:ai03bsemanticvisiblelivematrix01',
   'check:seferabireasoningassistant01',
   'check:seferabiallrolesreasoningassistant01',
   'check:uxcopilotsmartchips01',

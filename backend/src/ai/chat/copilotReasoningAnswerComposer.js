@@ -32,6 +32,14 @@ export const COPILOT_REASONING_ANSWER_COMPOSER_ACTION_LEAD_QUESTION_TYPES = Obje
   'FAKE_SUCCESS_REQUEST_BLOCKED',
 ]);
 
+const COPILOT_REASONING_ANSWER_COMPOSER_NOW_LEAD_STRIP_QUESTION_TYPES = new Set([
+  'SCREEN_FOCUS',
+  'SCREEN_PURPOSE',
+  'SCREEN_EXPLANATION_HELP',
+  'PRODUCT_OVERVIEW_HELP',
+  'ROLE_EXPLANATION_HELP',
+]);
+
 export const COPILOT_REASONING_ANSWER_COMPOSER_PROGRESS_COMMANDS = Object.freeze([
   'STEP_ENTERED',
   'RESULT_CHECK',
@@ -88,6 +96,14 @@ function capitalizeFirstSentence(text) {
 function stripLeadMarker(text) {
   return String(text || '')
     .replace(/^\s*(?:Şimdi yap|Şimdi|Kısaca|Kısa cevap|Sade cevap)\s*:\s*/i, '')
+    .trim();
+}
+
+function stripNowLeadMarkers(text) {
+  return String(text || '')
+    .replace(/\bŞimdi:\s*/gi, ' ')
+    .replace(/\bSimdi:\s*/gi, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -204,7 +220,7 @@ function buildProgressLead(snapshot = {}, reply = '') {
     case 'STEP_ENTERED':
       return containsNormalized(replyText, 'girdin') ? '' : 'Şimdi: Girdin, tamam.';
     case 'RESULT_CHECK':
-      return containsNormalized(replyText, 'birlikte kontrol') ? '' : 'Şimdi: Yaptığını gördüm; şimdi sonucu birlikte kontrol edelim.';
+      return containsNormalized(replyText, 'birlikte kontrol') ? '' : 'Şimdi: Yaptığını gördüm; şimdi birlikte kontrol edelim.';
     case 'ALTERNATIVE_PATH':
       return [
         'Şimdi: Bulamadıysan alternatif menü yolunu birlikte açalım.',
@@ -276,6 +292,15 @@ function shouldPreserveGuidedTaskLead(snapshot = {}) {
     return true;
   }
   return [...COPILOT_REASONING_ANSWER_COMPOSER_ACTION_LEAD_FAMILY_IDS].some((value) => String(familyId).includes(value));
+}
+
+function shouldStripNowLead(snapshot = {}) {
+  return COPILOT_REASONING_ANSWER_COMPOSER_NOW_LEAD_STRIP_QUESTION_TYPES.has(String(snapshot?.questionType || ''));
+}
+
+function finalizeReply(snapshot, reply, maxLength = 360) {
+  const value = shouldStripNowLead(snapshot) ? stripNowLeadMarkers(reply) : reply;
+  return limitText(value, maxLength);
 }
 
 function buildFallbackReply(snapshot = {}) {
@@ -366,7 +391,7 @@ export function composeCopilotReasoningAnswer(snapshot = {}) {
     ], maxLength);
   }
   if (overrideFinalReply) {
-    return limitText(overrideFinalReply, maxLength);
+    return finalizeReply(snapshot, overrideFinalReply, maxLength);
   }
   const rawReplyText = String(snapshot?.rawReply || '');
   const preserveGuidedTaskLead = shouldPreserveGuidedTaskLead(snapshot)
@@ -376,13 +401,19 @@ export function composeCopilotReasoningAnswer(snapshot = {}) {
       (shouldPreserveActionLead(snapshot) || preserveGuidedTaskLead) ? rawReplyText : stripLeadMarker(rawReplyText),
     ),
   );
+  if (['SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP'].includes(questionType) && rawReply) {
+    const directReply = directRoleLead && !containsNormalized(rawReply, roleName)
+      ? joinParts([directRoleLead, rawReply], maxLength)
+      : rawReply;
+    return finalizeReply(snapshot, joinParts([directReply, buildDirectQuestionTail(snapshot, rawReply)], maxLength), maxLength);
+  }
   const fallback = buildFallbackReply(snapshot);
 
   if (!shouldUseFallback(snapshot, rawReply)) {
     const directReply = directRoleLead && !containsNormalized(rawReply, roleName)
       ? joinParts([directRoleLead, rawReply], maxLength)
       : rawReply;
-    return limitText(directReply, maxLength);
+    return finalizeReply(snapshot, directReply, maxLength);
   }
 
   const pieces = [];
@@ -394,7 +425,7 @@ export function composeCopilotReasoningAnswer(snapshot = {}) {
   if (tail) pieces.push(tail);
 
   const reply = joinParts(pieces, maxLength);
-  if (reply) return reply;
-  if (fallback) return fallback;
-  return limitText(rawReply, maxLength);
+  if (reply) return finalizeReply(snapshot, reply, maxLength);
+  if (fallback) return finalizeReply(snapshot, fallback, maxLength);
+  return finalizeReply(snapshot, rawReply, maxLength);
 }

@@ -1000,7 +1000,7 @@ function buildBlockedReply(family, screenLabel = 'bu ekran') {
   const advice = firstNonEmpty(family?.advice, topicMeta?.advice, 'İnsan onayını ve eksik veriyi kontrol et.');
   const screenLead = `Şu an ${screenLabel} ekranındasın.`;
   if (family?.questionType === 'FAKE_SUCCESS_REQUEST_BLOCKED') {
-    return `Şimdi: Yapmış gibi söyleyemem. ${screenLead} Sahte başarı üretmem; yalnızca gerçekten doğrulanmış sinyali paylaşırım. Yapabileceğim güvenli şeyler: gerçekten yapılanı, eksik kalanları ve sonraki doğru adımı açıkça ayırmak. Neden? ${why} Öneri: ${advice}`.trim();
+    return `Şimdi: Yapmış gibi söyleyemem. ${screenLead} Sahte başarı üretmem; gerçek yapmadan yalnızca gerçekten doğrulanmış sinyali paylaşırım. Yapabileceğim güvenli şeyler: gerçekten yapılanı, eksik kalanları ve sonraki doğru adımı açıkça ayırmak. Neden? ${why} Öneri: ${advice}`.trim();
   }
   if (family?.questionType === 'ROUTE_APPLY_BLOCKED' || family?.questionType === 'IMPORT_WRITE_BLOCKED') {
     return `Şimdi: ${family.questionType === 'IMPORT_WRITE_BLOCKED' ? 'Bu Excel’i sisteme kaydedemem.' : 'Rotayı uygulayamam.'} ${screenLead} ${family.questionType === 'IMPORT_WRITE_BLOCKED' ? 'Toplu yazma, DB write ve personel oluşturma kapalı.' : 'route apply, dispatch apply ve günlük atamaya işleme kapalı.'} Yapabileceğim güvenli şeyler: preview, risk özeti, insan onayı ve geri alma notunu kontrol etmek. Neden? ${why} Öneri: ${advice}`.trim();
