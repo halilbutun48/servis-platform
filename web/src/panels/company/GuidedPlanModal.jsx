@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import { useSession } from "../../state/session";
 import { personLabel } from "../../utils/labels";
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
+import { getApiErrorMessage } from "../../utils/apiContract";
 import {
   WEEKDAYS,
   weekdayBitFromYmdUTC as _weekdayBitFromYmdUTC,
@@ -14,7 +15,6 @@ import {
   addDaysISO,
 } from "../../utils/agreementUi";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
-import { getApiErrorMessage } from "../../utils/apiContract";
 import {
   PACKS,
   buildGuidedPlanDestinationAudit,
@@ -55,24 +55,16 @@ import GuidedPeopleStopsStep from "./guidedPlanModalPeopleStep";
 import { GuidedHubStep, GuidedPlanSetupStep, GuidedSolveOffersStep } from "./guidedPlanModalSections";
 import { MapPointPickerModal, Modal } from "./guidedPlanModalShell";
 import {
+  useGuidedPlanModalActions,
   cleanupGuidedDraftShifts,
-  createGuidedDraftShiftsAction,
-  geocodeGuidedLocation,
-  hydrateGuidedDraftPeopleFromSourceShift,
   loadGuidedCompanyHub,
   loadGuidedResumeDraftShifts,
-  osrmReorderGuidedCore,
-  refreshGuidedDraftShiftsAction,
-  saveGuidedCompanyHub,
-  sendGuidedBulkOffersAction,
-  sendGuidedRouteRefreshRequestAction,
 } from "./guidedPlanModalActions";
 import {
   addDestinationToList,
   applyDestinationMapPointToList,
   buildDestinationMapPickerBasePoint,
   buildDestinationNavigationTarget,
-  buildOrganizationNoteSummary,
   buildShiftNavigationTarget,
   geocodeGuidedDestinationAtIndex,
   moveDestinationInList,
@@ -80,6 +72,7 @@ import {
   setDestinationCoordFieldInList,
   setDestinationFieldInList,
 } from "./guidedPlanModalDestinationHelpers";
+
 export default function GuidedPlanModal({
   open,
   onClose,
@@ -143,7 +136,6 @@ export default function GuidedPlanModal({
   const [mapPickPoint, setMapPickPoint] = useState(null);
 
   const [draftShiftIds, setDraftShiftIds] = useState([]);
-  const draftShiftIdsKey = draftShiftIds.join("|");
   const [draftShifts, setDraftShifts] = useState([]);
   const [osrmBatch, setOsrmBatch] = useState({ running: false, done: 0, total: 0 });
   const [osrmResById, setOsrmResById] = useState({});
@@ -159,7 +151,7 @@ export default function GuidedPlanModal({
   const [offerOutcome, setOfferOutcome] = useState("idle");
   const [companyGeoGate, setCompanyGeoGate] = useState({ blocking: false, ready: true, geoStats: { ok: 0, review: 0, failed: 0, total: 0 }, stopSummary: null });
 
-  const resetStateBaselineRef = useRef(normalizePersistedGuidedPlanDraftState(buildGuidedPlanModalResetState()));
+  const [resetStateBaseline, setResetStateBaseline] = useState(() => normalizePersistedGuidedPlanDraftState(buildGuidedPlanModalResetState()));
   const hydratingDraftRef = useRef(false);
   const skipPersistOnceRef = useRef(false);
   const skipStep3ResetOnceRef = useRef(false);
@@ -167,6 +159,7 @@ export default function GuidedPlanModal({
     () => buildGuidedPlanModalDraftStorageKey({ me, persistenceScope, launchContext, routeRefreshMode }),
     [me, persistenceScope, launchContext, routeRefreshMode]
   );
+  const draftShiftIdsKey = useMemo(() => draftShiftIds.join("|"), [draftShiftIds]);
 
   const persistedGuidedPlanDraftSnapshot = useMemo(
     () =>
@@ -237,8 +230,8 @@ export default function GuidedPlanModal({
   );
 
   const isPristineGuidedPlanDraft = useMemo(
-    () => JSON.stringify(persistedGuidedPlanDraftSnapshot) === JSON.stringify(resetStateBaselineRef.current),
-    [persistedGuidedPlanDraftSnapshot]
+    () => JSON.stringify(persistedGuidedPlanDraftSnapshot) === JSON.stringify(resetStateBaseline),
+    [persistedGuidedPlanDraftSnapshot, resetStateBaseline]
   );
 
   function closeGuidedPlanModal() {
@@ -371,64 +364,7 @@ export default function GuidedPlanModal({
       reasons,
     };
   }, [draftShifts, osrmResById, organization, companyGeoGate]);
-
-  async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
-    const ids = Array.from(new Set((Array.isArray(idsInput) ? idsInput : []).map((x) => Number(x)).filter(Number.isFinite)));
-    await cleanupGuidedDraftShifts({ token, ids });
-    if (!opts.keepState) {
-      setDraftShiftIds([]);
-      setDraftShifts([]);
-      setOsrmResById({});
-    }
-  }
-
-  function resetAll(opts = {}) {
-    if (!opts.skipCleanup && !sentOk && draftShiftIds.length) {
-      void cleanupDraftShifts(draftShiftIds, { keepState: true });
-    }
-    skipPersistOnceRef.current = true;
-    hydratingDraftRef.current = false;
-    skipStep3ResetOnceRef.current = false;
-    const next = buildGuidedPlanModalResetState();
-    resetStateBaselineRef.current = normalizePersistedGuidedPlanDraftState(next);
-    setStep(next.step);
-    setBusy(next.busy);
-    setErr(next.err);
-    setInfo(next.info);
-    setHubLat(next.hubLat);
-    setHubLng(next.hubLng);
-    setAddr(next.addr);
-    setHubLoaded(next.hubLoaded);
-    setPackKey(next.packKey);
-    setStartDate(next.startDate);
-    setDurationKey(next.durationKey);
-    setEndDate(next.endDate);
-    setDaysSel(next.daysSel);
-    setCustomSlots(next.customSlots);
-    setDraftNote(next.draftNote);
-    setDraftAmount(next.draftAmount);
-    setOrgEstimatedPax(next.orgEstimatedPax);
-    setOrgGatheringName(next.orgGatheringName);
-    setOrgReturnType(next.orgReturnType);
-    setOrgDestinations(next.orgDestinations);
-    setMapPickIdx(next.mapPickIdx);
-    setMapPickPoint(next.mapPickPoint);
-    setDraftShiftIds(next.draftShiftIds);
-    setDraftShifts(next.draftShifts);
-    setOsrmBatch(next.osrmBatch);
-    setOsrmResById(next.osrmResById);
-    setCompanyGeoGate(next.companyGeoGate);
-    setRoomQ(next.roomQ);
-    setOnlyHubRooms(next.onlyHubRooms);
-    setSelRoomIds(next.selRoomIds);
-    setRoomScores(next.roomScores);
-    setOfferAmount(next.offerAmount);
-    setOfferNote(next.offerNote);
-    setSentOk(next.sentOk);
-    setOfferOutcome(next.offerOutcome);
-    appliedLaunchNonceRef.current = 0;
-    clearGuidedPlanModalDraftState(guidedPlanDraftStorageKey);
-  }
+  const offerSendBlockedByOsrm = (!organization && offerOsrmGate.blocking);
 
   // Load hub on open
   useEffect(() => {
@@ -522,7 +458,6 @@ export default function GuidedPlanModal({
     };
   }, [open, token, resumeStep, resumeNonce, isPristineGuidedPlanDraft, guidedPlanDraftStorageKey]);
 
-
   useEffect(() => {
     if (!open || !hubLoaded) return;
     const nonce = Number(launchNonce || 0);
@@ -595,350 +530,93 @@ export default function GuidedPlanModal({
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
   }, [startDate, durationDays]);
 
-  async function saveHub() {
-    setErr("");
-    setInfo("");
-    if (!token) return;
-    const lat = hubLat === "" ? null : Number(hubLat);
-    const lng = hubLng === "" ? null : Number(hubLng);
-    if ((lat == null) !== (lng == null)) {
-      setErr("Konum enlem/boylam birlikte olmalı.");
-      return;
-    }
-    if (lat != null && lng != null && (lat === 0 || lng === 0)) {
-      setErr("Konum 0,0 olamaz.");
-      return;
-    }
-
-    setBusy(true);
-    try {
-      await saveGuidedCompanyHub({ token, hubLat: lat, hubLng: lng });
-      setInfo(organization ? "Toplanma konumu kaydedildi." : "Şirket konumu kaydedildi.");
-      setStep(1);
-    } catch (e) {
-      setErr(getApiErrorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function useGeolocation() {
-    setErr("");
-    setInfo("");
-    if (!navigator?.geolocation) {
-      setErr("Tarayıcı konum izni desteklemiyor.");
-      return;
-    }
-
-    setBusy(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setBusy(false);
-        const lat = Number(pos?.coords?.latitude);
-        const lng = Number(pos?.coords?.longitude);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          setErr("Konum okunamadı.");
-          return;
-        }
-        setHubLat(String(lat));
-        setHubLng(String(lng));
-        setInfo(
-          organization
-            ? "• Toplanma konumu alındı. Kaydetmek için 'İleri'ye bas."
-            : "• Konum alındı. Kaydetmek için 'İleri'ye bas."
-        );
-      },
-      (e) => {
-        setBusy(false);
-        setErr(getApiErrorMessage(e, "Konum izni reddedildi"));
-      },
-      { enableHighAccuracy: true, timeout: 9000 }
-    );
-  }
-
-  async function geocodeAddress() {
-    setErr("");
-    setInfo("");
-    if (!token) return;
-    const q = String(addr || "").trim();
-    if (q.length < 3) {
-      setErr("Adres en az 3 karakter olmalı.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const r = await geocodeGuidedLocation({ token, q });
-      if (r?.ok) {
-        setHubLat(String(r.lat));
-        setHubLng(String(r.lng));
-        setInfo(`Bulundu: ${r.displayName || ""}`);
-      } else {
-        setErr("Adres bulunamadı.");
-      }
-    } catch (e) {
-      setErr(getApiErrorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function createDraftShifts() {
-    setErr("");
-    setInfo("");
-    setSentOk(false);
-    if (!token) return;
-
-    const lat = hubLat === "" ? null : Number(hubLat);
-    const lng = hubLng === "" ? null : Number(hubLng);
-    if ((lat == null) !== (lng == null)) {
-      setErr("Konum enlem/boylam birlikte olmalı.");
-      return;
-    }
-    if (lat != null && lng != null && (lat === 0 || lng === 0)) {
-      setErr("Konum 0,0 olamaz.");
-      return;
-    }
-
-    const items = currentStepItems;
-    if (!items.length) {
-      setErr("Plan paketi geçersiz.");
-      return;
-    }
-    const totalDraftCount = eligibleDaysCount * items.length;
-    if (eligibleDaysCount > 7) {
-      setErr("Rehberli Mod en fazla 7 gün olabilir. Daha uzun planlar için sözleşme kullanın.");
-      return;
-    }
-    if (totalDraftCount > 21) {
-      setErr("Rehberli Mod en fazla 21 vardiya oluşturabilir. Daha yoğun planlar için sözleşme kullanın.");
-      return;
-    }
-    if (organization) {
-      if (!String(orgEstimatedPax || "").trim()) {
-        setErr("Tahmini kişi sayısını gir.");
-        return;
-      }
-      if (!orgFilledDestinations.length) {
-        setErr("En az 1 gidilecek konum ekle.");
-        return;
-      }
-      if (!orgDestinationAudit.ok) {
-        setErr(`Koordinatı eksik konumlar var: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}. Adresten bul, manuel enlem / boylam gir veya haritadan seç.`);
-        return;
-      }
-    }
-
-    setBusy(true);
-    try {
-      const created = await createGuidedDraftShiftsAction({
-        token,
-        existingDraftShiftIds: draftShiftIds,
-        cleanupDraftShifts,
-        stepItems: items,
-        startDate,
-        endDate,
-        weekMask,
-        draftNote,
-        draftAmount,
-        organization,
-        orgNoteSummaryText: organization
-          ? buildOrganizationNoteSummary({
-              organization,
-              orgEstimatedPax,
-              orgGatheringName,
-              orgFilledDestinations,
-              orgReturnType,
-            })
-          : "",
-        orgReturnType,
-        orgEstimatedPax,
-        orgFilledDestinations,
-        orgGatheringName,
-        hubLat,
-        hubLng,
-      });
-      if (!created.createdIds.length) {
-        setErr("Seçili tarih aralığında (gün filtresine göre) vardiya üretilecek gün yok. Başlangıç / günler / süreyi değiştir.");
-        return;
-      }
-
-      let nextDraftShifts = created.draftShifts;
-      let hydrationInfo = "";
-      if (!organization && routeRefreshMode) {
-        const sourceShiftId = Number(launchContext?.sourceShiftId || 0);
-        if (sourceShiftId > 0) {
-          const hydrated = await hydrateGuidedDraftPeopleFromSourceShift({
-            token,
-            sourceShiftId,
-            targetShiftIds: created.createdIds,
-          });
-          if (hydrated?.copied) {
-            hydrationInfo = ` ? kaynak vardiyadan ${Number(hydrated.personCount || 0)} personel taşındı`;
-            nextDraftShifts = await refreshGuidedDraftShiftsAction({ token, draftShiftIds: created.createdIds });
-          }
-        }
-      }
-
-      setDraftShiftIds(created.createdIds);
-      setDraftShifts(nextDraftShifts);
-      setInfo(`Taslak vardiya oluşturuldu: ${created.createdIds.map((x) => "#" + x).join(", ")}${hydrationInfo}`);
-      setStep(2);
-    } catch (e) {
-      setErr(getApiErrorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function refreshDraftShifts() {
-    if (!token) return;
-    if (!draftShiftIds.length) return;
-    try {
-      const items = await refreshGuidedDraftShiftsAction({ token, draftShiftIds });
-      setDraftShifts(items);
-    } catch {
-      // ignore
-    }
-  }
-
-async function osrmReorderCore(sid) {
-  return osrmReorderGuidedCore({ token, draftShifts, shiftId: sid });
-}
-
-async function osrmReorder(shiftId) {
-  setErr("");
-  setInfo("");
-  if (!token) return;
-
-  const sid = Number(shiftId);
-  if (!Number.isFinite(sid)) return;
-
-  setBusy(true);
-  try {
-    const res = await osrmReorderCore(sid);
-    if (!res.ok) {
-      setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: res.error } }));
-      setErr(res.error || "Sıralama başarısız.");
-      return;
-    }
-    setOsrmResById((prev) => ({ ...prev, [sid]: { ok: true } }));
-    setInfo(`Rota sırası oluşturuldu (motor: ${res.solver || "-" }).`);
-    await refreshDraftShifts();
-  } catch (e) {
-    setErr(getApiErrorMessage(e));
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function osrmReorderAll() {
-  setErr("");
-  setInfo("");
-  if (!token) return;
-
-  const ids = (draftShifts || [])
-    .map((x) => Number(x.id))
-    .filter(Number.isFinite);
-
-    if (!ids.length) {
-    setErr("Taslak vardiya yok.");
-    return;
-  }
-
-  setBusy(true);
-  setOsrmBatch({ running: true, done: 0, total: ids.length });
-
-  try {
-    let okCount = 0;
-    let errCount = 0;
-
-    for (let i = 0; i < ids.length; i++) {
-      const sid = ids[i];
-
-      try {
-        const res = await osrmReorderCore(sid);
-        if (res.ok) {
-          okCount++;
-          setOsrmResById((prev) => ({ ...prev, [sid]: { ok: true } }));
-        } else {
-          errCount++;
-          setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: res.error } }));
-        }
-      } catch (e) {
-        errCount++;
-        setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: getApiErrorMessage(e) } }));
-      }
-
-      setOsrmBatch({ running: true, done: i + 1, total: ids.length });
-    }
-
-    await refreshDraftShifts();
-    setInfo(`Hepsi işlendi. Başarılı: ${okCount}, Hatalı: ${errCount}.`);
-  } catch (e) {
-    setErr(getApiErrorMessage(e));
-  } finally {
-    setOsrmBatch((p) => ({ ...p, running: false }));
-    setBusy(false);
-  }
-}
-
-async function sendBulkOffers() {
-    setErr("");
-    setInfo("");
-    if (!token) return;
-    if (!draftShiftIds.length) {
-      setErr("Önce taslak vardiya oluşturmalısın.");
-      return;
-    }
-    if (organization && !orgDraftCompletion.ready) {
-      setErr(`Markete göndermek için plan tamamlanmalı: ${orgDraftCompletion.reasons.join(" • ")}`);
-      return;
-    }
-    if (!organization && offerOsrmGate.blocking) {
-      setErr(offerOsrmGate.reasons.join(" • ") || "Rota doğrulaması tamamlanmadan teklif gönderilemez.");
-      return;
-    }
-
-    setBusy(true);
-    try {
-      if (routeRefreshMode) {
-        const agreementId = Number(launchContext?.agreementId || 0);
-        const roomId = Number(launchContext?.roomId || 0);
-        const sourceShiftId = Number(launchContext?.sourceShiftId || 0);
-        const created = await sendGuidedRouteRefreshRequestAction({
-          token, agreementId, roomId, sourceShiftId, draftShiftIds, offerAmount, offerNote,
-        });
-        setSentOk(true);
-        setOfferOutcome("route_refresh_pending");
-        setInfo(`Rota güncelleme isteği gönderildi (${launchContext?.roomName || `Sağlayıcı #${roomId || "?"}`}). Talep #${Number(created?.item?.id || created?.id || 0) || "?"} olarak kaydedildi.`);
-      } else {
-        const roomIds = selectedRoomIds;
-        if (!roomIds.length) {
-          setErr("En az 1 sağlayıcı seç.");
-          return;
-        }
-        const result = await sendGuidedBulkOffersAction({ token, draftShiftIds, selectedRoomIds: roomIds, offerAmount, offerNote });
-        const skippedCount = Array.isArray(result?.skippedRoomIds) ? result.skippedRoomIds.length : 0;
-        setSentOk(true);
-        if (result?.allBlocked) {
-          setOfferOutcome("agreement_covered");
-          setInfo("Seçilen sağlayıcılar bu zaman penceresinde zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; taslak vardiyalar korundu.");
-        } else {
-          setOfferOutcome("sent");
-          const sentText = `Gönderildi (vardiya sayısı: ${Number(result?.sentCount || 0)}).`;
-          const skipText =
-            skippedCount > 0
-              ? ` Not: ${skippedCount} sağlayıcı teklifi atlandı (aktif sözleşme çakışması).`
-              : "";
-          setInfo(`${sentText}${skipText}`);
-        }
-      }
-    } catch (e) {
-      setErr(getApiErrorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
+  const {
+    resetAll,
+    saveHub,
+    useGeolocation,
+    geocodeAddress,
+    createDraftShifts,
+    refreshDraftShifts,
+    osrmReorder,
+    osrmReorderAll,
+    sendBulkOffers,
+  } = useGuidedPlanModalActions({
+    token,
+    organization,
+    routeRefreshMode,
+    launchContext,
+    guidedPlanDraftStorageKey,
+    setResetStateBaseline,
+    hydratingDraftRef,
+    skipPersistOnceRef,
+    skipStep3ResetOnceRef,
+    appliedLaunchNonceRef,
+    currentStepItems,
+    eligibleDaysCount,
+    weekMask,
+    draftNote,
+    draftAmount,
+    addr,
+    orgEstimatedPax,
+    orgGatheringName,
+    orgReturnType,
+    orgFilledDestinations,
+    hubLat,
+    hubLng,
+    startDate,
+    endDate,
+    draftShiftIds,
+    draftShifts,
+    selectedRoomIds,
+    offerAmount,
+    offerNote,
+    orgDraftCompletion,
+    offerOsrmGate,
+    offerSendBlockedByOsrm,
+    orgDestinationAudit,
+    hubSaveFeedback: {
+      organization: "Toplanma konumu kaydedildi.",
+      company: "Şirket konumu kaydedildi.",
+    },
+    getApiErrorMessage,
+    sentOk,
+    setStep,
+    setBusy,
+    setErr,
+    setInfo,
+    setHubLat,
+    setHubLng,
+    setAddr,
+    setHubLoaded,
+    setPackKey,
+    setStartDate,
+    setDurationKey,
+    setEndDate,
+    setDaysSel,
+    setCustomSlots,
+    setDraftNote,
+    setDraftAmount,
+    setOrgEstimatedPax,
+    setOrgGatheringName,
+    setOrgReturnType,
+    setOrgDestinations,
+    setMapPickIdx,
+    setMapPickPoint,
+    setDraftShiftIds,
+    setDraftShifts,
+    setOsrmBatch,
+    setOsrmResById,
+    setRoomQ,
+    setOnlyHubRooms,
+    setSelRoomIds,
+    setRoomScores,
+    setOfferAmount,
+    setOfferNote,
+    setSentOk,
+    setOfferOutcome,
+    setCompanyGeoGate,
+    onClose,
+  });
 
   const planSummary = useMemo(() => {
     const lines = currentStepItems.map((it) => {

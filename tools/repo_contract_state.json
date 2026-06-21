@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  14,
-    "currentWarningHotFileCount":  10,
+    "currentWarningHotFileCount":  9,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -229,10 +229,6 @@
                                                                                                              "class":  "safe-candidate-review",
                                                                                                              "note":  "sefer abi reasoning assistant check; controlled cleanup adayi"
                                                                                                          },
-                                                       "web/src/panels/company/GuidedPlanModal.jsx":  {
-                                                                                                      "class":  "safe-candidate-review",
-                                                                                                      "note":  "guided plan modal hot path; controlled cleanup adayi"
-                                                                                                  },
                                                        "mobile/src/screens/driverPremiumUi.js":  {
                                                                                                       "class":  "safe-candidate-review",
                                                                                                      "note":  "premium mobile shell; controlled cleanup adayi"
