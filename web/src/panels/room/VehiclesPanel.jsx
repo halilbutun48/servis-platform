@@ -7,22 +7,9 @@ import { useAutoReload } from "../../live/useAutoReload";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
-import { isoFromTRDateInput, isoFromTRLocalInput, toDatetimeLocalTR } from "../../utils/time";
+import { toDatetimeLocalTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
-import { cachedGet } from "../../utils/uiDataCache";
-import {
-  VEHICLE_TEMPLATES_TR,
-  TABS,
-  buildVehicleCopilotSelection,
-  fmtDriverHuman,
-  hasGpsFix,
-  isoToDateInput,
-  isoToDatetimeLocal,
-  normalizeList,
-  pickCurrentShift,
-  pickNextShift,
-  pickRoomVehicleError as pickErr,
-} from "./roomVehiclesPanelUtils";
+import { TABS, buildVehicleCopilotSelection, fmtDriverHuman, hasGpsFix, normalizeList, pickCurrentShift, pickNextShift, pickRoomVehicleError as pickErr } from "./roomVehiclesPanelUtils";
 import {
   RoomVehicleStatusSection,
   RoomVehicleAssignmentsSection,
@@ -32,16 +19,19 @@ import {
   RoomVehicleEditModal,
   RoomVehicleManageSection,
 } from "./roomVehiclesPanelSections";
-
-function upperTr(value) {
-  const text = String(value ?? "").trim();
-  return text ? text.toLocaleUpperCase("tr-TR") : "";
-}
-
-function upperTrOrNull(value) {
-  const text = String(value ?? "").trim();
-  return text ? text.toLocaleUpperCase("tr-TR") : null;
-}
+import {
+  applyVehicleEditTemplate,
+  applyVehicleTemplate,
+  bindVehicleDriverAction,
+  checkAvailabilityAllAction,
+  createVehicleAction,
+  deleteVehicleAction,
+  loadRoomVehiclePanelData,
+  openVehicleEditAction,
+  saveVehicleEditAction,
+  transferVehicleDriverAction,
+  unbindVehicleDriverAction,
+} from "./roomVehiclesPanelActions";
 
 export default function VehiclesPanel() {
   const { token } = useSession();
@@ -151,49 +141,32 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   });
 
   function applyTemplate(tid) {
-    setTemplateId(tid);
-    const t = VEHICLE_TEMPLATES_TR.find((x) => x.id === tid);
-    if (!t) return;
-    setType(t.type);
-    setCapacity(t.capacity);
-    setBrand(t.brand);
-    setModel(t.model);
+    return applyVehicleTemplate({ setTemplateId, setType, setCapacity, setBrand, setModel }, tid);
   }
 
   function applyEditTemplate(tid) {
-    setEditTemplateId(tid);
-    const t = VEHICLE_TEMPLATES_TR.find((x) => x.id === tid);
-    if (!t) return;
-    setEditForm((p) => ({
-      ...p,
-      type: t.type,
-      capacity: t.capacity,
-      brand: t.brand,
-      model: t.model,
-    }));
+    return applyVehicleEditTemplate({ setEditTemplateId, setEditForm }, tid);
+  }
+
+  function upperTr(value) {
+    const text = String(value ?? "").trim();
+    return text ? text.toLocaleUpperCase("tr-TR") : "";
+  }
+
+  function upperTrOrNull(value) {
+    const text = String(value ?? "").trim();
+    return text ? text.toLocaleUpperCase("tr-TR") : null;
   }
 
   async function load(opts = {}) {
-    try {
-      const includeArchived = opts.includeArchived ?? showArchived;
-      const force = Boolean(opts.force);
-      const path = includeArchived ? "/api/vehicles?includeArchived=1" : "/api/vehicles";
-      const [v, d] = await Promise.all([
-        cachedGet(path, { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
-        cachedGet("/api/drivers", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
-      ]);
-
-      const vv = normalizeList(v);
-      const dd = normalizeList(d);
-
-      setItems(vv);
-      setDrivers(dd);
-
-      if (!focusVehicleId && vv.length) setFocusVehicleId(Number(vv[0].id));
-    } catch (e) {
-      const { msg } = pickErr(e);
-      setErr(String(msg));
-    }
+    return loadRoomVehiclePanelData({
+      token,
+      showArchived,
+      setItems,
+      setDrivers,
+      setErr,
+      setFocusVehicleId,
+    }, opts);
   }
 
   useEffect(() => { load(); }, []); // eslint-disable-line
@@ -266,56 +239,50 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   useEffect(() => {
     if (tab !== "link") return;
     if (!focusVehicleId) return;
-    const currentVehicle = items.find((x) => Number(x?.id) === Number(focusVehicleId)) || null;
-    const nextDriverId = Number(currentVehicle?.driver?.id || currentVehicle?.driverId || 0);
-    setBindSel((p) => {
-      const nextValue = nextDriverId ? String(nextDriverId) : "";
-      if (String(p?.[focusVehicleId] || "") === nextValue) return p;
-      return { ...p, [focusVehicleId]: nextValue };
-    });
+    const timer = setTimeout(() => {
+      const currentVehicle = items.find((x) => Number(x?.id) === Number(focusVehicleId)) || null;
+      const nextDriverId = Number(currentVehicle?.driver?.id || currentVehicle?.driverId || 0);
+      setBindSel((p) => {
+        const nextValue = nextDriverId ? String(nextDriverId) : "";
+        if (String(p?.[focusVehicleId] || "") === nextValue) return p;
+        return { ...p, [focusVehicleId]: nextValue };
+      });
+    }, 0);
+    return () => clearTimeout(timer);
   }, [tab, focusVehicleId, items]);
 
 
   async function createVehicle(e) {
-    e.preventDefault();
-    setBusy(true);
-    setErr("");
-    try {
-      const body = {
-        plate: upperTr(plate),
-        capacity: Number(capacity),
-        speedLimitKmh: Number(speedLimitKmh),
-      };
+    const body = {
+      plate: upperTr(plate),
+      capacity: Number(capacity),
+      speedLimitKmh: Number(speedLimitKmh),
+    };
+    body.brand = upperTr(brand);
+    body.model = upperTr(model);
+    body.color = upperTr(color);
+    body.vin = upperTr(vin);
+    body.note = upperTr(note);
 
-      if (type) body.type = type;
-      if (brand.trim()) body.brand = upperTr(brand);
-      if (model.trim()) body.model = upperTr(model);
-      if (String(modelYear).trim()) body.modelYear = Number(modelYear);
-      if (color.trim()) body.color = upperTr(color);
-      if (vin.trim()) body.vin = upperTr(vin);
-      if (note.trim()) body.note = upperTr(note);
-
-      if (inspectionDueAt) body.inspectionDueAt = isoFromTRDateInput(inspectionDueAt);
-      if (lastServiceAt) body.lastServiceAt = isoFromTRDateInput(lastServiceAt);
-      if (String(lastServiceKm).trim()) body.lastServiceKm = Number(lastServiceKm);
-      if (serviceIntervalKm) body.serviceIntervalKm = Number(serviceIntervalKm);
-      if (String(odometerKm).trim()) body.odometerKm = Number(odometerKm);
-
-      if (nextMaintenanceAt) body.nextMaintenanceAt = isoFromTRLocalInput(nextMaintenanceAt);
-
-      await api("/api/vehicles", { method: "POST", token, body });
-
-      setTemplateId("");
-      setPlate("");
-      showToast("Araç eklendi");
-      await load({ force: true });
-    } catch (e2) {
-      const { msg } = pickErr(e2);
-      setErr(String(msg));
-      showToast("Araç eklenemedi", "err");
-    } finally {
-      setBusy(false);
-    }
+    return createVehicleAction({
+      api,
+      token,
+      body,
+      type,
+      modelYear,
+      inspectionDueAt,
+      lastServiceAt,
+      lastServiceKm,
+      serviceIntervalKm,
+      odometerKm,
+      nextMaintenanceAt,
+      setBusy,
+      setErr,
+      setTemplateId,
+      setPlate,
+      showToast,
+      load,
+    }, e);
   }
 
   // driver lookup map (telefon vs için)
@@ -410,226 +377,45 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   }
 
   async function bindDriver(vehicleId) {
-    const sel = bindSel?.[vehicleId] ?? "";
-    const driverId = Number(sel || 0);
-    if (!driverId) {
-      setErr("Bağlamak için driver seçmelisin.");
-      return;
-    }
-
-    // UI-side conflict gate: başka araca bağlıysa bind denemesini engelle
-    const bound = driverBoundMap.get(driverId);
-    const isOther = bound && Number(bound.vehicleId) !== Number(vehicleId);
-    if (isOther) {
-      setErr(`Bu sürücü zaten başka araca bağlı: ${bound.plate}. Transfer kullan.`);
-      showToast("Sürücü başka araca bağlı", "warn");
-      return;
-    }
-
-    setBusy(true);
-    setErr("");
-    try {
-      await api(`/api/vehicles/${vehicleId}/bind-driver`, {
-        method: "PUT",
-        token,
-        body: { driverId },
-      });
-      showToast("Sürücü bağlandı");
-      setBindSel((p) => ({ ...p, [vehicleId]: "" }));
-      await load({ force: true });
-    } catch (e) {
-      const { msg, code, status, payload } = pickErr(e);
-
-      // Backend spesifik kod
-      if (code === "DRIVER_ALREADY_BOUND") {
-        const cv = payload?.conflictingVehicle;
-        const detail = cv?.plate ? ` (Bağlı araç: ${cv.plate})` : "";
-        setErr(`${msg}${detail}`);
-        showToast("Sürücü başka araca bağlı", "warn");
-        return;
-      }
-
-      // 409 vb: netleştir
-      if (Number(status) === 409) {
-        setErr(`Uygun değil (409): ${msg}`);
-        showToast("Uygun değil", "warn");
-        return;
-      }
-
-      setErr(String(msg));
-      showToast("Bağlama başarısız", "err");
-    } finally {
-      setBusy(false);
-    }
+    return bindVehicleDriverAction(vehicleActionsCtx, vehicleId);
   }
 
   async function unbindDriver(vehicleId) {
-    setBusy(true);
-    setErr("");
-    try {
-      await api(`/api/vehicles/${vehicleId}/bind-driver`, {
-        method: "PUT",
-        token,
-        body: { driverId: null },
-      });
-      showToast("Bağlantı kaldırıldı", "warn");
-      await load({ force: true });
-    } catch (e) {
-      const { msg, status } = pickErr(e);
-      if (Number(status) === 409) setErr(`Uygun değil (409): ${msg}`);
-      else setErr(String(msg));
-      showToast("Ayırma başarısız", "err");
-    } finally {
-      setBusy(false);
-    }
+    return unbindVehicleDriverAction(vehicleActionsCtx, vehicleId);
   }
 
   async function transferDriver(toVehicleId, driverId, fromVehicleId) {
-    const fromPlate = items.find((x) => Number(x.id) === Number(fromVehicleId))?.plate || `#${fromVehicleId}`;
-    const toPlate = items.find((x) => Number(x.id) === Number(toVehicleId))?.plate || `#${toVehicleId}`;
-
-    // ✅ Mini polish: daha net confirm metni
-    const ok = window.confirm(
-      `Sürücü şu an "${fromPlate}" aracına bağlı.\n` +
-      `Yeni araç: "${toPlate}"\n\n` +
-      `Onaylarsan şu adımlar uygulanacak:\n` +
-      `1) "${fromPlate}" aracından ayrılacak\n` +
-      `2) "${toPlate}" aracına bağlanacak\n\n` +
-      `Devam edilsin mi?`
-    );
-    if (!ok) return;
-
-    setBusy(true);
-    setErr("");
-    try {
-      await api(`/api/vehicles/${fromVehicleId}/bind-driver`, {
-        method: "PUT",
-        token,
-        body: { driverId: null },
-      });
-
-      await api(`/api/vehicles/${toVehicleId}/bind-driver`, {
-        method: "PUT",
-        token,
-        body: { driverId },
-      });
-
-      showToast("Transfer tamamlandı", "warn");
-      setBindSel((p) => ({ ...p, [toVehicleId]: "" }));
-      await load({ force: true });
-    } catch (e) {
-      const { msg, status } = pickErr(e);
-      if (Number(status) === 409) setErr(`Uygun değil (409): ${msg}`);
-      else setErr(String(msg));
-      showToast("Transfer başarısız", "err");
-    } finally {
-      setBusy(false);
-    }
+    return transferVehicleDriverAction(vehicleActionsCtx, toVehicleId, driverId, fromVehicleId);
   }
 
   function openEdit(v) {
-    if (v.archivedAt) {
-      setErr("Arşivli araç düzenlenemez.");
-      return;
-    }
-
-    setErr("");
-    setEditTemplateId("");
-
-    setEditForm({
-      id: v.id,
-
-      plate: v.plate ?? "",
-      capacity: Number(v.capacity ?? 16),
-      speedLimitKmh: Number(v.speedLimitKmh ?? 80),
-
-      type: v.type ?? "",
-      brand: v.brand ?? "",
-      model: v.model ?? "",
-      modelYear: v.modelYear != null ? String(v.modelYear) : "",
-      color: v.color ?? "",
-      vin: v.vin ?? "",
-      note: v.note ?? "",
-
-      inspectionDueAt: isoToDateInput(v.inspectionDueAt),
-      lastServiceAt: isoToDateInput(v.lastServiceAt),
-      lastServiceKm: v.lastServiceKm != null ? String(v.lastServiceKm) : "",
-      serviceIntervalKm: v.serviceIntervalKm != null ? Number(v.serviceIntervalKm) : 15000,
-      odometerKm: v.odometerKm != null ? String(v.odometerKm) : "",
-
-      nextMaintenanceAt: v.nextMaintenanceAt ? isoToDatetimeLocal(v.nextMaintenanceAt) : "",
-    });
-
-    setEditOpen(true);
+    return openVehicleEditAction(vehicleActionsCtx, v);
   }
 
   async function saveEdit() {
-    if (!editForm.id) return;
-
-    setBusy(true);
-    setErr("");
-    try {
-      const body = {
-        plate: upperTr(editForm.plate),
-        capacity: Number(editForm.capacity),
-        speedLimitKmh: Number(editForm.speedLimitKmh),
-
-        type: editForm.type || null,
-        brand: upperTrOrNull(editForm.brand),
-        model: upperTrOrNull(editForm.model),
-        modelYear: String(editForm.modelYear).trim() ? Number(editForm.modelYear) : null,
-        color: upperTrOrNull(editForm.color),
-        vin: upperTrOrNull(editForm.vin),
-        note: upperTrOrNull(editForm.note),
-
-        inspectionDueAt: editForm.inspectionDueAt ? isoFromTRDateInput(editForm.inspectionDueAt) : null,
-        lastServiceAt: editForm.lastServiceAt ? isoFromTRDateInput(editForm.lastServiceAt) : null,
-        lastServiceKm: String(editForm.lastServiceKm).trim() ? Number(editForm.lastServiceKm) : null,
-        serviceIntervalKm: editForm.serviceIntervalKm ? Number(editForm.serviceIntervalKm) : null,
-        odometerKm: String(editForm.odometerKm).trim() ? Number(editForm.odometerKm) : null,
-
-        nextMaintenanceAt: editForm.nextMaintenanceAt ? isoFromTRLocalInput(editForm.nextMaintenanceAt) : null,
-      };
-
-      await api(`/api/vehicles/${editForm.id}`, { method: "PUT", token, body });
-
-      setEditOpen(false);
-      showToast("Araç güncellendi");
-      await load({ force: true });
-    } catch (e) {
-      const { msg } = pickErr(e);
-      setErr(String(msg));
-      showToast("Güncelleme başarısız", "err");
-    } finally {
-      setBusy(false);
-    }
+    const body = {
+      plate: upperTr(editForm.plate),
+      capacity: Number(editForm.capacity),
+      speedLimitKmh: Number(editForm.speedLimitKmh),
+      type: editForm.type || null,
+      brand: upperTrOrNull(editForm.brand),
+      model: upperTrOrNull(editForm.model),
+      modelYear: String(editForm.modelYear).trim() ? Number(editForm.modelYear) : null,
+      color: upperTrOrNull(editForm.color),
+      vin: upperTrOrNull(editForm.vin),
+      note: upperTrOrNull(editForm.note),
+      inspectionDueAt: editForm.inspectionDueAt ? editForm.inspectionDueAt : null,
+      lastServiceAt: editForm.lastServiceAt ? editForm.lastServiceAt : null,
+      lastServiceKm: String(editForm.lastServiceKm).trim() ? Number(editForm.lastServiceKm) : null,
+      serviceIntervalKm: editForm.serviceIntervalKm ? Number(editForm.serviceIntervalKm) : null,
+      odometerKm: String(editForm.odometerKm).trim() ? Number(editForm.odometerKm) : null,
+      nextMaintenanceAt: editForm.nextMaintenanceAt ? editForm.nextMaintenanceAt : null,
+    };
+    return saveVehicleEditAction({ ...vehicleActionsCtx, body });
   }
 
   async function deleteVehicle(v) {
-    if (v.archivedAt) {
-      setErr("Arşivli araçta işlem yapılmaz.");
-      return;
-    }
-
-    const ok = window.confirm(`${v.plate} aracını silmek/arşivlemek istiyor musun? (Shift bağlıysa otomatik arşivlenir)`);
-    if (!ok) return;
-
-    setBusy(true);
-    setErr("");
-    try {
-      const resp = await api(`/api/vehicles/${v.id}`, { method: "DELETE", token });
-
-      if (resp?.archived === true) showToast("Arşivlendi (shift bağlı)", "warn");
-      else showToast("Silindi");
-
-      await load({ force: true });
-    } catch (e) {
-      const { msg } = pickErr(e);
-      setErr(String(msg));
-      showToast("Silme/arşivleme başarısız", "err");
-    } finally {
-      setBusy(false);
-    }
+    return deleteVehicleAction(vehicleActionsCtx, v);
   }
 
   const statusRows = useMemo(() => {
@@ -647,146 +433,147 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
         return true;
       });
   }, [items, statusFilter, plateQuery]);
-const assignRows = useMemo(() => {
-  const now = new Date();
-  const q = String(assignQuery || "").trim().toLowerCase();
-  const maxMs = assignRangeDays * 24 * 60 * 60 * 1000;
+  const assignRows = useMemo(() => {
+    const now = new Date();
+    const q = String(assignQuery || "").trim().toLowerCase();
+    const maxMs = assignRangeDays * 24 * 60 * 60 * 1000;
 
-  const rows = (items || [])
-    .filter((v) => !v.archivedAt)
-    .filter((v) => (q ? String(v.plate || "").toLowerCase().includes(q) : true))
-    .map((v) => {
-      const shifts = Array.isArray(v.shifts) ? v.shifts : [];
-      const cur = pickCurrentShift(shifts, now);
-      const next = pickNextShift(shifts, now);
-      const nextInRange = next && (new Date(next.startAt).getTime() - now.getTime() <= maxMs);
-      const hasAgreement = Boolean(cur?.agreementId || next?.agreementId);
-      return { v, cur, next: nextInRange ? next : null, hasAgreement };
-    })
-    .filter((r) => {
-      if (assignFilter === "HAS_CURRENT") return Boolean(r.cur);
-      if (assignFilter === "HAS_NEXT") return Boolean(r.next);
-      if (assignFilter === "AGREEMENT_ONLY") return Boolean(r.hasAgreement);
-      return true;
+    const rows = (items || [])
+      .filter((v) => !v.archivedAt)
+      .filter((v) => (q ? String(v.plate || "").toLowerCase().includes(q) : true))
+      .map((v) => {
+        const shifts = Array.isArray(v.shifts) ? v.shifts : [];
+        const cur = pickCurrentShift(shifts, now);
+        const next = pickNextShift(shifts, now);
+        const nextInRange = next && (new Date(next.startAt).getTime() - now.getTime() <= maxMs);
+        const hasAgreement = Boolean(cur?.agreementId || next?.agreementId);
+        return { v, cur, next: nextInRange ? next : null, hasAgreement };
+      })
+      .filter((r) => {
+        if (assignFilter === "HAS_CURRENT") return Boolean(r.cur);
+        if (assignFilter === "HAS_NEXT") return Boolean(r.next);
+        if (assignFilter === "AGREEMENT_ONLY") return Boolean(r.hasAgreement);
+        return true;
+      });
+
+    rows.sort((a, b) => {
+      if (assignSort === "PLATE_DESC") return String(b.v.plate || "").localeCompare(String(a.v.plate || ""), "tr");
+      if (assignSort === "CURRENT_SOON") {
+        const at = a.cur ? new Date(a.cur.startAt).getTime() : Number.POSITIVE_INFINITY;
+        const bt = b.cur ? new Date(b.cur.startAt).getTime() : Number.POSITIVE_INFINITY;
+        return at - bt;
+      }
+      if (assignSort === "NEXT_SOON") {
+        const at = a.next ? new Date(a.next.startAt).getTime() : Number.POSITIVE_INFINITY;
+        const bt = b.next ? new Date(b.next.startAt).getTime() : Number.POSITIVE_INFINITY;
+        return at - bt;
+      }
+      return String(a.v.plate || "").localeCompare(String(b.v.plate || ""), "tr");
     });
 
-  rows.sort((a, b) => {
-    if (assignSort === "PLATE_DESC") return String(b.v.plate || "").localeCompare(String(a.v.plate || ""), "tr");
-    if (assignSort === "CURRENT_SOON") {
-      const at = a.cur ? new Date(a.cur.startAt).getTime() : Number.POSITIVE_INFINITY;
-      const bt = b.cur ? new Date(b.cur.startAt).getTime() : Number.POSITIVE_INFINITY;
-      return at - bt;
-    }
-    if (assignSort === "NEXT_SOON") {
-      const at = a.next ? new Date(a.next.startAt).getTime() : Number.POSITIVE_INFINITY;
-      const bt = b.next ? new Date(b.next.startAt).getTime() : Number.POSITIVE_INFINITY;
-      return at - bt;
-    }
-    return String(a.v.plate || "").localeCompare(String(b.v.plate || ""), "tr");
-  });
+    return rows;
+  }, [items, assignQuery, assignFilter, assignSort, assignRangeDays]);
 
-  return rows;
-}, [items, assignQuery, assignFilter, assignSort, assignRangeDays]);
+  const availRows = useMemo(() => {
+    const q = String(availQuery || "").trim().toLowerCase();
 
-const availRows = useMemo(() => {
-  const q = String(availQuery || "").trim().toLowerCase();
+    const rows = (items || [])
+      .filter((v) => !v.archivedAt)
+      .filter((v) => (q ? String(v.plate || "").toLowerCase().includes(q) : true))
+      .map((v) => {
+        const row = availMap?.[v.id] || null;
+        const now = new Date();
+        const cur = pickCurrentShift(v.shifts, now);
+        const quickBusy = Boolean(cur);
+        const hasDriver = Boolean(v.driverId || v.driver?.id || v.driver);
 
-  const rows = (items || [])
-    .filter((v) => !v.archivedAt)
-    .filter((v) => (q ? String(v.plate || "").toLowerCase().includes(q) : true))
-    .map((v) => {
-      const row = availMap?.[v.id] || null;
-      const now = new Date();
-      const cur = pickCurrentShift(v.shifts, now);
-      const quickBusy = Boolean(cur);
-      const hasDriver = Boolean(v.driverId || v.driver?.id || v.driver);
+        const anyConflict =
+          row ? (row.vehicleOk === false || (hasDriver && row.driverOk === false)) : false;
+        const allOk =
+          row ? (row.vehicleOk === true && (!hasDriver || row.driverOk === true)) : false;
 
-      const anyConflict =
-        row ? (row.vehicleOk === false || (hasDriver && row.driverOk === false)) : false;
-      const allOk =
-        row ? (row.vehicleOk === true && (!hasDriver || row.driverOk === true)) : false;
+        return { v, row, quickBusy, hasDriver, anyConflict, allOk };
+      })
+      .filter((r) => {
+        if (availFilter === "ONLY_WITH_DRIVER") return r.hasDriver;
+        if (availFilter === "ONLY_UNCHECKED") return !r.row;
+        if (availFilter === "ONLY_CONFLICT") return r.anyConflict;
+        if (availFilter === "ONLY_OK") return r.allOk;
+        return true;
+      });
 
-      return { v, row, quickBusy, hasDriver, anyConflict, allOk };
-    })
-    .filter((r) => {
-      if (availFilter === "ONLY_WITH_DRIVER") return r.hasDriver;
-      if (availFilter === "ONLY_UNCHECKED") return !r.row;
-      if (availFilter === "ONLY_CONFLICT") return r.anyConflict;
-      if (availFilter === "ONLY_OK") return r.allOk;
-      return true;
+    // Premium: meşguller üstte, sonra plaka
+    rows.sort((a, b) => {
+      if (a.quickBusy !== b.quickBusy) return a.quickBusy ? -1 : 1;
+      return String(a.v.plate || "").localeCompare(String(b.v.plate || ""), "tr");
     });
 
-  // Premium: meşguller üstte, sonra plaka
-  rows.sort((a, b) => {
-    if (a.quickBusy !== b.quickBusy) return a.quickBusy ? -1 : 1;
-    return String(a.v.plate || "").localeCompare(String(b.v.plate || ""), "tr");
-  });
+    return rows;
+  }, [items, availMap, availQuery, availFilter]);
 
-  return rows;
-}, [items, availMap, availQuery, availFilter]);
+  const vehicleActionsCtx = {
+    api,
+    token,
+    showArchived,
+    items,
+    drivers,
+    bindSel,
+    setBindSel,
+    driverBoundMap,
+    focusVehicleId,
+    setFocusVehicleId,
+    showToast,
+    setErr,
+    setBusy,
+    load,
+    setItems,
+    setDrivers,
+    setTemplateId,
+    setPlate,
+    plate,
+    capacity,
+    speedLimitKmh,
+    type,
+    brand,
+    model,
+    modelYear,
+    color,
+    vin,
+    note,
+    inspectionDueAt,
+    lastServiceAt,
+    lastServiceKm,
+    serviceIntervalKm,
+    odometerKm,
+    nextMaintenanceAt,
+    setType,
+    setCapacity,
+    setBrand,
+    setModel,
+    setModelYear,
+    setColor,
+    setVin,
+    setNote,
+    setInspectionDueAt,
+    setLastServiceAt,
+    setLastServiceKm,
+    setServiceIntervalKm,
+    setOdometerKm,
+    setEditTemplateId,
+    editForm,
+    setEditForm,
+    setEditOpen,
+    availRows,
+    availSel,
+    availStartAt,
+    availEndAt,
+    setAvailBusy,
+    setAvailMap,
+  };
 
-async function checkAvailabilityAll(onlySelected = false) {
-  const startIso = isoFromTRLocalInput(availStartAt);
-  const endIso = isoFromTRLocalInput(availEndAt);
-
-  if (!startIso || !endIso) { showToast("start/end seç", "warn"); return; }
-  if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
-    showToast("end > start olmalı", "warn");
-    return;
+  async function checkAvailabilityAll(onlySelected = false) {
+    return checkAvailabilityAllAction(vehicleActionsCtx, onlySelected);
   }
-
-  // görünür liste = filtrelenmiş availRows
-  const visible = (availRows || []).map((r) => r.v);
-  const visibleIds = visible.map((v) => Number(v.id));
-  const selectedIds = visibleIds.filter((id) => !!availSel[id]);
-
-  let targetIds;
-  if (onlySelected) {
-    if (!selectedIds.length) {
-      showToast("Seçili araç yok", "warn");
-      return;
-    }
-    targetIds = selectedIds;
-  } else {
-    // seçili varsa seçiliyi, yoksa görünürlerin hepsini kontrol et
-    targetIds = selectedIds.length ? selectedIds : visibleIds;
-  }
-
-
-
-  setAvailBusy(true);
-  setErr("");
-
-  try {
-    const payload = {
-      startAt: startIso,
-      endAt: endIso,
-      vehicleIds: targetIds,
-    };
-
-    const resp = await api("/api/availability/bulk", { method: "POST", body: payload, token });
-
-    const next = {};
-    for (const it of resp?.items || []) {
-      next[it.vehicleId] = {
-        vehicleOk: it.vehicleOk !== false,
-        vehicleConflict: it.vehicleConflict || null,
-        driverOk: it.driverId ? it.driverOk !== false : true,
-        driverConflict: it.driverConflict || null,
-      };
-    }
-
-    // selection modunda eski sonuçları koru
-    setAvailMap((prev) => ({ ...prev, ...next }));
-    showToast(`Müsaitlik güncellendi (${Object.keys(next).length})`, "ok");
-  } catch (e) {
-    const ne = pickErr(e);
-    setErr(ne.msg || "Müsaitlik kontrolü başarısız");
-    showToast("Müsaitlik kontrolü başarısız", "err");
-  } finally {
-    setAvailBusy(false);
-  }
-}
 
   return (
     <div>
