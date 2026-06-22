@@ -1192,7 +1192,7 @@ function main() {
     }),
   });
   must(refusalReply, 'Bunu senin yerine uygulayamam', 'write-action reply offers a safe preparation step');
-  must(refusalReply, 'adım adım hazırlamana yardımcı olayım', 'write-action reply keeps the safe alternative');
+  must(refusalReply, 'güvenli bir hazırlık yapmana yardımcı olayım', 'write-action reply keeps the safe alternative');
   mustNot(refusalReply, 'uyguladım', 'write-action reply does not claim execution');
 
   const locationReply = buildHelpReply({

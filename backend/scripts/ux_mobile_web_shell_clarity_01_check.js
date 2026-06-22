@@ -184,6 +184,17 @@ function main() {
 
   const status = statusNames();
   const exactAllowed = new Set([
+    "backend/scripts/ai03b_semantic_visible_audit_01_check.js",
+    "backend/scripts/copilot_context_memory_task_state_01_check.js",
+    "backend/src/ai/chat/conversationTaskState.js",
+    "backend/src/ai/chat/conversationTaskStateResponses.js",
+    "backend/src/ai/chat/conversationTaskStateShared.js",
+    "backend/src/ai/chat/conversationTaskStateClarifiers.js",
+    "backend/src/ai/chat/conversationTaskStateSelectedRecord.js",
+    "backend/src/ai/chat/conversationTaskStateFollowUps.js",
+    "backend/src/ai/chat/conversationTaskStateBuilders.js",
+    "backend/src/ai/chat/conversationTaskStateCompanyReplies.js",
+    "backend/src/ai/chat/conversationTaskStateRoomReplies.js",
     "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
     "backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
     "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",

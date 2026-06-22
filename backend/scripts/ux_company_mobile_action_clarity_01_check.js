@@ -428,6 +428,17 @@ function main() {
     .filter((file) => !cleanupScopeFiles.includes(file))
     .filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md");
   const exactAllowed = new Set([
+    "backend/scripts/ai03b_semantic_visible_audit_01_check.js",
+    "backend/scripts/copilot_context_memory_task_state_01_check.js",
+    "backend/src/ai/chat/conversationTaskState.js",
+    "backend/src/ai/chat/conversationTaskStateResponses.js",
+    "backend/src/ai/chat/conversationTaskStateShared.js",
+    "backend/src/ai/chat/conversationTaskStateClarifiers.js",
+    "backend/src/ai/chat/conversationTaskStateSelectedRecord.js",
+    "backend/src/ai/chat/conversationTaskStateFollowUps.js",
+    "backend/src/ai/chat/conversationTaskStateBuilders.js",
+    "backend/src/ai/chat/conversationTaskStateCompanyReplies.js",
+    "backend/src/ai/chat/conversationTaskStateRoomReplies.js",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/script_harness_consolidation_01_check.js",

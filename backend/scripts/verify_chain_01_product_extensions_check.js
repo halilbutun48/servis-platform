@@ -148,6 +148,8 @@ function main() {
   must(pkg, '"check:ai03bsemanticvisiblelivematrix01": "node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js"', 'package.json keeps check:ai03bsemanticvisiblelivematrix01');
   must(pkg, '"check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js"', 'package.json keeps check:seferabireasoningassistant01');
   must(pkg, '"check:seferabiallrolesreasoningassistant01": "node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js"', 'package.json keeps check:seferabiallrolesreasoningassistant01');
+  must(pkg, '"check:copilotcontextmemorytaskstate01": "node backend/scripts/copilot_context_memory_task_state_01_check.js"', 'package.json exposes check:copilotcontextmemorytaskstate01');
+  must(runner, 'check:copilotcontextmemorytaskstate01', 'product extensions chain includes check:copilotcontextmemorytaskstate01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
   must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotpersona01');
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');

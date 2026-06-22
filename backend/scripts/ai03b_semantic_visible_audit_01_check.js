@@ -914,7 +914,7 @@ function main() {
       fixture: personelFixture,
       message: 'Bildirim kaynağı',
       expectedQuestionType: 'STATUS_HELP',
-      replyNeedles: ['Bildirim kaynağı', 'olay kaydına', 'bildirim'],
+      replyNeedles: ['Bildirimin türünü ve zamanını incele', 'kritik bildirim', 'ilgili kayda veya ekrana geç'],
     },
     {
       label: 'personel chip roundtrip missing data',

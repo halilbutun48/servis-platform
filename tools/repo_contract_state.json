@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  14,
-    "currentWarningHotFileCount":  7,
+    "currentWarningHotFileCount":  8,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -220,6 +220,10 @@
                                                        "backend/scripts/sefer_abi_reasoning_assistant_01_check.js":  {
                                                                                                              "class":  "safe-candidate-review",
                                                                                                              "note":  "sefer abi reasoning assistant check; controlled cleanup adayi"
+                                                                                                         },
+                                                       "backend/src/ai/chat/seferAbiReasoningAssistant.js":  {
+                                                                                                             "class":  "safe-candidate-review",
+                                                                                                             "note":  "reasoning assistant runtime companion; controlled cleanup adayi"
                                                                                                          },
                                                        "mobile/src/screens/driverPremiumUi.js":  {
                                                                                                       "class":  "safe-candidate-review",

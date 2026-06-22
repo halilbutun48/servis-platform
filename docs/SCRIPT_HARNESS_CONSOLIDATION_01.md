@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `378`
+- Toplam package script entry: `379`
 - Toplam executable tracked file: `1173`
-- Combined registry row: `1551`
-- Root/backend/web/mobile package dağılımı: root `221`, backend `733`, web `93`, mobile `201`
+- Combined registry row: `1552`
+- Root/backend/web/mobile package dağılımı: root `222`, backend `733`, web `93`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -192,7 +192,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `574`
+- NEEDS_REVIEW: `575`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
@@ -213,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 574 |
+| NEEDS_REVIEW | 575 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -292,6 +292,7 @@ Repo: `servis-platform`
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
 | root:check:seferabiallrolesreasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01 |  | Owner or chain unclear |  |
+| root:check:copilotcontextmemorytaskstate01 | package.json | root | node backend/scripts/copilot_context_memory_task_state_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTCONTEXTMEMORYTASKSTATE-01 |  | Owner or chain unclear |  |
 | root:check:plancenterguidedflowpersistence01 | package.json | root | node backend/scripts/plan_center_guided_flow_persistence_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PLANCENTERGUIDEDFLOWPERSISTENCE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
 | root:check:m95e23c | package.json | root | npm --prefix web run check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | ROOT-CHECK-M-95-E-23-C |  | Breaks frontend/web lint gate |  |
@@ -1099,7 +1100,7 @@ Repo: `servis-platform`
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend |  | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
