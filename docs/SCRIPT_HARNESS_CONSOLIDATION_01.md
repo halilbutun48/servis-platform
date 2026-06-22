@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-06-20
+Tarih: 2026-06-22
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
 - Toplam package script entry: `378`
-- Toplam executable tracked file: `1171`
-- Combined registry row: `1549`
-- Root/backend/web/mobile package dağılımı: root `221`, backend `733`, web `91`, mobile `201`
+- Toplam executable tracked file: `1173`
+- Combined registry row: `1551`
+- Root/backend/web/mobile package dağılımı: root `221`, backend `733`, web `93`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -192,7 +192,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `572`
+- NEEDS_REVIEW: `574`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
@@ -213,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 572 |
+| NEEDS_REVIEW | 574 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1236,6 +1236,8 @@ Repo: `servis-platform`
 | roomShiftsPanelActions.js | web/src/panels/room/roomShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
 | roomShiftsPanelHelpers.js | web/src/panels/room/roomShiftsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | roomShiftsPanelUtils.js | web/src/panels/room/roomShiftsPanelUtils.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-UTILS |  | Owner or chain unclear |  |
+| roomShiftsPanelWorkflow.js | web/src/panels/room/roomShiftsPanelWorkflow.js | web |  | review | NEEDS_REVIEW |  | ROOM-SHIFTS-PANEL-WORKFLOW |  | Owner or chain unclear |  |
+| roomVehiclesPanelActions.js | web/src/panels/room/roomVehiclesPanelActions.js | web |  | review | NEEDS_REVIEW |  | ROOM-VEHICLES-PANEL-ACTIONS |  | Owner or chain unclear |  |
 | roomVehiclesPanelUtils.js | web/src/panels/room/roomVehiclesPanelUtils.js | web |  | review | NEEDS_REVIEW |  | ROOM-VEHICLES-PANEL-UTILS |  | Owner or chain unclear |  |
 | useRoomVehicleTelematics.js | web/src/panels/room/useRoomVehicleTelematics.js | web |  | review | NEEDS_REVIEW |  | USE-ROOM-VEHICLE-TELEMATICS |  | Owner or chain unclear |  |
 | boardingChangeUi.js | web/src/panels/shared/boardingChangeUi.js | web |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-UI |  | Owner or chain unclear |  |
