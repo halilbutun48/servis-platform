@@ -101,14 +101,20 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   }
 
   if (looksLikeDetailContinuationQuestion(originalText) || looksLikeDetailContinuationQuestion(combinedText)) {
-    const lastQuestionType = normalizeText(options.conversationState?.lastQuestionType || options.conversationState?.lastGuidedTaskQuestionType || '');
+    const lastQuestionType = normalizeText(options.conversationState?.taskState?.currentQuestionType || options.conversationState?.taskState?.lastQuestionType || options.conversationState?.lastQuestionType || options.conversationState?.lastGuidedTaskQuestionType || options.conversationState?.taskState?.currentGuidedTaskQuestionType || options.conversationState?.taskState?.lastGuidedTaskQuestionType || '');
     const lastConcern = normalizeText(String(
-      options.conversationState?.lastPrimaryConcern
+      options.conversationState?.taskState?.currentPrimaryConcern
+      || options.conversationState?.taskState?.lastPrimaryConcern
+      || options.conversationState?.taskState?.currentUserMessage
+      || options.conversationState?.taskState?.lastUserMessage
+      || options.conversationState?.taskState?.currentRawUserMessage
+      || options.conversationState?.taskState?.lastRawUserMessage
+      || options.conversationState?.lastPrimaryConcern
       || options.conversationState?.lastUserMessage
       || options.conversationState?.lastRawUserMessage
       || '',
     ));
-    if (/(vardiya.*nasıl.*oluştur|teklif.*nasıl.*alınır|sözleşmeye.*nasıl.*geçilir|servisimi.*nasıl.*takip|check-?in.*nasıl.*yap)/.test(lastConcern) || ['HOW_TO_HELP', 'DETAIL_FLOW'].includes(lastQuestionType)) {
+    if (/(vardiya.*nasıl.*oluştur|teklif.*nasıl.*alınır|sözleşmeye.*nasıl.*geçilir|servisimi.*nasıl.*takip|check-?in.*nasıl.*yap)/.test(lastConcern) || ['how_to_help', 'detail_flow'].includes(lastQuestionType)) {
       return {
         questionType: 'HOW_TO_HELP',
         confidence: 0.94,

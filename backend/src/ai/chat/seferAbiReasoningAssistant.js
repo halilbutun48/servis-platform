@@ -1,5 +1,7 @@
 import { hasExplicitRoleBoundarySignal } from './answerQualityPolicy.js';
 import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
+import { buildConversationTaskState } from './conversationTaskState.js';
+import { buildSelectedRecordText, detectRepetition } from './conversationTaskState.js';
 import { COPILOT_REASONING_ANSWER_COMPOSER_VERSION, composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 
 export const SEFER_ABI_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-REASONING-ASSISTANT-01';
@@ -332,7 +334,18 @@ function detectSeferAbiReasoningIntentFamily({
   conversationState = null,
 } = {}) {
   const text = normalizeText(message);
-  const lastQuestionType = String(conversationState?.lastQuestionType || '');
+  const lastQuestionType = String(
+    conversationState?.taskState?.currentQuestionType
+    || conversationState?.taskState?.lastQuestionType
+    || conversationState?.lastQuestionType
+    || conversationState?.taskState?.currentGuidedTaskQuestionType
+    || conversationState?.taskState?.lastGuidedTaskQuestionType
+    || conversationState?.lastGuidedTaskQuestionType
+    || conversationState?.taskState?.currentGuidedTaskIntent
+    || conversationState?.taskState?.lastGuidedTaskIntent
+    || conversationState?.lastGuidedTaskIntent
+    || '',
+  );
   if (!text) return 'DEFAULT';
 
   if (/(bunu\s+sen\s+yap|benim\s+yerime\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|benim\s+ad(?:ı|i)ma\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|sen\s+uygula|sen\s+kaydet|sen\s+oluştur|sen\s+olustur|aracı\s+ata|araci\s+ata|teklifi\s+kabul\s+et|sözleşmeyi\s+yürürlüğe\s+al|sozlesmeyi\s+yururluge\s+al)/.test(text)) return 'DELEGATE_SAFE';
@@ -519,16 +532,6 @@ function buildBoundaryText(snapshot) {
   return boundaryBits[0] || '';
 }
 
-function buildSelectedRecordText(snapshot) {
-  return uniqueStrings([
-    snapshot?.selectedRecordStatus || '',
-    snapshot?.analysis?.selectedRecordStatus || '',
-    snapshot?.screenContext?.selectedSummary || '',
-    snapshot?.screenContext?.selectedLabel || '',
-    snapshot?.screenContext?.selectedEntityLabel || '',
-  ])[0] || '';
-}
-
 function buildReasoningLead(snapshot) {
   return firstNonEmpty(
     buildIntentLead(snapshot),
@@ -579,17 +582,6 @@ function detectDangerRequest(snapshot) {
     || /(fake success|sahte başarı|sahte basari|yapmış gibi|yapmis gibi|yaptım de|yaptim de|gerçekten yapma|gercekten yapma|otomatik .*?(oluştur|olustur|uygula|yap)|db write|write-action|tool execution|runtime ai action|osrm call|geocode execute|route apply|dispatch apply|bunu\s+sen\s+yap|benim\s+yerime\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|benim\s+ad(?:ı|i)ma\s+(?:yap|uygula|işle|isle|kaydet|oluştur|olustur|ata|atama|onayla|kabul\s+et)|teklifi\s+kabul\s+et|aracı\s+ata|araci\s+ata|sözleşmeyi\s+yürürlüğe\s+al|sozlesmeyi\s+yururluge\s+al|sözleşmeyi\s+uygula|sozlesmeyi\s+uygula)/i.test(text)
     || /(^|[\s:])(?:otomatik|auto)(?:[\s:]+.*)?(?:oluştur|olustur|uygula|yap|ekle|kaydet)/i.test(text)
   );
-}
-
-function detectRepetition(snapshot) {
-  const previousFingerprint = String(snapshot?.conversationState?.lastReasoningFingerprint || '').trim();
-  const previousMessage = normalizeText(firstNonEmpty(snapshot?.conversationState?.lastUserMessage, snapshot?.conversationState?.lastRawUserMessage, ''));
-  const currentMessage = normalizeText(snapshot?.normalizedMessage || snapshot?.message || '');
-  if (!previousFingerprint && !previousMessage) return 0;
-  const sameFingerprint = previousFingerprint && previousFingerprint === snapshot?.fingerprint;
-  const sameMessage = previousMessage && currentMessage && previousMessage === currentMessage;
-  const previousRepeatCount = Number(snapshot?.conversationState?.lastReasoningRepeatCount || 0);
-  return sameFingerprint || sameMessage ? previousRepeatCount + 1 : 0;
 }
 
 function buildSuggestedChips(snapshot) {
@@ -668,12 +660,35 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     analysis,
     contextPriority,
   });
+  const taskState = buildConversationTaskState({
+    message,
+    rawMessage: message,
+    questionType,
+    conversationState,
+    screenContext,
+    sourceScreenContext,
+    screenDefinition,
+    sourceScreenDefinition,
+    guidedTaskMeta,
+    contextPriority,
+    analysis,
+    roleMode,
+    userRole,
+    entityType,
+    screenPath,
+  });
   const interactionIntentFamily = detectSeferAbiReasoningIntentFamily({ message, questionType, conversationState });
   const reasoningLead = buildReasoningLead({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const nextBestAction = buildNextAction({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const boundaryText = buildBoundaryText({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const clarifyingQuestion = buildClarifyingQuestion({ guidedTaskMeta, contextPriority, roleProfile, interactionIntentFamily });
   const previousTaskState = firstNonEmpty(
+    taskState?.anchorLabel,
+    taskState?.selectedSummary,
+    taskState?.selectedLabel,
+    taskState?.lastSelectedLabel,
+    taskState?.lastPrimaryConcern,
+    taskState?.currentPrimaryConcern,
     conversationState?.lastSelectedLabel,
     conversationState?.lastSelectedSummary,
     conversationState?.lastGuidedTaskQuestionType,
@@ -699,6 +714,9 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
   });
   const selectedContextPresent = Boolean(
     selectedRecordStatus
+    || taskState?.selectedRecordStatus
+    || taskState?.selectedSummary
+    || taskState?.anchorLabel
     || selectedFieldLines.length
     || selectedBadgeLines.length
     || selectedSignalLines.length
@@ -716,6 +734,16 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     selectedFieldLines.join(' | '),
     selectedBadgeLines.join(' | '),
     selectedSignalLines.join(' | '),
+    String(taskState?.anchorLabel || ''),
+    String(taskState?.selectedSummary || ''),
+    String(taskState?.selectedRecordStatus || ''),
+    String(taskState?.currentQuestionType || ''),
+    String(taskState?.currentGuidedTaskQuestionType || ''),
+    String(taskState?.currentGuidedTaskFlowId || ''),
+    String(taskState?.currentGuidedTaskProgressCommand || ''),
+    String(taskState?.currentPrimaryConcern || ''),
+    String(taskState?.currentUserMessage || ''),
+    String(taskState?.currentRawUserMessage || ''),
     normalizedMessage,
     String(conversationState?.lastReasoningFingerprint || ''),
     String(conversationState?.lastReasoningMode || ''),
@@ -734,6 +762,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     explicitBoundary
     || repeatCount > 0
     || selectedContextPresent
+    || taskState?.isFollowUp
     || reasoningLead
     || nextBestAction
     || boundaryText
@@ -818,6 +847,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     context,
     sourceScreenDefinition,
     sourceScreenContext,
+    taskState,
     suggestedChips: buildSuggestedChips({
       roleMode,
       effectiveRole,
@@ -857,10 +887,48 @@ function composeReasoningLead(snapshot) {
   const nextBestAction = snapshot?.nextBestAction || '';
   const boundaryText = snapshot?.boundaryText || '';
   const rawReply = limitText(snapshot?.rawReply || '', roleProfile.maxLength);
+  const screenPurposeText = firstNonEmpty(
+    snapshot?.guide?.plainSummary,
+    snapshot?.guide?.summary,
+    snapshot?.screenContext?.menuPurpose,
+    snapshot?.screenDefinition?.menuPurpose,
+    snapshot?.sourceScreenContext?.menuPurpose,
+    snapshot?.screenContext?.helpContextSummary,
+    snapshot?.screenDefinition?.summary,
+    '',
+  );
+  const firstControlText = firstNonEmpty(
+    snapshot?.screenDefinition?.firstStep,
+    snapshot?.screenContext?.firstStep,
+    snapshot?.guide?.firstStep,
+    '',
+  );
   const needsPrefix = !textIncludes(rawReply, roleProfile.frame);
   const simpleRoleMode = String(snapshot?.roleMode || '').toUpperCase() === 'SIMPLE';
   const hasGuidedTask = Boolean(snapshot?.guidedTaskMeta?.familyId || snapshot?.contextPriority?.guidedTaskMeta?.familyId);
   const avoidNowLead = SEFER_ABI_REASONING_ASSISTANT_NOW_LEAD_STRIP_QUESTION_TYPES.has(String(snapshot?.questionType || ''));
+  if (String(snapshot?.questionType || '') === 'SCREEN_PURPOSE') {
+    const parts = [];
+    const normalizedScreenPurposeText = String(firstNonEmpty(screenPurposeText, '')).trim();
+    const screenPurposeSentence = normalizedScreenPurposeText
+      ? firstNonEmpty(normalizedScreenPurposeText.split(/(?<=[.!?])\s+/)[0], normalizedScreenPurposeText)
+      : '';
+    const screenPurposeLead = screenPurposeSentence
+      ? (/^Bu (ekran|program|bilgi|rolde|yardım|yardim)/i.test(screenPurposeSentence)
+        ? screenPurposeSentence
+        : `Bu ekran, ${screenPurposeSentence}`)
+      : 'Bu ekran yardım için kullanılır.';
+    if (screenPurposeLead) parts.push(screenPurposeLead);
+    if (firstControlText) parts.push(`İlk bakılacak yer: ${String(firstControlText).trim()}`);
+    if (selectedRecordStatus) parts.push(`Seçili kayıt: ${selectedRecordStatus}.`);
+    if (reasoningLead && !textIncludes(screenPurposeLead, reasoningLead)) parts.push(reasoningLead);
+    if (nextBestAction && !textIncludes(screenPurposeLead, nextBestAction)) parts.push(avoidNowLead ? nextBestAction : `Şimdi: ${nextBestAction}`);
+    if (boundaryText && !textIncludes(screenPurposeLead, boundaryText)) parts.push(boundaryText);
+    if (roleProfile.role === 'PERSONEL' && !textIncludes(screenPurposeLead, 'KVKK')) parts.push('Odak: KVKK.');
+    if (roleProfile.role === 'PARENT' && !textIncludes(screenPurposeLead, 'çocuk')) parts.push('Odak: çocuk.');
+    const lead = joinReply(parts, roleProfile.maxLength);
+    return lead ? `${lead} ${rawReply}`.trim() : rawReply;
+  }
   const prefix = needsPrefix
     ? (simpleRoleMode ? (avoidNowLead ? roleProfile.frame : 'Şimdi:') : (hasGuidedTask ? (avoidNowLead ? roleProfile.frame : 'Şimdi:') : roleProfile.frame))
     : '';
@@ -870,7 +938,13 @@ function composeReasoningLead(snapshot) {
   if (sharedScreenPrefix) parts.push(sharedScreenPrefix);
   if (selectedRecordStatus && !textIncludes(rawReply, selectedRecordStatus)) parts.push(`Seçili kayıt: ${selectedRecordStatus}.`);
   if (reasoningLead && !textIncludes(rawReply, reasoningLead)) parts.push(reasoningLead);
-  if (nextBestAction && !textIncludes(rawReply, nextBestAction)) parts.push(avoidNowLead ? nextBestAction : `Şimdi: ${nextBestAction}`);
+  if (nextBestAction && !textIncludes(rawReply, nextBestAction)) {
+    parts.push(
+      String(snapshot?.questionType || '') === 'NEXT_BEST_ACTION'
+        ? `Sıradaki doğru işlem: ${nextBestAction}`
+        : (avoidNowLead ? nextBestAction : `Şimdi: ${nextBestAction}`),
+    );
+  }
   if (boundaryText && !textIncludes(rawReply, boundaryText)) parts.push(boundaryText);
   if (roleProfile.role === 'PERSONEL' && !textIncludes(rawReply, 'KVKK')) parts.push('Odak: KVKK.');
   if (roleProfile.role === 'PARENT' && !textIncludes(rawReply, 'çocuk')) parts.push('Odak: çocuk.');

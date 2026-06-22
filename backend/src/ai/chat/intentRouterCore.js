@@ -266,7 +266,18 @@ export function isShortFollowUp(text) {
 }
 
 export function lastQuestionType(state) {
-  return String(state?.lastQuestionType || state?.lastGuidedTaskQuestionType || state?.lastGuidedTaskIntent || '').trim();
+  return String(
+    state?.taskState?.currentQuestionType
+    || state?.taskState?.lastQuestionType
+    || state?.lastQuestionType
+    || state?.taskState?.currentGuidedTaskQuestionType
+    || state?.taskState?.lastGuidedTaskQuestionType
+    || state?.lastGuidedTaskQuestionType
+    || state?.taskState?.currentGuidedTaskIntent
+    || state?.taskState?.lastGuidedTaskIntent
+    || state?.lastGuidedTaskIntent
+    || '',
+  ).trim();
 }
 
 export function computeConfidence(score = 0) {

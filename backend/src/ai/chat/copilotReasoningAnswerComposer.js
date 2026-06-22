@@ -189,12 +189,29 @@ function privacyBoundaryRequested(snapshot = {}) {
 }
 
 function progressCommand(snapshot = {}) {
-  return String(firstNonEmpty(snapshot?.userProgressCommand, snapshot?.interactionIntentFamily, '') || '');
+  return String(firstNonEmpty(
+    snapshot?.userProgressCommand,
+    snapshot?.taskState?.currentGuidedTaskProgressCommand,
+    snapshot?.taskState?.lastGuidedTaskProgressCommand,
+    snapshot?.conversationState?.taskState?.currentGuidedTaskProgressCommand,
+    snapshot?.conversationState?.taskState?.lastGuidedTaskProgressCommand,
+    snapshot?.interactionIntentFamily,
+    '',
+  ) || '');
 }
 
 function previousTaskState(snapshot = {}) {
   return firstNonEmpty(
     snapshot?.previousTaskState,
+    snapshot?.taskState?.anchorLabel,
+    snapshot?.taskState?.selectedSummary,
+    snapshot?.taskState?.selectedLabel,
+    snapshot?.taskState?.lastSelectedLabel,
+    snapshot?.taskState?.lastPrimaryConcern,
+    snapshot?.conversationState?.taskState?.anchorLabel,
+    snapshot?.conversationState?.taskState?.selectedSummary,
+    snapshot?.conversationState?.taskState?.selectedLabel,
+    snapshot?.conversationState?.taskState?.lastSelectedLabel,
     snapshot?.conversationState?.lastSelectedLabel,
     snapshot?.conversationState?.lastSelectedSummary,
     snapshot?.conversationState?.lastGuidedTaskQuestionType,

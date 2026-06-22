@@ -900,12 +900,20 @@ export function detectCopilotGuidedTaskEngineProgressCommand(message, conversati
   const text = normalizeText(message);
   if (!text) return null;
   const lastFlowId = firstNonEmpty(
+    conversationState?.taskState?.currentGuidedTaskFlowId,
+    conversationState?.taskState?.lastGuidedTaskFlowId,
     conversationState?.lastGuidedTaskFlowId,
     conversationState?.lastGuidedTaskFamilyId,
     conversationState?.lastGuidedTaskIntent,
     '',
   );
-  const hasGuidedTask = Boolean(lastFlowId || conversationState?.lastGuidedTaskStepIndex != null || conversationState?.lastGuidedTaskQuestionType);
+  const hasGuidedTask = Boolean(
+    lastFlowId
+    || conversationState?.taskState?.currentGuidedTaskQuestionType
+    || conversationState?.taskState?.lastGuidedTaskQuestionType
+    || conversationState?.lastGuidedTaskStepIndex != null
+    || conversationState?.lastGuidedTaskQuestionType
+  );
   if (!hasGuidedTask && !/(girdim|yaptim|yaptım|bulamadım|bulamadim|devam|sonraki|baştan|bastan|geri dön|geri don|iptal)/.test(text)) {
     return null;
   }
@@ -925,11 +933,18 @@ function bestFamilyScores({ message, originalMessage, screenPath, sourceScreenPa
   const guidedSurfacePath = firstNonEmpty(sourceScreenPath, screenPath, '');
   const progress = detectCopilotGuidedTaskEngineProgressCommand(raw, conversationState);
   const lastGuidedFlowId = firstNonEmpty(
+    conversationState?.taskState?.currentGuidedTaskFlowId,
+    conversationState?.taskState?.lastGuidedTaskFlowId,
     conversationState?.lastGuidedTaskFlowId,
     conversationState?.lastGuidedTaskFamilyId,
     '',
   );
-  const lastGuidedQuestionType = firstNonEmpty(conversationState?.lastGuidedTaskQuestionType, '');
+  const lastGuidedQuestionType = firstNonEmpty(
+    conversationState?.taskState?.currentGuidedTaskQuestionType,
+    conversationState?.taskState?.lastGuidedTaskQuestionType,
+    conversationState?.lastGuidedTaskQuestionType,
+    '',
+  );
   const candidateRows = [];
   const guidedTaskApplySignal = /(\buygula\b|\bdevreye\s+al\b|\bbunu\s+sisteme\s+uygula\b|\brot[aıi]y[ıi]\s+uygula\b|\bkaydet\b|\bolu[şs]tur\b|\bbenim\s+yerime\s+yap\b)/.test(text);
   for (const family of FAMILY_DEFINITIONS) {
@@ -972,7 +987,7 @@ function bestFamilyScores({ message, originalMessage, screenPath, sourceScreenPa
     if (guidedTaskApplySignal && family.familyId === 'ROUTE_REVIEW_APPROVAL') {
       score -= 3;
     }
-    if (family.replyMode === 'BLOCKED' && progress?.command === 'CONTINUE' && (conversationState?.lastGuidedTaskFlowId === family.familyId || conversationState?.lastGuidedTaskQuestionType === family.questionType)) {
+    if (family.replyMode === 'BLOCKED' && progress?.command === 'CONTINUE' && (lastGuidedFlowId === family.familyId || lastGuidedQuestionType === family.questionType)) {
       score += 2;
     }
     if (family.replyMode === 'BLOCKED' && compact.includes('yaptimdegercektenyapma')) score += 2;
@@ -1053,6 +1068,8 @@ export function detectCopilotGuidedTaskEngineIntent({
 
   const progress = detectCopilotGuidedTaskEngineProgressCommand(message, conversationState);
   const progressFlowId = firstNonEmpty(
+    conversationState?.taskState?.currentGuidedTaskFlowId,
+    conversationState?.taskState?.lastGuidedTaskFlowId,
     conversationState?.lastGuidedTaskFlowId,
     conversationState?.lastGuidedTaskFamilyId,
     '',
