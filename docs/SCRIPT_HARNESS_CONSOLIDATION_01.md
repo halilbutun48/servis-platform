@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `379`
-- Toplam executable tracked file: `1173`
-- Combined registry row: `1552`
-- Root/backend/web/mobile package dağılımı: root `222`, backend `733`, web `93`, mobile `201`
+- Toplam executable tracked file: `1183`
+- Combined registry row: `1562`
+- Root/backend/web/mobile package dağılımı: root `222`, backend `743`, web `93`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -192,11 +192,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `575`
+- NEEDS_REVIEW: `585`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `313`
+- Eski sistem term eşleşmesi: `318`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -213,7 +213,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 575 |
+| NEEDS_REVIEW | 585 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -585,6 +585,7 @@ Repo: `servis-platform`
 | cop_04b_panel_context_audit_check.js | backend/scripts/cop_04b_panel_context_audit_check.js | backend | root:check:cop04b | product | ACTIVE |  | COP-04-B-PANEL-CONTEXT-AUDIT-CHECK |  | Owner or chain unclear | product check/helper |
 | cop_live_accept_01_check.js | backend/scripts/cop_live_accept_01_check.js | backend | root:check:copliveaccept01 | product | ACTIVE |  | COP-LIVE-ACCEPT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | copilot_ai_action_roadmap_01_check.js | backend/scripts/copilot_ai_action_roadmap_01_check.js | backend | root:check:copilotairoadmap01 | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
+| copilot_context_memory_task_state_01_check.js | backend/scripts/copilot_context_memory_task_state_01_check.js | backend | root:check:copilotcontextmemorytaskstate01 | review | NEEDS_REVIEW |  | COPILOT-CONTEXT-MEMORY-TASK-STATE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_demand_to_agreement_roadmap_01_check.js | backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js | backend | root:check:copilotdemandagreement01 | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
 | copilot_e_block_runtime_answer_integration_01_check.js | backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js | backend | root:check:copiloteblockruntimeanswerintegration01 | review | NEEDS_REVIEW |  | COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01-CHECK |  | Owner or chain unclear |  |
 | copilot_excel_demand_import_01_check.js | backend/scripts/copilot_excel_demand_import_01_check.js | backend | root:check:copilotexceldemandimport01 | review | NEEDS_REVIEW |  | COPILOT-EXCEL-DEMAND-IMPORT-01-CHECK |  | Owner or chain unclear |  |
@@ -945,6 +946,15 @@ Repo: `servis-platform`
 | addressGeocodingConfidencePolicy.js | backend/src/ai/chat/addressGeocodingConfidencePolicy.js | backend |  | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-POLICY |  | Owner or chain unclear |  |
 | answerQualityPolicy.js | backend/src/ai/chat/answerQualityPolicy.js | backend |  | review | NEEDS_REVIEW |  | ANSWER-QUALITY-POLICY |  | Owner or chain unclear |  |
 | contextResolver.js | backend/src/ai/chat/contextResolver.js | backend |  | review | NEEDS_REVIEW |  | CONTEXT-RESOLVER |  | Owner or chain unclear |  |
+| conversationTaskState.js | backend/src/ai/chat/conversationTaskState.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE |  | Owner or chain unclear |  |
+| conversationTaskStateBuilders.js | backend/src/ai/chat/conversationTaskStateBuilders.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-BUILDERS |  | Owner or chain unclear |  |
+| conversationTaskStateClarifiers.js | backend/src/ai/chat/conversationTaskStateClarifiers.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-CLARIFIERS |  | Owner or chain unclear |  |
+| conversationTaskStateCompanyReplies.js | backend/src/ai/chat/conversationTaskStateCompanyReplies.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-COMPANY-REPLIES |  | Owner or chain unclear |  |
+| conversationTaskStateFollowUps.js | backend/src/ai/chat/conversationTaskStateFollowUps.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-FOLLOW-UPS |  | Owner or chain unclear |  |
+| conversationTaskStateResponses.js | backend/src/ai/chat/conversationTaskStateResponses.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-RESPONSES |  | Owner or chain unclear |  |
+| conversationTaskStateRoomReplies.js | backend/src/ai/chat/conversationTaskStateRoomReplies.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-ROOM-REPLIES |  | Owner or chain unclear |  |
+| conversationTaskStateSelectedRecord.js | backend/src/ai/chat/conversationTaskStateSelectedRecord.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-SELECTED-RECORD |  | Owner or chain unclear |  |
+| conversationTaskStateShared.js | backend/src/ai/chat/conversationTaskStateShared.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-SHARED |  | Owner or chain unclear |  |
 | copilotAiActionRoadmap.js | backend/src/ai/chat/copilotAiActionRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP |  | Owner or chain unclear |  |
 | copilotDemandToAgreementRoadmap.js | backend/src/ai/chat/copilotDemandToAgreementRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP |  | Owner or chain unclear |  |
 | copilotEBlockRuntimeAnswerIntegration.js | backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-EBLOCK-RUNTIME-ANSWER-INTEGRATION |  | Owner or chain unclear |  |
