@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  14,
-    "currentWarningHotFileCount":  9,
+    "currentWarningHotFileCount":  7,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -168,15 +168,7 @@
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "room agreement bridge panel; controlled cleanup adayi"
                                                                                                  },
-                                                         "web/src/panels/room/VehiclesPanel.jsx":  {
-                                                                                                "class":  "safe-candidate-review",
-                                                                                                "note":  "vehicle roster hot path; controlled cleanup adayi"
-                                                                                            },
-                                                        "web/src/panels/room/ShiftsPanel.jsx":  {
-                                                                                                "class":  "safe-candidate-review",
-                                                                                                "note":  "room shifts hot path; controlled cleanup adayi"
-                                                                                            },
-                                                         "web/src/index.css":  {
+                                                       "web/src/index.css":  {
                                                                                   "class":  "safe-candidate-review",
                                                                                   "note":  "nav dock premium polish; controlled cleanup adayi"
                                                                               },

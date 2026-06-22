@@ -403,6 +403,8 @@ function main() {
     "web/src/panels/room/VehiclesPanel.jsx",
     "web/src/panels/room/roomVehiclesPanelCards.jsx",
     "web/src/panels/room/roomVehiclesPanelRows.jsx",
+    "web/src/panels/room/roomShiftsPanelWorkflow.js",
+    "web/src/panels/room/roomVehiclesPanelActions.js",
     "web/src/panels/room/useRoomVehicleTelematics.js",
     "web/src/panels/parent/LivePanel.jsx",
     "web/src/panels/personel/LivePanel.jsx",

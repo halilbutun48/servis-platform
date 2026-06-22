@@ -490,6 +490,8 @@ function main() {
     "web/src/panels/room/roomShiftsOverviewSection.jsx",
     "web/src/panels/room/roomVehiclesPanelCards.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/panels/room/roomShiftsPanelWorkflow.js",
+    "web/src/panels/room/roomVehiclesPanelActions.js",
     "web/src/panels/shared/PanelKvkkHint.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
     "web/src/utils/regionOwnership.js",

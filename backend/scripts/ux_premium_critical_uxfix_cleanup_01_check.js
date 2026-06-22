@@ -324,6 +324,8 @@ function main() {
     "web/src/panels/room/roomShiftsPanelRows.jsx",
     "web/src/panels/room/roomVehiclesPanelCards.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/panels/room/roomShiftsPanelWorkflow.js",
+    "web/src/panels/room/roomVehiclesPanelActions.js",
     "web/src/panels/room/RoomDriversQuickPenaltyCard.jsx",
     "web/src/panels/shared/PanelKvkkHint.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
