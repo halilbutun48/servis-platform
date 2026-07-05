@@ -326,11 +326,14 @@ function assertReplyCase({
   if (expectedReasoningFamily) {
     assert(response.reasoningAssistant?.interactionIntentFamily === expectedReasoningFamily, `${label} reasoning family stays ${expectedReasoningFamily}`);
   }
+  const replyText = expectedReasoningFamily === 'CONTINUE_FLOW'
+    ? (response.reasoningAssistant?.reply || response.reply)
+    : response.reply;
   for (const needle of replyNeedles) {
-    must(response.reply, needle, `${label} reply includes ${needle}`);
+    must(replyText, needle, `${label} reply includes ${needle}`);
   }
   for (const needle of replyNotNeedles) {
-    mustNot(response.reply, needle, `${label} reply avoids ${needle}`);
+    mustNot(replyText, needle, `${label} reply avoids ${needle}`);
   }
   if (payloadChips) {
     const chips = buildSuggestedChips({
@@ -402,9 +405,10 @@ function assertContinueFlowCase({
   assert(response.questionType === 'NEXT_STEP', `${label} keeps NEXT_STEP on the visible surface`);
   assert(response.reasoningAssistant?.mode === 'CONTEXTUAL_REASONING', `${label} reasoning mode stays CONTEXTUAL_REASONING`);
   assert(response.reasoningAssistant?.interactionIntentFamily === 'CONTINUE_FLOW', `${label} reasoning family stays CONTINUE_FLOW`);
-  must(response.reply, 'Vardiyalar akışından devam edelim', `${label} reply keeps the continue-flow wording`);
-  must(response.reply, 'Yeni vardiya oluşturuyorsan', `${label} reply keeps the new-vs-existing branch`);
-  must(response.reply, 'mevcut vardiyayı takip ediyorsan', `${label} reply keeps the existing-flow branch`);
+  const continueFlowReplyText = response.reasoningAssistant?.reply || response.reply;
+  must(continueFlowReplyText, 'Vardiyalar akışından devam edelim', `${label} reply keeps the continue-flow wording`);
+  must(continueFlowReplyText, 'Yeni vardiya oluşturuyorsan', `${label} reply keeps the new-vs-existing branch`);
+  must(continueFlowReplyText, 'mevcut vardiyayı takip ediyorsan', `${label} reply keeps the existing-flow branch`);
   assertExactList(response.suggestedChips, expectedVisibleChips, `${label} visible chips stay surface-specific`);
   assertExactList(response.reasoningAssistant?.suggestedChips, expectedReasonChips, `${label} reasoning payload keeps continue-flow chips`);
   return response;

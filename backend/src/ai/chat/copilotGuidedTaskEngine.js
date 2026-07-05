@@ -5,6 +5,7 @@ import {
   getCopilotEBlockRuntimeAnswerTopicMeta,
   listCopilotEBlockRuntimeAnswerTopics,
 } from './copilotEBlockRuntimeAnswerIntegration.js';
+import { buildDynamicQuestionChips } from './conversationTaskStateResponses.js';
 import {
   firstNonEmpty,
   makeAskAction,
@@ -1207,7 +1208,11 @@ export function detectCopilotGuidedTaskEngineIntent({
   const secondary = candidates[1] || null;
   const family = best.family;
   const isAmbiguous = Boolean(secondary && secondary.score >= Math.max(2, best.score - 1));
-  const needsClarification = Boolean(isAmbiguous && family.replyMode === 'GUIDED') || Boolean(family.clarificationQuestion && family.replyMode === 'GUIDED' && best.score < 5);
+  const needsClarification = Boolean(
+    (family.familyId === 'GENERAL_GUIDED_TASK_GUIDE' && !progress?.command)
+    || (isAmbiguous && family.replyMode === 'GUIDED')
+    || (family.clarificationQuestion && family.replyMode === 'GUIDED' && best.score < 5),
+  );
   const clarificationQuestion = needsClarification ? buildClarificationQuestion(family, candidates) : '';
   const matchedSignals = uniqueStrings([
     family.familyId,
@@ -1276,6 +1281,16 @@ export function getCopilotGuidedTaskEngineChips({
   if (meta?.clarificationQuestion) {
     return [meta.clarificationQuestion, ...(meta.progressCommand ? ['Devam et'] : [])];
   }
+  const dynamicChips = buildDynamicQuestionChips({
+    message,
+    currentReply: '',
+    questionType: activeTopic || questionType,
+    screenPath,
+    conversationState,
+    roleMode,
+    userRole,
+  });
+  if (Array.isArray(dynamicChips) && dynamicChips.length) return [...dynamicChips];
   if (ROUTE_E_BLOCK_TOPICS.has(String(activeTopic || questionType || ''))) {
     return getCopilotEBlockRuntimeAnswerChips({ activeTopic, questionType, screenPath });
   }

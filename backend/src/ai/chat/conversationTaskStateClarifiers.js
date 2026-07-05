@@ -98,6 +98,7 @@ function buildSurfaceContext({
     isCompanyPlanningSurface: normalizedPath === '/company'
       || looksLikeCompanyPlanningSurfaceText(surfaceText)
       || looksLikeCompanyPlanningSurfaceText(planningCenterSurfaceText),
+    isCompanyOperationsSurface: normalizedPath.includes('/company/operations') || includeAny(surfaceText, ['operasyon', 'operations']),
     isRoomShiftsSurface: normalizedPath.includes('/room/shifts') || includeAny(surfaceText, ['vardiya', 'shift', 'vardiyalar']),
     isPersonelLiveSurface: normalizedPath.includes('/personel/live') || normalizedPath.includes('/personel/my') || includeAny(surfaceText, ['servis durumu', 'my ride', 'personel']),
     isParentLiveSurface: normalizedPath.includes('/parent/live') || includeAny(surfaceText, ['veli', 'çocuk', 'cocuk']),
@@ -194,7 +195,20 @@ function buildClarifyingQuestionBody({
     return '';
   }
 
-  if (selectedContextPresent && (genericScreenPurposeAsk || genericSelectionAsk || explicitClarifyingRequest)) {
+  if (
+    selectedContextPresent
+    && (genericScreenPurposeAsk || genericSelectionAsk || explicitClarifyingRequest)
+    && !surface.isCompanyPlanningSurface
+    && !surface.isCommercialSurface
+  ) {
+    return 'Hangi kayıt için bakayım? Ekranın amacını mı, seçili kaydı mı netleştireyim?';
+  }
+
+  if (
+    selectedContextPresent
+    && (genericSelectionAsk || explicitClarifyingRequest)
+    && surface.isCompanyPlanningSurface
+  ) {
     return 'Hangi kayıt için bakayım? Ekranın amacını mı, seçili kaydı mı netleştireyim?';
   }
 
@@ -205,6 +219,10 @@ function buildClarifyingQuestionBody({
     if (companySelectionAsk) {
       return 'Teklifi hangi açıdan kıyaslayayım: fiyat, süre, risk veya sözleşme uygunluğu?';
     }
+  }
+
+  if (surface.isCompanyOperationsSurface && includeAny(text, ['bunu ne yapacağım', 'bunu ne yapacagim'])) {
+    return 'Bu operasyon kaydında açık işi mi, sorumlu rolü mü, yoksa sonraki adımı mı netleştireyim?';
   }
 
   if (surface.isRoomShiftsSurface) {

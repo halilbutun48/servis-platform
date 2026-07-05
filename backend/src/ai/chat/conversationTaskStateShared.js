@@ -306,7 +306,8 @@ export function companyPlanningCenterPurposeReply() {
   return [
     'Planlama Merkezi yeni işi kurma ve planlama akışını yönetmek için kullanılır.',
     'Burada paket, tarih, saat, servis yönü, kapsam, personel, adres / konum, durak ve rota önizlemesini kontrol edersin.',
-    'Plan netleşince vardiyayı Vardiyalar ekranında takip eder, sonra teklif ve sözleşme hazırlığına geçersin.',
+    'Yeni Plan Oluştur veya Rehberi Başlat ile yeni akışı açarsın.',
+    'Plan netleşince Vardiyalar ekranında takip edersin, sonra teklif ve sözleşme hazırlığına geçersin.',
   ].join(' ');
 }
 

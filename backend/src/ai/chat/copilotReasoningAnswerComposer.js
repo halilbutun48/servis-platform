@@ -235,12 +235,12 @@ function buildProgressLead(snapshot = {}, reply = '') {
   const repeatCount = Math.max(0, Number(snapshot?.repeatCount || snapshot?.conversationState?.lastReasoningAssistantRepeatCount || 0));
   switch (progress) {
     case 'STEP_ENTERED':
-      return containsNormalized(replyText, 'girdin') ? '' : 'Şimdi: Girdin, tamam.';
+      return 'Şimdi: Girdin, tamam.';
     case 'RESULT_CHECK':
       return containsNormalized(replyText, 'birlikte kontrol') ? '' : 'Şimdi: Yaptığını gördüm; şimdi birlikte kontrol edelim.';
     case 'ALTERNATIVE_PATH':
       return [
-        'Şimdi: Bulamadıysan alternatif menü yolunu birlikte açalım.',
+        'Şimdi: Alternatif menüyü açalım.',
         'Şimdi: Takıldığın yer için başka ekran yolunu gösteriyorum.',
         'Şimdi: Olmadıysa en yakın menü kapısını birlikte bulalım.',
       ][Math.min(repeatCount, 2)];

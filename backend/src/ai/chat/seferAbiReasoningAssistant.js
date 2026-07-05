@@ -2,7 +2,11 @@ import { hasExplicitRoleBoundarySignal } from './answerQualityPolicy.js';
 import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
 import { buildConversationTaskState } from './conversationTaskState.js';
 import { buildSelectedRecordText, detectRepetition } from './conversationTaskState.js';
-import { buildClarifyingQuestionReply, resolveClarifyingQuestionText } from './conversationTaskStateResponses.js';
+import {
+  buildClarifyingQuestionReply,
+  buildDynamicQuestionChips,
+  resolveClarifyingQuestionText,
+} from './conversationTaskStateResponses.js';
 import { COPILOT_REASONING_ANSWER_COMPOSER_VERSION, composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 
 export const SEFER_ABI_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-REASONING-ASSISTANT-01';
@@ -593,6 +597,22 @@ function buildSuggestedChips(snapshot) {
   const profile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
   const roleChips = Array.isArray(profile.chips) ? profile.chips : [];
   const contextualChips = [];
+  const dynamicChips = buildDynamicQuestionChips({
+    message: firstNonEmpty(snapshot?.message, snapshot?.rawMessage, ''),
+    currentReply: snapshot?.rawReply || '',
+    questionType: snapshot?.questionType || '',
+    screenPath: snapshot?.screenPath || '',
+    screenDefinition: snapshot?.screenDefinition || null,
+    screenContext: snapshot?.screenContext || null,
+    sourceScreenDefinition: snapshot?.sourceScreenDefinition || null,
+    sourceScreenContext: snapshot?.sourceScreenContext || null,
+    conversationState: snapshot?.conversationState || null,
+    contextPriority: snapshot?.contextPriority || null,
+    roleMode: snapshot?.roleMode || '',
+    userRole: snapshot?.effectiveRole || snapshot?.userRole || '',
+    user: snapshot?.user || null,
+    analysis: snapshot?.analysis || null,
+  });
   const family = String(snapshot?.interactionIntentFamily || 'DEFAULT');
   if (family === 'CONTINUE_FLOW') contextualChips.push('Devam et');
   if (family === 'STEP_ENTERED') contextualChips.push('İlk kontrolü göster');
@@ -605,7 +625,7 @@ function buildSuggestedChips(snapshot) {
   if (snapshot?.selectedRecordStatus) contextualChips.push('Seçili kayıt özetini göster');
   if (snapshot?.clarifyingQuestion) contextualChips.push(snapshot.clarifyingQuestion);
   if (snapshot?.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') contextualChips.push('Güvenli alternatif göster');
-  return uniqueStrings([...(contextualChips || []), ...(roleChips || [])]).slice(0, snapshot?.roleMode === 'SIMPLE' ? 3 : 5);
+  return uniqueStrings([...(dynamicChips || []), ...(contextualChips || []), ...(roleChips || [])]).slice(0, snapshot?.roleMode === 'SIMPLE' ? 3 : 5);
 }
 
 function buildSharedScreenPrefix(snapshot) {
@@ -1064,7 +1084,16 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
 export function buildSeferAbiReasoningAssistant(options = {}) {
   const snapshot = buildSeferAbiReasoningAssistantContextSnapshot(options);
   const rawReply = composeSeferAbiReasoningReply(snapshot);
-  const reply = composeCopilotReasoningAnswer({ ...snapshot, rawReply });
+  const roomMapLocationHelp = String(snapshot?.questionType || '') === 'LOCATION_HELP'
+    && /\/room\/map\b/.test(normalizeText(firstNonEmpty(
+      snapshot?.screenPath,
+      snapshot?.screenContext?.path,
+      snapshot?.sourceScreenContext?.path,
+      '',
+    )));
+  const reply = roomMapLocationHelp
+    ? rawReply
+    : composeCopilotReasoningAnswer({ ...snapshot, rawReply });
   return Object.freeze({
     ...snapshot,
     reply,

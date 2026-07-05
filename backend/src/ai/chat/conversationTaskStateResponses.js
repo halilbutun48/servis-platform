@@ -12,6 +12,11 @@ import {
 } from './conversationTaskStateBuilders.js';
 import { buildCompanySemanticOverrideReply } from './conversationTaskStateCompanyReplies.js';
 import {
+  buildDynamicQuestionChips,
+  buildDynamicQuestionReply,
+  buildDynamicQuestionState,
+} from './conversationTaskStateDynamicQuestions.js';
+import {
   buildRoomShiftSemanticOverrideReply,
   looksLikeRoomShiftClarifyingRequest,
   looksLikeRoomShiftFocusQuestion,
@@ -42,6 +47,9 @@ export {
   buildScreenExplanationHelpReply,
   buildHowToHelpReply,
   buildCompanySemanticOverrideReply,
+  buildDynamicQuestionReply,
+  buildDynamicQuestionChips,
+  buildDynamicQuestionState,
   companyPlanningCenterNextBestActionReply,
   buildRoomShiftSemanticOverrideReply,
   buildCopilotEBlockRuntimeAnswerReply,
@@ -96,6 +104,9 @@ export function createConversationTaskStateResponses(deps = {}) {
       ensureVisibleSentence: ensureVisibleSentenceImpl,
     }),
     buildCompanySemanticOverrideReply,
+    buildDynamicQuestionReply,
+    buildDynamicQuestionChips,
+    buildDynamicQuestionState,
     companyPlanningCenterNextBestActionReply,
     buildRoomShiftSemanticOverrideReply: (args) => buildRoomShiftSemanticOverrideReply({
       ...args,

@@ -635,9 +635,9 @@ const cases = [
     message: 'Bu ne?',
     questionType: 'SCREEN_PURPOSE',
     mustIncludeAll: [
-      'Netleştirelim:',
-      'Ekranın amacını mı, seçili kaydı mı netleştireyim?',
-      'Alternatif:',
+      'Bu ekran, Planlama Merkezi yeni işi kurma ve vardiya planlama akışını yönetir.',
+      'Seçili kayıt: Seçili plan hazır.',
+      'Aynı akışı sürdürüyorum.',
     ],
   },
   {
