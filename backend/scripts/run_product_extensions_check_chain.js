@@ -84,6 +84,7 @@ const steps = [
   'check:exceltoroutereadinessredteam01',
   'check:copiloteblockruntimeanswerintegration01',
   'check:copilotguidedtaskengine01',
+  'check:copilotclarifyingquestionengine01',
   'check:copilotreasoninganswercomposer01',
   'check:ai03bparaphraseintentaudit01',
   'check:ai03bsemanticvisibleaudit01',

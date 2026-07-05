@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `379`
+- Toplam package script entry: `380`
 - Toplam executable tracked file: `1183`
-- Combined registry row: `1562`
-- Root/backend/web/mobile package dağılımı: root `222`, backend `743`, web `93`, mobile `201`
+- Combined registry row: `1563`
+- Root/backend/web/mobile package dağılımı: root `223`, backend `743`, web `93`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -157,6 +157,11 @@ Repo: `servis-platform`
 - Copilot guided task engine docs: `docs/COPILOT_GUIDED_TASK_ENGINE_01.md`
 - Copilot guided task engine command: `node backend\scripts\copilot_guided_task_engine_01_check.js`
 - Copilot guided task engine helper: `backend/src/ai/chat/copilotGuidedTaskEngine.js`
+- Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`
+- Copilot clarifying question engine check: `check:copilotclarifyingquestionengine01`
+- Copilot clarifying question engine docs: `docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md`
+- Copilot clarifying question engine command: `node backend\scripts\copilot_clarifying_question_engine_01_check.js`
+- Copilot clarifying question engine helper: `backend/src/ai/chat/conversationTaskStateResponses.js`
 - Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`
 - Sefer Abi reasoning assistant check: `check:seferabireasoningassistant01`
 - Sefer Abi reasoning assistant docs: `docs/SEFER_ABI_REASONING_ASSISTANT_01.md`
@@ -176,7 +181,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `171`
+- ACTIVE_CORE: `172`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -206,7 +211,7 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 171 |
+| ACTIVE_CORE | 172 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
@@ -289,6 +294,7 @@ Repo: `servis-platform`
 | root:check:ai03bsemanticvisibleaudit01 | package.json | root | node backend/scripts/ai03b_semantic_visible_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BSEMANTICVISIBLEAUDIT-01 |  | Owner or chain unclear |  |
 | root:check:ai03bsemanticvisiblelivematrix01 | package.json | root | node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BSEMANTICVISIBLELIVEMATRIX-01 |  | Owner or chain unclear |  |
 | root:check:copilotguidedtaskengine01 | package.json | root | node backend/scripts/copilot_guided_task_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-GUIDED-TASK-ENGINE-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotclarifyingquestionengine01 | package.json | root | node backend/scripts/copilot_clarifying_question_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-CLARIFYING-QUESTION-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
 | root:check:seferabiallrolesreasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01 |  | Owner or chain unclear |  |

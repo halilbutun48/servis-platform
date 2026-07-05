@@ -2,6 +2,7 @@ import { hasExplicitRoleBoundarySignal } from './answerQualityPolicy.js';
 import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
 import { buildConversationTaskState } from './conversationTaskState.js';
 import { buildSelectedRecordText, detectRepetition } from './conversationTaskState.js';
+import { buildClarifyingQuestionReply, resolveClarifyingQuestionText } from './conversationTaskStateResponses.js';
 import { COPILOT_REASONING_ANSWER_COMPOSER_VERSION, composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 
 export const SEFER_ABI_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-REASONING-ASSISTANT-01';
@@ -564,6 +565,10 @@ function buildNextAction(snapshot) {
 function buildClarifyingQuestion(snapshot) {
   const profile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
   return firstNonEmpty(
+    resolveClarifyingQuestionText({
+      ...snapshot,
+      roleClarifyingQuestion: profile.clarifyingQuestion,
+    }),
     buildIntentClarifyingQuestion(snapshot),
     snapshot?.guidedTaskMeta?.clarificationQuestion,
     snapshot?.contextPriority?.guidedTaskMeta?.clarificationQuestion,
@@ -648,6 +653,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
   guidedTaskMeta = null,
   entityType = 'screen',
   context = null,
+  reasoningAssistantFlavor = 'standalone',
 } = {}) {
   const effectiveRole = resolveRoleKey(userRole, user);
   const roleProfile = getSeferAbiReasoningRoleProfile(effectiveRole, user);
@@ -845,6 +851,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     guidedTaskMeta,
     user,
     context,
+    reasoningAssistantFlavor,
     sourceScreenDefinition,
     sourceScreenContext,
     taskState,
@@ -872,10 +879,14 @@ function looksLikeRoomShiftClarifyingQuestion(snapshot = {}) {
 
 export function detectSeferAbiReasoningMode(snapshot = {}) {
   if (snapshot.explicitBoundary) return 'SAFE_REFUSAL_WITH_ALTERNATIVE';
-  const hasGuidedTaskMeta = Boolean(snapshot.guidedTaskMeta?.familyId || snapshot.contextPriority?.guidedTaskMeta?.familyId);
-  if (!hasGuidedTaskMeta && looksLikeRoomShiftClarifyingQuestion(snapshot)) return 'CLARIFYING_QUESTION';
-  if (!hasGuidedTaskMeta && snapshot.clarifyingQuestion && snapshot.contextPriority?.needsSelection && !snapshot.selectedContextPresent) return 'CLARIFYING_QUESTION';
   if (snapshot.repeatCount > 0) return 'REPETITION_CONTROL';
+  const hasGuidedTaskMeta = Boolean(snapshot.guidedTaskMeta?.familyId || snapshot.contextPriority?.guidedTaskMeta?.familyId);
+  const roleProfile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
+  const clarifyingPrompt = resolveClarifyingQuestionText({
+    ...snapshot,
+    roleClarifyingQuestion: roleProfile.clarifyingQuestion,
+  });
+  if (!hasGuidedTaskMeta && (clarifyingPrompt || looksLikeRoomShiftClarifyingQuestion(snapshot))) return 'CLARIFYING_QUESTION';
   if (snapshot.hasReasoningSignal) return 'CONTEXTUAL_REASONING';
   return 'PASS_THROUGH';
 }
@@ -1013,10 +1024,24 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
   }
 
   if (snapshot.mode === 'CLARIFYING_QUESTION') {
-    return joinReply([
-      `Netleştirelim: ${firstNonEmpty(snapshot?.clarifyingQuestion, roleProfile.clarifyingQuestion, 'Hangi kayıt için bakayım?')}`,
-      `Alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik alanı birlikte kontrol edelim.')}`,
-    ], roleProfile.maxLength);
+    return buildClarifyingQuestionReply({
+      message: snapshot?.message,
+      questionType: snapshot?.questionType,
+      screenPath: snapshot?.screenPath,
+      screenDefinition: snapshot?.screenDefinition,
+      screenContext: snapshot?.screenContext,
+      sourceScreenDefinition: snapshot?.sourceScreenDefinition,
+      sourceScreenContext: snapshot?.sourceScreenContext,
+      contextPriority: snapshot?.contextPriority,
+      roleClarifyingQuestion: firstNonEmpty(snapshot?.clarifyingQuestion, roleProfile.clarifyingQuestion, 'Hangi kayıt için bakayım?'),
+      preferRoleClarifyingQuestion: String(snapshot?.reasoningAssistantFlavor || 'standalone') !== 'helpComposer'
+        && String(snapshot?.effectiveRole || '').toUpperCase() === 'ROOM'
+        && !Boolean(snapshot?.selectedContextPresent),
+      safeAlternative: firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik alanı birlikte kontrol edelim.'),
+      userRole: snapshot?.userRole,
+      user: snapshot?.user,
+      conversationState: snapshot?.conversationState,
+    });
   }
 
   if (snapshot.mode === 'REPETITION_CONTROL') {

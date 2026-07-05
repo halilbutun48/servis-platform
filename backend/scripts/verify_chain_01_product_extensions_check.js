@@ -62,6 +62,7 @@ function main() {
   const roleMatrix = read('docs/COPILOT_ROLE_TASK_MATRIX_01.md');
   const aiRoadmap = read('docs/COPILOT_AI_ACTION_ROADMAP_01.md');
   const guidedDoc = read('docs/COPILOT_GUIDED_TASK_ENGINE_01.md');
+  const clarifyingDoc = read('docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md');
   const reasoningDoc = read('docs/SEFER_ABI_REASONING_ASSISTANT_01.md');
   const allRolesDoc = read('docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md');
   const finalAuditDoc = read('docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md');
@@ -142,6 +143,7 @@ function main() {
   must(pkg, '"check:exceltoroutereadinessredteam01": "node backend/scripts/excel_to_route_readiness_redteam_01_check.js"', 'package.json keeps check:exceltoroutereadinessredteam01');
   must(pkg, '"check:copiloteblockruntimeanswerintegration01": "node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js"', 'package.json keeps check:copiloteblockruntimeanswerintegration01');
   must(pkg, '"check:copilotguidedtaskengine01": "node backend/scripts/copilot_guided_task_engine_01_check.js"', 'package.json keeps check:copilotguidedtaskengine01');
+  must(pkg, '"check:copilotclarifyingquestionengine01": "node backend/scripts/copilot_clarifying_question_engine_01_check.js"', 'package.json keeps check:copilotclarifyingquestionengine01');
   must(pkg, '"check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js"', 'package.json keeps check:copilotreasoninganswercomposer01');
   must(pkg, '"check:ai03bparaphraseintentaudit01": "node backend/scripts/ai03b_paraphrase_intent_audit_01_check.js"', 'package.json keeps check:ai03bparaphraseintentaudit01');
   must(pkg, '"check:ai03bsemanticvisibleaudit01": "node backend/scripts/ai03b_semantic_visible_audit_01_check.js"', 'package.json keeps check:ai03bsemanticvisibleaudit01');
@@ -321,6 +323,7 @@ function main() {
   'check:exceltoroutereadinessredteam01',
   'check:copiloteblockruntimeanswerintegration01',
   'check:copilotguidedtaskengine01',
+  'check:copilotclarifyingquestionengine01',
   'check:copilotreasoninganswercomposer01',
   'check:ai03bparaphraseintentaudit01',
   'check:ai03bsemanticvisibleaudit01',
@@ -502,6 +505,10 @@ function main() {
   must(guide, 'check:copilotguidedtaskengine01', 'script guide exposes check:copilotguidedtaskengine01');
   must(guide, 'node backend\\scripts\\copilot_guided_task_engine_01_check.js', 'script guide includes guided task engine command');
   must(guide, 'docs/COPILOT_GUIDED_TASK_ENGINE_01.md', 'script guide includes guided task engine doc');
+  must(guide, 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'script guide mentions COPILOT-CLARIFYING-QUESTION-ENGINE-01');
+  must(guide, 'check:copilotclarifyingquestionengine01', 'script guide exposes check:copilotclarifyingquestionengine01');
+  must(guide, 'node backend\\scripts\\copilot_clarifying_question_engine_01_check.js', 'script guide includes clarifying question engine command');
+  must(guide, 'docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md', 'script guide includes clarifying question engine doc');
   must(guide, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'script guide mentions COPILOT-REASONING-ANSWER-COMPOSER-01');
   must(guide, 'check:copilotreasoninganswercomposer01', 'script guide exposes check:copilotreasoninganswercomposer01');
   must(guide, 'node backend\\scripts\\copilot_reasoning_answer_composer_01_check.js', 'script guide includes reasoning answer composer command');
@@ -514,7 +521,7 @@ function main() {
   must(guide, 'check:seferabiallrolesreasoningassistant01', 'script guide exposes check:seferabiallrolesreasoningassistant01');
   must(guide, 'node backend\\scripts\\sefer_abi_all_roles_reasoning_assistant_01_check.js', 'script guide includes all-roles reasoning assistant command');
   must(guide, 'docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md', 'script guide includes all-roles reasoning assistant doc');
-  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'ETA-SANITY-01'], 'script guide keeps reasoning answer composer after guided task engine');
+  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'ETA-SANITY-01'], 'script guide keeps clarifying question engine before reasoning answer composer');
   must(guide, 'node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js', 'script guide includes redteam command');
   must(guide, 'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md', 'script guide includes redteam doc');
   must(guide, 'check:uxcopilotpersona01', 'script guide exposes check:uxcopilotpersona01');
@@ -687,6 +694,10 @@ function main() {
   must(primer, 'check:seferabireasoningassistant01', 'primer exposes reasoning assistant check');
   must(primer, 'docs/SEFER_ABI_REASONING_ASSISTANT_01.md', 'primer links reasoning assistant doc');
   must(primer, 'backend/src/ai/chat/seferAbiReasoningAssistant.js', 'primer links reasoning assistant helper');
+  must(primer, 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'primer mentions clarifying question engine milestone');
+  must(primer, 'check:copilotclarifyingquestionengine01', 'primer exposes clarifying question engine check');
+  must(primer, 'docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md', 'primer links clarifying question engine doc');
+  must(primer, 'backend/src/ai/chat/conversationTaskStateResponses.js', 'primer links clarifying question engine helper');
   must(primer, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'primer mentions reasoning answer composer milestone');
   must(primer, 'check:copilotreasoninganswercomposer01', 'primer exposes reasoning answer composer check');
   must(primer, 'docs/COPILOT_REASONING_ANSWER_COMPOSER_01.md', 'primer links reasoning answer composer doc');
@@ -703,6 +714,14 @@ function main() {
   must(guidedDoc, 'SEFER-ABI-REASONING-ASSISTANT-01', 'guided task engine doc references reasoning assistant milestone');
   must(guidedDoc, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'guided task engine doc references all-roles reasoning assistant milestone');
   must(guidedDoc, 'Golden pack test/kabul içindir', 'guided task engine doc keeps golden pack test-only wording');
+  must(clarifyingDoc, '# COPILOT CLARIFYING QUESTION ENGINE 01', 'clarifying question engine doc title present');
+  must(clarifyingDoc, 'Canonical check: `check:copilotclarifyingquestionengine01`', 'clarifying question engine doc keeps canonical check wording');
+  must(clarifyingDoc, 'conversationTaskStateResponses.js', 'clarifying question engine doc keeps canonical helper wording');
+  must(clarifyingDoc, 'helpComposer.js', 'clarifying question engine doc mentions help composer');
+  must(clarifyingDoc, 'seferAbiReasoningAssistant.js', 'clarifying question engine doc mentions reasoning assistant');
+  must(clarifyingDoc, 'copilotGuidedTaskEngine.js', 'clarifying question engine doc mentions guided task engine');
+  must(clarifyingDoc, 'Netleştirelim', 'clarifying question engine doc keeps clarifying phrasing');
+  must(clarifyingDoc, 'Alternatif', 'clarifying question engine doc keeps alternative phrasing');
   must(reasoningDoc, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'reasoning assistant doc references reasoning answer composer milestone');
   must(reasoningDoc, 'backend/src/ai/chat/copilotReasoningAnswerComposer.js', 'reasoning assistant doc links reasoning answer composer helper');
   must(allRolesDoc, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'all-roles reasoning assistant doc references reasoning answer composer milestone');
@@ -720,6 +739,10 @@ function main() {
   for (const role of ['SUPER_ADMIN', 'COMPANY', 'ROOM', 'DRIVER', 'PERSONEL', 'PARENT', 'SCHOOL', 'ORGANIZATION']) {
     must(allRolesDoc, role, `all-roles reasoning assistant doc covers role ${role}`);
   }
+  must(harnessDoc, 'Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`', 'script harness doc lists clarifying question engine milestone');
+  must(harnessDoc, 'root:check:copilotclarifyingquestionengine01', 'script harness doc lists clarifying question engine root check');
+  must(harnessDoc, 'copilot_clarifying_question_engine_01_check.js', 'script harness doc lists clarifying question engine command');
+  must(harnessDoc, 'backend/src/ai/chat/conversationTaskStateResponses.js', 'script harness doc lists clarifying question engine helper');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');

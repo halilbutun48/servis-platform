@@ -294,6 +294,8 @@ function main() {
     "backend/scripts/excel_to_route_readiness_redteam_01_check.js",
     "backend/src/ai/chat/excelToRouteReadinessRedteamPack.js",
     "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
+    "backend/scripts/copilot_clarifying_question_engine_01_check.js",
+    "docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md",
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
     "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",

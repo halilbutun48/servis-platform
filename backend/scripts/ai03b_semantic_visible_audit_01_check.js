@@ -798,7 +798,7 @@ function main() {
     role: 'ROOM',
     fixture: roomShiftsClarifyingFixture,
     message: 'Hangi kayıt için bakayım?',
-    expectedReplyNeedles: ['Netleştirelim', 'Hangi kayıt için bakayım?', 'Alternatif:'],
+    expectedReplyNeedles: ['Netleştirelim', 'Hangi vardiya için bakayım', 'Alternatif:'],
     expectedChips: ['Hangi kayıt için bakayım? Araç, sürücü ya da operasyon kaydı mı?', 'Araç / sürücü', 'Kapasite', 'Kalite / risk', 'Operasyon kontrolü'],
   });
 

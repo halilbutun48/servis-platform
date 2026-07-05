@@ -536,6 +536,7 @@ function main() {
     "backend/src/ai/chat/copilotReasoningAnswerComposer.js",
     "backend/src/ai/schemas.js",
     "backend/scripts/copilot_route_review_human_approval_01_check.js",
+    "backend/scripts/copilot_clarifying_question_engine_01_check.js",
     "backend/scripts/onboarding_review_final_audit_01_check.js",
     "backend/scripts/product_flow_button_audit_01.mjs",
     "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
@@ -574,6 +575,7 @@ function main() {
     "backend/src/ai/chat/goldenQuestionPack.js",
     "backend/src/ai/chat/qualityScorer.js",
     "backend/scripts/copilot_guided_task_engine_01_check.js",
+    "docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md",
     "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
     "web/src/utils/uiDataCache.js",
   ]);

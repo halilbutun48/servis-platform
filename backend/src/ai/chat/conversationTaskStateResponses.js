@@ -1,4 +1,7 @@
-import { buildClarifyingQuestionReply } from './conversationTaskStateClarifiers.js';
+import {
+  buildClarifyingQuestionReply,
+  resolveClarifyingQuestionText,
+} from './conversationTaskStateClarifiers.js';
 import {
   buildCopilotEBlockRuntimeAnswerGuide,
   buildCopilotEBlockRuntimeAnswerReply,
@@ -33,6 +36,7 @@ import {
 
 export {
   buildClarifyingQuestionReply,
+  resolveClarifyingQuestionText,
   buildProductOverviewHelpReply,
   buildRoleExplanationHelpReply,
   buildScreenExplanationHelpReply,
@@ -67,10 +71,17 @@ export function createConversationTaskStateResponses(deps = {}) {
     simpleNowText = () => '',
     selectedCarrySummary = () => '',
     extractVisibleValueFromText = () => '',
+    resolveRoleClarifyingQuestion = () => '',
+    resolveRoleSafeAlternative = () => '',
   } = deps;
 
   return {
-    buildClarifyingQuestionReply,
+    buildClarifyingQuestionReply: (args) => buildClarifyingQuestionReply({
+      ...args,
+      roleClarifyingQuestion: String(args?.roleClarifyingQuestion || resolveRoleClarifyingQuestion(args) || ''),
+      safeAlternative: String(args?.safeAlternative || resolveRoleSafeAlternative(args) || ''),
+    }),
+    resolveClarifyingQuestionText,
     buildProductOverviewHelpReply,
     buildRoleExplanationHelpReply,
     buildScreenExplanationHelpReply: (args) => buildScreenExplanationHelpReply({

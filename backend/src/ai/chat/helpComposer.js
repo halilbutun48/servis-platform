@@ -32,6 +32,11 @@ import {
   resolveFollowUpContextQuestion,
 } from './conversationTaskState.js';
 import {
+  companyPlanningCenterSurfaceText,
+  companyPlanningUiSurfaceText,
+  looksLikeClarifyingQuestionRequest,
+} from './conversationTaskStateShared.js';
+import {
   buildSeferAbiReasoningAssistant,
   getSeferAbiReasoningRolePlaybook,
 } from './seferAbiReasoningAssistant.js';
@@ -649,84 +654,6 @@ function looksLikeNextBestActionQuestion(message) {
   ]);
 }
 
-function looksLikeClarifyingQuestionRequest(message) {
-  const text = normalizeLooseText(message);
-  if (!text) return false;
-  return matchesStandalonePhrase(text, [
-    'İlgili durumu sor',
-    'Netleştirmek için ne sorarsın',
-    'Eksik bilgi ne',
-    'Hangi kayıt için bakayım',
-    'Hangi kaydı için bakayım',
-    'Hangi kayıt için bakmamı istiyorsun',
-    'Hangi kayıt üzerinde ilerlediğini seç',
-    'Hangi kayıt üzerinde ilerleyeyim',
-    'Hangi plan, vardiya, talep veya sözleşme kaydı için bakmamı istiyorsun',
-    'Hangi vardiya, talep ya da sözleşme için bakayım',
-    'Hangi vardiya, talep ya da sözleşme için bakmamı istiyorsun',
-    'Hangi plan ya da operasyon kaydı için bakayım',
-  ]) || /\bhangi\b.*\b(bakay[ıi]m|bakmam[ıi]\s+istiyorsun|bakmam[ıi])\b/.test(text);
-}
-
-function buildClarifyingQuestionReply({
-  message,
-  screenPath = '',
-  screenDefinition = null,
-  screenContext = null,
-  sourceScreenDefinition = null,
-  sourceScreenContext = null,
-  contextPriority = null,
-  userRole = '',
-  user = null,
-}) {
-  return buildClarifyingQuestionReplyImpl({
-    message,
-    screenPath,
-    screenDefinition,
-    screenContext,
-    sourceScreenDefinition,
-    sourceScreenContext,
-    contextPriority,
-    userRole,
-    user,
-  });
-}
-
-function companyPlanningUiSurfaceText(conversationState = null) {
-  const uiSurface = conversationState?.uiSurface && typeof conversationState.uiSurface === 'object' ? conversationState.uiSurface : null;
-  if (!uiSurface) return '';
-  return uniqueStrings([
-    ...(Array.isArray(uiSurface.modalTitles) ? uiSurface.modalTitles : []),
-    ...(Array.isArray(uiSurface.pageTitles) ? uiSurface.pageTitles : []),
-    ...(Array.isArray(uiSurface.activeTabs) ? uiSurface.activeTabs : []),
-    ...(Array.isArray(uiSurface.visibleButtons) ? uiSurface.visibleButtons.map(asText) : []),
-    ...(Array.isArray(uiSurface.disabledButtons) ? uiSurface.disabledButtons.map(asText) : []),
-  ]).join(' • ');
-}
-
-function companyPlanningCenterSurfaceText({ screenPath = '', screenDefinition = null, screenContext = null, sourceScreenDefinition = null, sourceScreenContext = null, conversationState = null } = {}) {
-  const path = normalizeLooseText(firstNonEmpty(
-    screenPath,
-    screenDefinition?.path,
-    screenContext?.path,
-    sourceScreenDefinition?.path,
-    sourceScreenContext?.path,
-    '',
-  ));
-  if (path === '/company') return 'planlama merkezi';
-  return normalizeLooseText(uniqueStrings([
-    screenDefinition?.label,
-    screenContext?.label,
-    sourceScreenDefinition?.label,
-    sourceScreenContext?.label,
-    screenDefinition?.menuPurpose,
-    screenContext?.menuPurpose,
-    sourceScreenDefinition?.menuPurpose,
-    sourceScreenContext?.menuPurpose,
-    companyPlanningUiSurfaceText(conversationState),
-  ]).join(' • '));
-}
-
 const {
   buildClarifyingQuestionReply: buildClarifyingQuestionReplyImpl,
   buildProductOverviewHelpReply: buildProductOverviewHelpReplyImpl,
@@ -754,6 +681,8 @@ const {
   simpleNowText,
   selectedCarrySummary,
   extractVisibleValueFromText,
+  resolveRoleClarifyingQuestion: ({ userRole: role, user: currentUser }) => getSeferAbiReasoningRolePlaybook(role, currentUser).clarifyingQuestion,
+  resolveRoleSafeAlternative: ({ userRole: role, user: currentUser }) => getSeferAbiReasoningRolePlaybook(role, currentUser).safeAlternative,
 });
 
 
@@ -3630,8 +3559,9 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
     const parentLiveNoSelectionReply = buildParentLiveNoSelectionReply({ screenContext, sourceScreenContext, screenPath });
     if (parentLiveNoSelectionReply) return toReply(parentLiveNoSelectionReply);
   }
-  const clarifyingQuestionReply = buildClarifyingQuestionReply({
+  const clarifyingQuestionReply = buildClarifyingQuestionReplyImpl({
     message: firstNonEmpty(rawMessage, message, ''),
+    questionType,
     screenPath,
     screenDefinition,
     screenContext,
@@ -3640,6 +3570,7 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
     contextPriority: effectiveContextPriority,
     userRole,
     user,
+    conversationState,
   });
   if (clarifyingQuestionReply) return toReply(clarifyingQuestionReply);
   const eBlockReply = composeCopilotEBlockRuntimeAnswerReply({
@@ -5063,6 +4994,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     guidedTaskMeta,
     entityType: answerEntityType,
     context,
+    reasoningAssistantFlavor: 'helpComposer',
   });
   const rawReplyBase = composeReply({
     questionType,
@@ -5122,6 +5054,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     guidedTaskMeta,
     entityType: answerEntityType,
     context,
+    reasoningAssistantFlavor: 'helpComposer',
   });
   if (safetyAssistant.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') {
     reasoningAssistant = safetyAssistant;
@@ -6201,7 +6134,9 @@ function ensureActionLead(reply, questionType, screenDefinition, roleMode = 'OPE
 function buildQualityHints({ reply, questionType, quickActions, intentConfidence, roleMode }) {
   const text = normalizeReplySurface(reply);
   const normalizedText = normalizeLooseText(reply);
+  const clarifyingQuestionLead = /^\s*netleştirelim\b/i.test(normalizedText) || /^\s*netlestirelim\b/i.test(normalizedText);
   const actionReady = /(şimdi:|simdi:|şimdi yap:|simdi yap:|önce:|once:|ilk bakılacak yer:|ilk bakilacak yer:|ilk kontrol:|ilk kontrol\s|sıradaki doğru işlem:|siradaki dogru islem:|sıradaki adım:|siradaki adim:)/.test(normalizedText)
+    || clarifyingQuestionLead
     || String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
     || String(questionType || '') === 'LOCATION_HELP'
     || ['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))
@@ -6219,6 +6154,7 @@ function buildQualityHints({ reply, questionType, quickActions, intentConfidence
     concise,
     actionable: actionReady,
     hasSupportAction,
+    clarifyingQuestionLead,
     intentConfidence: Number(intentConfidence || 0),
     questionType: String(questionType || ''),
   };
@@ -6258,11 +6194,14 @@ function buildUncertaintyMeta({ questionType, intentConfidence, qualityHints, sc
   const actionable = Boolean(qualityHints?.actionable);
   const hasSupportAction = Boolean(qualityHints?.hasSupportAction);
   const concise = Boolean(qualityHints?.concise);
+  const clarifyingQuestionLead = Boolean(qualityHints?.clarifyingQuestionLead);
   const ambiguousQuestion = ['SCREEN_PURPOSE', 'OPEN'].includes(String(questionType || ''));
-  const needsVerification = confidence < 0.72 || !actionable || !hasSupportAction || (ambiguousQuestion && confidence <= 0.72);
-  const cautionLevel = confidence >= 0.88 && actionable && hasSupportAction
+  const needsVerification = clarifyingQuestionLead || confidence < 0.72 || !hasSupportAction || (ambiguousQuestion && confidence <= 0.72) || !actionable;
+  const cautionLevel = clarifyingQuestionLead
+    ? 'HIGH'
+    : (confidence >= 0.88 && actionable && hasSupportAction
     ? 'LOW'
-    : (confidence >= 0.72 && actionable && !(ambiguousQuestion && confidence <= 0.72) ? 'MEDIUM' : 'HIGH');
+    : (confidence >= 0.72 && actionable && !(ambiguousQuestion && confidence <= 0.72) ? 'MEDIUM' : 'HIGH'));
   const labelMap = { LOW: 'Kararlı öneri', MEDIUM: 'Kontrollü öneri', HIGH: 'Önce kontrol et' };
   const summaryMap = {
     LOW: 'Bu cevap güçlü sinyallere dayanıyor.',

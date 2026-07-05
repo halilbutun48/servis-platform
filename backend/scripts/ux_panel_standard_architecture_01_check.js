@@ -742,6 +742,8 @@ function main() {
     "backend/scripts/excel_to_route_readiness_redteam_01_check.js",
     "backend/src/ai/chat/excelToRouteReadinessRedteamPack.js",
     "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
+    "backend/scripts/copilot_clarifying_question_engine_01_check.js",
+    "docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md",
     "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
     "backend/scripts/offer_ranking_quality_01_check.js",
     "backend/scripts/ux_live_panel_smoke_audit_01_check.js",

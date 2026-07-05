@@ -238,7 +238,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_GUIDED_TASK_ENGINE_01.md`
 - Static helper: `backend/src/ai/chat/copilotGuidedTaskEngine.js`
 - Bu check, `COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01`, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; güvenli red / clarification / guided step üretir ama runtime execute açmaz.
-- Sonraki güvenli hatlar: `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+- Sonraki güvenli hatlar: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+
+### COPILOT-CLARIFYING-QUESTION-ENGINE-01 [CHECK]
+- `check:copilotclarifyingquestionengine01` role + screen + selected record + conversation state üzerinden clarifying question assembly katmanını tek yerde toplar; `backend/src/ai/chat/conversationTaskStateResponses.js` üzerinden `Netleştirelim / Alternatif` formatını helpComposer, Sefer Abi reasoning assistant ve guided task engine arasında paylaşır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\copilot_clarifying_question_engine_01_check.js`
+- Doküman: `docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md`
+- Static helper: `backend/src/ai/chat/conversationTaskStateResponses.js`
+- Bu check, `COPILOT-GUIDED-TASK-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; role-aware clarifying question üretir ama runtime execute açmaz.
+- Sonraki güvenli hatlar: `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
 
 ### COPILOT-REASONING-ANSWER-COMPOSER-01 [CHECK]
 - `check:copilotreasoninganswercomposer01` Sefer Abi reasoning replies için final reply composer katmanını kilitler; robotik lead marker'ları, tekrarları ve template benzerliğini temizler; strict A-only acceptance'ta Company shifts preview/convert affordance da gerektiği için bu milestone `core composer + required product acceptance support` scope'u ile okunur, ancak runtime AI action, tool execution, write-action dispatcher ve DB write açmaz.

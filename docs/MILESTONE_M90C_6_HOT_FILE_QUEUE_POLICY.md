@@ -16,7 +16,7 @@ Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı o
 - davranış değiştirmeden kontrollü parçalara ayırma / section extraction yapılabilir
 - refactor öncesi acceptance zinciri korunur
 
-Güncel snapshot'ta `backend/src/ai/chat/copilotGuidedTaskEngine.js`, `web/src/utils/copilotFacts.js` ve `mobile/src/screens/driverPremiumUi.js` safe candidate review kuyruğundadır.
+Güncel snapshot'ta `backend/src/ai/chat/copilotGuidedTaskEngine.js`, `web/src/utils/copilotFacts.js`, `mobile/src/screens/driverPremiumUi.js` ve `backend/scripts/verify_chain_01_product_extensions_check.js` safe candidate review kuyruğundadır.
 
 ### 3) acceptance-sensitive / later
 - sırf satır sayısı için açılmaz
@@ -32,6 +32,7 @@ Güncel snapshot'ta `backend/src/ai/chat/copilotGuidedTaskEngine.js`, `web/src/u
 ### safe candidate review
 - `backend/src/ai/jobGuide/screenCatalog.js`
 - `backend/src/ai/chat/copilotGuidedTaskEngine.js`
+- `backend/scripts/verify_chain_01_product_extensions_check.js`
 - `web/src/panels/room/AgreementsPanel.jsx`
 - `web/src/panels/company/ShiftPeopleTab.jsx`
 - `web/src/panels/room/ShiftsPanel.jsx`
