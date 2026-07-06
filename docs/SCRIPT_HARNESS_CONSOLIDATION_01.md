@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `381`
-- Toplam executable tracked file: `1184`
-- Combined registry row: `1565`
-- Root/backend/web/mobile package dağılımı: root `224`, backend `744`, web `93`, mobile `201`
+- Toplam package script entry: `382`
+- Toplam executable tracked file: `1186`
+- Combined registry row: `1568`
+- Root/backend/web/mobile package dağılımı: root `225`, backend `746`, web `93`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -162,6 +162,11 @@ Repo: `servis-platform`
 - Copilot dynamic question engine docs: `docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md`
 - Copilot dynamic question engine command: `node backend\scripts\copilot_dynamic_question_engine_01_check.js`
 - Copilot dynamic question engine helper: `backend/src/ai/chat/conversationTaskStateResponses.js`
+- Copilot smart diagnostic engine milestone: `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`
+- Copilot smart diagnostic engine check: `check:copilotsmartdiagnosticengine01`
+- Copilot smart diagnostic engine docs: `docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md`
+- Copilot smart diagnostic engine command: `node backend\scripts\copilot_smart_diagnostic_engine_01_check.js`
+- Copilot smart diagnostic engine helper: `backend/src/ai/chat/conversationSmartDiagnostics.js`
 - Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`
 - Copilot clarifying question engine check: `check:copilotclarifyingquestionengine01`
 - Copilot clarifying question engine docs: `docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md`
@@ -186,7 +191,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `173`
+- ACTIVE_CORE: `174`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -202,11 +207,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `586`
+- NEEDS_REVIEW: `588`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `318`
+- Eski sistem term eşleşmesi: `319`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -216,14 +221,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 173 |
+| ACTIVE_CORE | 174 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 586 |
+| NEEDS_REVIEW | 588 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -300,6 +305,7 @@ Repo: `servis-platform`
 | root:check:ai03bsemanticvisiblelivematrix01 | package.json | root | node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AI-03-BSEMANTICVISIBLELIVEMATRIX-01 |  | Owner or chain unclear |  |
 | root:check:copilotguidedtaskengine01 | package.json | root | node backend/scripts/copilot_guided_task_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-GUIDED-TASK-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotdynamicquestionengine01 | package.json | root | node backend/scripts/copilot_dynamic_question_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-DYNAMIC-QUESTION-ENGINE-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotsmartdiagnosticengine01 | package.json | root | node backend/scripts/copilot_smart_diagnostic_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotclarifyingquestionengine01 | package.json | root | node backend/scripts/copilot_clarifying_question_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-CLARIFYING-QUESTION-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
@@ -600,6 +606,7 @@ Repo: `servis-platform`
 | copilot_clarifying_question_engine_01_check.js | backend/scripts/copilot_clarifying_question_engine_01_check.js | backend | root:check:copilotclarifyingquestionengine01 | review | NEEDS_REVIEW |  | COPILOT-CLARIFYING-QUESTION-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_context_memory_task_state_01_check.js | backend/scripts/copilot_context_memory_task_state_01_check.js | backend | root:check:copilotcontextmemorytaskstate01 | review | NEEDS_REVIEW |  | COPILOT-CONTEXT-MEMORY-TASK-STATE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_demand_to_agreement_roadmap_01_check.js | backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js | backend | root:check:copilotdemandagreement01 | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
+| copilot_dynamic_question_engine_01_check.js | backend/scripts/copilot_dynamic_question_engine_01_check.js | backend | root:check:copilotdynamicquestionengine01 | review | NEEDS_REVIEW |  | COPILOT-DYNAMIC-QUESTION-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_e_block_runtime_answer_integration_01_check.js | backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js | backend | root:check:copiloteblockruntimeanswerintegration01 | review | NEEDS_REVIEW |  | COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01-CHECK |  | Owner or chain unclear |  |
 | copilot_excel_demand_import_01_check.js | backend/scripts/copilot_excel_demand_import_01_check.js | backend | root:check:copilotexceldemandimport01 | review | NEEDS_REVIEW |  | COPILOT-EXCEL-DEMAND-IMPORT-01-CHECK |  | Owner or chain unclear |  |
 | copilot_guided_task_engine_01_check.js | backend/scripts/copilot_guided_task_engine_01_check.js | backend | root:check:copilotguidedtaskengine01 | review | NEEDS_REVIEW |  | COPILOT-GUIDED-TASK-ENGINE-01-CHECK |  | Owner or chain unclear |  |
@@ -963,6 +970,7 @@ Repo: `servis-platform`
 | conversationTaskStateBuilders.js | backend/src/ai/chat/conversationTaskStateBuilders.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-BUILDERS |  | Owner or chain unclear |  |
 | conversationTaskStateClarifiers.js | backend/src/ai/chat/conversationTaskStateClarifiers.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-CLARIFIERS |  | Owner or chain unclear |  |
 | conversationTaskStateCompanyReplies.js | backend/src/ai/chat/conversationTaskStateCompanyReplies.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-COMPANY-REPLIES |  | Owner or chain unclear |  |
+| conversationTaskStateDynamicQuestions.js | backend/src/ai/chat/conversationTaskStateDynamicQuestions.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-DYNAMIC-QUESTIONS |  | Owner or chain unclear |  |
 | conversationTaskStateFollowUps.js | backend/src/ai/chat/conversationTaskStateFollowUps.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-FOLLOW-UPS |  | Owner or chain unclear |  |
 | conversationTaskStateResponses.js | backend/src/ai/chat/conversationTaskStateResponses.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-RESPONSES |  | Owner or chain unclear |  |
 | conversationTaskStateRoomReplies.js | backend/src/ai/chat/conversationTaskStateRoomReplies.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-ROOM-REPLIES |  | Owner or chain unclear |  |

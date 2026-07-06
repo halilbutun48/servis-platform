@@ -1,5 +1,6 @@
 import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
 import { resolveFollowUpContextQuestion, looksLikeShortFollowUp } from './conversationTaskStateFollowUps.js';
+import { buildSmartDiagnosticState } from './conversationSmartDiagnostics.js';
 import {
   companyPlanningCenterSurfaceText,
   companyPlanningCenterPurposeReply,
@@ -461,8 +462,13 @@ function buildChipsForState(snapshot) {
 
 export function buildDynamicQuestionState(options = {}) {
   const snapshot = buildSurfaceSnapshot(options);
+  const smartDiagnosticState = buildSmartDiagnosticState({
+    ...options,
+    currentReply: snapshot.currentReply,
+  });
   const reply =
-    buildCompanyPlanningReply(snapshot)
+    smartDiagnosticState.reply
+    || buildCompanyPlanningReply(snapshot)
     || buildCompanyOperationsReply(snapshot)
     || buildRoomShiftsReply(snapshot)
     || buildRoomVehiclesReply(snapshot)
@@ -473,10 +479,14 @@ export function buildDynamicQuestionState(options = {}) {
     || buildFollowUpReply(snapshot)
     || '';
 
+  const chips = buildChipsForState(snapshot);
+  const diagnosticChips = Array.isArray(smartDiagnosticState.chips) ? smartDiagnosticState.chips : [];
+
   return {
     reply: String(reply || '').trim(),
-    chips: buildChipsForState(snapshot),
+    chips: chips.length ? chips : diagnosticChips,
     snapshot,
+    smartDiagnosticState,
   };
 }
 

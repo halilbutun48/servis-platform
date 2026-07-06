@@ -7,6 +7,7 @@ import {
   buildDynamicQuestionChips,
   resolveClarifyingQuestionText,
 } from './conversationTaskStateResponses.js';
+import { buildSmartDiagnosticState } from './conversationSmartDiagnostics.js';
 import { COPILOT_REASONING_ANSWER_COMPOSER_VERSION, composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 
 export const SEFER_ABI_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-REASONING-ASSISTANT-01';
@@ -703,6 +704,25 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     entityType,
     screenPath,
   });
+  const smartDiagnosticState = buildSmartDiagnosticState({
+    message,
+    currentReply: rawReply,
+    questionType,
+    screenPath,
+    screenDefinition,
+    screenContext,
+    sourceScreenDefinition,
+    sourceScreenContext,
+    conversationState,
+    contextPriority,
+    analysis,
+    roleMode,
+    userRole,
+    user,
+    guidedTaskMeta,
+    context,
+    entityType,
+  });
   const interactionIntentFamily = detectSeferAbiReasoningIntentFamily({ message, questionType, conversationState });
   const reasoningLead = buildReasoningLead({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const nextBestAction = buildNextAction({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
@@ -802,6 +822,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     || analysis?.blockers?.length
     || analysis?.missingData?.length
     || analysis?.evidence?.length
+    || smartDiagnosticState?.isDiagnostic
   );
   const mode = detectSeferAbiReasoningMode({
     explicitBoundary,
@@ -875,6 +896,10 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     sourceScreenDefinition,
     sourceScreenContext,
     taskState,
+    smartDiagnosticState,
+    smartDiagnosticTheme: smartDiagnosticState?.theme || '',
+    smartDiagnosticReply: smartDiagnosticState?.reply || '',
+    smartDiagnosticChips: smartDiagnosticState?.chips || [],
     suggestedChips: buildSuggestedChips({
       roleMode,
       effectiveRole,
@@ -913,6 +938,8 @@ export function detectSeferAbiReasoningMode(snapshot = {}) {
 
 function composeReasoningLead(snapshot) {
   const roleProfile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
+  const smartDiagnosticReply = firstNonEmpty(snapshot?.smartDiagnosticReply, snapshot?.smartDiagnosticState?.reply, '');
+  if (smartDiagnosticReply) return smartDiagnosticReply;
   const selectedRecordStatus = snapshot?.selectedRecordStatus || '';
   const reasoningLead = snapshot?.reasoningLead || '';
   const nextBestAction = snapshot?.nextBestAction || '';

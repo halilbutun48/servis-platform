@@ -17,6 +17,11 @@ import {
   buildDynamicQuestionState,
 } from './conversationTaskStateDynamicQuestions.js';
 import {
+  buildSmartDiagnosticChips,
+  buildSmartDiagnosticReply,
+  buildSmartDiagnosticState,
+} from './conversationSmartDiagnostics.js';
+import {
   buildRoomShiftSemanticOverrideReply,
   looksLikeRoomShiftClarifyingRequest,
   looksLikeRoomShiftFocusQuestion,
@@ -50,6 +55,9 @@ export {
   buildDynamicQuestionReply,
   buildDynamicQuestionChips,
   buildDynamicQuestionState,
+  buildSmartDiagnosticReply,
+  buildSmartDiagnosticChips,
+  buildSmartDiagnosticState,
   companyPlanningCenterNextBestActionReply,
   buildRoomShiftSemanticOverrideReply,
   buildCopilotEBlockRuntimeAnswerReply,
@@ -107,6 +115,9 @@ export function createConversationTaskStateResponses(deps = {}) {
     buildDynamicQuestionReply,
     buildDynamicQuestionChips,
     buildDynamicQuestionState,
+    buildSmartDiagnosticReply,
+    buildSmartDiagnosticChips,
+    buildSmartDiagnosticState,
     companyPlanningCenterNextBestActionReply,
     buildRoomShiftSemanticOverrideReply: (args) => buildRoomShiftSemanticOverrideReply({
       ...args,

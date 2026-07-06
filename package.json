@@ -62,6 +62,7 @@
     "check:ai03bsemanticvisiblelivematrix01": "node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
     "check:copilotguidedtaskengine01": "node backend/scripts/copilot_guided_task_engine_01_check.js",
     "check:copilotdynamicquestionengine01": "node backend/scripts/copilot_dynamic_question_engine_01_check.js",
+    "check:copilotsmartdiagnosticengine01": "node backend/scripts/copilot_smart_diagnostic_engine_01_check.js",
     "check:copilotclarifyingquestionengine01": "node backend/scripts/copilot_clarifying_question_engine_01_check.js",
     "check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js",
     "check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js",

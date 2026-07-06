@@ -14,6 +14,7 @@ Repo: `servis-platform`
 - `COPILOT-DYNAMIC-QUESTION-ENGINE-01` role + screen + selected record + current reply üzerinden dynamic question assembly katmanını tek yerde toplar.
 - `helpComposer.js`, `seferAbiReasoningAssistant.js` ve `copilotGuidedTaskEngine.js` aynı dinamik chip ve continuation paylaşımını kullanır.
 - Role-aware dynamic clarification, screen-purpose koruması, selected-record continuation ve safe alternative korunur.
+- Çıkış dili `Netleştirelim` ve `Devam edelim` kalıplarını korur.
 - Runtime AI action açmaz.
 - Tool execution açmaz.
 - Write-action dispatcher açmaz.
@@ -30,6 +31,7 @@ Repo: `servis-platform`
 - `backend/src/ai/chat/conversationTaskStateDynamicQuestions.js` low-level dynamic question builder'dır.
 
 ## Sonraki güvenli hatlar
+- `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`
 - `COPILOT-CLARIFYING-QUESTION-ENGINE-01`
 - `COPILOT-REASONING-ANSWER-COMPOSER-01`
 - `SEFER-ABI-REASONING-ASSISTANT-01`

@@ -297,6 +297,7 @@ function slugToMilestone(slug) {
     [/copilot[_-]?e[_-]?block[_-]?runtime[_-]?answer[_-]?integration0?1/i, "COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01"], // check:copiloteblockruntimeanswerintegration01
     [/copilot[_-]?guided[_-]?task[_-]?engine0?1/i, "COPILOT-GUIDED-TASK-ENGINE-01"], // check:copilotguidedtaskengine01
     [/copilot[_-]?dynamic[_-]?question[_-]?engine0?1/i, "COPILOT-DYNAMIC-QUESTION-ENGINE-01"], // check:copilotdynamicquestionengine01
+    [/copilot[_-]?smart[_-]?diagnostic[_-]?engine0?1/i, "COPILOT-SMART-DIAGNOSTIC-ENGINE-01"], // check:copilotsmartdiagnosticengine01
     [/copilot[_-]?clarifying[_-]?question[_-]?engine0?1/i, "COPILOT-CLARIFYING-QUESTION-ENGINE-01"], // check:copilotclarifyingquestionengine01
     [/sefer[_-]?abi[_-]?reasoning[_-]?assistant0?1/i, "SEFER-ABI-REASONING-ASSISTANT-01"], // check:seferabireasoningassistant01
     [/sefer[_-]?abi[_-]?all[_-]?roles[_-]?reasoning[_-]?assistant0?1/i, "SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01"], // check:seferabiallrolesreasoningassistant01
@@ -322,7 +323,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotclarifyingquestionengine01", "check:seferabireasoningassistant01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotclarifyingquestionengine01", "check:seferabireasoningassistant01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -898,6 +899,7 @@ function replacementFor(entry, duplicateMap) {
   if (entry.fullKey === "root:check:copiloteblockruntimeanswerintegration01") return "verify-core";
   if (entry.fullKey === "root:check:copilotguidedtaskengine01") return "verify-core";
   if (entry.fullKey === "root:check:copilotdynamicquestionengine01") return "verify-core";
+  if (entry.fullKey === "root:check:copilotsmartdiagnosticengine01") return "verify-core";
   if (entry.fullKey === "root:check:copilotclarifyingquestionengine01") return "verify-core";
   if (entry.fullKey === "root:check:seferabireasoningassistant01") return "verify-core";
   if (entry.fullKey === "root:check:uxroomagreementstabs01") return "check:uxpanelrealitycleanup02d";
@@ -907,7 +909,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotclarifyingquestionengine01", "root:check:seferabireasoningassistant01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotclarifyingquestionengine01", "root:check:seferabireasoningassistant01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1500,6 +1502,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot dynamic question engine docs: \`docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md\``);
   out.push(`- Copilot dynamic question engine command: \`node backend\\scripts\\copilot_dynamic_question_engine_01_check.js\``);
   out.push(`- Copilot dynamic question engine helper: \`backend/src/ai/chat/conversationTaskStateResponses.js\``);
+  out.push(`- Copilot smart diagnostic engine milestone: \`COPILOT-SMART-DIAGNOSTIC-ENGINE-01\``);
+  out.push(`- Copilot smart diagnostic engine check: \`check:copilotsmartdiagnosticengine01\``);
+  out.push(`- Copilot smart diagnostic engine docs: \`docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md\``);
+  out.push(`- Copilot smart diagnostic engine command: \`node backend\\scripts\\copilot_smart_diagnostic_engine_01_check.js\``);
+  out.push(`- Copilot smart diagnostic engine helper: \`backend/src/ai/chat/conversationSmartDiagnostics.js\``);
   out.push(`- Copilot clarifying question engine milestone: \`COPILOT-CLARIFYING-QUESTION-ENGINE-01\``);
   out.push(`- Copilot clarifying question engine check: \`check:copilotclarifyingquestionengine01\``);
   out.push(`- Copilot clarifying question engine docs: \`docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md\``);

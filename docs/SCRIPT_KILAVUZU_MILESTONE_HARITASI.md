@@ -246,6 +246,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md`
 - Static helper: `backend/src/ai/chat/conversationTaskStateResponses.js`
 - Bu check, `COPILOT-GUIDED-TASK-ENGINE-01`, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; dynamic clarification / continuation üretir ama runtime execute açmaz.
+- Sonraki güvenli hatlar: `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+
+### `COPILOT-SMART-DIAGNOSTIC-ENGINE-01` [CHECK]
+- `check:copilotsmartdiagnosticengine01` symptom/problem mesajlarında dynamic question ile clarifying question arasında güvenli diagnostic katmanını sağlar; `backend/src/ai/chat/conversationSmartDiagnostics.js` üzerinden helpComposer, Sefer Abi reasoning assistant ve guided task engine arasında `Görünmüyor / çıkmadı / çalışmadı / başlamadı / gelmedi / yok` sinyallerini ayırır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\copilot_smart_diagnostic_engine_01_check.js`
+- Doküman: `docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md`
+- Static helper: `backend/src/ai/chat/conversationSmartDiagnostics.js`
+- Bu check, `COPILOT-GUIDED-TASK-ENGINE-01`, `COPILOT-DYNAMIC-QUESTION-ENGINE-01`, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; symptom / problem sinyalini bağlamlı çözer ama runtime execute açmaz.
 - Sonraki güvenli hatlar: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
 
 ### COPILOT-CLARIFYING-QUESTION-ENGINE-01 [CHECK]
