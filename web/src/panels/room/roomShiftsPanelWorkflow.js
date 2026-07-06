@@ -1,5 +1,6 @@
 import { buildCapacityMeta, normalizeRoomShiftError as normalizeErr, overlaps } from "./roomShiftsPanelUtils";
 import { isDriverAvailableForShift, isVehicleAvailableForShift, makeAvailabilitySig } from "./roomShiftsPanelHelpers";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function hydrateShiftSelections({ list, vehicles, setAssignSel, setDriverSel, setRoomOfferSel }) {
   setAssignSel((prev) => {
@@ -166,11 +167,11 @@ export async function loadRoomShiftsPanelAll(ctx) {
   ctx.setErr("");
   try {
     const [sh, veh, drv, rm, off] = await Promise.all([
-      ctx.api("/api/shifts?take=200&includeOffered=1", { token: ctx.token }),
-      ctx.api("/api/vehicles", { token: ctx.token }),
-      ctx.api("/api/drivers", { token: ctx.token }).catch(() => ({ items: [] })),
-      ctx.api("/api/rooms", { token: ctx.token }).catch(() => ({ items: [] })),
-      ctx.api("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token: ctx.token }).catch(() => ({ items: [] })),
+      cachedGet("/api/shifts?take=200&includeOffered=1", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+      cachedGet("/api/vehicles", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+      cachedGet("/api/drivers", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
+      cachedGet("/api/rooms", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
+      cachedGet("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
     ]);
 
     const list = Array.isArray(sh) ? sh : sh?.items ?? [];
@@ -202,7 +203,7 @@ export async function loadRoomShiftsPanelAll(ctx) {
 export async function loadRoomShiftsPanelShiftList(ctx) {
   ctx.setErr("");
   try {
-    const sh = await ctx.api("/api/shifts?take=200&includeOffered=1", { token: ctx.token });
+    const sh = await cachedGet("/api/shifts?take=200&includeOffered=1", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 });
     const list = Array.isArray(sh) ? sh : sh?.items ?? [];
     list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
 
@@ -224,9 +225,9 @@ export async function loadRoomShiftsPanelReferenceData(ctx) {
   ctx.setErr("");
   try {
     const [veh, drv, rm] = await Promise.all([
-      ctx.api("/api/vehicles", { token: ctx.token }),
-      ctx.api("/api/drivers", { token: ctx.token }).catch(() => ({ items: [] })),
-      ctx.api("/api/rooms", { token: ctx.token }).catch(() => ({ items: [] })),
+      cachedGet("/api/vehicles", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+      cachedGet("/api/drivers", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
+      cachedGet("/api/rooms", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
     ]);
 
     const vlist = Array.isArray(veh) ? veh : veh?.items ?? [];
@@ -263,7 +264,7 @@ export async function loadRoomShiftsPanelReferenceData(ctx) {
 export async function loadRoomShiftsPanelOffers(ctx) {
   ctx.setErr("");
   try {
-    const off = await ctx.api("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token: ctx.token }).catch(() => ({ items: [] }));
+    const off = await cachedGet("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token: ctx.token, force: Boolean(ctx.force), ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] }));
     const olist = Array.isArray(off) ? off : off?.items ?? [];
     ctx.setOffers(Array.isArray(olist) ? olist : []);
   } catch (e) {

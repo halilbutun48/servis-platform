@@ -46,7 +46,7 @@ import {
 } from "./roomShiftsPanelWorkflow";
 
 export default function RoomShiftsPanel() {
-  const { token } = useSession();
+  const { token, me } = useSession();
 
   const [items, setItems] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -169,6 +169,60 @@ async function decideExtend(shiftId, decision) {
     return m;
   }, [rooms]);
 
+  const roomPreviewFallback = useMemo(() => {
+    const meRoomId = Number(me?.roomId || 0) || 0;
+    const currentRoom = meRoomId ? roomsById.get(meRoomId) || null : null;
+    const roomWithHub = rooms.find((room) => {
+      const lat = Number(room?.hubLat);
+      const lng = Number(room?.hubLng);
+      return Number.isFinite(lat) && Number.isFinite(lng) && !(Math.abs(lat) < 1e-9 && Math.abs(lng) < 1e-9);
+    }) || null;
+    const fallbackRoom = currentRoom || roomWithHub || rooms[0] || { id: meRoomId || 0, name: meRoomId ? `Oda ID ${meRoomId}` : "Oda" };
+
+    const hubLatRaw = Number(fallbackRoom?.hubLat);
+    const hubLngRaw = Number(fallbackRoom?.hubLng);
+    const hasRoomHub = Number.isFinite(hubLatRaw) && Number.isFinite(hubLngRaw) && !(Math.abs(hubLatRaw) < 1e-9 && Math.abs(hubLngRaw) < 1e-9);
+    const hubLat = hasRoomHub ? hubLatRaw : 41.0082;
+    const hubLng = hasRoomHub ? hubLngRaw : 28.9784;
+    const previewStops = [
+      { id: "room-hub", title: "Toplanma Konumu", lat: hubLat, lng: hubLng, count: 0 },
+      { id: "room-preview-stop", title: hasRoomHub ? "Örnek durak" : "Örnek konum", lat: hubLat + 0.0025, lng: hubLng + 0.0025, count: 0 },
+    ];
+
+    return {
+      room: fallbackRoom,
+      title: `${fallbackRoom?.name || `Oda ID ${fallbackRoom?.id || meRoomId || "?"}`} — Rota Önizleme`,
+      hint: hasRoomHub
+        ? "Bekleyen kayıt yok; oda hub'ı üzerinden yalnızca okuma önizlemesi açılır."
+        : "Bekleyen kayıt yok; örnek konum üzerinden yalnızca okuma önizlemesi açılır.",
+      shift: {
+        id: null,
+        roomId: Number(fallbackRoom?.id || meRoomId || 0) || null,
+        hubLat,
+        hubLng,
+        direction: "INBOUND",
+        pattern: "ONE_WAY",
+        previewOnly: true,
+      },
+      stops: previewStops,
+      people: [],
+      summary: {
+        direction: "INBOUND",
+        pattern: "ONE_WAY",
+        isLoop: false,
+        stopCount: 1,
+        totalPassengerCount: 0,
+        distanceKmEstimated: 0.18,
+        durationMinEstimated: 1,
+        startLabel: "HUB",
+        endLabel: previewStops[1].title,
+        warning: hasRoomHub ? "roomEmptyPreview" : "roomEmptyFallbackPreview",
+      },
+      pathPoints: previewStops.map((stop) => ({ lat: stop.lat, lng: stop.lng })),
+      source: "SNAPSHOT",
+    };
+  }, [me?.roomId, rooms, roomsById]);
+
   const vehiclesById = useMemo(() => {
     const m = new Map();
     for (const v of vehicles) m.set(Number(v.id), v);
@@ -222,7 +276,20 @@ async function decideExtend(shiftId, decision) {
     return checkRoomShiftAvailability({ api, token, avail, availInflight, setAvail, items, vehiclesById, vehiclesForRoom }, shift, vehicleId, driverId);
   }
 
-  async function openRoutePreview(shift) {
+  async function openRoutePreview(shift, previewOverride = null) {
+    if (previewOverride && typeof previewOverride === "object") {
+      setPreviewShift(previewOverride.shift || shift || null);
+      setPreviewStops(Array.isArray(previewOverride.stops) ? previewOverride.stops : []);
+      setPreviewPeople(Array.isArray(previewOverride.people) ? previewOverride.people : []);
+      setPreviewSummary(previewOverride.summary || null);
+      setPreviewPathPoints(Array.isArray(previewOverride.pathPoints) ? previewOverride.pathPoints : null);
+      setPreviewSource(previewOverride.source || null);
+      setPreviewErr("");
+      setPreviewLoading(false);
+      setPreviewOpen(true);
+      return;
+    }
+
     const sid = Number(shift?.id);
     if (!sid) return;
 
@@ -247,10 +314,11 @@ async function decideExtend(shiftId, decision) {
     return () => clearTimeout(timer);
   }, [pendingPreviewShiftId, items]);
 
-  async function loadAll() {
+  async function loadAll({ force = false } = {}) {
     return loadRoomShiftsPanelAll({
       api,
       token,
+      force,
       setErr,
       setItems,
       setVehicles,
@@ -263,10 +331,11 @@ async function decideExtend(shiftId, decision) {
     });
   }
 
-  async function loadShiftListOnly() {
+  async function loadShiftListOnly({ force = false } = {}) {
     return loadRoomShiftsPanelShiftList({
       api,
       token,
+      force,
       vehicles,
       setErr,
       setItems,
@@ -276,10 +345,11 @@ async function decideExtend(shiftId, decision) {
     });
   }
 
-  async function loadReferenceDataOnly() {
+  async function loadReferenceDataOnly({ force = false } = {}) {
     return loadRoomShiftsPanelReferenceData({
       api,
       token,
+      force,
       items,
       setErr,
       setVehicles,
@@ -289,10 +359,11 @@ async function decideExtend(shiftId, decision) {
     });
   }
 
-  async function loadOffersOnly() {
+  async function loadOffersOnly({ force = false } = {}) {
     return loadRoomShiftsPanelOffers({
       api,
       token,
+      force,
       setErr,
       setOffers,
     });
@@ -305,11 +376,11 @@ async function decideExtend(shiftId, decision) {
     loadAllRef.current();
   }, []);
 
-  useAutoReload("shifts", loadShiftListOnly);
-  useAutoReload("vehicles", loadReferenceDataOnly);
-  useAutoReload("drivers", loadReferenceDataOnly);
-  useAutoReload("rooms", loadReferenceDataOnly);
-  useAutoReload("offers", loadOffersOnly);
+  useAutoReload("shifts", () => loadShiftListOnly({ force: true }));
+  useAutoReload("vehicles", () => loadReferenceDataOnly({ force: true }));
+  useAutoReload("drivers", () => loadReferenceDataOnly({ force: true }));
+  useAutoReload("rooms", () => loadReferenceDataOnly({ force: true }));
+  useAutoReload("offers", () => loadOffersOnly({ force: true }));
 
   const PENDING_STATUSES = useMemo(() => new Set(["DRAFT", "REQUESTED"]), []);
   const pendingBase = useMemo(
@@ -638,6 +709,8 @@ async function decideExtend(shiftId, decision) {
         otherCount={tabCounts.other}
         copilotShift={copilotShift}
         autoSplitApprove={autoSplitApprove}
+        fallbackPreview={copilotShift ? null : roomPreviewFallback}
+        onOpenFallbackPreview={(preview) => openRoutePreview(null, preview)}
       />
 
       <RoomShiftsMainSections

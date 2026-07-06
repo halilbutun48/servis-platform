@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function needsGate(role, me) {
   if (me?.kvkk?.requiredCount > 0) return true;
@@ -16,11 +17,11 @@ export default function KvkkConsentGate() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  const loadCurrent = useCallback(async () => {
+  const loadCurrent = useCallback(async ({ force = false } = {}) => {
     if (!enabled) return;
     try {
       setErr("");
-      const r = await api.get("/api/kvkk/documents/current", { token });
+      const r = await cachedGet("/api/kvkk/documents/current", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 90 });
       setSummary(r || null);
     } catch (e) {
       setErr(e?.message || String(e));
@@ -49,7 +50,7 @@ export default function KvkkConsentGate() {
         { token }
       );
       await loadMe(token);
-      await loadCurrent();
+      await loadCurrent({ force: true });
     } catch (e) {
       setErr(e?.message || String(e));
     } finally {

@@ -190,7 +190,7 @@ function main() {
   mustNotAny(schoolOps, ['selectedPreview.personLabel', 'selectedPreviewRequest.personLabel', 'row.personLabel', 'request.personLabel'], 'school preview avoids raw personLabel access');
   mustNotAny(schoolOps, ['route.apply', 'sendSms', 'sendNotification', 'payment execute', 'settlement execute', 'penalty', 'accept/reject', 'prisma migration'], 'school preview stays readonly');
 
-  must(operationHealthPanel, 'api("/api/requests"', 'room operation health loads room-scoped requests');
+  must(operationHealthPanel, 'cachedGet("/api/requests"', 'room operation health loads room-scoped requests');
   mustNot(operationHealthPanel, 'onlyOpen=1&onlyActive=1', 'room operation health no longer uses partial request fetch');
   mustNot(operationHealthPanel, 'onlyActive=1', 'room operation health no longer uses partial request fetch');
   must(operationHealthPanel, 'handleApplyAcceptedRequest', 'room operation health keeps accepted-change apply flow');

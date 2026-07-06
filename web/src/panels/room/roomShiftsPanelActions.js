@@ -28,7 +28,7 @@ export async function autoSplitApproveAction(ctx, shift) {
     })).filter((x) => x.splitIndex && x.vehicleId && x.driverId);
     await api(`/api/shifts/${sid}/auto-split-approve`, { method: "POST", token, body: { overrides } });
     invalidate("shifts");
-    await load();
+    await load({ force: true });
   } catch (e) {
     setErr(ctx.getApiErrorMessage(e, "İşlem başarısız."));
   } finally {
@@ -74,7 +74,7 @@ export async function approveShiftAction(ctx, shift) {
   try {
     await api(`/api/shifts/${sid}/approve`, { method: "PUT", token, body: { vehicleId, driverId } });
     invalidate("shifts");
-    await load();
+    await load({ force: true });
   } catch (e) {
     const ne = normalizeErr(e);
     if (ne?.data?.conflictingShift || ne?.data?.code) {
@@ -103,7 +103,7 @@ export async function rejectShiftAction(ctx, shift) {
   try {
     await ctx.api(`/api/shifts/${sid}/reject`, { method: "PUT", token: ctx.token, body: {} });
     ctx.invalidate("shifts");
-    await ctx.load();
+    await ctx.load({ force: true });
   } catch (e) {
     ctx.setErr(ctx.getApiErrorMessage(e, "İşlem başarısız."));
   } finally {
@@ -122,7 +122,7 @@ export async function sendMarketCounterAction(ctx, offer) {
   try {
     await ctx.api(`/api/offers/${oid}/counter`, { method: "PUT", token: ctx.token, body: { amountRoom, noteRoom } });
     ctx.invalidate("offers");
-    await ctx.load();
+    await ctx.load({ force: true });
   } catch (e) {
     ctx.setErr(ctx.getApiErrorMessage(e, "İşlem başarısız."));
   } finally {
@@ -185,7 +185,7 @@ export async function bulkMarketCounterAction(ctx, refOffer, mode) {
       }
     }
     ctx.invalidate("offers");
-    await ctx.load();
+    await ctx.load({ force: true });
     if (fail) ctx.setErr(`Toplu counter: ${ok} başarılı, ${fail} hata.`);
   } catch (e) {
     ctx.setErr(ctx.getApiErrorMessage(e, "İşlem başarısız."));
@@ -233,7 +233,7 @@ export async function sendRoomOfferAction(ctx, shift) {
     if (mismatch) throw new Error("Backend teklifi kaydetmedi (response mismatch). Network response’u kontrol et.");
     ctx.setRoomOfferOpen((p) => ({ ...p, [sid]: false }));
     ctx.invalidate("shifts");
-    await ctx.load();
+    await ctx.load({ force: true });
   } catch (e) {
     ctx.setErr(ctx.getApiErrorMessage(e, "İşlem başarısız."));
   } finally {
@@ -250,7 +250,7 @@ export async function clearRoomOfferAction(ctx, shift) {
     ctx.setRoomOfferSel((p) => ({ ...p, [sid]: { roomOfferVehicleId: "", roomOfferAmount: "", roomOfferNote: "", notifyDriver: false, driverNote: "" } }));
     ctx.setRoomOfferOpen((p) => ({ ...p, [sid]: false }));
     ctx.invalidate("shifts");
-    await ctx.load();
+    await ctx.load({ force: true });
   } catch (e) {
     ctx.setErr(ctx.getApiErrorMessage(e, "İşlem başarısız."));
   } finally {
@@ -268,7 +268,7 @@ export async function submitReassignAction(ctx, payload) {
     ctx.setReassignModal({ open: false, shift: null });
     ctx.setOpsEventsModal({ open: true, shiftId: shift.id });
     ctx.invalidate("shifts");
-    await ctx.load();
+    await ctx.load({ force: true });
   } catch (e) {
     ctx.setErr(ctx.getApiErrorMessage(e, "İşlem başarısız."));
   } finally {

@@ -19,6 +19,7 @@ import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agree
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
 import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
+import { cachedGet } from "../../utils/uiDataCache";
 import { getAgreementPlatformFeePreview, getAgreementQualityPaymentBridgePreview, getAgreementSeferScorePreview } from "../../api";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import {
@@ -745,11 +746,11 @@ export default function AgreementsPanel() {
     };
   }, [token, routeRefreshItems, viewMode]);
 
-  const loadAll = useCallback(async () => {
+  const loadAll = useCallback(async ({ force = false } = {}) => {
     if (!token) return;
     setErr("");
     try {
-      const all = await api("/api/agreements?take=200", { token });
+      const all = await cachedGet("/api/agreements?take=200", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 90 });
       const items = all?.items ?? [];
 
       // ✅ M59: shift stats (today/horizon) for UI clarity
@@ -759,7 +760,7 @@ export default function AgreementsPanel() {
           const [st, bridge, routeRefresh] = await Promise.all([
             api("/api/agreements/shift-stats", { token, method: "POST", body: { agreementIds: ids, horizonDays: 7 } }),
             api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } }),
-            api("/api/agreements/route-refresh", { token }).catch(() => ({ items: [] })),
+            cachedGet("/api/agreements/route-refresh", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => ({ items: [] })),
           ]);
           setShiftStats(st?.byId ?? {});
           setOpsBridge(bridge?.byId ?? {});
@@ -798,7 +799,7 @@ export default function AgreementsPanel() {
   }, [token]);
 
   // ✅ WS invalidate → agreements topic gelince reload
-  useAutoReload("agreements", loadAll, !!token);
+  useAutoReload("agreements", () => loadAll({ force: true }), !!token);
 
   useEffect(() => {
     if (!token) return;
@@ -843,7 +844,7 @@ export default function AgreementsPanel() {
       setApproveId(null);
       setSelVehicle("");
       setSelDriver("");
-      await loadAll();
+      await loadAll({ force: true });
     } catch (e) {
       const status = e?.status ?? null;
       const payload = e?.payload ?? null;
@@ -875,7 +876,7 @@ export default function AgreementsPanel() {
       setCounterId(null);
       setCounterAmount("");
       setCounterNote("");
-      await loadAll();
+      await loadAll({ force: true });
     } catch (e) {
       setErr(e?.message || "Counter failed");
     } finally {
@@ -899,7 +900,7 @@ export default function AgreementsPanel() {
         setSelDriver("");
         setConflict(null);
       }
-      await loadAll();
+      await loadAll({ force: true });
     } catch (e) {
       setErr(e?.message || "Reject failed");
     } finally {
@@ -919,7 +920,7 @@ export default function AgreementsPanel() {
       setRouteRefreshCounterId(null);
       setRouteRefreshCounterAmount("");
       setRouteRefreshCounterNote("");
-      await loadAll();
+      await loadAll({ force: true });
     } catch (e) {
       setErr(e?.message || "Rota güncelleme kararı kaydedilemedi.");
     } finally {
@@ -945,7 +946,7 @@ export default function AgreementsPanel() {
       setRouteRefreshCounterId(null);
       setRouteRefreshCounterAmount("");
       setRouteRefreshCounterNote("");
-      await loadAll();
+      await loadAll({ force: true });
     } catch (e) {
       setErr(e?.message || "Rota güncelleme karşı teklif gönderilemedi.");
     } finally {
@@ -958,7 +959,7 @@ export default function AgreementsPanel() {
     setBusy(true);
     try {
       await api(`/api/agreements/${id}/extend-decision`, { token, method: "PUT", body: { decision } });
-      await loadAll();
+      await loadAll({ force: true });
     } catch (e) {
       setErr(e?.message || "Extend decision failed");
     } finally {
@@ -983,7 +984,7 @@ export default function AgreementsPanel() {
       setExtendCounterId(null);
       setExtendCounterAmount("");
       setExtendCounterNote("");
-      await loadAll();
+      await loadAll({ force: true });
     } catch (e) {
       setErr(e?.message || "Extend counter failed");
     } finally {
@@ -1071,23 +1072,24 @@ export default function AgreementsPanel() {
 
       {viewMode === "bridge" ? (
         <div style={{ display: "grid", gap: 12 }}>
-          {!bridgeDetailsRequested ? (
-            <div className="card roomCriticalFixScope" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-              <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
-              <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-                Detayları aç ile köprü kartını genişlet; ardından Vardiyaya git veya Rota Önizleme ile ilerle.
-              </div>
-              <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  className="btn sm primary roomActionCTA"
-                  onClick={() => setBridgeDetailsRequested(true)}
-                >
-                  Detayı aç
-                </button>
-              </div>
+          <div className="card roomCriticalFixScope" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+            <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
+            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+              Detayları aç ile köprü kartını genişlet; ardından Vardiyaya git veya Rota Önizleme ile ilerle.
             </div>
-          ) : null}
+            <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
+              Bu alan önizlemedir; işlem başlatmaz.
+            </div>
+            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn sm primary roomActionCTA"
+                onClick={() => setBridgeDetailsRequested(true)}
+              >
+                Detayı aç
+              </button>
+            </div>
+          </div>
           {copilotAgreementTarget ? (
             <div style={{ display: "grid", gap: 8 }}>
               <AgreementOpsBridgeCard

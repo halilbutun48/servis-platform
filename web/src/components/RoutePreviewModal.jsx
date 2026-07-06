@@ -357,8 +357,8 @@ function scrollToStopRow(stopId) {
           <div className="card routePreviewMapCard" style={{ margin: 0 }}>
             <h3 className="routePreviewSectionTitle" style={{ marginTop: 0 }}>Mini Map</h3>
 
-            {bounds ? (
-              <div className="routePreviewMapFrame">
+            <div className="routePreviewMapFrame">
+              {bounds ? (
                 <MapContainer center={center} zoom={13} style={{ width: "100%", height: "100%" }} scrollWheelZoom={false}>
                   <FitBounds bounds={bounds} />
                   <TileLayer
@@ -394,18 +394,21 @@ function scrollToStopRow(stopId) {
                     </CircleMarker>
                   ) : null}
                 </MapContainer>
-              </div>
-            ) : (
-              <div className="muted" style={{ marginTop: 8 }}>
-                Gösterilecek koordinat yok.
-              </div>
-            )}
+              ) : (
+                <div className="muted" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center" }}>
+                  Gösterilecek koordinat yok.
+                </div>
+              )}
+            </div>
 
             <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
               Leaflet mini-harita: Duraklar (1..N) ve rota çizgisi. S=Start, E=End.
             </div>
             <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
               Not: Bu önizleme kuş uçuşu/mini görünüm mantığındadır. Kesin rota, km ve dönüşler için “Tam Rotayı Dış Navigasyonda Aç” kullanın.
+            </div>
+            <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+              Önizleme: rota verisi yalnızca harita üzerinden okunur.
             </div>
           </div>
 

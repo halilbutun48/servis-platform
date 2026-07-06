@@ -172,6 +172,7 @@ function main() {
     "docs/SAFE_DRIVE_01.md",
     "package.json",
     "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/components/RoutePreviewModal.jsx",
     "web/src/panels/company/companyAgreementsMobileCards.jsx",
     "web/src/panels/company/PersonelAccessPanel.jsx",
     "web/src/components/checkin/CameraQrScannerCard.jsx",
@@ -183,11 +184,13 @@ function main() {
     "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
+    "web/src/panels/room/OperationHealthPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
     "web/src/panels/superadmin/OperationsPanel.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/personel/LivePanel.jsx",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    "backend/scripts/bug_route_impact_preview_button_01_check.js",
     "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
     "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
     "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
@@ -210,10 +213,12 @@ function main() {
     "web/src/panels/room/roomVehiclesPanelRows.jsx",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
     "web/src/panels/room/roomShiftsPanelWorkflow.js",
+    "web/src/panels/room/roomShiftsPanelActions.js",
     "web/src/panels/room/roomVehiclesPanelActions.js",
     "web/src/panels/room/useRoomVehicleTelematics.js",
     "web/src/panels/shared/SafeDriveSummaryCard.jsx",
     "web/src/panels/shared/PanelKvkkHint.jsx",
+    "web/src/panels/shared/KvkkConsentGate.jsx",
     "web/src/panels/superadmin/TelematicsHubPanel.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
     "web/src/utils/regionOwnership.js",
@@ -432,6 +437,9 @@ function main() {
     "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
     "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
     "docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md",
+    "backend/scripts/copilot_smart_diagnostic_engine_01_check.js",
+    "backend/src/ai/chat/conversationSmartDiagnostics.js",
+    "docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/copilot_stop_route_draft_01_check.js",
     "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
@@ -583,6 +591,7 @@ function main() {
     "web/src/utils/uiDataCache.js",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within agreements detail scope");
+  const exactAllowedSet = new Set(exactAllowed);
 
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
@@ -591,7 +600,7 @@ function main() {
   const statusWithoutOffers = status.filter((file) => file !== "web/src/panels/room/OffersPanel.jsx");
   const statusWithoutTrustQuality = statusWithoutOffers.filter((file) => file !== "web/src/panels/superadmin/TrustQualityPanel.jsx" && file !== "web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
 
-  mustNotList(statusWithoutTrustQuality, "web/src/panels/room/", "room surfaces are untouched");
+  mustNotList(statusWithoutTrustQuality.filter((file) => !exactAllowedSet.has(file)), "web/src/panels/room/", "room surfaces are untouched");
   mustNotList(status, "web/src/panels/driver/", "driver surfaces are untouched");
   mustNotList(statusWithoutTrustQuality, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
 

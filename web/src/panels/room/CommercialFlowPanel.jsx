@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "../../api";
 import { navigate } from "../../router";
 import { useAutoReload } from "../../live/useAutoReload";
 import { useSession } from "../../state/session";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
+import { cachedGet } from "../../utils/uiDataCache";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
@@ -212,10 +212,10 @@ export default function CommercialFlowPanel() {
   const [nextStepQ, setNextStepQ] = useState("");
   const [preferredId, setPreferredId] = useState("");
 
-  const loadCommercialFlow = useCallback(async ({ signal } = {}) => {
+  const loadCommercialFlow = useCallback(async ({ signal, force = false } = {}) => {
     const [s, i] = await Promise.all([
-      api("/api/commercial-core/room/summary", { token, signal }),
-      api("/api/commercial-core/room/items", { token, signal }),
+      cachedGet("/api/commercial-core/room/summary", { token, signal, force, ttlMs: 10 * 60 * 1000, delayMs: 90 }),
+      cachedGet("/api/commercial-core/room/items", { token, signal, force, ttlMs: 10 * 60 * 1000, delayMs: 90 }),
     ]);
     return {
       summary: s || null,
@@ -245,7 +245,7 @@ export default function CommercialFlowPanel() {
   }, [loadCommercialFlow]);
 
   useAutoReload("shifts", () => {
-    loadCommercialFlow()
+    loadCommercialFlow({ force: true })
       .then((data) => {
         setErr("");
         setSummary(data.summary);

@@ -620,9 +620,9 @@ export default function RoomMapPanel() {
     );
   }
 
-  const mapGridStyle = { ["--mapH"]: isCompactViewport ? "min(360px, calc(100vh - 440px))" : "min(700px, calc(100vh - 300px))" };
-  const listCardHeight = isCompactViewport ? "calc(var(--mapH) + 170px)" : "calc(var(--mapH) + 285px)";
-  const vehiclesCardHeight = isCompactViewport ? "min(520px, calc(100vh - 360px))" : "min(760px, calc(100vh - 330px))";
+  const mapGridStyle = { ["--mapH"]: isCompactViewport ? "min(300px, calc(100vh - 500px))" : "min(700px, calc(100vh - 300px))" };
+  const listCardHeight = isCompactViewport ? "min(260px, calc(100vh - 560px))" : "calc(var(--mapH) + 285px)";
+  const vehiclesCardHeight = isCompactViewport ? "min(360px, calc(100vh - 450px))" : "min(760px, calc(100vh - 330px))";
 
   return (
     <div className="wrap wrap--fluid">

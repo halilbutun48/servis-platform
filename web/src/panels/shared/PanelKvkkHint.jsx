@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { cachedGet } from "../../utils/uiDataCache";
 
 const PANEL_RULES = {
   users: {
@@ -66,7 +66,7 @@ export default function PanelKvkkHint({ panelKey, effectiveRole }) {
     let cancelled = false;
     (async () => {
       try {
-        const matrixResponse = await api("/api/kvkk/matrix", { token });
+        const matrixResponse = await cachedGet("/api/kvkk/matrix", { token, ttlMs: 10 * 60 * 1000, delayMs: 90 });
         if (!cancelled) setMatrix(matrixResponse || null);
       } catch (e) {
         if (!cancelled) setErr(String(e?.message || e));

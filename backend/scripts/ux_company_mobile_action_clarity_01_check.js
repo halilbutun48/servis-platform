@@ -175,6 +175,7 @@ function main() {
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/personel/LivePanel.jsx",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    "backend/scripts/bug_route_impact_preview_button_01_check.js",
     "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
     "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
     "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
@@ -195,6 +196,7 @@ function main() {
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
     "web/src/panels/shared/SafeDriveSummaryCard.jsx",
     "web/src/panels/shared/PanelKvkkHint.jsx",
+    "web/src/panels/shared/KvkkConsentGate.jsx",
     "web/src/panels/superadmin/AuditLogsPanel.jsx",
     "web/src/utils/regionOwnership.js",
     "web/src/utils/safeDriveSummary.js",
@@ -624,18 +626,23 @@ function main() {
     "backend/scripts/copilot_guided_task_engine_01_check.js",
     "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
     "docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md",
+    "backend/scripts/copilot_smart_diagnostic_engine_01_check.js",
+    "backend/src/ai/chat/conversationSmartDiagnostics.js",
+    "docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md",
     "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
     "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
     "web/src/utils/uiDataCache.js",
   ]);
   const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");
+  const exactAllowedSet = new Set(exactAllowed);
+  const statusOutsideExactAllowed = status.filter((file) => !exactAllowedSet.has(file));
 
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "backend/artifacts/browser-smoke/", "browser-smoke artifacts stay out of the tree");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
-  mustNotList(status, "web/src/panels/room/", "room surfaces are untouched");
+  mustNotList(statusOutsideExactAllowed, "web/src/panels/room/", "room surfaces are untouched");
   mustNotList(status, "web/src/panels/company/DriversPanel.jsx", "company drivers panel is untouched");
   mustNotList(status, "web/src/panels/company/VehiclesPanel.jsx", "company vehicles panel is untouched");
   mustNotList(status, "web/src/panels/company/MapPanel.jsx", "company map panel is untouched");

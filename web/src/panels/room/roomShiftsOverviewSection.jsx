@@ -11,6 +11,8 @@ export function RoomShiftsOverviewSection({
   otherCount = 0,
   copilotShift = null,
   autoSplitApprove = null,
+  fallbackPreview = null,
+  onOpenFallbackPreview = null,
 }) {
   const showDispatchApplyAction = Boolean(
     autoSplitApprove &&
@@ -18,6 +20,7 @@ export function RoomShiftsOverviewSection({
       Number(copilotShift.roomId || 0) > 0 &&
       !["SPLIT", "DONE"].includes(String(copilotShift.status || "").toUpperCase())
   );
+  const showFallbackPreview = Boolean(!showDispatchApplyAction && fallbackPreview && onOpenFallbackPreview);
 
   return (
     <>
@@ -41,6 +44,23 @@ export function RoomShiftsOverviewSection({
             </button>
             <div className="roomShiftsDispatchApplyHint">
               Seçili split vardiyada görünür; seçili vardiya yoksa öne çıkmaz.
+            </div>
+          </div>
+        ) : showFallbackPreview ? (
+          <div className="roomShiftsDispatchApplyRow">
+            <button type="button" className="btn sm primary roomActionCTA" onClick={() => onOpenFallbackPreview(fallbackPreview)}>
+              Rota Önizleme
+            </button>
+            <button
+              type="button"
+              className="btn roomActionCTA"
+              disabled
+              title="Bekleyen kayıt yok; önizleme yalnızca okuma amaçlıdır."
+            >
+              Önizlemeyi Uygula: Böl & Onayla
+            </button>
+            <div className="roomShiftsDispatchApplyHint">
+              {fallbackPreview?.hint || "Bekleyen kayıt yok; önizleme yalnızca okuma amaçlıdır."}
             </div>
           </div>
         ) : null}
@@ -78,6 +98,8 @@ export function RoomShiftsModalSection({
   opsEventsSubtitle,
   onCloseOpsEvents,
 }) {
+  const hasRealPreviewShiftId = Number.isFinite(Number(previewShift?.id)) && Number(previewShift?.id) > 0;
+
   return (
     <>
       {previewOpen && previewErr ? (
@@ -105,15 +127,16 @@ export function RoomShiftsModalSection({
       />
 
       <RoutePreviewModal
+        key={previewShift?.id != null ? `room-shift-${String(previewShift.id)}` : `room-fallback-${String(previewSource || "preview")}`}
         open={previewOpen}
         onClose={onClosePreview}
         title={
-          previewShift
+          hasRealPreviewShiftId
             ? `Vardiya ID ${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
             : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
         }
         subtitle={previewSubtitle}
-        shiftId={typeof previewShift?.id === "number" ? previewShift?.id : null}
+        shiftId={hasRealPreviewShiftId ? previewShift?.id : null}
         stops={previewStops}
         people={previewPeople}
         previewSummary={previewSummary}

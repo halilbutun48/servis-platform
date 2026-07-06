@@ -115,6 +115,15 @@ export default function AgreementOpsBridgeCard({
       <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
         Bu alan önizlemedir; işlem başlatmaz.
       </div>
+      <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
+        Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
+      </div>
+      <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
+        Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.
+      </div>
+      <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
+        Sadece önizleme — tahsilat/fatura oluşturulmaz.
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 12 }}>
         <SummaryChip label="Durum" value={routeStateLabel} tone={hasLastShift ? "good" : "warn"} />

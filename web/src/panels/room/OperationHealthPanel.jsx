@@ -158,20 +158,20 @@ export default function OperationHealthPanel() {
   const [applyingRequestId, setApplyingRequestId] = useState(null);
   const [applyNotice, setApplyNotice] = useState("");
 
-  const refreshRoomState = useCallback(async () => {
+  const refreshRoomState = useCallback(async ({ force = false } = {}) => {
     try {
       const today = new Date().toISOString().slice(0, 10);
       const [s, d, i] = await Promise.all([
-        cachedGet("/api/observability/room/summary", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
-        cachedGet("/api/observability/room/drivers", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
-        cachedGet("/api/observability/room/issues", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/observability/room/summary", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/observability/room/drivers", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/observability/room/issues", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
       ]);
       const [driverSignals, shiftSummary, vehicleSummary, driverSummary, requestsResp] = await Promise.all([
-        cachedGet("/api/drivers?take=200", { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
-        cachedGet(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
-        cachedGet(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
-        cachedGet(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
-        api("/api/requests", { token }).catch(() => []),
+        cachedGet("/api/drivers?take=200", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
+        cachedGet(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
+        cachedGet(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
+        cachedGet(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
+        cachedGet("/api/requests", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
       ]);
       setSummary(s || null);
       setDrivers(Array.isArray(d?.items) ? d.items : []);
@@ -201,7 +201,7 @@ export default function OperationHealthPanel() {
     try {
       const result = await api(`/api/requests/${id}/apply-boarding-change`, { token, method: "POST" });
       setApplyNotice(result?.applicationBoundaryNote || result?.applicationText || boardingChangeApplySuccessNote());
-      await refreshRoomState();
+      await refreshRoomState({ force: true });
     } catch (error) {
       console.error(error);
     } finally {

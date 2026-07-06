@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import { cachedGet } from "../../utils/uiDataCache";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
@@ -124,17 +125,17 @@ export default function CompanyOperationsPanel() {
     ? "Personel, vardiya, biniş değişikliği ve bildirim özetini tek yerde okur."
     : "Personel, vardiya, biniş değişikliği ve bildirim özetini tek yerde okur.";
 
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ force = false } = {}) => {
     setBusy(true);
     setErr("");
     try {
       const today = new Date().toISOString().slice(0, 10);
       const [personelsResp, shiftsResp, requestsResp, notificationsResp, summaryResp] = await Promise.all([
-        api("/api/company/personels?kind=PERSONEL&take=120", { token }),
-        api("/api/shifts?take=120&status=APPROVED,ACTIVE,DONE", { token }),
-        api("/api/requests", { token }).catch(() => []),
-        api("/api/notifications/my", { token }).catch(() => []),
-        api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+        cachedGet("/api/company/personels?kind=PERSONEL&take=120", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/shifts?take=120&status=APPROVED,ACTIVE,DONE", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
+        cachedGet("/api/requests", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
+        cachedGet("/api/notifications/my", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => []),
+        cachedGet(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }).catch(() => null),
       ]);
 
       setPersonels(Array.isArray(personelsResp?.items) ? personelsResp.items : Array.isArray(personelsResp) ? personelsResp : []);
@@ -158,7 +159,7 @@ export default function CompanyOperationsPanel() {
     try {
       const result = await api(`/api/requests/${id}/apply-boarding-change`, { token, method: "POST" });
       setApplyNotice(result?.boardingChangeRouteRefreshNote || result?.boardingChangeRouteRefreshLabel || result?.applicationBoundaryNote || result?.applicationText || boardingChangeApplySuccessNote());
-      await load();
+      await load({ force: true });
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
@@ -181,7 +182,7 @@ export default function CompanyOperationsPanel() {
         body: { status: nextStatus },
       });
       setDecisionNotice(result?.decisionText || (nextStatus === "ACCEPTED" ? "Talep onaylandı." : "Talep reddedildi."));
-      await load();
+      await load({ force: true });
     } catch (e) {
       setDecisionError(String(e?.message || e));
     } finally {
@@ -208,7 +209,7 @@ export default function CompanyOperationsPanel() {
     load();
   }, [token, load]);
 
-  useAutoReload("company-operations", load);
+  useAutoReload("company-operations", () => load({ force: true }));
 
   const notifRows = useMemo(() => normalizeNotificationDigest(notifications), [notifications]);
   const noBoardRows = useMemo(() => filterNotificationDigest(notifRows, ["bugün servisi kullanmayacağ", "bugün binmeyecek", "servisi kullanmayacağım"]), [notifRows]);
