@@ -75,6 +75,35 @@ export function hasExplicitRoleBoundarySignal({ questionType, activeTopic, messa
     : /(yetki|erişim|erisim|izin|rol|kvkk|göremez|goremeyebilir|görünmeyebilir|gorunmeyebilir|403|401|permission denied|erişim kapalı|erisim kapali)/.test(text));
 }
 
+function rootCauseChipsByPath(screenPath = '') {
+  const path = normalizeLooseText(screenPath);
+  if (path.includes('/company/planning-center')) {
+    return ['Eksik personel konumu', 'Vardiya saatini kontrol et', 'Durak sayısını göster', 'Rota önizlemesi'];
+  }
+  if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
+    return ['Aktif vardiya var mı?', 'Son GPS zamanı', 'Araç ataması', 'Şirket/oda kapsamı'];
+  }
+  if (path.includes('/company/shifts') || path.includes('/organization/shifts')) {
+    return ['Vardiya zamanı', 'Araç-sürücü ataması', 'Operasyon hazırlığı', 'Başlatma akışı'];
+  }
+  if (path.includes('/room/shifts')) {
+    return ['Araç-sürücü ataması', 'Başlatma zamanı', 'GPS hazırlığı', 'Canlı başlangıç'];
+  }
+  if (path.includes('/room/map') || path.includes('/room/vehicles') || path.includes('/driver/route') || path.includes('/driver/today') || path.includes('/driver/map') || path.includes('/personel/live') || path.includes('/personel/my') || path.includes('/parent/live')) {
+    return ['Atanmış vardiya', 'Son GPS zamanı', 'Araç bağlantısı', 'Servis saati'];
+  }
+  if (path.includes('/room/agreements') || path.includes('/company/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core')) {
+    return ['Talep durumu', 'Teklif filtresi', 'Tedarikçi dönüşü', 'Seçili teklif'];
+  }
+  if (path.includes('/shared/feedback')) {
+    return ['Açık kayıt', 'Sorumlu rol', 'Durum filtresi', 'Kapanma sinyali'];
+  }
+  if (path.startsWith('/superadmin')) {
+    return ['Arama filtresi', 'Kayıt durumu', 'Yetki kapsamı', 'Şirket filtresi'];
+  }
+  return ['Seçili kaydı aç', 'Son sinyali göster', 'Filtreyi kontrol et', 'Eksik veriyi göster'];
+}
+
 export function workflowTopicChipSet({ activeTopic = '', questionType = '', screenPath = '', guidedTaskMeta = null } = {}) {
   if (guidedTaskMeta?.chips?.length) return [...guidedTaskMeta.chips];
   if (guidedTaskMeta?.clarificationQuestion) {
@@ -87,6 +116,9 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(topic || detectCopilotEBlockRuntimeAnswerTopic({ questionType, screenPath }));
   if (helperTopicMeta?.chips?.length) return [...helperTopicMeta.chips];
   const path = normalizeText(screenPath);
+  if (topic === 'ROOT_CAUSE') {
+    return rootCauseChipsByPath(path);
+  }
   const paymentBridgeTopics = new Set(['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'QUALITY_SIGNAL', 'TRUST_QUALITY']);
   const paymentBridgeChips = ['Kanıt eksiklerini göster', 'Hakediş etkisini açıkla', 'Ödeme başlatılabilir mi?', 'Sıradaki doğru işlem ne?'];
   const requestEntryChips = ['Bugün binmeyeceğim talebi oluştur', 'Konumumu al', 'Büyük haritada konum seç', 'Adresten konum bul'];
@@ -339,6 +371,16 @@ export function workflowActionSpec({ activeTopic = '', questionType = '', guided
     };
   }
   switch (topic) {
+    case 'ROOT_CAUSE':
+      return {
+        guideLabel: 'Kök neden rehberini aç',
+        jobType: 'ASSIGNMENT_READINESS_GUIDE',
+        guideLevel: 'WHY',
+        reason: 'Kök neden, seçili kayıt ve son sinyal eksikliğini birlikte okur.',
+        askLabel: 'Kök nedeni sor',
+        askQuery: 'asıl sebep ne olabilir',
+        askReason: 'Kök neden teşhisini tekrar sorar.',
+      };
     case 'SHIFT_BLOCKED':
     case 'WHY_BLOCKED':
       return {

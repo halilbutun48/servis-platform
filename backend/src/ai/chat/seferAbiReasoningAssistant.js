@@ -7,6 +7,7 @@ import {
   buildDynamicQuestionChips,
   resolveClarifyingQuestionText,
 } from './conversationTaskStateResponses.js';
+import { buildRootCauseAssistantChips, buildRootCauseAssistantReply, buildRootCauseState } from './conversationRootCauseEngine.js';
 import { buildSmartDiagnosticState } from './conversationSmartDiagnostics.js';
 import { COPILOT_REASONING_ANSWER_COMPOSER_VERSION, composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 
@@ -598,6 +599,7 @@ function buildSuggestedChips(snapshot) {
   const profile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
   const roleChips = Array.isArray(profile.chips) ? profile.chips : [];
   const contextualChips = [];
+  const rootCauseChips = Array.isArray(snapshot?.rootCauseChips) ? snapshot.rootCauseChips : [];
   const dynamicChips = buildDynamicQuestionChips({
     message: firstNonEmpty(snapshot?.message, snapshot?.rawMessage, ''),
     currentReply: snapshot?.rawReply || '',
@@ -623,6 +625,7 @@ function buildSuggestedChips(snapshot) {
   if (['OVERVIEW_START', 'ROLE_START', 'SCREEN_START', 'STEP_BY_STEP', 'FIELD_BUTTON'].includes(family)) contextualChips.push('Başlangıç adımını aç');
   if (snapshot?.analysis?.nextBestAction) contextualChips.push('Sıradaki adımı göster');
   if (snapshot?.analysis?.blockers?.length) contextualChips.push('Neden takıldı?');
+  if (rootCauseChips.length) contextualChips.push(...rootCauseChips);
   if (snapshot?.selectedRecordStatus) contextualChips.push('Seçili kayıt özetini göster');
   if (snapshot?.clarifyingQuestion) contextualChips.push(snapshot.clarifyingQuestion);
   if (snapshot?.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') contextualChips.push('Güvenli alternatif göster');
@@ -723,6 +726,28 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     context,
     entityType,
   });
+  const rootCauseArgs = {
+    message,
+    currentReply: rawReply,
+    questionType,
+    screenPath,
+    screenDefinition,
+    screenContext,
+    sourceScreenDefinition,
+    sourceScreenContext,
+    conversationState,
+    contextPriority,
+    analysis,
+    roleMode,
+    userRole,
+    user,
+    guidedTaskMeta,
+    context,
+    entityType,
+  };
+  const rootCauseState = buildRootCauseState(rootCauseArgs);
+  const rootCauseReply = buildRootCauseAssistantReply(rootCauseArgs);
+  const rootCauseChips = buildRootCauseAssistantChips(rootCauseArgs);
   const interactionIntentFamily = detectSeferAbiReasoningIntentFamily({ message, questionType, conversationState });
   const reasoningLead = buildReasoningLead({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const nextBestAction = buildNextAction({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
@@ -822,6 +847,8 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     || analysis?.blockers?.length
     || analysis?.missingData?.length
     || analysis?.evidence?.length
+    || Boolean(rootCauseReply)
+    || rootCauseState?.hasRootCauseContext
     || smartDiagnosticState?.isDiagnostic
   );
   const mode = detectSeferAbiReasoningMode({
@@ -896,19 +923,26 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     sourceScreenDefinition,
     sourceScreenContext,
     taskState,
+    rootCauseState,
+    rootCauseTheme: rootCauseState?.theme || '',
+    rootCauseReply,
+    assistantReply: firstNonEmpty(rootCauseReply, String(rawReply || '')),
+    rootCauseChips,
     smartDiagnosticState,
     smartDiagnosticTheme: smartDiagnosticState?.theme || '',
-    smartDiagnosticReply: smartDiagnosticState?.reply || '',
+    smartDiagnosticReply: firstNonEmpty(rootCauseReply, smartDiagnosticState?.reply, ''),
     smartDiagnosticChips: smartDiagnosticState?.chips || [],
     suggestedChips: buildSuggestedChips({
       roleMode,
       effectiveRole,
+      questionType,
       selectedRecordStatus,
       clarifyingQuestion,
       analysis,
       mode,
       roleProfile,
       interactionIntentFamily,
+      rootCauseChips,
     }),
   });
 }
@@ -944,7 +978,7 @@ function composeReasoningLead(snapshot) {
   const reasoningLead = snapshot?.reasoningLead || '';
   const nextBestAction = snapshot?.nextBestAction || '';
   const boundaryText = snapshot?.boundaryText || '';
-  const rawReply = limitText(snapshot?.rawReply || '', roleProfile.maxLength);
+  const rawReply = limitText(snapshot?.assistantReply || snapshot?.rawReply || '', roleProfile.maxLength);
   const screenPurposeText = firstNonEmpty(
     snapshot?.guide?.plainSummary,
     snapshot?.guide?.summary,
@@ -1012,7 +1046,7 @@ function composeReasoningLead(snapshot) {
 
 export function composeSeferAbiReasoningReply(snapshot = {}) {
   const roleProfile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
-  const rawReply = limitText(snapshot?.rawReply || '', roleProfile.maxLength);
+  const rawReply = limitText(snapshot?.assistantReply || snapshot?.rawReply || '', roleProfile.maxLength);
   if (!rawReply && !snapshot?.hasReasoningSignal && !snapshot?.explicitBoundary && !snapshot?.clarifyingQuestion) return '';
 
   if (String(snapshot?.questionType || '') === 'FAKE_SUCCESS_REQUEST_BLOCKED') {

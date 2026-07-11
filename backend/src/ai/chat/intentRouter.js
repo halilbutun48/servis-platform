@@ -5,6 +5,7 @@ import {
   getCopilotEBlockRuntimeAnswerTopicMeta,
   listCopilotEBlockRuntimeAnswerTopics,
 } from './copilotEBlockRuntimeAnswerIntegration.js';
+import { detectRootCauseQuestionIntent } from './conversationRootCauseEngine.js';
 import { uniqueStrings } from './replyShapes.js';
 import {
   BASE_RULES,
@@ -99,7 +100,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       routeRequest: false,
     };
   }
-
+  const rootCauseIntent = detectRootCauseQuestionIntent({ message: combinedText, originalMessage: originalText }); if (rootCauseIntent) return rootCauseIntent;
   if (looksLikeDetailContinuationQuestion(originalText) || looksLikeDetailContinuationQuestion(combinedText)) {
     const lastQuestionType = normalizeText(options.conversationState?.taskState?.currentQuestionType || options.conversationState?.taskState?.lastQuestionType || options.conversationState?.lastQuestionType || options.conversationState?.lastGuidedTaskQuestionType || options.conversationState?.taskState?.currentGuidedTaskQuestionType || options.conversationState?.taskState?.lastGuidedTaskQuestionType || '');
     const lastConcern = normalizeText(String(
@@ -764,10 +765,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     routeRequest: hasImperativeNavigation(text) && mentionsScreenWord(text),
   };
 }
-export function detectQuestionType(message, entityTypeOrOptions = 'screen', screenPath = '') {
-  return detectQuestionIntent(message, entityTypeOrOptions, screenPath).questionType;
-}
-
+export function detectQuestionType(message, entityTypeOrOptions = 'screen', screenPath = '') { return detectQuestionIntent(message, entityTypeOrOptions, screenPath).questionType; }
 export function resolveReplyMode(message, questionType, roleMode = 'OPERATIONS', guidedTaskMeta = null) {
   const text = normalizeText(message);
   if (guidedTaskMeta?.guideLevel) return guidedTaskMeta.guideLevel;
@@ -775,13 +773,13 @@ export function resolveReplyMode(message, questionType, roleMode = 'OPERATIONS',
   if (helperTopicMeta?.guideLevel) return helperTopicMeta.guideLevel;
   if (questionType === 'HOW_TO_HELP') return 'STEP_BY_STEP';
   if (questionType === 'DETAIL_FLOW' || hasAny(text, ['adım adım', 'adim adim', 'madde madde', 'tek tek'])) return 'STEP_BY_STEP';
-  if (questionType === 'WHY_BLOCKED' || hasAny(text, ['neden'])) return 'WHY';
+  if (questionType === 'WHY_BLOCKED' || questionType === 'ROOT_CAUSE' || hasAny(text, ['neden'])) return 'WHY';
   if (roleMode === 'SIMPLE' && questionType !== 'TERM_HELP') return 'SHORT';
   return 'SHORT';
 }
 
 function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
+  const workflowQuestionTypes = new Set(['ROOT_CAUSE', 'WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -869,7 +867,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
 }
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionType = 'OPEN') {
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
+  const workflowQuestionTypes = new Set(['ROOT_CAUSE', 'WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   if (workflowQuestion) {
     const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
@@ -961,7 +959,7 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
       ...(guidedTaskMeta.progressCommand ? ['Devam et'] : []),
     ]);
   }
-  const workflowQuestionTypes = new Set(['WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
+  const workflowQuestionTypes = new Set(['ROOT_CAUSE', 'WHY_BLOCKED', 'READINESS_CHECK', 'SHIFT_BLOCKED', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'QUALITY_SIGNAL', 'SEFER_SCORE_PREVIEW', 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW', 'FEEDBACK_STATUS', 'NOTIFICATION_SOURCE', 'KVKK_VISIBILITY', 'DRIVER_PHONE_GPS', 'BOARDING_CHANGE_REQUEST_ENTRY', 'BOARDING_CHANGE_APPLICATION', 'BOARDING_ROUTE_IMPACT_PREVIEW', 'DYNAMIC_SAVINGS_PREVIEW', 'WHO_CAN_DO', 'NEXT_STEP', 'NEXT_SCREEN', 'SAFE_NEXT_STEP', 'MISSING_DATA', 'STATUS_HELP', 'FIRST_CONTROL', 'LOCATION_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', ...COPILOT_E_BLOCK_RUNTIME_ANSWER_TOPICS]);
   const workflowQuestion = workflowQuestionTypes.has(String(questionType || ''));
   const teachingQuestionChips = (() => {
     if (String(questionType || '') === 'PRODUCT_OVERVIEW_HELP') {

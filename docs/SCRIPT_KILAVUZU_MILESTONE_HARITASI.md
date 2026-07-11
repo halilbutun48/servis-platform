@@ -254,8 +254,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md`
 - Static helper: `backend/src/ai/chat/conversationSmartDiagnostics.js`
 - Bu check, `COPILOT-GUIDED-TASK-ENGINE-01`, `COPILOT-DYNAMIC-QUESTION-ENGINE-01`, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; symptom / problem sinyalini bağlamlı çözer ama runtime execute açmaz.
-- Sonraki güvenli hatlar: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+- Sonraki güvenli hatlar: `COPILOT-ROOT-CAUSE-ENGINE-01`, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
 
+### COPILOT-ROOT-CAUSE-ENGINE-01 [CHECK]
+- `check:copilotrootcauseengine01` root cause sorularında role + screen + selected record + current reply üzerinden güvenli sebep açıklaması ve sonraki kontrol üretir; `backend/src/ai/chat/conversationRootCauseEngine.js` üzerinden helpComposer, Sefer Abi reasoning assistant ve answerQualityPolicy arasında root cause reply/chip önceliğini paylaşır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\copilot_root_cause_engine_01_check.js`
+- Doküman: `docs/COPILOT_ROOT_CAUSE_ENGINE_01.md`
+- Static helper: `backend/src/ai/chat/conversationRootCauseEngine.js`
+- Bu check, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; kök neden açıklamasını bağlamlı çözer ama runtime execute açmaz.
+- Sonraki güvenli hatlar: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
 ### COPILOT-CLARIFYING-QUESTION-ENGINE-01 [CHECK]
 - `check:copilotclarifyingquestionengine01` role + screen + selected record + conversation state üzerinden clarifying question assembly katmanını tek yerde toplar; `backend/src/ai/chat/conversationTaskStateResponses.js` üzerinden `Netleştirelim / Alternatif` formatını helpComposer, Sefer Abi reasoning assistant ve guided task engine arasında paylaşır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - Check script: `node backend\scripts\copilot_clarifying_question_engine_01_check.js`

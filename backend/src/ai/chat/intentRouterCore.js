@@ -2,6 +2,7 @@ import {
   detectCopilotEBlockRuntimeAnswerTopic,
   getCopilotEBlockRuntimeAnswerTopicMeta,
 } from './copilotEBlockRuntimeAnswerIntegration.js';
+import { looksLikeRootCauseQuestion } from './conversationRootCauseEngine.js';
 
 export function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
@@ -332,6 +333,12 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
   if (questionType === 'SCREEN_EXPLANATION_HELP') return 'SCREEN_MENU_GUIDE';
   if (questionType === 'HOW_TO_HELP') return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
   if (questionType === 'FIELD_BUTTON_HELP') return 'BUTTON_ACTION_GUIDE';
+  if (questionType === 'ROOT_CAUSE' || looksLikeRootCauseQuestion(text)) {
+    const normalizedEntityType = String(entityType || '').toLowerCase();
+    if (normalizedEntityType === 'vehicle') return 'GPS_SIGNAL_DIAGNOSIS_GUIDE';
+    if (normalizedEntityType === 'shift') return 'ASSIGNMENT_READINESS_GUIDE';
+    return 'SCREEN_MENU_GUIDE';
+  }
   if (questionType === 'SCREEN_FOCUS' || questionType === 'RISK_LIST') return 'SCREEN_MENU_GUIDE';
   if (questionType === 'NEXT_BEST_ACTION') return String(entityType || '').toLowerCase() === 'shift' ? 'ASSIGNMENT_READINESS_GUIDE' : 'SCREEN_MENU_GUIDE';
   if (String(questionType || '') === 'BOARDING_CHANGE_APPLICATION' || hasAny(text, ['kabul edilen değişikliği uygula', 'kabul edilen degisikligi uygula', 'günlük atamaya işle', 'gunluk atamaya işle', 'günlük atamaya işlenebilir', 'sürücü rotası yenilenmez', 'surucu rotasi yenilenmez', 'kalıcı atama değişmez', 'kalici atama degismez', 'sürücü rota ekranında görünür', 'surucu rota ekraninda gorunur', 'rota güncellemesi bekliyor', 'rota guncellemesi bekliyor', 'günlük değişiklik rotada görünüyor', 'gunluk degisiklik rotada gorunuyor', 'sürücüye gönderildi mi', 'surucuye gonderildi mi', 'driver route refresh', 'mobile route update', 'rotasına yansıdı mı', 'rotasina yansidi mi', 'stopassignment'])) return 'ASSIGNMENT_READINESS_GUIDE';
@@ -398,6 +405,7 @@ export const BASE_RULES = [
   { type: 'STATUS_HELP', score: 2, patterns: ['durum'], label: 'status-light' },
   { type: 'COMPARE_ITEMS', score: 8, patterns: ['kaydet ile ok yap farkı', 'kaydet ile ok yap farki', 'kaydet ile ok yap aynı mı', 'kaydet + sonraki ile seç farkı', 'kaydet + sonraki ile sec farki', 'listeyi aç ile marketi aç farkı', 'listeyi ac ile marketi ac farki'], label: 'compare' },
   { type: 'TERM_HELP', score: 7, patterns: ['ne demek', 'anlamı', 'anlami', 'bu ne demek', 'aynı şey mi', 'ayni sey mi', 'farkı ne', 'farki ne', 'sözleşme ile vardiya ilişkisi ne', 'kalite puanı kesin karar mı', 'kalite puani kesin karar mi'], label: 'term-help' },
+  { type: 'ROOT_CAUSE', score: 12, patterns: ['asıl sebep', 'asil sebep', 'kök neden', 'kok neden', 'temel neden', 'temel problem', 'arkasında ne var', 'arkasinda ne var', 'hangi şey buna yol açıyor', 'hangi sey buna yol aciyor', 'neden tekrar ediyor', 'sürekli neden böyle oluyor', 'sürekli neden boyle oluyor', 'neden yeni oldu', 'neden düzelmiyor', 'neden duzelmiyor', 'bunu ne bozuyor olabilir', 'en olası neden', 'en olasi neden', 'root cause', 'hangi eksik buna sebep olur', 'neden sürekli görünmüyor', 'neden sürekli gorunmuyor', 'neden sürekli gps yok', 'rota neden hep oluşmuyor', 'rota neden hep olusmuyor'], label: 'root-cause' },
   { type: 'WHY_BLOCKED', score: 9, patterns: ['neden kapalı', 'neden kapali', 'kapalı', 'kapali', 'devam edemiyorum', 'neden olmuyor', 'neden görünmüyor', 'neden gorunmuyor', 'neden pasif', 'neden sorunlu', 'niye sorunlu', 'sorunlu görünüyor', 'sorunlu gorunuyor', 'neden riskli', 'niye riskli', 'neden kırmızı', 'neden kirmizi', 'bu kayıt neden ilerlemiyor', 'göremiyor olabilir miyim', 'gorunmuyor olabilir miyim', 'kvkk yüzünden', 'kvkk yuzunden', 'hazır değil', 'hazir degil', 'eksik bilgi', 'hangi olaydan geldi', 'nereden geldi', 'kaynak ne', 'bu bilgi neden görünmüyor', 'bu araç neden haritada görünmüyor', 'bu sağlayıcı neden daha iyi görünüyor', 'başlayamıyor', 'baslayamiyor', 'başlamıyor', 'baslamiyor'], label: 'why-blocked' },
   { type: 'CONTRACT_TO_SHIFT', score: 14, patterns: ['bu sözleşmeden bugün vardiya üretildi mi', 'bu sozlesmeden bugun vardiya uretildi mi', 'bu sözleşmeden vardiya üretildi mi', 'bu sozlesmeden vardiya uretildi mi', 'sözleşmeden bugün vardiya üretildi mi', 'sozlesmeden bugun vardiya uretildi mi', 'sözleşmeden vardiya üretildi mi', 'sozlesmeden vardiya uretildi mi', 'sözleşme bugün vardiya üretildi mi', 'sozlesme bugun vardiya uretildi mi', 'bugünkü vardiya bu sözleşmeden mi üretildi', 'bugunku vardiya bu sozlesmeden mi uretildi', 'sözleşme vardiya üretimi', 'sozlesme vardiya uretimi', 'sözleşme vardiya üretildi mi', 'sozlesme vardiya uretildi mi', 'sözleşme vardiya oluştu mu', 'sozlesme vardiya olustu mu', 'sözleşme vardiya oluşturuldu mu', 'sozlesme vardiya olusturuldu mu', 'sözleşme → vardiya', 'sözleşme -> vardiya', 'contract to shift'], label: 'contract-to-shift' },
   { type: 'STATUS_HELP', score: 4, patterns: ['sorumlu kim', 'kimde', 'hangi rol', 'hangi olaydan', 'bildirim kaynağı', 'bildirim kaynagi', 'bu bildirim hangi olaydan geldi'], label: 'status-ownership' },
@@ -411,6 +419,7 @@ export const COP02A_GENERAL_RULES = [
   { type: 'ROLE_HELP', score: 6, patterns: ['bu kullanıcı ne yapabilir', 'hangi yetkiler', 'yetki sınırı', 'rol bazlı', 'kim neyi görebilir', 'kim neyi görür', 'bu kullanıcı bu bilgiyi göremez', 'bu rolde ne yapabilirim', 'bu rolde burada neyi yönetebilirim', 'kim yapabilir', 'kim onaylayacak', 'sorumlu kim', 'bu kayıt kimde'], label: 'cop02a-role-help' },
   { type: 'SCREEN_PURPOSE', score: 5, patterns: ['bu ekranda ne yapmalıyım', 'burada ne yapmalıyım', 'bu ekranın amacı ne', 'bu ekran ne işe yarar', 'bu ekran ne için kullanılır', 'bura ne', 'burası ne', 'bu ne', 'ne bu', 'burda ne var', 'burası ne işe yarıyor', 'saha kabul', 'checklist'], label: 'cop02a-screen-purpose' },
   { type: 'NEXT_STEP', score: 6, patterns: ['sıradaki doğru işlem ne', 'sıradaki doğru adım ne', 'ilk bakılacak yer', 'ilk kontrolü ne', 'önce ne yapayım', 'ne yapayım', 'şimdi ne', 'hangi ekrana gitmeliyim', 'mobilde bu iş nereden yapılır', 'şimdi hangi ekrana gitmeliyim', 'sonra ne yapayım'], label: 'cop02a-next-step' },
+  { type: 'ROOT_CAUSE', score: 11, patterns: ['asıl sebep', 'asil sebep', 'kök neden', 'kok neden', 'temel neden', 'temel problem', 'arkasında ne var', 'arkasinda ne var', 'neden tekrar ediyor', 'sürekli neden böyle oluyor', 'sürekli neden boyle oluyor', 'neden düzelmiyor', 'neden duzelmiyor', 'en olası neden', 'en olasi neden', 'root cause', 'neden sürekli görünmüyor', 'neden sürekli gorunmuyor'], label: 'cop02a-root-cause' },
   { type: 'WHY_BLOCKED', score: 6, patterns: ['bu kayıt neden ilerlemiyor', 'neden ilerlemiyor', 'göremiyor olabilir miyim', 'kvkk yüzünden', 'bu kayıt neden kapalı', 'bu kullanıcı bu bilgiyi göremiyor', 'hazır değil', 'hazir degil', 'eksik bilgi', 'başlayamıyor', 'baslayamiyor', 'başlamıyor', 'baslamiyor'], label: 'cop02a-why-blocked' },
   { type: 'SCREEN_PURPOSE', score: 13, patterns: ['sözleşme ile vardiya ilişkisi ne', 'sozlesme ile vardiya iliskisi ne'], label: 'cop02a-contract-shift-purpose' },
   { type: 'TERM_HELP', score: 5, patterns: ['sözleşme ile vardiya ilişkisi ne', 'kalite puanı kesin karar mı', 'hakediş tarafında ne kontrol etmeliyim', 'bu ekran neyi anlatıyor', 'sağlayıcı neden daha iyi', 'bildirim hangi olaydan', 'bu kayıt kimde'], label: 'cop02a-term-help' },
@@ -453,6 +462,7 @@ export const INTENT_PRIORITY = [
   'STATUS_HELP',
   'COMPARE_ITEMS',
   'TERM_HELP',
+  'ROOT_CAUSE',
   'WHY_BLOCKED',
   'BUTTON_HELP',
   'GO_TO',

@@ -37,6 +37,7 @@ import {
   companyPlanningUiSurfaceText,
   looksLikeClarifyingQuestionRequest,
 } from './conversationTaskStateShared.js';
+import { buildRootCauseAssistantReply } from './conversationRootCauseEngine.js';
 import {
   buildSeferAbiReasoningAssistant,
   getSeferAbiReasoningRolePlaybook,
@@ -111,6 +112,7 @@ function hasSeferScoreSignal(text) {
 }
 
 const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
+  'ROOT_CAUSE',
   'WHY_BLOCKED',
   'MISSING_DATA',
   'CONTRACT_TO_SHIFT',
@@ -663,6 +665,7 @@ const {
   buildHowToHelpReply: buildHowToHelpReplyImpl,
   buildDynamicQuestionReply: buildDynamicQuestionReplyImpl,
   buildDynamicQuestionChips: buildDynamicQuestionChipsImpl,
+  buildRootCauseChips: buildRootCauseChipsImpl,
   buildCompanySemanticOverrideReply: buildCompanySemanticOverrideReplyImpl,
   buildRoomShiftSemanticOverrideReply: buildRoomShiftSemanticOverrideReplyImpl,
   buildCopilotEBlockRuntimeAnswerReply: buildCopilotEBlockRuntimeAnswerReplyImpl,
@@ -691,6 +694,7 @@ const {
 
 function topicLabelForContext(topic) {
   const labels = {
+    ROOT_CAUSE: 'Kök neden',
     SCREEN_PURPOSE: 'Ekran amacı',
     SHIFT_BLOCKED: 'Vardiya engeli',
     VEHICLE_NOT_VISIBLE: 'GPS görünürlüğü',
@@ -726,6 +730,7 @@ function topicLabelForContext(topic) {
 }
 
 const WORKFLOW_TOPICS = new Set([
+  'ROOT_CAUSE',
   'SHIFT_BLOCKED',
   'VEHICLE_NOT_VISIBLE',
   'DRIVER_PHONE_GPS',
@@ -767,7 +772,7 @@ function shouldUseWorkflowGuide({ questionType, activeTopic }) {
   const type = String(questionType || '');
   if (type === 'SCREEN_PURPOSE') return false;
   if (isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(type) || isCopilotEBlockRuntimeAnswerTopic(activeTopic) || isCopilotEBlockRuntimeAnswerTopic(type)) return true;
-  return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
+  return ['ROLE_HELP', 'NEXT_SCREEN', 'NEXT_STEP', 'ROOT_CAUSE', 'WHY_BLOCKED', 'READINESS_CHECK', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW', 'SAFE_NEXT_STEP', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO'].includes(type);
 }
 
 function detectContextTopic({ message, questionType, screenPath, screenContext, sourceScreenContext, analysis }) {
@@ -786,6 +791,7 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   ));
   const theme = selectedDiagnosticTheme(message);
   if (theme) return theme;
+  if (questionType === 'ROOT_CAUSE') return 'ROOT_CAUSE';
   if (isDirectRouteRequest(text) && extractMentionedScreenKind(text)) return 'NEXT_SCREEN';
   if (looksLikeScreenStartQuestion(text)) return 'SCREEN_PURPOSE';
   if (looksLikeOnboardingStartQuestion(text)) return 'FIRST_CONTROL';
@@ -1084,6 +1090,19 @@ function buildContextualSuggestedChips({
     selectedSummary,
   ].filter(Boolean).join(' '));
   const topicKey = String(activeTopic || questionType || '');
+  const rootCauseTopic = topicKey === 'ROOT_CAUSE';
+  const rootCauseChips = rootCauseTopic
+    ? buildRootCauseChipsImpl({
+      message: '',
+      questionType,
+      screenPath,
+      screenDefinition: _screenDefinition || null,
+      screenContext: context || null,
+      sourceScreenContext,
+      context,
+      roleMode,
+    })
+    : [];
   const routeRefreshTopic = Boolean(
     ['AGREEMENT_ROUTE_REFRESH'].includes(topicKey)
     || (!['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(topicKey) && /(rota değişikliği|rota degisikligi|rota güncelleme|rota guncelleme|eski rota|yeni rota|teklif mi|kabul mü|kabul mu|karşı teklif|karsi teklif|uygulanan rota|rota geçmişi|rota gecmisi|room.?a rota güncelleme talebi|room.?a rota guncelleme talebi)/.test(routeRefreshSignalText))
@@ -1093,8 +1112,9 @@ function buildContextualSuggestedChips({
     || ((path.includes('/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core')) && hasDynamicSavingsSignal([selectedLabel, selectedSummary, routeRefreshSignalText].filter(Boolean).join(' ')))
   );
   const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType);
-  const workflowChipContext = workflowTopic || boardingPreviewTopic || boardingApplicationTopic || routeRefreshTopic || dynamicSavingsTopic;
-  const workflowChipTopic = boardingApplicationTopic ? 'BOARDING_CHANGE_APPLICATION' : boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : dynamicSavingsTopic ? 'DYNAMIC_SAVINGS_PREVIEW' : routeRefreshTopic ? 'AGREEMENT_ROUTE_REFRESH' : activeTopic;
+  const workflowTopicWithRootCause = workflowTopic || rootCauseTopic;
+  const workflowChipContext = workflowTopicWithRootCause || boardingPreviewTopic || boardingApplicationTopic || routeRefreshTopic || dynamicSavingsTopic || rootCauseTopic;
+  const workflowChipTopic = rootCauseTopic ? 'ROOT_CAUSE' : boardingApplicationTopic ? 'BOARDING_CHANGE_APPLICATION' : boardingPreviewTopic ? 'BOARDING_ROUTE_IMPACT_PREVIEW' : dynamicSavingsTopic ? 'DYNAMIC_SAVINGS_PREVIEW' : routeRefreshTopic ? 'AGREEMENT_ROUTE_REFRESH' : activeTopic;
   const parentLiveNoVehicleFacts = structuredFacts(sourceScreenContext) || structuredFacts(context) || null;
   const parentLiveNoVehicleSignal = path.includes('/parent/live') && (
     parentLiveNoVehicleDetected(sourceScreenContext || context, context, path)
@@ -1102,6 +1122,7 @@ function buildContextualSuggestedChips({
     || parentLiveNoVehicleFacts?.liveVehicleVisible === false
     || (parentLiveNoVehicleFacts && Number(parentLiveNoVehicleFacts.vehicleCount) === 0)
   );
+  if (rootCauseChips.length) chips.push(...rootCauseChips);
   if (workflowChipContext) chips.push(...workflowTopicChipSet({ activeTopic: workflowChipTopic, questionType, screenPath, guidedTaskMeta }));
   if (hasSelectedRecord && !workflowTopic && !path.includes('/parent/live')) {
     if (!workflowChipContext) {
@@ -2260,7 +2281,8 @@ function composeScreenFocusReply({ guide, screenDefinition, screenContext, sourc
 }
 
 function composeRiskListReply({ guide, screenDefinition, screenContext, sourceScreenContext, screenPath = '' }) {
-  if (String(screenPath || screenDefinition?.path || screenContext?.path || sourceScreenContext?.path || '').includes('/room/shifts')) {
+  const resolvedPath = String(screenPath || screenDefinition?.path || screenContext?.path || sourceScreenContext?.path || '');
+  if (resolvedPath.includes('/room/shifts')) {
     return 'Oda açısından başlıca riskler: vardiya onaylı ama canlı başlatılmamış olabilir; araç/sürücü ataması eksik olabilir; GPS yok ya da eski olabilir; durak/rota eksik olabilir; operasyon kanıtı eksik olabilir; teklif/sözleşme bağlantısı net olmayabilir; başlatma zamanı geçmiş olabilir. Riskli alanı belirle; sonra ilgili ekrana geç.';
   }
   const purposeLead = buildVisibleScreenPurposeLead(firstNonEmpty(
@@ -2278,6 +2300,19 @@ function composeRiskListReply({ guide, screenDefinition, screenContext, sourceSc
     firstNonEmpty(guide?.doNotDo, screenDefinition?.doNotDo, ''),
     firstNonEmpty(selectedCarrySummary(screenContext), selectedCarrySummary(sourceScreenContext), ''),
   ]).filter(Boolean).slice(0, 4);
+  if (resolvedPath.includes('/superadmin/operations')) {
+    const firstStepLead = ensureVisibleSentence(firstNonEmpty(
+      screenDefinition?.firstStep,
+      sourceScreenContext?.firstStep,
+      guide?.whatToDoNow,
+      'İlk adım',
+    ));
+    return [
+      `Riskler: Önce: ${firstStepLead}`,
+      purposeLead,
+      `${riskItems.length ? riskItems.join(' • ') : 'eksik alan, uyumsuz kayıt veya yanlış ekran eşleşmesi olabilir.'}`,
+    ].join(' ').trim();
+  }
   return [
     purposeLead,
     `Riskler: ${riskItems.length ? riskItems.join(' • ') : 'eksik alan, uyumsuz kayıt veya yanlış ekran eşleşmesi olabilir.'}`,
@@ -3590,7 +3625,7 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
         entityType,
       })
       : '';
-    if (fallbackGuidedTaskReply) return toReply(fallbackGuidedTaskReply);
+  if (fallbackGuidedTaskReply) return toReply(fallbackGuidedTaskReply);
   }
   const selectedRecordDiagnosticReply = composeSelectedRecordDiagnosticReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, conversationState });
   if (selectedRecordDiagnosticReply) return toReply(selectedRecordDiagnosticReply);
@@ -5185,11 +5220,32 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenContext?.path,
     '',
   )));
-  const selectedReply = forceSafeReply
+  const rootCauseReply = questionType === 'ROOT_CAUSE'
+    ? buildRootCauseAssistantReply({
+      message: effectiveMessage,
+      currentReply: rawReply,
+      questionType,
+      screenPath,
+      screenDefinition: effectiveScreenDefinition,
+      screenContext: effectiveScreenContext,
+      sourceScreenDefinition: screenDefinition,
+      sourceScreenContext: screenContext,
+      conversationState,
+      contextPriority,
+      analysis,
+      roleMode,
+      userRole,
+      user,
+      guidedTaskMeta,
+      context,
+      entityType: answerEntityType,
+    })
+    : '';
+  const selectedReply = rootCauseReply || (forceSafeReply
     ? reasoningAssistant.reply
     : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
-    ? rawReply
-    : (reasoningAssistant.reply || rawReply);
+      ? rawReply
+      : (reasoningAssistant.reply || rawReply));
   let finalReply = selectedReply;
   if (operationHealthSurface && String(questionType || '') === 'WHY_BLOCKED') {
     finalReply = finalReply.replace(
@@ -6029,6 +6085,10 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     reply = `Aynı akışı sürdürüyorum. ${reply}`.trim();
     reasoningAssistant = { ...reasoningAssistant, reply };
   }
+  if (rootCauseReply) {
+    reply = rootCauseReply || reply;
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
   return {
     ok: true,
     provider: 'local-chat-help',
@@ -6522,6 +6582,7 @@ function verificationHintForQuestionType(questionType, screenDefinition, quickAc
   if (questionType === 'SCREEN_FOCUS') return `Önce ${screenLabel} üzerindeki ana kontrol noktalarını ve eksik alanları doğrula.`;
   if (questionType === 'RISK_LIST') return `Riskleri sıralamadan önce ${screenLabel} üzerindeki eksik, kırmızı veya uyumsuz alanları ayır.`;
   if (questionType === 'NEXT_BEST_ACTION') return `Sonraki adımı seçmeden önce ${screenLabel} üzerindeki mevcut durumu ve eksik sinyalleri doğrula.`;
+  if (questionType === 'ROOT_CAUSE') return `Kök nedeni netleştirmek için önce ${firstControl} ve son sinyal satırını kontrol et.`;
   if (['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))) return `${screenLabel} için önce ${firstControl} kontrolü yap; sonra yönlendirmeyi uygula.`;
   if (questionType === 'WHY_BLOCKED') return `Blokajı kesinleştirmek için önce ${firstControl} ve pasif/kırmızı alanları kontrol et.`;
   if (questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
@@ -6573,6 +6634,7 @@ function questionTypeLabel(questionType, activeTopic = '', activeTopicLabel = ''
     SCREEN_FOCUS: 'Neye bakmalıyım',
     RISK_LIST: 'Riskleri sırala',
     NEXT_BEST_ACTION: 'Sıradaki doğru işlem',
+    ROOT_CAUSE: 'Asıl sebep',
     STATUS_HELP: 'Şu an ne durumda',
     READINESS_CHECK: 'Hazır mı',
     CONTRACT_TO_SHIFT: 'Sözleşme → vardiya',
@@ -6641,6 +6703,7 @@ function responseWhyText(questionType, screenDefinition, activeTopic = '') {
   if (questionType === 'SCREEN_FOCUS') return `${screenLabel} ekranında önce bakılacak noktaları ve eksik alanları öne çıkardım.`;
   if (questionType === 'RISK_LIST') return `${screenLabel} ekranındaki riskleri ve uyumsuz sinyalleri sıraladım.`;
   if (questionType === 'NEXT_BEST_ACTION') return `${screenLabel} ekranında bir sonraki en doğru adımı öne çıkardım.`;
+  if (questionType === 'ROOT_CAUSE') return `${screenLabel} ekranındaki kök nedeni ve son sinyal eksiklerini birlikte okudum.`;
   if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;

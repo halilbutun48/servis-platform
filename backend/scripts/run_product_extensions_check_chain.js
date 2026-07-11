@@ -86,6 +86,7 @@ const steps = [
   'check:copilotguidedtaskengine01',
   'check:copilotdynamicquestionengine01',
   'check:copilotsmartdiagnosticengine01',
+  'check:copilotrootcauseengine01',
   'check:copilotclarifyingquestionengine01',
   'check:copilotreasoninganswercomposer01',
   'check:ai03bparaphraseintentaudit01',

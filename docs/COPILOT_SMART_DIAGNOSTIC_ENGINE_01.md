@@ -41,6 +41,7 @@ Repo: `servis-platform`
 - Belirsiz ya da çıplak `Görünmüyor.` gibi mesajlarda diagnostic reply üretmek yerine netleştirme davranışını korur.
 
 ## Sonraki güvenli hatlar
+- `COPILOT-ROOT-CAUSE-ENGINE-01`
 - `COPILOT-CLARIFYING-QUESTION-ENGINE-01`
 - `COPILOT-REASONING-ANSWER-COMPOSER-01`
 - `SEFER-ABI-REASONING-ASSISTANT-01`

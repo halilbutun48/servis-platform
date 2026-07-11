@@ -22,6 +22,11 @@ import {
   buildSmartDiagnosticState,
 } from './conversationSmartDiagnostics.js';
 import {
+  buildRootCauseChips,
+  buildRootCauseReply,
+  buildRootCauseState,
+} from './conversationRootCauseEngine.js';
+import {
   buildRoomShiftSemanticOverrideReply,
   looksLikeRoomShiftClarifyingRequest,
   looksLikeRoomShiftFocusQuestion,
@@ -58,6 +63,9 @@ export {
   buildSmartDiagnosticReply,
   buildSmartDiagnosticChips,
   buildSmartDiagnosticState,
+  buildRootCauseReply,
+  buildRootCauseChips,
+  buildRootCauseState,
   companyPlanningCenterNextBestActionReply,
   buildRoomShiftSemanticOverrideReply,
   buildCopilotEBlockRuntimeAnswerReply,
@@ -118,6 +126,9 @@ export function createConversationTaskStateResponses(deps = {}) {
     buildSmartDiagnosticReply,
     buildSmartDiagnosticChips,
     buildSmartDiagnosticState,
+    buildRootCauseReply,
+    buildRootCauseChips,
+    buildRootCauseState,
     companyPlanningCenterNextBestActionReply,
     buildRoomShiftSemanticOverrideReply: (args) => buildRoomShiftSemanticOverrideReply({
       ...args,
