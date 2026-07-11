@@ -1080,6 +1080,9 @@ export default function AgreementsPanel() {
             <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
               Bu alan önizlemedir; işlem başlatmaz.
             </div>
+            <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
+              Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
+            </div>
             <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
               <button
                 type="button"

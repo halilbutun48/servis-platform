@@ -436,6 +436,17 @@ async function decideExtend(shiftId, decision) {
     return otherFiltered;
   }, [shiftsTab, pendingFiltered, contractFiltered, otherFiltered]);
 
+  const splitEligibleShift = useMemo(() => {
+    const pools = [activeTabFiltered, contractFiltered, otherFiltered, items];
+    for (const pool of pools) {
+      const found = Array.isArray(pool)
+        ? pool.find((shift) => Number(shift?.splitRootId || 0) > 0)
+        : null;
+      if (found) return found;
+    }
+    return null;
+  }, [activeTabFiltered, contractFiltered, otherFiltered, items]);
+
   const preferredCopilotShift = useMemo(() => {
     const orderedPools = [
       activeTabFiltered,
@@ -455,8 +466,8 @@ async function decideExtend(shiftId, decision) {
         if (capacityMeta.dispatchRequired) return shift;
       }
     }
-    return activeTabFiltered[0] || pendingFiltered[0] || contractFiltered[0] || otherFiltered[0] || null;
-  }, [activeTabFiltered, shiftsTab, pendingFiltered, contractFiltered, otherFiltered, vehiclesForRoom]);
+    return splitEligibleShift || activeTabFiltered[0] || pendingFiltered[0] || contractFiltered[0] || otherFiltered[0] || null;
+  }, [activeTabFiltered, shiftsTab, pendingFiltered, contractFiltered, otherFiltered, vehiclesForRoom, splitEligibleShift]);
 
   const copilotShiftId = useMemo(
     () => Number(focusedTrackShiftId || 0) || Number(preferredCopilotShift?.id || 0) || null,
