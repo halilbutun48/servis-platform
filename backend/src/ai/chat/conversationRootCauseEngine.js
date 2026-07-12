@@ -43,7 +43,7 @@ const ROOT_CAUSE_THEME_LIBRARY = {
     chips: ['Atama durumu', 'Vardiya saati', 'Operasyon ön koşulları', 'Son durum'],
   },
   COMPANY_OFFER: {
-    reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler talebin tedarikçiye ulaşmaması, tedarikçi dönüşünün beklenmesi veya filtre/status farkıdır. Çünkü teklif listesi talep durumu ve dönüş kayıtlarına bağlıdır. Önce talep durumunu ve teklif filtresini kontrol edelim.',
+    reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler talebin tedarikçiye ulaşmaması, tedarikçi dönüşünün beklenmesi veya filtre/status farkı olabilir. Çünkü teklif listesi talep durumu ve dönüş kayıtlarına bağlıdır. Önce talep durumunu ve teklif filtresini kontrol edelim.',
     chips: ['Talep durumu', 'Teklif filtresi', 'Tedarikçi dönüşü', 'Seçili teklif'],
   },
   ROOM_SHIFT: {

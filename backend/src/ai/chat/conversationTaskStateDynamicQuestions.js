@@ -352,7 +352,7 @@ function buildParentLiveReply(snapshot) {
   const selected = snapshot.selectedLabel || snapshot.selectedSummary || 'bu öğrenci servisi';
   return makeClarifyingReply(
     `${selected} için araç konumu, servis saati veya bağlı vardiyadan hangisini netleştireyim?`,
-    `Servis görünmüyorsa önce yetkili servis görünümünde ilgili öğrencinin servis satırını açıp son GPS ve ETA bilgisini kontrol edelim.`,
+    `Servis görünmüyorsa önce yetkili servis görünümünde ilgili öğrencinin servis satırını açıp son GPS ve tahmini varış süresi bilgisini kontrol edelim.`,
   );
 }
 
@@ -365,7 +365,7 @@ function buildDriverRouteReply(snapshot) {
   if (/(geldim|girdim|ulaştım|ulastim|açtım|actim)/.test(text)) {
     return makeClarifyingReply(
       `${selected} için durak, şirket/varış veya tamamlanma bilgisinden hangisini netleştireyim?`,
-      'Önce durak sırası ve ETA’yı birlikte kontrol edelim; yazma işlemi yapmadan sonraki güvenli adımı gösteririm.',
+      'Önce durak sırası ve tahmini varış süresini birlikte kontrol edelim; yazma işlemi yapmadan sonraki güvenli adımı gösteririm.',
     );
   }
   return 'Devam edelim: önce durak sırası, şirket/varış ve tamamlanma durumunu kontrol et. Yazma işlemi yapmadan sonraki güvenli adımı birlikte seçelim.';

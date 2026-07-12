@@ -27,13 +27,16 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js",
   "backend/scripts/copilot_guided_task_engine_01_check.js",
   "backend/scripts/copilot_root_cause_engine_01_check.js",
+  "backend/scripts/copilot_risk_scoring_engine_01_check.js",
   "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
   "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
+  "backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
   "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
   "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
+  "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
@@ -56,6 +59,7 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js",
   "backend/src/ai/chat/copilotGuidedTaskEngine.js",
   "backend/src/ai/chat/conversationRootCauseEngine.js",
+  "backend/src/ai/chat/conversationRiskScoringEngine.js",
   "backend/src/ai/chat/seferAbiReasoningAssistant.js",
   "backend/src/ai/chat/copilotExcelDemandImportPolicy.js",
   "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
@@ -81,9 +85,20 @@ const workingTreeCompatFiles = [
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
   "docs/COPILOT_ROOT_CAUSE_ENGINE_01.md",
-  "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
-  "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
-  "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
+    "docs/COPILOT_RISK_SCORING_ENGINE_01.md",
+    "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
+    "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
+    "SEFER-ABI-TERMINAL-HUMANIZE-01",
+    "check:seferabiterminalhumanize01",
+    "docs/SEFER_ABI_TERMINAL_HUMANIZE_01.md",
+    "node backend\\scripts\\sefer_abi_terminal_humanize_01_check.js",
+    "SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01",
+    "check:seferabiturkishuserfacinglanguage01",
+    "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
+    "node backend\\scripts\\sefer_abi_turkish_user_facing_language_01_check.js",
+    "backend/src/ai/chat/helpComposer.js",
+    "backend/src/ai/chat/seferAbiReasoningAssistant.js",
+    "docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md",
   "docs/OSRM_ROUTE_DRAFT_FROM_EXCEL_01.md",
   "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
   "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
@@ -302,9 +317,11 @@ function slugToMilestone(slug) {
     [/copilot[_-]?dynamic[_-]?question[_-]?engine0?1/i, "COPILOT-DYNAMIC-QUESTION-ENGINE-01"], // check:copilotdynamicquestionengine01
     [/copilot[_-]?smart[_-]?diagnostic[_-]?engine0?1/i, "COPILOT-SMART-DIAGNOSTIC-ENGINE-01"], // check:copilotsmartdiagnosticengine01
     [/copilot[_-]?root[_-]?cause[_-]?engine0?1/i, "COPILOT-ROOT-CAUSE-ENGINE-01"], // check:copilotrootcauseengine01
+    [/copilot[_-]?risk[_-]?scoring[_-]?engine0?1/i, "COPILOT-RISK-SCORING-ENGINE-01"], // check:copilotriskscoringengine01
     [/copilot[_-]?clarifying[_-]?question[_-]?engine0?1/i, "COPILOT-CLARIFYING-QUESTION-ENGINE-01"], // check:copilotclarifyingquestionengine01
     [/sefer[_-]?abi[_-]?reasoning[_-]?assistant0?1/i, "SEFER-ABI-REASONING-ASSISTANT-01"], // check:seferabireasoningassistant01
     [/sefer[_-]?abi[_-]?all[_-]?roles[_-]?reasoning[_-]?assistant0?1/i, "SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01"], // check:seferabiallrolesreasoningassistant01
+    [/sefer[_-]?abi[_-]?turkish[_-]?user[_-]?facing[_-]?language(?:[_-]?audit)?0?1/i, "SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01"], // check:seferabiturkishuserfacinglanguage01
     [/final/i, "FINAL"],
     [/verifychain0?1/i, "VERIFY-CHAIN-01"],
     [/productextensions/i, "PRODUCT-EXTENSIONS"],
@@ -327,7 +344,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotclarifyingquestionengine01", "check:seferabireasoningassistant01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:seferabireasoningassistant01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -905,8 +922,10 @@ function replacementFor(entry, duplicateMap) {
   if (entry.fullKey === "root:check:copilotdynamicquestionengine01") return "verify-core";
   if (entry.fullKey === "root:check:copilotsmartdiagnosticengine01") return "verify-core";
   if (entry.fullKey === "root:check:copilotrootcauseengine01") return "verify-core";
+  if (entry.fullKey === "root:check:copilotriskscoringengine01") return "verify-core";
   if (entry.fullKey === "root:check:copilotclarifyingquestionengine01") return "verify-core";
   if (entry.fullKey === "root:check:seferabireasoningassistant01") return "verify-core";
+  if (entry.fullKey === "root:check:seferabiturkishuserfacinglanguage01") return "verify-core";
   if (entry.fullKey === "root:check:uxroomagreementstabs01") return "check:uxpanelrealitycleanup02d";
   return "";
 }
@@ -914,7 +933,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotclarifyingquestionengine01", "root:check:seferabireasoningassistant01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:seferabireasoningassistant01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1517,6 +1536,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot root cause engine docs: \`docs/COPILOT_ROOT_CAUSE_ENGINE_01.md\``);
   out.push(`- Copilot root cause engine command: \`node backend\\scripts\\copilot_root_cause_engine_01_check.js\``);
   out.push(`- Copilot root cause engine helper: \`backend/src/ai/chat/conversationRootCauseEngine.js\``);
+  out.push(`- Copilot risk scoring engine milestone: \`COPILOT-RISK-SCORING-ENGINE-01\``);
+  out.push(`- Copilot risk scoring engine check: \`check:copilotriskscoringengine01\``);
+  out.push(`- Copilot risk scoring engine docs: \`docs/COPILOT_RISK_SCORING_ENGINE_01.md\``);
+  out.push(`- Copilot risk scoring engine command: \`node backend\\scripts\\copilot_risk_scoring_engine_01_check.js\``);
+  out.push(`- Copilot risk scoring engine helper: \`backend/src/ai/chat/conversationRiskScoringEngine.js\``);
   out.push(`- Copilot clarifying question engine milestone: \`COPILOT-CLARIFYING-QUESTION-ENGINE-01\``);
   out.push(`- Copilot clarifying question engine check: \`check:copilotclarifyingquestionengine01\``);
   out.push(`- Copilot clarifying question engine docs: \`docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md\``);
@@ -1532,6 +1556,17 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Sefer Abi all-roles reasoning assistant docs: \`docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md\``);
   out.push(`- Sefer Abi all-roles reasoning assistant command: \`node backend\\scripts\\sefer_abi_all_roles_reasoning_assistant_01_check.js\``);
   out.push(`- Sefer Abi all-roles reasoning assistant helper: \`backend/src/ai/chat/seferAbiReasoningAssistant.js\``);
+  out.push(`- Sefer Abi terminal humanize milestone: \`SEFER-ABI-TERMINAL-HUMANIZE-01\``);
+  out.push(`- Sefer Abi terminal humanize check: \`check:seferabiterminalhumanize01\``);
+  out.push(`- Sefer Abi terminal humanize docs: \`docs/SEFER_ABI_TERMINAL_HUMANIZE_01.md\``);
+  out.push(`- Sefer Abi terminal humanize command: \`node backend\\scripts\\sefer_abi_terminal_humanize_01_check.js\``);
+  out.push(`- Sefer Abi terminal humanize helper: \`backend/src/ai/chat/helpComposer.js\``);
+  out.push(`- Sefer Abi Turkish user-facing language audit milestone: \`SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01\``);
+  out.push(`- Sefer Abi Turkish user-facing language audit check: \`check:seferabiturkishuserfacinglanguage01\``);
+  out.push(`- Sefer Abi Turkish user-facing language audit docs: \`docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md\``);
+  out.push(`- Sefer Abi Turkish user-facing language audit command: \`node backend\\scripts\\sefer_abi_turkish_user_facing_language_01_check.js\``);
+  out.push(`- Sefer Abi Turkish user-facing language audit helper: \`backend/src/ai/chat/helpComposer.js\``);
+  out.push(`- Sefer Abi Turkish user-facing language audit reasoning surface: \`backend/src/ai/chat/seferAbiReasoningAssistant.js\``);
   out.push(`- Address geocoding confidence milestone: \`ADDRESS-GEOCODING-CONFIDENCE-01\``);
   out.push(`- Address geocoding confidence check: \`check:addressgeocodingconfidence01\``);
   out.push(`- Address geocoding confidence docs: \`docs/ADDRESS_GEOCODING_CONFIDENCE_01.md\``);
@@ -1733,6 +1768,16 @@ function verifyDoc(docText, summary) {
     "check:uxlivepanelpremiumsmoke01",
     "check:dynamicsavings01",
     "check:scriptharnessconsolidation01",
+    "SEFER-ABI-TERMINAL-HUMANIZE-01",
+    "check:seferabiterminalhumanize01",
+    "docs/SEFER_ABI_TERMINAL_HUMANIZE_01.md",
+    "node backend\\scripts\\sefer_abi_terminal_humanize_01_check.js",
+    "SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01",
+    "check:seferabiturkishuserfacinglanguage01",
+    "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
+    "node backend\\scripts\\sefer_abi_turkish_user_facing_language_01_check.js",
+    "backend/src/ai/chat/helpComposer.js",
+    "backend/src/ai/chat/seferAbiReasoningAssistant.js",
     "SCRIPT-HARNESS-CONSOLIDATION-01",
     "PUBLIC-LANDING-01",
     "PUBLIC-LANDING-PLATFORM-FIRST-01",

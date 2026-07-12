@@ -6,6 +6,7 @@ import {
   listCopilotEBlockRuntimeAnswerTopics,
 } from './copilotEBlockRuntimeAnswerIntegration.js';
 import { detectRootCauseQuestionIntent } from './conversationRootCauseEngine.js';
+import { buildRiskScoringChips } from './conversationRiskScoringEngine.js';
 import { uniqueStrings } from './replyShapes.js';
 import {
   BASE_RULES,
@@ -987,7 +988,7 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
     return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
   }
   if (String(questionType || '') === 'RISK_LIST') {
-    const chips = ['Konum riski', 'Tarih / saat riski', 'Personel açığı', 'Rota önizleme riski'];
+    const chips = buildRiskScoringChips({ entityType, questionType, roleMode, screenPath, context, guidedTaskMeta });
     return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
   }
   if (String(questionType || '') === 'NEXT_BEST_ACTION') {

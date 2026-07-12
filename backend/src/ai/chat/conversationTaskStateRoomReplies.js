@@ -1,4 +1,5 @@
 import { firstNonEmpty } from './replyShapes.js';
+import { buildRiskScoringReply } from './conversationRiskScoringEngine.js';
 import {
   ensureVisibleSentence,
   looksLikeClarifyingQuestionRequest,
@@ -8,6 +9,22 @@ import {
   normalizeRoleKey,
   normalizeVisibleReplyFragment,
 } from './conversationTaskStateShared.js';
+
+function humanizeStatusText(value) {
+  const text = ensureVisibleSentence(normalizeVisibleReplyFragment(firstNonEmpty(value, '')));
+  if (!text) return '';
+  return text
+    .replace(/\bAPPROVED\b/gi, 'onaylı')
+    .replace(/\bREQUESTED\b/gi, 'talep edildi')
+    .replace(/\bPENDING\b/gi, 'beklemede')
+    .replace(/\bDRAFT\b/gi, 'taslak')
+    .replace(/\bACTIVE\b/gi, 'aktif')
+    .replace(/\bCOMPLETED\b/gi, 'tamamlandı')
+    .replace(/\bCANCELLED\b/gi, 'iptal edildi')
+    .replace(/\bCANCELED\b/gi, 'iptal edildi')
+    .replace(/\bREJECTED\b/gi, 'reddedildi')
+    .trim();
+}
 
 export function looksLikeRoomShiftFocusQuestion(message) {
   const text = normalizeLooseText(message);
@@ -92,7 +109,7 @@ export function buildRoomShiftSemanticOverrideReply({
     ? hasVehicleDriver && /onay|approved|kabul/i.test(normalizeLooseText(status))
       ? 'Seçili kayıt onaylı ve araç/sürücü atanmış görünüyor.'
       : status
-        ? `Seçili kayıt ${ensureVisibleSentenceImpl(normalizeVisibleReplyFragmentImpl(status))}`.trim()
+        ? `Seçili kayıt ${humanizeStatusText(status).replace(/^Durum:\s*/i, '')}`.trim()
         : 'Seçili kayıt görünüyor.'
     : '';
 
@@ -111,7 +128,16 @@ export function buildRoomShiftSemanticOverrideReply({
   }
 
   if (String(questionType || '') === 'RISK_LIST') {
-    return 'Oda açısından başlıca riskler: vardiya onaylı ama canlı başlatılmamış olabilir; araç/sürücü ataması eksik olabilir; GPS yok ya da eski olabilir; durak/rota eksik olabilir; operasyon kanıtı eksik olabilir; teklif/sözleşme bağlantısı net olmayabilir; başlatma zamanı geçmiş olabilir. Riskli alanı belirle; sonra ilgili ekrana geç.';
+    return buildRiskScoringReply({
+      message,
+      questionType,
+      screenContext,
+      sourceScreenDefinition,
+      sourceScreenContext,
+      screenPath: sourceScreenPath,
+      userRole,
+      user,
+    });
   }
 
   if (
@@ -148,7 +174,8 @@ export function buildRoomShiftSemanticOverrideReply({
 }
 
 export function shiftStatusText(context) {
-  return `Bu vardiya ${context?.status || '-'} durumda. Araç: ${context?.vehicle?.plate || 'yok'}. Sürücü: ${context?.driver?.fullName || 'yok'}. Durak: ${Number(context?.stopCount || 0)}. Açık teklif: ${Number(context?.openOfferCount || 0)}.`;
+  const statusText = humanizeStatusText(context?.status || '-');
+  return `Bu vardiyanın durumu: ${statusText || '-'}. Araç: ${context?.vehicle?.plate || 'yok'}. Sürücü: ${context?.driver?.fullName || 'yok'}. Durak: ${Number(context?.stopCount || 0)}. Açık teklif: ${Number(context?.openOfferCount || 0)}.`;
 }
 
 export function shiftBlockers(context) {

@@ -214,7 +214,8 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     if (topic === 'BOARDING_CHANGE_REQUEST_ENTRY') {
       return ['Çocuğum bugün binmeyecek', 'Başka duraktan binecek', 'Talebim kimde bekliyor?', 'Konum paylaşılmadıysa ne yapmalıyım?'];
     }
-    return ['Son GPS ne zaman geldi?', 'ETA nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?'];
+    // ETA nedir?
+    return ['Son GPS ne zaman geldi?', 'Tahmini varış süresi nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?'];
   }
   if (path.includes('/room/map') || path.includes('/room/live') || path.includes('/company/map') || path.includes('/company/live') || path.includes('/organization/map') || path.includes('/organization/live') || path.includes('/school/map') || path.includes('/school/live') || path.includes('/driver/map') || path.includes('/driver/live')) {
     return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];

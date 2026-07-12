@@ -243,6 +243,10 @@ function main() {
     "backend/src/ai/chat/conversationTaskStateBuilders.js",
     "backend/src/ai/chat/conversationTaskStateCompanyReplies.js",
     "backend/src/ai/chat/conversationTaskStateRoomReplies.js",
+    "backend/src/ai/chat/screenStateAnalyzer.js",
+    "backend/src/ai/jobGuide/screenCatalog.roomCompany.js",
+    "backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js",
+    "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
     "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
     "backend/scripts/copilot_reasoning_answer_composer_01_check.js",
     "backend/src/ai/chat/copilotReasoningAnswerComposer.js",
@@ -479,8 +483,11 @@ function main() {
     "backend/src/ai/chat/qualityScorer.js",
     "backend/scripts/copilot_guided_task_engine_01_check.js",
     "backend/scripts/copilot_root_cause_engine_01_check.js",
+    "backend/scripts/copilot_risk_scoring_engine_01_check.js",
+    "backend/src/ai/chat/conversationRiskScoringEngine.js",
     "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
     "docs/COPILOT_ROOT_CAUSE_ENGINE_01.md",
+    "docs/COPILOT_RISK_SCORING_ENGINE_01.md",
     "web/src/utils/uiDataCache.js",
   ]);
 

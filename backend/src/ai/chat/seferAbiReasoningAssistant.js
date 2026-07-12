@@ -6,6 +6,7 @@ import {
   buildClarifyingQuestionReply,
   buildDynamicQuestionChips,
   resolveClarifyingQuestionText,
+  buildRiskScoringState,
 } from './conversationTaskStateResponses.js';
 import { buildRootCauseAssistantChips, buildRootCauseAssistantReply, buildRootCauseState } from './conversationRootCauseEngine.js';
 import { buildSmartDiagnosticState } from './conversationSmartDiagnostics.js';
@@ -626,6 +627,9 @@ function buildSuggestedChips(snapshot) {
   if (snapshot?.analysis?.nextBestAction) contextualChips.push('Sıradaki adımı göster');
   if (snapshot?.analysis?.blockers?.length) contextualChips.push('Neden takıldı?');
   if (rootCauseChips.length) contextualChips.push(...rootCauseChips);
+  if (Array.isArray(snapshot?.riskScoringChips) && snapshot.riskScoringChips.length && ['RISK_LIST', 'SCREEN_RISKS'].includes(String(snapshot?.questionType || ''))) {
+    contextualChips.push(...snapshot.riskScoringChips);
+  }
   if (snapshot?.selectedRecordStatus) contextualChips.push('Seçili kayıt özetini göster');
   if (snapshot?.clarifyingQuestion) contextualChips.push(snapshot.clarifyingQuestion);
   if (snapshot?.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') contextualChips.push('Güvenli alternatif göster');
@@ -708,6 +712,25 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     screenPath,
   });
   const smartDiagnosticState = buildSmartDiagnosticState({
+    message,
+    currentReply: rawReply,
+    questionType,
+    screenPath,
+    screenDefinition,
+    screenContext,
+    sourceScreenDefinition,
+    sourceScreenContext,
+    conversationState,
+    contextPriority,
+    analysis,
+    roleMode,
+    userRole,
+    user,
+    guidedTaskMeta,
+    context,
+    entityType,
+  });
+  const riskScoringState = buildRiskScoringState({
     message,
     currentReply: rawReply,
     questionType,
@@ -847,6 +870,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     || analysis?.blockers?.length
     || analysis?.missingData?.length
     || analysis?.evidence?.length
+    || Boolean(riskScoringState?.isRiskScoring)
     || Boolean(rootCauseReply)
     || rootCauseState?.hasRootCauseContext
     || smartDiagnosticState?.isDiagnostic
@@ -928,6 +952,10 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     rootCauseReply,
     assistantReply: firstNonEmpty(rootCauseReply, String(rawReply || '')),
     rootCauseChips,
+    riskScoringState,
+    riskScoringTheme: riskScoringState?.theme || '',
+    riskScoringReply: riskScoringState?.reply || '',
+    riskScoringChips: riskScoringState?.chips || [],
     smartDiagnosticState,
     smartDiagnosticTheme: smartDiagnosticState?.theme || '',
     smartDiagnosticReply: firstNonEmpty(rootCauseReply, smartDiagnosticState?.reply, ''),
@@ -944,6 +972,20 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
       interactionIntentFamily,
       rootCauseChips,
     }),
+    contextualSuggestedChips: String(screenPath || '').includes('/parent/live') && String(effectiveRole || '').toUpperCase() === 'PARENT'
+      ? ['Son GPS ne zaman geldi?', 'ETA nedir?', 'Araç bağlantısı var mı?', "Sürücünün telefon GPS’i devrede mi?"]
+      : buildSuggestedChips({
+        roleMode,
+        effectiveRole,
+        questionType,
+        selectedRecordStatus,
+        clarifyingQuestion,
+        analysis,
+        mode,
+        roleProfile,
+        interactionIntentFamily,
+        rootCauseChips,
+      }),
   });
 }
 

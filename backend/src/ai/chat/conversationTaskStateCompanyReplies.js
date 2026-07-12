@@ -14,6 +14,7 @@ import {
   normalizeRoleKey,
   prettyScreenLabel,
 } from './conversationTaskStateShared.js';
+import { buildRiskScoringReply } from './conversationRiskScoringEngine.js';
 
 export function buildCompanySemanticOverrideReply({
   message,
@@ -169,7 +170,15 @@ export function buildCompanySemanticOverrideReply({
     return 'Bu ekranda önce şirket konumu, tarih / saat, servis yönü ve kapsamı kontrol et. Sonra personel listesi, adres / konum, duraklar ve rota önizlemesine bak. Eksik konum varsa önce konum incelemesini tamamla. Plan uygunsa oluşan vardiyayı Vardiyalar ekranında takip et, ardından teklif ve sözleşme hazırlığına geç.';
   }
   if (['RISK_LIST', 'SCREEN_RISKS'].includes(String(questionType || '')) && isCompanyPlanningSurface) {
-    return 'Başlıca riskler: şirket konumunun eksik olması, tarih / saat ya da servis yönünün yanlış seçilmesi, kapsamın dar ya da geniş gelmesi, personel listesindeki eksikler, adres / konum hatası ve durak / rota önizlemesinde sapma. Bunlardan biri varsa önce onu düzelt.';
+    return buildRiskScoringReply({
+      message,
+      questionType,
+      screenDefinition,
+      screenContext,
+      sourceScreenDefinition,
+      sourceScreenContext,
+      screenPath: _screenPath,
+    });
   }
   if (/konumda sorun varsa ne yapacağım/i.test(text) || /konumda sorun varsa ne yapacagim/i.test(text)) {
     return 'Konumda sorun varsa önce adres bilgisini kontrol et: il, ilçe, mahalle, sokak ve bina bilgisi eksik mi bak. Eksik veya şüpheli adresleri konum incelemesine ayır. Konum netleşmeden rota, teklif ve sözleşme hazırlığını ilerletme. Ben adresin yeterli olup olmadığını yorumlayabilirim; konumu senin yerine otomatik değiştirmem.';

@@ -263,6 +263,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Static helper: `backend/src/ai/chat/conversationRootCauseEngine.js`
 - Bu check, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; kök neden açıklamasını bağlamlı çözer ama runtime execute açmaz.
 - Sonraki güvenli hatlar: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+### COPILOT-RISK-SCORING-ENGINE-01 [CHECK]
+- `check:copilotriskscoringengine01` risk list / risk scoring sorularında role + screen + selected record + current reply üzerinden güvenli risk sıralaması ve yüzey-özel açıklama üretir; `backend/src/ai/chat/conversationRiskScoringEngine.js` üzerinden helpComposer, Sefer Abi reasoning assistant ve answerQualityPolicy arasında risk reply/chip önceliğini paylaşır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\copilot_risk_scoring_engine_01_check.js`
+- Doküman: `docs/COPILOT_RISK_SCORING_ENGINE_01.md`
+- Static helper: `backend/src/ai/chat/conversationRiskScoringEngine.js`
+- Bu check, `COPILOT-ROOT-CAUSE-ENGINE-01`, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; riskleri bağlama göre çözer ama runtime execute açmaz.
+- Sonraki güvenli hatlar: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
 ### COPILOT-CLARIFYING-QUESTION-ENGINE-01 [CHECK]
 - `check:copilotclarifyingquestionengine01` role + screen + selected record + conversation state üzerinden clarifying question assembly katmanını tek yerde toplar; `backend/src/ai/chat/conversationTaskStateResponses.js` üzerinden `Netleştirelim / Alternatif` formatını helpComposer, Sefer Abi reasoning assistant ve guided task engine arasında paylaşır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - Check script: `node backend\scripts\copilot_clarifying_question_engine_01_check.js`
@@ -1461,6 +1468,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:seferabiterminalhumanize01` Sefer Abi Terminali, sağ alt drawer ve analiz yüzeylerindeki teknik/İngilizce/internal/debug metinleri sade Türkçeye taşır.
 - `Sefer Abi Terminali` ana görünümünde rol bazlı, operasyon odaklı, `Durum / Ne anlama geliyor? / Etki / Sıradaki doğru işlem` yapısı korunur; teknik ayrıntılar ikincil `Teknik ayrıntılar` alanında kalır.
 - Bu düzenleme `UX-SEFER-ABI-LAUNCHER-01`, `COP-LIVE-ACCEPT-01`, `DYNAMIC-SAVINGS-01` ve `ROUTE-CHANGE-FINAL-01` zincirini bozmaz; runtime karar ve business flow değiştirmez.
+
+### SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01 [CHECK]
+- `check:seferabiturkishuserfacinglanguage01` Sefer Abi'nin tüm rol ve yüzeylerinde kullanıcıya görünen metinleri sade Türkçe tutar; `Free-to-operate`, `root cause`, `diagnostic`, `risk scoring`, `workflow`, `screen purpose`, `next best action`, `current step`, `fallback`, `offline`, `stale`, `ETA`, `warning`, `error` ve `blocker` gibi görünür sızıntıları engeller.
+- `node backend\scripts\sefer_abi_turkish_user_facing_language_01_check.js` bu kontrolü çalıştırır ve tüm yüzeylerde Türkçe görünür metinleri doğrular.
+- `docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md` bu audit’in kanonik açıklama dosyasıdır.
+- `MARKETPLACE_FREE_TO_OPERATE_PREVIEW` görünür label'ı `Başarı payı önizlemesi` olarak kilitlenir; help composer, reasoning assistant, quick action ve chip kopyası Türkçe kalır.
+- Bu düzenleme `SEFER-ABI-TERMINAL-HUMANIZE-01`, `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`, `COPILOT-ROOT-CAUSE-ENGINE-01`, `COPILOT-RISK-SCORING-ENGINE-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` zincirini bozmaz; runtime karar ve business flow değiştirmez.
 
 ### UX-COMPANY-PANELS-FINAL-POLISH-01 [CHECK]
 - `check:uxcompanypanelsfinalpolish01` Company / Vardiyalar, Sözleşmeler ve Ticari Akış yüzeylerini son gerçeklik düzeltmesiyle hizalar.

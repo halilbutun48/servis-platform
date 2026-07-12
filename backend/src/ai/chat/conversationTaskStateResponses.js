@@ -22,6 +22,11 @@ import {
   buildSmartDiagnosticState,
 } from './conversationSmartDiagnostics.js';
 import {
+  buildRiskScoringChips,
+  buildRiskScoringReply,
+  buildRiskScoringState,
+} from './conversationRiskScoringEngine.js';
+import {
   buildRootCauseChips,
   buildRootCauseReply,
   buildRootCauseState,
@@ -63,6 +68,9 @@ export {
   buildSmartDiagnosticReply,
   buildSmartDiagnosticChips,
   buildSmartDiagnosticState,
+  buildRiskScoringReply,
+  buildRiskScoringChips,
+  buildRiskScoringState,
   buildRootCauseReply,
   buildRootCauseChips,
   buildRootCauseState,
@@ -126,6 +134,9 @@ export function createConversationTaskStateResponses(deps = {}) {
     buildSmartDiagnosticReply,
     buildSmartDiagnosticChips,
     buildSmartDiagnosticState,
+    buildRiskScoringReply,
+    buildRiskScoringChips,
+    buildRiskScoringState,
     buildRootCauseReply,
     buildRootCauseChips,
     buildRootCauseState,

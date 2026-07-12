@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-07-06
+Tarih: 2026-07-12
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `383`
-- Toplam executable tracked file: `1190`
-- Combined registry row: `1573`
-- Root/backend/web/mobile package dağılımı: root `226`, backend `750`, web `93`, mobile `201`
+- Toplam package script entry: `385`
+- Toplam executable tracked file: `1193`
+- Combined registry row: `1578`
+- Root/backend/web/mobile package dağılımı: root `228`, backend `753`, web `93`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `50`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -172,6 +172,11 @@ Repo: `servis-platform`
 - Copilot root cause engine docs: `docs/COPILOT_ROOT_CAUSE_ENGINE_01.md`
 - Copilot root cause engine command: `node backend\scripts\copilot_root_cause_engine_01_check.js`
 - Copilot root cause engine helper: `backend/src/ai/chat/conversationRootCauseEngine.js`
+- Copilot risk scoring engine milestone: `COPILOT-RISK-SCORING-ENGINE-01`
+- Copilot risk scoring engine check: `check:copilotriskscoringengine01`
+- Copilot risk scoring engine docs: `docs/COPILOT_RISK_SCORING_ENGINE_01.md`
+- Copilot risk scoring engine command: `node backend\scripts\copilot_risk_scoring_engine_01_check.js`
+- Copilot risk scoring engine helper: `backend/src/ai/chat/conversationRiskScoringEngine.js`
 - Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`
 - Copilot clarifying question engine check: `check:copilotclarifyingquestionengine01`
 - Copilot clarifying question engine docs: `docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md`
@@ -187,6 +192,17 @@ Repo: `servis-platform`
 - Sefer Abi all-roles reasoning assistant docs: `docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md`
 - Sefer Abi all-roles reasoning assistant command: `node backend\scripts\sefer_abi_all_roles_reasoning_assistant_01_check.js`
 - Sefer Abi all-roles reasoning assistant helper: `backend/src/ai/chat/seferAbiReasoningAssistant.js`
+- Sefer Abi terminal humanize milestone: `SEFER-ABI-TERMINAL-HUMANIZE-01`
+- Sefer Abi terminal humanize check: `check:seferabiterminalhumanize01`
+- Sefer Abi terminal humanize docs: `docs/SEFER_ABI_TERMINAL_HUMANIZE_01.md`
+- Sefer Abi terminal humanize command: `node backend\scripts\sefer_abi_terminal_humanize_01_check.js`
+- Sefer Abi terminal humanize helper: `backend/src/ai/chat/helpComposer.js`
+- Sefer Abi Turkish user-facing language audit milestone: `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`
+- Sefer Abi Turkish user-facing language audit check: `check:seferabiturkishuserfacinglanguage01`
+- Sefer Abi Turkish user-facing language audit docs: `docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md`
+- Sefer Abi Turkish user-facing language audit command: `node backend\scripts\sefer_abi_turkish_user_facing_language_01_check.js`
+- Sefer Abi Turkish user-facing language audit helper: `backend/src/ai/chat/helpComposer.js`
+- Sefer Abi Turkish user-facing language audit reasoning surface: `backend/src/ai/chat/seferAbiReasoningAssistant.js`
 - Address geocoding confidence milestone: `ADDRESS-GEOCODING-CONFIDENCE-01`
 - Address geocoding confidence check: `check:addressgeocodingconfidence01`
 - Address geocoding confidence docs: `docs/ADDRESS_GEOCODING_CONFIDENCE_01.md`
@@ -196,7 +212,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `175`
+- ACTIVE_CORE: `177`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -212,7 +228,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `592`
+- NEEDS_REVIEW: `595`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `22`
 - SKIP gerekçesi olan entry: `61`
@@ -226,14 +242,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 175 |
+| ACTIVE_CORE | 177 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 592 |
+| NEEDS_REVIEW | 595 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -312,10 +328,12 @@ Repo: `servis-platform`
 | root:check:copilotdynamicquestionengine01 | package.json | root | node backend/scripts/copilot_dynamic_question_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-DYNAMIC-QUESTION-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotsmartdiagnosticengine01 | package.json | root | node backend/scripts/copilot_smart_diagnostic_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotrootcauseengine01 | package.json | root | node backend/scripts/copilot_root_cause_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-ROOT-CAUSE-ENGINE-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotriskscoringengine01 | package.json | root | node backend/scripts/copilot_risk_scoring_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-RISK-SCORING-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotclarifyingquestionengine01 | package.json | root | node backend/scripts/copilot_clarifying_question_engine_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-CLARIFYING-QUESTION-ENGINE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
 | root:check:seferabiallrolesreasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01 |  | Owner or chain unclear |  |
+| root:check:seferabiturkishuserfacinglanguage01 | package.json | root | node backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js | core | ACTIVE_CORE |  | SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotcontextmemorytaskstate01 | package.json | root | node backend/scripts/copilot_context_memory_task_state_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTCONTEXTMEMORYTASKSTATE-01 |  | Owner or chain unclear |  |
 | root:check:plancenterguidedflowpersistence01 | package.json | root | node backend/scripts/plan_center_guided_flow_persistence_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PLANCENTERGUIDEDFLOWPERSISTENCE-01 |  | Owner or chain unclear |  |
 | root:check:mobiletext01 | package.json | root | npm --prefix mobile run check:mobiletext01 | review | NEEDS_REVIEW |  | ROOT-CHECK-MOBILETEXT-01 |  | Owner or chain unclear |  |
@@ -619,6 +637,7 @@ Repo: `servis-platform`
 | copilot_human_approval_01_check.js | backend/scripts/copilot_human_approval_01_check.js | backend | root:check:copilothumanapproval01 | review | NEEDS_REVIEW |  | COPILOT-HUMAN-APPROVAL-01-CHECK |  | Owner or chain unclear |  |
 | copilot_reasoning_answer_composer_01_check.js | backend/scripts/copilot_reasoning_answer_composer_01_check.js | backend | root:check:copilotreasoninganswercomposer01 | review | NEEDS_REVIEW |  | COPILOT-REASONING-ANSWER-COMPOSER-01-CHECK |  | Owner or chain unclear |  |
 | copilot_role_task_matrix_01_check.js | backend/scripts/copilot_role_task_matrix_01_check.js | backend | root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX-01-CHECK |  | Owner or chain unclear |  |
+| copilot_root_cause_engine_01_check.js | backend/scripts/copilot_root_cause_engine_01_check.js | backend | root:check:copilotrootcauseengine01 | review | NEEDS_REVIEW |  | COPILOT-ROOT-CAUSE-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_route_review_human_approval_01_check.js | backend/scripts/copilot_route_review_human_approval_01_check.js | backend | root:check:copilotroutereviewhumanapproval01 | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01-CHECK |  | Owner or chain unclear |  |
 | copilot_smart_diagnostic_engine_01_check.js | backend/scripts/copilot_smart_diagnostic_engine_01_check.js | backend | root:check:copilotsmartdiagnosticengine01 | review | NEEDS_REVIEW |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_stop_route_draft_01_check.js | backend/scripts/copilot_stop_route_draft_01_check.js | backend | root:check:copilotstoproutedraft01 | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-01-CHECK |  | Owner or chain unclear |  |
@@ -973,6 +992,7 @@ Repo: `servis-platform`
 | addressGeocodingConfidencePolicy.js | backend/src/ai/chat/addressGeocodingConfidencePolicy.js | backend |  | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-POLICY |  | Owner or chain unclear |  |
 | answerQualityPolicy.js | backend/src/ai/chat/answerQualityPolicy.js | backend |  | review | NEEDS_REVIEW |  | ANSWER-QUALITY-POLICY |  | Owner or chain unclear |  |
 | contextResolver.js | backend/src/ai/chat/contextResolver.js | backend |  | review | NEEDS_REVIEW |  | CONTEXT-RESOLVER |  | Owner or chain unclear |  |
+| conversationRootCauseEngine.js | backend/src/ai/chat/conversationRootCauseEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-ROOT-CAUSE-ENGINE |  | Owner or chain unclear |  |
 | conversationSmartDiagnostics.js | backend/src/ai/chat/conversationSmartDiagnostics.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-SMART-DIAGNOSTICS |  | Owner or chain unclear |  |
 | conversationTaskState.js | backend/src/ai/chat/conversationTaskState.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE |  | Owner or chain unclear |  |
 | conversationTaskStateBuilders.js | backend/src/ai/chat/conversationTaskStateBuilders.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-BUILDERS |  | Owner or chain unclear |  |
@@ -1229,8 +1249,9 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| copilot_root_cause_engine_01_check.js | backend/scripts/copilot_root_cause_engine_01_check.js | backend | root:check:copilotrootcauseengine01 | review | NEEDS_REVIEW |  | COPILOT-ROOT-CAUSE-ENGINE-01-CHECK |  | Owner or chain unclear |  |
-| conversationRootCauseEngine.js | backend/src/ai/chat/conversationRootCauseEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-ROOT-CAUSE-ENGINE |  | Owner or chain unclear |  |
+| copilot_risk_scoring_engine_01_check.js | backend/scripts/copilot_risk_scoring_engine_01_check.js | backend | root:check:copilotriskscoringengine01 | review | NEEDS_REVIEW |  | COPILOT-RISK-SCORING-ENGINE-01-CHECK |  | Owner or chain unclear |  |
+| sefer_abi_turkish_user_facing_language_01_check.js | backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js | backend | root:check:seferabiturkishuserfacinglanguage01 | review | NEEDS_REVIEW |  | SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-01-CHECK |  | Owner or chain unclear |  |
+| conversationRiskScoringEngine.js | backend/src/ai/chat/conversationRiskScoringEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-RISK-SCORING-ENGINE |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -2095,7 +2116,7 @@ Repo: `servis-platform`
 | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | Vardis, Hub | NEEDS_REVIEW |
 | backend/scripts/eta_osrm_01_route_eta_service_check.js | OperationProof | NEEDS_REVIEW |
 | backend/scripts/eta_osrm_02_api_eta_bridge_check.js | OperationProof | NEEDS_REVIEW |
-| backend/scripts/excel_to_route_readiness_redteam_01_check.js | Yer | NEEDS_REVIEW |
+| backend/scripts/excel_to_route_readiness_redteam_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/final_ux_smoke_01_check.js | Hub, Yer, Audit Logs, Log Export, personel-access | NEEDS_REVIEW |
 | backend/scripts/invite_based_membership_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/m10check.js | Audit Logs | ACTIVE_RELEASE_ONLY |

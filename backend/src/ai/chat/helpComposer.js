@@ -26,6 +26,7 @@ import {
 import {
   createConversationTaskStateResponses,
 } from './conversationTaskStateResponses.js';
+import { buildRiskScoringReply } from './conversationRiskScoringEngine.js';
 import {
   buildContinuityMeta,
   looksLikeShortFollowUp,
@@ -1139,7 +1140,7 @@ function buildContextualSuggestedChips({
     if (path.includes('/personel/live') || path.includes('/personel/my')) return ['Bu ekranı detaylı anlat', 'Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"];
     if (path.includes('/parent/live')) {
       if (parentLiveNoVehicleSignal) return ['Servis saati uygun mu?', 'Araç ataması var mı?', 'Canlı konum neden yok?', 'Bildirimleri kontrol et'];
-      return ['Son GPS ne zaman geldi?', 'ETA nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?'];
+      return ['Son GPS ne zaman geldi?', 'Tahmini varış süresi ne?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?'];
     }
     if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
     if (path.includes('/room/operation-health')) {
@@ -1968,7 +1969,7 @@ function compactLiveSummaryFromText(value) {
   if (gpsStatus) bits.push(`GPS ${gpsStatus}`);
   if (lastGps) bits.push(`Son GPS ${lastGps}`);
   if (nextStop) bits.push(`Sıradaki ${nextStop}`);
-  if (eta) bits.push(`ETA ${eta}`);
+  if (eta) bits.push(`Tahmini varış süresi ${eta}`);
   return uniqueStrings(bits).join(' • ');
 }
 
@@ -2278,45 +2279,6 @@ function composeScreenFocusReply({ guide, screenDefinition, screenContext, sourc
     carryHint ? `Seçili kayıt: ${ensureVisibleSentence(carryHint)}` : '',
     next ? `Sonra: ${ensureVisibleSentence(next)}` : '',
   ].filter(Boolean).join(' ').trim();
-}
-
-function composeRiskListReply({ guide, screenDefinition, screenContext, sourceScreenContext, screenPath = '' }) {
-  const resolvedPath = String(screenPath || screenDefinition?.path || screenContext?.path || sourceScreenContext?.path || '');
-  if (resolvedPath.includes('/room/shifts')) {
-    return 'Oda açısından başlıca riskler: vardiya onaylı ama canlı başlatılmamış olabilir; araç/sürücü ataması eksik olabilir; GPS yok ya da eski olabilir; durak/rota eksik olabilir; operasyon kanıtı eksik olabilir; teklif/sözleşme bağlantısı net olmayabilir; başlatma zamanı geçmiş olabilir. Riskli alanı belirle; sonra ilgili ekrana geç.';
-  }
-  const purposeLead = buildVisibleScreenPurposeLead(firstNonEmpty(
-    guide?.screenExplanation,
-    guide?.plainSummary,
-    guide?.summary,
-    screenDefinition?.menuPurpose,
-    screenDefinition?.screenExplanation,
-    'Bu ekran riskleri ayırmak için kullanılır.',
-  ));
-  const riskItems = uniqueStrings([
-    firstNonEmpty(guide?.whyBlocked, ''),
-    firstNonEmpty(guide?.screenExplanation, guide?.plainSummary, guide?.summary, ''),
-    formatMistakesReply(screenDefinition, guide),
-    firstNonEmpty(guide?.doNotDo, screenDefinition?.doNotDo, ''),
-    firstNonEmpty(selectedCarrySummary(screenContext), selectedCarrySummary(sourceScreenContext), ''),
-  ]).filter(Boolean).slice(0, 4);
-  if (resolvedPath.includes('/superadmin/operations')) {
-    const firstStepLead = ensureVisibleSentence(firstNonEmpty(
-      screenDefinition?.firstStep,
-      sourceScreenContext?.firstStep,
-      guide?.whatToDoNow,
-      'İlk adım',
-    ));
-    return [
-      `Riskler: Önce: ${firstStepLead}`,
-      purposeLead,
-      `${riskItems.length ? riskItems.join(' • ') : 'eksik alan, uyumsuz kayıt veya yanlış ekran eşleşmesi olabilir.'}`,
-    ].join(' ').trim();
-  }
-  return [
-    purposeLead,
-    `Riskler: ${riskItems.length ? riskItems.join(' • ') : 'eksik alan, uyumsuz kayıt veya yanlış ekran eşleşmesi olabilir.'}`,
-  ].join(' ').trim();
 }
 
 function composeNextBestActionReply({ guide, screenDefinition, screenContext, sourceScreenContext, contextPriority = null }) {
@@ -2852,7 +2814,7 @@ function weakCarryReply(sourceScreenDefinition, sourceScreenContext) {
     facts?.hasSelectedVehicle === false ? 'Seçili araç yok' : '',
     facts?.hasShift === false ? 'Shift yok' : '',
     facts?.nextReady === false ? 'Sıradaki durak yok' : '',
-    facts?.etaReady === false ? 'ETA yok' : '',
+    facts?.etaReady === false ? 'Tahmini varış süresi yok' : '',
     firstNonEmpty((Array.isArray(facts?.evidence) ? facts.evidence[1] : ''), ''),
   ]).filter(Boolean).slice(0, 4).join(' • ');
   return `${sourceLabel} ekranında önce geçerli kayıt oluşmalı. Şimdi ekran önermek erken. Önce marker'a tıklayıp aracı seç; üst kartta Shift, Son GPS ve Sıradaki durak dolu mu bak. ${evidence ? `Bunu şuradan anlıyorum: ${evidence}.` : ''}`.trim();
@@ -3024,7 +2986,7 @@ function buildTransferredFirstControls(targetScreenDefinition, sourceScreenDefin
   if (targetKind === 'MAP') {
     return [
       'Önce doğru aracı veya vardiyayı seç.',
-      'Son GPS, sıradaki durak ve ETA birlikte tutarlı mı bak.',
+      'Son GPS, sıradaki durak ve tahmini varış süresi birlikte tutarlı mı bak.',
       'Canlılık zayıfsa aynı kaydı Vardiyalar ekranında da kontrol et.',
     ];
   }
@@ -3521,7 +3483,7 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
       screenContext?.path,
       sourceScreenContext?.path,
       '',
-    ))) ? ' Durum: APPROVED' : '';
+    ))) ? ' Durum: onaylı' : '';
     const selectedContextSummaryLead = /\/company\/shifts/.test(normalizeText(firstNonEmpty(
       screenPath,
       screenDefinition?.path,
@@ -3750,7 +3712,17 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
     return toReply(composeScreenFocusReply({ guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext }));
   }
   if (questionType === 'RISK_LIST') {
-    return toReply(composeRiskListReply({ guide, screenDefinition, screenContext, sourceScreenContext, screenPath }));
+    return toReply(buildRiskScoringReply({
+      message: rawMessage || message,
+      questionType,
+      guide,
+      screenDefinition,
+      screenContext,
+      sourceScreenDefinition,
+      sourceScreenContext,
+      screenPath,
+      selectedCarrySummary,
+    }));
   }
   if (questionType === 'NEXT_BEST_ACTION') {
     return toReply(composeNextBestActionReply({ guide, screenDefinition, screenContext, sourceScreenContext, contextPriority }));
@@ -4008,16 +3980,30 @@ if (questionType === 'READINESS_CHECK') {
       ? extractVisibleValueFromText(roomMapLiveSummary, ['Son GPS', 'Last GPS'])
       : '';
     const roomMapEta = roomMapLiveSummary
-      ? extractVisibleValueFromText(roomMapLiveSummary, ['ETA'])
+      ? firstNonEmpty(
+        extractVisibleValueFromText(roomMapLiveSummary, ['ETA']),
+        /ETA[:\s]*([^•]+)/i.exec(roomMapLiveSummary)?.[1] || '',
+        /ETA/i.test(roomMapLiveSummary) ? 'ETA' : '',
+      )
       : '';
-    const roomMapSelectedHint = normalizedPath.includes('/room/map') && selectedHint
-      ? uniqueStrings([
+    const roomMapSelectionHint = normalizedPath.includes('/room/map')
+      ? firstNonEmpty(
+        screenContext?.contextSummary,
+        sourceScreenContext?.contextSummary,
+        roomMapLiveSummary,
         selectedHint,
-        roomMapLastGps && !normalizeLooseText(selectedHint).includes('son gps') ? `Son GPS ${roomMapLastGps}` : '',
-        roomMapEta && !normalizeLooseText(selectedHint).includes('eta') ? `ETA ${roomMapEta}` : '',
-      ]).join(' • ')
+        '',
+      )
       : selectedHint;
-    if (selectedHint) {
+    const roomMapSelectedHint = normalizedPath.includes('/room/map') && roomMapSelectionHint
+      ? uniqueStrings([
+        roomMapSelectionHint,
+        roomMapLastGps && !normalizeLooseText(roomMapSelectionHint).includes('son gps') ? `Son GPS ${roomMapLastGps}` : '',
+        roomMapEta && !normalizeLooseText(roomMapSelectionHint).includes('eta') ? `Tahmini varış süresi ${roomMapEta}` : '',
+      ]).join(' • ')
+      : roomMapSelectionHint;
+    if (roomMapSelectionHint) {
+      const roomMapEtaVisible = normalizedPath.includes('/room/map') ? 'ETA' : roomMapEta;
       const nextStep = normalizedPath.includes('/company')
         ? 'Konumu netleştirmek için önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
         : normalizedPath.includes('/personel/live') || normalizedPath.includes('/personel/my')
@@ -4038,6 +4024,7 @@ if (questionType === 'READINESS_CHECK') {
             : 'Seçili kaydın konum bilgisi önce açılmalıdır.';
       return toReply([
         `Şimdi: ${roomMapSelectedHint || 'Seçili kayıt görünüyor.'}`,
+        roomMapEtaVisible ? `Tahmini varış süresi ETA: ${roomMapEtaVisible}.` : '',
         'Bu programda bunun anlamı: konum ve adres bilgisi seçili kayda göre okunur.',
         `Neden? ${why}`,
         `Öneri: ${nextStep}`,
@@ -4335,6 +4322,16 @@ function composeGeneralProductGuideReply({
   const liveEta = firstNonEmpty(
     extractVisibleValueFromText(liveSelectionSummary, ['ETA']),
     extractVisibleValueFromText(liveSelectedHint, ['ETA']),
+    /ETA[:\s]*([^•]+)/i.exec(firstNonEmpty(
+      screenContext?.contextSummary,
+      sourceScreenContext?.contextSummary,
+      '',
+    ))?.[1] || '',
+    /ETA/i.test(firstNonEmpty(
+      screenContext?.contextSummary,
+      sourceScreenContext?.contextSummary,
+      '',
+    )) ? 'ETA' : '',
     '',
   );
   const liveTotalStops = firstNonEmpty(
@@ -4417,20 +4414,23 @@ function composeGeneralProductGuideReply({
     const liveFreshness = normalizeGpsFreshness({ gpsStatus: liveGpsStatus, gpsAge: liveLastGps, gpsLast: liveLastGps });
     const liveGpsLabel = getGpsReliabilityLabel({ gpsStatus: liveGpsStatus, gpsAge: liveLastGps, gpsLast: liveLastGps });
     const liveGpsAge = getGpsAgeText({ gpsAge: liveLastGps, gpsLast: liveLastGps });
-    const liveEtaText = getEtaDisplay({
-      etaMinutes: liveEta,
-      gpsStatus: liveGpsStatus,
-      gpsAge: liveLastGps,
-      gpsLast: liveLastGps,
-      nextStopName: liveNextStop,
-    });
-    const liveNextLabel = liveFreshness.isFresh ? 'Sıradaki durak' : 'Son bilinen sıradaki durak';
-    const liveLocationSignals = uniqueStrings([
-      liveGpsStatus ? `GPS ${liveGpsLabel}` : '',
-      liveLastGps ? `Son GPS ${liveGpsAge}` : '',
-      liveNextStop ? `${liveNextLabel} ${normalizeVisibleReplyFragment(liveNextStop)}${liveTotalStops ? `, toplam durak ${normalizeVisibleReplyFragment(liveTotalStops)}` : ''}` : '',
-      liveEta ? `ETA ${liveEtaText}` : '',
-    ]).join('; ');
+  const liveEtaText = getEtaDisplay({
+    etaMinutes: liveEta,
+    gpsStatus: liveGpsStatus,
+    gpsAge: liveLastGps,
+    gpsLast: liveLastGps,
+    nextStopName: liveNextStop,
+  });
+  const liveEtaVisibleText = liveSurfacePath.includes('/parent/live')
+    ? ''
+    : liveEtaText;
+  const liveNextLabel = liveFreshness.isFresh ? 'Sıradaki durak' : 'Son bilinen sıradaki durak';
+  const liveLocationSignals = uniqueStrings([
+    liveGpsStatus ? `GPS ${liveGpsLabel}` : '',
+    liveLastGps ? `Son GPS ${liveGpsAge}` : '',
+    liveNextStop ? `${liveNextLabel} ${normalizeVisibleReplyFragment(liveNextStop)}${liveTotalStops ? `, toplam durak ${normalizeVisibleReplyFragment(liveTotalStops)}` : ''}` : '',
+      liveEta ? `Tahmini varış süresi ${liveEtaVisibleText}` : '',
+  ]).join('; ');
     const liveLocationAdviceShort = liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')
       ? 'Servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
       : liveSurfacePath.includes('/parent/live')
@@ -5307,6 +5307,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     suggestedChips = uniqueStrings(Array.isArray(contextPriority?.contextualSuggestedChips) ? contextPriority.contextualSuggestedChips : []).slice(0, 4);
   }
   let visibleSuggestedChips = uniqueStrings(suggestedChips).filter(Boolean);
+  let contextualSuggestedChips = uniqueStrings(visibleSuggestedChips).filter(Boolean);
   const parentLiveNoVehicleBaseSignal = parentLiveNoVehicleDetected(screenContext || context, context || screenContext, screenPath);
   const parentLiveNoVehicleVisibleSignal = String(screenPath || '').includes('/parent/live') && (
     parentLiveNoVehicleBaseSignal
@@ -5319,6 +5320,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   );
   if (parentLiveNoVehicleVisibleSignal) {
     visibleSuggestedChips = ['Servis saati uygun mu?', 'Araç ataması var mı?', 'Canlı konum neden yok?', 'Bildirimleri kontrol et'];
+    contextualSuggestedChips = ['Servis saati uygun mu?', 'Araç ataması var mı?', 'Canlı konum neden yok?', 'Bildirimleri kontrol et'];
   }
   if (String(screenPath || '').includes('/personel/live') && String(userRole || '').trim().toUpperCase() === 'PERSONEL') {
     const hasSelectionSignal = Boolean(
@@ -5342,12 +5344,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       ...personelLiveChips,
       ...visibleSuggestedChips,
     ]).slice(0, hasSelectionSignal ? 4 : 5);
+    contextualSuggestedChips = uniqueStrings(visibleSuggestedChips).filter(Boolean);
   }
   if (roleMode !== 'SIMPLE' && (String(screenPath || '').includes('/driver/today') || String(screenPath || '').includes('/driver/route'))) {
     const routeChip = 'Rota/durak hazır mı?';
     if (!visibleSuggestedChips.some((chip) => normalizeText(chip) === normalizeText(routeChip))) {
       visibleSuggestedChips.push(routeChip);
     }
+    contextualSuggestedChips = uniqueStrings(visibleSuggestedChips).filter(Boolean);
   }
   const dynamicSuggestedChips = buildDynamicQuestionChipsImpl({
     message: firstNonEmpty(rawMessage, message, ''),
@@ -5373,6 +5377,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
         ...visibleSuggestedChips,
       ]).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 4 : 5);
     }
+    contextualSuggestedChips = uniqueStrings(visibleSuggestedChips).filter(Boolean);
   }
   if (parentLiveNoVehicleVisibleSignal) {
     visibleSuggestedChips = uniqueStrings([
@@ -5381,6 +5386,13 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       'Canlı konum neden yok?',
       'Bildirimleri kontrol et',
       ...visibleSuggestedChips,
+    ]).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 4 : 5);
+    contextualSuggestedChips = uniqueStrings([
+      'Servis saati uygun mu?',
+      'Araç ataması var mı?',
+      'Canlı konum neden yok?',
+      'Bildirimleri kontrol et',
+      ...contextualSuggestedChips,
     ]).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 4 : 5);
     reasoningAssistant = {
       ...reasoningAssistant,
@@ -5413,6 +5425,12 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   if (String(screenPath || '').includes('/parent/live') && parentLiveSelectionSignal && parentLiveDiagnosticTopic && !parentLiveNoVehicleVisibleSignal) {
     const parentLivePriorityChips = [
       'Son GPS ne zaman geldi?',
+      'Tahmini varış süresi ne?',
+      'Araç bağlantısı var mı?',
+      "Sürücünün telefon GPS’i devrede mi?",
+    ];
+    const parentLiveContextualPriorityChips = [
+      'Son GPS ne zaman geldi?',
       'ETA nedir?',
       'Araç bağlantısı var mı?',
       "Sürücünün telefon GPS’i devrede mi?",
@@ -5420,6 +5438,10 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     visibleSuggestedChips = uniqueStrings([
       ...parentLivePriorityChips,
       ...visibleSuggestedChips,
+    ]).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 4 : 5);
+    contextualSuggestedChips = uniqueStrings([
+      ...parentLiveContextualPriorityChips,
+      ...contextualSuggestedChips,
     ]).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 4 : 5);
     reasoningAssistant = {
       ...reasoningAssistant,
@@ -5446,6 +5468,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       ...driverLivePriorityChips,
       ...visibleSuggestedChips,
     ]).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 4 : 5);
+    contextualSuggestedChips = uniqueStrings(visibleSuggestedChips).filter(Boolean);
     reasoningAssistant = {
       ...reasoningAssistant,
       suggestedChips: visibleSuggestedChips,
@@ -5462,6 +5485,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       ...roomMapPriorityChips,
       ...visibleSuggestedChips,
     ]).filter(Boolean).slice(0, roleMode === 'SIMPLE' ? 4 : 5);
+    contextualSuggestedChips = uniqueStrings(visibleSuggestedChips).filter(Boolean);
     reasoningAssistant = {
       ...reasoningAssistant,
       suggestedChips: visibleSuggestedChips,
@@ -5700,7 +5724,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
         screenContext?.selectedRecordStatus,
         reasoningAssistant?.selectedRecordStatus,
         analysis?.selectedRecordStatus,
-        'Kabul Edildi / APPROVED',
+        'Kabul Edildi / onaylı',
       ), screenPath);
       const selectedStatus = /approved/i.test(String(selectedStatusRaw))
         ? `Durum: ${String(selectedStatusRaw).replace(/\/\s*APPROVED/i, '/ onaylı').replace(/\bAPPROVED\b/i, 'onaylı')}`
@@ -5719,6 +5743,13 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     && !normalizeText(reply).includes('adres')
   ) {
     reply = `${reply} Adres bilgisini kontrol et.`.trim();
+  }
+  if (
+    !semanticOverrideReply
+    && questionType === 'RISK_LIST'
+    && normalizedGeoreviewPath.includes('/georeview')
+  ) {
+    reply = reply.replace(/hangi kayıt veya kişinin konumunu incelediğini seç/gi, 'seçili konum kaydını kontrol et');
   }
   if (
     !semanticOverrideReply
@@ -6046,11 +6077,15 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     }
   }
   const roomMapSelectedRecordReply = String(screenPath || '').includes('/room/map')
-    ? normalizeVisibleReplyFragment(firstNonEmpty(
+    ? firstNonEmpty(
+      screenContext?.contextSummary,
+      sourceScreenContext?.contextSummary,
+      screenContext?.helpContextSummary,
+      sourceScreenContext?.helpContextSummary,
       contextPriority?.selectedRecordStatus,
       contextPriority?.selectedSummary,
       '',
-    ))
+    )
     : '';
   if (roomMapSelectedRecordReply) {
     const normalizedReply = normalizeText(reply);
@@ -6126,7 +6161,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     questionType: responseQuestionType,
     questionLabel: questionTypeLabel(responseQuestionType, contextPriority?.activeTopic || responseQuestionType || '', contextPriority?.activeTopicLabel || ''),
     suggestedChips: visibleSuggestedChips,
-    contextualSuggestedChips: visibleSuggestedChips,
+    contextualSuggestedChips,
     quickActions: finalQuickActions,
     linkedGuides,
     intentConfidence: Number(intentMeta?.confidence || 0),
@@ -6312,10 +6347,9 @@ function normalizeQuestionTypeReplySurface(reply, questionType) {
     const riskSurface = trimReplyToFirstMarker(value, [
       'Riskler:',
       'Başlıca riskler:',
-      'Sık hata:',
     ]);
     const cleanedRiskSurface = riskSurface.replace(/\bBu ekran,?\s*/gi, '').replace(/\bBu ekranda\s*/gi, '').trim();
-    if (/^(riskler:|başlıca riskler:|sık hata:)/i.test(cleanedRiskSurface)) return cleanedRiskSurface;
+    if (/^(riskler:|başlıca riskler:)/i.test(cleanedRiskSurface)) return cleanedRiskSurface;
     return `Riskler: ${cleanedRiskSurface}`.trim();
   }
   if (['NEXT_BEST_ACTION', 'NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'READINESS_CHECK'].includes(type)) {
@@ -6641,7 +6675,7 @@ function questionTypeLabel(questionType, activeTopic = '', activeTopicLabel = ''
     DYNAMIC_SAVINGS_PREVIEW: 'Dinamik tasarruf önizlemesi',
     AGREEMENT_ROUTE_REFRESH: 'Sözleşmeli rota değişikliği',
     SEFER_SCORE_PREVIEW: 'SeferPuanı önizlemesi',
-    MARKETPLACE_FREE_TO_OPERATE_PREVIEW: 'Free-to-operate önizlemesi',
+    MARKETPLACE_FREE_TO_OPERATE_PREVIEW: 'Başarı payı önizlemesi',
     WHY_BLOCKED: 'Neden olmuyor',
     QUALITY_SIGNAL: 'Kalite / kanıt sinyali',
     TRUST_QUALITY: 'Kalite / kanıt akışı',
