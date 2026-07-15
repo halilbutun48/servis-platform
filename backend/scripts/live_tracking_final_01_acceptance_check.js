@@ -109,8 +109,8 @@ async function main() {
   must(route, 'getNextStopEta({', 'eta route bridges helper call');
   must(route, 'timeoutMs: 2000', 'eta route keeps safe timeout on helper call');
 
-  mustAny(etaSanityWebText, ['ETA ${etaText}', 'güncel değil', 'hesaplanamıyor'], 'frontend etaSanity keeps safe ETA wording');
-  mustAny(etaSanityBackendText, ['ETA ${etaText}', 'güncel değil', 'hesaplanamıyor'], 'backend etaSanity keeps safe ETA wording');
+  mustAny(etaSanityWebText, ['Tahmini varış süresi ${etaText}', 'güncel değil', 'hesaplanamıyor'], 'frontend etaSanity keeps safe Turkish wording');
+  mustAny(etaSanityBackendText, ['Tahmini varış süresi ${etaText}', 'güncel değil', 'hesaplanamıyor'], 'backend etaSanity keeps safe Turkish wording');
   must(copilotFacts, 'getLiveTrackingSummary', 'copilot facts keep live tracking summary helper');
 
   must(roomMap, 'getEtaDisplay', 'room live map uses safe ETA display');
@@ -140,24 +140,24 @@ async function main() {
     'GPS: ' + 'Canlı',
     'Son GPS 47 sn önce',
     'Sıradaki durak: Pickup 6',
-    'ETA 12 dk',
+    'Tahmini varış süresi 12 dk',
   ].join(' · ');
   const visibleStale = [
     'GPS: ' + 'Güncel değil',
     'Son GPS 26 dk önce',
     'Son bilinen sıradaki durak: Pickup 6',
-    'ETA güncel değil',
+    'Tahmini varış süresi güncel değil',
   ].join(' · ');
   const visibleOffline = [
     'GPS: ' + 'Çevrim dışı',
     'Son GPS 47 dk önce',
     'Son bilinen durak: Pickup 6',
-    'ETA hesaplanamıyor',
+    'Tahmini varış süresi hesaplanamıyor',
   ].join(' · ');
 
-  must(visibleFresh, 'ETA 12 dk', 'fresh visible summary keeps exact ETA');
-  must(visibleStale, 'ETA güncel değil', 'stale visible summary uses safe wording');
-  must(visibleOffline, 'ETA hesaplanamıyor', 'offline visible summary uses safe wording');
+  must(visibleFresh, 'Tahmini varış süresi 12 dk', 'fresh visible summary keeps exact Turkish wording');
+  must(visibleStale, 'Tahmini varış süresi güncel değil', 'stale visible summary uses safe wording');
+  must(visibleOffline, 'Tahmini varış süresi hesaplanamıyor', 'offline visible summary uses safe wording');
   mustNot(visibleStale, '619 dk', 'stale visible summary hides suspicious bare ETA');
   mustNot(visibleOffline, '619 dk', 'offline visible summary hides suspicious bare ETA');
 
@@ -225,7 +225,7 @@ async function main() {
       gpsLast: { at: new Date().toISOString() },
       nextStopName: 'Pickup 6',
       etaMinutes: 619,
-    }).includes('ETA hesaplanamıyor'), 'offline live summary keeps safe wording');
+    }).includes('Tahmini varış süresi hesaplanamıyor'), 'offline live summary keeps safe wording');
   } finally {
     process.env.OSRM_URL = prevOsrm;
   }

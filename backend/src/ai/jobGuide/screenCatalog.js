@@ -258,7 +258,7 @@ const DRIVER = [
       { label: 'Harita', path: '/driver/map', reason: 'Canlı konum, tahmini varış süresi ve sesli destek için.' },
     ],
     dataRules: ['Bugün ekranı görev özetidir; canlı haritanın yerine geçmez.', 'Bugün boşsa sürücüye atanmış aktif vardiya olmayabilir.', 'Araç veya saat bilgisi eksikse room/company tarafında atama bağı kontrol edilmelidir.'],
-    chatQuestions: ['Ne yapayım?', 'Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'],
+    chatQuestions: ['Ne yapayım?', 'Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?', 'Sürücünün telefon GPS’i devrede mi?'],
     fieldGuides: [
       { label: 'Görev', meaning: 'Bugün yapacağın işin özet başlığıdır.' },
       { label: 'Araç', meaning: 'Göreve bağlı araç bilgisidir.', risk: 'Boşsa atama eksik olabilir.' },
@@ -303,7 +303,7 @@ const DRIVER = [
     simpleTerms: pickTerms(['telefonGps', 'cihazGps', 'konumKaynagi']),
     dataRules: ['Sıradaki durak, mesafe ve tahmini varış süresi hareket ettikçe değişmelidir; sabit kalıyorsa rota yenilenmiyor olabilir.', 'Ekran kapanınca canlılık düşüyorsa background location zinciri kontrol edilmelidir.', 'Auto reached durak yakınlığına ve aktif görev bağlamına göre çalışır; yalnız haritaya bakarak anlaşılmaz.', 'Sesli destek operasyonu yönlendirmek içindir; yalnız konuşması değil doğru anda konuşması önemlidir.'],
     fieldGuides: [
-      { label: 'Son GPS', meaning: 'Konum bilgisinin en son ne zaman geldiğini gösterir.', risk: 'Eskiyse canlılık yanıltıcı olabilir.' },
+      { label: 'Son konum bilgisi', meaning: 'Konum bilgisinin en son ne zaman geldiğini gösterir.', risk: 'Eskiyse canlılık yanıltıcı olabilir.' },
       { label: 'Sıradaki Durak', meaning: 'Sıradaki hedef durağı gösterir.' },
       { label: 'Mesafe', meaning: 'Sıradaki durağa kalan yaklaşık yolu gösterir.' },
       { label: 'Tahmini varış süresi', meaning: 'Sıradaki durağa tahmini kalan süredir.', risk: 'Sabit kalıyorsa rota yenilenmiyor olabilir.' },
@@ -606,7 +606,7 @@ const SUPER_ADMIN = [
       { key: 'SUPERADMIN_QUALITY_NEXT', title: 'Bağlı ekrana geç', action: 'Gerekirse hizmet değerlendirme veya ticari akış tarafına in.', doneWhen: 'Sıradaki ekran seçilir.', ifBlocked: 'Kesin kalite puanı dili kullanma.' },
     ],
     nextScreens: [
-      { label: 'Denetim Paneli', path: '/superadmin/operations', reason: 'Kanıt ve GPS görünürlüğünü birlikte okumak için.' },
+      { label: 'Denetim Paneli', path: '/superadmin/operations', reason: 'Kanıt ve konum sinyali görünürlüğünü birlikte okumak için.' },
       { label: 'Ticari Akış', path: '/superadmin/commercial-core', reason: 'Hakediş önizleme tarafını görmek için.' },
     ],
     chatQuestions: ['Açık kalite sinyallerini göster', 'Bu sağlayıcı neden daha iyi görünüyor?', 'Risk nedenini açıkla', 'Kanıt durumunu kontrol et'],
@@ -648,7 +648,7 @@ const SUPER_ADMIN = [
     doNotDo: 'Sabit soru bankası sanıp uzun liste bekleme.',
   }),
   screen(6117, '/superadmin/operations', 'Denetim Paneli', {
-    menuPurpose: 'Servis kanıtı, açık veya riskli kayıtlar, GPS görünürlüğü ve operasyon blokajlarını birlikte okumak için kullanılır.',
+    menuPurpose: 'Servis kanıtı, açık veya riskli kayıtlar, konum sinyali görünürlüğü ve operasyon blokajlarını birlikte okumak için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Denetim özetini incele.',
     nextStep: 'Sonra kanıt, GPS ve değerlendirme satırlarını incele.',
@@ -658,7 +658,7 @@ const SUPER_ADMIN = [
       { key: 'SUPERADMIN_OPERATION_REASONS', title: 'Blokaj nedenini oku', action: 'Araç görünmüyor, vardiya başlamıyor veya sürücü GPS’i neden devrede sorularını sinyalle birlikte oku.', doneWhen: 'Neden farkı anlaşılır.', ifBlocked: 'Veri yoksa uydurma; eksik alanı söyle.' },
       { key: 'SUPERADMIN_OPERATION_NEXT', title: 'Güvenli sonraki adım', action: 'Gerekirse ilgili vardiya, araç, kanıt veya kalite ekranına geç.', doneWhen: 'Bir sonraki ekran belli olur.', ifBlocked: 'Yetkisiz yönetim işlemi önermeden sadece yol göster.' },
     ],
-    chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Bunu kim yapabilir?', 'Sürücünün telefon GPS’i devrede mi?', 'Yetkili rolü göster'],
+    chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Bunu kim yapabilir?', 'Sürücünün telefonundan konum sinyali geliyor mu?', 'Yetkili rolü göster'],
   }),
   screen(6118, '/superadmin/onboarding-review', 'Başvuru İncelemesi', {
     menuPurpose: 'Public lead başvurularını insan inceleme kuyruğunda okumak için kullanılır.',

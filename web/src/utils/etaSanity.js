@@ -227,6 +227,6 @@ export function getLiveTrackingSummary(input = {}) {
   if (ageText && ageText !== "bilinmiyor") parts.push(`Son GPS ${ageText}`);
   else parts.push("Son GPS bilinmiyor");
   if (nextStopName) parts.push(`${nextLabel}: ${nextStopName}`);
-  parts.push(`ETA ${etaText}`);
+  parts.push(`Tahmini varış süresi ${etaText}`);
   return parts.join(" · ");
 }

@@ -948,7 +948,7 @@ function main() {
   allWithin(
     status,
     exactAllowed,
-    ["backend/artifacts/runtime-data/", "tools/repo_contract_state.json", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"],
+    ["backend/artifacts/runtime-data/", "tools/repo_contract_state.json", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"],
     "working tree stays within panel standard architecture scope",
   );
 

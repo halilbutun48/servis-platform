@@ -95,10 +95,10 @@ async function main() {
 
   must(webEtaSanity, 'güncel değil', 'web etaSanity keeps güncel değil wording');
   must(webEtaSanity, 'hesaplanamıyor', 'web etaSanity keeps hesaplanamıyor wording');
-  must(webEtaSanity, 'ETA ${etaText}', 'web etaSanity summary keeps ETA prefix wording');
+  must(webEtaSanity, 'Tahmini varış süresi ${etaText}', 'web etaSanity summary keeps Turkish wording');
   must(backendEtaSanity, 'güncel değil', 'backend etaSanity keeps güncel değil wording');
   must(backendEtaSanity, 'hesaplanamıyor', 'backend etaSanity keeps hesaplanamıyor wording');
-  must(backendEtaSanity, 'ETA ${etaText}', 'backend etaSanity summary keeps ETA prefix wording');
+  must(backendEtaSanity, 'Tahmini varış süresi ${etaText}', 'backend etaSanity summary keeps Turkish wording');
 
   const prevOsrm = process.env.OSRM_URL;
   process.env.OSRM_URL = '';

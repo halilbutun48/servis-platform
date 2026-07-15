@@ -125,11 +125,11 @@ async function main() {
   must(routeEtaRoute, 'ROUTE_CHAIN_HAVERSINE', 'eta bridge keeps route mode');
 
   must(webEtaSanity, 'güncel değil', 'web etaSanity keeps not-current wording');
-  must(webEtaSanity, 'ETA ', 'web etaSanity keeps ETA summary prefix');
+  must(webEtaSanity, 'Tahmini varış süresi ', 'web etaSanity keeps Turkish summary prefix');
   must(webEtaSanity, 'hesaplanamıyor', 'web etaSanity keeps unavailable wording');
   must(webEtaSanity, 'bekleniyor', 'web etaSanity keeps waiting wording');
   must(backendEtaSanity, 'güncel değil', 'backend etaSanity keeps not-current wording');
-  must(backendEtaSanity, 'ETA ', 'backend etaSanity keeps ETA summary prefix');
+  must(backendEtaSanity, 'Tahmini varış süresi ', 'backend etaSanity keeps Turkish summary prefix');
   must(backendEtaSanity, 'hesaplanamıyor', 'backend etaSanity keeps unavailable wording');
   must(backendEtaSanity, 'bekleniyor', 'backend etaSanity keeps waiting wording');
 
@@ -195,7 +195,7 @@ async function main() {
       gpsAge: { at: new Date(Date.now() - 18 * 60 * 1000).toISOString() },
       nextStopName: 'Pickup 6',
     });
-    assert(/ETA .*güncel değil/.test(staleSummary), 'web etaSanity summary keeps stale ETA wording');
+    assert(/Tahmini varış süresi .*güncel değil/.test(staleSummary), 'web etaSanity summary keeps stale Turkish wording');
 
     const suspiciousEtaText = webEta.getEtaDisplay({ etaMinutes: 619, gpsStatus: 'LIVE', gpsAge: { at: new Date().toISOString() }, nextStopName: 'Pickup 6' });
     assert(/olağan dışı yüksek/.test(suspiciousEtaText), 'web etaSanity keeps suspicious ETA safe');

@@ -319,7 +319,7 @@ function buildRoomVehiclesReply(snapshot) {
   if (!hasSpecificSelection && !hasDetailedFields) {
     return makeClarifyingReply(
       'Hangi araç için bakayım? Seçili araç görünmüyor.',
-      'Önce araç satırını seçip GPS ve sürücü bağını birlikte kontrol edelim.',
+      'Önce araç satırını seçip konum sinyali ve sürücü bağını birlikte kontrol edelim.',
     );
   }
   const selectedVehiclePlate = firstNonEmpty(
@@ -330,7 +330,7 @@ function buildRoomVehiclesReply(snapshot) {
   const selected = firstNonEmpty(selectedVehiclePlate, snapshot.selectedLabel, snapshot.selectedSummary, 'bu araç');
   return makeClarifyingReply(
     `Seçili araç ${selected} görünüyor.`,
-    'Önce seçili araç kaydındaki GPS, sürücü, son konum veya durak bilgisini birlikte kontrol edelim.',
+    'Önce seçili araç kaydındaki konum sinyali (GPS), sürücü, son konum bilgisi veya durak bilgisini birlikte kontrol edelim.',
   );
 }
 
@@ -352,7 +352,7 @@ function buildParentLiveReply(snapshot) {
   const selected = snapshot.selectedLabel || snapshot.selectedSummary || 'bu öğrenci servisi';
   return makeClarifyingReply(
     `${selected} için araç konumu, servis saati veya bağlı vardiyadan hangisini netleştireyim?`,
-    `Servis görünmüyorsa önce yetkili servis görünümünde ilgili öğrencinin servis satırını açıp son GPS ve tahmini varış süresi bilgisini kontrol edelim.`,
+    `Servis görünmüyorsa önce yetkili servis görünümünde ilgili öğrencinin servis satırını açıp son konum bilgisi ve tahmini varış süresi bilgisini kontrol edelim.`,
   );
 }
 
@@ -425,10 +425,10 @@ function buildChipsForState(snapshot) {
     return ['Canlı başlatma zamanı', 'Araç / sürücü', 'Eksik bilgi', 'Durak / rota'];
   }
   if (snapshot.isRoomVehiclesSurface && /(başlatayım\s+mı|baslatayim\s+mi|bunu\s+başlatayım\s+mı|bunu\s+baslatayim\s+mi|niye\s+yok|neden\s+yok|görünmüyor|gorunmuyor|nerede|yok)/.test(text)) {
-    return ['GPS', 'Sürücü', 'Son konum', 'Durak'];
+    return ['Konum sinyali (GPS)', 'Sürücü', 'Son konum', 'Durak'];
   }
   if (snapshot.isPersonelLiveSurface && /(niye|neden|görünmüyor|gorunmuyor|yok|nerede)/.test(text)) {
-    return ['Araç nerede?', 'Son GPS ne zaman geldi? / Saat', 'Servis durumu ne? / Durak', "Sürücünün telefon GPS’i devrede mi?"];
+    return ['Araç nerede?', 'Son GPS ne zaman geldi? / Saat', 'Servis durumu ne? / Durak', 'Sürücünün telefon GPS’i devrede mi?'];
   }
   if (snapshot.isParentLiveSurface && /(gelmedi\s+m[iı]|gelmedi\s+mi|gelmedi|niye\s+yok|neden\s+yok|görünmüyor|gorunmuyor)/.test(text)) {
     return ['Araç konumu', 'Servis saati', 'Bağlı vardiya'];

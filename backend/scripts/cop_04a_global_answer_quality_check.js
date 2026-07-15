@@ -158,7 +158,7 @@ must(policy, 'KVKK sınırını açıkla', 'workflow chip policy keeps KVKK chip
 must(policy, 'filterWorkflowGenericChips(', 'workflow chip policy exposes workflow filter');
 must(policy, 'Yetki sınırını kontrol et', 'workflow chip policy still blocks old default wording');
 
-must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps map/live GPS fallback');
+must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps map/live GPS fallback');
 must(helpComposer, "const isVehicleSurface = answerEntityType === 'vehicle' || screen.includes('/map') || screen.includes('/live');", 'help composer includes live surfaces in vehicle routing');
 must(helpComposer, 'GPS görünürlüğünü sor', 'help composer keeps GPS ask wording');
 must(helpComposer, 'Başlatma durumunu sor', 'help composer keeps shift ask wording');
@@ -189,7 +189,7 @@ must(intentRouter, 'NOTIFICATION_SOURCE', 'intent router keeps notification inte
 must(intentRouter, 'QUALITY_SIGNAL', 'intent router keeps quality intent');
 must(intentRouter, 'filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });', 'intent router keeps workflow chip filtering');
 must(intentRouter, 'Riskli cihazı göster', 'intent router keeps operation health chip');
-must(intentRouter, 'GPS güncel değil / çevrim dışı satırını aç', 'intent router keeps stale chip');
+must(intentRouter, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'intent router keeps stale chip');
 must(intentRouter, 'Açık sorunları sırala', 'intent router keeps issue chip');
 must(intentRouter, 'Aktif sürücüleri kontrol et', 'intent router keeps active driver chip');
 must(intentRouter, 'Canlı takip ekranını aç', 'intent router keeps live tracking chip');
@@ -204,7 +204,7 @@ must(screenStateAnalyzer, 'Önce riskli cihazı aç. Sonra GPS güncel değil / 
 must(facts, "label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon kanıtı kontrolü'", 'facts keeps live start label');
 must(facts, "readyForLiveStart ? ['live-start', 'gps-old', 'missing-vehicle-driver', 'operation-proof']", 'facts keeps live-start scoring boost');
 must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'facts keeps shift recommendation');
-must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'facts keeps map recommendation');
+must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç konum sinyali ve sürücünün telefonundan konum sinyalini birlikte kontrol et.', 'facts keeps map recommendation');
 must(facts, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'facts keeps operation health lead');
 must(facts, 'Servis kanıtı', 'facts keeps service-proof visible language');
 mustNotRaw(facts, 'OperationProof', 'facts avoids visible technical proof wording');

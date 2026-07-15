@@ -143,10 +143,10 @@ must(helpComposerSource, 'Servis saati uygun mu?', 'help composer keeps parent l
 must(helpComposerSource, 'Araç ataması var mı?', 'help composer keeps parent live no-vehicle chip');
 must(helpComposerSource, 'Canlı konum neden yok?', 'help composer keeps parent live no-vehicle chip');
 must(helpComposerSource, 'Bildirimleri kontrol et', 'help composer keeps parent live no-vehicle chip');
-must(helpComposerSource, 'Son GPS ne zaman geldi?', 'help composer keeps parent live selected chip');
-must(helpComposerSource, 'ETA nedir?', 'help composer keeps parent live selected chip');
+must(helpComposerSource, 'Son konum bilgisi ne zaman geldi?', 'help composer keeps parent live selected chip');
+must(helpComposerSource, 'Tahmini varış süresi nedir?', 'help composer keeps parent live selected chip');
 must(helpComposerSource, 'Araç bağlantısı var mı?', 'help composer keeps parent live selected chip');
-must(helpComposerSource, 'Sürücünün telefon GPS’i devrede mi?', 'help composer keeps parent live selected chip');
+must(helpComposerSource, 'Sürücünün telefonundan konum sinyali devrede mi?', 'help composer keeps parent live selected chip');
 must(helpComposerSource, 'Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor', 'help composer keeps safe parent fallback');
 
 must(serviceSource, 'noLiveVehicle', 'service keeps no-live vehicle detection');
@@ -161,8 +161,8 @@ must(copilotFactsSource, 'Servis saati', 'facts keeps service-hour label');
 must(parentLivePanelSource, 'buildParentLiveNoVehicleFacts', 'parent live panel keeps no-vehicle facts bridge');
 must(parentLivePanelSource, 'setCopilotSelection(copilotSelection)', 'parent live panel keeps selection push');
 must(parentLivePanelSource, 'selectedRecordLabel', 'parent live panel keeps selected record label bridge');
-must(parentLivePanelSource, 'Araç GPS’i', 'parent live panel keeps vehicle gps badge');
-must(parentLivePanelSource, 'Sürücünün telefon GPS’i', 'parent live panel keeps driver phone gps badge');
+must(parentLivePanelSource, 'Araç konum sinyali', 'parent live panel keeps vehicle signal badge');
+must(parentLivePanelSource, 'Sürücünün telefonundan konum sinyali', 'parent live panel keeps driver phone signal badge');
 
 must(drawerSource, 'helpContextSummary', 'floating drawer keeps helpContextSummary bridge');
 must(drawerSource, 'contextSummary', 'floating drawer keeps contextSummary bridge');
@@ -180,10 +180,10 @@ must(copilotPanelSource, 'liveFacts', 'copilot panel keeps live facts bridge');
 must(intentRouterSource, "pathHas(options.screenPath, ['/parent/live'])", 'intent router keeps parent live path routing');
 must(intentRouterSource, 'LOCATION_HELP', 'intent router keeps location help intent');
 must(answerPolicySource, "path.includes('/parent/live')", 'answer policy keeps parent live chips path');
-must(answerPolicySource, 'Son GPS ne zaman geldi?', 'answer policy keeps parent live selected chip');
-must(answerPolicySource, 'ETA nedir?', 'answer policy keeps parent live selected chip');
+must(answerPolicySource, 'Son konum bilgisi ne zaman geldi?', 'answer policy keeps parent live selected chip');
+must(answerPolicySource, 'Tahmini varış süresi nedir?', 'answer policy keeps parent live selected chip');
 must(answerPolicySource, 'Araç bağlantısı var mı?', 'answer policy keeps parent live selected chip');
-must(answerPolicySource, 'Sürücünün telefon GPS’i devrede mi?', 'answer policy keeps parent live selected chip');
+must(answerPolicySource, 'Sürücünün telefonundan konum sinyali devrede mi?', 'answer policy keeps parent live selected chip');
 must(answerPolicySource, 'Bu ekranı detaylı anlat', 'answer policy keeps generic chip block');
 must(answerPolicySource, 'Bunu sor', 'answer policy keeps generic chip block');
 must(answerPolicySource, 'Aynı kayıt için devam et', 'answer policy keeps continuation block');
@@ -313,7 +313,7 @@ mustNot(replyA, 'Geri Bildirim ekranı', 'parent live no-vehicle reply avoids fe
 mustNot(replyA, 'açık geri bildirim', 'parent live no-vehicle reply avoids feedback wording');
 mustNot(replyA, 'kritik geri bildirim', 'parent live no-vehicle reply avoids feedback wording');
 mustAny(replyA, ['canlı araç görünmüyor', 'araç sadece aktif vardiya saat aralığında', 'araç ataması varsa görünür'], 'parent live no-vehicle reply states no-live fallback');
-mustAny(replyA, ['canlı konum', 'GPS'], 'parent live no-vehicle reply mentions live location');
+mustAny(replyA, ['Canlı konum', 'son konum bilgisi', 'sürücünün telefonundan konum sinyali'], 'parent live no-vehicle reply mentions live location');
 assertNoForbiddenVisibleTerms(replyA, 'parent live no-vehicle reply');
 const chipsA = chipList(responseA);
 mustArrayContains(chipsA, 'Servis saati uygun mu?', 'parent live no-vehicle chips keep service-hour chip');
@@ -336,23 +336,23 @@ const selectedServiceFixture = buildParentFixture({
     serviceStatus: 'Yolda',
   },
   selectedLabel: 'Student One servisi',
-  helpContextSummary: 'Şu an: Canlı • Çocuk: #2 Student One • Araç 34ABC123 • GPS Zayıf • Son GPS 2dk • Sıradaki Durak B • ETA 8dk',
-  contextSummary: 'Veli canlı takip • Student One servisi • Araç 34ABC123 • GPS Zayıf • Son GPS 2dk • Sıradaki Durak B • ETA 8dk',
-  selectedSummary: 'Veli canlı takip • Student One servisi • Araç 34ABC123 • GPS Zayıf • Son GPS 2dk • Sıradaki Durak B • ETA 8dk',
-  selectedRecordSummary: 'Veli canlı takip • Student One servisi • Araç 34ABC123 • GPS Zayıf • Son GPS 2dk • Sıradaki Durak B • ETA 8dk',
+    helpContextSummary: 'Şu an: Canlı • Çocuk: #2 Student One • Araç 34ABC123 • Konum sinyali Zayıf • Son konum bilgisi 2dk • Sıradaki Durak B • Tahmini varış süresi 8dk',
+  contextSummary: 'Veli canlı takip • Student One servisi • Araç 34ABC123 • Konum sinyali Zayıf • Son konum bilgisi 2dk • Sıradaki Durak B • Tahmini varış süresi 8dk',
+  selectedSummary: 'Veli canlı takip • Student One servisi • Araç 34ABC123 • Konum sinyali Zayıf • Son konum bilgisi 2dk • Sıradaki Durak B • Tahmini varış süresi 8dk',
+  selectedRecordSummary: 'Veli canlı takip • Student One servisi • Araç 34ABC123 • Konum sinyali Zayıf • Son konum bilgisi 2dk • Sıradaki Durak B • Tahmini varış süresi 8dk',
   selectedRecordStatus: 'Yolda',
   selectedEntityType: 'vehicle',
   selectedEntityId: 34,
   selectedFields: [
     { label: 'Araç', value: '34ABC123' },
-    { label: 'GPS durumu', value: 'Zayıf' },
-    { label: 'Son GPS', value: '2dk' },
+    { label: 'Konum sinyali durumu', value: 'Zayıf' },
+    { label: 'Son konum bilgisi', value: '2dk' },
     { label: 'Sıradaki durak', value: 'Durak B' },
-    { label: 'ETA', value: '8dk' },
+    { label: 'Tahmini varış süresi', value: '8dk' },
   ],
   selectedBadges: [
-    { label: 'Sürücünün telefon GPS’i', value: 'Canlı' },
-    { label: 'Araç GPS’i', value: 'Canlı' },
+    { label: 'Sürücünün telefonundan konum sinyali', value: 'Canlı' },
+    { label: 'Araç konum sinyali', value: 'Canlı' },
   ],
 });
 
@@ -393,17 +393,17 @@ mustNotRaw(replyB, 'FORBIDDEN', 'parent live selected-service reply avoids raw F
 mustNot(replyB, 'seçili servis bilgisi net görünmüyor', 'parent live selected-service reply avoids no-selection fallback');
 must(replyB, '34ABC123', 'parent live selected-service reply keeps vehicle plate');
 mustAny(replyB, ['GPS', 'Zayıf'], 'parent live selected-service reply keeps gps state');
-mustAny(replyB, ['Son GPS', '2dk'], 'parent live selected-service reply keeps last gps');
+mustAny(replyB, ['Son konum bilgisi', '2dk'], 'parent live selected-service reply keeps last gps');
 must(replyB, 'Durak B', 'parent live selected-service reply keeps next stop');
-mustAny(replyB, ['ETA', '8dk'], 'parent live selected-service reply keeps ETA');
-must(replyB, "Sürücünün telefon GPS’i", 'parent live selected-service reply keeps driver phone gps wording');
+mustAny(replyB, ['Tahmini varış süresi', '8dk'], 'parent live selected-service reply keeps ETA');
+must(replyB, 'Sürücünün telefonundan konum sinyali', 'parent live selected-service reply keeps driver phone signal wording');
 mustAny(replyB, ['araç bağlantısını', 'görev bağlantısını'], 'parent live selected-service reply keeps connection controls');
 assertNoForbiddenVisibleTerms(replyB, 'parent live selected-service reply');
 const chipsB = chipList(responseB);
-mustArrayContains(chipsB, 'Son GPS ne zaman geldi?', 'parent live selected-service chips keep last gps chip');
-mustArrayContains(chipsB, 'ETA nedir?', 'parent live selected-service chips keep ETA chip');
+mustArrayContains(chipsB, 'Son konum bilgisi ne zaman geldi?', 'parent live selected-service chips keep last gps chip');
+mustArrayContains(chipsB, 'Tahmini varış süresi nedir?', 'parent live selected-service chips keep ETA chip');
 mustArrayContains(chipsB, 'Araç bağlantısı var mı?', 'parent live selected-service chips keep vehicle connection chip');
-mustArrayContains(chipsB, 'Sürücünün telefon GPS’i devrede mi?', 'parent live selected-service chips keep driver phone gps chip');
+mustArrayContains(chipsB, 'Sürücünün telefonundan konum sinyali devrede mi?', 'parent live selected-service chips keep driver phone gps chip');
 mustArrayNotContains(chipsB, 'Geri Bildirim ekranını aç', 'parent live selected-service chips avoid feedback chip');
 mustArrayNotContains(chipsB, 'Bu ekranı detaylı anlat', 'parent live selected-service chips avoid generic explainer');
 

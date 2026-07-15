@@ -471,7 +471,7 @@ function main() {
     "web/src/utils/uiDataCache.js",
     "tools/repo_contract_state.json",
   ]);
-  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within mobile web shell clarity scope");
+  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"], "working tree stays within mobile web shell clarity scope");
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");

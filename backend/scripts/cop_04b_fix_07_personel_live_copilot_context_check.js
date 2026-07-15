@@ -163,7 +163,7 @@ must(answerPolicySource, "path.includes('/personel/live')", 'answer policy keeps
 must(answerPolicySource, "path.includes('/parent/live')", 'answer policy keeps parent live path');
 must(answerPolicySource, 'Araç nerede?', 'answer policy keeps personel live gps chip');
 must(answerPolicySource, 'Servis durumu ne?', 'answer policy keeps personel live status chip');
-must(answerPolicySource, 'Sürücünün telefon GPS’i devrede mi?', 'answer policy keeps personel live phone gps chip');
+must(answerPolicySource, 'Sürücünün telefonundan konum sinyali devrede mi?', 'answer policy keeps personel live phone gps chip');
 must(answerPolicySource, 'Bunu sor', 'answer policy keeps generic chip block');
 must(answerPolicySource, 'Aynı kayıt için devam et', 'answer policy keeps continuation block');
 must(answerPolicySource, 'Ekran rehberini aç', 'answer policy keeps guide block');
@@ -187,7 +187,7 @@ must(personelLivePanelSource, 'badges:', 'personel live panel keeps badges bridg
 must(personelLivePanelSource, 'facts', 'personel live panel keeps facts bridge');
 must(personelLivePanelSource, 'selectedRecordLabel', 'personel live panel keeps selected record label bridge');
 must(personelLivePanelSource, 'Araç GPS’i', 'personel live panel keeps vehicle gps label');
-must(personelLivePanelSource, "Sürücünün telefon GPS’i", 'personel live panel keeps driver phone gps label');
+must(personelLivePanelSource, 'Sürücünün telefonundan konum sinyali', 'personel live panel keeps driver phone gps label');
 must(personelMyRidePanelSource, 'setCopilotSelection(copilotSelection)', 'personel my-ride panel keeps selection push');
 must(personelMyRidePanelSource, 'fields:', 'personel my-ride panel keeps fields bridge');
 must(personelMyRidePanelSource, 'badges:', 'personel my-ride panel keeps badges bridge');
@@ -324,18 +324,18 @@ const replyLive = replyText(responseLive);
 mustNotRaw(replyLive, 'FORBIDDEN', 'live personel reply avoids raw FORBIDDEN');
 mustNot(replyLive, 'Bu ekranda seçili servis bilgisi net görünmüyor', 'live personel reply avoids no-selection fallback');
 must(replyLive, '34ABC123', 'live personel reply keeps vehicle plate');
-mustAny(replyLive, ['GPS', 'Çevrim Dışı', 'OFFLINE', 'eski'], 'live personel reply keeps gps state');
+mustAny(replyLive, ['konum sinyali', 'Çevrim Dışı', 'OFFLINE', 'eski'], 'live personel reply keeps gps state');
 mustAny(replyLive, ['Son GPS', '11dk'], 'live personel reply keeps last gps');
 mustAny(replyLive, ['Durak A'], 'live personel reply keeps next stop');
-mustAny(replyLive, ['ETA', '3 dk', '3dk'], 'live personel reply keeps ETA');
-must(replyLive, "Sürücünün telefon GPS’i", 'live personel reply keeps driver phone gps wording');
+mustAny(replyLive, ['Tahmini varış süresi 0 dk', 'Tahmini varış süresi', 'Kalan durak 3'], 'live personel reply keeps ETA');
+must(replyLive, 'Sürücünün telefonundan konum sinyali', 'live personel reply keeps driver phone gps wording');
 mustAny(replyLive, ['araç bağlantısını', 'görev bağlantısını'], 'live personel reply keeps connection controls');
 assertNoForbiddenVisibleTerms(replyLive, 'live personel reply');
 const liveChips = chipList(responseLive);
-mustArrayContains(liveChips, 'Son GPS ne zaman geldi?', 'live personel chips keep last gps chip');
+mustArrayContains(liveChips, 'Son konum bilgisi ne zaman geldi?', 'live personel chips keep last gps chip');
 mustArrayContains(liveChips, 'Araç nerede?', 'live personel chips keep vehicle chip');
 mustArrayContains(liveChips, 'Servis durumu ne?', 'live personel chips keep service status chip');
-mustArrayContains(liveChips, 'Sürücünün telefon GPS’i devrede mi?', 'live personel chips keep driver phone gps chip');
+mustArrayContains(liveChips, 'Sürücünün telefonundan konum sinyali devrede mi?', 'live personel chips keep driver phone gps chip');
 mustArrayNotContains(liveChips, 'Bu ekranı detaylı anlat', 'live personel chips avoid generic screen explainer');
 mustArrayNotContains(liveChips, 'Bunu sor', 'live personel chips avoid generic ask chip');
 mustArrayNotContains(liveChips, 'Aynı kayıt için devam et', 'live personel chips avoid continuation chip');
@@ -343,9 +343,9 @@ mustArrayNotContains(liveChips, 'Ekran rehberini aç', 'live personel chips avoi
 mustArrayNotContains(liveChips, 'İlgili durumu sor', 'live personel chips avoid generic follow-up chip');
 const policyPersonelChips = workflowTopicChipSet({ screenPath: '/personel/live', activeTopic: 'OPEN', questionType: 'OPEN' });
 mustArrayContains(policyPersonelChips, 'Araç nerede?', 'policy personel chips keep vehicle chip');
-mustArrayContains(policyPersonelChips, 'Son GPS ne zaman geldi?', 'policy personel chips keep last gps chip');
+mustArrayContains(policyPersonelChips, 'Son konum bilgisi ne zaman geldi?', 'policy personel chips keep last gps chip');
 mustArrayContains(policyPersonelChips, 'Servis durumu ne?', 'policy personel chips keep service status chip');
-mustArrayContains(policyPersonelChips, 'Sürücünün telefon GPS’i devrede mi?', 'policy personel chips keep driver phone gps chip');
+mustArrayContains(policyPersonelChips, 'Sürücünün telefonundan konum sinyali devrede mi?', 'policy personel chips keep driver phone gps chip');
 mustArrayNotContains(policyPersonelChips, 'Bu ekranı detaylı anlat', 'policy personel chips avoid generic screen explainer');
 
 const noSelectionFixture = buildPersonelFixture({
@@ -385,7 +385,7 @@ mustNotRaw(noSelectionReply, 'FORBIDDEN', 'no-selection reply avoids raw FORBIDD
 must(noSelectionReply, 'Bu ekranda seçili servis bilgisi net görünmüyor', 'no-selection reply keeps safe fallback');
 mustNot(noSelectionReply, 'Bunu anlayamadım', 'no-selection reply avoids understand fallback');
 const noSelectionChips = chipList(noSelectionResponse);
-mustArrayContains(noSelectionChips, 'Son GPS ne zaman geldi?', 'no-selection reply keeps gps chips');
+mustArrayContains(noSelectionChips, 'Son konum bilgisi ne zaman geldi?', 'no-selection reply keeps gps chips');
 mustArrayNotContains(noSelectionChips, 'Bu ekranı detaylı anlat', 'no-selection reply avoids generic explainer');
 
 const rawForbiddenError = makeHttpError(403, { error: { code: 'FORBIDDEN', message: 'Forbidden' } });

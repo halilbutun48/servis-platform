@@ -95,6 +95,7 @@ const steps = [
   'check:ai03bsemanticvisiblelivematrix01',
   'check:seferabireasoningassistant01',
   'check:seferabiallrolesreasoningassistant01',
+  'check:seferabiturkishterminology01',
   'check:seferabiturkishuserfacinglanguage01',
   'check:copilotcontextmemorytaskstate01',
   'check:uxcopilotsmartchips01',

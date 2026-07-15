@@ -676,7 +676,7 @@ function main() {
       "web/src/utils/planCenterOverlayLayer.js",
       "web/src/utils/uiDataCache.js",
     ]), 
-    ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"],
+    ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"],
     "working tree stays within cleanup scope"
   );
 

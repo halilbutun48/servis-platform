@@ -427,7 +427,7 @@ function buildThemeCases() {
         selectedEntityId: 8,
       }),
       messages: ['Asıl sebep ne olabilir?', 'Kök neden ne?', 'Neden düzelmiyor?'],
-      replyNeedles: ['aktif operasyon/vardiya olmaması', 'araç atamasının eksik olması', 'GPS verisinin gelmemesi'],
+      replyNeedles: ['aktif operasyon/vardiya olmaması', 'araç atamasının eksik olması', 'konum sinyali verisinin gelmemesi'],
       chipNeedles: ['Aktif vardiya var mı?', 'Son GPS zamanı', 'Araç ataması'],
     },
     {
@@ -522,7 +522,7 @@ function buildThemeCases() {
         selectedEntityId: 6,
       }),
       messages: ['Asıl sebep ne olabilir?', 'Kök neden ne?', 'Neden düzelmiyor?'],
-      replyNeedles: ['araç-sürücü atamasının eksik olması', 'başlatma zamanının uygun olmaması', 'GPS hazırlığının tamamlanmaması'],
+      replyNeedles: ['araç-sürücü atamasının eksik olması', 'başlatma zamanının uygun olmaması', 'konum sinyali hazırlığının tamamlanmaması'],
       chipNeedles: ['Araç-sürücü ataması', 'Başlatma zamanı', 'GPS hazırlığı'],
     },
     {
@@ -541,7 +541,7 @@ function buildThemeCases() {
       selectedEntityId: 6,
     }),
       messages: ['Asıl sebep ne olabilir, neden sürekli görünmüyor?', 'Kök neden ne, GPS neden sürekli yok?', 'Sürekli neden böyle oluyor, canlı başlangıç niye kopuk?'],
-      replyNeedles: ['atama, zaman veya GPS hazırlığının birinde kopukluk', 'canlı başlangıç'],
+      replyNeedles: ['atama, zaman veya konum sinyali hazırlığının birinde kopukluk', 'canlı başlangıç'],
       chipNeedles: ['Son atama', 'GPS hazırlığı', 'Başlatma zamanı', 'Canlı başlangıç'],
     },
     {
@@ -579,7 +579,7 @@ function buildThemeCases() {
       selectedEntityId: 17,
     }),
       messages: ['Asıl sebep ne olabilir, GPS neden sürekli yok?', 'Kök neden ne, konum verisi neden stale kaldı?', 'Sürekli neden böyle oluyor, araç offline mı?'],
-      replyNeedles: ['araç-sürücü eşleşmesi', 'sürücü cihazının konum izni', 'GPS verisinin stale/offline kalması'],
+      replyNeedles: ['araç-sürücü eşleşmesi', 'sürücü cihazının konum izni', 'konum sinyali verisinin stale/çevrim dışı kalması'],
       chipNeedles: ['Son GPS zamanı', 'Araç-sürücü eşleşmesi', 'Konum izni', 'Stale/offline'],
     },
     {
@@ -617,7 +617,7 @@ function buildThemeCases() {
       selectedEntityId: 2,
     }),
       messages: ['Asıl sebep ne olabilir, biniş neden sürekli görünmüyor?', 'Kök neden ne, check-in neden düzelmiyor?', 'Sürekli neden böyle oluyor, giriş neden görünmüyor?'],
-      replyNeedles: ['yanlış durak', 'uygun olmayan zaman', 'GPS/konum doğrulamasının eksik'],
+      replyNeedles: ['yanlış durak', 'uygun olmayan zaman', 'konum sinyali/konum doğrulamasının eksik'],
       chipNeedles: ['Durak doğrulaması', 'Uygun zaman', 'GPS doğrulaması', 'Konum geldi mi?'],
     },
     {
@@ -636,7 +636,7 @@ function buildThemeCases() {
         selectedEntityId: 11,
       }),
       messages: ['Asıl sebep ne olabilir?', 'Kök neden ne?', 'Neden düzelmiyor?'],
-      replyNeedles: ['atanmış aktif vardiya olmaması', 'servis saatinin başlamaması', 'araç GPS verisinin gelmemesi'],
+      replyNeedles: ['atanmış aktif vardiya olmaması', 'servis saatinin başlamaması', 'araç konum sinyali verisinin gelmemesi'],
       chipNeedles: ['Atanmış vardiya', 'Son GPS zamanı', 'Araç bağlantısı', 'Servis saati'],
     },
     {
@@ -848,7 +848,7 @@ function buildThemeCases() {
       fixture: personelLiveFixture,
       message: 'Servis neden görünmüyor?',
       expectedQuestionTypes: ['LOCATION_HELP'],
-      replyNeedles: ['Servis görünmüyorsa', 'son GPS', 'araç bağlantısı'],
+      replyNeedles: ['Servis görünmüyorsa', 'son konum bilgisi', 'araç bağlantısı'],
       chipNeedles: ['Servis', 'Araç', 'Durak', 'Saat'],
     },
     {
@@ -913,7 +913,7 @@ function buildThemeCases() {
       fixture: superadminTestFixture,
       message: 'Bu ekranda neye bakmalıyım?',
       expectedQuestionTypes: ['SCREEN_FOCUS'],
-      replyNeedles: ['canlı durum ve GPS güven skorunu oku'],
+      replyNeedles: ['canlı durum ve konum sinyali güven skorunu oku'],
     },
     {
       kind: 'regression',

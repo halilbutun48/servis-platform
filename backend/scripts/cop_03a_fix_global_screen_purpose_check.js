@@ -175,7 +175,7 @@ function main() {
     { id: 'matrix-superadmin-commercial', role: 'SUPER_ADMIN', path: '/superadmin/commercial-core', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Ticari akış'] },
     { id: 'matrix-superadmin-ops', role: 'SUPER_ADMIN', path: '/superadmin/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['açık veya riskli', 'İlgili kartı aç'] },
     { id: 'matrix-superadmin-logexport', role: 'SUPER_ADMIN', path: '/superadmin/logexport', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['İşlem kayıtlarını'] },
-    { id: 'matrix-superadmin-natural-copilot', role: 'SUPER_ADMIN', path: '/superadmin/natural-copilot', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['canlı sağlık', 'GPS güveni'] },
+    { id: 'matrix-superadmin-natural-copilot', role: 'SUPER_ADMIN', path: '/superadmin/natural-copilot', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['canlı sağlık, konum sinyali güveni ve son olayları birlikte okumak için kullanılır'] },
     { id: 'matrix-superadmin-launch-gate', role: 'SUPER_ADMIN', path: '/superadmin/pilot-launch-gate', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['sahaya çıkış', 'kontrol'] },
     { id: 'matrix-superadmin-regions', role: 'SUPER_ADMIN', path: '/superadmin/regions', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['atama sınırlarını'] },
     { id: 'matrix-superadmin-ssot', role: 'SUPER_ADMIN', path: '/superadmin/ssot-alignment', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Sistem Standartları', 'Canlı İzleme'] },

@@ -148,7 +148,7 @@ async function main() {
   must(helpComposer, 'Bu sadece SeferPuanı önizlemesidir.', 'helpComposer humanizes score preview');
   must(helpComposer, 'Başarı payı önizlemesini aç.', 'helpComposer humanizes marketplace action label');
   must(helpComposer, 'Organizasyon planı tek başına başarı payı kanıtı değildir.', 'helpComposer humanizes organization plan copy');
-  must(helpComposer, 'GPS güncel değil / çevrim dışı satırını aç', 'helpComposer humanizes operation-health chip');
+  must(helpComposer, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'helpComposer humanizes operation-health chip');
   must(helpComposer, 'SeferPuanı önizlemesini sadeleştir.', 'helpComposer humanizes linked guide copy');
   must(helpComposer, 'Başarı payı önizlemesini netleştirmek için', 'helpComposer humanizes quick help copy');
   must(helpComposer, 'ödeme ve mutabakat başlatılmaz', 'helpComposer replaces settlement with mutabakat');
@@ -157,13 +157,13 @@ async function main() {
   must(helpComposer, 'SeferPuanı önizlemesini tekrar sorar.', 'helpComposer humanizes score follow-up');
   must(helpComposer, 'Başarı payı önizlemesini tekrar sorar.', 'helpComposer humanizes marketplace follow-up');
 
-  must(intentRouter, 'GPS güncel değil / çevrim dışı satırını aç', 'intent router humanizes operation-health chip');
+  must(intentRouter, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'intent router humanizes operation-health chip');
   must(intentRouter, 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?', 'intent router humanizes marketplace chip');
-  must(answerQualityPolicy, 'GPS güncel değil / çevrim dışı satırını aç', 'answer quality policy humanizes starter chip');
+  must(answerQualityPolicy, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'answer quality policy humanizes starter chip');
   must(screenStateAnalyzer, 'GPS güncel değil / çevrim dışı', 'screen state analyzer uses Turkish operation-health wording');
-  must(roomCompany, 'GPS güncel değil / çevrim dışı', 'room/company screen catalog uses Turkish operation-health wording');
+  must(roomCompany, 'Konum bilgisi güncel değil / çevrim dışı', 'room/company screen catalog uses Turkish operation-health wording');
   must(goldenPack, 'Sadece önizleme • Bekliyor', 'golden pack humanizes summary text');
-  must(goldenPack, 'GPS güncel değil / çevrim dışı', 'golden pack humanizes stale/offline label');
+  must(goldenPack, 'Konum bilgisi güncel değil / çevrim dışı', 'golden pack humanizes stale/offline label');
   must(goldenPack, 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?', 'golden pack humanizes marketplace question');
   must(goldenPack, 'Hakediş hazırlığı ve sadece önizleme ödeme anlatımı', 'golden pack humanizes focus text');
   mustNot(goldenPack, 'Readonly', 'golden pack no longer surfaces raw Readonly text');

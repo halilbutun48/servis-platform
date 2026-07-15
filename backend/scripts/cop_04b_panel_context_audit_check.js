@@ -158,7 +158,7 @@ must(facts, 'buildLiveFactConfidence', 'copilot facts keeps live confidence help
 must(facts, 'buildDiagnosticPriority', 'copilot facts keeps diagnostic priority helper');
 must(facts, 'buildActionSimulationWording', 'copilot facts keeps action simulation helper');
 must(facts, 'Sürücünün telefon GPS’i', 'copilot facts keeps driver gps wording');
-must(facts, 'Araç GPS’i', 'copilot facts keeps vehicle gps wording');
+must(facts, 'araç görünürlüğü', 'copilot facts keeps vehicle visibility wording');
 must(facts, 'operasyon kanıtı', 'copilot facts keeps operational proof wording');
 
 must(intentRouter, 'CONTRACT_TO_SHIFT', 'intent router keeps contract intent');

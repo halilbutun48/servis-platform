@@ -1,4 +1,4 @@
-import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
+import { firstNonEmpty, normalizeVisibleTerminology, uniqueStrings } from './replyShapes.js';
 
 export function normalizeText(value) {
   return String(value || '')
@@ -25,7 +25,7 @@ export function normalizeLooseText(value) {
 }
 
 export function normalizeVisibleReplyFragment(value) {
-  return firstNonEmpty(value, '')
+  return normalizeVisibleTerminology(firstNonEmpty(value, ''))
     .replace(/\bPlan\s*Builder\b/gi, 'Planlama Merkezi')
     .replace(/^(?:Önce|Once)\s*:\s*/i, '')
     .replace(/^(?:Önce|Once)\s+/i, '')

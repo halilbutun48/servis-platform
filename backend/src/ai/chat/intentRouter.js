@@ -787,7 +787,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
     if (chips.length) return chips.slice(0, 4);
   }
   if (pathHas(screenPath, ['/driver/today'])) {
-    return workflowQuestion ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'] : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri'];
+    return workflowQuestion ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/konum sınırı nedir?'] : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'Konum sinyali bekleniyor', 'Eksik veri'];
   }
   if (pathHas(screenPath, ['/personel/live'])) {
     if (String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY') {
@@ -802,13 +802,13 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
     return workflowQuestion ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'] : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri'];
   }
   if (pathHas(screenPath, ['/room/map'])) {
-    return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+    return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (pathHas(screenPath, ['/room/operation-health'])) {
-    return ['Riskli cihazı göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
+    return ['Riskli cihazı göster', 'konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (pathHas(screenPath, ['/room/shifts'])) {
-    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et'];
   }
   if (pathHas(screenPath, ['/room/drivers'])) {
     return ['Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla', 'Bu kayıtta kim görevli?'];
@@ -826,7 +826,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
     return ['Üretim geçmişini göster', 'İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
   }
   if (pathHas(screenPath, ['/superadmin/operations'])) {
-    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et'];
   }
   if (pathHas(screenPath, ['/superadmin/commercial-core'])) {
     return ['Hakediş eksiklerini göster', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
@@ -835,7 +835,7 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
     return ['Konum İncele akışını aç', 'OSRM nedir?', 'Matrix nedir?', 'İlgili harita görünümünü aç'];
   }
   if (pathHas(screenPath, ['/commercial-flow', '/service-evaluation', '/shifts'])) {
-    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (pathHas(screenPath, ['/agreements'])) {
     if (String(questionType || '') === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') {
@@ -876,7 +876,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
   }
   const chips = [];
   if (pathHas(screenPath, ['/driver/today'])) {
-    chips.push(...(workflowQuestion ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/GPS sınırı nedir?'] : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı']));
+    chips.push(...(workflowQuestion ? ['Bugünkü görevleri göster', 'Rota ne durumda?', 'Bildirimleri göster', 'PIN/konum sınırı nedir?'] : ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'Konum sinyali bekleniyor', 'Eksik veri', 'Yetki sınırı']));
   } else if (pathHas(screenPath, ['/personel/live'])) {
     chips.push(...(String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
       ? ['Bugün binmeyeceğim talebi oluştur', 'Konumumu al', 'Büyük haritada konum seç', 'Adresten konum bul']
@@ -886,13 +886,13 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
       ? ['Çocuğum bugün binmeyecek', 'Çocuğum başka duraktan binecek', 'Çocuğum şu konumdan alınsın', 'Konumumu al']
       : workflowQuestion ? ['Servis durumunu göster', 'Servis durumu ne?', 'Bildirim kaynağı', 'Biniş değişikliği var mı?'] : ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri']));
   } else if (pathHas(screenPath, ['/room/map'])) {
-    chips.push(...(workflowQuestion ? ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'] : ['Bu ekranı detaylı anlat', 'Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']));
+    chips.push(...(workflowQuestion ? ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'] : ['Bu ekranı detaylı anlat', 'Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']));
   } else if (pathHas(screenPath, ['/room/operation-health'])) {
-    chips.push('Riskli cihazı göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et');
+    chips.push('Riskli cihazı göster', 'konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et');
   } else if (pathHas(screenPath, ['/room/shifts'])) {
-    chips.push('Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et');
+    chips.push('Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?');
   } else if (pathHas(screenPath, ['/superadmin/operations'])) {
-    chips.push('Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et');
+    chips.push('Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et');
   } else if (pathHas(screenPath, ['/superadmin/commercial-core'])) {
     chips.push('Hakediş eksiklerini göster', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç');
   } else if (pathHas(screenPath, ['/room/commercial-flow'])) {
@@ -918,7 +918,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
   } else if (pathHas(screenPath, ['/superadmin/operation-verification', '/acceptance', '/trust-quality', '/observability'])) {
     chips.push('İlgili kontrol kartını aç', 'Bu ne demek?', 'Sıradaki adımı göster', 'İlgili yere götür');
   } else if (pathHas(screenPath, ['/commercial-flow', '/service-evaluation', '/shifts'])) {
-    chips.push(...(workflowQuestion ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'] : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']));
+    chips.push(...(workflowQuestion ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'] : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']));
   } else if (pathHas(screenPath, ['/agreements'])) {
     if (String(questionType || '') === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') {
       chips.push('Lisans ücreti var mı?', 'Bu sözleşmeden SeferPakt pay alacak mı?', 'Başarı payı neden 0 görünüyor?', 'Bu sözleşme SeferPakt kaynaklı mı?', 'Kaynak vardiyası var mı?', 'Organizasyon planı tek başına kaynak kanıtı sayılır mı?');
@@ -1018,7 +1018,7 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
       const chips = filterWorkflowGenericChips(workflowTopicChipSet({ activeTopic: questionType, questionType, screenPath }), { activeTopic: questionType, questionType });
       if (chips.length) return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
     }
-    base.push('Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç', 'İlgili aracı aç');
+    base.push('Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç', 'İlgili aracı aç');
   } else if (String(entityType) === 'shift') {
     const hasSelection = Boolean(context?.selectedLabel || context?.selectedSummary || context?.selectedEntityId || context?.selectedEntityType || context?.id);
     const isRoomShifts = String(screenPath || '').includes('/room/shifts');

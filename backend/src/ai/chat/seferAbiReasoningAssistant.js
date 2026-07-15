@@ -10,6 +10,7 @@ import {
 } from './conversationTaskStateResponses.js';
 import { buildRootCauseAssistantChips, buildRootCauseAssistantReply, buildRootCauseState } from './conversationRootCauseEngine.js';
 import { buildSmartDiagnosticState } from './conversationSmartDiagnostics.js';
+import { normalizeVisibleReplyFragment } from './conversationTaskStateShared.js';
 import { COPILOT_REASONING_ANSWER_COMPOSER_VERSION, composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 
 export const SEFER_ABI_REASONING_ASSISTANT_VERSION = 'SEFER-ABI-REASONING-ASSISTANT-01';
@@ -155,7 +156,7 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
     clarifyingQuestion: 'Hangi rota ya da durak için bakayım?',
     safeAlternative: 'Önce aktif rota ve sıradaki durak sinyalini kontrol et.',
     repeatLead: 'Kısa saha notu:',
-    chips: Object.freeze(['Bugünkü rota', 'Check-in', 'Sonraki durak', 'GPS durumu']),
+    chips: Object.freeze(['Bugünkü rota', 'Check-in', 'Sonraki durak', 'Konum sinyali durumu']),
     maxLength: 280,
   }),
   PERSONEL: Object.freeze({
@@ -622,7 +623,7 @@ function buildSuggestedChips(snapshot) {
   if (family === 'STEP_ENTERED') contextualChips.push('İlk kontrolü göster');
   if (family === 'RESULT_CHECK') contextualChips.push('Sonucu kontrol et');
   if (family === 'ALTERNATIVE_PATH') contextualChips.push('Alternatif yolu göster');
-  if (family === 'DELEGATE_SAFE') contextualChips.push('Güvenli alternatif göster');
+  if (family === 'DELEGATE_SAFE') contextualChips.push('Önce şunu kontrol et');
   if (['OVERVIEW_START', 'ROLE_START', 'SCREEN_START', 'STEP_BY_STEP', 'FIELD_BUTTON'].includes(family)) contextualChips.push('Başlangıç adımını aç');
   if (snapshot?.analysis?.nextBestAction) contextualChips.push('Sıradaki adımı göster');
   if (snapshot?.analysis?.blockers?.length) contextualChips.push('Neden takıldı?');
@@ -632,7 +633,7 @@ function buildSuggestedChips(snapshot) {
   }
   if (snapshot?.selectedRecordStatus) contextualChips.push('Seçili kayıt özetini göster');
   if (snapshot?.clarifyingQuestion) contextualChips.push(snapshot.clarifyingQuestion);
-  if (snapshot?.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') contextualChips.push('Güvenli alternatif göster');
+  if (snapshot?.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') contextualChips.push('Önce şunu kontrol et');
   return uniqueStrings([...(dynamicChips || []), ...(contextualChips || []), ...(roleChips || [])]).slice(0, snapshot?.roleMode === 'SIMPLE' ? 3 : 5);
 }
 
@@ -651,6 +652,29 @@ function buildSharedScreenPrefix(snapshot) {
   if (String(screenPath || '').includes('/shared/logs')) return 'Log Dışa Aktarımı ekranı:';
   const screenLabel = firstNonEmpty(snapshot?.screenLabel, '');
   return screenLabel ? `${screenLabel} ekranı:` : '';
+}
+
+function normalizeVisibleList(values) {
+  return uniqueStrings((Array.isArray(values) ? values : [values]).map((value) => normalizeVisibleReplyFragment(value)).filter(Boolean));
+}
+
+function normalizeVisibleLocationTerminology(value) {
+  return normalizeVisibleReplyFragment(value)
+    .replace(/\bSon\s+GPS\b/gi, 'Son konum bilgisi')
+    .replace(/\bLast\s+GPS\b/gi, 'Son konum bilgisi')
+    .trim();
+}
+
+function normalizeVisibleLocationSurfaceValue(value) {
+  if (value == null) return value;
+  if (Array.isArray(value)) return value.map((item) => normalizeVisibleLocationSurfaceValue(item));
+  if (typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, normalizeVisibleLocationSurfaceValue(item)]),
+    );
+  }
+  if (typeof value !== 'string') return value;
+  return normalizeVisibleLocationTerminology(value);
 }
 
 export function listSeferAbiReasoningRoles() {
@@ -911,27 +935,27 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     message: String(message || ''),
     normalizedMessage,
     rawReply: String(rawReply || ''),
-    selectedRecordStatus,
-    selectedFieldLines,
-    selectedBadgeLines,
-    selectedSignalLines,
+    selectedRecordStatus: normalizeVisibleReplyFragment(selectedRecordStatus),
+    selectedFieldLines: normalizeVisibleList(selectedFieldLines),
+    selectedBadgeLines: normalizeVisibleList(selectedBadgeLines),
+    selectedSignalLines: normalizeVisibleList(selectedSignalLines),
     selectedContextPresent,
-    reasoningLead,
-    nextBestAction,
-    boundaryText,
-    clarifyingQuestion,
+    reasoningLead: normalizeVisibleReplyFragment(reasoningLead),
+    nextBestAction: normalizeVisibleReplyFragment(nextBestAction),
+    boundaryText: normalizeVisibleReplyFragment(boundaryText),
+    clarifyingQuestion: normalizeVisibleReplyFragment(clarifyingQuestion),
     previousTaskState,
     lastAssistantAnswerType,
     userProgressCommand,
-    safetyBoundary: firstNonEmpty(boundaryText, roleProfile.safeAlternative, ''),
+    safetyBoundary: normalizeVisibleReplyFragment(firstNonEmpty(boundaryText, roleProfile.safeAlternative, '')),
     reasoningAnswerComposerVersion: COPILOT_REASONING_ANSWER_COMPOSER_VERSION,
-    safeAlternative: firstNonEmpty(
+    safeAlternative: normalizeVisibleReplyFragment(firstNonEmpty(
       roleProfile.safeAlternative,
       contextPriority?.followUpPrompt,
       interactionIntentFamily === 'DELEGATE_SAFE' ? nextBestAction : '',
       nextBestAction,
       'Önce seçili kayıt ve eksik alanı birlikte kontrol edelim.',
-    ),
+    )),
     explicitBoundary,
     fingerprint,
     repeatCount,
@@ -949,18 +973,18 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     taskState,
     rootCauseState,
     rootCauseTheme: rootCauseState?.theme || '',
-    rootCauseReply,
-    assistantReply: firstNonEmpty(rootCauseReply, String(rawReply || '')),
-    rootCauseChips,
+    rootCauseReply: normalizeVisibleReplyFragment(rootCauseReply),
+    assistantReply: normalizeVisibleReplyFragment(firstNonEmpty(rootCauseReply, String(rawReply || ''))),
+    rootCauseChips: normalizeVisibleList(rootCauseChips),
     riskScoringState,
     riskScoringTheme: riskScoringState?.theme || '',
-    riskScoringReply: riskScoringState?.reply || '',
-    riskScoringChips: riskScoringState?.chips || [],
+    riskScoringReply: normalizeVisibleReplyFragment(riskScoringState?.reply || ''),
+    riskScoringChips: normalizeVisibleList(riskScoringState?.chips || []),
     smartDiagnosticState,
     smartDiagnosticTheme: smartDiagnosticState?.theme || '',
-    smartDiagnosticReply: firstNonEmpty(rootCauseReply, smartDiagnosticState?.reply, ''),
-    smartDiagnosticChips: smartDiagnosticState?.chips || [],
-    suggestedChips: buildSuggestedChips({
+    smartDiagnosticReply: normalizeVisibleReplyFragment(firstNonEmpty(rootCauseReply, smartDiagnosticState?.reply, '')),
+    smartDiagnosticChips: normalizeVisibleList(smartDiagnosticState?.chips || []),
+    suggestedChips: normalizeVisibleList(buildSuggestedChips({
       roleMode,
       effectiveRole,
       questionType,
@@ -971,9 +995,9 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
       roleProfile,
       interactionIntentFamily,
       rootCauseChips,
-    }),
-    contextualSuggestedChips: String(screenPath || '').includes('/parent/live') && String(effectiveRole || '').toUpperCase() === 'PARENT'
-      ? ['Son GPS ne zaman geldi?', 'ETA nedir?', 'Araç bağlantısı var mı?', "Sürücünün telefon GPS’i devrede mi?"]
+    })),
+    contextualSuggestedChips: normalizeVisibleList(String(screenPath || '').includes('/parent/live') && String(effectiveRole || '').toUpperCase() === 'PARENT'
+      ? ['Son GPS ne zaman geldi?', 'ETA nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?']
       : buildSuggestedChips({
         roleMode,
         effectiveRole,
@@ -985,7 +1009,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
         roleProfile,
         interactionIntentFamily,
         rootCauseChips,
-      }),
+      })),
   });
 }
 
@@ -1039,7 +1063,12 @@ function composeReasoningLead(snapshot) {
   );
   const needsPrefix = !textIncludes(rawReply, roleProfile.frame);
   const simpleRoleMode = String(snapshot?.roleMode || '').toUpperCase() === 'SIMPLE';
-  const hasGuidedTask = Boolean(snapshot?.guidedTaskMeta?.familyId || snapshot?.contextPriority?.guidedTaskMeta?.familyId);
+  const hasGuidedTask = Boolean(
+    snapshot?.guidedTaskMeta?.familyId
+    || snapshot?.contextPriority?.guidedTaskMeta?.familyId
+    || ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(snapshot?.questionType || '')),
+  );
+  const contractWorkflowQuestion = ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(snapshot?.questionType || ''));
   const avoidNowLead = SEFER_ABI_REASONING_ASSISTANT_NOW_LEAD_STRIP_QUESTION_TYPES.has(String(snapshot?.questionType || ''));
   if (String(snapshot?.questionType || '') === 'SCREEN_PURPOSE') {
     const parts = [];
@@ -1058,19 +1087,24 @@ function composeReasoningLead(snapshot) {
     if (reasoningLead && !textIncludes(screenPurposeLead, reasoningLead)) parts.push(reasoningLead);
     if (nextBestAction && !textIncludes(screenPurposeLead, nextBestAction)) parts.push(avoidNowLead ? nextBestAction : `Şimdi: ${nextBestAction}`);
     if (boundaryText && !textIncludes(screenPurposeLead, boundaryText)) parts.push(boundaryText);
-    if (roleProfile.role === 'PERSONEL' && !textIncludes(screenPurposeLead, 'KVKK')) parts.push('Odak: KVKK.');
-    if (roleProfile.role === 'PARENT' && !textIncludes(screenPurposeLead, 'çocuk')) parts.push('Odak: çocuk.');
-    const lead = joinReply(parts, roleProfile.maxLength);
-    return lead ? `${lead} ${rawReply}`.trim() : rawReply;
-  }
+  if (roleProfile.role === 'PERSONEL' && !textIncludes(screenPurposeLead, 'KVKK')) parts.push('Odak: KVKK.');
+  if (roleProfile.role === 'PARENT' && !textIncludes(screenPurposeLead, 'çocuk')) parts.push('Odak: çocuk.');
+  const lead = joinReply(parts, roleProfile.maxLength);
+  const contractLead = contractWorkflowQuestion && lead && !textIncludes(lead, 'Şimdi:')
+    ? `Şimdi: ${lead}`
+    : lead;
+  return contractLead ? `${contractLead} ${rawReply}`.trim() : rawReply;
+}
   const prefix = needsPrefix
     ? (simpleRoleMode ? (avoidNowLead ? roleProfile.frame : 'Şimdi:') : (hasGuidedTask ? (avoidNowLead ? roleProfile.frame : 'Şimdi:') : roleProfile.frame))
     : '';
   const parts = [];
   if (prefix) parts.push(prefix);
+  const prioritizeSelectedRecordStatus = ['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(snapshot?.questionType || '')) && selectedRecordStatus;
+  if (prioritizeSelectedRecordStatus) parts.push(`Seçili kayıt: ${selectedRecordStatus}.`);
   const sharedScreenPrefix = buildSharedScreenPrefix(snapshot);
   if (sharedScreenPrefix) parts.push(sharedScreenPrefix);
-  if (selectedRecordStatus && !textIncludes(rawReply, selectedRecordStatus)) parts.push(`Seçili kayıt: ${selectedRecordStatus}.`);
+  if (!prioritizeSelectedRecordStatus && selectedRecordStatus && !textIncludes(rawReply, selectedRecordStatus)) parts.push(`Seçili kayıt: ${selectedRecordStatus}.`);
   if (reasoningLead && !textIncludes(rawReply, reasoningLead)) parts.push(reasoningLead);
   if (nextBestAction && !textIncludes(rawReply, nextBestAction)) {
     parts.push(
@@ -1098,7 +1132,7 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
       screenLead,
       'Sahte başarı üretmem; yalnızca gerçekten doğrulanmış sinyali paylaşırım.',
       'Yapabileceğim güvenli şeyler: gerçekten yapılanı, eksik kalanları ve sonraki doğru adımı açıkça ayırmak.',
-      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik bilgiyi birlikte kontrol edelim.')}`,
+      `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik bilgiyi birlikte kontrol edelim.')}`,
     ], roleProfile.maxLength);
   }
 
@@ -1109,7 +1143,7 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
       screenLead,
       'route apply, dispatch apply ve günlük atamaya işleme kapalı.',
       'Yapabileceğim güvenli şeyler: preview, risk özeti, insan onayı ve geri alma notunu kontrol etmek.',
-      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce preview, risk özeti ve onay durumunu kontrol et.')}`,
+      `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce preview, risk özeti ve onay durumunu kontrol et.')}`,
     ], roleProfile.maxLength);
   }
 
@@ -1120,7 +1154,7 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
       screenLead,
       'Toplu yazma, DB write ve personel oluşturma kapalı.',
       'Yapabileceğim güvenli şeyler: eksik kolonları bulmak, KVKK sınırını kontrol etmek ve insan onayı checklist’i hazırlamak.',
-      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce eksik kolonları ve insan onayını kontrol et.')}`,
+      `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce eksik kolonları ve insan onayını kontrol et.')}`,
     ], roleProfile.maxLength);
   }
 
@@ -1131,14 +1165,14 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
       screenLead,
       'Önce insan onayı gerekir; ben yalnızca preview ve risk özeti okuyabilirim.',
       'Yapabileceğim güvenli şeyler: preview, risk özeti, geri alma notu ve onay durumunu kontrol etmek.',
-      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce preview, risk özeti ve onay durumunu kontrol et.')}`,
+      `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce preview, risk özeti ve onay durumunu kontrol et.')}`,
     ], roleProfile.maxLength);
   }
 
   if (snapshot.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') {
     return joinReply([
       firstNonEmpty(snapshot?.boundaryText, buildIntentLead(snapshot), 'Bu işlemi burada yapamam.'),
-      `Güvenli alternatif: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik bilgiyi birlikte kontrol edelim.')}`,
+      `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce seçili kayıt ve eksik bilgiyi birlikte kontrol edelim.')}`,
     ], roleProfile.maxLength);
   }
 
@@ -1197,18 +1231,84 @@ export function buildSeferAbiReasoningAssistant(options = {}) {
   const reply = roomMapLocationHelp
     ? rawReply
     : composeCopilotReasoningAnswer({ ...snapshot, rawReply });
+  const sanitizeLiveVisibleSurface = ['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'WHY_BLOCKED'].includes(String(snapshot?.questionType || ''))
+    || String(snapshot?.screenPath || '').includes('/superadmin/telematics')
+    || String(snapshot?.screenPath || '').includes('/company/shifts')
+    || String(snapshot?.screenPath || '').includes('/room/vehicles')
+    || String(snapshot?.screenPath || '').includes('/room/map')
+    || String(snapshot?.screenPath || '').includes('/driver/route')
+    || String(snapshot?.screenPath || '').includes('/driver/today')
+    || String(snapshot?.screenPath || '').includes('/driver/map')
+    || (
+      ['SCREEN_EXPLANATION_HELP', 'MISSING_DATA_HELP', 'ROLE_EXPLANATION_HELP', 'HOW_TO_HELP', 'SCREEN_PURPOSE'].includes(String(snapshot?.questionType || ''))
+      && (
+        String(snapshot?.screenPath || '').includes('/personel/live')
+        || String(snapshot?.screenPath || '').includes('/personel/my')
+        || String(snapshot?.screenPath || '').includes('/parent/live')
+      )
+    );
+  const genericRootCauseSurface = normalizeText(firstNonEmpty(
+    snapshot?.screenDefinition?.label,
+    snapshot?.sourceScreenDefinition?.label,
+    snapshot?.screenContext?.label,
+    snapshot?.sourceScreenContext?.label,
+    '',
+  )) === 'root cause'
+    || /root cause diagnostic/.test(normalizeText(firstNonEmpty(
+      snapshot?.screenDefinition?.menuPurpose,
+      snapshot?.sourceScreenDefinition?.menuPurpose,
+      snapshot?.screenContext?.menuPurpose,
+      snapshot?.sourceScreenContext?.menuPurpose,
+      '',
+    )));
+  const genericRiskScoringSurface = normalizeText(firstNonEmpty(
+    snapshot?.screenDefinition?.label,
+    snapshot?.sourceScreenDefinition?.label,
+    snapshot?.screenContext?.label,
+    snapshot?.sourceScreenContext?.label,
+    '',
+  )) === 'risk scoring'
+    || /risk scoring status/.test(normalizeText(firstNonEmpty(
+      snapshot?.screenDefinition?.menuPurpose,
+      snapshot?.sourceScreenDefinition?.menuPurpose,
+      snapshot?.screenContext?.menuPurpose,
+      snapshot?.sourceScreenContext?.menuPurpose,
+      '',
+    )));
+  const visibleSurfaceSanitizer = sanitizeLiveVisibleSurface || genericRootCauseSurface || genericRiskScoringSurface;
+  const visibleSurfaceValue = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue : (value) => value;
+  const visibleReply = visibleSurfaceValue(normalizeVisibleReplyFragment(reply));
+  const visibleSummary = visibleSurfaceValue(normalizeVisibleReplyFragment(firstNonEmpty(
+    snapshot.selectedRecordStatus,
+    snapshot.reasoningLead,
+    snapshot.nextBestAction,
+    snapshot.boundaryText,
+    snapshot.clarifyingQuestion,
+    snapshot.rawReply,
+    '',
+  )));
   return Object.freeze({
     ...snapshot,
-    reply,
+    reply: visibleReply,
     rawReply,
-    summary: firstNonEmpty(
-      snapshot.selectedRecordStatus,
-      snapshot.reasoningLead,
-      snapshot.nextBestAction,
-      snapshot.boundaryText,
-      snapshot.clarifyingQuestion,
-      snapshot.rawReply,
-      '',
-    ),
+    summary: visibleSummary,
+    selectedRecordStatus: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.selectedRecordStatus)),
+    selectedFieldLines: visibleSurfaceValue(normalizeVisibleList(snapshot.selectedFieldLines)),
+    selectedBadgeLines: visibleSurfaceValue(normalizeVisibleList(snapshot.selectedBadgeLines)),
+    selectedSignalLines: visibleSurfaceValue(normalizeVisibleList(snapshot.selectedSignalLines)),
+    reasoningLead: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.reasoningLead)),
+    nextBestAction: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.nextBestAction)),
+    boundaryText: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.boundaryText)),
+    clarifyingQuestion: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.clarifyingQuestion)),
+    safeAlternative: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.safeAlternative)),
+    rootCauseReply: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.rootCauseReply)),
+    assistantReply: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.assistantReply)),
+    riskScoringReply: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.riskScoringReply)),
+    smartDiagnosticReply: visibleSurfaceValue(normalizeVisibleReplyFragment(snapshot.smartDiagnosticReply)),
+    suggestedChips: visibleSurfaceValue(normalizeVisibleList(snapshot.suggestedChips)),
+    rootCauseChips: visibleSurfaceValue(normalizeVisibleList(snapshot.rootCauseChips)),
+    riskScoringChips: visibleSurfaceValue(normalizeVisibleList(snapshot.riskScoringChips)),
+    smartDiagnosticChips: visibleSurfaceValue(normalizeVisibleList(snapshot.smartDiagnosticChips)),
+    contextualSuggestedChips: visibleSurfaceValue(normalizeVisibleList(snapshot.contextualSuggestedChips)),
   });
 }

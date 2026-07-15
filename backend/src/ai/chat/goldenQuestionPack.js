@@ -97,7 +97,7 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/room/map', {
         label: 'Canlı Takip',
         selectedLabel: 'Araç 20 ABC 123',
-        selectedFields: [{ label: 'Son GPS', value: '2 dk önce' }, { label: 'Shift durumu', value: 'APPROVED' }],
+        selectedFields: [{ label: 'Son konum bilgisi', value: '2 dk önce' }, { label: 'Shift durumu', value: 'APPROVED' }],
       }),
     },
     {
@@ -287,7 +287,7 @@ export function buildGoldenQuestionPack() {
         selectedFields: [
           { label: 'Aktif sürücü', value: '0' },
           { label: 'Riskli cihaz', value: '1' },
-          { label: 'GPS güncel değil / çevrim dışı', value: '1' },
+          { label: 'Konum bilgisi güncel değil / çevrim dışı', value: '1' },
           { label: 'Açık sorun', value: '2' },
         ],
       }),
@@ -516,7 +516,7 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/superadmin/operations', {
         label: 'Denetim Paneli',
         selectedLabel: 'Araç 20 DRV 777',
-        selectedFields: [{ label: 'Son GPS', value: 'Yok' }, { label: 'Kaynak', value: 'Harita' }],
+        selectedFields: [{ label: 'Son konum bilgisi', value: 'Yok' }, { label: 'Kaynak', value: 'Harita' }],
         selectedBadges: [{ label: 'Durum', value: 'Görünmüyor' }],
       }),
     },
@@ -1157,13 +1157,13 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/driver/map', {
         label: 'Harita',
         selectedLabel: '34ABC123',
-        selectedSummary: 'Vardiya #3 • GPS Zayıf / güncel değil • Son GPS 47s',
+        selectedSummary: 'Vardiya #3 • Konum sinyali zayıf / güncel değil • Son konum bilgisi 47s',
         selectedFields: [
-          { label: 'Son GPS', value: '47s' },
+          { label: 'Son konum bilgisi', value: '47s' },
           { label: 'GPS durumu', value: 'Zayıf / güncel değil' },
           { label: 'Sıradaki durak', value: 'Pickup 6' },
           { label: 'Toplam durak', value: '6' },
-          { label: 'ETA', value: '619dk' },
+          { label: 'Tahmini varış süresi', value: '619dk' },
         ],
         selectedBadges: [
           { label: 'Araç GPS’i', value: 'Zayıf / güncel değil' },
@@ -1212,11 +1212,11 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/personel/live', {
         label: 'Canlı Takip',
         selectedLabel: 'Bugünkü servis',
-        selectedSummary: '34ABC123 • GPS güncel değil • ETA 12 dk',
+        selectedSummary: '34ABC123 • Konum bilgisi güncel değil • Tahmini varış süresi 12 dk',
         selectedFields: [
           { label: 'Araç', value: '34ABC123' },
-          { label: 'Son GPS', value: '2 dk' },
-          { label: 'ETA', value: '12 dk' },
+          { label: 'Son konum bilgisi', value: '2 dk' },
+          { label: 'Tahmini varış süresi', value: '12 dk' },
           { label: 'Sıradaki durak', value: 'Personel durağı' },
         ],
         selectedBadges: [
@@ -1321,11 +1321,11 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/parent/live', {
         label: 'Öğrencimin servisi',
         selectedLabel: 'Öğrenci servisi',
-        selectedSummary: '34ABC123 • Canlı • ETA 8 dk',
+        selectedSummary: '34ABC123 • Canlı • Tahmini varış süresi 8 dk',
         selectedFields: [
           { label: 'Araç', value: '34ABC123' },
-          { label: 'Son GPS', value: '30 sn' },
-          { label: 'ETA', value: '8 dk' },
+          { label: 'Son konum bilgisi', value: '30 sn' },
+          { label: 'Tahmini varış süresi', value: '8 dk' },
           { label: 'Sıradaki durak', value: 'Okul' },
         ],
         selectedBadges: [
@@ -1490,11 +1490,11 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/driver/route', {
         label: 'Rota',
         selectedLabel: 'Vardiya #3',
-        selectedSummary: '34ABC123 • Son GPS 47s • Pickup 6',
+        selectedSummary: '34ABC123 • Son konum bilgisi 47s • Pickup 6',
         selectedFields: [
           { label: 'Durum', value: 'Kabul Edildi' },
           { label: 'Araç', value: '34ABC123' },
-          { label: 'Son GPS', value: '47s' },
+          { label: 'Son konum bilgisi', value: '47s' },
           { label: 'Sıradaki durak', value: 'Pickup 6' },
         ],
         selectedBadges: [
@@ -1526,11 +1526,11 @@ export function buildGoldenQuestionPack() {
       screenContext: ctx('/personel/my', {
         label: 'Servisim',
         selectedLabel: 'Bugünkü servis',
-        selectedSummary: '34ABC123 • GPS güncel değil • ETA 12 dk',
+        selectedSummary: '34ABC123 • Konum bilgisi güncel değil • Tahmini varış süresi 12 dk',
         selectedFields: [
           { label: 'Araç', value: '34ABC123' },
-          { label: 'Son GPS', value: '2 dk' },
-          { label: 'ETA', value: '12 dk' },
+          { label: 'Son konum bilgisi', value: '2 dk' },
+          { label: 'Tahmini varış süresi', value: '12 dk' },
           { label: 'Sıradaki durak', value: 'Personel durağı' },
         ],
         selectedBadges: [

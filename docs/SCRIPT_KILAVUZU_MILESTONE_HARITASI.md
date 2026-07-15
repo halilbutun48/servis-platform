@@ -1469,6 +1469,12 @@ Bu bant güncel doğrulanmış üst hattır.
 - `Sefer Abi Terminali` ana görünümünde rol bazlı, operasyon odaklı, `Durum / Ne anlama geliyor? / Etki / Sıradaki doğru işlem` yapısı korunur; teknik ayrıntılar ikincil `Teknik ayrıntılar` alanında kalır.
 - Bu düzenleme `UX-SEFER-ABI-LAUNCHER-01`, `COP-LIVE-ACCEPT-01`, `DYNAMIC-SAVINGS-01` ve `ROUTE-CHANGE-FINAL-01` zincirini bozmaz; runtime karar ve business flow değiştirmez.
 
+### SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01 [CHECK]
+- `check:seferabiturkishterminology01` Sefer Abi'nin kullanıcıya görünen cevaplarında İngilizce, teknik ve sistem içi terminolojiyi sade Türkçe kullanıcı diliyle değiştirir; `ETA`, `GPS`, `offline`, `stale`, `fallback`, `selected record`, `root cause`, `diagnostic`, `risk scoring`, `task-state`, `intent`, `chip`, `workflow`, `screen purpose`, `next best action`, `safe alternative`, `active segment`, `completed segment`, `live decision`, `route binding`, `status`, `warning`, `error` ve `blocker` gibi görünür sızıntıları engeller.
+- `node backend\scripts\sefer_abi_turkish_user_facing_terminology_01_check.js` bu kontrolü çalıştırır ve 80+ case ile görünür terminoloji hijyenini doğrular.
+- `docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md` bu audit’in kanonik açıklama dosyasıdır.
+- Bu düzenleme `SEFER-ABI-TERMINAL-HUMANIZE-01`, `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`, `COPILOT-ROOT-CAUSE-ENGINE-01`, `COPILOT-RISK-SCORING-ENGINE-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` zincirini bozmaz; runtime karar ve business flow değiştirmez.
+
 ### SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01 [CHECK]
 - `check:seferabiturkishuserfacinglanguage01` Sefer Abi'nin tüm rol ve yüzeylerinde kullanıcıya görünen metinleri sade Türkçe tutar; `Free-to-operate`, `root cause`, `diagnostic`, `risk scoring`, `workflow`, `screen purpose`, `next best action`, `current step`, `fallback`, `offline`, `stale`, `ETA`, `warning`, `error` ve `blocker` gibi görünür sızıntıları engeller.
 - `node backend\scripts\sefer_abi_turkish_user_facing_language_01_check.js` bu kontrolü çalıştırır ve tüm yüzeylerde Türkçe görünür metinleri doğrular.

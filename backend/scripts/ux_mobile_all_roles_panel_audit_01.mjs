@@ -577,7 +577,8 @@ async function runScenario(page, scenario, viewportName, output) {
   }
 
   await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
-  await page.waitForTimeout(900);
+  // Give the backend a little more breathing room between consecutive route probes.
+  await page.waitForTimeout(1300);
 
   result.url = page.url();
   result.title = await page.title().catch(() => "");

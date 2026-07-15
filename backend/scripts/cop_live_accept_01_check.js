@@ -422,13 +422,13 @@ async function main() {
   must(intentRouter, 'NEXT_STEP', 'intent router keeps next step intent');
   must(intentRouter, 'NEXT_SCREEN', 'intent router keeps next screen intent');
   must(intentRouter, 'filterWorkflowGenericChips', 'intent router keeps workflow chip filtering');
-  must(intentRouter, 'GPS/operasyon kanıtını kontrol et', 'intent router keeps GPS proof chip wording');
-  must(intentRouter, 'Son GPS ne zaman geldi?', 'intent router keeps last GPS chip wording');
+  must(intentRouter, 'Konum sinyali/operasyon kanıtını kontrol et', 'intent router keeps GPS proof chip wording');
+  must(intentRouter, 'Son konum bilgisi ne zaman geldi?', 'intent router keeps last GPS chip wording');
 
   must(answerPolicy, 'WORKFLOW_GENERIC_CHIP_BLOCKLIST', 'answer policy keeps workflow generic chip blocklist');
-  must(answerPolicy, 'GPS/operasyon kanıtını kontrol et', 'answer policy keeps GPS proof chip wording');
-  must(answerPolicy, 'Son GPS ne zaman geldi?', 'answer policy keeps last GPS chip wording');
-  must(answerPolicy, 'ETA nedir?', 'answer policy keeps ETA chip wording');
+  must(answerPolicy, 'Konum sinyali/operasyon kanıtını kontrol et', 'answer policy keeps GPS proof chip wording');
+  must(answerPolicy, 'Son konum bilgisi ne zaman geldi?', 'answer policy keeps last GPS chip wording');
+  must(answerPolicy, 'Tahmini varış süresi nedir?', 'answer policy keeps ETA chip wording');
   must(answerPolicy, 'Hakediş eksiklerini sor', 'answer policy keeps commercial workflow chip');
   must(answerPolicy, 'Üretim durumunu sor', 'answer policy keeps contract workflow chip');
   mustNot(answerPolicy, 'OperationProof', 'answer policy hides raw operation proof code');

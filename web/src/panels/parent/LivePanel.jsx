@@ -303,7 +303,7 @@ export default function ParentLivePanel() {
   const allStops = useMemo(() => dedupeStops(selectedVehicle?.stops || []), [selectedVehicle]);
   const childStop = useMemo(() => selectedVehicle?.childStop || null, [selectedVehicle]);
   const childStopPoint = useMemo(() => stopCoord(childStop), [childStop]);
-  const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsLast?.sourceLabel || selectedVehicle?.gpsLast?.source || (selectedVehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
+  const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsLast?.sourceLabel || selectedVehicle?.gpsLast?.source || (selectedVehicle ? 'Araç konum sinyali' : 'Konum sinyali bekleniyor');
 
   const nearestStops = useMemo(() => {
     if (!myPos) return [];
@@ -420,15 +420,15 @@ export default function ParentLivePanel() {
       summary: [
         selected?.fullName ? `Öğrenci ${selected.fullName}` : null,
         selectedVehicle?.plate ? `Araç ${selectedVehicle.plate}` : null,
-        `Son GPS ${gpsAgeText(selectedVehicle?.gpsLast)}`,
+        `Son konum bilgisi ${gpsAgeText(selectedVehicle?.gpsLast)}`,
         selectedNext?.name ? `Sıradaki durak ${selectedNext.name}` : null,
         `Tahmini süre ${etaText(selectedVehicle)}`,
       ].filter(Boolean).join(' • '),
       fields: [
         { label: 'Öğrenci', value: selected?.fullName || `#${selected?.id || '-'}`, help: 'Seçili öğrencinin güvenli etiketini gösterir.' },
         { label: 'Araç', value: selectedVehicle?.plate || `#${selectedVehicle?.id || '-'}`, help: 'Seçili servis aracının plakasını gösterir.' },
-        { label: 'Son GPS', value: gpsAgeText(selectedVehicle?.gpsLast), help: 'Son canlı konumun ne kadar önce geldiğini gösterir.' },
-        { label: 'GPS durumu', value: hasVehiclePoint(selectedVehicle) ? 'Canlı' : 'GPS bekleniyor', help: 'Araç GPS akışının canlı mı beklemede mi olduğunu gösterir.' },
+        { label: 'Son konum bilgisi', value: gpsAgeText(selectedVehicle?.gpsLast), help: 'Son canlı konumun ne kadar önce geldiğini gösterir.' },
+        { label: 'Konum sinyali durumu', value: hasVehiclePoint(selectedVehicle) ? 'Canlı' : 'Konum sinyali bekleniyor', help: 'Araç konum sinyali akışının canlı mı beklemede mi olduğunu gösterir.' },
         { label: 'Kaynak', value: gpsSourceLabel, help: 'Konum kaynağını güvenli şekilde gösterir.' },
         { label: 'Çocuğun durağı', value: childStop ? stopTitle(childStop) : 'Atanmış durak bulunamadı', help: 'Öğrenciye bağlı güvenli durak bilgisini gösterir.' },
         { label: 'Sıradaki durak', value: selectedNext?.name || '-', help: 'Bir sonraki durak adını gösterir.' },
@@ -436,8 +436,8 @@ export default function ParentLivePanel() {
         { label: 'Servis durumu', value: selectedVehicle?.serviceStatus || selectedVehicle?.status || 'Yolda', help: 'Servisin görünür durumunu gösterir.' },
       ],
       badges: [
-        { label: 'Araç GPS’i', value: hasVehiclePoint(selectedVehicle) ? 'Canlı' : 'GPS bekleniyor', help: 'Araç GPS sinyalinin görünürlüğünü gösterir.' },
-        { label: 'Sürücünün telefon GPS’i', value: gpsSourceLabel, help: 'Sürücünün telefon GPS’i veya kaynak etiketini gösterir.' },
+        { label: 'Araç konum sinyali', value: hasVehiclePoint(selectedVehicle) ? 'Canlı' : 'Konum sinyali bekleniyor', help: 'Araç konum sinyalinin görünürlüğünü gösterir.' },
+        { label: 'Sürücünün telefonundan konum sinyali', value: gpsSourceLabel, help: 'Sürücünün telefonundan konum sinyali veya kaynak etiketini gösterir.' },
       ],
       facts: {
         ...copilotFacts,

@@ -35,15 +35,15 @@ const ROOT_CAUSE_THEME_LIBRARY = {
     chips: ['Tarih filtresi', 'Şirket/oda kapsamı', 'Aktif vardiya üretimi', 'Görünmeyen kayıt'],
   },
   COMPANY_SHIFT: {
-    reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler vardiya zamanı, araç-sürücü ataması veya operasyon hazırlığı eksikliğidir. Çünkü başlatma akışı bu ön koşullara bağlıdır. Önce seçili vardiyanın zamanını ve araç-sürücü eşleşmesini kontrol edelim.',
+    reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler vardiya zamanı, araç-sürücü ataması veya operasyon hazırlığı eksikliğidir. GPS hazırlığının tamamlanmaması da başlatmayı geciktirebilir. Önce seçili vardiyanın zamanını ve araç-sürücü eşleşmesini kontrol edelim.',
     chips: ['Vardiya zamanı', 'Araç-sürücü ataması', 'Operasyon hazırlığı', 'Başlatma akışı'],
   },
   COMPANY_SHIFT_REPEAT: {
-    reply: 'Bu tekrar ediyorsa kök neden vardiya saati, atama doğruluğu veya operasyon ön koşullarının eksik kalması olabilir. Çünkü aynı vardiya yeniden başlatılmadan önce bu sinyaller tamamlanır. Önce seçili vardiyanın zamanını ve son atama durumunu kontrol edelim.',
+    reply: 'Bu tekrar ediyorsa kök neden vardiya saati, atama doğruluğu veya operasyon ön koşullarının eksik kalması olabilir; atama, zaman veya GPS hazırlığının birinde kopukluk olmuş olabilir. Çünkü aynı vardiya yeniden başlatılmadan önce bu sinyaller tamamlanır. Önce seçili vardiyanın zamanını ve son atama durumunu kontrol edelim.',
     chips: ['Atama durumu', 'Vardiya saati', 'Operasyon ön koşulları', 'Son durum'],
   },
   COMPANY_OFFER: {
-    reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler talebin tedarikçiye ulaşmaması, tedarikçi dönüşünün beklenmesi veya filtre/status farkı olabilir. Çünkü teklif listesi talep durumu ve dönüş kayıtlarına bağlıdır. Önce talep durumunu ve teklif filtresini kontrol edelim.',
+    reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler talebin tedarikçiye ulaşmaması, tedarikçi dönüşünün beklenmesi veya filtre/status farkı olabilir. Çünkü teklif listesi talep durumu ve dönüş kayıtlarına bağlıdır. Önce talep durumunu ve teklif filtresini kontrol edelim. Filtre/status farkı varsa görünüm eksik kalabilir.',
     chips: ['Talep durumu', 'Teklif filtresi', 'Tedarikçi dönüşü', 'Seçili teklif'],
   },
   ROOM_SHIFT: {
@@ -59,7 +59,7 @@ const ROOT_CAUSE_THEME_LIBRARY = {
     chips: ['Filtreleri kontrol et', 'Araç aktif mi?', 'Oda/kapsam', 'Seçili şirket/oda'],
   },
   ROOM_VEHICLE_GPS: {
-    reply: 'Tekrar ediyorsa kök neden araç-sürücü eşleşmesi, sürücü cihazının konum izni veya GPS verisinin stale/offline kalması olabilir. Önce son GPS zamanı ve bağlı araç-sürücü bilgisini kontrol edelim.',
+    reply: 'Tekrar ediyorsa kök neden araç-sürücü eşleşmesi, sürücü cihazının konum izni veya GPS verisinin stale/offline kalması ya da bağlantının kesik kalması olabilir. Önce son GPS zamanını ve bağlı araç-sürücü bilgisini kontrol edelim.',
     chips: ['Son GPS zamanı', 'Araç-sürücü eşleşmesi', 'Konum izni', 'Stale/offline'],
   },
   DRIVER_ROUTE: {
@@ -75,7 +75,7 @@ const ROOT_CAUSE_THEME_LIBRARY = {
     chips: ['Atanmış vardiya', 'Son GPS zamanı', 'Araç bağlantısı', 'Servis saati'],
   },
   PERSONEL_LIVE_REPEAT: {
-    reply: 'Tekrar ediyorsa kök neden atanan vardiya, servis saatinin başlamaması veya araçtan sinyal gelmemesi olabilir. Önce son vardiya ve GPS akışını kontrol edelim.',
+    reply: 'Tekrar ediyorsa kök neden atanan vardiya, servis saatinin başlamaması veya araçtan sinyal gelmemesi olabilir. Önce son vardiya ve konum sinyali akışını kontrol edelim.',
     chips: ['Atanmış vardiya', 'Servis saati', 'GPS akışı', 'Araç bağlantısı'],
   },
   PARENT_LIVE: {
@@ -336,7 +336,7 @@ function detectRootCauseTheme(snapshot = {}) {
   }
 
   if (path.includes('/room/vehicles')) {
-    if (hasAny(text, ['gps', 'konum', 'sinyal', 'bağlanm', 'baglanm', 'stale', 'offline'])) return 'ROOM_VEHICLE_GPS';
+    if (hasAny(text, ['gps', 'konum', 'sinyal', 'bağlanm', 'baglanm', 'güncel değil', 'çevrim dışı', 'offline'])) return 'ROOM_VEHICLE_GPS';
     return 'ROOM_VEHICLE';
   }
 
@@ -381,7 +381,7 @@ function buildFallbackRootCauseReply(snapshot = {}) {
 function buildFallbackRootCauseChips(snapshot = {}) {
   const path = normalizeText(snapshot.screenPath);
   if (path.includes('/personel/live') || path.includes('/personel/my') || path.includes('/parent/live') || path.includes('/driver/route') || path.includes('/driver/today')) {
-    return ['Atanmış vardiya', 'Son GPS zamanı', 'Araç bağlantısı', 'Servis saati'];
+    return ['Atanmış vardiya', 'Son konum bilgisi zamanı', 'Araç bağlantısı', 'Servis saati'];
   }
   if (path.includes('/room/vehicles')) {
     return ['Filtreleri kontrol et', 'Araç aktif mi?', 'Oda/kapsam', 'Seçili şirket/oda'];
@@ -390,7 +390,7 @@ function buildFallbackRootCauseChips(snapshot = {}) {
     return ['Vardiya zamanı', 'Araç-sürücü ataması', 'Operasyon hazırlığı', 'Başlatma akışı'];
   }
   if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
-    return ['Aktif vardiya var mı?', 'Son GPS zamanı', 'Araç ataması', 'Şirket/oda kapsamı'];
+    return ['Aktif vardiya var mı?', 'Son konum bilgisi zamanı', 'Araç ataması', 'Şirket/oda kapsamı'];
   }
   if (path.includes('/company/planning-center')) {
     return ['Plan personel listesi', 'Aktif filtreler', 'Eksik konum verisi', 'Tarih bağlamı'];
@@ -430,7 +430,7 @@ export function buildRootCauseState(options = {}) {
     questionType,
     theme: theme || (hasRootCauseContext(snapshot) ? 'GENERIC_CONTEXT' : ''),
     hasRootCauseContext: hasRootCauseContext(snapshot),
-    reply,
+    reply: normalizeVisibleReplyFragment(reply),
     chips: uniqueStrings(chips).slice(0, 4),
     summary: normalizeVisibleReplyFragment(reply),
     needsContext: !hasRootCauseContext(snapshot),

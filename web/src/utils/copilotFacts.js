@@ -543,7 +543,7 @@ export function buildActionSimulationWording({
   } else if (normalizedScreenType === 'FEEDBACK') {
     text = 'Açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
   } else if (normalizedScreenType === 'MAP' || normalizedScreenType === 'OPERATION_PROOF') {
-    text = 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.';
+    text = 'Önerilen adım: araç, sürücü, rota/durak, araç konum sinyali ve sürücünün telefonundan konum sinyalini birlikte kontrol et.';
   } else if (normalizedScreenType === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
     text = 'Önerilen adım: rota etkisini önizle, kişi/durak/km/süre/kapasite farkını kontrol et ve değişiklik uygulama.';
   } else if (normalizedScreenType === 'AGREEMENTS') {

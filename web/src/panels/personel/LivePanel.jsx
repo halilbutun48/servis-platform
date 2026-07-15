@@ -374,7 +374,7 @@ export default function PersonelLivePanel() {
       ],
       badges: [
         { label: 'Araç GPS’i', value: gpsStatusText, help: 'Araç GPS sinyalinin görünürlüğünü gösterir.' },
-        { label: 'Sürücünün telefon GPS’i', value: gpsSourceLabel, help: 'Sürücünün telefon GPS’i veya konum kaynağı metnini gösterir.' },
+        { label: 'Sürücünün telefonundan konum sinyali', value: gpsSourceLabel, help: 'Sürücünün telefonundan konum sinyali veya konum kaynağı metnini gösterir.' },
       ],
       facts: {
         ...copilotFacts,

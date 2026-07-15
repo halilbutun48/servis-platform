@@ -287,6 +287,8 @@ async function main() {
     'docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md',
     'backend/scripts/ai03b_semantic_visible_audit_01_check.js',
     'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
+    'backend/scripts/sefer_abi_terminal_humanize_01_check.js',
+    'backend/scripts/cop_live_accept_01_check.js',
     'backend/scripts/copilot_context_memory_task_state_01_check.js',
     'backend/scripts/sefer_abi_reasoning_assistant_01_check.js',
     'backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js',
@@ -389,13 +391,26 @@ async function main() {
     'docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md',
     'docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md',
     'backend/scripts/product_flow_button_audit_01.mjs',
+    'backend/scripts/ux_live_panel_premium_smoke_01.mjs',
     'web/src/panels/parent/LivePanel.jsx',
     'backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs',
     'web/src/utils/uiDataCache.js',
     'tools/PRIMER_SNAPSHOT.md',
+    'backend/src/ai/chat/etaSanity.js',
+    'backend/scripts/driver_flow_final_01_acceptance_check.js',
+    'backend/scripts/eta_osrm_01_route_eta_service_check.js',
+    'backend/scripts/eta_osrm_02_api_eta_bridge_check.js',
+    'backend/scripts/live_tracking_final_01_acceptance_check.js',
+    'web/src/utils/etaSanity.js',
+    'backend/src/ai/chat/helpComposerSelectedRuntime.js',
+    'backend/src/ai/chat/replyShapes.js',
+    'web/src/panels/personel/LivePanel.jsx',
+    'web/src/utils/copilotFacts.js',
+    'backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js',
+    'docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md',
   ]);
 
-  allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log'], 'working tree stays within route review scope');
+  allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'], 'working tree stays within route review scope');
   mustNoDiff(['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'], 'backend route/service/schema and Prisma diff stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
 

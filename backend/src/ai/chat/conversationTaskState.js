@@ -73,6 +73,7 @@ function buildSelectedRecordText(snapshot) {
     snapshot?.taskState?.anchorLabel,
     snapshot?.selectedRecordStatus,
     snapshot?.analysis?.selectedRecordStatus,
+    snapshot?.screenContext?.selectedRecordStatus,
     snapshot?.screenContext?.selectedSummary,
     snapshot?.screenContext?.selectedLabel,
     snapshot?.screenContext?.selectedEntityLabel,

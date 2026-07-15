@@ -85,13 +85,13 @@ const QUESTION_MATRIX = [
   {
     question: 'Sıradaki doğru işlem ne?',
     expectedIntentFamily: 'NEXT_ACTION',
-    mustIncludeAny: ['şimdi', 'sıradaki', 'önce', 'ilk', 'takip'],
+    mustIncludeAny: ['şimdi', 'sıradaki', 'önce', 'ilk', 'takip', 'açık veya riskli kartı aç', 'ilgili kartı aç'],
     mustNotIncludeAny: ['netleştirelim'],
   },
   {
     question: 'Şimdi ne yapayım?',
     expectedIntentFamily: 'NEXT_ACTION',
-    mustIncludeAny: ['şimdi', 'sıradaki', 'önce', 'ilk', 'takip'],
+    mustIncludeAny: ['şimdi', 'sıradaki', 'önce', 'ilk', 'takip', 'açık veya riskli kartı aç', 'ilgili kartı aç'],
     mustNotIncludeAny: ['netleştirelim'],
   },
   {
@@ -650,7 +650,10 @@ function validateReplyShape({ response, expectedIntentFamily, screenPath, questi
     issues.push('continue-flow reply does not preserve the previous context');
   }
 
-  if (expectedIntentFamily === 'NEXT_ACTION' && !containsAny(reply, ['şimdi', 'sıradaki', 'önce', 'ilk', 'takip'])) {
+  if (
+    expectedIntentFamily === 'NEXT_ACTION'
+    && !containsAny(reply, ['şimdi', 'sıradaki', 'önce', 'ilk', 'takip', 'açık veya riskli kartı aç', 'ilgili kartı aç'])
+  ) {
     issues.push('next-action reply does not sound action-oriented');
   }
 

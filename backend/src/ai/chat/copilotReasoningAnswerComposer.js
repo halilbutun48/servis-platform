@@ -1,4 +1,4 @@
-import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
+import { firstNonEmpty, normalizeVisibleTerminology, uniqueStrings } from './replyShapes.js';
 
 export const COPILOT_REASONING_ANSWER_COMPOSER_VERSION = 'COPILOT-REASONING-ANSWER-COMPOSER-01';
 
@@ -256,7 +256,7 @@ function buildProgressLead(snapshot = {}, reply = '') {
       return '';
     }
     case 'DELEGATE_SAFE':
-      if (containsNormalized(replyText, 'güvenli alternatif') || containsNormalized(replyText, 'bunu senin yerine')) return '';
+      if (containsNormalized(replyText, 'güvenli adım') || containsNormalized(replyText, 'bunu senin yerine')) return '';
       return [
         'Şimdi: Bunu senin yerine uygulayamam; ama güvenli hazırlık yolunu göstereyim.',
         'Şimdi: İşlemi ben yapamam; ama hazırlık adımını netleştireyim.',
@@ -281,7 +281,7 @@ function buildDirectQuestionTail(snapshot = {}, reply = '') {
   }
 
   if (snapshot?.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE' && !containsNormalized(replyText, 'güvenli alternatif')) {
-    return `Güvenli alternatif: ${safeAlternative(snapshot)}`;
+    return `Önerilen güvenli adım: ${safeAlternative(snapshot)}`;
   }
 
   return '';
@@ -317,7 +317,7 @@ function shouldStripNowLead(snapshot = {}) {
 
 function finalizeReply(snapshot, reply, maxLength = 360) {
   const value = shouldStripNowLead(snapshot) ? stripNowLeadMarkers(reply) : reply;
-  return limitText(value, maxLength);
+  return limitText(normalizeVisibleTerminology(value), maxLength);
 }
 
 function buildFallbackReply(snapshot = {}) {

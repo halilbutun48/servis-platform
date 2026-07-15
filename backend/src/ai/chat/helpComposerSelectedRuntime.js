@@ -24,6 +24,14 @@ export function createSelectedRuntimeHelpers(deps = {}) {
     })).filter((row) => row.label);
   }
 
+  function normalizeSelectedDisplayLabel(label) {
+    return firstNonEmpty(label, '')
+      .replace(/\bStale\s*\/\s*Offline\b/gi, 'GPS güncel değil / çevrim dışı')
+      .replace(/\bStale\b/gi, 'GPS güncel değil')
+      .replace(/\bOffline\b/gi, 'çevrim dışı')
+      .trim();
+  }
+
   function guideFieldRows(screenDefinition) {
     return (Array.isArray(screenDefinition?.fieldGuides) ? screenDefinition.fieldGuides : []).map((row) => ({
       label: firstNonEmpty(row?.label, row?.key, ''),
@@ -112,9 +120,12 @@ export function createSelectedRuntimeHelpers(deps = {}) {
     const label = firstNonEmpty(screenContext?.selectedLabel, 'Seçili kayıt');
     if (!label || (!fields.length && !badges.length)) return '';
     const fieldText = fields.slice(0, 6).map((row) => (
-      /^Eksik bilgi$/i.test(row.label) && /^0$/.test(String(row.value || '').trim())
-        ? `${row.label} ${row.value} görünüyor`
-        : `${row.label}: ${row.value}`
+      (() => {
+        const displayLabel = normalizeSelectedDisplayLabel(row.label);
+        return /^Eksik bilgi$/i.test(displayLabel) && /^0$/.test(String(row.value || '').trim())
+          ? `${displayLabel} ${row.value} görünüyor`
+          : `${displayLabel}: ${row.value}`;
+      })()
     )).join(' • ');
     const badgeText = badges.slice(0, 4).map((row) => `${row.label}: ${row.value}`).join(' • ');
     const missing = fields.filter((row) => isBlankishValue(row.value)).map((row) => row.label).slice(0, 4);
@@ -150,7 +161,7 @@ export function createSelectedRuntimeHelpers(deps = {}) {
       const counterText = Object.entries(facts.counters).filter(([, value]) => value != null && value !== '' && value !== false).slice(0, 5).map(([key, value]) => `${key}: ${value}`).join(' • ');
       if (counterText) parts.push(`Panel verisi: ${counterText}`);
     }
-    parts.push(`${row.label}: ${firstNonEmpty(row.value, row.meaning, '-')}.`);
+    parts.push(`${normalizeSelectedDisplayLabel(row.label)}: ${firstNonEmpty(row.value, row.meaning, '-')}.`);
     const meaning = firstNonEmpty(row.help, row.meaning, 'Bu alan seçili kaydın aynı başlıktaki gerçek tablo bilgisidir.');
     if (meaning) parts.push(meaning);
     if (row.howToRead) parts.push(`Nasıl okunur: ${row.howToRead}`);
@@ -172,7 +183,7 @@ export function createSelectedRuntimeHelpers(deps = {}) {
       const counterText = Object.entries(facts.counters).filter(([, value]) => value != null && value !== '' && value !== false).slice(0, 5).map(([key, value]) => `${key}: ${value}`).join(' • ');
       if (counterText) parts.push(`Panel verisi: ${counterText}`);
     }
-    parts.push(`${row.label}: ${firstNonEmpty(row.value, row.meaning, '-')}.`);
+    parts.push(`${normalizeSelectedDisplayLabel(row.label)}: ${firstNonEmpty(row.value, row.meaning, '-')}.`);
     const meaning = firstNonEmpty(row.help, row.meaning, 'Bu rozet seçili kaydın mevcut durumunu veya aşamasını kısa gösterir.');
     if (meaning) parts.push(meaning);
     if (row.howToRead) parts.push(`Nasıl okunur: ${row.howToRead}`);

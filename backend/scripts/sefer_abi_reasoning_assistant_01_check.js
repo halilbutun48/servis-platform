@@ -631,7 +631,7 @@ async function main() {
   });
   assert(refusal.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE', 'safe refusal mode');
   must(refusal.reply, 'sistem durumu', 'safe refusal lead');
-  must(refusal.reply, 'Güvenli alternatif', 'safe refusal alternative');
+  must(refusal.reply, 'Önerilen güvenli adım', 'safe refusal alternative');
 
   const integrationUser = { role: 'COMPANY', companyKind: 'SCHOOL' };
   const integrationScreenContext = {
@@ -968,7 +968,7 @@ async function main() {
     {
       label: 'Servis kanıtı',
       message: 'Servis kanıtı ne işe yarar?',
-      needle: 'Sürücünün telefon GPS’i ve ilgili sinyallerle hizmetin görünürlüğünü doğrulayan kart',
+      needle: 'Sürücünün telefonundan konum sinyali ve ilgili sinyallerle hizmetin görünürlüğünü doğrulayan kart',
     },
   ];
   for (const caseItem of fieldButtonTermCases) {

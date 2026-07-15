@@ -115,16 +115,16 @@ export function buildRoomShiftSemanticOverrideReply({
 
   if (looksLikeRoomShiftClarifyingRequest(text) || (String(questionType || '') === 'STATUS_HELP' && looksLikeRoomShiftClarifyingRequest(text))) {
     if (hasSelection && hasVehicleDriver) {
-      return 'Seçili kayıt onaylı ve araç/sürücü atanmış görünüyor. Bu kayıt için özellikle canlı başlatma zamanı, aktif durum, GPS/kanıt veya rota/durak bilgisinden hangisini kontrol edeyim?';
+      return 'Seçili kayıt onaylı ve araç/sürücü atanmış görünüyor. Bu kayıt için özellikle canlı başlatma zamanı, aktif durum, konum sinyali/kanıt veya rota/durak bilgisinden hangisini kontrol edeyim?';
     }
     if (hasSelection) {
-      return 'Seçili kayıt görünüyor. Bu kayıt için özellikle canlı başlatma zamanı, aktif durum, GPS/kanıt veya rota/durak bilgisinden hangisini kontrol edeyim?';
+      return 'Seçili kayıt görünüyor. Bu kayıt için özellikle canlı başlatma zamanı, aktif durum, konum sinyali/kanıt veya rota/durak bilgisinden hangisini kontrol edeyim?';
     }
-    return 'Hangi vardiya için bakayım? Bu kayıtla ilgili canlı başlatma mı, araç/sürücü ataması mı, GPS/kanıt durumu mu, yoksa teklif/sözleşme bağlantısı mı netleşsin?';
+    return 'Hangi vardiya için bakayım? Bu kayıtla ilgili canlı başlatma mı, araç/sürücü ataması mı, konum sinyali/kanıt durumu mu, yoksa teklif/sözleşme bağlantısı mı netleşsin?';
   }
 
   if (looksLikeRoomShiftFocusQuestion(text) || String(questionType || '') === 'SCREEN_FOCUS' || String(questionType || '') === 'SCREEN_PURPOSE') {
-    return 'Vardiyalar ekranında seçili vardiya, durum, araç/sürücü ataması, durak/rota hazırlığı, canlı başlatma zamanı, GPS ve operasyon kanıtı okunur; gerekirse teklif veya sözleşme bağlantısı da kontrol edilir.';
+    return 'Vardiyalar ekranında seçili vardiya, durum, araç/sürücü ataması, durak/rota hazırlığı, canlı başlatma zamanı, konum sinyali ve operasyon kanıtı okunur; gerekirse teklif veya sözleşme bağlantısı da kontrol edilir.';
   }
 
   if (String(questionType || '') === 'RISK_LIST') {
@@ -147,25 +147,25 @@ export function buildRoomShiftSemanticOverrideReply({
   ) {
     if (looksLikeRoomShiftLiveStartInstruction(text)) {
       if (hasSelection && hasVehicleDriver) {
-        return 'Bu vardiya için önce canlı başlatma zamanı ve aktif durumu kontrol et. Aktif değilse başlatma koşullarını netleştir. Aktifse GPS canlı mı, son konum ne kadar eski, operasyon kanıtı var mı ve rota/durak akışı tamam mı sırayla kontrol et.';
+        return 'Bu vardiya için önce canlı başlatma zamanı ve aktif durumu kontrol et. Aktif değilse başlatma koşullarını netleştir. Aktifse konum sinyali canlı mı, son konum ne kadar eski, operasyon kanıtı var mı ve rota/durak akışı tamam mı sırayla kontrol et.';
       }
       if (hasSelection) {
-        return 'Seçili vardiyada önce canlı başlatma zamanı ve aktif durumu kontrol et. Sonra GPS canlı mı, son konum ne kadar eski, operasyon kanıtı var mı ve rota/durak akışı tamam mı sırayla kontrol et.';
+        return 'Seçili vardiyada önce canlı başlatma zamanı ve aktif durumu kontrol et. Sonra konum sinyali canlı mı, son konum ne kadar eski, operasyon kanıtı var mı ve rota/durak akışı tamam mı sırayla kontrol et.';
       }
       return 'Önce doğru vardiya kaydını seç. Sonra durum, araç/sürücü, durak/rota ve canlı başlatma sinyalini kontrol et.';
     }
     if (hasSelection && hasVehicleDriver) {
-      return 'Bu kayıt onaylı ve araç/sürücü atanmış görünüyor. Şimdi canlı başlatma zamanı, aktif durum, durak/rota ve GPS/operasyon kanıtını kontrol et. Eksik varsa ilgili aksiyona geç.';
+      return 'Bu kayıt onaylı ve araç/sürücü atanmış görünüyor. Şimdi canlı başlatma zamanı, aktif durum, durak/rota ve konum sinyali/operasyon kanıtını kontrol et. Eksik varsa ilgili aksiyona geç.';
     }
     if (hasSelection) {
-      return `${selectionLead || 'Seçili kayıt görünüyor.'} Şimdi canlı başlatma zamanı, aktif durum, durak/rota ve GPS/operasyon kanıtını kontrol et. Eksik varsa ilgili aksiyona geç.`;
+      return `${selectionLead || 'Seçili kayıt görünüyor.'} Şimdi canlı başlatma zamanı, aktif durum, durak/rota ve konum sinyali/operasyon kanıtını kontrol et. Eksik varsa ilgili aksiyona geç.`;
     }
     return 'Önce doğru vardiya kaydını seç. Sonra durum, araç/sürücü, durak/rota ve canlı başlatma sinyalini kontrol et.';
   }
 
   if (looksLikeDetailContinuationRequestImpl(text) || /^(devam\s+et|devam)$/i.test(text)) {
     if (hasSelection) {
-      return 'Aynı vardiya akışından devam edelim. Önce durum ve araç/sürücü atamasını, sonra durak/rota ile GPS ve operasyon kanıtını kontrol et.';
+      return 'Aynı vardiya akışından devam edelim. Önce durum ve araç/sürücü atamasını, sonra durak/rota ile konum sinyali ve operasyon kanıtını kontrol et.';
     }
     return 'Aynı vardiya akışından devam edelim. Önce doğru vardiya kaydını seç, sonra durum ve araç/sürücü atamasını kontrol et.';
   }

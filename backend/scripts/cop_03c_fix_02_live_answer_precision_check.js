@@ -135,15 +135,15 @@ must(helpComposer, "makeGuideAction('Sıralı kontrol rehberini aç'", 'help com
 must(helpComposer, 'Başlatma zamanı uygun mu?', 'help composer keeps vardiya follow-up wording');
 must(helpComposer, 'Hakediş önizleme rehberini aç', 'help composer keeps workflow-specific payment guide label');
 must(helpComposer, 'Sözleşme → vardiya rehberini aç', 'help composer keeps workflow-specific contract guide label');
-must(helpComposer, 'GPS teşhis rehberini aç', 'help composer keeps workflow-specific GPS guide label');
-must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps GPS workflow chips without self-question');
-must(helpComposer, "if (['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''))) return ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps GPS workflow question chips');
+must(helpComposer, 'Konum kaynağı rehberini aç', 'help composer keeps workflow-specific GPS guide label');
+must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps GPS workflow chips without self-question');
+must(helpComposer, "if (['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''))) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps GPS workflow question chips');
 mustNot(helpComposer, "if (path.includes('/room/map')) return ['Bu araç neden haritada görünmüyor?',", 'help composer removes GPS self-question chip');
 must(helpComposer, 'Canlı takip ekranını aç', 'help composer keeps live tracking chip');
 must(helpComposer, 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.', 'help composer keeps payment mismatch guard');
   must(helpComposer, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.', 'help composer keeps contract-shift mismatch guard');
 must(helpComposer, "makeGuideAction('Sıralı kontrol rehberini aç', { jobType: 'ASSIGNMENT_READINESS_GUIDE'", 'help composer keeps generic readiness guide label in shift fallback');
-must(helpComposer, 'GPS/operasyon kanıtını kontrol et', 'help composer uses vardiya follow-up in shift fallback');
+must(helpComposer, 'Konum sinyali/operasyon kanıtını kontrol et', 'help composer uses vardiya follow-up in shift fallback');
 mustNot(helpComposer, 'Bu ekran, teklifin temel bilgilerini kontrol et', 'help composer no longer leaks offer-purpose intro');
 mustNot(helpComposer, 'Atamaya hazır mı rehberini aç', 'help composer removes generic readiness guide wording');
 
@@ -151,13 +151,13 @@ must(intentRouter, "pathHas(screenPath, ['/room/shifts'])", 'intent router adds 
 must(intentRouter, 'Başlatma zamanı uygun mu?', 'intent router keeps shift workflow chips');
 must(intentRouter, 'Araç/sürücü bağlantısını kontrol et', 'intent router keeps shift workflow chip');
 must(intentRouter, 'Rota/durak hazır mı?', 'intent router keeps shift workflow chip');
-must(intentRouter, 'GPS/operasyon kanıtını kontrol et', 'intent router keeps shift workflow chip');
+must(intentRouter, 'Konum sinyali/operasyon kanıtını kontrol et', 'intent router keeps shift workflow chip');
 must(intentRouter, 'Başlatma zamanı uygun mu?', 'intent router keeps shift workflow chip');
-must(intentRouter, "if (pathHas(screenPath, ['/room/map'])) {\n    return ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];\n  }", 'intent router keeps map workflow chips');
-must(intentRouter, "workflowQuestion ? ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'] : ['Bu ekranı detaylı anlat', 'Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']", 'intent router keeps map workflow chips');
+must(intentRouter, "if (pathHas(screenPath, ['/room/map'])) {\n    return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];\n  }", 'intent router keeps map workflow chips');
+must(intentRouter, "workflowQuestion ? ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'] : ['Bu ekranı detaylı anlat', 'Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']", 'intent router keeps map workflow chips');
 mustNot(intentRouter, "workflowQuestion ? ['Bu araç neden haritada görünmüyor?',", 'intent router removes GPS self-question chip');
 must(intentRouter, 'Riskli cihazı göster', 'intent router keeps operation-health chips');
-must(intentRouter, 'GPS güncel değil / çevrim dışı satırını aç', 'intent router keeps operation-health chips');
+must(intentRouter, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'intent router keeps operation-health chips');
 must(intentRouter, 'Açık sorunları sırala', 'intent router keeps operation-health chips');
 must(intentRouter, 'Aktif sürücüleri kontrol et', 'intent router keeps operation-health chips');
 must(intentRouter, 'Bu bilgi neden görünmüyor?', 'intent router keeps KVKK workflow chips');
@@ -186,7 +186,7 @@ must(facts, "label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon ka
 must(facts, "readyForLiveStart ? ['live-start', 'gps-old', 'missing-vehicle-driver', 'operation-proof']", 'facts boosts live-start priority on ready shifts');
 must(facts, 'APPROVED ile canlı başlatma aynı şey değildir', 'facts keeps live-start compare hint');
 must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'facts keeps shift action simulation wording');
-must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'facts keeps GPS action simulation wording');
+must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç konum sinyali ve sürücünün telefonundan konum sinyalini birlikte kontrol et.', 'facts keeps GPS action simulation wording');
 mustNot(facts, 'write', 'facts avoids write wording');
 mustNot(facts, 'execute', 'facts avoids execute wording');
 mustNot(facts, 'settlement execute', 'facts avoids settlement execute wording');
@@ -197,5 +197,3 @@ mustNot(facts, 'hash', 'facts avoids hash wording');
 mustNot(facts, 'debug', 'facts avoids debug wording');
 
 console.log('=== COP-03C-FIX-02 LIVE ANSWER PRECISION CHECK PASS ===');
-
-

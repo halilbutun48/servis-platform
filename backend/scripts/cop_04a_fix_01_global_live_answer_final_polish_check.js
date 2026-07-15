@@ -120,8 +120,8 @@ must(policy, 'Aynı kayıt için devam et', 'workflow chip policy keeps generic 
 must(policy, 'Ekran rehberini aç', 'workflow chip policy keeps generic guide block');
 must(policy, 'Vardiya engelini sor', 'workflow chip policy keeps blocked-shift block');
 
-must(helpComposer, 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'help composer keeps operation-health direct next step');
-  must(helpComposer, 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.', 'help composer keeps shift direct next step');
+must(helpComposer, 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'help composer keeps operation-health direct next step');
+  must(helpComposer, 'Başlatma zamanı ve aktif durum uygunsa konum sinyali/operasyon kanıtını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol konum sinyali/operasyon kanıtını kontrol et.', 'help composer keeps shift direct next step');
   must(helpComposer, 'Seçili kayıt bir vardiya; sözleşmeden üretim bilgisini kesin söylemek için ilgili sözleşme kaydı veya sözleşme üretim sinyali gerekir.', 'help composer keeps Turkish contract mismatch lead');
   must(helpComposer, 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.', 'help composer keeps contract next action');
   must(helpComposer, 'normalizeVisibleSuggestionFragment(actionSimulation)', 'help composer keeps action simulation normalizer');
@@ -143,7 +143,7 @@ must(facts, 'Bu ekranda bu sözleşmeden bugün vardiya üretildiğini kesinleş
 must(facts, 'Bu sözleşme için bugün vardiya üretim sinyali görünüyor.', 'facts keeps contract positive signal wording');
 must(facts, 'Eksik bilgi 0 görünüyor; ödeme hesabı, komisyon durumu ve hizmet/onay sinyalini kontrol et.', 'facts keeps payment zero-missing wording');
 must(facts, 'Sürücünün telefon GPS’i', 'facts keeps driver gps language');
-must(facts, 'Araç GPS’i', 'facts keeps vehicle gps language');
+must(facts, 'araç görünürlüğü', 'facts keeps vehicle visibility language');
 mustNotRaw(facts, 'OperationProof', 'facts avoids technical proof wording');
 mustNot(facts, 'Öneri: Önerilen adım:', 'facts avoids duplicated suggestion prefix');
 

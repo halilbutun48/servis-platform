@@ -146,7 +146,7 @@ must(facts, 'Ekrandaki sinyal', 'copilot facts keeps screen signal wording');
 must(facts, 'Hakediş eksik bilgi', 'copilot facts keeps payment readiness scoring');
 must(facts, 'Sözleşme/vardiya kontrolü', 'copilot facts keeps contract-to-shift scoring');
 must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'copilot facts keeps shift action simulation wording');
-must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'copilot facts keeps gps action simulation wording');
+must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç konum sinyali ve sürücünün telefonundan konum sinyalini birlikte kontrol et.', 'copilot facts keeps gps action simulation wording');
 
 must(selectedRuntime, 'Seçili kayıt durumu', 'selected runtime exposes selected status row');
 must(selectedRuntime, 'Ekrandaki sinyal', 'selected runtime exposes live signal row');
@@ -180,7 +180,7 @@ mustNot(helpComposer, 'settlement execute', 'help composer avoids settlement exe
 mustNot(helpComposer, 'veriyi güncelledim', 'help composer avoids write claim wording');
 mustNot(helpComposer, 'ben bunu düzelttim', 'help composer avoids write claim wording');
 
-must(intentRouter, "workflowQuestion ? ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']", 'intent router covers room map diagnostic wording');
+must(intentRouter, "workflowQuestion ? ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']", 'intent router covers room map diagnostic wording');
 mustNot(intentRouter, "workflowQuestion ? ['Bu araç neden haritada görünmüyor?',", 'intent router removes room map self-question wording');
 must(intentRouter, 'Ne yapayım?', 'intent router covers driver next-step wording');
 must(intentRouter, 'Servis durumunu göster', 'intent router covers personel live wording');
@@ -189,7 +189,7 @@ must(intentRouter, 'İlgili sözleşmeyi aç', 'intent router covers contract-to
 must(intentRouter, 'Bu kayıt kimde?', 'intent router covers ownership wording');
 must(intentRouter, 'Bildirim kaynağı', 'intent router covers notification source wording');
 must(intentRouter, 'Yetki sınırı', 'intent router covers boundary wording');
-must(intentRouter, 'Sürücünün telefon GPS’i devrede mi?', 'intent router covers driver phone GPS wording');
+must(intentRouter, 'Sürücünün telefonundan konum sinyali devrede mi?', 'intent router covers driver phone signal wording');
 
 must(screenCatalog, 'Ne yapayım?', 'screen catalog covers driver next-step wording');
 must(screenCatalog, 'Servisim nerede?', 'screen catalog covers personel live wording');

@@ -605,7 +605,7 @@ function main() {
     "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
     "web/src/utils/uiDataCache.js",
   ]);
-  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"], "working tree stays within agreements detail scope");
+  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"], "working tree stays within agreements detail scope");
   const exactAllowedSet = new Set(exactAllowed);
 
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");

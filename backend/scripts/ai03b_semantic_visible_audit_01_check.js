@@ -663,7 +663,7 @@ function main() {
       expectedReasoningFamily: 'DEFAULT',
       replyNeedles: ['Seçili kayıt', 'Vardiyalar için özet', 'Takip edeceğin vardiyayı seç'],
       payloadQuestionType: 'DETAIL_FLOW',
-      payloadChips: ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?', 'Bu rolde ne yapabilirim?'],
+      payloadChips: ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?', 'Bu rolde ne yapabilirim?'],
     },
     {
       label: 'company opener negative',
@@ -684,9 +684,9 @@ function main() {
       message: 'Bu ekran ne için?',
       expectedQuestionType: 'SCREEN_PURPOSE',
       expectedReasoningFamily: 'SCREEN_START',
-      replyNeedles: ['canlı araç ve sürücü takibi', 'Son GPS ve araç bağlantısını kontrol et'],
+      replyNeedles: ['canlı araç ve sürücü takibi', 'Son konum bilgisini ve araç bağlantısını kontrol et'],
       payloadQuestionType: 'SCREEN_PURPOSE',
-      payloadChips: ['Bu ekranı detaylı anlat', 'Son GPS ne zaman geldi?', 'Sürücünün telefon GPS’i devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç', 'Bu rolde ne yapabilirim?'],
+      payloadChips: ['Bu ekranı detaylı anlat', 'Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç', 'Bu rolde ne yapabilirim?'],
     },
     {
       label: 'room shifts risk list',
@@ -708,7 +708,7 @@ function main() {
       message: 'Bu ekran ne için?',
       expectedQuestionType: 'SCREEN_PURPOSE',
       expectedReasoningFamily: 'SCREEN_START',
-      replyNeedles: ['personel servis durumu', 'Servis durumunu aç', 'Son GPS ve servis durumunu kontrol et'],
+      replyNeedles: ['personel servis durumunu', 'Servis durumunu aç', 'Son konum bilgisi ve servis durumunu kontrol et'],
       payloadQuestionType: 'SCREEN_PURPOSE',
       payloadChips: ['Bu ekranı detaylı anlat', 'Servis durumunu göster', 'Bildirim kaynağı', 'Eksik veri', 'Bu rolde ne yapabilirim?'],
     },
@@ -721,7 +721,7 @@ function main() {
       expectedReasoningFamily: 'DEFAULT',
       replyNeedles: ['Servis durumunu aç', 'Sade cevap', 'Mavi aktif sıradaki parçayı'],
       payloadQuestionType: 'NEXT_STEP',
-      payloadChips: ['Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', 'Sürücünün telefon GPS’i devrede mi?'],
+      payloadChips: ['Araç nerede?', 'Son konum bilgisi ne zaman geldi?', 'Servis durumu ne?', 'Sürücünün telefonundan konum sinyali devrede mi?'],
     },
     {
       label: 'personel risk list',
@@ -745,7 +745,7 @@ function main() {
       expectedReasoningFamily: 'SCREEN_START',
       replyNeedles: ['sistem ve operasyon bandını izlemek', 'Canlı durum bandını aç', 'Risk ve açık sorunları kontrol et'],
       payloadQuestionType: 'SCREEN_PURPOSE',
-      payloadChips: ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et', 'Bu rolde ne yapabilirim?'],
+      payloadChips: ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Bu rolde ne yapabilirim?'],
     },
     {
       label: 'super admin focus',
@@ -754,7 +754,7 @@ function main() {
       message: 'Bu ekranda neye bakmalıyım?',
       expectedQuestionType: 'SCREEN_FOCUS',
       expectedReasoningFamily: 'SCREEN_START',
-      replyNeedles: ['canlı durum ve GPS güven skorunu', 'ilk kontrolünü netleştirelim', 'Canlı durum ile GPS güven skoru aynı şey değildir'],
+      replyNeedles: ['canlı durum ve konum sinyali güven skorunu', 'ilk kontrolünü netleştirelim', 'Canlı durum ile konum sinyali güven skoru aynı şey değildir'],
       payloadQuestionType: 'SCREEN_FOCUS',
       payloadChips: ['Konum kontrolü', 'Tarih / saat kontrolü', 'Personel ve duraklar', 'Rota önizlemesi'],
       expectedNormalizedIntent: null,
@@ -767,7 +767,7 @@ function main() {
       message: 'Bu ekran ne için?',
       expectedQuestionType: 'SCREEN_PURPOSE',
       expectedReasoningFamily: 'SCREEN_START',
-      replyNeedles: ['sürücü canlı harita', 'Haritayı aç', 'Son GPS sinyalini kontrol et'],
+      replyNeedles: ['sürücü canlı harita', 'Haritayı aç', 'Son konum bilgisini kontrol et'],
       payloadQuestionType: 'SCREEN_PURPOSE',
       payloadChips: ['Bu ekranı detaylı anlat', 'Sonraki adımı göster', 'Bu ne demek?', 'Bu rolde ne yapabilirim?'],
     },
@@ -794,7 +794,7 @@ function main() {
       ],
     },
     expectedVisibleChips: ['Açık talep var mı?', 'Kim onaylayacak?', 'Eksik veri', 'Yetki sınırı'],
-    expectedReasonChips: ['Devam et', 'Sıradaki adımı göster', 'Neden takıldı?', 'Aynı kayıtta mı devam edelim?', 'Bugünkü plan'],
+    expectedReasonChips: ['Devam et', 'Sıradaki adımı göster', 'Neden takıldı?', 'Seçili kayıt özetini göster', 'Aynı kayıtta mı devam edelim?'],
   });
 
   const clarifyingAssistant = assertClarifyingCase({
@@ -813,7 +813,7 @@ function main() {
       fixture: planCenterFixture,
       message: 'Eksik konumu düzelt',
       expectedQuestionType: 'LOCATION_HELP',
-      replyNeedles: ['Seçili kayıt', 'son GPS zamanını', 'araç bağlantısını', 'Sürücünün telefon GPS’i'],
+      replyNeedles: ['Seçili kayıt', 'son konum bilgisi zamanını', 'araç bağlantısını', 'Sürücünün telefonundan konum sinyali'],
     },
     {
       label: 'company chip roundtrip excel preview',
@@ -942,7 +942,7 @@ function main() {
       fixture: superAdminFixture,
       message: 'Bu ekranda neye bakmalıyım?',
       expectedQuestionType: 'SCREEN_FOCUS',
-      replyNeedles: ['canlı durum', 'GPS'],
+      replyNeedles: ['canlı durum', 'konum sinyali'],
     },
     {
       label: 'driver chip roundtrip purpose',

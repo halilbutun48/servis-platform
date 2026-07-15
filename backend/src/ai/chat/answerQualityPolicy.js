@@ -81,16 +81,16 @@ function rootCauseChipsByPath(screenPath = '') {
     return ['Eksik personel konumu', 'Vardiya saatini kontrol et', 'Durak sayısını göster', 'Rota önizlemesi'];
   }
   if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
-    return ['Aktif vardiya var mı?', 'Son GPS zamanı', 'Araç ataması', 'Şirket/oda kapsamı'];
+    return ['Aktif vardiya var mı?', 'Son konum bilgisi zamanı', 'Araç ataması', 'Şirket/oda kapsamı'];
   }
   if (path.includes('/company/shifts') || path.includes('/organization/shifts')) {
     return ['Vardiya zamanı', 'Araç-sürücü ataması', 'Operasyon hazırlığı', 'Başlatma akışı'];
   }
   if (path.includes('/room/shifts')) {
-    return ['Araç-sürücü ataması', 'Başlatma zamanı', 'GPS hazırlığı', 'Canlı başlangıç'];
+    return ['Araç-sürücü ataması', 'Başlatma zamanı', 'Konum sinyali hazırlığı', 'Canlı başlangıç'];
   }
   if (path.includes('/room/map') || path.includes('/room/vehicles') || path.includes('/driver/route') || path.includes('/driver/today') || path.includes('/driver/map') || path.includes('/personel/live') || path.includes('/personel/my') || path.includes('/parent/live')) {
-    return ['Atanmış vardiya', 'Son GPS zamanı', 'Araç bağlantısı', 'Servis saati'];
+    return ['Atanmış vardiya', 'Son konum bilgisi zamanı', 'Araç bağlantısı', 'Servis saati'];
   }
   if (path.includes('/room/agreements') || path.includes('/company/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements') || path.includes('/commercial-flow') || path.includes('/commercial-core')) {
     return ['Talep durumu', 'Teklif filtresi', 'Tedarikçi dönüşü', 'Seçili teklif'];
@@ -157,25 +157,25 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
       return ['Rota etkisini önizle', 'Kişi farkını göster', 'Km/süre farkını açıkla', 'Kapasite etkisini göster'];
     }
-    return ['Riskli cihazı göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
+    return ['Riskli cihazı göster', 'konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (path.includes('/driver/today')) {
     if (topic === 'BOARDING_CHANGE_APPLICATION') {
       return ['Sürücü rota ekranında görünür mü?', 'Rota güncellemesi bekliyor mu?', 'Bu sadece günlük atama mı?', 'Sürücüye gönderildi mi?'];
     }
-    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (path.includes('/driver/route')) {
     if (topic === 'BOARDING_CHANGE_APPLICATION') {
       return ['Sürücü rota ekranında görünür mü?', 'Rota güncellemesi bekliyor mu?', 'Bu sadece günlük atama mı?', 'Sürücüye gönderildi mi?'];
     }
-    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (path.includes('/driver/map')) {
     if (topic === 'BOARDING_CHANGE_APPLICATION') {
       return ['Sürücü rota ekranında görünür mü?', 'Rota güncellemesi bekliyor mu?', 'Bu sadece günlük atama mı?', 'Sürücüye gönderildi mi?'];
     }
-    return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+    return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (path.includes('/company/agreements') || path.includes('/room/agreements') || path.includes('/school/agreements') || path.includes('/organization/agreements')) {
     if (topic === 'DYNAMIC_SAVINGS_PREVIEW') {
@@ -202,23 +202,22 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     if (topic === 'BOARDING_CHANGE_REQUEST_ENTRY') {
       return requestEntryChips;
     }
-    return ['Servis nerede?', 'Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?'];
+    return ['Servis nerede?', 'Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?'];
   }
   if (path.includes('/personel/live')) {
     if (topic === 'BOARDING_CHANGE_REQUEST_ENTRY') {
       return requestEntryChips;
     }
-    return ['Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"];
+    return ['Araç nerede?', 'Son konum bilgisi ne zaman geldi?', 'Servis durumu ne?', 'Sürücünün telefonundan konum sinyali devrede mi?'];
   }
   if (path.includes('/parent/live')) {
     if (topic === 'BOARDING_CHANGE_REQUEST_ENTRY') {
       return ['Çocuğum bugün binmeyecek', 'Başka duraktan binecek', 'Talebim kimde bekliyor?', 'Konum paylaşılmadıysa ne yapmalıyım?'];
     }
-    // ETA nedir?
-    return ['Son GPS ne zaman geldi?', 'Tahmini varış süresi nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?'];
+    return ['Son konum bilgisi ne zaman geldi?', 'Tahmini varış süresi nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefonundan konum sinyali devrede mi?'];
   }
   if (path.includes('/room/map') || path.includes('/room/live') || path.includes('/company/map') || path.includes('/company/live') || path.includes('/organization/map') || path.includes('/organization/live') || path.includes('/school/map') || path.includes('/school/live') || path.includes('/driver/map') || path.includes('/driver/live')) {
-    return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+    return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (path.includes('/room/shifts') || path.includes('/company/shifts') || path.includes('/organization/shifts')) {
     if (topic === 'BOARDING_CHANGE_APPLICATION') {
@@ -251,7 +250,7 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     if (topic === 'WHO_CAN_DO' || topic === 'ROLE_BOUNDARY') {
       return ['Bu işlemi kim yapabilir?', 'Yetki sınırını açıkla', 'Bu rolde ne görünür?', 'Yetkili ekrana yönlendir'];
     }
-    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
   }
   if (path.includes('/company/operations') || path.includes('/school/operations') || path.includes('/organization/operations')) {
     if (topic === 'BOARDING_CHANGE_APPLICATION') {
@@ -306,10 +305,10 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
       return seferScoreChips;
     case 'SHIFT_BLOCKED':
     case 'WHY_BLOCKED':
-      return ['Başlatma zamanı uygun mu?', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    return ['Başlatma zamanı uygun mu?', 'Sonraki durak nerede?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
     case 'VEHICLE_NOT_VISIBLE':
     case 'DRIVER_PHONE_GPS':
-      return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+      return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
     case 'PAYMENT_READINESS':
     case 'PAYMENT_MISSING':
     case 'PAYMENT_PREVIEW':
@@ -388,7 +387,7 @@ export function workflowActionSpec({ activeTopic = '', questionType = '', guided
         guideLabel: 'Canlı başlatma rehberini aç',
         jobType: 'ASSIGNMENT_READINESS_GUIDE',
         guideLevel: 'STEP_BY_STEP',
-        reason: 'Canlı başlatma, aktif durum, GPS ve operasyon kanıtı akışını sıralar.',
+        reason: 'Canlı başlatma, aktif durum, konum sinyali ve operasyon kanıtı akışını sıralar.',
         askLabel: 'Başlatma durumunu sor',
         askQuery: 'bu vardiya neden başlayamıyor',
         askReason: 'Başlayamama nedenini tekrar sorar.',
@@ -399,7 +398,7 @@ export function workflowActionSpec({ activeTopic = '', questionType = '', guided
         guideLabel: 'GPS teşhis rehberini aç',
         jobType: 'GPS_SIGNAL_DIAGNOSIS_GUIDE',
         guideLevel: 'WHY',
-        reason: 'Araç GPS’i, görev bağlantısı ve sürücünün telefon GPS’i akışını açar.',
+        reason: 'Araç konum sinyali, görev bağlantısı ve sürücünün telefonundan gelen konum sinyali akışını açar.',
         askLabel: 'GPS görünürlüğünü sor',
         askQuery: 'bu araç neden haritada görünmüyor',
         askReason: 'Konum görünürlüğü teşhisini tekrar sorar.',
@@ -431,7 +430,7 @@ export function workflowActionSpec({ activeTopic = '', questionType = '', guided
         guideLabel: 'SeferPuanı önizleme rehberini aç',
         jobType: 'SCREEN_MENU_GUIDE',
         guideLevel: 'WHY',
-        reason: 'Zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini sadece önizleme olarak okur.',
+        reason: 'Zamanında hizmet, konum sinyali kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyallerini sadece önizleme olarak okur.',
         askLabel: 'SeferPuanını sor',
         askQuery: 'bu tedarikçinin sefer puanı kaç',
         askReason: 'Sadece önizleme kalite puanı görünümünü tekrar sorar.',

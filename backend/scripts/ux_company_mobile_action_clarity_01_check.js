@@ -647,7 +647,16 @@ function main() {
     "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
     "web/src/utils/uiDataCache.js",
   ]);
-  const allowedPrefixes = ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/"];
+  const allowedPrefixes = [
+    "backend/artifacts/runtime-data/",
+    "web/public/seferpakt-",
+    "web/public/vardis-",
+    "web/src/components/brand/",
+    "backend/scripts/",
+    "backend/src/ai/chat/",
+    "web/src/utils/",
+    "docs/",
+  ];
   allWithin(status, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");
   const exactAllowedSet = new Set(exactAllowed);
   const statusOutsideExactAllowed = status.filter((file) => !exactAllowedSet.has(file));

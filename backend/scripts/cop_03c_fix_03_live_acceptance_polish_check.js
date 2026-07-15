@@ -118,10 +118,10 @@ must(helpComposer, "if (['VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'LOCATION_HE
 must(helpComposer, "pickScreenByKind(screens, 'MAP')", 'help composer routes GPS questions to map screen');
 must(helpComposer, 'Canlı takip ekranını aç', 'help composer keeps live tracking prompt');
 must(helpComposer, 'Başlatma zamanı uygun mu?', 'help composer keeps shift action chip');
-must(helpComposer, 'Son GPS ne zaman geldi?', 'help composer keeps GPS action chip');
-must(helpComposer, "Sürücünün telefon GPS’i devrede mi?", 'help composer keeps driver phone GPS chip');
-must(helpComposer, 'GPS/operasyon kanıtını kontrol et', 'help composer keeps gps action chip');
-must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', \"Sürücünün telefon GPS’i devrede mi?\", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps map/live GPS route');
+must(helpComposer, 'Son konum bilgisi ne zaman geldi?', 'help composer keeps GPS action chip');
+must(helpComposer, "Sürücünün telefonundan konum sinyali devrede mi?", 'help composer keeps driver phone GPS chip');
+must(helpComposer, 'Konum sinyali/operasyon kanıtını kontrol et', 'help composer keeps gps action chip');
+must(helpComposer, "if (path.includes('/room/map') || path.includes('/room/live')) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];", 'help composer keeps map/live GPS route');
 must(helpComposer, 'Hakediş önizlemesini aç', 'help composer keeps payment action chip');
 must(helpComposer, 'İlgili sözleşmeyi aç', 'help composer keeps contract action chip');
 must(helpComposer, 'Bildirim kaynağını göster', 'help composer keeps notification action chip');
@@ -137,12 +137,12 @@ ordered(helpComposer, [
 ], 'help composer keeps GPS remap before workflow surface preserve');
 
 must(intentRouter, 'Başlatma zamanı uygun mu?', 'intent router keeps shift readiness chip');
-must(intentRouter, 'GPS/operasyon kanıtını kontrol et', 'intent router keeps gps/proof chip');
+must(intentRouter, 'Konum sinyali/operasyon kanıtını kontrol et', 'intent router keeps gps/proof chip');
 must(intentRouter, 'Hakediş önizlemesini aç', 'intent router keeps payment chip');
 must(intentRouter, 'İlgili sözleşmeyi aç', 'intent router keeps contract chip');
 must(intentRouter, 'Bildirim kaynağını göster', 'intent router keeps notification chip');
 must(intentRouter, 'Riskli cihazı göster', 'intent router keeps operation-health risk chip');
-must(intentRouter, 'GPS güncel değil / çevrim dışı satırını aç', 'intent router keeps operation-health stale chip');
+must(intentRouter, 'konum sinyali güncel değil / çevrim dışı satırını aç', 'intent router keeps operation-health stale chip');
 must(intentRouter, 'Açık sorunları sırala', 'intent router keeps operation-health issue chip');
 must(intentRouter, 'Aktif sürücüleri kontrol et', 'intent router keeps operation-health active driver chip');
 must(intentRouter, 'İşlem kaydını aç', 'intent router keeps logs chip');
@@ -164,7 +164,7 @@ must(http, 'Bu rehber şu anda bu ekran için kullanılamıyor.', 'http normaliz
 
 must(facts, "label: 'Canlı başlatma zamanı / aktif durum / GPS / operasyon kanıtı kontrolü'", 'facts keeps live-start label');
 must(facts, 'Önerilen adım: canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.', 'facts keeps shift recommendation text');
-must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç GPS’i ve Sürücünün telefon GPS’i sinyalini birlikte kontrol et.', 'facts keeps map recommendation text');
+must(facts, 'Önerilen adım: araç, sürücü, rota/durak, araç konum sinyali ve sürücünün telefonundan konum sinyalini birlikte kontrol et.', 'facts keeps map recommendation text');
   must(facts, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', 'facts keeps operation health lead');
   must(facts, 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.', 'facts keeps operation health recommendation');
   mustNotRaw(facts, 'OperationProof', 'facts avoids visible technical proof wording');

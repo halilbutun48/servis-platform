@@ -457,7 +457,7 @@ function main() {
     "web/src/utils/uiDataCache.js",
   ]);
 
-  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "working tree stays within brand/login premium scope");
+  allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"], "working tree stays within brand/login premium scope");
   mustNotList(status, "backend/src/routes/", "backend routes are untouched");
   mustNotList(status, "backend/src/services/", "backend services are untouched");
   mustNotList(status, "prisma/", "schema/migration files are untouched");

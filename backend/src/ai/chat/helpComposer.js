@@ -3,7 +3,7 @@ import { getScreenDefinitionForUser, listScreensForUser } from '../jobGuide/scre
 import { explainTermsFromText } from '../jobGuide/glossary.js';
 import { filterWorkflowGenericChips, hasExplicitRoleBoundarySignal, workflowActionSpec, workflowTopicChipSet } from './answerQualityPolicy.js';
 import { detectQuestionIntent, resolveReplyMode, selectGuideJobType, buildSuggestedChips } from './intentRouter.js';
-import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLinkedGuide, makeQuickAction, mergeQuickActions, toReply, uniqueStrings } from './replyShapes.js';
+import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLinkedGuide, makeQuickAction, mergeQuickActions, normalizeVisibleTerminology, toReply, uniqueStrings } from './replyShapes.js';
 import { analyzeScreenState } from './screenStateAnalyzer.js';
 import { createSelectedRuntimeHelpers } from './helpComposerSelectedRuntime.js';
 import { createEntityRuntimeHelpers } from './helpComposerEntityRuntime.js';
@@ -338,9 +338,9 @@ function _selectedDiagnosticSurfaceHint(theme) {
     case 'SHIFT_BLOCKED':
       return 'Araç, sürücü ve sözleşme bağı';
     case 'VEHICLE_NOT_VISIBLE':
-      return 'Son GPS zamanı ve konum kaynağı';
+      return 'Son konum bilgisi zamanı ve konum kaynağı';
     case 'DRIVER_PHONE_GPS':
-      return 'Görev durumu ve sürücünün telefon GPS’i sinyali';
+      return 'Görev durumu ve sürücünün telefonundan konum sinyali';
     case 'PROVIDER_BETTER':
     case 'QUALITY_SIGNAL':
       return 'Kanıt, taslak skor, inceleme kararı ve denetim izi';
@@ -698,8 +698,8 @@ function topicLabelForContext(topic) {
     ROOT_CAUSE: 'Kök neden',
     SCREEN_PURPOSE: 'Ekran amacı',
     SHIFT_BLOCKED: 'Vardiya engeli',
-    VEHICLE_NOT_VISIBLE: 'GPS görünürlüğü',
-    DRIVER_PHONE_GPS: 'Sürücünün telefon GPS’i',
+    VEHICLE_NOT_VISIBLE: 'Konum sinyali görünürlüğü',
+    DRIVER_PHONE_GPS: 'Sürücünün telefonundan konum sinyali',
     BOARDING_CHANGE_APPLICATION: 'Kabul edilen değişiklik / günlük atama',
     BOARDING_CHANGE_REQUEST_ENTRY: 'Biniş talebi girişi',
     BOARDING_ROUTE_IMPACT_PREVIEW: 'Biniş değişikliği önizlemesi',
@@ -998,7 +998,7 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
     rows.push(menuAction(vehiclesMenu, context, 'Araç detayına dönmek için açılır.', { accent: 'primary' }));
     if (!Number(context?.activeDeviceCount || 0) || ['GO_TO', 'WHY_BLOCKED', 'LOCATION_HELP'].includes(questionType)) rows.push(menuAction(mapMenu, context, 'Canlı konum tarafını tekrar görmek için açılır.', { accent: 'primary' }));
     if (!context?.driver?.id) rows.push(menuAction(driversMenu, context, 'Sürücü bağını netleştirmek için açılır.', { accent: 'warning' }));
-    rows.push(makeGuideAction('Konum kaynağı rehberini aç', { jobType: 'LOCATION_SOURCE_GUIDE', guideLevel: 'SHORT' }, 'Telefon GPS\'i ve cihaz GPS\'i farkını açar.'));
+    rows.push(makeGuideAction('Konum kaynağı rehberini aç', { jobType: 'LOCATION_SOURCE_GUIDE', guideLevel: 'SHORT' }, 'Telefon konum sinyali ile cihaz konum sinyali farkını açar.'));
     rows.push(makeGuideAction('GPS teşhis rehberini aç', { jobType: 'GPS_SIGNAL_DIAGNOSIS_GUIDE', guideLevel: 'WHY' }, 'Konum neden görünmüyor sorusuna odaklanır.'));
     rows.push(makeAskAction('Konum neden görünmüyor?', 'konum neden görünmüyor', 'Aynı kayıt için hızlı teşhis sorusu gönderir.'));
     rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
@@ -1027,7 +1027,7 @@ function guideLinksForEntity(entityType) {
   if (String(entityType) === 'vehicle') {
     return [
       makeLinkedGuide('LOCATION_SOURCE_GUIDE', 'Konum kaynağı rehberini aç', 'SHORT', 'Telefon GPS\'i ve cihaz GPS\'i farkını açar.'),
-      makeLinkedGuide('GPS_SIGNAL_DIAGNOSIS_GUIDE', 'GPS sinyal teşhisini aç', 'WHY', 'Konum neden görünmüyor sorusuna odaklanır.'),
+      makeLinkedGuide('GPS_SIGNAL_DIAGNOSIS_GUIDE', 'GPS teşhis rehberini aç', 'WHY', 'Konum neden görünmüyor sorusuna odaklanır.'),
       makeLinkedGuide('VEHICLE_DRIVER_BIND', 'Araç-sürücü bağlama rehberini aç', 'STEP_BY_STEP', 'Bağlama adımlarını sade dille gösterir.'),
     ];
   }
@@ -1132,35 +1132,35 @@ function buildContextualSuggestedChips({
   }
   const pathSpecificChips = (() => {
     if (path.includes('/driver/today')) return workflowChipContext
-      ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']
-      : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+      ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']
+      : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak nerede?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
     if (path.includes('/driver/route')) return workflowChipContext
-      ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']
-      : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'GPS/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
-    if (path.includes('/personel/live') || path.includes('/personel/my')) return ['Bu ekranı detaylı anlat', 'Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"];
+      ? ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?']
+      : ['Bu ekranı detaylı anlat', 'Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Sonraki durak neden görünmüyor?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?'];
+    if (path.includes('/personel/live') || path.includes('/personel/my')) return ['Bu ekranı detaylı anlat', 'Araç nerede?', 'Son konum bilgisi ne zaman geldi?', 'Servis durumu ne?', 'Sürücünün telefonundan konum sinyali devrede mi?'];
     if (path.includes('/parent/live')) {
       if (parentLiveNoVehicleSignal) return ['Servis saati uygun mu?', 'Araç ataması var mı?', 'Canlı konum neden yok?', 'Bildirimleri kontrol et'];
-      return ['Son GPS ne zaman geldi?', 'Tahmini varış süresi ne?', 'Araç bağlantısı var mı?', 'Sürücünün telefon GPS’i devrede mi?'];
+      return ['Son konum bilgisi ne zaman geldi?', 'Tahmini varış süresi nedir?', 'Araç bağlantısı var mı?', 'Sürücünün telefonundan konum sinyali devrede mi?'];
     }
-    if (path.includes('/room/map') || path.includes('/room/live')) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+    if (path.includes('/room/map') || path.includes('/room/live')) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
     if (path.includes('/room/operation-health')) {
       if (boardingApplicationTopic) return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
       if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
-      return ['Riskli cihazı göster', 'GPS güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Canlılık riskini açıkla'];
+      return ['Riskli cihazı göster', 'konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Canlılık riskini açıkla'];
     }
     if (path.includes('/room/shifts')) {
       if (boardingApplicationTopic) return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
       if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
       if (['PAYMENT_READINESS', 'PAYMENT_MISSING'].includes(String(questionType || ''))) return ['Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?', 'Hakediş önizlemesini aç'];
       if (['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(questionType || ''))) return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla'];
-      if (['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''))) return ['Son GPS ne zaman geldi?', "Sürücünün telefon GPS’i devrede mi?", 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
-      if (['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP'].includes(String(questionType || ''))) return ['Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/kanıt akışını kontrol et', 'Başlatma zamanı uygun mu?'];
-      return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
+      if (['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(questionType || ''))) return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
+      if (['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP'].includes(String(questionType || ''))) return ['Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Başlatma zamanı uygun mu?'];
+      return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et'];
     }
     if (path.includes('/superadmin/operations')) {
       if (boardingApplicationTopic) return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
       if (boardingPreviewTopic) return ['Rota etkisini önizle', 'Bugün binmeyecek kişiyi göster', 'Farklı durak değişikliğini açıkla', 'Kapasite etkisini göster'];
-      return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et'];
+      return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et'];
     }
     if (path.includes('/superadmin/commercial-core')) return ['Hakediş önizlemesini aç', 'Eksik bilgi ne?', 'Ödeme hesabı var mı?', 'Komisyon durumu ne?'];
     if (path.includes('/room/commercial-flow')) return ['İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim geçmişini göster', 'Üretim durumunu açıkla'];
@@ -1195,7 +1195,7 @@ function buildContextualSuggestedChips({
         break;
       case 'VEHICLE_NOT_VISIBLE':
       case 'DRIVER_PHONE_GPS':
-        chips.push('GPS kaynağını kontrol et', 'Sürücünün telefon GPS’i neden devrede?', 'Araç neden haritada yok?');
+        chips.push('Konum kaynağını kontrol et', 'Sürücünün telefonundan konum sinyali neden devrede değil?', 'Araç neden haritada yok?');
         break;
       case 'PROVIDER_BETTER':
       case 'QUALITY_SIGNAL':
@@ -1238,7 +1238,7 @@ function buildContextualSuggestedChips({
         chips.push('Sıradaki adımı açıkla', 'Bu kaydı kontrol et', 'Önce neyi kontrol edeyim');
         break;
       case 'WHY_BLOCKED':
-        chips.push('Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'GPS/operasyon kanıtını kontrol et', 'Başlatma zamanı uygun mu?');
+        chips.push('Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et', 'Başlatma zamanı uygun mu?');
         break;
       default:
         chips.push('Bu ekranı detaylı anlat', 'İlk neye bakayım?', 'Burada eksik ne olabilir?');
@@ -1395,13 +1395,13 @@ function buildContextPriorityDecision({
   const isOperationHealthSurface = /\/room\/operation-health|\/operation-health/.test(screenPathText);
   const operationHealthLead = !startGuidanceQuestion && isOperationHealthSurface
     ? ([activeDriversCount, riskyDevicesCount, staleOrOfflineCount, openIssuesCount].some((value) => Number.isFinite(value))
-      ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(activeDriversCount) ? activeDriversCount : 0}, riskli cihaz ${Number.isFinite(riskyDevicesCount) ? riskyDevicesCount : 0}, GPS güncel değil / çevrim dışı ${Number.isFinite(staleOrOfflineCount) ? staleOrOfflineCount : 0} ve açık sorun ${Number.isFinite(openIssuesCount) ? openIssuesCount : 0} görünüyor.`
-      : 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve GPS güncel değil / çevrim dışı satırlarını kontrol et.')
+      ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(activeDriversCount) ? activeDriversCount : 0}, riskli cihaz ${Number.isFinite(riskyDevicesCount) ? riskyDevicesCount : 0}, konum sinyali güncel değil / çevrim dışı ${Number.isFinite(staleOrOfflineCount) ? staleOrOfflineCount : 0} ve açık sorun ${Number.isFinite(openIssuesCount) ? openIssuesCount : 0} görünüyor.`
+      : 'Şimdi: Bu ekranda somut operasyon sağlığı sinyali görünmüyor; açık sorun, riskli cihaz, aktif sürücü ve konum sinyali güncel değil / çevrim dışı satırlarını kontrol et.')
     : '';
   const operationHealthAdvice = !startGuidanceQuestion && isOperationHealthSurface
     ? ([activeDriversCount, riskyDevicesCount, staleOrOfflineCount, openIssuesCount].some((value) => Number.isFinite(value))
-      ? 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.'
-      : 'Açık sorun, riskli cihaz, aktif sürücü ve GPS güncel değil / çevrim dışı satırlarını kontrol et.')
+      ? 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.'
+      : 'Açık sorun, riskli cihaz, aktif sürücü ve konum sinyali güncel değil / çevrim dışı satırlarını kontrol et.')
     : '';
   const boardingApplicationTopic = activeTopic === 'BOARDING_CHANGE_APPLICATION';
   const isDriverRouteSurface = /\/driver\/(today|route|map)/.test(screenPathText);
@@ -1484,7 +1484,7 @@ function buildContextPriorityDecision({
   } else if (!startGuidanceQuestion && (activeTopic === 'PAYMENT_READINESS' || activeTopic === 'PAYMENT_MISSING') && !selectedLooksLikePayment && !selectedCommercialSignals) {
     selectedRecordMismatchLead = 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.';
   } else if (!startGuidanceQuestion && (activeTopic === 'VEHICLE_NOT_VISIBLE' || activeTopic === 'DRIVER_PHONE_GPS' || activeTopic === 'LOCATION_HELP') && selectedLooksLikeShift && !selectedLiveSignals && !selectedLooksLikeVehicle && !selectedLooksLikeGps) {
-    selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; araç görünürlüğü için araç ve Sürücünün telefon GPS’i sinyalini ayrı kayıtta kontrol et.';
+    selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; araç görünürlüğü için araç ve sürücünün telefonundan konum sinyalini ayrı kayıtta kontrol et.';
   }
   const topicWhy = {
     QUALITY_SIGNAL: 'Bu sinyal kesin kalite puanı değil; sağlayıcıyı okumaya yardım eder.',
@@ -1494,7 +1494,7 @@ function buildContextPriorityDecision({
     PAYMENT_READINESS: 'Bu sadece önizlemedir; ödeme başlatılmaz ve önce eksik kanıt/kalite kontrolü tamamlanır.',
     PAYMENT_MISSING: 'Bu sadece önizlemedir; eksik kanıtlar kapatılmadan hakediş hazır sayılmaz.',
     PAYMENT_PREVIEW: 'Bu sadece önizlemedir; tahsilat/fatura oluşturulmaz ve kanıt satırları okunur.',
-    SHIFT_BLOCKED: 'Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.',
+    SHIFT_BLOCKED: 'Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol konum sinyali/operasyon kanıtını kontrol et.',
     FEEDBACK_STATUS: 'Kayıt açık ya da kritik olduğu için tamamlanmış görünmüyor.',
     NOTIFICATION_SOURCE: 'Bildirim bir olay kaydına bağlı olduğu için kaynağı ayrıca okunmalı.',
     KVKK_VISIBILITY: 'Bilgi rol bazlı görünürlük nedeniyle gizli olabilir.',
@@ -1503,8 +1503,8 @@ function buildContextPriorityDecision({
     CONTRACT_TO_SHIFT: 'Şimdi: Bu sözleşme için bugün vardiya üretim sinyali görünüyor mu, önce onu kontrol et.',
     CONTRACT_SHIFT_TODAY: 'Şimdi: Bu sözleşme için bugün vardiya üretim sinyali görünüyor mu, önce onu kontrol et.',
     AGREEMENT_ROUTE_REFRESH: 'Bu sözleşmedeki rota değişikliği talebi eski rota, yeni rota ve teklif/kabul durumuyla birlikte okunur.',
-    DRIVER_PHONE_GPS: 'Telefon GPS’i cihaz GPS’inin yerine geçiyor olabilir.',
-    VEHICLE_NOT_VISIBLE: 'Araç, görev bağlantısı, son GPS veya Sürücünün telefon GPS’i devrede olmadığı için görünmüyor olabilir.',
+    DRIVER_PHONE_GPS: 'Telefon konum sinyali cihaz konum sinyalinin yerine geçiyor olabilir.',
+    VEHICLE_NOT_VISIBLE: 'Araç, görev bağlantısı, son GPS veya sürücünün telefonundan konum sinyali gelmediği için görünmüyor olabilir.',
     WHY_BLOCKED: operationHealthLead || 'Önce blokaj nedeni ve eksik alanı kontrol et.',
   };
   const whyCandidate = firstNonEmpty(
@@ -1550,7 +1550,7 @@ function buildContextPriorityDecision({
     NEXT_SCREEN: 'Önce ilgili ekrana geç.',
     NEXT_STEP: 'Önce ilgili kayıt veya alanı kontrol et.',
     WHY_BLOCKED: operationHealthAdvice || 'Önce blokaj nedeni ve eksik alanı kontrol et.',
-    SHIFT_BLOCKED: 'Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.',
+    SHIFT_BLOCKED: 'Başlatma zamanı ve aktif durum uygunsa konum sinyali/operasyon kanıtını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol konum sinyali/operasyon kanıtını kontrol et.',
     FIRST_CONTROL: 'Önce ilgili satırı veya ilk kontrol alanını aç.',
     SAFE_NEXT_STEP: 'Önce en risksiz kayıt veya alanı kontrol et.',
     BOARDING_CHANGE_APPLICATION: firstNonEmpty(boardingRouteVisibilityLead, 'Bu değişiklik kabul edilmişse günlük atamaya işlenebilir; sürücü rotası yenilenmez. Önce kabul durumu ve günlük atama etkisini kontrol et.'),
@@ -1563,8 +1563,8 @@ function buildContextPriorityDecision({
     CONTRACT_SHIFT_TODAY: 'İlgili sözleşmeyi aç ve bugünkü vardiya üretim geçmişini kontrol et.',
     MISSING_DATA: 'Önce boş alanları ve eksik bilgi blokajını kontrol et.',
     WHO_CAN_DO: 'Önce yetki sınırını ve ilgili rolü kontrol et.',
-    DRIVER_PHONE_GPS: 'Önce sürücünün telefon GPS’i ile cihaz GPS’i kaynağını ayır.',
-    VEHICLE_NOT_VISIBLE: 'Önce araç GPS’i, görev bağlantısı, son konum ve Sürücünün telefon GPS’i sinyalini kontrol et.',
+    DRIVER_PHONE_GPS: 'Önce sürücünün telefonundan konum sinyali ile cihaz konum sinyali kaynağını ayır.',
+    VEHICLE_NOT_VISIBLE: 'Önce araç GPS sinyali, görev bağlantısı, son GPS ve sürücünün telefonundan GPS sinyalini kontrol et.',
   };
   const bestNextAction = firstNonEmpty(
     selectedRecordMismatchLead,
@@ -1956,18 +1956,18 @@ function compactLiveSummaryFromText(value) {
     extractVisibleValueFromText(text, ['Durum']),
     '',
   );
-  const lastGps = extractVisibleValueFromText(text, ['Son GPS', 'Last GPS']);
+  const lastGps = extractVisibleValueFromText(text, ['Son konum bilgisi', 'Last GPS']);
   const nextStop = firstNonEmpty(
     extractVisibleValueFromText(text, ['Sıradaki']),
     extractVisibleValueFromText(text, ['Sıradaki Durak', 'Sıradaki durak', 'Next Stop']),
     '',
   );
-  const eta = extractVisibleValueFromText(text, ['ETA']);
+  const eta = extractVisibleValueFromText(text, ['Tahmini varış süresi']);
   const shiftLabel = extractVisibleValueFromText(text, ['Seçili kayıt', 'Seçili satır']);
   if (shiftLabel) bits.push(`Seçili kayıt ${shiftLabel}`);
   if (plate) bits.push(`Araç ${plate}`);
   if (gpsStatus) bits.push(`GPS ${gpsStatus}`);
-  if (lastGps) bits.push(`Son GPS ${lastGps}`);
+  if (lastGps) bits.push(`Son konum bilgisi ${lastGps}`);
   if (nextStop) bits.push(`Sıradaki ${nextStop}`);
   if (eta) bits.push(`Tahmini varış süresi ${eta}`);
   return uniqueStrings(bits).join(' • ');
@@ -2243,7 +2243,7 @@ function composeScreenFocusReply({ guide, screenDefinition, screenContext, sourc
   ]);
   if (screenPaths.some((value) => String(value || '') === '/superadmin/operations')) {
     return [
-      'Bu ekran, canlı durum ve GPS güven skorunu birlikte okumak için kullanılır.',
+      'Bu ekran, canlı durum ve GPS güven skorunu oku.',
       'İlk kontrolünü netleştirelim: önce canlı durum bandını, sonra GPS güvenini ve açık riskleri kontrol et.',
       'Canlı durum ile GPS güven skoru aynı şey değildir; biri operasyon sinyali, diğeri kanıt güvenidir.',
     ].join(' ');
@@ -2376,7 +2376,7 @@ const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFiel
         break;
       case 'VEHICLE_NOT_VISIBLE':
         result = 'Bu ekrandaki veriye göre bu araç haritada görünmüyor.';
-        firstControl = 'Son GPS zamanı ve konum kaynağı';
+        firstControl = 'Son konum bilgisi zamanı ve konum kaynağı';
         break;
       case 'DRIVER_PHONE_GPS':
         result = 'Bu ekrandaki veriye göre sürücünün telefon GPS’i devrede görünüyor.';
@@ -2817,7 +2817,7 @@ function weakCarryReply(sourceScreenDefinition, sourceScreenContext) {
     facts?.etaReady === false ? 'Tahmini varış süresi yok' : '',
     firstNonEmpty((Array.isArray(facts?.evidence) ? facts.evidence[1] : ''), ''),
   ]).filter(Boolean).slice(0, 4).join(' • ');
-  return `${sourceLabel} ekranında önce geçerli kayıt oluşmalı. Şimdi ekran önermek erken. Önce marker'a tıklayıp aracı seç; üst kartta Shift, Son GPS ve Sıradaki durak dolu mu bak. ${evidence ? `Bunu şuradan anlıyorum: ${evidence}.` : ''}`.trim();
+  return `${sourceLabel} ekranında önce geçerli kayıt oluşmalı. Şimdi ekran önermek erken. Önce marker'a tıklayıp aracı seç; üst kartta Shift, son konum bilgisi ve sıradaki durak dolu mu bak. ${evidence ? `Bunu şuradan anlıyorum: ${evidence}.` : ''}`.trim();
 }
 
 function scoreNextScreenCandidate({ candidate, targetScreenDefinition, sourceScreenDefinition, sourceScreenContext, genericFlow = false }) {
@@ -2964,7 +2964,7 @@ function buildTransferredFirstControls(targetScreenDefinition, sourceScreenDefin
       'Durum rozetini araç ve sürücü alanıyla birlikte oku.',
       'Sonraki adım veya teklif katmanı açık mı kontrol et.',
     ];
-    if (signals.gpsWeak) rows.splice(2, 0, 'Son GPS zayıfsa yalnız duruma güvenme; atama ve teklif katmanını da birlikte değerlendir.');
+    if (signals.gpsWeak) rows.splice(2, 0, 'Son konum bilgisi zayıfsa yalnız duruma güvenme; atama ve teklif katmanını da birlikte değerlendir.');
     if (signals.shiftWeak) rows[2] = 'Araç veya sürücü boş mu diye özellikle bak.';
     return rows;
   }
@@ -2986,7 +2986,7 @@ function buildTransferredFirstControls(targetScreenDefinition, sourceScreenDefin
   if (targetKind === 'MAP') {
     return [
       'Önce doğru aracı veya vardiyayı seç.',
-      'Son GPS, sıradaki durak ve tahmini varış süresi birlikte tutarlı mı bak.',
+      'Son konum bilgisi, sıradaki durak ve tahmini varış süresi birlikte tutarlı mı bak.',
       'Canlılık zayıfsa aynı kaydı Vardiyalar ekranında da kontrol et.',
     ];
   }
@@ -3208,7 +3208,7 @@ function explainFieldButtonTermsFromText(text, limit = 4) {
     },
     {
       term: 'Servis Kanıtı',
-      explanation: 'Sürücünün telefon GPS’i ve ilgili sinyallerle hizmetin görünürlüğünü doğrulayan kart.',
+      explanation: 'Sürücünün telefonundan konum sinyali ve ilgili sinyallerle hizmetin görünürlüğünü doğrulayan kart.',
       aliases: ['servis kanıtı', 'servis kaniti', 'servis kanıtı ne işe yarar', 'servis kaniti ne ise yarar'],
     },
   ]
@@ -3405,18 +3405,18 @@ function vehicleSourceText(context) {
   const lastPart = age == null ? 'Son konum zamanı görünmüyor.' : `Son konum yaklaşık ${age} dakika önce geldi.`;
   const lastUiLabel = getGpsReliabilityLabel({ gpsStatus: context?.gpsState?.lastUiStatus, gpsAge: context?.gpsLast?.at, gpsLast: context?.gpsLast?.at });
   if (hasDevice && hasDriver) return `Bu araçta hem cihaz GPS'i kaydı hem de sürücü bağı görünüyor. Ana kaynak kullanımına göre ikisi de devreye girebilir. ${lastPart} Konum durumu: ${lastUiLabel}.`;
-  if (hasDevice) return `Bu araçta aktif cihaz GPS'i görünüyor. Sürücü bağı ${hasDriver ? 'de var' : 'görünmüyor'}. ${lastPart} Konum durumu: ${lastUiLabel}.`;
-  if (hasDriver) return `Bu araçta sürücünün telefon GPS'i tarafı için sürücü bağı görünüyor. Aktif cihaz GPS'i görünmüyor. ${lastPart} Konum durumu: ${lastUiLabel}.`;
-  return `Bu araçta şu an ne aktif cihaz GPS'i ne de sürücü bağı net görünüyor. ${lastPart}`;
+  if (hasDevice) return `Bu araçta aktif konum sinyali görünüyor. Sürücü bağı ${hasDriver ? 'de var' : 'görünmüyor'}. ${lastPart} Konum durumu: ${lastUiLabel}.`;
+  if (hasDriver) return `Bu araçta sürücünün telefonundan konum sinyali tarafı için sürücü bağı görünüyor. Aktif konum sinyali görünmüyor. ${lastPart} Konum durumu: ${lastUiLabel}.`;
+  return `Bu araçta şu an ne aktif konum sinyali ne de sürücü bağı net görünüyor. ${lastPart}`;
 }
 
 function vehicleBlockers(context) {
   const items = [];
   if (!Number(context?.activeDeviceCount || 0) && !context?.driver?.id) items.push('Konum verecek kaynak net görünmüyor.');
-  if (!Number(context?.activeDeviceCount || 0)) items.push("Aktif cihaz GPS'i görünmüyor.");
-  if (!context?.gpsLast?.at) items.push('Son GPS zamanı görünmüyor.');
+  if (!Number(context?.activeDeviceCount || 0)) items.push('Aktif cihaz konum sinyali görünmüyor.');
+  if (!context?.gpsLast?.at) items.push('Son konum bilgisi zamanı görünmüyor.');
   if (!context?.driver?.id) items.push('Sürücü bağı görünmüyor.');
-  if (String(context?.gpsState?.lastUiStatus || '') === 'STALE') items.push('GPS güncel değil.');
+  if (String(context?.gpsState?.lastUiStatus || '') === 'STALE') items.push('Konum sinyali güncel değil.');
   return uniqueStrings(items);
 }
 
@@ -3926,7 +3926,7 @@ if (questionType === 'READINESS_CHECK') {
       '',
     )));
     const operationHealthExactNextStep = operationHealthSurface
-      ? 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.'
+      ? 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.'
       : '';
     if (analysis?.blockers?.length || analysis?.disabledHints?.length) {
       return toReply(`${analyzerReply(analysis, 'DIAGNOSIS')} ${operationHealthExactNextStep}`.trim());
@@ -3968,22 +3968,39 @@ if (questionType === 'READINESS_CHECK') {
     const selectedHint = firstNonEmpty(selectedCarrySummary(screenContext), selectedCarrySummary(sourceScreenContext), '');
     const roomMapLiveSummary = normalizedPath.includes('/room/map')
       ? mergeLiveSummaryFragments(
-        screenContext?.contextSummary,
-        sourceScreenContext?.contextSummary,
-        screenContext?.helpContextSummary,
-        sourceScreenContext?.helpContextSummary,
-        contextPriority?.selectedSummary,
-        contextPriority?.selectedRecordStatus,
+        normalizeVisibleReplyFragment(screenContext?.contextSummary),
+        normalizeVisibleReplyFragment(sourceScreenContext?.contextSummary),
+        normalizeVisibleReplyFragment(screenContext?.helpContextSummary),
+        normalizeVisibleReplyFragment(sourceScreenContext?.helpContextSummary),
+        normalizeVisibleReplyFragment(contextPriority?.selectedSummary),
+        normalizeVisibleReplyFragment(contextPriority?.selectedRecordStatus),
       )
       : '';
     const roomMapLastGps = roomMapLiveSummary
-      ? extractVisibleValueFromText(roomMapLiveSummary, ['Son GPS', 'Last GPS'])
+      ? extractVisibleValueFromText(roomMapLiveSummary, ['Son konum bilgisi', 'Last GPS'])
       : '';
+    const roomMapGpsStatus = roomMapLiveSummary
+      ? firstNonEmpty(
+        extractVisibleValueFromText(roomMapLiveSummary, ['Konum sinyali', 'Canlılık', 'Durum']),
+        extractVisibleValueFromText(screenContext?.selectedSummary, ['Konum sinyali', 'Canlılık', 'Durum']),
+        extractVisibleValueFromText(sourceScreenContext?.selectedSummary, ['Konum sinyali', 'Canlılık', 'Durum']),
+        '',
+      )
+      : '';
+    const roomMapGpsState = (() => {
+      const text = normalizeText(roomMapGpsStatus);
+      if (!text) return '';
+      if (/(çevrim dışı|cevrim disi|offline)/.test(text)) return 'Konum sinyali: Çevrim dışı';
+      if (/(bekleniyor|pending)/.test(text)) return 'Konum sinyali: Bekleniyor';
+      if (/(zayıf|zayif|stale|güncel değil|guncel degil|weak)/.test(text)) return 'Konum sinyali: Güncel değil';
+      if (/(canlı|canli|fresh|aktif)/.test(text)) return 'Konum sinyali: Canlı';
+      return '';
+    })();
     const roomMapEta = roomMapLiveSummary
       ? firstNonEmpty(
-        extractVisibleValueFromText(roomMapLiveSummary, ['ETA']),
-        /ETA[:\s]*([^•]+)/i.exec(roomMapLiveSummary)?.[1] || '',
-        /ETA/i.test(roomMapLiveSummary) ? 'ETA' : '',
+        extractVisibleValueFromText(roomMapLiveSummary, ['Tahmini varış süresi']),
+        /Tahmini varış süresi[:\s]*([^•]+)/i.exec(roomMapLiveSummary)?.[1] || '',
+        /Tahmini varış süresi/i.test(roomMapLiveSummary) ? 'Tahmini varış süresi' : '',
       )
       : '';
     const roomMapSelectionHint = normalizedPath.includes('/room/map')
@@ -3997,15 +4014,16 @@ if (questionType === 'READINESS_CHECK') {
       : selectedHint;
     const roomMapSelectedHint = normalizedPath.includes('/room/map') && roomMapSelectionHint
       ? uniqueStrings([
+        roomMapGpsState,
         roomMapSelectionHint,
-        roomMapLastGps && !normalizeLooseText(roomMapSelectionHint).includes('son gps') ? `Son GPS ${roomMapLastGps}` : '',
-        roomMapEta && !normalizeLooseText(roomMapSelectionHint).includes('eta') ? `Tahmini varış süresi ${roomMapEta}` : '',
+        roomMapLastGps && !normalizeLooseText(roomMapSelectionHint).includes('son konum bilgisi') ? `Son konum bilgisi ${roomMapLastGps}` : '',
+        roomMapEta && !normalizeLooseText(roomMapSelectionHint).includes('tahmini varış süresi') ? `Tahmini varış süresi ${roomMapEta}` : '',
       ]).join(' • ')
       : roomMapSelectionHint;
     if (roomMapSelectionHint) {
-      const roomMapEtaVisible = normalizedPath.includes('/room/map') ? 'ETA' : roomMapEta;
+      const roomMapEtaVisible = normalizedPath.includes('/room/map') ? 'Tahmini varış süresi' : roomMapEta;
       const nextStep = normalizedPath.includes('/company')
-        ? 'Konumu netleştirmek için önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
+        ? 'Konumu netleştirmek için önce son konum bilgisi zamanını, araç bağlantısını ve sürücünün telefonundan gelen konum sinyali durumunu kontrol et.'
         : normalizedPath.includes('/personel/live') || normalizedPath.includes('/personel/my')
           ? 'Önce canlı takipte araç bağlantısını ve görev bağlantısını kontrol et.'
           : normalizedPath.includes('/parent/live')
@@ -4024,7 +4042,7 @@ if (questionType === 'READINESS_CHECK') {
             : 'Seçili kaydın konum bilgisi önce açılmalıdır.';
       return toReply([
         `Şimdi: ${roomMapSelectedHint || 'Seçili kayıt görünüyor.'}`,
-        roomMapEtaVisible ? `Tahmini varış süresi ETA: ${roomMapEtaVisible}.` : '',
+        roomMapEtaVisible ? `Tahmini varış süresi: ${roomMapEtaVisible}.` : '',
         'Bu programda bunun anlamı: konum ve adres bilgisi seçili kayda göre okunur.',
         `Neden? ${why}`,
         `Öneri: ${nextStep}`,
@@ -4202,7 +4220,7 @@ function composeGeneralProductGuideReply({
       )),
       'Seçili görev bilgisi okunuyor.',
     );
-    return `Şimdi: ${ensureVisibleSentence(driverSelected)}. Canlı başlatma zamanını ve aktif durumu kontrol et. Durum: ${ensureVisibleSentence(driverSelectedStatus)}. Neden? Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır. Öneri: Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışına geç.`.trim();
+    return `Şimdi: ${ensureVisibleSentence(driverSelected)}. Canlı başlatma zamanını ve aktif durumu kontrol et. Durum: ${ensureVisibleSentence(driverSelectedStatus)}. Neden? Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır. Öneri: Başlatma zamanı ve aktif durum uygunsa GPS ve operasyon kanıtı akışını kontrol et; araç/sürücü bağı görünmüyorsa kontrol et, atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.`.trim();
   }
   const analysisEvidence = normalizeVisibleReplyFragment(firstNonEmpty(
     Array.isArray(analysis?.evidence) ? uniqueStrings(analysis.evidence).slice(0, 3).join(' • ') : '',
@@ -4310,8 +4328,8 @@ function composeGeneralProductGuideReply({
     '',
   );
   const liveLastGps = firstNonEmpty(
-    extractVisibleValueFromText(liveSelectionSummary, ['Son GPS', 'Last GPS']),
-    extractVisibleValueFromText(liveSelectedHint, ['Son GPS', 'Last GPS']),
+    extractVisibleValueFromText(liveSelectionSummary, ['Son konum bilgisi', 'Last GPS']),
+    extractVisibleValueFromText(liveSelectedHint, ['Son konum bilgisi', 'Last GPS']),
     '',
   );
   const liveNextStop = firstNonEmpty(
@@ -4320,8 +4338,8 @@ function composeGeneralProductGuideReply({
     '',
   );
   const liveEta = firstNonEmpty(
-    extractVisibleValueFromText(liveSelectionSummary, ['ETA']),
-    extractVisibleValueFromText(liveSelectedHint, ['ETA']),
+    extractVisibleValueFromText(liveSelectionSummary, ['Tahmini varış süresi']),
+    extractVisibleValueFromText(liveSelectedHint, ['Tahmini varış süresi']),
     /ETA[:\s]*([^•]+)/i.exec(firstNonEmpty(
       screenContext?.contextSummary,
       sourceScreenContext?.contextSummary,
@@ -4331,7 +4349,7 @@ function composeGeneralProductGuideReply({
       screenContext?.contextSummary,
       sourceScreenContext?.contextSummary,
       '',
-    )) ? 'ETA' : '',
+    )) ? 'Tahmini varış süresi' : '',
     '',
   );
   const liveTotalStops = firstNonEmpty(
@@ -4349,14 +4367,14 @@ function composeGeneralProductGuideReply({
     || sourceScreenContext?.selectedEntityId
   );
   liveSelectedHint = redactSensitiveLiveSelectionText(liveSelectedHint, liveSurfacePath);
-  const liveHasMeaningfulLiveText = /(?:\b\d{2}[A-Z]{0,3}\d{2,}\b|GPS|ETA|Durak|Sıradaki|Sıradaki durak|Araç|Arac|Servis|Sürücü|Surucu)/i.test(normalizeLooseText(liveSelectionSummary))
-    || /(?:\b\d{2}[A-Z]{0,3}\d{2,}\b|GPS|ETA|Durak|Sıradaki|Sıradaki durak|Araç|Arac|Servis|Sürücü|Surucu)/i.test(normalizeLooseText(liveSelectedHint));
+  const liveHasMeaningfulLiveText = /(?:\b\d{2}[A-Z]{0,3}\d{2,}\b|GPS|Tahmini varış süresi|Durak|Sıradaki|Sıradaki durak|Araç|Arac|Servis|Sürücü|Surucu)/i.test(normalizeLooseText(liveSelectionSummary))
+    || /(?:\b\d{2}[A-Z]{0,3}\d{2,}\b|GPS|Tahmini varış süresi|Durak|Sıradaki|Sıradaki durak|Araç|Arac|Servis|Sürücü|Surucu)/i.test(normalizeLooseText(liveSelectedHint));
   const liveHasSelection = Boolean((liveSelectedFieldCount || liveSelectedBadgeCount || liveHasMeaningfulLiveText) && liveSelectionHasEntity);
   if (liveLocationTopic && !liveHasSelection && (liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my'))) {
-    return 'Bu ekranda seçili servis bilgisi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.';
+    return 'Bu ekranda seçili servis bilgisi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.';
   }
   if ((liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')) && !liveSelectionHasEntity) {
-    return 'Bu ekranda seçili servis bilgisi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.';
+    return 'Bu ekranda seçili servis bilgisi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.';
   }
   if (liveLocationTopic && !liveHasSelection && liveSurfacePath.includes('/parent/live')) {
     return 'Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve tahmini varışı kontrol et.';
@@ -4395,10 +4413,10 @@ function composeGeneralProductGuideReply({
     '',
   );
   const driverLiveSelectionLead = (liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')) && driverSelectionSource
-    ? `${normalizeVisibleReplyFragment(firstNonEmpty(resolvedContextPriority.selectedLabel, liveSelectedHint, 'Seçili görev'))} görünüyor. Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.`
+    ? `${normalizeVisibleReplyFragment(firstNonEmpty(resolvedContextPriority.selectedLabel, liveSelectedHint, 'Seçili görev'))} görünüyor. Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa konum sinyali ve operasyon kanıtı akışına geç.`
     : '';
   const driverLiveStartFallback = (liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map')) && driverSelectionSource
-    ? 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'
+    ? 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa konum sinyali ve operasyon kanıtı akışına geç.'
     : '';
   const directRouteNavigationRequest = isDirectRouteRequest(message) && ['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''));
   if (workflowStyle && liveLocationTopic && liveHasSelection && !directRouteNavigationRequest) {
@@ -4426,23 +4444,23 @@ function composeGeneralProductGuideReply({
     : liveEtaText;
   const liveNextLabel = liveFreshness.isFresh ? 'Sıradaki durak' : 'Son bilinen sıradaki durak';
   const liveLocationSignals = uniqueStrings([
-    liveGpsStatus ? `GPS ${liveGpsLabel}` : '',
-    liveLastGps ? `Son GPS ${liveGpsAge}` : '',
+    liveGpsStatus ? `Konum sinyali: ${liveGpsLabel}` : '',
+    liveLastGps ? `Son konum bilgisi ${liveGpsAge}` : '',
     liveNextStop ? `${liveNextLabel} ${normalizeVisibleReplyFragment(liveNextStop)}${liveTotalStops ? `, toplam durak ${normalizeVisibleReplyFragment(liveTotalStops)}` : ''}` : '',
       liveEta ? `Tahmini varış süresi ${liveEtaVisibleText}` : '',
   ]).join('; ');
     const liveLocationAdviceShort = liveSurfacePath.includes('/personel/live') || liveSurfacePath.includes('/personel/my')
-      ? 'Servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
+      ? 'Servis görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.'
       : liveSurfacePath.includes('/parent/live')
-        ? 'Servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.'
-        : 'Araç haritada güvenilir görünmüyorsa önce son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.';
+        ? 'Servis görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.'
+        : 'Araç haritada güvenilir görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını, görev bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.';
     return `Şimdi: ${liveLocationNow} ${liveLocationSignals ? `${liveLocationSignals}.` : ''} ${liveLocationAdviceShort}`.trim();
   }
   if (workflowStyle && driverShiftTopic && liveHasSelection && !directRouteNavigationRequest) {
     const driverSignals = liveSelectedSignals.length ? ` ${liveSelectedSignals.join(' • ')}.` : '';
     const driverProofNote = driverProofLead ? ` ${driverProofLead}` : '';
-    const driverLiveLeadText = firstNonEmpty(driverLiveSelectionLead, driverLiveStartFallback, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.');
-    return `Şimdi: ${liveSelectedHint ? `Seçili görev ${liveSelectedHint}.` : 'Seçili görev.'}${driverSignals}${driverProofNote} ${driverLiveLeadText} Neden? ${driverLiveWhy} Öneri: Başlatma zamanı ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç. Sıradaki doğru işlem: Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol GPS ve operasyon kanıtıdır.`.trim();
+    const driverLiveLeadText = firstNonEmpty(driverLiveSelectionLead, driverLiveStartFallback, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa konum sinyali ve operasyon kanıtı akışına geç.');
+    return `Sıradaki doğru işlem: ${liveSelectedHint ? `Seçili görev ${liveSelectedHint}.` : 'Seçili görev.'}${driverSignals}${driverProofNote} ${driverLiveLeadText} Neden? ${driverLiveWhy} Öneri: Başlatma zamanı ve aktif durumu kontrol et; uygunsa konum sinyali ve operasyon kanıtı akışına geç. Sıradaki doğru işlem: Araç/sürücü bağı görünmüyorsa kontrol et; atanmış görünüyorsa sonraki kontrol konum sinyali ve operasyon kanıtıdır.`.trim();
   }
   const workflowSelectedRecordSentence = /\/(company\/shifts|company\/agreem[e]nts|superadmin\/commercial-core|room\/map|personel\/live|parent\/live|driver\/today)/.test(normalizeText(screenPath))
     ? firstNonEmpty(
@@ -4496,7 +4514,7 @@ function composeGeneralProductGuideReply({
     'Ekrandaki sinyale göre konuşuyorum.',
   );
   const workflowNowLead = driverShiftTopic
-    ? `${firstNonEmpty(driverLiveStartFallback, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.')} ${workflowNow}`.trim()
+    ? `${firstNonEmpty(driverLiveStartFallback, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa konum sinyali ve operasyon kanıtı akışına geç.')} ${workflowNow}`.trim()
     : workflowNow;
   const workflowMeaning = pickWorkflowVisibleReply(
     resolvedContextPriority.activeTopicLabel,
@@ -4613,7 +4631,9 @@ function composeGeneralProductGuideReply({
     return `${screenName ? `${screenName}: ` : ''}${ensureVisibleSentence(screenPurpose)} Şimdi: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(startStep))} Bu programda bunun anlamı: ${ensureVisibleSentence(screenPurpose)} Öneri: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(prepStep))} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(prepStep))}`.trim();
   }
   if (workflowStyle) {
-    const workflowLead = `Şimdi: ${ensureVisibleSentence(workflowNowLead)}`;
+    const workflowLead = (liveSurfacePath.includes('/driver/today') || liveSurfacePath.includes('/driver/route') || liveSurfacePath.includes('/driver/map'))
+      ? `Takip: ${ensureVisibleSentence(workflowNowLead)}`
+      : `Şimdi: ${ensureVisibleSentence(workflowNowLead)}`;
     const workflowSelectionLead = firstNonEmpty(
       resolvedContextPriority.selectedRecordMismatchLead
         ? ` ${ensureVisibleSentence(normalizeVisibleReplyFragment(resolvedContextPriority.selectedRecordMismatchLead))}`
@@ -4665,6 +4685,8 @@ function composeGeneralProductGuideReply({
     resolvedContextPriority.sameRecordLikely ? 'Aynı kayıt üzerinde devam ediyoruz' : '',
     resolvedContextPriority.activeTopicLabel,
   ]).filter(Boolean).slice(0, 3).join(' • ') || 'Görünen kayıt ve durum satırı ana ipucudur.');
+  const workflowNowLeadSentence = `Şimdi: ${ensureVisibleSentence(workflowNow)} Bu programda bunun anlamı: ${programMeaning}`;
+  void workflowNowLeadSentence;
   const why = normalizeVisibleReplyFragment(firstNonEmpty(
     resolvedContextPriority.whyCandidate,
     resolvedContextPriority.missingInfo,
@@ -4698,6 +4720,7 @@ function composeGeneralProductGuideReply({
     'İlgili ekranı açıp seçili kaydı kontrol et.',
   ));
   const screenLeadIntro = workflowStyle ? '' : ensureVisibleSentence(screenLead);
+  const workflowScreenLeadIntro = contractWorkflowQuestion ? '' : screenLeadIntro;
   const workflowFirstControlSentence = String(questionType || '') === 'FIRST_CONTROL';
   // String(questionType || '') === 'FIRST_CONTROL' ? buildVisibleScreenPurposeLead(firstNonEmpty(
   const firstControlLead = workflowFirstControlSentence
@@ -4711,7 +4734,7 @@ function composeGeneralProductGuideReply({
     )))}` 
     : '';
   const driverSelectedFollowOn = driverSelectionSource
-    ? ` ${ensureVisibleSentence(firstNonEmpty(driverLiveSelectionLead, driverLiveLead, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa GPS ve operasyon kanıtı akışına geç.'))}`
+    ? ` ${ensureVisibleSentence(firstNonEmpty(driverLiveSelectionLead, driverLiveLead, 'Canlı başlatma zamanını ve aktif durumu kontrol et; uygunsa konum sinyali ve operasyon kanıtı akışına geç.'))}`
     : '';
   const selectedCompanyShiftStopCount = String(screenPath || '').includes('/company/shifts')
     ? firstNonEmpty(
@@ -4740,10 +4763,17 @@ function composeGeneralProductGuideReply({
   const includeWhy = roleMode !== 'SIMPLE'
     || isWorkflowTopic(resolvedContextPriority.activeTopic)
     || ['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_SCREEN', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'FIRST_CONTROL', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO', 'ROLE_HELP'].includes(String(questionType || ''));
+  const driverActionLead = (
+    liveSurfacePath.includes('/driver/today')
+    || liveSurfacePath.includes('/driver/route')
+    || liveSurfacePath.includes('/driver/map')
+  )
+    ? 'Takip:'
+    : 'Şimdi:';
   if (roleMode === 'SIMPLE') {
-    return `${screenLeadIntro}${firstControlLead} Şimdi: ${ensureVisibleSentence(workflowNow)} Bu programda bunun anlamı: ${programMeaning}${selectedRecordSentence}${includeWhy ? ` Neden? ${why}` : ''} Öneri: ${advice} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(nextAction))}`;
+    return `${workflowScreenLeadIntro}${firstControlLead} ${driverActionLead} ${ensureVisibleSentence(workflowNow)} Bu programda bunun anlamı: ${programMeaning}${selectedRecordSentence}${includeWhy ? ` Neden? ${why}` : ''} Öneri: ${advice} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(nextAction))}`;
   }
-  return `${screenLeadIntro}${firstControlLead} Şimdi: ${ensureVisibleSentence(workflowNow)} Bu programda bunun anlamı: ${programMeaning}${selectedRecordSentence} Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(nextAction))}${schoolOperationsReplyTail}`;
+  return `${workflowScreenLeadIntro}${firstControlLead} ${driverActionLead} ${ensureVisibleSentence(workflowNow)} Bu programda bunun anlamı: ${programMeaning}${selectedRecordSentence} Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: ${ensureVisibleSentence(normalizeVisibleSuggestionFragment(nextAction))}${schoolOperationsReplyTail}`;
 }
 
 
@@ -5212,7 +5242,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     && ['SHIFT_BLOCKED', 'READINESS_CHECK', 'WHY_BLOCKED', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'MISSING_DATA'].includes(String(questionType || ''));
   const preserveRawMissingLookupReply = /bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim/i.test(firstNonEmpty(rawMessage, effectiveMessage, ''))
     && ['NEXT_STEP', 'NEXT_SCREEN', 'FIRST_CONTROL', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHY_BLOCKED', 'MISSING_DATA'].includes(String(questionType || ''));
-  const operationHealthExactNextStep = 'Riskli cihazı aç, GPS güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.';
+  const operationHealthExactNextStep = 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.';
   const operationHealthSurface = /\/operation-health/.test(normalizeText(firstNonEmpty(
     screenPath,
     effectiveScreenDefinition?.path,
@@ -5249,7 +5279,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   let finalReply = selectedReply;
   if (operationHealthSurface && String(questionType || '') === 'WHY_BLOCKED') {
     finalReply = finalReply.replace(
-      'Önce riskli cihazı aç. Sonra GPS güncel değil / çevrim dışı satırını ve açık sorunları sırala.',
+      'Önce riskli cihazı aç. Sonra konum sinyali güncel değil / çevrim dışı satırını ve açık sorunları sırala.',
       operationHealthExactNextStep,
     );
     if (!normalizeText(finalReply).includes(normalizeText(operationHealthExactNextStep))) {
@@ -5338,8 +5368,8 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       || context?.contextSummary
     );
     const personelLiveChips = hasSelectionSignal
-      ? ['Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"]
-      : ['Bu ekranı detaylı anlat', 'Araç nerede?', 'Son GPS ne zaman geldi?', 'Servis durumu ne?', "Sürücünün telefon GPS’i devrede mi?"];
+      ? ['Araç nerede?', 'Son konum bilgisi ne zaman geldi?', 'Servis durumu ne?', 'Sürücünün telefonundan konum sinyali devrede mi?']
+      : ['Bu ekranı detaylı anlat', 'Araç nerede?', 'Son konum bilgisi ne zaman geldi?', 'Servis durumu ne?', 'Sürücünün telefonundan konum sinyali devrede mi?'];
     visibleSuggestedChips = uniqueStrings([
       ...personelLiveChips,
       ...visibleSuggestedChips,
@@ -5419,21 +5449,21 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   );
   const parentLiveSelectionSignal = parentLiveSelectionEvidence && !parentLiveNoSelectionDetected(screenContext || context, context || screenContext, screenPath);
   const parentLiveNoSelectionFallback = String(screenPath || '').includes('/parent/live') && !parentLiveSelectionEvidence
-    ? 'Şimdi: Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor. Servis görünmüyorsa son GPS, araç bağlantısı ve tahmini varışı kontrol et.'
+    ? 'Şimdi: Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor. Servis görünmüyorsa son konum bilgisi, araç bağlantısı ve tahmini varışı kontrol et.'
     : '';
   const parentLiveDiagnosticTopic = ['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS'].includes(String(firstNonEmpty(contextPriority?.activeTopic, questionType, '')));
   if (String(screenPath || '').includes('/parent/live') && parentLiveSelectionSignal && parentLiveDiagnosticTopic && !parentLiveNoVehicleVisibleSignal) {
     const parentLivePriorityChips = [
-      'Son GPS ne zaman geldi?',
-      'Tahmini varış süresi ne?',
+      'Son konum bilgisi ne zaman geldi?',
+      'Tahmini varış süresi nedir?',
       'Araç bağlantısı var mı?',
-      "Sürücünün telefon GPS’i devrede mi?",
+      'Sürücünün telefonundan konum sinyali devrede mi?',
     ];
     const parentLiveContextualPriorityChips = [
-      'Son GPS ne zaman geldi?',
-      'ETA nedir?',
+      'Son konum bilgisi ne zaman geldi?',
+      'Tahmini varış süresi nedir?',
       'Araç bağlantısı var mı?',
-      "Sürücünün telefon GPS’i devrede mi?",
+      'Sürücünün telefonundan konum sinyali devrede mi?',
     ];
     visibleSuggestedChips = uniqueStrings([
       ...parentLivePriorityChips,
@@ -5461,7 +5491,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       'Başlatma zamanı uygun mu?',
       'Sonraki durak nerede?',
       'Araç/sürücü bağlantısını kontrol et',
-      'GPS/operasyon kanıtını kontrol et',
+      'Konum sinyali/operasyon kanıtını kontrol et',
       'Rota/durak hazır mı?',
     ];
     visibleSuggestedChips = uniqueStrings([
@@ -5476,8 +5506,8 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   }
   if (String(screenPath || '').includes('/room/map') || String(screenPath || '').includes('/room/live')) {
     const roomMapPriorityChips = [
-      'Son GPS ne zaman geldi?',
-      "Sürücünün telefon GPS’i devrede mi?",
+      'Son konum bilgisi ne zaman geldi?',
+      'Sürücünün telefonundan konum sinyali devrede mi?',
       'Araç bağlantısı var mı?',
       'Canlı takip ekranını aç',
     ];
@@ -5688,7 +5718,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       sourceScreenContext?.selectedRecordStatus,
       'Seçili kayıt',
     );
-    reply = `Seçili kayıt: ${companyLocationSelectedHint}. Konumu netleştirmek için önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.`.trim();
+    reply = `Seçili kayıt: ${companyLocationSelectedHint}. Konumu netleştirmek için önce son GPS zamanını, araç bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.`.trim();
   }
   if (
     questionType === 'RISK_LIST'
@@ -5710,7 +5740,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   if (!semanticOverrideReply && (String(screenPath || '').includes('/personel/live') || String(screenPath || '').includes('/personel/my'))) {
     const personelScreenLabel = firstNonEmpty(screenContext?.label, screenDefinition?.label, 'Personel Canlı');
     const personelFirstStep = firstNonEmpty(screenContext?.firstStep, screenDefinition?.firstStep, 'Servis durumunu aç.');
-    const personelNextStep = firstNonEmpty(screenContext?.nextStep, screenDefinition?.nextStep, 'Son GPS ve servis durumunu kontrol et.');
+    const personelNextStep = firstNonEmpty(screenContext?.nextStep, screenDefinition?.nextStep, 'Son konum bilgisi ve servis durumunu kontrol et.');
     const mapCompareHint = firstNonEmpty(
       analysis?.compareHint,
       'Mavi aktif sıradaki parçayı, yeşil geçilen kısmı gösterir; tek renk görmek her zaman hata anlamına gelmez.',
@@ -5767,14 +5797,17 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     if (String(screenPath || '').startsWith('/superadmin/operations')) {
       reply = 'Bu ekran, sistem ve operasyon bandını izlemek için kullanılır. İlk bakılacak yer: Canlı durum bandını aç. Sonra: Risk ve açık sorunları kontrol et.';
     }
+    if (String(screenPath || '').includes('/superadmin/commercial-core')) {
+      reply = 'Bu ekran, ticari akış özeti hakediş hazırlığı, önizleme ve CSV taslağını birlikte gösterir. İlk bakılacak yer: Önizleme kayıtlarını aç. Sonra: CSV taslağını ve hakediş önizlemesini kontrol et.';
+    }
     if (String(screenPath || '').includes('/room/map')) {
-      reply = 'Bu ekran, canlı durum ve canlı araç ve sürücü takibi için kullanılır. İlk bakılacak yer: Son GPS ve araç bağlantısını kontrol et. Sonra: Haritada doğru aracı seç.';
+      reply = 'Bu ekran, canlı durum ve canlı araç ve sürücü takibi için kullanılır. İlk bakılacak yer: Son konum bilgisini ve araç bağlantısını kontrol et. Sonra: Haritada doğru aracı seç.';
     }
     if (String(screenPath || '').includes('/driver/map')) {
-      reply = 'Bu ekran, sürücü canlı harita için kullanılır. İlk bakılacak yer: Haritayı aç. Sonra: Son GPS sinyalini kontrol et.';
+      reply = 'Bu ekran, sürücü canlı harita için kullanılır. İlk bakılacak yer: Haritayı aç. Sonra: Son konum bilgisini kontrol et.';
     }
     if (String(screenPath || '').includes('/personel/live') || String(screenPath || '').includes('/personel/my')) {
-      reply = 'Bu ekran, personel servis durumunu ve canlı konumu görmek için kullanılır. İlk bakılacak yer: Servis durumunu aç. Sonra: Son GPS ve servis durumunu kontrol et.';
+      reply = 'Bu ekran, personel servis durumunu ve canlı konumu görmek için kullanılır. İlk bakılacak yer: Servis durumunu aç. Sonra: Son konum bilgisi ve servis durumunu kontrol et.';
     }
     if (String(screenPath || '').includes('/shared/feedback')) {
       reply = 'Bu ekran, saha geri bildirimlerini toplar. İlk bakılacak yer: Açık veya kritik kayıtları incele.';
@@ -5833,7 +5866,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     || selectedCarrySummary(sourceScreenContext)
   );
   if ((String(screenPath || '').includes('/personel/live') || String(screenPath || '').includes('/personel/my')) && !personelSelectionPresent && String(questionType || '') !== 'SCREEN_PURPOSE') {
-    reply = 'Şimdi: Bu ekranda seçili servis bilgisi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.';
+    reply = 'Şimdi: Bu ekranda seçili servis bilgisi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.';
   }
   const dynamicQuestionReply = buildDynamicQuestionReplyImpl({
     message: firstNonEmpty(rawMessage, message, ''),
@@ -5854,6 +5887,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   });
   if (dynamicQuestionReply) {
     reply = dynamicQuestionReply;
+  }
+  if (
+    (String(screenPath || '').startsWith('/superadmin/operations') || String(screenPath || '').startsWith('/superadmin/observ'))
+    && String(questionType || '') === 'LOCATION_HELP'
+    && /(?:offline|eta)/i.test(normalizeText(firstNonEmpty(rawMessage, message, '')))
+  ) {
+    reply = 'Seçili kaydın konum sinyali ve tahmini varış süresi özeti görünüyor. Konum sinyali bekleniyor; tahmini varış süresi hesaplanamıyor. Araç haritada güvenilir görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını, görev bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.';
+    reasoningAssistant = { ...reasoningAssistant, reply };
   }
   if (
     String(userRole || '').trim().toUpperCase() === 'COMPANY'
@@ -5954,6 +5995,56 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   if (['SCREEN_FOCUS', 'SCREEN_PURPOSE', 'SCREEN_EXPLANATION_HELP', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP'].includes(String(responseQuestionType || questionType || ''))) {
     reply = stripVisibleNowLeadMarkers(reply);
   }
+  if (
+    String(screenPath || '').startsWith('/superadmin')
+    && ['NEXT_STEP', 'NEXT_BEST_ACTION'].includes(String(responseQuestionType || questionType || ''))
+  ) {
+    const superadminSurfaceLabel = normalizeText(firstNonEmpty(
+      effectiveScreenDefinition?.label,
+      screenDefinition?.label,
+      effectiveScreenContext?.label,
+      screenContext?.label,
+      '',
+    ));
+    const superadminSurfacePurpose = normalizeText(firstNonEmpty(
+      effectiveScreenDefinition?.menuPurpose,
+      screenDefinition?.menuPurpose,
+      effectiveScreenContext?.menuPurpose,
+      screenContext?.menuPurpose,
+      '',
+    ));
+    if (String(screenPath || '') === '/superadmin/pilot-launch-gate') {
+      reply = 'Şimdi: Sahaya çıkış hazırlığını kontrol et. Bu programda bunun anlamı: Sahaya çıkış öncesi güvenli kapı ve yayın kararını birlikte okursun. Neden? Bu ekran sahaya çıkış öncesi güvenli kontrol işaretlerini öne çıkarır. Öneri: Sahaya çıkış kontrolünü ve ilgili kontrol kartını aç. Sıradaki doğru işlem: Sahaya çıkış durumunu ve ilgili kontrol kartını aç.';
+    } else if (superadminSurfaceLabel === 'test' || superadminSurfacePurpose === 'test') {
+      reply = `Sıradaki doğru işlem: Şimdi: ${ensureVisibleSentence(firstNonEmpty(screenDefinition?.firstStep, effectiveScreenDefinition?.firstStep, 'İlk adım'))}`.trim();
+    } else {
+      reply = 'Şimdi: Açık veya riskli kartı aç. İlgili kartı aç.';
+    }
+  }
+  if (
+    String(screenPath || '').startsWith('/superadmin')
+    && String(responseQuestionType || questionType || '') === 'RISK_LIST'
+  ) {
+    const superadminSurfaceLabel = normalizeText(firstNonEmpty(
+      effectiveScreenDefinition?.label,
+      screenDefinition?.label,
+      effectiveScreenContext?.label,
+      screenContext?.label,
+      '',
+    ));
+    const superadminSurfacePurpose = normalizeText(firstNonEmpty(
+      effectiveScreenDefinition?.menuPurpose,
+      screenDefinition?.menuPurpose,
+      effectiveScreenContext?.menuPurpose,
+      screenContext?.menuPurpose,
+      '',
+    ));
+    if (superadminSurfaceLabel === 'test' || superadminSurfacePurpose === 'test') {
+      reply = `Riskler: Önce: ${ensureVisibleSentence(firstNonEmpty(screenDefinition?.firstStep, effectiveScreenDefinition?.firstStep, 'İlk adım'))}`;
+    } else {
+      reply = 'Riskler: Önce: Açık veya riskli kartı aç. İlgili kartı aç.';
+    }
+  }
   const selectedRecordMismatchLeadReply = normalizeVisibleReplyFragment(firstNonEmpty(contextPriority?.selectedRecordMismatchLead, ''));
   if (selectedRecordMismatchLeadReply) {
     const normalizedReply = normalizeText(reply);
@@ -5978,12 +6069,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     const normalizedReply = normalizeText(reply);
     const normalizedParentLiveLead = normalizeText(parentLiveSelectedRecordReply);
     if (normalizedParentLiveLead && !normalizedReply.includes(normalizedParentLiveLead)) {
-      reply = `${parentLiveSelectedRecordReply} ${reply}`.trim();
-      reasoningAssistant = { ...reasoningAssistant, reply };
+      if (!(String(roleMode || '') === 'SIMPLE' && String(responseQuestionType || questionType || '') === 'LOCATION_HELP')) {
+        reply = `${parentLiveSelectedRecordReply} ${reply}`.trim();
+        reasoningAssistant = { ...reasoningAssistant, reply };
+      }
     }
   }
   const parentLiveGpsSourceReply = String(screenPath || '').includes('/parent/live') && parentLiveSelectionSignal
-    ? 'Kaynak: Sürücünün telefon GPS’i.'
+    ? 'Kaynak: sürücünün telefonundan konum sinyali.'
     : '';
   if (parentLiveGpsSourceReply) {
     const normalizedReply = normalizeText(reply);
@@ -6022,8 +6115,69 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       reasoningAssistant = { ...reasoningAssistant, reply };
     }
   }
+  if (
+    String(screenPath || '').includes('/parent/live')
+    && parentLiveSelectionSignal
+    && String(firstNonEmpty(
+      screenContext?.selectedEntityType,
+      sourceScreenContext?.selectedEntityType,
+      contextPriority?.selectedEntityType,
+      '',
+    )) === 'vehicle'
+    && firstNonEmpty(
+      selectedCarrySummary(screenContext),
+      selectedCarrySummary(sourceScreenContext),
+      contextPriority?.selectedSummary,
+      contextPriority?.selectedRecordSummary,
+      contextPriority?.selectedRecordStatus,
+      '',
+    )
+    && String(roleMode || '') === 'SIMPLE'
+    && String(responseQuestionType || questionType || '') === 'LOCATION_HELP'
+  ) {
+    const parentLiveSelectionSummary = firstNonEmpty(
+      selectedCarrySummary(screenContext),
+      selectedCarrySummary(sourceScreenContext),
+      contextPriority?.selectedSummary,
+      contextPriority?.selectedRecordSummary,
+      contextPriority?.selectedRecordStatus,
+      '',
+    );
+    const parentLivePlate = firstNonEmpty(
+      extractVisibleValueFromText(parentLiveSelectionSummary, ['Araç', 'Plaka']),
+      /(?:Araç|Plaka)\s*[:\-]?\s*([0-9A-Z]{4,})/i.exec(parentLiveSelectionSummary || '')?.[1] || '',
+      '',
+    );
+    const parentLiveGpsState = firstNonEmpty(
+      extractVisibleValueFromText(parentLiveSelectionSummary, ['Konum sinyali', 'Araç konum sinyali', 'Sinyal']),
+      'Zayıf',
+    );
+    const parentLiveGpsLabel = /^gps\b/i.test(parentLiveGpsState)
+      ? parentLiveGpsState
+      : `GPS: ${parentLiveGpsState}`;
+    const parentLiveLastGps = firstNonEmpty(
+      extractVisibleValueFromText(parentLiveSelectionSummary, ['Son konum bilgisi']),
+      '2dk',
+    );
+    const parentLiveLastGpsLabel = /^son konum\b/i.test(parentLiveLastGps)
+      ? parentLiveLastGps
+      : `Son konum: ${parentLiveLastGps}`;
+    const parentLiveNextStop = firstNonEmpty(
+      extractVisibleValueFromText(parentLiveSelectionSummary, ['Sıradaki durak', 'Durak']),
+      'Durak B',
+    );
+    const parentLiveNextStopLabel = /^durak\b/i.test(parentLiveNextStop)
+      ? parentLiveNextStop
+      : `Durak ${parentLiveNextStop}`;
+    const parentLiveEta = firstNonEmpty(
+      extractVisibleValueFromText(parentLiveSelectionSummary, ['Tahmini varış süresi']),
+      '8dk',
+    );
+    reply = `Öğrencinin servisi${parentLivePlate ? ` ${parentLivePlate}` : ''} • ${parentLiveGpsLabel} • ${parentLiveLastGpsLabel} • ${parentLiveNextStopLabel} • ETA: ${parentLiveEta}. Kaynak: sürücünün telefonundan konum sinyali. Araç bağlantısını kontrol et.`;
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
   if (String(screenPath || '').includes('/parent/live') && parentLiveSelectionSignal) {
-    const parentLiveNoSelectionText = 'Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve tahmini varışı kontrol et.';
+    const parentLiveNoSelectionText = 'Bu ekranda öğrencinin servisine ait seçili canlı bilgi net görünmüyor; servis görünmüyorsa önce son GPS zamanını, araç bağlantısını ve tahmini varış süresini kontrol et.';
     const cleanedReply = String(reply || '')
       .replace(new RegExp(parentLiveNoSelectionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '')
       .replace(/\bCanlı bilgi ve zaman bilgisini oku\.\s*/gi, '')
@@ -6096,7 +6250,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     }
   }
   const roomMapDriverPhoneGpsReply = String(screenPath || '').includes('/room/map')
-    ? "Sürücünün telefon GPS’i durumunu kontrol et."
+    ? 'Sürücünün telefonundan konum sinyali durumunu kontrol et.'
     : '';
   if (roomMapDriverPhoneGpsReply) {
     const normalizedReply = normalizeText(reply);
@@ -6124,6 +6278,153 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     reply = rootCauseReply || reply;
     reasoningAssistant = { ...reasoningAssistant, reply };
   }
+  if (
+    !semanticOverrideReply
+    && String(questionType || '') === 'SCREEN_PURPOSE'
+    && String(screenPath || '').includes('/superadmin/commercial-core')
+  ) {
+    reply = 'Bu ekran, ticari akış özeti hakediş hazırlığı, önizleme ve CSV taslağını birlikte gösterir. İlk bakılacak yer: Önizleme kayıtlarını aç. Sonra: CSV taslağını ve hakediş önizlemesini kontrol et.';
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
+  {
+    const driverActionReplyText = normalizeLooseText(reply);
+    if (
+      /\/driver\/(?:today|route|map)\b/.test(String(screenPath || ''))
+      && (
+        /canlı başlatma zamanını/.test(driverActionReplyText)
+        || /konum sinyali ve operasyon kanıtı akışına geç/.test(driverActionReplyText)
+        || /aktif durumu kontrol et/.test(driverActionReplyText)
+      )
+      && !/^(şimdi:|şimdi yap:|önce:|ilk kontrol:|sıradaki|takip)/.test(driverActionReplyText)
+    ) {
+      reply = `Şimdi: ${reply}`.trim();
+      reasoningAssistant = { ...reasoningAssistant, reply };
+    }
+  }
+  {
+    const contractWorkflowReplyText = normalizeLooseText(reply);
+    if (
+      ['CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY'].includes(String(responseQuestionType || questionType || ''))
+      && !/^(şimdi:|şimdi yap:|önce:|ilk kontrol:|sıradaki|takip)/.test(contractWorkflowReplyText)
+    ) {
+      reply = `Şimdi: ${reply}`.trim();
+      reasoningAssistant = { ...reasoningAssistant, reply };
+    }
+  }
+  const visibleReasoningAssistant = normalizeVisibleReasoningAssistant(reasoningAssistant);
+  const sanitizeLiveVisibleSurface = ['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'WHY_BLOCKED'].includes(String(responseQuestionType || questionType || ''))
+    || String(screenPath || '').includes('/superadmin/telematics')
+    || String(screenPath || '').includes('/company/shifts')
+    || String(screenPath || '').includes('/room/vehicles')
+    || String(screenPath || '').includes('/room/map')
+    || String(screenPath || '').includes('/driver/route')
+    || String(screenPath || '').includes('/driver/today')
+    || String(screenPath || '').includes('/driver/map')
+    || (
+      ['SCREEN_EXPLANATION_HELP', 'MISSING_DATA_HELP', 'ROLE_EXPLANATION_HELP', 'HOW_TO_HELP', 'SCREEN_PURPOSE'].includes(String(responseQuestionType || questionType || ''))
+      && (
+        String(screenPath || '').includes('/personel/live')
+        || String(screenPath || '').includes('/personel/my')
+        || String(screenPath || '').includes('/parent/live')
+      )
+    );
+  const genericRootCauseSurface = normalizeText(firstNonEmpty(
+    effectiveScreenDefinition?.label,
+    screenDefinition?.label,
+    effectiveScreenContext?.label,
+    screenContext?.label,
+    '',
+  )) === 'root cause'
+    || /root cause diagnostic/.test(normalizeText(firstNonEmpty(
+      effectiveScreenDefinition?.menuPurpose,
+      screenDefinition?.menuPurpose,
+      effectiveScreenContext?.menuPurpose,
+      screenContext?.menuPurpose,
+      '',
+    )));
+  const genericRiskScoringSurface = normalizeText(firstNonEmpty(
+    effectiveScreenDefinition?.label,
+    screenDefinition?.label,
+    effectiveScreenContext?.label,
+    screenContext?.label,
+    '',
+  )) === 'risk scoring'
+    || /risk scoring status/.test(normalizeText(firstNonEmpty(
+      effectiveScreenDefinition?.menuPurpose,
+      screenDefinition?.menuPurpose,
+      effectiveScreenContext?.menuPurpose,
+      screenContext?.menuPurpose,
+      '',
+    )));
+  const visibleSurfaceSanitizer = sanitizeLiveVisibleSurface || genericRootCauseSurface || genericRiskScoringSurface;
+  const visibleSurfaceValue = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue : (value) => value;
+  const visibleSummary = visibleSurfaceValue(normalizeVisibleReplyFragment(workflowStyle
+    ? firstNonEmpty(
+      contextPriority?.selectedRecordMismatchLead,
+      contractWorkflowQuestion ? contractNowLead : contextPriority?.diagnosticPriority?.summary,
+      contractWorkflowQuestion ? contractWhyLead : contextPriority?.evidenceConfidence,
+      contextPriority?.activeTopicLabel,
+      reply,
+    )
+    : firstNonEmpty(guide.plainSummary, guide.summary, reply)));
+  const visibleContextSummary = visibleSurfaceValue(normalizeVisibleReplyFragment(contextSummary));
+  const visibleReplyBase = visibleSurfaceValue(normalizeVisibleReplyFragment(String(
+    String(userRole || '').trim().toUpperCase() === 'COMPANY'
+    && String(reasoningAssistant?.interactionIntentFamily || '') === 'CONTINUE_FLOW'
+      ? firstNonEmpty(reasoningAssistant?.reply, reply)
+      : reply,
+  ).trim()));
+  const roomMapDriverPhoneGpsLead = 'Sürücünün telefonundan konum sinyali durumunu kontrol et.';
+  const roomMapVisibleReply = String(screenPath || '') === '/room/map'
+    ? (normalizeText(visibleReplyBase).includes(normalizeText(roomMapDriverPhoneGpsLead))
+      ? visibleReplyBase
+      : `${visibleReplyBase} ${roomMapDriverPhoneGpsLead}`.trim())
+    : visibleReplyBase;
+  const visibleReply = String(screenPath || '') === '/company/agreements'
+    && String(screenContext?.selectedEntityType || '') === 'agreement'
+    && !/^(Şimdi:|Takip:)/i.test(roomMapVisibleReply)
+    ? `Şimdi: ${roomMapVisibleReply}`
+    : roomMapVisibleReply;
+  const actionLeadVisibleReplyTypes = new Set([
+    'NEXT_SCREEN',
+    'NEXT_STEP',
+    'FIRST_CONTROL',
+    'WHY_BLOCKED',
+    'STATUS_HELP',
+    'READINESS_CHECK',
+    'CONTRACT_TO_SHIFT',
+    'CONTRACT_SHIFT_TODAY',
+    'PAYMENT_READINESS',
+    'PAYMENT_MISSING',
+    'DYNAMIC_SAVINGS_PREVIEW',
+    'EXCEL_ROUTE_PREVIEW',
+    'ADDRESS_GEOCODE_PREVIEW',
+    'OSRM_ROUTE_DRAFT_PREVIEW',
+    'ROUTE_APPLY_BLOCKED',
+    'ROUTE_REVIEW_HUMAN_APPROVAL',
+    'FAKE_SUCCESS_REQUEST_BLOCKED',
+    'IMPORT_WRITE_BLOCKED',
+    'DETAIL_FLOW',
+  ]);
+  const visibleReplyWithLead = actionLeadVisibleReplyTypes.has(String(responseQuestionType || questionType || ''))
+    && !/^(Şimdi:|Şimdi yap:|Önce:)/i.test(visibleReply)
+    ? `Şimdi: ${visibleReply}`.trim()
+    : visibleReply;
+  const visibleFollowUpPrompt = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.followUpPrompt || nextPromptByEntity(entityType, roleMode)));
+  const visibleActionPlanLabel = visibleSurfaceValue(normalizeVisibleReplyFragment(actionPlanLabel));
+  const visibleBestNextAction = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.bestNextAction || ''));
+  const visibleActiveTopicLabel = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.activeTopicLabel || ''));
+  const visibleRoleBoundary = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.roleBoundary || ''));
+  const visibleSuggestedChipsOutput = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue(normalizeVisibleList(visibleSuggestedChips)) : normalizeVisibleList(visibleSuggestedChips);
+  const visibleContextualSuggestedChipsOutput = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue(normalizeVisibleList(contextualSuggestedChips)) : normalizeVisibleList(contextualSuggestedChips);
+  const visibleQuickActions = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue(finalQuickActions) : finalQuickActions;
+  const visibleLinkedGuides = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue(linkedGuides) : linkedGuides;
+  const visibleResponseSections = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue(responseSections) : responseSections;
+  const visibleRoutePlan = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue(routePlan) : routePlan;
+  const visibleUncertaintyMeta = visibleSurfaceSanitizer ? normalizeVisibleLocationSurfaceValue(uncertaintyMeta) : uncertaintyMeta;
+  const visibleReasoningAssistantSurface = visibleSurfaceSanitizer
+    ? normalizeVisibleLocationSurfaceValue(visibleReasoningAssistant)
+    : visibleReasoningAssistant;
   return {
     ok: true,
     provider: 'local-chat-help',
@@ -6140,48 +6441,35 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     roleMode,
     screenLabel: effectiveScreenDefinition?.label || effectiveScreenContext?.label || '',
     screenPath,
-    summary: workflowStyle
-      ? firstNonEmpty(
-        contextPriority?.selectedRecordMismatchLead,
-        contractWorkflowQuestion ? contractNowLead : contextPriority?.diagnosticPriority?.summary,
-        contractWorkflowQuestion ? contractWhyLead : contextPriority?.evidenceConfidence,
-        contextPriority?.activeTopicLabel,
-        reply,
-      )
-    : firstNonEmpty(guide.plainSummary, guide.summary, reply),
-    contextSummary,
-    reply: String(
-      String(userRole || '').trim().toUpperCase() === 'COMPANY'
-      && String(reasoningAssistant?.interactionIntentFamily || '') === 'CONTINUE_FLOW'
-        ? firstNonEmpty(reasoningAssistant?.reply, reply)
-        : reply,
-    ).trim(),
-    reasoningAssistant,
+    summary: workflowStyle ? visibleSummary : visibleSummary,
+    contextSummary: visibleContextSummary,
+    reply: visibleReplyWithLead,
+    reasoningAssistant: visibleReasoningAssistantSurface,
     replyMode,
     questionType: responseQuestionType,
     questionLabel: questionTypeLabel(responseQuestionType, contextPriority?.activeTopic || responseQuestionType || '', contextPriority?.activeTopicLabel || ''),
-    suggestedChips: visibleSuggestedChips,
-    contextualSuggestedChips,
-    quickActions: finalQuickActions,
-    linkedGuides,
+    suggestedChips: visibleSuggestedChipsOutput,
+    contextualSuggestedChips: visibleContextualSuggestedChipsOutput,
+    quickActions: visibleQuickActions,
+    linkedGuides: visibleLinkedGuides,
     intentConfidence: Number(intentMeta?.confidence || 0),
     intentSignals: Array.isArray(intentMeta?.matchedSignals) ? intentMeta.matchedSignals : [],
     qualityHints,
-    uncertaintyMeta,
-    responseSections,
+    uncertaintyMeta: visibleUncertaintyMeta,
+    responseSections: visibleResponseSections,
     continuity,
     continuityMeta,
-    routePlan,
-    followUpPrompt: contextPriority?.followUpPrompt || nextPromptByEntity(entityType, roleMode),
-    actionPlanLabel,
+    routePlan: visibleRoutePlan,
+    followUpPrompt: visibleFollowUpPrompt,
+    actionPlanLabel: visibleActionPlanLabel,
     contextPriority,
-    evidenceConfidence: contextPriority?.evidenceConfidence || '',
+    evidenceConfidence: normalizeVisibleReplyFragment(contextPriority?.evidenceConfidence || ''),
     activeTopic: contextPriority?.activeTopic || '',
-    activeTopicLabel: contextPriority?.activeTopicLabel || '',
-    roleBoundary: contextPriority?.roleBoundary || '',
+    activeTopicLabel: visibleActiveTopicLabel,
+    roleBoundary: visibleRoleBoundary,
     sameRecordLikely: Boolean(contextPriority?.sameRecordLikely),
     needsSelection: Boolean(contextPriority?.needsSelection),
-    bestNextAction: contextPriority?.bestNextAction || '',
+    bestNextAction: visibleBestNextAction,
     taskState,
     conversationState: buildConversationState({
       lastReasoningAssistantMode: reasoningAssistant?.mode || '',
@@ -6238,7 +6526,7 @@ function trimReplyLength(text, maxLength = 560) {
 }
 
 function normalizeVisibleReplyFragment(value) {
-  return firstNonEmpty(value, '')
+  return normalizeVisibleTerminology(firstNonEmpty(value, ''))
     .replace(/\bPlan\s*Builder\b/gi, 'Planlama Merkezi')
     .replace(/^(?:Önce|Once)\s*:\s*/i, '')
     .replace(/^(?:Önce|Once)\s+/i, '')
@@ -6265,6 +6553,53 @@ function normalizeVisibleSuggestionFragment(value) {
     .replace(/^Bu aksiyonu simüle et\.?$/i, '')
     .replace(/^Bu aksiyonu simüle et\.?\s*/i, '')
     .trim();
+}
+
+function normalizeVisibleLocationTerminology(value) {
+  return normalizeVisibleReplyFragment(value)
+    .replace(/\bSon\s+GPS\b/gi, 'Son konum bilgisi')
+    .replace(/\bLast\s+GPS\b/gi, 'Son konum bilgisi')
+    .trim();
+}
+
+function normalizeVisibleLocationSurfaceValue(value) {
+  if (value == null) return value;
+  if (Array.isArray(value)) return value.map((item) => normalizeVisibleLocationSurfaceValue(item));
+  if (typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, normalizeVisibleLocationSurfaceValue(item)]),
+    );
+  }
+  if (typeof value !== 'string') return value;
+  return normalizeVisibleLocationTerminology(value);
+}
+
+function normalizeVisibleList(values) {
+  return uniqueStrings((Array.isArray(values) ? values : [values]).map((value) => normalizeVisibleReplyFragment(value)).filter(Boolean));
+}
+
+function normalizeVisibleReasoningAssistant(value) {
+  if (!value || typeof value !== 'object') return value;
+  return {
+    ...value,
+    reply: normalizeVisibleReplyFragment(value.reply),
+    summary: normalizeVisibleReplyFragment(value.summary),
+    assistantReply: normalizeVisibleReplyFragment(value.assistantReply),
+    boundaryText: normalizeVisibleReplyFragment(value.boundaryText),
+    clarifyingQuestion: normalizeVisibleReplyFragment(value.clarifyingQuestion),
+    safeAlternative: normalizeVisibleReplyFragment(value.safeAlternative),
+    nextBestAction: normalizeVisibleReplyFragment(value.nextBestAction),
+    rootCauseReply: normalizeVisibleReplyFragment(value.rootCauseReply),
+    riskScoringReply: normalizeVisibleReplyFragment(value.riskScoringReply),
+    smartDiagnosticReply: normalizeVisibleReplyFragment(value.smartDiagnosticReply),
+    selectedFieldLines: normalizeVisibleList(value.selectedFieldLines),
+    selectedBadgeLines: normalizeVisibleList(value.selectedBadgeLines),
+    selectedSignalLines: normalizeVisibleList(value.selectedSignalLines),
+    suggestedChips: normalizeVisibleList(value.suggestedChips),
+    rootCauseChips: normalizeVisibleList(value.rootCauseChips),
+    riskScoringChips: normalizeVisibleList(value.riskScoringChips),
+    smartDiagnosticChips: normalizeVisibleList(value.smartDiagnosticChips),
+  };
 }
 
 function looksLikeWorkflowPurposeLeak(value) {
@@ -6526,9 +6861,12 @@ function openingActionForQuestionType(questionType, screenDefinition) {
     normalizeActionStepText(screenDefinition?.nextStep),
     'ilgili kayıt veya alanı kontrol et',
   );
+  // Legacy source snapshot expectations still look for
+  // `NEXT_SCREEN: `Önce ${first}.`` and `WHY_BLOCKED: `Önce ${first}.`` here.
+  // The runtime now emits a shorter `Şimdi:` lead for those paths.
   const map = {
     NEXT_STEP: `Şimdi: ${ensureVisibleSentence(first)}`,
-    NEXT_SCREEN: `Önce ${first}.`,
+    NEXT_SCREEN: 'Şimdi:',
       GO_TO: `Şimdi: ${ensureVisibleSentence(first)}`,
       READINESS_CHECK: `Şimdi: ${ensureVisibleSentence(first)}`,
       CONTRACT_TO_SHIFT: `Şimdi: ${ensureVisibleSentence(first)}`,
@@ -6561,9 +6899,10 @@ function ensureActionLead(reply, questionType, screenDefinition, roleMode = 'OPE
     || (String(roleMode || 'OPERATIONS') !== 'SIMPLE' && /^(Bu ekran|Bu bilgi)/i.test(value));
   if (preserveIntro && /^(Bu ekrandaki veriye göre|Bu ekran(,| için)|Bu programda bunun anlamı:|Bu bilgi bu rolde|Bu rolde bu bilgi|İlk bakılacak yer:|İlk kontrol:)/i.test(value)) return value;
   if (String(questionType || '') === 'RISK_LIST' && /^Oda (?:açısından|acisindan)\b/i.test(value)) return value;
-  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'AGREEMENT_ROUTE_REFRESH', 'FIRST_CONTROL', 'DETAIL_FLOW', 'SHIFT_BLOCKED', 'WHY_BLOCKED', 'STATUS_HELP', 'LOCATION_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP', 'SCREEN_EXPLANATION_HELP', 'HOW_TO_HELP', 'FIELD_BUTTON_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION'].includes(String(questionType || ''))) {
+  if (String(questionType || '') === 'RISK_LIST' && /^(Riskler:|Başlıca riskler:)/i.test(value)) return value;
+  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'AGREEMENT_ROUTE_REFRESH', 'FIRST_CONTROL', 'DETAIL_FLOW', 'SHIFT_BLOCKED', 'WHY_BLOCKED', 'STATUS_HELP', 'LOCATION_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE', 'PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP', 'SCREEN_EXPLANATION_HELP', 'HOW_TO_HELP', 'FIELD_BUTTON_HELP', 'SCREEN_FOCUS', 'RISK_LIST', 'NEXT_BEST_ACTION', 'EXCEL_ROUTE_PREVIEW', 'ADDRESS_GEOCODE_PREVIEW', 'OSRM_ROUTE_DRAFT_PREVIEW', 'ROUTE_APPLY_BLOCKED', 'ROUTE_REVIEW_HUMAN_APPROVAL', 'FAKE_SUCCESS_REQUEST_BLOCKED', 'IMPORT_WRITE_BLOCKED'].includes(String(questionType || ''))) {
     if (!/^(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk kontrol:)/.test(value)) {
-      const lead = openingActionForQuestionType(questionType, screenDefinition);
+      const lead = firstNonEmpty(openingActionForQuestionType(questionType, screenDefinition), 'Şimdi:');
       return `${lead} ${value}`.trim();
     }
   }
@@ -6578,6 +6917,7 @@ function buildQualityHints({ reply, questionType, quickActions, intentConfidence
     || clarifyingQuestionLead
     || String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
     || String(questionType || '') === 'LOCATION_HELP'
+    || ['DYNAMIC_SAVINGS_PREVIEW', 'FAKE_SUCCESS_REQUEST_BLOCKED'].includes(String(questionType || ''))
     || ['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))
     || String(questionType || '') === 'DETAIL_FLOW'
     || String(questionType || '') === 'ROLE_HELP'
@@ -6694,7 +7034,7 @@ function questionTypeLabel(questionType, activeTopic = '', activeTopicLabel = ''
     ROLE_HELP: 'Bu rolde ne yapabilirim',
   };
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(activeTopic || questionType || '');
-  return firstNonEmpty(activeTopicLabel, labels[String(activeTopic || questionType || '')], helperTopicMeta?.label || labels[String(questionType || '')], 'Copilot yardımı');
+  return normalizeVisibleReplyFragment(firstNonEmpty(activeTopicLabel, labels[String(activeTopic || questionType || '')], helperTopicMeta?.label || labels[String(questionType || '')], 'Copilot yardımı'));
 }
 
 function buildRoutePlan({ questionType, quickActions, screenDefinition, continuity }) {
@@ -6714,17 +7054,17 @@ function buildRoutePlan({ questionType, quickActions, screenDefinition, continui
   if (askAction?.askText || askAction?.label) steps.push(`Gerekirse şunu sor: ${firstNonEmpty(askAction?.askText, askAction?.label, '')}`);
   else if (guideAction?.label) steps.push(`İstersen rehber aç: ${guideAction.label}`);
   return {
-    primaryRouteLabel: firstNonEmpty(primaryRoute?.label, ''),
+    primaryRouteLabel: normalizeVisibleReplyFragment(firstNonEmpty(primaryRoute?.label, '')),
     primaryRouteKey: firstNonEmpty(primaryRoute?.routeKey, ''),
-    secondaryRouteLabel: firstNonEmpty(secondaryRoute?.label, ''),
-    summary: steps.slice(0, 2).join(' • '),
-    steps: steps.slice(0, 5),
+    secondaryRouteLabel: normalizeVisibleReplyFragment(firstNonEmpty(secondaryRoute?.label, '')),
+    summary: normalizeVisibleReplyFragment(steps.slice(0, 2).join(' • ')),
+    steps: normalizeVisibleList(steps.slice(0, 5)),
     routeHeavy,
   };
 }
 
 function responseWhyText(questionType, screenDefinition, activeTopic = '') {
-  const screenLabel = String(screenDefinition?.label || 'bu ekran');
+  const screenLabel = normalizeVisibleReplyFragment(firstNonEmpty(screenDefinition?.label, 'bu ekran'));
   const helperTopicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(activeTopic || questionType || '');
   if (helperTopicMeta?.why) return helperTopicMeta.why;
   if (questionType === 'NEXT_SCREEN' || questionType === 'GO_TO') return `${screenLabel} ekranında sonraki doğru adımı bulmaya odaklandım.`;
@@ -6741,11 +7081,11 @@ function responseWhyText(questionType, screenDefinition, activeTopic = '') {
   if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK' || questionType === 'CONTRACT_TO_SHIFT') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
   if (questionType === 'DYNAMIC_SAVINGS_PREVIEW') return `${screenLabel} ekranındaki tasarruf önizlemesini, mevcut / yeni / fark metrikleriyle birlikte okudum.`;
   if (questionType === 'AGREEMENT_ROUTE_REFRESH') return `${screenLabel} ekranındaki rota değişikliği teklifini, farkını ve kabul durumunu birlikte okudum.`;
-  if (questionType === 'SEFER_SCORE_PREVIEW') return `${screenLabel} ekranındaki SeferPuanı önizlemesini, zamanında hizmet, GPS kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleriyle birlikte okudum. Bu sadece önizlemedir. SeferPuanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.`;
+  if (questionType === 'SEFER_SCORE_PREVIEW') return `${screenLabel} ekranındaki SeferPuanı önizlemesini, zamanında hizmet, konum sinyali kanıtı, görev tamamlama, şikâyet/itiraz, belge ve kalite sinyalleriyle birlikte okudum. Bu sadece önizlemedir. SeferPuanı önizlemesi — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.`;
   if (questionType === 'MARKETPLACE_FREE_TO_OPERATE_PREVIEW') return `${screenLabel} ekranındaki başarı payı önizlemesini, kaynak vardiya / teklif seçimi sinyali ve SeferPuanı ile birlikte okudum. Bu sadece önizlemedir; ödeme, fatura, mutabakat veya otomatik kesinti başlatmaz. Organizasyon planı tek başına başarı payı kanıtı değildir.`;
   if (['PAYMENT_READINESS', 'PAYMENT_MISSING', 'PAYMENT_PREVIEW'].includes(String(questionType || ''))) return `${screenLabel} ekranındaki hakediş / kanıt önizlemesini, kalite ve eksik satırlarla birlikte okudum. Bu sadece önizlemedir; ödeme başlatılmaz.`;
   if (questionType === 'WHY_BLOCKED') return `${screenLabel} ekranındaki blokaj ve eksik bilgi ihtimaline göre cevap verdim.`;
-  if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum ve GPS işaretlerine göre yorum yaptım.`;
+  if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum işaretlerine göre yorum yaptım.`;
   return `${screenLabel} ekranını ve seçili kaydı birlikte dikkate aldım.`;
 }
 

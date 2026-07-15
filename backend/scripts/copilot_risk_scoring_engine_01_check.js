@@ -361,10 +361,10 @@ function buildCases() {
       menuPurpose: 'Canlı operasyon ve vardiya izleme için kullanılır.',
       firstStep: 'Aktif vardiyayı aç.',
       nextStep: 'Son GPS ve araç atamasını kontrol et.',
-      genericNeedles: ['operasyon riskini değerlendirirken aktif servis, GPS ve kayıt kapsamı birlikte okunur', 'aktif servis görünmemesi', 'aktif vardiya ve son GPS sinyalini kontrol edelim.'],
+      genericNeedles: ['operasyon riskini değerlendirirken aktif servis, konum sinyali ve kayıt kapsamı birlikte okunur', 'konum sinyali verisinin gelmemesidir', 'aktif vardiya ve Son konum bilgisi sinyalini kontrol edelim.'],
       special: {
         message: 'Risk var mı? aktif servis görünmüyor',
-        replyNeedles: ['yüksek risk aktif servis görünmemesi veya GPS verisinin gelmemesidir', 'aktif vardiya ve son GPS sinyalini kontrol edelim.'],
+        replyNeedles: ['yüksek risk aktif servis görünmemesi veya konum sinyali verisinin gelmemesidir', 'aktif vardiya ve Son konum bilgisi sinyalini kontrol edelim.'],
       },
     },
     {
@@ -392,7 +392,7 @@ function buildCases() {
       genericNeedles: ['Oda açısından başlıca riskler yüksek görünüyor', 'vardiya onaylı ama canlı başlatılmamış olabilir', 'Riskli alanı belirle.'],
       special: {
         message: 'Risk var mı? başlatma',
-        replyNeedles: ['Oda açısından başlatma riski araç-sürücü ataması veya GPS hazırlığı eksikse yükselir', 'Riskli alanı belirle.'],
+      replyNeedles: ['Oda açısından başlatma riski araç-sürücü ataması veya konum sinyali hazırlığı eksikse yükselir', 'Riskli alanı belirle.'],
       },
     },
     {
@@ -403,10 +403,10 @@ function buildCases() {
       menuPurpose: 'Araç ve sürücü uygunluğu ile GPS durumunu gösterir.',
       firstStep: 'Araç satırını aç.',
       nextStep: 'Sürücü ve GPS durumunu kontrol et.',
-      genericNeedles: ['araç riski, araç pasif ya da görünmezse', 'Kritik olan önce araç-sürücü eşleşmesi ve GPS durumudur', 'aktiflik ve son GPS durumunu kontrol edelim.'],
+      genericNeedles: ['araç riski, araç pasif ya da görünmezse', 'Kritik olan önce araç-sürücü eşleşmesi ve konum sinyali durumudur', 'aktiflik ve Son konum bilgisi durumunu kontrol edelim.'],
       special: {
         message: 'Risk var mı? sürücü eşleşmesi',
-        replyNeedles: ['araç riski, sürücü eşleşmesi yoksa veya GPS göndermiyorsa yükselir', 'aktiflik ve son GPS durumunu kontrol edelim.'],
+        replyNeedles: ['araç riski, sürücü eşleşmesi yoksa veya konum sinyali göndermiyorsa yükselir', 'aktiflik ve Son konum bilgisi durumunu kontrol edelim.'],
       },
     },
     {
@@ -417,10 +417,10 @@ function buildCases() {
       menuPurpose: 'Günlük rota ve check-in akışını gösterir.',
       firstStep: 'Aktif vardiyayı aç.',
       nextStep: 'Durak listesini ve GPS doğrulamasını kontrol et.',
-      genericNeedles: ['yüksek risk aktif vardiya / rota görünmüyorsa veya durak listesi hazır değilse oluşur', 'Orta risk GPS / konum doğrulamasının eksik olmasıdır.', 'Otomatik işlem yapmadan önce aktif vardiya ve durak listesini kontrol edelim.'],
+      genericNeedles: ['yüksek risk aktif vardiya / rota görünmüyorsa veya durak listesi hazır değilse oluşur', 'Orta risk konum sinyali / konum doğrulamasının eksik olmasıdır.', 'Otomatik işlem yapmadan önce aktif vardiya ve durak listesini kontrol edelim.'],
       special: {
         message: 'Risk var mı? check-in',
-        replyNeedles: ['check-in riski yanlış durak, uygunsuz zaman veya GPS doğrulaması eksikse yükselir', 'doğru durak ve konum sinyalini kontrol etmek gerekir.'],
+        replyNeedles: ['check-in riski yanlış durak, uygunsuz zaman veya konum sinyali doğrulaması eksikse yükselir', 'doğru durak ve konum sinyalini kontrol etmek gerekir.'],
       },
     },
     {
@@ -431,7 +431,7 @@ function buildCases() {
       menuPurpose: 'Personel canlı ekranı servis durumu ve canlı takip sinyallerini gösterir.',
       firstStep: 'Servis durumunu aç.',
       nextStep: 'Biniş ve saat bilgisini kontrol et.',
-      genericNeedles: ['Personel Canlı için yüksek risk servis görünmüyorsa veya araç GPS göndermiyorsa oluşur', 'Servis durumunu aç.', 'atanmış vardiya ve araç konumunu kontrol edelim.'],
+      genericNeedles: ['Personel Canlı için yüksek risk servis görünmüyorsa veya araç konum sinyali göndermiyorsa oluşur', 'Servis durumunu aç.', 'atanmış vardiya ve araç konumunu kontrol edelim.'],
       special: {
         message: 'Risk var mı? gecikme',
         replyNeedles: ['Personel Canlı için gecikme riski araç konumu gelmiyorsa, servis saati yaklaştıysa veya sıradaki durak bilgisi eksikse artar', 'Servis durumunu aç.'],

@@ -570,7 +570,7 @@ async function main() {
     roleMode: 'OPERATIONS',
   });
   must(roomActionRefusal.reply, 'Bunu ben atayamam', 'room action refusal avoids the write action');
-  must(roomActionRefusal.reply, 'Güvenli alternatif', 'room action refusal gives an alternative');
+  must(roomActionRefusal.reply, 'Önerilen güvenli adım', 'room action refusal gives an alternative');
   must(roomActionRefusal.reply, 'araç', 'room action refusal stays in the vehicle lane');
 
   const parentBoundary = buildAssistantSnapshot({

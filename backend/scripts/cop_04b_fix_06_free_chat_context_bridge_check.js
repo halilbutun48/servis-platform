@@ -126,8 +126,8 @@ must(copilotPanelSource, 'const latestSelection = readCopilotSelection();', 'cop
 must(copilotPanelSource, 'entityType: "screen"', 'copilot panel submits free chat as screen-scoped request');
 must(copilotPanelSource, 'liveFacts', 'copilot panel forwards liveFacts');
 must(serviceSource, 'Bu ekranda seçili araç bilgisi net görünmüyor', 'service keeps safe no-selection fallback');
-must(helpComposerSource, 'Son GPS ne zaman geldi?', 'help composer keeps gps chip');
-must(helpComposerSource, 'Sürücünün telefon GPS’i devrede mi?', 'help composer keeps phone gps chip');
+must(helpComposerSource, 'Son konum bilgisi ne zaman geldi?', 'help composer keeps gps chip');
+must(helpComposerSource, 'Sürücünün telefonundan konum sinyali devrede mi?', 'help composer keeps phone gps chip');
 
 const { detectQuestionIntent } = await import(pathToFileURL(path.join(root, 'backend/src/ai/chat/intentRouter.js')).href);
 const { buildChatHelpResponse } = await import(pathToFileURL(path.join(root, 'backend/src/ai/chat/helpComposer.js')).href);
@@ -195,14 +195,14 @@ mustAny(replyA, ['GPS', 'zayıf', 'zayif', 'STALE', 'eski'], 'fixture A reply ke
 mustAny(replyA, ['Son GPS', '1 dk'], 'fixture A reply keeps last gps');
 mustAny(replyA, ['Pickup 6'], 'fixture A reply keeps next stop');
 mustAny(replyA, ['619', 'ETA'], 'fixture A reply keeps ETA');
-must(replyA, "Sürücünün telefon GPS’i", 'fixture A reply keeps phone gps wording');
-must(replyA, 'Araç haritada güvenilir görünmüyorsa önce son GPS zamanını, araç bağlantısını, görev bağlantısını ve Sürücünün telefon GPS’i durumunu kontrol et.', 'fixture A reply keeps recommended next control');
+must(replyA, 'Sürücünün telefonundan konum sinyali', 'fixture A reply keeps phone gps wording');
+must(replyA, 'Araç haritada güvenilir görünmüyorsa önce son konum bilgisi zamanını, araç bağlantısını, görev bağlantısını ve sürücünün telefonundan konum sinyali durumunu kontrol et.', 'fixture A reply keeps recommended next control');
 mustNot(replyA, 'Bu ekranda seçili araç bilgisi net görünmüyor', 'fixture A reply avoids no-selection fallback');
 mustNot(replyA, 'Bunu anlayamadım', 'fixture A reply avoids unknown fallback');
 assertNoForbiddenVisibleTerms(replyA, 'fixture A reply');
 const chipsA = chipList(responseA);
-mustArrayContains(chipsA, 'Son GPS ne zaman geldi?', 'fixture A chips keep last gps chip');
-mustArrayContains(chipsA, 'Sürücünün telefon GPS’i devrede mi?', 'fixture A chips keep phone gps chip');
+mustArrayContains(chipsA, 'Son konum bilgisi ne zaman geldi?', 'fixture A chips keep last gps chip');
+mustArrayContains(chipsA, 'Sürücünün telefonundan konum sinyali devrede mi?', 'fixture A chips keep phone gps chip');
 mustArrayContains(chipsA, 'Araç bağlantısı var mı?', 'fixture A chips keep vehicle connection chip');
 mustArrayContains(chipsA, 'Canlı takip ekranını aç', 'fixture A chips keep live tracking chip');
 
@@ -228,6 +228,6 @@ mustAny(replyB, ['Bu ekranda seçili araç bilgisi net görünmüyor', 'Ekrandak
 mustNot(replyB, 'Bunu anlayamadım', 'fixture B avoids unknown fallback');
 mustNotRaw(replyB, 'JOB_TYPE_ENTITY_MISMATCH', 'fixture B avoids raw entity mismatch');
 assertNoForbiddenVisibleTerms(replyB, 'fixture B reply');
-mustArrayContains(chipList(responseB), 'Son GPS ne zaman geldi?', 'fixture B chips stay gps-specific');
+mustArrayContains(chipList(responseB), 'Son konum bilgisi ne zaman geldi?', 'fixture B chips stay gps-specific');
 
 console.log('=== COP-04B-FIX-06 FREE CHAT CONTEXT BRIDGE CHECK PASS ===');

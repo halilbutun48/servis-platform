@@ -239,7 +239,7 @@ function buildCompanyOperationsRiskReply({
   const riskItems = buildRiskItems({ guide, screenDefinition, screenContext, sourceScreenContext, selectedCarrySummary });
   if (hasAnySignal(message, ['gecikme'])) {
     return buildRiskReply([
-      'Veriyle doğrulamak gerekir; gecikme riski konum sinyalinin güncel olmaması, servis saatinin yaklaşması veya araç atamasının eksik olmasıyla yükselir.',
+      'Veriyle doğrulamak gerekir; gecikme riski GPS verisinin güncel olmaması, servis saatinin yaklaşması veya araç atamasının eksik olmasıyla yükselir.',
       'Önce canlı araç durumu ve vardiya saatine bakalım.',
     ], riskItems);
   }
@@ -252,7 +252,7 @@ function buildCompanyOperationsRiskReply({
   }
   if (hasAnySignal(message, ['gps'])) {
     return buildRiskReply([
-      'Veriyle doğrulamak gerekir; yüksek risk son konum sinyalinin güncel olmamasıdır.',
+      'Veriyle doğrulamak gerekir; yüksek risk son GPS sinyalinin güncel olmamasıdır.',
       'Orta risk araç ataması eksikse canlı müdahale gecikir.',
       'Önce aktif vardiya ve son GPS sinyalini kontrol edelim.',
     ], riskItems);
@@ -316,7 +316,7 @@ function buildRoomShiftsRiskReply({
   if (hasAnySignal(message, ['gps'])) {
     return buildRiskReply([
       'Veriyle doğrulamak gerekir; Oda açısından GPS riski yüksekse canlı takip ve gecikme müdahalesi aksar.',
-      'En önemli sinyaller son GPS zamanı, konum sinyalinin güncel olmaması ve araç-sürücü eşleşmesidir.',
+      'En önemli sinyaller son GPS zamanı, GPS verisinin güncel olmaması ve araç-sürücü eşleşmesidir.',
       'Riskli alanı belirle.',
       'Sonra ilgili ekrana geç.',
     ], riskItems);
@@ -389,7 +389,7 @@ function buildDriverRouteRiskReply({
     ], riskItems);
   }
   return buildRiskReply([
-    'Veriyle doğrulamak gerekir; yüksek risk aktif vardiya / rota görünmüyorsa veya durak listesi hazır değilse oluşur.',
+      'Veriyle doğrulamak gerekir; yüksek risk aktif vardiya / rota görünmüyorsa veya durak listesi hazır değilse oluşur.',
     'Orta risk GPS / konum doğrulamasının eksik olmasıdır.',
     'Otomatik işlem yapmadan önce aktif vardiya ve durak listesini kontrol edelim.',
   ], riskItems);
@@ -406,7 +406,7 @@ function buildPersonelLiveRiskReply({
   const riskItems = buildRiskItems({ guide, screenDefinition, screenContext, sourceScreenContext, selectedCarrySummary });
   if (hasAnySignal(message, ['gecikme'])) {
     return buildRiskReply([
-      'Veriyle doğrulamak gerekir; Personel Canlı için gecikme riski araç konumu gelmiyorsa, servis saati yaklaştıysa veya sıradaki durak bilgisi eksikse artar.',
+      'Veriyle doğrulamak gerekir; Personel Canlı için gecikme riski araç konumu gelmiyorsa, servis saati yaklaştıysa veya sıradaki durak bilgisi eksikse artar. Araç GPS verisi gelmiyorsa gecikme riski daha da yükselir.',
       'Önce araç konumu ve servis saatini kontrol edelim.',
       'Servis durumunu aç.',
     ], riskItems);
