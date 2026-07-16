@@ -10,6 +10,7 @@ import {
 } from './conversationTaskStateResponses.js';
 import { buildRootCauseAssistantChips, buildRootCauseAssistantReply, buildRootCauseState } from './conversationRootCauseEngine.js';
 import { buildSmartDiagnosticState } from './conversationSmartDiagnostics.js';
+import { WORKFLOW_REASONING_RELEVANT_QUESTION_TYPES, buildWorkflowReasoningState } from './conversationWorkflowReasoningEngine.js';
 import { normalizeVisibleReplyFragment } from './conversationTaskStateShared.js';
 import { COPILOT_REASONING_ANSWER_COMPOSER_VERSION, composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 
@@ -796,6 +797,33 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
   const rootCauseReply = buildRootCauseAssistantReply(rootCauseArgs);
   const rootCauseChips = buildRootCauseAssistantChips(rootCauseArgs);
   const interactionIntentFamily = detectSeferAbiReasoningIntentFamily({ message, questionType, conversationState });
+  const workflowReasoningState = buildWorkflowReasoningState({
+    message,
+    rawMessage: message,
+    questionType,
+    interactionIntentFamily,
+    guide,
+    roleMode,
+    userRole,
+    user,
+    screenPath,
+    screenDefinition,
+    screenContext,
+    sourceScreenDefinition,
+    sourceScreenContext,
+    analysis,
+    contextPriority,
+    conversationState,
+    guidedTaskMeta,
+    entityType,
+    context,
+    taskState,
+  });
+  const workflowReasoningReply = normalizeVisibleReplyFragment(workflowReasoningState?.reply || '');
+  const smartDiagnosticReply = normalizeVisibleReplyFragment(smartDiagnosticState?.reply || '');
+  const workflowReasoningAssistantReply = workflowReasoningState?.shouldRespond && WORKFLOW_REASONING_RELEVANT_QUESTION_TYPES.includes(String(questionType || ''))
+    ? workflowReasoningReply
+    : '';
   const reasoningLead = buildReasoningLead({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const nextBestAction = buildNextAction({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
   const boundaryText = buildBoundaryText({ analysis, contextPriority, guide, interactionIntentFamily, roleProfile, effectiveRole });
@@ -891,6 +919,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     || contextPriority?.sameRecordLikely
     || contextPriority?.selectedRecordMismatchLead
     || contextPriority?.evidenceConfidence
+    || Boolean(workflowReasoningState?.shouldRespond)
     || analysis?.blockers?.length
     || analysis?.missingData?.length
     || analysis?.evidence?.length
@@ -911,6 +940,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     roleMode,
     questionType,
     message,
+    workflowReasoningState,
     analysis,
     contextPriority,
     screenPath,
@@ -974,7 +1004,15 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     rootCauseState,
     rootCauseTheme: rootCauseState?.theme || '',
     rootCauseReply: normalizeVisibleReplyFragment(rootCauseReply),
-    assistantReply: normalizeVisibleReplyFragment(firstNonEmpty(rootCauseReply, String(rawReply || ''))),
+    workflowReasoningState,
+    workflowReasoningReply,
+    workflowReasoningChips: normalizeVisibleList(workflowReasoningState?.chips || []),
+    assistantReply: normalizeVisibleReplyFragment(firstNonEmpty(
+      smartDiagnosticReply,
+      rootCauseReply,
+      workflowReasoningAssistantReply,
+      String(rawReply || ''),
+    )),
     rootCauseChips: normalizeVisibleList(rootCauseChips),
     riskScoringState,
     riskScoringTheme: riskScoringState?.theme || '',
@@ -982,7 +1020,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     riskScoringChips: normalizeVisibleList(riskScoringState?.chips || []),
     smartDiagnosticState,
     smartDiagnosticTheme: smartDiagnosticState?.theme || '',
-    smartDiagnosticReply: normalizeVisibleReplyFragment(firstNonEmpty(rootCauseReply, smartDiagnosticState?.reply, '')),
+    smartDiagnosticReply,
     smartDiagnosticChips: normalizeVisibleList(smartDiagnosticState?.chips || []),
     suggestedChips: normalizeVisibleList(buildSuggestedChips({
       roleMode,
@@ -1022,6 +1060,15 @@ function looksLikeRoomShiftClarifyingQuestion(snapshot = {}) {
   return /(?:ilgili\s+durumu\s+sor|netleştirmek\s+için\s+ne\s+sorars[ıi]n|netlestirmek\s+icin\s+ne\s+sorars[ıi]n|eksik\s+bilgi\s+ne)/.test(text);
 }
 
+function looksLikePersonelLiveClarifyingQuestion(snapshot = {}) {
+  const role = String(firstNonEmpty(snapshot?.effectiveRole, snapshot?.roleProfile?.role, '')).toLowerCase();
+  if (role !== 'personel') return false;
+  const screenPath = String(firstNonEmpty(snapshot?.sourceScreenDefinition?.path, snapshot?.sourceScreenContext?.path, snapshot?.screenContext?.path, snapshot?.screenPath, '')).toLowerCase();
+  if (!screenPath.includes('/personel/live')) return false;
+  const text = normalizeText(firstNonEmpty(snapshot?.message, snapshot?.rawMessage, ''));
+  return /^(niye\s+yok|neden\s+yok)\??$/.test(text);
+}
+
 export function detectSeferAbiReasoningMode(snapshot = {}) {
   if (snapshot.explicitBoundary) return 'SAFE_REFUSAL_WITH_ALTERNATIVE';
   if (snapshot.repeatCount > 0) return 'REPETITION_CONTROL';
@@ -1031,13 +1078,17 @@ export function detectSeferAbiReasoningMode(snapshot = {}) {
     ...snapshot,
     roleClarifyingQuestion: roleProfile.clarifyingQuestion,
   });
-  if (!hasGuidedTaskMeta && (clarifyingPrompt || looksLikeRoomShiftClarifyingQuestion(snapshot))) return 'CLARIFYING_QUESTION';
+  if (looksLikePersonelLiveClarifyingQuestion(snapshot)) return 'CLARIFYING_QUESTION';
+  if (!hasGuidedTaskMeta && (clarifyingPrompt || looksLikeRoomShiftClarifyingQuestion(snapshot) || looksLikePersonelLiveClarifyingQuestion(snapshot))) return 'CLARIFYING_QUESTION';
+  if (snapshot.workflowReasoningState?.shouldRespond) return 'CONTEXTUAL_REASONING';
   if (snapshot.hasReasoningSignal) return 'CONTEXTUAL_REASONING';
   return 'PASS_THROUGH';
 }
 
 function composeReasoningLead(snapshot) {
   const roleProfile = snapshot?.roleProfile || profileForRole(snapshot?.effectiveRole);
+  const rootCauseReply = firstNonEmpty(snapshot?.rootCauseReply, '');
+  if (rootCauseReply) return rootCauseReply;
   const smartDiagnosticReply = firstNonEmpty(snapshot?.smartDiagnosticReply, snapshot?.smartDiagnosticState?.reply, '');
   if (smartDiagnosticReply) return smartDiagnosticReply;
   const selectedRecordStatus = snapshot?.selectedRecordStatus || '';
@@ -1209,6 +1260,16 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
       firstNonEmpty(snapshot?.reasoningLead, snapshot?.nextBestAction, ''),
       rawReply,
     ], roleProfile.maxLength);
+  }
+
+  if (snapshot?.workflowReasoningState?.shouldRespond && WORKFLOW_REASONING_RELEVANT_QUESTION_TYPES.includes(String(snapshot?.questionType || ''))) {
+    return firstNonEmpty(
+      snapshot?.rootCauseReply,
+      snapshot?.smartDiagnosticReply,
+      snapshot?.workflowReasoningReply,
+      snapshot?.workflowReasoningState?.reply,
+      rawReply,
+    );
   }
 
   if (snapshot.mode === 'CONTEXTUAL_REASONING') {

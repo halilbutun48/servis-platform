@@ -66,6 +66,7 @@
     "check:copilotrootcauseengine01": "node backend/scripts/copilot_root_cause_engine_01_check.js",
     "check:copilotriskscoringengine01": "node backend/scripts/copilot_risk_scoring_engine_01_check.js",
     "check:copilotclarifyingquestionengine01": "node backend/scripts/copilot_clarifying_question_engine_01_check.js",
+    "check:copilotworkflowreasoningengine01": "node backend/scripts/copilot_workflow_reasoning_engine_01_check.js",
     "check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js",
     "check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
     "check:seferabiallrolesreasoningassistant01": "node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",

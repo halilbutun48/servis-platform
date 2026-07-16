@@ -153,6 +153,7 @@ function main() {
   must(pkg, '"check:copilotrootcauseengine01": "node backend/scripts/copilot_root_cause_engine_01_check.js"', 'package.json keeps check:copilotrootcauseengine01');
   must(pkg, '"check:copilotriskscoringengine01": "node backend/scripts/copilot_risk_scoring_engine_01_check.js"', 'package.json exposes check:copilotriskscoringengine01');
   must(pkg, '"check:copilotclarifyingquestionengine01": "node backend/scripts/copilot_clarifying_question_engine_01_check.js"', 'package.json keeps check:copilotclarifyingquestionengine01');
+  must(pkg, '"check:copilotworkflowreasoningengine01": "node backend/scripts/copilot_workflow_reasoning_engine_01_check.js"', 'package.json exposes check:copilotworkflowreasoningengine01');
   must(pkg, '"check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js"', 'package.json keeps check:copilotreasoninganswercomposer01');
   must(pkg, '"check:ai03bparaphraseintentaudit01": "node backend/scripts/ai03b_paraphrase_intent_audit_01_check.js"', 'package.json keeps check:ai03bparaphraseintentaudit01');
   must(pkg, '"check:ai03bsemanticvisibleaudit01": "node backend/scripts/ai03b_semantic_visible_audit_01_check.js"', 'package.json keeps check:ai03bsemanticvisibleaudit01');
@@ -165,6 +166,7 @@ function main() {
   must(runner, 'check:copilotcontextmemorytaskstate01', 'product extensions chain includes check:copilotcontextmemorytaskstate01');
   must(runner, 'check:copilotrootcauseengine01', 'product extensions chain includes check:copilotrootcauseengine01');
   must(runner, 'check:copilotriskscoringengine01', 'product extensions chain includes check:copilotriskscoringengine01');
+  must(runner, 'check:copilotworkflowreasoningengine01', 'product extensions chain includes check:copilotworkflowreasoningengine01');
   must(runner, 'check:seferabiturkishterminology01', 'product extensions chain includes check:seferabiturkishterminology01');
   must(runner, 'check:seferabiturkishuserfacinglanguage01', 'product extensions chain includes check:seferabiturkishuserfacinglanguage01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
@@ -343,6 +345,7 @@ function main() {
   'check:copilotrootcauseengine01',
   'check:copilotriskscoringengine01',
   'check:copilotclarifyingquestionengine01',
+  'check:copilotworkflowreasoningengine01',
   'check:copilotreasoninganswercomposer01',
   'check:ai03bparaphraseintentaudit01',
   'check:ai03bsemanticvisibleaudit01',
@@ -545,6 +548,10 @@ function main() {
   must(guide, 'check:copilotclarifyingquestionengine01', 'script guide exposes check:copilotclarifyingquestionengine01');
   must(guide, 'node backend\\scripts\\copilot_clarifying_question_engine_01_check.js', 'script guide includes clarifying question engine command');
   must(guide, 'docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md', 'script guide includes clarifying question engine doc');
+  must(guide, 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'script guide mentions COPILOT-WORKFLOW-REASONING-ENGINE-01');
+  must(guide, 'check:copilotworkflowreasoningengine01', 'script guide exposes check:copilotworkflowreasoningengine01');
+  must(guide, 'node backend\\scripts\\copilot_workflow_reasoning_engine_01_check.js', 'script guide includes workflow reasoning engine command');
+  must(guide, 'docs/COPILOT_WORKFLOW_REASONING_ENGINE_01.md', 'script guide includes workflow reasoning engine doc');
   must(guide, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'script guide mentions COPILOT-REASONING-ANSWER-COMPOSER-01');
   must(guide, 'check:copilotreasoninganswercomposer01', 'script guide exposes check:copilotreasoninganswercomposer01');
   must(guide, 'node backend\\scripts\\copilot_reasoning_answer_composer_01_check.js', 'script guide includes reasoning answer composer command');
@@ -557,7 +564,7 @@ function main() {
   must(guide, 'check:seferabiallrolesreasoningassistant01', 'script guide exposes check:seferabiallrolesreasoningassistant01');
   must(guide, 'node backend\\scripts\\sefer_abi_all_roles_reasoning_assistant_01_check.js', 'script guide includes all-roles reasoning assistant command');
   must(guide, 'docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md', 'script guide includes all-roles reasoning assistant doc');
-  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'ETA-SANITY-01', 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'script guide keeps terminology audit between terminal humanize and language audit');
+  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'ETA-SANITY-01', 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'script guide keeps terminology audit between terminal humanize and language audit');
   must(guide, 'node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js', 'script guide includes redteam command');
   must(guide, 'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md', 'script guide includes redteam doc');
   must(guide, 'check:uxcopilotpersona01', 'script guide exposes check:uxcopilotpersona01');
@@ -758,7 +765,11 @@ function main() {
   must(primer, 'check:copilotclarifyingquestionengine01', 'primer exposes clarifying question engine check');
   must(primer, 'docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md', 'primer links clarifying question engine doc');
   must(primer, 'backend/src/ai/chat/conversationTaskStateResponses.js', 'primer links clarifying question engine helper');
-  ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps terminology audit before language audit');
+  must(primer, 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'primer mentions workflow reasoning engine milestone');
+  must(primer, 'check:copilotworkflowreasoningengine01', 'primer exposes workflow reasoning engine check');
+  must(primer, 'docs/COPILOT_WORKFLOW_REASONING_ENGINE_01.md', 'primer links workflow reasoning engine doc');
+  must(primer, 'backend/src/ai/chat/conversationWorkflowReasoningEngine.js', 'primer links workflow reasoning engine helper');
+  ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps terminology audit before language audit');
   must(primer, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'primer mentions reasoning answer composer milestone');
   must(primer, 'check:copilotreasoninganswercomposer01', 'primer exposes reasoning answer composer check');
   must(primer, 'docs/COPILOT_REASONING_ANSWER_COMPOSER_01.md', 'primer links reasoning answer composer doc');
@@ -808,6 +819,11 @@ function main() {
   must(harnessCheck, 'COPILOT-RISK-SCORING-ENGINE-01', 'script harness check knows risk scoring engine milestone');
   must(harnessCheck, 'docs/COPILOT_RISK_SCORING_ENGINE_01.md', 'script harness check knows risk scoring engine doc');
   must(harnessCheck, 'backend/src/ai/chat/conversationRiskScoringEngine.js', 'script harness check knows risk scoring engine helper');
+  must(harnessCheck, 'check:copilotworkflowreasoningengine01', 'script harness check knows workflow reasoning engine alias');
+  must(harnessCheck, 'root:check:copilotworkflowreasoningengine01', 'script harness check knows workflow reasoning engine root check');
+  must(harnessCheck, 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'script harness check knows workflow reasoning engine milestone');
+  must(harnessCheck, 'docs/COPILOT_WORKFLOW_REASONING_ENGINE_01.md', 'script harness check knows workflow reasoning engine doc');
+  must(harnessCheck, 'backend/src/ai/chat/conversationWorkflowReasoningEngine.js', 'script harness check knows workflow reasoning engine helper');
   must(harnessCheck, 'check:seferabiturkishterminology01', 'script harness check knows terminology audit alias');
   must(harnessCheck, 'root:check:seferabiturkishterminology01', 'script harness check knows terminology audit root check');
   must(harnessCheck, 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'script harness check knows terminology audit milestone');
@@ -873,6 +889,10 @@ function main() {
   must(harnessDoc, 'root:check:copilotclarifyingquestionengine01', 'script harness doc lists clarifying question engine root check');
   must(harnessDoc, 'copilot_clarifying_question_engine_01_check.js', 'script harness doc lists clarifying question engine command');
   must(harnessDoc, 'backend/src/ai/chat/conversationTaskStateResponses.js', 'script harness doc lists clarifying question engine helper');
+  must(harnessDoc, 'Copilot workflow reasoning engine milestone: `COPILOT-WORKFLOW-REASONING-ENGINE-01`', 'script harness doc lists workflow reasoning engine milestone');
+  must(harnessDoc, 'root:check:copilotworkflowreasoningengine01', 'script harness doc lists workflow reasoning engine root check');
+  must(harnessDoc, 'copilot_workflow_reasoning_engine_01_check.js', 'script harness doc lists workflow reasoning engine command');
+  must(harnessDoc, 'backend/src/ai/chat/conversationWorkflowReasoningEngine.js', 'script harness doc lists workflow reasoning engine helper');
   must(harnessDoc, 'Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`', 'script harness doc lists reasoning assistant milestone');
   must(harnessDoc, 'check:seferabireasoningassistant01', 'script harness doc lists reasoning assistant check');
   must(harnessDoc, 'docs/SEFER_ABI_REASONING_ASSISTANT_01.md', 'script harness doc lists reasoning assistant doc');
@@ -900,7 +920,7 @@ function main() {
   must(harnessDoc, 'node backend\\scripts\\sefer_abi_turkish_user_facing_language_01_check.js', 'script harness doc lists Turkish user-facing language audit command');
   must(harnessDoc, 'backend/src/ai/chat/helpComposer.js', 'script harness doc lists Turkish user-facing language audit helper');
   must(harnessDoc, 'backend/src/ai/chat/seferAbiReasoningAssistant.js', 'script harness doc lists Turkish user-facing language audit reasoning surface');
-  ordered(harnessDoc, ['Copilot guided task engine milestone: `COPILOT-GUIDED-TASK-ENGINE-01`', 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'Copilot smart diagnostic engine milestone: `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`', 'Copilot root cause engine milestone: `COPILOT-ROOT-CAUSE-ENGINE-01`', 'Copilot risk scoring engine milestone: `COPILOT-RISK-SCORING-ENGINE-01`', 'Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`', 'Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`', 'Sefer Abi all-roles reasoning assistant milestone: `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`', 'Sefer Abi terminal humanize milestone: `SEFER-ABI-TERMINAL-HUMANIZE-01`', 'Sefer Abi Turkish user-facing terminology audit milestone: `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`', 'Sefer Abi Turkish user-facing language audit milestone: `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`'], 'script harness doc keeps Sefer Abi helpers in order');
+  ordered(harnessDoc, ['Copilot guided task engine milestone: `COPILOT-GUIDED-TASK-ENGINE-01`', 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'Copilot smart diagnostic engine milestone: `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`', 'Copilot root cause engine milestone: `COPILOT-ROOT-CAUSE-ENGINE-01`', 'Copilot risk scoring engine milestone: `COPILOT-RISK-SCORING-ENGINE-01`', 'Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`', 'Copilot workflow reasoning engine milestone: `COPILOT-WORKFLOW-REASONING-ENGINE-01`', 'Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`', 'Sefer Abi all-roles reasoning assistant milestone: `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`', 'Sefer Abi terminal humanize milestone: `SEFER-ABI-TERMINAL-HUMANIZE-01`', 'Sefer Abi Turkish user-facing terminology audit milestone: `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`', 'Sefer Abi Turkish user-facing language audit milestone: `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`'], 'script harness doc keeps Sefer Abi helpers in order');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');

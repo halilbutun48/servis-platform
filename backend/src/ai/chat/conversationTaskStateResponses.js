@@ -27,6 +27,10 @@ import {
   buildRiskScoringState,
 } from './conversationRiskScoringEngine.js';
 import {
+  buildWorkflowReasoningReply,
+  buildWorkflowReasoningState,
+} from './conversationWorkflowReasoningEngine.js';
+import {
   buildRootCauseChips,
   buildRootCauseReply,
   buildRootCauseState,
@@ -71,6 +75,8 @@ export {
   buildRiskScoringReply,
   buildRiskScoringChips,
   buildRiskScoringState,
+  buildWorkflowReasoningReply,
+  buildWorkflowReasoningState,
   buildRootCauseReply,
   buildRootCauseChips,
   buildRootCauseState,
@@ -137,6 +143,8 @@ export function createConversationTaskStateResponses(deps = {}) {
     buildRiskScoringReply,
     buildRiskScoringChips,
     buildRiskScoringState,
+    buildWorkflowReasoningReply,
+    buildWorkflowReasoningState,
     buildRootCauseReply,
     buildRootCauseChips,
     buildRootCauseState,

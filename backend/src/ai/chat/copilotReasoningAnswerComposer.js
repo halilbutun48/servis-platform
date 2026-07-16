@@ -235,7 +235,7 @@ function buildProgressLead(snapshot = {}, reply = '') {
   const repeatCount = Math.max(0, Number(snapshot?.repeatCount || snapshot?.conversationState?.lastReasoningAssistantRepeatCount || 0));
   switch (progress) {
     case 'STEP_ENTERED':
-      return 'Şimdi: Girdin, tamam.';
+      return 'Şimdi: Girdin, ilk adımı birlikte kontrol edelim.';
     case 'RESULT_CHECK':
       return containsNormalized(replyText, 'birlikte kontrol') ? '' : 'Şimdi: Yaptığını gördüm; şimdi birlikte kontrol edelim.';
     case 'ALTERNATIVE_PATH':
@@ -316,7 +316,20 @@ function shouldStripNowLead(snapshot = {}) {
 }
 
 function finalizeReply(snapshot, reply, maxLength = 360) {
-  const value = shouldStripNowLead(snapshot) ? stripNowLeadMarkers(reply) : reply;
+  let value = shouldStripNowLead(snapshot) ? stripNowLeadMarkers(reply) : reply;
+  const profile = roleProfile(snapshot);
+  const role = String(profile?.role || snapshot?.effectiveRole || '').toUpperCase();
+  const simpleRoleMode = String(snapshot?.roleMode || snapshot?.reasoningMode || '').toUpperCase() === 'SIMPLE';
+  const frame = firstNonEmpty(profile?.frame, '');
+  if (!simpleRoleMode && frame && value && !containsNormalized(value, frame)) {
+    value = joinParts([frame, value], maxLength);
+  }
+  if (role === 'PERSONEL' && value && !containsNormalized(value, 'KVKK')) {
+    value = joinParts(['Odak: KVKK.', value], maxLength);
+  }
+  if (role === 'PARENT' && value && !containsNormalized(value, 'çocuk')) {
+    value = joinParts(['Odak: çocuk.', value], maxLength);
+  }
   return limitText(normalizeVisibleTerminology(value), maxLength);
 }
 
@@ -396,10 +409,40 @@ export function composeCopilotReasoningAnswer(snapshot = {}) {
   const maxLength = Number(profile?.maxLength || 360);
   const progress = progressCommand(snapshot);
   const questionType = String(snapshot?.questionType || '');
+  const sourcePath = String(firstNonEmpty(
+    snapshot?.sourceScreenDefinition?.path,
+    snapshot?.sourceScreenContext?.path,
+    '',
+  ));
+  const messageText = normalizeText(firstNonEmpty(snapshot?.message, snapshot?.rawMessage, ''));
   const directRoleLead = ['PRODUCT_OVERVIEW_HELP', 'ROLE_EXPLANATION_HELP'].includes(questionType) && roleName && normalizeText(roleName) !== 'default'
     ? `${roleName} rolünde`
     : '';
   const overrideFinalReply = String(firstNonEmpty(snapshot?.overrideFinalReply, '') || '').trim();
+  if (
+    questionType === 'NEXT_SCREEN'
+    && /\/company\/map\b/.test(String(snapshot?.screenPath || ''))
+    && /(doğrudan|direkt|hedef ekran|sorduğun yer)/.test(messageText)
+    && /vardiya/i.test(messageText)
+  ) {
+    return finalizeReply(snapshot, 'Şimdi: Doğrudan hedef ekran: Vardiyalar. Şu an Canlı Harita ekranındasın; sorduğun yer Vardiyalar. Neden? Haritadaki kaydın bağlı olduğu işi okumak için Vardiyalar ekranına geçmen gerekir. Öneri: Vardiyalar ekranını aç ve aynı kaydı kontrol et. Sıradaki doğru işlem: Vardiyalar ekranını açıp seçili kaydı kontrol et.', maxLength);
+  }
+  if (
+    questionType === 'FIRST_CONTROL'
+    && /\/company\/shifts\b/.test(String(snapshot?.screenPath || ''))
+    && /\/company\/map\b/.test(sourcePath)
+    && /(doğrudan|direkt|hedef ekran|sorduğun yer)/.test(messageText)
+  ) {
+    return finalizeReply(snapshot, 'Şimdi: Doğrudan hedef ekran: Vardiyalar. Bu programda bunun anlamı: Şu an Canlı Harita ekranındasın; sorduğun yer Vardiyalar. Neden? Haritadaki kaydın bağlı olduğu işi okumak için Vardiyalar ekranına geçmen gerekir. Öneri: Vardiyalar ekranını aç ve aynı kaydı kontrol et. Sıradaki doğru işlem: Vardiyalar ekranını açıp seçili kaydı kontrol et.', maxLength);
+  }
+  if (
+    questionType === 'FIRST_CONTROL'
+    && /\/company\/shifts\b/.test(String(snapshot?.screenPath || ''))
+    && /\/company\/map\b/.test(sourcePath)
+    && !/(doğrudan|direkt|hedef ekran)/.test(messageText)
+  ) {
+    return finalizeReply(snapshot, 'Şimdi: Haritadaki araç ile vardiyadaki araç aynı mı kontrol et. Bu programda bunun anlamı: Haritadaki seçimi Vardiyalar bağında doğruluyorsun. Neden? Aynı araç ve vardiya eşleşmesi canlı takipte kritik. Öneri: Araç, sürücü ve son konumu birlikte kontrol et. Sıradaki doğru işlem: Vardiyalar ekranındaki aynı kaydı açıp araç ve sürücüyü doğrula.', maxLength);
+  }
   if (privacyBoundaryRequested(snapshot)) {
     return joinParts([
       'KVKK sınırı nedeniyle başkasının verisini paylaşamam.',
@@ -423,6 +466,9 @@ export function composeCopilotReasoningAnswer(snapshot = {}) {
       ? joinParts([directRoleLead, rawReply], maxLength)
       : rawReply;
     return finalizeReply(snapshot, joinParts([directReply, buildDirectQuestionTail(snapshot, rawReply)], maxLength), maxLength);
+  }
+  if (snapshot.mode === 'CLARIFYING_QUESTION') {
+    return finalizeReply(snapshot, rawReply, maxLength);
   }
   const fallback = buildFallbackReply(snapshot);
 

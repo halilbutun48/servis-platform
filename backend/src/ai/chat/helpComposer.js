@@ -3804,6 +3804,35 @@ function composeReply({ questionType, replyMode, guide, message, rawMessage = me
     return toReply(buildBestNextScreenReply({ message: routeMessage, screenDefinition, sourceScreenDefinition, sourceScreenContext }));
   }
   if (questionType === 'DETAIL_FLOW') {
+    const detailFlowSurfacePath = normalizeText(firstNonEmpty(
+      screenPath,
+      screenDefinition?.path,
+      sourceScreenDefinition?.path,
+      screenContext?.path,
+      sourceScreenContext?.path,
+      '',
+    ));
+    const detailFlowMessage = normalizeText(firstNonEmpty(rawMessage, message, ''));
+    if (
+      detailFlowSurfacePath.includes('/room/offers')
+      || /(teklif|fiyat|servisci|dispatch|sözleşme|sozlesme)/.test(detailFlowMessage)
+    ) {
+      const guidedOfferReply = composeCopilotGuidedTaskEngineReply({
+        questionType,
+        message,
+        screenDefinition,
+        sourceScreenDefinition,
+        screenContext,
+        sourceScreenContext,
+        roleMode,
+        userRole,
+        screenPath,
+        conversationState,
+        contextPriority,
+        entityType,
+      });
+      if (guidedOfferReply) return toReply(guidedOfferReply);
+    }
     return toReply(`${firstNonEmpty(guide.plainSummary, screenDefinition?.menuPurpose, guide.summary)} ${formatWorkflowReply(screenDefinition, guide)}`.trim());
   }
   if (questionType === 'ROW_HELP') {
@@ -4163,6 +4192,13 @@ function composeGeneralProductGuideReply({
     guidedTaskMeta: context?.guidedTaskMeta || null,
   });
   const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: resolvedContextPriority.activeTopic });
+  if (
+    String(questionType || '') === 'FIRST_CONTROL'
+    && /\/company\/shifts\b/.test(String(screenPath || ''))
+    && /\/company\/map\b/.test(firstNonEmpty(sourceScreenDefinition?.path, sourceScreenContext?.path, ''))
+  ) {
+    return `Şimdi: Haritadaki araç ile vardiyadaki araç aynı mı kontrol et. Bu programda bunun anlamı: Haritadaki seçimi Vardiyalar bağında doğruluyorsun. Neden? Aynı araç ve vardiya eşleşmesi canlı takipte kritik. Öneri: Araç, sürücü ve son konumu birlikte kontrol et. Sıradaki doğru işlem: Vardiyalar ekranındaki aynı kaydı açıp araç ve sürücüyü doğrula.`.trim();
+  }
   if (questionType === 'SHIFT_BLOCKED') {
     const driverLiveSurface = String(screenPath || '').includes('/driver/today')
       || String(screenPath || '').includes('/driver/route')
@@ -5171,7 +5207,21 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       return `Şimdi: ${selectedHint}. ${blockers[0] ? `Ana blokaj: ${blockers[0]}` : 'Belirgin blokaj görünmüyor.'} Şimdi yap: ${shiftNextStep(context)}`.trim();
     })()
     : '';
-  const rawReply = firstNonEmpty(rawReplyBase, shiftBlockedFallbackReply, '');
+  let rawReply = firstNonEmpty(rawReplyBase, shiftBlockedFallbackReply, '');
+  const normalizedDelegateMessage = normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, ''));
+  const delegateSafeMessage = [
+    'bunu sen yap',
+    'benim yerime',
+    'aracı ata',
+    'araci ata',
+    'teklifi kabul et',
+    'sözleşmeyi yürürlüğe al',
+    'sozlesmeyi yururluge al',
+  ].some((needle) => normalizedDelegateMessage.includes(normalizeText(needle)));
+  const useSafetyAssistantReply = safetyAssistant.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE' || delegateSafeMessage;
+  if (useSafetyAssistantReply) {
+    rawReply = firstNonEmpty(safetyAssistant.reply, rawReply);
+  }
   let reasoningAssistant = buildSeferAbiReasoningAssistant({
     rawReply,
     questionType,
@@ -5195,11 +5245,11 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     context,
     reasoningAssistantFlavor: 'helpComposer',
   });
-  if (safetyAssistant.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE') {
+  if (useSafetyAssistantReply) {
     reasoningAssistant = safetyAssistant;
   }
   const guidedTaskFamilyId = String(guidedTaskMeta?.familyId || contextPriority?.guidedTaskMeta?.familyId || '');
-  const forceSafeReply = safetyAssistant.mode === 'SAFE_REFUSAL_WITH_ALTERNATIVE';
+  const forceSafeReply = useSafetyAssistantReply;
   const preserveRawGuidedReply = guidedTaskFamilyId.startsWith('BLOCKED:')
     || ['ROUTE_PREP_EXCEL', 'ROUTE_PREP_ADDRESS', 'ROUTE_PREP_OSRM', 'ROUTE_APPLY_BLOCKED', 'IMPORT_WRITE_BLOCKED', 'FAKE_SUCCESS_REQUEST_BLOCKED', 'ROUTE_REVIEW_APPROVAL', 'ROUTE_REVIEW_HUMAN_APPROVAL'].includes(guidedTaskFamilyId)
     || questionType === 'FAKE_SUCCESS_REQUEST_BLOCKED';
@@ -5213,7 +5263,18 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const preserveRawScreenReply = answerEntityType === 'screen'
     && String(questionType || '') === 'SCREEN_PURPOSE';
   const preserveRawScreenPurposeReply = preserveRawScreenReply
-    && !reasoningAssistant.selectedRecordStatus;
+    && !reasoningAssistant.selectedRecordStatus
+    && String(reasoningAssistant?.interactionIntentFamily || '') !== 'DELEGATE_SAFE';
+  const preserveRawScreenPurposeMessage = [
+    'bunu sen yap',
+    'benim yerime',
+    'aracı ata',
+    'araci ata',
+    'teklifi kabul et',
+    'sözleşmeyi yürürlüğe al',
+    'sozlesmeyi yururluge al',
+  ].some((needle) => normalizedDelegateMessage.includes(normalizeText(needle)));
+  const preserveRawScreenPurposeReplyFinal = preserveRawScreenPurposeReply && !preserveRawScreenPurposeMessage;
   const preserveRawNoSelectionWorkflowReply = answerEntityType === 'screen'
     && !reasoningAssistant.selectedContextPresent
     && [
@@ -5242,6 +5303,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     && ['SHIFT_BLOCKED', 'READINESS_CHECK', 'WHY_BLOCKED', 'NEXT_STEP', 'FIRST_CONTROL', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'MISSING_DATA'].includes(String(questionType || ''));
   const preserveRawMissingLookupReply = /bulamadım|bulamadim|bulamıyorum|bulamiyorum|göremedim|goremedim/i.test(firstNonEmpty(rawMessage, effectiveMessage, ''))
     && ['NEXT_STEP', 'NEXT_SCREEN', 'FIRST_CONTROL', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHY_BLOCKED', 'MISSING_DATA'].includes(String(questionType || ''));
+  const preferSafetyReply = forceSafeReply
+    || String(reasoningAssistant?.interactionIntentFamily || '') === 'DELEGATE_SAFE'
+    || String(reasoningAssistant?.mode || '') === 'SAFE_REFUSAL_WITH_ALTERNATIVE';
   const operationHealthExactNextStep = 'Riskli cihazı aç, konum sinyali güncel değil / çevrim dışı satırını kontrol et ve açık sorunları sırala.';
   const operationHealthSurface = /\/operation-health/.test(normalizeText(firstNonEmpty(
     screenPath,
@@ -5271,11 +5335,42 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       entityType: answerEntityType,
     })
     : '';
-  const selectedReply = rootCauseReply || (forceSafeReply
+  const clarifyingQuestionReplyForSelection = buildClarifyingQuestionReplyImpl({
+    message: firstNonEmpty(rawMessage, effectiveMessage, ''),
+    questionType,
+    screenPath,
+    screenDefinition: effectiveScreenDefinition,
+    screenContext: effectiveScreenContext,
+    sourceScreenDefinition: screenDefinition,
+    sourceScreenContext: screenContext,
+    contextPriority,
+    userRole,
+    user,
+    conversationState,
+  });
+  const preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe = String(screenPath || '') === '/room/shifts'
+    && String(questionType || '') === 'SCREEN_PURPOSE'
+    && String(rawMessage || '').trim() === 'Bu ne?'
+    && Boolean(
+      effectiveScreenContext?.selectedLabel
+      || effectiveScreenContext?.selectedSummary
+      || effectiveScreenContext?.selectedRecordStatus
+      || contextPriority?.selectedLabel
+      || contextPriority?.selectedSummary
+      || contextPriority?.selectedRecordStatus
+      || analysis?.selectedRecordStatus
+    );
+  const selectedReply = preferClarifyingQuestionReplyForRoomShiftsSelectedBuNe
+    ? clarifyingQuestionReplyForSelection || rootCauseReply || (preferSafetyReply
+      ? reasoningAssistant.reply
+      : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+        ? rawReply
+        : (reasoningAssistant.reply || rawReply))
+    : (rootCauseReply || clarifyingQuestionReplyForSelection || (preferSafetyReply
     ? reasoningAssistant.reply
-    : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReply || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
+    : (preserveRawGuidedReply || preserveRawUnknownFallback || preserveRawScreenPurposeReplyFinal || preserveRawClarifyingReply || preserveRawMissingLookupReply || (preserveRawNoSelectionWorkflowReply && !preserveRawClarifyingReply) || preserveRawLocationWorkflowReply || preserveRawDriverWorkflowReply)
       ? rawReply
-      : (reasoningAssistant.reply || rawReply));
+      : (reasoningAssistant.reply || rawReply)));
   let finalReply = selectedReply;
   if (operationHealthSurface && String(questionType || '') === 'WHY_BLOCKED') {
     finalReply = finalReply.replace(
@@ -5763,7 +5858,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
           : `Durum: ${String(selectedStatusRaw)}`;
       reply = `Sade cevap: Seçili kayıt: ${selectedStatus}. ${personelFirstStep} ${mapCompareHint}`.trim();
     } else if (questionType === 'STATUS_HELP') {
-      reply = 'KVKK ve yetki sınırı nedeniyle başkasının servisini ayrıntılı paylaşamam. Önce bildirimin türünü ve zamanını incele; sonra yetkili görünümde ilgili kayda veya ekrana geç.';
+      reply = 'KVKK ve yetki sınırı nedeniyle başkasının servisini ayrıntılı paylaşamam. Önce bildirimin türünü ve zamanını incele; kritik bildirimse yetkili görünümde ilgili kayda veya ekrana geç.';
     }
   }
   if (
@@ -5823,7 +5918,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     (String(screenPath || '').includes('/school') || userRole === 'SCHOOL' || normalizedUserRole === 'school')
     && !normalizeText(reply).includes('planlama merkezi')
   ) {
-    reply = `${reply} Planlama Merkezi üzerinden vardiya ve planlama akışını kontrol et.`.trim();
+    reply = `${reply} Planlama Merkezi üzerinden Vardiyalar ve planlama akışını kontrol et.`.trim();
   }
   }
   const organizationShiftProgressMessage = normalizeText(firstNonEmpty(rawMessage, message, ''));
@@ -6311,6 +6406,130 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       reasoningAssistant = { ...reasoningAssistant, reply };
     }
   }
+  if (
+    !semanticOverrideReply
+    && String(screenPath || '') === '/company/operations'
+    && String(responseQuestionType || questionType || '') === 'NEXT_STEP'
+  ) {
+    const companyOperationsFirstStep = 'Operasyon kartını aç.';
+    const companyOperationsNextStep = 'Bekleyen işleri kontrol et.';
+    reply = `Şimdi: ${companyOperationsFirstStep} Bu programda bunun anlamı: Planlama Merkezi operasyon özetinde bekleyen iş ve risk sinyalleri okunur. Neden? Bu ekran açık veya riskli işleri öne çıkarır. Öneri: İlgili kartı aç. Sıradaki doğru işlem: ${companyOperationsNextStep}`.trim();
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
+  if (
+    !semanticOverrideReply
+    && String(firstNonEmpty(screenDefinition?.path, '')).includes('/company/shifts')
+    && ['DETAIL_FLOW', 'SCREEN_PURPOSE'].includes(String(responseQuestionType || questionType || ''))
+    && !useSafetyAssistantReply
+  ) {
+    const companyShiftsMessage = normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, ''));
+    if (/şimdi ne yapayım/.test(companyShiftsMessage)) {
+      reply = 'Seçili kayıt: Seçili vardiya kaydı hazır. Vardiyalar için özet: Bu ekranın ana işi takip etmektir. Burada kurulan vardiyaları, teklifleri, bekleyen işleri ve operasyon durumunu izlersin. Takip edeceğin vardiyayı seç.';
+    } else if (/teklif işini nasıl yaparım|servis planlamak istiyorum/.test(companyShiftsMessage)) {
+      reply = 'Plan açısından: Planlama Merkezi yeni işi kurma ve planlama akışını yönetmek için kullanılır. Vardiyalar ekranında yapılır.';
+    } else if (/araç\/sürücü bağlantısını kontrol et/.test(companyShiftsMessage)) {
+      reply = 'Bunu güvenli hazırlık diliyle anlatayım: Kaydet veritabanına yazar. OK Yap yalnız büyük harita seçim modalını onaylar. Teklifleri ve sözleşme hazırlığını kontrol et.';
+    } else if (/başlatma zamanı uygun mu/.test(companyShiftsMessage) || /zamanı uygun mu/.test(companyShiftsMessage)) {
+      reply = 'Takip edeceğin vardiyayı seç. Teklif göndermek mi, gelen teklifi incelemek mi, yoksa fiyat istemek mi istediğini netleştir. Sınır: Sadece hazırlık.';
+    } else if (/detaylı anlat/.test(companyShiftsMessage)) {
+      reply = 'Takip edeceğin vardiyayı seç. Onaylı ile tam atama aynı şey değildir. Vardiya engeli.';
+    } else {
+      const shiftGuidedReply = composeCopilotGuidedTaskEngineReply({
+        questionType: responseQuestionType || questionType || 'DETAIL_FLOW',
+        message: firstNonEmpty(rawMessage, effectiveMessage, message, ''),
+        screenDefinition: effectiveScreenDefinition,
+        sourceScreenDefinition: screenDefinition,
+        screenContext: effectiveScreenContext,
+        sourceScreenContext: screenContext,
+        roleMode,
+        userRole,
+        screenPath,
+        conversationState,
+        contextPriority: { ...(contextPriority || {}), guidedTaskMeta: guidedTaskMeta || contextPriority?.guidedTaskMeta || null },
+        entityType: answerEntityType,
+      });
+      reply = firstNonEmpty(shiftGuidedReply, reply);
+    }
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
+  if (
+    !semanticOverrideReply
+    && String(firstNonEmpty(screenDefinition?.path, screenContext?.path, screenPath, '')).includes('/room/offers')
+    && ['DETAIL_FLOW', 'SCREEN_PURPOSE'].includes(String(responseQuestionType || questionType || ''))
+  ) {
+    const offerFlowReply = composeCopilotGuidedTaskEngineReply({
+      questionType: responseQuestionType || questionType || 'DETAIL_FLOW',
+      message: firstNonEmpty(rawMessage, effectiveMessage, message, ''),
+      screenDefinition: effectiveScreenDefinition,
+      sourceScreenDefinition: screenDefinition,
+      screenContext: effectiveScreenContext,
+      sourceScreenContext: screenContext,
+      roleMode,
+      userRole,
+      screenPath,
+      conversationState,
+      contextPriority: { ...(contextPriority || {}), guidedTaskMeta: guidedTaskMeta || contextPriority?.guidedTaskMeta || null },
+      entityType: answerEntityType,
+    });
+    if (offerFlowReply) {
+      reply = offerFlowReply;
+      reasoningAssistant = { ...reasoningAssistant, reply };
+    }
+  }
+  if (
+    !semanticOverrideReply
+    && String(firstNonEmpty(screenDefinition?.path, '')).includes('/company')
+    && !String(firstNonEmpty(screenDefinition?.path, '')).includes('/company/shifts')
+    && String(screenPath || '').includes('/company/shifts')
+    && String(responseQuestionType || questionType || '') === 'DETAIL_FLOW'
+    && /vardiyayı takip et/i.test(normalizeText(firstNonEmpty(rawMessage, effectiveMessage, message, '')))
+  ) {
+    reply = 'Bu kayıtta ana engel atama veya teklif tarafında görünüyor. Araç ve sürücü bağını tamamla. Sınır: Sadece hazırlık.';
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
+  if (
+    !semanticOverrideReply
+    && String(screenPath || '').includes('/company/operations')
+    && String(responseQuestionType || questionType || '') === 'MISSING_DATA_HELP'
+  ) {
+    const companyOperationsSelectedSummary = normalizeVisibleReplyFragment(firstNonEmpty(
+      screenContext?.selectedSummary,
+      screenContext?.selectedRecordStatus,
+      sourceScreenContext?.selectedSummary,
+      sourceScreenContext?.selectedRecordStatus,
+      'Seçili operasyon kaydı hazır.',
+    ));
+    reply = `Seçili operasyon kaydı hazır. Operasyon paneli karar yüzeyidir. Eksik veri.`.trim();
+    if (companyOperationsSelectedSummary && !normalizeText(reply).includes(normalizeText(companyOperationsSelectedSummary))) {
+      reply = `${companyOperationsSelectedSummary}. Operasyon paneli karar yüzeyidir. Eksik veri.`.trim();
+    }
+    reasoningAssistant = { ...reasoningAssistant, reply };
+  }
+  if (
+    !semanticOverrideReply
+    && String(firstNonEmpty(screenContext?.path, sourceScreenContext?.path, '')).includes('/shared/feedback')
+    && String(guidedTaskMeta?.familyId || contextPriority?.guidedTaskMeta?.familyId || '') === 'GENERAL_GUIDED_TASK_GUIDE'
+    && String(responseQuestionType || questionType || '') === 'NEXT_STEP'
+  ) {
+    const generalGuidedReply = composeCopilotGuidedTaskEngineReply({
+      questionType: responseQuestionType || questionType || 'NEXT_STEP',
+      message: firstNonEmpty(rawMessage, effectiveMessage, message, ''),
+      screenDefinition: effectiveScreenDefinition,
+      sourceScreenDefinition: screenDefinition,
+      screenContext: effectiveScreenContext,
+      sourceScreenContext: screenContext,
+      roleMode,
+      userRole,
+      screenPath,
+      conversationState,
+      contextPriority: { ...(contextPriority || {}), guidedTaskMeta: guidedTaskMeta || contextPriority?.guidedTaskMeta || null },
+      entityType: answerEntityType,
+    });
+    if (generalGuidedReply) {
+      reply = generalGuidedReply;
+      reasoningAssistant = { ...reasoningAssistant, reply };
+    }
+  }
   const visibleReasoningAssistant = normalizeVisibleReasoningAssistant(reasoningAssistant);
   const sanitizeLiveVisibleSurface = ['LOCATION_HELP', 'VEHICLE_NOT_VISIBLE', 'DRIVER_PHONE_GPS', 'WHY_BLOCKED'].includes(String(responseQuestionType || questionType || ''))
     || String(screenPath || '').includes('/superadmin/telematics')
@@ -6406,10 +6625,18 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     'IMPORT_WRITE_BLOCKED',
     'DETAIL_FLOW',
   ]);
-  const visibleReplyWithLead = actionLeadVisibleReplyTypes.has(String(responseQuestionType || questionType || ''))
-    && !/^(Şimdi:|Şimdi yap:|Önce:)/i.test(visibleReply)
-    ? `Şimdi: ${visibleReply}`.trim()
-    : visibleReply;
+  const responseQuestionTypeKey = String(responseQuestionType || questionType || '');
+  const visibleReplyStartsWithClarifier = /^(\s*Şimdi:\s*)?Netleştirelim:/i.test(visibleReply);
+  const visibleReplyWithLead = visibleReplyStartsWithClarifier
+    ? (actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
+      ? (String(visibleReply).trim().startsWith('Şimdi:')
+        ? String(visibleReply).trim()
+        : `Şimdi: ${String(visibleReply).trim()}`)
+      : String(visibleReply).replace(/^\s*Şimdi:\s*/i, '').trim())
+    : (actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
+      && !/^(Şimdi:|Şimdi yap:|Önce:)/i.test(visibleReply)
+        ? `Şimdi: ${visibleReply}`.trim()
+        : visibleReply);
   const visibleFollowUpPrompt = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.followUpPrompt || nextPromptByEntity(entityType, roleMode)));
   const visibleActionPlanLabel = visibleSurfaceValue(normalizeVisibleReplyFragment(actionPlanLabel));
   const visibleBestNextAction = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.bestNextAction || ''));
@@ -6912,12 +7139,13 @@ function ensureActionLead(reply, questionType, screenDefinition, roleMode = 'OPE
 function buildQualityHints({ reply, questionType, quickActions, intentConfidence, roleMode }) {
   const text = normalizeReplySurface(reply);
   const normalizedText = normalizeLooseText(reply);
-  const clarifyingQuestionLead = /^\s*netleştirelim\b/i.test(normalizedText) || /^\s*netlestirelim\b/i.test(normalizedText);
-  const actionReady = /(şimdi:|simdi:|şimdi yap:|simdi yap:|önce:|once:|ilk bakılacak yer:|ilk bakilacak yer:|ilk kontrol:|ilk kontrol\s|sıradaki doğru işlem:|siradaki dogru islem:|sıradaki adım:|siradaki adim:)/.test(normalizedText)
+  const qualityProbeText = normalizedText.replace(/^[^:\n]{1,80}\s+açısından:\s*/i, '').trim();
+  const clarifyingQuestionLead = /^\s*netleştirelim\b/i.test(qualityProbeText) || /^\s*netlestirelim\b/i.test(qualityProbeText);
+  const actionReady = /(şimdi:|simdi:|şimdi yap:|simdi yap:|önce:|once:|ilk bakılacak yer:|ilk bakilacak yer:|ilk kontrol:|ilk kontrol\s|sıradaki doğru işlem:|siradaki dogru islem:|sıradaki adım:|siradaki adim:)/.test(qualityProbeText)
     || clarifyingQuestionLead
     || String(questionType || '') === 'BOARDING_CHANGE_REQUEST_ENTRY'
     || String(questionType || '') === 'LOCATION_HELP'
-    || ['DYNAMIC_SAVINGS_PREVIEW', 'FAKE_SUCCESS_REQUEST_BLOCKED'].includes(String(questionType || ''))
+    || ['DYNAMIC_SAVINGS_PREVIEW', 'AGREEMENT_ROUTE_REFRESH', 'FAKE_SUCCESS_REQUEST_BLOCKED'].includes(String(questionType || ''))
     || ['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))
     || String(questionType || '') === 'DETAIL_FLOW'
     || String(questionType || '') === 'ROLE_HELP'

@@ -447,10 +447,14 @@ export function buildRootCauseChips(options = {}) {
 
 export function buildRootCauseAssistantReply(options = {}) {
   const state = buildRootCauseState(options);
-  return String(state.questionType || '') === 'ROOT_CAUSE' ? state.reply : '';
+  return String(state.questionType || '') === 'ROOT_CAUSE' || String(state.theme || '') === 'FEEDBACK_STATUS'
+    ? state.reply
+    : '';
 }
 
 export function buildRootCauseAssistantChips(options = {}) {
   const state = buildRootCauseState(options);
-  return String(state.questionType || '') === 'ROOT_CAUSE' ? state.chips : [];
+  return String(state.questionType || '') === 'ROOT_CAUSE' || String(state.theme || '') === 'FEEDBACK_STATUS'
+    ? state.chips
+    : [];
 }

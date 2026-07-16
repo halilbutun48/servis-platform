@@ -275,8 +275,16 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Check script: `node backend\scripts\copilot_clarifying_question_engine_01_check.js`
 - Doküman: `docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md`
 - Static helper: `backend/src/ai/chat/conversationTaskStateResponses.js`
-- Bu check, `COPILOT-GUIDED-TASK-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; role-aware clarifying question üretir ama runtime execute açmaz.
-- Sonraki güvenli hatlar: `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+- Bu check, `COPILOT-GUIDED-TASK-ENGINE-01`, `COPILOT-WORKFLOW-REASONING-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; role-aware clarifying question üretir ama runtime execute açmaz.
+- Sonraki güvenli hatlar: `COPILOT-WORKFLOW-REASONING-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-TERMINAL-01`.
+
+### COPILOT-WORKFLOW-REASONING-ENGINE-01 [CHECK]
+- `check:copilotworkflowreasoningengine01` company plan, offers / agreements, shifts, room map / vehicles, driver route, personel live, parent live ve superadmin yüzeylerinde işlem akışı, current stage, next safe control ve human approval points katmanını tek yerde toplar; `backend/src/ai/chat/conversationWorkflowReasoningEngine.js` üzerinden helpComposer ve Sefer Abi reasoning assistant arasında paylaşılır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\copilot_workflow_reasoning_engine_01_check.js`
+- Doküman: `docs/COPILOT_WORKFLOW_REASONING_ENGINE_01.md`
+- Static helper: `backend/src/ai/chat/conversationWorkflowReasoningEngine.js`
+- Bu check, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; role-aware workflow reasoning üretir ama runtime execute açmaz.
+- Sonraki güvenli hatlar: `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`, `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`.
 
 ### COPILOT-REASONING-ANSWER-COMPOSER-01 [CHECK]
 - `check:copilotreasoninganswercomposer01` Sefer Abi reasoning replies için final reply composer katmanını kilitler; robotik lead marker'ları, tekrarları ve template benzerliğini temizler; strict A-only acceptance'ta Company shifts preview/convert affordance da gerektiği için bu milestone `core composer + required product acceptance support` scope'u ile okunur, ancak runtime AI action, tool execution, write-action dispatcher ve DB write açmaz.
