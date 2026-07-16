@@ -47,6 +47,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `COPILOT-RISK-SCORING-ENGINE-01` role + screen + selected record + current reply üzerinden risk list / risk scoring katmanını paylaşır; `check:copilotriskscoringengine01`, `docs/COPILOT_RISK_SCORING_ENGINE_01.md` ve `backend/src/ai/chat/conversationRiskScoringEngine.js` ile yaşar; `riskleri sırala / risk var mı / en riskli ne / hangi konu acil` sinyallerini helpComposer, Sefer Abi reasoning assistant ve answerQualityPolicy arasında güvenli şekilde çözer; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - `COPILOT-CLARIFYING-QUESTION-ENGINE-01` role + screen + selected record + conversation state üzerinden clarifying question assembly katmanını tek yerde toplar; `check:copilotclarifyingquestionengine01`, `docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md` ve `backend/src/ai/chat/conversationTaskStateResponses.js` ile yaşar; `Netleştirelim / Alternatif` formatını helpComposer, Sefer Abi reasoning assistant ve guided task engine arasında paylaşır; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - `COPILOT-WORKFLOW-REASONING-ENGINE-01` company plan, offers / agreements, shifts, room map / vehicles, driver route, personel live, parent live ve superadmin yüzeylerinde işlem akışı, current stage, next safe control ve human approval points katmanını tek yerde toplar; `check:copilotworkflowreasoningengine01`, `docs/COPILOT_WORKFLOW_REASONING_ENGINE_01.md`, `backend/src/ai/chat/conversationWorkflowReasoningEngine.js` ve `backend/src/ai/chat/seferAbiReasoningAssistant.js` ile yaşar; görünür Türkçe reply'ı sabitler, surface-aware chip setini korur ve runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01` `helpComposer.js` içindeki güvenli reply-helper yüzeyini `helpComposerSafeReplies.js` ile ayıran acceptance-safe hot-file split milestone'udur; `check:hotfilesplitaichatcomposers01`, `docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md`, `backend/src/ai/chat/helpComposer.js` ve `backend/src/ai/chat/helpComposerSafeReplies.js` ile yaşar; görünür davranışı korurken hot-file borcunu azaltır.
 - `COPILOT-REASONING-ANSWER-COMPOSER-01` reasoning assistant çıkışını robotik lead marker / tekrar / template benzerliğinden temizleyen final reply composer katmanıdır; `check:copilotreasoninganswercomposer01`, `docs/COPILOT_REASONING_ANSWER_COMPOSER_01.md` ve `backend/src/ai/chat/copilotReasoningAnswerComposer.js` ile yaşar; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - Acceptance scope notu: bu milestone artık `core composer + required product acceptance support` olarak okunur; strict A-only ürün smoke'unda Company shifts preview/convert yüzeyi zorunlu kaldığı için bu destek de scope içindedir, fakat runtime execute açmaz.
 - `SEFER-ABI-REASONING-ASSISTANT-01` role + screen + selected record + conversation state ile reasoning assistant katmanını açar; `check:seferabireasoningassistant01`, `docs/SEFER_ABI_REASONING_ASSISTANT_01.md` ve `backend/src/ai/chat/seferAbiReasoningAssistant.js` ile yaşar; golden pack test/kabul içindir, reply source değildir ve runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
@@ -181,9 +182,9 @@ Compatibility aliases for legacy checks:
 
 ## helpComposer exception policy
 - `backend/src/ai/chat/helpComposer.js` justified exception dosyasıdır.
-- Bu dosyada line-count reduction hedefi yoktur.
+- Kör line-count reduction hedefi yoktur; kabul güvenli helper split yalnız `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01` altında yürür.
 - Agresif küçültme/refactor yapılmaz.
-- Yalnız acceptance-safe lokal düzeltme yapılabilir.
+- Yalnız acceptance-safe lokal düzeltme ve companion helper split yapılabilir.
 - M90C.1, M90C.2 ve M90C.3 kapanmıştır; helpComposer policy canonical docs içine işlenmiştir.
 - Latest static milestone chain: `npm run verify:milestones` -> `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`.
 - Current live surface pack: `npm --prefix backend run current:surface`.
@@ -203,7 +204,7 @@ Compatibility aliases for legacy checks:
 ## hot-file queue policy
 - Hot/large file kuyruğu yalnız sayısal repo-audit çıktısı değildir; resmi sınıflı queue olarak yönetilir.
 - Kör line-count düşürme yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
-- `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` queue içinde **justified exception** olarak kalır.
+- `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` queue içinde **justified exception** olarak kalır; `backend/src/ai/chat/helpComposerSafeReplies.js` helpComposer için acceptance-safe companion split yüzeyidir.
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js` ve `web/src/panels/shared/CopilotPanel.jsx` **acceptance-sensitive / later** sınıfındadır; `mobile/App.js` shell kalır, yeni mobile iş helper/state/screen dosyalarına taşınır.
 - `backend/src/ai/chat/copilotGuidedTaskEngine.js` **safe candidate review** kuyruğundadır.
 - `web/src/panels/company/ShiftPeopleTab.jsx` **safe candidate review** kuyruğundadır.

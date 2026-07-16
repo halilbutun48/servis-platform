@@ -131,8 +131,8 @@
                                 "policyVersion":  1,
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
-    "currentLargeFileCount":  15,
-    "currentWarningHotFileCount":  8,
+    "currentLargeFileCount":  16,
+    "currentWarningHotFileCount":  7,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",

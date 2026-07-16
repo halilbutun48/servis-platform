@@ -9,7 +9,8 @@ export function normalizeText(value) {
     .replace(/\\/g, '/')
     .replace(/\s+/g, ' ')
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/\u0307/g, '');
 }
 
 export function normalizeLooseText(value) {
@@ -21,7 +22,8 @@ export function normalizeLooseText(value) {
     .replace(/\\/g, '/')
     .replace(/\s+/g, ' ')
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/\u0307/g, '');
 }
 
 export function normalizeVisibleReplyFragment(value) {

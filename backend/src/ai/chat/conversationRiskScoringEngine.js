@@ -42,7 +42,11 @@ function formatCommonMistakes(commonMistakes = []) {
 }
 
 function formatRiskSentence(value) {
-  return ensureVisibleSentence(normalizeVisibleReplyFragment(firstNonEmpty(value, '')));
+  const raw = String(firstNonEmpty(value, '')).trim();
+  if (/^Sonra ilgili ekrana geç\.?$/i.test(raw)) {
+    return 'Sonra ilgili ekrana geç.';
+  }
+  return ensureVisibleSentence(normalizeVisibleReplyFragment(raw));
 }
 
 function buildRiskReply(lines = [], extraRiskItems = []) {

@@ -67,6 +67,9 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/addressGeocodingConfidencePolicy.js",
   "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
   "backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js",
+  "backend/src/ai/chat/helpComposerSafeReplies.js",
+  "backend/scripts/hot_file_split_ai_chat_composers_01_check.js",
+  "docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md",
   "web/src/utils/safeDriveSummary.js",
   "web/src/utils/offerQualityRanking.js",
   "web/src/panels/shared/SafeDriveSummaryCard.jsx",
@@ -144,6 +147,7 @@ const selectedDocs = [
   "docs/PRIMER_SSOT.md",
   "docs/FINAL_RELEASE_EVIDENCE_M90.md",
   "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+  "docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md",
   // PUBLIC-LANDING-01 / PUBLIC-LANDING-PLATFORM-FIRST-01 / PUBLIC-LANDING-01 FINAL PROMISE CHECK / LEAD-CAPTURE-01 public vitrin docs/check coverage
   "docs/PUBLIC_LANDING_01.md",
   "docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md",
@@ -351,7 +355,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -772,7 +776,7 @@ const coverageMatrix = [
     rolePanel: "Copilot drawer and terminal",
     backendRouteService: "backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/chat/copilotHumanApprovalPolicy.js; backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js; backend/src/ai/jobGuide/screenCatalog.js",
     frontendSurface: "web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx",
-    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copiloteblockruntimeanswerintegration01; check:copilotguidedtaskengine01; check:copilotdynamicquestionengine01; check:copilotsmartdiagnosticengine01; check:copilotrootcauseengine01; check:copilotworkflowreasoningengine01; check:seferabireasoningassistant01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
+    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copiloteblockruntimeanswerintegration01; check:copilotguidedtaskengine01; check:copilotdynamicquestionengine01; check:copilotsmartdiagnosticengine01; check:copilotrootcauseengine01; check:copilotworkflowreasoningengine01; check:hotfilesplitaichatcomposers01; check:seferabireasoningassistant01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
     checkType: "static",
     coverageStatus: "COVERED_ACTIVE",
     missingGap: "None on the current static/product chain.",
@@ -932,6 +936,7 @@ function replacementFor(entry, duplicateMap) {
   if (entry.fullKey === "root:check:copilotriskscoringengine01") return "verify-core";
   if (entry.fullKey === "root:check:copilotclarifyingquestionengine01") return "verify-core";
   if (entry.fullKey === "root:check:copilotworkflowreasoningengine01") return "verify-core";
+  if (entry.fullKey === "root:check:hotfilesplitaichatcomposers01") return "verify-core";
   if (entry.fullKey === "root:check:seferabireasoningassistant01") return "verify-core";
   if (entry.fullKey === "root:check:seferabiturkishterminology01") return "verify-core";
   if (entry.fullKey === "root:check:seferabiturkishuserfacinglanguage01") return "verify-core";
@@ -1560,6 +1565,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot workflow reasoning engine docs: \`docs/COPILOT_WORKFLOW_REASONING_ENGINE_01.md\``);
   out.push(`- Copilot workflow reasoning engine command: \`node backend\\scripts\\copilot_workflow_reasoning_engine_01_check.js\``);
   out.push(`- Copilot workflow reasoning engine helper: \`backend/src/ai/chat/conversationWorkflowReasoningEngine.js\``);
+  out.push(`- Hot file split AI chat composers milestone: \`HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01\``);
+  out.push(`- Hot file split AI chat composers check: \`check:hotfilesplitaichatcomposers01\``);
+  out.push(`- Hot file split AI chat composers docs: \`docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md\``);
+  out.push(`- Hot file split AI chat composers command: \`node backend\\scripts\\hot_file_split_ai_chat_composers_01_check.js\``);
+  out.push(`- Hot file split AI chat composers helper: \`backend/src/ai/chat/helpComposerSafeReplies.js\``);
   out.push(`- Sefer Abi reasoning assistant milestone: \`SEFER-ABI-REASONING-ASSISTANT-01\``);
   out.push(`- Sefer Abi reasoning assistant check: \`check:seferabireasoningassistant01\``);
   out.push(`- Sefer Abi reasoning assistant docs: \`docs/SEFER_ABI_REASONING_ASSISTANT_01.md\``);

@@ -286,6 +286,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; role-aware workflow reasoning üretir ama runtime execute açmaz.
 - Sonraki güvenli hatlar: `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`, `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`.
 
+### HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01 [CHECK]
+- `check:hotfilesplitaichatcomposers01` helpComposer içindeki güvenli reply-helper yüzeyini `helpComposerSafeReplies.js` ile ayıran acceptance-safe hot-file split kapısıdır; görünür Türkçe reply davranışını korur ama runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\hot_file_split_ai_chat_composers_01_check.js`
+- Doküman: `docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md`
+- Static helper: `backend/src/ai/chat/helpComposerSafeReplies.js`
+- Bu check, `COPILOT-WORKFLOW-REASONING-ENGINE-01` ve `COPILOT-REASONING-ANSWER-COMPOSER-01` hattıyla birlikte okunur; hot-file borcunu azaltır ama smoke policy, threshold, skip veya PASS kriterini gevşetmez.
+- Sonraki güvenli hatlar: `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `SEFER-ABI-TERMINAL-HUMANIZE-01`, `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`, `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`.
+
 ### COPILOT-REASONING-ANSWER-COMPOSER-01 [CHECK]
 - `check:copilotreasoninganswercomposer01` Sefer Abi reasoning replies için final reply composer katmanını kilitler; robotik lead marker'ları, tekrarları ve template benzerliğini temizler; strict A-only acceptance'ta Company shifts preview/convert affordance da gerektiği için bu milestone `core composer + required product acceptance support` scope'u ile okunur, ancak runtime AI action, tool execution, write-action dispatcher ve DB write açmaz.
 - Check script: `node backend\scripts\copilot_reasoning_answer_composer_01_check.js`
