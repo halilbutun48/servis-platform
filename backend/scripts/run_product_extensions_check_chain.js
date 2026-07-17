@@ -90,6 +90,7 @@ const steps = [
   'check:copilotriskscoringengine01',
   'check:copilotclarifyingquestionengine01',
   'check:copilotworkflowreasoningengine01',
+  'check:copilotplanreviewengine01',
   'check:hotfilesplitaichatcomposers01',
   'check:copilotreasoninganswercomposer01',
   'check:ai03bparaphraseintentaudit01',

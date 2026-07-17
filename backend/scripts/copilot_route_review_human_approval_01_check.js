@@ -414,6 +414,9 @@ async function main() {
     'web/src/utils/copilotFacts.js',
     'backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js',
     'docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md',
+    'backend/scripts/copilot_plan_review_engine_01_check.js',
+    'backend/src/ai/chat/conversationPlanReviewEngine.js',
+    'docs/COPILOT_PLAN_REVIEW_ENGINE_01.md',
   ]);
 
   allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'], 'working tree stays within route review scope');

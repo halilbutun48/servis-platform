@@ -401,7 +401,7 @@ function buildIntentLead(snapshot) {
           'Bu kararı otomatik veremem; ama risk ve kanıtı birlikte sıralayalım.',
         ],
         COMPANY: [
-          'Bunu senin yerine yapamam; ama teklif ve sözleşme hazırlığını adım adım gösteririm.',
+          'Teklifi senin yerine kabul edemem. Kabul öncesi fiyat, kapasite, kalite, araç / sürücü uygunluğu ve sözleşme hazırlığı kontrollerini adım adım gösterebilirim. Son onay yetkili kullanıcı tarafından verilmelidir.',
           'Bu işlemi ben uygulayamam; ama plan ekranında neyi kontrol edeceğini söyleyeyim.',
           'Yürütmeyi ben üstlenemem; ama güvenli hazırlık yolunu çıkarayım.',
         ],

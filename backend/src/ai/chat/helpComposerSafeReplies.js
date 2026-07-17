@@ -182,6 +182,102 @@ function selectedCarrySummary(screenContext) {
   return redactSensitiveLiveSelectionText(result, screenContext?.path);
 }
 
+function pickTerms(simpleTerms, limit = 3) {
+  return (Array.isArray(simpleTerms) ? simpleTerms : []).slice(0, limit).map((row) => `${row.term}: ${row.meaning}`);
+}
+
+function pickButtons(buttonGuides, limit = 3) {
+  return (Array.isArray(buttonGuides) ? buttonGuides : []).slice(0, limit).map((row) => `${row.label}: ${row.purpose}`);
+}
+
+function normalizeGuideText(value) {
+  return normalizeText(value).replace(/[.!?]+$/g, '');
+}
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function matchesStandalonePhrase(text, phrases) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return (Array.isArray(phrases) ? phrases : []).some((phrase) => {
+    const normalized = normalizeLooseText(phrase);
+    if (!normalized) return false;
+    const pattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapeRegExp(normalized)}(?:$|[^\\p{L}\\p{N}])`, 'iu');
+    return pattern.test(value);
+  });
+}
+
+function hasSeferScoreSignal(text) {
+  return matchesStandalonePhrase(text, [
+    'seferpuan',
+    'sefer puanı',
+    'sefer puani',
+    'sefer score',
+    'kalitepuan',
+    'readonly kalite puanı',
+    'readonly kalite puani',
+    'kalite puanı',
+    'kalite puani',
+    'tedarikcipuan',
+    'tedarikçi puanı',
+    'tedarikci puani',
+    'sağlayıcıpuan',
+    'sağlayıcı puanı',
+    'saglayici puani',
+    'bu servis kaliteli mi',
+    'eksik sinyaller',
+    'puan neden düşük',
+    'puan neden dusuk',
+    'puan nasıl yükselir',
+    'puan nasil yukselir',
+    'bu puan ödeme veya teklif sıralamasını etkiliyor mu',
+    'bu puan odeme veya teklif siralamasini etkiliyor mu',
+  ]);
+}
+
+const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
+  'ROOT_CAUSE',
+  'WHY_BLOCKED',
+  'MISSING_DATA',
+  'CONTRACT_TO_SHIFT',
+  'CONTRACT_SHIFT_TODAY',
+  'DYNAMIC_SAVINGS_PREVIEW',
+  'AGREEMENT_ROUTE_REFRESH',
+  'SEFER_SCORE_PREVIEW',
+  'MARKETPLACE_FREE_TO_OPERATE_PREVIEW',
+  'PAYMENT_READINESS',
+  'PAYMENT_MISSING',
+  'QUALITY_SIGNAL',
+  'TRUST_QUALITY',
+  'FEEDBACK_STATUS',
+  'NOTIFICATION_SOURCE',
+  'KVKK_VISIBILITY',
+  'DRIVER_PHONE_GPS',
+  'LOCATION_HELP',
+  'WHO_CAN_DO',
+  'ROLE_BOUNDARY',
+  'NEXT_STEP',
+  'NEXT_SCREEN',
+  'NEXT_ACTION',
+  'SAFE_NEXT_STEP',
+  'FIRST_CONTROL',
+  'SCREEN_FOCUS',
+  'RISK_LIST',
+  'NEXT_BEST_ACTION',
+]);
+
+export {
+  WORKFLOW_DIAGNOSTIC_QUESTION_TYPES,
+  escapeRegExp,
+  hasSeferScoreSignal,
+  matchesStandalonePhrase,
+  normalizeGuideText,
+  pickButtons,
+  pickTerms,
+};
+
 export function normalizeReplySurface(text) {
   return String(text || '').replace(/\s+/g, ' ').replace(/\s+([.,!?;:])/g, '$1').trim();
 }

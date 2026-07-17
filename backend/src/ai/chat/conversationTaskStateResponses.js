@@ -36,6 +36,11 @@ import {
   buildRootCauseState,
 } from './conversationRootCauseEngine.js';
 import {
+  buildPlanReviewChips,
+  buildPlanReviewReply,
+  buildPlanReviewState,
+} from './conversationPlanReviewEngine.js';
+import {
   buildRoomShiftSemanticOverrideReply,
   looksLikeRoomShiftClarifyingRequest,
   looksLikeRoomShiftFocusQuestion,
@@ -80,6 +85,9 @@ export {
   buildRootCauseReply,
   buildRootCauseChips,
   buildRootCauseState,
+  buildPlanReviewReply,
+  buildPlanReviewChips,
+  buildPlanReviewState,
   companyPlanningCenterNextBestActionReply,
   buildRoomShiftSemanticOverrideReply,
   buildCopilotEBlockRuntimeAnswerReply,
@@ -148,6 +156,9 @@ export function createConversationTaskStateResponses(deps = {}) {
     buildRootCauseReply,
     buildRootCauseChips,
     buildRootCauseState,
+    buildPlanReviewReply,
+    buildPlanReviewChips,
+    buildPlanReviewState,
     companyPlanningCenterNextBestActionReply,
     buildRoomShiftSemanticOverrideReply: (args) => buildRoomShiftSemanticOverrideReply({
       ...args,

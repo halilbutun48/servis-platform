@@ -468,6 +468,38 @@ export function composeCopilotReasoningAnswer(snapshot = {}) {
     return finalizeReply(snapshot, joinParts([directReply, buildDirectQuestionTail(snapshot, rawReply)], maxLength), maxLength);
   }
   if (snapshot.mode === 'CLARIFYING_QUESTION') {
+    if (
+      questionType === 'WHY_BLOCKED'
+      && /\/company\/shifts\b/.test(String(snapshot?.screenPath || ''))
+      && (
+        firstNonEmpty(snapshot?.screenContext?.selectedLabel, snapshot?.sourceScreenContext?.selectedLabel, '')
+        || firstNonEmpty(snapshot?.selectedRecordStatus, '')
+        || (Array.isArray(snapshot?.screenContext?.selectedFields) && snapshot.screenContext.selectedFields.length > 0)
+      )
+    ) {
+      const selectedShiftLabel = firstNonEmpty(
+        snapshot?.screenContext?.selectedLabel,
+        snapshot?.sourceScreenContext?.selectedLabel,
+        '',
+      );
+      const selectedShiftFields = uniqueStrings((Array.isArray(snapshot?.screenContext?.selectedFields) ? snapshot.screenContext.selectedFields : [])
+        .map((row) => {
+          const label = firstNonEmpty(row?.label, row?.key, '');
+          const value = firstNonEmpty(row?.value, row?.text, '');
+          return label && value ? `${label}: ${value}` : firstNonEmpty(label, value, '');
+        })
+        .filter(Boolean));
+      const selectedShiftStatus = firstNonEmpty(
+        selectedShiftFields.join(' • '),
+        snapshot?.selectedRecordStatus,
+        '',
+      );
+      return finalizeReply(snapshot, joinParts([
+        selectedShiftLabel ? `Seçili vardiya: ${selectedShiftLabel}.` : '',
+        selectedShiftStatus ? `Seçili kayıt: ${selectedShiftStatus}.` : '',
+        rawReply,
+      ], maxLength), maxLength);
+    }
     return finalizeReply(snapshot, rawReply, maxLength);
   }
   const fallback = buildFallbackReply(snapshot);

@@ -67,6 +67,7 @@
     "check:copilotriskscoringengine01": "node backend/scripts/copilot_risk_scoring_engine_01_check.js",
     "check:copilotclarifyingquestionengine01": "node backend/scripts/copilot_clarifying_question_engine_01_check.js",
     "check:copilotworkflowreasoningengine01": "node backend/scripts/copilot_workflow_reasoning_engine_01_check.js",
+    "check:copilotplanreviewengine01": "node backend/scripts/copilot_plan_review_engine_01_check.js",
     "check:hotfilesplitaichatcomposers01": "node backend/scripts/hot_file_split_ai_chat_composers_01_check.js",
     "check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js",
     "check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js",

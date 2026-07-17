@@ -286,6 +286,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; role-aware workflow reasoning üretir ama runtime execute açmaz.
 - Sonraki güvenli hatlar: `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`, `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`.
 
+### COPILOT-PLAN-REVIEW-ENGINE-01 [CHECK]
+- `check:copilotplanreviewengine01` plan kontrolü / önizleme / onay öncesi değerlendirme dilini `Planlama Merkezi` ekseninde kilitler; `Sonraki güvenli kontrol` ve `İnsan onayı` çizgisini korur.
+- Check script: `node backend\scripts\copilot_plan_review_engine_01_check.js`
+- Doküman: `docs/COPILOT_PLAN_REVIEW_ENGINE_01.md`
+- Static helper: `backend/src/ai/chat/conversationPlanReviewEngine.js`
+- `write-action` ve `route review` sınırlarını açık tutar; runtime AI action, tool execution, DB write, route apply ve fake success açmaz.
+- Sonraki güvenli hatlar: `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`.
+
 ### HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01 [CHECK]
 - `check:hotfilesplitaichatcomposers01` helpComposer içindeki güvenli reply-helper yüzeyini `helpComposerSafeReplies.js` ile ayıran acceptance-safe hot-file split kapısıdır; görünür Türkçe reply davranışını korur ama runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - Check script: `node backend\scripts\hot_file_split_ai_chat_composers_01_check.js`

@@ -7,6 +7,7 @@ import {
 } from './copilotEBlockRuntimeAnswerIntegration.js';
 import { detectRootCauseQuestionIntent } from './conversationRootCauseEngine.js';
 import { buildRiskScoringChips } from './conversationRiskScoringEngine.js';
+import { buildPlanReviewChips, looksLikePlanReviewQuestion } from './conversationPlanReviewEngine.js';
 import { uniqueStrings } from './replyShapes.js';
 import {
   BASE_RULES,
@@ -97,6 +98,36 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       questionType: 'SCREEN_EXPLANATION_HELP',
       confidence: 0.92,
       matchedSignals: ['SCREEN_EXPLANATION_HELP', 'screen-explanation-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+  if (matchesStandalonePhrase(combinedText, ['adım adım anlat', 'adim adim anlat', 'adım adım göster', 'adim adim goster'])) {
+    return {
+      questionType: 'HOW_TO_HELP',
+      confidence: 0.92,
+      matchedSignals: ['HOW_TO_HELP', 'step-by-step-help'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+  if (matchesStandalonePhrase(combinedText, ['hangi kayıt için bakayım', 'hangi kayit için bakayim', 'hangi kayıt için bakayım?', 'hangi kayit için bakayim?'])) {
+    return {
+      questionType: 'CLARIFYING_QUESTION',
+      confidence: 0.93,
+      matchedSignals: ['CLARIFYING_QUESTION', 'clarifying-record-selection'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+  if (
+    pathHas(options.screenPath, ['/room/shifts'])
+    && matchesStandalonePhrase(combinedText, ['bu rolde ne yapabilirim', 'bu rolde ne yaparım', 'bu rolde ne yaparim'])
+  ) {
+    return {
+      questionType: 'ROLE_EXPLANATION_HELP',
+      confidence: 0.91,
+      matchedSignals: ['ROLE_EXPLANATION_HELP', 'room-shifts-role-explanation-override'],
       preferRoute: false,
       routeRequest: false,
     };
@@ -397,9 +428,41 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     };
   }
 
+  if (looksLikePlanReviewQuestion(combinedText, 'OPEN', '', {
+    screenPath: options.screenPath,
+    screenDefinition: options.screenDefinition,
+    screenContext: options.screenContext,
+    sourceScreenDefinition: options.sourceScreenDefinition,
+    sourceScreenContext: options.sourceScreenContext,
+    userRole: options.userRole,
+    user: options.user,
+    conversationState: options.conversationState,
+    entityType: options.entityType,
+  })) {
+    return {
+      questionType: 'PLAN_REVIEW',
+      confidence: 0.95,
+      matchedSignals: ['PLAN_REVIEW', 'plan-review'],
+      preferRoute: false,
+      routeRequest: false,
+    };
+  }
+
+  const nextActionSurfacePath = String(options.sourceScreenPath || options.screenPath || '');
   if (isNextBestActionQuestion(text) || isNextBestActionQuestion(originalText)) {
-    const planningSurfacePath = String(options.sourceScreenPath || options.screenPath || '');
-    if (isPlanningSurfacePath(planningSurfacePath)) {
+    if (
+      pathHas(nextActionSurfacePath, ['/company/shifts', '/room/shifts', '/organization/shifts', '/superadmin/operations'])
+      && matchesStandalonePhrase(combinedText, ['sıradaki doğru işlem ne', 'siradaki dogru islem ne'])
+    ) {
+      return {
+        questionType: 'NEXT_STEP',
+        confidence: 0.93,
+        matchedSignals: ['NEXT_STEP', 'shift-surface-next-step-override'],
+        preferRoute: false,
+        routeRequest: false,
+      };
+    }
+    if (isPlanningSurfacePath(nextActionSurfacePath)) {
       return {
         questionType: 'NEXT_BEST_ACTION',
         confidence: 0.93,
@@ -989,6 +1052,10 @@ export function buildSuggestedChips({ entityType = 'screen', questionType = 'OPE
   }
   if (String(questionType || '') === 'RISK_LIST') {
     const chips = buildRiskScoringChips({ entityType, questionType, roleMode, screenPath, context, guidedTaskMeta });
+    return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
+  }
+  if (String(questionType || '') === 'PLAN_REVIEW') {
+    const chips = buildPlanReviewChips({ entityType, questionType, roleMode, screenPath, context, guidedTaskMeta });
     return roleMode === 'SIMPLE' ? chips.slice(0, 4) : chips.slice(0, 6);
   }
   if (String(questionType || '') === 'NEXT_BEST_ACTION') {
