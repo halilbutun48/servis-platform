@@ -1,4 +1,5 @@
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from './etaSanity.js';
+import { buildOperationHealthState } from './conversationOperationHealthEngine.js';
 
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
@@ -45,8 +46,8 @@ function selectedBadgeRows(screenContext) {
 
 function normalizeSelectedDisplayLabel(label) {
   return firstNonEmpty(label, '')
-    .replace(/\bStale\s*\/\s*Offline\b/gi, 'GPS güncel değil / çevrim dışı')
-    .replace(/\bStale\b/gi, 'GPS güncel değil')
+    .replace(/\bStale\s*\/\s*Offline\b/gi, 'Konum sinyali güncel değil / çevrim dışı')
+    .replace(/\bStale\b/gi, 'Konum sinyali güncel değil')
     .replace(/\bOffline\b/gi, 'çevrim dışı')
     .trim();
 }
@@ -774,55 +775,48 @@ function analyzeAgreements(screenContext, screenDefinition) {
 
 function analyzeOperationHealth(screenContext, screenDefinition) {
   const result = makeResult('OPERATION_HEALTH', screenContext, screenDefinition);
-  const fields = selectedFieldRows(screenContext);
-  const facts = structuredFacts(screenContext) || {};
-  const counters = firstNonEmpty(facts?.counters, facts?.counts, facts?.metrics, {}) || {};
-  const toCount = (value) => {
-    const text = String(value ?? '').trim();
-    if (!text) return Number.NaN;
-    const parsed = Number(text.replace(/[^\d]/g, ''));
-    return Number.isFinite(parsed) ? parsed : Number.NaN;
-  };
-  const activeDrivers = toCount(firstNonEmpty(counters.activeDrivers, findValue(fields, ['aktif sürücü', 'active drivers'])));
-  const riskyDevices = toCount(firstNonEmpty(counters.riskyDevices, findValue(fields, ['riskli cihaz'])));
-  const staleOrOffline = toCount(firstNonEmpty(counters.staleOrOffline, findValue(fields, ['stale / offline', 'stale', 'offline'])));
-  const openIssues = toCount(firstNonEmpty(counters.openIssues, findValue(fields, ['açık sorun', 'acik sorun'])));
-  const live = findValue(fields, ['stale / offline', 'stale', 'offline']);
-  const risky = findValue(fields, ['riskli cihaz']);
-  const issues = findValue(fields, ['açık sorun', 'acik sorun']);
-  const sampleDriver = findValue(fields, ['örnek sürücü', 'ornek surucu']);
-  const sampleIssue = findValue(fields, ['örnek sorun', 'ornek sorun']);
-  const hasOperationalCounts = [activeDrivers, riskyDevices, staleOrOffline, openIssues].some((value) => Number.isFinite(value));
-  if (hasBlankish(live) && hasBlankish(issues) && hasBlankish(risky)) result.blockers.push('Operasyon sağlığı özeti boş görünüyor.');
-  if (!hasBlankish(issues) && Number(String(issues).replace(/[^\d]/g, '') || 0) > 0) result.blockers.push('Açık sorun sayısı sıfır değil; önce risk satırlarına inmek gerekir.');
-  if (!hasBlankish(live) && Number(String(live).replace(/[^\d]/g, '') || 0) > 0) result.blockers.push('Stale veya offline sürücü sayısı sıfır değil.');
-  if (Number.isFinite(activeDrivers) && activeDrivers === 0) result.blockers.push('Aktif sürücü 0 görünüyor.');
-  if (Number.isFinite(riskyDevices) && riskyDevices > 0) result.blockers.push('Riskli cihaz var.');
-  if (Number.isFinite(staleOrOffline) && staleOrOffline > 0) result.blockers.push('GPS güncel değil / çevrim dışı kayıt var.');
-  if (Number.isFinite(openIssues) && openIssues > 0) result.blockers.push('Açık sorun var.');
-  if (Number.isFinite(activeDrivers)) result.evidence.push(`Aktif sürücü: ${activeDrivers}`);
-  if (Number.isFinite(riskyDevices)) result.evidence.push(`Riskli cihaz: ${riskyDevices}`);
-  if (Number.isFinite(staleOrOffline)) result.evidence.push(`GPS güncel değil / çevrim dışı: ${staleOrOffline}`);
-  if (Number.isFinite(openIssues)) result.evidence.push(`Açık sorun: ${openIssues}`);
-  if (live) result.evidence.push(`GPS güncel değil / çevrim dışı: ${live}`);
-  if (risky) result.evidence.push(`Riskli cihaz: ${risky}`);
-  if (issues) result.evidence.push(`Açık sorun: ${issues}`);
-  if (sampleDriver) result.evidence.push(`Örnek sürücü: ${sampleDriver}`);
-  if (sampleIssue) result.evidence.push(`Örnek sorun: ${sampleIssue}`);
-  result.reasoningLead = hasOperationalCounts
-    ? `Şimdi: En kritik sorun canlılık ve cihaz riski. Aktif sürücü ${Number.isFinite(activeDrivers) ? activeDrivers : 0}, riskli cihaz ${Number.isFinite(riskyDevices) ? riskyDevices : 0}, GPS güncel değil / çevrim dışı ${Number.isFinite(staleOrOffline) ? staleOrOffline : 0} ve açık sorun ${Number.isFinite(openIssues) ? openIssues : 0} görünüyor.`
-    : (result.blockers.length
-      ? 'Bu ekranda ana konu açık sorunları ve canlılık risklerini azaltmaktır.'
-      : 'Bu ekranda önce özet kartlar, sonra sorunlu sürücüler ve açık sorunlar birlikte okunur.');
-  result.nextBestAction = hasOperationalCounts
-    ? 'Önce riskli cihazı aç. Sonra GPS güncel değil / çevrim dışı satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.'
-    : sampleIssue
-      ? 'Önce örnek sorunu aç. Sonra hangi ekrana gitmen gerektiğini netleştir.'
-      : sampleDriver
-        ? 'Önce örnek sürücünün canlılık, izin ve oturum durumunu birlikte kontrol et.'
-        : 'Önce özet kartlardan hangi riskin yüksek olduğunu belirle. Sonra ilgili ekrana geç.';
-  result.safestNextStep = 'En risksiz adım, açık sorun sayısı ile GPS güncel değil / çevrim dışı sayısını birlikte okuyup önce en riskli satıra inmektir.';
-  result.compareHint = 'Operasyon Sağlığı sorun bulma ekranıdır; tek başına atama veya sözleşme kararı ekranı değildir.';
+  const state = buildOperationHealthState({
+    screenContext,
+    screenDefinition,
+    sourceScreenContext: screenContext,
+    sourceScreenDefinition: screenDefinition,
+    roleMode: 'OPERATIONS',
+    userRole: '',
+    user: null,
+    message: '',
+    rawMessage: '',
+    questionType: 'SCREEN_FOCUS',
+    interactionIntentFamily: '',
+    analysis: null,
+    contextPriority: null,
+    conversationState: null,
+    guidedTaskMeta: null,
+    entityType: 'screen',
+    context: null,
+    taskState: null,
+  });
+  result.reasoningLead = firstNonEmpty(state.reasoningLead, 'Şimdi: En kritik sorun canlılık ve cihaz riski.', result.reasoningLead, '');
+  result.nextBestAction = firstNonEmpty(
+    state.nextBestAction,
+    result.nextBestAction,
+    'Önce riskli cihazı aç. Sonra GPS güncel değil / çevrim dışı satırını ve açık sorunları sırala. Ardından ilgili sürücü veya araç ekranına geç.',
+  );
+  result.safestNextStep = firstNonEmpty(state.safestNextStep, result.safestNextStep, '');
+  result.compareHint = firstNonEmpty(state.compareHint, result.compareHint, '');
+  result.selectedRecordStatus = firstNonEmpty(state.selectedRecordStatus, result.selectedRecordStatus, '');
+  result.blockers.push(...(Array.isArray(state.blockers) ? state.blockers : []));
+  result.missingData.push(...(Array.isArray(state.missingData) ? state.missingData : []));
+  result.evidence.push(...(Array.isArray(state.evidence) ? state.evidence : []));
+  if (state.counters && typeof state.counters === 'object') {
+    if (Number.isFinite(state.counters.activeDrivers)) result.evidence.push(`Aktif sürücü: ${state.counters.activeDrivers}`);
+    if (Number.isFinite(state.counters.riskyDevices)) result.evidence.push(`Riskli cihaz: ${state.counters.riskyDevices}`);
+    if (Number.isFinite(state.counters.staleOrOffline)) result.evidence.push(`GPS güncel değil / çevrim dışı: ${state.counters.staleOrOffline}`);
+    if (Number.isFinite(state.counters.openIssues)) result.evidence.push(`Açık sorun: ${state.counters.openIssues}`);
+  }
+  result.healthSignals = uniqueStrings([
+    ...(Array.isArray(result.healthSignals) ? result.healthSignals : []),
+    ...(Array.isArray(state.healthSignals) ? state.healthSignals : []),
+  ]);
   applyStructuredFacts(result, screenContext);
   applyUiSurface(result, screenContext);
   return finalize(result);

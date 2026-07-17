@@ -417,6 +417,10 @@ async function main() {
     'backend/scripts/copilot_plan_review_engine_01_check.js',
     'backend/src/ai/chat/conversationPlanReviewEngine.js',
     'docs/COPILOT_PLAN_REVIEW_ENGINE_01.md',
+    // Operation Health milestone files are legitimate scope for this consolidated route-review pass.
+    'backend/scripts/copilot_operation_health_engine_01_check.js',
+    'backend/src/ai/chat/conversationOperationHealthEngine.js',
+    'docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md',
   ]);
 
   allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'], 'working tree stays within route review scope');

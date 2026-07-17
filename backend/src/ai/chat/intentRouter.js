@@ -6,6 +6,7 @@ import {
   listCopilotEBlockRuntimeAnswerTopics,
 } from './copilotEBlockRuntimeAnswerIntegration.js';
 import { detectRootCauseQuestionIntent } from './conversationRootCauseEngine.js';
+import { buildOperationHealthChips } from './conversationOperationHealthEngine.js';
 import { buildRiskScoringChips } from './conversationRiskScoringEngine.js';
 import { buildPlanReviewChips, looksLikePlanReviewQuestion } from './conversationPlanReviewEngine.js';
 import { uniqueStrings } from './replyShapes.js';
@@ -45,7 +46,6 @@ import {
   pathHas,
   selectGuideJobType,
 } from './intentRouterCore.js';
-
 // Source anchors retained for text-based checks: bura ne | burası ne | bu ne | ne bu | burda ne var | burası ne işe yar | ne yapay | SCREEN_PURPOSE | NEXT_STEP | bu kullanıcı ne yapabilir | sözleşme ile vardiya ilişkisi ne | hakediş tarafında ne kontrol etmeliyim | sürücünün telefon gps’i neden devrede | hangi ekrana gitmeliyim | saha kabul | checklist | bu hakediş neden hazır değil | bu bilgi neden görünmüyor | bu sağlayıcı neden daha iyi | bu sözleşmeden bugün vardiya üretildi mi | bunu kim yapabilir | sözleşme bugün vardiya üretildi mi | sözleşmeden vardiya üretildi mi | sözleşmeden bugün vardiya üretildi mi | ASSIGNMENT_READINESS_GUIDE | Sürücü rotası yenilenmez
 // const BASE_RULES = [ | const COP02A_GENERAL_RULES = [ | const INTENT_PRIORITY = [
 // return ['Bu ekranı detaylı anlat', 'İlk neye bakayım?', 'Burada eksik ne olabilir?', 'Hangi ekrana geçmeliyim?']; chips.push('Bu ekranı detaylı anlat', 'Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla', 'İlgili yere götür'); chips.push('Bu ekranı detaylı anlat', 'Açık geri bildirimi göster', 'Kritik geri bildirimleri sırala', 'Sorumlu rolü göster', 'Geri bildirim açık'); chips.push('Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?', 'Yetki sınırı'); chips.push('Bildirim kaynağını göster', 'İlgili kaydı aç', 'Okunmamış bildirimleri göster', 'Açık bildirimi göster'); chips.push('Üretim geçmişini göster', 'İlgili sözleşmeyi aç', 'Bugünkü vardiyaları göster', 'Üretim durumunu açıkla');
@@ -92,7 +92,6 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
       routeRequest: false,
     };
   }
-
   if (/(?:bu ekran ne işe yarar|bu ekran ne ise yarar|bu ekran ne işe yarıyor|bu ekran ne ise yarıyor|bu ekran ne demek|burada ne yapıyorum|burada ne yapiyorum|bu panel neyi gösteriyor|bu panel neyi gosteriyor|bu panel ne işe yarıyor|bu panel ne ise yarıyor|bu kart ne demek|bu sayfa ne işe yarar|bu sayfa ne ise yarar|bu sayfa ne işe yarıyor|bu sayfa ne ise yarıyor|ekranın amacı ne|ekranin amaci ne)/.test(originalText) && !/(buton|alan|rozet|badge|sütun|sutun|kolon|terim)/.test(originalText)) {
     return {
       questionType: 'SCREEN_EXPLANATION_HELP',
@@ -868,7 +867,8 @@ function simpleScreenChipsByPath(screenPath = '', questionType = 'OPEN') {
     return ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'];
   }
   if (pathHas(screenPath, ['/room/operation-health'])) {
-    return ['Riskli cihazı göster', 'konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
+    const operationHealthChips = buildOperationHealthChips({ questionType, screenPath });
+    return operationHealthChips.length ? operationHealthChips : ['Riskli cihazı göster', 'Konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
   }
   if (pathHas(screenPath, ['/room/shifts'])) {
     return ['Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Rota/durak hazır mı?', 'Konum sinyali/operasyon kanıtını kontrol et'];
@@ -951,7 +951,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS', questionTyp
   } else if (pathHas(screenPath, ['/room/map'])) {
     chips.push(...(workflowQuestion ? ['Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç'] : ['Bu ekranı detaylı anlat', 'Son konum bilgisi ne zaman geldi?', 'Sürücünün telefonundan konum sinyali devrede mi?', 'Araç bağlantısı var mı?', 'Canlı takip ekranını aç']));
   } else if (pathHas(screenPath, ['/room/operation-health'])) {
-    chips.push('Riskli cihazı göster', 'konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et');
+    chips.push('Riskli cihazı göster', 'Konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et');
   } else if (pathHas(screenPath, ['/room/shifts'])) {
     chips.push('Başlatma zamanı uygun mu?', 'Araç/sürücü bağlantısını kontrol et', 'Konum sinyali/operasyon kanıtını kontrol et', 'Rota/durak hazır mı?');
   } else if (pathHas(screenPath, ['/superadmin/operations'])) {

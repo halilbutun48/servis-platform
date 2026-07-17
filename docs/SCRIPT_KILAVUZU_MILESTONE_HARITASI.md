@@ -286,6 +286,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-CLARIFYING-QUESTION-ENGINE-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; role-aware workflow reasoning üretir ama runtime execute açmaz.
 - Sonraki güvenli hatlar: `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`, `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`.
 
+### COPILOT-OPERATION-HEALTH-ENGINE-01 [CHECK]
+- `check:copilotoperationhealthengine01` şirket, oda, superadmin, sürücü, personel, veli, okul ve organizasyon operasyon yüzeylerinde canlılık / risk / konum sinyali okumasını tek yerde toplar; `backend/src/ai/chat/conversationOperationHealthEngine.js` üzerinden helpComposer, intentRouter, answerQualityPolicy, screenStateAnalyzer ve Sefer Abi reasoning assistant arasında paylaşılır; read-only kalır, no write-action, tool execution, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\copilot_operation_health_engine_01_check.js`
+- Doküman: `docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md`
+- Static helper: `backend/src/ai/chat/conversationOperationHealthEngine.js`
+- Bu check, `COPILOT-WORKFLOW-REASONING-ENGINE-01`, `COPILOT-PLAN-REVIEW-ENGINE-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; görünür Türkçe reply üretir ama yazma, uygulama ve otomatik kapanış açmaz.
+
 ### COPILOT-PLAN-REVIEW-ENGINE-01 [CHECK]
 - `check:copilotplanreviewengine01` plan kontrolü / önizleme / onay öncesi değerlendirme dilini `Planlama Merkezi` ekseninde kilitler; `Sonraki güvenli kontrol` ve `İnsan onayı` çizgisini korur.
 - Check script: `node backend\scripts\copilot_plan_review_engine_01_check.js`

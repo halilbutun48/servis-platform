@@ -6,6 +6,7 @@ import {
   buildClarifyingQuestionReply,
   buildDynamicQuestionChips,
   resolveClarifyingQuestionText,
+  buildOperationHealthState,
   buildRiskScoringState,
 } from './conversationTaskStateResponses.js';
 import { buildRootCauseAssistantChips, buildRootCauseAssistantReply, buildRootCauseState } from './conversationRootCauseEngine.js';
@@ -819,8 +820,30 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     context,
     taskState,
   });
+  const operationHealthState = buildOperationHealthState({
+    message,
+    rawMessage: message,
+    questionType,
+    interactionIntentFamily,
+    roleMode,
+    userRole,
+    user,
+    screenPath,
+    screenDefinition,
+    screenContext,
+    sourceScreenDefinition,
+    sourceScreenContext,
+    analysis,
+    contextPriority,
+    conversationState,
+    guidedTaskMeta,
+    entityType,
+    context,
+    taskState,
+  });
   const workflowReasoningReply = normalizeVisibleReplyFragment(workflowReasoningState?.reply || '');
   const smartDiagnosticReply = normalizeVisibleReplyFragment(smartDiagnosticState?.reply || '');
+  const operationHealthReply = normalizeVisibleReplyFragment(operationHealthState?.reply || '');
   const workflowReasoningAssistantReply = workflowReasoningState?.shouldRespond && WORKFLOW_REASONING_RELEVANT_QUESTION_TYPES.includes(String(questionType || ''))
     ? workflowReasoningReply
     : '';
@@ -920,6 +943,7 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     || contextPriority?.selectedRecordMismatchLead
     || contextPriority?.evidenceConfidence
     || Boolean(workflowReasoningState?.shouldRespond)
+    || Boolean(operationHealthState?.shouldRespond)
     || analysis?.blockers?.length
     || analysis?.missingData?.length
     || analysis?.evidence?.length
@@ -1007,8 +1031,12 @@ export function buildSeferAbiReasoningAssistantContextSnapshot({
     workflowReasoningState,
     workflowReasoningReply,
     workflowReasoningChips: normalizeVisibleList(workflowReasoningState?.chips || []),
+    operationHealthState,
+    operationHealthReply,
+    operationHealthChips: normalizeVisibleList(operationHealthState?.chips || []),
     assistantReply: normalizeVisibleReplyFragment(firstNonEmpty(
       smartDiagnosticReply,
+      operationHealthReply,
       rootCauseReply,
       workflowReasoningAssistantReply,
       String(rawReply || ''),
@@ -1091,6 +1119,8 @@ function composeReasoningLead(snapshot) {
   if (rootCauseReply) return rootCauseReply;
   const smartDiagnosticReply = firstNonEmpty(snapshot?.smartDiagnosticReply, snapshot?.smartDiagnosticState?.reply, '');
   if (smartDiagnosticReply) return smartDiagnosticReply;
+  const operationHealthReply = firstNonEmpty(snapshot?.operationHealthReply, snapshot?.operationHealthState?.reply, '');
+  if (operationHealthReply) return operationHealthReply;
   const selectedRecordStatus = snapshot?.selectedRecordStatus || '';
   const reasoningLead = snapshot?.reasoningLead || '';
   const nextBestAction = snapshot?.nextBestAction || '';
@@ -1266,6 +1296,7 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
     return firstNonEmpty(
       snapshot?.rootCauseReply,
       snapshot?.smartDiagnosticReply,
+      snapshot?.operationHealthReply,
       snapshot?.workflowReasoningReply,
       snapshot?.workflowReasoningState?.reply,
       rawReply,

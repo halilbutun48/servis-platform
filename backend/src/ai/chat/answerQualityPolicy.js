@@ -2,6 +2,7 @@ import {
   detectCopilotEBlockRuntimeAnswerTopic,
   getCopilotEBlockRuntimeAnswerTopicMeta,
 } from './copilotEBlockRuntimeAnswerIntegration.js';
+import { buildOperationHealthChips } from './conversationOperationHealthEngine.js';
 
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
@@ -60,6 +61,13 @@ const WORKFLOW_GENERIC_CHIP_BLOCKLIST = [
   'Yetki sınırını kontrol et',
   'İlgili durumu sor',
   'Bu aksiyonu simüle et',
+];
+
+const OPERATION_HEALTH_CHIPS = [
+  'Riskli cihazı göster',
+  'Konum sinyali güncel değil / çevrim dışı satırını aç',
+  'Açık sorunları sırala',
+  'Aktif sürücüleri kontrol et',
 ];
 
 export function hasExplicitRoleBoundarySignal({ questionType, activeTopic, message }) {
@@ -151,13 +159,8 @@ export function workflowTopicChipSet({ activeTopic = '', questionType = '', scre
     }
   }
   if (path.includes('/room/operation-health') || path.includes('/superadmin/operations')) {
-    if (topic === 'BOARDING_CHANGE_APPLICATION') {
-      return ['Bu değişiklik uygulamaya hazır mı?', 'Günlük atamaya işlenir mi?', 'Sürücü rotası yenilenir mi?', 'Bu sadece günlük atama mı?'];
-    }
-    if (topic === 'BOARDING_ROUTE_IMPACT_PREVIEW') {
-      return ['Rota etkisini önizle', 'Kişi farkını göster', 'Km/süre farkını açıkla', 'Kapasite etkisini göster'];
-    }
-    return ['Riskli cihazı göster', 'konum sinyali güncel değil / çevrim dışı satırını aç', 'Açık sorunları sırala', 'Aktif sürücüleri kontrol et'];
+    const operationHealthChips = buildOperationHealthChips({ questionType: topic, screenPath: path });
+    return operationHealthChips.length ? operationHealthChips : OPERATION_HEALTH_CHIPS;
   }
   if (path.includes('/driver/today')) {
     if (topic === 'BOARDING_CHANGE_APPLICATION') {
