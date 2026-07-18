@@ -84,7 +84,9 @@ async function main() {
   const routeFile = read('backend/src/routes/agreements.js');
   const cardFile = read('web/src/panels/shared/PlatformFeePreviewCard.jsx');
   const companyPanel = read('web/src/panels/company/AgreementsPanel.jsx');
+  const companyBridgeSection = read('web/src/panels/company/companyAgreementsBridgeSection.jsx');
   const roomPanel = read('web/src/panels/room/AgreementsPanel.jsx');
+  const roomBridgeSection = read('web/src/panels/room/roomAgreementsBridgeSection.jsx');
   const apiFile = read('web/src/api.js');
   const copilotFacts = read('web/src/utils/agreementCopilotFacts.js');
   const starterFacts = read('web/src/utils/copilotFacts.js');
@@ -143,9 +145,11 @@ async function main() {
   must(cardFile, 'Kaynak vardiya zinciri kanıtlanmıyorsa başarı payı doğmaz', 'platform fee card explains lineage fallback');
 
   must(companyPanel, 'getAgreementPlatformFeePreview', 'company agreements panel wires platform fee API');
-  must(companyPanel, 'PlatformFeePreviewCard', 'company agreements panel renders platform fee card');
+  must(companyPanel, 'CompanyAgreementsBridgeSection', 'company agreements panel imports split bridge section');
+  must(companyBridgeSection, 'PlatformFeePreviewCard', 'company bridge section renders platform fee card');
   must(roomPanel, 'getAgreementPlatformFeePreview', 'room agreements panel wires platform fee API');
-  must(roomPanel, 'PlatformFeePreviewCard', 'room agreements panel renders platform fee card');
+  must(roomPanel, 'RoomAgreementsBridgeSection', 'room agreements panel imports split bridge section');
+  must(roomBridgeSection, 'PlatformFeePreviewCard', 'room bridge section renders platform fee card');
   must(apiFile, 'getAgreementPlatformFeePreview', 'web api exposes platform fee helper');
   must(copilotFacts, 'platformFeePreview', 'agreement copilot facts carry platform fee preview');
   must(starterFacts, 'isMarketplaceFreeToOperatePreview', 'starter chips detect marketplace preview');

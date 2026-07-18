@@ -94,6 +94,7 @@ const steps = [
   'check:copilotnextbestactionengine01',
   'check:copilotplanreviewengine01',
   'check:hotfilesplitaichatcomposers01',
+  'check:hotfilesplitwebpanels01',
   'check:copilotreasoninganswercomposer01',
   'check:ai03bparaphraseintentaudit01',
   'check:ai03bsemanticvisibleaudit01',

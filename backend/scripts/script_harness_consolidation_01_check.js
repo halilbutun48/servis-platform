@@ -73,9 +73,15 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_plan_review_engine_01_check.js",
   "backend/scripts/copilot_next_best_action_engine_01_check.js",
   "backend/scripts/hot_file_split_ai_chat_composers_01_check.js",
+  "backend/scripts/hot_file_split_web_panels_01_check.js",
   "docs/COPILOT_PLAN_REVIEW_ENGINE_01.md",
   "docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md",
   "docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md",
+  "docs/HOT_FILE_SPLIT_WEB_PANELS_01.md",
+  "web/src/panels/company/companyAgreementsBridgeSection.jsx",
+  "web/src/panels/company/companyAgreementsPanelHelpers.js",
+  "web/src/panels/room/roomAgreementsBridgeSection.jsx",
+  "web/src/panels/room/roomAgreementsPanelHelpers.js",
   "web/src/utils/safeDriveSummary.js",
   "web/src/utils/offerQualityRanking.js",
   "web/src/panels/shared/SafeDriveSummaryCard.jsx",
@@ -156,6 +162,7 @@ const selectedDocs = [
   "docs/COPILOT_PLAN_REVIEW_ENGINE_01.md",
   "docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md",
   "docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md",
+  "docs/HOT_FILE_SPLIT_WEB_PANELS_01.md",
   // PUBLIC-LANDING-01 / PUBLIC-LANDING-PLATFORM-FIRST-01 / PUBLIC-LANDING-01 FINAL PROMISE CHECK / LEAD-CAPTURE-01 public vitrin docs/check coverage
   "docs/PUBLIC_LANDING_01.md",
   "docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md",
@@ -787,7 +794,7 @@ const coverageMatrix = [
     rolePanel: "Copilot drawer and terminal",
     backendRouteService: "backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/chat/copilotHumanApprovalPolicy.js; backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js; backend/src/ai/chat/conversationWorkflowReasoningEngine.js; backend/src/ai/chat/conversationOperationHealthEngine.js; backend/src/ai/chat/conversationNextBestActionEngine.js; backend/src/ai/chat/conversationPlanReviewEngine.js; backend/src/ai/jobGuide/screenCatalog.js",
     frontendSurface: "web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx",
-    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copiloteblockruntimeanswerintegration01; check:copilotguidedtaskengine01; check:copilotdynamicquestionengine01; check:copilotsmartdiagnosticengine01; check:copilotrootcauseengine01; check:copilotworkflowreasoningengine01; check:copilotoperationhealthengine01; check:copilotnextbestactionengine01; check:copilotplanreviewengine01; check:hotfilesplitaichatcomposers01; check:seferabireasoningassistant01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
+    currentCheckScript: "check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copiloteblockruntimeanswerintegration01; check:copilotguidedtaskengine01; check:copilotdynamicquestionengine01; check:copilotsmartdiagnosticengine01; check:copilotrootcauseengine01; check:copilotworkflowreasoningengine01; check:copilotoperationhealthengine01; check:copilotnextbestactionengine01; check:copilotplanreviewengine01; check:hotfilesplitaichatcomposers01; check:hotfilesplitwebpanels01; check:seferabireasoningassistant01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01",
     checkType: "static",
     coverageStatus: "COVERED_ACTIVE",
     missingGap: "None on the current static/product chain.",
@@ -951,6 +958,7 @@ function replacementFor(entry, duplicateMap) {
   if (entry.fullKey === "root:check:copilotnextbestactionengine01") return "verify-core";
   if (entry.fullKey === "root:check:copilotplanreviewengine01") return "verify-core";
   if (entry.fullKey === "root:check:hotfilesplitaichatcomposers01") return "verify-core";
+  if (entry.fullKey === "root:check:hotfilesplitwebpanels01") return "verify-core";
   if (entry.fullKey === "root:check:seferabireasoningassistant01") return "verify-core";
   if (entry.fullKey === "root:check:seferabiturkishterminology01") return "verify-core";
   if (entry.fullKey === "root:check:seferabiturkishuserfacinglanguage01") return "verify-core";
@@ -1599,6 +1607,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Hot file split AI chat composers docs: \`docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md\``);
   out.push(`- Hot file split AI chat composers command: \`node backend\\scripts\\hot_file_split_ai_chat_composers_01_check.js\``);
   out.push(`- Hot file split AI chat composers helper: \`backend/src/ai/chat/helpComposerSafeReplies.js\``);
+  out.push(`- Hot file split web panels milestone: \`HOT-FILE-SPLIT-WEB-PANELS-01\``);
+  out.push(`- Hot file split web panels check: \`check:hotfilesplitwebpanels01\``);
+  out.push(`- Hot file split web panels docs: \`docs/HOT_FILE_SPLIT_WEB_PANELS_01.md\``);
+  out.push(`- Hot file split web panels command: \`node backend\\scripts\\hot_file_split_web_panels_01_check.js\``);
+  out.push(`- Hot file split web panels bridge helpers: \`web/src/panels/company/companyAgreementsBridgeSection.jsx; web/src/panels/company/companyAgreementsPanelHelpers.js; web/src/panels/room/roomAgreementsBridgeSection.jsx; web/src/panels/room/roomAgreementsPanelHelpers.js\``);
   out.push(`- Sefer Abi reasoning assistant milestone: \`SEFER-ABI-REASONING-ASSISTANT-01\``);
   out.push(`- Sefer Abi reasoning assistant check: \`check:seferabireasoningassistant01\``);
   out.push(`- Sefer Abi reasoning assistant docs: \`docs/SEFER_ABI_REASONING_ASSISTANT_01.md\``);

@@ -454,6 +454,10 @@ function main() {
     "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
     "docs/COPILOT_ROOT_CAUSE_ENGINE_01.md",
     "docs/COPILOT_RISK_SCORING_ENGINE_01.md",
+    "web/src/panels/company/companyAgreementsBridgeSection.jsx",
+    "web/src/panels/company/companyAgreementsPanelHelpers.js",
+    "web/src/panels/room/roomAgreementsBridgeSection.jsx",
+    "web/src/panels/room/roomAgreementsPanelHelpers.js",
     "web/src/utils/uiDataCache.js",
   ]);
 

@@ -8,14 +8,7 @@ import { ymdTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
-import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
-import QualityPaymentBridgePreviewCard from "../shared/QualityPaymentBridgePreviewCard";
-import PlatformFeePreviewCard from "../shared/PlatformFeePreviewCard";
-import SeferScorePreviewCard from "../shared/SeferScorePreviewCard";
-import AgreementConflictBox from "../../components/AgreementConflictBox";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
-import CollapsibleSection from "../../components/CollapsibleSection";
-import { agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
 import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
@@ -28,53 +21,17 @@ import {
   RoomAgreementsRouteRefreshAcceptedSection,
   RoomAgreementsRouteRefreshPendingSection,
 } from "./roomAgreementsPanelSections";
+import RoomAgreementsBridgeSection from "./roomAgreementsBridgeSection";
+import {
+  daysLeftYmd,
+  moneyTry,
+  parseTryInput,
+  pill,
+  resolveRoomAgreementsDefaultTab,
+  ShiftSummary,
+} from "./roomAgreementsPanelHelpers";
 
 const EMPTY_QUALITY_BRIDGE_LIST = [];
-
-function moneyTry(v) {
-  if (v == null || v === "") return "-";
-  const n = Number(v);
-  if (!Number.isFinite(n)) return String(v);
-  return `₺${n}`;
-}
-
-// ✅ M59 helpers
-function daysLeftYmd(ymd) {
-  if (!ymd || String(ymd).length < 10) return null;
-  const end = new Date(String(ymd).slice(0, 10) + "T23:59:59.999+03:00");
-  const diff = end.getTime() - Date.now();
-  const d = Math.ceil(diff / 86400000);
-  return Number.isFinite(d) ? d : null;
-}
-function ShiftSummary({ st }) {
-  const tTot = Number(st?.todayTotal ?? 0);
-  const tDone = Number(st?.todayDone ?? 0);
-  const h = Number(st?.horizonOpen ?? 0);
-  return (
-    <div className="muted" style={{ lineHeight: 1.2 }}>
-      <div>Bugün: {tTot ? (tDone + "/" + tTot + " tamamlandı") : "-"}</div>
-      <div>Ufuk: {h ? (h + " kabul edildi") : "-"}</div>
-    </div>
-  );
-}
-
-function pill(status) {
-  const s = String(status || "").toUpperCase();
-  return (
-    <span className="pill" data-status={s} title={agreementStatusText(s)}>
-      {agreementStatusPillLabel(s)}
-    </span>
-  );
-}
-
-function parseTryInput(raw) {
-  if (raw == null) return null;
-  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
 const ROOM_AGREEMENT_TABS = [
   { key: "bridge", label: "Operasyon Köprüsü" },
   { key: "route", label: "Rota Talepleri" },
@@ -83,13 +40,6 @@ const ROOM_AGREEMENT_TABS = [
   { key: "pending", label: "Bekleyen" },
   { key: "other", label: "Diğer Sözleşmeler" },
 ];
-
-function resolveRoomAgreementsDefaultTab({ routeRefreshPendingCount, pendingCount, extendCount }) {
-  if (routeRefreshPendingCount > 0) return "route";
-  if (pendingCount > 0) return "bridge";
-  if (extendCount > 0) return "extend";
-  return "bridge";
-}
 
 export default function AgreementsPanel() {
   const { token } = useSession();
@@ -1070,49 +1020,6 @@ export default function AgreementsPanel() {
         <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
       </div>
 
-      {viewMode === "bridge" ? (
-        <div style={{ display: "grid", gap: 12 }}>
-          <div className="card roomCriticalFixScope" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-            <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
-            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-              Detayları aç ile köprü kartını genişlet; ardından Vardiyaya git veya Rota Önizleme ile ilerle.
-            </div>
-            <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
-              Bu alan önizlemedir; işlem başlatmaz.
-            </div>
-            <div className="muted" style={{ marginTop: 4, lineHeight: 1.45 }}>
-              Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.
-            </div>
-            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className="btn sm primary roomActionCTA"
-                onClick={() => setBridgeDetailsRequested(true)}
-              >
-                Detayı aç
-              </button>
-            </div>
-          </div>
-          {copilotAgreementTarget ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              <AgreementOpsBridgeCard
-                key={`room-bridge-${copilotAgreementTarget.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
-                agreement={copilotAgreementTarget}
-                bridge={opsBridge?.[copilotAgreementTarget.id] || null}
-                onOpenShift={openAgreementShift}
-                onOpenPreview={openAgreementPreview}
-                initialDetailsOpen={bridgeDetailsRequested}
-              />
-            </div>
-          ) : (
-            <div className="card muted">Operasyon köprüsü için bir sözleşme seç.</div>
-          )}
-          <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
-            İpucu: Detayı aç ile köprü kartını genişlet; ardından Vardiyaya git veya Rota Önizleme ile ilerle.
-          </div>
-        </div>
-      ) : null}
-
       <PanelSegmentTabs
         tabs={roomAgreementTabs}
         value={viewMode}
@@ -1121,150 +1028,47 @@ export default function AgreementsPanel() {
       />
 
       {viewMode === "bridge" ? (
-        <div style={{ display: "grid", gap: 12 }}>
-          {copilotAgreementTarget ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              <CollapsibleSection
-                title="Kalite / hakediş önizlemesi"
-                subtitle="Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."
-                badge={copilotAgreementTarget?.id ? `Sözleşme ID ${copilotAgreementTarget.id}` : "Seçili"}
-                defaultOpen={false}
-                compact
-              >
-              <QualityPaymentBridgePreviewCard
-                agreement={copilotAgreementTarget}
-                preview={qualityPaymentBridgePreview.data}
-                loading={qualityPaymentBridgePreview.loading}
-                error={qualityPaymentBridgePreview.err}
-              />
-              <SeferScorePreviewCard
-                agreement={copilotAgreementTarget}
-                preview={seferScorePreviewData}
-                loading={seferScorePreview.loading}
-                error={seferScorePreview.err}
-                style={{ marginTop: 12 }}
-              />
-              <PlatformFeePreviewCard
-                agreement={copilotAgreementTarget}
-                preview={platformFeePreviewData}
-                loading={platformFeePreview.loading}
-                error={platformFeePreview.err}
-                style={{ marginTop: 12 }}
-              />
-              </CollapsibleSection>
-            </div>
-          ) : null}
-
-          {counterTarget ? (
-            <div className="card">
-              <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme ID {counterTarget.id}</div>
-
-              <div className="muted" style={{ marginTop: 6 }}>
-                Şirket teklifi: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
-                {counterTarget.companyOfferNote ? <span> — {counterTarget.companyOfferNote}</span> : null}
-              </div>
-
-              <div className="fieldRow" style={{ marginTop: 12 }}>
-                <div className="field">
-                  <div className="muted">Karşı Teklif (₺)</div>
-                  <input value={counterAmount} onChange={(e) => setCounterAmount(e.target.value)} placeholder="örn: 5000" />
-                </div>
-                <div className="field" style={{ flex: 2 }}>
-                  <div className="muted">Not (opsiyonel)</div>
-                  <input value={counterNote} onChange={(e) => setCounterNote(e.target.value)} placeholder="örn: 3 gün / 2 araç" />
-                </div>
-              </div>
-
-              <div className="actionsRow" style={{ marginTop: 12 }}>
-                <button type="button" className="btn sm primary" disabled={busy} onClick={counter}>
-                  {busy ? "Gönderiliyor..." : "Karşı Teklif Gönder"}
-                </button>
-                <button
-                  type="button"
-                  className="btn sm ghost"
-                  disabled={busy}
-                  onClick={() => {
-                    setCounterId(null);
-                    setCounterAmount("");
-                    setCounterNote("");
-                  }}
-                >
-                  Vazgeç
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {approveTarget ? (
-            <div className="card">
-              <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme ID {approveTarget.id}</div>
-
-              <div className="muted" style={{ marginTop: 6 }}>
-                Şirket teklifi: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
-                {approveTarget.companyOfferNote ? <span> — {approveTarget.companyOfferNote}</span> : null}
-              </div>
-
-              <div className="fieldRow" style={{ marginTop: 12 }}>
-                <div className="field">
-                  <div className="muted">Araç</div>
-                  <select
-                    value={selVehicle}
-                    onChange={(e) => {
-                      setSelVehicle(e.target.value);
-                      setConflict(null);
-                    }}
-                  >
-                    <option value="">Seç</option>
-                    {vehicles.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.plate ?? `Araç ID ${v.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="field">
-                  <div className="muted">Sürücü</div>
-                  <select
-                    value={selDriver}
-                    onChange={(e) => {
-                      setSelDriver(e.target.value);
-                      setConflict(null);
-                    }}
-                  >
-                    <option value="">Seç</option>
-                    {drivers.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.fullName ?? `Sürücü ID ${d.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="actionsRow" style={{ marginTop: 12 }}>
-                <button type="button" className="btn sm primary" disabled={busy} onClick={approve}>
-                  {busy ? "Kabul ediliyor..." : "Kabul Et"}
-                </button>
-                <button
-                  type="button"
-                  className="btn sm ghost"
-                  disabled={busy}
-                  onClick={() => {
-                    setApproveId(null);
-                    setSelVehicle("");
-                    setSelDriver("");
-                    setConflict(null);
-                  }}
-                >
-                  Vazgeç
-                </button>
-              </div>
-
-              <AgreementConflictBox errObj={conflict} />
-            </div>
-          ) : null}
-        </div>
+        <RoomAgreementsBridgeSection
+          busy={busy}
+          copilotAgreementTarget={copilotAgreementTarget}
+          opsBridge={opsBridge}
+          bridgeDetailsRequested={bridgeDetailsRequested}
+          onRequestBridgeDetails={() => setBridgeDetailsRequested(true)}
+          onOpenShift={openAgreementShift}
+          onOpenPreview={openAgreementPreview}
+          qualityPaymentBridgePreview={qualityPaymentBridgePreview}
+          seferScorePreviewData={seferScorePreviewData}
+          seferScorePreview={seferScorePreview}
+          platformFeePreviewData={platformFeePreviewData}
+          platformFeePreview={platformFeePreview}
+          counterTarget={counterTarget}
+          counterAmount={counterAmount}
+          counterNote={counterNote}
+          onChangeCounterAmount={setCounterAmount}
+          onChangeCounterNote={setCounterNote}
+          onCounterSubmit={counter}
+          onCounterCancel={() => {
+            setCounterId(null);
+            setCounterAmount("");
+            setCounterNote("");
+          }}
+          approveTarget={approveTarget}
+          vehicles={vehicles}
+          drivers={drivers}
+          selVehicle={selVehicle}
+          selDriver={selDriver}
+          onChangeVehicle={setSelVehicle}
+          onChangeDriver={setSelDriver}
+          onApproveSubmit={approve}
+          onApproveCancel={() => {
+            setApproveId(null);
+            setSelVehicle("");
+            setSelDriver("");
+            setConflict(null);
+          }}
+          conflict={conflict}
+          onClearConflict={() => setConflict(null)}
+        />
       ) : null}
 
       {viewMode === "route" ? (

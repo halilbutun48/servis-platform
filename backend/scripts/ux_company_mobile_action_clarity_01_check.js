@@ -518,6 +518,8 @@ function main() {
     "web/src/panels/company/companyShiftsPanelCards.jsx",
     "web/src/panels/company/CommercialFlowPanel.jsx",
     "web/src/panels/company/companyAgreementsSourceShiftSection.jsx",
+    "web/src/panels/company/companyAgreementsBridgeSection.jsx",
+    "web/src/panels/company/companyAgreementsPanelHelpers.js",
     "web/src/components/BrandMark.jsx",
     "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
     "web/src/panels/shared/OfferQualityRankingCard.jsx",

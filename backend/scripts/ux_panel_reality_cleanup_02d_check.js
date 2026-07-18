@@ -152,6 +152,7 @@ function main() {
   mustContains(etaServer, "hesaplanamıyor", "backend ETA fallback wording remains");
 
   const roomAgreements = read("web/src/panels/room/AgreementsPanel.jsx");
+  const roomAgreementsBridgeSection = read("web/src/panels/room/roomAgreementsBridgeSection.jsx");
   mustContains(roomAgreements, "PanelSegmentTabs", "Room AgreementsPanel uses segmented tabs");
   mustContains(roomAgreements, 'const [viewMode, setViewMode] = useState("bridge")', "Room AgreementsPanel keeps active tab state");
   mustContains(roomAgreements, "roomAgreementsNotice", "Room AgreementsPanel has top info band state");
@@ -171,7 +172,7 @@ function main() {
   mustContains(roomAgreements, 'viewMode === "extend"', "Room AgreementsPanel renders extend branch conditionally");
   mustContains(roomAgreements, 'viewMode === "pending"', "Room AgreementsPanel renders pending branch conditionally");
   mustContains(roomAgreements, 'viewMode === "other"', "Room AgreementsPanel renders other branch conditionally");
-  mustContains(roomAgreements, "AgreementOpsBridgeCard", "Room AgreementsPanel keeps operation bridge card");
+  mustContains(roomAgreementsBridgeSection, "AgreementOpsBridgeCard", "Room AgreementsPanel keeps operation bridge card");
   mustContains(roomAgreements, "RoomAgreementsRouteRefreshPendingSection", "Room AgreementsPanel keeps route refresh pending section");
   mustContains(roomAgreements, "RoomAgreementsRouteRefreshAcceptedSection", "Room AgreementsPanel keeps route refresh accepted section");
   mustContains(roomAgreements, "RoomAgreementsExtendRequestsSection", "Room AgreementsPanel keeps extend requests section");

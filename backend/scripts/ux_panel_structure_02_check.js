@@ -90,6 +90,7 @@ function main() {
   const roomCommercialFlow = read("web/src/panels/room/CommercialFlowPanel.jsx");
   const companyCommercialFlow = read("web/src/panels/company/CommercialFlowPanel.jsx");
   const agreements = read("web/src/panels/company/AgreementsPanel.jsx");
+  const companyAgreementsBridgeSection = read("web/src/panels/company/companyAgreementsBridgeSection.jsx");
   const superadminVerification = read("web/src/panels/superadmin/OperationVerificationPanel.jsx");
   const parentLive = read("web/src/panels/parent/LivePanel.jsx");
   const personelLive = read("web/src/panels/personel/LivePanel.jsx");
@@ -134,7 +135,7 @@ function main() {
   mustContains(agreements, "CompanyAgreementsSelectedSummarySection", "Company / Sözleşmeler keeps selected summary visible");
   mustContains(agreements, 'table className="tbl"', "Company / Sözleşmeler keeps main table visible");
   mustContains(agreements, "AgreementWizard", "Company / Sözleşmeler keeps wizard mode visible");
-  mustContains(agreements, "CollapsibleSection", "Company / Sözleşmeler keeps secondary bridge collapsed");
+  mustContains(companyAgreementsBridgeSection, "CollapsibleSection", "Company / Sözleşmeler keeps secondary bridge collapsed");
 
   mustNotContains(companyCommercialFlow, "PanelSegmentTabs", "Company / Ticari Akış no longer uses segmented tabs");
   mustNotContains(companyCommercialFlow, "FLOW_VIEW_TABS", "Company / Ticari Akış removes segmented view config");

@@ -83,6 +83,7 @@ const agreementWizard = read("web/src/panels/company/AgreementWizard.jsx");
 const companyShiftRows = read("web/src/panels/company/companyShiftsPanelRows.jsx");
 const bridgeCard = read("web/src/components/AgreementOpsBridgeCard.jsx");
 const roomAgreementsPanel = read("web/src/panels/room/AgreementsPanel.jsx");
+const roomAgreementsBridgeSection = read("web/src/panels/room/roomAgreementsBridgeSection.jsx");
 const staged = stagedNames();
 
 must(pkg, '"check:uxcontractconversionopsbridgeclarity01": "node backend/scripts/ux_contract_conversion_ops_bridge_clarity_01_check.js"', "package.json exposes contract conversion clarity check");
@@ -181,13 +182,14 @@ must(bridgeCard, "Etki", "bridge card keeps impact chip");
 must(bridgeCard, "Risk", "bridge card keeps risk chip");
 must(bridgeCard, "Sıradaki işlem", "bridge card keeps next-step chip");
 
-must(roomAgreementsPanel, "CollapsibleSection", "room agreements panel uses collapsible section for heavy previews");
-must(roomAgreementsPanel, "Kalite / hakediş önizlemesi", "room agreements panel groups payment preview under compact section");
-must(roomAgreementsPanel, "defaultOpen={false}", "room agreements panel keeps heavy preview collapsed by default");
-must(roomAgreementsPanel, "compact", "room agreements panel keeps preview section compact");
-must(roomAgreementsPanel, "QualityPaymentBridgePreviewCard", "room agreements panel keeps quality preview inside collapsible");
-must(roomAgreementsPanel, "SeferScorePreviewCard", "room agreements panel keeps score preview inside collapsible");
-must(roomAgreementsPanel, "PlatformFeePreviewCard", "room agreements panel keeps fee preview inside collapsible");
+must(roomAgreementsPanel, "RoomAgreementsBridgeSection", "room agreements panel imports split bridge section");
+must(roomAgreementsBridgeSection, "CollapsibleSection", "room bridge section uses collapsible section for heavy previews");
+must(roomAgreementsBridgeSection, "Kalite / hakediş önizlemesi", "room bridge section groups payment preview under compact section");
+must(roomAgreementsBridgeSection, "defaultOpen={false}", "room bridge section keeps heavy preview collapsed by default");
+must(roomAgreementsBridgeSection, "compact", "room bridge section keeps preview section compact");
+must(roomAgreementsBridgeSection, "QualityPaymentBridgePreviewCard", "room bridge section keeps quality preview inside collapsible");
+must(roomAgreementsBridgeSection, "SeferScorePreviewCard", "room bridge section keeps score preview inside collapsible");
+must(roomAgreementsBridgeSection, "PlatformFeePreviewCard", "room bridge section keeps fee preview inside collapsible");
 
 mustNot(staged, "backend/artifacts/runtime-data", "runtime-data is not staged");
 mustNot(staged, "public-leads.json", "public leads runtime data is not staged");

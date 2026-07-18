@@ -306,7 +306,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_PLAN_REVIEW_ENGINE_01.md`
 - Static helper: `backend/src/ai/chat/conversationPlanReviewEngine.js`
 - `write-action` ve `route review` sınırlarını açık tutar; runtime AI action, tool execution, DB write, route apply ve fake success açmaz.
-- Sonraki güvenli hatlar: `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`.
+- Sonraki güvenli hatlar: `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01`, `HOT-FILE-SPLIT-WEB-PANELS-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`.
 
 ### HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01 [CHECK]
 - `check:hotfilesplitaichatcomposers01` helpComposer içindeki güvenli reply-helper yüzeyini `helpComposerSafeReplies.js` ile ayıran acceptance-safe hot-file split kapısıdır; görünür Türkçe reply davranışını korur ama runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
@@ -314,6 +314,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md`
 - Static helper: `backend/src/ai/chat/helpComposerSafeReplies.js`
 - Bu check, `COPILOT-WORKFLOW-REASONING-ENGINE-01` ve `COPILOT-REASONING-ANSWER-COMPOSER-01` hattıyla birlikte okunur; hot-file borcunu azaltır ama smoke policy, threshold, skip veya PASS kriterini gevşetmez.
+- Sonraki güvenli hatlar: `HOT-FILE-SPLIT-WEB-PANELS-01`, `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `SEFER-ABI-TERMINAL-HUMANIZE-01`, `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`, `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`.
+
+### HOT-FILE-SPLIT-WEB-PANELS-01 [CHECK]
+- `check:hotfilesplitwebpanels01` company/room agreements panel helper ve bridge logic'ini ana panel gövdelerinden ayıran acceptance-safe hot-file split kapısıdır; görünür Türkçe panel davranışını korur ama runtime write-action, tool execution, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\hot_file_split_web_panels_01_check.js`
+- Doküman: `docs/HOT_FILE_SPLIT_WEB_PANELS_01.md`
+- Bridge helper'lar: `web/src/panels/company/companyAgreementsBridgeSection.jsx`, `web/src/panels/company/companyAgreementsPanelHelpers.js`, `web/src/panels/room/roomAgreementsBridgeSection.jsx`, `web/src/panels/room/roomAgreementsPanelHelpers.js`
+- Bu check, `COPILOT-PLAN-REVIEW-ENGINE-01`, `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01` ve `COPILOT-REASONING-ANSWER-COMPOSER-01` hattıyla birlikte okunur; main panel gövdelerindeki acceptance-sensitive davranışı daraltır ama smoke policy, threshold, skip veya PASS kriterini gevşetmez.
 - Sonraki güvenli hatlar: `COPILOT-REASONING-ANSWER-COMPOSER-01`, `SEFER-ABI-REASONING-ASSISTANT-01`, `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`, `SEFER-ABI-TERMINAL-HUMANIZE-01`, `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`, `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`.
 
 ### COPILOT-REASONING-ANSWER-COMPOSER-01 [CHECK]

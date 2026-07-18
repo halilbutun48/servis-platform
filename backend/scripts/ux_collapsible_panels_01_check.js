@@ -79,6 +79,7 @@ function main() {
   const route = read("web/src/panels/driver/RoutePanel.jsx");
   const parent = read("web/src/panels/parent/LivePanel.jsx");
   const companyAgreements = read("web/src/panels/company/AgreementsPanel.jsx");
+  const companyAgreementsBridgeSection = read("web/src/panels/company/companyAgreementsBridgeSection.jsx");
   const routeRefreshPending = read("web/src/panels/company/companyAgreementsRouteRefreshPendingSection.jsx");
   const sourceShift = read("web/src/panels/company/companyAgreementsSourceShiftSection.jsx");
 
@@ -109,7 +110,7 @@ function main() {
 
   mustContains(companyAgreements, "CompanyAgreementsSelectedSummarySection", "Company / Sözleşmeler keeps selected summary visible");
   mustContains(companyAgreements, 'table className="tbl"', "Company / Sözleşmeler keeps main table visible");
-  mustContains(companyAgreements, "CollapsibleSection", "Company / Sözleşmeler uses collapsible secondary details");
+  mustContains(companyAgreementsBridgeSection, "CollapsibleSection", "Company / Sözleşmeler uses collapsible secondary details");
   mustContains(routeRefreshPending, "CollapsibleSection", "route refresh pending section is collapsible");
   mustContains(sourceShift, "CollapsibleSection", "source shift section is collapsible");
 

@@ -83,7 +83,9 @@ async function main() {
   const routeFile = read('backend/src/routes/agreements.js');
   const cardFile = read('web/src/panels/shared/PlatformFeePreviewCard.jsx');
   const companyPanel = read('web/src/panels/company/AgreementsPanel.jsx');
+  const companyBridgeSection = read('web/src/panels/company/companyAgreementsBridgeSection.jsx');
   const roomPanel = read('web/src/panels/room/AgreementsPanel.jsx');
+  const roomBridgeSection = read('web/src/panels/room/roomAgreementsBridgeSection.jsx');
   const copilotFacts = read('web/src/utils/agreementCopilotFacts.js');
   const starterFacts = read('web/src/utils/copilotFacts.js');
   const intentRouter = read('backend/src/ai/chat/intentRouter.js');
@@ -129,10 +131,12 @@ async function main() {
   must(cardFile, 'SeferPakt kaynaklı', 'platform fee card includes source verdict');
   must(cardFile, 'Başarı payı doğar mı', 'platform fee card includes success share verdict');
 
-  must(companyPanel, 'PlatformFeePreviewCard', 'company agreements panel renders platform fee card');
+  must(companyPanel, 'CompanyAgreementsBridgeSection', 'company agreements panel imports split bridge section');
   must(companyPanel, 'getAgreementPlatformFeePreview', 'company agreements panel wires platform fee preview api');
-  must(roomPanel, 'PlatformFeePreviewCard', 'room agreements panel renders platform fee card');
+  must(companyBridgeSection, 'PlatformFeePreviewCard', 'company bridge section renders platform fee card');
+  must(roomPanel, 'RoomAgreementsBridgeSection', 'room agreements panel imports split bridge section');
   must(roomPanel, 'getAgreementPlatformFeePreview', 'room agreements panel wires platform fee preview api');
+  must(roomBridgeSection, 'PlatformFeePreviewCard', 'room bridge section renders platform fee card');
 
   must(copilotFacts, 'platformFeeSourceLineage', 'agreement copilot facts carry source lineage');
   must(copilotFacts, 'platformFeeMarketShiftId', 'agreement copilot facts carry market shift id');

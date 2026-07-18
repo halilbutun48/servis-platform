@@ -83,7 +83,9 @@ const route = read("backend/src/routes/agreements.js");
 const api = read("web/src/api.js");
 const card = read("web/src/panels/shared/SeferScorePreviewCard.jsx");
 const companyPanel = read("web/src/panels/company/AgreementsPanel.jsx");
+const companyBridgeSection = read("web/src/panels/company/companyAgreementsBridgeSection.jsx");
 const roomPanel = read("web/src/panels/room/AgreementsPanel.jsx");
+const roomBridgeSection = read("web/src/panels/room/roomAgreementsBridgeSection.jsx");
 const agreementFacts = read("web/src/utils/agreementCopilotFacts.js");
 const copilotFacts = read("web/src/utils/copilotFacts.js");
 const helpComposer = read("backend/src/ai/chat/helpComposer.js");
@@ -137,15 +139,15 @@ must(card, "Eksik sinyaller", "sefer card shows missing signals");
 must(card, "Risk nedenleri", "sefer card shows risk reasons");
 must(card, "Sıradaki doğru işlem", "sefer card shows next action");
 
-must(companyPanel, "SeferScorePreviewCard", "company panel renders sefer card");
+must(companyPanel, "CompanyAgreementsBridgeSection", "company panel imports split bridge section");
 must(companyPanel, "getAgreementSeferScorePreview", "company panel fetches sefer preview");
 must(companyPanel, "seferScorePreview", "company panel tracks sefer preview state");
-must(companyPanel, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "company panel keeps safe boundary wording");
+must(companyBridgeSection, "SeferScorePreviewCard", "company bridge section renders sefer card");
 
-must(roomPanel, "SeferScorePreviewCard", "room panel renders sefer card");
+must(roomPanel, "RoomAgreementsBridgeSection", "room panel imports split bridge section");
 must(roomPanel, "getAgreementSeferScorePreview", "room panel fetches sefer preview");
 must(roomPanel, "seferScorePreview", "room panel tracks sefer preview state");
-must(roomPanel, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "room panel keeps safe boundary wording");
+must(roomBridgeSection, "SeferScorePreviewCard", "room bridge section renders sefer card");
 
 must(agreementFacts, "seferScorePreview", "agreement facts keep sefer preview");
 must(agreementFacts, "seferScoreSummaryText", "agreement facts keep sefer summary");

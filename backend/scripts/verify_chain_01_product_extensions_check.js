@@ -158,6 +158,7 @@ function main() {
   must(pkg, '"check:copilotoperationhealthengine01": "node backend/scripts/copilot_operation_health_engine_01_check.js"', 'package.json exposes check:copilotoperationhealthengine01');
   must(pkg, '"check:copilotplanreviewengine01": "node backend/scripts/copilot_plan_review_engine_01_check.js"', 'package.json exposes check:copilotplanreviewengine01');
   must(pkg, '"check:hotfilesplitaichatcomposers01": "node backend/scripts/hot_file_split_ai_chat_composers_01_check.js"', 'package.json exposes check:hotfilesplitaichatcomposers01');
+  must(pkg, '"check:hotfilesplitwebpanels01": "node backend/scripts/hot_file_split_web_panels_01_check.js"', 'package.json exposes check:hotfilesplitwebpanels01');
   must(pkg, '"check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js"', 'package.json keeps check:copilotreasoninganswercomposer01');
   must(pkg, '"check:ai03bparaphraseintentaudit01": "node backend/scripts/ai03b_paraphrase_intent_audit_01_check.js"', 'package.json keeps check:ai03bparaphraseintentaudit01');
   must(pkg, '"check:ai03bsemanticvisibleaudit01": "node backend/scripts/ai03b_semantic_visible_audit_01_check.js"', 'package.json keeps check:ai03bsemanticvisibleaudit01');
@@ -575,6 +576,11 @@ function main() {
   must(guide, 'node backend\\scripts\\hot_file_split_ai_chat_composers_01_check.js', 'script guide includes hot file split command');
   must(guide, 'docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md', 'script guide includes hot file split doc');
   must(guide, 'backend/src/ai/chat/helpComposerSafeReplies.js', 'script guide includes helpComposer safe replies helper');
+  must(guide, 'HOT-FILE-SPLIT-WEB-PANELS-01', 'script guide mentions hot file split web panels milestone');
+  must(guide, 'check:hotfilesplitwebpanels01', 'script guide exposes hot file split web panels check');
+  must(guide, 'docs/HOT_FILE_SPLIT_WEB_PANELS_01.md', 'script guide includes hot file split web panels doc');
+  must(guide, 'web/src/panels/company/companyAgreementsBridgeSection.jsx', 'script guide includes company bridge split file');
+  must(guide, 'web/src/panels/room/roomAgreementsBridgeSection.jsx', 'script guide includes room bridge split file');
   must(guide, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'script guide mentions COPILOT-REASONING-ANSWER-COMPOSER-01');
   must(guide, 'check:copilotreasoninganswercomposer01', 'script guide exposes check:copilotreasoninganswercomposer01');
   must(guide, 'node backend\\scripts\\copilot_reasoning_answer_composer_01_check.js', 'script guide includes reasoning answer composer command');
@@ -587,7 +593,7 @@ function main() {
   must(guide, 'check:seferabiallrolesreasoningassistant01', 'script guide exposes check:seferabiallrolesreasoningassistant01');
   must(guide, 'node backend\\scripts\\sefer_abi_all_roles_reasoning_assistant_01_check.js', 'script guide includes all-roles reasoning assistant command');
   must(guide, 'docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md', 'script guide includes all-roles reasoning assistant doc');
-  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'ETA-SANITY-01', 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'script guide keeps next best action between operation health and plan review');
+  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'HOT-FILE-SPLIT-WEB-PANELS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'ETA-SANITY-01', 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'script guide keeps next best action between operation health and plan review');
   must(guide, 'node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js', 'script guide includes redteam command');
   must(guide, 'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md', 'script guide includes redteam doc');
   must(guide, 'check:uxcopilotpersona01', 'script guide exposes check:uxcopilotpersona01');
@@ -808,7 +814,12 @@ function main() {
   must(primer, 'check:hotfilesplitaichatcomposers01', 'primer exposes hot file split check');
   must(primer, 'docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md', 'primer links hot file split doc');
   must(primer, 'backend/src/ai/chat/helpComposerSafeReplies.js', 'primer links helpComposer safe replies helper');
-  ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps next best action between operation health and hot file split');
+  must(primer, 'HOT-FILE-SPLIT-WEB-PANELS-01', 'primer mentions hot file split web panels milestone');
+  must(primer, 'check:hotfilesplitwebpanels01', 'primer exposes hot file split web panels check');
+  must(primer, 'docs/HOT_FILE_SPLIT_WEB_PANELS_01.md', 'primer links hot file split web panels doc');
+  must(primer, 'web/src/panels/company/companyAgreementsBridgeSection.jsx', 'primer lists company bridge split file');
+  must(primer, 'web/src/panels/room/roomAgreementsBridgeSection.jsx', 'primer lists room bridge split file');
+  ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'HOT-FILE-SPLIT-WEB-PANELS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps next best action between operation health and hot file split');
   must(primer, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'primer mentions reasoning answer composer milestone');
   must(primer, 'check:copilotreasoninganswercomposer01', 'primer exposes reasoning answer composer check');
   must(primer, 'docs/COPILOT_REASONING_ANSWER_COMPOSER_01.md', 'primer links reasoning answer composer doc');
@@ -882,6 +893,11 @@ function main() {
   must(harnessCheck, 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'script harness check knows hot file split milestone');
   must(harnessCheck, 'docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md', 'script harness check knows hot file split doc');
   must(harnessCheck, 'backend/src/ai/chat/helpComposerSafeReplies.js', 'script harness check knows helpComposer safe replies helper');
+  must(harnessCheck, 'check:hotfilesplitwebpanels01', 'script harness check knows hot file split web panels alias');
+  must(harnessCheck, 'HOT-FILE-SPLIT-WEB-PANELS-01', 'script harness check knows hot file split web panels milestone');
+  must(harnessCheck, 'docs/HOT_FILE_SPLIT_WEB_PANELS_01.md', 'script harness check knows hot file split web panels doc');
+  must(harnessCheck, 'web/src/panels/company/companyAgreementsBridgeSection.jsx', 'script harness check knows company bridge split file');
+  must(harnessCheck, 'web/src/panels/room/roomAgreementsBridgeSection.jsx', 'script harness check knows room bridge split file');
   must(harnessCheck, 'check:seferabiturkishterminology01', 'script harness check knows terminology audit alias');
   must(harnessCheck, 'root:check:seferabiturkishterminology01', 'script harness check knows terminology audit root check');
   must(harnessCheck, 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'script harness check knows terminology audit milestone');
@@ -977,6 +993,11 @@ function main() {
   must(harnessDoc, 'check:hotfilesplitaichatcomposers01', 'script harness doc lists hot file split check');
   must(harnessDoc, 'docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md', 'script harness doc lists hot file split doc');
   must(harnessDoc, 'backend/src/ai/chat/helpComposerSafeReplies.js', 'script harness doc lists helpComposer safe replies helper');
+  must(harnessDoc, 'Hot file split web panels milestone: `HOT-FILE-SPLIT-WEB-PANELS-01`', 'script harness doc lists hot file split web panels milestone');
+  must(harnessDoc, 'check:hotfilesplitwebpanels01', 'script harness doc lists hot file split web panels check');
+  must(harnessDoc, 'docs/HOT_FILE_SPLIT_WEB_PANELS_01.md', 'script harness doc lists hot file split web panels doc');
+  must(harnessDoc, 'web/src/panels/company/companyAgreementsBridgeSection.jsx', 'script harness doc lists company bridge split file');
+  must(harnessDoc, 'web/src/panels/room/roomAgreementsBridgeSection.jsx', 'script harness doc lists room bridge split file');
   must(harnessDoc, 'Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`', 'script harness doc lists reasoning assistant milestone');
   must(harnessDoc, 'check:seferabireasoningassistant01', 'script harness doc lists reasoning assistant check');
   must(harnessDoc, 'docs/SEFER_ABI_REASONING_ASSISTANT_01.md', 'script harness doc lists reasoning assistant doc');
@@ -1004,7 +1025,7 @@ function main() {
   must(harnessDoc, 'node backend\\scripts\\sefer_abi_turkish_user_facing_language_01_check.js', 'script harness doc lists Turkish user-facing language audit command');
   must(harnessDoc, 'backend/src/ai/chat/helpComposer.js', 'script harness doc lists Turkish user-facing language audit helper');
   must(harnessDoc, 'backend/src/ai/chat/seferAbiReasoningAssistant.js', 'script harness doc lists Turkish user-facing language audit reasoning surface');
-  ordered(harnessDoc, ['Copilot guided task engine milestone: `COPILOT-GUIDED-TASK-ENGINE-01`', 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'Copilot smart diagnostic engine milestone: `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`', 'Copilot root cause engine milestone: `COPILOT-ROOT-CAUSE-ENGINE-01`', 'Copilot risk scoring engine milestone: `COPILOT-RISK-SCORING-ENGINE-01`', 'Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`', 'Copilot workflow reasoning engine milestone: `COPILOT-WORKFLOW-REASONING-ENGINE-01`', 'Copilot operation health engine milestone: `COPILOT-OPERATION-HEALTH-ENGINE-01`', 'Copilot next best action engine milestone: `COPILOT-NEXT-BEST-ACTION-ENGINE-01`', 'Copilot plan review engine milestone: `COPILOT-PLAN-REVIEW-ENGINE-01`', 'Hot file split AI chat composers milestone: `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01`', 'Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`', 'Sefer Abi all-roles reasoning assistant milestone: `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`', 'Sefer Abi terminal humanize milestone: `SEFER-ABI-TERMINAL-HUMANIZE-01`', 'Sefer Abi Turkish user-facing terminology audit milestone: `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`', 'Sefer Abi Turkish user-facing language audit milestone: `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`'], 'script harness doc keeps next best action between operation health and plan review');
+  ordered(harnessDoc, ['Copilot guided task engine milestone: `COPILOT-GUIDED-TASK-ENGINE-01`', 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'Copilot smart diagnostic engine milestone: `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`', 'Copilot root cause engine milestone: `COPILOT-ROOT-CAUSE-ENGINE-01`', 'Copilot risk scoring engine milestone: `COPILOT-RISK-SCORING-ENGINE-01`', 'Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`', 'Copilot workflow reasoning engine milestone: `COPILOT-WORKFLOW-REASONING-ENGINE-01`', 'Copilot operation health engine milestone: `COPILOT-OPERATION-HEALTH-ENGINE-01`', 'Copilot next best action engine milestone: `COPILOT-NEXT-BEST-ACTION-ENGINE-01`', 'Copilot plan review engine milestone: `COPILOT-PLAN-REVIEW-ENGINE-01`', 'Hot file split AI chat composers milestone: `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01`', 'Hot file split web panels milestone: `HOT-FILE-SPLIT-WEB-PANELS-01`', 'Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`', 'Sefer Abi all-roles reasoning assistant milestone: `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`', 'Sefer Abi terminal humanize milestone: `SEFER-ABI-TERMINAL-HUMANIZE-01`', 'Sefer Abi Turkish user-facing terminology audit milestone: `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`', 'Sefer Abi Turkish user-facing language audit milestone: `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`'], 'script harness doc keeps next best action between operation health and plan review');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');

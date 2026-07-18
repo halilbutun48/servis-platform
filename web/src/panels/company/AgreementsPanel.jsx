@@ -21,20 +21,26 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { getAgreementPlatformFeePreview, getAgreementQualityPaymentBridgePreview, getAgreementSeferScorePreview } from "../../api";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
-import QualityPaymentBridgePreviewCard from "../shared/QualityPaymentBridgePreviewCard";
-import PlatformFeePreviewCard from "../shared/PlatformFeePreviewCard";
-import SeferScorePreviewCard from "../shared/SeferScorePreviewCard";
-import CollapsibleSection from "../../components/CollapsibleSection";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CompanyAgreementsOverviewSection from "./companyAgreementsOverviewSection";
-import CompanyAgreementsRouteRefreshPendingSection from "./companyAgreementsRouteRefreshPendingSection";
 import CompanyAgreementsSelectedSummarySection, {
   CompanyAgreementExtendPill,
   CompanyAgreementShiftSummary,
   CompanyAgreementStatusPill,
 } from "./companyAgreementsSelectedSummarySection";
 import CompanyAgreementsMobileCards from "./companyAgreementsMobileCards";
-import CompanyAgreementsSourceShiftSection from "./companyAgreementsSourceShiftSection";
+import CompanyAgreementsBridgeSection from "./companyAgreementsBridgeSection";
+import {
+  buildRouteRefreshLaunch,
+  canRouteRefresh,
+  compactText,
+  daysLeftYmd,
+  isActiveRouteRefreshStatus,
+  isYmd,
+  moneyTry,
+  todayYmd,
+  trDateTime,
+} from "./companyAgreementsPanelHelpers";
 import { consumeAgreementPrefill } from "../../utils/agreementPrefill";
 import { getAgreementOrigins } from "../../utils/agreementOriginLink";
 import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
@@ -45,187 +51,6 @@ import { buildDynamicSavingsPreview, routeDiffText, routeSummaryText, summarizeR
 
 const EMPTY_QUALITY_BRIDGE_LIST = [];
 
-// ✅ M59 helpers
-function daysLeftYmd(ymd) {
-  if (!ymd || String(ymd).length < 10) return null;
-  const end = new Date(String(ymd).slice(0, 10) + "T23:59:59.999+03:00");
-  const diff = end.getTime() - Date.now();
-  const d = Math.ceil(diff / 86400000);
-  return Number.isFinite(d) ? d : null;
-}
-
-function todayYmd() {
-  return ymdTR();
-}
-function isYmd(s) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(s || "").trim());
-}
-
-function buildRouteRefreshLaunch({ agreement, room, origin }) {
-  const sourceShiftId = Number(origin?.sourceShiftId || 0);
-  if (!sourceShiftId) return null;
-
-  const agreementId = Number(agreement?.id || 0);
-  const roomId = Number(agreement?.roomId || room?.id || 0);
-  const startDate = String(agreement?.startDate || "").slice(0, 10);
-  const endDate = String(agreement?.endDate || "").slice(0, 10);
-  const today = todayYmd();
-  const refreshStartDate = isYmd(startDate) && startDate > today ? startDate : today;
-  const startHHMM = toHHMM(agreement?.startMin) || "08:00";
-  const endHHMM = toHHMM(agreement?.endMin) || "10:00";
-
-  return {
-    mode: "ROUTE_REFRESH",
-    agreementId,
-    roomId: roomId || null,
-    roomName: room?.name || null,
-    sourceShiftId,
-    sourceSummary: String(origin?.sourceSummary || "").trim() || null,
-    startDate: refreshStartDate,
-    agreementStartDate: isYmd(startDate) ? startDate : null,
-    agreementEndDate: isYmd(endDate) ? endDate : null,
-    durationKey: "1w",
-    weekMask: Number(agreement?.weekMask || 62) || 62,
-    startHHMM,
-    endHHMM,
-    direction: String(agreement?.direction || "INBOUND").toUpperCase(),
-    pattern: String(agreement?.pattern || "ONE_WAY").toUpperCase(),
-    hubLat: agreement?.hubLat ?? null,
-    hubLng: agreement?.hubLng ?? null,
-    currentCompanyOfferAmount: agreement?.companyOfferAmount ?? null,
-    currentRoomOfferAmount: agreement?.roomOfferAmount ?? null,
-  };
-}
-function canRouteRefresh(agreement, origin) {
-  const status = String(agreement?.status || "").toUpperCase();
-  if (!["APPROVED", "ACTIVE"].includes(status)) return false;
-  return Number(origin?.sourceShiftId || 0) > 0;
-}
-
-function isActiveRouteRefreshStatus(status) {
-  return ["PENDING", "COUNTERED"].includes(String(status || "").toUpperCase());
-}
-
-function moneyTry(value) {
-  const n = Number(value || 0);
-  return `${new Intl.NumberFormat("tr-TR").format(Number.isFinite(n) ? n : 0)} ₺`;
-}
-
-function trDateTime(value) {
-  const text = String(value || "").trim();
-  if (!text) return "";
-  if (/^\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}/.test(text)) return text.replace(/\s*[—–-]\s*/g, " - ");
-  const date = new Date(text);
-  if (Number.isNaN(date.getTime())) return text;
-  const parts = new Intl.DateTimeFormat("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(date);
-  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${map.day}.${map.month}.${map.year} ${map.hour}:${map.minute}`;
-}
-
-function compactText(value, fallback = "") {
-  const text = String(value || "").replace(/\s+/g, " ").trim();
-  return text || String(fallback || "").trim();
-}
-
-function AgreementRoutePreviewEvidenceCard({ shiftId = 0 }) {
-  const sid = Number(shiftId || 0);
-  if (!sid) return null;
-
-  return (
-    <div className="card companyActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-      <div className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 900 }}>Rota/Durak Önizleme</div>
-          <div className="muted" style={{ marginTop: 4 }}>Mini Map</div>
-        </div>
-        <button
-          type="button"
-          className="btn sm primary"
-          disabled
-          title="Bu önizleme yalnızca okunur."
-        >
-          Tam Rotayı Dış Navigasyonda Aç
-        </button>
-      </div>
-
-      <div
-        className="routePreviewMapFrame"
-        style={{
-          marginTop: 12,
-          minHeight: 320,
-          borderRadius: 12,
-          overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.08)",
-          background: "linear-gradient(180deg, rgba(15,23,42,0.86), rgba(15,23,42,0.72))",
-          position: "relative",
-        }}
-      >
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "radial-gradient(circle at 20% 24%, rgba(37,99,235,0.18) 0, rgba(37,99,235,0.18) 1px, transparent 1px), radial-gradient(circle at 72% 68%, rgba(37,99,235,0.18) 0, rgba(37,99,235,0.18) 1px, transparent 1px)",
-            backgroundSize: "100% 100%, 100% 100%",
-          }}
-        />
-        <div style={{ position: "relative", padding: 12, display: "grid", gap: 10, minHeight: 320 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ fontWeight: 900 }}>Mini Map</div>
-            <span className="map-preview-pill">Duraklar + rota çizgisi</span>
-          </div>
-          <div className="muted" style={{ fontSize: 12 }}>
-            Leaflet mini-harita: Duraklar (1..N) ve rota çizgisi. S=Start, E=End.
-          </div>
-          <div
-            aria-hidden="true"
-            style={{
-              flex: 1,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))",
-              minHeight: 210,
-              display: "grid",
-              alignContent: "center",
-              justifyItems: "center",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                left: "18%",
-                top: "24%",
-                width: "58%",
-                height: 4,
-                background: "#2563eb",
-                opacity: 0.72,
-                transform: "rotate(20deg)",
-                borderRadius: 999,
-              }}
-            />
-            <div className="row" style={{ gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-              <span className="pill" data-status="READY">S</span>
-              <span className="pill" data-status="READY">1</span>
-              <span className="pill" data-status="READY">2</span>
-              <span className="pill" data-status="READY">3</span>
-              <span className="pill" data-status="READY">E</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 const AGREEMENTS_VIEW_TABS = [
   { key: "list", label: "Liste" },
   { key: "bridge", label: "Bağlantı" },
@@ -1316,121 +1141,40 @@ export default function AgreementsPanel() {
         onChange={setViewMode}
       />
 
-        {viewMode === "bridge" ? (
-          <>
-          {!selectedAgreementRow?.a ? (
-            <div className="card companyActionCTA" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-              <div style={{ fontWeight: 900 }}>Operasyon bağlantısı</div>
-              <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-                Bu okul/kurum görünümünde seçili sözleşme yok. Listeyi yenileyebilir veya Sözleşmeler sekmesinden bir kayıt seçebilirsin.
-              </div>
-              <div className="muted" style={{ marginTop: 10, fontSize: 12, fontWeight: 800 }}>
-                Detayı kapat
-              </div>
-            </div>
-          ) : null}
+      {viewMode === "bridge" ? (
+        <CompanyAgreementsBridgeSection
+          busy={busy}
+          selectedAgreementRow={selectedAgreementRow}
+          selectedAgreementOrigin={selectedAgreementOrigin}
+          selectedAgreementDetailRef={selectedAgreementDetailRef}
+          selectedAgreementBridgeReadOnly={selectedAgreementBridgeReadOnly}
+          bridgeDetailsRequested={bridgeDetailsRequested}
+          selectedAgreementPreviewShiftId={selectedAgreementPreviewShiftId}
+          selectedRouteRefreshCurrentPreviewShiftId={selectedRouteRefreshCurrentPreviewShiftId}
+          selectedRouteRefreshProposedPreviewShiftId={selectedRouteRefreshProposedPreviewShiftId}
+          selectedRouteRefreshPending={selectedRouteRefreshPending}
+          selectedRouteRefreshCountered={selectedRouteRefreshCountered}
+          selectedRouteRefreshSummaryText={selectedRouteRefreshSummaryText}
+          selectedRouteRefreshRoomCounterText={selectedRouteRefreshRoomCounterText}
+          selectedRouteRefreshCurrentText={selectedRouteRefreshCurrentText}
+          selectedRouteRefreshProposedText={selectedRouteRefreshProposedText}
+          selectedRouteRefreshDiffText={selectedRouteRefreshDiffText}
+          selectedRouteRefreshPriceImpactText={selectedRouteRefreshPriceImpactText}
+          routeRefreshPreviewSummary={routeRefreshPreviewSummary}
+          selectedDynamicSavingsPreview={selectedDynamicSavingsPreview}
+          qualityPaymentBridgePreview={qualityPaymentBridgePreview}
+          seferScorePreviewData={seferScorePreviewData}
+          seferScorePreview={seferScorePreview}
+          platformFeePreviewData={platformFeePreviewData}
+          platformFeePreview={platformFeePreview}
+          openAgreementShift={openAgreementShift}
+          startRouteRefresh={startRouteRefresh}
+          acceptRouteRefreshCounter={acceptRouteRefreshCounter}
+          rejectRouteRefreshCounter={rejectRouteRefreshCounter}
+        />
+      ) : null}
 
-          {selectedAgreementRow?.a && selectedAgreementOrigin ? (
-            <CompanyAgreementsSourceShiftSection
-              origin={selectedAgreementOrigin}
-              // Company agreements keeps the evidence inline; do not expose the route-preview launcher here.
-              canShowRouteRefreshActions={false}
-              previewShiftId={selectedAgreementPreviewShiftId}
-              routeRefreshActionDisabled={busy || Boolean(selectedRouteRefreshPending)}
-              routeRefreshActionLabel={selectedRouteRefreshCountered ? "Karşı Teklif Geldi" : selectedRouteRefreshPending ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
-              onOpenSourceShift={() => openAgreementShift(selectedAgreementOrigin.sourceShiftId, false)}
-              onOpenPreview={null}
-              onStartRouteRefresh={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}
-            />
-          ) : null}
-
-          {selectedAgreementRow?.a ? (
-            <div ref={selectedAgreementDetailRef}>
-            <CollapsibleSection
-              title="Operasyon bağlantısı"
-              subtitle="Seçili sözleşmenin ürettiği vardiya ve önizleme bağlantısı ikinci katmanda."
-              badge={selectedAgreementRow.a?.id ? `#${selectedAgreementRow.a.id}` : "Seçili"}
-              defaultOpen={true}
-              compact
-            >
-            <AgreementOpsBridgeCard
-              key={`company-bridge-${selectedAgreementRow.a.id}-${bridgeDetailsRequested ? "open" : "closed"}`}
-              agreement={selectedAgreementRow.a}
-              room={selectedAgreementRow.room}
-              bridge={selectedAgreementBridgeReadOnly}
-              onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
-              onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
-              initialDetailsOpen={bridgeDetailsRequested}
-              emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
-            />
-            </CollapsibleSection>
-            </div>
-          ) : null}
-
-          {selectedAgreementPreviewShiftId ? (
-            <AgreementRoutePreviewEvidenceCard
-              shiftId={selectedAgreementPreviewShiftId || selectedRouteRefreshCurrentPreviewShiftId || selectedRouteRefreshProposedPreviewShiftId}
-            />
-          ) : null}
-
-          {selectedAgreementRow?.a ? (
-            <CollapsibleSection
-              title="Kalite / hakediş önizlemesi"
-              subtitle="Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz."
-              badge={selectedAgreementRow.a?.id ? `#${selectedAgreementRow.a.id}` : "Seçili"}
-              defaultOpen={false}
-              compact
-            >
-              <QualityPaymentBridgePreviewCard
-                agreement={selectedAgreementRow.a}
-                preview={qualityPaymentBridgePreview.data}
-                loading={qualityPaymentBridgePreview.loading}
-                error={qualityPaymentBridgePreview.err}
-              />
-              <SeferScorePreviewCard
-                agreement={selectedAgreementRow.a}
-                preview={seferScorePreviewData}
-                loading={seferScorePreview.loading}
-                error={seferScorePreview.err}
-                style={{ marginTop: 12 }}
-              />
-              <PlatformFeePreviewCard
-                agreement={selectedAgreementRow.a}
-                preview={platformFeePreviewData}
-                loading={platformFeePreview.loading}
-                error={platformFeePreview.err}
-                style={{ marginTop: 12 }}
-              />
-            </CollapsibleSection>
-          ) : null}
-
-          {selectedRouteRefreshPending ? (
-            <CompanyAgreementsRouteRefreshPendingSection
-              title={selectedRouteRefreshCountered ? "Rota güncelleme karşı teklifi" : "Bekleyen rota güncelleme teklifi"}
-              summaryText={selectedRouteRefreshSummaryText}
-              companyOfferNote={selectedRouteRefreshPending.companyOfferNote || ""}
-              roomCounterText={selectedRouteRefreshRoomCounterText}
-              currentRouteText={selectedRouteRefreshCurrentText}
-              proposedRouteText={selectedRouteRefreshProposedText}
-              diffText={selectedRouteRefreshDiffText}
-              priceImpactText={selectedRouteRefreshPriceImpactText}
-              previewError={routeRefreshPreviewSummary.err}
-              previewLoading={routeRefreshPreviewSummary.loading}
-              currentPreviewShiftId={selectedRouteRefreshCurrentPreviewShiftId}
-              proposedPreviewShiftId={selectedRouteRefreshProposedPreviewShiftId}
-              dynamicSavingsPreview={selectedDynamicSavingsPreview}
-              showCounterActions={selectedRouteRefreshCountered}
-              busy={busy}
-              onOpenCurrentPreview={null}
-              onOpenProposedPreview={null}
-              onAcceptCounter={() => acceptRouteRefreshCounter(selectedRouteRefreshPending.id)}
-              onRejectCounter={() => rejectRouteRefreshCounter(selectedRouteRefreshPending.id)}
-            />
-          ) : null}
-          </>
-        ) : null}
-
-        {viewMode === "wizard" ? (
+      {viewMode === "wizard" ? (
           <>
           <div className="card">
             <div style={{ fontWeight: 900 }}>Sözleşme oluşturma kuralı</div>

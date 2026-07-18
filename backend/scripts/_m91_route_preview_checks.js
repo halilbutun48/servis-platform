@@ -145,7 +145,7 @@ export function runM91AgreementOperationsBridgeCheck() {
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "AgreementOpsBridgeCard", "company ops bridge card");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "/api/agreements/ops-bridge", "company ops bridge api call");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "company:previewShiftId", "company preview focus stash");
-  assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "AgreementOpsBridgeCard", "room ops bridge card");
+  assertIncludes("web/src/panels/room/roomAgreementsBridgeSection.jsx", "AgreementOpsBridgeCard", "room ops bridge card");
   assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "/api/agreements/ops-bridge", "room ops bridge api call");
   assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "room:focusShiftId", "room shift focus stash");
   assertIncludes("web/src/panels/company/ShiftsPanel.jsx", "company:previewShiftId", "company shifts preview focus consume");

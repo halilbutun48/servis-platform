@@ -85,6 +85,8 @@ const runner = read("backend/scripts/run_product_extensions_check_chain.js");
 const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const milestoneDoc = read("docs/QLT_PAY_BRIDGE_01.md");
+const companyBridgeSection = read("web/src/panels/company/companyAgreementsBridgeSection.jsx");
+const roomBridgeSection = read("web/src/panels/room/roomAgreementsBridgeSection.jsx");
 const gitStatus = runGitStatus();
 
 must(service, "previewOnly: true", "service keeps previewOnly boundary");
@@ -127,20 +129,16 @@ must(bridgeCard, "Hakediş önizleme etkisi", "bridge card shows preview impact"
 must(bridgeCard, "Ödeme / settlement hazırlığı", "bridge card shows settlement readiness");
 must(bridgeCard, "Sıradaki doğru işlem", "bridge card shows next best action");
 
-must(companyPanel, "QualityPaymentBridgePreviewCard", "company panel imports bridge card");
+must(companyPanel, "CompanyAgreementsBridgeSection", "company panel imports split bridge section");
 must(companyPanel, "qualityPaymentBridgePreview", "company panel fetches bridge preview");
-must(companyPanel, "Kalite / hakediş önizlemesi", "company panel exposes preview section");
-must(companyPanel, "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "company panel uses safe preview language");
-must(companyPanel, "Kalite durumu", "company panel exposes quality status field");
-must(companyPanel, "Kanıt tamlığı", "company panel exposes proof completeness field");
-must(companyPanel, "Sıradaki işlem", "company panel exposes next action field");
+must(companyBridgeSection, "QualityPaymentBridgePreviewCard", "company bridge section imports bridge card");
+must(companyBridgeSection, "Kalite / hakediş önizlemesi", "company bridge section exposes preview section");
+must(companyBridgeSection, "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "company bridge section uses safe preview language");
 
-must(roomPanel, "QualityPaymentBridgePreviewCard", "room panel imports bridge card");
+must(roomPanel, "RoomAgreementsBridgeSection", "room panel imports split bridge section");
 must(roomPanel, "qualityPaymentBridgePreview", "room panel fetches bridge preview");
-must(roomPanel, "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "room panel uses safe preview language");
-must(roomPanel, "Kalite durumu", "room panel exposes quality status field");
-must(roomPanel, "Kanıt tamlığı", "room panel exposes proof completeness field");
-must(roomPanel, "Sıradaki işlem", "room panel exposes next action field");
+must(roomBridgeSection, "QualityPaymentBridgePreviewCard", "room bridge section imports bridge card");
+must(roomBridgeSection, "Sadece önizleme — ödeme başlatılmaz. Tahsilat/fatura oluşturulmaz.", "room bridge section uses safe preview language");
 
 must(agreementFacts, "qualityPaymentBridgePreview", "agreement facts keep bridge preview object");
 must(agreementFacts, "qualityPaymentBridgeSummaryText", "agreement facts keep bridge summary");

@@ -582,12 +582,23 @@ async function runScenario(page, scenario, viewportName, output) {
 
   result.url = page.url();
   result.title = await page.title().catch(() => "");
-  const bodyText = await getText(page);
+  let bodyText = await getText(page);
   result.textLength = bodyText.length;
   result.textPreview = bodyText.slice(0, 4000);
   result.headings = await getHeadings(page);
   result.buttons = await getButtons(page);
   result.scrollHeight = await page.evaluate(() => document.body?.scrollHeight || 0).catch(() => 0);
+
+  if ((!bodyText || notFoundSeen(bodyText)) && scenario.role === "school" && scenario.kind === "overview" && viewportName === "mobile") {
+    await page.getByText("Okul — Planlama Merkezi").first().waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(2500);
+    bodyText = await getText(page);
+    result.textLength = bodyText.length;
+    result.textPreview = bodyText.slice(0, 4000);
+    result.headings = await getHeadings(page);
+    result.buttons = await getButtons(page);
+    result.scrollHeight = await page.evaluate(() => document.body?.scrollHeight || 0).catch(() => 0);
+  }
 
   if (navError) {
     result.notes.push(`Navigation warning: ${navError.split("\n")[0]}`);

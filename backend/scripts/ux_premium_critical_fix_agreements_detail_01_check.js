@@ -112,6 +112,7 @@ function main() {
   const app = read("web/src/App.jsx");
   const appShell = read("web/src/layout/AppShell.jsx");
   const agreementsPanel = read("web/src/panels/company/AgreementsPanel.jsx");
+  const companyAgreementsBridgeSection = read("web/src/panels/company/companyAgreementsBridgeSection.jsx");
   const bridgeCard = read("web/src/components/AgreementOpsBridgeCard.jsx");
   const css = read("web/src/index.css");
   const cleanupScopeFiles = [
@@ -277,7 +278,7 @@ function main() {
   must(agreementsPanel, "Detayı aç", "agreements panel exposes visible detail CTA");
   must(agreementsPanel, "Bu alan önizlemedir; işlem başlatmaz.", "agreements panel keeps readonly preview boundary");
   must(agreementsPanel, "viewMode === \"bridge\"", "agreements panel keeps bridge view");
-  must(agreementsPanel, "defaultOpen={true}", "agreements panel opens bridge details by default");
+  must(companyAgreementsBridgeSection, "defaultOpen={true}", "agreements panel opens bridge details by default");
 
   must(bridgeCard, "Detayı aç", "agreement ops bridge card keeps visible detail CTA");
   must(bridgeCard, "Taslağı incele", "agreement ops bridge card keeps draft CTA");
@@ -515,6 +516,10 @@ function main() {
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/panels/company/CommercialFlowPanel.jsx",
     "web/src/panels/company/companyAgreementsSourceShiftSection.jsx",
+    "web/src/panels/company/companyAgreementsBridgeSection.jsx",
+    "web/src/panels/company/companyAgreementsPanelHelpers.js",
+    "web/src/panels/room/roomAgreementsBridgeSection.jsx",
+    "web/src/panels/room/roomAgreementsPanelHelpers.js",
     "web/src/panels/organization/PlansPanel.jsx",
     "web/src/panels/organization/organizationPlansShared.jsx",
     "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
