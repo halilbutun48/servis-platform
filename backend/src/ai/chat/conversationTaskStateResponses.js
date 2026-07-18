@@ -46,6 +46,13 @@ import {
   buildOperationHealthState,
 } from './conversationOperationHealthEngine.js';
 import {
+  buildNextBestActionChips,
+  buildNextBestActionReply,
+  buildNextBestActionState,
+  detectNextBestActionSurface,
+  looksLikeNextBestActionQuestion,
+} from './conversationNextBestActionEngine.js';
+import {
   buildRoomShiftSemanticOverrideReply,
   looksLikeRoomShiftClarifyingRequest,
   looksLikeRoomShiftFocusQuestion,
@@ -96,6 +103,11 @@ export {
   buildOperationHealthReply,
   buildOperationHealthChips,
   buildOperationHealthState,
+  buildNextBestActionReply,
+  buildNextBestActionChips,
+  buildNextBestActionState,
+  detectNextBestActionSurface,
+  looksLikeNextBestActionQuestion,
   companyPlanningCenterNextBestActionReply,
   buildRoomShiftSemanticOverrideReply,
   buildCopilotEBlockRuntimeAnswerReply,
@@ -170,6 +182,11 @@ export function createConversationTaskStateResponses(deps = {}) {
     buildOperationHealthReply,
     buildOperationHealthChips,
     buildOperationHealthState,
+    buildNextBestActionReply,
+    buildNextBestActionChips,
+    buildNextBestActionState,
+    detectNextBestActionSurface,
+    looksLikeNextBestActionQuestion,
     companyPlanningCenterNextBestActionReply,
     buildRoomShiftSemanticOverrideReply: (args) => buildRoomShiftSemanticOverrideReply({
       ...args,

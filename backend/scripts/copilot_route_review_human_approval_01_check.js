@@ -416,6 +416,10 @@ async function main() {
     'docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md',
     'backend/scripts/copilot_plan_review_engine_01_check.js',
     'backend/src/ai/chat/conversationPlanReviewEngine.js',
+    // Next Best Action milestone files are legitimate scope for this consolidated route-review pass.
+    'backend/scripts/copilot_next_best_action_engine_01_check.js',
+    'backend/src/ai/chat/conversationNextBestActionEngine.js',
+    'docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md',
     'docs/COPILOT_PLAN_REVIEW_ENGINE_01.md',
     // Operation Health milestone files are legitimate scope for this consolidated route-review pass.
     'backend/scripts/copilot_operation_health_engine_01_check.js',

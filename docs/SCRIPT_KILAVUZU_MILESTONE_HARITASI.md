@@ -291,7 +291,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Check script: `node backend\scripts\copilot_operation_health_engine_01_check.js`
 - Doküman: `docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md`
 - Static helper: `backend/src/ai/chat/conversationOperationHealthEngine.js`
-- Bu check, `COPILOT-WORKFLOW-REASONING-ENGINE-01`, `COPILOT-PLAN-REVIEW-ENGINE-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; görünür Türkçe reply üretir ama yazma, uygulama ve otomatik kapanış açmaz.
+- Bu check, `COPILOT-WORKFLOW-REASONING-ENGINE-01`, `COPILOT-NEXT-BEST-ACTION-ENGINE-01`, `COPILOT-PLAN-REVIEW-ENGINE-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; görünür Türkçe reply üretir ama yazma, uygulama ve otomatik kapanış açmaz.
+
+### COPILOT-NEXT-BEST-ACTION-ENGINE-01 [CHECK]
+- `check:copilotnextbestactionengine01` şirket, organizasyon, okul, oda, sürücü, personel, veli ve superadmin yüzeylerinde sıradaki en doğru güvenli adım / önce yapılacak güvenli kontrol çizgisini tek yerde toplar; `backend/src/ai/chat/conversationNextBestActionEngine.js` üzerinden helpComposer, intentRouter, conversationTaskStateResponses ve Sefer Abi reasoning assistant arasında paylaşılır; read-only kalır, no write-action, tool execution, DB write, route apply ve fake success açmaz.
+- Check script: `node backend\scripts\copilot_next_best_action_engine_01_check.js`
+- Doküman: `docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md`
+- Static helper: `backend/src/ai/chat/conversationNextBestActionEngine.js`
+- Bu check, `COPILOT-OPERATION-HEALTH-ENGINE-01`, `COPILOT-PLAN-REVIEW-ENGINE-01`, `SEFER-ABI-REASONING-ASSISTANT-01` ve `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01` hattıyla birlikte okunur; görünür Türkçe reply üretir ama yazma, uygulama ve otomatik kapanış açmaz.
 
 ### COPILOT-PLAN-REVIEW-ENGINE-01 [CHECK]
 - `check:copilotplanreviewengine01` plan kontrolü / önizleme / onay öncesi değerlendirme dilini `Planlama Merkezi` ekseninde kilitler; `Sonraki güvenli kontrol` ve `İnsan onayı` çizgisini korur.

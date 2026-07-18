@@ -10,6 +10,7 @@ import {
   buildRiskScoringState,
 } from './conversationTaskStateResponses.js';
 import { buildRootCauseAssistantChips, buildRootCauseAssistantReply, buildRootCauseState } from './conversationRootCauseEngine.js';
+import { buildNextBestActionState } from './conversationNextBestActionEngine.js';
 import { buildSmartDiagnosticState } from './conversationSmartDiagnostics.js';
 import { WORKFLOW_REASONING_RELEVANT_QUESTION_TYPES, buildWorkflowReasoningState } from './conversationWorkflowReasoningEngine.js';
 import { normalizeVisibleReplyFragment } from './conversationTaskStateShared.js';
@@ -560,6 +561,7 @@ function buildReasoningLead(snapshot) {
 }
 
 function buildNextAction(snapshot) {
+  const nextBestActionState = buildNextBestActionState(snapshot);
   return firstNonEmpty(
     buildIntentNextAction(snapshot),
     snapshot?.analysis?.nextBestAction,
@@ -568,6 +570,8 @@ function buildNextAction(snapshot) {
     snapshot?.contextPriority?.followUpPrompt,
     snapshot?.guide?.whatToDoNow,
     snapshot?.guide?.whatToDoNext,
+    nextBestActionState?.nextBestAction,
+    nextBestActionState?.safestNextStep,
     '',
   );
 }

@@ -91,6 +91,7 @@ const steps = [
   'check:copilotclarifyingquestionengine01',
   'check:copilotworkflowreasoningengine01',
   'check:copilotoperationhealthengine01',
+  'check:copilotnextbestactionengine01',
   'check:copilotplanreviewengine01',
   'check:hotfilesplitaichatcomposers01',
   'check:copilotreasoninganswercomposer01',

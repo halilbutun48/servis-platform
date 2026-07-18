@@ -562,6 +562,10 @@ function main() {
   must(guide, 'check:copilotoperationhealthengine01', 'script guide exposes check:copilotoperationhealthengine01');
   must(guide, 'node backend\\scripts\\copilot_operation_health_engine_01_check.js', 'script guide includes operation health engine command');
   must(guide, 'docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md', 'script guide includes operation health engine doc');
+  must(guide, 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'script guide mentions COPILOT-NEXT-BEST-ACTION-ENGINE-01');
+  must(guide, 'check:copilotnextbestactionengine01', 'script guide exposes check:copilotnextbestactionengine01');
+  must(guide, 'node backend\\scripts\\copilot_next_best_action_engine_01_check.js', 'script guide includes next best action engine command');
+  must(guide, 'docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md', 'script guide includes next best action engine doc');
   must(guide, 'COPILOT-PLAN-REVIEW-ENGINE-01', 'script guide mentions COPILOT-PLAN-REVIEW-ENGINE-01');
   must(guide, 'check:copilotplanreviewengine01', 'script guide exposes check:copilotplanreviewengine01');
   must(guide, 'node backend\\scripts\\copilot_plan_review_engine_01_check.js', 'script guide includes plan review engine command');
@@ -583,7 +587,7 @@ function main() {
   must(guide, 'check:seferabiallrolesreasoningassistant01', 'script guide exposes check:seferabiallrolesreasoningassistant01');
   must(guide, 'node backend\\scripts\\sefer_abi_all_roles_reasoning_assistant_01_check.js', 'script guide includes all-roles reasoning assistant command');
   must(guide, 'docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md', 'script guide includes all-roles reasoning assistant doc');
-  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'ETA-SANITY-01', 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'script guide keeps operation health between workflow reasoning and plan review');
+  ordered(guide, ['EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'COPILOT-GUIDED-TASK-ENGINE-01', 'COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'ETA-SANITY-01', 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'script guide keeps next best action between operation health and plan review');
   must(guide, 'node backend\\scripts\\excel_to_route_readiness_redteam_01_check.js', 'script guide includes redteam command');
   must(guide, 'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md', 'script guide includes redteam doc');
   must(guide, 'check:uxcopilotpersona01', 'script guide exposes check:uxcopilotpersona01');
@@ -792,6 +796,10 @@ function main() {
   must(primer, 'check:copilotoperationhealthengine01', 'primer exposes operation health engine check');
   must(primer, 'docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md', 'primer links operation health engine doc');
   must(primer, 'backend/src/ai/chat/conversationOperationHealthEngine.js', 'primer links operation health engine helper');
+  must(primer, 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'primer mentions next best action engine milestone');
+  must(primer, 'check:copilotnextbestactionengine01', 'primer exposes next best action engine check');
+  must(primer, 'docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md', 'primer links next best action engine doc');
+  must(primer, 'backend/src/ai/chat/conversationNextBestActionEngine.js', 'primer links next best action engine helper');
   must(primer, 'COPILOT-PLAN-REVIEW-ENGINE-01', 'primer mentions plan review engine milestone');
   must(primer, 'check:copilotplanreviewengine01', 'primer exposes plan review engine check');
   must(primer, 'docs/COPILOT_PLAN_REVIEW_ENGINE_01.md', 'primer links plan review engine doc');
@@ -800,7 +808,7 @@ function main() {
   must(primer, 'check:hotfilesplitaichatcomposers01', 'primer exposes hot file split check');
   must(primer, 'docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md', 'primer links hot file split doc');
   must(primer, 'backend/src/ai/chat/helpComposerSafeReplies.js', 'primer links helpComposer safe replies helper');
-  ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps operation health between workflow reasoning and hot file split');
+  ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps next best action between operation health and hot file split');
   must(primer, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'primer mentions reasoning answer composer milestone');
   must(primer, 'check:copilotreasoninganswercomposer01', 'primer exposes reasoning answer composer check');
   must(primer, 'docs/COPILOT_REASONING_ANSWER_COMPOSER_01.md', 'primer links reasoning answer composer doc');
@@ -860,6 +868,11 @@ function main() {
   must(harnessCheck, 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'script harness check knows operation health milestone');
   must(harnessCheck, 'docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md', 'script harness check knows operation health doc');
   must(harnessCheck, 'backend/src/ai/chat/conversationOperationHealthEngine.js', 'script harness check knows operation health helper');
+  must(harnessCheck, 'check:copilotnextbestactionengine01', 'script harness check knows next best action alias');
+  must(harnessCheck, 'root:check:copilotnextbestactionengine01', 'script harness check knows next best action root check');
+  must(harnessCheck, 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'script harness check knows next best action milestone');
+  must(harnessCheck, 'docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md', 'script harness check knows next best action doc');
+  must(harnessCheck, 'backend/src/ai/chat/conversationNextBestActionEngine.js', 'script harness check knows next best action helper');
   must(harnessCheck, 'check:copilotplanreviewengine01', 'script harness check knows plan review alias');
   must(harnessCheck, 'root:check:copilotplanreviewengine01', 'script harness check knows plan review root check');
   must(harnessCheck, 'COPILOT-PLAN-REVIEW-ENGINE-01', 'script harness check knows plan review milestone');
@@ -950,6 +963,11 @@ function main() {
   must(harnessDoc, 'copilot_operation_health_engine_01_check.js', 'script harness doc lists operation health command');
   must(harnessDoc, 'backend/src/ai/chat/conversationOperationHealthEngine.js', 'script harness doc lists operation health helper');
   must(harnessDoc, 'docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md', 'script harness doc lists operation health doc');
+  must(harnessDoc, 'Copilot next best action engine milestone: `COPILOT-NEXT-BEST-ACTION-ENGINE-01`', 'script harness doc lists next best action milestone');
+  must(harnessDoc, 'root:check:copilotnextbestactionengine01', 'script harness doc lists next best action root check');
+  must(harnessDoc, 'copilot_next_best_action_engine_01_check.js', 'script harness doc lists next best action command');
+  must(harnessDoc, 'backend/src/ai/chat/conversationNextBestActionEngine.js', 'script harness doc lists next best action helper');
+  must(harnessDoc, 'docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md', 'script harness doc lists next best action doc');
   must(harnessDoc, 'Copilot plan review engine milestone: `COPILOT-PLAN-REVIEW-ENGINE-01`', 'script harness doc lists plan review milestone');
   must(harnessDoc, 'root:check:copilotplanreviewengine01', 'script harness doc lists plan review root check');
   must(harnessDoc, 'copilot_plan_review_engine_01_check.js', 'script harness doc lists plan review command');
@@ -986,7 +1004,7 @@ function main() {
   must(harnessDoc, 'node backend\\scripts\\sefer_abi_turkish_user_facing_language_01_check.js', 'script harness doc lists Turkish user-facing language audit command');
   must(harnessDoc, 'backend/src/ai/chat/helpComposer.js', 'script harness doc lists Turkish user-facing language audit helper');
   must(harnessDoc, 'backend/src/ai/chat/seferAbiReasoningAssistant.js', 'script harness doc lists Turkish user-facing language audit reasoning surface');
-  ordered(harnessDoc, ['Copilot guided task engine milestone: `COPILOT-GUIDED-TASK-ENGINE-01`', 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'Copilot smart diagnostic engine milestone: `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`', 'Copilot root cause engine milestone: `COPILOT-ROOT-CAUSE-ENGINE-01`', 'Copilot risk scoring engine milestone: `COPILOT-RISK-SCORING-ENGINE-01`', 'Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`', 'Copilot workflow reasoning engine milestone: `COPILOT-WORKFLOW-REASONING-ENGINE-01`', 'Copilot operation health engine milestone: `COPILOT-OPERATION-HEALTH-ENGINE-01`', 'Copilot plan review engine milestone: `COPILOT-PLAN-REVIEW-ENGINE-01`', 'Hot file split AI chat composers milestone: `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01`', 'Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`', 'Sefer Abi all-roles reasoning assistant milestone: `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`', 'Sefer Abi terminal humanize milestone: `SEFER-ABI-TERMINAL-HUMANIZE-01`', 'Sefer Abi Turkish user-facing terminology audit milestone: `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`', 'Sefer Abi Turkish user-facing language audit milestone: `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`'], 'script harness doc keeps operation health between workflow reasoning and hot file split');
+  ordered(harnessDoc, ['Copilot guided task engine milestone: `COPILOT-GUIDED-TASK-ENGINE-01`', 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'Copilot smart diagnostic engine milestone: `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`', 'Copilot root cause engine milestone: `COPILOT-ROOT-CAUSE-ENGINE-01`', 'Copilot risk scoring engine milestone: `COPILOT-RISK-SCORING-ENGINE-01`', 'Copilot clarifying question engine milestone: `COPILOT-CLARIFYING-QUESTION-ENGINE-01`', 'Copilot workflow reasoning engine milestone: `COPILOT-WORKFLOW-REASONING-ENGINE-01`', 'Copilot operation health engine milestone: `COPILOT-OPERATION-HEALTH-ENGINE-01`', 'Copilot next best action engine milestone: `COPILOT-NEXT-BEST-ACTION-ENGINE-01`', 'Copilot plan review engine milestone: `COPILOT-PLAN-REVIEW-ENGINE-01`', 'Hot file split AI chat composers milestone: `HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01`', 'Sefer Abi reasoning assistant milestone: `SEFER-ABI-REASONING-ASSISTANT-01`', 'Sefer Abi all-roles reasoning assistant milestone: `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`', 'Sefer Abi terminal humanize milestone: `SEFER-ABI-TERMINAL-HUMANIZE-01`', 'Sefer Abi Turkish user-facing terminology audit milestone: `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01`', 'Sefer Abi Turkish user-facing language audit milestone: `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01`'], 'script harness doc keeps next best action between operation health and plan review');
   must(roadmap, 'VERIFIED-SUPPLIER-01', 'roadmap keeps verified supplier milestone');
   must(roadmap, 'Verified supplier guard', 'roadmap keeps verified supplier guard section');
   must(roadmap, 'docs/VERIFIED_SUPPLIER_01.md', 'roadmap links verified supplier doc');
