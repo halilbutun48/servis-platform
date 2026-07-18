@@ -210,6 +210,7 @@
     "check:fieldlaunch01": "node backend/scripts/field_launch_pack_01_readiness_check.js",
     "check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js",
     "check:qualitygatefinal01": "node backend/scripts/quality_gate_final_01_check.js",
+    "check:testqualityandflakeaudit01": "node backend/scripts/test_quality_and_flake_audit_01_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",

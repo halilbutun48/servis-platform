@@ -528,6 +528,10 @@ async function main() {
       'backend/scripts/product_flow_button_audit_01.mjs',
       'backend/scripts/ux_live_panel_premium_smoke_01.mjs',
       'backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs',
+      // Test quality and flake audit files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/ux_all_panels_reality_audit_01.mjs',
+      'backend/scripts/test_quality_and_flake_audit_01_check.js',
+      'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md',
       'backend/scripts/bug_route_impact_preview_button_01_check.js',
       'web/src/panels/parent/LivePanel.jsx',
       'backend/src/ai/chat/etaSanity.js',

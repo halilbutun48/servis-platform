@@ -179,6 +179,7 @@ const steps = [
   'check:livetrackingfinal01',
   'check:driverflowfinal01',
   'check:qualitygatefinal01',
+  'check:testqualityandflakeaudit01',
 ];
 
 function runStep(scriptName) {

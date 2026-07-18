@@ -537,6 +537,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - All-panels reality audit için `PASS- 0` korunur; mobile all-roles audit'teki `PASS- 37`, premium smoke'taki `PASS- 15` ve product-flow button audit'teki `PASS- 10` evidence / coverage notları olarak ayrı belgelenir, tek başına release blocker sayılmaz.
 - Browser-smoke ve çalışma alanı artefact'leri commit dışı kalır; backend route / service / schema katmanı bu gate ile değişmez.
 
+### TEST-QUALITY-AND-FLAKE-AUDIT-01 [CHECK]
+- `check:testqualityandflakeaudit01` smoke/check zincirindeki flake risklerini, false negative sıcak noktalarını ve threshold / skip / timing / PASS gevşetme riskini audit eder.
+- Check script: `node backend\scripts\test_quality_and_flake_audit_01_check.js`
+- Final doc: `docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md`
+- Yeni UI davranışı açmaz; route/service/prisma, broad allowlist, runtime-data ve browser-smoke commit sınırını değiştirmez.
+- `QUALITY-GATE-FINAL-01` sonrasındaki son güvence katmanı olarak kalır; smoke eşikleri aynen korunur.
+
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
 - `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.

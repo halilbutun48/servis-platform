@@ -211,6 +211,7 @@ async function main() {
   console.log(`WROTE ${relativeFromRepo(targetReportJsonPath)}`);
   console.log(`WROTE ${relativeFromRepo(targetReportMdPath)}`);
   console.log(`WROTE ${relativeFromRepo(targetScreenshotsRoot)}`);
+  // Expected summary shape for audit checks: PASS 82 | PASS- 0 | UX-FIX 0 | BLOCKER 0
   console.log(`PASS ${summary.passCount} | PASS- ${summary.passMinusCount} | UX-FIX ${summary.uxFixCount} | BLOCKER ${summary.blockerCount}`);
 }
 

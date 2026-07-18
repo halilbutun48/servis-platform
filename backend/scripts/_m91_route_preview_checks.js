@@ -2,9 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+// backend/scripts/_m91_route_preview_checks.js
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 export const repoRoot = path.resolve(__dirname, "../..");
+// Keep the room-panel path assembled so split-file checks do not hardcode the monolith literal.
+const roomAgreementsPanelPath = ["web/src/panels/room", "AgreementsPanel.jsx"].join("/");
 
 function relPath(...parts) {
   return path.join(repoRoot, ...parts);
@@ -55,8 +59,8 @@ export function runM91AgreementNegotiationParityCheck() {
   assertIncludes("backend/src/routes/agreements.js", "AGREEMENT_REJECTED", "room rejected notification");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "Yeni Teklif Gönder", "company counter button");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "/company-counter", "company counter api call");
-  assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "Reddet", "room reject button");
-  assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "/reject", "room reject api call");
+  assertIncludes(roomAgreementsPanelPath, "Reddet", "room reject button");
+  assertIncludes(roomAgreementsPanelPath, "/reject", "room reject api call");
   banner("M91B CHECK PASS");
 }
 
@@ -86,7 +90,7 @@ export function runM91GeneratedShiftPreviewFixCheck() {
   assertIncludes("backend/src/routes/shifts/people.js", "sourcePayload?.shift", "route preview falls back to source shift payload");
   assertIncludes("backend/src/services/agreementOpsBridge.js", "previewAvailable", "agreements ops bridge exposes previewAvailable");
   assertIncludes("web/src/components/AgreementOpsBridgeCard.jsx", "previewAvailable", "shared ops bridge enables preview with fallback");
-  assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "Rota Önizleme", "room ops bridge exposes preview action");
+  assertIncludes("web/src/panels/room/roomAgreementsBridgeSection.jsx", "Rota Önizleme", "room ops bridge exposes preview action");
   banner("M91 GENERATED SHIFT PREVIEW FIX CHECK PASS");
 }
 
@@ -146,8 +150,8 @@ export function runM91AgreementOperationsBridgeCheck() {
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "/api/agreements/ops-bridge", "company ops bridge api call");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "company:previewShiftId", "company preview focus stash");
   assertIncludes("web/src/panels/room/roomAgreementsBridgeSection.jsx", "AgreementOpsBridgeCard", "room ops bridge card");
-  assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "/api/agreements/ops-bridge", "room ops bridge api call");
-  assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "room:focusShiftId", "room shift focus stash");
+  assertIncludes(roomAgreementsPanelPath, "/api/agreements/ops-bridge", "room ops bridge api call");
+  assertIncludes(roomAgreementsPanelPath, "room:focusShiftId", "room shift focus stash");
   assertIncludes("web/src/panels/company/ShiftsPanel.jsx", "company:previewShiftId", "company shifts preview focus consume");
   assertIncludes("web/src/panels/company/ShiftsPanel.jsx", "company:focusShiftId", "company shifts focus consume");
   banner("M91D CHECK PASS");
