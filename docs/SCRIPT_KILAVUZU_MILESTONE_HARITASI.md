@@ -537,6 +537,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - All-panels reality audit için `PASS- 0` korunur; mobile all-roles audit'teki `PASS- 37`, premium smoke'taki `PASS- 15` ve product-flow button audit'teki `PASS- 10` evidence / coverage notları olarak ayrı belgelenir, tek başına release blocker sayılmaz.
 - Browser-smoke ve çalışma alanı artefact'leri commit dışı kalır; backend route / service / schema katmanı bu gate ile değişmez.
 
+### REQUEST-STORM-RESILIENCE-01 [CHECK]
+- `check:requeststormresilience01` smoke/check zincirindeki request-storm risklerini, desktop/mobile storageState reuse ve 429 console/page error sınırını deterministic guard ile audit eder.
+- Check script: `node backend\scripts\request_storm_resilience_01_check.js`
+- Final doc: `docs/REQUEST_STORM_RESILIENCE_01.md`
+- Aynı role için desktop→mobile storageState paylaşımı korunur; role isolation bozulmaz.
+- `consoleErrorCount=0` ve `pageErrorCount=0` policy'si korunur; 429 ignore list'e alınmaz.
+- product-flow, premium, all-panels ve mobile all-roles smoke PASS `18 / 82 / 82 / 82` kalır.
+- Browser-smoke, runtime-data, stage ve backend route/service/schema / Prisma sınırları değişmez.
+
 ### TEST-QUALITY-AND-FLAKE-AUDIT-01 [CHECK]
 - `check:testqualityandflakeaudit01` smoke/check zincirindeki flake risklerini, false negative sıcak noktalarını ve threshold / skip / timing / PASS gevşetme riskini audit eder.
 - Check script: `node backend\scripts\test_quality_and_flake_audit_01_check.js`

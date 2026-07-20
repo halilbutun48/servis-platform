@@ -131,7 +131,7 @@
                                 "policyVersion":  1,
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
-    "currentLargeFileCount":  16,
+    "currentLargeFileCount":  17,
     "currentWarningHotFileCount":  7,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
@@ -218,12 +218,16 @@
                                                                                                              "note":  "copilot reasoning answer composer check; controlled cleanup adayi"
                                                                                                          },
                                                        "backend/scripts/verify_chain_01_product_extensions_check.js":  {
-                                                                                                             "class":  "safe-candidate-review",
-                                                                                                             "note":  "verify-chain product extensions runner; controlled cleanup adayi"
-                                                                                                         },
+                                                                                  "class":  "safe-candidate-review",
+                                                                                  "note":  "verify-chain product extensions runner; controlled cleanup adayi"
+                                                                              },
+                                                       "backend/scripts/ai_response_semantic_quality_gate_01_check.js":  {
+                                                                                  "class":  "safe-candidate-review",
+                                                                                  "note":  "AI response semantic quality gate check; controlled cleanup adayi"
+                                                                              },
                                                        "backend/scripts/sefer_abi_reasoning_assistant_01_check.js":  {
-                                                                                                             "class":  "safe-candidate-review",
-                                                                                                             "note":  "sefer abi reasoning assistant check; controlled cleanup adayi"
+                                                                                  "class":  "safe-candidate-review",
+                                                                                  "note":  "sefer abi reasoning assistant check; controlled cleanup adayi"
                                                                                                          },
                                                        "backend/src/ai/chat/seferAbiReasoningAssistant.js":  {
                                                                                                              "class":  "safe-candidate-review",

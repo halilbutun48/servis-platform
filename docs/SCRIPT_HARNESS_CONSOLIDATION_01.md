@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `394`
-- Toplam executable tracked file: `1208`
-- Combined registry row: `1602`
-- Root/backend/web/mobile package dağılımı: root `237`, backend `766`, web `95`, mobile `201`
+- Toplam package script entry: `395`
+- Toplam executable tracked file: `1209`
+- Combined registry row: `1604`
+- Root/backend/web/mobile package dağılımı: root `238`, backend `767`, web `95`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `56`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -71,6 +71,11 @@ Repo: `servis-platform`
 - Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`
 - Test quality and flake audit docs: `docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md`
 - Test quality and flake audit command: `node backend\scripts\test_quality_and_flake_audit_01_check.js`
+- Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`
+- Request storm resilience alias: `check:requeststormresilience01`
+- Request storm resilience root alias: `root:check:requeststormresilience01`
+- Request storm resilience docs: `docs/REQUEST_STORM_RESILIENCE_01.md`
+- Request storm resilience command: `node backend\scripts\request_storm_resilience_01_check.js`
 - AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`
 - AI response semantic quality gate docs: `docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md`
 - AI response semantic quality gate command: `node backend\scripts\ai_response_semantic_quality_gate_01_check.js`

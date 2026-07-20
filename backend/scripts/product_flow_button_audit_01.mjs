@@ -1075,6 +1075,7 @@ async function main() {
 
   for (const group of ROUTE_GROUPS) {
     let authState = { role: group.role, token: null, loginInfo: null, error: null };
+    let sharedStorageState = null;
     if (group.auth) {
       authState = await loginRole(group.role);
       report.authResults.push(authState);
@@ -1087,7 +1088,7 @@ async function main() {
     }
 
     for (const viewport of VIEWPORTS) {
-      const context = await browser.newContext({
+      const contextOptions = {
         viewport: { width: viewport.width, height: viewport.height },
         deviceScaleFactor: viewport.deviceScaleFactor,
         isMobile: viewport.isMobile,
@@ -1096,7 +1097,13 @@ async function main() {
         timezoneId: "Europe/Istanbul",
         geolocation: { latitude: 41.0082, longitude: 28.9784 },
         permissions: ["geolocation"],
-      });
+      };
+
+      if (sharedStorageState) {
+        contextOptions.storageState = sharedStorageState;
+      }
+
+      const context = await browser.newContext(contextOptions);
 
       if (authState.token) {
         await context.addInitScript((token) => {
@@ -1115,6 +1122,10 @@ async function main() {
         report.success = report.success && !["BLOCKER", "NOT-FOUND", "AUTH-BLOCKED"].includes(row.status);
         console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
         await page.close().catch(() => {});
+      }
+
+      if (viewport.name === "desktop") {
+        sharedStorageState = await context.storageState().catch(() => null);
       }
 
       await context.close().catch(() => {});

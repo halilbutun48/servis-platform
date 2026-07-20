@@ -180,6 +180,7 @@ const steps = [
   'check:driverflowfinal01',
   'check:qualitygatefinal01',
   'check:testqualityandflakeaudit01',
+  'check:requeststormresilience01',
   'check:airesponsesemanticqualitygate01',
 ];
 

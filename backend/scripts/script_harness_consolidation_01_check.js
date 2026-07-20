@@ -328,6 +328,7 @@ function slugToMilestone(slug) {
     [/uxlivepanelpremium0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
     [/qualitygatefinal0?1/i, "QUALITY-GATE-FINAL-01"],
     [/testqualityandflakeaudit0?1/i, "TEST-QUALITY-AND-FLAKE-AUDIT-01"], // check:testqualityandflakeaudit01
+    [/requeststormresilience0?1/i, "REQUEST-STORM-RESILIENCE-01"], // check:requeststormresilience01
     [/airesponsesemanticqualitygate0?1/i, "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01"], // check:airesponsesemanticqualitygate01
     [/uxsmokepassminusevidence0?1/i, "UX-SMOKE-PASS-MINUS-EVIDENCE-01"],
     [/uxsmokepassminuszero0?1/i, "UX-SMOKE-PASS-MINUS-ZERO-01"],
@@ -379,7 +380,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:airesponsesemanticqualitygate01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:requeststormresilience01", "check:airesponsesemanticqualitygate01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -975,7 +976,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1291,7 +1292,7 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
     entry.commandRefs = [...new Set(entry.commandRefs)].sort();
     if (entry.commandRefs.some((ref) => ref.startsWith("root:verify:repo") || ref.startsWith("backend:repo:check"))) {
       entry.chain = "verify:repo";
-    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01"))) {
+    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01") || ref.startsWith("root:check:requeststormresilience01"))) {
       entry.chain = "product-extensions";
     } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:scriptharnessconsolidation01"))) {
       entry.chain = "product-extensions";
@@ -1477,6 +1478,9 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Test quality and flake audit milestone: \`TEST-QUALITY-AND-FLAKE-AUDIT-01\``);
   out.push(`- Test quality and flake audit docs: \`docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md\``);
   out.push(`- Test quality and flake audit command: \`node backend\\scripts\\test_quality_and_flake_audit_01_check.js\``);
+  out.push(`- Request storm resilience milestone: \`REQUEST-STORM-RESILIENCE-01\``);
+  out.push(`- Request storm resilience docs: \`docs/REQUEST_STORM_RESILIENCE_01.md\``);
+  out.push(`- Request storm resilience command: \`node backend\\scripts\\request_storm_resilience_01_check.js\``);
   out.push(`- AI response semantic quality gate milestone: \`AI-RESPONSE-SEMANTIC-QUALITY-GATE-01\``);
   out.push(`- AI response semantic quality gate docs: \`docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md\``);
   out.push(`- AI response semantic quality gate command: \`node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js\``);
@@ -1972,6 +1976,11 @@ function verifyDoc(docText, summary) {
     "root:check:testqualityandflakeaudit01",
     "docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md",
     "node backend\\scripts\\test_quality_and_flake_audit_01_check.js",
+    "REQUEST-STORM-RESILIENCE-01",
+    "check:requeststormresilience01",
+    "root:check:requeststormresilience01",
+    "docs/REQUEST_STORM_RESILIENCE_01.md",
+    "node backend\\scripts\\request_storm_resilience_01_check.js",
     "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01",
     "check:airesponsesemanticqualitygate01",
     "root:check:airesponsesemanticqualitygate01",
