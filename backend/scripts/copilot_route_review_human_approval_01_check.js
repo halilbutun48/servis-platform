@@ -455,6 +455,9 @@ async function main() {
     'backend/scripts/copilot_operation_health_engine_01_check.js',
     'backend/src/ai/chat/conversationOperationHealthEngine.js',
     'docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md',
+    // Semantic quality gate files are part of the current consolidated validation pass.
+    'backend/scripts/ai_response_semantic_quality_gate_01_check.js',
+    'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md',
   ]);
 
   allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'], 'working tree stays within route review scope');

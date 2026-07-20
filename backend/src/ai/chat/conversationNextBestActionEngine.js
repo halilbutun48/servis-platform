@@ -485,9 +485,31 @@ function normalizeSafeControl(text) {
     .trim();
 }
 
+function stripRepeatedLeadLabel(text, label) {
+  const value = normalizeVisibleReplyFragment(text).trim();
+  const baseLabel = normalizeVisibleReplyFragment(label).trim();
+  if (!value || !baseLabel) return value;
+  const labelBase = baseLabel.replace(/^Önce\s+/i, '').trim();
+  const candidates = uniqueStrings([
+    baseLabel,
+    labelBase,
+    `Önce ${labelBase}`,
+  ]);
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const pattern = new RegExp(`^${candidate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s*[:：-]\\s*|\\s+)+`, 'i');
+    if (pattern.test(value)) {
+      return value.replace(pattern, '').trim();
+    }
+  }
+  return value;
+}
+
 function buildLead(label, control) {
   const text = normalizeSafeControl(control);
-  return text ? `${label}: ${ensureVisibleSentence(text)}` : '';
+  if (!text) return '';
+  const cleanText = stripRepeatedLeadLabel(text, label);
+  return cleanText ? `${label}: ${ensureVisibleSentence(cleanText)}` : '';
 }
 
 function collectEvidence(surface, screenContext, analysis, contextPriority, screenLabel, roleText, selectedSummary, selectedStatus) {

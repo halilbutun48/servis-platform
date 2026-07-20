@@ -324,7 +324,14 @@ function buildReplyParts({
   if (stageText) parts.push(`İşlem akışı: ${stageText}.`);
   if (nextControlText) parts.push(`Sonraki güvenli kontrol: ${nextControlText}.`);
   if (approvalText) parts.push(`Onay noktası: ${approvalText}.`);
-  if (nextScreenText) parts.push(`Gerekirse ${nextScreenText}.`);
+  if (nextScreenText) {
+    const cleanNextScreenText = String(nextScreenText || '')
+      .replace(/^\s*Gerekirse\s+/i, '')
+      .replace(/^\s*Gerekirse[:\s-]+/i, '')
+      .replace(/[.。!?]+$/u, '')
+      .trim();
+    if (cleanNextScreenText) parts.push(`Gerekirse ${cleanNextScreenText}.`);
+  }
   if (roleText && !parts.some((part) => normalizeLooseText(part).includes(normalizeLooseText(roleText)))) {
     parts.unshift(`${roleText}: ilerliyorum.`);
   }

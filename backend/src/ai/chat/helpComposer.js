@@ -3190,7 +3190,11 @@ function composeSimpleScreenReply({ questionType, guide, message, rawMessage = m
   }
 
   if (questionType === 'SCREEN_PURPOSE' || questionType === 'OPEN') {
-    return `${purposeLead} Şimdi: ${ensureVisibleSentence(now)}${menus[0] ? ` Gerekirse ${menus[0]} kısmına geç.` : ''}`.trim();
+    const nextMenu = String(menus[0] || '')
+      .replace(/^\s*Gerekirse\s+/i, '')
+      .replace(/^\s*Gerekirse[:\s-]+/i, '')
+      .trim();
+    return `${purposeLead} Şimdi: ${ensureVisibleSentence(now)}${nextMenu ? ` Gerekirse ${nextMenu} kısmına geç.` : ''}`.trim();
   }
 
   return `${purposeLead} Şimdi: ${ensureVisibleSentence(now)}`.trim();

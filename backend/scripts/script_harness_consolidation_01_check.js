@@ -204,6 +204,7 @@ const selectedDocs = [
   "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
   "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
   "docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md",
+  "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
   "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
   "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
   "docs/COP_LIVE_ACCEPT_01_MATRIX.md",
@@ -327,6 +328,7 @@ function slugToMilestone(slug) {
     [/uxlivepanelpremium0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
     [/qualitygatefinal0?1/i, "QUALITY-GATE-FINAL-01"],
     [/testqualityandflakeaudit0?1/i, "TEST-QUALITY-AND-FLAKE-AUDIT-01"], // check:testqualityandflakeaudit01
+    [/airesponsesemanticqualitygate0?1/i, "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01"], // check:airesponsesemanticqualitygate01
     [/uxsmokepassminusevidence0?1/i, "UX-SMOKE-PASS-MINUS-EVIDENCE-01"],
     [/uxsmokepassminuszero0?1/i, "UX-SMOKE-PASS-MINUS-ZERO-01"],
     [/uxcompanymobileactionclarity0?1/i, "UX-COMPANY-MOBILE-ACTION-CLARITY-01"],
@@ -377,7 +379,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:airesponsesemanticqualitygate01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1475,6 +1477,9 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Test quality and flake audit milestone: \`TEST-QUALITY-AND-FLAKE-AUDIT-01\``);
   out.push(`- Test quality and flake audit docs: \`docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md\``);
   out.push(`- Test quality and flake audit command: \`node backend\\scripts\\test_quality_and_flake_audit_01_check.js\``);
+  out.push(`- AI response semantic quality gate milestone: \`AI-RESPONSE-SEMANTIC-QUALITY-GATE-01\``);
+  out.push(`- AI response semantic quality gate docs: \`docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md\``);
+  out.push(`- AI response semantic quality gate command: \`node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js\``);
   out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
   out.push(`- Agreements detail docs: \`docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md\``);
   out.push(`- Agreements detail command: \`node backend\\scripts\\ux_premium_critical_fix_agreements_detail_01_check.js\``);
@@ -1967,6 +1972,11 @@ function verifyDoc(docText, summary) {
     "root:check:testqualityandflakeaudit01",
     "docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md",
     "node backend\\scripts\\test_quality_and_flake_audit_01_check.js",
+    "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01",
+    "check:airesponsesemanticqualitygate01",
+    "root:check:airesponsesemanticqualitygate01",
+    "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
+    "node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",

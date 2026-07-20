@@ -544,6 +544,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Yeni UI davranışı açmaz; route/service/prisma, broad allowlist, runtime-data ve browser-smoke commit sınırını değiştirmez.
 - `QUALITY-GATE-FINAL-01` sonrasındaki son güvence katmanı olarak kalır; smoke eşikleri aynen korunur.
 
+### AI-RESPONSE-SEMANTIC-QUALITY-GATE-01 [CHECK]
+- `check:airesponsesemanticqualitygate01` Sefer Abi / Copilot yanıt semantiğinde role/screen fit, intent fit, güvenli adım, insan onayı, terminoloji, belirsizlik, tekrar kontrolü, clarifying ve cross-engine separation çizgisini deterministic case suite ile audit eder.
+- Check script: `node backend\scripts\ai_response_semantic_quality_gate_01_check.js`
+- Final doc: `docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md`
+- Bu milestone yalnızca local deterministic response check'tir; runtime AI action, tool execution, write-action dispatcher, DB write, route apply, fake success, route/service/prisma değişimi, broad allowlist genişletmesi, runtime-data commit veya browser-smoke commit açmaz.
+
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
 - `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.

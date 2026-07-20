@@ -175,6 +175,7 @@ function main() {
   must(runner, 'check:copilotoperationhealthengine01', 'product extensions chain includes check:copilotoperationhealthengine01');
   must(runner, 'check:copilotplanreviewengine01', 'product extensions chain includes check:copilotplanreviewengine01');
   must(runner, 'check:testqualityandflakeaudit01', 'product extensions chain includes check:testqualityandflakeaudit01');
+  must(runner, 'check:airesponsesemanticqualitygate01', 'product extensions chain includes check:airesponsesemanticqualitygate01');
   must(runner, 'check:seferabiturkishterminology01', 'product extensions chain includes check:seferabiturkishterminology01');
   must(runner, 'check:seferabiturkishuserfacinglanguage01', 'product extensions chain includes check:seferabiturkishuserfacinglanguage01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
@@ -259,6 +260,7 @@ function main() {
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
   must(pkg, '"check:qualitygatefinal01": "node backend/scripts/quality_gate_final_01_check.js"', 'package.json exposes check:qualitygatefinal01');
   must(pkg, '"check:testqualityandflakeaudit01": "node backend/scripts/test_quality_and_flake_audit_01_check.js"', 'package.json exposes check:testqualityandflakeaudit01');
+  must(pkg, '"check:airesponsesemanticqualitygate01": "node backend/scripts/ai_response_semantic_quality_gate_01_check.js"', 'package.json exposes check:airesponsesemanticqualitygate01');
   must(companyAgreementsPanel, 'CompanyAgreementsMobileCards', 'company agreements panel wires mobile cards');
   must(companyAgreementsPanel, 'desktopShiftTable companyAgreementsDesktopList', 'company agreements panel keeps desktop table wrapper');
   must(companyAgreementsMobileCards, 'CompanyAgreementMobileCard', 'company agreements mobile cards file exports card');
@@ -437,6 +439,7 @@ function main() {
     'check:driverflowfinal01',
     'check:qualitygatefinal01',
     'check:testqualityandflakeaudit01',
+    'check:airesponsesemanticqualitygate01',
 ], 'product extensions runner order');
 
   must(guide, 'check:product-extensions', 'script guide exposes check:product-extensions');
@@ -826,6 +829,11 @@ function main() {
   must(primer, 'check:testqualityandflakeaudit01', 'primer exposes test quality and flake audit check');
   must(primer, 'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md', 'primer links test quality and flake audit doc');
   must(primer, 'backend/scripts/test_quality_and_flake_audit_01_check.js', 'primer links test quality and flake audit command');
+  must(primer, 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'primer mentions AI response semantic quality gate milestone');
+  must(primer, 'check:airesponsesemanticqualitygate01', 'primer exposes AI response semantic quality gate check');
+  must(primer, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'primer links AI response semantic quality gate doc');
+  must(primer, 'backend/scripts/ai_response_semantic_quality_gate_01_check.js', 'primer links AI response semantic quality gate command');
+  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps AI response semantic quality gate after test quality and before terminology audit');
   ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'HOT-FILE-SPLIT-WEB-PANELS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps next best action between operation health and hot file split');
   must(primer, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'primer mentions reasoning answer composer milestone');
   must(primer, 'check:copilotreasoninganswercomposer01', 'primer exposes reasoning answer composer check');
@@ -1126,6 +1134,11 @@ function main() {
   must(harnessCheck, 'root:check:testqualityandflakeaudit01', 'script harness check knows test quality and flake audit root check');
   must(harnessCheck, 'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md', 'script harness check knows test quality and flake audit doc');
   must(harnessCheck, 'backend/scripts/test_quality_and_flake_audit_01_check.js', 'script harness check knows test quality and flake audit command');
+  must(harnessCheck, 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'script harness check knows AI response semantic quality gate milestone');
+  must(harnessCheck, 'check:airesponsesemanticqualitygate01', 'script harness check knows AI response semantic quality gate alias');
+  must(harnessCheck, 'root:check:airesponsesemanticqualitygate01', 'script harness check knows AI response semantic quality gate root check');
+  must(harnessCheck, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script harness check knows AI response semantic quality gate doc');
+  must(harnessCheck, 'backend/scripts/ai_response_semantic_quality_gate_01_check.js', 'script harness check knows AI response semantic quality gate command');
   must(harnessCheck, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness check knows cleanup milestone');
   must(harnessCheck, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness check knows cleanup alias');
   must(harnessCheck, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness check knows cleanup doc');
@@ -1169,6 +1182,11 @@ function main() {
   must(harnessDoc, 'check:testqualityandflakeaudit01', 'script harness doc lists test quality and flake audit alias');
   must(harnessDoc, 'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md', 'script harness doc lists test quality and flake audit doc');
   must(harnessDoc, 'node backend\\scripts\\test_quality_and_flake_audit_01_check.js', 'script harness doc lists test quality and flake audit command');
+  must(harnessDoc, 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'script harness doc lists AI response semantic quality gate milestone');
+  must(harnessDoc, 'check:airesponsesemanticqualitygate01', 'script harness doc lists AI response semantic quality gate alias');
+  must(harnessDoc, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script harness doc lists AI response semantic quality gate doc');
+  must(harnessDoc, 'node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js', 'script harness doc lists AI response semantic quality gate command');
+  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps AI response semantic quality gate after test quality and before agreements detail');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
@@ -1267,6 +1285,11 @@ function main() {
   must(guide, 'check:testqualityandflakeaudit01', 'script guide exposes check:testqualityandflakeaudit01');
   must(guide, 'node backend\\scripts\\test_quality_and_flake_audit_01_check.js', 'script guide includes test quality and flake audit command');
   must(guide, 'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md', 'script guide includes test quality and flake audit doc');
+  must(guide, 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'script guide mentions AI response semantic quality gate milestone');
+  must(guide, 'check:airesponsesemanticqualitygate01', 'script guide exposes AI response semantic quality gate check');
+  must(guide, 'node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js', 'script guide includes AI response semantic quality gate command');
+  must(guide, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script guide includes AI response semantic quality gate doc');
+  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps AI response semantic quality gate after test quality and before parent/personel live error clarity');
   must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
   must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');
   must(guide, 'node backend\\scripts\\ux_parent_personel_live_error_clarity_01_check.js', 'script guide includes parent/personel live error clarity command');
