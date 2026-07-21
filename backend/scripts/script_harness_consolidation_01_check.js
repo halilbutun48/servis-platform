@@ -204,6 +204,7 @@ const selectedDocs = [
   "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
   "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
   "docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md",
+  "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
   "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
   "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
   "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
@@ -380,7 +381,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:requeststormresilience01", "check:airesponsesemanticqualitygate01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -845,6 +846,18 @@ const coverageMatrix = [
     requiredNextAction: "None",
   },
   {
+    function: "Production Rate Limit Policy",
+    rolePanel: "Auth / public / read-heavy / write-action / AI assistant rate-limit policy",
+    backendRouteService: "backend/src/bootstrap/rateLimits.js; backend/src/env.js; backend/src/errors/http.js",
+    frontendSurface: "backend rate-limit policy, 429 response copy, smoke/request-storm guard",
+    currentCheckScript: "check:requeststormresilience01; check:productionratelimitpolicy01; check:airesponsesemanticqualitygate01; check:testqualityandflakeaudit01",
+    checkType: "static + policy",
+    coverageStatus: "COVERED_ACTIVE",
+    missingGap: "None on the current static/product chain; runtime enforcement already exists and stays unchanged.",
+    ownerMilestone: "PRODUCTION-RATE-LIMIT-POLICY-01",
+    requiredNextAction: "None",
+  },
+  {
     function: "Performance / Reliability",
     rolePanel: "Repo audit / hot file hygiene",
     backendRouteService: "backend/scripts/repo_audit.js; m90c6-m90c10 repo hygiene gates",
@@ -976,7 +989,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1292,7 +1305,7 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
     entry.commandRefs = [...new Set(entry.commandRefs)].sort();
     if (entry.commandRefs.some((ref) => ref.startsWith("root:verify:repo") || ref.startsWith("backend:repo:check"))) {
       entry.chain = "verify:repo";
-    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01") || ref.startsWith("root:check:requeststormresilience01"))) {
+    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01") || ref.startsWith("root:check:requeststormresilience01") || ref.startsWith("root:check:productionratelimitpolicy01"))) {
       entry.chain = "product-extensions";
     } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:scriptharnessconsolidation01"))) {
       entry.chain = "product-extensions";
@@ -1481,6 +1494,9 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Request storm resilience milestone: \`REQUEST-STORM-RESILIENCE-01\``);
   out.push(`- Request storm resilience docs: \`docs/REQUEST_STORM_RESILIENCE_01.md\``);
   out.push(`- Request storm resilience command: \`node backend\\scripts\\request_storm_resilience_01_check.js\``);
+  out.push(`- Production rate limit policy milestone: \`PRODUCTION-RATE-LIMIT-POLICY-01\``);
+  out.push(`- Production rate limit policy docs: \`docs/PRODUCTION_RATE_LIMIT_POLICY_01.md\``);
+  out.push(`- Production rate limit policy command: \`node backend\\scripts\\production_rate_limit_policy_01_check.js\``);
   out.push(`- AI response semantic quality gate milestone: \`AI-RESPONSE-SEMANTIC-QUALITY-GATE-01\``);
   out.push(`- AI response semantic quality gate docs: \`docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md\``);
   out.push(`- AI response semantic quality gate command: \`node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js\``);
@@ -1981,6 +1997,11 @@ function verifyDoc(docText, summary) {
     "root:check:requeststormresilience01",
     "docs/REQUEST_STORM_RESILIENCE_01.md",
     "node backend\\scripts\\request_storm_resilience_01_check.js",
+    "PRODUCTION-RATE-LIMIT-POLICY-01",
+    "check:productionratelimitpolicy01",
+    "root:check:productionratelimitpolicy01",
+    "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
+    "node backend\\scripts\\production_rate_limit_policy_01_check.js",
     "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01",
     "check:airesponsesemanticqualitygate01",
     "root:check:airesponsesemanticqualitygate01",

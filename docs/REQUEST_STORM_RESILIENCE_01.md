@@ -153,6 +153,6 @@ Validation policy:
 
 ## 12) Next recommended milestone
 
-`AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`
+`PRODUCTION-RATE-LIMIT-POLICY-01`
 
-Bu milestone, request-storm resilience guard tamamlandıktan sonra AI yanıt semantik kalite kapısını takip eden sıradaki güvenli adımdır.
+Bu milestone, request-storm resilience guard tamamlandıktan sonra production rate-limit policy kapısını takip eden sıradaki güvenli adımdır.

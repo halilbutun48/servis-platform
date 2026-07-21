@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `395`
-- Toplam executable tracked file: `1209`
-- Combined registry row: `1604`
-- Root/backend/web/mobile package dağılımı: root `238`, backend `767`, web `95`, mobile `201`
+- Toplam package script entry: `396`
+- Toplam executable tracked file: `1210`
+- Combined registry row: `1606`
+- Root/backend/web/mobile package dağılımı: root `239`, backend `768`, web `95`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `56`
+- Docs indexed: `57`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -72,15 +72,14 @@ Repo: `servis-platform`
 - Test quality and flake audit docs: `docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md`
 - Test quality and flake audit command: `node backend\scripts\test_quality_and_flake_audit_01_check.js`
 - Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`
-- Request storm resilience alias: `check:requeststormresilience01`
-- Request storm resilience root alias: `root:check:requeststormresilience01`
 - Request storm resilience docs: `docs/REQUEST_STORM_RESILIENCE_01.md`
 - Request storm resilience command: `node backend\scripts\request_storm_resilience_01_check.js`
+- Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`
+- Production rate limit policy docs: `docs/PRODUCTION_RATE_LIMIT_POLICY_01.md`
+- Production rate limit policy command: `node backend\scripts\production_rate_limit_policy_01_check.js`
 - AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`
 - AI response semantic quality gate docs: `docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md`
 - AI response semantic quality gate command: `node backend\scripts\ai_response_semantic_quality_gate_01_check.js`
-- AI response semantic quality gate check alias: `check:airesponsesemanticqualitygate01`
-- AI response semantic quality gate root alias: `root:check:airesponsesemanticqualitygate01`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -261,7 +260,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `184`
+- ACTIVE_CORE: `187`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -277,11 +276,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `611`
+- NEEDS_REVIEW: `613`
 - Duplicate/overlap groups: `8`
-- Product coverage rows: `22`
+- Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `325`
+- Eski sistem term eşleşmesi: `326`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -291,14 +290,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 184 |
+| ACTIVE_CORE | 187 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 611 |
+| NEEDS_REVIEW | 613 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -307,7 +306,7 @@ Repo: `servis-platform`
 
 | status | count |
 | --- | --- |
-| COVERED_ACTIVE | 16 |
+| COVERED_ACTIVE | 17 |
 | COVERED_RELEASE_ONLY | 2 |
 | PARTIAL_COVERAGE | 4 |
 
@@ -524,6 +523,9 @@ Repo: `servis-platform`
 | root:check:verifychain01 | package.json | root | node backend/scripts/verify_chain_01_product_extensions_check.js | verify-core | ACTIVE_CORE |  | VERIFY-CHAIN-01 |  | Breaks canonical verification chain |  |
 | root:check:qualitygatefinal01 | package.json | root | node backend/scripts/quality_gate_final_01_check.js | core | ACTIVE_CORE |  | QUALITY-GATE-FINAL-01 |  | Breaks canonical verification chain |  |
 | root:check:testqualityandflakeaudit01 | package.json | root | node backend/scripts/test_quality_and_flake_audit_01_check.js | core | ACTIVE_CORE |  | TEST-QUALITY-AND-FLAKE-AUDIT-01 |  | Breaks canonical verification chain |  |
+| root:check:productionratelimitpolicy01 | package.json | root | node backend/scripts/production_rate_limit_policy_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-PRODUCTIONRATELIMITPOLICY-01 |  | Breaks canonical verification chain |  |
+| root:check:requeststormresilience01 | package.json | root | node backend/scripts/request_storm_resilience_01_check.js | verify-core | ACTIVE_CORE |  | REQUEST-STORM-RESILIENCE-01 |  | Breaks canonical verification chain |  |
+| root:check:airesponsesemanticqualitygate01 | package.json | root | node backend/scripts/ai_response_semantic_quality_gate_01_check.js | verify-core | ACTIVE_CORE |  | AI-RESPONSE-SEMANTIC-QUALITY-GATE-01 |  | Breaks canonical verification chain |  |
 | root:check:op01 | package.json | root | node backend/scripts/op_01_operation_proof_service_proof_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-01 |  | Breaks canonical verification chain |  |
 | root:check:op02 | package.json | root | node backend/scripts/op_02_manual_operator_proof_note_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-02 |  | Breaks canonical verification chain |  |
 | root:check:op03 | package.json | root | node backend/scripts/op_03_web_operation_proof_card_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-03 |  | Breaks canonical verification chain |  |
@@ -638,6 +640,7 @@ Repo: `servis-platform`
 | ai03b_paraphrase_intent_audit_01_check.js | backend/scripts/ai03b_paraphrase_intent_audit_01_check.js | backend | root:check:ai03bparaphraseintentaudit01 | review | NEEDS_REVIEW |  | AI-03-B-PARAPHRASE-INTENT-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ai03b_semantic_visible_audit_01_check.js | backend/scripts/ai03b_semantic_visible_audit_01_check.js | backend | root:check:ai03bsemanticvisibleaudit01 | review | NEEDS_REVIEW |  | AI-03-B-SEMANTIC-VISIBLE-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ai03b_semantic_visible_live_matrix_01_check.js | backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | backend | root:check:ai03bsemanticvisiblelivematrix01 | review | NEEDS_REVIEW |  | AI-03-B-SEMANTIC-VISIBLE-LIVE-MATRIX-01-CHECK |  | Owner or chain unclear |  |
+| ai_response_semantic_quality_gate_01_check.js | backend/scripts/ai_response_semantic_quality_gate_01_check.js | backend | root:check:airesponsesemanticqualitygate01 | review | NEEDS_REVIEW |  | AI-RESPONSE-SEMANTIC-QUALITY-GATE-01-CHECK |  | Owner or chain unclear |  |
 | audit_logs_session_hotfix_check.mjs | backend/scripts/audit_logs_session_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | AUDIT-LOGS-SESSION-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_dev_toggle_01_check.js | backend/scripts/auth_stepup_dev_toggle_01_check.js | backend | root:check:authstepupdevtoggle01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-DEV-TOGGLE-01-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_provider_local_default_01_check.js | backend/scripts/auth_stepup_provider_local_default_01_check.js | backend | root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01-CHECK |  | Owner or chain unclear |  |
@@ -954,6 +957,7 @@ Repo: `servis-platform`
 | repo_audit.js | backend/scripts/repo_audit.js | backend | root:audit:repo | verify:repo | ACTIVE_CORE |  | REPO-AUDIT |  | Owner or chain unclear | canonical runner |
 | repo_deep_audit.js | backend/scripts/repo_deep_audit.js | backend |  | review | NEEDS_REVIEW |  | REPO-DEEP-AUDIT |  | Owner or chain unclear |  |
 | repo_js_syntax_scan.js | backend/scripts/repo_js_syntax_scan.js | backend |  | review | NEEDS_REVIEW |  | REPO-JS-SYNTAX-SCAN |  | Owner or chain unclear |  |
+| request_storm_resilience_01_check.js | backend/scripts/request_storm_resilience_01_check.js | backend | root:check:requeststormresilience01 | product-extensions | NEEDS_REVIEW |  | REQUEST-STORM-RESILIENCE-01-CHECK |  | Owner or chain unclear |  |
 | roadmap_lock_ai_marketplace_01_check.js | backend/scripts/roadmap_lock_ai_marketplace_01_check.js | backend | root:check:roadmaplockaimarketplace01 | review | NEEDS_REVIEW |  | ROADMAP-LOCK-AI-MARKETPLACE-01-CHECK |  | Owner or chain unclear |  |
 | room_vehicle_driver_uppercase_normalization_01_check.js | backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js | backend | root:check:roomvehicledriveruppercase01 | review | NEEDS_REVIEW |  | ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01-CHECK |  | Owner or chain unclear |  |
 | route_change_final_01_check.js | backend/scripts/route_change_final_01_check.js | backend | root:check:routechangefinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
@@ -982,6 +986,7 @@ Repo: `servis-platform`
 | superadmin_menu_copilot_sadelestirme_check.js | backend/scripts/superadmin_menu_copilot_sadelestirme_check.js | backend |  | review | NEEDS_REVIEW |  | SUPERADMIN-MENU-COPILOT-SADELESTIRME-CHECK |  | Owner or chain unclear |  |
 | superadmin_menu_turkce_hotfix_check.js | backend/scripts/superadmin_menu_turkce_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | SUPERADMIN-MENU-TURKCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | telematics_provider_hub_01_check.js | backend/scripts/telematics_provider_hub_01_check.js | backend | root:check:telematicsproviderhub01 | review | NEEDS_REVIEW |  | TELEMATICS-PROVIDER-HUB-01-CHECK |  | Owner or chain unclear |  |
+| test_quality_and_flake_audit_01_check.js | backend/scripts/test_quality_and_flake_audit_01_check.js | backend | root:check:testqualityandflakeaudit01 | review | NEEDS_REVIEW |  | TEST-QUALITY-AND-FLAKE-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ui_action_wiring_audit_01_check.js | backend/scripts/ui_action_wiring_audit_01_check.js | backend | root:check:uiactionwiringaudit01 | review | NEEDS_REVIEW |  | UI-ACTION-WIRING-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ui_route_resilience_hotfix_check.js | backend/scripts/ui_route_resilience_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | UI-ROUTE-RESILIENCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | username_first_login_hotfix_check.js | backend/scripts/username_first_login_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | USERNAME-FIRST-LOGIN-HOTFIX-CHECK |  | Owner or chain unclear |  |
@@ -1211,7 +1216,7 @@ Repo: `servis-platform`
 | agreementRouteRefreshRouter.js | backend/src/routes/agreementRouteRefreshRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-ROUTE-REFRESH-ROUTER |  | Owner or chain unclear |  |
 | agreements.js | backend/src/routes/agreements.js | backend | root:check:cop04afix03, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | AGREEMENTS |  | Owner or chain unclear |  |
 | agreementsHelpers.js | backend/src/routes/agreementsHelpers.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENTS-HELPERS |  | Owner or chain unclear |  |
-| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03b, root:check:copilotairoadmap01, root:check:hotfilesplitaichatcomposers01, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
+| ai.js | backend/src/routes/ai.js | backend | backend:repo:check, backend:repo:check:chain, mobile:check:m81.2b, mobile:check:m96a, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:ai03bsemanticvisiblelivematrix01, root:check:airesponsesemanticqualitygate01, root:check:cop03b, root:check:copilotairoadmap01, root:check:hotfilesplitaichatcomposers01, root:check:m99kvkk01, root:check:pay01c, root:check:product-extensions, root:check:roadmaplockaimarketplace01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:verifychain01, root:verify:closure, root:verify:docs, root:verify:hot, root:verify:repo, root:verify:web-contract | verify:repo | NEEDS_REVIEW |  | AI |  | Owner or chain unclear |  |
 | auth.js | backend/src/routes/auth.js | backend | root:check:authstepupdevtoggle01, root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH |  | Owner or chain unclear |  |
 | auth_step2.js | backend/src/routes/auth_step2.js | backend |  | review | NEEDS_REVIEW |  | AUTH-STEP-2 |  | Owner or chain unclear |  |
 | availability.js | backend/src/routes/availability.js | backend | mobile:check:m96a | review | NEEDS_REVIEW |  | AVAILABILITY |  | Owner or chain unclear |  |
@@ -1321,7 +1326,6 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| test_quality_and_flake_audit_01_check.js | backend/scripts/test_quality_and_flake_audit_01_check.js | backend | root:check:testqualityandflakeaudit01 | review | NEEDS_REVIEW |  | TEST-QUALITY-AND-FLAKE-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1806,8 +1810,8 @@ Repo: `servis-platform`
 | check_m71_workflow_loadsummary_hotfix_repo_contract.ps1 | tools/checks/living/hotfixes/check_m71_workflow_loadsummary_hotfix_repo_contract.ps1 | tools |  | release | ACTIVE_RELEASE_ONLY |  | CHECK-M-71-WORKFLOW-LOADSUMMARY-HOTFIX-REPO-CONTRACT |  | Owner or chain unclear | canonical living hotfix |
 | check_m72_georeview_token_hotfix_repo_contract.ps1 | tools/checks/living/hotfixes/check_m72_georeview_token_hotfix_repo_contract.ps1 | tools |  | release | ACTIVE_RELEASE_ONLY |  | CHECK-M-72-GEOREVIEW-TOKEN-HOTFIX-REPO-CONTRACT |  | Owner or chain unclear | canonical living hotfix |
 | export_shareable_repo_bundle.ps1 | tools/export_shareable_repo_bundle.ps1 | tools |  | review | NEEDS_REVIEW |  | EXPORT-SHAREABLE-REPO-BUNDLE |  | Owner or chain unclear |  |
-| gate.cmd | tools/gate.cmd | tools | backend:m90b1check, mobile:check:m9, root:check:paysafe01, root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
-| gate.ps1 | tools/gate.ps1 | tools | backend:m90b1check, mobile:check:m9, root:check:paysafe01, root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
+| gate.cmd | tools/gate.cmd | tools | backend:m90b1check, mobile:check:m9, root:check:airesponsesemanticqualitygate01, root:check:paysafe01, root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
+| gate.ps1 | tools/gate.ps1 | tools | backend:m90b1check, mobile:check:m9, root:check:airesponsesemanticqualitygate01, root:check:paysafe01, root:check:qualitygatefinal01 | review | NEEDS_REVIEW |  | GATE |  | Owner or chain unclear |  |
 | pack.cmd | tools/pack.cmd | tools | backend:m83check, backend:m90c7check, mobile:check:m10, mobile:check:m99a, root:check:fieldlaunch01 | review | NEEDS_REVIEW |  | PACK |  | Owner or chain unclear |  |
 | pack.ps1 | tools/pack.ps1 | tools | backend:m83check, backend:m90c7check, mobile:check:m10, mobile:check:m99a, root:check:fieldlaunch01 | review | NEEDS_REVIEW |  | PACK |  | Owner or chain unclear |  |
 | pack_docs_ssot.ps1 | tools/pack_docs_ssot.ps1 | tools |  | manual | MANUAL_RELEASE_TOOL |  | PACK-DOCS-SSOT |  | Loses operator release tool | release tool |
@@ -1974,6 +1978,7 @@ Repo: `servis-platform`
 | Telematics / Provider Hub | Super Admin GPS readiness / Room vehicle mapping | docs/TELEMATICS_PROVIDER_HUB_01.md; backend/scripts/telematics_provider_hub_01_check.js | web/src/panels/superadmin/SuperAdminPanel.jsx; web/src/panels/room/roomVehiclesPanelSections.jsx | check:telematicsproviderhub01; check:m44telematicst1t5; check:uxroomvehiclestelematicsfix | static | COVERED_ACTIVE | None on the current static/product chain. | TELEMATICS-PROVIDER-HUB-01 | None |
 | Telematics / Safe Drive | Driver live map and telematics surfaces | docs/SAFE_DRIVE_01.md; backend/scripts/safe_drive_01_check.js; ETA / OSRM helpers | web/src/utils/safeDriveSummary.js; web/src/panels/shared/SafeDriveSummaryCard.jsx; web/src/panels/driver/RoutePanel.jsx; web/src/panels/driver/MapPanel.jsx; web/src/panels/company/MapPanel.jsx; web/src/panels/room/MapPanel.jsx | check:safedrive01; check:telematicsproviderhub01; check:m44telematicst1t5; check:etaosrm01; check:etaosrm02; check:etasanity01 | static | COVERED_ACTIVE | None on the current static/product chain. | SAFE-DRIVE-01 | None |
 | Offer Ranking Quality / Readonly Comparison | Company / room / super admin offer comparison surfaces | docs/OFFER_RANKING_QUALITY_01.md; backend/scripts/offer_ranking_quality_01_check.js | web/src/utils/offerQualityRanking.js; web/src/panels/shared/OfferQualityRankingCard.jsx; web/src/panels/company/WorkflowPanel.jsx; web/src/panels/company/companyShiftsPanelSections.jsx; web/src/panels/room/OffersPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx | check:offerrankingquality01 | static | COVERED_ACTIVE | Readonly comparison only; auto-select and auto-accept stay blocked. | OFFER-RANKING-QUALITY-01 | None |
+| Production Rate Limit Policy | Auth / public / read-heavy / write-action / AI assistant rate-limit policy | backend/src/bootstrap/rateLimits.js; backend/src/env.js; backend/src/errors/http.js | backend rate-limit policy, 429 response copy, smoke/request-storm guard | check:requeststormresilience01; check:productionratelimitpolicy01; check:airesponsesemanticqualitygate01; check:testqualityandflakeaudit01 | static + policy | COVERED_ACTIVE | None on the current static/product chain; runtime enforcement already exists and stays unchanged. | PRODUCTION-RATE-LIMIT-POLICY-01 | None |
 | Performance / Reliability | Repo audit / hot file hygiene | backend/scripts/repo_audit.js; m90c6-m90c10 repo hygiene gates | none | check:product-extensions; check:verifychain01; check:finaluxsmoke01; verify:final; m90_c6/m90_c7/m90_c8/m90_c9/m90_c10 chain | release-only | COVERED_RELEASE_ONLY | These are intentionally release gates, not commit-time smoke. | M90C / verify:final | None |
 | Brand / Docs / Release | Docs, pack/export, closure tooling | tools/pack.ps1; tools/export_shareable_repo_bundle.ps1; docs-state and closure helpers | README.md; docs/*.md; tools/README.md; tools/wrappers/README.md | check:brand; check:docsstate01; check:m99ux01; check:m99kvkk01; check:finaluxsmoke01; verify:final; verify:snapshot | release-only + manual-release | COVERED_RELEASE_ONLY | No safe evidence-free pack/export path is intended. | M90/M99/FINAL | None |
 

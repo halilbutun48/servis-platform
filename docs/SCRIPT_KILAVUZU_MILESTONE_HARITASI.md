@@ -546,6 +546,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - product-flow, premium, all-panels ve mobile all-roles smoke PASS `18 / 82 / 82 / 82` kalır.
 - Browser-smoke, runtime-data, stage ve backend route/service/schema / Prisma sınırları değişmez.
 
+### PRODUCTION-RATE-LIMIT-POLICY-01 [CHECK]
+- `check:productionratelimitpolicy01` production ortamında auth/public, read-heavy/live, write-action/human approval ve AI assistant read-only rate-limit sınıflarını merkezi policy/check/doc olarak kilitler.
+- Check script: `node backend\scripts\production_rate_limit_policy_01_check.js`
+- Final doc: `docs/PRODUCTION_RATE_LIMIT_POLICY_01.md`
+- Runtime enforcement açmaz; backend route/service/prisma değiştirmez; smoke threshold / skip / timing / PASS kriterini gevşetmez; 429 ignore list açmaz.
+- Request-storm ve smoke deneyimi korunur; 429 görünür kalır ve Türkçe user-facing mesaj korunur.
+
 ### TEST-QUALITY-AND-FLAKE-AUDIT-01 [CHECK]
 - `check:testqualityandflakeaudit01` smoke/check zincirindeki flake risklerini, false negative sıcak noktalarını ve threshold / skip / timing / PASS gevşetme riskini audit eder.
 - Check script: `node backend\scripts\test_quality_and_flake_audit_01_check.js`

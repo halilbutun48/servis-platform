@@ -176,6 +176,7 @@ function main() {
   must(runner, 'check:copilotplanreviewengine01', 'product extensions chain includes check:copilotplanreviewengine01');
   must(runner, 'check:testqualityandflakeaudit01', 'product extensions chain includes check:testqualityandflakeaudit01');
   must(runner, 'check:requeststormresilience01', 'product extensions chain includes check:requeststormresilience01');
+  must(runner, 'check:productionratelimitpolicy01', 'product extensions chain includes check:productionratelimitpolicy01');
   must(runner, 'check:airesponsesemanticqualitygate01', 'product extensions chain includes check:airesponsesemanticqualitygate01');
   must(runner, 'check:seferabiturkishterminology01', 'product extensions chain includes check:seferabiturkishterminology01');
   must(runner, 'check:seferabiturkishuserfacinglanguage01', 'product extensions chain includes check:seferabiturkishuserfacinglanguage01');
@@ -262,6 +263,7 @@ function main() {
   must(pkg, '"check:qualitygatefinal01": "node backend/scripts/quality_gate_final_01_check.js"', 'package.json exposes check:qualitygatefinal01');
   must(pkg, '"check:testqualityandflakeaudit01": "node backend/scripts/test_quality_and_flake_audit_01_check.js"', 'package.json exposes check:testqualityandflakeaudit01');
   must(pkg, '"check:requeststormresilience01": "node backend/scripts/request_storm_resilience_01_check.js"', 'package.json exposes check:requeststormresilience01');
+  must(pkg, '"check:productionratelimitpolicy01": "node backend/scripts/production_rate_limit_policy_01_check.js"', 'package.json exposes check:productionratelimitpolicy01');
   must(pkg, '"check:airesponsesemanticqualitygate01": "node backend/scripts/ai_response_semantic_quality_gate_01_check.js"', 'package.json exposes check:airesponsesemanticqualitygate01');
   must(companyAgreementsPanel, 'CompanyAgreementsMobileCards', 'company agreements panel wires mobile cards');
   must(companyAgreementsPanel, 'desktopShiftTable companyAgreementsDesktopList', 'company agreements panel keeps desktop table wrapper');
@@ -441,6 +443,8 @@ function main() {
     'check:driverflowfinal01',
     'check:qualitygatefinal01',
     'check:testqualityandflakeaudit01',
+    'check:requeststormresilience01',
+    'check:productionratelimitpolicy01',
     'check:airesponsesemanticqualitygate01',
 ], 'product extensions runner order');
 
@@ -835,11 +839,15 @@ function main() {
   must(primer, 'check:requeststormresilience01', 'primer exposes request storm resilience check');
   must(primer, 'docs/REQUEST_STORM_RESILIENCE_01.md', 'primer links request storm resilience doc');
   must(primer, 'backend/scripts/request_storm_resilience_01_check.js', 'primer links request storm resilience command');
+  must(primer, 'PRODUCTION-RATE-LIMIT-POLICY-01', 'primer mentions production rate limit policy milestone');
+  must(primer, 'check:productionratelimitpolicy01', 'primer exposes production rate limit policy check');
+  must(primer, 'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md', 'primer links production rate limit policy doc');
+  must(primer, 'backend/scripts/production_rate_limit_policy_01_check.js', 'primer links production rate limit policy command');
   must(primer, 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'primer mentions AI response semantic quality gate milestone');
   must(primer, 'check:airesponsesemanticqualitygate01', 'primer exposes AI response semantic quality gate check');
   must(primer, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'primer links AI response semantic quality gate doc');
   must(primer, 'backend/scripts/ai_response_semantic_quality_gate_01_check.js', 'primer links AI response semantic quality gate command');
-  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'REQUEST-STORM-RESILIENCE-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps request storm resilience after test quality and before terminology audit');
+  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps request storm resilience, production rate limit policy and AI response semantic quality gate in order');
   ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'HOT-FILE-SPLIT-WEB-PANELS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps next best action between operation health and hot file split');
   must(primer, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'primer mentions reasoning answer composer milestone');
   must(primer, 'check:copilotreasoninganswercomposer01', 'primer exposes reasoning answer composer check');
@@ -1145,6 +1153,11 @@ function main() {
   must(harnessCheck, 'root:check:requeststormresilience01', 'script harness check knows request storm resilience root check');
   must(harnessCheck, 'docs/REQUEST_STORM_RESILIENCE_01.md', 'script harness check knows request storm resilience doc');
   must(harnessCheck, 'backend/scripts/request_storm_resilience_01_check.js', 'script harness check knows request storm resilience command');
+  must(harnessCheck, 'PRODUCTION-RATE-LIMIT-POLICY-01', 'script harness check knows production rate limit policy milestone');
+  must(harnessCheck, 'check:productionratelimitpolicy01', 'script harness check knows production rate limit policy alias');
+  must(harnessCheck, 'root:check:productionratelimitpolicy01', 'script harness check knows production rate limit policy root check');
+  must(harnessCheck, 'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md', 'script harness check knows production rate limit policy doc');
+  must(harnessCheck, 'backend/scripts/production_rate_limit_policy_01_check.js', 'script harness check knows production rate limit policy command');
   must(harnessCheck, 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'script harness check knows AI response semantic quality gate milestone');
   must(harnessCheck, 'check:airesponsesemanticqualitygate01', 'script harness check knows AI response semantic quality gate alias');
   must(harnessCheck, 'root:check:airesponsesemanticqualitygate01', 'script harness check knows AI response semantic quality gate root check');
@@ -1198,11 +1211,16 @@ function main() {
   must(harnessDoc, 'root:check:requeststormresilience01', 'script harness doc lists request storm resilience root alias');
   must(harnessDoc, 'docs/REQUEST_STORM_RESILIENCE_01.md', 'script harness doc lists request storm resilience doc');
   must(harnessDoc, 'node backend\\scripts\\request_storm_resilience_01_check.js', 'script harness doc lists request storm resilience command');
+  must(harnessDoc, 'PRODUCTION-RATE-LIMIT-POLICY-01', 'script harness doc lists production rate limit policy milestone');
+  must(harnessDoc, 'check:productionratelimitpolicy01', 'script harness doc lists production rate limit policy alias');
+  must(harnessDoc, 'root:check:productionratelimitpolicy01', 'script harness doc lists production rate limit policy root alias');
+  must(harnessDoc, 'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md', 'script harness doc lists production rate limit policy doc');
+  must(harnessDoc, 'node backend\\scripts\\production_rate_limit_policy_01_check.js', 'script harness doc lists production rate limit policy command');
   must(harnessDoc, 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'script harness doc lists AI response semantic quality gate milestone');
   must(harnessDoc, 'check:airesponsesemanticqualitygate01', 'script harness doc lists AI response semantic quality gate alias');
   must(harnessDoc, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script harness doc lists AI response semantic quality gate doc');
   must(harnessDoc, 'node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js', 'script harness doc lists AI response semantic quality gate command');
-  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps request storm resilience after test quality and before AI response semantic quality gate');
+  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps request storm resilience, production rate limit policy and AI response semantic quality gate in order');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
@@ -1305,11 +1323,15 @@ function main() {
   must(guide, 'check:requeststormresilience01', 'script guide exposes request storm resilience check');
   must(guide, 'node backend\\scripts\\request_storm_resilience_01_check.js', 'script guide includes request storm resilience command');
   must(guide, 'docs/REQUEST_STORM_RESILIENCE_01.md', 'script guide includes request storm resilience doc');
+  must(guide, 'PRODUCTION-RATE-LIMIT-POLICY-01', 'script guide mentions production rate limit policy milestone');
+  must(guide, 'check:productionratelimitpolicy01', 'script guide exposes production rate limit policy check');
+  must(guide, 'node backend\\scripts\\production_rate_limit_policy_01_check.js', 'script guide includes production rate limit policy command');
+  must(guide, 'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md', 'script guide includes production rate limit policy doc');
   must(guide, 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'script guide mentions AI response semantic quality gate milestone');
   must(guide, 'check:airesponsesemanticqualitygate01', 'script guide exposes AI response semantic quality gate check');
   must(guide, 'node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js', 'script guide includes AI response semantic quality gate command');
   must(guide, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script guide includes AI response semantic quality gate doc');
-  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'REQUEST-STORM-RESILIENCE-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps request storm resilience after test quality and before parent/personel live error clarity');
+  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps request storm resilience, production rate limit policy and AI response semantic quality gate in order');
   must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
   must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');
   must(guide, 'node backend\\scripts\\ux_parent_personel_live_error_clarity_01_check.js', 'script guide includes parent/personel live error clarity command');
