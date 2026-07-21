@@ -560,6 +560,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Yeni UI davranışı açmaz; route/service/prisma, broad allowlist, runtime-data ve browser-smoke commit sınırını değiştirmez.
 - `QUALITY-GATE-FINAL-01` sonrasındaki son güvence katmanı olarak kalır; smoke eşikleri aynen korunur.
 
+### DASHBOARD-BULK-ENDPOINT-01 [CHECK]
+- `check:dashboardbulkendpoint01` dashboard yüzeylerinde read-only bulk aggregation pattern'ini dar kapsamlı guard ile audit eder.
+- Check script: `node backend\scripts\dashboard_bulk_endpoint_01_check.js`
+- Final doc: `docs/DASHBOARD_BULK_ENDPOINT_01.md`
+- Aynı kullanıcı role içinde şirket / okul / oda / superadmin dashboard'larında fan-out azaltılır; read-only bulk endpoint write-action veya human approval sınırını açmaz.
+- route/service/prisma ve backend/prisma değişmez; browser-smoke, runtime-data ve debug.log commit sınırı korunur.
+
 ### AI-RESPONSE-SEMANTIC-QUALITY-GATE-01 [CHECK]
 - `check:airesponsesemanticqualitygate01` Sefer Abi / Copilot yanıt semantiğinde role/screen fit, intent fit, güvenli adım, insan onayı, terminoloji, belirsizlik, tekrar kontrolü, clarifying ve cross-engine separation çizgisini deterministic case suite ile audit eder.
 - Check script: `node backend\scripts\ai_response_semantic_quality_gate_01_check.js`

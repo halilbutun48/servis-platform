@@ -148,6 +148,7 @@ Validation policy:
 
 - future route or smoke refactors can reintroduce duplicate request flood if sharedStorageState reuse is removed
 - 429 regressions can return if mobile context bootstrap is split again
+- `DASHBOARD-BULK-ENDPOINT-01` read-only bulk aggregation desteği devre dışı kalırsa dashboard fan-out tekrar büyüyebilir
 - browser-smoke artifacts must stay out of the commit set
 - stage empty policy must be preserved before commit
 

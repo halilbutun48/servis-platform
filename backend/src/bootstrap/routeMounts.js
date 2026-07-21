@@ -28,6 +28,7 @@ export function mountCoreRoutes(app, routes, io) {
     naturalCopilotRouter,
     pilotLaunchGateRouter,
     operationVerificationRouter,
+    dashboardBulkRouter,
     operationProofRouter,
     parentRouter,
     schoolParentInvitesRouter,
@@ -79,6 +80,7 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/plan-builder", planBuilderRouter());
   app.use("/api/live", liveRouter());
   app.use("/api/observability", observabilityRouter());
+  app.use("/api/dashboard", dashboardBulkRouter());
   app.use("/api/field-acceptance", fieldAcceptanceRouter());
   app.use("/api/ssot-alignment", ssotAlignmentRouter());
   app.use("/api/commercial-core", commercialCoreRouter());

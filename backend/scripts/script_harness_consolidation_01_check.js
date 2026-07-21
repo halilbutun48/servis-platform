@@ -32,6 +32,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
   "backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js",
   "backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js",
+  "backend/scripts/dashboard_bulk_endpoint_01_check.js",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
@@ -39,6 +40,7 @@ const workingTreeCompatFiles = [
   "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
   "docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md",
   "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
+  "docs/DASHBOARD_BULK_ENDPOINT_01.md",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
   "backend/scripts/invite_based_membership_01_check.js",
@@ -204,6 +206,7 @@ const selectedDocs = [
   "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
   "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
   "docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md",
+  "docs/DASHBOARD_BULK_ENDPOINT_01.md",
   "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
   "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
   "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
@@ -329,6 +332,7 @@ function slugToMilestone(slug) {
     [/uxlivepanelpremium0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
     [/qualitygatefinal0?1/i, "QUALITY-GATE-FINAL-01"],
     [/testqualityandflakeaudit0?1/i, "TEST-QUALITY-AND-FLAKE-AUDIT-01"], // check:testqualityandflakeaudit01
+    [/dashboardbulkendpoint0?1/i, "DASHBOARD-BULK-ENDPOINT-01"], // check:dashboardbulkendpoint01
     [/requeststormresilience0?1/i, "REQUEST-STORM-RESILIENCE-01"], // check:requeststormresilience01
     [/airesponsesemanticqualitygate0?1/i, "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01"], // check:airesponsesemanticqualitygate01
     [/uxsmokepassminusevidence0?1/i, "UX-SMOKE-PASS-MINUS-EVIDENCE-01"],
@@ -381,7 +385,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1491,6 +1495,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Test quality and flake audit milestone: \`TEST-QUALITY-AND-FLAKE-AUDIT-01\``);
   out.push(`- Test quality and flake audit docs: \`docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md\``);
   out.push(`- Test quality and flake audit command: \`node backend\\scripts\\test_quality_and_flake_audit_01_check.js\``);
+  out.push(`- Dashboard bulk endpoint milestone: \`DASHBOARD-BULK-ENDPOINT-01\``);
+  out.push(`- Dashboard bulk endpoint alias: \`check:dashboardbulkendpoint01\``);
+  out.push(`- Dashboard bulk endpoint docs: \`docs/DASHBOARD_BULK_ENDPOINT_01.md\``);
+  out.push(`- Dashboard bulk endpoint command: \`node backend\\scripts\\dashboard_bulk_endpoint_01_check.js\``);
   out.push(`- Request storm resilience milestone: \`REQUEST-STORM-RESILIENCE-01\``);
   out.push(`- Request storm resilience docs: \`docs/REQUEST_STORM_RESILIENCE_01.md\``);
   out.push(`- Request storm resilience command: \`node backend\\scripts\\request_storm_resilience_01_check.js\``);

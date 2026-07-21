@@ -7,6 +7,7 @@ import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import PanelChrome from "../../components/PanelChrome";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import BoardingRouteImpactPreviewCard from "../shared/BoardingRouteImpactPreviewCard";
+import { loadSchoolOperationsBundle } from "../../utils/dashboardBulk";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { resolvePersonDisplayLabel } from "../../utils/labels";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
@@ -96,6 +97,14 @@ export default function SchoolOperationsPanel() {
     setBusy(true);
     setErr("");
     try {
+      const bulk = await loadSchoolOperationsBundle({ token });
+      if (bulk) {
+        setStudents(Array.isArray(bulk.students) ? bulk.students : []);
+        setInvites(Array.isArray(bulk.invites) ? bulk.invites : []);
+        setRequests(Array.isArray(bulk.requests) ? bulk.requests : []);
+        setNotifications(Array.isArray(bulk.notifications) ? bulk.notifications : []);
+        return;
+      }
       const [studentsResp, invitesResp, requestsResp, notificationsResp] = await Promise.all([
         api("/api/company/personels?kind=STUDENT&take=120", { token }),
         api("/api/school/parent-invites?take=120", { token }),

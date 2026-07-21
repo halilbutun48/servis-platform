@@ -1,16 +1,16 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-07-20
+Tarih: 2026-07-21
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `396`
-- Toplam executable tracked file: `1210`
-- Combined registry row: `1606`
-- Root/backend/web/mobile package dağılımı: root `239`, backend `768`, web `95`, mobile `201`
+- Toplam package script entry: `397`
+- Toplam executable tracked file: `1215`
+- Combined registry row: `1612`
+- Root/backend/web/mobile package dağılımı: root `240`, backend `772`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `57`
+- Docs indexed: `58`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -71,6 +71,10 @@ Repo: `servis-platform`
 - Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`
 - Test quality and flake audit docs: `docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md`
 - Test quality and flake audit command: `node backend\scripts\test_quality_and_flake_audit_01_check.js`
+- Dashboard bulk endpoint milestone: `DASHBOARD-BULK-ENDPOINT-01`
+- Dashboard bulk endpoint alias: `check:dashboardbulkendpoint01`
+- Dashboard bulk endpoint docs: `docs/DASHBOARD_BULK_ENDPOINT_01.md`
+- Dashboard bulk endpoint command: `node backend\scripts\dashboard_bulk_endpoint_01_check.js`
 - Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`
 - Request storm resilience docs: `docs/REQUEST_STORM_RESILIENCE_01.md`
 - Request storm resilience command: `node backend\scripts\request_storm_resilience_01_check.js`
@@ -260,7 +264,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `187`
+- ACTIVE_CORE: `188`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -276,11 +280,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `613`
+- NEEDS_REVIEW: `618`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `326`
+- Eski sistem term eşleşmesi: `328`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -290,14 +294,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 187 |
+| ACTIVE_CORE | 188 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 613 |
+| NEEDS_REVIEW | 618 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -523,6 +527,7 @@ Repo: `servis-platform`
 | root:check:verifychain01 | package.json | root | node backend/scripts/verify_chain_01_product_extensions_check.js | verify-core | ACTIVE_CORE |  | VERIFY-CHAIN-01 |  | Breaks canonical verification chain |  |
 | root:check:qualitygatefinal01 | package.json | root | node backend/scripts/quality_gate_final_01_check.js | core | ACTIVE_CORE |  | QUALITY-GATE-FINAL-01 |  | Breaks canonical verification chain |  |
 | root:check:testqualityandflakeaudit01 | package.json | root | node backend/scripts/test_quality_and_flake_audit_01_check.js | core | ACTIVE_CORE |  | TEST-QUALITY-AND-FLAKE-AUDIT-01 |  | Breaks canonical verification chain |  |
+| root:check:dashboardbulkendpoint01 | package.json | root | node backend/scripts/dashboard_bulk_endpoint_01_check.js | core | ACTIVE_CORE |  | DASHBOARD-BULK-ENDPOINT-01 |  | Breaks canonical verification chain |  |
 | root:check:productionratelimitpolicy01 | package.json | root | node backend/scripts/production_rate_limit_policy_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-PRODUCTIONRATELIMITPOLICY-01 |  | Breaks canonical verification chain |  |
 | root:check:requeststormresilience01 | package.json | root | node backend/scripts/request_storm_resilience_01_check.js | verify-core | ACTIVE_CORE |  | REQUEST-STORM-RESILIENCE-01 |  | Breaks canonical verification chain |  |
 | root:check:airesponsesemanticqualitygate01 | package.json | root | node backend/scripts/ai_response_semantic_quality_gate_01_check.js | verify-core | ACTIVE_CORE |  | AI-RESPONSE-SEMANTIC-QUALITY-GATE-01 |  | Breaks canonical verification chain |  |
@@ -706,6 +711,7 @@ Repo: `servis-platform`
 | copilot_smart_diagnostic_engine_01_check.js | backend/scripts/copilot_smart_diagnostic_engine_01_check.js | backend | root:check:copilotsmartdiagnosticengine01 | review | NEEDS_REVIEW |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_stop_route_draft_01_check.js | backend/scripts/copilot_stop_route_draft_01_check.js | backend | root:check:copilotstoproutedraft01 | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-01-CHECK |  | Owner or chain unclear |  |
 | copilot_workflow_reasoning_engine_01_check.js | backend/scripts/copilot_workflow_reasoning_engine_01_check.js | backend | root:check:copilotworkflowreasoningengine01 | review | NEEDS_REVIEW |  | COPILOT-WORKFLOW-REASONING-ENGINE-01-CHECK |  | Owner or chain unclear |  |
+| dashboard_bulk_endpoint_01_check.js | backend/scripts/dashboard_bulk_endpoint_01_check.js | backend | root:check:dashboardbulkendpoint01 | review | NEEDS_REVIEW |  | DASHBOARD-BULK-ENDPOINT-01-CHECK |  | Owner or chain unclear |  |
 | docs_ssot_brand_artifact_cleanup_01_check.js | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | backend | root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01-CHECK |  | Owner or chain unclear |  |
 | docs_ssot_pack_check.js | backend/scripts/docs_ssot_pack_check.js | backend |  | verify:repo | ACTIVE_CORE |  | DOCS-SSOT-PACK-CHECK |  | Owner or chain unclear | canonical runner |
 | docs_state_01_recent_product_closure_check.js | backend/scripts/docs_state_01_recent_product_closure_check.js | backend | root:check:docsstate01 | verify:repo | ACTIVE_CORE |  | DOCS-STATE-01-RECENT-PRODUCT-CLOSURE-CHECK |  | Owner or chain unclear | canonical runner |
@@ -941,6 +947,7 @@ Repo: `servis-platform`
 | plan_center_guided_flow_persistence_01_check.js | backend/scripts/plan_center_guided_flow_persistence_01_check.js | backend | root:check:plancenterguidedflowpersistence01 | review | NEEDS_REVIEW |  | PLAN-CENTER-GUIDED-FLOW-PERSISTENCE-01-CHECK |  | Owner or chain unclear |  |
 | product_flow_button_audit_01.mjs | backend/scripts/product_flow_button_audit_01.mjs | backend | root:check:productflowbuttonaudit01, root:smoke:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Owner or chain unclear |  |
 | product_flow_button_audit_01_check.js | backend/scripts/product_flow_button_audit_01_check.js | backend | root:check:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01-CHECK |  | Owner or chain unclear |  |
+| production_rate_limit_policy_01_check.js | backend/scripts/production_rate_limit_policy_01_check.js | backend | root:check:productionratelimitpolicy01 | product-extensions | NEEDS_REVIEW |  | PRODUCTION-RATE-LIMIT-POLICY-01-CHECK |  | Owner or chain unclear |  |
 | project_spec_v1_future_strengthening_coverage_check.js | backend/scripts/project_spec_v1_future_strengthening_coverage_check.js | backend | backend:spec16check | review | NEEDS_REVIEW |  | PROJECT-SPEC-V-1-FUTURE-STRENGTHENING-COVERAGE-CHECK |  | Owner or chain unclear |  |
 | public_landing_01_check.js | backend/scripts/public_landing_01_check.js | backend | root:check:publiclanding01 | review | NEEDS_REVIEW |  | PUBLIC-LANDING-01-CHECK |  | Owner or chain unclear |  |
 | public_landing_final_promise_01_check.js | backend/scripts/public_landing_final_promise_01_check.js | backend | root:check:publiclandingfinalpromise01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
@@ -1227,6 +1234,7 @@ Repo: `servis-platform`
 | companyHub.js | backend/src/routes/companyHub.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-HUB |  | Owner or chain unclear |  |
 | companyOverview.js | backend/src/routes/companyOverview.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-OVERVIEW |  | Owner or chain unclear |  |
 | companyPersonels.js | backend/src/routes/companyPersonels.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-PERSONELS |  | Owner or chain unclear |  |
+| dashboardBulk.js | backend/src/routes/dashboardBulk.js | backend |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | drivers.js | backend/src/routes/drivers.js | backend |  | review | NEEDS_REVIEW |  | DRIVERS |  | Owner or chain unclear |  |
 | eta.js | backend/src/routes/eta.js | backend | mobile:check:m49, mobile:check:m49.1, mobile:check:m95b, root:check:etaosrm01, root:check:etaosrm02, root:check:etasanity01, root:check:pay01c, root:check:uxpremiumcriticalfixagreementsdetail01 | review | NEEDS_REVIEW |  | ETA |  | Owner or chain unclear |  |
@@ -1296,6 +1304,7 @@ Repo: `servis-platform`
 | clusterStops.js | backend/src/services/clusterStops.js | backend |  | review | NEEDS_REVIEW |  | CLUSTER-STOPS |  | Owner or chain unclear |  |
 | companyShiftMutationTail.js | backend/src/services/companyShiftMutationTail.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-SHIFT-MUTATION-TAIL |  | Owner or chain unclear |  |
 | companyShiftValidation.js | backend/src/services/companyShiftValidation.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-SHIFT-VALIDATION |  | Owner or chain unclear |  |
+| dashboardBulk.js | backend/src/services/dashboardBulk.js | backend |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK |  | Owner or chain unclear |  |
 | dispatchRepack.js | backend/src/services/dispatchRepack.js | backend |  | review | NEEDS_REVIEW |  | DISPATCH-REPACK |  | Owner or chain unclear |  |
 | geoState.js | backend/src/services/geoState.js | backend |  | review | NEEDS_REVIEW |  | GEO-STATE |  | Owner or chain unclear |  |
 | osrmMatch.js | backend/src/services/osrmMatch.js | backend |  | review | NEEDS_REVIEW |  | OSRM-MATCH |  | Owner or chain unclear |  |
@@ -1398,6 +1407,7 @@ Repo: `servis-platform`
 | copilotFacts.js | web/src/utils/copilotFacts.js | web |  | review | NEEDS_REVIEW |  | COPILOT-FACTS |  | Owner or chain unclear |  |
 | copilotPanelHelpers.js | web/src/utils/copilotPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COPILOT-PANEL-HELPERS |  | Owner or chain unclear |  |
 | copilotSelection.js | web/src/utils/copilotSelection.js | web |  | review | NEEDS_REVIEW |  | COPILOT-SELECTION |  | Owner or chain unclear |  |
+| dashboardBulk.js | web/src/utils/dashboardBulk.js | web |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK |  | Owner or chain unclear |  |
 | displayStatus.js | web/src/utils/displayStatus.js | web |  | review | NEEDS_REVIEW |  | DISPLAY-STATUS |  | Owner or chain unclear |  |
 | etaSanity.js | web/src/utils/etaSanity.js | web |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
 | gpsSource.js | web/src/utils/gpsSource.js | web |  | review | NEEDS_REVIEW |  | GPS-SOURCE |  | Owner or chain unclear |  |

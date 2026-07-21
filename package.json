@@ -211,6 +211,7 @@
     "check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js",
     "check:qualitygatefinal01": "node backend/scripts/quality_gate_final_01_check.js",
     "check:testqualityandflakeaudit01": "node backend/scripts/test_quality_and_flake_audit_01_check.js",
+    "check:dashboardbulkendpoint01": "node backend/scripts/dashboard_bulk_endpoint_01_check.js",
     "check:productionratelimitpolicy01": "node backend/scripts/production_rate_limit_policy_01_check.js",
     "check:requeststormresilience01": "node backend/scripts/request_storm_resilience_01_check.js",
     "check:airesponsesemanticqualitygate01": "node backend/scripts/ai_response_semantic_quality_gate_01_check.js",

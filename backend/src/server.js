@@ -68,6 +68,7 @@ import { trustQualityRouter } from "./routes/trustQuality.js";
 import { naturalCopilotRouter } from "./routes/naturalCopilot.js";
 import { pilotLaunchGateRouter } from "./routes/pilotLaunchGate.js";
 import { operationVerificationRouter } from "./routes/operationVerification.js";
+import * as dashboardBulkMod from "./routes/dashboardBulk.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -98,6 +99,7 @@ const publicPersonelInviteRouter = pickExport(personelAccessMod, "publicPersonel
 const publicLeadsRouter = pickExport(publicLeadMod, "publicLeadsRouter");
 const publicLeadReviewRouter = pickExport(publicLeadReviewMod, "publicLeadReviewRouter");
 const operationProofRouter = pickExport(operationProofMod, "operationProofRouter");
+const dashboardBulkRouter = pickExport(dashboardBulkMod, "dashboardBulkRouter");
 
 const companiesRouter = pickExport(companiesMod, "companiesRouter");
 const roomsRouter = pickExport(roomsMod, "roomsRouter");
@@ -119,6 +121,7 @@ assertRouteFactories({
   publicLeadsRouter,
   publicLeadReviewRouter,
   operationProofRouter,
+  dashboardBulkRouter,
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,
@@ -275,6 +278,7 @@ mountCoreRoutes(app, {
   naturalCopilotRouter,
   pilotLaunchGateRouter,
   operationVerificationRouter,
+  dashboardBulkRouter,
   parentRouter,
   schoolParentInvitesRouter,
   personelAccessRouter,

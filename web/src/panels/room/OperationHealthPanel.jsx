@@ -11,6 +11,7 @@ import RoomOperationsBoard from "./roomOperationsBoard";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import { boardingChangeApplySuccessNote } from "../shared/boardingChangeUi";
 import { cachedGet } from "../../utils/uiDataCache";
+import { loadRoomOperationHealthBundle } from "../../utils/dashboardBulk";
 
 const ENTRY_HINT_KEY = "room:operationHealthHint";
 
@@ -161,6 +162,19 @@ export default function OperationHealthPanel() {
   const refreshRoomState = useCallback(async ({ force = false } = {}) => {
     try {
       const today = new Date().toISOString().slice(0, 10);
+      const bulk = await loadRoomOperationHealthBundle({
+        token,
+        force,
+        from: today,
+        to: today,
+      });
+      if (bulk) {
+        setSummary(bulk.summary || null);
+        setDrivers(Array.isArray(bulk.drivers) ? bulk.drivers : []);
+        setIssues(Array.isArray(bulk.issues) ? bulk.issues : []);
+        setRoomOperations(bulk.roomOperations || null);
+        return;
+      }
       const [s, d, i] = await Promise.all([
         cachedGet("/api/observability/room/summary", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
         cachedGet("/api/observability/room/drivers", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),

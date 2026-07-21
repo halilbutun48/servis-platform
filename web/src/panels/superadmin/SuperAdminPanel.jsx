@@ -6,6 +6,7 @@ import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import SystemModeSummaryBand from "../../components/SystemModeSummaryBand";
 import FeedbackLoopSection from "../../components/feedback/FeedbackLoopSection";
+import { loadSuperAdminOverviewBundle } from "../../utils/dashboardBulk";
 
 function copyText(s) {
   const v = String(s ?? "");
@@ -252,6 +253,23 @@ export default function SuperAdminPanel() {
     setBusy(true);
     setErr("");
     try {
+      const bulk = await loadSuperAdminOverviewBundle({ token });
+      if (bulk) {
+        const s = bulk.stats || {};
+        setStats({
+          companies: s?.companies ?? null,
+          rooms: s?.rooms ?? null,
+          vehicles: s?.vehicles ?? null,
+          drivers: s?.drivers ?? null,
+          companiesTotal: s?.companiesTotal ?? null,
+          roomsTotal: s?.roomsTotal ?? null,
+          vehiclesTotal: s?.vehiclesTotal ?? null,
+          driversTotal: s?.driversTotal ?? null,
+        });
+        setFeedbackItems(Array.isArray(bulk.feedbackRecords) ? bulk.feedbackRecords : []);
+        setFeedbackErr("");
+        return;
+      }
       const s = await api("/api/admin/stats", { token });
       setStats({
         companies: s?.companies ?? null,
@@ -275,6 +293,11 @@ export default function SuperAdminPanel() {
     setFeedbackBusy(true);
     setFeedbackErr("");
     try {
+      const bulk = await loadSuperAdminOverviewBundle({ token });
+      if (bulk) {
+        setFeedbackItems(Array.isArray(bulk.feedbackRecords) ? bulk.feedbackRecords : []);
+        return;
+      }
       const response = await api("/api/pilot-launch-gate/field-feedback-loop/records", { token });
       const list = Array.isArray(response?.items) ? response.items : Array.isArray(response) ? response : [];
       setFeedbackItems(list);

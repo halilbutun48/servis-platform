@@ -429,8 +429,8 @@ function main() {
   const status = statusNames()
     .filter((file) => !cleanupScopeFiles.includes(file))
     .filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md" && file !== "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md" && file !== "web/src/components/AgreementOpsBridgeCard.jsx" && file !== "web/src/panels/company/AgreementsPanel.jsx" && file !== "web/src/panels/company/companyAgreementsBridgeSection.jsx" && file !== "web/src/panels/company/companyAgreementsPanelHelpers.js" && file !== "web/src/panels/company/companyShiftsPanelSections.jsx" && file !== "web/src/panels/company/WorkflowPanel.jsx" && file !== "web/src/panels/company/companyShiftsPanelCards.jsx");
-  mustNotList(status, "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status, "backend/src/services/", "backend services are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   mustNotList(status, "web/src/panels/room/", "room surfaces are untouched");

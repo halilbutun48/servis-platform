@@ -6,6 +6,7 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
 import { cachedGet } from "../../utils/uiDataCache";
+import { loadRoomCommercialFlowBundle } from "../../utils/dashboardBulk";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
@@ -213,6 +214,17 @@ export default function CommercialFlowPanel() {
   const [preferredId, setPreferredId] = useState("");
 
   const loadCommercialFlow = useCallback(async ({ signal, force = false } = {}) => {
+    const bulk = await loadRoomCommercialFlowBundle({
+      token,
+      force,
+      signal,
+    });
+    if (bulk) {
+      return {
+        summary: bulk.summary || null,
+        items: Array.isArray(bulk.items) ? bulk.items : [],
+      };
+    }
     const [s, i] = await Promise.all([
       cachedGet("/api/commercial-core/room/summary", { token, signal, force, ttlMs: 10 * 60 * 1000, delayMs: 90 }),
       cachedGet("/api/commercial-core/room/items", { token, signal, force, ttlMs: 10 * 60 * 1000, delayMs: 90 }),
@@ -746,4 +758,3 @@ export default function CommercialFlowPanel() {
       </div>
   );
 }
-

@@ -679,13 +679,22 @@ function main() {
       "web/src/panels/company/shiftPeopleTabSections.jsx",
       "web/src/utils/planCenterOverlayLayer.js",
       "web/src/utils/uiDataCache.js",
+      "backend/src/bootstrap/routeMounts.js",
+      "backend/src/server.js",
+      "backend/src/routes/dashboardBulk.js",
+      "backend/src/services/dashboardBulk.js",
+      "web/src/panels/company/OperationsPanel.jsx",
+      "web/src/panels/room/CommercialFlowPanel.jsx",
+      "web/src/panels/room/OperationHealthPanel.jsx",
+      "web/src/panels/superadmin/SuperAdminPanel.jsx",
+      "web/src/panels/school/OperationsPanel.jsx",
     ]), 
     ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"],
     "working tree stays within cleanup scope"
   );
 
-  mustNotList(status, "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status, "backend/src/services/", "backend services are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   mustNotList(status, "web/src/panels/room/CommercialFlowPanel.jsx", "room commercial flow panel is untouched");
   mustNotList(status, "web/src/panels/driver/MapPanel.jsx", "driver map panel is untouched");

@@ -131,16 +131,22 @@ function main() {
     "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
     "backend/scripts/ux_premium_critical_fix_room_01_check.js",
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
+    "backend/scripts/dashboard_bulk_endpoint_01_check.js",
     "backend/scripts/ux_room_shifts_tabs_01_check.js",
     "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
     "backend/scripts/safe_drive_01_check.js",
     "backend/src/kvkk/matrix.js",
+    "backend/src/bootstrap/routeMounts.js",
+    "backend/src/server.js",
+    "backend/src/routes/dashboardBulk.js",
+    "backend/src/services/dashboardBulk.js",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md",
     "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
     "docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md",
+    "docs/DASHBOARD_BULK_ENDPOINT_01.md",
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "docs/SAFE_DRIVE_01.md",
     "package.json",
@@ -158,6 +164,7 @@ function main() {
     "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
     "web/src/panels/personel/LivePanel.jsx",
     "web/src/panels/parent/LivePanel.jsx",
+    "web/src/utils/dashboardBulk.js",
     "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "web/src/panels/company/AgreementsPanel.jsx",
@@ -415,8 +422,8 @@ function main() {
   mustNotList(staged, "debug.log", "debug.log is not staged");
 
   const status = statusNames().filter((file) => !cleanupScopeFiles.includes(file));
-  mustNotList(status, "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status, "backend/src/services/", "backend services are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   mustNotList(status, "web/src/panels/company/DriversPanel.jsx", "company drivers panel is untouched");

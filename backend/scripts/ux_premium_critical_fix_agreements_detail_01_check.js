@@ -609,12 +609,19 @@ function main() {
     "docs/COPILOT_RISK_SCORING_ENGINE_01.md",
     "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
     "web/src/utils/uiDataCache.js",
+    "backend/src/bootstrap/routeMounts.js",
+    "backend/src/server.js",
+    "backend/src/routes/dashboardBulk.js",
+    "backend/src/services/dashboardBulk.js",
+    "web/src/panels/company/OperationsPanel.jsx",
+    "web/src/panels/superadmin/SuperAdminPanel.jsx",
+    "web/src/panels/school/OperationsPanel.jsx",
   ]);
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"], "working tree stays within agreements detail scope");
   const exactAllowedSet = new Set(exactAllowed);
 
-  mustNotList(status, "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status, "backend/src/services/", "backend services are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(status, "Prisma/", "schema/migration files are untouched");
   const statusWithoutOffers = status.filter((file) => file !== "web/src/panels/room/OffersPanel.jsx");

@@ -59,6 +59,7 @@ function main() {
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
   const primer = read('docs/PRIMER_SSOT.md');
+  const dashboardBulkDoc = read('docs/DASHBOARD_BULK_ENDPOINT_01.md');
   const roleMatrix = read('docs/COPILOT_ROLE_TASK_MATRIX_01.md');
   const aiRoadmap = read('docs/COPILOT_AI_ACTION_ROADMAP_01.md');
   const guidedDoc = read('docs/COPILOT_GUIDED_TASK_ENGINE_01.md');
@@ -262,6 +263,7 @@ function main() {
   must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
   must(pkg, '"check:qualitygatefinal01": "node backend/scripts/quality_gate_final_01_check.js"', 'package.json exposes check:qualitygatefinal01');
   must(pkg, '"check:testqualityandflakeaudit01": "node backend/scripts/test_quality_and_flake_audit_01_check.js"', 'package.json exposes check:testqualityandflakeaudit01');
+  must(pkg, '"check:dashboardbulkendpoint01": "node backend/scripts/dashboard_bulk_endpoint_01_check.js"', 'package.json exposes check:dashboardbulkendpoint01');
   must(pkg, '"check:requeststormresilience01": "node backend/scripts/request_storm_resilience_01_check.js"', 'package.json exposes check:requeststormresilience01');
   must(pkg, '"check:productionratelimitpolicy01": "node backend/scripts/production_rate_limit_policy_01_check.js"', 'package.json exposes check:productionratelimitpolicy01');
   must(pkg, '"check:airesponsesemanticqualitygate01": "node backend/scripts/ai_response_semantic_quality_gate_01_check.js"', 'package.json exposes check:airesponsesemanticqualitygate01');
@@ -443,6 +445,7 @@ function main() {
     'check:driverflowfinal01',
     'check:qualitygatefinal01',
     'check:testqualityandflakeaudit01',
+    'check:dashboardbulkendpoint01',
     'check:requeststormresilience01',
     'check:productionratelimitpolicy01',
     'check:airesponsesemanticqualitygate01',
@@ -835,6 +838,10 @@ function main() {
   must(primer, 'check:testqualityandflakeaudit01', 'primer exposes test quality and flake audit check');
   must(primer, 'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md', 'primer links test quality and flake audit doc');
   must(primer, 'backend/scripts/test_quality_and_flake_audit_01_check.js', 'primer links test quality and flake audit command');
+  must(primer, 'DASHBOARD-BULK-ENDPOINT-01', 'primer mentions dashboard bulk endpoint milestone');
+  must(primer, 'check:dashboardbulkendpoint01', 'primer exposes dashboard bulk endpoint check');
+  must(primer, 'docs/DASHBOARD_BULK_ENDPOINT_01.md', 'primer links dashboard bulk endpoint doc');
+  must(primer, 'backend/scripts/dashboard_bulk_endpoint_01_check.js', 'primer links dashboard bulk endpoint command');
   must(primer, 'REQUEST-STORM-RESILIENCE-01', 'primer mentions request storm resilience milestone');
   must(primer, 'check:requeststormresilience01', 'primer exposes request storm resilience check');
   must(primer, 'docs/REQUEST_STORM_RESILIENCE_01.md', 'primer links request storm resilience doc');
@@ -847,7 +854,33 @@ function main() {
   must(primer, 'check:airesponsesemanticqualitygate01', 'primer exposes AI response semantic quality gate check');
   must(primer, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'primer links AI response semantic quality gate doc');
   must(primer, 'backend/scripts/ai_response_semantic_quality_gate_01_check.js', 'primer links AI response semantic quality gate command');
-  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps request storm resilience, production rate limit policy and AI response semantic quality gate in order');
+  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps dashboard bulk endpoint, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
+  must(dashboardBulkDoc, '# DASHBOARD-BULK-ENDPOINT-01', 'dashboard bulk doc title present');
+  must(dashboardBulkDoc, '## 1) Purpose', 'dashboard bulk doc purpose heading present');
+  must(dashboardBulkDoc, '## 2) Problem statement', 'dashboard bulk doc problem statement heading present');
+  must(dashboardBulkDoc, '## 3) Bulk policy', 'dashboard bulk doc bulk policy heading present');
+  must(dashboardBulkDoc, '## 4) Backend implementation', 'dashboard bulk doc backend implementation heading present');
+  must(dashboardBulkDoc, '## 5) Frontend integration', 'dashboard bulk doc frontend integration heading present');
+  must(dashboardBulkDoc, '## 6) New guard script', 'dashboard bulk doc new guard script heading present');
+  must(dashboardBulkDoc, '## 7) Validation', 'dashboard bulk doc validation heading present');
+  must(dashboardBulkDoc, '## 8) Smoke expectations', 'dashboard bulk doc smoke expectations heading present');
+  must(dashboardBulkDoc, '## 9) Diff / boundary safety', 'dashboard bulk doc diff safety heading present');
+  must(dashboardBulkDoc, '## 10) Remaining risks', 'dashboard bulk doc remaining risks heading present');
+  must(dashboardBulkDoc, '## 11) Next recommended milestone', 'dashboard bulk doc next milestone heading present');
+  must(dashboardBulkDoc, 'check:dashboardbulkendpoint01', 'dashboard bulk doc canonical check present');
+  must(dashboardBulkDoc, 'backend/scripts/dashboard_bulk_endpoint_01_check.js', 'dashboard bulk doc command present');
+  must(dashboardBulkDoc, 'read-only bulk endpoint', 'dashboard bulk doc read-only wording present');
+  must(dashboardBulkDoc, 'write-action', 'dashboard bulk doc write-action boundary present');
+  must(dashboardBulkDoc, 'human approval', 'dashboard bulk doc human approval boundary present');
+  must(dashboardBulkDoc, 'backend/src/routes', 'dashboard bulk doc route boundary present');
+  must(dashboardBulkDoc, 'backend/src/services', 'dashboard bulk doc service boundary present');
+  must(dashboardBulkDoc, 'prisma', 'dashboard bulk doc prisma boundary present');
+  must(dashboardBulkDoc, 'backend/prisma', 'dashboard bulk doc backend prisma boundary present');
+  must(dashboardBulkDoc, 'browser-smoke', 'dashboard bulk doc browser-smoke boundary present');
+  must(dashboardBulkDoc, 'runtime-data', 'dashboard bulk doc runtime-data boundary present');
+  must(dashboardBulkDoc, 'debug.log', 'dashboard bulk doc debug.log boundary present');
+  must(dashboardBulkDoc, 'REQUEST-STORM-RESILIENCE-01', 'dashboard bulk doc references request storm resilience milestone');
+  must(dashboardBulkDoc, 'PRODUCTION-RATE-LIMIT-POLICY-01', 'dashboard bulk doc references production rate limit policy milestone');
   ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'HOT-FILE-SPLIT-WEB-PANELS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps next best action between operation health and hot file split');
   must(primer, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'primer mentions reasoning answer composer milestone');
   must(primer, 'check:copilotreasoninganswercomposer01', 'primer exposes reasoning answer composer check');
@@ -1148,6 +1181,10 @@ function main() {
   must(harnessCheck, 'root:check:testqualityandflakeaudit01', 'script harness check knows test quality and flake audit root check');
   must(harnessCheck, 'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md', 'script harness check knows test quality and flake audit doc');
   must(harnessCheck, 'backend/scripts/test_quality_and_flake_audit_01_check.js', 'script harness check knows test quality and flake audit command');
+  must(harnessCheck, 'DASHBOARD-BULK-ENDPOINT-01', 'script harness check knows dashboard bulk endpoint milestone');
+  must(harnessCheck, 'check:dashboardbulkendpoint01', 'script harness check knows dashboard bulk endpoint alias');
+  must(harnessCheck, 'docs/DASHBOARD_BULK_ENDPOINT_01.md', 'script harness check knows dashboard bulk endpoint doc');
+  must(harnessCheck, 'backend/scripts/dashboard_bulk_endpoint_01_check.js', 'script harness check knows dashboard bulk endpoint command');
   must(harnessCheck, 'REQUEST-STORM-RESILIENCE-01', 'script harness check knows request storm resilience milestone');
   must(harnessCheck, 'check:requeststormresilience01', 'script harness check knows request storm resilience alias');
   must(harnessCheck, 'root:check:requeststormresilience01', 'script harness check knows request storm resilience root check');
@@ -1206,6 +1243,10 @@ function main() {
   must(harnessDoc, 'check:testqualityandflakeaudit01', 'script harness doc lists test quality and flake audit alias');
   must(harnessDoc, 'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md', 'script harness doc lists test quality and flake audit doc');
   must(harnessDoc, 'node backend\\scripts\\test_quality_and_flake_audit_01_check.js', 'script harness doc lists test quality and flake audit command');
+  must(harnessDoc, 'DASHBOARD-BULK-ENDPOINT-01', 'script harness doc lists dashboard bulk endpoint milestone');
+  must(harnessDoc, 'check:dashboardbulkendpoint01', 'script harness doc lists dashboard bulk endpoint alias');
+  must(harnessDoc, 'docs/DASHBOARD_BULK_ENDPOINT_01.md', 'script harness doc lists dashboard bulk endpoint doc');
+  must(harnessDoc, 'node backend\\scripts\\dashboard_bulk_endpoint_01_check.js', 'script harness doc lists dashboard bulk endpoint command');
   must(harnessDoc, 'REQUEST-STORM-RESILIENCE-01', 'script harness doc lists request storm resilience milestone');
   must(harnessDoc, 'check:requeststormresilience01', 'script harness doc lists request storm resilience alias');
   must(harnessDoc, 'root:check:requeststormresilience01', 'script harness doc lists request storm resilience root alias');
@@ -1220,7 +1261,7 @@ function main() {
   must(harnessDoc, 'check:airesponsesemanticqualitygate01', 'script harness doc lists AI response semantic quality gate alias');
   must(harnessDoc, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script harness doc lists AI response semantic quality gate doc');
   must(harnessDoc, 'node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js', 'script harness doc lists AI response semantic quality gate command');
-  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps request storm resilience, production rate limit policy and AI response semantic quality gate in order');
+  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Dashboard bulk endpoint milestone: `DASHBOARD-BULK-ENDPOINT-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps dashboard bulk endpoint, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
@@ -1319,6 +1360,10 @@ function main() {
   must(guide, 'check:testqualityandflakeaudit01', 'script guide exposes check:testqualityandflakeaudit01');
   must(guide, 'node backend\\scripts\\test_quality_and_flake_audit_01_check.js', 'script guide includes test quality and flake audit command');
   must(guide, 'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md', 'script guide includes test quality and flake audit doc');
+  must(guide, 'DASHBOARD-BULK-ENDPOINT-01', 'script guide mentions dashboard bulk endpoint milestone');
+  must(guide, 'check:dashboardbulkendpoint01', 'script guide exposes dashboard bulk endpoint check');
+  must(guide, 'node backend\\scripts\\dashboard_bulk_endpoint_01_check.js', 'script guide includes dashboard bulk endpoint command');
+  must(guide, 'docs/DASHBOARD_BULK_ENDPOINT_01.md', 'script guide includes dashboard bulk endpoint doc');
   must(guide, 'REQUEST-STORM-RESILIENCE-01', 'script guide mentions request storm resilience milestone');
   must(guide, 'check:requeststormresilience01', 'script guide exposes request storm resilience check');
   must(guide, 'node backend\\scripts\\request_storm_resilience_01_check.js', 'script guide includes request storm resilience command');
@@ -1331,7 +1376,7 @@ function main() {
   must(guide, 'check:airesponsesemanticqualitygate01', 'script guide exposes AI response semantic quality gate check');
   must(guide, 'node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js', 'script guide includes AI response semantic quality gate command');
   must(guide, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script guide includes AI response semantic quality gate doc');
-  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps request storm resilience, production rate limit policy and AI response semantic quality gate in order');
+  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps dashboard bulk endpoint, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
   must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
   must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');
   must(guide, 'node backend\\scripts\\ux_parent_personel_live_error_clarity_01_check.js', 'script guide includes parent/personel live error clarity command');

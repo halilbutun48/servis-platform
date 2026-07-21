@@ -205,6 +205,7 @@ Planned validation set:
 - future refactors can split rate-limit buckets again and weaken the centralized policy narrative
 - broad read/write allowlist changes could blur auth/public boundaries
 - 429 ignore lists would hide real production signals and should not be added
+- `DASHBOARD-BULK-ENDPOINT-01` read-only bulk aggregation desteği, read-heavy dashboard fan-out'u azaltan upstream yardımcı katman olarak korunmalıdır
 - browser-smoke artifacts must remain commit dışı
 - runtime-data must remain commit dışı
 

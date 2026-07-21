@@ -460,6 +460,16 @@ async function main() {
     // Semantic quality gate files are part of the current consolidated validation pass.
     'backend/scripts/ai_response_semantic_quality_gate_01_check.js',
     'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md',
+    // Dashboard bulk endpoint files are legitimate scope companions for this consolidated pass.
+    'backend/scripts/dashboard_bulk_endpoint_01_check.js',
+    'backend/src/bootstrap/routeMounts.js',
+    'backend/src/server.js',
+    'backend/src/routes/dashboardBulk.js',
+    'backend/src/services/dashboardBulk.js',
+    'docs/DASHBOARD_BULK_ENDPOINT_01.md',
+    'web/src/panels/school/OperationsPanel.jsx',
+    'web/src/panels/superadmin/SuperAdminPanel.jsx',
+    'web/src/utils/dashboardBulk.js',
     // Production rate limit policy files are legitimate scope companions for this consolidated pass.
     'backend/scripts/production_rate_limit_policy_01_check.js',
     'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md',

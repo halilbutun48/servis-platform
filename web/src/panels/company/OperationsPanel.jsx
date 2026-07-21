@@ -4,6 +4,7 @@ import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { cachedGet } from "../../utils/uiDataCache";
+import { loadCompanyOperationsBundle } from "../../utils/dashboardBulk";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
@@ -130,6 +131,20 @@ export default function CompanyOperationsPanel() {
     setErr("");
     try {
       const today = new Date().toISOString().slice(0, 10);
+      const bulk = await loadCompanyOperationsBundle({
+        token,
+        force,
+        from: today,
+        to: today,
+      });
+      if (bulk) {
+        setPersonels(Array.isArray(bulk.personels) ? bulk.personels : []);
+        setShifts(Array.isArray(bulk.shifts) ? bulk.shifts : []);
+        setRequests(Array.isArray(bulk.requests) ? bulk.requests : []);
+        setNotifications(Array.isArray(bulk.notifications) ? bulk.notifications : []);
+        setShiftSummary(bulk.shiftSummary || null);
+        return;
+      }
       const [personelsResp, shiftsResp, requestsResp, notificationsResp, summaryResp] = await Promise.all([
         cachedGet("/api/company/personels?kind=PERSONEL&take=120", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),
         cachedGet("/api/shifts?take=120&status=APPROVED,ACTIVE,DONE", { token, force, ttlMs: 10 * 60 * 1000, delayMs: 120 }),

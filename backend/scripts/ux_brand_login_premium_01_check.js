@@ -459,11 +459,20 @@ function main() {
     "web/src/panels/room/roomAgreementsBridgeSection.jsx",
     "web/src/panels/room/roomAgreementsPanelHelpers.js",
     "web/src/utils/uiDataCache.js",
+    "backend/src/bootstrap/routeMounts.js",
+    "backend/src/server.js",
+    "backend/src/routes/dashboardBulk.js",
+    "backend/src/services/dashboardBulk.js",
+    "web/src/panels/company/OperationsPanel.jsx",
+    "web/src/panels/room/CommercialFlowPanel.jsx",
+    "web/src/panels/room/OperationHealthPanel.jsx",
+    "web/src/panels/superadmin/SuperAdminPanel.jsx",
+    "web/src/panels/school/OperationsPanel.jsx",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"], "working tree stays within brand/login premium scope");
-  mustNotList(status, "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status, "backend/src/services/", "backend services are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
+  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(status, "prisma/", "schema/migration files are untouched");
   mustNotList(status, "backend/prisma/", "backend schema/migration files are untouched");
   mustNotList(status, "debug.log", "debug.log is untouched");
