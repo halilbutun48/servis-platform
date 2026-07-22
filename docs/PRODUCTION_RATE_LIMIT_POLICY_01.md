@@ -211,7 +211,7 @@ Planned validation set:
 - browser-smoke artifacts must remain commit dışı
 - runtime-data must remain commit dışı
 
-`LOAD-TEST-2000-USERS-01` production policy sonrasında ayrı bir local/dev-safe 2000-user readiness harness olarak takip edilir; 429 ignore list açmaz ve write-action sınırını değiştirmez.
+`LOAD-TEST-2000-USERS-01` production policy sonrasında ayrı bir local/dev-safe 2000-user readiness harness olarak takip edilir; `DB-POOL-AND-API-SCALING-01` de bu zincirin infra-readiness devamıdır; 429 ignore list açmaz ve write-action sınırını değiştirmez.
 
 ## 13) Next Recommended Milestone
 

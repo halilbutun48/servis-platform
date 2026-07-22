@@ -585,6 +585,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:loadtest2000users01` 2000-user load-test readiness guard'ını local/dev-safe smoke bandı, explicit high-concurrency flag ve read-only scenario matrix ile sabitler.
 - Check script: `node backend\scripts\load_test_2000_users_01_check.js`
 - Final doc: `docs/LOAD_TEST_2000_USERS_01.md`
+
+### DB-POOL-AND-API-SCALING-01 [CHECK]
+- `check:dbpoolandapiscaling01` DB pool ve API scaling readiness guard'ını local/dev-safe probe, bounded timeout budget ve read-only companion doc zinciri ile sabitler.
+- Check script: `node backend\scripts\db_pool_and_api_scaling_01_check.js`
+- Probe helper: `node backend\scripts\db_pool_and_api_scaling_01_probe.js`
+- Final doc: `docs/DB_POOL_AND_API_SCALING_01.md`
 - Harness: `backend\scripts\load_test_2000_users_01_harness.js`
 - 2000-user planı dashboard bulk, cache coalescing, request storm ve production rate-limit companion guard'larından ayrı tutulur; production/public URL load, write-action, human approval ve Prisma sınırı açılmaz.
 

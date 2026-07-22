@@ -390,6 +390,8 @@ async function main() {
       'backend/scripts/copilot_clarifying_question_engine_01_check.js',
       'backend/scripts/copilot_dynamic_question_engine_01_check.js',
       'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
+      'backend/scripts/db_pool_and_api_scaling_01_check.js',
+      'backend/scripts/db_pool_and_api_scaling_01_probe.js',
       // Semantic quality gate files are part of the current consolidated validation pass.
       'backend/scripts/ai_response_semantic_quality_gate_01_check.js',
       'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md',
@@ -412,6 +414,7 @@ async function main() {
       // Production rate limit policy files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/production_rate_limit_policy_01_check.js',
       'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md',
+      'docs/DB_POOL_AND_API_SCALING_01.md',
       'backend/scripts/sefer_abi_terminal_humanize_01_check.js',
       'backend/scripts/cop_live_accept_01_check.js',
       'backend/scripts/onboarding_review_final_audit_01_check.js',

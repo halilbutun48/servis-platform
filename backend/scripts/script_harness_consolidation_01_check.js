@@ -340,6 +340,7 @@ function slugToMilestone(slug) {
     [/dashboardbulkendpoint0?1/i, "DASHBOARD-BULK-ENDPOINT-01"], // check:dashboardbulkendpoint01
     [/cachecoalescingandbackoff0?1/i, "CACHE-COALESCING-AND-BACKOFF-01"], // check:cachecoalescingandbackoff01
     [/load[_-]?test[_-]?2000[_-]?users[_-]?01(?:[_-]?check|[_-]?harness)?/i, "LOAD-TEST-2000-USERS-01"], // check:loadtest2000users01
+    [/db[_-]?pool[_-]?and[_-]?api[_-]?scaling[_-]?01(?:[_-]?check|[_-]?probe)?/i, "DB-POOL-AND-API-SCALING-01"], // check:dbpoolandapiscaling01
     [/requeststormresilience0?1/i, "REQUEST-STORM-RESILIENCE-01"], // check:requeststormresilience01
     [/airesponsesemanticqualitygate0?1/i, "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01"], // check:airesponsesemanticqualitygate01
     [/uxsmokepassminusevidence0?1/i, "UX-SMOKE-PASS-MINUS-EVIDENCE-01"],
@@ -1527,6 +1528,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Load test 2000 users docs: \`docs/LOAD_TEST_2000_USERS_01.md\``);
   out.push(`- Load test 2000 users command: \`node backend\\scripts\\load_test_2000_users_01_check.js\``);
   // node backend/scripts/load_test_2000_users_01_check.js
+  out.push(`- DB pool and API scaling milestone: \`DB-POOL-AND-API-SCALING-01\``);
+  out.push(`- DB pool and API scaling alias: \`check:dbpoolandapiscaling01\``);
+  out.push(`- DB pool and API scaling docs: \`docs/DB_POOL_AND_API_SCALING_01.md\``);
+  out.push(`- DB pool and API scaling command: \`node backend\\scripts\\db_pool_and_api_scaling_01_check.js\``);
+  // node backend/scripts/db_pool_and_api_scaling_01_check.js
   out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
   out.push(`- Agreements detail docs: \`docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md\``);
   out.push(`- Agreements detail command: \`node backend\\scripts\\ux_premium_critical_fix_agreements_detail_01_check.js\``);
@@ -2038,6 +2044,10 @@ function verifyDoc(docText, summary) {
     "check:loadtest2000users01",
     "docs/LOAD_TEST_2000_USERS_01.md",
     "node backend\\scripts\\load_test_2000_users_01_check.js",
+    "DB-POOL-AND-API-SCALING-01",
+    "check:dbpoolandapiscaling01",
+    "docs/DB_POOL_AND_API_SCALING_01.md",
+    "node backend\\scripts\\db_pool_and_api_scaling_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",

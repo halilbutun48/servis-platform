@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-07-21
+Tarih: 2026-07-22
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `399`
+- Toplam package script entry: `400`
 - Toplam executable tracked file: `1218`
-- Combined registry row: `1617`
-- Root/backend/web/mobile package dağılımı: root `242`, backend `775`, web `96`, mobile `201`
+- Combined registry row: `1618`
+- Root/backend/web/mobile package dağılımı: root `243`, backend `775`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `60`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -92,6 +92,10 @@ Repo: `servis-platform`
 - Load test 2000 users alias: `check:loadtest2000users01`
 - Load test 2000 users docs: `docs/LOAD_TEST_2000_USERS_01.md`
 - Load test 2000 users command: `node backend\scripts\load_test_2000_users_01_check.js`
+- DB pool and API scaling milestone: `DB-POOL-AND-API-SCALING-01`
+- DB pool and API scaling alias: `check:dbpoolandapiscaling01`
+- DB pool and API scaling docs: `docs/DB_POOL_AND_API_SCALING_01.md`
+- DB pool and API scaling command: `node backend\scripts\db_pool_and_api_scaling_01_check.js`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -288,7 +292,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `619`
+- NEEDS_REVIEW: `623`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -309,7 +313,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 619 |
+| NEEDS_REVIEW | 623 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -540,6 +544,8 @@ Repo: `servis-platform`
 | root:check:productionratelimitpolicy01 | package.json | root | node backend/scripts/production_rate_limit_policy_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-PRODUCTIONRATELIMITPOLICY-01 |  | Breaks canonical verification chain |  |
 | root:check:requeststormresilience01 | package.json | root | node backend/scripts/request_storm_resilience_01_check.js | verify-core | ACTIVE_CORE |  | REQUEST-STORM-RESILIENCE-01 |  | Breaks canonical verification chain |  |
 | root:check:airesponsesemanticqualitygate01 | package.json | root | node backend/scripts/ai_response_semantic_quality_gate_01_check.js | verify-core | ACTIVE_CORE |  | AI-RESPONSE-SEMANTIC-QUALITY-GATE-01 |  | Breaks canonical verification chain |  |
+| root:check:loadtest2000users01 | package.json | root | node backend/scripts/load_test_2000_users_01_check.js | review | NEEDS_REVIEW |  | LOAD-TEST-2000-USERS-01 |  | Owner or chain unclear |  |
+| root:check:dbpoolandapiscaling01 | package.json | root | node backend/scripts/db_pool_and_api_scaling_01_check.js | review | NEEDS_REVIEW |  | DB-POOL-AND-API-SCALING-01 |  | Owner or chain unclear |  |
 | root:check:op01 | package.json | root | node backend/scripts/op_01_operation_proof_service_proof_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-01 |  | Breaks canonical verification chain |  |
 | root:check:op02 | package.json | root | node backend/scripts/op_02_manual_operator_proof_note_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-02 |  | Breaks canonical verification chain |  |
 | root:check:op03 | package.json | root | node backend/scripts/op_03_web_operation_proof_card_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-03 |  | Breaks canonical verification chain |  |
@@ -666,6 +672,7 @@ Repo: `servis-platform`
 | boarding_ops_01c_driver_route_refresh_check.js | backend/scripts/boarding_ops_01c_driver_route_refresh_check.js | backend | root:check:boardingops01c | review | NEEDS_REVIEW |  | BOARDING-OPS-01-C-DRIVER-ROUTE-REFRESH-CHECK |  | Owner or chain unclear |  |
 | bootstrap_dependencies.js | backend/scripts/bootstrap_dependencies.js | backend |  | review | NEEDS_REVIEW |  | BOOTSTRAP-DEPENDENCIES |  | Owner or chain unclear |  |
 | bug_route_impact_preview_button_01_check.js | backend/scripts/bug_route_impact_preview_button_01_check.js | backend | root:check:bugrouteimpactpreviewbutton01 | review | NEEDS_REVIEW |  | BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01-CHECK |  | Owner or chain unclear |  |
+| cache_coalescing_and_backoff_01_check.js | backend/scripts/cache_coalescing_and_backoff_01_check.js | backend | root:check:cachecoalescingandbackoff01 | review | NEEDS_REVIEW |  | CACHE-COALESCING-AND-BACKOFF-01-CHECK |  | Owner or chain unclear |  |
 | clean_snapshot_artifacts.js | backend/scripts/clean_snapshot_artifacts.js | backend | root:verify:final | verify:final | ACTIVE_CORE |  | CLEAN-SNAPSHOT-ARTIFACTS |  | Owner or chain unclear | canonical runner |
 | company_fetch_storm_check.js | backend/scripts/company_fetch_storm_check.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-FETCH-STORM-CHECK |  | Owner or chain unclear |  |
 | company_fetch_storm_v2_check.cjs | backend/scripts/company_fetch_storm_v2_check.cjs | backend |  | review | NEEDS_REVIEW |  | COMPANY-FETCH-STORM-V-2-CHECK |  | Owner or chain unclear |  |
@@ -742,6 +749,8 @@ Repo: `servis-platform`
 | lead_capture_01_check.js | backend/scripts/lead_capture_01_check.js | backend | root:check:leadcapture01 | review | NEEDS_REVIEW |  | LEAD-CAPTURE-01-CHECK |  | Owner or chain unclear |  |
 | live_gate_readiness_hotfix_check.mjs | backend/scripts/live_gate_readiness_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | LIVE-GATE-READINESS-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | live_tracking_final_01_acceptance_check.js | backend/scripts/live_tracking_final_01_acceptance_check.js | backend | root:check:livetrackingfinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| load_test_2000_users_01_check.js | backend/scripts/load_test_2000_users_01_check.js | backend | root:check:loadtest2000users01 | review | NEEDS_REVIEW |  | LOAD-TEST-2000-USERS-01 |  | Owner or chain unclear |  |
+| load_test_2000_users_01_harness.js | backend/scripts/load_test_2000_users_01_harness.js | backend |  | review | NEEDS_REVIEW |  | LOAD-TEST-2000-USERS-01 |  | Owner or chain unclear |  |
 | m0check.js | backend/scripts/m0check.js | backend | backend:m0check | product | ACTIVE_RELEASE_ONLY |  | M-0-CHECK |  | Owner or chain unclear | product check/helper |
 | m10check.js | backend/scripts/m10check.js | backend | backend:m10check | product | ACTIVE_RELEASE_ONLY |  | M-10-CHECK |  | Owner or chain unclear | product check/helper |
 | m11check.js | backend/scripts/m11check.js | backend | backend:m11check | product | ACTIVE_RELEASE_ONLY |  | M-11-CHECK |  | Owner or chain unclear | product check/helper |
@@ -1344,7 +1353,6 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| cache_coalescing_and_backoff_01_check.js | backend/scripts/cache_coalescing_and_backoff_01_check.js | backend | root:check:cachecoalescingandbackoff01 | review | NEEDS_REVIEW |  | CACHE-COALESCING-AND-BACKOFF-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1365,7 +1373,7 @@ Repo: `servis-platform`
 | m95_e23c_web_gps_source_visibility_check.js | web/scripts/m95_e23c_web_gps_source_visibility_check.js | web | web:check:m95e23c | web-lint | ACTIVE_WEB_LINT |  | M-95-E-23-C-WEB-GPS-SOURCE-VISIBILITY-CHECK |  | Owner or chain unclear | frontend/web script |
 | m98_e2c_personel_access_web_check.js | web/scripts/m98_e2c_personel_access_web_check.js | web | web:check:m98e2c | web-lint | ACTIVE_WEB_LINT |  | M-98-E-2-C-PERSONEL-ACCESS-WEB-CHECK |  | Owner or chain unclear | frontend/web script |
 | web_mobile_responsive_check.js | web/scripts/web_mobile_responsive_check.js | web | web:check:web-mobile | web-lint | ACTIVE_WEB_LINT |  | WEB-MOBILE-RESPONSIVE-CHECK |  | Owner or chain unclear | frontend/web script |
-| api.js | web/src/api.js | web | mobile:check:m95e2, mobile:check:m95e6, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
+| api.js | web/src/api.js | web | mobile:check:m95e2, mobile:check:m95e6, root:check:dbpoolandapiscaling01, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
 | uiSurface.js | web/src/components/copilot/uiSurface.js | web |  | review | NEEDS_REVIEW |  | UI-SURFACE |  | Owner or chain unclear |  |
 | stopTimelineUtils.js | web/src/components/stopTimelineUtils.js | web |  | review | NEEDS_REVIEW |  | STOP-TIMELINE-UTILS |  | Owner or chain unclear |  |
 | brand.js | web/src/config/brand.js | web | root:check:brand, root:check:docsbrandcleanup01, root:check:uxbrandloginpremium01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
@@ -1617,7 +1625,7 @@ Repo: `servis-platform`
 | roleLiveState.js | mobile/src/app/roleLiveState.js | mobile |  | review | NEEDS_REVIEW |  | ROLE-LIVE-STATE |  | Owner or chain unclear |  |
 | useDriverRealtimeResync.js | mobile/src/app/useDriverRealtimeResync.js | mobile |  | review | NEEDS_REVIEW |  | USE-DRIVER-REALTIME-RESYNC |  | Owner or chain unclear |  |
 | useMobileAppLifecycle.js | mobile/src/app/useMobileAppLifecycle.js | mobile |  | review | NEEDS_REVIEW |  | USE-MOBILE-APP-LIFECYCLE |  | Owner or chain unclear |  |
-| api.js | mobile/src/lib/api.js | mobile | mobile:check:m95e2, mobile:check:m95e6, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
+| api.js | mobile/src/lib/api.js | mobile | mobile:check:m95e2, mobile:check:m95e6, root:check:dbpoolandapiscaling01, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
 | backgroundGps.js | mobile/src/lib/backgroundGps.js | mobile |  | review | NEEDS_REVIEW |  | BACKGROUND-GPS |  | Owner or chain unclear |  |
 | brand.js | mobile/src/lib/brand.js | mobile | root:check:brand, root:check:docsbrandcleanup01, root:check:uxbrandloginpremium01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
 | gps.js | mobile/src/lib/gps.js | mobile | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
