@@ -490,6 +490,9 @@ async function main() {
     'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md',
     // Quality gate final file is a legitimate smoke-summary companion for this consolidated pass.
     'backend/scripts/quality_gate_final_01_check.js',
+    // Backend lint warning burndown files are legitimate scope companions for this consolidated pass.
+    'backend/scripts/backend_lint_warning_burndown_01_check.js',
+    'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md',
   ]);
 
   allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'], 'working tree stays within route review scope');

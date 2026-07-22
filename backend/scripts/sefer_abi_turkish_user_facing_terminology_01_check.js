@@ -535,10 +535,6 @@ function must(condition, label) {
   }
 }
 
-function mustEqual(actual, expected, label) {
-  must(normalize(actual) === normalize(expected), `${label} expected=${String(expected || '')} actual=${String(actual || '')}`);
-}
-
 function mustIncludeAny(text, needles, label) {
   const list = Array.isArray(needles) ? needles : [needles];
   const haystack = normalize(text);

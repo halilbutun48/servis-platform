@@ -92,12 +92,6 @@ function normalize(text) {
     .toLowerCase();
 }
 
-function excerpt(text, limit = 180) {
-  const value = String(text || '').replace(/\s+/g, ' ').trim();
-  if (!value) return '';
-  return value.length > limit ? `${value.slice(0, limit - 1)}…` : value;
-}
-
 function ok(label) {
   console.log(`OK ${label}`);
 }
@@ -115,18 +109,6 @@ function contains(text, needle) {
   return normalize(text).includes(normalize(needle));
 }
 
-function containsAny(text, needles = []) {
-  const list = Array.isArray(needles) ? needles : [needles];
-  return list.some((needle) => contains(text, needle));
-}
-
-function mustInclude(text, needles, label) {
-  const list = Array.isArray(needles) ? needles : [needles];
-  for (const needle of list) {
-    must(contains(text, needle), `${label} missing=${needle}`);
-  }
-}
-
 function mustIncludeAny(text, needles, label) {
   const list = Array.isArray(needles) ? needles : [needles];
   must(list.some((needle) => contains(text, needle)), `${label} missing any of ${list.join(' / ')}`);
@@ -137,18 +119,6 @@ function mustNotInclude(text, needles, label) {
   for (const needle of list) {
     must(!contains(text, needle), `${label} unexpected=${needle}`);
   }
-}
-
-function ordered(text, needles, label) {
-  const haystack = normalize(text);
-  let cursor = 0;
-  for (const needle of needles) {
-    const target = normalize(needle);
-    const idx = haystack.indexOf(target, cursor);
-    if (idx < 0) fail(`${label}: missing ${needle}`);
-    cursor = idx + target.length;
-  }
-  ok(label);
 }
 
 function makeUser(surface) {
@@ -312,15 +282,6 @@ function assertNoRepetition(reply, label) {
   }
 }
 
-function assertAnchor(reply, bundle, label) {
-  mustIncludeAny(reply, [
-    bundle.surface.frameNeedle,
-    bundle.surface.label,
-    bundle.selectedSummary,
-    bundle.selectedRecordStatus,
-  ], `${label} keeps surface anchor`);
-}
-
 function runDirectCase(bundle, family, message, caseLabel, currentReply = '') {
   if (Array.isArray(family.unsupportedSurfaceIds) && family.unsupportedSurfaceIds.includes(bundle.surface.id)) {
     console.log(`SKIP ${caseLabel} direct reply unsupported surface`);
@@ -365,65 +326,6 @@ function buildPublicResponse(bundle, message, conversationState) {
     resolvedEntityType: 'screen',
     resolvedEntityId: bundle.index + 1,
   });
-}
-
-function runIntegrationCase(bundle, testCase) {
-  const conversationState = testCase.buildConversationState ? testCase.buildConversationState(bundle) : testCase.conversationState || null;
-  const response = buildPublicResponse(bundle, testCase.message, conversationState);
-  const reply = String(response?.reply || '');
-  const assistant = response?.reasoningAssistant || {};
-  const directBuilder = testCase.builder || testCase.family?.builder;
-  const directReply = directBuilder ? directBuilder(makeBuilderOptions(
-    bundle,
-    testCase.family,
-    testCase.message,
-    testCase.questionType,
-    conversationState,
-    testCase.currentReply || bundle.analysis.nextBestAction,
-  )) : '';
-
-  must(Array.isArray(testCase.allowedQuestionTypes) && testCase.allowedQuestionTypes.length > 0, `${testCase.id} has allowed question types`);
-  must(testCase.allowedQuestionTypes.includes(String(response?.questionType || '')), `${testCase.id} question type is allowed`);
-  must(String(reply).trim().length > 0, `${testCase.id} public reply is non-empty`);
-  must(String(assistant.mode || '').trim().length > 0, `${testCase.id} assistant mode is non-empty`);
-  must(String(assistant.effectiveRole || '').trim().length > 0, `${testCase.id} assistant effective role is non-empty`);
-  assertAnchor(reply, bundle, `${testCase.id} public reply`);
-  mustNotInclude(reply, WRITE_TERMS, `${testCase.id} public reply no write-action leakage`);
-  mustNotInclude(reply, INTERNAL_TERMS, `${testCase.id} public reply no internal terminology leakage`);
-  if (testCase.publicMustAny) {
-    mustIncludeAny(reply, testCase.publicMustAny, `${testCase.id} public reply markers`);
-  }
-  if (testCase.publicMustNot) {
-    mustNotInclude(reply, testCase.publicMustNot, `${testCase.id} public reply exclusions`);
-  }
-  if (testCase.expectedMode) {
-    must(String(assistant.mode || '') === testCase.expectedMode, `${testCase.id} assistant mode is ${testCase.expectedMode}`);
-  }
-  if (testCase.fieldName) {
-    must(String(assistant[testCase.fieldName] || '').trim().length > 0, `${testCase.id} assistant field ${testCase.fieldName} is non-empty`);
-    if (String(directReply || '').trim()) {
-      must(contains(assistant[testCase.fieldName], directReply), `${testCase.id} assistant field ${testCase.fieldName} matches direct reply`);
-    }
-  }
-  if (testCase.replyMustAny) {
-    mustIncludeAny(reply, testCase.replyMustAny, `${testCase.id} public reply markers`);
-  }
-  if (testCase.replyMustNot) {
-    mustNotInclude(reply, testCase.replyMustNot, `${testCase.id} public reply exclusions`);
-  }
-  if (testCase.compareField && testCase.compareField in assistant) {
-    must(String(assistant[testCase.compareField] || '').trim().length > 0, `${testCase.id} assistant field ${testCase.compareField} is non-empty`);
-    if (String(directReply || '').trim()) {
-      must(contains(assistant[testCase.compareField], directReply), `${testCase.id} assistant field ${testCase.compareField} matches direct reply`);
-    }
-  }
-  if (testCase.separationField && String(assistant[testCase.separationField] || '').trim()) {
-    must(reply !== String(assistant[testCase.separationField] || ''), `${testCase.id} public reply stays separate from ${testCase.separationField}`);
-  }
-  if (testCase.extraChecks) {
-    testCase.extraChecks({ response, assistant, reply, directReply, bundle, conversationState });
-  }
-  return { response, assistant, reply, directReply };
 }
 
 const SURFACES = [
@@ -1120,7 +1022,6 @@ async function main() {
   const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
-  const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const doc = read('docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md');

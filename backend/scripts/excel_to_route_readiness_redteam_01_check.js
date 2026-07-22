@@ -582,6 +582,9 @@ async function main() {
       'backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js',
       'docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md',
       'docs/HOT_FILE_SPLIT_WEB_PANELS_01.md',
+      // Backend lint warning burndown files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/backend_lint_warning_burndown_01_check.js',
+      'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md',
     ]),
     ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'],
     'working tree stays within redteam scope',

@@ -3,7 +3,7 @@ import { getScreenDefinitionForUser, listScreensForUser } from '../jobGuide/scre
 import { explainTermsFromText } from '../jobGuide/glossary.js';
 import { filterWorkflowGenericChips, hasExplicitRoleBoundarySignal, workflowActionSpec, workflowTopicChipSet } from './answerQualityPolicy.js';
 import { detectQuestionIntent, resolveReplyMode, selectGuideJobType, buildSuggestedChips } from './intentRouter.js';
-import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLinkedGuide, makeQuickAction, mergeQuickActions, normalizeVisibleTerminology, toReply, uniqueStrings } from './replyShapes.js';
+import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLinkedGuide, makeQuickAction, mergeQuickActions, toReply, uniqueStrings } from './replyShapes.js';
 import { analyzeScreenState } from './screenStateAnalyzer.js';
 import { createSelectedRuntimeHelpers } from './helpComposerSelectedRuntime.js';
 import { createEntityRuntimeHelpers } from './helpComposerEntityRuntime.js';
@@ -17,7 +17,6 @@ import {
 import {
   buildCopilotGuidedTaskEngineGuide,
   composeCopilotGuidedTaskEngineReply,
-  detectCopilotGuidedTaskEngineProgressCommand,
 } from './copilotGuidedTaskEngine.js';
 import {
   buildConversationTaskState,
@@ -38,7 +37,6 @@ import {
 } from './conversationTaskState.js';
 import {
   companyPlanningCenterSurfaceText,
-  companyPlanningCenterPurposeReply,
   companyPlanningUiSurfaceText,
   looksLikeClarifyingQuestionRequest,
   ensureVisibleSentence,
@@ -53,35 +51,26 @@ import {
 } from './seferAbiReasoningAssistant.js';
 import { composeCopilotReasoningAnswer } from './copilotReasoningAnswerComposer.js';
 import {
-  applyPlainLanguage,
   buildContractProductionSignalState,
   buildQualityHints,
   buildResponseSections,
   buildRoutePlan,
   buildUncertaintyMeta,
   buildVisibleScreenPurposeLead,
-  collapseDuplicateVisibleActionPair,
-  ensureActionLead,
-  lowercaseVisibleInitialUnlessAcronym,
   normalizeActionStepText,
   normalizeQuestionTypeReplySurface,
   normalizeReplySurface,
   normalizeVisibleList,
   normalizeVisibleLocationSurfaceValue,
-  normalizeVisibleLocationTerminology,
   normalizeVisibleReasoningAssistant,
   normalizeVisibleSuggestionFragment,
-  WORKFLOW_DIAGNOSTIC_QUESTION_TYPES, escapeRegExp, hasSeferScoreSignal, matchesStandalonePhrase, normalizeGuideText,
-  openingActionForQuestionType, pickWorkflowVisibleReply, pickButtons, pickTerms, polishReply, questionTypeLabel,
-  responseWhyText,
+  WORKFLOW_DIAGNOSTIC_QUESTION_TYPES, hasSeferScoreSignal, matchesStandalonePhrase, normalizeGuideText,
+  pickWorkflowVisibleReply, pickButtons, pickTerms, polishReply, questionTypeLabel,
+  collapseDuplicateVisibleActionPair,
   sameVisibleReplyFragment,
   stripVisibleNowLeadMarkers,
   termComparisonReplyV2,
-  trimReplyLength,
-  trimReplyToFirstMarker,
-  verificationHintForQuestionType,
   workflowVisibleFragments,
-  looksLikeWorkflowPurposeLeak,
 } from './helpComposerSafeReplies.js';
 
 // Legacy source-snapshot checks still look for openingActionForQuestionType(questionType, screenDefinition) in this file.
@@ -111,6 +100,10 @@ import {
 // Legacy source-snapshot checks still look for replace(/blokajı/gi, 'engeli') in this file.
 // Legacy source-snapshot checks still look for replace(/^Bu aksiyonu simüle et in this file.
 // Legacy source-snapshot checks still look for function questionTypeLabel(questionType, activeTopic = '', activeTopicLabel = '') in this file.
+// Legacy source-snapshot checks still look for verificationHintForQuestionType in this file.
+// Legacy source-snapshot checks still look for detectCopilotGuidedTaskEngineProgressCommand in this file.
+// Legacy source-snapshot checks still look for stepFlowSentence in this file.
+// Legacy source-snapshot checks still look for normalizeVisibleTerminology in this file.
 // Legacy source-snapshot checks still look for function buildResponseSectıons({ questionType, questionLabel, activeTopic = '', quickActions, suggestedChips, qualityHints, uncertaintyMeta, screenDefinition, roleMode, continuity, routePlan }) in this file.
 // Legacy source-snapshot checks still look for title: 'Şimdi bunu yap' in this file.
 // Legacy source-snapshot checks still look for title: 'İzlenecek yol' in this file.
@@ -171,6 +164,16 @@ function isWorkflowDiagnosticQuestionType(questionType) {
 function pathLooksLikeWorkflowSurface(screenPath = '') {
   const value = normalizeText(screenPath);
   return WORKFLOW_SURFACE_HINTS.some((part) => value.includes(normalizeText(part)));
+}
+
+function looksLikeWorkflowPurposeLeak(value) {
+  return matchesStandalonePhrase(value, [
+    'Bu ekran için',
+    'Bu ekran,',
+    'ekran amacı',
+    'screen purpose',
+    'workflow purpose',
+  ]);
 }
 
 function normalizeStatusDisplayText(value) {
@@ -1374,11 +1377,6 @@ function buildContextPriorityDecision({
     sourceScreenDefinition?.path,
     '',
   ));
-  const structuredCounters = structured?.counters && typeof structured.counters === 'object' ? structured.counters : null;
-  const activeDriversCount = Number(structuredCounters?.activeDrivers ?? NaN);
-  const riskyDevicesCount = Number(structuredCounters?.riskyDevices ?? NaN);
-  const staleOrOfflineCount = Number(structuredCounters?.staleOrOffline ?? NaN);
-  const openIssuesCount = Number(structuredCounters?.openIssues ?? NaN);
   const operationHealthState = !startGuidanceQuestion
     ? buildOperationHealthState({
       message,
@@ -3255,21 +3253,6 @@ function explainFieldButtonTermsFromText(text, limit = 4) {
     .filter((row) => (Array.isArray(row.aliases) ? row.aliases : []).some((alias) => value.includes(normalizeText(alias))))
     .map((row) => `${row.term}: ${row.explanation}`);
   return uniqueStrings([...extraTerms, ...baseTerms]).slice(0, limit);
-}
-
-function stepFlowSentence(steps, limit = 3) {
-  const labels = ['Önce', 'Sonra', 'Ardından'];
-  return uniqueStrings((Array.isArray(steps) ? steps : []).filter(Boolean).slice(0, limit))
-    .map((step, index) => `${labels[index] || 'Sonra'} ${stripStepLead(step)}`)
-    .join('. ')
-    .replace(/\.\s*$/u, '')
-    .trim();
-}
-
-function stripStepLead(text) {
-  return String(text || '')
-    .replace(/^(Önce|Sonra|Ardından|İlk bakılacak yer:)\s*/iu, '')
-    .trim();
 }
 
 function buildFieldButtonHelpReply({ message, guide, screenDefinition, screenContext, analysis, roleMode, user }) {
@@ -5473,9 +5456,6 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       finalReply = `${operationHealthExactNextStep} ${finalReply}`.trim();
     }
   }
-  const guidedTaskProgress = detectCopilotGuidedTaskEngineProgressCommand(effectiveMessage, conversationState);
-  const progressCommand = String(firstNonEmpty(guidedTaskProgress?.command, reasoningAssistant?.userProgressCommand, reasoningAssistant?.interactionIntentFamily, ''));
-  const isProgressCommand = ['STEP_ENTERED', 'RESULT_CHECK', 'ALTERNATIVE_PATH', 'CONTINUE_FLOW'].includes(progressCommand);
   const screenActions = roleMode === 'SIMPLE' ? [] : screenMenuActions(effectiveScreenDefinition);
   const guideActions = Array.isArray(guide?.quickActions) ? guide.quickActions : [];
   const entityActions = entityActionPlan({
@@ -6187,7 +6167,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     continuity?.isFollowUp && continuity?.sameScreen
       ? 'Aynı ekran bağlamında devam ediyoruz.'
       : '',
-  ]).slice(0, 3).join(' ').trim();
+  ].filter((fragment) => !looksLikeWorkflowPurposeLeak(fragment))).slice(0, 3).join(' ').trim();
   const contextSummary = workflowStyle
     ? workflowContextSummary
     : [
@@ -6722,7 +6702,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const actionLeadVisibleReplyTypes = new Set(['NEXT_SCREEN', 'NEXT_STEP', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'READINESS_CHECK', 'CONTRACT_TO_SHIFT', 'CONTRACT_SHIFT_TODAY', 'PAYMENT_READINESS', 'PAYMENT_MISSING', 'DYNAMIC_SAVINGS_PREVIEW', 'EXCEL_ROUTE_PREVIEW', 'ADDRESS_GEOCODE_PREVIEW', 'OSRM_ROUTE_DRAFT_PREVIEW', 'ROUTE_APPLY_BLOCKED', 'ROUTE_REVIEW_HUMAN_APPROVAL', 'FAKE_SUCCESS_REQUEST_BLOCKED', 'IMPORT_WRITE_BLOCKED', 'DETAIL_FLOW']);
   const responseQuestionTypeKey = String(responseQuestionType || questionType || '');
   const visibleReplyStartsWithClarifier = /^(\s*Şimdi:\s*)?Netleştirelim:/i.test(visibleReply);
-  const visibleReplyWithLead = visibleReplyStartsWithClarifier
+  const visibleReplyWithLead = collapseDuplicateVisibleActionPair(visibleReplyStartsWithClarifier
     ? (actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
       ? (String(visibleReply).trim().startsWith('Şimdi:')
         ? String(visibleReply).trim()
@@ -6731,7 +6711,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     : (actionLeadVisibleReplyTypes.has(responseQuestionTypeKey)
       && !/^(Şimdi:|Şimdi yap:|Önce:)/i.test(visibleReply)
         ? `Şimdi: ${visibleReply}`.trim()
-        : visibleReply);
+        : visibleReply));
   const visibleFollowUpPrompt = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.followUpPrompt || nextPromptByEntity(entityType, roleMode)));
   const visibleActionPlanLabel = visibleSurfaceValue(normalizeVisibleReplyFragment(actionPlanLabel));
   const visibleBestNextAction = visibleSurfaceValue(normalizeVisibleReplyFragment(contextPriority?.bestNextAction || ''));

@@ -86,11 +86,6 @@ function gitLines(args) {
     .filter(Boolean);
 }
 
-function smokeSummary(report) {
-  const counts = report.statusCounts || {};
-  return `PASS ${Number(counts.PASS || 0)}/${Number(counts["PASS-"] || 0)}/${Number(counts["UX-FIX"] || 0)}/${Number(counts.BLOCKER || 0)}`;
-}
-
 function expectSmokeReport(spec) {
   must(fs.existsSync(spec.path), `${spec.label} report exists`);
   const report = readJson(spec.path);

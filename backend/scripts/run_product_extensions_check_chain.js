@@ -188,6 +188,7 @@ const steps = [
   'check:loadtest2000users01',
   'check:dbpoolandapiscaling01',
   'check:observabilitymonitoringalerting01',
+  'check:backendlintwarningburndown01',
 ];
 
 function runStep(scriptName) {

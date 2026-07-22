@@ -9,7 +9,6 @@ import {
   looksLikeCompanyPlanningSurfaceText,
   looksLikeDetailContinuationRequest,
   looksLikeNextBestActionQuestion,
-  looksLikeOnboardingStartQuestion,
   normalizeLooseText,
   normalizeRoleKey,
   normalizeText,
@@ -32,13 +31,6 @@ function normalizeMatchText(value) {
 function makeClarifyingReply(question, alternative) {
   return uniqueStrings([
     `Netleştirelim: ${String(question || '').trim()}`,
-    `Alternatif: ${String(alternative || '').trim()}`,
-  ]).join(' ').trim();
-}
-
-function makeContinuationReply(text, alternative) {
-  return uniqueStrings([
-    `Devam edelim: ${String(text || '').trim()}`,
     `Alternatif: ${String(alternative || '').trim()}`,
   ]).join(' ').trim();
 }

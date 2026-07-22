@@ -67,8 +67,8 @@ export function buildRoomShiftSemanticOverrideReply({
   sourceScreenContext,
   selectedCarrySummary = () => '',
   extractVisibleValueFromText = () => '',
-  normalizeVisibleReplyFragment: normalizeVisibleReplyFragmentImpl = normalizeVisibleReplyFragment,
-  ensureVisibleSentence: ensureVisibleSentenceImpl = ensureVisibleSentence,
+  normalizeVisibleReplyFragment: _normalizeVisibleReplyFragmentImpl = normalizeVisibleReplyFragment,
+  ensureVisibleSentence: _ensureVisibleSentenceImpl = ensureVisibleSentence,
   looksLikeDetailContinuationRequest: looksLikeDetailContinuationRequestImpl = looksLikeDetailContinuationRequest,
 }) {
   const normalizedUserRole = normalizeRoleKey(firstNonEmpty(user?.role, userRole, ''));

@@ -9,11 +9,9 @@ import { buildSuggestedChips, detectQuestionIntent } from '../src/ai/chat/intent
 import {
   buildPlanReviewReply,
   buildPlanReviewState,
-  PLAN_REVIEW_ENGINE_VERSION,
   PLAN_REVIEW_GUARD_REQUIREMENTS,
   PLAN_REVIEW_NO_WRITE_ACTIONS,
   PLAN_REVIEW_REGRESSION_BOUNDARIES,
-  PLAN_REVIEW_SURFACE_PROFILES,
   PLAN_REVIEW_TERMINOLOGY,
   PLAN_REVIEW_TRIGGER_PHRASES,
   looksLikePlanReviewQuestion,
@@ -22,10 +20,6 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
-
-function read(rel) {
-  return fs.readFileSync(path.join(root, rel), 'utf8');
-}
 
 function normalize(text) {
   return String(text || '')
@@ -58,15 +52,10 @@ function ok(label) {
 
 function casePass(label) {
   ok(label);
-  caseCount += 1;
 }
 
 function must(text, needle, label) {
   check(normalize(text).includes(normalize(needle)), label);
-}
-
-function mustNot(text, needle, label) {
-  check(!normalize(text).includes(normalize(needle)), label);
 }
 
 function ordered(text, needles, label) {
@@ -481,7 +470,6 @@ function readRoot(rel) {
 }
 
 let assertionCount = 0;
-let caseCount = 0;
 let runtimeCaseCount = 0;
 let regressionCaseCount = 0;
 const surfaceCoverageSeen = new Set();
@@ -733,7 +721,7 @@ async function main() {
 
   const noWriteActionHits = PLAN_REVIEW_NO_WRITE_ACTIONS.filter((needle) => !containsNormalized(aggregateReplyText, needle));
   const terminologyHits = PLAN_REVIEW_TERMINOLOGY.filter((needle) => containsNormalized(aggregateReplyText, needle));
-  const regressionBoundaryHits = regressionCases.filter((item) => true).length;
+  const regressionBoundaryHits = regressionCases.length;
   check(noWriteActionHits.length === PLAN_REVIEW_NO_WRITE_ACTIONS.length, `no-write-action coverage is ${PLAN_REVIEW_NO_WRITE_ACTIONS.length}/${PLAN_REVIEW_NO_WRITE_ACTIONS.length}`);
   ok(`no-write-action summary ${PLAN_REVIEW_NO_WRITE_ACTIONS.length}/${PLAN_REVIEW_NO_WRITE_ACTIONS.length}`);
   check(terminologyHits.length === PLAN_REVIEW_TERMINOLOGY.length, `terminology coverage is ${PLAN_REVIEW_TERMINOLOGY.length}/${PLAN_REVIEW_TERMINOLOGY.length}`);

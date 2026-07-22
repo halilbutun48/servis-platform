@@ -89,6 +89,7 @@ function main() {
   const css = read('web/src/index.css');
   const observabilityDoc = read('docs/OBSERVABILITY_MONITORING_ALERTING_01.md');
   const observabilityProbe = read('backend/scripts/observability_monitoring_alerting_01_probe.js');
+  const backendLintDoc = read('docs/BACKEND_LINT_WARNING_BURNDOWN_01.md');
 
   must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json exposes check:product-extensions');
   must(pkg, '"check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js"', 'package.json exposes check:verifychain01');
@@ -189,6 +190,7 @@ function main() {
   must(runner, 'check:airesponsesemanticqualitygate01', 'product extensions chain includes check:airesponsesemanticqualitygate01');
   must(runner, 'check:loadtest2000users01', 'product extensions chain includes check:loadtest2000users01');
   must(runner, 'check:observabilitymonitoringalerting01', 'product extensions chain includes check:observabilitymonitoringalerting01');
+  must(runner, 'check:backendlintwarningburndown01', 'product extensions chain includes check:backendlintwarningburndown01');
   must(runner, 'check:seferabiturkishterminology01', 'product extensions chain includes check:seferabiturkishterminology01');
   must(runner, 'check:seferabiturkishuserfacinglanguage01', 'product extensions chain includes check:seferabiturkishuserfacinglanguage01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
@@ -280,6 +282,7 @@ function main() {
   must(pkg, '"check:airesponsesemanticqualitygate01": "node backend/scripts/ai_response_semantic_quality_gate_01_check.js"', 'package.json exposes check:airesponsesemanticqualitygate01');
   must(pkg, '"check:loadtest2000users01": "node backend/scripts/load_test_2000_users_01_check.js"', 'package.json exposes check:loadtest2000users01');
   must(pkg, '"check:observabilitymonitoringalerting01": "node backend/scripts/observability_monitoring_alerting_01_check.js"', 'package.json exposes check:observabilitymonitoringalerting01');
+  must(pkg, '"check:backendlintwarningburndown01": "node backend/scripts/backend_lint_warning_burndown_01_check.js"', 'package.json exposes check:backendlintwarningburndown01');
   must(companyAgreementsPanel, 'CompanyAgreementsMobileCards', 'company agreements panel wires mobile cards');
   must(companyAgreementsPanel, 'desktopShiftTable companyAgreementsDesktopList', 'company agreements panel keeps desktop table wrapper');
   must(companyAgreementsMobileCards, 'CompanyAgreementMobileCard', 'company agreements mobile cards file exports card');
@@ -884,7 +887,11 @@ function main() {
   must(primer, 'check:observabilitymonitoringalerting01', 'primer exposes observability check');
   must(primer, 'docs/OBSERVABILITY_MONITORING_ALERTING_01.md', 'primer links observability doc');
   must(primer, 'backend/scripts/observability_monitoring_alerting_01_check.js', 'primer links observability command');
-  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'LOAD-TEST-2000-USERS-01', 'DB-POOL-AND-API-SCALING-01', 'OBSERVABILITY-MONITORING-ALERTING-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling and observability in order');
+  must(primer, 'BACKEND-LINT-WARNING-BURNDOWN-01', 'primer mentions backend lint burndown milestone');
+  must(primer, 'check:backendlintwarningburndown01', 'primer exposes backend lint burndown check');
+  must(primer, 'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md', 'primer links backend lint burndown doc');
+  must(primer, 'backend/scripts/backend_lint_warning_burndown_01_check.js', 'primer links backend lint burndown command');
+  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'LOAD-TEST-2000-USERS-01', 'DB-POOL-AND-API-SCALING-01', 'OBSERVABILITY-MONITORING-ALERTING-01', 'BACKEND-LINT-WARNING-BURNDOWN-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling and observability in order');
   must(loadTestDoc, '# LOAD-TEST-2000-USERS-01', 'load-test doc title present');
   must(loadTestDoc, '## 1) Purpose', 'load-test doc purpose heading present');
   must(loadTestDoc, '## 6) Local-safe harness policy', 'load-test doc harness heading present');
@@ -929,6 +936,11 @@ function main() {
   must(observabilityDoc, 'backend/scripts/observability_monitoring_alerting_01_probe.js', 'observability doc mentions probe helper');
   must(observabilityDoc, 'backend/artifacts/observability/observability_monitoring_alerting_01_report.json', 'observability doc mentions generated report path');
   must(observabilityDoc, 'UX-SUPERADMIN-LIVE-MONITORING-01', 'observability doc mentions next milestone');
+  must(backendLintDoc, '# BACKEND-LINT-WARNING-BURNDOWN-01', 'backend lint burndown doc title present');
+  must(backendLintDoc, 'check:backendlintwarningburndown01', 'backend lint burndown doc mentions canonical check alias');
+  must(backendLintDoc, 'node backend/scripts/backend_lint_warning_burndown_01_check.js', 'backend lint burndown doc mentions canonical check command');
+  must(backendLintDoc, '0 error / 0 warning', 'backend lint burndown doc mentions final zero-warning state');
+  must(backendLintDoc, 'DATA-INTEGRITY-AND-RECOVERY-01', 'backend lint burndown doc mentions next milestone');
   must(observabilityProbe, 'OBSERVABILITY_BASE_URL must stay local/dev-safe', 'observability probe mentions local-only base url');
   must(observabilityProbe, 'OBSERVABILITY_ALLOW_AUTH_ENDPOINTS=true requires OBSERVABILITY_AUTH_TOKEN', 'observability probe mentions auth opt-in');
   must(observabilityProbe, '/api/observability/health-summary', 'observability probe mentions health summary endpoint');
@@ -1323,6 +1335,10 @@ function main() {
   must(harnessCheck, 'docs/OBSERVABILITY_MONITORING_ALERTING_01.md', 'script harness check knows observability doc');
   must(harnessCheck, 'node backend\\scripts\\observability_monitoring_alerting_01_check.js', 'script harness check knows observability command');
   must(harnessCheck, 'backend\\scripts\\observability_monitoring_alerting_01_probe.js', 'script harness check knows observability probe');
+  must(harnessCheck, 'BACKEND-LINT-WARNING-BURNDOWN-01', 'script harness check knows backend lint burndown milestone');
+  must(harnessCheck, 'check:backendlintwarningburndown01', 'script harness check knows backend lint burndown alias');
+  must(harnessCheck, 'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md', 'script harness check knows backend lint burndown doc');
+  must(harnessCheck, 'backend\\scripts\\backend_lint_warning_burndown_01_check.js', 'script harness check knows backend lint burndown command');
   must(harnessCheck, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness check knows cleanup milestone');
   must(harnessCheck, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness check knows cleanup alias');
   must(harnessCheck, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness check knows cleanup doc');
@@ -1401,7 +1417,11 @@ function main() {
   must(harnessDoc, 'docs/OBSERVABILITY_MONITORING_ALERTING_01.md', 'script harness doc lists observability doc');
   must(harnessDoc, 'node backend\\scripts\\observability_monitoring_alerting_01_check.js', 'script harness doc lists observability command');
   must(harnessDoc, 'node backend\\scripts\\observability_monitoring_alerting_01_probe.js', 'script harness doc lists observability probe');
-  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Dashboard bulk endpoint milestone: `DASHBOARD-BULK-ENDPOINT-01`', 'Cache coalescing and backoff milestone: `CACHE-COALESCING-AND-BACKOFF-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Load test 2000 users milestone: `LOAD-TEST-2000-USERS-01`', 'DB pool and API scaling milestone: `DB-POOL-AND-API-SCALING-01`', 'Observability monitoring alerting milestone: `OBSERVABILITY-MONITORING-ALERTING-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling and observability in order');
+  must(harnessDoc, 'BACKEND-LINT-WARNING-BURNDOWN-01', 'script harness doc lists backend lint burndown milestone');
+  must(harnessDoc, 'check:backendlintwarningburndown01', 'script harness doc lists backend lint burndown alias');
+  must(harnessDoc, 'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md', 'script harness doc lists backend lint burndown doc');
+  must(harnessDoc, 'node backend\\scripts\\backend_lint_warning_burndown_01_check.js', 'script harness doc lists backend lint burndown command');
+  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Dashboard bulk endpoint milestone: `DASHBOARD-BULK-ENDPOINT-01`', 'Cache coalescing and backoff milestone: `CACHE-COALESCING-AND-BACKOFF-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Load test 2000 users milestone: `LOAD-TEST-2000-USERS-01`', 'DB pool and API scaling milestone: `DB-POOL-AND-API-SCALING-01`', 'Observability monitoring alerting milestone: `OBSERVABILITY-MONITORING-ALERTING-01`', 'Backend lint warning burndown milestone: `BACKEND-LINT-WARNING-BURNDOWN-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling, observability and backend lint burndown in order');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
@@ -1533,7 +1553,11 @@ function main() {
   must(guide, 'node backend\\scripts\\observability_monitoring_alerting_01_check.js', 'script guide includes observability command');
   must(guide, 'node backend\\scripts\\observability_monitoring_alerting_01_probe.js', 'script guide includes observability probe');
   must(guide, 'docs/OBSERVABILITY_MONITORING_ALERTING_01.md', 'script guide includes observability doc');
-  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'LOAD-TEST-2000-USERS-01', 'DB-POOL-AND-API-SCALING-01', 'OBSERVABILITY-MONITORING-ALERTING-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling and observability in order');
+  must(guide, 'BACKEND-LINT-WARNING-BURNDOWN-01', 'script guide mentions backend lint burndown milestone');
+  must(guide, 'check:backendlintwarningburndown01', 'script guide exposes backend lint burndown check');
+  must(guide, 'node backend\\scripts\\backend_lint_warning_burndown_01_check.js', 'script guide includes backend lint burndown command');
+  must(guide, 'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md', 'script guide includes backend lint burndown doc');
+  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'LOAD-TEST-2000-USERS-01', 'DB-POOL-AND-API-SCALING-01', 'OBSERVABILITY-MONITORING-ALERTING-01', 'BACKEND-LINT-WARNING-BURNDOWN-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling, observability and backend lint burndown in order');
   must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
   must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');
   must(guide, 'node backend\\scripts\\ux_parent_personel_live_error_clarity_01_check.js', 'script guide includes parent/personel live error clarity command');

@@ -41,34 +41,6 @@ function redactSensitiveLiveSelectionText(value, screenPath = '') {
     .trim();
 }
 
-function extractVisibleValueFromText(value, labels = []) {
-  const text = normalizeVisibleReplyFragment(firstNonEmpty(value, ''));
-  if (!text) return '';
-  const labelList = (Array.isArray(labels) ? labels : [labels]).map((item) => normalizeVisibleReplyFragment(item)).filter(Boolean);
-  for (const label of labelList) {
-    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const patterns = [
-      new RegExp(`(?:^|[•\\-])\\s*${escaped}\\s*[:：]?\\s*([^•]+)`, 'i'),
-      new RegExp(`(?:^|[•\\-])\\s*${escaped}\\s+([^•]+)`, 'i'),
-    ];
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match?.[1]) return normalizeVisibleReplyFragment(match[1]);
-    }
-  }
-  return '';
-}
-
-function extractPlateFromVisibleText(value) {
-  const text = normalizeVisibleReplyFragment(firstNonEmpty(value, ''));
-  if (!text) return '';
-  const explicit = text.match(/\b(?:Araç|Vehicle)\s*([A-Z0-9-]{5,})\b/i);
-  if (explicit?.[1]) return explicit[1];
-  const barePlate = text.match(/\b([A-Z0-9-]{5,})\b/i);
-  if (barePlate?.[1] && /\d/.test(barePlate[1])) return barePlate[1];
-  return '';
-}
-
 function compactLiveSummaryFromText(value) {
   const text = normalizeVisibleReplyFragment(firstNonEmpty(value, ''));
   if (!text) return '';

@@ -76,15 +76,6 @@ function mustEqual(actual, expected, label) {
   must(normalize(actual) === normalize(expected), `${label} expected=${String(expected || '')} actual=${String(actual || '')}`);
 }
 
-function mustInclude(text, needle, label) {
-  must(normalize(text).includes(normalize(needle)), `${label} missing=${String(needle || '')}`);
-}
-
-function mustIncludeAny(text, needles, label) {
-  const list = Array.isArray(needles) ? needles : [needles];
-  must(list.some((needle) => normalize(text).includes(normalize(needle))), `${label} missing any of ${list.join(' / ')}`);
-}
-
 function uniqueStrings(values) {
   return [...new Set((Array.isArray(values) ? values : []).flatMap((value) => flattenStrings(value)).map((value) => String(value || '').trim()).filter(Boolean))];
 }

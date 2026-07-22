@@ -219,6 +219,7 @@
     "check:loadtest2000users01": "node backend/scripts/load_test_2000_users_01_check.js",
     "check:dbpoolandapiscaling01": "node backend/scripts/db_pool_and_api_scaling_01_check.js",
     "check:observabilitymonitoringalerting01": "node backend/scripts/observability_monitoring_alerting_01_check.js",
+    "check:backendlintwarningburndown01": "node backend/scripts/backend_lint_warning_burndown_01_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",

@@ -24,14 +24,6 @@ function containsAny(text, needles = []) {
   });
 }
 
-function joinTurkishList(items = []) {
-  const rows = uniqueStrings((Array.isArray(items) ? items : []).map((item) => normalizeSentence(item)).filter(Boolean));
-  if (!rows.length) return '';
-  if (rows.length === 1) return rows[0];
-  if (rows.length === 2) return `${rows[0]} ve ${rows[1]}`;
-  return `${rows.slice(0, -1).join(', ')} ve ${rows[rows.length - 1]}`;
-}
-
 function selectedAnchor(snapshot = {}) {
   return firstNonEmpty(
     snapshot.selectedLabel,

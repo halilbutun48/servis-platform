@@ -92,11 +92,6 @@ function mustInclude(text, needles, label) {
   }
 }
 
-function mustIncludeAny(text, needles, label) {
-  const list = Array.isArray(needles) ? needles : [needles];
-  must(list.some((needle) => contains(text, needle)), `${label} missing any of ${list.join(' / ')}`);
-}
-
 function mustNotInclude(text, needles, label) {
   const list = Array.isArray(needles) ? needles : [needles];
   for (const needle of list) {

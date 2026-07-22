@@ -126,16 +126,6 @@ function expectSmoke(spec) {
   return report;
 }
 
-function statusCountsSummary(report) {
-  const counts = report.statusCounts || {};
-  return [
-    `PASS ${Number(counts.PASS || 0)}`,
-    `PASS- ${Number(counts["PASS-"] || 0)}`,
-    `UX-FIX ${Number(counts["UX-FIX"] || 0)}`,
-    `BLOCKER ${Number(counts.BLOCKER || 0)}`,
-  ].join(" / ");
-}
-
 function main() {
   console.log("=== CACHE-COALESCING-AND-BACKOFF-01 CHECK ===");
 

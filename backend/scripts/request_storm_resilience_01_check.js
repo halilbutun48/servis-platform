@@ -87,27 +87,6 @@ function statusCountsSummary(report) {
   ].join(" / ");
 }
 
-function expectReport(reportPath, expected, label) {
-  must(fs.existsSync(reportPath), `${label} report exists`);
-  const report = readJson(reportPath);
-  must(Number(report.routeCount || 0) === expected.routeCount, `${label} route count`);
-  must(Number(report.screenshotCount || 0) === expected.screenshotCount, `${label} screenshot count`);
-  must(Boolean(report.success) === true, `${label} success flag`);
-  must(Number(report.consoleErrorCount || 0) === expected.consoleErrorCount, `${label} console error count`);
-  must(Number(report.pageErrorCount || 0) === expected.pageErrorCount, `${label} page error count`);
-  must(Number(report.totalLoginFailures || 0) === expected.totalLoginFailures, `${label} login failure count`);
-  must(Number(report.statusCounts?.PASS || 0) === expected.passCount, `${label} PASS count`);
-  must(Number(report.statusCounts?.["PASS-"] || 0) === expected.passMinusCount, `${label} PASS- count`);
-  must(Number(report.statusCounts?.["UX-FIX"] || 0) === expected.uxFixCount, `${label} UX-FIX count`);
-  must(Number(report.statusCounts?.BLOCKER || 0) === expected.blockerCount, `${label} BLOCKER count`);
-  must(Number(report.statusCounts?.["AUTH-BLOCKED"] || 0) === expected.authBlockedCount, `${label} AUTH-BLOCKED count`);
-  must(Number(report.statusCounts?.["NOT-FOUND"] || 0) === expected.notFoundCount, `${label} NOT-FOUND count`);
-  must(Array.isArray(report.routes), `${label} routes array present`);
-  must(report.routes.length === expected.routeCount, `${label} route rows count`);
-  must(report.routes.every((row) => Array.isArray(row.consoleErrors) && row.consoleErrors.every((item) => noIgnore429(item))), `${label} console errors are 429-free`);
-  must(report.routes.every((row) => Array.isArray(row.pageErrors) && row.pageErrors.length === 0), `${label} page errors are empty`);
-}
-
 function addCase(cases, label, fn) {
   cases.push({ label, fn });
 }

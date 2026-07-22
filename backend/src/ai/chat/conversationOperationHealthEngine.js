@@ -1,15 +1,10 @@
 import {
   ensureVisibleSentence,
-  looksLikeClarifyingQuestionRequest,
-  looksLikeDetailContinuationRequest,
-  looksLikeNextBestActionQuestion,
-  looksLikeOnboardingStartQuestion,
-  looksLikeScreenStartQuestion,
   normalizeVisibleReplyFragment,
   prettyRoleName,
   prettyScreenLabel,
 } from './conversationTaskStateShared.js';
-import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
+import { uniqueStrings } from './replyShapes.js';
 
 export const OPERATION_HEALTH_ENGINE_VERSION = 'COPILOT-OPERATION-HEALTH-ENGINE-01';
 
@@ -163,10 +158,6 @@ function normalizeLooseText(value) {
     .trim()
     .toLowerCase()
     .replace(/\u0307/g, '');
-}
-
-function compactText(value) {
-  return normalizeLooseText(value).replace(/\s+/g, ' ');
 }
 
 function pathHas(path = '', needles = []) {
@@ -604,7 +595,7 @@ function buildOperationHealthCoreReply({
   safestNextStep,
   compareHint,
   replyTail = '',
-  questionType = '',
+  _questionType = '',
 }) {
   const screenPurposeLead = surface?.label ? `${surface.label} tarafı takip için kullanılır.` : '';
   return normalizeVisibleReplyFragment(uniqueTextList([

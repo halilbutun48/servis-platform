@@ -385,10 +385,6 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
-function compactText(value) {
-  return normalizeText(value).replace(/\s+/g, '');
-}
-
 function textHas(text = '', needles = []) {
   const haystack = normalizeText(text);
   return (Array.isArray(needles) ? needles : []).some((needle) => haystack.includes(normalizeText(needle)));

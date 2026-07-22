@@ -4,7 +4,6 @@ import { firstNonEmpty, uniqueStrings } from './replyShapes.js';
 import {
   companyPlanningCenterSurfaceText,
   companyPlanningUiSurfaceText,
-  ensureVisibleSentence,
   looksLikeCompanyPlanningSurfaceText,
   normalizeLooseText,
   normalizeRoleKey,
@@ -107,13 +106,6 @@ function hasAny(text, needles = []) {
     const target = normalizeLooseText(needle);
     return Boolean(target) && value.includes(target);
   });
-}
-
-function joinNumbered(items = [], maxItems = 3) {
-  return uniqueStrings((Array.isArray(items) ? items : []).map((item) => normalizeSentence(item)).filter(Boolean))
-    .slice(0, maxItems)
-    .map((item, index) => `${index + 1}) ${ensureVisibleSentence(item)}`)
-    .join(' ');
 }
 
 function buildSurfaceSnapshot({

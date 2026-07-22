@@ -246,10 +246,6 @@ function buildAssistantResponse({
   });
 }
 
-function describeFixture(fixture) {
-  return `${fixture?.screenContext?.path || ''} :: ${fixture?.screenContext?.label || ''}`;
-}
-
 function runRootCauseScenario(testCase) {
   const intent = detectQuestionIntent(testCase.message, {
     originalMessage: testCase.message,
