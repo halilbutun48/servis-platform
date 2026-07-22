@@ -409,6 +409,10 @@ async function main() {
       'backend/scripts/cache_coalescing_and_backoff_01_check.js',
       'backend/src/utils/responseCache.js',
       'docs/CACHE_COALESCING_AND_BACKOFF_01.md',
+      // Observability monitoring alerting files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/observability_monitoring_alerting_01_check.js',
+      'backend/scripts/observability_monitoring_alerting_01_probe.js',
+      'docs/OBSERVABILITY_MONITORING_ALERTING_01.md',
       // Quality gate final file is a legitimate smoke-summary companion for this pass.
       'backend/scripts/quality_gate_final_01_check.js',
       // Production rate limit policy files are legitimate consolidated-scope companions for this pass.

@@ -481,6 +481,10 @@ async function main() {
     'backend/scripts/cache_coalescing_and_backoff_01_check.js',
     'backend/src/utils/responseCache.js',
     'docs/CACHE_COALESCING_AND_BACKOFF_01.md',
+    // Observability monitoring alerting files are legitimate scope companions for this consolidated pass.
+    'backend/scripts/observability_monitoring_alerting_01_check.js',
+    'backend/scripts/observability_monitoring_alerting_01_probe.js',
+    'docs/OBSERVABILITY_MONITORING_ALERTING_01.md',
     // Production rate limit policy files are legitimate scope companions for this consolidated pass.
     'backend/scripts/production_rate_limit_policy_01_check.js',
     'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md',

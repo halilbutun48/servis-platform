@@ -34,6 +34,9 @@ const workingTreeCompatFiles = [
   "backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js",
   "backend/scripts/dashboard_bulk_endpoint_01_check.js",
   "backend/scripts/cache_coalescing_and_backoff_01_check.js",
+  "backend/scripts/observability_monitoring_alerting_01_check.js",
+  "backend/scripts/observability_monitoring_alerting_01_probe.js",
+  "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
@@ -212,6 +215,7 @@ const selectedDocs = [
   "docs/DASHBOARD_BULK_ENDPOINT_01.md",
   "docs/CACHE_COALESCING_AND_BACKOFF_01.md",
   "docs/LOAD_TEST_2000_USERS_01.md",
+  "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
   "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
   "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
@@ -341,6 +345,7 @@ function slugToMilestone(slug) {
     [/cachecoalescingandbackoff0?1/i, "CACHE-COALESCING-AND-BACKOFF-01"], // check:cachecoalescingandbackoff01
     [/load[_-]?test[_-]?2000[_-]?users[_-]?01(?:[_-]?check|[_-]?harness)?/i, "LOAD-TEST-2000-USERS-01"], // check:loadtest2000users01
     [/db[_-]?pool[_-]?and[_-]?api[_-]?scaling[_-]?01(?:[_-]?check|[_-]?probe)?/i, "DB-POOL-AND-API-SCALING-01"], // check:dbpoolandapiscaling01
+    [/observability[_-]?monitoring[_-]?alerting[_-]?01(?:[_-]?check|[_-]?probe)?/i, "OBSERVABILITY-MONITORING-ALERTING-01"], // check:observabilitymonitoringalerting01
     [/requeststormresilience0?1/i, "REQUEST-STORM-RESILIENCE-01"], // check:requeststormresilience01
     [/airesponsesemanticqualitygate0?1/i, "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01"], // check:airesponsesemanticqualitygate01
     [/uxsmokepassminusevidence0?1/i, "UX-SMOKE-PASS-MINUS-EVIDENCE-01"],
@@ -1533,6 +1538,12 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- DB pool and API scaling docs: \`docs/DB_POOL_AND_API_SCALING_01.md\``);
   out.push(`- DB pool and API scaling command: \`node backend\\scripts\\db_pool_and_api_scaling_01_check.js\``);
   // node backend/scripts/db_pool_and_api_scaling_01_check.js
+  out.push(`- Observability monitoring alerting milestone: \`OBSERVABILITY-MONITORING-ALERTING-01\``);
+  out.push(`- Observability monitoring alerting alias: \`check:observabilitymonitoringalerting01\``);
+  out.push(`- Observability monitoring alerting docs: \`docs/OBSERVABILITY_MONITORING_ALERTING_01.md\``);
+  out.push(`- Observability monitoring alerting command: \`node backend\\scripts\\observability_monitoring_alerting_01_check.js\``);
+  out.push(`- Observability monitoring alerting probe: \`node backend\\scripts\\observability_monitoring_alerting_01_probe.js\``);
+  // node backend/scripts/observability_monitoring_alerting_01_check.js
   out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
   out.push(`- Agreements detail docs: \`docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md\``);
   out.push(`- Agreements detail command: \`node backend\\scripts\\ux_premium_critical_fix_agreements_detail_01_check.js\``);
@@ -2048,6 +2059,11 @@ function verifyDoc(docText, summary) {
     "check:dbpoolandapiscaling01",
     "docs/DB_POOL_AND_API_SCALING_01.md",
     "node backend\\scripts\\db_pool_and_api_scaling_01_check.js",
+    "OBSERVABILITY-MONITORING-ALERTING-01",
+    "check:observabilitymonitoringalerting01",
+    "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
+    "node backend\\scripts\\observability_monitoring_alerting_01_check.js",
+    "backend/scripts/observability_monitoring_alerting_01_probe.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",

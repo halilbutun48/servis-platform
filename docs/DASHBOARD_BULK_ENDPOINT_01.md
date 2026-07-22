@@ -176,4 +176,4 @@ Bu milestone, dashboard fan-out'u azaltan read-only bulk katmanının ardından 
 
 `REQUEST-STORM-RESILIENCE-01` ve `PRODUCTION-RATE-LIMIT-POLICY-01` bu read-only bulk yaklaşımıyla birlikte okunur; dashboard fan-out azaltma, cache coalescing, request-storm ve policy katmanları aynı read-heavy koruma zincirinin parçalarıdır.
 
-`LOAD-TEST-2000-USERS-01` bu zincirdeki local/dev-safe 2000-user readiness hazırlığını ayrı bir harness olarak takip eder; `DB-POOL-AND-API-SCALING-01` ise onun ardından DB pool ve API scaling readiness katmanını açar; production load, external/public URL ve write-action sınırını açmaz.
+`LOAD-TEST-2000-USERS-01` bu zincirdeki local/dev-safe 2000-user readiness hazırlığını ayrı bir harness olarak takip eder; `DB-POOL-AND-API-SCALING-01` ise onun ardından DB pool ve API scaling readiness katmanını açar; `OBSERVABILITY-MONITORING-ALERTING-01` bu read-only bulk sinyallerini alert/runbook yüzeyine bağlar; production load, external/public URL ve write-action sınırını açmaz.

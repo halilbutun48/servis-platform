@@ -594,6 +594,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Harness: `backend\scripts\load_test_2000_users_01_harness.js`
 - 2000-user planı dashboard bulk, cache coalescing, request storm ve production rate-limit companion guard'larından ayrı tutulur; production/public URL load, write-action, human approval ve Prisma sınırı açılmaz.
 
+### OBSERVABILITY-MONITORING-ALERTING-01 [CHECK]
+- `check:observabilitymonitoringalerting01` health, metrics, alert ve KVKK-safe logging readiness guard'ını local/dev-safe GET probe, incident runbook yüzeyi ve smoke threshold zinciri ile sabitler.
+- Check script: `node backend\scripts\observability_monitoring_alerting_01_check.js`
+- Probe helper: `node backend\scripts\observability_monitoring_alerting_01_probe.js`
+- Final doc: `docs/OBSERVABILITY_MONITORING_ALERTING_01.md`
+- DB pool ve API scaling sonrasında alarm bandı, rate-limit policy, dashboard bulk, cache coalescing ve request storm sinyallerini okunur hale getirir; production/public probe, write-action ve schema/migration sınırı açılmaz.
+
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
 - `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.

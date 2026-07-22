@@ -227,7 +227,7 @@ Planned validation:
 
 ## 16) Remaining risks
 
-- 2000-user plan, DB pool ve API scaling milestone'una bağlanmadan gerçek production yük gibi kullanılmamalı
+- 2000-user plan, DB pool ve API scaling milestone'una bağlanmadan gerçek production yük gibi kullanılmamalı; `OBSERVABILITY-MONITORING-ALERTING-01` bu hattı alarm/runbook yüzeyine bağlar
 - auth opt-in path'ler tekrar genel akışa sızarsa smoke-load ile acceptance load karışabilir
 - 429 ignore list açılırsa gerçek kapasite sinyali kaybolur
 - generated report gitignored klasörde tutulmazsa commit-external boundary bozulur

@@ -39,3 +39,4 @@ README_M*_OVERLAY*.txt
 backend/artifacts/browser-smoke/
 backend/artifacts/load-test/
 backend/artifacts/db-scaling/
+backend/artifacts/observability/
