@@ -679,6 +679,7 @@ function main() {
       "web/src/panels/company/shiftPeopleTabSections.jsx",
       "web/src/utils/planCenterOverlayLayer.js",
       "web/src/utils/uiDataCache.js",
+      "backend/src/utils/responseCache.js",
       "backend/src/bootstrap/routeMounts.js",
       "backend/src/server.js",
       "backend/src/routes/dashboardBulk.js",

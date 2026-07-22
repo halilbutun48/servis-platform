@@ -89,6 +89,8 @@ const EXPECTED_SMOKES = [
     routeCount: 18,
     screenshotCount: 36,
     passCount: 18,
+    consoleErrorCount: 0,
+    pageErrorCount: 0,
   },
   {
     label: "premium",
@@ -96,6 +98,8 @@ const EXPECTED_SMOKES = [
     routeCount: 82,
     screenshotCount: 164,
     passCount: 82,
+    consoleErrorCount: 0,
+    pageErrorCount: 0,
   },
   {
     label: "all-panels",
@@ -103,6 +107,8 @@ const EXPECTED_SMOKES = [
     routeCount: 82,
     screenshotCount: 164,
     passCount: 82,
+    consoleErrorCount: 0,
+    pageErrorCount: 0,
   },
   {
     label: "mobile all-roles",
@@ -110,6 +116,8 @@ const EXPECTED_SMOKES = [
     routeCount: 82,
     screenshotCount: 164,
     passCount: 82,
+    consoleErrorCount: 0,
+    pageErrorCount: 0,
   },
 ];
 
@@ -176,8 +184,8 @@ function expectReport(spec) {
   must(Number(report.routeCount || 0) === spec.routeCount, `${spec.label} route count`);
   must(Number(report.screenshotCount || 0) === spec.screenshotCount, `${spec.label} screenshot count`);
   must(Boolean(report.success) === true, `${spec.label} success flag`);
-  must(Number(report.consoleErrorCount || 0) === 0, `${spec.label} console error count`);
-  must(Number(report.pageErrorCount || 0) === 0, `${spec.label} page error count`);
+  must(Number(report.consoleErrorCount || 0) === spec.consoleErrorCount, `${spec.label} console error count`);
+  must(Number(report.pageErrorCount || 0) === spec.pageErrorCount, `${spec.label} page error count`);
   must(Number(report.statusCounts?.PASS || 0) === spec.passCount, `${spec.label} PASS count`);
   must(Number(report.statusCounts?.["PASS-"] || 0) === 0, `${spec.label} PASS- count`);
   must(Number(report.statusCounts?.["UX-FIX"] || 0) === 0, `${spec.label} UX-FIX count`);
@@ -440,7 +448,7 @@ function main() {
     ? "429 kullanıcıya Türkçe, retryAfterSec destekli ve RATE_LIMITED kodlu dönüyor"
     : "429 kullanıcı mesajı eksik";
   const console429PolicySummary = contains(policyDoc, "429 Console Policy")
-    ? "429 console/page error ignore list açılmıyor; smoke 429'yi görünür fail olarak tutuyor"
+    ? "429 console/page error ignore list açılmıyor; product-flow, premium, all-panels ve mobile all-roles consoleErrorCount=0 ve pageErrorCount=0 kalıyor"
     : "429 console policy eksik";
   const runtimeEnforcementSummary = [
     runtimeSourceDiff.length === 0,
@@ -457,7 +465,7 @@ function main() {
     contains(requestStormDoc, "429 ignore list"),
     contains(requestStormDoc, "runtime-data"),
   ].every(Boolean)
-    ? "request-storm smoke uyumu korunuyor; sharedStorageState reuse ve 429 görünürlüğü bozulmadı"
+    ? "request-storm smoke uyumu korunuyor; sharedStorageState reuse, zero console/page error policy ve 429 ignore list yok"
     : "request-storm compatibility eksik";
   const smokeThresholdSummary = smokeReports.every(({ report, spec }) =>
     Number(report.statusCounts?.PASS || 0) === spec.passCount &&

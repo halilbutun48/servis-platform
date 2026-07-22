@@ -310,7 +310,7 @@ function buildCases() {
       must(Number(report.statusCounts?.["AUTH-BLOCKED"] || 0) === spec.expected.authBlockedCount, `${spec.label} AUTH-BLOCKED count`);
       must(Number(report.statusCounts?.["NOT-FOUND"] || 0) === spec.expected.notFoundCount, `${spec.label} NOT-FOUND count`);
     });
-    addCase(cases, `${spec.label} zero console/page errors`, () => {
+    addCase(cases, `${spec.label} console/page errors stay within expected policy`, () => {
       const report = readJson(spec.path);
       must(Number(report.consoleErrorCount || 0) === spec.expected.consoleErrorCount, `${spec.label} console error count`);
       must(Number(report.pageErrorCount || 0) === spec.expected.pageErrorCount, `${spec.label} page error count`);
@@ -400,11 +400,15 @@ function main() {
 
   const consoleErrorPolicySummary = [
     Number(premiumReport.consoleErrorCount || 0) === 0,
-    Number(mobileReport.consoleErrorCount || 0) === 0,
     Number(productFlowReport.consoleErrorCount || 0) === 0,
     Number(allPanelsReport.consoleErrorCount || 0) === 0,
+    Number(mobileReport.consoleErrorCount || 0) === 0,
+    Number(premiumReport.pageErrorCount || 0) === 0,
+    Number(productFlowReport.pageErrorCount || 0) === 0,
+    Number(allPanelsReport.pageErrorCount || 0) === 0,
+    Number(mobileReport.pageErrorCount || 0) === 0,
   ].every(Boolean)
-    ? "consoleErrorCount=0 ve pageErrorCount=0 policy'si korunuyor; 429 ignore list yok; console/page error görüldüğünde fail kalıyor"
+    ? "product-flow, premium, all-panels reality audit ve mobile all-roles consoleErrorCount=0 kalır; pageErrorCount=0; 429 ignore list yok"
     : "console/page error policy bozuldu";
 
   const thresholdSummary = [
@@ -416,19 +420,21 @@ function main() {
 
   const duplicateRequestSummary = [
     Number(premiumReport.consoleErrorCount || 0) === 0,
-    Number(mobileReport.consoleErrorCount || 0) === 0,
     Number(productFlowReport.consoleErrorCount || 0) === 0,
+    Number(allPanelsReport.consoleErrorCount || 0) === 0,
+    Number(mobileReport.consoleErrorCount || 0) === 0,
+    Number(allPanelsReport.pageErrorCount || 0) === 0,
+    Number(mobileReport.pageErrorCount || 0) === 0,
     !/429|Too Many Requests/i.test(
       [
         ...(premiumReport.routes || []),
-        ...(mobileReport.routes || []),
         ...(productFlowReport.routes || []),
       ]
         .flatMap((row) => row.consoleErrors || [])
         .join(" ")
     ),
   ].every(Boolean)
-    ? "desktop->mobile storageState reuse duplicate read flood'u kesiyor; superadmin mobile 429 regresyonu görünmüyor"
+    ? "desktop->mobile sharedStorageState reuse duplicate read flood'u kesiyor; all-panels ve mobile all-roles console/page error üretmiyor"
     : "duplicate request flood veya 429 izi var";
 
   const commitExternalSummary = [

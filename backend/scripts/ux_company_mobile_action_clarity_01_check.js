@@ -648,6 +648,7 @@ function main() {
     "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
     "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
     "web/src/utils/uiDataCache.js",
+    "backend/src/utils/responseCache.js",
     "backend/src/bootstrap/routeMounts.js",
     "backend/src/server.js",
     "backend/src/routes/dashboardBulk.js",

@@ -133,9 +133,10 @@ Kullanıcıya görünen temel 429 davranışı:
 ## 7) 429 Console Policy
 
 - 429 console/page error ignore list açılmaz
-- consoleErrorCount=0 ve pageErrorCount=0 beklenir
+- product-flow, premium, all-panels reality audit ve mobile all-roles smoke için `consoleErrorCount=0` beklenir
+- `pageErrorCount=0` korunur
 - smoke ve request-storm akışı 429’yi maskelemez
-- false positive’u azaltmak için threshold gevşetilmez
+- false positive'u azaltmak için threshold gevşetilmez
 
 ## 8) What Changed
 
@@ -206,6 +207,7 @@ Planned validation set:
 - broad read/write allowlist changes could blur auth/public boundaries
 - 429 ignore lists would hide real production signals and should not be added
 - `DASHBOARD-BULK-ENDPOINT-01` read-only bulk aggregation desteği, read-heavy dashboard fan-out'u azaltan upstream yardımcı katman olarak korunmalıdır
+- `CACHE-COALESCING-AND-BACKOFF-01` dashboard bulk/read-heavy cache helper tarafındaki companion guard olarak okunur; policy layer'ı gevşetmez ve human approval sınırını açmaz
 - browser-smoke artifacts must remain commit dışı
 - runtime-data must remain commit dışı
 

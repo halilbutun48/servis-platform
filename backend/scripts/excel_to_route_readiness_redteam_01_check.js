@@ -403,6 +403,12 @@ async function main() {
       'web/src/panels/school/OperationsPanel.jsx',
       'web/src/panels/superadmin/SuperAdminPanel.jsx',
       'web/src/utils/dashboardBulk.js',
+      // Cache coalescing and backoff files are legitimate read-only companions for this pass.
+      'backend/scripts/cache_coalescing_and_backoff_01_check.js',
+      'backend/src/utils/responseCache.js',
+      'docs/CACHE_COALESCING_AND_BACKOFF_01.md',
+      // Quality gate final file is a legitimate smoke-summary companion for this pass.
+      'backend/scripts/quality_gate_final_01_check.js',
       // Production rate limit policy files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/production_rate_limit_policy_01_check.js',
       'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md',

@@ -567,6 +567,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Aynı kullanıcı role içinde şirket / okul / oda / superadmin dashboard'larında fan-out azaltılır; read-only bulk endpoint write-action veya human approval sınırını açmaz.
 - route/service/prisma ve backend/prisma değişmez; browser-smoke, runtime-data ve debug.log commit sınırı korunur.
 
+### CACHE-COALESCING-AND-BACKOFF-01 [CHECK]
+- `check:cachecoalescingandbackoff01` dashboard bulk ve read-heavy read flows için same-key inflight coalescing / bounded backoff guard'ını audit eder.
+- Check script: `node backend\scripts\cache_coalescing_and_backoff_01_check.js`
+- Final doc: `docs/CACHE_COALESCING_AND_BACKOFF_01.md`
+- `backend/src/utils/responseCache.js` aynı-key promise reuse ile duplicate fetch fan-out'u keser; `web/src/utils/uiDataCache.js` bounded request gap / retry-after ile 429 görünürlüğünü korur.
+- `REQUEST-STORM-RESILIENCE-01` ve `PRODUCTION-RATE-LIMIT-POLICY-01` aynı read-heavy zincirin companion guard'larıdır; write-action ve human approval sınırı açılmaz.
+- route/service/prisma ve backend/prisma değişmez; browser-smoke, runtime-data ve debug.log commit sınırı korunur.
+
 ### AI-RESPONSE-SEMANTIC-QUALITY-GATE-01 [CHECK]
 - `check:airesponsesemanticqualitygate01` Sefer Abi / Copilot yanıt semantiğinde role/screen fit, intent fit, güvenli adım, insan onayı, terminoloji, belirsizlik, tekrar kontrolü, clarifying ve cross-engine separation çizgisini deterministic case suite ile audit eder.
 - Check script: `node backend\scripts\ai_response_semantic_quality_gate_01_check.js`

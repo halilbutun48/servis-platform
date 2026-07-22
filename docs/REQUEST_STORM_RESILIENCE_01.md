@@ -36,7 +36,7 @@ Bu risk özellikle şu yüzeylerde önemlidir:
 
 Riskin özü:
 - aynı akışta gereksiz tekrar login / storage reset request yaratılmamalı
-- console/page error sayıları sıfır kalmalı
+- console/page error sayıları 0 kalmalı
 - 429 veya Too Many Requests sinyali görünürse fail olmalı
 
 ## 3) Previous 429 finding
@@ -76,7 +76,8 @@ Korumalar:
 ## 6) Console/page error policy
 
 Bu milestone için kabul edilen politika:
-- `consoleErrorCount=0`
+- product-flow ve premium smoke için `consoleErrorCount=0`
+- all-panels reality audit ve mobile all-roles audit için `consoleErrorCount=0`
 - `pageErrorCount=0`
 - 429, Too Many Requests veya benzeri sinyal görünürse fail
 - console/page error için ignore list açılmaz
@@ -137,7 +138,7 @@ Last validated baseline:
 - `npm run smoke:uxmobileallrolespanelaudit01` -> `PASS 82 / PASS- 0 / UX-FIX 0 / BLOCKER 0 / AUTH-BLOCKED 0 / NOT-FOUND 0`
 
 Validation policy:
-- consoleErrorCount stays `0`
+- product-flow, premium, all-panels reality audit ve mobile all-roles audit için consoleErrorCount stays `0`
 - pageErrorCount stays `0`
 - stage empty stays true
 - runtime-data stays commit-external
@@ -151,6 +152,7 @@ Validation policy:
 - `DASHBOARD-BULK-ENDPOINT-01` read-only bulk aggregation desteği devre dışı kalırsa dashboard fan-out tekrar büyüyebilir
 - browser-smoke artifacts must stay out of the commit set
 - stage empty policy must be preserved before commit
+- `CACHE-COALESCING-AND-BACKOFF-01` dashboard bulk ve read-heavy cache helper tarafındaki companion guard olarak okunur; duplicate fetch fan-out'u azaltır ama request-storm check'ini tek başına ikame etmez.
 
 ## 12) Next recommended milestone
 

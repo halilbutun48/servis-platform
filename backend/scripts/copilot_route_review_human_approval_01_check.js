@@ -470,9 +470,15 @@ async function main() {
     'web/src/panels/school/OperationsPanel.jsx',
     'web/src/panels/superadmin/SuperAdminPanel.jsx',
     'web/src/utils/dashboardBulk.js',
+    // Cache coalescing and backoff files are legitimate read-only companions for this consolidated pass.
+    'backend/scripts/cache_coalescing_and_backoff_01_check.js',
+    'backend/src/utils/responseCache.js',
+    'docs/CACHE_COALESCING_AND_BACKOFF_01.md',
     // Production rate limit policy files are legitimate scope companions for this consolidated pass.
     'backend/scripts/production_rate_limit_policy_01_check.js',
     'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md',
+    // Quality gate final file is a legitimate smoke-summary companion for this consolidated pass.
+    'backend/scripts/quality_gate_final_01_check.js',
   ]);
 
   allWithin(status, exactAllowed, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'web/public/seferpakt-', 'web/public/vardis-', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'], 'working tree stays within route review scope');

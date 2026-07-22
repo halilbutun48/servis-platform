@@ -60,6 +60,9 @@ function main() {
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const dashboardBulkDoc = read('docs/DASHBOARD_BULK_ENDPOINT_01.md');
+  const cacheDoc = read('docs/CACHE_COALESCING_AND_BACKOFF_01.md');
+  const requestStormDoc = read('docs/REQUEST_STORM_RESILIENCE_01.md');
+  const policyDoc = read('docs/PRODUCTION_RATE_LIMIT_POLICY_01.md');
   const roleMatrix = read('docs/COPILOT_ROLE_TASK_MATRIX_01.md');
   const aiRoadmap = read('docs/COPILOT_AI_ACTION_ROADMAP_01.md');
   const guidedDoc = read('docs/COPILOT_GUIDED_TASK_ENGINE_01.md');
@@ -176,6 +179,7 @@ function main() {
   must(runner, 'check:copilotoperationhealthengine01', 'product extensions chain includes check:copilotoperationhealthengine01');
   must(runner, 'check:copilotplanreviewengine01', 'product extensions chain includes check:copilotplanreviewengine01');
   must(runner, 'check:testqualityandflakeaudit01', 'product extensions chain includes check:testqualityandflakeaudit01');
+  must(runner, 'check:cachecoalescingandbackoff01', 'product extensions chain includes check:cachecoalescingandbackoff01');
   must(runner, 'check:requeststormresilience01', 'product extensions chain includes check:requeststormresilience01');
   must(runner, 'check:productionratelimitpolicy01', 'product extensions chain includes check:productionratelimitpolicy01');
   must(runner, 'check:airesponsesemanticqualitygate01', 'product extensions chain includes check:airesponsesemanticqualitygate01');
@@ -264,6 +268,7 @@ function main() {
   must(pkg, '"check:qualitygatefinal01": "node backend/scripts/quality_gate_final_01_check.js"', 'package.json exposes check:qualitygatefinal01');
   must(pkg, '"check:testqualityandflakeaudit01": "node backend/scripts/test_quality_and_flake_audit_01_check.js"', 'package.json exposes check:testqualityandflakeaudit01');
   must(pkg, '"check:dashboardbulkendpoint01": "node backend/scripts/dashboard_bulk_endpoint_01_check.js"', 'package.json exposes check:dashboardbulkendpoint01');
+  must(pkg, '"check:cachecoalescingandbackoff01": "node backend/scripts/cache_coalescing_and_backoff_01_check.js"', 'package.json exposes check:cachecoalescingandbackoff01');
   must(pkg, '"check:requeststormresilience01": "node backend/scripts/request_storm_resilience_01_check.js"', 'package.json exposes check:requeststormresilience01');
   must(pkg, '"check:productionratelimitpolicy01": "node backend/scripts/production_rate_limit_policy_01_check.js"', 'package.json exposes check:productionratelimitpolicy01');
   must(pkg, '"check:airesponsesemanticqualitygate01": "node backend/scripts/ai_response_semantic_quality_gate_01_check.js"', 'package.json exposes check:airesponsesemanticqualitygate01');
@@ -446,6 +451,7 @@ function main() {
     'check:qualitygatefinal01',
     'check:testqualityandflakeaudit01',
     'check:dashboardbulkendpoint01',
+    'check:cachecoalescingandbackoff01',
     'check:requeststormresilience01',
     'check:productionratelimitpolicy01',
     'check:airesponsesemanticqualitygate01',
@@ -842,6 +848,10 @@ function main() {
   must(primer, 'check:dashboardbulkendpoint01', 'primer exposes dashboard bulk endpoint check');
   must(primer, 'docs/DASHBOARD_BULK_ENDPOINT_01.md', 'primer links dashboard bulk endpoint doc');
   must(primer, 'backend/scripts/dashboard_bulk_endpoint_01_check.js', 'primer links dashboard bulk endpoint command');
+  must(primer, 'CACHE-COALESCING-AND-BACKOFF-01', 'primer mentions cache coalescing and backoff milestone');
+  must(primer, 'check:cachecoalescingandbackoff01', 'primer exposes cache coalescing and backoff check');
+  must(primer, 'docs/CACHE_COALESCING_AND_BACKOFF_01.md', 'primer links cache coalescing and backoff doc');
+  must(primer, 'backend/scripts/cache_coalescing_and_backoff_01_check.js', 'primer links cache coalescing and backoff command');
   must(primer, 'REQUEST-STORM-RESILIENCE-01', 'primer mentions request storm resilience milestone');
   must(primer, 'check:requeststormresilience01', 'primer exposes request storm resilience check');
   must(primer, 'docs/REQUEST_STORM_RESILIENCE_01.md', 'primer links request storm resilience doc');
@@ -854,7 +864,7 @@ function main() {
   must(primer, 'check:airesponsesemanticqualitygate01', 'primer exposes AI response semantic quality gate check');
   must(primer, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'primer links AI response semantic quality gate doc');
   must(primer, 'backend/scripts/ai_response_semantic_quality_gate_01_check.js', 'primer links AI response semantic quality gate command');
-  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps dashboard bulk endpoint, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
+  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
   must(dashboardBulkDoc, '# DASHBOARD-BULK-ENDPOINT-01', 'dashboard bulk doc title present');
   must(dashboardBulkDoc, '## 1) Purpose', 'dashboard bulk doc purpose heading present');
   must(dashboardBulkDoc, '## 2) Problem statement', 'dashboard bulk doc problem statement heading present');
@@ -879,8 +889,30 @@ function main() {
   must(dashboardBulkDoc, 'browser-smoke', 'dashboard bulk doc browser-smoke boundary present');
   must(dashboardBulkDoc, 'runtime-data', 'dashboard bulk doc runtime-data boundary present');
   must(dashboardBulkDoc, 'debug.log', 'dashboard bulk doc debug.log boundary present');
+  must(dashboardBulkDoc, 'CACHE-COALESCING-AND-BACKOFF-01', 'dashboard bulk doc references cache coalescing and backoff milestone');
   must(dashboardBulkDoc, 'REQUEST-STORM-RESILIENCE-01', 'dashboard bulk doc references request storm resilience milestone');
   must(dashboardBulkDoc, 'PRODUCTION-RATE-LIMIT-POLICY-01', 'dashboard bulk doc references production rate limit policy milestone');
+  must(cacheDoc, '# CACHE-COALESCING-AND-BACKOFF-01', 'cache coalescing doc title present');
+  must(cacheDoc, '## 1) Purpose', 'cache coalescing doc purpose heading present');
+  must(cacheDoc, '## 2) Problem statement', 'cache coalescing doc problem statement heading present');
+  must(cacheDoc, '## 3) Coalescing policy', 'cache coalescing doc coalescing policy heading present');
+  must(cacheDoc, '## 4) Cache key isolation model', 'cache coalescing doc cache key isolation heading present');
+  must(cacheDoc, '## 5) Backoff / retry policy', 'cache coalescing doc backoff heading present');
+  must(cacheDoc, '## 6) Backend implementation', 'cache coalescing doc backend implementation heading present');
+  must(cacheDoc, '## 7) Frontend integration', 'cache coalescing doc frontend integration heading present');
+  must(cacheDoc, '## 8) New guard script', 'cache coalescing doc guard script heading present');
+  must(cacheDoc, '## 9) Validation', 'cache coalescing doc validation heading present');
+  must(cacheDoc, '## 10) Diff / boundary safety', 'cache coalescing doc diff safety heading present');
+  must(cacheDoc, '## 11) Remaining risks', 'cache coalescing doc remaining risks heading present');
+  must(cacheDoc, '## 12) Next recommended milestone', 'cache coalescing doc next milestone heading present');
+  must(cacheDoc, 'backend/src/utils/responseCache.js', 'cache coalescing doc response cache source present');
+  must(cacheDoc, 'web/src/utils/uiDataCache.js', 'cache coalescing doc ui cache source present');
+  must(cacheDoc, 'backend/src/services/dashboardBulk.js', 'cache coalescing doc dashboard bulk service source present');
+  must(cacheDoc, 'web/src/utils/dashboardBulk.js', 'cache coalescing doc dashboard bulk helper source present');
+  must(cacheDoc, 'REQUEST-STORM-RESILIENCE-01', 'cache coalescing doc references request storm resilience milestone');
+  must(cacheDoc, 'PRODUCTION-RATE-LIMIT-POLICY-01', 'cache coalescing doc references production rate limit policy milestone');
+  must(requestStormDoc, 'CACHE-COALESCING-AND-BACKOFF-01', 'request storm doc references cache coalescing and backoff milestone');
+  must(policyDoc, 'CACHE-COALESCING-AND-BACKOFF-01', 'production policy doc references cache coalescing and backoff milestone');
   ordered(primer, ['COPILOT-DYNAMIC-QUESTION-ENGINE-01', 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'COPILOT-ROOT-CAUSE-ENGINE-01', 'COPILOT-RISK-SCORING-ENGINE-01', 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'COPILOT-NEXT-BEST-ACTION-ENGINE-01', 'COPILOT-PLAN-REVIEW-ENGINE-01', 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'HOT-FILE-SPLIT-WEB-PANELS-01', 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'SEFER-ABI-REASONING-ASSISTANT-01', 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01', 'SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01'], 'primer keeps next best action between operation health and hot file split');
   must(primer, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'primer mentions reasoning answer composer milestone');
   must(primer, 'check:copilotreasoninganswercomposer01', 'primer exposes reasoning answer composer check');
@@ -1185,6 +1217,10 @@ function main() {
   must(harnessCheck, 'check:dashboardbulkendpoint01', 'script harness check knows dashboard bulk endpoint alias');
   must(harnessCheck, 'docs/DASHBOARD_BULK_ENDPOINT_01.md', 'script harness check knows dashboard bulk endpoint doc');
   must(harnessCheck, 'backend/scripts/dashboard_bulk_endpoint_01_check.js', 'script harness check knows dashboard bulk endpoint command');
+  must(harnessCheck, 'CACHE-COALESCING-AND-BACKOFF-01', 'script harness check knows cache coalescing and backoff milestone');
+  must(harnessCheck, 'check:cachecoalescingandbackoff01', 'script harness check knows cache coalescing and backoff alias');
+  must(harnessCheck, 'docs/CACHE_COALESCING_AND_BACKOFF_01.md', 'script harness check knows cache coalescing and backoff doc');
+  must(harnessCheck, 'backend/scripts/cache_coalescing_and_backoff_01_check.js', 'script harness check knows cache coalescing and backoff command');
   must(harnessCheck, 'REQUEST-STORM-RESILIENCE-01', 'script harness check knows request storm resilience milestone');
   must(harnessCheck, 'check:requeststormresilience01', 'script harness check knows request storm resilience alias');
   must(harnessCheck, 'root:check:requeststormresilience01', 'script harness check knows request storm resilience root check');
@@ -1247,6 +1283,10 @@ function main() {
   must(harnessDoc, 'check:dashboardbulkendpoint01', 'script harness doc lists dashboard bulk endpoint alias');
   must(harnessDoc, 'docs/DASHBOARD_BULK_ENDPOINT_01.md', 'script harness doc lists dashboard bulk endpoint doc');
   must(harnessDoc, 'node backend\\scripts\\dashboard_bulk_endpoint_01_check.js', 'script harness doc lists dashboard bulk endpoint command');
+  must(harnessDoc, 'CACHE-COALESCING-AND-BACKOFF-01', 'script harness doc lists cache coalescing and backoff milestone');
+  must(harnessDoc, 'check:cachecoalescingandbackoff01', 'script harness doc lists cache coalescing and backoff alias');
+  must(harnessDoc, 'docs/CACHE_COALESCING_AND_BACKOFF_01.md', 'script harness doc lists cache coalescing and backoff doc');
+  must(harnessDoc, 'node backend\\scripts\\cache_coalescing_and_backoff_01_check.js', 'script harness doc lists cache coalescing and backoff command');
   must(harnessDoc, 'REQUEST-STORM-RESILIENCE-01', 'script harness doc lists request storm resilience milestone');
   must(harnessDoc, 'check:requeststormresilience01', 'script harness doc lists request storm resilience alias');
   must(harnessDoc, 'root:check:requeststormresilience01', 'script harness doc lists request storm resilience root alias');
@@ -1261,7 +1301,7 @@ function main() {
   must(harnessDoc, 'check:airesponsesemanticqualitygate01', 'script harness doc lists AI response semantic quality gate alias');
   must(harnessDoc, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script harness doc lists AI response semantic quality gate doc');
   must(harnessDoc, 'node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js', 'script harness doc lists AI response semantic quality gate command');
-  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Dashboard bulk endpoint milestone: `DASHBOARD-BULK-ENDPOINT-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps dashboard bulk endpoint, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
+  ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Dashboard bulk endpoint milestone: `DASHBOARD-BULK-ENDPOINT-01`', 'Cache coalescing and backoff milestone: `CACHE-COALESCING-AND-BACKOFF-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
   must(harnessDoc, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness doc lists cleanup doc');
@@ -1364,6 +1404,10 @@ function main() {
   must(guide, 'check:dashboardbulkendpoint01', 'script guide exposes dashboard bulk endpoint check');
   must(guide, 'node backend\\scripts\\dashboard_bulk_endpoint_01_check.js', 'script guide includes dashboard bulk endpoint command');
   must(guide, 'docs/DASHBOARD_BULK_ENDPOINT_01.md', 'script guide includes dashboard bulk endpoint doc');
+  must(guide, 'CACHE-COALESCING-AND-BACKOFF-01', 'script guide mentions cache coalescing and backoff milestone');
+  must(guide, 'check:cachecoalescingandbackoff01', 'script guide exposes cache coalescing and backoff check');
+  must(guide, 'node backend\\scripts\\cache_coalescing_and_backoff_01_check.js', 'script guide includes cache coalescing and backoff command');
+  must(guide, 'docs/CACHE_COALESCING_AND_BACKOFF_01.md', 'script guide includes cache coalescing and backoff doc');
   must(guide, 'REQUEST-STORM-RESILIENCE-01', 'script guide mentions request storm resilience milestone');
   must(guide, 'check:requeststormresilience01', 'script guide exposes request storm resilience check');
   must(guide, 'node backend\\scripts\\request_storm_resilience_01_check.js', 'script guide includes request storm resilience command');
@@ -1376,7 +1420,7 @@ function main() {
   must(guide, 'check:airesponsesemanticqualitygate01', 'script guide exposes AI response semantic quality gate check');
   must(guide, 'node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js', 'script guide includes AI response semantic quality gate command');
   must(guide, 'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md', 'script guide includes AI response semantic quality gate doc');
-  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps dashboard bulk endpoint, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
+  ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy and AI response semantic quality gate in order');
   must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
   must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');
   must(guide, 'node backend\\scripts\\ux_parent_personel_live_error_clarity_01_check.js', 'script guide includes parent/personel live error clarity command');

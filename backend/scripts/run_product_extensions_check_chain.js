@@ -181,6 +181,7 @@ const steps = [
   'check:qualitygatefinal01',
   'check:testqualityandflakeaudit01',
   'check:dashboardbulkendpoint01',
+  'check:cachecoalescingandbackoff01',
   'check:requeststormresilience01',
   'check:productionratelimitpolicy01',
   'check:airesponsesemanticqualitygate01',

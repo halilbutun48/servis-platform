@@ -170,8 +170,8 @@ Korunması gereken sınırlar:
 
 ## 11) Next recommended milestone
 
-`REQUEST-STORM-RESILIENCE-01`
+`CACHE-COALESCING-AND-BACKOFF-01`
 
-Bu milestone, dashboard fan-out'u azaltan read-only bulk katmanının ardından request-storm resilience guard'ını takip eden güvenli adımdır.
+Bu milestone, dashboard fan-out'u azaltan read-only bulk katmanının ardından aynı-key inflight coalescing ve bounded backoff katmanını sıkılaştıran güvenli adımdır.
 
-`PRODUCTION-RATE-LIMIT-POLICY-01` bu read-only bulk yaklaşımıyla birlikte okunur; dashboard fan-out azaltma, request-storm ve policy katmanları aynı read-heavy koruma zincirinin parçalarıdır.
+`REQUEST-STORM-RESILIENCE-01` ve `PRODUCTION-RATE-LIMIT-POLICY-01` bu read-only bulk yaklaşımıyla birlikte okunur; dashboard fan-out azaltma, cache coalescing, request-storm ve policy katmanları aynı read-heavy koruma zincirinin parçalarıdır.

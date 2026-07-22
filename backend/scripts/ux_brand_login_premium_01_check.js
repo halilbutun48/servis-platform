@@ -459,6 +459,7 @@ function main() {
     "web/src/panels/room/roomAgreementsBridgeSection.jsx",
     "web/src/panels/room/roomAgreementsPanelHelpers.js",
     "web/src/utils/uiDataCache.js",
+    "backend/src/utils/responseCache.js",
     "backend/src/bootstrap/routeMounts.js",
     "backend/src/server.js",
     "backend/src/routes/dashboardBulk.js",

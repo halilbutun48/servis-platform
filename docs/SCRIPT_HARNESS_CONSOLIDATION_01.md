@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `397`
-- Toplam executable tracked file: `1215`
-- Combined registry row: `1612`
-- Root/backend/web/mobile package dağılımı: root `240`, backend `772`, web `96`, mobile `201`
+- Toplam package script entry: `398`
+- Toplam executable tracked file: `1216`
+- Combined registry row: `1614`
+- Root/backend/web/mobile package dağılımı: root `241`, backend `773`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `58`
+- Docs indexed: `59`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -75,6 +75,10 @@ Repo: `servis-platform`
 - Dashboard bulk endpoint alias: `check:dashboardbulkendpoint01`
 - Dashboard bulk endpoint docs: `docs/DASHBOARD_BULK_ENDPOINT_01.md`
 - Dashboard bulk endpoint command: `node backend\scripts\dashboard_bulk_endpoint_01_check.js`
+- Cache coalescing and backoff milestone: `CACHE-COALESCING-AND-BACKOFF-01`
+- Cache coalescing and backoff alias: `check:cachecoalescingandbackoff01`
+- Cache coalescing and backoff docs: `docs/CACHE_COALESCING_AND_BACKOFF_01.md`
+- Cache coalescing and backoff command: `node backend\scripts\cache_coalescing_and_backoff_01_check.js`
 - Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`
 - Request storm resilience docs: `docs/REQUEST_STORM_RESILIENCE_01.md`
 - Request storm resilience command: `node backend\scripts\request_storm_resilience_01_check.js`
@@ -264,7 +268,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `188`
+- ACTIVE_CORE: `189`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -280,7 +284,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `618`
+- NEEDS_REVIEW: `619`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -294,14 +298,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 188 |
+| ACTIVE_CORE | 189 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 618 |
+| NEEDS_REVIEW | 619 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -528,6 +532,7 @@ Repo: `servis-platform`
 | root:check:qualitygatefinal01 | package.json | root | node backend/scripts/quality_gate_final_01_check.js | core | ACTIVE_CORE |  | QUALITY-GATE-FINAL-01 |  | Breaks canonical verification chain |  |
 | root:check:testqualityandflakeaudit01 | package.json | root | node backend/scripts/test_quality_and_flake_audit_01_check.js | core | ACTIVE_CORE |  | TEST-QUALITY-AND-FLAKE-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:dashboardbulkendpoint01 | package.json | root | node backend/scripts/dashboard_bulk_endpoint_01_check.js | core | ACTIVE_CORE |  | DASHBOARD-BULK-ENDPOINT-01 |  | Breaks canonical verification chain |  |
+| root:check:cachecoalescingandbackoff01 | package.json | root | node backend/scripts/cache_coalescing_and_backoff_01_check.js | core | ACTIVE_CORE |  | CACHE-COALESCING-AND-BACKOFF-01 |  | Breaks canonical verification chain |  |
 | root:check:productionratelimitpolicy01 | package.json | root | node backend/scripts/production_rate_limit_policy_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-PRODUCTIONRATELIMITPOLICY-01 |  | Breaks canonical verification chain |  |
 | root:check:requeststormresilience01 | package.json | root | node backend/scripts/request_storm_resilience_01_check.js | verify-core | ACTIVE_CORE |  | REQUEST-STORM-RESILIENCE-01 |  | Breaks canonical verification chain |  |
 | root:check:airesponsesemanticqualitygate01 | package.json | root | node backend/scripts/ai_response_semantic_quality_gate_01_check.js | verify-core | ACTIVE_CORE |  | AI-RESPONSE-SEMANTIC-QUALITY-GATE-01 |  | Breaks canonical verification chain |  |
@@ -1335,6 +1340,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| cache_coalescing_and_backoff_01_check.js | backend/scripts/cache_coalescing_and_backoff_01_check.js | backend | root:check:cachecoalescingandbackoff01 | review | NEEDS_REVIEW |  | CACHE-COALESCING-AND-BACKOFF-01-CHECK |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
