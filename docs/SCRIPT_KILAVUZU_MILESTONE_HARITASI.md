@@ -581,6 +581,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Final doc: `docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md`
 - Bu milestone yalnızca local deterministic response check'tir; runtime AI action, tool execution, write-action dispatcher, DB write, route apply, fake success, route/service/prisma değişimi, broad allowlist genişletmesi, runtime-data commit veya browser-smoke commit açmaz.
 
+### LOAD-TEST-2000-USERS-01 [CHECK]
+- `check:loadtest2000users01` 2000-user load-test readiness guard'ını local/dev-safe smoke bandı, explicit high-concurrency flag ve read-only scenario matrix ile sabitler.
+- Check script: `node backend\scripts\load_test_2000_users_01_check.js`
+- Final doc: `docs/LOAD_TEST_2000_USERS_01.md`
+- Harness: `backend\scripts\load_test_2000_users_01_harness.js`
+- 2000-user planı dashboard bulk, cache coalescing, request storm ve production rate-limit companion guard'larından ayrı tutulur; production/public URL load, write-action, human approval ve Prisma sınırı açılmaz.
+
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
 - `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.

@@ -37,3 +37,4 @@ web/dist/
 pack_living_*.log
 README_M*_OVERLAY*.txt
 backend/artifacts/browser-smoke/
+backend/artifacts/load-test/

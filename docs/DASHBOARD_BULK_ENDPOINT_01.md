@@ -175,3 +175,5 @@ Korunması gereken sınırlar:
 Bu milestone, dashboard fan-out'u azaltan read-only bulk katmanının ardından aynı-key inflight coalescing ve bounded backoff katmanını sıkılaştıran güvenli adımdır.
 
 `REQUEST-STORM-RESILIENCE-01` ve `PRODUCTION-RATE-LIMIT-POLICY-01` bu read-only bulk yaklaşımıyla birlikte okunur; dashboard fan-out azaltma, cache coalescing, request-storm ve policy katmanları aynı read-heavy koruma zincirinin parçalarıdır.
+
+`LOAD-TEST-2000-USERS-01` bu zincirdeki local/dev-safe 2000-user readiness hazırlığını ayrı bir harness olarak takip eder; production load, external/public URL ve write-action sınırını açmaz.

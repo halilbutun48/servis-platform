@@ -185,6 +185,7 @@ const steps = [
   'check:requeststormresilience01',
   'check:productionratelimitpolicy01',
   'check:airesponsesemanticqualitygate01',
+  'check:loadtest2000users01',
 ];
 
 function runStep(scriptName) {

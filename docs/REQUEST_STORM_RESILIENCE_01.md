@@ -154,6 +154,8 @@ Validation policy:
 - stage empty policy must be preserved before commit
 - `CACHE-COALESCING-AND-BACKOFF-01` dashboard bulk ve read-heavy cache helper tarafındaki companion guard olarak okunur; duplicate fetch fan-out'u azaltır ama request-storm check'ini tek başına ikame etmez.
 
+`LOAD-TEST-2000-USERS-01` bu guard zincirinin devamındaki local/dev-safe 2000-user readiness adımıdır; production/public URL load ve write-action kapsamaz.
+
 ## 12) Next recommended milestone
 
 `PRODUCTION-RATE-LIMIT-POLICY-01`

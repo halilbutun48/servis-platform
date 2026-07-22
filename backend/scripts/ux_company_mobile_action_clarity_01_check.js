@@ -443,6 +443,7 @@ function main() {
     "backend/src/ai/chat/conversationTaskStateBuilders.js",
     "backend/src/ai/chat/conversationTaskStateCompanyReplies.js",
     "backend/src/ai/chat/conversationTaskStateRoomReplies.js",
+    ".gitignore",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/script_harness_consolidation_01_check.js",

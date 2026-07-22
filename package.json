@@ -216,6 +216,7 @@
     "check:productionratelimitpolicy01": "node backend/scripts/production_rate_limit_policy_01_check.js",
     "check:requeststormresilience01": "node backend/scripts/request_storm_resilience_01_check.js",
     "check:airesponsesemanticqualitygate01": "node backend/scripts/ai_response_semantic_quality_gate_01_check.js",
+    "check:loadtest2000users01": "node backend/scripts/load_test_2000_users_01_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",

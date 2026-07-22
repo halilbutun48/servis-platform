@@ -528,6 +528,7 @@ function main() {
       "backend/scripts/ux_panel_inventory_02a_check.js",
       "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
       "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+      ".gitignore",
       "backend/scripts/ux_brand_login_premium_01_check.js",
       "web/src/panels/company/companyAgreementsBridgeSection.jsx",
       "web/src/panels/company/companyAgreementsPanelHelpers.js",

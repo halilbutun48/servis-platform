@@ -481,6 +481,7 @@ function main() {
     "backend/scripts/quality_gate_final_01_check.js",
     "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
     "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
+    ".gitignore",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/ONBOARDING_REVIEW_01.md",
     "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md",

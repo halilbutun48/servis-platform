@@ -76,6 +76,8 @@ Bu milestone, dashboard bulk ve read-heavy read flows için aynı-key inflight c
 - 429 retry görünürlüğü kapatılırsa bounded backoff, gerçek rate-limit sinyalini gizler.
 - `REQUEST-STORM-RESILIENCE-01` ve `PRODUCTION-RATE-LIMIT-POLICY-01` companion guard'lar olarak korunmalıdır.
 
+`LOAD-TEST-2000-USERS-01` 2000-user readiness hazırlığını ayrı tutar; local/dev-safe smoke bandı ve explicit high-concurrency flag sınırı korunur.
+
 ## 12) Next recommended milestone
 
 `REQUEST-STORM-RESILIENCE-01`

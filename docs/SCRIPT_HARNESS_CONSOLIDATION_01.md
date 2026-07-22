@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `398`
-- Toplam executable tracked file: `1216`
-- Combined registry row: `1614`
-- Root/backend/web/mobile package dağılımı: root `241`, backend `773`, web `96`, mobile `201`
+- Toplam package script entry: `399`
+- Toplam executable tracked file: `1218`
+- Combined registry row: `1617`
+- Root/backend/web/mobile package dağılımı: root `242`, backend `775`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `59`
+- Docs indexed: `60`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -88,6 +88,10 @@ Repo: `servis-platform`
 - AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`
 - AI response semantic quality gate docs: `docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md`
 - AI response semantic quality gate command: `node backend\scripts\ai_response_semantic_quality_gate_01_check.js`
+- Load test 2000 users milestone: `LOAD-TEST-2000-USERS-01`
+- Load test 2000 users alias: `check:loadtest2000users01`
+- Load test 2000 users docs: `docs/LOAD_TEST_2000_USERS_01.md`
+- Load test 2000 users command: `node backend\scripts\load_test_2000_users_01_check.js`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`

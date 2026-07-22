@@ -55,6 +55,8 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_ai_action_roadmap_01_check.js",
   "backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js",
   "backend/scripts/copilot_human_approval_01_check.js",
+  "backend/scripts/load_test_2000_users_01_check.js",
+  "backend/scripts/load_test_2000_users_01_harness.js",
   "backend/src/ai/chat/copilotRoleTaskMatrix.js",
   "backend/src/ai/chat/copilotAiActionRoadmap.js",
   "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
@@ -209,6 +211,7 @@ const selectedDocs = [
   "docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md",
   "docs/DASHBOARD_BULK_ENDPOINT_01.md",
   "docs/CACHE_COALESCING_AND_BACKOFF_01.md",
+  "docs/LOAD_TEST_2000_USERS_01.md",
   "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
   "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
   "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
@@ -336,6 +339,7 @@ function slugToMilestone(slug) {
     [/testqualityandflakeaudit0?1/i, "TEST-QUALITY-AND-FLAKE-AUDIT-01"], // check:testqualityandflakeaudit01
     [/dashboardbulkendpoint0?1/i, "DASHBOARD-BULK-ENDPOINT-01"], // check:dashboardbulkendpoint01
     [/cachecoalescingandbackoff0?1/i, "CACHE-COALESCING-AND-BACKOFF-01"], // check:cachecoalescingandbackoff01
+    [/load[_-]?test[_-]?2000[_-]?users[_-]?01(?:[_-]?check|[_-]?harness)?/i, "LOAD-TEST-2000-USERS-01"], // check:loadtest2000users01
     [/requeststormresilience0?1/i, "REQUEST-STORM-RESILIENCE-01"], // check:requeststormresilience01
     [/airesponsesemanticqualitygate0?1/i, "AI-RESPONSE-SEMANTIC-QUALITY-GATE-01"], // check:airesponsesemanticqualitygate01
     [/uxsmokepassminusevidence0?1/i, "UX-SMOKE-PASS-MINUS-EVIDENCE-01"],
@@ -1509,12 +1513,20 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Request storm resilience milestone: \`REQUEST-STORM-RESILIENCE-01\``);
   out.push(`- Request storm resilience docs: \`docs/REQUEST_STORM_RESILIENCE_01.md\``);
   out.push(`- Request storm resilience command: \`node backend\\scripts\\request_storm_resilience_01_check.js\``);
+  // node backend/scripts/request_storm_resilience_01_check.js
   out.push(`- Production rate limit policy milestone: \`PRODUCTION-RATE-LIMIT-POLICY-01\``);
   out.push(`- Production rate limit policy docs: \`docs/PRODUCTION_RATE_LIMIT_POLICY_01.md\``);
   out.push(`- Production rate limit policy command: \`node backend\\scripts\\production_rate_limit_policy_01_check.js\``);
+  // node backend/scripts/production_rate_limit_policy_01_check.js
   out.push(`- AI response semantic quality gate milestone: \`AI-RESPONSE-SEMANTIC-QUALITY-GATE-01\``);
   out.push(`- AI response semantic quality gate docs: \`docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md\``);
   out.push(`- AI response semantic quality gate command: \`node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js\``);
+  // node backend/scripts/ai_response_semantic_quality_gate_01_check.js
+  out.push(`- Load test 2000 users milestone: \`LOAD-TEST-2000-USERS-01\``);
+  out.push(`- Load test 2000 users alias: \`check:loadtest2000users01\``);
+  out.push(`- Load test 2000 users docs: \`docs/LOAD_TEST_2000_USERS_01.md\``);
+  out.push(`- Load test 2000 users command: \`node backend\\scripts\\load_test_2000_users_01_check.js\``);
+  // node backend/scripts/load_test_2000_users_01_check.js
   out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
   out.push(`- Agreements detail docs: \`docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md\``);
   out.push(`- Agreements detail command: \`node backend\\scripts\\ux_premium_critical_fix_agreements_detail_01_check.js\``);
@@ -2022,6 +2034,10 @@ function verifyDoc(docText, summary) {
     "root:check:airesponsesemanticqualitygate01",
     "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
     "node backend\\scripts\\ai_response_semantic_quality_gate_01_check.js",
+    "LOAD-TEST-2000-USERS-01",
+    "check:loadtest2000users01",
+    "docs/LOAD_TEST_2000_USERS_01.md",
+    "node backend\\scripts\\load_test_2000_users_01_check.js",
     "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
     "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
