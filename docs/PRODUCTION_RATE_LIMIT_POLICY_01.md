@@ -212,6 +212,7 @@ Planned validation set:
 - runtime-data must remain commit dışı
 
 `LOAD-TEST-2000-USERS-01` production policy sonrasında ayrı bir local/dev-safe 2000-user readiness harness olarak takip edilir; `DB-POOL-AND-API-SCALING-01` de bu zincirin infra-readiness devamıdır; `OBSERVABILITY-MONITORING-ALERTING-01` 429 / retryAfterSec / capacity sinyallerini alarm bandına taşır; 429 ignore list açmaz ve write-action sınırını değiştirmez.
+- Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
 
 ## 13) Next Recommended Milestone
 

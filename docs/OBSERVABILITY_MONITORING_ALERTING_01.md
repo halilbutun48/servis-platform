@@ -271,6 +271,7 @@ Planned validation:
 - request-storm veya rate-limit policy gevşetilirse 429 sinyali maskelenebilir
 - `backend/artifacts/observability/` gitignore dışında kalırsa commit-external boundary bozulur
 - `DB-POOL-AND-API-SCALING-01` ve `LOAD-TEST-2000-USERS-01` ile aynı sinyaller farklı amaçlarla kullanıldığı için dokümanlar karıştırılmamalı
+- Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
 
 ## 16) Next recommended milestone
 

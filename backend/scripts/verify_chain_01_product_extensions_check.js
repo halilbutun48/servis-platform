@@ -193,6 +193,7 @@ function main() {
   must(runner, 'check:observabilitymonitoringalerting01', 'product extensions chain includes check:observabilitymonitoringalerting01');
   must(runner, 'check:backendlintwarningburndown01', 'product extensions chain includes check:backendlintwarningburndown01');
   must(runner, 'check:dataintegrityandrecovery01', 'product extensions chain includes check:dataintegrityandrecovery01');
+  must(runner, 'check:roledataisolationredteam01', 'product extensions chain includes check:roledataisolationredteam01');
   must(runner, 'check:seferabiturkishterminology01', 'product extensions chain includes check:seferabiturkishterminology01');
   must(runner, 'check:seferabiturkishuserfacinglanguage01', 'product extensions chain includes check:seferabiturkishuserfacinglanguage01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');

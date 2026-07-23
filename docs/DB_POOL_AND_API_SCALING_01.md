@@ -133,6 +133,7 @@ Repo: `servis-platform`
 - companion checks: `check:loadtest2000users01`, `check:dashboardbulkendpoint01`, `check:cachecoalescingandbackoff01`, `check:requeststormresilience01`, `check:productionratelimitpolicy01`
 - chain checks: `check:scriptharnessconsolidation01`, `check:verifychain01`
 - repo checks: `npm run verify:repo`, `npm run verify:final`
+- Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
 
 ## 18) Remaining risks
 

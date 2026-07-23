@@ -603,6 +603,12 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `BACKEND-LINT-WARNING-BURNDOWN-01` backend lint warning burndown kabul katmanıdır; `check:backendlintwarningburndown01`, `docs/BACKEND_LINT_WARNING_BURNDOWN_01.md` ve `node backend\scripts\backend_lint_warning_burndown_01_check.js` ile yaşar; runtime davranışı, smoke threshold, lint config ve commit dışı artefakt sınırını açmaz.
 - `DATA-INTEGRITY-AND-RECOVERY-01` runtime-data recovery, backup/restore ve corruption detection kabul katmanıdır; `check:dataintegrityandrecovery01`, `docs/DATA_INTEGRITY_AND_RECOVERY_01.md` ve `node backend\scripts\data_integrity_and_recovery_01_check.js` ile yaşar; `backend/artifacts/runtime-data/`, `backend/artifacts/browser-smoke/`, `backend/artifacts/load-test/`, `backend/artifacts/db-scaling/`, `backend/artifacts/observability/` ve `backend/artifacts/data-integrity/` commit dışı kalır, production DB / destructive query / schema değişikliği açmaz.
 
+### ROLE-DATA-ISOLATION-REDTEAM-01 [CHECK]
+- `check:roledataisolationredteam01` role ve tenant data isolation redteam guard'ını read-only, local/dev-safe, deterministic statik policy olarak kilitler.
+- Check script: `node backend\scripts\role_data_isolation_redteam_01_check.js`
+- Doküman: `docs/ROLE_DATA_ISOLATION_REDTEAM_01.md`
+- Bu check, data integrity / observability / DB scaling / load-test / request-storm zinciriyle birlikte okunur; production DB, public URL probe, real credential, write-action ve schema/migration açmaz.
+
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
 - `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.

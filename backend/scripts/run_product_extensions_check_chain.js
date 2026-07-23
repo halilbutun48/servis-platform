@@ -190,6 +190,7 @@ const steps = [
   'check:observabilitymonitoringalerting01',
   'check:backendlintwarningburndown01',
   'check:dataintegrityandrecovery01',
+  'check:roledataisolationredteam01',
 ];
 
 function runStep(scriptName) {

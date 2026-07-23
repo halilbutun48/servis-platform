@@ -224,6 +224,7 @@ Planned validation:
 - `npm run verify:final`
 - `npm --prefix backend run lint`
 - `npm --prefix web run lint`
+- Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
 
 ## 16) Remaining risks
 

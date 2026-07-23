@@ -1,16 +1,16 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-07-22
+Tarih: 2026-07-23
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `403`
-- Toplam executable tracked file: `1224`
-- Combined registry row: `1627`
-- Root/backend/web/mobile package dağılımı: root `246`, backend `781`, web `96`, mobile `201`
+- Toplam package script entry: `404`
+- Toplam executable tracked file: `1225`
+- Combined registry row: `1629`
+- Root/backend/web/mobile package dağılımı: root `247`, backend `782`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `63`
+- Docs indexed: `64`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -109,6 +109,10 @@ Repo: `servis-platform`
 - Data integrity and recovery alias: `check:dataintegrityandrecovery01`
 - Data integrity and recovery docs: `docs/DATA_INTEGRITY_AND_RECOVERY_01.md`
 - Data integrity and recovery command: `node backend\scripts\data_integrity_and_recovery_01_check.js`
+- Role data isolation redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
+- Role data isolation redteam alias: `check:roledataisolationredteam01`
+- Role data isolation redteam docs: `docs/ROLE_DATA_ISOLATION_REDTEAM_01.md`
+- Role data isolation redteam command: `node backend\scripts\role_data_isolation_redteam_01_check.js`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -289,7 +293,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `190`
+- ACTIVE_CORE: `191`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -305,7 +309,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `631`
+- NEEDS_REVIEW: `632`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -319,14 +323,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 190 |
+| ACTIVE_CORE | 191 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 631 |
+| NEEDS_REVIEW | 632 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -562,6 +566,7 @@ Repo: `servis-platform`
 | root:check:observabilitymonitoringalerting01 | package.json | root | node backend/scripts/observability_monitoring_alerting_01_check.js | review | NEEDS_REVIEW |  | OBSERVABILITY-MONITORING-ALERTING-01 |  | Owner or chain unclear |  |
 | root:check:backendlintwarningburndown01 | package.json | root | node backend/scripts/backend_lint_warning_burndown_01_check.js | review | NEEDS_REVIEW |  | BACKEND-LINT-WARNING-BURNDOWN-01 |  | Owner or chain unclear |  |
 | root:check:dataintegrityandrecovery01 | package.json | root | node backend/scripts/data_integrity_and_recovery_01_check.js | core | ACTIVE_CORE |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Breaks canonical verification chain |  |
+| root:check:roledataisolationredteam01 | package.json | root | node backend/scripts/role_data_isolation_redteam_01_check.js | verify-core | ACTIVE_CORE |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Breaks canonical verification chain |  |
 | root:check:op01 | package.json | root | node backend/scripts/op_01_operation_proof_service_proof_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-01 |  | Breaks canonical verification chain |  |
 | root:check:op02 | package.json | root | node backend/scripts/op_02_manual_operator_proof_note_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-02 |  | Breaks canonical verification chain |  |
 | root:check:op03 | package.json | root | node backend/scripts/op_03_web_operation_proof_card_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-03 |  | Breaks canonical verification chain |  |
@@ -745,6 +750,7 @@ Repo: `servis-platform`
 | copilot_stop_route_draft_01_check.js | backend/scripts/copilot_stop_route_draft_01_check.js | backend | root:check:copilotstoproutedraft01 | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-01-CHECK |  | Owner or chain unclear |  |
 | copilot_workflow_reasoning_engine_01_check.js | backend/scripts/copilot_workflow_reasoning_engine_01_check.js | backend | root:check:copilotworkflowreasoningengine01 | review | NEEDS_REVIEW |  | COPILOT-WORKFLOW-REASONING-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | dashboard_bulk_endpoint_01_check.js | backend/scripts/dashboard_bulk_endpoint_01_check.js | backend | root:check:dashboardbulkendpoint01 | review | NEEDS_REVIEW |  | DASHBOARD-BULK-ENDPOINT-01-CHECK |  | Owner or chain unclear |  |
+| data_integrity_and_recovery_01_check.js | backend/scripts/data_integrity_and_recovery_01_check.js | backend | root:check:dataintegrityandrecovery01 | review | NEEDS_REVIEW |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Owner or chain unclear |  |
 | db_pool_and_api_scaling_01_check.js | backend/scripts/db_pool_and_api_scaling_01_check.js | backend | root:check:dbpoolandapiscaling01 | review | NEEDS_REVIEW |  | DB-POOL-AND-API-SCALING-01 |  | Owner or chain unclear |  |
 | db_pool_and_api_scaling_01_probe.js | backend/scripts/db_pool_and_api_scaling_01_probe.js | backend |  | review | NEEDS_REVIEW |  | DB-POOL-AND-API-SCALING-01 |  | Owner or chain unclear |  |
 | docs_ssot_brand_artifact_cleanup_01_check.js | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | backend | root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01-CHECK |  | Owner or chain unclear |  |
@@ -1374,7 +1380,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| data_integrity_and_recovery_01_check.js | backend/scripts/data_integrity_and_recovery_01_check.js | backend | root:check:dataintegrityandrecovery01 | review | NEEDS_REVIEW |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Owner or chain unclear |  |
+| role_data_isolation_redteam_01_check.js | backend/scripts/role_data_isolation_redteam_01_check.js | backend | root:check:roledataisolationredteam01 | review | NEEDS_REVIEW |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

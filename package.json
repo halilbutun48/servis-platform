@@ -221,6 +221,7 @@
     "check:observabilitymonitoringalerting01": "node backend/scripts/observability_monitoring_alerting_01_check.js",
     "check:backendlintwarningburndown01": "node backend/scripts/backend_lint_warning_burndown_01_check.js",
     "check:dataintegrityandrecovery01": "node backend/scripts/data_integrity_and_recovery_01_check.js",
+    "check:roledataisolationredteam01": "node backend/scripts/role_data_isolation_redteam_01_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",
