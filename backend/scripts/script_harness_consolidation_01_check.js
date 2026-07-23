@@ -39,10 +39,12 @@ const workingTreeCompatFiles = [
   "backend/scripts/backend_lint_warning_burndown_01_check.js",
   "backend/scripts/data_integrity_and_recovery_01_check.js",
   "backend/scripts/role_data_isolation_redteam_01_check.js",
+  "backend/scripts/security_kvkk_final_01_check.js",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
   "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
   "docs/ROLE_DATA_ISOLATION_REDTEAM_01.md",
+  "docs/SECURITY_KVKK_FINAL_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
@@ -225,6 +227,7 @@ const selectedDocs = [
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
   "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
   "docs/ROLE_DATA_ISOLATION_REDTEAM_01.md",
+  "docs/SECURITY_KVKK_FINAL_01.md",
   "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
   "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
   "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
@@ -347,6 +350,7 @@ function slugToMilestone(slug) {
     [/uxcompanyagreementsmobileparity0?1/i, "UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01"], // check:uxcompanyagreementsmobileparity01
     [/uxcompanypersonelaccessmobileparity0?1/i, "UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01"], // check:uxcompanypersonelaccessmobileparity01
   [/uxpremiumcriticaluxfixcleanup0?1/i, "UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01"],
+    [/security[_-]?kvkk[_-]?final[_-]?0?1(?:[_-]?check)?/i, "SECURITY-KVKK-FINAL-01"], // check:securitykvkkfinal01
     [/uxlivepanelpremiumsmoke0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
     [/uxlivepanelpremium0?1/i, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"],
     [/qualitygatefinal0?1/i, "QUALITY-GATE-FINAL-01"],
@@ -644,7 +648,7 @@ const coverageMatrix = [
     coverageStatus: "PARTIAL_COVERAGE",
     missingGap: "No single canonical end-to-end login/role smoke; browser/device split stays manual.",
     ownerMilestone: "M98 / M99",
-    requiredNextAction: "MISSING_FUTURE_MILESTONE: SECURITY-KVKK-FINAL-01",
+    requiredNextAction: "SECURITY-KVKK-FINAL-01",
   },
   {
     function: "Super Admin",
@@ -1568,6 +1572,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Role data isolation redteam alias: \`check:roledataisolationredteam01\``);
   out.push(`- Role data isolation redteam docs: \`docs/ROLE_DATA_ISOLATION_REDTEAM_01.md\``);
   out.push(`- Role data isolation redteam command: \`node backend\\scripts\\role_data_isolation_redteam_01_check.js\``);
+  out.push(`- Security final milestone: \`SECURITY-KVKK-FINAL-01\``);
+  out.push(`- Security final alias: \`check:securitykvkkfinal01\``);
+  out.push(`- Security final docs: \`docs/SECURITY_KVKK_FINAL_01.md\``);
+  out.push(`- Security final command: \`node backend\\scripts\\security_kvkk_final_01_check.js\``);
+  // node backend/scripts/security_kvkk_final_01_check.js
   // node backend/scripts/role_data_isolation_redteam_01_check.js
   // node backend/scripts/backend_lint_warning_burndown_01_check.js
   out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
@@ -2190,10 +2199,13 @@ function verifyDoc(docText, summary) {
     "root:check:roledataisolationredteam01",
     "docs/ROLE_DATA_ISOLATION_REDTEAM_01.md",
     "node backend\\scripts\\role_data_isolation_redteam_01_check.js",
+    "SECURITY-KVKK-FINAL-01",
+    "check:securitykvkkfinal01",
+    "docs/SECURITY_KVKK_FINAL_01.md",
+    "node backend\\scripts\\security_kvkk_final_01_check.js",
     "Duplicate / overlap groups",
     "Product coverage rows",
     "REMOVED:",
-    "MISSING_FUTURE_MILESTONE",
   ];
   for (const needle of mustContain) {
     if (!normalize(docText).includes(normalize(needle))) {

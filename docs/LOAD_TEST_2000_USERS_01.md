@@ -225,6 +225,7 @@ Planned validation:
 - `npm --prefix backend run lint`
 - `npm --prefix web run lint`
 - Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
+- Security final handoff: `SECURITY-KVKK-FINAL-01`
 
 ## 16) Remaining risks
 

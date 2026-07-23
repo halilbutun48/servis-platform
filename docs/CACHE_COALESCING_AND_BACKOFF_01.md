@@ -78,6 +78,7 @@ Bu milestone, dashboard bulk ve read-heavy read flows için aynı-key inflight c
 
 `LOAD-TEST-2000-USERS-01` 2000-user readiness hazırlığını ayrı tutar; `DB-POOL-AND-API-SCALING-01` local/dev-safe probe ile DB pool ve API scaling takibini devralır; `OBSERVABILITY-MONITORING-ALERTING-01` coalesced read/backoff sinyallerini alert/runbook yüzeyine taşır; explicit high-concurrency flag sınırı korunur.
 - Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
+- Security final handoff: `SECURITY-KVKK-FINAL-01`
 
 ## 12) Next recommended milestone
 

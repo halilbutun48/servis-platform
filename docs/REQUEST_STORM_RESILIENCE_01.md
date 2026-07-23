@@ -156,6 +156,7 @@ Validation policy:
 
 `LOAD-TEST-2000-USERS-01` bu guard zincirinin devamındaki local/dev-safe 2000-user readiness adımıdır; `DB-POOL-AND-API-SCALING-01` ise onun ardından DB/API scaling readiness takibini devralır; `OBSERVABILITY-MONITORING-ALERTING-01` bu sinyalleri alarm/runbook katmanına taşır; production/public URL load ve write-action kapsamaz.
 - Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
+- Security final handoff: `SECURITY-KVKK-FINAL-01`
 
 ## 12) Next recommended milestone
 

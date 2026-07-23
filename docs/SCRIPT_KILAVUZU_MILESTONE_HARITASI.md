@@ -609,6 +609,13 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/ROLE_DATA_ISOLATION_REDTEAM_01.md`
 - Bu check, data integrity / observability / DB scaling / load-test / request-storm zinciriyle birlikte okunur; production DB, public URL probe, real credential, write-action ve schema/migration açmaz.
 
+### SECURITY-KVKK-FINAL-01 [CHECK]
+- `check:securitykvkkfinal01` technical security / KVKK readiness final gate'idir.
+- Check script: `node backend\scripts\security_kvkk_final_01_check.js`
+- Doküman: `docs/SECURITY_KVKK_FINAL_01.md`
+- Bu check, `ROLE-DATA-ISOLATION-REDTEAM-01`, `DATA-INTEGRITY-AND-RECOVERY-01`, `OBSERVABILITY-MONITORING-ALERTING-01`, `DB-POOL-AND-API-SCALING-01`, `LOAD-TEST-2000-USERS-01`, `CACHE-COALESCING-AND-BACKOFF-01`, `REQUEST-STORM-RESILIENCE-01` ve `PRODUCTION-RATE-LIMIT-POLICY-01` hattıyla birlikte okunur; production DB, public URL probe, real credential, write-action ve schema/migration açmaz.
+- Runtime-data / generated artifact / debug.log commit dışıdır.
+
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.
 - `docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md` Parent / Veli ve Personel canlı takip için güvenli fallback ve next-step copy referansıdır.

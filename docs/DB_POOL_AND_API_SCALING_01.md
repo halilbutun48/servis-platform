@@ -134,6 +134,7 @@ Repo: `servis-platform`
 - chain checks: `check:scriptharnessconsolidation01`, `check:verifychain01`
 - repo checks: `npm run verify:repo`, `npm run verify:final`
 - Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`
+- Security final handoff: `SECURITY-KVKK-FINAL-01`
 
 ## 18) Remaining risks
 

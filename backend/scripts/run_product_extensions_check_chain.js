@@ -191,6 +191,7 @@ const steps = [
   'check:backendlintwarningburndown01',
   'check:dataintegrityandrecovery01',
   'check:roledataisolationredteam01',
+  'check:securitykvkkfinal01',
 ];
 
 function runStep(scriptName) {

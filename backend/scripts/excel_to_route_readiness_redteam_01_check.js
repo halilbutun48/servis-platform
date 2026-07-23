@@ -591,6 +591,9 @@ async function main() {
       // Role data isolation redteam files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/role_data_isolation_redteam_01_check.js',
       'docs/ROLE_DATA_ISOLATION_REDTEAM_01.md',
+      // Security KVKK final files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/security_kvkk_final_01_check.js',
+      'docs/SECURITY_KVKK_FINAL_01.md',
       'docs/RUNBOOK_M45_RETENTION_BACKUP.md',
     ]),
     ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'],

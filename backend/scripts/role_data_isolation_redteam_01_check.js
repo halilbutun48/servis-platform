@@ -128,6 +128,8 @@ function main() {
     'backend/scripts/copilot_route_review_human_approval_01_check.js',
     'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
     'docs/ROLE_DATA_ISOLATION_REDTEAM_01.md',
+    'backend/scripts/security_kvkk_final_01_check.js',
+    'docs/SECURITY_KVKK_FINAL_01.md',
     'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md',
     'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md',
     'docs/PRIMER_SSOT.md',

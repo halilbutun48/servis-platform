@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `404`
-- Toplam executable tracked file: `1225`
-- Combined registry row: `1629`
-- Root/backend/web/mobile package dağılımı: root `247`, backend `782`, web `96`, mobile `201`
+- Toplam package script entry: `405`
+- Toplam executable tracked file: `1226`
+- Combined registry row: `1631`
+- Root/backend/web/mobile package dağılımı: root `248`, backend `783`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `64`
+- Docs indexed: `65`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -113,6 +113,10 @@ Repo: `servis-platform`
 - Role data isolation redteam alias: `check:roledataisolationredteam01`
 - Role data isolation redteam docs: `docs/ROLE_DATA_ISOLATION_REDTEAM_01.md`
 - Role data isolation redteam command: `node backend\scripts\role_data_isolation_redteam_01_check.js`
+- Security final milestone: `SECURITY-KVKK-FINAL-01`
+- Security final alias: `check:securitykvkkfinal01`
+- Security final docs: `docs/SECURITY_KVKK_FINAL_01.md`
+- Security final command: `node backend\scripts\security_kvkk_final_01_check.js`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -309,7 +313,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `632`
+- NEEDS_REVIEW: `634`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -330,7 +334,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 632 |
+| NEEDS_REVIEW | 634 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -567,6 +571,7 @@ Repo: `servis-platform`
 | root:check:backendlintwarningburndown01 | package.json | root | node backend/scripts/backend_lint_warning_burndown_01_check.js | review | NEEDS_REVIEW |  | BACKEND-LINT-WARNING-BURNDOWN-01 |  | Owner or chain unclear |  |
 | root:check:dataintegrityandrecovery01 | package.json | root | node backend/scripts/data_integrity_and_recovery_01_check.js | core | ACTIVE_CORE |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Breaks canonical verification chain |  |
 | root:check:roledataisolationredteam01 | package.json | root | node backend/scripts/role_data_isolation_redteam_01_check.js | verify-core | ACTIVE_CORE |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Breaks canonical verification chain |  |
+| root:check:securitykvkkfinal01 | package.json | root | node backend/scripts/security_kvkk_final_01_check.js | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
 | root:check:op01 | package.json | root | node backend/scripts/op_01_operation_proof_service_proof_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-01 |  | Breaks canonical verification chain |  |
 | root:check:op02 | package.json | root | node backend/scripts/op_02_manual_operator_proof_note_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-02 |  | Breaks canonical verification chain |  |
 | root:check:op03 | package.json | root | node backend/scripts/op_03_web_operation_proof_card_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-03 |  | Breaks canonical verification chain |  |
@@ -1011,6 +1016,7 @@ Repo: `servis-platform`
 | repo_js_syntax_scan.js | backend/scripts/repo_js_syntax_scan.js | backend |  | review | NEEDS_REVIEW |  | REPO-JS-SYNTAX-SCAN |  | Owner or chain unclear |  |
 | request_storm_resilience_01_check.js | backend/scripts/request_storm_resilience_01_check.js | backend | root:check:requeststormresilience01 | product-extensions | NEEDS_REVIEW |  | REQUEST-STORM-RESILIENCE-01-CHECK |  | Owner or chain unclear |  |
 | roadmap_lock_ai_marketplace_01_check.js | backend/scripts/roadmap_lock_ai_marketplace_01_check.js | backend | root:check:roadmaplockaimarketplace01 | review | NEEDS_REVIEW |  | ROADMAP-LOCK-AI-MARKETPLACE-01-CHECK |  | Owner or chain unclear |  |
+| role_data_isolation_redteam_01_check.js | backend/scripts/role_data_isolation_redteam_01_check.js | backend | root:check:roledataisolationredteam01 | review | NEEDS_REVIEW |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Owner or chain unclear |  |
 | room_vehicle_driver_uppercase_normalization_01_check.js | backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js | backend | root:check:roomvehicledriveruppercase01 | review | NEEDS_REVIEW |  | ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01-CHECK |  | Owner or chain unclear |  |
 | route_change_final_01_check.js | backend/scripts/route_change_final_01_check.js | backend | root:check:routechangefinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | run_backend_lint.js | backend/scripts/run_backend_lint.js | backend | backend:lint | backend-lint | ACTIVE_CORE |  | RUN-BACKEND-LINT |  | Owner or chain unclear | canonical runner |
@@ -1286,7 +1292,7 @@ Repo: `servis-platform`
 | fieldAcceptance.js | backend/src/routes/fieldAcceptance.js | backend |  | review | NEEDS_REVIEW |  | FIELD-ACCEPTANCE |  | Owner or chain unclear |  |
 | geocode.js | backend/src/routes/geocode.js | backend |  | review | NEEDS_REVIEW |  | GEOCODE |  | Owner or chain unclear |  |
 | gps.js | backend/src/routes/gps.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
-| kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
+| kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:securitykvkkfinal01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
 | me.js | backend/src/routes/me.js | backend | backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
@@ -1380,7 +1386,7 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| role_data_isolation_redteam_01_check.js | backend/scripts/role_data_isolation_redteam_01_check.js | backend | root:check:roledataisolationredteam01 | review | NEEDS_REVIEW |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Owner or chain unclear |  |
+| security_kvkk_final_01_check.js | backend/scripts/security_kvkk_final_01_check.js | backend | root:check:securitykvkkfinal01 | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -2014,7 +2020,7 @@ Repo: `servis-platform`
 
 | function | rolePanel | backendRouteService | frontendSurface | currentCheckScript | checkType | coverageStatus | missingGap | ownerMilestone | requiredNextAction |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Auth / login / role access | Mobile login, step-up, KVKK | backend/src/routes/personelAccess.js; backend/src/routes/live.js; auth / step-up services | mobile/src/screens/LoginScreen.js; mobile/src/screens/ForcePasswordChangeScreen.js; mobile/src/screens/PinChangeScreen.js; web/src/panels/shared/KvkkPanel.jsx; web/src/panels/shared/KvkkConsentGate.jsx; web/src/panels/shared/TotpStepUpCard.jsx | check:m98e2e; check:m98e2b; check:m98e2d; check:m98e5; check:m99kvkk01; check:m99ux01 | static + auth-session + device | PARTIAL_COVERAGE | No single canonical end-to-end login/role smoke; browser/device split stays manual. | M98 / M99 | MISSING_FUTURE_MILESTONE: SECURITY-KVKK-FINAL-01 |
+| Auth / login / role access | Mobile login, step-up, KVKK | backend/src/routes/personelAccess.js; backend/src/routes/live.js; auth / step-up services | mobile/src/screens/LoginScreen.js; mobile/src/screens/ForcePasswordChangeScreen.js; mobile/src/screens/PinChangeScreen.js; web/src/panels/shared/KvkkPanel.jsx; web/src/panels/shared/KvkkConsentGate.jsx; web/src/panels/shared/TotpStepUpCard.jsx | check:m98e2e; check:m98e2b; check:m98e2d; check:m98e5; check:m99kvkk01; check:m99ux01 | static + auth-session + device | PARTIAL_COVERAGE | No single canonical end-to-end login/role smoke; browser/device split stays manual. | M98 / M99 | SECURITY-KVKK-FINAL-01 |
 | Super Admin | Super Admin panels | backend/src/routes/live.js; backend/src/routes/company.js; backend/src/routes/organization.js; backend/src/routes/requests.js | web/src/panels/superadmin/SuperAdminPanel.jsx; UsersPanel.jsx; RoomsPanel.jsx; RegionsPanel.jsx; CompaniesPanel.jsx; CommercialCorePanel.jsx; AuditLogsPanel.jsx; LogExportPanel.jsx; TrustQualityPanel.jsx; FieldAcceptanceCenter.jsx | check:web01b; check:uxsuperadminoverviewcleanup01; check:uxsuperadminpanelclarity01; check:uxsuperadminlabelpolish01; check:uxsuperadminlivemonitoring01; check:uxsuperadminauditpanel01; check:uxsuperadminqualitypanel01; check:uxsuperadmincommercialflow01; check:uxsuperadminfielddispatchdiscovery01; check:uxsuperadminfieldacceptancecenter01; check:cop04bfix01; check:cop04bfix04; check:copliveaccept01; check:finaluxsmoke01 | static | COVERED_ACTIVE | None on the current static/product chain. | M97 / M99 / COP-04B | None |
 | Room / Oda | Room panels | backend/src/routes/shifts/room.js; backend/src/routes/requests.js; backend/src/routes/live.js; backend/src/routes/agreements.js | web/src/panels/room/roomOperationsBoard.jsx; roomShiftsMainSections.jsx; AgreementsPanel.jsx; ShiftsPanel.jsx; DriversPanel.jsx; MapPanel.jsx; VehiclesPanel.jsx; CommercialFlowPanel.jsx; CheckinPanel.jsx; HubPanel.jsx; OperationHealthPanel.jsx | check:uxroomopspaneltabs01; check:uxroomopsrelationshippolish01; check:uxroomshiftstabs01; check:uxroomvehiclestelematicsfix; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:routechangefinal01; check:finaluxsmoke01 | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | BOARDING-OPS / ROUTE-CHANGE-FINAL | None |
 | Company / Firma | Company panels | backend/src/routes/shifts/company.js; backend/src/routes/agreements.js; backend/src/routes/company.js; backend/src/routes/requests.js; backend/src/routes/personelAccess.js | web/src/panels/company/OperationsPanel.jsx; ShiftsPanel.jsx; AgreementsPanel.jsx; AgreementWizard.jsx; AgreementWizardModal.jsx; GuidedPlanModal.jsx; guidedPlanModalShell.jsx; CommercialFlowPanel.jsx; ServiceEvaluationPanel.jsx; MapPanel.jsx; WorkflowPanel.jsx; RoutePreviewModal.jsx; AgreementOpsBridgeCard.jsx; PersonelAccessPanel.jsx; PassengerLinksPanel.jsx; HubPanel.jsx; CompanyShiftsPanel* | check:uxcompanyshiftstabs01; check:uxcompanymobileactionclarity01; check:uxcompanypersonelaccessmobileparity01; check:uxcompanyopspaneltabs01; check:uxcompanyqualitytabs01; check:uxcompanypanelssmoke01; check:routechangefinal01; check:boardingops01b; check:boardingops01c | static + manual boundary | COVERED_ACTIVE | None on the current static/product chain. | ROUTE-CHANGE-FINAL / BOARDING-OPS | None |

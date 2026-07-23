@@ -85,6 +85,7 @@ Amaç feature davranışı eklemek değil, mevcut güvenli yüzeyi okumak ve rel
 - Summary outputs: `dataClassificationSummary`, `integrityRiskSummary`, `transactionBoundarySummary`, `idempotencySummary`, `backupRestoreSummary`, `runtimeDataRecoverySummary`, `kvkkSafeRecoverySummary`, `compatibilitySummary`, `smokeThresholdSummary`, `chainWiringSummary`, `commitExternalSummary`, `prismaSummary`.
 - Guard topics: data classification, critical entity matrix, referential integrity policy, transaction boundary policy, idempotency and retry-safety policy, backup policy, restore policy, RPO / RTO targets, recovery runbook, corruption detection policy, partial write / duplicate write / stale write risk matrix, runtime-data commit-external and recovery policy, migration and rollback safety policy, KVKK-safe backup/logging policy, observability handoff, incident severity matrix, release gate checklist, generated artifact policy, runtime-data list, no production DB, no destructive query, no schema/migration, no route/service/prisma diff, smoke threshold 18/82/82/82, consoleErrorCount=0, pageErrorCount=0, 429=none.
 - Companion redteam milestone: `ROLE-DATA-ISOLATION-REDTEAM-01`.
+- Security final handoff: `SECURITY-KVKK-FINAL-01`.
 
 ## 15) Remaining risks
 - Live restore drill olmadan production recovery sonucu sadece policy seviyesindedir.
