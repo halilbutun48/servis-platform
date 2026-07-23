@@ -37,8 +37,10 @@ const workingTreeCompatFiles = [
   "backend/scripts/observability_monitoring_alerting_01_check.js",
   "backend/scripts/observability_monitoring_alerting_01_probe.js",
   "backend/scripts/backend_lint_warning_burndown_01_check.js",
+  "backend/scripts/data_integrity_and_recovery_01_check.js",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
+  "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
@@ -219,6 +221,7 @@ const selectedDocs = [
   "docs/LOAD_TEST_2000_USERS_01.md",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
+  "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
   "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
   "docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md",
   "docs/COPILOT_ROLE_TASK_MATRIX_01.md",
@@ -336,6 +339,7 @@ function slugToMilestone(slug) {
     [/uxpanelstandardarchitecture0?1/i, "UX-PANEL-STANDARD-ARCHITECTURE-01"],
     [/uxpremiumcriticalfixroom0?1/i, "UX-PREMIUM-CRITICAL-FIX-ROOM-01"],
     [/uxpremiumcriticalfixagreementsdetail0?1/i, "UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01"],
+    [/data[_-]?integrity[_-]?and[_-]?recovery[_-]?0?1(?:[_-]?check)?/i, "DATA-INTEGRITY-AND-RECOVERY-01"], // check:dataintegrityandrecovery01
     [/exceltoroutereadinessredteam0?1/i, "EXCEL-TO-ROUTE-READINESS-REDTEAM-01"], // check:exceltoroutereadinessredteam01
     [/uxcompanyagreementsmobileparity0?1/i, "UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01"], // check:uxcompanyagreementsmobileparity01
     [/uxcompanypersonelaccessmobileparity0?1/i, "UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01"], // check:uxcompanypersonelaccessmobileparity01
@@ -402,7 +406,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1552,6 +1556,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Backend lint warning burndown alias: \`check:backendlintwarningburndown01\``);
   out.push(`- Backend lint warning burndown docs: \`docs/BACKEND_LINT_WARNING_BURNDOWN_01.md\``);
   out.push(`- Backend lint warning burndown command: \`node backend\\scripts\\backend_lint_warning_burndown_01_check.js\``);
+  out.push(`- Data integrity and recovery milestone: \`DATA-INTEGRITY-AND-RECOVERY-01\``);
+  out.push(`- Data integrity and recovery alias: \`check:dataintegrityandrecovery01\``);
+  out.push(`- Data integrity and recovery docs: \`docs/DATA_INTEGRITY_AND_RECOVERY_01.md\``);
+  out.push(`- Data integrity and recovery command: \`node backend\\scripts\\data_integrity_and_recovery_01_check.js\``);
   // node backend/scripts/backend_lint_warning_burndown_01_check.js
   out.push(`- Agreements detail milestone: \`UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01\``);
   out.push(`- Agreements detail docs: \`docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md\``);

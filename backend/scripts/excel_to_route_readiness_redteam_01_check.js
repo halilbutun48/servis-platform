@@ -585,6 +585,10 @@ async function main() {
       // Backend lint warning burndown files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/backend_lint_warning_burndown_01_check.js',
       'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md',
+      // Data integrity and recovery files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/data_integrity_and_recovery_01_check.js',
+      'docs/DATA_INTEGRITY_AND_RECOVERY_01.md',
+      'docs/RUNBOOK_M45_RETENTION_BACKUP.md',
     ]),
     ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'],
     'working tree stays within redteam scope',

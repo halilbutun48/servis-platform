@@ -601,6 +601,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Final doc: `docs/OBSERVABILITY_MONITORING_ALERTING_01.md`
 - DB pool ve API scaling sonrasında alarm bandı, rate-limit policy, dashboard bulk, cache coalescing ve request storm sinyallerini okunur hale getirir; production/public probe, write-action ve schema/migration sınırı açılmaz.
 - `BACKEND-LINT-WARNING-BURNDOWN-01` backend lint warning burndown kabul katmanıdır; `check:backendlintwarningburndown01`, `docs/BACKEND_LINT_WARNING_BURNDOWN_01.md` ve `node backend\scripts\backend_lint_warning_burndown_01_check.js` ile yaşar; runtime davranışı, smoke threshold, lint config ve commit dışı artefakt sınırını açmaz.
+- `DATA-INTEGRITY-AND-RECOVERY-01` runtime-data recovery, backup/restore ve corruption detection kabul katmanıdır; `check:dataintegrityandrecovery01`, `docs/DATA_INTEGRITY_AND_RECOVERY_01.md` ve `node backend\scripts\data_integrity_and_recovery_01_check.js` ile yaşar; `backend/artifacts/runtime-data/`, `backend/artifacts/browser-smoke/`, `backend/artifacts/load-test/`, `backend/artifacts/db-scaling/`, `backend/artifacts/observability/` ve `backend/artifacts/data-integrity/` commit dışı kalır, production DB / destructive query / schema değişikliği açmaz.
 
 ### UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 [CHECK]
 - `check:uxparentpersonelliveerrorclarity01` Parent / Veli ve Personel canlı takip yüzeylerinde hata, yetki, servis görünmüyor, bugün servis yok, konum yok ve fallback mesajlarını sade Türkçe ile güvenli hale getirir.

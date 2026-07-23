@@ -40,3 +40,4 @@ backend/artifacts/browser-smoke/
 backend/artifacts/load-test/
 backend/artifacts/db-scaling/
 backend/artifacts/observability/
+backend/artifacts/data-integrity/

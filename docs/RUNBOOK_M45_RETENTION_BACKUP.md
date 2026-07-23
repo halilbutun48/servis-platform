@@ -27,7 +27,7 @@ Bu kayıtlar retention arşivi değildir; expiry/revoke yaşam döngüsüyle yö
 
 1. Retention policy kontrolü:
    - `GET /api/admin/retention/policy`
-2. Archive policy kontrolü:
+2. Backup policy kontrolü:
    - `GET /api/admin/backup/policy`
 3. Archive snapshot oluştur:
    - `npm --prefix backend run m45:backup:create`

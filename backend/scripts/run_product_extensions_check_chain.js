@@ -189,6 +189,7 @@ const steps = [
   'check:dbpoolandapiscaling01',
   'check:observabilitymonitoringalerting01',
   'check:backendlintwarningburndown01',
+  'check:dataintegrityandrecovery01',
 ];
 
 function runStep(scriptName) {
