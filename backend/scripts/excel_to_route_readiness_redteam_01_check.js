@@ -374,6 +374,12 @@ async function main() {
       'backend/scripts/verify_chain_01_product_extensions_check.js',
       'backend/scripts/script_harness_consolidation_01_check.js',
       'backend/scripts/copilot_route_review_human_approval_01_check.js',
+      // Demand intake companion files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/copilot_demand_intake_01_check.js',
+      'backend/src/ai/chat/copilotDemandIntake.js',
+      'backend/src/ai/chat/copilotDemandToAgreementRoadmap.js',
+      'docs/COPILOT_DEMAND_INTAKE_01.md',
+      'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md',
       'backend/scripts/request_storm_resilience_01_check.js',
       'backend/scripts/copilot_operation_health_engine_01_check.js',
       'backend/scripts/copilot_next_best_action_engine_01_check.js',

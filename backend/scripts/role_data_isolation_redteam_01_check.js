@@ -128,6 +128,13 @@ function main() {
     'backend/scripts/copilot_route_review_human_approval_01_check.js',
     'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
     'docs/ROLE_DATA_ISOLATION_REDTEAM_01.md',
+    // Demand intake companion files are legitimate scope for this consolidated redteam pass.
+    'backend/scripts/copilot_demand_intake_01_check.js',
+    'backend/src/ai/chat/copilotDemandIntake.js',
+    'backend/src/ai/chat/copilotDemandToAgreementRoadmap.js',
+    'docs/COPILOT_DEMAND_INTAKE_01.md',
+    'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md',
+    'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md',
     'backend/scripts/security_kvkk_final_01_check.js',
     'backend/scripts/audit_log_and_approval_trace_01_check.js',
     'docs/SECURITY_KVKK_FINAL_01.md',

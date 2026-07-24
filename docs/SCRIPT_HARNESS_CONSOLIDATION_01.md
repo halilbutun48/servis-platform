@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-07-23
+Tarih: 2026-07-24
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `406`
-- Toplam executable tracked file: `1227`
-- Combined registry row: `1633`
-- Root/backend/web/mobile package dağılımı: root `249`, backend `784`, web `96`, mobile `201`
+- Toplam package script entry: `407`
+- Toplam executable tracked file: `1229`
+- Combined registry row: `1636`
+- Root/backend/web/mobile package dağılımı: root `250`, backend `786`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `66`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -168,6 +168,11 @@ Repo: `servis-platform`
 - Copilot AI action roadmap check: `check:copilotairoadmap01`
 - Copilot AI action roadmap docs: `docs/COPILOT_AI_ACTION_ROADMAP_01.md`
 - Copilot AI action roadmap command: `node backend\scripts\copilot_ai_action_roadmap_01_check.js`
+- Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`
+- Copilot demand intake check: `check:copilotdemandintake01`
+- Copilot demand intake docs: `docs/COPILOT_DEMAND_INTAKE_01.md`
+- Copilot demand intake command: `node backend\scripts\copilot_demand_intake_01_check.js`
+- Copilot demand intake helper: `backend/src/ai/chat/copilotDemandIntake.js`
 - Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`
 - Copilot demand-to-agreement roadmap check: `check:copilotdemandagreement01`
 - Copilot demand-to-agreement roadmap docs: `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
@@ -301,7 +306,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `192`
+- ACTIVE_CORE: `193`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -317,7 +322,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `635`
+- NEEDS_REVIEW: `637`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -331,14 +336,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 192 |
+| ACTIVE_CORE | 193 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 635 |
+| NEEDS_REVIEW | 637 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -401,6 +406,7 @@ Repo: `servis-platform`
 | root:check:offerrankingquality01 | package.json | root | node backend/scripts/offer_ranking_quality_01_check.js | core | ACTIVE_CORE |  | OFFER-RANKING-QUALITY-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotroletaskmatrix01 | package.json | root | node backend/scripts/copilot_role_task_matrix_01_check.js | core | ACTIVE_CORE |  | COPILOT-ROLE-TASK-MATRIX-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotairoadmap01 | package.json | root | node backend/scripts/copilot_ai_action_roadmap_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-COPILOTAIROADMAP-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotdemandintake01 | package.json | root | node backend/scripts/copilot_demand_intake_01_check.js | core | ACTIVE_CORE |  | COPILOT-DEMAND-INTAKE-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotdemandagreement01 | package.json | root | node backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js | core | ACTIVE_CORE |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01 |  | Breaks canonical verification chain |  |
 | root:check:copilothumanapproval01 | package.json | root | node backend/scripts/copilot_human_approval_01_check.js | core | ACTIVE_CORE |  | COPILOT-HUMAN-APPROVAL-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotexceldemandimport01 | package.json | root | node backend/scripts/copilot_excel_demand_import_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-EXCEL-DEMAND-IMPORT-01 |  | Breaks canonical verification chain |  |
@@ -692,6 +698,7 @@ Repo: `servis-platform`
 | ai03b_semantic_visible_audit_01_check.js | backend/scripts/ai03b_semantic_visible_audit_01_check.js | backend | root:check:ai03bsemanticvisibleaudit01 | review | NEEDS_REVIEW |  | AI-03-B-SEMANTIC-VISIBLE-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ai03b_semantic_visible_live_matrix_01_check.js | backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | backend | root:check:ai03bsemanticvisiblelivematrix01 | review | NEEDS_REVIEW |  | AI-03-B-SEMANTIC-VISIBLE-LIVE-MATRIX-01-CHECK |  | Owner or chain unclear |  |
 | ai_response_semantic_quality_gate_01_check.js | backend/scripts/ai_response_semantic_quality_gate_01_check.js | backend | root:check:airesponsesemanticqualitygate01 | review | NEEDS_REVIEW |  | AI-RESPONSE-SEMANTIC-QUALITY-GATE-01-CHECK |  | Owner or chain unclear |  |
+| audit_log_and_approval_trace_01_check.js | backend/scripts/audit_log_and_approval_trace_01_check.js | backend | root:check:auditlogandapprovaltrace01 | review | NEEDS_REVIEW |  | AUDIT-LOG-AND-APPROVAL-TRACE-01 |  | Owner or chain unclear |  |
 | audit_logs_session_hotfix_check.mjs | backend/scripts/audit_logs_session_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | AUDIT-LOGS-SESSION-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_dev_toggle_01_check.js | backend/scripts/auth_stepup_dev_toggle_01_check.js | backend | root:check:authstepupdevtoggle01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-DEV-TOGGLE-01-CHECK |  | Owner or chain unclear |  |
 | auth_stepup_provider_local_default_01_check.js | backend/scripts/auth_stepup_provider_local_default_01_check.js | backend | root:check:authstepupproviderlocaldefault01 | review | NEEDS_REVIEW |  | AUTH-STEPUP-PROVIDER-LOCAL-DEFAULT-01-CHECK |  | Owner or chain unclear |  |
@@ -1392,7 +1399,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| audit_log_and_approval_trace_01_check.js | backend/scripts/audit_log_and_approval_trace_01_check.js | backend | root:check:auditlogandapprovaltrace01 | review | NEEDS_REVIEW |  | AUDIT-LOG-AND-APPROVAL-TRACE-01 |  | Owner or chain unclear |  |
+| copilot_demand_intake_01_check.js | backend/scripts/copilot_demand_intake_01_check.js | backend | root:check:copilotdemandintake01 | review | NEEDS_REVIEW |  | COPILOT-DEMAND-INTAKE-01-CHECK |  | Owner or chain unclear |  |
+| copilotDemandIntake.js | backend/src/ai/chat/copilotDemandIntake.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-DEMAND-INTAKE |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -2042,7 +2050,7 @@ Repo: `servis-platform`
 | Dynamic Savings / Readonly Preview | Company/room agreements and commercial flow | backend/src/services/boardingRouteImpactPreview.js; backend/src/services/agreementRouteChangePreview.js; route preview helpers | web/src/panels/shared/DynamicSavingsPreviewCard.jsx; web/src/panels/company/AgreementsPanel.jsx; web/src/panels/room/AgreementsPanel.jsx; web/src/panels/company/companyAgreementsRouteRefreshPendingSection.jsx; web/src/panels/room/roomAgreementsPanelSections.jsx | check:dynamicsavings01; check:routechangefinal01; check:boardingops01a; check:boardingops01b; check:boardingops01c; check:copliveaccept01 | static | COVERED_ACTIVE | None on the current static/product chain. Preview-only by design. | DYNAMIC-SAVINGS-01 | None |
 | Commercial / Payment Preview | Company/room commercial panels | backend/src/scripts/pay_*.js; backend/src/scripts/op_04*.js; payment readiness helpers | web/src/panels/company/CommercialFlowPanel.jsx; web/src/panels/room/CommercialFlowPanel.jsx; web/src/panels/superadmin/CommercialCorePanel.jsx | check:pay01a; check:pay01b; check:pay01c; check:pay01d; check:pay01e; check:paysafe01; check:op04; check:qlt01; check:qlt02; check:qlt03; check:qlt04 | static + release-only | COVERED_ACTIVE | Execute/write actions remain deliberately forbidden. | PAY / QLT / OP | None |
 | Quality / Evidence | Company/superadmin quality views | backend/src/scripts/qlt_*.js; backend/src/scripts/op_*.js; evidence helpers | web/src/panels/company/ServiceEvaluationPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx; web/src/panels/shared/ReportsPanel.jsx | check:qlt01; check:qlt02; check:qlt03; check:qlt04; check:qlt04a; check:qlt04b; check:op01; check:op02; check:op03; check:op04 | static + release-only | COVERED_ACTIVE | None on the current static/product chain. | QLT / OP | None |
-| Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/chat/copilotHumanApprovalPolicy.js; backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js; backend/src/ai/chat/conversationWorkflowReasoningEngine.js; backend/src/ai/chat/conversationOperationHealthEngine.js; backend/src/ai/chat/conversationNextBestActionEngine.js; backend/src/ai/chat/conversationPlanReviewEngine.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copiloteblockruntimeanswerintegration01; check:copilotguidedtaskengine01; check:copilotdynamicquestionengine01; check:copilotsmartdiagnosticengine01; check:copilotrootcauseengine01; check:copilotworkflowreasoningengine01; check:copilotoperationhealthengine01; check:copilotnextbestactionengine01; check:copilotplanreviewengine01; check:hotfilesplitaichatcomposers01; check:hotfilesplitwebpanels01; check:seferabireasoningassistant01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
+| Sefer Abi / Copilot | Copilot drawer and terminal | backend/src/ai/service.js; backend/src/ai/chat/helpComposer.js; backend/src/ai/chat/intentRouter.js; backend/src/ai/chat/answerQualityPolicy.js; backend/src/ai/chat/copilotRoleTaskMatrix.js; backend/src/ai/chat/copilotHumanApprovalPolicy.js; backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js; backend/src/ai/chat/conversationWorkflowReasoningEngine.js; backend/src/ai/chat/conversationOperationHealthEngine.js; backend/src/ai/chat/conversationNextBestActionEngine.js; backend/src/ai/chat/conversationPlanReviewEngine.js; backend/src/ai/jobGuide/screenCatalog.js | web/src/components/copilot/FloatingCopilotDrawer.jsx; web/src/panels/shared/CopilotPanel.jsx | check:cop01a; check:cop01b; check:cop01c; check:cop01d; check:cop01e; check:cop02a; check:cop02b; check:cop02bfix01; check:cop03a; check:cop03afix01; check:cop03afix02; check:cop03b; check:cop03c; check:cop03cfix01; check:cop03cfix02; check:cop03cfix03; check:cop04a; check:cop04afix01; check:cop04afix02; check:cop04afix03; check:cop04afix04; check:cop04b; check:cop04bfix01; check:cop04bfix02; check:cop04bfix03; check:cop04bfix04; check:cop04bfix05; check:cop04bfix06; check:cop04bfix07; check:cop04bfix08; check:copilotroletaskmatrix01; check:copilotairoadmap01; check:copilotdemandintake01; check:copilotdemandagreement01; check:copilothumanapproval01; check:copilotexceldemandimport01; check:addressgeocodingconfidence01; check:copilotroutereviewhumanapproval01; check:copiloteblockruntimeanswerintegration01; check:copilotguidedtaskengine01; check:copilotdynamicquestionengine01; check:copilotsmartdiagnosticengine01; check:copilotrootcauseengine01; check:copilotworkflowreasoningengine01; check:copilotoperationhealthengine01; check:copilotnextbestactionengine01; check:copilotplanreviewengine01; check:hotfilesplitaichatcomposers01; check:hotfilesplitwebpanels01; check:seferabireasoningassistant01; check:copliveaccept01; check:uxcopilotpersona01; check:uxcopilotsmartchips01; check:uxcopilotterminal01; check:uxseferabilauncher01 | static | COVERED_ACTIVE | None on the current static/product chain. | COP-01..04 / COP-LIVE-ACCEPT-01 | None |
 | Telematics / Provider Hub | Super Admin GPS readiness / Room vehicle mapping | docs/TELEMATICS_PROVIDER_HUB_01.md; backend/scripts/telematics_provider_hub_01_check.js | web/src/panels/superadmin/SuperAdminPanel.jsx; web/src/panels/room/roomVehiclesPanelSections.jsx | check:telematicsproviderhub01; check:m44telematicst1t5; check:uxroomvehiclestelematicsfix | static | COVERED_ACTIVE | None on the current static/product chain. | TELEMATICS-PROVIDER-HUB-01 | None |
 | Telematics / Safe Drive | Driver live map and telematics surfaces | docs/SAFE_DRIVE_01.md; backend/scripts/safe_drive_01_check.js; ETA / OSRM helpers | web/src/utils/safeDriveSummary.js; web/src/panels/shared/SafeDriveSummaryCard.jsx; web/src/panels/driver/RoutePanel.jsx; web/src/panels/driver/MapPanel.jsx; web/src/panels/company/MapPanel.jsx; web/src/panels/room/MapPanel.jsx | check:safedrive01; check:telematicsproviderhub01; check:m44telematicst1t5; check:etaosrm01; check:etaosrm02; check:etasanity01 | static | COVERED_ACTIVE | None on the current static/product chain. | SAFE-DRIVE-01 | None |
 | Offer Ranking Quality / Readonly Comparison | Company / room / super admin offer comparison surfaces | docs/OFFER_RANKING_QUALITY_01.md; backend/scripts/offer_ranking_quality_01_check.js | web/src/utils/offerQualityRanking.js; web/src/panels/shared/OfferQualityRankingCard.jsx; web/src/panels/company/WorkflowPanel.jsx; web/src/panels/company/companyShiftsPanelSections.jsx; web/src/panels/room/OffersPanel.jsx; web/src/panels/superadmin/TrustQualityPanel.jsx | check:offerrankingquality01 | static | COVERED_ACTIVE | Readonly comparison only; auto-select and auto-accept stay blocked. | OFFER-RANKING-QUALITY-01 | None |
@@ -2229,6 +2237,7 @@ Repo: `servis-platform`
 | backend/scripts/_m91_route_preview_checks.js | Hub | ACTIVE |
 | backend/scripts/_m91_smoke_helpers.js | Hub | ACTIVE |
 | backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | Hub | NEEDS_REVIEW |
+| backend/scripts/audit_log_and_approval_trace_01_check.js | debug payload | NEEDS_REVIEW |
 | backend/scripts/audit_logs_session_hotfix_check.mjs | Audit Logs | NEEDS_REVIEW |
 | backend/scripts/boarding_ops_01a_route_impact_preview_check.js | OperationProof | NEEDS_REVIEW |
 | backend/scripts/boarding_ops_01b_apply_accepted_change_check.js | OperationProof, raw internal | NEEDS_REVIEW |
@@ -2265,7 +2274,6 @@ Repo: `servis-platform`
 | backend/scripts/final_ux_smoke_01_check.js | Hub, Yer, Audit Logs, Log Export, personel-access | NEEDS_REVIEW |
 | backend/scripts/invite_based_membership_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/m10check.js | Audit Logs | ACTIVE_RELEASE_ONLY |
-| backend/scripts/m19check.js | Hub | ACTIVE_RELEASE_ONLY |
 
 ## 11) Cleanup Raporu
 

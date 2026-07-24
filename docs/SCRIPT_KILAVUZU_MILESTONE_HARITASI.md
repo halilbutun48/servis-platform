@@ -157,13 +157,21 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:copilotroletaskmatrix01` Sefer Abi / Copilot rol/task matrix ve guardrail katmanını statik docs/check olarak kilitler.
 - Check script: `node backend\scripts\copilot_role_task_matrix_01_check.js`
 - Doküman: `docs/COPILOT_ROLE_TASK_MATRIX_01.md`
-- Bu check, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-TERMINAL-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; runtime AI action açmaz.
+- Bu check, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-TERMINAL-01`, `COPILOT-AI-ACTION-ROADMAP-01`, `COPILOT-DEMAND-INTAKE-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; runtime AI action açmaz.
 
 ### COPILOT-AI-ACTION-ROADMAP-01 [CHECK]
 - `check:copilotairoadmap01` Sefer Abi için future-only AI action phase modelini docs/check olarak kilitler; runtime AI action açmaz.
 - Check script: `node backend\scripts\copilot_ai_action_roadmap_01_check.js`
 - Doküman: `docs/COPILOT_AI_ACTION_ROADMAP_01.md`
-- Bu check, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-TERMINAL-01`, `COPILOT-ROLE-TASK-MATRIX-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; tool execution, write-action dispatcher ve runtime AI action açmaz.
+- Bu check, `UX-COPILOT-PERSONA-01`, `UX-COPILOT-SMART-CHIPS-01`, `UX-COPILOT-TERMINAL-01`, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-DEMAND-INTAKE-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; tool execution, write-action dispatcher ve runtime AI action açmaz.
+
+### COPILOT-DEMAND-INTAKE-01 [CHECK]
+- `check:copilotdemandintake01` Sefer Abi için draft-only demand intake, sınıflandırma ve netleştirme soruları katmanını docs/check olarak kilitler; runtime AI action, tool execution, write-action dispatcher, production DB, destructive query ve route/service/prisma diff açmaz.
+- Check script: `node backend\scripts\copilot_demand_intake_01_check.js`
+- Doküman: `docs/COPILOT_DEMAND_INTAKE_01.md`
+- Static helper: `backend/src/ai/chat/copilotDemandIntake.js`
+- Bu check, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01`, `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`, `COPILOT-HUMAN-APPROVAL-01` ve `COPILOT-EXCEL-DEMAND-IMPORT-01` guardrail hattıyla birlikte okunur; draft-only, tool execution, write-action dispatcher ve production DB açmaz.
+- Not: runtime-data ve browser-smoke artifaktları commit dışı kalır.
 
 ### COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01 [CHECK]
 - `check:copilotdemandagreement01` Sefer Abi için talep -> teklif -> sözleşme hazırlık yol haritasını docs/check olarak kilitler; runtime AI action açmaz.

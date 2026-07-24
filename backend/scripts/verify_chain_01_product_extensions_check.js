@@ -67,6 +67,8 @@ function main() {
   const dbScalingDoc = read('docs/DB_POOL_AND_API_SCALING_01.md');
   const roleMatrix = read('docs/COPILOT_ROLE_TASK_MATRIX_01.md');
   const aiRoadmap = read('docs/COPILOT_AI_ACTION_ROADMAP_01.md');
+  const demandIntakeDoc = read('docs/COPILOT_DEMAND_INTAKE_01.md');
+  const demandToAgreementDoc = read('docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md');
   const guidedDoc = read('docs/COPILOT_GUIDED_TASK_ENGINE_01.md');
   const dynamicDoc = read('docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md');
   const smartDiagnosticDoc = read('docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md');
@@ -83,6 +85,8 @@ function main() {
   const backlog = read('docs/NEXT_BACKLOG_V1.md');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
+  const demandIntakeHelper = read('backend/src/ai/chat/copilotDemandIntake.js');
+  const demandToAgreementHelper = read('backend/src/ai/chat/copilotDemandToAgreementRoadmap.js');
   const companyAgreementsMobileParityDoc = read('docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md');
   const companyAgreementsPanel = read('web/src/panels/company/AgreementsPanel.jsx');
   const companyAgreementsMobileCards = read('web/src/panels/company/companyAgreementsMobileCards.jsx');
@@ -97,6 +101,7 @@ function main() {
   must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json exposes check:product-extensions');
   must(pkg, '"check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js"', 'package.json exposes check:verifychain01');
   must(pkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', 'package.json keeps verify:final product extension step');
+  must(pkg, '"check:copilotdemandintake01": "node backend/scripts/copilot_demand_intake_01_check.js"', 'package.json exposes check:copilotdemandintake01');
   must(pkg, '"check:auditlogandapprovaltrace01": "node backend/scripts/audit_log_and_approval_trace_01_check.js"', 'package.json exposes check:auditlogandapprovaltrace01');
   must(pkg, '"check:web01a"', 'package.json keeps check:web01a');
   must(pkg, '"check:web01b"', 'package.json keeps check:web01b');
@@ -373,6 +378,7 @@ function main() {
   'check:cop04bfix08',
   'check:copilotroletaskmatrix01',
   'check:copilotairoadmap01',
+  'check:copilotdemandintake01',
   'check:copilotdemandagreement01',
   'check:copilothumanapproval01',
   'check:copilotexceldemandimport01',
@@ -517,6 +523,10 @@ function main() {
   must(guide, 'PRODUCT-FLOW-BUTTON-AUDIT-01', 'script guide mentions product flow button audit milestone');
   must(guide, 'check:productflowbuttonaudit01', 'script guide exposes product flow button audit check');
   must(guide, 'node backend\\scripts\\product_flow_button_audit_01_check.js', 'script guide includes product flow button audit command');
+  must(guide, 'COPILOT-DEMAND-INTAKE-01', 'script guide mentions demand intake milestone');
+  must(guide, 'check:copilotdemandintake01', 'script guide exposes demand intake check');
+  must(guide, 'node backend\\scripts\\copilot_demand_intake_01_check.js', 'script guide includes demand intake command');
+  must(guide, 'docs/COPILOT_DEMAND_INTAKE_01.md', 'script guide includes demand intake doc');
   must(guide, 'QLT-PAY-BRIDGE-01', 'script guide mentions QLT-PAY-BRIDGE-01');
   must(guide, 'check:qltpaybridge01', 'script guide exposes check:qltpaybridge01');
   must(guide, 'check:seferscore01', 'script guide exposes check:seferscore01');
@@ -540,6 +550,7 @@ function main() {
   must(guide, 'Risk sinyali', 'script guide keeps risk signal wording');
   must(guide, 'İnsan onayı gerekir', 'script guide keeps human approval wording');
   ordered(guide, ['M44-TELEMATICS-T1-T5', 'TELEMATICS-PROVIDER-HUB-01', 'SAFE-DRIVE-01'], 'script guide keeps telematics provider hub after M44 before safe drive');
+  ordered(guide, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'script guide keeps demand intake between AI action and demand-to-agreement');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
   must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
@@ -1075,9 +1086,61 @@ function main() {
   must(roleMatrix, 'SEFER-ABI-REASONING-ASSISTANT-01', 'role/task matrix references reasoning assistant milestone');
   must(roleMatrix, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'role/task matrix references all-roles reasoning assistant milestone');
   must(roleMatrix, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'role/task matrix references reasoning answer composer milestone');
+  must(primer, 'COPILOT-ROLE-TASK-MATRIX-01', 'primer mentions role/task matrix milestone');
+  must(primer, 'check:copilotroletaskmatrix01', 'primer exposes role/task matrix check');
+  must(primer, 'docs/COPILOT_ROLE_TASK_MATRIX_01.md', 'primer links role/task matrix doc');
+  must(primer, 'COPILOT-AI-ACTION-ROADMAP-01', 'primer mentions AI action roadmap milestone');
+  must(primer, 'check:copilotairoadmap01', 'primer exposes AI action roadmap check');
+  must(primer, 'docs/COPILOT_AI_ACTION_ROADMAP_01.md', 'primer links AI action roadmap doc');
+  must(primer, 'COPILOT-DEMAND-INTAKE-01', 'primer mentions demand intake milestone');
+  must(primer, 'check:copilotdemandintake01', 'primer exposes demand intake check');
+  must(primer, 'docs/COPILOT_DEMAND_INTAKE_01.md', 'primer links demand intake doc');
+  must(primer, 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'primer mentions demand-to-agreement milestone');
+  must(primer, 'check:copilotdemandagreement01', 'primer exposes demand-to-agreement check');
+  must(primer, 'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md', 'primer links demand-to-agreement doc');
+  must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
+  must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
+  must(primer, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'primer links human approval doc');
+  must(primer, 'COPILOT-EXCEL-DEMAND-IMPORT-01', 'primer mentions Excel demand import milestone');
+  must(primer, 'check:copilotexceldemandimport01', 'primer exposes Excel demand import check');
+  must(primer, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'primer links Excel demand import doc');
+  ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps demand intake before demand-to-agreement');
   must(aiRoadmap, 'SEFER-ABI-REASONING-ASSISTANT-01', 'AI action roadmap references reasoning assistant milestone');
   must(aiRoadmap, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'AI action roadmap references all-roles reasoning assistant milestone');
   must(aiRoadmap, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'AI action roadmap references reasoning answer composer milestone');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_VERSION', 'demand intake helper exports version');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_GUARD_REQUIREMENTS', 'demand intake helper exports guard requirements');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_PUBLIC_PROMISE', 'demand intake helper exports public promise');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_REQUIRED_FIELDS', 'demand intake helper exports required fields');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_OPTIONAL_FIELDS', 'demand intake helper exports optional fields');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_FIELD_HINTS', 'demand intake helper exports field hints');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_SAFETY_NOTES', 'demand intake helper exports safety notes');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_SUPPORTED_DEMAND_TYPES', 'demand intake helper exports demand types');
+  must(demandIntakeHelper, 'COPILOT_DEMAND_INTAKE_ROLE_GUIDANCE', 'demand intake helper exports role guidance');
+  must(demandIntakeHelper, 'normalizeDemandIntakeField', 'demand intake helper exposes normalizer');
+  must(demandIntakeHelper, 'maskDemandIntakeSensitiveValue', 'demand intake helper exposes masker');
+  must(demandIntakeHelper, 'detectDemandIntakeIntent', 'demand intake helper exposes intent detector');
+  must(demandIntakeHelper, 'getDemandIntakeMissingFields', 'demand intake helper exposes missing-field helper');
+  must(demandIntakeHelper, 'buildDemandIntakeClarifyingQuestions', 'demand intake helper exposes clarifying question builder');
+  must(demandIntakeHelper, 'buildDemandIntakeDraft', 'demand intake helper exposes draft builder');
+  must(demandIntakeHelper, 'composeDemandIntakeAnswer', 'demand intake helper exposes answer composer');
+  must(demandIntakeHelper, 'listCopilotDemandIntakeTypes', 'demand intake helper exposes type lister');
+  must(demandIntakeHelper, 'getCopilotDemandIntakePolicy', 'demand intake helper exposes policy getter');
+  if (/^\s*import\s/m.test(demandIntakeHelper)) fail('demand intake helper stays import-free');
+  must(demandIntakeDoc, '# COPILOT DEMAND INTAKE 01', 'demand intake doc title present');
+  must(demandIntakeDoc, 'Canonical check: `check:copilotdemandintake01`', 'demand intake doc keeps canonical check wording');
+  must(demandIntakeDoc, 'draft-only', 'demand intake doc keeps draft-only boundary wording');
+  must(demandIntakeDoc, 'No route / service / prisma diff.', 'demand intake doc keeps route/service/prisma boundary wording');
+  must(demandIntakeDoc, 'No production DB.', 'demand intake doc keeps production DB boundary wording');
+  must(demandIntakeDoc, 'No destructive query.', 'demand intake doc keeps destructive query boundary wording');
+  must(demandIntakeDoc, 'Smoke threshold: 18/82/82/82', 'demand intake doc keeps smoke threshold wording');
+  must(demandIntakeDoc, 'PASS COPILOT-DEMAND-INTAKE-01', 'demand intake doc keeps pass marker');
+  for (const summaryKey of ['dataClassificationSummary', 'integrityRiskSummary', 'transactionBoundarySummary', 'idempotencySummary', 'backupRestoreSummary', 'runtimeDataRecoverySummary', 'kvkkSafeRecoverySummary', 'compatibilitySummary', 'smokeThresholdSummary', 'chainWiringSummary', 'commitExternalSummary', 'prismaSummary']) {
+    must(demandIntakeDoc, summaryKey, `demand intake doc keeps ${summaryKey}`);
+  }
+  must(demandToAgreementDoc, 'COPILOT-DEMAND-INTAKE-01', 'demand-to-agreement doc references demand intake companion');
+  must(demandToAgreementHelper, 'companionMilestone', 'demand-to-agreement helper exposes companion milestone');
+  must(demandToAgreementHelper, 'COPILOT-DEMAND-INTAKE-01', 'demand-to-agreement helper references demand intake companion');
   must(guidedDoc, 'SEFER-ABI-REASONING-ASSISTANT-01', 'guided task engine doc references reasoning assistant milestone');
   must(guidedDoc, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'guided task engine doc references all-roles reasoning assistant milestone');
   must(guidedDoc, 'Golden pack test/kabul içindir', 'guided task engine doc keeps golden pack test-only wording');
@@ -1128,6 +1191,11 @@ function main() {
   must(harnessCheck, 'COPILOT-PLAN-REVIEW-ENGINE-01', 'script harness check knows plan review milestone');
   must(harnessCheck, 'docs/COPILOT_PLAN_REVIEW_ENGINE_01.md', 'script harness check knows plan review doc');
   must(harnessCheck, 'backend/src/ai/chat/conversationPlanReviewEngine.js', 'script harness check knows plan review helper');
+  must(harnessCheck, 'check:copilotdemandintake01', 'script harness check knows demand intake alias');
+  must(harnessCheck, 'root:check:copilotdemandintake01', 'script harness check knows demand intake root check');
+  must(harnessCheck, 'COPILOT-DEMAND-INTAKE-01', 'script harness check knows demand intake milestone');
+  must(harnessCheck, 'docs/COPILOT_DEMAND_INTAKE_01.md', 'script harness check knows demand intake doc');
+  must(harnessCheck, 'backend/src/ai/chat/copilotDemandIntake.js', 'script harness check knows demand intake helper');
   must(harnessCheck, 'check:hotfilesplitaichatcomposers01', 'script harness check knows hot file split alias');
   must(harnessCheck, 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'script harness check knows hot file split milestone');
   must(harnessCheck, 'docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md', 'script harness check knows hot file split doc');
@@ -1189,6 +1257,32 @@ function main() {
   must(terminologyDoc, 'check:seferabiturkishterminology01', 'terminology audit doc exposes canonical check');
   must(terminologyDoc, 'ETA → tahmini varış süresi', 'terminology audit doc documents ETA replacement');
   must(terminologyDoc, 'GPS → konum sinyali / konum bilgisi', 'terminology audit doc documents GPS replacement');
+  must(harnessDoc, 'Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'script harness doc lists AI action roadmap milestone');
+  must(harnessDoc, 'check:copilotairoadmap01', 'script harness doc lists AI action roadmap check');
+  must(harnessDoc, 'docs/COPILOT_AI_ACTION_ROADMAP_01.md', 'script harness doc lists AI action roadmap doc');
+  must(harnessDoc, 'node backend\\scripts\\copilot_ai_action_roadmap_01_check.js', 'script harness doc lists AI action roadmap command');
+  must(harnessDoc, 'backend/src/ai/chat/copilotAiActionRoadmap.js', 'script harness doc lists AI action roadmap helper');
+  must(harnessDoc, 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'script harness doc lists demand intake milestone');
+  must(harnessDoc, 'check:copilotdemandintake01', 'script harness doc lists demand intake check');
+  must(harnessDoc, 'docs/COPILOT_DEMAND_INTAKE_01.md', 'script harness doc lists demand intake doc');
+  must(harnessDoc, 'node backend\\scripts\\copilot_demand_intake_01_check.js', 'script harness doc lists demand intake command');
+  must(harnessDoc, 'backend/src/ai/chat/copilotDemandIntake.js', 'script harness doc lists demand intake helper');
+  must(harnessDoc, 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'script harness doc lists demand-to-agreement roadmap milestone');
+  must(harnessDoc, 'check:copilotdemandagreement01', 'script harness doc lists demand-to-agreement roadmap check');
+  must(harnessDoc, 'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md', 'script harness doc lists demand-to-agreement roadmap doc');
+  must(harnessDoc, 'node backend\\scripts\\copilot_demand_to_agreement_roadmap_01_check.js', 'script harness doc lists demand-to-agreement roadmap command');
+  must(harnessDoc, 'backend/src/ai/chat/copilotDemandToAgreementRoadmap.js', 'script harness doc lists demand-to-agreement roadmap helper');
+  must(harnessDoc, 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'script harness doc lists human approval milestone');
+  must(harnessDoc, 'check:copilothumanapproval01', 'script harness doc lists human approval check');
+  must(harnessDoc, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'script harness doc lists human approval doc');
+  must(harnessDoc, 'node backend\\scripts\\copilot_human_approval_01_check.js', 'script harness doc lists human approval command');
+  must(harnessDoc, 'backend/src/ai/chat/copilotHumanApprovalPolicy.js', 'script harness doc lists human approval helper');
+  must(harnessDoc, 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`', 'script harness doc lists Excel demand import milestone');
+  must(harnessDoc, 'check:copilotexceldemandimport01', 'script harness doc lists Excel demand import check');
+  must(harnessDoc, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'script harness doc lists Excel demand import doc');
+  must(harnessDoc, 'node backend\\scripts\\copilot_excel_demand_import_01_check.js', 'script harness doc lists Excel demand import command');
+  must(harnessDoc, 'backend/src/ai/chat/copilotExcelDemandImportPolicy.js', 'script harness doc lists Excel demand import helper');
+  ordered(harnessDoc, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement');
   must(harnessDoc, 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'script harness doc lists dynamic question engine milestone');
   must(harnessDoc, 'root:check:copilotdynamicquestionengine01', 'script harness doc lists dynamic question engine root check');
   must(harnessDoc, 'copilot_dynamic_question_engine_01_check.js', 'script harness doc lists dynamic question engine command');

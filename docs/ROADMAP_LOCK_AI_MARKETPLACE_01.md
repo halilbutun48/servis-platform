@@ -442,7 +442,7 @@ Kullanılmayacak cümleler:
 - SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01: role + screen + selected record + conversation state + interactionIntentFamily reasoning katmanıdır; golden pack test/kabul içindir, reply source değildir; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 
 ### E) COPILOT OPERASYON AKIŞI
-- COPILOT-DEMAND-INTAKE-01
+- COPILOT-DEMAND-INTAKE-01: demand intake draft-only companion milestone; talep anlama, sınıflandırma ve netleştirme soruları ayrı docs/check katmanı olarak kilitlenir.
 - COPILOT-RFQ-PREP-01
 - SUPPLIER-MATCHING-01
 - SUPPLIER-OFFER-COLLECT-01

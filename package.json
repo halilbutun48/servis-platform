@@ -48,6 +48,7 @@
     "check:offerrankingquality01": "node backend/scripts/offer_ranking_quality_01_check.js",
     "check:copilotroletaskmatrix01": "node backend/scripts/copilot_role_task_matrix_01_check.js",
     "check:copilotairoadmap01": "node backend/scripts/copilot_ai_action_roadmap_01_check.js",
+    "check:copilotdemandintake01": "node backend/scripts/copilot_demand_intake_01_check.js",
     "check:copilotdemandagreement01": "node backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js",
     "check:copilothumanapproval01": "node backend/scripts/copilot_human_approval_01_check.js",
     "check:copilotexceldemandimport01": "node backend/scripts/copilot_excel_demand_import_01_check.js",

@@ -74,6 +74,7 @@ const steps = [
   'check:cop04bfix08',
   'check:copilotroletaskmatrix01',
   'check:copilotairoadmap01',
+  'check:copilotdemandintake01',
   'check:copilotdemandagreement01',
   'check:copilothumanapproval01',
   'check:copilotexceldemandimport01',

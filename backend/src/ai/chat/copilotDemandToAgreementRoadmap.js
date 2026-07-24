@@ -6,6 +6,7 @@ export const COPILOT_DEMAND_TO_AGREEMENT_STAGES = Object.freeze([
     title: 'Demand Intake',
     status: 'current baseline',
     futureOnly: false,
+    companionMilestone: 'COPILOT-DEMAND-INTAKE-01',
   }),
   Object.freeze({
     id: 'STAGE_2',

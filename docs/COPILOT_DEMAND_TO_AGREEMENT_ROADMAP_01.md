@@ -12,6 +12,7 @@ Repo: `servis-platform`
 ## Amaç
 - `COPILOT-ROLE-TASK-MATRIX-01` ve `COPILOT-AI-ACTION-ROADMAP-01` sonrasında Sefer Abi için talep -> teklif -> sözleşme -> operasyon hazırlığı yol haritasını kilitler.
 - Bu milestone runtime AI action açmaz.
+- `COPILOT-DEMAND-INTAKE-01` bu roadmap'in stage 1 intake companion'ıdır; draft-only talep anlama ve netleştirme sorularını ayrı docs/check katmanı olarak kilitler.
 - `ADDRESS-GEOCODING-CONFIDENCE-01` bu yol haritasına güvenli adres readiness girişi sağlar; geocoding confidence, human review gate ve KVKK / data safety boundary readiness'i ayrı docs/check katmanı olarak kilitler.
 - `OSRM-ROUTE-DRAFT-FROM-EXCEL-01` bu yol haritasına stop/route draft sonrası güvenli OSRM hazırlık girişi sağlar; route preview readiness, human review gate ve OSRM risk sınıfları ayrı docs/check katmanı olarak kilitlenir.
 - `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01` bu yol haritasında OSRM sonrası route review / human review kapısını ayrı docs/check katmanı olarak kilitler; route preview, route apply ve dispatch execute açmaz.
@@ -25,6 +26,7 @@ Repo: `servis-platform`
 - Kullanıcı talebini anlar.
 - Servis tipi, tarih/saat, kişi sayısı, konum, vardiya yönü, kapasite ihtiyacı, özel not ve KVKK / izin sinyalini çıkarır.
 - Eksik bilgileri listeler.
+- Bu stage `COPILOT-DEMAND-INTAKE-01` ile ayrı docs/check katmanı olarak kilitlenir.
 - Runtime talep oluşturma yok.
 
 ### STAGE 2 - Data Readiness
