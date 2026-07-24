@@ -50,7 +50,10 @@ Repo: `servis-platform`
 ### STAGE 4 - RFQ / Offer Prep
 - Talebi teklif istemeye hazır hale getirir.
 - Room / supplier adaylarını kalite, verified supplier, telematics readiness ve capacity fit sinyalleriyle açıklar.
+- Bu stage `COPILOT-RFQ-PREP-01` companion'ı ile draft-only hazırlanır; supplier matching, offer collect ve RFQ send açmaz.
 - Supplier auto-selection yok.
+- Supplier matching yok.
+- Offer collect yok.
 - RFQ gönderimi yok.
 - Kullanıcı onaylarsa hazırlık notu bir sonraki insan onaylı adıma taşınır; kritik adımın kendisi yine yapılmaz.
 
@@ -135,6 +138,8 @@ Repo: `servis-platform`
 - Excel/CSV import execute yok.
 - Route apply yok.
 - RFQ send yok.
+- Supplier matching yok.
+- Offer collect yok.
 - Offer accept/reject yok.
 - Supplier auto-selection yok.
 - Agreement/contract execute yok.

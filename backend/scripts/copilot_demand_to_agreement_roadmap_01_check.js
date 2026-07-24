@@ -153,6 +153,8 @@ async function main() {
 
   must(roadmapLock, 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'roadmap lock keeps demand-to-agreement milestone');
   must(roadmapLock, 'demand-to-agreement', 'roadmap lock keeps demand-to-agreement wording');
+  must(roadmapLock, 'COPILOT-RFQ-PREP-01', 'roadmap lock keeps RFQ prep companion milestone');
+  must(roadmapLock, 'draft-only RFQ prep companion milestone', 'roadmap lock keeps RFQ prep wording');
 
   must(roleMatrix, 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'role/task matrix doc references demand-to-agreement milestone');
   must(roleMatrix, 'runtime AI action açmaz', 'role/task matrix doc keeps runtime AI boundary');
@@ -184,6 +186,9 @@ async function main() {
   must(doc, 'Excel/CSV import execute yok.', 'demand-to-agreement doc keeps import boundary');
   must(doc, 'Route apply yok.', 'demand-to-agreement doc keeps route boundary');
   must(doc, 'RFQ send yok.', 'demand-to-agreement doc keeps RFQ boundary');
+  must(doc, 'COPILOT-RFQ-PREP-01', 'demand-to-agreement doc references RFQ prep companion');
+  must(doc, 'Supplier matching yok.', 'demand-to-agreement doc keeps supplier matching boundary');
+  must(doc, 'Offer collect yok.', 'demand-to-agreement doc keeps offer collect boundary');
   must(doc, 'Offer accept/reject yok.', 'demand-to-agreement doc keeps offer boundary');
   must(doc, 'Supplier auto-selection yok.', 'demand-to-agreement doc keeps supplier boundary');
   must(doc, 'Agreement/contract execute yok.', 'demand-to-agreement doc keeps agreement boundary');
@@ -206,6 +211,9 @@ async function main() {
   must(helper, 'COPILOT_DEMAND_TO_AGREEMENT_BLOCKED_ACTIONS', 'helper exposes blocked actions');
   must(helper, 'COPILOT_DEMAND_TO_AGREEMENT_NEVER_AUTOMATE', 'helper exposes never-automate list');
   must(helper, 'COPILOT_DEMAND_TO_AGREEMENT_ROADMAP', 'helper exposes roadmap object');
+  must(helper, "companionMilestone: 'COPILOT-RFQ-PREP-01'", 'helper links RFQ prep companion milestone');
+  must(helper, 'supplier matching execute', 'helper blocks supplier matching execution');
+  must(helper, 'offer collect execute', 'helper blocks offer collect execution');
   must(helper, 'listCopilotDemandToAgreementRoadmapRoles', 'helper exposes role lister');
   must(helper, 'getCopilotDemandToAgreementRoadmap', 'helper exposes roadmap getter');
   ordered(helper, requiredStages, 'helper keeps roadmap stage ordering');
@@ -221,12 +229,22 @@ async function main() {
   must(harnessCheck, 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'script harness check knows demand-to-agreement milestone');
   must(harnessCheck, 'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md', 'script harness check knows demand-to-agreement doc');
   must(harnessCheck, 'backend/src/ai/chat/copilotDemandToAgreementRoadmap.js', 'script harness check knows demand-to-agreement helper');
+  must(harnessCheck, 'check:copilotrfqprep01', 'script harness check knows RFQ prep alias');
+  must(harnessCheck, 'copilot_rfq_prep_01_check.js', 'script harness check knows RFQ prep file');
+  must(harnessCheck, 'COPILOT-RFQ-PREP-01', 'script harness check knows RFQ prep milestone');
+  must(harnessCheck, 'docs/COPILOT_RFQ_PREP_01.md', 'script harness check knows RFQ prep doc');
+  must(harnessCheck, 'backend/src/ai/chat/copilotRfqPrep.js', 'script harness check knows RFQ prep helper');
 
   must(harnessDoc, 'root:check:copilotdemandagreement01', 'script harness doc lists demand-to-agreement root check');
   must(harnessDoc, 'copilot_demand_to_agreement_roadmap_01_check.js', 'script harness doc lists demand-to-agreement check');
   must(harnessDoc, 'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md', 'script harness doc lists demand-to-agreement doc');
   must(harnessDoc, 'backend/src/ai/chat/copilotDemandToAgreementRoadmap.js', 'script harness doc lists demand-to-agreement helper');
   must(harnessDoc, 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'script harness doc lists demand-to-agreement milestone');
+  must(harnessDoc, 'root:check:copilotrfqprep01', 'script harness doc lists RFQ prep root check');
+  must(harnessDoc, 'copilot_rfq_prep_01_check.js', 'script harness doc lists RFQ prep check');
+  must(harnessDoc, 'docs/COPILOT_RFQ_PREP_01.md', 'script harness doc lists RFQ prep doc');
+  must(harnessDoc, 'backend/src/ai/chat/copilotRfqPrep.js', 'script harness doc lists RFQ prep helper');
+  must(harnessDoc, 'COPILOT-RFQ-PREP-01', 'script harness doc lists RFQ prep milestone');
 
   mustNoDiff(['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'], 'backend route/service/schema and Prisma diff stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');

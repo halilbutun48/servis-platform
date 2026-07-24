@@ -443,7 +443,7 @@ Kullanılmayacak cümleler:
 
 ### E) COPILOT OPERASYON AKIŞI
 - COPILOT-DEMAND-INTAKE-01: demand intake draft-only companion milestone; talep anlama, sınıflandırma ve netleştirme soruları ayrı docs/check katmanı olarak kilitlenir.
-- COPILOT-RFQ-PREP-01
+- COPILOT-RFQ-PREP-01: draft-only RFQ prep companion milestone; supplier matching, offer collect ve RFQ send açmaz.
 - SUPPLIER-MATCHING-01
 - SUPPLIER-OFFER-COLLECT-01
 - COPILOT-OFFER-ANALYSIS-01

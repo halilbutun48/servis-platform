@@ -25,6 +25,7 @@ export const COPILOT_DEMAND_TO_AGREEMENT_STAGES = Object.freeze([
     title: 'RFQ / Offer Prep',
     status: 'current baseline',
     futureOnly: false,
+    companionMilestone: 'COPILOT-RFQ-PREP-01',
   }),
   Object.freeze({
     id: 'STAGE_5',
@@ -111,6 +112,8 @@ export const COPILOT_DEMAND_TO_AGREEMENT_BLOCKED_ACTIONS = Object.freeze([
   'Excel/CSV import execute',
   'route apply',
   'RFQ send',
+  'supplier matching execute',
+  'offer collect execute',
   'offer accept/reject',
   'supplier auto-selection',
   'agreement/contract execute',
@@ -128,6 +131,8 @@ export const COPILOT_DEMAND_TO_AGREEMENT_BLOCKED_ACTIONS = Object.freeze([
 export const COPILOT_DEMAND_TO_AGREEMENT_NEVER_AUTOMATE = Object.freeze([
   'otomatik talep oluşturma',
   'otomatik RFQ gönderimi',
+  'otomatik supplier matching',
+  'otomatik offer collect',
   'otomatik teklif kabulü',
   'otomatik sözleşme bağlama',
   'otomatik dispatch uygulama',

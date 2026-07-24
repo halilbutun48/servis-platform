@@ -68,6 +68,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_role_task_matrix_01_check.js",
   "backend/scripts/copilot_ai_action_roadmap_01_check.js",
   "backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js",
+  "backend/scripts/copilot_rfq_prep_01_check.js",
   "backend/scripts/copilot_human_approval_01_check.js",
   "backend/scripts/load_test_2000_users_01_check.js",
   "backend/scripts/load_test_2000_users_01_harness.js",
@@ -75,6 +76,7 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/copilotAiActionRoadmap.js",
   "backend/src/ai/chat/copilotDemandIntake.js",
   "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
+  "backend/src/ai/chat/copilotRfqPrep.js",
   "backend/src/ai/chat/copilotHumanApprovalPolicy.js",
   "backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js",
   "backend/src/ai/chat/excelToRouteReadinessRedteamPack.js",
@@ -117,6 +119,7 @@ const workingTreeCompatFiles = [
   "docs/COPILOT_AI_ACTION_ROADMAP_01.md",
   "docs/COPILOT_DEMAND_INTAKE_01.md",
   "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
+  "docs/COPILOT_RFQ_PREP_01.md",
   "docs/COPILOT_HUMAN_APPROVAL_01.md",
   "docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
@@ -395,6 +398,7 @@ function slugToMilestone(slug) {
     [/copilotaiactionroadmap0?1/i, "COPILOT-AI-ACTION-ROADMAP-01"], // check:copilotairoadmap01
     [/copilotdemandintake0?1/i, "COPILOT-DEMAND-INTAKE-01"], // check:copilotdemandintake01
     [/copilotdemand(?:to)?agreement0?1/i, "COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01"], // check:copilotdemandagreement01
+    [/copilot[_-]?rfq[_-]?prep0?1/i, "COPILOT-RFQ-PREP-01"], // check:copilotrfqprep01
     [/copilothumanapproval0?1/i, "COPILOT-HUMAN-APPROVAL-01"], // check:copilothumanapproval01
     [/copilotroutereviewhumanapproval0?1/i, "COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01"], // check:copilotroutereviewhumanapproval01
     [/copilotexceldemandimport0?1/i, "COPILOT-EXCEL-DEMAND-IMPORT-01"], // check:copilotexceldemandimport01
@@ -437,7 +441,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandintake01", "check:copilotdemandagreement01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01", "check:roledataisolationredteam01", "check:auditlogandapprovaltrace01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandintake01", "check:copilotdemandagreement01", "check:copilotrfqprep01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01", "check:roledataisolationredteam01", "check:auditlogandapprovaltrace01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1046,7 +1050,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "root:check:roledataisolationredteam01", "root:check:auditlogandapprovaltrace01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:copilotrfqprep01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "root:check:roledataisolationredteam01", "root:check:auditlogandapprovaltrace01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1664,6 +1668,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Copilot demand-to-agreement roadmap check: \`check:copilotdemandagreement01\``);
   out.push(`- Copilot demand-to-agreement roadmap docs: \`docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md\``);
   out.push(`- Copilot demand-to-agreement roadmap command: \`node backend\\scripts\\copilot_demand_to_agreement_roadmap_01_check.js\``);
+  out.push(`- Copilot RFQ prep milestone: \`COPILOT-RFQ-PREP-01\``);
+  out.push(`- Copilot RFQ prep check: \`check:copilotrfqprep01\``);
+  out.push(`- Copilot RFQ prep docs: \`docs/COPILOT_RFQ_PREP_01.md\``);
+  out.push(`- Copilot RFQ prep command: \`node backend\\scripts\\copilot_rfq_prep_01_check.js\``);
+  out.push(`- Copilot RFQ prep helper: \`backend/src/ai/chat/copilotRfqPrep.js\``);
   out.push(`- Copilot human approval milestone: \`COPILOT-HUMAN-APPROVAL-01\``);
   out.push(`- Copilot human approval check: \`check:copilothumanapproval01\``);
   out.push(`- Copilot human approval docs: \`docs/COPILOT_HUMAN_APPROVAL_01.md\``);
@@ -2193,6 +2202,11 @@ function verifyDoc(docText, summary) {
     "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
     "node backend\\scripts\\copilot_demand_to_agreement_roadmap_01_check.js",
     "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
+    "COPILOT-RFQ-PREP-01",
+    "check:copilotrfqprep01",
+    "docs/COPILOT_RFQ_PREP_01.md",
+    "node backend\\scripts\\copilot_rfq_prep_01_check.js",
+    "backend/src/ai/chat/copilotRfqPrep.js",
     "COPILOT-HUMAN-APPROVAL-01",
     "check:copilothumanapproval01",
     "docs/COPILOT_HUMAN_APPROVAL_01.md",
@@ -2250,7 +2264,7 @@ function verifyDoc(docText, summary) {
     "Product coverage rows",
     "REMOVED:",
   ];
-  ordered(docText, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement');
+  ordered(docText, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
   for (const needle of mustContain) {
     if (!normalize(docText).includes(normalize(needle))) {
       throw new Error(`FAIL doc missing: ${needle}`);
