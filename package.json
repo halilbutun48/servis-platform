@@ -223,6 +223,7 @@
     "check:dataintegrityandrecovery01": "node backend/scripts/data_integrity_and_recovery_01_check.js",
     "check:roledataisolationredteam01": "node backend/scripts/role_data_isolation_redteam_01_check.js",
     "check:securitykvkkfinal01": "node backend/scripts/security_kvkk_final_01_check.js",
+    "check:auditlogandapprovaltrace01": "node backend/scripts/audit_log_and_approval_trace_01_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",

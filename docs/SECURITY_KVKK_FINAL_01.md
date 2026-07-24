@@ -80,6 +80,7 @@ Probe gerekli değildir; bu milestone static policy/doc/code inventory ile yaşa
 
 ## 12) Data integrity / recovery handoff
 - `DATA-INTEGRITY-AND-RECOVERY-01` bu gate'in recovery companion'ıdır.
+- `AUDIT-LOG-AND-APPROVAL-TRACE-01` bu gate'in human approval trace companion'ıdır.
 - `docs/PHASE_12_KVKK_SECURITY.md` phase 12 checklist'i ve KVKK/security DoD için referans source of truth olarak kalır.
 - Corruption detection, runtime-data recovery ve backup/restore policy birlikte okunur.
 - Partial write / duplicate write / stale write riskleri cross-tenant leak'e dönüşmez.

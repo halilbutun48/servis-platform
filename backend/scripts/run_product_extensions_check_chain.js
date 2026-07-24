@@ -192,6 +192,7 @@ const steps = [
   'check:dataintegrityandrecovery01',
   'check:roledataisolationredteam01',
   'check:securitykvkkfinal01',
+  'check:auditlogandapprovaltrace01',
 ];
 
 function runStep(scriptName) {

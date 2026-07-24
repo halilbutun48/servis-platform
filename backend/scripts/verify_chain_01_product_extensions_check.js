@@ -92,10 +92,12 @@ function main() {
   const backendLintDoc = read('docs/BACKEND_LINT_WARNING_BURNDOWN_01.md');
   const dataIntegrityDoc = read('docs/DATA_INTEGRITY_AND_RECOVERY_01.md');
   const securityDoc = read('docs/SECURITY_KVKK_FINAL_01.md');
+  const auditTraceDoc = read('docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md');
 
   must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json exposes check:product-extensions');
   must(pkg, '"check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js"', 'package.json exposes check:verifychain01');
   must(pkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', 'package.json keeps verify:final product extension step');
+  must(pkg, '"check:auditlogandapprovaltrace01": "node backend/scripts/audit_log_and_approval_trace_01_check.js"', 'package.json exposes check:auditlogandapprovaltrace01');
   must(pkg, '"check:web01a"', 'package.json keeps check:web01a');
   must(pkg, '"check:web01b"', 'package.json keeps check:web01b');
   must(pkg, '"check:uxsuperadminoverviewcleanup01"', 'package.json exposes check:uxsuperadminoverviewcleanup01');
@@ -196,6 +198,7 @@ function main() {
   must(runner, 'check:dataintegrityandrecovery01', 'product extensions chain includes check:dataintegrityandrecovery01');
   must(runner, 'check:roledataisolationredteam01', 'product extensions chain includes check:roledataisolationredteam01');
   must(runner, 'check:securitykvkkfinal01', 'product extensions chain includes check:securitykvkkfinal01');
+  must(runner, 'check:auditlogandapprovaltrace01', 'product extensions chain includes check:auditlogandapprovaltrace01');
   must(runner, 'check:seferabiturkishterminology01', 'product extensions chain includes check:seferabiturkishterminology01');
   must(runner, 'check:seferabiturkishuserfacinglanguage01', 'product extensions chain includes check:seferabiturkishuserfacinglanguage01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
@@ -474,6 +477,7 @@ function main() {
     'check:productionratelimitpolicy01',
     'check:airesponsesemanticqualitygate01',
     'check:securitykvkkfinal01',
+    'check:auditlogandapprovaltrace01',
 ], 'product extensions runner order');
 
   must(guide, 'check:product-extensions', 'script guide exposes check:product-extensions');
@@ -907,7 +911,11 @@ function main() {
   must(primer, 'check:securitykvkkfinal01', 'primer exposes security final check');
   must(primer, 'docs/SECURITY_KVKK_FINAL_01.md', 'primer links security final doc');
   must(primer, 'backend/scripts/security_kvkk_final_01_check.js', 'primer links security final command');
-  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'LOAD-TEST-2000-USERS-01', 'DB-POOL-AND-API-SCALING-01', 'OBSERVABILITY-MONITORING-ALERTING-01', 'BACKEND-LINT-WARNING-BURNDOWN-01', 'DATA-INTEGRITY-AND-RECOVERY-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling, observability, backend lint burndown and data integrity in order');
+  must(primer, 'AUDIT-LOG-AND-APPROVAL-TRACE-01', 'primer mentions audit trace milestone');
+  must(primer, 'check:auditlogandapprovaltrace01', 'primer exposes audit trace check');
+  must(primer, 'docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md', 'primer links audit trace doc');
+  must(primer, 'backend/scripts/audit_log_and_approval_trace_01_check.js', 'primer links audit trace command');
+  ordered(primer, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'LOAD-TEST-2000-USERS-01', 'DB-POOL-AND-API-SCALING-01', 'OBSERVABILITY-MONITORING-ALERTING-01', 'BACKEND-LINT-WARNING-BURNDOWN-01', 'DATA-INTEGRITY-AND-RECOVERY-01', 'AUDIT-LOG-AND-APPROVAL-TRACE-01', 'SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01'], 'primer keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling, observability, backend lint burndown, data integrity and audit trace in order');
   must(loadTestDoc, '# LOAD-TEST-2000-USERS-01', 'load-test doc title present');
   must(loadTestDoc, '## 1) Purpose', 'load-test doc purpose heading present');
   must(loadTestDoc, '## 6) Local-safe harness policy', 'load-test doc harness heading present');
@@ -978,9 +986,20 @@ function main() {
   must(dataIntegrityDoc, 'RUNBOOK_M45_RETENTION_BACKUP.md', 'data integrity doc mentions retention backup runbook');
   must(dataIntegrityDoc, 'REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md', 'data integrity doc mentions archive export restore doc');
   must(dataIntegrityDoc, 'SECURITY-KVKK-FINAL-01', 'data integrity doc mentions security final');
+  must(dataIntegrityDoc, 'AUDIT-LOG-AND-APPROVAL-TRACE-01', 'data integrity doc mentions audit trace');
   must(securityDoc, '# SECURITY-KVKK-FINAL-01', 'security doc title present');
   must(securityDoc, 'check:securitykvkkfinal01', 'security doc mentions canonical check alias');
   must(securityDoc, 'node backend/scripts/security_kvkk_final_01_check.js', 'security doc mentions canonical check command');
+  must(securityDoc, 'AUDIT-LOG-AND-APPROVAL-TRACE-01', 'security doc mentions audit trace');
+  must(auditTraceDoc, '# AUDIT-LOG-AND-APPROVAL-TRACE-01', 'audit trace doc title present');
+  must(auditTraceDoc, 'check:auditlogandapprovaltrace01', 'audit trace doc mentions canonical check alias');
+  must(auditTraceDoc, 'node backend/scripts/audit_log_and_approval_trace_01_check.js', 'audit trace doc mentions canonical check command');
+  must(auditTraceDoc, 'docs/check milestone', 'audit trace doc keeps docs/check wording');
+  must(auditTraceDoc, 'eventType', 'audit trace doc mentions eventType field');
+  must(auditTraceDoc, 'approvalState', 'audit trace doc mentions approvalState field');
+  must(auditTraceDoc, 'AUDIT-LOG-AND-APPROVAL-TRACE-01', 'audit trace doc keeps milestone token');
+  must(auditTraceDoc, 'No write-action / human approval boundary', 'audit trace doc keeps human approval boundary wording');
+  must(auditTraceDoc, 'Release gate checklist', 'audit trace doc keeps release gate wording');
   must(observabilityProbe, 'OBSERVABILITY_BASE_URL must stay local/dev-safe', 'observability probe mentions local-only base url');
   must(observabilityProbe, 'OBSERVABILITY_ALLOW_AUTH_ENDPOINTS=true requires OBSERVABILITY_AUTH_TOKEN', 'observability probe mentions auth opt-in');
   must(observabilityProbe, '/api/observability/health-summary', 'observability probe mentions health summary endpoint');
@@ -1387,6 +1406,9 @@ function main() {
   must(harnessCheck, 'check:securitykvkkfinal01', 'script harness check knows security alias');
   must(harnessCheck, 'docs/SECURITY_KVKK_FINAL_01.md', 'script harness check knows security doc');
   must(harnessCheck, 'backend\\scripts\\security_kvkk_final_01_check.js', 'script harness check knows security command');
+  must(harnessCheck, 'check:auditlogandapprovaltrace01', 'script harness check knows audit trace alias');
+  must(harnessCheck, 'docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md', 'script harness check knows audit trace doc');
+  must(harnessCheck, 'backend\\scripts\\audit_log_and_approval_trace_01_check.js', 'script harness check knows audit trace command');
   must(harnessCheck, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness check knows cleanup milestone');
   must(harnessCheck, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness check knows cleanup alias');
   must(harnessCheck, 'docs/UX_PREMIUM_CRITICAL_UXFIX_CLEANUP_01.md', 'script harness check knows cleanup doc');
@@ -1477,6 +1499,9 @@ function main() {
   must(harnessDoc, 'check:securitykvkkfinal01', 'script harness doc lists security alias');
   must(harnessDoc, 'docs/SECURITY_KVKK_FINAL_01.md', 'script harness doc lists security doc');
   must(harnessDoc, 'node backend\\scripts\\security_kvkk_final_01_check.js', 'script harness doc lists security command');
+  must(harnessDoc, 'check:auditlogandapprovaltrace01', 'script harness doc lists audit trace alias');
+  must(harnessDoc, 'docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md', 'script harness doc lists audit trace doc');
+  must(harnessDoc, 'node backend\\scripts\\audit_log_and_approval_trace_01_check.js', 'script harness doc lists audit trace command');
   ordered(harnessDoc, ['Test quality and flake audit milestone: `TEST-QUALITY-AND-FLAKE-AUDIT-01`', 'Dashboard bulk endpoint milestone: `DASHBOARD-BULK-ENDPOINT-01`', 'Cache coalescing and backoff milestone: `CACHE-COALESCING-AND-BACKOFF-01`', 'Request storm resilience milestone: `REQUEST-STORM-RESILIENCE-01`', 'Production rate limit policy milestone: `PRODUCTION-RATE-LIMIT-POLICY-01`', 'AI response semantic quality gate milestone: `AI-RESPONSE-SEMANTIC-QUALITY-GATE-01`', 'Load test 2000 users milestone: `LOAD-TEST-2000-USERS-01`', 'DB pool and API scaling milestone: `DB-POOL-AND-API-SCALING-01`', 'Observability monitoring alerting milestone: `OBSERVABILITY-MONITORING-ALERTING-01`', 'Backend lint warning burndown milestone: `BACKEND-LINT-WARNING-BURNDOWN-01`', 'DATA-INTEGRITY-AND-RECOVERY-01', 'Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`'], 'script harness doc keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling, observability, backend lint burndown and data integrity in order');
   must(harnessDoc, 'UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01', 'script harness doc lists cleanup milestone');
   must(harnessDoc, 'check:uxpremiumcriticaluxfixcleanup01', 'script harness doc lists cleanup alias');
@@ -1621,6 +1646,10 @@ function main() {
   must(guide, 'check:securitykvkkfinal01', 'script guide exposes security final check');
   must(guide, 'node backend\\scripts\\security_kvkk_final_01_check.js', 'script guide includes security final command');
   must(guide, 'docs/SECURITY_KVKK_FINAL_01.md', 'script guide includes security final doc');
+  must(guide, 'AUDIT-LOG-AND-APPROVAL-TRACE-01', 'script guide mentions audit trace milestone');
+  must(guide, 'check:auditlogandapprovaltrace01', 'script guide exposes audit trace check');
+  must(guide, 'node backend\\scripts\\audit_log_and_approval_trace_01_check.js', 'script guide includes audit trace command');
+  must(guide, 'docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md', 'script guide includes audit trace doc');
   ordered(guide, ['TEST-QUALITY-AND-FLAKE-AUDIT-01', 'DASHBOARD-BULK-ENDPOINT-01', 'CACHE-COALESCING-AND-BACKOFF-01', 'REQUEST-STORM-RESILIENCE-01', 'PRODUCTION-RATE-LIMIT-POLICY-01', 'AI-RESPONSE-SEMANTIC-QUALITY-GATE-01', 'LOAD-TEST-2000-USERS-01', 'DB-POOL-AND-API-SCALING-01', 'OBSERVABILITY-MONITORING-ALERTING-01', 'BACKEND-LINT-WARNING-BURNDOWN-01', 'DATA-INTEGRITY-AND-RECOVERY-01', 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01'], 'script guide keeps dashboard bulk endpoint, cache coalescing and backoff, request storm resilience, production rate limit policy, AI response semantic quality gate, load-test, db scaling, observability, backend lint burndown and data integrity in order');
   must(guide, 'UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01', 'script guide mentions UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01');
   must(guide, 'check:uxparentpersonelliveerrorclarity01', 'script guide exposes check:uxparentpersonelliveerrorclarity01');

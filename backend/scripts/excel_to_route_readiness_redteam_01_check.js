@@ -594,6 +594,8 @@ async function main() {
       // Security KVKK final files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/security_kvkk_final_01_check.js',
       'docs/SECURITY_KVKK_FINAL_01.md',
+      'backend/scripts/audit_log_and_approval_trace_01_check.js',
+      'docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md',
       'docs/RUNBOOK_M45_RETENTION_BACKUP.md',
     ]),
     ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'],

@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `405`
-- Toplam executable tracked file: `1226`
-- Combined registry row: `1631`
-- Root/backend/web/mobile package dağılımı: root `248`, backend `783`, web `96`, mobile `201`
+- Toplam package script entry: `406`
+- Toplam executable tracked file: `1227`
+- Combined registry row: `1633`
+- Root/backend/web/mobile package dağılımı: root `249`, backend `784`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `65`
+- Docs indexed: `66`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -117,6 +117,10 @@ Repo: `servis-platform`
 - Security final alias: `check:securitykvkkfinal01`
 - Security final docs: `docs/SECURITY_KVKK_FINAL_01.md`
 - Security final command: `node backend\scripts\security_kvkk_final_01_check.js`
+- Audit trace milestone: `AUDIT-LOG-AND-APPROVAL-TRACE-01`
+- Audit trace alias: `check:auditlogandapprovaltrace01`
+- Audit trace docs: `docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md`
+- Audit trace command: `node backend\scripts\audit_log_and_approval_trace_01_check.js`
 - Agreements detail milestone: `UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01`
 - Agreements detail docs: `docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md`
 - Agreements detail command: `node backend\scripts\ux_premium_critical_fix_agreements_detail_01_check.js`
@@ -297,7 +301,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `191`
+- ACTIVE_CORE: `192`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -313,11 +317,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `634`
+- NEEDS_REVIEW: `635`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `330`
+- Eski sistem term eşleşmesi: `332`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -327,14 +331,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 191 |
+| ACTIVE_CORE | 192 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 634 |
+| NEEDS_REVIEW | 635 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -572,6 +576,7 @@ Repo: `servis-platform`
 | root:check:dataintegrityandrecovery01 | package.json | root | node backend/scripts/data_integrity_and_recovery_01_check.js | core | ACTIVE_CORE |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Breaks canonical verification chain |  |
 | root:check:roledataisolationredteam01 | package.json | root | node backend/scripts/role_data_isolation_redteam_01_check.js | verify-core | ACTIVE_CORE |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Breaks canonical verification chain |  |
 | root:check:securitykvkkfinal01 | package.json | root | node backend/scripts/security_kvkk_final_01_check.js | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
+| root:check:auditlogandapprovaltrace01 | package.json | root | node backend/scripts/audit_log_and_approval_trace_01_check.js | verify-core | ACTIVE_CORE |  | AUDIT-LOG-AND-APPROVAL-TRACE-01 |  | Breaks canonical verification chain |  |
 | root:check:op01 | package.json | root | node backend/scripts/op_01_operation_proof_service_proof_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-01 |  | Breaks canonical verification chain |  |
 | root:check:op02 | package.json | root | node backend/scripts/op_02_manual_operator_proof_note_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-02 |  | Breaks canonical verification chain |  |
 | root:check:op03 | package.json | root | node backend/scripts/op_03_web_operation_proof_card_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-OP-03 |  | Breaks canonical verification chain |  |
@@ -1029,6 +1034,7 @@ Repo: `servis-platform`
 | safe_drive_01_check.js | backend/scripts/safe_drive_01_check.js | backend | root:check:safedrive01 | review | NEEDS_REVIEW |  | SAFE-DRIVE-01-CHECK |  | Owner or chain unclear |  |
 | scale_readiness_check.js | backend/scripts/scale_readiness_check.js | backend |  | review | NEEDS_REVIEW |  | SCALE-READINESS-CHECK |  | Owner or chain unclear |  |
 | script_harness_consolidation_01_check.js | backend/scripts/script_harness_consolidation_01_check.js | backend | root:check:scriptharnessconsolidation01 | product-extensions | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01-CHECK |  | Owner or chain unclear | canonical repo harness inventory |
+| security_kvkk_final_01_check.js | backend/scripts/security_kvkk_final_01_check.js | backend | root:check:securitykvkkfinal01 | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
 | sefer_abi_all_roles_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | backend | root:check:seferabiallrolesreasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_reasoning_assistant_01_check.js | backend | root:check:seferabireasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_terminal_humanize_01_check.js | backend/scripts/sefer_abi_terminal_humanize_01_check.js | backend | root:check:seferabiterminalhumanize01 | review | NEEDS_REVIEW |  | SEFER-ABI-TERMINAL-HUMANIZE-01-CHECK |  | Owner or chain unclear |  |
@@ -1185,7 +1191,7 @@ Repo: `servis-platform`
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
 | service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
-| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:testqualityandflakeaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
+| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:auditlogandapprovaltrace01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:testqualityandflakeaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
 | google.js | backend/src/auth/google.js | backend |  | review | NEEDS_REVIEW |  | GOOGLE |  | Owner or chain unclear |  |
 | jwt.js | backend/src/auth/jwt.js | backend |  | review | NEEDS_REVIEW |  | JWT |  | Owner or chain unclear |  |
@@ -1380,13 +1386,13 @@ Repo: `servis-platform`
 | hash.js | backend/src/telematics/hash.js | backend |  | review | NEEDS_REVIEW |  | HASH |  | Owner or chain unclear |  |
 | providers.js | backend/src/telematics/providers.js | backend |  | review | NEEDS_REVIEW |  | PROVIDERS |  | Owner or chain unclear |  |
 | service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
-| tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:ai03bsemanticvisiblelivematrix01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
+| tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:ai03bsemanticvisiblelivematrix01, root:check:auditlogandapprovaltrace01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
 | responseCache.js | backend/src/utils/responseCache.js | backend |  | review | NEEDS_REVIEW |  | RESPONSE-CACHE |  | Owner or chain unclear |  |
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| security_kvkk_final_01_check.js | backend/scripts/security_kvkk_final_01_check.js | backend | root:check:securitykvkkfinal01 | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
+| audit_log_and_approval_trace_01_check.js | backend/scripts/audit_log_and_approval_trace_01_check.js | backend | root:check:auditlogandapprovaltrace01 | review | NEEDS_REVIEW |  | AUDIT-LOG-AND-APPROVAL-TRACE-01 |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1572,7 +1578,7 @@ Repo: `servis-platform`
 | mobile:acceptance:mobile | mobile/package.json | mobile | npm run check:m57.2 && npm run check:m81.2 && npm run check:m82.4 && npm run check:m82.5 && npm run check:m82.6 && npm run check:m82.7 && npm run check:m82.8 && npm run check:m95e0 && npm run check:m95e1 && npm run check:m95e2 && npm run check:m95e4 && npm run check:m95e5 && npm run check:m95e6 && npm run check:m95e7 && npm run check:m95e8 && npm run check:m95e9 && npm run check:m95e10 && npm run check:m95e12 && npm run check:m95e13 && npm run check:m95e14 && npm run check:m95e15 && npm run check:m95e16 && npm run check:m95e17 && npm run check:m95e18 && npm run check:m95e19 && npm run check:m95e22a && npm run check:m95e22b && npm run check:m95e22c && npm run check:m95e23a && npm run check:m95e20 && npm run check:m95e21 && npm run check:m95e24a && npm run check:m95e24b && npm run check:m95e24c && npm run check:m98e1 && npm run check:m98e2d && npm run check:m96b && npm run check:m96c && npm run check:m96d && npm run check:m98a && npm run check:m98bcd && npm run check:m99a && npm run check:m99b && npm run check:m99c && npm run check:mobiletext01 | review | NEEDS_REVIEW |  | MOBILE-ACCEPTANCE-MOBILE |  | Owner or chain unclear | mobile package |
 | mobile:check:m82.7 | mobile/package.json | mobile | node scripts/m82_7_repo_hygiene_cleanup_check.js | review | ACTIVE |  | MOBILE-CHECK-M-82-7 |  | Owner or chain unclear | mobile package |
 | mobile:check:m82.8 | mobile/package.json | mobile | node scripts/m82_8_verification_2_0_check.js | review | ACTIVE |  | MOBILE-CHECK-M-82-8 |  | Owner or chain unclear | mobile package |
-| App.js | mobile/App.js | mobile | mobile:check:m95e1, mobile:check:m95e13, root:check:boardingops01b, root:check:copilothumanapproval01, root:check:copilotroutereviewhumanapproval01, root:check:shiftdispatchapprovalfix01 | review | NEEDS_REVIEW |  | APP |  | Owner or chain unclear |  |
+| App.js | mobile/App.js | mobile | mobile:check:m95e1, mobile:check:m95e13, root:check:auditlogandapprovaltrace01, root:check:boardingops01b, root:check:copilothumanapproval01, root:check:copilotroutereviewhumanapproval01, root:check:shiftdispatchapprovalfix01 | review | NEEDS_REVIEW |  | APP |  | Owner or chain unclear |  |
 | app.config.js | mobile/app.config.js | mobile |  | review | NEEDS_REVIEW |  | APP-CONFIG |  | Owner or chain unclear |  |
 | babel.config.js | mobile/babel.config.js | mobile |  | review | NEEDS_REVIEW |  | BABEL-CONFIG |  | Owner or chain unclear |  |
 | metro.config.js | mobile/metro.config.js | mobile |  | review | NEEDS_REVIEW |  | METRO-CONFIG |  | Owner or chain unclear |  |
