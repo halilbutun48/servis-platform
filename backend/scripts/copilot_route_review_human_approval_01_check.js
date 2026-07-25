@@ -282,6 +282,9 @@ async function main() {
     'backend/scripts/copilot_rfq_prep_01_check.js',
     'backend/src/ai/chat/copilotRfqPrep.js',
     'docs/COPILOT_RFQ_PREP_01.md',
+    'backend/scripts/copilot_negotiation_assist_01_check.js',
+    'backend/src/ai/chat/copilotNegotiationAssist.js',
+    'backend/src/ai/chat/copilotHumanApprovalPolicy.js',
     // Supplier offer collect companion files are legitimate scope for this consolidated route-review pass.
     'backend/scripts/supplier_offer_collect_01_check.js',
     'backend/src/ai/chat/supplierOfferCollect.js',
@@ -290,6 +293,8 @@ async function main() {
     'backend/scripts/copilot_offer_analysis_01_check.js',
     'backend/src/ai/chat/copilotOfferAnalysis.js',
     'docs/COPILOT_OFFER_ANALYSIS_01.md',
+    'docs/COPILOT_NEGOTIATION_ASSIST_01.md',
+    'docs/COPILOT_HUMAN_APPROVAL_01.md',
     'backend/scripts/copilot_workflow_reasoning_engine_01_check.js',
     'backend/scripts/request_storm_resilience_01_check.js',
     'backend/scripts/db_pool_and_api_scaling_01_check.js',

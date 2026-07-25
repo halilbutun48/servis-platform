@@ -25,6 +25,7 @@ const steps = [
   'check:suppliermatching01',
   'check:supplieroffercollect01',
   'check:copilotofferanalysis01',
+  'check:copilotnegotiationassist01',
   'check:uxmarketplacepanels01',
   'check:productflowbuttonaudit01',
   'check:agreementsourceshiftlineage01',

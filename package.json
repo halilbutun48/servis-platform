@@ -41,6 +41,7 @@
     "check:suppliermatching01": "node backend/scripts/supplier_matching_01_check.js",
     "check:supplieroffercollect01": "node backend/scripts/supplier_offer_collect_01_check.js",
     "check:copilotofferanalysis01": "node backend/scripts/copilot_offer_analysis_01_check.js",
+    "check:copilotnegotiationassist01": "node backend/scripts/copilot_negotiation_assist_01_check.js",
     "check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js",
     "check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js",
     "check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js",

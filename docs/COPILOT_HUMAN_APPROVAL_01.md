@@ -6,6 +6,7 @@ Repo: `servis-platform`
 ## docs/check milestone
 - Bu doküman kritik işlemlerde insan onayı / confirmation sınırını docs/check olarak kilitler.
 - Canonical check: `check:copilothumanapproval01`
+- Companion check: `check:copilotnegotiationassist01`
 - Komut: `node backend\scripts\copilot_human_approval_01_check.js`
 - Static source of truth gerektiğinde `backend/src/ai/chat/copilotHumanApprovalPolicy.js` ile taşınır; helper runtime executor değildir.
 
@@ -98,6 +99,7 @@ Her kritik işlem öncesi Sefer Abi şu maddeleri gösterebilir:
 - `SUPPLIER-MATCHING-01`
 - `SUPPLIER-OFFER-COLLECT-01`
 - `COPILOT-OFFER-ANALYSIS-01`
+- `COPILOT-NEGOTIATION-ASSIST-01`
 - `COPILOT-OFFER-RECOMMENDATION-01`
 - `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`
 - `COPILOT-DISPATCH-ACTION-PREP-01`

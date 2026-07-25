@@ -210,7 +210,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_OFFER_ANALYSIS_01.md`
 - Static helper: `backend/src/ai/chat/copilotOfferAnalysis.js`
 - Bu check, `SUPPLIER-OFFER-COLLECT-01`, `COPILOT-HUMAN-APPROVAL-01` ve `UX-MARKETPLACE-PANELS-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, offer selection ve provider credential management açmaz.
-- Sonraki güvenli hatlar: `COPILOT-OFFER-RECOMMENDATION-01`, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`, `COPILOT-DISPATCH-ACTION-PREP-01`.
+- Sonraki güvenli hatlar: `COPILOT-NEGOTIATION-ASSIST-01`, `COPILOT-OFFER-RECOMMENDATION-01`, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`.
+
+### COPILOT-NEGOTIATION-ASSIST-01 [CHECK]
+- `check:copilotnegotiationassist01` Sefer Abi için draft-only negotiation prep companion milestone'ını docs/check olarak kilitler; supplier offer collect shortlistini pazarlık hazırlık taslağına, karşı teklif draftına, soru setine ve risk/value özeti katmanına çevirir ama supplier selection, offer accept/reject, supplier contact, RFQ send, agreement execute, dispatch apply, payment execute ve provider credential management açmaz.
+- Check script: `node backend\scripts\copilot_negotiation_assist_01_check.js`
+- Doküman: `docs/COPILOT_NEGOTIATION_ASSIST_01.md`
+- Static helper: `backend/src/ai/chat/copilotNegotiationAssist.js`
+- Bu check, `SUPPLIER-OFFER-COLLECT-01`, `COPILOT-OFFER-ANALYSIS-01`, `COPILOT-OFFER-RECOMMENDATION-01` ve `COPILOT-HUMAN-APPROVAL-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, supplier contact ve RFQ send açmaz.
+- Sonraki güvenli hatlar: `COPILOT-OFFER-RECOMMENDATION-01`, `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`.
 
 ### COPILOT-HUMAN-APPROVAL-01 [CHECK]
 - `check:copilothumanapproval01` Sefer Abi için kritik işlemlerde insan onayı / confirmation modelini docs/check olarak kilitler; READ / EXPLAIN / RECOMMEND / PREPARE / DRAFT / RISK_SUMMARY / NEXT_STEP sınırını görünür kılar, runtime AI action açmaz.

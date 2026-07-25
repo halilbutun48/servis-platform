@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `411`
-- Toplam executable tracked file: `1236`
-- Combined registry row: `1647`
-- Root/backend/web/mobile package dağılımı: root `254`, backend `793`, web `96`, mobile `201`
+- Toplam package script entry: `412`
+- Toplam executable tracked file: `1239`
+- Combined registry row: `1651`
+- Root/backend/web/mobile package dağılımı: root `255`, backend `796`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `66`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -155,6 +155,12 @@ Repo: `servis-platform`
 - Offer analysis command: `node backend\scripts\copilot_offer_analysis_01_check.js`
 - Offer analysis helper: `backend/src/ai/chat/copilotOfferAnalysis.js`
 - Offer analysis root check: `root:check:copilotofferanalysis01`
+- Negotiation assist milestone: `COPILOT-NEGOTIATION-ASSIST-01`
+- Negotiation assist check: `check:copilotnegotiationassist01`
+- Negotiation assist docs: `docs/COPILOT_NEGOTIATION_ASSIST_01.md`
+- Negotiation assist command: `node backend\scripts\copilot_negotiation_assist_01_check.js`
+- Negotiation assist helper: `backend/src/ai/chat/copilotNegotiationAssist.js`
+- Negotiation assist root check: `root:check:copilotnegotiationassist01`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
@@ -325,7 +331,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `195`
+- ACTIVE_CORE: `196`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -341,7 +347,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `646`
+- NEEDS_REVIEW: `649`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -355,14 +361,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 195 |
+| ACTIVE_CORE | 196 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 646 |
+| NEEDS_REVIEW | 649 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -418,6 +424,7 @@ Repo: `servis-platform`
 | root:check:suppliermatching01 | package.json | root | node backend/scripts/supplier_matching_01_check.js | verify-core | ACTIVE_CORE |  | SUPPLIER-MATCHING-01 |  | Breaks canonical verification chain |  |
 | root:check:supplieroffercollect01 | package.json | root | node backend/scripts/supplier_offer_collect_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SUPPLIEROFFERCOLLECT-01 |  | Owner or chain unclear |  |
 | root:check:copilotofferanalysis01 | package.json | root | node backend/scripts/copilot_offer_analysis_01_check.js | review | NEEDS_REVIEW |  | COPILOT-OFFER-ANALYSIS-01 |  | Owner or chain unclear |  |
+| root:check:copilotnegotiationassist01 | package.json | root | node backend/scripts/copilot_negotiation_assist_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-COPILOTNEGOTIATIONASSIST-01 |  | Breaks canonical verification chain |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
@@ -780,6 +787,7 @@ Repo: `servis-platform`
 | copilot_guided_task_engine_01_check.js | backend/scripts/copilot_guided_task_engine_01_check.js | backend | root:check:copilotguidedtaskengine01 | review | NEEDS_REVIEW |  | COPILOT-GUIDED-TASK-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_human_approval_01_check.js | backend/scripts/copilot_human_approval_01_check.js | backend | root:check:copilothumanapproval01 | review | NEEDS_REVIEW |  | COPILOT-HUMAN-APPROVAL-01-CHECK |  | Owner or chain unclear |  |
 | copilot_next_best_action_engine_01_check.js | backend/scripts/copilot_next_best_action_engine_01_check.js | backend | root:check:copilotnextbestactionengine01 | review | NEEDS_REVIEW |  | COPILOT-NEXT-BEST-ACTION-ENGINE-01-CHECK |  | Owner or chain unclear |  |
+| copilot_offer_analysis_01_check.js | backend/scripts/copilot_offer_analysis_01_check.js | backend | root:check:copilotofferanalysis01 | review | NEEDS_REVIEW |  | COPILOT-OFFER-ANALYSIS-01-CHECK |  | Owner or chain unclear |  |
 | copilot_operation_health_engine_01_check.js | backend/scripts/copilot_operation_health_engine_01_check.js | backend | root:check:copilotoperationhealthengine01 | review | NEEDS_REVIEW |  | COPILOT-OPERATION-HEALTH-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_plan_review_engine_01_check.js | backend/scripts/copilot_plan_review_engine_01_check.js | backend | root:check:copilotplanreviewengine01 | review | NEEDS_REVIEW |  | COPILOT-PLAN-REVIEW-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_reasoning_answer_composer_01_check.js | backend/scripts/copilot_reasoning_answer_composer_01_check.js | backend | root:check:copilotreasoninganswercomposer01 | review | NEEDS_REVIEW |  | COPILOT-REASONING-ANSWER-COMPOSER-01-CHECK |  | Owner or chain unclear |  |
@@ -1185,6 +1193,7 @@ Repo: `servis-platform`
 | copilotExcelDemandImportPolicy.js | backend/src/ai/chat/copilotExcelDemandImportPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-EXCEL-DEMAND-IMPORT-POLICY |  | Owner or chain unclear |  |
 | copilotGuidedTaskEngine.js | backend/src/ai/chat/copilotGuidedTaskEngine.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-GUIDED-TASK-ENGINE |  | Owner or chain unclear |  |
 | copilotHumanApprovalPolicy.js | backend/src/ai/chat/copilotHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
+| copilotOfferAnalysis.js | backend/src/ai/chat/copilotOfferAnalysis.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-OFFER-ANALYSIS |  | Owner or chain unclear |  |
 | copilotReasoningAnswerComposer.js | backend/src/ai/chat/copilotReasoningAnswerComposer.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-REASONING-ANSWER-COMPOSER |  | Owner or chain unclear |  |
 | copilotRfqPrep.js | backend/src/ai/chat/copilotRfqPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-RFQ-PREP |  | Owner or chain unclear |  |
 | copilotRoleTaskMatrix.js | backend/src/ai/chat/copilotRoleTaskMatrix.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX |  | Owner or chain unclear |  |
@@ -1430,7 +1439,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| copilotOfferAnalysis.js | backend/src/ai/chat/copilotOfferAnalysis.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-OFFER-ANALYSIS |  | Owner or chain unclear |  |
+| copilot_negotiation_assist_01_check.js | backend/scripts/copilot_negotiation_assist_01_check.js | backend | root:check:copilotnegotiationassist01 | review | NEEDS_REVIEW |  | COPILOT-NEGOTIATION-ASSIST-01-CHECK |  | Owner or chain unclear |  |
+| copilotNegotiationAssist.js | backend/src/ai/chat/copilotNegotiationAssist.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-NEGOTIATION-ASSIST |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
