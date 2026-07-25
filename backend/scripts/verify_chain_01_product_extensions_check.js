@@ -127,6 +127,7 @@ function main() {
   must(pkg, '"check:invitebasedmembership01": "node backend/scripts/invite_based_membership_01_check.js"', 'package.json exposes check:invitebasedmembership01');
   must(pkg, '"check:verifiedsupplier01": "node backend/scripts/verified_supplier_01_check.js"', 'package.json exposes check:verifiedsupplier01');
   must(pkg, '"check:suppliermatching01": "node backend/scripts/supplier_matching_01_check.js"', 'package.json exposes check:suppliermatching01');
+  must(pkg, '"check:supplieroffercollect01": "node backend/scripts/supplier_offer_collect_01_check.js"', 'package.json exposes check:supplieroffercollect01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -330,6 +331,7 @@ function main() {
     'check:invitebasedmembership01',
     'check:verifiedsupplier01',
     'check:suppliermatching01',
+    'check:supplieroffercollect01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
@@ -777,10 +779,20 @@ function main() {
   must(harnessCheck, 'check:verifiedsupplier01', 'script harness check knows verified supplier alias');
   must(harnessCheck, 'verified_supplier_01_check.js', 'script harness check knows verified supplier file');
   must(harnessCheck, 'VERIFIED-SUPPLIER-01', 'script harness check knows verified supplier milestone');
+  must(harnessCheck, 'check:supplieroffercollect01', 'script harness check knows supplier offer collect alias');
+  must(harnessCheck, 'supplier_offer_collect_01_check.js', 'script harness check knows supplier offer collect file');
+  must(harnessCheck, 'SUPPLIER-OFFER-COLLECT-01', 'script harness check knows supplier offer collect milestone');
+  must(harnessCheck, 'docs/SUPPLIER_OFFER_COLLECT_01.md', 'script harness check knows supplier offer collect doc');
+  must(harnessCheck, 'backend/src/ai/chat/supplierOfferCollect.js', 'script harness check knows supplier offer collect helper');
   must(harnessDoc, 'root:check:verifiedsupplier01', 'script harness doc lists verified supplier root check');
   must(harnessDoc, 'verified_supplier_01_check.js', 'script harness doc lists verified supplier check');
   must(harnessDoc, 'docs/VERIFIED_SUPPLIER_01.md', 'script harness doc lists verified supplier doc');
   must(harnessDoc, 'VERIFIED-SUPPLIER-01', 'script harness doc lists verified supplier milestone');
+  must(harnessDoc, 'root:check:supplieroffercollect01', 'script harness doc lists supplier offer collect root check');
+  must(harnessDoc, 'supplier_offer_collect_01_check.js', 'script harness doc lists supplier offer collect check');
+  must(harnessDoc, 'docs/SUPPLIER_OFFER_COLLECT_01.md', 'script harness doc lists supplier offer collect doc');
+  must(harnessDoc, 'SUPPLIER-OFFER-COLLECT-01', 'script harness doc lists supplier offer collect milestone');
+  must(harnessDoc, 'backend/src/ai/chat/supplierOfferCollect.js', 'script harness doc lists supplier offer collect helper');
   must(harnessCheck, 'check:uxmarketplacepanels01', 'script harness check knows marketplace panels alias');
   must(harnessCheck, 'ux_marketplace_panels_01_check.js', 'script harness check knows marketplace panels file');
   must(harnessCheck, 'UX-MARKETPLACE-PANELS-01', 'script harness check knows marketplace panels milestone');
@@ -1311,7 +1323,7 @@ function main() {
   must(harnessDoc, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'script harness doc lists Excel demand import doc');
   must(harnessDoc, 'node backend\\scripts\\copilot_excel_demand_import_01_check.js', 'script harness doc lists Excel demand import command');
   must(harnessDoc, 'backend/src/ai/chat/copilotExcelDemandImportPolicy.js', 'script harness doc lists Excel demand import helper');
-  ordered(harnessDoc, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
+  ordered(harnessDoc, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
   must(harnessDoc, 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'script harness doc lists dynamic question engine milestone');
   must(harnessDoc, 'root:check:copilotdynamicquestionengine01', 'script harness doc lists dynamic question engine root check');
   must(harnessDoc, 'copilot_dynamic_question_engine_01_check.js', 'script harness doc lists dynamic question engine command');

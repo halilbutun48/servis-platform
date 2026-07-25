@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-07-24
+Tarih: 2026-07-25
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `409`
-- Toplam executable tracked file: `1233`
-- Combined registry row: `1642`
-- Root/backend/web/mobile package dağılımı: root `252`, backend `790`, web `96`, mobile `201`
+- Toplam package script entry: `410`
+- Toplam executable tracked file: `1235`
+- Combined registry row: `1645`
+- Root/backend/web/mobile package dağılımı: root `253`, backend `792`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `66`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -145,6 +145,10 @@ Repo: `servis-platform`
 - Supplier matching check: `check:suppliermatching01`
 - Supplier matching docs: `docs/SUPPLIER_MATCHING_01.md`
 - Supplier matching helper: `backend/src/ai/chat/supplierMatching.js`
+- Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`
+- Supplier offer collect check: `check:supplieroffercollect01`
+- Supplier offer collect docs: `docs/SUPPLIER_OFFER_COLLECT_01.md`
+- Supplier offer collect helper: `backend/src/ai/chat/supplierOfferCollect.js`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
@@ -331,11 +335,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `641`
+- NEEDS_REVIEW: `644`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `333`
+- Eski sistem term eşleşmesi: `334`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -352,7 +356,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 641 |
+| NEEDS_REVIEW | 644 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -405,7 +409,8 @@ Repo: `servis-platform`
 | root:check:onboardingreviewfinalaudit01 | package.json | root | node backend/scripts/onboarding_review_final_audit_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
 | root:check:invitebasedmembership01 | package.json | root | node backend/scripts/invite_based_membership_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-INVITEBASEDMEMBERSHIP-01 |  | Breaks canonical verification chain |  |
 | root:check:verifiedsupplier01 | package.json | root | node backend/scripts/verified_supplier_01_check.js | verify-core | ACTIVE_CORE |  | VERIFIED-SUPPLIER-01 |  | Breaks canonical verification chain |  |
-| root:check:suppliermatching01 | package.json | root | node backend/scripts/supplier_matching_01_check.js | core | ACTIVE_CORE |  | SUPPLIER-MATCHING-01 |  | Breaks canonical verification chain |  |
+| root:check:suppliermatching01 | package.json | root | node backend/scripts/supplier_matching_01_check.js | verify-core | ACTIVE_CORE |  | SUPPLIER-MATCHING-01 |  | Breaks canonical verification chain |  |
+| root:check:supplieroffercollect01 | package.json | root | node backend/scripts/supplier_offer_collect_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SUPPLIEROFFERCOLLECT-01 |  | Owner or chain unclear |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
@@ -1069,6 +1074,7 @@ Repo: `servis-platform`
 | step1_totp_stepup_check.js | backend/scripts/step1_totp_stepup_check.js | backend |  | review | NEEDS_REVIEW |  | STEP-1-TOTP-STEPUP-CHECK |  | Owner or chain unclear |  |
 | superadmin_menu_copilot_sadelestirme_check.js | backend/scripts/superadmin_menu_copilot_sadelestirme_check.js | backend |  | review | NEEDS_REVIEW |  | SUPERADMIN-MENU-COPILOT-SADELESTIRME-CHECK |  | Owner or chain unclear |  |
 | superadmin_menu_turkce_hotfix_check.js | backend/scripts/superadmin_menu_turkce_hotfix_check.js | backend |  | review | NEEDS_REVIEW |  | SUPERADMIN-MENU-TURKCE-HOTFIX-CHECK |  | Owner or chain unclear |  |
+| supplier_matching_01_check.js | backend/scripts/supplier_matching_01_check.js | backend | root:check:suppliermatching01 | product-extensions | NEEDS_REVIEW |  | SUPPLIER-MATCHING-01-CHECK |  | Owner or chain unclear |  |
 | telematics_provider_hub_01_check.js | backend/scripts/telematics_provider_hub_01_check.js | backend | root:check:telematicsproviderhub01 | review | NEEDS_REVIEW |  | TELEMATICS-PROVIDER-HUB-01-CHECK |  | Owner or chain unclear |  |
 | test_quality_and_flake_audit_01_check.js | backend/scripts/test_quality_and_flake_audit_01_check.js | backend | root:check:testqualityandflakeaudit01 | review | NEEDS_REVIEW |  | TEST-QUALITY-AND-FLAKE-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | ui_action_wiring_audit_01_check.js | backend/scripts/ui_action_wiring_audit_01_check.js | backend | root:check:uiactionwiringaudit01 | review | NEEDS_REVIEW |  | UI-ACTION-WIRING-AUDIT-01-CHECK |  | Owner or chain unclear |  |
@@ -1190,6 +1196,7 @@ Repo: `servis-platform`
 | replyShapes.js | backend/src/ai/chat/replyShapes.js | backend |  | review | NEEDS_REVIEW |  | REPLY-SHAPES |  | Owner or chain unclear |  |
 | screenStateAnalyzer.js | backend/src/ai/chat/screenStateAnalyzer.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-STATE-ANALYZER |  | Owner or chain unclear |  |
 | seferAbiReasoningAssistant.js | backend/src/ai/chat/seferAbiReasoningAssistant.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT |  | Owner or chain unclear |  |
+| supplierMatching.js | backend/src/ai/chat/supplierMatching.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-MATCHING |  | Owner or chain unclear |  |
 | copyOutputs.js | backend/src/ai/jobGuide/copyOutputs.js | backend |  | review | NEEDS_REVIEW |  | COPY-OUTPUTS |  | Owner or chain unclear |  |
 | glossary.js | backend/src/ai/jobGuide/glossary.js | backend |  | review | NEEDS_REVIEW |  | GLOSSARY |  | Owner or chain unclear |  |
 | index.js | backend/src/ai/jobGuide/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
@@ -1414,8 +1421,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| supplier_matching_01_check.js | backend/scripts/supplier_matching_01_check.js | backend | root:check:suppliermatching01 | product-extensions | NEEDS_REVIEW |  | SUPPLIER-MATCHING-01-CHECK |  | Owner or chain unclear |  |
-| supplierMatching.js | backend/src/ai/chat/supplierMatching.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-MATCHING |  | Owner or chain unclear |  |
+| supplier_offer_collect_01_check.js | backend/scripts/supplier_offer_collect_01_check.js | backend | root:check:supplieroffercollect01 | product-extensions | NEEDS_REVIEW |  | SUPPLIER-OFFER-COLLECT-01-CHECK |  | Owner or chain unclear |  |
+| supplierOfferCollect.js | backend/src/ai/chat/supplierOfferCollect.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-OFFER-COLLECT |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

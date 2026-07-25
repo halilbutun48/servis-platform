@@ -162,6 +162,7 @@ function main() {
 
   const allowedStatusNames = new Set([
     ...runtimeDataFiles,
+    "tools/repo_contract_state.json",
     "package.json",
     "backend/scripts/run_product_extensions_check_chain.js",
     "backend/scripts/verify_chain_01_product_extensions_check.js",
@@ -170,6 +171,7 @@ function main() {
     "backend/scripts/excel_to_route_readiness_redteam_01_check.js",
     "backend/scripts/role_data_isolation_redteam_01_check.js",
     "backend/scripts/supplier_matching_01_check.js",
+    "backend/scripts/supplier_offer_collect_01_check.js",
     "backend/scripts/copilot_demand_intake_01_check.js",
     "backend/src/ai/chat/copilotDemandIntake.js",
     "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
@@ -184,8 +186,10 @@ function main() {
     "backend/scripts/audit_log_and_approval_trace_01_check.js",
     "docs/SECURITY_KVKK_FINAL_01.md",
     "backend/src/ai/chat/supplierMatching.js",
+    "backend/src/ai/chat/supplierOfferCollect.js",
     "docs/VERIFIED_SUPPLIER_01.md",
     "docs/SUPPLIER_MATCHING_01.md",
+    "docs/SUPPLIER_OFFER_COLLECT_01.md",
     "docs/UX_MARKETPLACE_PANELS_01.md",
     "docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",

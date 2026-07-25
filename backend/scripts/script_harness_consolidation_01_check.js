@@ -43,7 +43,9 @@ const workingTreeCompatFiles = [
   "backend/scripts/security_kvkk_final_01_check.js",
   "backend/scripts/audit_log_and_approval_trace_01_check.js",
   "backend/scripts/supplier_matching_01_check.js",
+  "backend/scripts/supplier_offer_collect_01_check.js",
   "backend/src/ai/chat/supplierMatching.js",
+  "backend/src/ai/chat/supplierOfferCollect.js",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
   "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
@@ -51,6 +53,7 @@ const workingTreeCompatFiles = [
   "docs/SECURITY_KVKK_FINAL_01.md",
   "docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md",
   "docs/SUPPLIER_MATCHING_01.md",
+  "docs/SUPPLIER_OFFER_COLLECT_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
@@ -1055,7 +1058,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:copilotrfqprep01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "root:check:roledataisolationredteam01", "root:check:auditlogandapprovaltrace01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:suppliermatching01", "root:check:supplieroffercollect01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:copilotrfqprep01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "root:check:roledataisolationredteam01", "root:check:auditlogandapprovaltrace01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1371,7 +1374,7 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
     entry.commandRefs = [...new Set(entry.commandRefs)].sort();
     if (entry.commandRefs.some((ref) => ref.startsWith("root:verify:repo") || ref.startsWith("backend:repo:check"))) {
       entry.chain = "verify:repo";
-    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:suppliermatching01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01") || ref.startsWith("root:check:requeststormresilience01") || ref.startsWith("root:check:productionratelimitpolicy01"))) {
+    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:suppliermatching01") || ref.startsWith("root:check:supplieroffercollect01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01") || ref.startsWith("root:check:requeststormresilience01") || ref.startsWith("root:check:productionratelimitpolicy01"))) {
       entry.chain = "product-extensions";
     } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:scriptharnessconsolidation01"))) {
       entry.chain = "product-extensions";
@@ -1641,6 +1644,10 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Supplier matching check: \`check:suppliermatching01\``);
   out.push(`- Supplier matching docs: \`docs/SUPPLIER_MATCHING_01.md\``);
   out.push(`- Supplier matching helper: \`backend/src/ai/chat/supplierMatching.js\``);
+  out.push(`- Supplier offer collect milestone: \`SUPPLIER-OFFER-COLLECT-01\``);
+  out.push(`- Supplier offer collect check: \`check:supplieroffercollect01\``);
+  out.push(`- Supplier offer collect docs: \`docs/SUPPLIER_OFFER_COLLECT_01.md\``);
+  out.push(`- Supplier offer collect helper: \`backend/src/ai/chat/supplierOfferCollect.js\``);
   out.push(`- Marketplace panels milestone: \`UX-MARKETPLACE-PANELS-01\``);
   out.push(`- Marketplace panels check: \`check:uxmarketplacepanels01\``);
   out.push(`- Marketplace panels docs: \`docs/UX_MARKETPLACE_PANELS_01.md\``);
@@ -2050,13 +2057,16 @@ function verifyDoc(docText, summary) {
     "check:suppliermatching01",
     "VERIFIED-SUPPLIER-01",
     "SUPPLIER-MATCHING-01",
+    "SUPPLIER-OFFER-COLLECT-01",
     "root:check:uxmarketplacepanels01",
     "root:check:verifiedsupplier01",
     "root:check:suppliermatching01",
+    "root:check:supplieroffercollect01",
     "root:check:offerrankingquality01",
     "node backend\\scripts\\ux_marketplace_panels_01_check.js",
     "node backend\\scripts\\verified_supplier_01_check.js",
     "node backend\\scripts\\supplier_matching_01_check.js",
+    "node backend\\scripts\\supplier_offer_collect_01_check.js",
     "node backend\\scripts\\offer_ranking_quality_01_check.js",
     "Verified supplier milestone",
     "Verified supplier check",
@@ -2065,6 +2075,10 @@ function verifyDoc(docText, summary) {
     "Supplier matching check",
     "Supplier matching docs",
     "Supplier matching helper",
+    "Supplier offer collect milestone",
+    "Supplier offer collect check",
+    "Supplier offer collect docs",
+    "Supplier offer collect helper",
     "UX-MARKETPLACE-PANELS-01",
     "node backend\\scripts\\product_flow_button_audit_01_check.js",
     "node backend\\scripts\\product_flow_button_audit_01.mjs",
@@ -2283,7 +2297,7 @@ function verifyDoc(docText, summary) {
     "REMOVED:",
   ];
   ordered(docText, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
-  ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching and marketplace panels');
+  ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching, offer collect and marketplace panels');
   for (const needle of mustContain) {
     if (!normalize(docText).includes(normalize(needle))) {
       throw new Error(`FAIL doc missing: ${needle}`);

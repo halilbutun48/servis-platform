@@ -455,7 +455,7 @@ Kullanılmayacak cümleler:
 - COPILOT-DEMAND-INTAKE-01: demand intake draft-only companion milestone; talep anlama, sınıflandırma ve netleştirme soruları ayrı docs/check katmanı olarak kilitlenir.
 - COPILOT-RFQ-PREP-01: draft-only RFQ prep companion milestone; supplier matching, offer collect ve RFQ send açmaz.
 - SUPPLIER-MATCHING-01: draft-only supplier matching companion milestone; RFQ prep çıktısını aday kısa liste taslağına çevirir, contact/send/offer collect açmaz.
-- SUPPLIER-OFFER-COLLECT-01
+- SUPPLIER-OFFER-COLLECT-01: SUPPLIER-MATCHING-01 sonrasında gelen draft-only offer collection companion milestone; supplier matching shortlistini offer collection inputuna ve draft-only teklif durum tablosuna çevirir, contact/send/accept/reject açmaz. Detay: `docs/SUPPLIER_OFFER_COLLECT_01.md`
 - COPILOT-OFFER-ANALYSIS-01
 - COPILOT-NEGOTIATION-ASSIST-01
 - COPILOT-OFFER-RECOMMENDATION-01
