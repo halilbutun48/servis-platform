@@ -391,8 +391,17 @@ Kullanılmayacak cümleler:
 - Prisma/migration, backend route/service/schema veya UI feature genişlemesi açılmaz.
 - Detay dokümanı: `docs/VERIFIED_SUPPLIER_01.md`
 
+## Supplier matching guard
+- `SUPPLIER-MATCHING-01` `VERIFIED-SUPPLIER-01` sonrasında gelir; RFQ prep çıktısını supplier matching inputuna dönüştürür ve aday kısa liste / ön değerlendirme taslağı üretir; draft-only ara katmandır.
+- Public/self-service tedarikçi kontaktı yok.
+- RFQ send, supplier contact, offer collect ve offer accept/reject açmaz; provider credential kullanımı ve messaging/email/SMS/push açılmaz.
+- Aday değerlendirme; uygunluk, kapasite, saha/sinyal, KVKK ve operasyon güvenliği etrafında kalır.
+- İnsan onayı olmadan seçim, kesin sıralama veya dışa gönderim yapılmaz.
+- Prisma/migration, backend route/service/schema veya UI feature genişlemesi açılmaz.
+- Detay dokümanı: `docs/SUPPLIER_MATCHING_01.md`
+
 ## Marketplace panels guard
-- `UX-MARKETPLACE-PANELS-01` `VERIFIED-SUPPLIER-01` sonrasında gelir; marketplace readiness center, status-first ve human approval çizgisini docs/check olarak kilitler.
+- `UX-MARKETPLACE-PANELS-01` `SUPPLIER-MATCHING-01` sonrasında gelir; marketplace readiness center, status-first ve human approval çizgisini docs/check olarak kilitler.
 - Başvuru alındı, İncelemede, Davete hazır, Davet hazırlandı, Doğrulama bekliyor, Doğrulama incelemede, Doğrulandı, Eksik bilgi ve Reddedildi durumları açık görünür.
 - Hazırla, İncele, Önizle, Onaya sun dili kullanılır.
 - Marketplace auto-selection yok; offer ranking, payment/billing, contract/agreement execute, email/SMS/push ve AI runtime action açılmaz.
@@ -405,6 +414,7 @@ Kullanılmayacak cümleler:
 - ONBOARDING-REVIEW-01 final audit
 - INVITE-BASED-MEMBERSHIP-01
 - VERIFIED-SUPPLIER-01
+- SUPPLIER-MATCHING-01
 - UX-MARKETPLACE-PANELS-01
 
 ### B) SAHA / KALİTE / TEKLİF MOTORU
@@ -444,7 +454,7 @@ Kullanılmayacak cümleler:
 ### E) COPILOT OPERASYON AKIŞI
 - COPILOT-DEMAND-INTAKE-01: demand intake draft-only companion milestone; talep anlama, sınıflandırma ve netleştirme soruları ayrı docs/check katmanı olarak kilitlenir.
 - COPILOT-RFQ-PREP-01: draft-only RFQ prep companion milestone; supplier matching, offer collect ve RFQ send açmaz.
-- SUPPLIER-MATCHING-01
+- SUPPLIER-MATCHING-01: draft-only supplier matching companion milestone; RFQ prep çıktısını aday kısa liste taslağına çevirir, contact/send/offer collect açmaz.
 - SUPPLIER-OFFER-COLLECT-01
 - COPILOT-OFFER-ANALYSIS-01
 - COPILOT-NEGOTIATION-ASSIST-01

@@ -16,6 +16,7 @@ Bu doküman, `INVITE-BASED-MEMBERSHIP-01` sonrasında tedarikçi doğrulama haz�
 - `ONBOARDING-REVIEW-01 FINAL AUDIT`
 - `INVITE-BASED-MEMBERSHIP-01`
 - `VERIFIED-SUPPLIER-01`
+- `SUPPLIER-MATCHING-01`
 - `UX-MARKETPLACE-PANELS-01`
 - `PRODUCT-FLOW-BUTTON-AUDIT-01`
 
@@ -47,6 +48,7 @@ Bu doküman, `INVITE-BASED-MEMBERSHIP-01` sonrasında tedarikçi doğrulama haz�
 - Tedarikçi seçimi, ödeme ve sözleşme kesinleştirme otomatik değildir.
 - Offer ranking, marketplace auto-selection, payment, billing, contract execute, email/SMS/push açılmaz.
 - Human approval, guard ve audit log zorunludur.
+- `SUPPLIER-MATCHING-01` ayrı bir docs/check kilididir; RFQ prep çıktısından aday kısa liste taslağı üretir ve contact/send/offer collect açmaz.
 - `UX-MARKETPLACE-PANELS-01` ayrı bir docs/check kilididir; marketplace readiness center dışına taşmaz.
 - schema değişikliği yok.
 - Backend route/service/schema genişlemesi yok.

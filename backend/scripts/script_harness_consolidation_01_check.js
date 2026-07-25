@@ -42,12 +42,15 @@ const workingTreeCompatFiles = [
   "backend/scripts/role_data_isolation_redteam_01_check.js",
   "backend/scripts/security_kvkk_final_01_check.js",
   "backend/scripts/audit_log_and_approval_trace_01_check.js",
+  "backend/scripts/supplier_matching_01_check.js",
+  "backend/src/ai/chat/supplierMatching.js",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
   "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
   "docs/ROLE_DATA_ISOLATION_REDTEAM_01.md",
   "docs/SECURITY_KVKK_FINAL_01.md",
   "docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md",
+  "docs/SUPPLIER_MATCHING_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
@@ -170,6 +173,7 @@ const workingTreeCompatFiles = [
   "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md",
   "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md",
   "docs/VERIFIED_SUPPLIER_01.md",
+  "docs/SUPPLIER_MATCHING_01.md",
   "docs/UX_MARKETPLACE_PANELS_01.md",
   "docs/M44_TELEMATICS_T1_T5.md",
   "docs/TELEMATICS_PROVIDER_HUB_01.md",
@@ -357,6 +361,7 @@ function slugToMilestone(slug) {
     [/offerrankingquality0?1/i, "OFFER-RANKING-QUALITY-01"], // check:offerrankingquality01
     [/copilotroletaskmatrix0?1/i, "COPILOT-ROLE-TASK-MATRIX-01"], // check:copilotroletaskmatrix01
     [/verifiedsupplier0?1/i, "VERIFIED-SUPPLIER-01"],
+    [/suppliermatching0?1/i, "SUPPLIER-MATCHING-01"], // check:suppliermatching01
     [/uxmarketplacepanels0?1/i, "UX-MARKETPLACE-PANELS-01"], // check:uxmarketplacepanels01
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
     [/uxroomcompanyshiftsmobilecardfix0?1/i, "UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01"], // check:uxroomcompanyshiftsmobilecardfix01
@@ -441,7 +446,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandintake01", "check:copilotdemandagreement01", "check:copilotrfqprep01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01", "check:roledataisolationredteam01", "check:auditlogandapprovaltrace01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandintake01", "check:copilotdemandagreement01", "check:copilotrfqprep01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:suppliermatching01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01", "check:roledataisolationredteam01", "check:auditlogandapprovaltrace01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1366,7 +1371,7 @@ function makeFileRegistry(trackedFiles, packageRegistry, docsIndex) {
     entry.commandRefs = [...new Set(entry.commandRefs)].sort();
     if (entry.commandRefs.some((ref) => ref.startsWith("root:verify:repo") || ref.startsWith("backend:repo:check"))) {
       entry.chain = "verify:repo";
-    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01") || ref.startsWith("root:check:requeststormresilience01") || ref.startsWith("root:check:productionratelimitpolicy01"))) {
+    } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:product-extensions") || ref.startsWith("root:check:verifychain01") || ref.startsWith("root:check:dynamicsavings01") || ref.startsWith("root:check:verifiedsupplier01") || ref.startsWith("root:check:suppliermatching01") || ref.startsWith("root:check:uxmarketplacepanels01") || ref.startsWith("root:check:productflowbuttonaudit01") || ref.startsWith("root:check:requeststormresilience01") || ref.startsWith("root:check:productionratelimitpolicy01"))) {
       entry.chain = "product-extensions";
     } else if (entry.commandRefs.some((ref) => ref.startsWith("root:check:scriptharnessconsolidation01"))) {
       entry.chain = "product-extensions";
@@ -1628,10 +1633,14 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- PASS-minus zero milestone: \`UX-SMOKE-PASS-MINUS-ZERO-01\``);
   out.push(`- PASS-minus zero docs: \`docs/UX_SMOKE_PASS_MINUS_ZERO_01.md\``);
   out.push(`- PASS-minus zero command: \`node backend\\scripts\\ux_smoke_pass_minus_zero_01_check.js\``);
-  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md\`, \`docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md\`, \`docs/LEAD_CAPTURE_01.md\`, \`docs/ONBOARDING_REVIEW_01.md\`, \`docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md\`, \`docs/INVITE_BASED_MEMBERSHIP_01.md\`, \`docs/VERIFIED_SUPPLIER_01.md\`, \`docs/UX_MARKETPLACE_PANELS_01.md\`, \`docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md\``);
+  out.push(`- Public lead docs: \`docs/PUBLIC_LANDING_01.md\`, \`docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md\`, \`docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md\`, \`docs/LEAD_CAPTURE_01.md\`, \`docs/ONBOARDING_REVIEW_01.md\`, \`docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md\`, \`docs/INVITE_BASED_MEMBERSHIP_01.md\`, \`docs/VERIFIED_SUPPLIER_01.md\`, \`docs/SUPPLIER_MATCHING_01.md\`, \`docs/UX_MARKETPLACE_PANELS_01.md\`, \`docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md\``);
   out.push(`- Verified supplier milestone: \`VERIFIED-SUPPLIER-01\``);
   out.push(`- Verified supplier check: \`check:verifiedsupplier01\``);
   out.push(`- Verified supplier docs: \`docs/VERIFIED_SUPPLIER_01.md\``);
+  out.push(`- Supplier matching milestone: \`SUPPLIER-MATCHING-01\``);
+  out.push(`- Supplier matching check: \`check:suppliermatching01\``);
+  out.push(`- Supplier matching docs: \`docs/SUPPLIER_MATCHING_01.md\``);
+  out.push(`- Supplier matching helper: \`backend/src/ai/chat/supplierMatching.js\``);
   out.push(`- Marketplace panels milestone: \`UX-MARKETPLACE-PANELS-01\``);
   out.push(`- Marketplace panels check: \`check:uxmarketplacepanels01\``);
   out.push(`- Marketplace panels docs: \`docs/UX_MARKETPLACE_PANELS_01.md\``);
@@ -2029,6 +2038,7 @@ function verifyDoc(docText, summary) {
     "INVITE-BASED-MEMBERSHIP-01",
     "verified_supplier_01_check.js",
     "docs/VERIFIED_SUPPLIER_01.md",
+    "docs/SUPPLIER_MATCHING_01.md",
     "docs/UX_MARKETPLACE_PANELS_01.md",
     "OFFER-RANKING-QUALITY-01",
     "check:offerrankingquality01",
@@ -2037,16 +2047,24 @@ function verifyDoc(docText, summary) {
     "web/src/utils/offerQualityRanking.js",
     "web/src/panels/shared/OfferQualityRankingCard.jsx",
     "check:verifiedsupplier01",
+    "check:suppliermatching01",
     "VERIFIED-SUPPLIER-01",
+    "SUPPLIER-MATCHING-01",
     "root:check:uxmarketplacepanels01",
     "root:check:verifiedsupplier01",
+    "root:check:suppliermatching01",
     "root:check:offerrankingquality01",
     "node backend\\scripts\\ux_marketplace_panels_01_check.js",
     "node backend\\scripts\\verified_supplier_01_check.js",
+    "node backend\\scripts\\supplier_matching_01_check.js",
     "node backend\\scripts\\offer_ranking_quality_01_check.js",
     "Verified supplier milestone",
     "Verified supplier check",
     "Verified supplier docs",
+    "Supplier matching milestone",
+    "Supplier matching check",
+    "Supplier matching docs",
+    "Supplier matching helper",
     "UX-MARKETPLACE-PANELS-01",
     "node backend\\scripts\\product_flow_button_audit_01_check.js",
     "node backend\\scripts\\product_flow_button_audit_01.mjs",
@@ -2265,6 +2283,7 @@ function verifyDoc(docText, summary) {
     "REMOVED:",
   ];
   ordered(docText, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
+  ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching and marketplace panels');
   for (const needle of mustContain) {
     if (!normalize(docText).includes(normalize(needle))) {
       throw new Error(`FAIL doc missing: ${needle}`);

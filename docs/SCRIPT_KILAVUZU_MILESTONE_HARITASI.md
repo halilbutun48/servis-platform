@@ -187,6 +187,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`, `COPILOT-HUMAN-APPROVAL-01` ve `COPILOT-ROLE-TASK-MATRIX-01` guardrail hattıyla birlikte okunur; supplier matching, offer collect, RFQ send ve runtime AI action açmaz.
 - Sonraki güvenli hatlar: `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-EXCEL-DEMAND-IMPORT-01`, `COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01`.
 
+### SUPPLIER-MATCHING-01 [CHECK]
+- `check:suppliermatching01` Sefer Abi için draft-only supplier matching companion milestone'ını docs/check olarak kilitler; RFQ prep çıktısını aday uygunluk matrisi ve shortlist taslağına çevirir ama RFQ send, supplier contact, offer collect ve provider credential kullanımını açmaz.
+- Check script: `node backend\scripts\supplier_matching_01_check.js`
+- Doküman: `docs/SUPPLIER_MATCHING_01.md`
+- Static helper: `backend/src/ai/chat/supplierMatching.js`
+- Bu check, `COPILOT-RFQ-PREP-01`, `VERIFIED-SUPPLIER-01`, `COPILOT-HUMAN-APPROVAL-01` ve `UX-MARKETPLACE-PANELS-01` guardrail hattıyla birlikte okunur; supplier matching execution, RFQ send, offer collect, provider credential management ve runtime AI action açmaz.
+- Sonraki güvenli hatlar: `COPILOT-HUMAN-APPROVAL-01`, `SUPPLIER-OFFER-COLLECT-01`, `COPILOT-OFFER-ANALYSIS-01`, `COPILOT-OFFER-RECOMMENDATION-01`.
+
 ### COPILOT-HUMAN-APPROVAL-01 [CHECK]
 - `check:copilothumanapproval01` Sefer Abi için kritik işlemlerde insan onayı / confirmation modelini docs/check olarak kilitler; READ / EXPLAIN / RECOMMEND / PREPARE / DRAFT / RISK_SUMMARY / NEXT_STEP sınırını görünür kılar, runtime AI action açmaz.
 - Check script: `node backend\scripts\copilot_human_approval_01_check.js`

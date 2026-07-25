@@ -3,7 +3,7 @@
 Tarih: 2026-06-10
 Repo: `servis-platform`
 
-Bu doküman, `VERIFIED-SUPPLIER-01` sonrasında marketplace temel panellerini UX olarak kilitler. Yeni backend flow açmaz; supplier matching, offer ranking, payment, contract/agreement execute veya AI runtime action açmaz. Marketplace yalnızca readiness/preview ve status-first görünürlük sağlar.
+Bu doküman, `SUPPLIER-MATCHING-01` sonrasında marketplace temel panellerini UX olarak kilitler. Yeni backend flow açmaz; supplier matching, offer ranking, payment, contract/agreement execute veya AI runtime action açmaz. Marketplace yalnızca readiness/preview ve status-first görünürlük sağlar.
 
 ## Amaç
 - Marketplace'i platform-first bir readiness merkezi olarak göstermek.
@@ -65,6 +65,7 @@ Bu doküman, `VERIFIED-SUPPLIER-01` sonrasında marketplace temel panellerini UX
 
 ## Güvenli sınır
 - Marketplace auto-selection yok.
+- Supplier matching draft-only ön değerlendirme olarak kalır; contact/send/offer collect yok.
 - Offer ranking yok.
 - Payment/billing yok.
 - Contract/agreement execute yok.
@@ -78,6 +79,7 @@ Bu doküman, `VERIFIED-SUPPLIER-01` sonrasında marketplace temel panellerini UX
 ## Kanonik bağlar
 - `INVITE-BASED-MEMBERSHIP-01`
 - `VERIFIED-SUPPLIER-01`
+- `SUPPLIER-MATCHING-01`
 - `UX-MARKETPLACE-PANELS-01`
 - `PRODUCT-FLOW-BUTTON-AUDIT-01`
 

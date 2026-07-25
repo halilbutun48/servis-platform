@@ -126,6 +126,7 @@ function main() {
   must(pkg, '"check:onboardingreviewfinalaudit01": "node backend/scripts/onboarding_review_final_audit_01_check.js"', 'package.json exposes check:onboardingreviewfinalaudit01');
   must(pkg, '"check:invitebasedmembership01": "node backend/scripts/invite_based_membership_01_check.js"', 'package.json exposes check:invitebasedmembership01');
   must(pkg, '"check:verifiedsupplier01": "node backend/scripts/verified_supplier_01_check.js"', 'package.json exposes check:verifiedsupplier01');
+  must(pkg, '"check:suppliermatching01": "node backend/scripts/supplier_matching_01_check.js"', 'package.json exposes check:suppliermatching01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -328,6 +329,7 @@ function main() {
     'check:onboardingreviewfinalaudit01',
     'check:invitebasedmembership01',
     'check:verifiedsupplier01',
+    'check:suppliermatching01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',

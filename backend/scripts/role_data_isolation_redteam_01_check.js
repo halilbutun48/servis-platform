@@ -127,7 +127,12 @@ function main() {
     'backend/scripts/role_data_isolation_redteam_01_check.js',
     'backend/scripts/copilot_route_review_human_approval_01_check.js',
     'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
+    'backend/scripts/supplier_matching_01_check.js',
     'docs/ROLE_DATA_ISOLATION_REDTEAM_01.md',
+    'backend/src/ai/chat/supplierMatching.js',
+    'docs/VERIFIED_SUPPLIER_01.md',
+    'docs/SUPPLIER_MATCHING_01.md',
+    'docs/UX_MARKETPLACE_PANELS_01.md',
     // Demand intake companion files are legitimate scope for this consolidated redteam pass.
     'backend/scripts/copilot_demand_intake_01_check.js',
     'backend/src/ai/chat/copilotDemandIntake.js',

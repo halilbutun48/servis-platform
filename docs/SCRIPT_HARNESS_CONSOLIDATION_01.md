@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `408`
-- Toplam executable tracked file: `1231`
-- Combined registry row: `1639`
-- Root/backend/web/mobile package dağılımı: root `251`, backend `788`, web `96`, mobile `201`
+- Toplam package script entry: `409`
+- Toplam executable tracked file: `1233`
+- Combined registry row: `1642`
+- Root/backend/web/mobile package dağılımı: root `252`, backend `790`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `66`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -137,10 +137,14 @@ Repo: `servis-platform`
 - PASS-minus zero milestone: `UX-SMOKE-PASS-MINUS-ZERO-01`
 - PASS-minus zero docs: `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`
 - PASS-minus zero command: `node backend\scripts\ux_smoke_pass_minus_zero_01_check.js`
-- Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`, `docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md`, `docs/INVITE_BASED_MEMBERSHIP_01.md`, `docs/VERIFIED_SUPPLIER_01.md`, `docs/UX_MARKETPLACE_PANELS_01.md`, `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`
+- Public lead docs: `docs/PUBLIC_LANDING_01.md`, `docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md`, `docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md`, `docs/LEAD_CAPTURE_01.md`, `docs/ONBOARDING_REVIEW_01.md`, `docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md`, `docs/INVITE_BASED_MEMBERSHIP_01.md`, `docs/VERIFIED_SUPPLIER_01.md`, `docs/SUPPLIER_MATCHING_01.md`, `docs/UX_MARKETPLACE_PANELS_01.md`, `docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md`
 - Verified supplier milestone: `VERIFIED-SUPPLIER-01`
 - Verified supplier check: `check:verifiedsupplier01`
 - Verified supplier docs: `docs/VERIFIED_SUPPLIER_01.md`
+- Supplier matching milestone: `SUPPLIER-MATCHING-01`
+- Supplier matching check: `check:suppliermatching01`
+- Supplier matching docs: `docs/SUPPLIER_MATCHING_01.md`
+- Supplier matching helper: `backend/src/ai/chat/supplierMatching.js`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
@@ -311,7 +315,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `194`
+- ACTIVE_CORE: `195`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -327,7 +331,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `639`
+- NEEDS_REVIEW: `641`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -341,14 +345,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 194 |
+| ACTIVE_CORE | 195 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 639 |
+| NEEDS_REVIEW | 641 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -401,6 +405,7 @@ Repo: `servis-platform`
 | root:check:onboardingreviewfinalaudit01 | package.json | root | node backend/scripts/onboarding_review_final_audit_01_check.js | core | ACTIVE_CORE |  | FINAL |  | Breaks canonical verification chain |  |
 | root:check:invitebasedmembership01 | package.json | root | node backend/scripts/invite_based_membership_01_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-INVITEBASEDMEMBERSHIP-01 |  | Breaks canonical verification chain |  |
 | root:check:verifiedsupplier01 | package.json | root | node backend/scripts/verified_supplier_01_check.js | verify-core | ACTIVE_CORE |  | VERIFIED-SUPPLIER-01 |  | Breaks canonical verification chain |  |
+| root:check:suppliermatching01 | package.json | root | node backend/scripts/supplier_matching_01_check.js | core | ACTIVE_CORE |  | SUPPLIER-MATCHING-01 |  | Breaks canonical verification chain |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
@@ -766,6 +771,7 @@ Repo: `servis-platform`
 | copilot_operation_health_engine_01_check.js | backend/scripts/copilot_operation_health_engine_01_check.js | backend | root:check:copilotoperationhealthengine01 | review | NEEDS_REVIEW |  | COPILOT-OPERATION-HEALTH-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_plan_review_engine_01_check.js | backend/scripts/copilot_plan_review_engine_01_check.js | backend | root:check:copilotplanreviewengine01 | review | NEEDS_REVIEW |  | COPILOT-PLAN-REVIEW-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_reasoning_answer_composer_01_check.js | backend/scripts/copilot_reasoning_answer_composer_01_check.js | backend | root:check:copilotreasoninganswercomposer01 | review | NEEDS_REVIEW |  | COPILOT-REASONING-ANSWER-COMPOSER-01-CHECK |  | Owner or chain unclear |  |
+| copilot_rfq_prep_01_check.js | backend/scripts/copilot_rfq_prep_01_check.js | backend | root:check:copilotrfqprep01 | review | NEEDS_REVIEW |  | COPILOT-RFQ-PREP-01-CHECK |  | Owner or chain unclear |  |
 | copilot_risk_scoring_engine_01_check.js | backend/scripts/copilot_risk_scoring_engine_01_check.js | backend | root:check:copilotriskscoringengine01 | review | NEEDS_REVIEW |  | COPILOT-RISK-SCORING-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_role_task_matrix_01_check.js | backend/scripts/copilot_role_task_matrix_01_check.js | backend | root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX-01-CHECK |  | Owner or chain unclear |  |
 | copilot_root_cause_engine_01_check.js | backend/scripts/copilot_root_cause_engine_01_check.js | backend | root:check:copilotrootcauseengine01 | review | NEEDS_REVIEW |  | COPILOT-ROOT-CAUSE-ENGINE-01-CHECK |  | Owner or chain unclear |  |
@@ -1166,6 +1172,7 @@ Repo: `servis-platform`
 | copilotGuidedTaskEngine.js | backend/src/ai/chat/copilotGuidedTaskEngine.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-GUIDED-TASK-ENGINE |  | Owner or chain unclear |  |
 | copilotHumanApprovalPolicy.js | backend/src/ai/chat/copilotHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
 | copilotReasoningAnswerComposer.js | backend/src/ai/chat/copilotReasoningAnswerComposer.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-REASONING-ANSWER-COMPOSER |  | Owner or chain unclear |  |
+| copilotRfqPrep.js | backend/src/ai/chat/copilotRfqPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-RFQ-PREP |  | Owner or chain unclear |  |
 | copilotRoleTaskMatrix.js | backend/src/ai/chat/copilotRoleTaskMatrix.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX |  | Owner or chain unclear |  |
 | copilotRouteReviewHumanApprovalPolicy.js | backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
 | copilotStopRouteDraftPolicy.js | backend/src/ai/chat/copilotStopRouteDraftPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-POLICY |  | Owner or chain unclear |  |
@@ -1407,8 +1414,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| copilot_rfq_prep_01_check.js | backend/scripts/copilot_rfq_prep_01_check.js | backend | root:check:copilotrfqprep01 | review | NEEDS_REVIEW |  | COPILOT-RFQ-PREP-01-CHECK |  | Owner or chain unclear |  |
-| copilotRfqPrep.js | backend/src/ai/chat/copilotRfqPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-RFQ-PREP |  | Owner or chain unclear |  |
+| supplier_matching_01_check.js | backend/scripts/supplier_matching_01_check.js | backend | root:check:suppliermatching01 | product-extensions | NEEDS_REVIEW |  | SUPPLIER-MATCHING-01-CHECK |  | Owner or chain unclear |  |
+| supplierMatching.js | backend/src/ai/chat/supplierMatching.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-MATCHING |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
