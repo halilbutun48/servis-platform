@@ -69,6 +69,7 @@ function main() {
   const aiRoadmap = read('docs/COPILOT_AI_ACTION_ROADMAP_01.md');
   const demandIntakeDoc = read('docs/COPILOT_DEMAND_INTAKE_01.md');
   const demandToAgreementDoc = read('docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md');
+  const offerAnalysisDoc = read('docs/COPILOT_OFFER_ANALYSIS_01.md');
   const guidedDoc = read('docs/COPILOT_GUIDED_TASK_ENGINE_01.md');
   const dynamicDoc = read('docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md');
   const smartDiagnosticDoc = read('docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md');
@@ -87,6 +88,7 @@ function main() {
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const demandIntakeHelper = read('backend/src/ai/chat/copilotDemandIntake.js');
   const demandToAgreementHelper = read('backend/src/ai/chat/copilotDemandToAgreementRoadmap.js');
+  const offerAnalysisHelper = read('backend/src/ai/chat/copilotOfferAnalysis.js');
   const companyAgreementsMobileParityDoc = read('docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md');
   const companyAgreementsPanel = read('web/src/panels/company/AgreementsPanel.jsx');
   const companyAgreementsMobileCards = read('web/src/panels/company/companyAgreementsMobileCards.jsx');
@@ -128,6 +130,7 @@ function main() {
   must(pkg, '"check:verifiedsupplier01": "node backend/scripts/verified_supplier_01_check.js"', 'package.json exposes check:verifiedsupplier01');
   must(pkg, '"check:suppliermatching01": "node backend/scripts/supplier_matching_01_check.js"', 'package.json exposes check:suppliermatching01');
   must(pkg, '"check:supplieroffercollect01": "node backend/scripts/supplier_offer_collect_01_check.js"', 'package.json exposes check:supplieroffercollect01');
+  must(pkg, '"check:copilotofferanalysis01": "node backend/scripts/copilot_offer_analysis_01_check.js"', 'package.json exposes check:copilotofferanalysis01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -332,6 +335,7 @@ function main() {
     'check:verifiedsupplier01',
     'check:suppliermatching01',
     'check:supplieroffercollect01',
+    'check:copilotofferanalysis01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
@@ -561,6 +565,11 @@ function main() {
   must(guide, 'node backend\\scripts\\copilot_rfq_prep_01_check.js', 'script guide includes RFQ prep command');
   must(guide, 'docs/COPILOT_RFQ_PREP_01.md', 'script guide includes RFQ prep doc');
   ordered(guide, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'script guide keeps RFQ prep between demand-to-agreement and human approval');
+  must(guide, 'COPILOT-OFFER-ANALYSIS-01', 'script guide mentions offer analysis milestone');
+  must(guide, 'check:copilotofferanalysis01', 'script guide exposes offer analysis check');
+  must(guide, 'node backend\\scripts\\copilot_offer_analysis_01_check.js', 'script guide includes offer analysis command');
+  must(guide, 'docs/COPILOT_OFFER_ANALYSIS_01.md', 'script guide includes offer analysis doc');
+  ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01'], 'script guide keeps offer analysis between supplier offer collect and human approval');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
   must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
@@ -784,6 +793,11 @@ function main() {
   must(harnessCheck, 'SUPPLIER-OFFER-COLLECT-01', 'script harness check knows supplier offer collect milestone');
   must(harnessCheck, 'docs/SUPPLIER_OFFER_COLLECT_01.md', 'script harness check knows supplier offer collect doc');
   must(harnessCheck, 'backend/src/ai/chat/supplierOfferCollect.js', 'script harness check knows supplier offer collect helper');
+  must(harnessCheck, 'check:copilotofferanalysis01', 'script harness check knows offer analysis alias');
+  must(harnessCheck, 'copilot_offer_analysis_01_check.js', 'script harness check knows offer analysis file');
+  must(harnessCheck, 'COPILOT-OFFER-ANALYSIS-01', 'script harness check knows offer analysis milestone');
+  must(harnessCheck, 'docs/COPILOT_OFFER_ANALYSIS_01.md', 'script harness check knows offer analysis doc');
+  must(harnessCheck, 'backend/src/ai/chat/copilotOfferAnalysis.js', 'script harness check knows offer analysis helper');
   must(harnessDoc, 'root:check:verifiedsupplier01', 'script harness doc lists verified supplier root check');
   must(harnessDoc, 'verified_supplier_01_check.js', 'script harness doc lists verified supplier check');
   must(harnessDoc, 'docs/VERIFIED_SUPPLIER_01.md', 'script harness doc lists verified supplier doc');
@@ -793,6 +807,11 @@ function main() {
   must(harnessDoc, 'docs/SUPPLIER_OFFER_COLLECT_01.md', 'script harness doc lists supplier offer collect doc');
   must(harnessDoc, 'SUPPLIER-OFFER-COLLECT-01', 'script harness doc lists supplier offer collect milestone');
   must(harnessDoc, 'backend/src/ai/chat/supplierOfferCollect.js', 'script harness doc lists supplier offer collect helper');
+  must(harnessDoc, 'root:check:copilotofferanalysis01', 'script harness doc lists offer analysis root check');
+  must(harnessDoc, 'copilot_offer_analysis_01_check.js', 'script harness doc lists offer analysis check');
+  must(harnessDoc, 'docs/COPILOT_OFFER_ANALYSIS_01.md', 'script harness doc lists offer analysis doc');
+  must(harnessDoc, 'COPILOT-OFFER-ANALYSIS-01', 'script harness doc lists offer analysis milestone');
+  must(harnessDoc, 'backend/src/ai/chat/copilotOfferAnalysis.js', 'script harness doc lists offer analysis helper');
   must(harnessCheck, 'check:uxmarketplacepanels01', 'script harness check knows marketplace panels alias');
   must(harnessCheck, 'ux_marketplace_panels_01_check.js', 'script harness check knows marketplace panels file');
   must(harnessCheck, 'UX-MARKETPLACE-PANELS-01', 'script harness check knows marketplace panels milestone');
@@ -1123,13 +1142,23 @@ function main() {
   must(primer, 'COPILOT-RFQ-PREP-01', 'primer mentions RFQ prep milestone');
   must(primer, 'check:copilotrfqprep01', 'primer exposes RFQ prep check');
   must(primer, 'docs/COPILOT_RFQ_PREP_01.md', 'primer links RFQ prep doc');
+  must(roadmap, 'COPILOT-OFFER-ANALYSIS-01', 'roadmap keeps offer analysis milestone');
+  must(roadmap, 'draft-only offer analysis companion milestone', 'roadmap keeps offer analysis wording');
+  must(roadmap, 'docs/COPILOT_OFFER_ANALYSIS_01.md', 'roadmap links offer analysis doc');
+  must(offerAnalysisDoc, 'COPILOT-OFFER-ANALYSIS-01', 'offer analysis doc keeps milestone wording');
+  must(offerAnalysisDoc, 'check:copilotofferanalysis01', 'offer analysis doc keeps canonical check wording');
+  must(offerAnalysisHelper, 'COPILOT_OFFER_ANALYSIS_VERSION', 'offer analysis helper exports version');
+  must(offerAnalysisHelper, 'composeOfferAnalysisAnswer', 'offer analysis helper exports answer composer');
+  must(primer, 'COPILOT-OFFER-ANALYSIS-01', 'primer mentions offer analysis milestone');
+  must(primer, 'check:copilotofferanalysis01', 'primer exposes offer analysis check');
+  must(primer, 'docs/COPILOT_OFFER_ANALYSIS_01.md', 'primer links offer analysis doc');
   must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
   must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
   must(primer, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'primer links human approval doc');
   must(primer, 'COPILOT-EXCEL-DEMAND-IMPORT-01', 'primer mentions Excel demand import milestone');
   must(primer, 'check:copilotexceldemandimport01', 'primer exposes Excel demand import check');
   must(primer, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'primer links Excel demand import doc');
-  ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps RFQ prep before human approval');
+  ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps offer analysis before human approval');
   must(aiRoadmap, 'SEFER-ABI-REASONING-ASSISTANT-01', 'AI action roadmap references reasoning assistant milestone');
   must(aiRoadmap, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'AI action roadmap references all-roles reasoning assistant milestone');
   must(aiRoadmap, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'AI action roadmap references reasoning answer composer milestone');
@@ -1323,7 +1352,7 @@ function main() {
   must(harnessDoc, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'script harness doc lists Excel demand import doc');
   must(harnessDoc, 'node backend\\scripts\\copilot_excel_demand_import_01_check.js', 'script harness doc lists Excel demand import command');
   must(harnessDoc, 'backend/src/ai/chat/copilotExcelDemandImportPolicy.js', 'script harness doc lists Excel demand import helper');
-  ordered(harnessDoc, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
+  ordered(harnessDoc, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Offer analysis milestone: `COPILOT-OFFER-ANALYSIS-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps offer analysis between supplier offer collect and human approval');
   must(harnessDoc, 'Copilot dynamic question engine milestone: `COPILOT-DYNAMIC-QUESTION-ENGINE-01`', 'script harness doc lists dynamic question engine milestone');
   must(harnessDoc, 'root:check:copilotdynamicquestionengine01', 'script harness doc lists dynamic question engine root check');
   must(harnessDoc, 'copilot_dynamic_question_engine_01_check.js', 'script harness doc lists dynamic question engine command');

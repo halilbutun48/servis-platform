@@ -444,6 +444,10 @@ async function main() {
       'backend/scripts/supplier_offer_collect_01_check.js',
       'backend/src/ai/chat/supplierOfferCollect.js',
       'docs/SUPPLIER_OFFER_COLLECT_01.md',
+      // Offer analysis companion files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/copilot_offer_analysis_01_check.js',
+      'backend/src/ai/chat/copilotOfferAnalysis.js',
+      'docs/COPILOT_OFFER_ANALYSIS_01.md',
       'backend/scripts/sefer_abi_reasoning_assistant_01_check.js',
       'backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js',
       'backend/scripts/hot_file_split_ai_chat_composers_01_check.js',

@@ -46,6 +46,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/supplier_offer_collect_01_check.js",
   "backend/src/ai/chat/supplierMatching.js",
   "backend/src/ai/chat/supplierOfferCollect.js",
+  "backend/src/ai/chat/copilotOfferAnalysis.js",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
   "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
@@ -54,6 +55,7 @@ const workingTreeCompatFiles = [
   "docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md",
   "docs/SUPPLIER_MATCHING_01.md",
   "docs/SUPPLIER_OFFER_COLLECT_01.md",
+  "docs/COPILOT_OFFER_ANALYSIS_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
@@ -365,6 +367,7 @@ function slugToMilestone(slug) {
     [/copilotroletaskmatrix0?1/i, "COPILOT-ROLE-TASK-MATRIX-01"], // check:copilotroletaskmatrix01
     [/verifiedsupplier0?1/i, "VERIFIED-SUPPLIER-01"],
     [/suppliermatching0?1/i, "SUPPLIER-MATCHING-01"], // check:suppliermatching01
+    [/copilotofferanalysis0?1/i, "COPILOT-OFFER-ANALYSIS-01"], // check:copilotofferanalysis01
     [/uxmarketplacepanels0?1/i, "UX-MARKETPLACE-PANELS-01"], // check:uxmarketplacepanels01
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
     [/uxroomcompanyshiftsmobilecardfix0?1/i, "UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01"], // check:uxroomcompanyshiftsmobilecardfix01
@@ -1648,6 +1651,12 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Supplier offer collect check: \`check:supplieroffercollect01\``);
   out.push(`- Supplier offer collect docs: \`docs/SUPPLIER_OFFER_COLLECT_01.md\``);
   out.push(`- Supplier offer collect helper: \`backend/src/ai/chat/supplierOfferCollect.js\``);
+  out.push(`- Offer analysis milestone: \`COPILOT-OFFER-ANALYSIS-01\``);
+  out.push(`- Offer analysis alias: \`check:copilotofferanalysis01\``);
+  out.push(`- Offer analysis docs: \`docs/COPILOT_OFFER_ANALYSIS_01.md\``);
+  out.push(`- Offer analysis command: \`node backend\\scripts\\copilot_offer_analysis_01_check.js\``);
+  out.push(`- Offer analysis helper: \`backend/src/ai/chat/copilotOfferAnalysis.js\``);
+  out.push(`- Offer analysis root check: \`root:check:copilotofferanalysis01\``);
   out.push(`- Marketplace panels milestone: \`UX-MARKETPLACE-PANELS-01\``);
   out.push(`- Marketplace panels check: \`check:uxmarketplacepanels01\``);
   out.push(`- Marketplace panels docs: \`docs/UX_MARKETPLACE_PANELS_01.md\``);
@@ -2079,6 +2088,12 @@ function verifyDoc(docText, summary) {
     "Supplier offer collect check",
     "Supplier offer collect docs",
     "Supplier offer collect helper",
+    "Offer analysis milestone",
+    "Offer analysis alias",
+    "Offer analysis docs",
+    "Offer analysis command",
+    "Offer analysis helper",
+    "Offer analysis root check",
     "UX-MARKETPLACE-PANELS-01",
     "node backend\\scripts\\product_flow_button_audit_01_check.js",
     "node backend\\scripts\\product_flow_button_audit_01.mjs",
@@ -2297,7 +2312,7 @@ function verifyDoc(docText, summary) {
     "REMOVED:",
   ];
   ordered(docText, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
-  ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching, offer collect and marketplace panels');
+  ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Offer analysis milestone: `COPILOT-OFFER-ANALYSIS-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching, offer collect, offer analysis and marketplace panels');
   for (const needle of mustContain) {
     if (!normalize(docText).includes(normalize(needle))) {
       throw new Error(`FAIL doc missing: ${needle}`);

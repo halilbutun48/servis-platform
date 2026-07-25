@@ -4,6 +4,7 @@ Tarih: 2026-07-24
 Repo: `servis-platform`
 
 Bu doküman, `COPILOT-RFQ-PREP-01` sonrası aday tedarikçi uygunluk hazırlığını draft-only, human-approved ve commit-external sınırda kilitler. Amaç, RFQ prep çıktısını supplier matching inputuna dönüştürmek; adayları yalnızca static/fixture veriyle ön değerlendirmeden geçirmek ve hiçbir tedarikçiyle gerçek temas kurmamaktır.
+Bu taslak, downstream `SUPPLIER-OFFER-COLLECT-01`, `COPILOT-OFFER-ANALYSIS-01` ve `COPILOT-OFFER-RECOMMENDATION-01` hatlarına güvenli shortlist hazırlar.
 
 ## 1) Amaç
 - RFQ prep çıktısını supplier matching inputuna dönüştürür.
@@ -16,6 +17,9 @@ Bu doküman, `COPILOT-RFQ-PREP-01` sonrası aday tedarikçi uygunluk hazırlığ
 - `COPILOT-RFQ-PREP-01`
 - `VERIFIED-SUPPLIER-01`
 - `SUPPLIER-MATCHING-01`
+- `SUPPLIER-OFFER-COLLECT-01`
+- `COPILOT-OFFER-ANALYSIS-01`
+- `COPILOT-OFFER-RECOMMENDATION-01`
 - `UX-MARKETPLACE-PANELS-01`
 - `PRODUCT-FLOW-BUTTON-AUDIT-01`
 
