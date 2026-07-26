@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `414`
-- Toplam executable tracked file: `1243`
-- Combined registry row: `1657`
-- Root/backend/web/mobile package dağılımı: root `257`, backend `800`, web `96`, mobile `201`
+- Toplam package script entry: `415`
+- Toplam executable tracked file: `1245`
+- Combined registry row: `1660`
+- Root/backend/web/mobile package dağılımı: root `258`, backend `802`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `66`
+- Docs indexed: `67`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -172,6 +172,12 @@ Repo: `servis-platform`
 - Shift to agreement prep docs: `docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md`
 - Shift to agreement prep command: `node backend\scripts\copilot_shift_to_agreement_prep_01_check.js`
 - Shift to agreement prep helper: `backend/src/ai/chat/copilotShiftToAgreementPrep.js`
+- Dispatch action prep milestone: `COPILOT-DISPATCH-ACTION-PREP-01`
+- Dispatch action prep check: `check:copilotdispatchactionprep01`
+- Dispatch action prep root check: `root:check:copilotdispatchactionprep01`
+- Dispatch action prep docs: `docs/COPILOT_DISPATCH_ACTION_PREP_01.md`
+- Dispatch action prep command: `node backend\scripts\copilot_dispatch_action_prep_01_check.js`
+- Dispatch action prep helper: `backend/src/ai/chat/copilotDispatchActionPrep.js`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
@@ -342,7 +348,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `198`
+- ACTIVE_CORE: `199`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -358,7 +364,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `653`
+- NEEDS_REVIEW: `655`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -372,14 +378,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 198 |
+| ACTIVE_CORE | 199 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 653 |
+| NEEDS_REVIEW | 655 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -438,6 +444,7 @@ Repo: `servis-platform`
 | root:check:copilotnegotiationassist01 | package.json | root | node backend/scripts/copilot_negotiation_assist_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-COPILOTNEGOTIATIONASSIST-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotofferrecommendation01 | package.json | root | node backend/scripts/copilot_offer_recommendation_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-OFFER-RECOMMENDATION-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotshifttoagreementprep01 | package.json | root | node backend/scripts/copilot_shift_to_agreement_prep_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-SHIFT-TO-AGREEMENT-PREP-01 |  | Breaks canonical verification chain |  |
+| root:check:copilotdispatchactionprep01 | package.json | root | node backend/scripts/copilot_dispatch_action_prep_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-DISPATCH-ACTION-PREP-01 |  | Breaks canonical verification chain |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
@@ -811,6 +818,7 @@ Repo: `servis-platform`
 | copilot_role_task_matrix_01_check.js | backend/scripts/copilot_role_task_matrix_01_check.js | backend | root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX-01-CHECK |  | Owner or chain unclear |  |
 | copilot_root_cause_engine_01_check.js | backend/scripts/copilot_root_cause_engine_01_check.js | backend | root:check:copilotrootcauseengine01 | review | NEEDS_REVIEW |  | COPILOT-ROOT-CAUSE-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_route_review_human_approval_01_check.js | backend/scripts/copilot_route_review_human_approval_01_check.js | backend | root:check:copilotroutereviewhumanapproval01 | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01-CHECK |  | Owner or chain unclear |  |
+| copilot_shift_to_agreement_prep_01_check.js | backend/scripts/copilot_shift_to_agreement_prep_01_check.js | backend | root:check:copilotshifttoagreementprep01 | review | NEEDS_REVIEW |  | COPILOT-SHIFT-TO-AGREEMENT-PREP-01-CHECK |  | Owner or chain unclear |  |
 | copilot_smart_diagnostic_engine_01_check.js | backend/scripts/copilot_smart_diagnostic_engine_01_check.js | backend | root:check:copilotsmartdiagnosticengine01 | review | NEEDS_REVIEW |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_stop_route_draft_01_check.js | backend/scripts/copilot_stop_route_draft_01_check.js | backend | root:check:copilotstoproutedraft01 | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-01-CHECK |  | Owner or chain unclear |  |
 | copilot_workflow_reasoning_engine_01_check.js | backend/scripts/copilot_workflow_reasoning_engine_01_check.js | backend | root:check:copilotworkflowreasoningengine01 | review | NEEDS_REVIEW |  | COPILOT-WORKFLOW-REASONING-ENGINE-01-CHECK |  | Owner or chain unclear |  |
@@ -1215,6 +1223,7 @@ Repo: `servis-platform`
 | copilotRfqPrep.js | backend/src/ai/chat/copilotRfqPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-RFQ-PREP |  | Owner or chain unclear |  |
 | copilotRoleTaskMatrix.js | backend/src/ai/chat/copilotRoleTaskMatrix.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROLE-TASK-MATRIX |  | Owner or chain unclear |  |
 | copilotRouteReviewHumanApprovalPolicy.js | backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-POLICY |  | Owner or chain unclear |  |
+| copilotShiftToAgreementPrep.js | backend/src/ai/chat/copilotShiftToAgreementPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-SHIFT-TO-AGREEMENT-PREP |  | Owner or chain unclear |  |
 | copilotStopRouteDraftPolicy.js | backend/src/ai/chat/copilotStopRouteDraftPolicy.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-POLICY |  | Owner or chain unclear |  |
 | etaSanity.js | backend/src/ai/chat/etaSanity.js | backend |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
 | excelToRouteReadinessRedteamPack.js | backend/src/ai/chat/excelToRouteReadinessRedteamPack.js | backend |  | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-PACK |  | Owner or chain unclear |  |
@@ -1456,8 +1465,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| copilot_shift_to_agreement_prep_01_check.js | backend/scripts/copilot_shift_to_agreement_prep_01_check.js | backend | root:check:copilotshifttoagreementprep01 | review | NEEDS_REVIEW |  | COPILOT-SHIFT-TO-AGREEMENT-PREP-01-CHECK |  | Owner or chain unclear |  |
-| copilotShiftToAgreementPrep.js | backend/src/ai/chat/copilotShiftToAgreementPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-SHIFT-TO-AGREEMENT-PREP |  | Owner or chain unclear |  |
+| copilot_dispatch_action_prep_01_check.js | backend/scripts/copilot_dispatch_action_prep_01_check.js | backend | root:check:copilotdispatchactionprep01 | review | NEEDS_REVIEW |  | COPILOT-DISPATCH-ACTION-PREP-01-CHECK |  | Owner or chain unclear |  |
+| copilotDispatchActionPrep.js | backend/src/ai/chat/copilotDispatchActionPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-DISPATCH-ACTION-PREP |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

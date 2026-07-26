@@ -15,6 +15,7 @@ Repo: `servis-platform`
 - Agreement/contract create, approve, sign, execute açmaz.
 - Supplier contact, RFQ send, offer accept/reject, messaging/email/SMS/push açmaz.
 - DB write, audit event write, route/service/prisma mutation ve backend/prisma diff açmaz.
+- No dispatch apply yok.
 - Bu milestone yalnızca docs/check/helper seviyesindedir.
 - KVKK / PII-safe minimum veri yaklaşımı korunur.
 

@@ -255,6 +255,14 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-OFFER-RECOMMENDATION-01`, `COPILOT-HUMAN-APPROVAL-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, agreement/contract execute, dispatch apply ve route apply açmaz.
 - Sonraki güvenli hatlar: `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-DISPATCH-ACTION-PREP-01`, `COPILOT-ACTION-PREP-01`.
 
+### COPILOT-DISPATCH-ACTION-PREP-01 [CHECK]
+- `check:copilotdispatchactionprep01` Sefer Abi için read-only dispatch prep companion milestone'ını docs/check olarak kilitler; shift-to-agreement prep sonrası gelen dispatch readiness, driver/vehicle readiness, GPS/safe-drive readiness ve evidence checklist hazırlığını ayrı docs/check katmanı olarak taşır.
+- Check script: `node backend\scripts\copilot_dispatch_action_prep_01_check.js`
+- Doküman: `docs/COPILOT_DISPATCH_ACTION_PREP_01.md`
+- Static helper: `backend/src/ai/chat/copilotDispatchActionPrep.js`
+- Bu check, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`, `COPILOT-HUMAN-APPROVAL-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, dispatch apply, route apply, driver/vehicle assignment ve provider credential management açmaz.
+- Sonraki güvenli hatlar: `COPILOT-ACTION-PREP-01`, `UX-MARKETPLACE-PANELS-01`.
+
 ### COPILOT-EXCEL-DEMAND-IMPORT-01 [CHECK]
 - `check:copilotexceldemandimport01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check olarak kilitler; runtime import execute, file upload endpoint ve DB write açmaz.
 - Check script: `node backend\scripts\copilot_excel_demand_import_01_check.js`

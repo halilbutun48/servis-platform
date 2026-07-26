@@ -301,6 +301,10 @@ async function main() {
     'backend/scripts/copilot_shift_to_agreement_prep_01_check.js',
     'backend/src/ai/chat/copilotShiftToAgreementPrep.js',
     'docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md',
+    // Dispatch prep companion files are legitimate scope for this consolidated route-review pass.
+    'backend/scripts/copilot_dispatch_action_prep_01_check.js',
+    'backend/src/ai/chat/copilotDispatchActionPrep.js',
+    'docs/COPILOT_DISPATCH_ACTION_PREP_01.md',
     'docs/COPILOT_NEGOTIATION_ASSIST_01.md',
     'docs/COPILOT_HUMAN_APPROVAL_01.md',
     'backend/scripts/copilot_workflow_reasoning_engine_01_check.js',
@@ -376,6 +380,7 @@ async function main() {
     'web/src/panels/room/OperationHealthPanel.jsx',
     'web/src/panels/room/ShiftsPanel.jsx',
     'web/src/panels/room/VehiclesPanel.jsx',
+    'web/src/panels/room/DriversPanel.jsx',
     'web/src/panels/room/roomShiftsPanelWorkflow.js',
     'web/src/panels/room/roomShiftsPanelActions.js',
     'web/src/panels/room/roomVehiclesPanelActions.js',

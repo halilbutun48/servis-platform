@@ -261,6 +261,7 @@ function main() {
       "backend/src/services/dashboardBulk.js",
       "web/src/panels/room/ShiftsPanel.jsx",
       "web/src/panels/room/VehiclesPanel.jsx",
+      "web/src/panels/room/DriversPanel.jsx",
       "web/src/panels/room/roomShiftsPanelWorkflow.js",
       "web/src/panels/room/roomShiftsPanelActions.js",
       "web/src/panels/room/roomVehiclesPanelActions.js",

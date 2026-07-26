@@ -505,6 +505,7 @@ function main() {
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
+    "web/src/panels/room/DriversPanel.jsx",
   ]);
 
   allWithin(status, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"], "working tree stays within room/company shifts mobile card fix scope");

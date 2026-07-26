@@ -460,7 +460,7 @@ Kullanılmayacak cümleler:
 - COPILOT-NEGOTIATION-ASSIST-01: draft-only negotiation prep companion milestone; offer analysis çıktısını pazarlık hazırlık taslağına, karşı teklif draftına ve soru setine çevirir; supplier selection, offer accept/reject, contact, RFQ send, agreement execute ve provider credential management açmaz. Detay: `docs/COPILOT_NEGOTIATION_ASSIST_01.md`
 - COPILOT-OFFER-RECOMMENDATION-01: negotiation assist sonrası gelen read-only recommendation companion milestone; supplier selection, offer accept/reject, contact, RFQ send ve provider credential management açmaz. Detay: `docs/COPILOT_OFFER_RECOMMENDATION_01.md`
 - COPILOT-SHIFT-TO-AGREEMENT-PREP-01: offer recommendation sonrası gelen read-only agreement prep companion milestone; `check:copilotshifttoagreementprep01`, `docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md` ve `backend/src/ai/chat/copilotShiftToAgreementPrep.js` ile yaşar; supplier selection, offer accept/reject, supplier contact, RFQ send, agreement/contract execute, dispatch apply, route apply ve provider credential management açmaz.
-- COPILOT-DISPATCH-ACTION-PREP-01
+- COPILOT-DISPATCH-ACTION-PREP-01: shift sonrası gelen read-only dispatch prep companion milestone; `check:copilotdispatchactionprep01`, `docs/COPILOT_DISPATCH_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotDispatchActionPrep.js` ile yaşar; supplier selection, offer accept/reject, supplier contact, RFQ send, agreement/contract execute, dispatch apply, route apply, driver/vehicle assignment ve provider credential management açmaz.
 - COPILOT-ACTION-PREP-01
 
 ### F) VOICE / PROACTIVE / AUTOPILOT

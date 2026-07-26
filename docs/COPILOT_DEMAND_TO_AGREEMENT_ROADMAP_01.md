@@ -78,6 +78,7 @@ Repo: `servis-platform`
 - Runtime AI action yok.
 
 ### STAGE 8 - Dispatch / Operation Prep
+- `COPILOT-DISPATCH-ACTION-PREP-01` bu stage için read-only dispatch prep companion milestone'ıdır; `check:copilotdispatchactionprep01`, `docs/COPILOT_DISPATCH_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotDispatchActionPrep.js` ile yaşar.
 - Operasyon başlamadan önce dispatch readiness, driver/vehicle readiness, GPS/safe-drive readiness ve evidence checklist hazırlar.
 - Dispatch apply, route apply ve driver/vehicle assignment yok.
 

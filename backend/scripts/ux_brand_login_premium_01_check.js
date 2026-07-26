@@ -471,6 +471,7 @@ function main() {
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/room/OperationHealthPanel.jsx",
+    "web/src/panels/room/DriversPanel.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
   ]);
