@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `412`
-- Toplam executable tracked file: `1239`
-- Combined registry row: `1651`
-- Root/backend/web/mobile package dağılımı: root `255`, backend `796`, web `96`, mobile `201`
+- Toplam package script entry: `413`
+- Toplam executable tracked file: `1240`
+- Combined registry row: `1653`
+- Root/backend/web/mobile package dağılımı: root `256`, backend `797`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `66`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -161,6 +161,12 @@ Repo: `servis-platform`
 - Negotiation assist command: `node backend\scripts\copilot_negotiation_assist_01_check.js`
 - Negotiation assist helper: `backend/src/ai/chat/copilotNegotiationAssist.js`
 - Negotiation assist root check: `root:check:copilotnegotiationassist01`
+- Offer recommendation milestone: `COPILOT-OFFER-RECOMMENDATION-01`
+- Offer recommendation check: `check:copilotofferrecommendation01`
+- Offer recommendation docs: `docs/COPILOT_OFFER_RECOMMENDATION_01.md`
+- Offer recommendation command: `node backend\scripts\copilot_offer_recommendation_01_check.js`
+- Offer recommendation helper: `backend/src/ai/chat/copilotOfferRecommendation.js`
+- Offer recommendation root check: `root:check:copilotofferrecommendation01`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`

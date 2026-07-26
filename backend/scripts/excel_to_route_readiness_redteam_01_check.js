@@ -452,6 +452,10 @@ async function main() {
       'backend/src/ai/chat/copilotNegotiationAssist.js',
       'backend/src/ai/chat/copilotHumanApprovalPolicy.js',
       'docs/COPILOT_NEGOTIATION_ASSIST_01.md',
+      // Offer recommendation companion files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/copilot_offer_recommendation_01_check.js',
+      'backend/src/ai/chat/copilotOfferRecommendation.js',
+      'docs/COPILOT_OFFER_RECOMMENDATION_01.md',
       'docs/COPILOT_HUMAN_APPROVAL_01.md',
       'backend/scripts/sefer_abi_reasoning_assistant_01_check.js',
       'backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js',

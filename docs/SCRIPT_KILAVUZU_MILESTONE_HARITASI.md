@@ -220,6 +220,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `SUPPLIER-OFFER-COLLECT-01`, `COPILOT-OFFER-ANALYSIS-01`, `COPILOT-OFFER-RECOMMENDATION-01` ve `COPILOT-HUMAN-APPROVAL-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, supplier contact ve RFQ send açmaz.
 - Sonraki güvenli hatlar: `COPILOT-OFFER-RECOMMENDATION-01`, `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`.
 
+### COPILOT-OFFER-RECOMMENDATION-01 [CHECK]
+- `check:copilotofferrecommendation01` Sefer Abi için read-only recommendation companion milestone'ını docs/check olarak kilitler; offer analysis ve negotiation assist sinyallerini öneri taslağına ve onay paketi draftına çevirir ama supplier selection, offer accept/reject, supplier contact, RFQ send, agreement execute, dispatch apply, payment execute ve provider credential management açmaz.
+- Root check: `root:check:copilotofferrecommendation01`
+- Check script: `node backend\scripts\copilot_offer_recommendation_01_check.js`
+- Doküman: `docs/COPILOT_OFFER_RECOMMENDATION_01.md`
+- Static helper: `backend/src/ai/chat/copilotOfferRecommendation.js`
+- Bu check, `COPILOT-OFFER-ANALYSIS-01`, `COPILOT-NEGOTIATION-ASSIST-01` ve `COPILOT-HUMAN-APPROVAL-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, supplier contact ve RFQ send açmaz.
+- Sonraki güvenli hatlar: `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`, `COPILOT-DISPATCH-ACTION-PREP-01`.
+
 ### COPILOT-HUMAN-APPROVAL-01 [CHECK]
 - `check:copilothumanapproval01` Sefer Abi için kritik işlemlerde insan onayı / confirmation modelini docs/check olarak kilitler; READ / EXPLAIN / RECOMMEND / PREPARE / DRAFT / RISK_SUMMARY / NEXT_STEP sınırını görünür kılar, runtime AI action açmaz.
 - Check script: `node backend\scripts\copilot_human_approval_01_check.js`

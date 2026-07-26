@@ -71,6 +71,7 @@ function main() {
   const demandToAgreementDoc = read('docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md');
   const offerAnalysisDoc = read('docs/COPILOT_OFFER_ANALYSIS_01.md');
   const negotiationAssistDoc = read('docs/COPILOT_NEGOTIATION_ASSIST_01.md');
+  const offerRecommendationDoc = read('docs/COPILOT_OFFER_RECOMMENDATION_01.md');
   const guidedDoc = read('docs/COPILOT_GUIDED_TASK_ENGINE_01.md');
   const dynamicDoc = read('docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md');
   const smartDiagnosticDoc = read('docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md');
@@ -91,6 +92,7 @@ function main() {
   const demandToAgreementHelper = read('backend/src/ai/chat/copilotDemandToAgreementRoadmap.js');
   const offerAnalysisHelper = read('backend/src/ai/chat/copilotOfferAnalysis.js');
   const negotiationAssistHelper = read('backend/src/ai/chat/copilotNegotiationAssist.js');
+  const offerRecommendationHelper = read('backend/src/ai/chat/copilotOfferRecommendation.js');
   const companyAgreementsMobileParityDoc = read('docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md');
   const companyAgreementsPanel = read('web/src/panels/company/AgreementsPanel.jsx');
   const companyAgreementsMobileCards = read('web/src/panels/company/companyAgreementsMobileCards.jsx');
@@ -134,6 +136,7 @@ function main() {
   must(pkg, '"check:supplieroffercollect01": "node backend/scripts/supplier_offer_collect_01_check.js"', 'package.json exposes check:supplieroffercollect01');
   must(pkg, '"check:copilotofferanalysis01": "node backend/scripts/copilot_offer_analysis_01_check.js"', 'package.json exposes check:copilotofferanalysis01');
   must(pkg, '"check:copilotnegotiationassist01": "node backend/scripts/copilot_negotiation_assist_01_check.js"', 'package.json exposes check:copilotnegotiationassist01');
+  must(pkg, '"check:copilotofferrecommendation01": "node backend/scripts/copilot_offer_recommendation_01_check.js"', 'package.json exposes check:copilotofferrecommendation01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -340,6 +343,7 @@ function main() {
     'check:supplieroffercollect01',
     'check:copilotofferanalysis01',
     'check:copilotnegotiationassist01',
+    'check:copilotofferrecommendation01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
@@ -577,6 +581,11 @@ function main() {
   must(guide, 'check:copilotnegotiationassist01', 'script guide exposes negotiation assist check');
   must(guide, 'node backend\\scripts\\copilot_negotiation_assist_01_check.js', 'script guide includes negotiation assist command');
   must(guide, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'script guide includes negotiation assist doc');
+  must(guide, 'COPILOT-OFFER-RECOMMENDATION-01', 'script guide mentions offer recommendation milestone');
+  must(guide, 'check:copilotofferrecommendation01', 'script guide exposes offer recommendation check');
+  must(guide, 'node backend\\scripts\\copilot_offer_recommendation_01_check.js', 'script guide includes offer recommendation command');
+  must(guide, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'script guide includes offer recommendation doc');
+  must(guide, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'script guide includes offer recommendation helper');
   ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01'], 'script guide keeps negotiation assist after offer analysis and before recommendation');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
@@ -811,6 +820,11 @@ function main() {
   must(harnessCheck, 'COPILOT-NEGOTIATION-ASSIST-01', 'script harness check knows negotiation assist milestone');
   must(harnessCheck, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'script harness check knows negotiation assist doc');
   must(harnessCheck, 'backend/src/ai/chat/copilotNegotiationAssist.js', 'script harness check knows negotiation assist helper');
+  must(harnessCheck, 'check:copilotofferrecommendation01', 'script harness check knows offer recommendation alias');
+  must(harnessCheck, 'copilot_offer_recommendation_01_check.js', 'script harness check knows offer recommendation file');
+  must(harnessCheck, 'COPILOT-OFFER-RECOMMENDATION-01', 'script harness check knows offer recommendation milestone');
+  must(harnessCheck, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'script harness check knows offer recommendation doc');
+  must(harnessCheck, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'script harness check knows offer recommendation helper');
   must(harnessDoc, 'root:check:verifiedsupplier01', 'script harness doc lists verified supplier root check');
   must(harnessDoc, 'verified_supplier_01_check.js', 'script harness doc lists verified supplier check');
   must(harnessDoc, 'docs/VERIFIED_SUPPLIER_01.md', 'script harness doc lists verified supplier doc');
@@ -830,6 +844,11 @@ function main() {
   must(harnessDoc, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'script harness doc lists negotiation assist doc');
   must(harnessDoc, 'COPILOT-NEGOTIATION-ASSIST-01', 'script harness doc lists negotiation assist milestone');
   must(harnessDoc, 'backend/src/ai/chat/copilotNegotiationAssist.js', 'script harness doc lists negotiation assist helper');
+  must(harnessDoc, 'root:check:copilotofferrecommendation01', 'script harness doc lists offer recommendation root check');
+  must(harnessDoc, 'copilot_offer_recommendation_01_check.js', 'script harness doc lists offer recommendation check');
+  must(harnessDoc, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'script harness doc lists offer recommendation doc');
+  must(harnessDoc, 'COPILOT-OFFER-RECOMMENDATION-01', 'script harness doc lists offer recommendation milestone');
+  must(harnessDoc, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'script harness doc lists offer recommendation helper');
   must(harnessCheck, 'check:uxmarketplacepanels01', 'script harness check knows marketplace panels alias');
   must(harnessCheck, 'ux_marketplace_panels_01_check.js', 'script harness check knows marketplace panels file');
   must(harnessCheck, 'UX-MARKETPLACE-PANELS-01', 'script harness check knows marketplace panels milestone');
@@ -1165,6 +1184,8 @@ function main() {
   must(roadmap, 'docs/COPILOT_OFFER_ANALYSIS_01.md', 'roadmap links offer analysis doc');
   must(roadmap, 'COPILOT-NEGOTIATION-ASSIST-01', 'roadmap keeps negotiation assist milestone');
   must(roadmap, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'roadmap links negotiation assist doc');
+  must(roadmap, 'COPILOT-OFFER-RECOMMENDATION-01', 'roadmap keeps offer recommendation milestone');
+  must(roadmap, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'roadmap links offer recommendation doc');
   ordered(roadmap, ['COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01'], 'roadmap keeps negotiation assist between offer analysis and offer recommendation');
   must(offerAnalysisDoc, 'COPILOT-OFFER-ANALYSIS-01', 'offer analysis doc keeps milestone wording');
   must(offerAnalysisDoc, 'check:copilotofferanalysis01', 'offer analysis doc keeps canonical check wording');
@@ -1174,6 +1195,11 @@ function main() {
   must(negotiationAssistDoc, 'check:copilotnegotiationassist01', 'negotiation assist doc keeps canonical check wording');
   must(negotiationAssistHelper, 'COPILOT_NEGOTIATION_ASSIST_VERSION', 'negotiation assist helper exports version');
   must(negotiationAssistHelper, 'COPILOT_NEGOTIATION_ASSIST_PUBLIC_PROMISE', 'negotiation assist helper exports public promise');
+  must(offerRecommendationDoc, 'COPILOT-OFFER-RECOMMENDATION-01', 'offer recommendation doc keeps milestone wording');
+  must(offerRecommendationDoc, 'check:copilotofferrecommendation01', 'offer recommendation doc keeps canonical check wording');
+  must(offerRecommendationHelper, 'COPILOT_OFFER_RECOMMENDATION_VERSION', 'offer recommendation helper exports version');
+  must(offerRecommendationHelper, 'COPILOT_OFFER_RECOMMENDATION_PUBLIC_PROMISE', 'offer recommendation helper exports public promise');
+  must(offerRecommendationHelper, 'composeOfferRecommendationAnswer', 'offer recommendation helper exports answer composer');
   must(primer, 'COPILOT-OFFER-ANALYSIS-01', 'primer mentions offer analysis milestone');
   must(primer, 'check:copilotofferanalysis01', 'primer exposes offer analysis check');
   must(primer, 'docs/COPILOT_OFFER_ANALYSIS_01.md', 'primer links offer analysis doc');
@@ -1181,6 +1207,8 @@ function main() {
   must(primer, 'check:copilotnegotiationassist01', 'primer exposes negotiation assist check');
   must(primer, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'primer links negotiation assist doc');
   must(primer, 'COPILOT-OFFER-RECOMMENDATION-01', 'primer mentions offer recommendation milestone');
+  must(primer, 'check:copilotofferrecommendation01', 'primer exposes offer recommendation check');
+  must(primer, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'primer links offer recommendation doc');
   must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
   must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
   must(primer, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'primer links human approval doc');

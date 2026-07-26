@@ -293,6 +293,10 @@ async function main() {
     'backend/scripts/copilot_offer_analysis_01_check.js',
     'backend/src/ai/chat/copilotOfferAnalysis.js',
     'docs/COPILOT_OFFER_ANALYSIS_01.md',
+    // Offer recommendation companion files are legitimate scope for this consolidated route-review pass.
+    'backend/scripts/copilot_offer_recommendation_01_check.js',
+    'backend/src/ai/chat/copilotOfferRecommendation.js',
+    'docs/COPILOT_OFFER_RECOMMENDATION_01.md',
     'docs/COPILOT_NEGOTIATION_ASSIST_01.md',
     'docs/COPILOT_HUMAN_APPROVAL_01.md',
     'backend/scripts/copilot_workflow_reasoning_engine_01_check.js',

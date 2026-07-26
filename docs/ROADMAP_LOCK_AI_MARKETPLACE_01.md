@@ -458,7 +458,7 @@ Kullanılmayacak cümleler:
 - SUPPLIER-OFFER-COLLECT-01: SUPPLIER-MATCHING-01 sonrasında gelen draft-only offer collection companion milestone; supplier matching shortlistini offer collection inputuna ve draft-only teklif durum tablosuna çevirir, contact/send/accept/reject açmaz. Detay: `docs/SUPPLIER_OFFER_COLLECT_01.md`
 - COPILOT-OFFER-ANALYSIS-01: draft-only offer analysis companion milestone; supplier matching shortlistini comparison matrix, risk summary ve read-only recommendation draftına çevirir; supplier selection, offer accept/reject, contact, RFQ send ve provider credential management açmaz. Detay: `docs/COPILOT_OFFER_ANALYSIS_01.md`
 - COPILOT-NEGOTIATION-ASSIST-01: draft-only negotiation prep companion milestone; offer analysis çıktısını pazarlık hazırlık taslağına, karşı teklif draftına ve soru setine çevirir; supplier selection, offer accept/reject, contact, RFQ send, agreement execute ve provider credential management açmaz. Detay: `docs/COPILOT_NEGOTIATION_ASSIST_01.md`
-- COPILOT-OFFER-RECOMMENDATION-01: negotiation assist sonrası gelen read-only recommendation companion milestone; supplier selection, offer accept/reject, contact, RFQ send ve provider credential management açmaz.
+- COPILOT-OFFER-RECOMMENDATION-01: negotiation assist sonrası gelen read-only recommendation companion milestone; supplier selection, offer accept/reject, contact, RFQ send ve provider credential management açmaz. Detay: `docs/COPILOT_OFFER_RECOMMENDATION_01.md`
 - COPILOT-SHIFT-TO-AGREEMENT-PREP-01
 - COPILOT-DISPATCH-ACTION-PREP-01
 - COPILOT-ACTION-PREP-01
