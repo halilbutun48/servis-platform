@@ -457,6 +457,10 @@ async function main() {
       'backend/src/ai/chat/copilotOfferRecommendation.js',
       'docs/COPILOT_OFFER_RECOMMENDATION_01.md',
       'docs/COPILOT_HUMAN_APPROVAL_01.md',
+      // Shift-to-agreement prep companion files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/copilot_shift_to_agreement_prep_01_check.js',
+      'backend/src/ai/chat/copilotShiftToAgreementPrep.js',
+      'docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md',
       'backend/scripts/sefer_abi_reasoning_assistant_01_check.js',
       'backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js',
       'backend/scripts/hot_file_split_ai_chat_composers_01_check.js',

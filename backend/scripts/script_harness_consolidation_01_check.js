@@ -46,10 +46,12 @@ const workingTreeCompatFiles = [
   "backend/scripts/supplier_matching_01_check.js",
   "backend/scripts/supplier_offer_collect_01_check.js",
   "backend/scripts/copilot_negotiation_assist_01_check.js",
+  "backend/scripts/copilot_shift_to_agreement_prep_01_check.js",
   "backend/src/ai/chat/supplierMatching.js",
   "backend/src/ai/chat/supplierOfferCollect.js",
   "backend/src/ai/chat/copilotOfferAnalysis.js",
   "backend/src/ai/chat/copilotNegotiationAssist.js",
+  "backend/src/ai/chat/copilotShiftToAgreementPrep.js",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
   "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
@@ -60,6 +62,7 @@ const workingTreeCompatFiles = [
   "docs/SUPPLIER_OFFER_COLLECT_01.md",
   "docs/COPILOT_OFFER_ANALYSIS_01.md",
   "docs/COPILOT_NEGOTIATION_ASSIST_01.md",
+  "docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md",
   "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
   "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
   "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
@@ -373,6 +376,7 @@ function slugToMilestone(slug) {
     [/suppliermatching0?1/i, "SUPPLIER-MATCHING-01"], // check:suppliermatching01
     [/copilotofferanalysis0?1/i, "COPILOT-OFFER-ANALYSIS-01"], // check:copilotofferanalysis01
     [/copilotofferrecommendation0?1/i, "COPILOT-OFFER-RECOMMENDATION-01"], // check:copilotofferrecommendation01
+    [/copilot[_-]?shift[_-]?to[_-]?agreement[_-]?prep0?1/i, "COPILOT-SHIFT-TO-AGREEMENT-PREP-01"], // check:copilotshifttoagreementprep01
     [/uxmarketplacepanels0?1/i, "UX-MARKETPLACE-PANELS-01"], // check:uxmarketplacepanels01
     [/productflowbuttonaudit0?1/i, "PRODUCT-FLOW-BUTTON-AUDIT-01"], // check:productflowbuttonaudit01
     [/uxroomcompanyshiftsmobilecardfix0?1/i, "UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01"], // check:uxroomcompanyshiftsmobilecardfix01
@@ -417,6 +421,7 @@ function slugToMilestone(slug) {
     [/copilot[_-]?rfq[_-]?prep0?1/i, "COPILOT-RFQ-PREP-01"], // check:copilotrfqprep01
     [/copilothumanapproval0?1/i, "COPILOT-HUMAN-APPROVAL-01"], // check:copilothumanapproval01
     [/copilot[_-]?offer[_-]?recommendation0?1/i, "COPILOT-OFFER-RECOMMENDATION-01"], // check:copilotofferrecommendation01
+    [/copilot[_-]?shift[_-]?to[_-]?agreement[_-]?prep0?1/i, "COPILOT-SHIFT-TO-AGREEMENT-PREP-01"], // check:copilotshifttoagreementprep01
     [/copilotroutereviewhumanapproval0?1/i, "COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01"], // check:copilotroutereviewhumanapproval01
     [/copilotexceldemandimport0?1/i, "COPILOT-EXCEL-DEMAND-IMPORT-01"], // check:copilotexceldemandimport01
     [/addressgeocodingconfidence0?1/i, "ADDRESS-GEOCODING-CONFIDENCE-01"], // check:addressgeocodingconfidence01
@@ -458,7 +463,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandintake01", "check:copilotdemandagreement01", "check:copilotrfqprep01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:suppliermatching01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01", "check:roledataisolationredteam01", "check:auditlogandapprovaltrace01", "check:copilotnegotiationassist01", "check:copilotofferrecommendation01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandintake01", "check:copilotdemandagreement01", "check:copilotrfqprep01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:suppliermatching01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01", "check:roledataisolationredteam01", "check:auditlogandapprovaltrace01", "check:copilotnegotiationassist01", "check:copilotofferrecommendation01", "check:copilotshifttoagreementprep01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1067,7 +1072,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:suppliermatching01", "root:check:supplieroffercollect01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:copilotrfqprep01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "root:check:roledataisolationredteam01", "root:check:auditlogandapprovaltrace01", "root:check:copilotnegotiationassist01", "root:check:copilotofferrecommendation01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:suppliermatching01", "root:check:supplieroffercollect01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:copilotrfqprep01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "root:check:roledataisolationredteam01", "root:check:auditlogandapprovaltrace01", "root:check:copilotnegotiationassist01", "root:check:copilotofferrecommendation01", "root:check:copilotshifttoagreementprep01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1675,6 +1680,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Offer recommendation command: \`node backend\\scripts\\copilot_offer_recommendation_01_check.js\``);
   out.push(`- Offer recommendation helper: \`backend/src/ai/chat/copilotOfferRecommendation.js\``);
   out.push(`- Offer recommendation root check: \`root:check:copilotofferrecommendation01\``);
+  out.push(`- Shift to agreement prep milestone: \`COPILOT-SHIFT-TO-AGREEMENT-PREP-01\``);
+  out.push(`- Shift to agreement prep check: \`check:copilotshifttoagreementprep01\``);
+  out.push(`- Shift to agreement prep docs: \`docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md\``);
+  out.push(`- Shift to agreement prep command: \`node backend\\scripts\\copilot_shift_to_agreement_prep_01_check.js\``);
+  out.push(`- Shift to agreement prep helper: \`backend/src/ai/chat/copilotShiftToAgreementPrep.js\``);
   out.push(`- Marketplace panels milestone: \`UX-MARKETPLACE-PANELS-01\``);
   out.push(`- Marketplace panels check: \`check:uxmarketplacepanels01\``);
   out.push(`- Marketplace panels docs: \`docs/UX_MARKETPLACE_PANELS_01.md\``);
@@ -2118,6 +2128,11 @@ function verifyDoc(docText, summary) {
     "Offer recommendation command",
     "Offer recommendation helper",
     "Offer recommendation root check",
+    "Shift to agreement prep milestone",
+    "Shift to agreement prep check",
+    "Shift to agreement prep docs",
+    "Shift to agreement prep command",
+    "Shift to agreement prep helper",
     "UX-MARKETPLACE-PANELS-01",
     "node backend\\scripts\\product_flow_button_audit_01_check.js",
     "node backend\\scripts\\product_flow_button_audit_01.mjs",
@@ -2336,7 +2351,7 @@ function verifyDoc(docText, summary) {
     "REMOVED:",
   ];
   ordered(docText, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
-  ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Offer analysis milestone: `COPILOT-OFFER-ANALYSIS-01`', 'Negotiation assist milestone: `COPILOT-NEGOTIATION-ASSIST-01`', 'Offer recommendation milestone: `COPILOT-OFFER-RECOMMENDATION-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching, offer collect, offer analysis, negotiation assist, offer recommendation and marketplace panels');
+  ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Offer analysis milestone: `COPILOT-OFFER-ANALYSIS-01`', 'Negotiation assist milestone: `COPILOT-NEGOTIATION-ASSIST-01`', 'Offer recommendation milestone: `COPILOT-OFFER-RECOMMENDATION-01`', 'Shift to agreement prep milestone: `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching, offer collect, offer analysis, negotiation assist, offer recommendation, shift to agreement prep and marketplace panels');
   for (const needle of mustContain) {
     if (!normalize(docText).includes(normalize(needle))) {
       throw new Error(`FAIL doc missing: ${needle}`);

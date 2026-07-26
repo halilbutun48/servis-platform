@@ -71,6 +71,12 @@ Repo: `servis-platform`
 - Rota, vardiya, kişi, fiyat, kalite, kanıt, telematics, KVKK ve hizmet kapsamı kontrol edilir.
 - Agreement/contract execute yok.
 
+### STAGE 7B - Agreement Prep Companion
+- `COPILOT-SHIFT-TO-AGREEMENT-PREP-01` bu stage için draft-only companion milestone'ıdır; `check:copilotshifttoagreementprep01`, `docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md` ve `backend/src/ai/chat/copilotShiftToAgreementPrep.js` ile yaşar.
+- No agreement/contract execute yok.
+- Agreement/contract execute, supplier contact, RFQ send, dispatch apply, route apply ve provider credential management açmaz.
+- Runtime AI action yok.
+
 ### STAGE 8 - Dispatch / Operation Prep
 - Operasyon başlamadan önce dispatch readiness, driver/vehicle readiness, GPS/safe-drive readiness ve evidence checklist hazırlar.
 - Dispatch apply, route apply ve driver/vehicle assignment yok.

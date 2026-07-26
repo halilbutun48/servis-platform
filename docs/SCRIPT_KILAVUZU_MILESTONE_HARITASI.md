@@ -235,6 +235,26 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Doküman: `docs/COPILOT_HUMAN_APPROVAL_01.md`
 - Bu check, `COPILOT-ROLE-TASK-MATRIX-01`, `COPILOT-AI-ACTION-ROADMAP-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; voice command alone critical actions execute ettirmez, tool execution / write-action dispatcher / safe autopilot real action açmaz.
 
+### COPILOT-SHIFT-TO-AGREEMENT-PREP-01 [CHECK]
+- `check:copilotshifttoagreementprep01` Sefer Abi için draft-only agreement prep companion milestone'ını docs/check olarak kilitler; offer recommendation sonrası gelen sözleşme ön hazırlığı katmanını hazırlar ama supplier selection, offer accept/reject, supplier contact, RFQ send, agreement/contract execute, dispatch apply, route apply ve provider credential management açmaz.
+- Check script: `node backend\scripts\copilot_shift_to_agreement_prep_01_check.js`
+- Doküman: `docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md`
+- Static helper: `backend/src/ai/chat/copilotShiftToAgreementPrep.js`
+- Shift-to-Agreement Input Summary
+- Agreement Field Mapping Model
+- Agreement Readiness Scorecard
+- Agreement Prep Packet Draft
+- Missing Field Summary
+- Risk Summary
+- Question Set
+- Safe Next-Step Draft
+- Safety / Boundary
+- PII / KVKK Safe Handling
+- Türkçe Visible Answer
+- Audit / Human Approval Handoff
+- Bu check, `COPILOT-OFFER-RECOMMENDATION-01`, `COPILOT-HUMAN-APPROVAL-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, agreement/contract execute, dispatch apply ve route apply açmaz.
+- Sonraki güvenli hatlar: `COPILOT-HUMAN-APPROVAL-01`, `COPILOT-DISPATCH-ACTION-PREP-01`, `COPILOT-ACTION-PREP-01`.
+
 ### COPILOT-EXCEL-DEMAND-IMPORT-01 [CHECK]
 - `check:copilotexceldemandimport01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check olarak kilitler; runtime import execute, file upload endpoint ve DB write açmaz.
 - Check script: `node backend\scripts\copilot_excel_demand_import_01_check.js`
