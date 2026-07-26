@@ -1,0 +1,182 @@
+# REPO-CAPABILITY-AUDIT-AND-CANONICAL-ROADMAP-01
+
+Tarih: 2026-07-26
+Repo: `servis-platform`
+
+> Bu belge yeni ürün davranışı açmaz. Amaç, mevcut repo durumunu code-first biçimde audit etmek, kanonik milestone sırasını sabitlemek ve kalan işleri güvenli sırada görünür kılmaktır.
+
+## 1) Snapshot
+
+Audit anındaki repo fotoğrafı:
+
+| Alan | Durum |
+| --- | --- |
+| Branch | `m90d1_web_lint_inventory` |
+| HEAD | `15a786adcea77a27825aaed6a6b008176772a282` |
+| HEAD tag | `v2026.07.26-copilot-dispatch-action-prep-01` |
+| Stage | boş |
+| `debug.log` | absent |
+| Route / service / Prisma diff | boş |
+| Browser smoke artifacts | commit dışı |
+| Runtime-data | commit dışı, stage dışı |
+
+Dirty state yalnızca runtime-data katmanındaydı:
+- `backend/artifacts/runtime-data/password-change-requirements.json`
+- `backend/artifacts/runtime-data/username-directory.json`
+- `backend/artifacts/runtime-data/agreement-route-refresh-requests.json`
+- `backend/artifacts/runtime-data/public-leads.json`
+- `backend/artifacts/runtime-data/quality-review-decisions.json`
+- `backend/artifacts/runtime-data/region-failover-drill-state.json`
+
+## 2) Verified Gates
+
+Bu audit sırasında doğrulanan ana kapılar:
+
+- `npm run check:copilotdemandintake01` PASS
+- `npm run check:copilotrfqprep01` PASS, `guardCases=309`, `passCount=309`, `failCount=0`
+- `npm run check:suppliermatching01` PASS, `guardCases=529`, `passCount=529`, `failCount=0`
+- `npm run check:supplieroffercollect01` PASS, `guardCases=577`, `passCount=577`, `failCount=0`
+- `npm run check:copilotofferanalysis01` PASS, `guardCases=726`, `passCount=726`, `failCount=0`, `lineCountSummary=backend/src/ai/chat/copilotOfferAnalysis.js stays under 1000 lines`
+- `npm run check:copilotnegotiationassist01` PASS, `guardCases=1723`, `passCount=1723`, `failCount=0`, `lineCountSummary=backend/src/ai/chat/copilotNegotiationAssist.js stays under 1000 lines`
+- `npm run check:copilotguidedtaskengine01` PASS
+- `npm run check:copilotdynamicquestionengine01` PASS, `runtimeCases=40`, `testedCases=40`, `passCount=40`, `failCount=0`
+- `npm run check:copilotsmartdiagnosticengine01` PASS, `runtimeCases=55`, `testedCases=55`, `passCount=55`, `failCount=0`
+- `npm run check:copilotrootcauseengine01` PASS, `runtimeCases=68`, `testedCases=68`, `passCount=68`, `failCount=0`
+
+Önceki doğrulama hattında temiz olduğu görülen gates:
+
+- `npm run check:copilotdispatchactionprep01` PASS, `guardCases=1211`, `passCount=1211`, `failCount=0`
+- `npm run check:copilotshifttoagreementprep01` PASS, `guardCases=1538`, `passCount=1538`, `failCount=0`
+- `npm run check:copilotofferrecommendation01` PASS, `guardCases=2076`, `passCount=2076`, `failCount=0`
+- `npm run check:product-extensions` PASS
+- `npm run verify:repo` PASS
+- `npm run verify:final` PASS
+- `npm --prefix backend run lint` PASS
+- `npm --prefix web run lint` PASS
+
+Smoke sonucu:
+
+- `npm run smoke:productflowbuttonaudit01` PASS `18/0/0/0`
+- `npm run smoke:uxlivepanelpremium01` PASS `82/0/0/0`
+- `npm run smoke:uxallpanelsrealityaudit01` PASS `82/0/0/0`
+- `npm run smoke:uxmobileallrolespanelaudit01` PASS `82/0/0/0`
+- `consoleErrorCount=0`
+- `pageErrorCount=0`
+- `429=none`
+
+## 3) Canonical Capability Map
+
+### A. Runtime-verified reasoning / guidance family
+
+Bu grup hem docs hem check zinciriyle doğrulandı:
+
+- `COPILOT-GUIDED-TASK-ENGINE-01`
+- `COPILOT-DYNAMIC-QUESTION-ENGINE-01`
+- `COPILOT-SMART-DIAGNOSTIC-ENGINE-01`
+- `COPILOT-ROOT-CAUSE-ENGINE-01`
+- `COPILOT-RISK-SCORING-ENGINE-01`
+- `COPILOT-CLARIFYING-QUESTION-ENGINE-01`
+- `COPILOT-WORKFLOW-REASONING-ENGINE-01`
+- `COPILOT-OPERATION-HEALTH-ENGINE-01`
+- `COPILOT-NEXT-BEST-ACTION-ENGINE-01`
+- `COPILOT-PLAN-REVIEW-ENGINE-01`
+- `COPILOT-REASONING-ANSWER-COMPOSER-01`
+- `SEFER-ABI-REASONING-ASSISTANT-01`
+- `SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01`
+
+Bu aile runtime execute açmaz; read-only reasoning / reply composition sınırında kalır.
+
+### B. Demand-to-dispatch chain
+
+Doğrulanan read-only ürün zinciri:
+
+- `COPILOT-DEMAND-INTAKE-01`
+- `COPILOT-RFQ-PREP-01`
+- `SUPPLIER-MATCHING-01`
+- `SUPPLIER-OFFER-COLLECT-01`
+- `COPILOT-OFFER-ANALYSIS-01`
+- `COPILOT-NEGOTIATION-ASSIST-01`
+- `COPILOT-OFFER-RECOMMENDATION-01`
+- `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`
+- `COPILOT-DISPATCH-ACTION-PREP-01`
+
+Bu sıra içinde contact/send/accept/reject, agreement execute, dispatch apply, route apply, driver/vehicle assignment ve provider credential açılmamalı. Mevcut guardrail ve smoke sonuçları bu sınırı koruyor.
+
+### C. Docs-only guardrail milestones
+
+Kanonik yol haritasını kilitleyen, fakat runtime behavior açmayan belgeler:
+
+- `COPILOT-AI-ACTION-ROADMAP-01`
+- `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`
+- `COPILOT-HUMAN-APPROVAL-01`
+
+Bu belgeler phase modelini ve human approval sınırını görünür kılar; write-action, tool execution ve fake success açmaz.
+
+### D. Future-only / not yet implemented product milestones
+
+Kanonik roadmap'te yer alıp bu audit anında current runtime gate olarak doğrulanmayan başlıklar:
+
+- `COPILOT-ACTION-PREP-01`
+- `VOICE-COPILOT-ROLE-ASSISTANT-01`
+- `VOICE-COPILOT-COMMANDS-01`
+- `VOICE-COPILOT-CONFIRMATION-01`
+- `DRIVER-VOICE-COPILOT-01`
+- `DRIVER-VOICE-ROUTE-ASSIST-01`
+- `DRIVER-VOICE-CHECKIN-ASSIST-01`
+- `DRIVER-VOICE-RISK-ALERTS-01`
+- `PROACTIVE-COPILOT-01`
+- `COPILOT-NEXT-BEST-ACTION-01`
+- `COPILOT-ALERT-TO-ACTION-CARD-01`
+- `COPILOT-SAFE-AUTOPILOT-01`
+- `PERF-REGRESSION-01`
+- `SECURITY-KVKK-FINAL-01`
+- `PROD-HARDENING-01`
+- `FIELD-ACCEPTANCE-01`
+- `RELEASE-CANDIDATE-01`
+
+Not:
+- `PROACTIVE-COPILOT-01` harness içinde açıkça `MISSING_FUTURE_MILESTONE` olarak işaretli.
+- `VOICE-COPILOT-ROLE-ASSISTANT-01` için web tarafında text-to-speech / voice readout yardımcı kodu mevcut olsa da, dedicated check script ve tamamlanmış voice-command execution zinciri görünmüyor.
+- `COPILOT-NEXT-BEST-ACTION-01`, `COPILOT-NEXT-BEST-ACTION-ENGINE-01` ile aynı şey değildir; roadmap ürün başlığı ayrı, engine check ayrı doğrulandı.
+
+## 4) Canonical Next Order
+
+Bu auditin önerdiği güvenli sonraki sıra:
+
+1. `COPILOT-ACTION-PREP-01`
+2. `VOICE-COPILOT-ROLE-ASSISTANT-01`
+3. `VOICE-COPILOT-COMMANDS-01`
+4. `VOICE-COPILOT-CONFIRMATION-01`
+5. `DRIVER-VOICE-COPILOT-01`
+6. `DRIVER-VOICE-ROUTE-ASSIST-01`
+7. `DRIVER-VOICE-CHECKIN-ASSIST-01`
+8. `DRIVER-VOICE-RISK-ALERTS-01`
+9. `PROACTIVE-COPILOT-01`
+10. `COPILOT-NEXT-BEST-ACTION-01`
+11. `COPILOT-ALERT-TO-ACTION-CARD-01`
+12. `COPILOT-SAFE-AUTOPILOT-01`
+13. `PERF-REGRESSION-01`
+14. `SECURITY-KVKK-FINAL-01`
+15. `PROD-HARDENING-01`
+16. `FIELD-ACCEPTANCE-01`
+17. `RELEASE-CANDIDATE-01`
+
+Bu sıra, mevcut verified chain'i zayıflatmadan ilerlemek için hazırlanmıştır. Yeni milestone açarken current allowlist, smoke threshold, 429 policy ve write-action boundary gevşetilmemelidir.
+
+## 5) Open Notes
+
+- Route / service / Prisma / backend-prisma diff boş kaldı.
+- Stage boş kaldı.
+- `debug.log` absent kaldı.
+- Runtime-data commit dışı tutuldu.
+- Browser smoke raporları commit setine alınmadı.
+
+## 6) Read Together With
+
+Bu belge şu kanonik kaynaklarla birlikte okunmalı:
+
+- `docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md`
+- `docs/PRIMER_SSOT.md`
+- `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md`
+- `docs/COPILOT_HUMAN_APPROVAL_01.md`
+- `docs/SCRIPT_HARNESS_CONSOLIDATION_01.md`
