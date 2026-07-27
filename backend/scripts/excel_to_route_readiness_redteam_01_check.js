@@ -440,6 +440,7 @@ async function main() {
       'docs/VERIFIED_SUPPLIER_01.md',
       'docs/SUPPLIER_MATCHING_01.md',
       'docs/UX_MARKETPLACE_PANELS_01.md',
+      'backend/scripts/roadmap_lock_ai_marketplace_01_check.js',
       // Supplier offer collect companion files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/supplier_offer_collect_01_check.js',
       'backend/src/ai/chat/supplierOfferCollect.js',
@@ -465,6 +466,11 @@ async function main() {
       'backend/scripts/copilot_dispatch_action_prep_01_check.js',
       'backend/src/ai/chat/copilotDispatchActionPrep.js',
       'docs/COPILOT_DISPATCH_ACTION_PREP_01.md',
+      // Action prep companion files are legitimate consolidated-scope companions for this pass.
+      'backend/scripts/copilot_action_prep_01_check.js',
+      'backend/src/ai/chat/copilotActionPrep.js',
+      'docs/COPILOT_ACTION_PREP_01.md',
+      'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md',
       'backend/scripts/sefer_abi_reasoning_assistant_01_check.js',
       'backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js',
       'backend/scripts/hot_file_split_ai_chat_composers_01_check.js',

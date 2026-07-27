@@ -45,6 +45,7 @@
     "check:copilotofferrecommendation01": "node backend/scripts/copilot_offer_recommendation_01_check.js",
     "check:copilotshifttoagreementprep01": "node backend/scripts/copilot_shift_to_agreement_prep_01_check.js",
     "check:copilotdispatchactionprep01": "node backend/scripts/copilot_dispatch_action_prep_01_check.js",
+    "check:copilotactionprep01": "node backend/scripts/copilot_action_prep_01_check.js",
     "check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js",
     "check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js",
     "check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js",

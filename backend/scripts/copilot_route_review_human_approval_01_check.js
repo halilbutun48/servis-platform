@@ -272,6 +272,7 @@ async function main() {
     'backend/scripts/verify_chain_01_product_extensions_check.js',
     'backend/scripts/script_harness_consolidation_01_check.js',
     'backend/scripts/copilot_route_review_human_approval_01_check.js',
+    'backend/scripts/roadmap_lock_ai_marketplace_01_check.js',
     // Demand intake, demand-to-agreement and RFQ prep companion files are legitimate scope for this consolidated route-review pass.
     'backend/scripts/copilot_demand_intake_01_check.js',
     'backend/src/ai/chat/copilotDemandIntake.js',
@@ -305,6 +306,11 @@ async function main() {
     'backend/scripts/copilot_dispatch_action_prep_01_check.js',
     'backend/src/ai/chat/copilotDispatchActionPrep.js',
     'docs/COPILOT_DISPATCH_ACTION_PREP_01.md',
+    // Action prep companion files are legitimate scope for this consolidated route-review pass.
+    'backend/scripts/copilot_action_prep_01_check.js',
+    'backend/src/ai/chat/copilotActionPrep.js',
+    'docs/COPILOT_ACTION_PREP_01.md',
+    'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md',
     'docs/COPILOT_NEGOTIATION_ASSIST_01.md',
     'docs/COPILOT_HUMAN_APPROVAL_01.md',
     'backend/scripts/copilot_workflow_reasoning_engine_01_check.js',

@@ -74,6 +74,7 @@ function main() {
   const offerRecommendationDoc = read('docs/COPILOT_OFFER_RECOMMENDATION_01.md');
   const shiftToAgreementDoc = read('docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md');
   const dispatchActionPrepDoc = read('docs/COPILOT_DISPATCH_ACTION_PREP_01.md');
+  const actionPrepDoc = read('docs/COPILOT_ACTION_PREP_01.md');
   const guidedDoc = read('docs/COPILOT_GUIDED_TASK_ENGINE_01.md');
   const dynamicDoc = read('docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md');
   const smartDiagnosticDoc = read('docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md');
@@ -97,8 +98,11 @@ function main() {
   const offerRecommendationHelper = read('backend/src/ai/chat/copilotOfferRecommendation.js');
   const shiftToAgreementHelper = read('backend/src/ai/chat/copilotShiftToAgreementPrep.js');
   const dispatchActionPrepHelper = read('backend/src/ai/chat/copilotDispatchActionPrep.js');
+  const actionPrepHelper = read('backend/src/ai/chat/copilotActionPrep.js');
   const shiftToAgreementCheck = read('backend/scripts/copilot_shift_to_agreement_prep_01_check.js');
   const dispatchActionPrepCheck = read('backend/scripts/copilot_dispatch_action_prep_01_check.js');
+  const actionPrepCheck = read('backend/scripts/copilot_action_prep_01_check.js');
+  const humanApprovalHelper = read('backend/src/ai/chat/copilotHumanApprovalPolicy.js');
   const companyAgreementsMobileParityDoc = read('docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md');
   const companyAgreementsPanel = read('web/src/panels/company/AgreementsPanel.jsx');
   const companyAgreementsMobileCards = read('web/src/panels/company/companyAgreementsMobileCards.jsx');
@@ -145,6 +149,7 @@ function main() {
   must(pkg, '"check:copilotofferrecommendation01": "node backend/scripts/copilot_offer_recommendation_01_check.js"', 'package.json exposes check:copilotofferrecommendation01');
   must(pkg, '"check:copilotshifttoagreementprep01": "node backend/scripts/copilot_shift_to_agreement_prep_01_check.js"', 'package.json exposes check:copilotshifttoagreementprep01');
   must(pkg, '"check:copilotdispatchactionprep01": "node backend/scripts/copilot_dispatch_action_prep_01_check.js"', 'package.json exposes check:copilotdispatchactionprep01');
+  must(pkg, '"check:copilotactionprep01": "node backend/scripts/copilot_action_prep_01_check.js"', 'package.json exposes check:copilotactionprep01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -354,6 +359,7 @@ function main() {
     'check:copilotofferrecommendation01',
     'check:copilotshifttoagreementprep01',
     'check:copilotdispatchactionprep01',
+    'check:copilotactionprep01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
@@ -606,7 +612,12 @@ function main() {
   must(guide, 'node backend\\scripts\\copilot_dispatch_action_prep_01_check.js', 'script guide includes dispatch prep command');
   must(guide, 'docs/COPILOT_DISPATCH_ACTION_PREP_01.md', 'script guide includes dispatch prep doc');
   must(guide, 'backend/src/ai/chat/copilotDispatchActionPrep.js', 'script guide includes dispatch prep helper');
-  ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'UX-MARKETPLACE-PANELS-01'], 'script guide keeps dispatch prep after shift-to-agreement prep and before marketplace panels');
+  must(guide, 'COPILOT-ACTION-PREP-01', 'script guide mentions action prep milestone');
+  must(guide, 'check:copilotactionprep01', 'script guide exposes action prep check');
+  must(guide, 'node backend\\scripts\\copilot_action_prep_01_check.js', 'script guide includes action prep command');
+  must(guide, 'docs/COPILOT_ACTION_PREP_01.md', 'script guide includes action prep doc');
+  must(guide, 'backend/src/ai/chat/copilotActionPrep.js', 'script guide includes action prep helper');
+  ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'UX-MARKETPLACE-PANELS-01'], 'script guide keeps action prep after dispatch prep and before marketplace panels');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
   must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
@@ -1234,6 +1245,10 @@ function main() {
   must(roadmap, 'check:copilotdispatchactionprep01', 'roadmap exposes dispatch prep check');
   must(roadmap, 'docs/COPILOT_DISPATCH_ACTION_PREP_01.md', 'roadmap links dispatch prep doc');
   must(roadmap, 'backend/src/ai/chat/copilotDispatchActionPrep.js', 'roadmap links dispatch prep helper');
+  must(roadmap, 'COPILOT-ACTION-PREP-01', 'roadmap keeps action prep milestone');
+  must(roadmap, 'check:copilotactionprep01', 'roadmap exposes action prep check');
+  must(roadmap, 'docs/COPILOT_ACTION_PREP_01.md', 'roadmap links action prep doc');
+  must(roadmap, 'backend/src/ai/chat/copilotActionPrep.js', 'roadmap links action prep helper');
   ordered(roadmap, ['COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01'], 'roadmap keeps dispatch prep before action prep');
   must(offerAnalysisDoc, 'COPILOT-OFFER-ANALYSIS-01', 'offer analysis doc keeps milestone wording');
   must(offerAnalysisDoc, 'check:copilotofferanalysis01', 'offer analysis doc keeps canonical check wording');
@@ -1263,6 +1278,41 @@ function main() {
   must(dispatchActionPrepCheck, 'PASS COPILOT-DISPATCH-ACTION-PREP-01', 'dispatch prep check script pass marker present');
   must(dispatchActionPrepHelper, 'COPILOT_DISPATCH_ACTION_PREP_VERSION', 'dispatch prep helper exports version');
   must(dispatchActionPrepHelper, 'COPILOT_DISPATCH_ACTION_PREP_PUBLIC_PROMISE', 'dispatch prep helper exports public promise');
+  must(actionPrepCheck, '=== COPILOT-ACTION-PREP-01 CHECK ===', 'action prep check script banner present');
+  must(actionPrepCheck, 'PASS COPILOT-ACTION-PREP-01', 'action prep check script pass marker present');
+  must(actionPrepDoc, '# COPILOT ACTION PREP 01', 'action prep doc title present');
+  must(actionPrepDoc, 'Canonical check: `check:copilotactionprep01`', 'action prep doc keeps canonical check wording');
+  must(actionPrepDoc, 'shared action-prep owner', 'action prep doc keeps shared owner wording');
+  must(actionPrepDoc, 'backend/src/ai/chat/copilotActionPrep.js', 'action prep doc links helper');
+  must(actionPrepDoc, 'No write-action.', 'action prep doc keeps write-action boundary');
+  must(actionPrepDoc, 'No dispatch apply.', 'action prep doc keeps dispatch boundary');
+  must(actionPrepDoc, 'No route apply.', 'action prep doc keeps route boundary');
+  must(actionPrepDoc, 'No agreement / contract execute.', 'action prep doc keeps agreement boundary');
+  must(actionPrepDoc, 'No payment / hakediş execute.', 'action prep doc keeps payment boundary');
+  must(actionPrepDoc, 'No messaging / email / SMS / push.', 'action prep doc keeps messaging boundary');
+  must(actionPrepDoc, 'PASS COPILOT-ACTION-PREP-01', 'action prep doc keeps pass marker');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_VERSION', 'action prep helper exposes version');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_OWNER_STACK', 'action prep helper exposes owner stack');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_BLOCKED_ACTIONS', 'action prep helper exposes blocked actions');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_NEVER_AUTOMATE', 'action prep helper exposes never automate list');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_PUBLIC_PROMISE', 'action prep helper exposes public promise');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_TURKISH_VISIBLE_PHRASES', 'action prep helper exposes visible phrases');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_BOUNDARY_FLAGS', 'action prep helper exposes boundary flags');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_EXECUTION_STATE', 'action prep helper exposes execution state');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_NEXT_SAFE_STEP', 'action prep helper exposes next safe step');
+  must(actionPrepHelper, 'COPILOT_ACTION_PREP_POLICY', 'action prep helper exposes policy object');
+  must(actionPrepHelper, 'listCopilotActionPrepRoles', 'action prep helper exposes role lister');
+  must(actionPrepHelper, 'getCopilotActionPrepPolicy', 'action prep helper exposes policy getter');
+  must(actionPrepHelper, 'buildActionPrepOwnerPack', 'action prep helper exposes pack builder');
+  must(actionPrepHelper, 'composeActionPrepAnswer', 'action prep helper exposes answer composer');
+  must(actionPrepHelper, 'composeDispatchActionPrepAnswer', 'action prep helper reuses dispatch composer');
+  must(actionPrepHelper, 'buildShiftToAgreementPrepPack', 'action prep helper reuses shift pack');
+  must(actionPrepHelper, 'getCopilotHumanApprovalPolicy', 'action prep helper reuses human approval policy');
+  must(actionPrepHelper, 'COPILOT_HUMAN_APPROVAL_CHECKLIST', 'action prep helper reuses human approval checklist');
+  must(actionPrepHelper, 'COPILOT_HUMAN_APPROVAL_FUTURE_LINES', 'action prep helper reuses human approval future lines');
+  must(actionPrepHelper, 'sharedOwner', 'action prep helper keeps shared owner flag');
+  must(humanApprovalHelper, 'COPILOT_HUMAN_APPROVAL_VERSION', 'human approval helper remains reusable source');
+  must(humanApprovalHelper, 'COPILOT_HUMAN_APPROVAL_FUTURE_LINES', 'human approval helper keeps future lines');
   must(primer, 'COPILOT-OFFER-ANALYSIS-01', 'primer mentions offer analysis milestone');
   must(primer, 'check:copilotofferanalysis01', 'primer exposes offer analysis check');
   must(primer, 'docs/COPILOT_OFFER_ANALYSIS_01.md', 'primer links offer analysis doc');
@@ -1280,13 +1330,17 @@ function main() {
   must(primer, 'check:copilotdispatchactionprep01', 'primer exposes dispatch prep check');
   must(primer, 'docs/COPILOT_DISPATCH_ACTION_PREP_01.md', 'primer links dispatch prep doc');
   must(primer, 'backend/src/ai/chat/copilotDispatchActionPrep.js', 'primer links dispatch prep helper');
+  must(primer, 'COPILOT-ACTION-PREP-01', 'primer mentions action prep milestone');
+  must(primer, 'check:copilotactionprep01', 'primer exposes action prep check');
+  must(primer, 'docs/COPILOT_ACTION_PREP_01.md', 'primer links action prep doc');
+  must(primer, 'backend/src/ai/chat/copilotActionPrep.js', 'primer links action prep helper');
   must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
   must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
   must(primer, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'primer links human approval doc');
   must(primer, 'COPILOT-EXCEL-DEMAND-IMPORT-01', 'primer mentions Excel demand import milestone');
   must(primer, 'check:copilotexceldemandimport01', 'primer exposes Excel demand import check');
   must(primer, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'primer links Excel demand import doc');
-  ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps dispatch prep between shift-to-agreement prep and human approval');
+  ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps action prep between dispatch prep and human approval');
   must(aiRoadmap, 'SEFER-ABI-REASONING-ASSISTANT-01', 'AI action roadmap references reasoning assistant milestone');
   must(aiRoadmap, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'AI action roadmap references all-roles reasoning assistant milestone');
   must(aiRoadmap, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'AI action roadmap references reasoning answer composer milestone');
