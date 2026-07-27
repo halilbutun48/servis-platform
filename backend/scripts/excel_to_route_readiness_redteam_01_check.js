@@ -374,6 +374,9 @@ async function main() {
       'backend/scripts/verify_chain_01_product_extensions_check.js',
       'backend/scripts/script_harness_consolidation_01_check.js',
       'backend/scripts/copilot_route_review_human_approval_01_check.js',
+      'backend/scripts/financial_operations_surface_and_rbac_01_check.js',
+      'backend/src/finance/financialOperationsScope.js',
+      'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md',
       // Demand intake companion files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/copilot_demand_intake_01_check.js',
       'backend/src/ai/chat/copilotDemandIntake.js',
@@ -645,7 +648,7 @@ async function main() {
       'docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md',
       'docs/RUNBOOK_M45_RETENTION_BACKUP.md',
     ]),
-    ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04'],
+    ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04', 'backend/src/finance/'],
     'working tree stays within redteam scope',
   );
 

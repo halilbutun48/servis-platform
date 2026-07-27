@@ -271,6 +271,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`, `COPILOT-DISPATCH-ACTION-PREP-01` ve `COPILOT-HUMAN-APPROVAL-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, dispatch apply, route apply, agreement execute, payment/hakediş ve provider credential management açmaz.
 - Sonraki güvenli hatlar: `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`, `OPERATIONAL-COST-MODEL-01`, `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`, `COMPANY-BUDGET-AND-SERVICE-COST-01`, `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01`, `COST-SCENARIO-FORECAST-AND-SAVINGS-01`, `SEFER-ABI-COST-ANALYSIS-ASSISTANT-01`, `ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01`.
 - Bu finans bloğu mevcut dynamic savings, hakediş önizleme, kalite/payment bridge ve CSV export yüzeylerini yeniden kullanır; full muhasebe/e-Fatura/e-Defter/vergi programı değildir.
+- `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01` `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md` ve `backend/src/finance/financialOperationsScope.js` ile yaşar; read-only/preview/RBAC sınırını korur.
 
 ### COPILOT-EXCEL-DEMAND-IMPORT-01 [CHECK]
 - `check:copilotexceldemandimport01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check olarak kilitler; runtime import execute, file upload endpoint ve DB write açmaz.

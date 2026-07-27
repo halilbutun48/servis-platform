@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-07-26
+Tarih: 2026-07-27
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `416`
-- Toplam executable tracked file: `1245`
-- Combined registry row: `1661`
-- Root/backend/web/mobile package dağılımı: root `259`, backend `802`, web `96`, mobile `201`
+- Toplam package script entry: `417`
+- Toplam executable tracked file: `1249`
+- Combined registry row: `1666`
+- Root/backend/web/mobile package dağılımı: root `260`, backend `806`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `67`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -178,6 +178,12 @@ Repo: `servis-platform`
 - Dispatch action prep docs: `docs/COPILOT_DISPATCH_ACTION_PREP_01.md`
 - Dispatch action prep command: `node backend\scripts\copilot_dispatch_action_prep_01_check.js`
 - Dispatch action prep helper: `backend/src/ai/chat/copilotDispatchActionPrep.js`
+- Financial operations surface milestone: `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`
+- Financial operations surface check: `check:financialoperationssurfaceandrbac01`
+- Financial operations surface root check: `root:check:financialoperationssurfaceandrbac01`
+- Financial operations surface docs: `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md`
+- Financial operations surface command: `node backend\scripts\financial_operations_surface_and_rbac_01_check.js`
+- Financial operations surface helper: `backend/src/finance/financialOperationsScope.js`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
@@ -348,7 +354,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `199`
+- ACTIVE_CORE: `200`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -364,11 +370,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `656`
+- NEEDS_REVIEW: `660`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `335`
+- Eski sistem term eşleşmesi: `338`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -378,14 +384,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 199 |
+| ACTIVE_CORE | 200 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 656 |
+| NEEDS_REVIEW | 660 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -446,6 +452,7 @@ Repo: `servis-platform`
 | root:check:copilotshifttoagreementprep01 | package.json | root | node backend/scripts/copilot_shift_to_agreement_prep_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-SHIFT-TO-AGREEMENT-PREP-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotdispatchactionprep01 | package.json | root | node backend/scripts/copilot_dispatch_action_prep_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-DISPATCH-ACTION-PREP-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotactionprep01 | package.json | root | node backend/scripts/copilot_action_prep_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTACTIONPREP-01 |  | Owner or chain unclear |  |
+| root:check:financialoperationssurfaceandrbac01 | package.json | root | node backend/scripts/financial_operations_surface_and_rbac_01_check.js | verify-core | ACTIVE_CORE |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Breaks canonical verification chain |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
@@ -797,6 +804,7 @@ Repo: `servis-platform`
 | cop_04b_fix_08_parent_live_context_check.js | backend/scripts/cop_04b_fix_08_parent_live_context_check.js | backend | root:check:cop04bfix08 | product | ACTIVE |  | COP-04-B-FIX-08-PARENT-LIVE-CONTEXT-CHECK |  | Owner or chain unclear | product check/helper |
 | cop_04b_panel_context_audit_check.js | backend/scripts/cop_04b_panel_context_audit_check.js | backend | root:check:cop04b | product | ACTIVE |  | COP-04-B-PANEL-CONTEXT-AUDIT-CHECK |  | Owner or chain unclear | product check/helper |
 | cop_live_accept_01_check.js | backend/scripts/cop_live_accept_01_check.js | backend | root:check:copliveaccept01 | product | ACTIVE |  | COP-LIVE-ACCEPT-01-CHECK |  | Owner or chain unclear | product check/helper |
+| copilot_action_prep_01_check.js | backend/scripts/copilot_action_prep_01_check.js | backend | root:check:copilotactionprep01 | review | NEEDS_REVIEW |  | COPILOT-ACTION-PREP-01-CHECK |  | Owner or chain unclear |  |
 | copilot_ai_action_roadmap_01_check.js | backend/scripts/copilot_ai_action_roadmap_01_check.js | backend | root:check:copilotairoadmap01 | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP-01-CHECK |  | Owner or chain unclear |  |
 | copilot_clarifying_question_engine_01_check.js | backend/scripts/copilot_clarifying_question_engine_01_check.js | backend | root:check:copilotclarifyingquestionengine01 | review | NEEDS_REVIEW |  | COPILOT-CLARIFYING-QUESTION-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_context_memory_task_state_01_check.js | backend/scripts/copilot_context_memory_task_state_01_check.js | backend | root:check:copilotcontextmemorytaskstate01 | review | NEEDS_REVIEW |  | COPILOT-CONTEXT-MEMORY-TASK-STATE-01-CHECK |  | Owner or chain unclear |  |
@@ -1211,6 +1219,7 @@ Repo: `servis-platform`
 | conversationTaskStateSelectedRecord.js | backend/src/ai/chat/conversationTaskStateSelectedRecord.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-SELECTED-RECORD |  | Owner or chain unclear |  |
 | conversationTaskStateShared.js | backend/src/ai/chat/conversationTaskStateShared.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-TASK-STATE-SHARED |  | Owner or chain unclear |  |
 | conversationWorkflowReasoningEngine.js | backend/src/ai/chat/conversationWorkflowReasoningEngine.js | backend |  | review | NEEDS_REVIEW |  | CONVERSATION-WORKFLOW-REASONING-ENGINE |  | Owner or chain unclear |  |
+| copilotActionPrep.js | backend/src/ai/chat/copilotActionPrep.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-ACTION-PREP |  | Owner or chain unclear |  |
 | copilotAiActionRoadmap.js | backend/src/ai/chat/copilotAiActionRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-AI-ACTION-ROADMAP |  | Owner or chain unclear |  |
 | copilotDemandIntake.js | backend/src/ai/chat/copilotDemandIntake.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-DEMAND-INTAKE |  | Owner or chain unclear |  |
 | copilotDemandToAgreementRoadmap.js | backend/src/ai/chat/copilotDemandToAgreementRoadmap.js | backend |  | review | NEEDS_REVIEW |  | COPILOT-DEMAND-TO-AGREEMENT-ROADMAP |  | Owner or chain unclear |  |
@@ -1468,6 +1477,8 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| financial_operations_surface_and_rbac_01_check.js | backend/scripts/financial_operations_surface_and_rbac_01_check.js | backend | root:check:financialoperationssurfaceandrbac01 | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Owner or chain unclear |  |
+| financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -2329,6 +2340,7 @@ Repo: `servis-platform`
 | backend/scripts/cop_04b_fix_07_personel_live_copilot_context_check.js | OperationProof | ACTIVE |
 | backend/scripts/cop_04b_fix_08_parent_live_context_check.js | OperationProof | ACTIVE |
 | backend/scripts/cop_live_accept_01_check.js | OperationProof | ACTIVE |
+| backend/scripts/copilot_action_prep_01_check.js | Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_guided_task_engine_01_check.js | Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_reasoning_answer_composer_01_check.js | Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_role_task_matrix_01_check.js | Hub | NEEDS_REVIEW |
@@ -2340,7 +2352,6 @@ Repo: `servis-platform`
 | backend/scripts/excel_to_route_readiness_redteam_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/final_ux_smoke_01_check.js | Hub, Yer, Audit Logs, Log Export, personel-access | NEEDS_REVIEW |
 | backend/scripts/invite_based_membership_01_check.js | Hub, Yer | NEEDS_REVIEW |
-| backend/scripts/m10check.js | Audit Logs | ACTIVE_RELEASE_ONLY |
 
 ## 11) Cleanup Raporu
 

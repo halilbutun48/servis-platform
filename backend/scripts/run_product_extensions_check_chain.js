@@ -30,6 +30,7 @@ const steps = [
   'check:copilotshifttoagreementprep01',
   'check:copilotdispatchactionprep01',
   'check:copilotactionprep01',
+  'check:financialoperationssurfaceandrbac01',
   'check:uxmarketplacepanels01',
   'check:productflowbuttonaudit01',
   'check:agreementsourceshiftlineage01',

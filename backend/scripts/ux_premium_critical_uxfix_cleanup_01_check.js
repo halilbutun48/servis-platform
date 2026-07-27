@@ -691,7 +691,7 @@ function main() {
       "web/src/panels/superadmin/SuperAdminPanel.jsx",
       "web/src/panels/school/OperationsPanel.jsx",
     ]), 
-    ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "web/src/utils/", "docs/"],
+    ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"],
     "working tree stays within cleanup scope"
   );
 

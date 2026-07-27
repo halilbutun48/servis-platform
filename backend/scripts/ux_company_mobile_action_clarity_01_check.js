@@ -660,6 +660,7 @@ function main() {
   ]);
   const allowedPrefixes = [
     "backend/artifacts/runtime-data/",
+    "backend/src/finance/",
     "web/public/seferpakt-",
     "web/public/vardis-",
     "web/src/components/brand/",

@@ -150,6 +150,7 @@ function main() {
   must(pkg, '"check:copilotshifttoagreementprep01": "node backend/scripts/copilot_shift_to_agreement_prep_01_check.js"', 'package.json exposes check:copilotshifttoagreementprep01');
   must(pkg, '"check:copilotdispatchactionprep01": "node backend/scripts/copilot_dispatch_action_prep_01_check.js"', 'package.json exposes check:copilotdispatchactionprep01');
   must(pkg, '"check:copilotactionprep01": "node backend/scripts/copilot_action_prep_01_check.js"', 'package.json exposes check:copilotactionprep01');
+  must(pkg, '"check:financialoperationssurfaceandrbac01": "node backend/scripts/financial_operations_surface_and_rbac_01_check.js"', 'package.json exposes check:financialoperationssurfaceandrbac01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -360,6 +361,7 @@ function main() {
     'check:copilotshifttoagreementprep01',
     'check:copilotdispatchactionprep01',
     'check:copilotactionprep01',
+    'check:financialoperationssurfaceandrbac01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
@@ -617,7 +619,12 @@ function main() {
   must(guide, 'node backend\\scripts\\copilot_action_prep_01_check.js', 'script guide includes action prep command');
   must(guide, 'docs/COPILOT_ACTION_PREP_01.md', 'script guide includes action prep doc');
   must(guide, 'backend/src/ai/chat/copilotActionPrep.js', 'script guide includes action prep helper');
-  ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'UX-MARKETPLACE-PANELS-01'], 'script guide keeps action prep after dispatch prep and before marketplace panels');
+  must(guide, 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'script guide mentions financial operations milestone');
+  must(guide, 'check:financialoperationssurfaceandrbac01', 'script guide exposes financial operations check');
+  must(guide, 'node backend\\scripts\\financial_operations_surface_and_rbac_01_check.js', 'script guide includes financial operations command');
+  must(guide, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'script guide includes financial operations doc');
+  must(guide, 'backend/src/finance/financialOperationsScope.js', 'script guide includes financial operations helper');
+  ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'UX-MARKETPLACE-PANELS-01'], 'script guide keeps action prep after dispatch prep and before marketplace panels');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
   must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
@@ -866,6 +873,11 @@ function main() {
   must(harnessCheck, 'COPILOT-DISPATCH-ACTION-PREP-01', 'script harness check knows dispatch prep milestone');
   must(harnessCheck, 'docs/COPILOT_DISPATCH_ACTION_PREP_01.md', 'script harness check knows dispatch prep doc');
   must(harnessCheck, 'backend/src/ai/chat/copilotDispatchActionPrep.js', 'script harness check knows dispatch prep helper');
+  must(harnessCheck, 'check:financialoperationssurfaceandrbac01', 'script harness check knows financial operations alias');
+  must(harnessCheck, 'financial_operations_surface_and_rbac_01_check.js', 'script harness check knows financial operations file');
+  must(harnessCheck, 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'script harness check knows financial operations milestone');
+  must(harnessCheck, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'script harness check knows financial operations doc');
+  must(harnessCheck, 'backend/src/finance/financialOperationsScope.js', 'script harness check knows financial operations helper');
   must(harnessDoc, 'root:check:verifiedsupplier01', 'script harness doc lists verified supplier root check');
   must(harnessDoc, 'verified_supplier_01_check.js', 'script harness doc lists verified supplier check');
   must(harnessDoc, 'docs/VERIFIED_SUPPLIER_01.md', 'script harness doc lists verified supplier doc');
@@ -901,6 +913,12 @@ function main() {
   must(harnessDoc, 'docs/COPILOT_DISPATCH_ACTION_PREP_01.md', 'script harness doc lists dispatch prep doc');
   must(harnessDoc, 'node backend\\scripts\\copilot_dispatch_action_prep_01_check.js', 'script harness doc lists dispatch prep command');
   must(harnessDoc, 'backend/src/ai/chat/copilotDispatchActionPrep.js', 'script harness doc lists dispatch prep helper');
+  must(harnessDoc, 'root:check:financialoperationssurfaceandrbac01', 'script harness doc lists financial operations root check');
+  must(harnessDoc, 'financial_operations_surface_and_rbac_01_check.js', 'script harness doc lists financial operations check');
+  must(harnessDoc, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'script harness doc lists financial operations doc');
+  must(harnessDoc, 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'script harness doc lists financial operations milestone');
+  must(harnessDoc, 'node backend\\scripts\\financial_operations_surface_and_rbac_01_check.js', 'script harness doc lists financial operations command');
+  must(harnessDoc, 'backend/src/finance/financialOperationsScope.js', 'script harness doc lists financial operations helper');
   must(harnessCheck, 'check:uxmarketplacepanels01', 'script harness check knows marketplace panels alias');
   must(harnessCheck, 'ux_marketplace_panels_01_check.js', 'script harness check knows marketplace panels file');
   must(harnessCheck, 'UX-MARKETPLACE-PANELS-01', 'script harness check knows marketplace panels milestone');
@@ -1249,7 +1267,11 @@ function main() {
   must(roadmap, 'check:copilotactionprep01', 'roadmap exposes action prep check');
   must(roadmap, 'docs/COPILOT_ACTION_PREP_01.md', 'roadmap links action prep doc');
   must(roadmap, 'backend/src/ai/chat/copilotActionPrep.js', 'roadmap links action prep helper');
-  ordered(roadmap, ['COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01'], 'roadmap keeps dispatch prep before action prep');
+  must(roadmap, 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'roadmap keeps financial operations milestone');
+  must(roadmap, 'check:financialoperationssurfaceandrbac01', 'roadmap exposes financial operations check');
+  must(roadmap, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'roadmap links financial operations doc');
+  must(roadmap, 'backend/src/finance/financialOperationsScope.js', 'roadmap links financial operations helper');
+  ordered(roadmap, ['COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01'], 'roadmap keeps dispatch prep before action prep and action prep before financial operations');
   must(offerAnalysisDoc, 'COPILOT-OFFER-ANALYSIS-01', 'offer analysis doc keeps milestone wording');
   must(offerAnalysisDoc, 'check:copilotofferanalysis01', 'offer analysis doc keeps canonical check wording');
   must(offerAnalysisHelper, 'COPILOT_OFFER_ANALYSIS_VERSION', 'offer analysis helper exports version');
@@ -1291,6 +1313,7 @@ function main() {
   must(actionPrepDoc, 'No payment / hakediş execute.', 'action prep doc keeps payment boundary');
   must(actionPrepDoc, 'No messaging / email / SMS / push.', 'action prep doc keeps messaging boundary');
   must(actionPrepDoc, 'PASS COPILOT-ACTION-PREP-01', 'action prep doc keeps pass marker');
+  must(actionPrepDoc, 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'action prep doc points to financial operations follow-up');
   must(actionPrepHelper, 'COPILOT_ACTION_PREP_VERSION', 'action prep helper exposes version');
   must(actionPrepHelper, 'COPILOT_ACTION_PREP_OWNER_STACK', 'action prep helper exposes owner stack');
   must(actionPrepHelper, 'COPILOT_ACTION_PREP_BLOCKED_ACTIONS', 'action prep helper exposes blocked actions');
@@ -1334,13 +1357,17 @@ function main() {
   must(primer, 'check:copilotactionprep01', 'primer exposes action prep check');
   must(primer, 'docs/COPILOT_ACTION_PREP_01.md', 'primer links action prep doc');
   must(primer, 'backend/src/ai/chat/copilotActionPrep.js', 'primer links action prep helper');
+  must(primer, 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'primer mentions financial operations milestone');
+  must(primer, 'check:financialoperationssurfaceandrbac01', 'primer exposes financial operations check');
+  must(primer, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'primer links financial operations doc');
+  must(primer, 'backend/src/finance/financialOperationsScope.js', 'primer links financial operations helper');
   must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
   must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
   must(primer, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'primer links human approval doc');
   must(primer, 'COPILOT-EXCEL-DEMAND-IMPORT-01', 'primer mentions Excel demand import milestone');
   must(primer, 'check:copilotexceldemandimport01', 'primer exposes Excel demand import check');
   must(primer, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'primer links Excel demand import doc');
-  ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps action prep between dispatch prep and human approval');
+  ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps action prep between dispatch prep and human approval');
   must(aiRoadmap, 'SEFER-ABI-REASONING-ASSISTANT-01', 'AI action roadmap references reasoning assistant milestone');
   must(aiRoadmap, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'AI action roadmap references all-roles reasoning assistant milestone');
   must(aiRoadmap, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'AI action roadmap references reasoning answer composer milestone');
