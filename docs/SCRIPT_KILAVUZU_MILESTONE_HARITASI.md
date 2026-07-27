@@ -263,6 +263,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu check, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`, `COPILOT-HUMAN-APPROVAL-01` ve `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, dispatch apply, route apply, driver/vehicle assignment ve provider credential management açmaz.
 - Sonraki güvenli hatlar: `COPILOT-ACTION-PREP-01`, `UX-MARKETPLACE-PANELS-01`.
 
+### COPILOT-ACTION-PREP-01 [CHECK]
+- `check:copilotactionprep01` Sefer Abi için dispatch, shift ve human approval kaynaklarını ortak read-only owner pack altında birleştiren docs/check milestone'ını kilitler; runtime AI action, tool execution, write-action dispatcher, dispatch apply, route apply, driver/vehicle assignment, agreement execute, payment/hakediş ve messaging/email/SMS/push açmaz.
+- Check script: `node backend\scripts\copilot_action_prep_01_check.js`
+- Doküman: `docs/COPILOT_ACTION_PREP_01.md`
+- Static helper: `backend/src/ai/chat/copilotActionPrep.js`
+- Bu check, `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`, `COPILOT-DISPATCH-ACTION-PREP-01` ve `COPILOT-HUMAN-APPROVAL-01` guardrail hattıyla birlikte okunur; runtime AI action, tool execution, write-action dispatcher, dispatch apply, route apply, agreement execute, payment/hakediş ve provider credential management açmaz.
+- Sonraki güvenli hatlar: `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`, `OPERATIONAL-COST-MODEL-01`, `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`, `COMPANY-BUDGET-AND-SERVICE-COST-01`, `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01`, `COST-SCENARIO-FORECAST-AND-SAVINGS-01`, `SEFER-ABI-COST-ANALYSIS-ASSISTANT-01`, `ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01`.
+- Bu finans bloğu mevcut dynamic savings, hakediş önizleme, kalite/payment bridge ve CSV export yüzeylerini yeniden kullanır; full muhasebe/e-Fatura/e-Defter/vergi programı değildir.
+
 ### COPILOT-EXCEL-DEMAND-IMPORT-01 [CHECK]
 - `check:copilotexceldemandimport01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check olarak kilitler; runtime import execute, file upload endpoint ve DB write açmaz.
 - Check script: `node backend\scripts\copilot_excel_demand_import_01_check.js`
@@ -1327,7 +1336,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md`
   - `docs/VOICE_COPILOT_ROLE_ASSISTANT_01.md`
   - `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md`
-- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> M44-TELEMATICS-T1-T5 -> TELEMATICS-PROVIDER-HUB-01 -> SAFE-DRIVE-01 -> OFFER-RANKING-QUALITY-01 -> ... -> RELEASE-CANDIDATE-01`
+- Locked roadmap order summary: `ROADMAP-LOCK-AI-MARKETPLACE-01 -> PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> M44-TELEMATICS-T1-T5 -> TELEMATICS-PROVIDER-HUB-01 -> SAFE-DRIVE-01 -> OFFER-RANKING-QUALITY-01 -> ... -> COPILOT-ACTION-PREP-01 -> FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 -> ... -> PROACTIVE-COPILOT-01 -> PROACTIVE-COPILOT-NEXT-BEST-ACTION-01 -> ... -> RELEASE-CANDIDATE-01`
 
 ### PUBLIC-LANDING-01 — public landing / tanıtım vitrini [DOCS]
 - Check script: `check:publiclanding01`

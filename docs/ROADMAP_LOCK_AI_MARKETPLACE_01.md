@@ -461,9 +461,21 @@ Kullanılmayacak cümleler:
 - COPILOT-OFFER-RECOMMENDATION-01: negotiation assist sonrası gelen read-only recommendation companion milestone; supplier selection, offer accept/reject, contact, RFQ send ve provider credential management açmaz. Detay: `docs/COPILOT_OFFER_RECOMMENDATION_01.md`
 - COPILOT-SHIFT-TO-AGREEMENT-PREP-01: offer recommendation sonrası gelen read-only agreement prep companion milestone; `check:copilotshifttoagreementprep01`, `docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md` ve `backend/src/ai/chat/copilotShiftToAgreementPrep.js` ile yaşar; supplier selection, offer accept/reject, supplier contact, RFQ send, agreement/contract execute, dispatch apply, route apply ve provider credential management açmaz.
 - COPILOT-DISPATCH-ACTION-PREP-01: shift sonrası gelen read-only dispatch prep companion milestone; `check:copilotdispatchactionprep01`, `docs/COPILOT_DISPATCH_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotDispatchActionPrep.js` ile yaşar; supplier selection, offer accept/reject, supplier contact, RFQ send, agreement/contract execute, dispatch apply, route apply, driver/vehicle assignment ve provider credential management açmaz.
-- COPILOT-ACTION-PREP-01
+- COPILOT-ACTION-PREP-01: dispatch, shift ve human approval için ortak read-only owner pack milestone'u; `check:copilotactionprep01`, `docs/COPILOT_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotActionPrep.js` ile yaşar; dispatch apply, route apply, driver/vehicle assignment, agreement/contract execute, payment/hakediş ve messaging/email/SMS/push açmaz.
 
-### F) VOICE / PROACTIVE / AUTOPILOT
+### F) FINANSAL OPERASYON VE MALİYET YÖNETİMİ
+- FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01
+- OPERATIONAL-COST-MODEL-01
+- ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01
+- COMPANY-BUDGET-AND-SERVICE-COST-01
+- HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01
+- COST-SCENARIO-FORECAST-AND-SAVINGS-01
+- SEFER-ABI-COST-ANALYSIS-ASSISTANT-01
+- ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01
+- Bu blok, mevcut dynamic savings, hakediş önizleme, kalite/komisyon sinyali, payment preview, CSV export ve Sefer Abi maliyet cevaplarını yeniden kullanır; full muhasebe, e-Fatura, e-Defter veya vergi programı değildir.
+- ROOM ve COMPANY yüzeyleri RBAC ile bağlanır; write-action, payment execute, tahsilat, fatura oluşturma, muhasebe kayıt yazma ve provider credential açmaz.
+
+### G) VOICE / PROACTIVE / AUTOPILOT
 - VOICE-COPILOT-ROLE-ASSISTANT-01
 - VOICE-COPILOT-COMMANDS-01
 - VOICE-COPILOT-CONFIRMATION-01
@@ -472,11 +484,12 @@ Kullanılmayacak cümleler:
 - DRIVER-VOICE-CHECKIN-ASSIST-01
 - DRIVER-VOICE-RISK-ALERTS-01
 - PROACTIVE-COPILOT-01
+- PROACTIVE-COPILOT-NEXT-BEST-ACTION-01
 - COPILOT-NEXT-BEST-ACTION-01
 - COPILOT-ALERT-TO-ACTION-CARD-01
 - COPILOT-SAFE-AUTOPILOT-01
 
-### G) FINAL HARDENING / RELEASE - EN SON
+### H) FINAL HARDENING / RELEASE - EN SON
 - PERF-REGRESSION-01
 - SECURITY-KVKK-FINAL-01
 - PROD-HARDENING-01

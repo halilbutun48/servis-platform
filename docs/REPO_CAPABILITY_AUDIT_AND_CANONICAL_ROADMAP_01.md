@@ -109,14 +109,22 @@ Kanonik yol haritasını kilitleyen, fakat runtime behavior açmayan belgeler:
 - `COPILOT-AI-ACTION-ROADMAP-01`
 - `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`
 - `COPILOT-HUMAN-APPROVAL-01`
+- `COPILOT-ACTION-PREP-01`
 
-Bu belgeler phase modelini ve human approval sınırını görünür kılar; write-action, tool execution ve fake success açmaz.
+Bu belgeler phase modelini, human approval sınırını ve ortak action-prep owner pack katmanını görünür kılar; write-action, tool execution ve fake success açmaz.
 
 ### D. Future-only / not yet implemented product milestones
 
-Kanonik roadmap'te yer alıp bu audit anında current runtime gate olarak doğrulanmayan başlıklar:
+Kanonik roadmap'te yer alıp bu audit anında current runtime gate olarak doğrulanmayan 25 başlık:
 
-- `COPILOT-ACTION-PREP-01`
+- `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`
+- `OPERATIONAL-COST-MODEL-01`
+- `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`
+- `COMPANY-BUDGET-AND-SERVICE-COST-01`
+- `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01`
+- `COST-SCENARIO-FORECAST-AND-SAVINGS-01`
+- `SEFER-ABI-COST-ANALYSIS-ASSISTANT-01`
+- `ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01`
 - `VOICE-COPILOT-ROLE-ASSISTANT-01`
 - `VOICE-COPILOT-COMMANDS-01`
 - `VOICE-COPILOT-CONFIRMATION-01`
@@ -125,6 +133,7 @@ Kanonik roadmap'te yer alıp bu audit anında current runtime gate olarak doğru
 - `DRIVER-VOICE-CHECKIN-ASSIST-01`
 - `DRIVER-VOICE-RISK-ALERTS-01`
 - `PROACTIVE-COPILOT-01`
+- `PROACTIVE-COPILOT-NEXT-BEST-ACTION-01`
 - `COPILOT-NEXT-BEST-ACTION-01`
 - `COPILOT-ALERT-TO-ACTION-CARD-01`
 - `COPILOT-SAFE-AUTOPILOT-01`
@@ -135,7 +144,9 @@ Kanonik roadmap'te yer alıp bu audit anında current runtime gate olarak doğru
 - `RELEASE-CANDIDATE-01`
 
 Not:
+- `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01` mevcut dynamic savings, hakediş önizleme, quality-payment bridge, payment preview, CSV export ve Sefer Abi cost cevapları üzerine kurulur; full muhasebe/e-Fatura/e-Defter/vergi programı değildir.
 - `PROACTIVE-COPILOT-01` harness içinde açıkça `MISSING_FUTURE_MILESTONE` olarak işaretli.
+- `PROACTIVE-COPILOT-NEXT-BEST-ACTION-01` docs-only companion milestone'dır; `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md` ile yaşar ve `COPILOT-NEXT-BEST-ACTION-01` ile aynı şey değildir.
 - `VOICE-COPILOT-ROLE-ASSISTANT-01` için web tarafında text-to-speech / voice readout yardımcı kodu mevcut olsa da, dedicated check script ve tamamlanmış voice-command execution zinciri görünmüyor.
 - `COPILOT-NEXT-BEST-ACTION-01`, `COPILOT-NEXT-BEST-ACTION-ENGINE-01` ile aynı şey değildir; roadmap ürün başlığı ayrı, engine check ayrı doğrulandı.
 
@@ -143,23 +154,31 @@ Not:
 
 Bu auditin önerdiği güvenli sonraki sıra:
 
-1. `COPILOT-ACTION-PREP-01`
-2. `VOICE-COPILOT-ROLE-ASSISTANT-01`
-3. `VOICE-COPILOT-COMMANDS-01`
-4. `VOICE-COPILOT-CONFIRMATION-01`
-5. `DRIVER-VOICE-COPILOT-01`
-6. `DRIVER-VOICE-ROUTE-ASSIST-01`
-7. `DRIVER-VOICE-CHECKIN-ASSIST-01`
-8. `DRIVER-VOICE-RISK-ALERTS-01`
-9. `PROACTIVE-COPILOT-01`
-10. `COPILOT-NEXT-BEST-ACTION-01`
-11. `COPILOT-ALERT-TO-ACTION-CARD-01`
-12. `COPILOT-SAFE-AUTOPILOT-01`
-13. `PERF-REGRESSION-01`
-14. `SECURITY-KVKK-FINAL-01`
-15. `PROD-HARDENING-01`
-16. `FIELD-ACCEPTANCE-01`
-17. `RELEASE-CANDIDATE-01`
+1. `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`
+2. `OPERATIONAL-COST-MODEL-01`
+3. `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`
+4. `COMPANY-BUDGET-AND-SERVICE-COST-01`
+5. `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01`
+6. `COST-SCENARIO-FORECAST-AND-SAVINGS-01`
+7. `SEFER-ABI-COST-ANALYSIS-ASSISTANT-01`
+8. `ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01`
+9. `VOICE-COPILOT-ROLE-ASSISTANT-01`
+10. `VOICE-COPILOT-COMMANDS-01`
+11. `VOICE-COPILOT-CONFIRMATION-01`
+12. `DRIVER-VOICE-COPILOT-01`
+13. `DRIVER-VOICE-ROUTE-ASSIST-01`
+14. `DRIVER-VOICE-CHECKIN-ASSIST-01`
+15. `DRIVER-VOICE-RISK-ALERTS-01`
+16. `PROACTIVE-COPILOT-01`
+17. `PROACTIVE-COPILOT-NEXT-BEST-ACTION-01`
+18. `COPILOT-NEXT-BEST-ACTION-01`
+19. `COPILOT-ALERT-TO-ACTION-CARD-01`
+20. `COPILOT-SAFE-AUTOPILOT-01`
+21. `PERF-REGRESSION-01`
+22. `SECURITY-KVKK-FINAL-01`
+23. `PROD-HARDENING-01`
+24. `FIELD-ACCEPTANCE-01`
+25. `RELEASE-CANDIDATE-01`
 
 Bu sıra, mevcut verified chain'i zayıflatmadan ilerlemek için hazırlanmıştır. Yeni milestone açarken current allowlist, smoke threshold, 429 policy ve write-action boundary gevşetilmemelidir.
 
