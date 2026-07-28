@@ -49,6 +49,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_shift_to_agreement_prep_01_check.js",
   "backend/scripts/copilot_dispatch_action_prep_01_check.js",
   "backend/scripts/financial_operations_surface_and_rbac_01_check.js",
+  "backend/scripts/operational_cost_model_01_check.js",
   "backend/src/ai/chat/supplierMatching.js",
   "backend/src/ai/chat/supplierOfferCollect.js",
   "backend/src/ai/chat/copilotOfferAnalysis.js",
@@ -56,6 +57,8 @@ const workingTreeCompatFiles = [
   "backend/src/ai/chat/copilotShiftToAgreementPrep.js",
   "backend/src/ai/chat/copilotDispatchActionPrep.js",
   "backend/src/finance/financialOperationsScope.js",
+  "backend/src/finance/operationalCostModel.js",
+  "backend/src/finance/operationalCostMath.js",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
   "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
@@ -210,6 +213,7 @@ const selectedDocs = [
   "docs/COPILOT_PLAN_REVIEW_ENGINE_01.md",
   "docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md",
   "docs/COPILOT_DISPATCH_ACTION_PREP_01.md",
+  "docs/OPERATIONAL_COST_MODEL_01.md",
   "docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md",
   "docs/HOT_FILE_SPLIT_WEB_PANELS_01.md",
   // PUBLIC-LANDING-01 / PUBLIC-LANDING-PLATFORM-FIRST-01 / PUBLIC-LANDING-01 FINAL PROMISE CHECK / LEAD-CAPTURE-01 public vitrin docs/check coverage
@@ -473,7 +477,7 @@ function slugToMilestone(slug) {
 
 function statusFromPackage(pkg, name) {
   if (pkg === "root") {
-    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandintake01", "check:copilotdemandagreement01", "check:copilotrfqprep01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:suppliermatching01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01", "check:roledataisolationredteam01", "check:auditlogandapprovaltrace01", "check:copilotnegotiationassist01", "check:copilotofferrecommendation01", "check:copilotshifttoagreementprep01", "check:copilotdispatchactionprep01", "check:financialoperationssurfaceandrbac01"].includes(name)) {
+    if (["check", "verify:repo", "check:copilotairoadmap01", "check:copilotdemandintake01", "check:copilotdemandagreement01", "check:copilotrfqprep01", "check:copilothumanapproval01", "check:copilotexceldemandimport01", "check:addressgeocodingconfidence01", "check:copilotstoproutedraft01", "check:osrmroutedraftfromexcel01", "check:copilotroutereviewhumanapproval01", "check:exceltoroutereadinessredteam01", "check:copiloteblockruntimeanswerintegration01", "check:copilotguidedtaskengine01", "check:copilotdynamicquestionengine01", "check:copilotsmartdiagnosticengine01", "check:copilotrootcauseengine01", "check:copilotriskscoringengine01", "check:copilotclarifyingquestionengine01", "check:copilotworkflowreasoningengine01", "check:copilotoperationhealthengine01", "check:copilotnextbestactionengine01", "check:copilotplanreviewengine01", "check:hotfilesplitaichatcomposers01", "check:seferabireasoningassistant01", "check:seferabiturkishterminology01", "check:seferabiturkishuserfacinglanguage01", "verify:ci", "verify:closure", "verify:final", "check:product-extensions", "check:verifychain01", "check:scriptharnessconsolidation01", "check:docsbrandcleanup01", "check:dynamicsavings01", "check:uiactionwiringaudit01", "check:boardingchangerequestentry01", "check:shiftdispatchapprovalfix01", "check:uxcontractconversionopsbridgeclarity01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01", "check:onboardingreviewfinal01", "check:onboardingreviewfinalaudit01", "check:invitebasedmembership01", "check:verifiedsupplier01", "check:suppliermatching01", "check:uxmarketplacepanels01", "check:m44telematicst1t5", "check:telematicsproviderhub01", "check:safedrive01", "check:offerrankingquality01", "check:copilotroletaskmatrix01", "check:productflowbuttonaudit01", "check:qualitygatefinal01", "check:testqualityandflakeaudit01", "check:dashboardbulkendpoint01", "check:cachecoalescingandbackoff01", "check:requeststormresilience01", "check:productionratelimitpolicy01", "check:airesponsesemanticqualitygate01", "check:dataintegrityandrecovery01", "check:roledataisolationredteam01", "check:auditlogandapprovaltrace01", "check:copilotnegotiationassist01", "check:copilotofferrecommendation01", "check:copilotshifttoagreementprep01", "check:copilotdispatchactionprep01", "check:financialoperationssurfaceandrbac01", "check:operationalcostmodel01"].includes(name)) {
       return "ACTIVE_CORE";
     }
     if (["lint:backend"].includes(name)) return "ACTIVE_BACKEND_LINT";
@@ -1082,7 +1086,7 @@ function replacementFor(entry, duplicateMap) {
 function chainForPackageEntry(pkg, name, status) {
   const full = `${pkg}:${name}`;
   if (status === "ACTIVE_CORE") {
-    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:suppliermatching01", "root:check:supplieroffercollect01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:copilotrfqprep01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "root:check:roledataisolationredteam01", "root:check:auditlogandapprovaltrace01", "root:check:copilotnegotiationassist01", "root:check:copilotofferrecommendation01", "root:check:copilotshifttoagreementprep01", "root:check:copilotdispatchactionprep01", "root:check:financialoperationssurfaceandrbac01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
+    if (["root:check", "root:verify:repo", "root:verify:ci", "root:verify:closure", "root:verify:final", "root:check:product-extensions", "root:check:verifychain01", "root:check:scriptharnessconsolidation01", "root:check:dynamicsavings01", "root:check:verifiedsupplier01", "root:check:suppliermatching01", "root:check:supplieroffercollect01", "root:check:uxmarketplacepanels01", "root:check:productflowbuttonaudit01", "root:check:copilotexceldemandimport01", "root:check:copilotrfqprep01", "root:check:addressgeocodingconfidence01", "root:check:copilotstoproutedraft01", "root:check:osrmroutedraftfromexcel01", "root:check:copilotroutereviewhumanapproval01", "root:check:copiloteblockruntimeanswerintegration01", "root:check:copilotguidedtaskengine01", "root:check:copilotdynamicquestionengine01", "root:check:copilotsmartdiagnosticengine01", "root:check:copilotrootcauseengine01", "root:check:copilotriskscoringengine01", "root:check:copilotclarifyingquestionengine01", "root:check:copilotoperationhealthengine01", "root:check:copilotnextbestactionengine01", "root:check:seferabireasoningassistant01", "root:check:seferabiturkishterminology01", "root:check:requeststormresilience01", "root:check:productionratelimitpolicy01", "root:check:airesponsesemanticqualitygate01", "root:check:exceltoroutereadinessredteam01", "root:check:roledataisolationredteam01", "root:check:auditlogandapprovaltrace01", "root:check:copilotnegotiationassist01", "root:check:copilotofferrecommendation01", "root:check:copilotshifttoagreementprep01", "root:check:copilotdispatchactionprep01", "root:check:financialoperationssurfaceandrbac01", "root:check:operationalcostmodel01", "backend:repo:check", "backend:fullcheck"].includes(full)) return "verify-core";
     return "core";
   }
   if (status === "ACTIVE_BACKEND_LINT") return "backend-lint";
@@ -1707,6 +1711,13 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Financial operations surface docs: \`docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md\``);
   out.push(`- Financial operations surface command: \`node backend\\scripts\\financial_operations_surface_and_rbac_01_check.js\``);
   out.push(`- Financial operations surface helper: \`backend/src/finance/financialOperationsScope.js\``);
+  out.push(`- Operational cost model milestone: \`OPERATIONAL-COST-MODEL-01\``);
+  out.push(`- Operational cost model check: \`check:operationalcostmodel01\``);
+  out.push(`- Operational cost model root check: \`root:check:operationalcostmodel01\``);
+  out.push(`- Operational cost model docs: \`docs/OPERATIONAL_COST_MODEL_01.md\``);
+  out.push(`- Operational cost model command: \`node backend\\scripts\\operational_cost_model_01_check.js\``);
+  out.push(`- Operational cost model helper: \`backend/src/finance/operationalCostModel.js\``);
+  out.push(`- Operational cost math helper: \`backend/src/finance/operationalCostMath.js\``);
   out.push(`- Marketplace panels milestone: \`UX-MARKETPLACE-PANELS-01\``);
   out.push(`- Marketplace panels check: \`check:uxmarketplacepanels01\``);
   out.push(`- Marketplace panels docs: \`docs/UX_MARKETPLACE_PANELS_01.md\``);
@@ -2368,10 +2379,24 @@ function verifyDoc(docText, summary) {
     "check:auditlogandapprovaltrace01",
     "docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md",
     "node backend\\scripts\\audit_log_and_approval_trace_01_check.js",
+    "FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01",
+    "check:financialoperationssurfaceandrbac01",
+    "root:check:financialoperationssurfaceandrbac01",
+    "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+    "node backend\\scripts\\financial_operations_surface_and_rbac_01_check.js",
+    "backend/src/finance/financialOperationsScope.js",
+    "OPERATIONAL-COST-MODEL-01",
+    "check:operationalcostmodel01",
+    "root:check:operationalcostmodel01",
+    "docs/OPERATIONAL_COST_MODEL_01.md",
+    "node backend\\scripts\\operational_cost_model_01_check.js",
+    "backend/src/finance/operationalCostModel.js",
+    "backend/src/finance/operationalCostMath.js",
     "Duplicate / overlap groups",
     "Product coverage rows",
     "REMOVED:",
   ];
+  ordered(docText, ['Financial operations surface milestone: `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`', 'Operational cost model milestone: `OPERATIONAL-COST-MODEL-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps financial operations before operational cost model and marketplace panels');
   ordered(docText, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
   ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Offer analysis milestone: `COPILOT-OFFER-ANALYSIS-01`', 'Negotiation assist milestone: `COPILOT-NEGOTIATION-ASSIST-01`', 'Offer recommendation milestone: `COPILOT-OFFER-RECOMMENDATION-01`', 'Shift to agreement prep milestone: `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`', 'Dispatch action prep milestone: `COPILOT-DISPATCH-ACTION-PREP-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching, offer collect, offer analysis, negotiation assist, offer recommendation, shift to agreement prep, dispatch prep and marketplace panels');
   for (const needle of mustContain) {

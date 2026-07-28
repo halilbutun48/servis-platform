@@ -377,6 +377,9 @@ async function main() {
       'backend/scripts/financial_operations_surface_and_rbac_01_check.js',
       'backend/src/finance/financialOperationsScope.js',
       'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md',
+      'backend/scripts/operational_cost_model_01_check.js',
+      'backend/scripts/operational_cost_model_01_expansion.js',
+      'docs/OPERATIONAL_COST_MODEL_01.md',
       // Demand intake companion files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/copilot_demand_intake_01_check.js',
       'backend/src/ai/chat/copilotDemandIntake.js',

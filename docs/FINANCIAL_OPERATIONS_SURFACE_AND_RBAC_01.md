@@ -45,6 +45,7 @@
 ## Future Milestone Mapping
 - `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`
 - `OPERATIONAL-COST-MODEL-01`
+- `OPERATIONAL-COST-MODEL-01`: `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile yaşar.
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`
 - `COMPANY-BUDGET-AND-SERVICE-COST-01`
 - `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01`
@@ -210,4 +211,4 @@
 - DRIVER / PERSONEL denied surfaces stay empty.
 
 ## Next Milestone
-- OPERATIONAL-COST-MODEL-01
+- `OPERATIONAL-COST-MODEL-01`: `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js`

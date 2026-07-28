@@ -56,9 +56,11 @@ function main() {
 
   const pkg = read('package.json');
   const runner = read('backend/scripts/run_product_extensions_check_chain.js');
+  const verifyText = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
   const primer = read('docs/PRIMER_SSOT.md');
+  const repoAuditText = read('docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md');
   const dashboardBulkDoc = read('docs/DASHBOARD_BULK_ENDPOINT_01.md');
   const cacheDoc = read('docs/CACHE_COALESCING_AND_BACKOFF_01.md');
   const requestStormDoc = read('docs/REQUEST_STORM_RESILIENCE_01.md');
@@ -91,6 +93,7 @@ function main() {
   const backlog = read('docs/NEXT_BACKLOG_V1.md');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
+  const financialSurfaceDocText = read('docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md');
   const demandIntakeHelper = read('backend/src/ai/chat/copilotDemandIntake.js');
   const demandToAgreementHelper = read('backend/src/ai/chat/copilotDemandToAgreementRoadmap.js');
   const offerAnalysisHelper = read('backend/src/ai/chat/copilotOfferAnalysis.js');
@@ -99,6 +102,10 @@ function main() {
   const shiftToAgreementHelper = read('backend/src/ai/chat/copilotShiftToAgreementPrep.js');
   const dispatchActionPrepHelper = read('backend/src/ai/chat/copilotDispatchActionPrep.js');
   const actionPrepHelper = read('backend/src/ai/chat/copilotActionPrep.js');
+  const opCostDoc = read('docs/OPERATIONAL_COST_MODEL_01.md');
+  const opCostHelper = read('backend/src/finance/operationalCostModel.js');
+  const opCostMathHelper = read('backend/src/finance/operationalCostMath.js');
+  const opCostCheck = read('backend/scripts/operational_cost_model_01_check.js');
   const shiftToAgreementCheck = read('backend/scripts/copilot_shift_to_agreement_prep_01_check.js');
   const dispatchActionPrepCheck = read('backend/scripts/copilot_dispatch_action_prep_01_check.js');
   const actionPrepCheck = read('backend/scripts/copilot_action_prep_01_check.js');
@@ -151,6 +158,7 @@ function main() {
   must(pkg, '"check:copilotdispatchactionprep01": "node backend/scripts/copilot_dispatch_action_prep_01_check.js"', 'package.json exposes check:copilotdispatchactionprep01');
   must(pkg, '"check:copilotactionprep01": "node backend/scripts/copilot_action_prep_01_check.js"', 'package.json exposes check:copilotactionprep01');
   must(pkg, '"check:financialoperationssurfaceandrbac01": "node backend/scripts/financial_operations_surface_and_rbac_01_check.js"', 'package.json exposes check:financialoperationssurfaceandrbac01');
+  must(pkg, '"check:operationalcostmodel01": "node backend/scripts/operational_cost_model_01_check.js"', 'package.json exposes check:operationalcostmodel01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -362,6 +370,7 @@ function main() {
     'check:copilotdispatchactionprep01',
     'check:copilotactionprep01',
     'check:financialoperationssurfaceandrbac01',
+    'check:operationalcostmodel01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
@@ -624,7 +633,13 @@ function main() {
   must(guide, 'node backend\\scripts\\financial_operations_surface_and_rbac_01_check.js', 'script guide includes financial operations command');
   must(guide, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'script guide includes financial operations doc');
   must(guide, 'backend/src/finance/financialOperationsScope.js', 'script guide includes financial operations helper');
+  must(guide, 'OPERATIONAL-COST-MODEL-01', 'script guide mentions operational cost model milestone');
+  must(guide, 'check:operationalcostmodel01', 'script guide exposes operational cost model check');
+  must(guide, 'docs/OPERATIONAL_COST_MODEL_01.md', 'script guide includes operational cost model doc');
+  must(guide, 'backend/src/finance/operationalCostModel.js', 'script guide includes operational cost model helper');
+  must(guide, 'backend/src/finance/operationalCostMath.js', 'script guide includes operational cost math helper');
   ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'UX-MARKETPLACE-PANELS-01'], 'script guide keeps action prep after dispatch prep and before marketplace panels');
+  ordered(guide, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'script guide keeps finance milestones in order');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
   must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
@@ -878,6 +893,12 @@ function main() {
   must(harnessCheck, 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'script harness check knows financial operations milestone');
   must(harnessCheck, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'script harness check knows financial operations doc');
   must(harnessCheck, 'backend/src/finance/financialOperationsScope.js', 'script harness check knows financial operations helper');
+  must(harnessCheck, 'check:operationalcostmodel01', 'script harness check knows operational cost model alias');
+  must(harnessCheck, 'operational_cost_model_01_check.js', 'script harness check knows operational cost model file');
+  must(harnessCheck, 'OPERATIONAL-COST-MODEL-01', 'script harness check knows operational cost model milestone');
+  must(harnessCheck, 'docs/OPERATIONAL_COST_MODEL_01.md', 'script harness check knows operational cost model doc');
+  must(harnessCheck, 'backend/src/finance/operationalCostModel.js', 'script harness check knows operational cost model helper');
+  must(harnessCheck, 'backend/src/finance/operationalCostMath.js', 'script harness check knows operational cost math helper');
   must(harnessDoc, 'root:check:verifiedsupplier01', 'script harness doc lists verified supplier root check');
   must(harnessDoc, 'verified_supplier_01_check.js', 'script harness doc lists verified supplier check');
   must(harnessDoc, 'docs/VERIFIED_SUPPLIER_01.md', 'script harness doc lists verified supplier doc');
@@ -919,6 +940,45 @@ function main() {
   must(harnessDoc, 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'script harness doc lists financial operations milestone');
   must(harnessDoc, 'node backend\\scripts\\financial_operations_surface_and_rbac_01_check.js', 'script harness doc lists financial operations command');
   must(harnessDoc, 'backend/src/finance/financialOperationsScope.js', 'script harness doc lists financial operations helper');
+  must(financialSurfaceDocText, 'OPERATIONAL-COST-MODEL-01`: `check:operationalcostmodel01`', 'financial surface doc links operational cost model');
+  must(financialSurfaceDocText, 'docs/OPERATIONAL_COST_MODEL_01.md', 'financial surface doc links operational cost doc');
+  must(financialSurfaceDocText, 'backend/src/finance/operationalCostModel.js', 'financial surface doc links operational cost model helper');
+  must(financialSurfaceDocText, 'backend/src/finance/operationalCostMath.js', 'financial surface doc links operational cost math helper');
+  must(opCostDoc, '# OPERATIONAL-COST-MODEL-01', 'operational cost doc title present');
+  must(opCostDoc, 'check:operationalcostmodel01', 'operational cost doc keeps canonical check wording');
+  must(opCostDoc, 'docs/OPERATIONAL_COST_MODEL_01.md', 'operational cost doc keeps doc path');
+  must(opCostDoc, 'backend/src/finance/operationalCostModel.js', 'operational cost doc links operational cost model helper');
+  must(opCostDoc, 'backend/src/finance/operationalCostMath.js', 'operational cost doc links operational cost math helper');
+  must(opCostHelper, 'export function normalizeOperationalCostInput', 'operational cost model helper exports normalize function');
+  must(opCostHelper, 'export function buildOperationalCostModel', 'operational cost model helper exports build function');
+  must(opCostHelper, 'export function getOperationalCostModelRegistrySummary', 'operational cost model helper exports registry summary');
+  must(opCostMathHelper, 'RECOGNIZED_CURRENCY_CODES', 'operational cost math helper exports currency set');
+  must(opCostMathHelper, 'buildFuelComponent', 'operational cost math helper exports fuel component');
+  must(opCostMathHelper, 'buildVehicleFixedComponent', 'operational cost math helper exports vehicle fixed component');
+  must(opCostMathHelper, 'buildVehicleVariableComponent', 'operational cost math helper exports vehicle variable component');
+  must(opCostMathHelper, 'buildDriverLaborComponent', 'operational cost math helper exports driver labor component');
+  must(opCostCheck, 'PASS OPERATIONAL-COST-MODEL-01', 'operational cost check keeps pass banner');
+  must(opCostCheck, 'buildCompleteInput', 'operational cost check includes complete case');
+  must(opCostCheck, 'buildPreviewInput', 'operational cost check includes preview case');
+  must(opCostCheck, 'buildBlockedInput', 'operational cost check includes blocked case');
+  must(opCostCheck, 'buildIncompleteInput', 'operational cost check includes incomplete case');
+  must(verifyText, 'check:operationalcostmodel01', 'verify chain script includes operational cost model alias');
+  must(verifyText, 'docs/OPERATIONAL_COST_MODEL_01.md', 'verify chain script includes operational cost model doc');
+  must(verifyText, 'backend/src/finance/operationalCostModel.js', 'verify chain script includes operational cost model helper');
+  must(verifyText, 'backend/src/finance/operationalCostMath.js', 'verify chain script includes operational cost math helper');
+  must(verifyText, 'backend/scripts/operational_cost_model_01_check.js', 'verify chain script includes operational cost model check path');
+  ordered(verifyText, [
+    'check:financialoperationssurfaceandrbac01',
+    'check:operationalcostmodel01',
+    'check:uxmarketplacepanels01',
+  ], 'verify chain keeps financial check order');
+  must(harnessDoc, 'root:check:operationalcostmodel01', 'script harness doc lists operational cost model root check');
+  must(harnessDoc, 'operational_cost_model_01_check.js', 'script harness doc lists operational cost model check');
+  must(harnessDoc, 'docs/OPERATIONAL_COST_MODEL_01.md', 'script harness doc lists operational cost model doc');
+  must(harnessDoc, 'OPERATIONAL-COST-MODEL-01', 'script harness doc lists operational cost model milestone');
+  must(harnessDoc, 'node backend\\scripts\\operational_cost_model_01_check.js', 'script harness doc lists operational cost model command');
+  must(harnessDoc, 'backend/src/finance/operationalCostModel.js', 'script harness doc lists operational cost model helper');
+  must(harnessDoc, 'backend/src/finance/operationalCostMath.js', 'script harness doc lists operational cost math helper');
   must(harnessCheck, 'check:uxmarketplacepanels01', 'script harness check knows marketplace panels alias');
   must(harnessCheck, 'ux_marketplace_panels_01_check.js', 'script harness check knows marketplace panels file');
   must(harnessCheck, 'UX-MARKETPLACE-PANELS-01', 'script harness check knows marketplace panels milestone');
@@ -1271,7 +1331,22 @@ function main() {
   must(roadmap, 'check:financialoperationssurfaceandrbac01', 'roadmap exposes financial operations check');
   must(roadmap, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'roadmap links financial operations doc');
   must(roadmap, 'backend/src/finance/financialOperationsScope.js', 'roadmap links financial operations helper');
+  must(roadmap, 'OPERATIONAL-COST-MODEL-01', 'roadmap keeps operational cost model milestone');
+  must(roadmap, 'check:operationalcostmodel01', 'roadmap exposes operational cost model check');
+  must(roadmap, 'docs/OPERATIONAL_COST_MODEL_01.md', 'roadmap links operational cost model doc');
+  must(roadmap, 'backend/src/finance/operationalCostModel.js', 'roadmap links operational cost model helper');
+  must(roadmap, 'backend/src/finance/operationalCostMath.js', 'roadmap links operational cost math helper');
   ordered(roadmap, ['COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01'], 'roadmap keeps dispatch prep before action prep and action prep before financial operations');
+  ordered(roadmap, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'roadmap keeps finance milestones in order');
+  must(repoAuditText, 'check:financialoperationssurfaceandrbac01', 'repo audit roadmap exposes financial operations check');
+  must(repoAuditText, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'repo audit roadmap links financial operations doc');
+  must(repoAuditText, 'backend/src/finance/financialOperationsScope.js', 'repo audit roadmap links financial operations helper');
+  must(repoAuditText, 'OPERATIONAL-COST-MODEL-01', 'repo audit roadmap mentions operational cost model milestone');
+  must(repoAuditText, 'check:operationalcostmodel01', 'repo audit roadmap exposes operational cost model check');
+  must(repoAuditText, 'docs/OPERATIONAL_COST_MODEL_01.md', 'repo audit roadmap links operational cost model doc');
+  must(repoAuditText, 'backend/src/finance/operationalCostModel.js', 'repo audit roadmap links operational cost model helper');
+  must(repoAuditText, 'backend/src/finance/operationalCostMath.js', 'repo audit roadmap links operational cost math helper');
+  ordered(repoAuditText, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'repo audit keeps finance milestones in order');
   must(offerAnalysisDoc, 'COPILOT-OFFER-ANALYSIS-01', 'offer analysis doc keeps milestone wording');
   must(offerAnalysisDoc, 'check:copilotofferanalysis01', 'offer analysis doc keeps canonical check wording');
   must(offerAnalysisHelper, 'COPILOT_OFFER_ANALYSIS_VERSION', 'offer analysis helper exports version');
@@ -1361,6 +1436,11 @@ function main() {
   must(primer, 'check:financialoperationssurfaceandrbac01', 'primer exposes financial operations check');
   must(primer, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'primer links financial operations doc');
   must(primer, 'backend/src/finance/financialOperationsScope.js', 'primer links financial operations helper');
+  must(primer, 'OPERATIONAL-COST-MODEL-01', 'primer mentions operational cost model milestone');
+  must(primer, 'check:operationalcostmodel01', 'primer exposes operational cost model check');
+  must(primer, 'docs/OPERATIONAL_COST_MODEL_01.md', 'primer links operational cost model doc');
+  must(primer, 'backend/src/finance/operationalCostModel.js', 'primer links operational cost model helper');
+  must(primer, 'backend/src/finance/operationalCostMath.js', 'primer links operational cost math helper');
   must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
   must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
   must(primer, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'primer links human approval doc');
@@ -1368,6 +1448,7 @@ function main() {
   must(primer, 'check:copilotexceldemandimport01', 'primer exposes Excel demand import check');
   must(primer, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'primer links Excel demand import doc');
   ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps action prep between dispatch prep and human approval');
+  ordered(primer, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'primer keeps finance milestones in order');
   must(aiRoadmap, 'SEFER-ABI-REASONING-ASSISTANT-01', 'AI action roadmap references reasoning assistant milestone');
   must(aiRoadmap, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'AI action roadmap references all-roles reasoning assistant milestone');
   must(aiRoadmap, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'AI action roadmap references reasoning answer composer milestone');

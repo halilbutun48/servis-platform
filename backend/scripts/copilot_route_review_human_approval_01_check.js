@@ -306,6 +306,10 @@ async function main() {
     'backend/scripts/copilot_dispatch_action_prep_01_check.js',
     'backend/src/ai/chat/copilotDispatchActionPrep.js',
     'docs/COPILOT_DISPATCH_ACTION_PREP_01.md',
+    // Operational cost model companion files are legitimate scope for this consolidated route-review pass.
+    'backend/scripts/operational_cost_model_01_check.js',
+    'backend/scripts/operational_cost_model_01_expansion.js',
+    'docs/OPERATIONAL_COST_MODEL_01.md',
     // Action prep companion files are legitimate scope for this consolidated route-review pass.
     'backend/scripts/copilot_action_prep_01_check.js',
     'backend/src/ai/chat/copilotActionPrep.js',

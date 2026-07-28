@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `417`
-- Toplam executable tracked file: `1249`
-- Combined registry row: `1666`
-- Root/backend/web/mobile package dağılımı: root `260`, backend `806`, web `96`, mobile `201`
+- Toplam package script entry: `418`
+- Toplam executable tracked file: `1252`
+- Combined registry row: `1670`
+- Root/backend/web/mobile package dağılımı: root `261`, backend `809`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `67`
+- Docs indexed: `68`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -184,6 +184,13 @@ Repo: `servis-platform`
 - Financial operations surface docs: `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md`
 - Financial operations surface command: `node backend\scripts\financial_operations_surface_and_rbac_01_check.js`
 - Financial operations surface helper: `backend/src/finance/financialOperationsScope.js`
+- Operational cost model milestone: `OPERATIONAL-COST-MODEL-01`
+- Operational cost model check: `check:operationalcostmodel01`
+- Operational cost model root check: `root:check:operationalcostmodel01`
+- Operational cost model docs: `docs/OPERATIONAL_COST_MODEL_01.md`
+- Operational cost model command: `node backend\scripts\operational_cost_model_01_check.js`
+- Operational cost model helper: `backend/src/finance/operationalCostModel.js`
+- Operational cost math helper: `backend/src/finance/operationalCostMath.js`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
@@ -354,7 +361,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `200`
+- ACTIVE_CORE: `201`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -370,11 +377,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `660`
+- NEEDS_REVIEW: `663`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `338`
+- Eski sistem term eşleşmesi: `339`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -384,14 +391,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 200 |
+| ACTIVE_CORE | 201 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 660 |
+| NEEDS_REVIEW | 663 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -453,6 +460,7 @@ Repo: `servis-platform`
 | root:check:copilotdispatchactionprep01 | package.json | root | node backend/scripts/copilot_dispatch_action_prep_01_check.js | verify-core | ACTIVE_CORE |  | COPILOT-DISPATCH-ACTION-PREP-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotactionprep01 | package.json | root | node backend/scripts/copilot_action_prep_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTACTIONPREP-01 |  | Owner or chain unclear |  |
 | root:check:financialoperationssurfaceandrbac01 | package.json | root | node backend/scripts/financial_operations_surface_and_rbac_01_check.js | verify-core | ACTIVE_CORE |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Breaks canonical verification chain |  |
+| root:check:operationalcostmodel01 | package.json | root | node backend/scripts/operational_cost_model_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-OPERATIONALCOSTMODEL-01 |  | Breaks canonical verification chain |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
@@ -848,6 +856,7 @@ Repo: `servis-platform`
 | excel_to_route_readiness_redteam_01_check.js | backend/scripts/excel_to_route_readiness_redteam_01_check.js | backend | root:check:exceltoroutereadinessredteam01 | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01-CHECK |  | Owner or chain unclear |  |
 | field_launch_pack_01_readiness_check.js | backend/scripts/field_launch_pack_01_readiness_check.js | backend | root:check:fieldlaunch01 | review | NEEDS_REVIEW |  | FIELD-LAUNCH-PACK-01-READINESS-CHECK |  | Owner or chain unclear |  |
 | final_ux_smoke_01_check.js | backend/scripts/final_ux_smoke_01_check.js | backend | root:check:finaluxsmoke01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
+| financial_operations_surface_and_rbac_01_check.js | backend/scripts/financial_operations_surface_and_rbac_01_check.js | backend | root:check:financialoperationssurfaceandrbac01 | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Owner or chain unclear |  |
 | fullcheck.js | backend/scripts/fullcheck.js | backend | backend:fullcheck | review | NEEDS_REVIEW |  | FULLCHECK |  | Owner or chain unclear |  |
 | guided_7x21_and_agreement_contract_check.js | backend/scripts/guided_7x21_and_agreement_contract_check.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-7-X-21-AND-AGREEMENT-CONTRACT-CHECK |  | Owner or chain unclear |  |
 | guided_offer_agreement_skip_check.js | backend/scripts/guided_offer_agreement_skip_check.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-OFFER-AGREEMENT-SKIP-CHECK |  | Owner or chain unclear |  |
@@ -1292,6 +1301,7 @@ Repo: `servis-platform`
 | routeMounts.js | backend/src/bootstrap/routeMounts.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-MOUNTS |  | Owner or chain unclear |  |
 | env.js | backend/src/env.js | backend | mobile:check:m81.4, mobile:check:m82.6 | review | NEEDS_REVIEW |  | ENV |  | Owner or chain unclear |  |
 | http.js | backend/src/errors/http.js | backend |  | review | NEEDS_REVIEW |  | HTTP |  | Owner or chain unclear |  |
+| financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
 | geo.js | backend/src/geo.js | backend | root:check:addressgeocodingconfidence01 | review | NEEDS_REVIEW |  | GEO |  | Owner or chain unclear |  |
 | gpsStateGate.js | backend/src/gps/gpsStateGate.js | backend |  | review | NEEDS_REVIEW |  | GPS-STATE-GATE |  | Owner or chain unclear |  |
 | sourceLabel.js | backend/src/gps/sourceLabel.js | backend |  | review | NEEDS_REVIEW |  | SOURCE-LABEL |  | Owner or chain unclear |  |
@@ -1477,8 +1487,9 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| financial_operations_surface_and_rbac_01_check.js | backend/scripts/financial_operations_surface_and_rbac_01_check.js | backend | root:check:financialoperationssurfaceandrbac01 | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Owner or chain unclear |  |
-| financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
+| operational_cost_model_01_check.js | backend/scripts/operational_cost_model_01_check.js | backend | root:check:operationalcostmodel01 | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MODEL-01-CHECK |  | Owner or chain unclear |  |
+| operationalCostModel.js | backend/src/finance/operationalCostModel.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MODEL |  | Owner or chain unclear |  |
+| operationalCostMath.js | backend/src/finance/operationalCostMath.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MATH |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

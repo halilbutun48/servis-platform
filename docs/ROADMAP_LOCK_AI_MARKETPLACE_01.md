@@ -463,6 +463,7 @@ Kullanılmayacak cümleler:
 - COPILOT-DISPATCH-ACTION-PREP-01: shift sonrası gelen read-only dispatch prep companion milestone; `check:copilotdispatchactionprep01`, `docs/COPILOT_DISPATCH_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotDispatchActionPrep.js` ile yaşar; supplier selection, offer accept/reject, supplier contact, RFQ send, agreement/contract execute, dispatch apply, route apply, driver/vehicle assignment ve provider credential management açmaz.
 - COPILOT-ACTION-PREP-01: dispatch, shift ve human approval için ortak read-only owner pack milestone'u; `check:copilotactionprep01`, `docs/COPILOT_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotActionPrep.js` ile yaşar; dispatch apply, route apply, driver/vehicle assignment, agreement/contract execute, payment/hakediş ve messaging/email/SMS/push açmaz.
 - FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01: `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md` ve `backend/src/finance/financialOperationsScope.js` ile yaşar; read-only/preview/RBAC sınırını korur, write-action ve muhasebe/program açmaz.
+- OPERATIONAL-COST-MODEL-01: `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile yaşar; pure deterministic read-only cost modeldir, write-action ve muhasebe/ERP açmaz.
 
 ### F) FINANSAL OPERASYON VE MALİYET YÖNETİMİ
 - FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01
