@@ -109,6 +109,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
       : isOrganization
         ? "Konum İncele"
         : "Personel Konum Seçici";
+    const financialOperationsLabel = "Bütçe ve Servis Maliyeti";
     const companyHubLabel = hubLabelForKind(me?.companyKind);
     const copilotEntry = getCopilotMenuEntry({ role, companyKind: me?.companyKind });
     const feedbackEntry = { label: "Geri Bildirim", path: "/shared/feedback" };
@@ -136,6 +137,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
       sections.push({
         title: operationsTitle,
         items: [
+          { label: "Finansal Operasyonlar", path: "/room/financial-operations" },
           { label: "Operasyon Sağlığı", path: "/room/operation-health" },
           { label: "Araçlar", path: "/room/vehicles" },
           { label: "Sürücüler", path: "/room/drivers" },
@@ -170,6 +172,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
         items: [
           { label: "Ticari Akış", path: base + "/commercial-flow" },
           { label: "Hizmet Değerlendirme", path: base + "/service-evaluation" },
+          { label: financialOperationsLabel, path: base + "/financial-operations" },
           { label: "Raporlar", path: base + "/reports" },
         ],
       });

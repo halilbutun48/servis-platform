@@ -159,6 +159,7 @@ function main() {
   must(pkg, '"check:copilotactionprep01": "node backend/scripts/copilot_action_prep_01_check.js"', 'package.json exposes check:copilotactionprep01');
   must(pkg, '"check:financialoperationssurfaceandrbac01": "node backend/scripts/financial_operations_surface_and_rbac_01_check.js"', 'package.json exposes check:financialoperationssurfaceandrbac01');
   must(pkg, '"check:operationalcostmodel01": "node backend/scripts/operational_cost_model_01_check.js"', 'package.json exposes check:operationalcostmodel01');
+  must(pkg, '"check:roomprofitabilityandquotefloor01": "node backend/scripts/room_profitability_and_quote_floor_01_check.js"', 'package.json exposes check:roomprofitabilityandquotefloor01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -371,6 +372,7 @@ function main() {
     'check:copilotactionprep01',
     'check:financialoperationssurfaceandrbac01',
     'check:operationalcostmodel01',
+    'check:roomprofitabilityandquotefloor01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
@@ -638,6 +640,10 @@ function main() {
   must(guide, 'docs/OPERATIONAL_COST_MODEL_01.md', 'script guide includes operational cost model doc');
   must(guide, 'backend/src/finance/operationalCostModel.js', 'script guide includes operational cost model helper');
   must(guide, 'backend/src/finance/operationalCostMath.js', 'script guide includes operational cost math helper');
+  must(guide, 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01', 'script guide mentions room profitability milestone');
+  must(guide, 'check:roomprofitabilityandquotefloor01', 'script guide exposes room profitability check');
+  must(guide, 'docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md', 'script guide includes room profitability doc');
+  must(guide, 'backend/src/finance/roomProfitabilityAndQuoteFloor.js', 'script guide includes room profitability helper');
   ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'UX-MARKETPLACE-PANELS-01'], 'script guide keeps action prep after dispatch prep and before marketplace panels');
   ordered(guide, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'script guide keeps finance milestones in order');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
@@ -1336,6 +1342,10 @@ function main() {
   must(roadmap, 'docs/OPERATIONAL_COST_MODEL_01.md', 'roadmap links operational cost model doc');
   must(roadmap, 'backend/src/finance/operationalCostModel.js', 'roadmap links operational cost model helper');
   must(roadmap, 'backend/src/finance/operationalCostMath.js', 'roadmap links operational cost math helper');
+  must(roadmap, 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01', 'roadmap keeps room profitability milestone');
+  must(roadmap, 'check:roomprofitabilityandquotefloor01', 'roadmap exposes room profitability check');
+  must(roadmap, 'docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md', 'roadmap links room profitability doc');
+  must(roadmap, 'backend/src/finance/roomProfitabilityAndQuoteFloor.js', 'roadmap links room profitability helper');
   ordered(roadmap, ['COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01'], 'roadmap keeps dispatch prep before action prep and action prep before financial operations');
   ordered(roadmap, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'roadmap keeps finance milestones in order');
   must(repoAuditText, 'check:financialoperationssurfaceandrbac01', 'repo audit roadmap exposes financial operations check');
@@ -1346,6 +1356,10 @@ function main() {
   must(repoAuditText, 'docs/OPERATIONAL_COST_MODEL_01.md', 'repo audit roadmap links operational cost model doc');
   must(repoAuditText, 'backend/src/finance/operationalCostModel.js', 'repo audit roadmap links operational cost model helper');
   must(repoAuditText, 'backend/src/finance/operationalCostMath.js', 'repo audit roadmap links operational cost math helper');
+  must(repoAuditText, 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01', 'repo audit roadmap mentions room profitability milestone');
+  must(repoAuditText, 'check:roomprofitabilityandquotefloor01', 'repo audit roadmap exposes room profitability check');
+  must(repoAuditText, 'docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md', 'repo audit roadmap links room profitability doc');
+  must(repoAuditText, 'backend/src/finance/roomProfitabilityAndQuoteFloor.js', 'repo audit roadmap links room profitability helper');
   ordered(repoAuditText, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'repo audit keeps finance milestones in order');
   must(offerAnalysisDoc, 'COPILOT-OFFER-ANALYSIS-01', 'offer analysis doc keeps milestone wording');
   must(offerAnalysisDoc, 'check:copilotofferanalysis01', 'offer analysis doc keeps canonical check wording');
@@ -1441,6 +1455,10 @@ function main() {
   must(primer, 'docs/OPERATIONAL_COST_MODEL_01.md', 'primer links operational cost model doc');
   must(primer, 'backend/src/finance/operationalCostModel.js', 'primer links operational cost model helper');
   must(primer, 'backend/src/finance/operationalCostMath.js', 'primer links operational cost math helper');
+  must(primer, 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01', 'primer mentions room profitability milestone');
+  must(primer, 'check:roomprofitabilityandquotefloor01', 'primer exposes room profitability check');
+  must(primer, 'docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md', 'primer links room profitability doc');
+  must(primer, 'backend/src/finance/roomProfitabilityAndQuoteFloor.js', 'primer links room profitability helper');
   must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
   must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
   must(primer, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'primer links human approval doc');

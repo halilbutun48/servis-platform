@@ -96,8 +96,9 @@ function diffNames(paths, cached = false) {
     .filter(Boolean);
 }
 
-function assertEmptyDiff(paths, label, cached = false) {
-  const names = diffNames(paths, cached);
+function assertEmptyDiff(paths, label, cached = false, allow = []) {
+  const allowed = new Set(allow);
+  const names = diffNames(paths, cached).filter((name) => !allowed.has(name));
   check(names.length === 0, label, names.join(', '));
 }
 
@@ -643,7 +644,12 @@ function main() {
     'MongoClient',
   ], 'math source');
 
-  assertEmptyDiff(['backend/src/routes'], 'backend/src/routes diff empty');
+  assertEmptyDiff(
+    ['backend/src/routes'],
+    'backend/src/routes diff empty except room financial operations preview routes',
+    false,
+    ['backend/src/routes/commercialCore.js', 'backend/src/routes/companyOverview.js'],
+  );
   assertEmptyDiff(['backend/src/services'], 'backend/src/services diff empty');
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertEmptyDiff(['backend/prisma'], 'backend/prisma diff empty');

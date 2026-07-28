@@ -11,14 +11,15 @@ Tarama kapsamı:
 - `web/src/components/**/*.jsx`
 - `web/src/components/PanelChrome.jsx`
 - `web/src/panels/shared/OfferQualityRankingCard.jsx`
+- `web/src/panels/shared/FinancialOperationsPanel.jsx`
 - `web/src/index.css`
 - `web/src/layout/NavDock.jsx`
 - `web/src/App.jsx` route/menu bağlantıları
 
 Özet envanter:
-  - `122` panel-related JSX dosyası: `web/src/panels/**/*.jsx`
-- `62` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
-- `99` gerçek route surface + `/` root redirect ile `100` unique route literal
+  - `123` panel-related JSX dosyası: `web/src/panels/**/*.jsx`
+- `63` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
+- `103` gerçek route surface + `/` root redirect ile `104` unique route literal
 
 ### Super Admin (20)
 - `/superadmin`
@@ -40,7 +41,7 @@ Tarama kapsamı:
 - `/superadmin/operation-verification`
 - `/superadmin/copilot`
 
-### Room / Oda (13)
+### Room / Oda (14)
 - `/room/reports`
 - `/room/operation-health`
 - `/room/map`
@@ -51,16 +52,18 @@ Tarama kapsamı:
 - `/room/agreements`
 - `/room/offers`
 - `/room/commercial-flow`
+- `/room/financial-operations`
 - `/room/hub`
 - `/room/checkin`
 - `/room/copilot`
 
-### Company / Firma (14)
+### Company / Firma (15)
 - `/company`
 - `/company/reports`
 - `/company/operations`
 - `/company/map`
 - `/company/commercial-flow`
+- `/company/financial-operations`
 - `/company/shifts`
 - `/company/georeview`
 - `/company/agreements`
@@ -71,12 +74,13 @@ Tarama kapsamı:
 - `/company/service-evaluation`
 - `/company/copilot`
 
-### School (14)
+### School (15)
 - `/school`
 - `/school/reports`
 - `/school/operations`
 - `/school/map`
 - `/school/commercial-flow`
+- `/school/financial-operations`
 - `/school/shifts`
 - `/school/georeview`
 - `/school/agreements`
@@ -87,13 +91,14 @@ Tarama kapsamı:
 - `/school/parents`
 - `/school/copilot`
 
-### Organization (15)
+### Organization (16)
 - `/organization`
 - `/organization/reports`
 - `/organization/operations`
 - `/organization/plans`
 - `/organization/map`
 - `/organization/commercial-flow`
+- `/organization/financial-operations`
 - `/organization/shifts`
 - `/organization/georeview`
 - `/organization/agreements`

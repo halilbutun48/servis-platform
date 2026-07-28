@@ -273,6 +273,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Bu finans bloğu mevcut dynamic savings, hakediş önizleme, kalite/payment bridge ve CSV export yüzeylerini yeniden kullanır; full muhasebe/e-Fatura/e-Defter/vergi programı değildir.
 - `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01` `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md` ve `backend/src/finance/financialOperationsScope.js` ile yaşar; read-only/preview/RBAC sınırını korur.
 - `OPERATIONAL-COST-MODEL-01` `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile yaşar; pure deterministic read-only cost modeldir, write-action ve muhasebe/ERP açmaz.
+- `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01` `check:roomprofitabilityandquotefloor01`, `docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md` ve `backend/src/finance/roomProfitabilityAndQuoteFloor.js` ile yaşar; oda kârlılığı ve quote floor preview katmanını reuse eder, write-action ve muhasebe/ERP açmaz.
 
 ### COPILOT-EXCEL-DEMAND-IMPORT-01 [CHECK]
 - `check:copilotexceldemandimport01` Sefer Abi için Excel/CSV demand import readiness, column mapping, data quality ve human approval gate docs/check olarak kilitler; runtime import execute, file upload endpoint ve DB write açmaz.

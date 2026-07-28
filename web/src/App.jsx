@@ -55,6 +55,7 @@ const OrganizationCenterPanel = lazy(() => import("./panels/organization/CenterP
 const OrganizationPlansPanel = lazy(() => import("./panels/organization/PlansPanel"));
 const CompanyOperationsPanel = lazy(() => import("./panels/company/OperationsPanel"));
 const SchoolOperationsPanel = lazy(() => import("./panels/school/OperationsPanel"));
+const FinancialOperationsPanel = lazy(() => import("./panels/shared/FinancialOperationsPanel"));
 
 // DRIVER
 const DriverMapPanel = lazy(() => import("./panels/driver/MapPanel"));
@@ -349,6 +350,7 @@ export default function App() {
     if (path === "/room/agreements") return { layout: true, node: <RoomAgreementsPanel /> };
     if (path === "/room/offers") return { layout: true, node: <RoomOffersPanel /> };
     if (path === "/room/commercial-flow") return { layout: true, node: <CommercialFlowPanel /> };
+    if (path === "/room/financial-operations") return { layout: true, node: <FinancialOperationsPanel scope="ROOM" /> };
     if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
     if (path === "/room/checkin") return { layout: true, node: <RoomCheckinPanel /> };
     if (path === "/room/copilot") return { layout: true, node: <CopilotPanel /> };
@@ -358,6 +360,7 @@ export default function App() {
     if (path === "/company/operations") return { layout: true, node: <CompanyOperationsPanel /> };
     if (path === "/company/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/company/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
+    if (path === "/company/financial-operations") return { layout: true, node: <FinancialOperationsPanel scope="COMPANY" /> };
     if (path === "/company/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
     if (path === "/company/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/company/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
@@ -373,6 +376,7 @@ export default function App() {
     if (path === "/school/operations") return { layout: true, node: <SchoolOperationsPanel /> };
     if (path === "/school/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/school/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
+    if (path === "/school/financial-operations") return { layout: true, node: <FinancialOperationsPanel scope="COMPANY" /> };
     if (path === "/school/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
     if (path === "/school/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/school/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
@@ -390,6 +394,7 @@ export default function App() {
     if (path === "/organization/plans") return { layout: true, node: <OrganizationPlansPanel /> };
     if (path === "/organization/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/organization/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
+    if (path === "/organization/financial-operations") return { layout: true, node: <FinancialOperationsPanel scope="COMPANY" /> };
     if (path === "/organization/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
     if (path === "/organization/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/organization/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };

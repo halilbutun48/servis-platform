@@ -48,6 +48,7 @@
     "check:copilotactionprep01": "node backend/scripts/copilot_action_prep_01_check.js",
     "check:financialoperationssurfaceandrbac01": "node backend/scripts/financial_operations_surface_and_rbac_01_check.js",
     "check:operationalcostmodel01": "node backend/scripts/operational_cost_model_01_check.js",
+    "check:roomprofitabilityandquotefloor01": "node backend/scripts/room_profitability_and_quote_floor_01_check.js",
     "check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js",
     "check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js",
     "check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js",

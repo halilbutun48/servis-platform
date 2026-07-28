@@ -3,6 +3,10 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { rememberResponse } from "../utils/responseCache.js";
 import { ymdTR, addDaysTR, atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd } from "../time/tr.js";
+import {
+  buildCompanyBudgetAndServiceCostPreview,
+  buildFinancialOperationsCompanyKindDeniedPreview,
+} from "../finance/roomProfitabilityAndQuoteFloor.js";
 
 function scopeOf(user) {
   return { role: user?.role, companyId: user?.companyId, userId: user?.id };
@@ -253,6 +257,82 @@ export function companyOverviewRouter() {
       ? await buildCommercialFlowSummary(company)
       : await rememberResponse(`company-overview:commercial-flow:${company.id}`, () => buildCommercialFlowSummary(company), { ttlMs: 15000, scope: scopeOf(req.user) });
     return res.json(payload);
+  });
+
+  r.get("/financial-operations/preview", async (req, res) => {
+    const company = await resolveCompany(req);
+    if (!company) return res.status(400).json({ ok: false, error: "companyId required" });
+    if (String(req.user?.role || "").toUpperCase() === "COMPANY" && ["SCHOOL", "ORGANIZATION"].includes(String(company.kind || "").toUpperCase())) {
+      return res.status(403).json(buildFinancialOperationsCompanyKindDeniedPreview({
+        role: req.user?.role,
+        companyKind: company.kind,
+        scope: "COMPANY",
+      }));
+    }
+
+    const [workflowSummary, commercialFlowSummary, latestShift, latestAgreement] = await Promise.all([
+      buildWorkflowSummary(company),
+      buildCommercialFlowSummary(company),
+      prisma.shift.findFirst({
+        where: { companyId: company.id, status: { in: ["APPROVED", "ACTIVE", "SPLIT"] } },
+        orderBy: [{ routeSnapshotValidatedAt: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
+        select: {
+          id: true,
+          status: true,
+          roomId: true,
+          companyId: true,
+          routeSnapshotDistanceM: true,
+          routeSnapshotDurationSec: true,
+          routeSnapshotValidatedAt: true,
+          routeSnapshotInputHash: true,
+          requiredPaxOverride: true,
+          companyOfferAmount: true,
+          roomOfferAmount: true,
+          companyOfferNote: true,
+          roomOfferNote: true,
+          startAt: true,
+          endAt: true,
+          room: { select: { id: true, name: true, kind: true } },
+          company: { select: { id: true, name: true, kind: true } },
+          vehicle: { select: { id: true, plate: true, capacity: true } },
+          _count: { select: { people: true, stops: true } },
+        },
+      }),
+      prisma.agreement.findFirst({
+        where: { companyId: company.id },
+        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+        select: {
+          id: true,
+          status: true,
+          companyId: true,
+          roomId: true,
+          companyOfferAmount: true,
+          roomOfferAmount: true,
+          updatedAt: true,
+          room: { select: { id: true, name: true, kind: true } },
+          company: { select: { id: true, name: true, kind: true } },
+        },
+      }),
+    ]);
+
+    const mergedCompanySummary = {
+      ...workflowSummary,
+      cards: {
+        ...(workflowSummary?.cards || {}),
+        ...(commercialFlowSummary?.cards || {}),
+      },
+    };
+
+    return res.json(buildCompanyBudgetAndServiceCostPreview({
+      role: req.user?.role,
+      companyKind: company.kind,
+      company,
+      shift: latestShift,
+      agreement: latestAgreement,
+      companySummary: mergedCompanySummary,
+      costInputs: req.query || {},
+      quoteFloorInputs: req.query || {},
+    }));
   });
 
   return r;

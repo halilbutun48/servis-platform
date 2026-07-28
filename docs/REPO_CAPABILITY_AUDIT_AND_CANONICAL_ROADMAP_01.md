@@ -147,6 +147,7 @@ Not:
 - `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01` mevcut dynamic savings, hakediş önizleme, quality-payment bridge, payment preview, CSV export ve Sefer Abi cost cevapları üzerine kurulur; full muhasebe/e-Fatura/e-Defter/vergi programı değildir.
 - Kanonik yüzey kaydı: `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md`, `backend/src/finance/financialOperationsScope.js`.
 - `OPERATIONAL-COST-MODEL-01` `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile takip edilir; pure deterministic read-only cost modeldir.
+- `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01` `check:roomprofitabilityandquotefloor01`, `docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md` ve `backend/src/finance/roomProfitabilityAndQuoteFloor.js` ile takip edilir; room profitability ve quote floor preview katmanını yeniden kullanır.
 - `PROACTIVE-COPILOT-01` harness içinde açıkça `MISSING_FUTURE_MILESTONE` olarak işaretli.
 - `PROACTIVE-COPILOT-NEXT-BEST-ACTION-01` docs-only companion milestone'dır; `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md` ile yaşar ve `COPILOT-NEXT-BEST-ACTION-01` ile aynı şey değildir.
 - `VOICE-COPILOT-ROLE-ASSISTANT-01` için web tarafında text-to-speech / voice readout yardımcı kodu mevcut olsa da, dedicated check script ve tamamlanmış voice-command execution zinciri görünmüyor.

@@ -30,23 +30,23 @@ Repo: `servis-platform`
 
 ## 2) Audit Summary
 
-- Panel yüzey sayısı: `64`
-- PASS: `20`
-- PASS-: `20`
-- UX-FIX: `24`
+- Panel yüzey sayısı: `65`
+- PASS: `22`
+- PASS-: `21`
+- UX-FIX: `22`
 - DEFER: `0`
 
 ### Role Summary
 
-- Super Admin: total `18`, PASS `6`, PASS- `9`, UX-FIX `3`, DEFER `0`
-- Room: total `10`, PASS `4`, PASS- `2`, UX-FIX `4`, DEFER `0`
+- Super Admin: total `18`, PASS `7`, PASS- `9`, UX-FIX `2`, DEFER `0`
+- Room: total `10`, PASS `4`, PASS- `3`, UX-FIX `3`, DEFER `0`
 - Company: total `14`, PASS `1`, PASS- `6`, UX-FIX `7`, DEFER `0`
 - Driver: total `5`, PASS `1`, PASS- `1`, UX-FIX `3`, DEFER `0`
 - Personel: total `2`, PASS `2`, PASS- `0`, UX-FIX `0`, DEFER `0`
 - Parent/Veli: total `1`, PASS `1`, PASS- `0`, UX-FIX `0`, DEFER `0`
 - Organization: total `2`, PASS `1`, PASS- `0`, UX-FIX `1`, DEFER `0`
 - Public: total `3`, PASS `2`, PASS- `0`, UX-FIX `1`, DEFER `0`
-- Shared: total `7`, PASS `2`, PASS- `2`, UX-FIX `3`, DEFER `0`
+- Shared: total `8`, PASS `3`, PASS- `2`, UX-FIX `3`, DEFER `0`
 - School: total `2`, PASS `0`, PASS- `0`, UX-FIX `2`, DEFER `0`
 
 ## 3) Audit Matrix
@@ -88,12 +88,13 @@ Repo: `servis-platform`
 | `web/src/panels/room/MapPanel.jsx` | Room | Var | Yok | Var | Net | Var | Var | Var | Risk | UX-FIX |
 | `web/src/panels/room/OffersPanel.jsx` | Room | Var | Yok | Var | Net | Yok | Yok | Yok | Risk | UX-FIX |
 | `web/src/panels/room/OperationHealthPanel.jsx` | Room | Var | Var | Var | Net | Var | Var | Var | Temiz | PASS |
-| `web/src/panels/room/ShiftsPanel.jsx` | Room | Var | Yok | Var | Net | Var | Yok | Yok | Risk | UX-FIX |
-| `web/src/panels/room/VehiclesPanel.jsx` | Room | Var | Var | Var | Kısmi/Belirsiz | Var | Var | Yok | Temiz | PASS |
+| `web/src/panels/room/ShiftsPanel.jsx` | Room | Var | Yok | Var | Net | Var | Yok | Yok | Temiz | PASS- |
+| `web/src/panels/room/VehiclesPanel.jsx` | Room | Var | Var | Var | Kısmi/Belirsiz | Var | Var | Var | Temiz | PASS |
 | `web/src/panels/school/OperationsPanel.jsx` | School | Var | Var | Var | Net | Var | Var | Var | Risk | UX-FIX |
 | `web/src/panels/school/ParentInvitePanel.jsx` | School | Var | Yok | Var | Net | Var | Var | Var | Risk | UX-FIX |
 | `web/src/panels/shared/CopilotPanel.jsx` | Shared | Var | Var | Var | Net | Var | Var | Yok | Risk | UX-FIX |
 | `web/src/panels/shared/FeedbackLoopPanel.jsx` | Shared | Var | Yok | Var | Kısmi/Belirsiz | Yok | Yok | Yok | Temiz | PASS- |
+| `web/src/panels/shared/FinancialOperationsPanel.jsx` | Shared | Var | Var | Var | Net | Var | Var | Var | Temiz | PASS |
 | `web/src/panels/shared/ForcePasswordChangePanel.jsx` | Shared | Yok | Yok | Var | Kısmi/Belirsiz | Yok | Var | Var | Risk | UX-FIX |
 | `web/src/panels/shared/KvkkPanel.jsx` | Shared | Var | Yok | Var | Kısmi/Belirsiz | Yok | Yok | Var | Risk | UX-FIX |
 | `web/src/panels/shared/LogsPanel.jsx` | Shared | Var | Yok | Var | Net | Var | Var | Var | Temiz | PASS- |
@@ -113,7 +114,7 @@ Repo: `servis-platform`
 | `web/src/panels/superadmin/RegionsPanel.jsx` | Super Admin | Yok | Yok | Var | Kısmi/Belirsiz | Var | Yok | Var | Temiz | PASS- |
 | `web/src/panels/superadmin/RoomsPanel.jsx` | Super Admin | Var | Yok | Var | Kısmi/Belirsiz | Yok | Yok | Var | Temiz | PASS- |
 | `web/src/panels/superadmin/SsotAlignmentPanel.jsx` | Super Admin | Var | Yok | Var | Kısmi/Belirsiz | Yok | Yok | Var | Temiz | PASS- |
-| `web/src/panels/superadmin/SuperAdminPanel.jsx` | Super Admin | Var | Var | Var | Net | Var | Var | Var | Risk | UX-FIX |
+| `web/src/panels/superadmin/SuperAdminPanel.jsx` | Super Admin | Var | Var | Var | Net | Var | Var | Var | Temiz | PASS |
 | `web/src/panels/superadmin/TelematicsHubPanel.jsx` | Super Admin | Var | Var | Var | Kısmi/Belirsiz | Yok | Var | Yok | Temiz | PASS |
 | `web/src/panels/superadmin/TrustQualityPanel.jsx` | Super Admin | Var | Var | Var | Net | Var | Var | Var | Temiz | PASS |
 | `web/src/panels/superadmin/UsersPanel.jsx` | Super Admin | Var | Var | Var | Kısmi/Belirsiz | Var | Var | Var | Temiz | PASS |

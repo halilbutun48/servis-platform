@@ -232,6 +232,24 @@ export const ROOM = [
     screenMenus: [{ label: "Vardiyalar", path: "/room/shifts", purpose: "Check-in kaydının bağlı olduğu işi görmek için açılır." }],
     simpleTerms: pickTerms(["checkin"]),
   }),
+  screen(1110, "/room/financial-operations", "Finansal Operasyonlar", {
+    menuPurpose: "Oda tarafındaki karlılık, teklif tabanı ve bütçe önizlemelerini read-only görmek için kullanılır.",
+    forWhom: "Oda operasyonunu ve maliyet önizlemelerini takip eden kullanıcı içindir.",
+    firstStep: "Önce karlılık, teklif tabanı veya bütçe önizlemesini seç.",
+    nextStep: "Gerekirse şirket finansal operasyon ekranına geç.",
+    doNotDo: "Bu ekranı write-action, muhasebe veya ödeme işlemi sanma.",
+    stepByStep: ["Kârlılık veya maliyet kartını seç.", "Teklif tabanı ve bütçe önizlemesini oku.", "Gerekirse şirket ekranına geç."],
+    commonMistakes: ["Önizlemeyi yazma ekranı sanmak.", "Şirket ve oda bütçe alanlarını karıştırmak."],
+    doneChecklist: ["Read-only finansal önizleme açıldı.", "İlgili next step netleşti."],
+    buttonGuides: [
+      button("Önizlemeyi aç", "Finansal karlılık ve bütçe önizlemesini gösterir.", "Maliyet okumak istediğinde kullan.", "Read-only finansal ekran açılır."),
+    ],
+    screenMenus: [
+      { label: "Şirket Finansal Operasyonlar", path: "/company/financial-operations", purpose: "Şirket bütçe ve servis maliyeti görünümüne geçmek için açılır." },
+      { label: "Copilot", path: "/room/copilot", purpose: "Kâr, teklif tabanı veya bütçe sorularında rehber almak için açılır." },
+    ],
+    simpleTerms: pickTerms(["karlilik", "teklifTabani", "butce"]),
+  }),
   screen(1114, "/room/operation-health", "Operasyon Sağlığı", {
     menuPurpose: "Room içindeki sürücü, cihaz ve canlılık risklerini toplu görmek için kullanılır.",
     forWhom: "Operasyon sağlığını izleyen oda kullanıcısı içindir.",
@@ -423,6 +441,24 @@ export const COMPANY = [
       { label: "Copilot", path: "/company/copilot", purpose: "Takılırsan operasyon rehberi almak için açılır." },
     ],
     chatQuestions: ['Bu kayıt ne durumda?', 'Önce neyi kontrol edeyim?', 'Hangi ekrana geçeyim?'],
+  }),
+  screen(2119, "/company/financial-operations", "Bütçe ve Servis Maliyeti", {
+    menuPurpose: "Şirket bütçe, servis maliyeti ve karlılık önizlemelerini read-only görmek için kullanılır.",
+    forWhom: "Şirket finansal operasyonlarını takip eden kullanıcı içindir.",
+    firstStep: "Önce bütçe, servis maliyeti veya karlılık önizlemesini seç.",
+    nextStep: "Gerekirse room finansal operasyon ekranına geç.",
+    doNotDo: "Bu ekranı yazma işlemi, muhasebe kaydı veya ödeme akışı sanma.",
+    stepByStep: ["Bütçe veya servis maliyeti kartını seç.", "Kârlılık ve quote floor önizlemesini oku.", "Gerekirse room ekranına geç."],
+    commonMistakes: ["Önizlemeyi yazma ekranı sanmak.", "Oda ve şirket maliyet alanlarını karıştırmak."],
+    doneChecklist: ["Read-only şirket finansal önizleme açıldı.", "İlgili next step netleşti."],
+    buttonGuides: [
+      button("Önizlemeyi aç", "Şirket bütçe ve servis maliyeti önizlemesini gösterir.", "Maliyet okumak istediğinde kullan.", "Read-only şirket finansal ekran açılır."),
+    ],
+    screenMenus: [
+      { label: "Oda Finansal Operasyonlar", path: "/room/financial-operations", purpose: "Oda tarafındaki karlılık ve teklif tabanı görünümüne geçmek için açılır." },
+      { label: "Copilot", path: "/company/copilot", purpose: "Bütçe ve servis maliyeti sorularında rehber almak için açılır." },
+    ],
+    simpleTerms: pickTerms(["butce", "servisMaliyeti", "karlilik"]),
   }),
   screen(2102, "/company/shifts", "Vardiyalar", {
     menuPurpose: "Bu ekranın ana işi takip etmektir. Burada kurulan vardiyaları, teklifleri, bekleyen işleri ve operasyon durumunu izlersin.",

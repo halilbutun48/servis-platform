@@ -312,6 +312,14 @@ export async function getPaymentBackboneReadinessPreviewCsv(params = {}, { token
   return cachedGet(`/api/commercial-core/payment-backbone/readiness/preview.csv${buildQueryString(params)}`, { token, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
 
+export function getRoomFinancialOperationsPreview(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
+  return cachedGet(`/api/commercial-core/room/financial-operations/preview${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
+}
+
+export function getCompanyFinancialOperationsPreview(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
+  return cachedGet(`/api/company/overview/financial-operations/preview${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
+}
+
 export async function getAgreementQualityPaymentBridgePreview(agreementId, { token, signal } = {}) {
   return cachedGet(`/api/agreements/${Number(agreementId)}/quality-payment-bridge`, { token, signal, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }
