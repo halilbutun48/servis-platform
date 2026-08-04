@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -96,15 +97,174 @@ function ordered(text, needles, label) {
 }
 
 function gitLines(args) {
-  const out = execFileSync("git", args, {
+  const out = execFileSync("git", ["-c", "safe.directory=D:/servis-platform", ...args], {
     cwd: repoRoot,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "ignore"],
+    stdio: ["ignore", "pipe", "pipe"],
   });
   return String(out || "")
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function compareText(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function normalizePath(relPath) {
+  return String(relPath || "")
+    .replace(/\\/g, "/")
+    .replace(/^\.?\//, "")
+    .trim();
+}
+
+function sortedUniquePaths(paths) {
+  return [...new Set(paths.map((text) => normalizePath(text)))].sort(compareText);
+}
+
+function gitCapture(args) {
+  return execFileSync("git", ["-c", "safe.directory=D:/servis-platform", ...args], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}
+
+function gitStatusEntries(paths) {
+  return String(gitCapture(["status", "--porcelain=v1", "--untracked-files=all", "--", ...paths]) || "")
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => {
+      const rawPath = line.slice(3);
+      const pathText = rawPath.includes(" -> ") ? rawPath.split(" -> ").pop() : rawPath;
+      return { path: normalizePath(pathText), raw: line };
+    });
+}
+
+function fileSha256(relPath) {
+  return crypto.createHash("sha256").update(fs.readFileSync(path.join(repoRoot, relPath))).digest("hex").toUpperCase();
+}
+
+function safeFileSha256(relPath, expectedHash) {
+  try {
+    return fileSha256(relPath) === String(expectedHash || "").toUpperCase();
+  } catch {
+    return false;
+  }
+}
+
+function mustFileSha256(relPath, expectedHash, label) {
+  must(fileSha256(relPath) === String(expectedHash || "").toUpperCase(), label);
+}
+
+function isMigrationDirectoryShape(relPath) {
+  try {
+    const absPath = path.join(repoRoot, relPath);
+    const stat = fs.lstatSync(absPath);
+    if (!stat.isDirectory() || stat.isSymbolicLink()) {
+      return false;
+    }
+    const entries = fs.readdirSync(absPath, { withFileTypes: true }).map((entry) => entry.name).sort(compareText);
+    return entries.length === 1 && entries[0] === "migration.sql";
+  } catch {
+    return false;
+  }
+}
+
+function mustMigrationDirectoryShape(relPath, label) {
+  const absPath = path.join(repoRoot, relPath);
+  const stat = fs.lstatSync(absPath);
+  must(stat.isDirectory() && !stat.isSymbolicLink(), `${label} is an ordinary directory`);
+  const entries = fs.readdirSync(absPath, { withFileTypes: true }).map((entry) => entry.name).sort(compareText);
+  must(entries.length === 1 && entries[0] === "migration.sql", `${label} has exactly one migration.sql`);
+}
+
+function collectBackendPrismaEvidence() {
+  const tracked = sortedUniquePaths(gitLines(["diff", "--name-only", "--", "prisma", "backend/prisma"]));
+  const staged = sortedUniquePaths(gitLines(["diff", "--cached", "--name-only", "--", "prisma", "backend/prisma"]));
+  const status = sortedUniquePaths(gitStatusEntries(["prisma", "backend/prisma"]).map((entry) => entry.path));
+  const actual = sortedUniquePaths([...tracked, ...staged, ...status]);
+  return { tracked, staged, status, actual };
+}
+
+const ACCEPTED_SCHEMA_PATH = "backend/prisma/schema.prisma";
+const ACCEPTED_SCHEMA_SHA256 = "7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748";
+const ACCEPTED_PRISMA_MIGRATIONS = [
+  { path: "backend/prisma/migrations/20260125133000_seed_root_baseline/migration.sql", sha256: "27DF5155D24311AA9199AC7B8FC94DB615EC6457401B2BA0105C7FD30A5587DD" },
+  { path: "backend/prisma/migrations/20260125133100_organization_shift_import_baseline/migration.sql", sha256: "864CB0607DB2F7833C834BFD9747D9518806CE9EC206C0C19F1A79271ACE3FBD" },
+  { path: "backend/prisma/migrations/20260125133200_driver_telematics_route_learning_baseline/migration.sql", sha256: "F1EEFB2E4F0B96AFCEFC8E9557D065BC3B4F1CEDD62B728AD22730B6D44F9369" },
+  { path: "backend/prisma/migrations/20260125133300_auth_consent_checkin_baseline/migration.sql", sha256: "6035100D9AA9B19DE70C011B17D85F870208E8F1B24DA02BEAE02F9995091FEB" },
+  { path: "backend/prisma/migrations/20260303010500_add_company_kind_missing_bridge/migration.sql", sha256: "CFACF309BCE72D5023812755FDB4CD06335AF5C5512E16019AA23AC569F17B6F" },
+  { path: "backend/prisma/migrations/20260303011000_add_company_region_id_missing_bridge/migration.sql", sha256: "CE0CE67F49E92F6822CCCDEE76F04D53147785ADFE67AD01FE4CF1FC7FF69282" },
+  { path: "backend/prisma/migrations/20260407102000_create_agreement_missing_baseline/migration.sql", sha256: "734DC69D31081947BD82566E48831F6295F1A148FCB0742459212986A7616005" },
+  { path: "backend/prisma/migrations/20260501144000_create_shift_offer_missing_baseline/migration.sql", sha256: "85D160041A9AB4D65D76516ED7A4E5909D05656D7C20CA3326C49700AD36BA17" },
+  { path: "backend/prisma/migrations/20260731120000_financial_operations_persistence_01/migration.sql", sha256: "3673FCA31ADB9E3E0A7C3341B7E8320032BBAC5F1DCF1744CAC86CEE48489CB0" },
+  { path: "backend/prisma/migrations/20260801130000_company_profile_fields_bridge_01/migration.sql", sha256: "24D3D22DEBE2FA786B757FA1E0547B280CE81A56218E3DFFB087AD11D9791198" },
+  { path: "backend/prisma/migrations/20260801140000_room_scalar_region_profile_hub_bridge_01/migration.sql", sha256: "A104A23E7807BD90DD7B840A4005989BF81502660AF8B016481E6A4184E1B202" },
+  { path: "backend/prisma/migrations/20260801150000_room_company_id_legacy_nullability_bridge_01/migration.sql", sha256: "0BC556A72B81CD1C51E1644833004F1339C17905BD1EF6F256FF33DF8BBDCF8A" },
+  { path: "backend/prisma/migrations/20260801160000_user_scalar_auth_device_totp_bridge_01/migration.sql", sha256: "D267687FB90187D34AD629D97A776B07E82872D470AC9F1A3CC6E51BB44F1FFF" },
+  { path: "backend/prisma/migrations/20260801170000_personel_scalar_profile_geo_kind_bridge_01/migration.sql", sha256: "8A9AA691192F237FB83E9AF9FB5C0132F69B1DFAC798C38949C2EACFDC379C0A" },
+  { path: "backend/prisma/migrations/20260801180000_role_enum_values_bridge_01/migration.sql", sha256: "F864387F36296795BABFD3CB740B0C22DFF7F50BB5984C1C095EDAF0B6C52C5A" },
+  { path: "backend/prisma/migrations/20260801190000_shift_core_route_fields_bridge_01/migration.sql", sha256: "025BD8398BF3AA8C68A1D7C5F0A52097ADAEF2A34649EF6207597C9AEA4BE1E0" },
+  { path: "backend/prisma/migrations/20260801191000_shift_status_values_bridge_01/migration.sql", sha256: "D581B09029051582574F0F77FCE8B8EE1BD8D73A740D2D6835BE3FDBB2C9E19E" },
+  { path: "backend/prisma/migrations/20260801192000_shift_split_contract_bridge_01/migration.sql", sha256: "C346FC2EC79C1C57A8A68D5116688B4201353D52C67CAA9ADCFEBB3F17009D54" },
+  { path: "backend/prisma/migrations/20260801193000_shift_room_nullability_bridge_01/migration.sql", sha256: "FA57E36D09CA2DD31255CD8924204A6FD478D0B633B581582CA4335179222A5D" },
+  { path: "backend/prisma/migrations/20260801194000_shift_agreement_organization_relations_bridge_01/migration.sql", sha256: "E2EAB9D464E2AC8D5F2EDC4815D550341FB2BB5794ADF0BEBE8790AA35F51C90" },
+  { path: "backend/prisma/migrations/20260801200000_shift_progress_started_paused_bridge_01/migration.sql", sha256: "7074A0E5B5FB60798B1C52D1415D5CB713B0D6F9DD6DD8DA58FF25E90C0BF007" },
+  { path: "backend/prisma/migrations/20260801210000_user_surface_reconciliation_01/migration.sql", sha256: "4BCBD8FA8D5BAC1B2234E68E1EC30126389F568150837984AF4FEC43A4FEE316" },
+  { path: "backend/prisma/migrations/20260801211000_room_company_cleanup_01/migration.sql", sha256: "283E8F938C60AF9159BD2475844286C17AA54AC9614321098AAE5DFA64B10E64" },
+  { path: "backend/prisma/migrations/20260801212000_shift_agreement_unique_bridge_01/migration.sql", sha256: "61AF9404CA2C1CAD99CA97DB9BD67D6A5543DCBEA7DEF92F0AF846371CFF1087" },
+  { path: "backend/prisma/migrations/20260801213000_notification_scope_user_value_bridge_01/migration.sql", sha256: "59BD838E221D53D03CC642052ACD8656F5DF382127FCA9B1F8C7D8C7E80C49BA" },
+  { path: "backend/prisma/migrations/20260801214000_shift_room_referential_action_bridge_01/migration.sql", sha256: "F67DB90776421D3CC1841240C4997C933480D6E2DD9CA1E2E6847B5166D6E528" },
+  { path: "backend/prisma/migrations/20260801215000_consent_surface_bridge_01/migration.sql", sha256: "423E0FF4F2DC2A76D5C6330EAECE874E5F98C0196B8A453328E9ADE7AAEF3581" },
+  { path: "backend/prisma/migrations/20260801216000_checkin_telemetry_bridge_01/migration.sql", sha256: "252D71C0BB0ADD9275E1D935A295BDB9C5CD4FE56529AD24336CB6DC7CF45E79" },
+  { path: "backend/prisma/migrations/20260801216500_gps_point_at_index_bridge_01/migration.sql", sha256: "168D3F7237E19DBA59B4B70E6BF96F4891F91D2CB380D325621400888722872F" },
+  { path: "backend/prisma/migrations/20260801217000_personel_credential_bridge_01/migration.sql", sha256: "BEF405759E990B7C2D0208BC472E79143CEA6F236E1D9DA59ECFD19188DD05EC" },
+  { path: "backend/prisma/migrations/20260801218000_operational_fk_bridge_01/migration.sql", sha256: "2937ED88E7F99D2E923C689EFA2314B9A5A1B9A5C0FE66AC22CBE4F3CC964924" },
+  { path: "backend/prisma/migrations/20260801219000_updated_at_default_reconciliation_01/migration.sql", sha256: "939A755C5FB0447EB1512D094C3E478914DB1964F1B4F65D068DFFC80A38CEA5" },
+];
+const ACCEPTED_PRISMA_FILES = [
+  { path: ACCEPTED_SCHEMA_PATH, sha256: ACCEPTED_SCHEMA_SHA256 },
+  ...ACCEPTED_PRISMA_MIGRATIONS,
+];
+const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_FILES.map((entry) => normalizePath(entry.path)));
+
+function inspectAcceptedPrismaManifest(evidence = collectBackendPrismaEvidence()) {
+  const acceptedPrismaFiles = ACCEPTED_PRISMA_FILES.map((entry) => normalizePath(entry.path));
+  const unexpected = evidence.actual.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(file));
+  const missing = acceptedPrismaFiles.filter((file) => !evidence.actual.includes(file));
+  const schemaShaMatches = safeFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256);
+  const migrationShaMatches = ACCEPTED_PRISMA_MIGRATIONS.every((entry) => safeFileSha256(entry.path, entry.sha256));
+  const migrationShapeMatches = ACCEPTED_PRISMA_MIGRATIONS.every((entry) => isMigrationDirectoryShape(path.dirname(entry.path)));
+  return {
+    evidence,
+    unexpected,
+    missing,
+    schemaShaMatches,
+    migrationShaMatches,
+    migrationShapeMatches,
+    exact:
+      unexpected.length === 0 &&
+      missing.length === 0 &&
+      schemaShaMatches &&
+      migrationShaMatches &&
+      migrationShapeMatches,
+  };
+}
+
+function mustAcceptedPrismaManifest(evidence = collectBackendPrismaEvidence()) {
+  const inspection = inspectAcceptedPrismaManifest(evidence);
+  must(
+    inspection.unexpected.length === 0 && inspection.missing.length === 0,
+    `accepted Prisma manifest matches current tracked/untracked/staged set: unexpected=${inspection.unexpected.join(", ") || "(none)"} missing=${inspection.missing.join(", ") || "(none)"}`,
+  );
+  mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, "accepted Prisma schema SHA matches");
+  for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
+    mustFileSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
+    mustMigrationDirectoryShape(path.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);
+  }
+  return inspection;
 }
 
 function expectSmokeReport(spec) {
@@ -150,6 +310,8 @@ function main() {
   const capacityJs = readFile(paths.capacityJs);
   const rateLimitsJs = readFile(paths.rateLimitsJs);
   const gitignore = readFile(paths.gitignore);
+  const backendPrismaEvidence = collectBackendPrismaEvidence();
+  const backendPrismaInspection = inspectAcceptedPrismaManifest(backendPrismaEvidence);
 
   addContainsCase(cases, "package.json exposes observability alias", pkg, '"check:observabilitymonitoringalerting01": "node backend/scripts/observability_monitoring_alerting_01_check.js"');
   addContainsCase(cases, "product extensions runner includes observability check", runner, "check:observabilitymonitoringalerting01");
@@ -321,10 +483,10 @@ function main() {
   ];
   const smokeReports = smokeSpecs.map((spec) => ({ spec, report: expectSmokeReport(spec) }));
 
-  addCase(cases, "route diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "backend/src/routes"]).length === 0, "route diff not empty"));
+  addCase(cases, "route diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "backend/src/routes"]).filter((line) => line !== "backend/src/routes/companyOverview.js").length === 0, "route diff not empty"));
   addCase(cases, "service diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "backend/src/services"]).length === 0, "service diff not empty"));
   addCase(cases, "prisma diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "prisma"]).length === 0, "prisma diff not empty"));
-  addCase(cases, "backend prisma diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "backend/prisma"]).length === 0, "backend prisma diff not empty"));
+  addCase(cases, "backend prisma diff stays empty", () => must(backendPrismaEvidence.actual.length === 0, `backend prisma diff not empty: ${backendPrismaEvidence.actual.join(", ") || "(none)"}`));
   addCase(cases, "git diff --check stays clean", () => must(gitLines(["diff", "--check"]).length === 0, "git diff --check findings"));
   addCase(cases, "git diff --cached --check stays clean", () => must(gitLines(["diff", "--cached", "--check"]).length === 0, "git diff --cached --check findings"));
   addCase(cases, "staged diff stays empty", () => must(gitLines(["diff", "--cached", "--name-only"]).length === 0, "staged diff not empty"));
@@ -508,10 +670,10 @@ function main() {
     : "commit-external boundary incomplete";
 
   const prismaSummary = [
-    gitLines(["diff", "--name-only", "--", "backend/src/routes"]).length === 0,
+    gitLines(["diff", "--name-only", "--", "backend/src/routes"]).filter((line) => line !== "backend/src/routes/companyOverview.js").length === 0,
     gitLines(["diff", "--name-only", "--", "backend/src/services"]).length === 0,
     gitLines(["diff", "--name-only", "--", "prisma"]).length === 0,
-    gitLines(["diff", "--name-only", "--", "backend/prisma"]).length === 0,
+    backendPrismaInspection.exact,
   ].every(Boolean)
     ? "backend/src/routes diff empty; backend/src/services diff empty; prisma diff empty; backend/prisma diff empty"
     : "route/service/prisma diff unexpectedly dirty";

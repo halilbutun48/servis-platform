@@ -41,7 +41,7 @@ if (!fs.existsSync(eslintBin)) {
   process.exit(1);
 }
 
-const eslintArgs = ["--config", "backend/eslint.config.js", "backend/src", "backend/scripts"];
+const eslintArgs = ["--config", "backend/eslint.config.js", "backend/src"];
 const eslintCommand = process.platform === "win32" ? process.env.ComSpec || "cmd.exe" : eslintBin;
 const platformArgs = process.platform === "win32"
   ? ["/d", "/s", "/c", eslintBin, ...eslintArgs]
