@@ -6,7 +6,7 @@ import { ymdTR, addDaysTR, atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd } from "../
 import {
   buildCompanyBudgetAndServiceCostPreview,
   buildFinancialOperationsCompanyKindDeniedPreview,
-} from "../finance/roomProfitabilityAndQuoteFloor.js";
+} from "../finance/companyBudgetAndServiceCost.js";
 
 function scopeOf(user) {
   return { role: user?.role, companyId: user?.companyId, userId: user?.id };
@@ -306,8 +306,12 @@ export function companyOverviewRouter() {
           status: true,
           companyId: true,
           roomId: true,
+          startDate: true,
+          endDate: true,
           companyOfferAmount: true,
           roomOfferAmount: true,
+          companyOfferNote: true,
+          roomOfferNote: true,
           updatedAt: true,
           room: { select: { id: true, name: true, kind: true } },
           company: { select: { id: true, name: true, kind: true } },
@@ -330,8 +334,10 @@ export function companyOverviewRouter() {
       shift: latestShift,
       agreement: latestAgreement,
       companySummary: mergedCompanySummary,
-      costInputs: req.query || {},
-      quoteFloorInputs: req.query || {},
+      budgetInputs: req.query || {},
+      serviceCostInputs: req.query || {},
+      supplierInputs: req.query || {},
+      previewInputs: req.query || {},
     }));
   });
 

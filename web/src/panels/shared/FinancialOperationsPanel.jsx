@@ -106,6 +106,200 @@ function scopeMeta(scope) {
   };
 }
 
+function formatMoney(value, currencyCode = "TRY") {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+  const suffix = currencyCode === "TRY" ? " ₺" : currencyCode ? ` ${currencyCode}` : "";
+  return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(n)}${suffix}`;
+}
+
+function CompanyComparisonBlock({ comparison, currencyCode }) {
+  if (!comparison) return null;
+  return (
+    <div className="card" style={{ padding: 12, background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontWeight: 800 }}>{comparison.safeSupplierLabel || comparison.supplierRef || "Tedarikçi"}</div>
+          <div className="muted" style={{ marginTop: 4 }}>
+            {comparison.verifiedSupplierState ? `Durum: ${comparison.verifiedSupplierState}` : "Durum: unknown"}
+          </div>
+        </div>
+        <div className="muted">{comparison.pricePeriod || "-"}</div>
+      </div>
+      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+        <MetricCard title="Fiyat" value={formatMoney(comparison.normalizedPriceMinor, currencyCode)} note="Dönemsel fiyat" />
+        <MetricCard title="Kalite" value={comparison.qualityScore ?? "-"} note="Kalite göstergesi" />
+        <MetricCard title="Güvenilirlik" value={comparison.reliabilityScore ?? "-"} note="Güvenilirlik göstergesi" />
+        <MetricCard title="Kanıt" value={comparison.serviceEvidenceCount ?? "-"} note="Veri / kanıt kapsamı" />
+      </div>
+      <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>
+        {comparison.valueBand ? `Value band: ${comparison.valueBand}` : "Value band: incomplete"}
+      </div>
+      {Array.isArray(comparison.comparisonWarnings) && comparison.comparisonWarnings.length ? (
+        <ChipRow items={comparison.comparisonWarnings} emptyText="Karşılaştırma uyarısı yok." />
+      ) : null}
+    </div>
+  );
+}
+
+function renderCompanyFinancialPreview({ meta, me, preview, loading, err, setRefreshTick }) {
+  const companyBudget = preview?.companyBudget || {};
+  const companyServiceCost = preview?.companyServiceCost || {};
+  const unitCosts = preview?.unitCosts || {};
+  const period = preview?.period || {};
+  const supplierComparisons = Array.isArray(preview?.supplierComparisons) ? preview.supplierComparisons : [];
+  const companyStatus = String(preview?.status || "unknown").toUpperCase();
+  const statusTone = {
+    WITHIN_BUDGET: "good",
+    OVER_BUDGET: "danger",
+    PARTIAL_PERIOD: "warm",
+    MIXED_CURRENCY: "danger",
+    PERIOD_MISMATCH: "danger",
+    REVIEW_REQUIRED: "warm",
+    NO_BUDGET: "warm",
+    NO_SERVICE_COST: "warm",
+    BLOCKED: "danger",
+  }[companyStatus] || "default";
+
+  return (
+    <PanelChrome
+      title={meta.title}
+      subtitle={meta.subtitle}
+      actions={(
+        <button type="button" className="btn sm" onClick={() => setRefreshTick((n) => n + 1)} disabled={loading}>
+          {loading ? "Yenileniyor..." : "Yenile"}
+        </button>
+      )}
+    >
+      <div className="muted" style={{ lineHeight: 1.45 }}>
+        Bu yüzey sadece read-only/preview amaçlıdır; write-action, payment, invoice ve accounting kapalıdır.
+      </div>
+
+      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <span className="pill" data-status="OK">{normalizeText(me?.role) || "-"}</span>
+        {normalizeText(me?.companyKind) ? <span className="pill">{normalizeText(me?.companyKind)}</span> : null}
+        <span className="pill" data-status={statusTone.toUpperCase()}>{companyStatus}</span>
+        <span className="pill">{period.periodLabel || "Dönem eksik"}</span>
+        <span className="pill">{preview?.currencyCode || "CUR?"}</span>
+        <span className="pill">{preview?.budgetSource || "budget missing"}</span>
+      </div>
+
+      {err ? (
+        <div className="card" style={{ marginTop: 12, border: "1px solid rgba(240,68,56,0.25)" }}>
+          {err}
+        </div>
+      ) : null}
+
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <MetricCard title="Dönem Bütçesi" value={formatMoney(companyBudget.effectiveBudgetMinor, preview?.currencyCode)} note={companyBudget.summaryText || "Onaylı bütçe yok"} tone={companyBudget.effectiveBudgetMinor != null ? "good" : "warm"} />
+        <MetricCard title="Gerçekleşen Servis Harcaması" value={formatMoney(companyServiceCost.companyVisibleServiceSpendMinor, preview?.currencyCode)} note={companyServiceCost.summaryText || "Servis harcaması yok"} tone={companyServiceCost.companyVisibleServiceSpendMinor != null ? "good" : "warm"} />
+        <MetricCard title="Kalan Bütçe" value={formatMoney(companyBudget.remainingBudgetMinor, preview?.currencyCode)} note={companyBudget.budgetSource || "-"} tone={companyBudget.remainingBudgetMinor != null && Number(companyBudget.remainingBudgetMinor) >= 0 ? "good" : "danger"} />
+        <MetricCard title="Bütçe Sapması" value={formatMoney(companyBudget.varianceMinor, preview?.currencyCode)} note={companyBudget.varianceDirection || "unknown"} tone={companyBudget.varianceMinor != null && Number(companyBudget.varianceMinor) >= 0 ? "good" : "danger"} />
+        <MetricCard title="Bütçe Kullanım Oranı" value={formatBps(companyBudget.usageBps)} note={companyBudget.budgetApprovalState || "unknown"} />
+        <MetricCard title="Personel Başı Maliyet" value={formatMoney(unitCosts.costPerActivePersonMinor, preview?.currencyCode)} note={`Aktif personel: ${unitCosts.activePersonCount ?? "-"}`} />
+        <MetricCard title="Vardiya Başı Maliyet" value={formatMoney(unitCosts.costPerShiftMinor, preview?.currencyCode)} note={`Vardiya: ${unitCosts.deliveredShiftCount ?? "-"}`} />
+        <MetricCard title="Sefer Başı Maliyet" value={formatMoney(unitCosts.costPerTripMinor, preview?.currencyCode)} note={`Sefer: ${unitCosts.deliveredTripCount ?? "-"}`} />
+        <MetricCard title="Gün Başı Maliyet" value={formatMoney(unitCosts.costPerServiceDayMinor, preview?.currencyCode)} note={`Gün: ${unitCosts.deliveredServiceDayCount ?? "-"}`} />
+        <MetricCard title="Veri Güveni" value={String(preview?.confidence?.level || preview?.dataQuality?.level || "-").toUpperCase()} note={`Puan ${Number(preview?.confidence?.score || preview?.dataQuality?.score || 0) || 0}/100`} />
+      </div>
+
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        <div className="card" style={{ minWidth: 0 }}>
+          <div className="panelSectionTitle">Servis Bütçesi</div>
+          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            {companyBudget.summaryText || "Onaylı bütçe bulunamadığı için bütçe sapması hesaplanmadı."}
+          </div>
+          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            <div className="muted">Bütçe kaynağı: <b>{companyBudget.budgetSource || "-"}</b></div>
+            <div className="muted">Onay durumu: <b>{companyBudget.budgetApprovalState || "-"}</b></div>
+            <div className="muted">Dönem: <b>{companyBudget.periodLabel || period.periodLabel || "-"}</b></div>
+            <div className="muted">Kalan / sapma: <b>{formatMoney(companyBudget.remainingBudgetMinor, preview?.currencyCode)}</b> / <b>{formatMoney(companyBudget.varianceMinor, preview?.currencyCode)}</b></div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div className="muted">Eksik alanlar</div>
+            <ChipRow items={Array.isArray(preview?.missingFields) ? preview.missingFields : []} emptyText="Eksik alan görünmüyor." />
+          </div>
+        </div>
+
+        <div className="card" style={{ minWidth: 0 }}>
+          <div className="panelSectionTitle">Gerçekleşen Servis Maliyeti</div>
+          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            {companyServiceCost.summaryText || "Servis harcaması için yeterli kaynak bulunamadı."}
+          </div>
+          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            <div className="muted">Kaynak: <b>{companyServiceCost.serviceCostSource || "-"}</b></div>
+            <div className="muted">Para birimi: <b>{companyServiceCost.currencyCode || "-"}</b></div>
+            <div className="muted">Vergi / baz: <b>{companyServiceCost.taxBasis || "-"}</b></div>
+            <div className="muted">Aktif kişi: <b>{companyServiceCost.activePersonCount ?? "-"}</b> • Planlı kişi: <b>{companyServiceCost.plannedPersonCount ?? "-"}</b></div>
+            <div className="muted">Gün / vardiya / sefer: <b>{companyServiceCost.deliveredServiceDayCount ?? "-"}</b> / <b>{companyServiceCost.deliveredShiftCount ?? "-"}</b> / <b>{companyServiceCost.deliveredTripCount ?? "-"}</b></div>
+          </div>
+          {Array.isArray(preview?.serviceCostComponents) && preview.serviceCostComponents.length ? (
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              {preview.serviceCostComponents.map((component) => (
+                <div key={component.key} className="card" style={{ padding: 10, background: "rgba(255,255,255,0.02)" }}>
+                  <div style={{ fontWeight: 800 }}>{component.label}</div>
+                  <div className="muted" style={{ marginTop: 4 }}>{formatMoney(component.amountMinor, preview?.currencyCode)}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="card" style={{ minWidth: 0 }}>
+          <div className="panelSectionTitle">Tedarikçi Karşılaştırması</div>
+          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            {preview?.supplierComparisonSummaryText || "Tedarikçi karşılaştırması için veri bekleniyor; otomatik seçim yapılmadı."}
+          </div>
+          <div style={{ marginTop: 10 }}>
+            {supplierComparisons.length ? (
+              <div style={{ display: "grid", gap: 10 }}>
+                {supplierComparisons.map((comparison) => (
+                  <CompanyComparisonBlock key={comparison.supplierRef || comparison.safeSupplierLabel || comparison.pricePeriod || "supplier"} comparison={comparison} currencyCode={preview?.currencyCode} />
+                ))}
+              </div>
+            ) : (
+              <div className="card" style={{ padding: 12, background: "rgba(255,255,255,0.02)" }}>
+                Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz otomatik tedarikçi seçimi yapılmıyor.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="card" style={{ minWidth: 0 }}>
+          <div className="panelSectionTitle">Hakediş / Fatura Kontrolü</div>
+          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz fatura, hakediş, tasarruf veya dışa aktarım işlemi yapılmıyor.
+          </div>
+        </div>
+
+        <div className="card" style={{ minWidth: 0 }}>
+          <div className="panelSectionTitle">Tasarruf Senaryoları</div>
+          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz forecast veya savings hesaplanmıyor.
+          </div>
+        </div>
+
+        <div className="card" style={{ minWidth: 0 }}>
+          <div className="panelSectionTitle">Dışa Aktarım</div>
+          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz Excel / CSV dışa aktarım yapılmıyor.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12 }} className="card">
+        <div className="panelSectionTitle">Genel Not</div>
+        <div style={{ marginTop: 8 }} className="muted">
+          {preview?.summaryText || "Bütçe ve servis maliyeti önizlemesi için veri bekleniyor."}
+        </div>
+        <div style={{ marginTop: 10 }} className="muted">
+          {preview?.nextSafeStep ? `Sonraki güvenli adım: ${preview.nextSafeStep}` : "Sonraki güvenli adım henüz belirlenmedi."}
+        </div>
+      </div>
+    </PanelChrome>
+  );
+}
+
 function initialForm() {
   return {
     manualBaselineOperationalCostMinor: "",
@@ -222,6 +416,17 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         </div>
       </PanelChrome>
     );
+  }
+
+  if (scope === "COMPANY") {
+    return renderCompanyFinancialPreview({
+      meta,
+      me,
+      preview,
+      loading,
+      err,
+      setRefreshTick,
+    });
   }
 
   const scopeTitle = meta.title;
