@@ -1,0 +1,7 @@
+ALTER TABLE "Shift"
+  DROP CONSTRAINT "Shift_roomId_fkey";
+
+ALTER TABLE "Shift"
+  ADD CONSTRAINT "Shift_roomId_fkey"
+  FOREIGN KEY ("roomId") REFERENCES "Room"("id")
+  ON DELETE SET NULL ON UPDATE CASCADE;

@@ -214,6 +214,7 @@ model Company {
   parentInvites     ParentInvite[]
   invites           Invite[]
   organizationPlans OrganizationPlan[]
+  budgetPlans       CompanyBudgetPlan[]
   paymentAccounts   PaymentAccount[]
   commercialSources CommercialSource[]
 
@@ -274,6 +275,18 @@ model OrganizationStop {
   @@index([planId, order])
 }
 
+enum CompanyBudgetPlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum RoomQuoteFloorDraftStatus {
+  DRAFT
+  APPLIED
+  ARCHIVED
+}
+
 enum PersonelKind {
   PERSONEL
   STUDENT
@@ -309,6 +322,7 @@ model Room {
 
   // ✅ M24: offers inbox (Room ↔ ShiftOffer)
   shiftOffers ShiftOffer[] @relation("RoomShiftOffers")
+  quoteFloorDrafts RoomQuoteFloorDraft[]
   commissionRules CommissionRule[]
   paymentAccounts PaymentAccount[]
   commercialSources CommercialSource[]
@@ -374,6 +388,12 @@ model User {
   parentInvitesConsumed  ParentInvite[]  @relation("ParentInviteConsumedBy")
   invitesCreated         Invite[]        @relation("InviteCreatedBy")
   invitesConsumed        Invite[]        @relation("InviteConsumedBy")
+  companyBudgetPlansCreated CompanyBudgetPlan[]      @relation("CompanyBudgetPlanCreatedBy")
+  companyBudgetPlansUpdated CompanyBudgetPlan[]      @relation("CompanyBudgetPlanUpdatedBy")
+  companyBudgetPlansActivated CompanyBudgetPlan[]    @relation("CompanyBudgetPlanActivatedBy")
+  roomQuoteFloorDraftsCreated RoomQuoteFloorDraft[]   @relation("RoomQuoteFloorDraftCreatedBy")
+  roomQuoteFloorDraftsUpdated RoomQuoteFloorDraft[]   @relation("RoomQuoteFloorDraftUpdatedBy")
+  roomQuoteFloorDraftsApplied RoomQuoteFloorDraft[]   @relation("RoomQuoteFloorDraftAppliedBy")
 
   @@index([companyId])
   @@index([roomId])
@@ -644,11 +664,76 @@ model ShiftOffer {
 
   shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   room  Room  @relation("RoomShiftOffers", fields: [roomId], references: [id])
+  quoteFloorDrafts RoomQuoteFloorDraft[] @relation("RoomQuoteFloorDraftAppliedOffer")
 
   @@unique([shiftId, roomId])
   @@index([shiftId])
   @@index([roomId])
   @@index([status])
+}
+
+model CompanyBudgetPlan {
+  id                  Int                     @id @default(autoincrement())
+  companyId           Int
+  status              CompanyBudgetPlanStatus @default(DRAFT)
+  currencyCode        String                  @default("TRY")
+  budgetAmountMinor    Int?
+  periodStart         DateTime?               @db.Date
+  periodEnd           DateTime?               @db.Date
+  budgetSource        String?
+  budgetApprovalState String?
+  description         String?
+  warningThresholdBps Int?
+  inputSnapshot       Json?
+  version             Int                     @default(1)
+  createdByUserId     Int?
+  updatedByUserId     Int?
+  activatedByUserId   Int?
+  activatedAt         DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy    User?   @relation("CompanyBudgetPlanCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy    User?   @relation("CompanyBudgetPlanUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  activatedBy  User?   @relation("CompanyBudgetPlanActivatedBy", fields: [activatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, status])
+  @@index([companyId, updatedAt])
+  @@index([companyId, activatedAt])
+}
+
+model RoomQuoteFloorDraft {
+  id                             Int                        @id @default(autoincrement())
+  roomId                         Int
+  status                         RoomQuoteFloorDraftStatus  @default(DRAFT)
+  currencyCode                   String                     @default("TRY")
+  manualBaselineOperationalCostMinor Int?
+  targetContributionBps          Int?
+  riskReserveBps                 Int?
+  quoteFloorMinor                Int?
+  quoteFloorPerPassengerMinor    Int?
+  baselineSource                 String?
+  inputSnapshot                  Json?
+  calculationVersion             String                     @default("ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01")
+  version                        Int                        @default(1)
+  createdByUserId                Int?
+  updatedByUserId                Int?
+  appliedByUserId                Int?
+  appliedShiftOfferId            Int?
+  appliedAt                      DateTime?
+  createdAt                      DateTime                   @default(now())
+  updatedAt                      DateTime                   @updatedAt
+
+  room            Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy       User?       @relation("RoomQuoteFloorDraftCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy       User?       @relation("RoomQuoteFloorDraftUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  appliedBy       User?       @relation("RoomQuoteFloorDraftAppliedBy", fields: [appliedByUserId], references: [id], onDelete: SetNull)
+  appliedShiftOffer ShiftOffer? @relation("RoomQuoteFloorDraftAppliedOffer", fields: [appliedShiftOfferId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, status])
+  @@index([roomId, updatedAt])
+  @@index([appliedShiftOfferId])
 }
 
 // ✅ M17

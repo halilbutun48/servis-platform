@@ -1,0 +1,2 @@
+ALTER TABLE "Room"
+ALTER COLUMN "companyId" DROP NOT NULL;

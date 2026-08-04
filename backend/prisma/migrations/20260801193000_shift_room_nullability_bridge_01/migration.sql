@@ -1,0 +1,2 @@
+ALTER TABLE "Shift"
+  ALTER COLUMN "roomId" DROP NOT NULL;

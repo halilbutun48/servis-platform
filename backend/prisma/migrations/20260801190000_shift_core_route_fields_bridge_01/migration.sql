@@ -1,0 +1,6 @@
+ALTER TABLE "Shift"
+  ADD COLUMN "requiredPaxOverride" INTEGER,
+  ADD COLUMN "hubLat" DOUBLE PRECISION,
+  ADD COLUMN "hubLng" DOUBLE PRECISION,
+  ADD COLUMN "direction" "ShiftDirection" NOT NULL DEFAULT 'INBOUND',
+  ADD COLUMN "pattern" "RoutePattern" NOT NULL DEFAULT 'ONE_WAY';
