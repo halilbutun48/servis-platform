@@ -47,7 +47,7 @@
 - `OPERATIONAL-COST-MODEL-01`
 - `OPERATIONAL-COST-MODEL-01`: `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile yaşar.
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`
-- `COMPANY-BUDGET-AND-SERVICE-COST-01`
+- `COMPANY-BUDGET-AND-SERVICE-COST-01`: `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md` ve `backend/src/finance/companyBudgetAndServiceCost.js` ile yaşar; company budget ve service cost preview katmanını read-only tutar.
 - `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01`
 - `COST-SCENARIO-FORECAST-AND-SAVINGS-01`
 - `SEFER-ABI-COST-ANALYSIS-ASSISTANT-01`
