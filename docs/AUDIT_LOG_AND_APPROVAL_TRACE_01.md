@@ -7,6 +7,7 @@ Repo: `servis-platform`
 Bu doküman kritik aksiyonlar için audit log ve human approval trace readiness gate'idir; hukuki danışmanlık değildir.
 Canonical check: `check:auditlogandapprovaltrace01`
 Check script: `node backend\scripts\audit_log_and_approval_trace_01_check.js`
+docs/check milestone wording is preserved here.
 Probe gerekli değildir; bu milestone static policy / doc / code inventory ile yaşar.
 
 ## 2) Problem statement

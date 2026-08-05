@@ -50,6 +50,7 @@ const workingTreeCompatFiles = [
   "backend/scripts/copilot_dispatch_action_prep_01_check.js",
   "backend/scripts/financial_operations_surface_and_rbac_01_check.js",
   "backend/scripts/operational_cost_model_01_check.js",
+  "backend/scripts/company_budget_and_service_cost_01_check.js",
   "backend/src/ai/chat/supplierMatching.js",
   "backend/src/ai/chat/supplierOfferCollect.js",
   "backend/src/ai/chat/copilotOfferAnalysis.js",
@@ -61,6 +62,7 @@ const workingTreeCompatFiles = [
   "backend/src/finance/operationalCostMath.js",
   "backend/scripts/room_profitability_and_quote_floor_01_check.js",
   "backend/src/finance/roomProfitabilityAndQuoteFloor.js",
+  "backend/src/finance/companyBudgetAndServiceCost.js",
   "web/src/panels/shared/FinancialOperationsPanel.jsx",
   "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
   "docs/BACKEND_LINT_WARNING_BURNDOWN_01.md",
@@ -83,6 +85,7 @@ const workingTreeCompatFiles = [
   "docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md",
   "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
   "docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md",
+  "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md",
   "docs/DASHBOARD_BULK_ENDPOINT_01.md",
   "backend/scripts/product_flow_button_audit_01_check.js",
   "backend/scripts/product_flow_button_audit_01.mjs",
@@ -1730,6 +1733,11 @@ function buildDoc(summary, packageEntries, fileEntries, oldSystemHits) {
   out.push(`- Room profitability command: \`node backend\\scripts\\room_profitability_and_quote_floor_01_check.js\``);
   out.push(`- Room profitability helper: \`backend/src/finance/roomProfitabilityAndQuoteFloor.js\``);
   out.push(`- Room profitability UI wiring: \`web/src/panels/shared/FinancialOperationsPanel.jsx\`, \`web/src/api.js\`, \`web/src/App.jsx\`, \`web/src/layout/NavDock.jsx\`, \`web/src/copilot/screenRegistry.js\`, \`backend/src/routes/commercialCore.js\`, \`backend/src/routes/companyOverview.js\``);
+  out.push(`- Company budget/service cost milestone: \`COMPANY-BUDGET-AND-SERVICE-COST-01\``);
+  out.push(`- Company budget/service cost check: \`check:companybudgetandservicecost01\``);
+  out.push(`- Company budget/service cost docs: \`docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md\``);
+  out.push(`- Company budget/service cost command: \`node backend\\scripts\\company_budget_and_service_cost_01_check.js\``);
+  out.push(`- Company budget/service cost helper: \`backend/src/finance/companyBudgetAndServiceCost.js\``);
   out.push(`- Marketplace panels milestone: \`UX-MARKETPLACE-PANELS-01\``);
   out.push(`- Marketplace panels check: \`check:uxmarketplacepanels01\``);
   out.push(`- Marketplace panels docs: \`docs/UX_MARKETPLACE_PANELS_01.md\``);
@@ -2410,12 +2418,17 @@ function verifyDoc(docText, summary) {
     "docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md",
     "node backend\\scripts\\room_profitability_and_quote_floor_01_check.js",
     "backend/src/finance/roomProfitabilityAndQuoteFloor.js",
+    "COMPANY-BUDGET-AND-SERVICE-COST-01",
+    "check:companybudgetandservicecost01",
+    "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md",
+    "node backend\\scripts\\company_budget_and_service_cost_01_check.js",
+    "backend/src/finance/companyBudgetAndServiceCost.js",
     "web/src/panels/shared/FinancialOperationsPanel.jsx",
     "Duplicate / overlap groups",
     "Product coverage rows",
     "REMOVED:",
   ];
-  ordered(docText, ['Financial operations surface milestone: `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`', 'Operational cost model milestone: `OPERATIONAL-COST-MODEL-01`', 'Room profitability milestone: `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps financial operations before operational cost model, room profitability and marketplace panels');
+  ordered(docText, ['Financial operations surface milestone: `FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01`', 'Operational cost model milestone: `OPERATIONAL-COST-MODEL-01`', 'Room profitability milestone: `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`', 'Company budget/service cost milestone: `COMPANY-BUDGET-AND-SERVICE-COST-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps financial operations before operational cost model, room profitability, company budget/service cost and marketplace panels');
   ordered(docText, ['Copilot AI action roadmap milestone: `COPILOT-AI-ACTION-ROADMAP-01`', 'Copilot demand intake milestone: `COPILOT-DEMAND-INTAKE-01`', 'Copilot demand-to-agreement roadmap milestone: `COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01`', 'Copilot RFQ prep milestone: `COPILOT-RFQ-PREP-01`', 'Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`', 'Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`'], 'script harness doc keeps demand intake between AI action and demand-to-agreement and RFQ prep before human approval');
   ordered(docText, ['Verified supplier milestone: `VERIFIED-SUPPLIER-01`', 'Supplier matching milestone: `SUPPLIER-MATCHING-01`', 'Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`', 'Offer analysis milestone: `COPILOT-OFFER-ANALYSIS-01`', 'Negotiation assist milestone: `COPILOT-NEGOTIATION-ASSIST-01`', 'Offer recommendation milestone: `COPILOT-OFFER-RECOMMENDATION-01`', 'Shift to agreement prep milestone: `COPILOT-SHIFT-TO-AGREEMENT-PREP-01`', 'Dispatch action prep milestone: `COPILOT-DISPATCH-ACTION-PREP-01`', 'Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`'], 'script harness doc keeps verified supplier before supplier matching, offer collect, offer analysis, negotiation assist, offer recommendation, shift to agreement prep, dispatch prep and marketplace panels');
   for (const needle of mustContain) {

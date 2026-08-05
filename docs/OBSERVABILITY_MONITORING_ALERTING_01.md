@@ -225,6 +225,7 @@ Bu milestone bunları planlar, fakat doğrudan açmaz.
 ## 14) Validation results
 
 Planned validation:
+- `node backend\scripts\observability_monitoring_alerting_01_check.js`
 - `npm run check:observabilitymonitoringalerting01`
 - `npm run check:dbpoolandapiscaling01`
 - `npm run check:loadtest2000users01`

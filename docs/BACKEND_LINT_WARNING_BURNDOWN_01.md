@@ -71,6 +71,7 @@ Bu milestone feature geliştirme milestone'u değildir. Amaç, backend lint warn
 - `backend/src/ai/chat/conversationTaskStateRoomReplies.js`
 - `backend/src/ai/chat/helpComposer.js`
 - `backend/src/ai/chat/helpComposerSafeReplies.js`
+- `node backend\scripts\backend_lint_warning_burndown_01_check.js`
 - `backend/scripts/backend_lint_warning_burndown_01_check.js`
 - `docs/BACKEND_LINT_WARNING_BURNDOWN_01.md`
 

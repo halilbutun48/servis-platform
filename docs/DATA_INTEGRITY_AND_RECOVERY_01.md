@@ -53,6 +53,7 @@ Amaç feature davranışı eklemek değil, mevcut güvenli yüzeyi okumak ve rel
 - Corruption detection, silent success yerine fail-closed davranmalıdır.
 
 ## 11) Release gate
+- `node backend\scripts\data_integrity_and_recovery_01_check.js`
 - `check:dataintegrityandrecovery01`
 - `check:product-extensions`
 - `verify:repo`

@@ -78,6 +78,7 @@ Repo: `servis-platform`
 - Soru dili kısa, net ve kullanıcı dostu kalır.
 
 ## STAGE 5 — Data Classification
+- Summary keys: `dataClassificationSummary`, `integrityRiskSummary`, `transactionBoundarySummary`, `idempotencySummary`, `backupRestoreSummary`, `runtimeDataRecoverySummary`, `kvkkSafeRecoverySummary`, `compatibilitySummary`, `smokeThresholdSummary`, `chainWiringSummary`, `commitExternalSummary`, `prismaSummary`
 - Servis talebi; kurum, kişi, öğrenci, sözleşme, rota ve iletişim verisi içerebilir.
 - Kritik entity matrix talep, kurum, okul, rota, vardiya, sözleşme ve kapasite bağını birlikte okur.
 - Referential integrity policy, sahte referans veya kopuk alan üretmez.

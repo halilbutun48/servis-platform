@@ -94,6 +94,7 @@ function main() {
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const financialSurfaceDocText = read('docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md');
+  const companyBudgetDocText = read('docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md');
   const demandIntakeHelper = read('backend/src/ai/chat/copilotDemandIntake.js');
   const demandToAgreementHelper = read('backend/src/ai/chat/copilotDemandToAgreementRoadmap.js');
   const offerAnalysisHelper = read('backend/src/ai/chat/copilotOfferAnalysis.js');
@@ -160,6 +161,7 @@ function main() {
   must(pkg, '"check:financialoperationssurfaceandrbac01": "node backend/scripts/financial_operations_surface_and_rbac_01_check.js"', 'package.json exposes check:financialoperationssurfaceandrbac01');
   must(pkg, '"check:operationalcostmodel01": "node backend/scripts/operational_cost_model_01_check.js"', 'package.json exposes check:operationalcostmodel01');
   must(pkg, '"check:roomprofitabilityandquotefloor01": "node backend/scripts/room_profitability_and_quote_floor_01_check.js"', 'package.json exposes check:roomprofitabilityandquotefloor01');
+  must(pkg, '"check:companybudgetandservicecost01": "node backend/scripts/company_budget_and_service_cost_01_check.js"', 'package.json exposes check:companybudgetandservicecost01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -241,6 +243,7 @@ function main() {
   must(runner, 'check:auditlogandapprovaltrace01', 'product extensions chain includes check:auditlogandapprovaltrace01');
   must(runner, 'check:seferabiturkishterminology01', 'product extensions chain includes check:seferabiturkishterminology01');
   must(runner, 'check:seferabiturkishuserfacinglanguage01', 'product extensions chain includes check:seferabiturkishuserfacinglanguage01');
+  must(runner, 'check:companybudgetandservicecost01', 'product extensions chain includes check:companybudgetandservicecost01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
   must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotpersona01');
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');
@@ -373,6 +376,7 @@ function main() {
     'check:financialoperationssurfaceandrbac01',
     'check:operationalcostmodel01',
     'check:roomprofitabilityandquotefloor01',
+    'check:companybudgetandservicecost01',
     'check:uxmarketplacepanels01',
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
@@ -644,8 +648,12 @@ function main() {
   must(guide, 'check:roomprofitabilityandquotefloor01', 'script guide exposes room profitability check');
   must(guide, 'docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md', 'script guide includes room profitability doc');
   must(guide, 'backend/src/finance/roomProfitabilityAndQuoteFloor.js', 'script guide includes room profitability helper');
+  must(guide, 'COMPANY-BUDGET-AND-SERVICE-COST-01', 'script guide mentions company budget/service cost milestone');
+  must(guide, 'check:companybudgetandservicecost01', 'script guide exposes company budget/service cost check');
+  must(guide, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'script guide includes company budget/service cost doc');
+  must(guide, 'backend/src/finance/companyBudgetAndServiceCost.js', 'script guide includes company budget/service cost helper');
   ordered(guide, ['SUPPLIER-OFFER-COLLECT-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'UX-MARKETPLACE-PANELS-01'], 'script guide keeps action prep after dispatch prep and before marketplace panels');
-  ordered(guide, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'script guide keeps finance milestones in order');
+  ordered(guide, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01', 'COMPANY-BUDGET-AND-SERVICE-COST-01'], 'script guide keeps finance milestones in order');
   must(guide, 'UI-ACTION-WIRING-AUDIT-01', 'script guide mentions UI-ACTION-WIRING-AUDIT-01');
   must(guide, 'BOARDING-CHANGE-REQUEST-ENTRY-01', 'script guide mentions BOARDING-CHANGE-REQUEST-ENTRY-01');
   must(guide, 'check:boardingchangerequestentry01', 'script guide exposes check:boardingchangerequestentry01');
@@ -905,6 +913,11 @@ function main() {
   must(harnessCheck, 'docs/OPERATIONAL_COST_MODEL_01.md', 'script harness check knows operational cost model doc');
   must(harnessCheck, 'backend/src/finance/operationalCostModel.js', 'script harness check knows operational cost model helper');
   must(harnessCheck, 'backend/src/finance/operationalCostMath.js', 'script harness check knows operational cost math helper');
+  must(harnessCheck, 'check:companybudgetandservicecost01', 'script harness check knows company budget alias');
+  must(harnessCheck, 'company_budget_and_service_cost_01_check.js', 'script harness check knows company budget file');
+  must(harnessCheck, 'COMPANY-BUDGET-AND-SERVICE-COST-01', 'script harness check knows company budget milestone');
+  must(harnessCheck, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'script harness check knows company budget doc');
+  must(harnessCheck, 'backend/src/finance/companyBudgetAndServiceCost.js', 'script harness check knows company budget helper');
   must(harnessDoc, 'root:check:verifiedsupplier01', 'script harness doc lists verified supplier root check');
   must(harnessDoc, 'verified_supplier_01_check.js', 'script harness doc lists verified supplier check');
   must(harnessDoc, 'docs/VERIFIED_SUPPLIER_01.md', 'script harness doc lists verified supplier doc');
@@ -950,6 +963,16 @@ function main() {
   must(financialSurfaceDocText, 'docs/OPERATIONAL_COST_MODEL_01.md', 'financial surface doc links operational cost doc');
   must(financialSurfaceDocText, 'backend/src/finance/operationalCostModel.js', 'financial surface doc links operational cost model helper');
   must(financialSurfaceDocText, 'backend/src/finance/operationalCostMath.js', 'financial surface doc links operational cost math helper');
+  must(financialSurfaceDocText, 'COMPANY-BUDGET-AND-SERVICE-COST-01', 'financial surface doc mentions company budget milestone');
+  must(financialSurfaceDocText, 'check:companybudgetandservicecost01', 'financial surface doc links company budget check');
+  must(financialSurfaceDocText, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'financial surface doc links company budget doc');
+  must(financialSurfaceDocText, 'backend/src/finance/companyBudgetAndServiceCost.js', 'financial surface doc links company budget helper');
+  must(companyBudgetDocText, '# COMPANY-BUDGET-AND-SERVICE-COST-01', 'company budget doc title present');
+  must(companyBudgetDocText, 'check:companybudgetandservicecost01', 'company budget doc keeps canonical check wording');
+  must(companyBudgetDocText, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'company budget doc keeps doc path');
+  must(companyBudgetDocText, 'backend/src/finance/companyBudgetAndServiceCost.js', 'company budget doc links company budget helper');
+  must(companyBudgetDocText, 'backend/src/routes/companyOverview.js', 'company budget doc links company route');
+  must(companyBudgetDocText, 'web/src/panels/shared/FinancialOperationsPanel.jsx', 'company budget doc links company panel');
   must(opCostDoc, '# OPERATIONAL-COST-MODEL-01', 'operational cost doc title present');
   must(opCostDoc, 'check:operationalcostmodel01', 'operational cost doc keeps canonical check wording');
   must(opCostDoc, 'docs/OPERATIONAL_COST_MODEL_01.md', 'operational cost doc keeps doc path');
@@ -973,9 +996,14 @@ function main() {
   must(verifyText, 'backend/src/finance/operationalCostModel.js', 'verify chain script includes operational cost model helper');
   must(verifyText, 'backend/src/finance/operationalCostMath.js', 'verify chain script includes operational cost math helper');
   must(verifyText, 'backend/scripts/operational_cost_model_01_check.js', 'verify chain script includes operational cost model check path');
+  must(verifyText, 'check:companybudgetandservicecost01', 'verify chain script includes company budget alias');
+  must(verifyText, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'verify chain script includes company budget doc');
+  must(verifyText, 'backend/src/finance/companyBudgetAndServiceCost.js', 'verify chain script includes company budget helper');
+  must(verifyText, 'backend/scripts/company_budget_and_service_cost_01_check.js', 'verify chain script includes company budget check path');
   ordered(verifyText, [
     'check:financialoperationssurfaceandrbac01',
     'check:operationalcostmodel01',
+    'check:companybudgetandservicecost01',
     'check:uxmarketplacepanels01',
   ], 'verify chain keeps financial check order');
   must(harnessDoc, 'root:check:operationalcostmodel01', 'script harness doc lists operational cost model root check');
@@ -985,6 +1013,12 @@ function main() {
   must(harnessDoc, 'node backend\\scripts\\operational_cost_model_01_check.js', 'script harness doc lists operational cost model command');
   must(harnessDoc, 'backend/src/finance/operationalCostModel.js', 'script harness doc lists operational cost model helper');
   must(harnessDoc, 'backend/src/finance/operationalCostMath.js', 'script harness doc lists operational cost math helper');
+  must(harnessDoc, 'check:companybudgetandservicecost01', 'script harness doc lists company budget check');
+  must(harnessDoc, 'company_budget_and_service_cost_01_check.js', 'script harness doc lists company budget check file');
+  must(harnessDoc, 'COMPANY-BUDGET-AND-SERVICE-COST-01', 'script harness doc lists company budget milestone');
+  must(harnessDoc, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'script harness doc lists company budget doc');
+  must(harnessDoc, 'node backend\\scripts\\company_budget_and_service_cost_01_check.js', 'script harness doc lists company budget command');
+  must(harnessDoc, 'backend/src/finance/companyBudgetAndServiceCost.js', 'script harness doc lists company budget helper');
   must(harnessCheck, 'check:uxmarketplacepanels01', 'script harness check knows marketplace panels alias');
   must(harnessCheck, 'ux_marketplace_panels_01_check.js', 'script harness check knows marketplace panels file');
   must(harnessCheck, 'UX-MARKETPLACE-PANELS-01', 'script harness check knows marketplace panels milestone');
@@ -1346,8 +1380,12 @@ function main() {
   must(roadmap, 'check:roomprofitabilityandquotefloor01', 'roadmap exposes room profitability check');
   must(roadmap, 'docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md', 'roadmap links room profitability doc');
   must(roadmap, 'backend/src/finance/roomProfitabilityAndQuoteFloor.js', 'roadmap links room profitability helper');
+  must(roadmap, 'COMPANY-BUDGET-AND-SERVICE-COST-01', 'roadmap keeps company budget/service cost milestone');
+  must(roadmap, 'check:companybudgetandservicecost01', 'roadmap exposes company budget/service cost check');
+  must(roadmap, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'roadmap links company budget/service cost doc');
+  must(roadmap, 'backend/src/finance/companyBudgetAndServiceCost.js', 'roadmap links company budget/service cost helper');
   ordered(roadmap, ['COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01'], 'roadmap keeps dispatch prep before action prep and action prep before financial operations');
-  ordered(roadmap, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'roadmap keeps finance milestones in order');
+  ordered(roadmap, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01', 'COMPANY-BUDGET-AND-SERVICE-COST-01'], 'roadmap keeps finance milestones in order');
   must(repoAuditText, 'check:financialoperationssurfaceandrbac01', 'repo audit roadmap exposes financial operations check');
   must(repoAuditText, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'repo audit roadmap links financial operations doc');
   must(repoAuditText, 'backend/src/finance/financialOperationsScope.js', 'repo audit roadmap links financial operations helper');
@@ -1360,6 +1398,10 @@ function main() {
   must(repoAuditText, 'check:roomprofitabilityandquotefloor01', 'repo audit roadmap exposes room profitability check');
   must(repoAuditText, 'docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md', 'repo audit roadmap links room profitability doc');
   must(repoAuditText, 'backend/src/finance/roomProfitabilityAndQuoteFloor.js', 'repo audit roadmap links room profitability helper');
+  must(repoAuditText, 'COMPANY-BUDGET-AND-SERVICE-COST-01', 'repo audit roadmap mentions company budget/service cost milestone');
+  must(repoAuditText, 'check:companybudgetandservicecost01', 'repo audit roadmap exposes company budget/service cost check');
+  must(repoAuditText, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'repo audit roadmap links company budget/service cost doc');
+  must(repoAuditText, 'backend/src/finance/companyBudgetAndServiceCost.js', 'repo audit roadmap links company budget/service cost helper');
   ordered(repoAuditText, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'repo audit keeps finance milestones in order');
   must(offerAnalysisDoc, 'COPILOT-OFFER-ANALYSIS-01', 'offer analysis doc keeps milestone wording');
   must(offerAnalysisDoc, 'check:copilotofferanalysis01', 'offer analysis doc keeps canonical check wording');
@@ -1459,6 +1501,10 @@ function main() {
   must(primer, 'check:roomprofitabilityandquotefloor01', 'primer exposes room profitability check');
   must(primer, 'docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md', 'primer links room profitability doc');
   must(primer, 'backend/src/finance/roomProfitabilityAndQuoteFloor.js', 'primer links room profitability helper');
+  must(primer, 'COMPANY-BUDGET-AND-SERVICE-COST-01', 'primer mentions company budget/service cost milestone');
+  must(primer, 'check:companybudgetandservicecost01', 'primer exposes company budget/service cost check');
+  must(primer, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'primer links company budget/service cost doc');
+  must(primer, 'backend/src/finance/companyBudgetAndServiceCost.js', 'primer links company budget/service cost helper');
   must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
   must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
   must(primer, 'docs/COPILOT_HUMAN_APPROVAL_01.md', 'primer links human approval doc');

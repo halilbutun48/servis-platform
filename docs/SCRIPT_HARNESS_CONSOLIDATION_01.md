@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `419`
-- Toplam executable tracked file: `1255`
-- Combined registry row: `1674`
-- Root/backend/web/mobile package dağılımı: root `262`, backend `812`, web `96`, mobile `201`
+- Toplam package script entry: `420`
+- Toplam executable tracked file: `1258`
+- Combined registry row: `1678`
+- Root/backend/web/mobile package dağılımı: root `263`, backend `815`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `68`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -198,6 +198,11 @@ Repo: `servis-platform`
 - Room profitability command: `node backend\scripts\room_profitability_and_quote_floor_01_check.js`
 - Room profitability helper: `backend/src/finance/roomProfitabilityAndQuoteFloor.js`
 - Room profitability UI wiring: `web/src/panels/shared/FinancialOperationsPanel.jsx`, `web/src/api.js`, `web/src/App.jsx`, `web/src/layout/NavDock.jsx`, `web/src/copilot/screenRegistry.js`, `backend/src/routes/commercialCore.js`, `backend/src/routes/companyOverview.js`
+- Company budget/service cost milestone: `COMPANY-BUDGET-AND-SERVICE-COST-01`
+- Company budget/service cost check: `check:companybudgetandservicecost01`
+- Company budget/service cost docs: `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`
+- Company budget/service cost command: `node backend\scripts\company_budget_and_service_cost_01_check.js`
+- Company budget/service cost helper: `backend/src/finance/companyBudgetAndServiceCost.js`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
@@ -239,6 +244,7 @@ Repo: `servis-platform`
 - Copilot RFQ prep docs: `docs/COPILOT_RFQ_PREP_01.md`
 - Copilot RFQ prep command: `node backend\scripts\copilot_rfq_prep_01_check.js`
 - Copilot RFQ prep helper: `backend/src/ai/chat/copilotRfqPrep.js`
+- Canonical sequence after RFQ prep: Supplier offer collect milestone: `SUPPLIER-OFFER-COLLECT-01`, Offer analysis milestone: `COPILOT-OFFER-ANALYSIS-01`, Negotiation assist milestone: `COPILOT-NEGOTIATION-ASSIST-01`, Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`, Copilot Excel demand import milestone: `COPILOT-EXCEL-DEMAND-IMPORT-01`
 - Copilot human approval milestone: `COPILOT-HUMAN-APPROVAL-01`
 - Copilot human approval check: `check:copilothumanapproval01`
 - Copilot human approval docs: `docs/COPILOT_HUMAN_APPROVAL_01.md`
@@ -384,7 +390,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `666`
+- NEEDS_REVIEW: `670`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -405,7 +411,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 666 |
+| NEEDS_REVIEW | 670 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -469,6 +475,7 @@ Repo: `servis-platform`
 | root:check:financialoperationssurfaceandrbac01 | package.json | root | node backend/scripts/financial_operations_surface_and_rbac_01_check.js | verify-core | ACTIVE_CORE |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Breaks canonical verification chain |  |
 | root:check:operationalcostmodel01 | package.json | root | node backend/scripts/operational_cost_model_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-OPERATIONALCOSTMODEL-01 |  | Breaks canonical verification chain |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
+| root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Owner or chain unclear |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
@@ -1114,6 +1121,8 @@ Repo: `servis-platform`
 | request_storm_resilience_01_check.js | backend/scripts/request_storm_resilience_01_check.js | backend | root:check:requeststormresilience01 | product-extensions | NEEDS_REVIEW |  | REQUEST-STORM-RESILIENCE-01-CHECK |  | Owner or chain unclear |  |
 | roadmap_lock_ai_marketplace_01_check.js | backend/scripts/roadmap_lock_ai_marketplace_01_check.js | backend | root:check:roadmaplockaimarketplace01 | review | NEEDS_REVIEW |  | ROADMAP-LOCK-AI-MARKETPLACE-01-CHECK |  | Owner or chain unclear |  |
 | role_data_isolation_redteam_01_check.js | backend/scripts/role_data_isolation_redteam_01_check.js | backend | root:check:roledataisolationredteam01 | review | NEEDS_REVIEW |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Owner or chain unclear |  |
+| room_profitability_and_quote_floor_01_check.js | backend/scripts/room_profitability_and_quote_floor_01_check.js | backend | root:check:roomprofitabilityandquotefloor01 | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |
+| room_profitability_and_quote_floor_01_expansion.js | backend/scripts/room_profitability_and_quote_floor_01_expansion.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |
 | room_vehicle_driver_uppercase_normalization_01_check.js | backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js | backend | root:check:roomvehicledriveruppercase01 | review | NEEDS_REVIEW |  | ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01-CHECK |  | Owner or chain unclear |  |
 | route_change_final_01_check.js | backend/scripts/route_change_final_01_check.js | backend | root:check:routechangefinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | run_backend_lint.js | backend/scripts/run_backend_lint.js | backend | backend:lint | backend-lint | ACTIVE_CORE |  | RUN-BACKEND-LINT |  | Owner or chain unclear | canonical runner |
@@ -1293,7 +1302,7 @@ Repo: `servis-platform`
 | screenCatalog.roomCompany.js | backend/src/ai/jobGuide/screenCatalog.roomCompany.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG-ROOM-COMPANY |  | Owner or chain unclear |  |
 | screenCatalog.shared.js | backend/src/ai/jobGuide/screenCatalog.shared.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-CATALOG-SHARED |  | Owner or chain unclear |  |
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
-| service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
+| service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:companybudgetandservicecost01, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
 | audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:auditlogandapprovaltrace01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:testqualityandflakeaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
@@ -1314,6 +1323,7 @@ Repo: `servis-platform`
 | financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
 | operationalCostMath.js | backend/src/finance/operationalCostMath.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MATH |  | Owner or chain unclear |  |
 | operationalCostModel.js | backend/src/finance/operationalCostModel.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MODEL |  | Owner or chain unclear |  |
+| roomProfitabilityAndQuoteFloor.js | backend/src/finance/roomProfitabilityAndQuoteFloor.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR |  | Owner or chain unclear |  |
 | geo.js | backend/src/geo.js | backend | root:check:addressgeocodingconfidence01 | review | NEEDS_REVIEW |  | GEO |  | Owner or chain unclear |  |
 | gpsStateGate.js | backend/src/gps/gpsStateGate.js | backend |  | review | NEEDS_REVIEW |  | GPS-STATE-GATE |  | Owner or chain unclear |  |
 | sourceLabel.js | backend/src/gps/sourceLabel.js | backend |  | review | NEEDS_REVIEW |  | SOURCE-LABEL |  | Owner or chain unclear |  |
@@ -1345,7 +1355,7 @@ Repo: `servis-platform`
 | gpsThrottle1200ms.js | backend/src/middleware/gpsThrottle1200ms.js | backend |  | review | NEEDS_REVIEW |  | GPS-THROTTLE-1200-MS |  | Owner or chain unclear |  |
 | rateLimitRedisStore.js | backend/src/middleware/rateLimitRedisStore.js | backend |  | review | NEEDS_REVIEW |  | RATE-LIMIT-REDIS-STORE |  | Owner or chain unclear |  |
 | payloadV1.js | backend/src/notifications/payloadV1.js | backend |  | review | NEEDS_REVIEW |  | PAYLOAD-V-1 |  | Owner or chain unclear |  |
-| service.js | backend/src/notifications/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
+| service.js | backend/src/notifications/service.js | backend | backend:m63check, root:check:companybudgetandservicecost01, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | stopProgressNotifs.js | backend/src/notifications/stopProgressNotifs.js | backend |  | review | NEEDS_REVIEW |  | STOP-PROGRESS-NOTIFS |  | Owner or chain unclear |  |
 | backupArchiveOps.js | backend/src/ops/backupArchiveOps.js | backend |  | review | NEEDS_REVIEW |  | BACKUP-ARCHIVE-OPS |  | Owner or chain unclear |  |
 | capacityLoadBaseline.js | backend/src/ops/capacityLoadBaseline.js | backend |  | review | NEEDS_REVIEW |  | CAPACITY-LOAD-BASELINE |  | Owner or chain unclear |  |
@@ -1431,7 +1441,7 @@ Repo: `servis-platform`
 | rooms.js | backend/src/routes/rooms.js | backend |  | review | NEEDS_REVIEW |  | ROOMS |  | Owner or chain unclear |  |
 | routeTemplates.js | backend/src/routes/routeTemplates.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-TEMPLATES |  | Owner or chain unclear |  |
 | schoolParentInvites.js | backend/src/routes/schoolParentInvites.js | backend |  | review | NEEDS_REVIEW |  | SCHOOL-PARENT-INVITES |  | Owner or chain unclear |  |
-| company.js | backend/src/routes/shifts/company.js | backend | root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanyagreementsmobileparity01, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanypersonelaccessmobileparity01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01, root:check:uxroomcompanyshiftsmobilecardfix01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
+| company.js | backend/src/routes/shifts/company.js | backend | root:check:companybudgetandservicecost01, root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanyagreementsmobileparity01, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanypersonelaccessmobileparity01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01, root:check:uxroomcompanyshiftsmobilecardfix01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/shifts/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
 | index.js | backend/src/routes/shifts/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
@@ -1492,15 +1502,15 @@ Repo: `servis-platform`
 | shiftRouteState.js | backend/src/services/shiftRouteState.js | backend |  | review | NEEDS_REVIEW |  | SHIFT-ROUTE-STATE |  | Owner or chain unclear |  |
 | hash.js | backend/src/telematics/hash.js | backend |  | review | NEEDS_REVIEW |  | HASH |  | Owner or chain unclear |  |
 | providers.js | backend/src/telematics/providers.js | backend |  | review | NEEDS_REVIEW |  | PROVIDERS |  | Owner or chain unclear |  |
-| service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
+| service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:companybudgetandservicecost01, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tr.js | backend/src/time/tr.js | backend | backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:ai03bsemanticvisiblelivematrix01, root:check:auditlogandapprovaltrace01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
 | responseCache.js | backend/src/utils/responseCache.js | backend |  | review | NEEDS_REVIEW |  | RESPONSE-CACHE |  | Owner or chain unclear |  |
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| room_profitability_and_quote_floor_01_check.js | backend/scripts/room_profitability_and_quote_floor_01_check.js | backend | root:check:roomprofitabilityandquotefloor01 | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |
-| roomProfitabilityAndQuoteFloor.js | backend/src/finance/roomProfitabilityAndQuoteFloor.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR |  | Owner or chain unclear |  |
+| company_budget_and_service_cost_01_check.js | backend/scripts/company_budget_and_service_cost_01_check.js | backend | root:check:companybudgetandservicecost01 | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AND-SERVICE-COST-01-CHECK |  | Owner or chain unclear |  |
+| companyBudgetAndServiceCost.js | backend/src/finance/companyBudgetAndServiceCost.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AND-SERVICE-COST |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
