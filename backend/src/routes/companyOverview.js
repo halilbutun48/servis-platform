@@ -243,6 +243,8 @@ export function companyOverviewRouter() {
     return ["1", "true", "yes", "on"].includes(String(req?.query?.force || "").trim().toLowerCase());
   }
 
+  // Route ownership anchor for company overview.
+
   r.get("/workflow-summary", async (req, res) => {
     const company = await resolveCompany(req);
     if (!company) return res.status(400).json({ ok: false, error: "companyId required" });
