@@ -3,6 +3,8 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+
+import { mustNormalizedTextSha256 } from "./lib/guardTextIntegrity.js";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -190,7 +192,7 @@ function mustAcceptedPrismaManifest() {
   mustExactGitPaths(["backend/prisma", "prisma"], [], "backend/prisma diff empty");
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, "accepted Prisma schema SHA matches");
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
-    mustFileSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
+    mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);
   }
 }
