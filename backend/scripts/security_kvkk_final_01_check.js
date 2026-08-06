@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { normalizedTextSha256 } from "./lib/guardTextIntegrity.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -255,10 +256,10 @@ const ACCEPTED_PRISMA_SCHEMA = {
 const ACCEPTED_PRISMA_MIGRATIONS = [
   { dir: "backend/prisma/migrations/20260125133000_seed_root_baseline", sha256: "27DF5155D24311AA9199AC7B8FC94DB615EC6457401B2BA0105C7FD30A5587DD" },
   { dir: "backend/prisma/migrations/20260125133100_organization_shift_import_baseline", sha256: "864CB0607DB2F7833C834BFD9747D9518806CE9EC206C0C19F1A79271ACE3FBD" },
-  { dir: "backend/prisma/migrations/20260125133200_driver_telematics_route_learning_baseline", sha256: "F1EEFB2E4F0B96AFCEFC8E9557D065BC3B4F1CEDD62B728AD22730B6D44F9369" },
+  { dir: "backend/prisma/migrations/20260125133200_driver_telematics_route_learning_baseline", sha256: "E4EBDCDC04CC09D6698CF9EC868D6E55F46928A489D456A2DBB9ABDAF21B40B5" },
   { dir: "backend/prisma/migrations/20260125133300_auth_consent_checkin_baseline", sha256: "6035100D9AA9B19DE70C011B17D85F870208E8F1B24DA02BEAE02F9995091FEB" },
   { dir: "backend/prisma/migrations/20260303010500_add_company_kind_missing_bridge", sha256: "CFACF309BCE72D5023812755FDB4CD06335AF5C5512E16019AA23AC569F17B6F" },
-  { dir: "backend/prisma/migrations/20260303011000_add_company_region_id_missing_bridge", sha256: "CE0CE67F49E92F6822CCCDEE76F04D53147785ADFE67AD01FE4CF1FC7FF69282" },
+  { dir: "backend/prisma/migrations/20260303011000_add_company_region_id_missing_bridge", sha256: "B168268CE0E96E131E27EB385EA4B0228883C8C04D5804CDF742F3A814C1EC90" },
   { dir: "backend/prisma/migrations/20260407102000_create_agreement_missing_baseline", sha256: "734DC69D31081947BD82566E48831F6295F1A148FCB0742459212986A7616005" },
   { dir: "backend/prisma/migrations/20260501144000_create_shift_offer_missing_baseline", sha256: "85D160041A9AB4D65D76516ED7A4E5909D05656D7C20CA3326C49700AD36BA17" },
   { dir: "backend/prisma/migrations/20260731120000_financial_operations_persistence_01", sha256: "3673FCA31ADB9E3E0A7C3341B7E8320032BBAC5F1DCF1744CAC86CEE48489CB0" },
@@ -274,9 +275,9 @@ const ACCEPTED_PRISMA_MIGRATIONS = [
   { dir: "backend/prisma/migrations/20260801193000_shift_room_nullability_bridge_01", sha256: "FA57E36D09CA2DD31255CD8924204A6FD478D0B633B581582CA4335179222A5D" },
   { dir: "backend/prisma/migrations/20260801194000_shift_agreement_organization_relations_bridge_01", sha256: "E2EAB9D464E2AC8D5F2EDC4815D550341FB2BB5794ADF0BEBE8790AA35F51C90" },
   { dir: "backend/prisma/migrations/20260801200000_shift_progress_started_paused_bridge_01", sha256: "7074A0E5B5FB60798B1C52D1415D5CB713B0D6F9DD6DD8DA58FF25E90C0BF007" },
-  { dir: "backend/prisma/migrations/20260801210000_user_surface_reconciliation_01", sha256: "4BCBD8FA8D5BAC1B2234E68E1EC30126389F568150837984AF4FEC43A4FEE316" },
-  { dir: "backend/prisma/migrations/20260801211000_room_company_cleanup_01", sha256: "283E8F938C60AF9159BD2475844286C17AA54AC9614321098AAE5DFA64B10E64" },
-  { dir: "backend/prisma/migrations/20260801212000_shift_agreement_unique_bridge_01", sha256: "61AF9404CA2C1CAD99CA97DB9BD67D6A5543DCBEA7DEF92F0AF846371CFF1087" },
+  { dir: "backend/prisma/migrations/20260801210000_user_surface_reconciliation_01", sha256: "285B8F12DB03865E6A6B27782F80C9FC44AC0632EA8ECBA2800842E699C1BC27" },
+  { dir: "backend/prisma/migrations/20260801211000_room_company_cleanup_01", sha256: "E002BE555C9116C98268307F194C380A3A081F7EE59E9DFB16EAA0D0322041B5" },
+  { dir: "backend/prisma/migrations/20260801212000_shift_agreement_unique_bridge_01", sha256: "3D367B1DEF35FA7475A8962044834A3759C9D16F7EB0C806FA81A3EE05698E36" },
   { dir: "backend/prisma/migrations/20260801213000_notification_scope_user_value_bridge_01", sha256: "59BD838E221D53D03CC642052ACD8656F5DF382127FCA9B1F8C7D8C7E80C49BA" },
   { dir: "backend/prisma/migrations/20260801214000_shift_room_referential_action_bridge_01", sha256: "F67DB90776421D3CC1841240C4997C933480D6E2DD9CA1E2E6847B5166D6E528" },
   { dir: "backend/prisma/migrations/20260801215000_consent_surface_bridge_01", sha256: "423E0FF4F2DC2A76D5C6330EAECE874E5F98C0196B8A453328E9ADE7AAEF3581" },
@@ -305,7 +306,7 @@ function inspectAcceptedPrismaManifest(evidence = collectAcceptedPrismaEvidence(
   const unexpected = evidence.actual.filter((file) => !ACCEPTED_PRISMA_FILE_SET.has(file));
   const missing = ACCEPTED_PRISMA_FILE_PATHS.filter((file) => !evidence.actual.includes(file));
   const schemaShaMatches = safeFileSha256(ACCEPTED_PRISMA_SCHEMA.path, ACCEPTED_PRISMA_SCHEMA.sha256);
-  const migrationShaMatches = ACCEPTED_PRISMA_MIGRATIONS.every((entry) => safeFileSha256(`${entry.dir}/migration.sql`, entry.sha256));
+  const migrationShaMatches = ACCEPTED_PRISMA_MIGRATIONS.every((entry) => normalizedTextSha256(`${entry.dir}/migration.sql`) === String(entry.sha256 || "").toUpperCase());
   const migrationShapeMatches = ACCEPTED_PRISMA_MIGRATIONS.every((entry) => {
     const dir = path.join(repoRoot, entry.dir);
     let stat = null;

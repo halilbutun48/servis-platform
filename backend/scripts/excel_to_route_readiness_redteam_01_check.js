@@ -101,6 +101,12 @@ function allWithin(files, exactPaths, prefixes, label) {
   ok(label);
 }
 
+function mustRejectScope(files, exactPaths, prefixes, label) {
+  const allowed = files.filter((file) => exactPaths.has(file) || prefixes.some((prefix) => file.startsWith(prefix)));
+  if (allowed.length > 0) fail(`${label}: unexpectedly allowed=${allowed.join(', ')}`);
+  ok(label);
+}
+
 function mustNoDiff(paths, label) {
   const files = gitDiffNames(paths);
   if (files.length > 0) fail(`${label}: ${files.join(', ')}`);
@@ -571,6 +577,16 @@ async function main() {
       // Semantic quality gate files are part of the current consolidated validation pass.
       'backend/scripts/ai_response_semantic_quality_gate_01_check.js',
       'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md',
+      // Guard-V2 standardization support files are exact architecture companions for this pass.
+      'backend/scripts/guard_v2_standardization_01_check.js',
+      'backend/scripts/run_guard_regression_chain.js',
+      'backend/scripts/run_repo_check_chain.js',
+      'backend/scripts/lib/guardTextIntegrity.js',
+      'backend/scripts/lib/guardGitScope.js',
+      'backend/scripts/lib/guardValidationEnvironment.js',
+      'backend/scripts/lib/guardRunnerContracts.js',
+      'backend/scripts/lib/guardRegressionTiers.js',
+      'docs/GUARD_V2_STANDARDIZATION_01.md',
       // Dashboard bulk endpoint files are legitimate consolidated-scope companions for this pass.
       'backend/scripts/dashboard_bulk_endpoint_01_check.js',
       'backend/src/bootstrap/routeMounts.js',
@@ -840,6 +856,22 @@ async function main() {
     ]),
     ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04', 'backend/src/finance/'],
     'working tree stays within redteam scope',
+  );
+  mustRejectScope(
+    ['backend/scripts/guard_v2_synthetic_unrelated.js'],
+    new Set([
+      'backend/scripts/guard_v2_standardization_01_check.js',
+      'backend/scripts/run_guard_regression_chain.js',
+      'backend/scripts/run_repo_check_chain.js',
+      'backend/scripts/lib/guardTextIntegrity.js',
+      'backend/scripts/lib/guardGitScope.js',
+      'backend/scripts/lib/guardValidationEnvironment.js',
+      'backend/scripts/lib/guardRunnerContracts.js',
+      'backend/scripts/lib/guardRegressionTiers.js',
+      'docs/GUARD_V2_STANDARDIZATION_01.md',
+    ]),
+    [],
+    'guard-v2 synthetic unrelated path is rejected',
   );
 
   console.log('=== EXCEL-TO-ROUTE-READINESS-REDTEAM-01 CHECK PASS ===');

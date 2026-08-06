@@ -2,9 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import crypto from 'node:crypto';
 
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import {
@@ -13,6 +11,21 @@ import {
   getSeferAbiReasoningRoleProfile,
   listSeferAbiReasoningRoles,
 } from '../src/ai/chat/seferAbiReasoningAssistant.js';
+import {
+  gitCachedNames as sharedGitCachedNames,
+  gitDiffNames as sharedGitDiffNames,
+  gitStatusEntries as sharedGitStatusEntries,
+  mustNoDiff as sharedMustNoDiff,
+  mustNoDiffExcept as sharedMustNoDiffExcept,
+  mustNoStagedPrefix as sharedMustNoStagedPrefix,
+} from './lib/guardGitScope.js';
+import {
+  mustFileSha256 as sharedMustFileSha256,
+  mustMigrationDirectoryShape as sharedMustMigrationDirectoryShape,
+  mustNormalizedTextSha256 as sharedMustNormalizedTextSha256,
+  fileSha256 as sharedFileSha256,
+  normalizedTextSha256 as sharedNormalizedTextSha256,
+} from './lib/guardTextIntegrity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,45 +86,21 @@ function ordered(text, needles, label) {
 }
 
 function gitDiffNames(paths) {
-  const out = execFileSync('git', ['diff', '--name-only', '--', ...paths], {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return String(out || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  return sharedGitDiffNames(paths);
 }
 
 function gitCachedNames() {
-  const out = execFileSync('git', ['diff', '--cached', '--name-only'], {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return String(out || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  return sharedGitCachedNames();
 }
 
 function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
-  if (files.length > 0) fail(`${label}: ${files.join(', ')}`);
-  ok(label);
+  return sharedMustNoDiff(paths, label);
 }
 function mustNoDiffExcept(paths, allowedFiles, label) {
-  const files = gitDiffNames(paths).filter((file) => !allowedFiles.includes(file));
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(', ')}`);
-  }
-  ok(label);
+  return sharedMustNoDiffExcept(paths, allowedFiles, label);
 }
 function mustNoStagedPrefix(names, prefixes, label) {
-  const hits = names.filter((name) => prefixes.some((prefix) => normalize(name).startsWith(normalize(prefix))));
-  if (hits.length > 0) fail(`${label}: ${hits.join(', ')}`);
-  ok(label);
+  return sharedMustNoStagedPrefix(names, prefixes, label);
 }
 
 function normalizePath(relPath) {
@@ -130,21 +119,7 @@ function sortedUniquePaths(paths) {
 }
 
 function gitStatusEntries(paths) {
-  const out = execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=all', '--', ...paths], {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return String(out || '')
-    .split(/\r?\n/)
-    .map((line) => line.trimEnd())
-    .filter(Boolean)
-    .map((line) => {
-      const code = line.slice(0, 2);
-      const rawPath = line.slice(3);
-      const pathText = rawPath.includes(' -> ') ? rawPath.split(' -> ').pop() : rawPath;
-      return { code, path: normalizePath(pathText), raw: line };
-    });
+  return sharedGitStatusEntries(paths);
 }
 
 function mustExactGitPaths(paths, expectedPaths, label) {
@@ -166,48 +141,23 @@ function mustExactGitPaths(paths, expectedPaths, label) {
 }
 
 function fileSha256(relPath) {
-  return crypto.createHash('sha256').update(fs.readFileSync(path.join(root, relPath))).digest('hex').toUpperCase();
+  return sharedFileSha256(relPath);
 }
 
 function mustFileSha256(relPath, expectedHash, label) {
-  const actual = fileSha256(relPath);
-  if (actual !== String(expectedHash || '').toUpperCase()) {
-    fail(`${label}: ${actual} != ${String(expectedHash || '').toUpperCase()}`);
-  }
-  ok(label);
+  return sharedMustFileSha256(relPath, expectedHash, label);
 }
 
 function normalizedTextSha256(relPath) {
-  const bytes = fs.readFileSync(path.join(root, relPath));
-  for (let i = 0; i < bytes.length; i++) {
-    if (bytes[i] === 0x0d && (i === bytes.length - 1 || bytes[i + 1] !== 0x0a)) {
-      fail(`${relPath}: bare CR`);
-    }
-  }
-  const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  const normalized = text.replace(/\r\n/g, '\n');
-  return crypto.createHash('sha256').update(Buffer.from(normalized, 'utf8')).digest('hex').toUpperCase();
+  return sharedNormalizedTextSha256(relPath);
 }
 
 function mustNormalizedTextSha256(relPath, expectedHash, label) {
-  const actual = normalizedTextSha256(relPath);
-  if (actual !== String(expectedHash || '').toUpperCase()) {
-    fail(`${label}: ${actual} != ${String(expectedHash || '').toUpperCase()}`);
-  }
-  ok(label);
+  return sharedMustNormalizedTextSha256(relPath, expectedHash, label);
 }
 
 function mustMigrationDirectoryShape(relPath, label) {
-  const absPath = path.join(root, relPath);
-  const stat = fs.lstatSync(absPath);
-  if (!stat.isDirectory() || stat.isSymbolicLink()) {
-    fail(`${label}: not an ordinary directory`);
-  }
-  const entries = fs.readdirSync(absPath, { withFileTypes: true }).map((entry) => entry.name).sort(compareText);
-  if (entries.length !== 1 || entries[0] !== 'migration.sql') {
-    fail(`${label}: unexpected contents=${entries.join(', ')}`);
-  }
-  ok(label);
+  return sharedMustMigrationDirectoryShape(relPath, label);
 }
 
 const ACCEPTED_SCHEMA_PATH = 'backend/prisma/schema.prisma';

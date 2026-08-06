@@ -18,6 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
 const runtimeDataDir = path.join(repoRoot, "artifacts", "runtime-data");
+const safeDirectory = path.resolve(repoRoot).replace(/\\/g, "/");
 
 function nodeStep(id, relPath, args = []) {
   return {
@@ -141,6 +142,9 @@ function runStep(step) {
       PROJECT_ROOT: repoRoot,
       BACKUP_ARCHIVE_ALLOW_PLACEHOLDER: process.env.BACKUP_ARCHIVE_ALLOW_PLACEHOLDER || "1",
       RUNTIME_DATA_DIR: process.env.RUNTIME_DATA_DIR || runtimeDataDir,
+      GIT_CONFIG_COUNT: "1",
+      GIT_CONFIG_KEY_0: "safe.directory",
+      GIT_CONFIG_VALUE_0: safeDirectory,
     },
       stdio: "inherit",
     });

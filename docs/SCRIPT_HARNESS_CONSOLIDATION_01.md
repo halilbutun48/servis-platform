@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `420`
-- Toplam executable tracked file: `1258`
-- Combined registry row: `1678`
-- Root/backend/web/mobile package dağılımı: root `263`, backend `815`, web `96`, mobile `201`
+- Toplam package script entry: `424`
+- Toplam executable tracked file: `1265`
+- Combined registry row: `1689`
+- Root/backend/web/mobile package dağılımı: root `267`, backend `822`, web `96`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `68`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`

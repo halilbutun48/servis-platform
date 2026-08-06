@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  17,
-    "currentWarningHotFileCount":  13,
+    "currentWarningHotFileCount":  12,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -244,10 +244,6 @@
                                                         "mobile/src/screens/driverPremiumUi.js":  {
                                                                                                        "class":  "safe-candidate-review",
                                                                                                       "note":  "premium mobile shell; controlled cleanup adayi"
-                                                                                                  },
-                                                        "backend/scripts/audit_log_and_approval_trace_01_check.js":  {
-                                                                                                      "class":  "safe-candidate-review",
-                                                                                                      "note":  "audit log and approval trace hot path; controlled cleanup adayi"
                                                                                                   },
                                                         "backend/scripts/cache_coalescing_and_backoff_01_check.js":  {
                                                                                                      "class":  "safe-candidate-review",
