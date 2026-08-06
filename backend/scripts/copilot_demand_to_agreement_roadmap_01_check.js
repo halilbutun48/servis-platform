@@ -84,7 +84,13 @@ function mustNoDiff(paths, label) {
   if (files.length > 0) fail(`${label}: ${files.join(', ')}`);
   ok(label);
 }
-
+function mustNoDiffExcept(paths, allowedFiles, label) {
+  const files = gitDiffNames(paths).filter((file) => !allowedFiles.includes(file));
+  if (files.length > 0) {
+    fail(`${label}: ${files.join(', ')}`);
+  }
+  ok(label);
+}
 function mustNoStagedPrefix(names, prefixes, label) {
   const hits = names.filter((name) => prefixes.some((prefix) => normalize(name).startsWith(normalize(prefix))));
   if (hits.length > 0) fail(`${label}: ${hits.join(', ')}`);
@@ -246,7 +252,7 @@ async function main() {
   must(harnessDoc, 'backend/src/ai/chat/copilotRfqPrep.js', 'script harness doc lists RFQ prep helper');
   must(harnessDoc, 'COPILOT-RFQ-PREP-01', 'script harness doc lists RFQ prep milestone');
 
-  mustNoDiff(['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
 
   console.log('=== COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01 CHECK PASS ===');

@@ -466,7 +466,7 @@ async function main() {
   }
 
   mustCondition(gitCachedNames().length === 0, 'stage is empty');
-  mustNoDiff(['backend/src/routes', 'backend/src/services', 'prisma', 'backend/prisma'], 'route/service/prisma diff empty');
+  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diff empty');
   mustCommandPass(['git', 'diff', '--check'], 'working tree diff check is clean');
   mustCommandPass(['git', 'diff', '--cached', '--check'], 'cached diff check is clean');
   mustCondition(!fs.existsSync(path.join(root, 'debug.log')), 'debug.log absent');

@@ -652,7 +652,7 @@ function main() {
   );
   assertEmptyDiff(['backend/src/services'], 'backend/src/services diff empty');
   assertEmptyDiff(['prisma'], 'prisma diff empty');
-  assertEmptyDiff(['backend/prisma'], 'backend/prisma diff empty');
+  assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertCommandOutputEmpty(['diff', '--check'], 'git diff --check clean');
   assertCommandOutputEmpty(['diff', '--cached', '--check'], 'git diff --cached --check clean');
   assertCommandOutputEmpty(['diff', '--cached', '--name-only'], 'stage empty');

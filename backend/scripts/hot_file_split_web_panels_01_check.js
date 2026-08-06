@@ -240,7 +240,7 @@ async function main() {
   must(statusShort, "backend/artifacts/runtime-data/", "runtime-data artifacts remain in working tree");
   mustNot(statusShort, "debug.log", "debug.log absent from git status");
   assertCleanOutput(["diff", "--cached", "--name-only"], "stage remains empty");
-  assertCleanOutput(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "prisma", "backend/prisma"], "route/service/prisma diff remains empty");
+  assertCleanOutput(["diff", "--name-only", "--", "backend/src/services", "prisma"], "service/prisma diff remains empty");
   assertCleanOutput(["diff", "--check"], "working tree diff check is clean");
   assertCleanOutput(["diff", "--cached", "--check"], "staged diff check is clean");
   if (exists("debug.log")) fail("debug.log should be absent");

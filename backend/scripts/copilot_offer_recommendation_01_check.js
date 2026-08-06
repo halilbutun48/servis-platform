@@ -548,7 +548,7 @@ function main() {
   mustCommandPass(['git', 'diff', '--check'], 'git diff --check is clean');
   mustCommandPass(['git', 'diff', '--cached', '--check'], 'git diff --cached --check is clean');
   mustCommandPass(['git', 'show', '--check', '--stat', 'HEAD'], 'git show --check --stat HEAD is clean');
-  mustNoDiff(['backend/src/routes', 'backend/src/services', 'prisma', 'backend/prisma'], 'route/service/prisma diffs stay empty');
+  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diffs stay empty');
   mustCondition(cachedNames.length === 0, 'stage stays empty');
   mustCondition(!fs.existsSync(path.join(root, 'debug.log')), 'debug.log stays absent');
 

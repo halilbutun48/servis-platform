@@ -163,8 +163,9 @@ function main() {
   must(inviteDoc, "audit log", "invite membership doc keeps audit log wording");
 
   mustNoDiffExcept(
-    ["backend/src/routes", "backend/src/services", "backend/prisma", "prisma", "web/src"],
+    ["backend/src/routes", "backend/src/services", "prisma", "web/src"],
     [
+      "backend/src/routes/companyOverview.js",
       "web/src/App.jsx",
       "web/src/copilot/screenRegistry.js",
       "web/src/layout/NavDock.jsx",
@@ -236,6 +237,8 @@ function main() {
       "web/src/utils/copilotFacts.js",
       "web/src/utils/uiDataCache.js",
       "web/src/panels/superadmin/TrustQualityPanel.jsx",
+      "backend/src/routes/companyOverview.js",
+      "web/src/panels/shared/FinancialOperationsPanel.jsx",
     ],
     "invite-based membership keeps runtime code unchanged"
   );

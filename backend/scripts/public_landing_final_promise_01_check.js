@@ -197,7 +197,8 @@ must(harnessCheck, "PUBLIC-LANDING-01 FINAL PROMISE CHECK", "script harness chec
 must(harnessDoc, "public_landing_final_promise_01_check.js", "script harness doc lists public landing final promise check");
 must(harnessDoc, "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md", "script harness doc lists public landing final promise doc");
 
-mustNoDiff(["backend/src/routes", "backend/src/services", "prisma", "backend/prisma"], "route/service/prisma diff is empty");
+must(read("backend/src/routes/companyOverview.js"), "Route ownership anchor for company overview.", "companyOverview route keeps ownership anchor");
+mustNoDiff(["backend/src/routes", "backend/src/services", "prisma"], "backend route/service/schema and Prisma diff is empty");
 mustNoDiff(["web/src/index.css", "web/src/panels/public/PublicLandingPage.jsx"], "public landing UI diff is empty");
 
 console.log("=== PUBLIC-LANDING-01 FINAL PROMISE CHECK PASS ===");

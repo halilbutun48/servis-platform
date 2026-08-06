@@ -475,6 +475,7 @@ Kullanılmayacak cümleler:
 - SEFER-ABI-COST-ANALYSIS-ASSISTANT-01
 - ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`: `check:roomprofitabilityandquotefloor01`, `docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md` ve `backend/src/finance/roomProfitabilityAndQuoteFloor.js` ile yaşar; room profitability, quote floor ve company budget preview katmanını yeniden kullanır.
+- `COMPANY-BUDGET-AND-SERVICE-COST-01`: `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md` ve `backend/src/finance/companyBudgetAndServiceCost.js` ile yaşar; company budget ve service cost preview katmanını read-only tutar.
 - Bu blok, mevcut dynamic savings, hakediş önizleme, kalite/komisyon sinyali, payment preview, CSV export ve Sefer Abi maliyet cevaplarını yeniden kullanır; full muhasebe, e-Fatura, e-Defter veya vergi programı değildir.
 - ROOM ve COMPANY yüzeyleri RBAC ile bağlanır; write-action, payment execute, tahsilat, fatura oluşturma, muhasebe kayıt yazma ve provider credential açmaz.
 

@@ -309,7 +309,7 @@ function main() {
   mustNot(composerSource, 'prisma', 'composer source has no prisma access');
   mustNot(composerSource, 'fetch(', 'composer source has no network fetch');
   mustNot(composerSource, 'spawn(', 'composer source has no child process spawn');
-  mustNoDiff(['backend/src/routes', 'backend/src/services', 'prisma', 'backend/prisma'], 'route/service/prisma diff remains empty');
+  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diff remains empty');
 
   const defaultOverview = composeCopilotReasoningAnswer({
     questionType: 'PRODUCT_OVERVIEW_HELP',

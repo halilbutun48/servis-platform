@@ -143,6 +143,24 @@ function mustFileSha256(relPath, expectedHash, label) {
   must(fileSha256(relPath) === String(expectedHash || "").toUpperCase(), label);
 }
 
+function normalizedTextSha256(relPath) {
+  const bytes = fs.readFileSync(path.join(repoRoot, relPath));
+  for (let i = 0; i < bytes.length; i++) {
+    if (bytes[i] === 0x0d && (i === bytes.length - 1 || bytes[i + 1] !== 0x0a)) {
+      throw new Error(`FAIL ${relPath}: bare CR`);
+    }
+  }
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  const normalized = text.replace(/\r\n/g, "\n");
+  return crypto.createHash("sha256").update(Buffer.from(normalized, "utf8")).digest("hex").toUpperCase();
+}
+
+function mustNormalizedTextSha256(relPath, expectedHash, label) {
+  const actual = normalizedTextSha256(relPath);
+  const wanted = String(expectedHash || "").toUpperCase();
+  must(actual === wanted, `${label}: ${actual} != ${wanted}`);
+}
+
 function isMigrationDirectoryShape(relPath) {
   try {
     const absPath = path.join(repoRoot, relPath);
@@ -220,7 +238,7 @@ function inspectAcceptedPrismaManifest(evidence = collectBackendPrismaEvidence()
   const unexpected = evidence.actual.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(file));
   const missing = acceptedPrismaFiles.filter((file) => !evidence.actual.includes(file));
   const schemaShaMatches = safeFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256);
-  const migrationShaMatches = ACCEPTED_PRISMA_MIGRATIONS.every((entry) => safeFileSha256(entry.path, entry.sha256));
+  const migrationShaMatches = ACCEPTED_PRISMA_MIGRATIONS.every((entry) => normalizedTextSha256(entry.path) === String(entry.sha256 || "").toUpperCase());
   const migrationShapeMatches = ACCEPTED_PRISMA_MIGRATIONS.every((entry) => isMigrationDirectoryShape(path.dirname(entry.path)));
   return {
     evidence,
@@ -240,13 +258,10 @@ function inspectAcceptedPrismaManifest(evidence = collectBackendPrismaEvidence()
 
 function mustAcceptedPrismaManifest(evidence = collectBackendPrismaEvidence()) {
   const inspection = inspectAcceptedPrismaManifest(evidence);
-  must(
-    inspection.unexpected.length === 0 && inspection.missing.length === 0,
-    `accepted Prisma manifest matches current tracked/untracked/staged set: unexpected=${inspection.unexpected.join(", ") || "(none)"} missing=${inspection.missing.join(", ") || "(none)"}`,
-  );
+  must(evidence.actual.length === 0, "backend/prisma diff empty");
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, "accepted Prisma schema SHA matches");
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
-    mustFileSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
+    mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);
   }
   return inspection;

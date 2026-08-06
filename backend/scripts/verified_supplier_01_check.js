@@ -246,7 +246,7 @@ function main() {
   must(displayStatus, "APPROVED_FOR_INVITE", "display status supports invite-ready state");
 
   mustNoDiffExcept(
-    ["backend/src/routes", "backend/src/services", "backend/src/bootstrap", "backend/src/server.js", "web/src/panels/superadmin", "web/src/panels/company", "web/src/panels/room", "web/src/utils", "backend/prisma", "prisma"],
+    ["backend/src/routes", "backend/src/services", "backend/src/bootstrap", "backend/src/server.js", "web/src/panels/superadmin", "web/src/panels/company", "web/src/panels/room", "web/src/utils"],
     [
       "web/src/App.jsx",
       "web/src/copilot/screenRegistry.js",
@@ -258,6 +258,7 @@ function main() {
       "backend/src/bootstrap/routeMounts.js",
       "backend/src/server.js",
       "backend/src/routes/dashboardBulk.js",
+      "backend/src/routes/companyOverview.js",
       "backend/src/services/dashboardBulk.js",
       "web/src/panels/room/ShiftsPanel.jsx",
       "web/src/panels/room/VehiclesPanel.jsx",

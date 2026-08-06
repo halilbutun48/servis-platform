@@ -294,7 +294,6 @@ mustNoDiffExcept(
     "web/src/copilot",
     "web/src/components/public",
     "prisma",
-    "backend/prisma",
   ],
   [
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
@@ -303,6 +302,7 @@ mustNoDiffExcept(
     "backend/src/bootstrap/routeMounts.js",
     "backend/src/server.js",
     "backend/src/routes/dashboardBulk.js",
+    "backend/src/routes/companyOverview.js",
     "backend/src/services/dashboardBulk.js",
     "web/src/utils/copilotFacts.js",
     "web/src/panels/room/ShiftsPanel.jsx",

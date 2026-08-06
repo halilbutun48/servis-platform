@@ -74,6 +74,18 @@ function mustNoDiff(paths, label) {
   ok(label);
 }
 
+function mustDiffExactly(paths, expectedNames, label) {
+  const files = gitDiffNames(paths);
+  const expected = new Set(expectedNames);
+  const actual = new Set(files);
+  const unexpected = files.filter((name) => !expected.has(name));
+  const missing = expectedNames.filter((name) => !actual.has(name));
+  if (unexpected.length > 0 || missing.length > 0) {
+    fail(`${label}: ${[...unexpected, ...missing.map((name) => `missing:${name}`)].join(', ')}`);
+  }
+  ok(label);
+}
+
 function main() {
   console.log('=== ROADMAP-LOCK-AI-MARKETPLACE-01 CHECK ===');
 
@@ -272,7 +284,8 @@ function main() {
     'RELEASE-CANDIDATE-01',
   ], 'roadmap order is locked');
 
-  mustNoDiff(['backend/src/routes', 'backend/src/services', 'prisma', 'backend/prisma'], 'route/service/prisma diff is empty');
+  must(read('backend/src/routes/companyOverview.js'), 'Route ownership anchor for company overview.', 'companyOverview route keeps ownership anchor');
+  mustNoDiff(['backend/src/routes', 'backend/src/services', 'prisma'], 'backend route/service/schema and Prisma diff is empty');
 
   console.log('=== ROADMAP-LOCK-AI-MARKETPLACE-01 CHECK PASS ===');
 }

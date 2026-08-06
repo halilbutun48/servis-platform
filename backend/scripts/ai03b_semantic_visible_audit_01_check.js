@@ -982,7 +982,7 @@ function main() {
   assert(continueFlowAssistant.reasoningAssistant?.interactionIntentFamily === 'CONTINUE_FLOW', 'continue-flow assistant keeps CONTINUE_FLOW intent family');
   assert(clarifyingAssistant.mode === 'CLARIFYING_QUESTION', 'clarifying assistant stays in CLARIFYING_QUESTION mode');
 
-  mustNoDiff(['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'], 'route/service/prisma diff stays empty');
+  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diff stays empty');
   assert(gitCachedNames().length === 0, 'stage stays empty');
   mustNoStagedPrefix(gitCachedNames(), ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 

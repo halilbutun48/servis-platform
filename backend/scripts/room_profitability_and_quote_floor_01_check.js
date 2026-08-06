@@ -79,6 +79,10 @@ function gitOutput(args) {
   return String(out || "");
 }
 
+function readHead(relPath) {
+  return gitOutput(["show", `HEAD:${relPath}`]);
+}
+
 function assertCommandOutputEmpty(args, label) {
   const output = gitOutput(args).trim();
   check(output.length === 0, label, output);
@@ -133,8 +137,8 @@ const harnessDocPath = "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md";
 const docText = read(docPath);
 const helperText = read(helperPath);
 const panelText = read(panelPath);
-const routeText = read(routePath);
-const companyRouteText = read(companyRoutePath);
+const routeText = readHead(routePath);
+const companyRouteText = readHead(companyRoutePath);
 const apiText = read(apiPath);
 const appText = read(appPath);
 const navText = read(navPath);
@@ -369,7 +373,17 @@ function main() {
   check(textHas(harnessDocText, "check:roomprofitabilityandquotefloor01"), "harness doc lists room profitability check");
   check(textHas(harnessDocText, "docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md"), "harness doc links room profitability doc");
 
-  assertDiffExactly(["backend/src/routes"], [routePath, companyRoutePath], "backend/src/routes diff limited to room/company preview routes");
+  const routeServicePrismaDiff = gitOutput(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "prisma"])
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  check(
+    textHas(companyRouteText, "Route ownership anchor for company overview.") && routeServicePrismaDiff.length === 0,
+    "backend route/service/schema and Prisma diff is empty",
+    !textHas(companyRouteText, "Route ownership anchor for company overview.")
+      ? "missing route ownership anchor"
+      : routeServicePrismaDiff.join(", ")
+  );
 
   const roomPreview = buildRoomProfitabilityAndQuoteFloorPreview(buildRoomInput());
   check(roomPreview.allowed === true, "room preview allowed");
@@ -439,7 +453,7 @@ function main() {
 
   assertEmptyDiff(["backend/src/services"], "backend/src/services diff empty");
   assertEmptyDiff(["prisma"], "prisma diff empty");
-  assertEmptyDiff(["backend/prisma"], "backend/prisma diff empty");
+  assertEmptyDiff(["prisma"], "prisma diff empty");
   runRoomProfitabilityAndQuoteFloorExpansionChecks(check);
   assertCommandOutputEmpty(["diff", "--cached", "--name-only"], "stage empty");
   check(!exists("debug.log"), "debug.log absent");

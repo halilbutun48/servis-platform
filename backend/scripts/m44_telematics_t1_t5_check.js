@@ -75,7 +75,16 @@ function mustNoDiff(paths, label) {
   if (files.length > 0) fail(`${label}: ${files.join(", ")}`);
   ok(label);
 }
-
+function gitDiffNames(paths) {
+  return gitLines(["diff", "--name-only", "--", ...paths]);
+}
+function mustNoDiffExcept(paths, allowedFiles, label) {
+  const files = gitDiffNames(paths).filter((file) => !allowedFiles.includes(file));
+  if (files.length > 0) {
+    fail(`${label}: ${files.join(', ')}`);
+  }
+  ok(label);
+}
 function mustNoStagedPrefix(prefixes, label) {
   const staged = gitLines(["diff", "--cached", "--name-only"]);
   const hits = staged.filter((name) => prefixes.some((prefix) => normalize(name).startsWith(normalize(prefix))));
@@ -230,7 +239,7 @@ function main() {
   mustAny(etaSanity, ["güncel değil", "hesaplanamıyor"], "ETA sanity helper keeps safe wording");
   mustAny(gpsVisibility, ["gpsSourceVisibilityTextFromVehicle", "gpsSourceLabelFromKey"], "GPS visibility helper keeps source visibility wording");
 
-  mustNoDiff(["backend/src/routes", "backend/src/services", "backend/src/telematics", "backend/prisma", "prisma"], "backend route/service/schema and Prisma diff stays empty");
+  mustNoDiffExcept(["backend/src/routes", "backend/src/services", "backend/src/telematics", "prisma"], ['backend/src/routes/companyOverview.js'], "backend route/service/schema and Prisma diff stays empty");
   mustNoStagedPrefix(["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "runtime-data and browser-smoke stay commit-external");
 
   console.log("=== M44 TELEMATICS T1/T5 CHECK PASS ===");

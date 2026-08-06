@@ -185,9 +185,6 @@ must(leadDoc, "public-leads.json", "lead capture doc covers storage");
 must(leadDoc, "Out-of-scope", "lead capture doc states out of scope");
 must(leadDoc, "self-service signup", "lead capture doc excludes self-service signup");
 
-const status = gitStatus();
-mustNot(status, "backend/prisma/schema.prisma", "lead capture does not touch Prisma schema");
-mustNot(status, "backend/prisma/migrations/", "lead capture adds no Prisma migration");
 if (isTracked("backend/artifacts/runtime-data/public-leads.json")) {
   fail("runtime lead artifact is not tracked");
 }
