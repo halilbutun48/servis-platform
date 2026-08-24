@@ -708,13 +708,16 @@ async function main() {
   addGuard("allowlist", "redteam guard keeps the owned-file scope contract narrow", () => {
     mustAll(redteamCheck, [
       ["const redteamOwnedScopePaths = [", "owned-file scope path list"],
-      ["const redteamAllowedStatusPaths = [", "owned-file scope status list"],
+      ["const redteamTrackedCleanPaths = [", "owned-file committed-clean scope list"],
+      ["const redteamAuthorizedFollowupPaths = [", "owned-file authorized follow-up scope list"],
       ["mustDiffEmptyOrExactlyWithIdentity(", "identity-locked backend diff helper"],
       ["backend/src/routes/commercialCore.js", "identity-locked backend diff routes"],
       ["backend/src/routes/operationProof.js", "identity-locked backend diff routes"],
       ["backend/src/routes/trustQuality.js", "identity-locked backend diff routes"],
       ["backend/src/services/qualityPaymentBridgeService.js", "identity-locked backend diff services"],
-      ["mustExactStatusPaths(status, redteamAllowedStatusPaths, 'redteam owned-file scope stays within expected files');", "owned-file scope status contract"],
+      ["mustTrackedAndCleanPaths(redteamTrackedCleanPaths, 'redteam committed scope stays tracked and clean');", "owned-file committed-clean status contract"],
+      ["mustTrackedPaths(redteamAuthorizedFollowupPaths, 'redteam authorized follow-up scope stays tracked');", "owned-file authorized follow-up tracked contract"],
+      ["mustDirtyOnlyWithin(", "owned-file follow-up dirty contract"],
       ["mustRejectScope(", "owned-file scope rejection contract"],
       ["backend/artifacts/runtime-data/", "runtime-data boundary"],
       ["backend/artifacts/browser-smoke/", "browser-smoke boundary"],

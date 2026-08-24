@@ -134,6 +134,7 @@ const GENERATED_LINT_OWNER_PREFIX = "artifacts/lint/";
 const GENERATED_REPO_AUDIT_PREFIX = "artifacts/encoding_";
 const GENERATED_BROWSER_SMOKE_PREFIX = "backend/artifacts/browser-smoke/";
 const GENERATED_ARTIFACTS_PREFIX = "artifacts/";
+const VOLATILE_BACKUP_EVIDENCE_BASENAME_RE = /^servisdb_backup_\d{8}-\d{6}_(?:stderr\.txt|sql|manifest\.json)$/i;
 
 const HISTORICAL_DIRECTORY_PREFIXES = [
   "docs/_archive/",
@@ -628,6 +629,11 @@ function isGeneratedArtifactPath(relPath) {
   return false;
 }
 
+function isVolatileBackupEvidencePath(relPath) {
+  const normalized = normalizePath(relPath);
+  return normalized.startsWith(GENERATED_BACKUP_OWNER_PREFIX) && VOLATILE_BACKUP_EVIDENCE_BASENAME_RE.test(path.posix.basename(normalized));
+}
+
 function canonicalOwnerForPath(relPath) {
   const normalized = normalizePath(relPath);
 
@@ -772,8 +778,139 @@ function replacementForEntry(relPath, classification) {
   return null;
 }
 
+function isValidGitCommitSha(value) {
+  return /^[0-9a-f]{40}$/i.test(String(value || "").trim());
+}
+
+function gitCommitExists(commitSha) {
+  const normalized = String(commitSha || "").trim();
+  if (!isValidGitCommitSha(normalized)) {
+    return false;
+  }
+  try {
+    gitExec(["cat-file", "-e", `${normalized}^{commit}`]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateRepoHeadProvenance(registry, currentHead, label) {
+  const diffs = [];
+  const repoHead = String(registry?.repo?.head || "").trim();
+  if (!isValidGitCommitSha(repoHead)) {
+    diffs.push({
+      type: "REPO_HEAD_FORMAT_MISMATCH",
+      label,
+      value: registry?.repo?.head,
+    });
+    return diffs;
+  }
+  if (!gitCommitExists(repoHead)) {
+    diffs.push({
+      type: "REPO_HEAD_UNKNOWN_COMMIT",
+      label,
+      value: repoHead,
+    });
+    return diffs;
+  }
+
+  // repo.head is generation provenance, not a live current-HEAD drift field.
+  // We still require it to name a real commit that is on or behind the current HEAD.
+  if (repoHead !== currentHead) {
+    try {
+      gitExec(["merge-base", "--is-ancestor", repoHead, currentHead]);
+    } catch {
+      diffs.push({
+        type: "REPO_HEAD_NOT_ANCESTOR",
+        label,
+        expectedAncestor: repoHead,
+        actualHead: currentHead,
+      });
+    }
+  }
+
+  return diffs;
+}
+
 function canonicalizationSort(entries) {
   return [...entries].sort((a, b) => comparePaths(normalizePath(a.path), normalizePath(b.path)));
+}
+
+function projectDocumentationRegistryForComparison(registry) {
+  const projectedEntries = canonicalizationSort(
+    ensureArray(registry?.entries, "registry.entries").filter((entry) => !isVolatileBackupEvidencePath(entry?.path)),
+  ).map((entry) => ({
+    path: normalizePath(entry.path),
+    tracked: Boolean(entry.tracked),
+    classification: entry.classification,
+    ownerDomain: entry.ownerDomain,
+    canonicalOwner: entry.canonicalOwner,
+    consumerCount: entry.consumerCount,
+    checkerDependent: Boolean(entry.checkerDependent),
+    archiveDisposition: entry.archiveDisposition,
+    archiveBlocked: Boolean(entry.archiveBlocked),
+    replacement: entry.replacement ?? null,
+    notesStatusReason: entry.notesStatusReason ?? "",
+  }));
+
+  const classificationCounts = Object.create(null);
+  const archiveDispositionCounts = Object.create(null);
+  let trackedCount = 0;
+  let checkerDependentCount = 0;
+  let archiveBlockedCount = 0;
+  let generatedCount = 0;
+  let activeCanonicalCount = 0;
+
+  for (const entry of projectedEntries) {
+    classificationCounts[entry.classification] = (classificationCounts[entry.classification] || 0) + 1;
+    archiveDispositionCounts[entry.archiveDisposition] = (archiveDispositionCounts[entry.archiveDisposition] || 0) + 1;
+    if (entry.tracked) {
+      trackedCount += 1;
+    }
+    if (entry.checkerDependent) {
+      checkerDependentCount += 1;
+    }
+    if (entry.archiveBlocked) {
+      archiveBlockedCount += 1;
+    }
+    if (entry.classification === "DERIVED_GENERATED") {
+      generatedCount += 1;
+    }
+    if (entry.classification === "CANONICAL_SSOT" || (entry.classification === "ACTIVE_DOMAIN_DOC" && entry.archiveDisposition === "KEEP_ACTIVE")) {
+      activeCanonicalCount += 1;
+    }
+  }
+
+  return {
+    ...registry,
+    entries: projectedEntries,
+    census: {
+      total: projectedEntries.length,
+      tracked: trackedCount,
+      untracked: projectedEntries.length - trackedCount,
+    },
+    summaryCounts: {
+      classificationCounts: {
+        CANONICAL_SSOT: classificationCounts.CANONICAL_SSOT || 0,
+        ACTIVE_DOMAIN_DOC: classificationCounts.ACTIVE_DOMAIN_DOC || 0,
+        REFERENCE_POINTER: classificationCounts.REFERENCE_POINTER || 0,
+        HISTORICAL_EVIDENCE: classificationCounts.HISTORICAL_EVIDENCE || 0,
+        DERIVED_GENERATED: classificationCounts.DERIVED_GENERATED || 0,
+        STALE_CONTRADICTORY: classificationCounts.STALE_CONTRADICTORY || 0,
+        UNKNOWN_NEEDS_REVIEW: classificationCounts.UNKNOWN_NEEDS_REVIEW || 0,
+        CHECKER_DEPENDENT: classificationCounts.CHECKER_DEPENDENT || 0,
+        ARCHIVE_CANDIDATE: classificationCounts.ARCHIVE_CANDIDATE || 0,
+        DUPLICATE: classificationCounts.DUPLICATE || 0,
+        ORPHAN: classificationCounts.ORPHAN || 0,
+      },
+      archiveBlocked: archiveBlockedCount,
+      checkerDependent: checkerDependentCount,
+      generated: generatedCount,
+      activeCanonical: activeCanonicalCount,
+      archiveDispositionCounts,
+    },
+  };
 }
 
 export function buildDocumentationRegistryV1() {
@@ -914,16 +1051,19 @@ function isScriptLikeConsumerPath(relPath) {
 }
 
 export function compareDocumentationRegistryV1(expected, actual) {
-  const expectedEntryList = ensureArray(expected.entries, "expected.entries");
-  const actualEntryList = ensureArray(actual.entries, "actual.entries");
+  const currentHead = gitExec(["rev-parse", "HEAD"]).trim();
+  const projectedExpected = projectDocumentationRegistryForComparison(expected);
+  const projectedActual = projectDocumentationRegistryForComparison(actual);
 
   const diffs = [
-    ...collectDuplicatePathDiffs(expectedEntryList, "expected", "DUPLICATE_EXPECTED_PATH"),
-    ...collectDuplicatePathDiffs(actualEntryList, "actual", "DUPLICATE_ACTUAL_PATH"),
+    ...collectDuplicatePathDiffs(projectedExpected.entries, "expected", "DUPLICATE_EXPECTED_PATH"),
+    ...collectDuplicatePathDiffs(projectedActual.entries, "actual", "DUPLICATE_ACTUAL_PATH"),
+    ...validateRepoHeadProvenance(expected, currentHead, "expected"),
+    ...validateRepoHeadProvenance(actual, currentHead, "actual"),
   ];
 
-  const expectedEntries = new Map(expectedEntryList.map((entry) => [normalizePath(entry.path), entry]));
-  const actualEntries = new Map(actualEntryList.map((entry) => [normalizePath(entry.path), entry]));
+  const expectedEntries = new Map(projectedExpected.entries.map((entry) => [normalizePath(entry.path), entry]));
+  const actualEntries = new Map(projectedActual.entries.map((entry) => [normalizePath(entry.path), entry]));
 
   const allPaths = [...new Set([...expectedEntries.keys(), ...actualEntries.keys()])].sort(comparePaths);
 
@@ -964,13 +1104,12 @@ export function compareDocumentationRegistryV1(expected, actual) {
   }
 
   const summaryMismatchFields = [
-    ["schemaVersion", expected.schemaVersion, actual.schemaVersion],
-    ["generatedAt", expected.generatedAt, actual.generatedAt],
-    ["repo.head", expected?.repo?.head, actual?.repo?.head],
-    ["repo.branch", expected?.repo?.branch, actual?.repo?.branch],
-    ["census.total", expected?.census?.total, actual?.census?.total],
-    ["census.tracked", expected?.census?.tracked, actual?.census?.tracked],
-    ["census.untracked", expected?.census?.untracked, actual?.census?.untracked],
+    ["schemaVersion", projectedExpected.schemaVersion, projectedActual.schemaVersion],
+    ["generatedAt", projectedExpected.generatedAt, projectedActual.generatedAt],
+    ["repo.branch", projectedExpected?.repo?.branch, projectedActual?.repo?.branch],
+    ["census.total", projectedExpected?.census?.total, projectedActual?.census?.total],
+    ["census.tracked", projectedExpected?.census?.tracked, projectedActual?.census?.tracked],
+    ["census.untracked", projectedExpected?.census?.untracked, projectedActual?.census?.untracked],
   ];
   for (const [field, expectedValue, actualValue] of summaryMismatchFields) {
     if (JSON.stringify(expectedValue) !== JSON.stringify(actualValue)) {
@@ -978,8 +1117,8 @@ export function compareDocumentationRegistryV1(expected, actual) {
     }
   }
 
-  const expectedSummaryCounts = expected?.summaryCounts || {};
-  const actualSummaryCounts = actual?.summaryCounts || {};
+  const expectedSummaryCounts = projectedExpected?.summaryCounts || {};
+  const actualSummaryCounts = projectedActual?.summaryCounts || {};
   const classificationKeys = [
     "CANONICAL_SSOT",
     "ACTIVE_DOMAIN_DOC",

@@ -189,10 +189,7 @@ function buildStep167ConcurrentCanonicalEntries() {
     const record = getCanonicalProvenanceRecord(relPath);
     must(record, `step 167 canonical provenance record present for ${relPath}`);
     must(record.baselinePresence === "ABSENT", `step 167 canonical provenance baseline remains absent for ${relPath}`);
-    must(
-      record.workingTreeState === "UNTRACKED_CANONICAL_NEW_FILE",
-      `step 167 canonical provenance working-tree state remains canonical for ${relPath}`
-    );
+    must(record.workingTreeState === "TRACKED_UNMODIFIED", `step 167 canonical provenance working-tree state remains tracked and unmodified for ${relPath}`);
     must(
       record.provenanceClass === "CONCURRENT_CANONICAL",
       `step 167 canonical provenance class remains concurrent canonical for ${relPath}`

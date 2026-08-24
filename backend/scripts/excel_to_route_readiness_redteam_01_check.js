@@ -30,13 +30,18 @@ const redteamOwnedScopePaths = [
   'backend/scripts/current_head_scope_policy_01_check.js',
   'backend/scripts/lib/currentHeadScopePolicy.js',
 ];
-const redteamAllowedStatusPaths = [
-  'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
+const redteamTrackedCleanPaths = [
   'backend/scripts/lib/guardSmokeEvidence.js',
   'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
-  ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
+  ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS.filter(
+    (path) => path !== 'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md'
+  ),
   'backend/scripts/current_head_scope_policy_01_check.js',
+];
+const redteamAuthorizedFollowupPaths = [
+  'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
   'backend/scripts/lib/currentHeadScopePolicy.js',
+  'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md',
 ];
 const exactApprovedConcurrentCanonicalEntries = [
   { path: 'backend/src/routes/admin.js', sha256: '61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4' },
@@ -109,6 +114,18 @@ function gitStatusNames() {
     .filter(Boolean);
 }
 
+function gitTrackedNames(paths) {
+  const out = execFileSync('git', ['ls-files', '--', ...paths], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  return String(out || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/\\/g, '/'))
+    .filter(Boolean);
+}
+
 function gitCachedNames() {
   const out = execFileSync('git', ['diff', '--cached', '--name-only'], {
     cwd: root,
@@ -136,6 +153,53 @@ function gitDiffNames(paths) {
 function allWithin(files, exactPaths, prefixes, label) {
   const unexpected = files.filter((file) => !exactPaths.has(file) && !prefixes.some((prefix) => file.startsWith(prefix)));
   if (unexpected.length > 0) fail(`${label}: ${unexpected.join(', ')}`);
+  ok(label);
+}
+
+function mustTrackedAndCleanPaths(paths, label) {
+  const actualTracked = sortedUniquePaths(gitTrackedNames(paths));
+  const expected = sortedUniquePaths(paths);
+  const unexpected = actualTracked.filter((file) => !expected.includes(file));
+  const missing = expected.filter((file) => !actualTracked.includes(file));
+  const dirty = gitDiffNames(paths);
+  if (unexpected.length > 0 || missing.length > 0 || dirty.length > 0) {
+    fail(
+      `${label}: unexpected=${unexpected.join(', ') || '(none)'} missing=${missing.join(', ') || '(none)'} dirty=${dirty.join(', ') || '(none)'}`
+    );
+  }
+  ok(label);
+}
+
+function mustTrackedPaths(paths, label) {
+  const actualTracked = sortedUniquePaths(gitTrackedNames(paths));
+  const expected = sortedUniquePaths(paths);
+  const unexpected = actualTracked.filter((file) => !expected.includes(file));
+  const missing = expected.filter((file) => !actualTracked.includes(file));
+  if (unexpected.length > 0 || missing.length > 0) {
+    fail(
+      `${label}: unexpected=${unexpected.join(', ') || '(none)'} missing=${missing.join(', ') || '(none)'}`
+    );
+  }
+  ok(label);
+}
+
+function mustDirtyOnlyWithin(paths, allowedPaths, label) {
+  const entries = gitStatusEntries(paths);
+  const actual = sortedUniquePaths(entries.map((entry) => entry.path));
+  const allowed = sortedUniquePaths(allowedPaths);
+  const unexpected = actual.filter((file) => !allowed.includes(file));
+  const invalidStatuses = entries
+    .filter((entry) => allowed.includes(entry.path))
+    .filter((entry) => {
+      const status = String(entry.raw || '').slice(0, 2);
+      return status.includes('D') || status.includes('R');
+    })
+    .map((entry) => `${entry.path} (${entry.raw})`);
+  if (unexpected.length > 0 || invalidStatuses.length > 0) {
+    fail(
+      `${label}: unexpected=${unexpected.join(', ') || '(none)'} invalid=${invalidStatuses.join(', ') || '(none)'}`
+    );
+  }
   ok(label);
 }
 
@@ -350,7 +414,6 @@ async function main() {
   const helperText = read(helperRel);
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
-  const status = sortedUniquePaths(gitStatusEntries(redteamOwnedScopePaths).map((entry) => entry.path));
   const cachedNames = gitCachedNames();
   const pack = await loadPack();
 
@@ -580,7 +643,7 @@ async function main() {
   mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', '6992AC173A900820A62F5EC3228F3279E29F0E2C42261EBE3A96CD9B36055141', 'guard smoke evidence helper SHA matches');
   mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', 'A2937E28340E505084041529D1798ED01C5A0D2F90DF4D4BD8FEBDAA146FE20B', 'premium smoke check SHA matches');
   mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F', 'current head scope policy check SHA matches');
-  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', '1EDAF2C4458361567427493E0EA90487867D13D06DB0CB11F7553E8B14DAC5C8', 'current head scope policy manifest SHA matches');
+  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', 'E5716C9033F3834280709467A62D77CC6AFCBCBDA55AEF825B3CE69761F45D19', 'current head scope policy manifest SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.posix.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);
@@ -588,7 +651,13 @@ async function main() {
   if (cachedNames.length !== 0) fail(`stage stays empty: ${cachedNames.join(', ')}`);
   ok('stage stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
-  mustExactStatusPaths(status, redteamAllowedStatusPaths, 'redteam owned-file scope stays within expected files');
+  mustTrackedAndCleanPaths(redteamTrackedCleanPaths, 'redteam committed scope stays tracked and clean');
+  mustTrackedPaths(redteamAuthorizedFollowupPaths, 'redteam authorized follow-up scope stays tracked');
+  mustDirtyOnlyWithin(
+    redteamOwnedScopePaths,
+    redteamAuthorizedFollowupPaths,
+    'redteam follow-up dirty scope stays within authorized follow-up paths'
+  );
   mustRejectScope(
     ['backend/scripts/guard_v2_synthetic_unrelated.js'],
     new Set([

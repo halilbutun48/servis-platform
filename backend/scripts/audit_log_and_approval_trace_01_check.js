@@ -181,8 +181,8 @@ function buildExpectedShaMap(entries) {
 
 const batch09ApprovedConcurrentWorktreeEntries = [
   { path: "backend/README.md", sha256: "0E5C4A471BB7CD0B361C7EC6FB33899CABD810D8CB3892913F66FE26BE8F8AE7" },
-  { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "8EC706598066C9754923F3FD064F69F046892AA1B0BFF1473EACE29172113994" },
-  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "8FA5851B4CC686E82127B51ACD2969960BB988337A1435F925D94DD6B3010876" },
+    { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "367A0ECC128DEE9B5B8BD9B969518CFF390DF0F16D1FFC30B3C1A5216F01644C" },
+  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "6C58E2527886FACC9A1A81EF8C61F5144C4883E8AB848714BD2575839D48AA5F" },
   { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "F4F9BE905D1908ED9FB632225404968F36080F7B30785A20534D5D7C65380567" },
   { path: "backend/src/bootstrap/rateLimits.js", sha256: "D493701282D68ABA6F1DAFCAD4F01F9A65A432ECCA91F6A168A1058F119D3A2C" },
   { path: "backend/src/middleware/apiRequestLog.js", sha256: "5F27CA48608B10C6DDCD35F9D1C1E146D6AD432EAD63C90CF117F0EA3A051EE3" },
@@ -370,7 +370,7 @@ function main() {
   const activeRegistryCheckerPaths = buildRegistryOwnedCheckerPaths(packageScripts, productExtensionsCheckScripts);
   const coreGuardEntries = [
     { path: "backend/scripts/current_head_scope_policy_01_check.js", sha256: "0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F" },
-  { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "1EDAF2C4458361567427493E0EA90487867D13D06DB0CB11F7553E8B14DAC5C8" },
+   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "E5716C9033F3834280709467A62D77CC6AFCBCBDA55AEF825B3CE69761F45D19" },
   { path: "backend/scripts/lib/productExtensionsRegistry.js", sha256: "6C0FA82E0B7024D4DADF5AA588E33509A5D91866CF39D8D875A0BFEF94064D8F" },
   { path: "backend/scripts/lib/guardGitScope.js", sha256: "7BAA65107857A0A64EF236A130B0E618AD08FC72453928C0A46F243287044EE5" },
   { path: "backend/scripts/lib/guardRunnerContracts.js", sha256: "1B180E2E1C901041734CCE494774865C9644CA02917B1326B6FEF8EB713E239A" },

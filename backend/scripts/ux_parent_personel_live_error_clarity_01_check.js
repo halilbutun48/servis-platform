@@ -241,10 +241,7 @@ function buildStep181ProvenanceBackedConcurrentEntries() {
     mustTrue(Boolean(record), `step 181 provenance record present for ${relPath}`);
     mustTrue(record.path === relPath, `step 181 provenance path matches for ${relPath}`);
     mustTrue(record.baselinePresence === "ABSENT", `step 181 provenance baseline remains ABSENT for ${relPath}`);
-    mustTrue(
-      record.workingTreeState === "UNTRACKED_CANONICAL_NEW_FILE",
-      `step 181 provenance working tree remains canonical for ${relPath}`
-    );
+    mustTrue(record.workingTreeState === "TRACKED_UNMODIFIED", `step 181 provenance working tree remains tracked and unmodified for ${relPath}`);
     mustTrue(record.provenanceClass === "CONCURRENT_CANONICAL", `step 181 provenance class remains concurrent canonical for ${relPath}`);
     mustTrue(record.lifecycleStatus === "ACTIVE_PROVEN", `step 181 provenance lifecycle remains active proven for ${relPath}`);
     mustTrue(record.currentHeadPolicyState === "APPROVED", `step 181 provenance current-head policy remains approved for ${relPath}`);

@@ -253,7 +253,7 @@ function step172CanonicalConcurrentBackendDiffEntry(relPath, label) {
   mustTrue(Boolean(record), `${label}: missing canonical provenance record for ${relPath}`);
   mustTrue(record.path === relPath, `${label}: canonical provenance path mismatch for ${relPath}`);
   mustTrue(record.baselinePresence === "ABSENT", `${label}: ${relPath} baseline must be ABSENT`);
-  mustTrue(record.workingTreeState === "UNTRACKED_CANONICAL_NEW_FILE", `${label}: ${relPath} working tree state must be UNTRACKED_CANONICAL_NEW_FILE`);
+  mustTrue(record.workingTreeState === "TRACKED_UNMODIFIED", `${label}: ${relPath} working tree state must be TRACKED_UNMODIFIED`);
   mustTrue(record.provenanceClass === "CONCURRENT_CANONICAL", `${label}: ${relPath} provenance class must be CONCURRENT_CANONICAL`);
   mustTrue(record.lifecycleStatus === "ACTIVE_PROVEN", `${label}: ${relPath} lifecycle status must be ACTIVE_PROVEN`);
   mustTrue(record.currentHeadPolicyState === "APPROVED", `${label}: ${relPath} current-head policy state must be APPROVED`);

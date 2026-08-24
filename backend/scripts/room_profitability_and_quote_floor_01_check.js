@@ -147,6 +147,7 @@ const docPath = "docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md";
 const helperPath = "backend/src/finance/roomProfitabilityAndQuoteFloor.js";
 const panelPath = "web/src/panels/shared/FinancialOperationsPanel.jsx";
 const routePath = "backend/src/routes/commercialCore.js";
+const roomRoutePath = "backend/src/routes/commercialCoreRoomRoutes.js";
 const companyRoutePath = "backend/src/routes/companyOverview.js";
 const apiPath = "web/src/api.js";
 const appPath = "web/src/App.jsx";
@@ -165,6 +166,7 @@ const docText = read(docPath);
 const helperText = read(helperPath);
 const panelText = read(panelPath);
 const routeText = readHead(routePath);
+const roomRouteText = readHead(roomRoutePath);
 const companyRouteText = readHead(companyRoutePath);
 const apiText = read(apiPath);
 const appText = read(appPath);
@@ -360,7 +362,7 @@ function main() {
   check(textHas(panelText, "Sürücü temel maliyeti"), "panel driver cost input present");
   check(textHas(panelText, "Aylık araç kira maliyeti"), "panel lease input present");
 
-  check(textHas(routeText, "/room/financial-operations/preview"), "room route path present");
+  check(textHas(roomRouteText, "/room/financial-operations/preview"), "room route path present");
   check(textHas(companyRouteText, "/financial-operations/preview"), "company route path present");
   check(textHas(apiText, "getRoomFinancialOperationsPreview"), "api room helper present");
   check(textHas(apiText, "getCompanyFinancialOperationsPreview"), "api company helper present");

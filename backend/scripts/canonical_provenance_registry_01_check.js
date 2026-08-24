@@ -96,7 +96,7 @@ function buildStatusMap(paths) {
 function assertCanonicalProvenanceAgainstWorkingTree(records = CANONICAL_PROVENANCE_RECORDS) {
   const statusMap = buildStatusMap(REQUIRED_CANONICAL_PATHS);
   must(
-    statusMap.size === REQUIRED_CANONICAL_PATHS.length,
+    statusMap.size === 0,
     `exact canonical provenance working-tree status scope (${statusMap.size})`
   );
 
@@ -104,14 +104,14 @@ function assertCanonicalProvenanceAgainstWorkingTree(records = CANONICAL_PROVENA
     const normalizedPath = normalizePath(record.path);
     const absPath = path.join(repoRoot, normalizedPath);
     const statusEntry = statusMap.get(normalizedPath);
-    must(Boolean(statusEntry), `${normalizedPath} working-tree status entry present`);
-    must(statusEntry.raw.startsWith("?? "), `${normalizedPath} is untracked`);
+    must(!statusEntry, `${normalizedPath} remains clean in working tree`);
     must(fs.existsSync(absPath), `${normalizedPath} exists in working tree`);
+    // baselinePresence preserves the original NEW-01 introduction fact; workingTreeState tracks the current baseline.
     must(record.baselinePresence === "ABSENT", `${normalizedPath} baseline is absent`);
-    must(record.workingTreeState === "UNTRACKED_CANONICAL_NEW_FILE", `${normalizedPath} working-tree state is canonical new file`);
+    must(record.workingTreeState === "TRACKED_UNMODIFIED", `${normalizedPath} working-tree state is tracked and unmodified`);
     must(record.lifecycleStatus === "ACTIVE_PROVEN", `${normalizedPath} lifecycle is active proven`);
     must(record.currentSha256 === sha256File(normalizedPath), `${normalizedPath} sha256 matches working tree`);
-    must(!headHasPath(normalizedPath), `${normalizedPath} is absent from HEAD`);
+    must(headHasPath(normalizedPath), `${normalizedPath} is present in HEAD`);
 
     if (normalizedPath === REQUEST_URL_PATH) {
       must(
@@ -335,6 +335,16 @@ function assertNegativeCases(records = CANONICAL_PROVENANCE_RECORDS) {
         ...records.slice(1),
       ]),
     "evidenceChecks must not be empty"
+  );
+
+  expectFailure(
+    "stale untracked working-tree state is rejected for canonical baseline",
+    () =>
+      assertCanonicalProvenanceAgainstWorkingTree([
+        { ...records[0], workingTreeState: "UNTRACKED_CANONICAL_NEW_FILE" },
+        ...records.slice(1),
+      ]),
+    "working-tree state is tracked and unmodified"
   );
 
   expectFailure(
