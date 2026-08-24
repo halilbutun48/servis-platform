@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -157,8 +160,6 @@ async function main() {
   console.log('=== COPILOT-DEMAND-INTAKE-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -176,11 +177,12 @@ async function main() {
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const helperModule = await import(pathToFileURL(path.join(root, 'backend/src/ai/chat/copilotDemandIntake.js')).href);
 
   must(pkg, '"check:copilotdemandintake01": "node backend/scripts/copilot_demand_intake_01_check.js"', 'package.json exposes demand intake check');
-  ordered(runner, ['check:copilotairoadmap01', 'check:copilotdemandintake01', 'check:copilotdemandagreement01', 'check:copilothumanapproval01'], 'product extensions runner places demand intake after AI action roadmap');
-  ordered(verify, ['check:copilotairoadmap01', 'check:copilotdemandintake01', 'check:copilotdemandagreement01', 'check:copilothumanapproval01'], 'verify chain places demand intake after AI action roadmap');
+  assertProductExtensionsOrder(['check:copilotairoadmap01', 'check:copilotdemandintake01', 'check:copilotdemandagreement01', 'check:copilothumanapproval01'], 'product extensions registry keeps demand intake after AI action roadmap', registryScripts);
+  assertProductExtensionsOrder(['check:copilotairoadmap01', 'check:copilotdemandintake01', 'check:copilotdemandagreement01', 'check:copilothumanapproval01'], 'verify chain registry keeps demand intake after AI action roadmap', registryScripts);
 
   must(guide, 'COPILOT-DEMAND-INTAKE-01', 'milestone guide mentions demand intake milestone');
   must(guide, 'check:copilotdemandintake01', 'milestone guide exposes demand intake check');
@@ -364,7 +366,11 @@ async function main() {
   must(composed.blockedActions.join(' '), 'route apply', 'composed answer keeps blocked action list');
   must(composed.neverAutomate.join(' '), 'otomatik', 'composed answer keeps never-automate list');
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'route/service/schema and Prisma diff stays empty'
+  );
   mustStageEmpty(cachedNames, 'stage remains empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
   must(String(!fs.existsSync(path.join(root, 'debug.log'))), 'true', 'debug.log absent');

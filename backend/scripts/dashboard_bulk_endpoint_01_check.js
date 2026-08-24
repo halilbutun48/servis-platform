@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { mustNormalizedTextSha256 } from "./lib/guardTextIntegrity.js";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -14,8 +15,6 @@ const root = path.resolve(__dirname, "../..");
 
 const paths = {
   packageJson: "package.json",
-  runner: "backend/scripts/run_product_extensions_check_chain.js",
-  verify: "backend/scripts/verify_chain_01_product_extensions_check.js",
   harnessCheck: "backend/scripts/script_harness_consolidation_01_check.js",
   harnessDoc: "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
   guide: "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
@@ -201,8 +200,6 @@ function main() {
   console.log("=== DASHBOARD-BULK-ENDPOINT-01 CHECK ===");
 
   const pkg = read(paths.packageJson);
-  const runner = read(paths.runner);
-  const verify = read(paths.verify);
   const harnessCheck = read(paths.harnessCheck);
   const harnessDoc = read(paths.harnessDoc);
   const guide = read(paths.guide);
@@ -228,8 +225,12 @@ function main() {
   const cases = [];
 
   addContains(cases, "package.json exposes dashboard bulk endpoint alias", pkg, '"check:dashboardbulkendpoint01": "node backend/scripts/dashboard_bulk_endpoint_01_check.js"');
-  addContains(cases, "product extensions runner includes dashboard bulk endpoint check", runner, "check:dashboardbulkendpoint01");
-  addContains(cases, "verify chain includes dashboard bulk endpoint check", verify, '"check:dashboardbulkendpoint01"');
+  addCase(cases, "product extensions registry includes dashboard bulk endpoint check", () => {
+    assertProductExtensionsIncludes("check:dashboardbulkendpoint01", "product extensions registry includes dashboard bulk endpoint check");
+  });
+  addCase(cases, "verify chain registry includes dashboard bulk endpoint check", () => {
+    assertProductExtensionsIncludes("check:dashboardbulkendpoint01", "verify chain registry includes dashboard bulk endpoint check");
+  });
 
   addContains(cases, "script harness check knows dashboard bulk endpoint milestone", harnessCheck, "DASHBOARD-BULK-ENDPOINT-01");
   addContains(cases, "script harness check knows dashboard bulk endpoint alias", harnessCheck, "check:dashboardbulkendpoint01");

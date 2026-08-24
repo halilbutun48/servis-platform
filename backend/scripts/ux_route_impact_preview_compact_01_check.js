@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,8 +72,8 @@ function stagedNames() {
 console.log("=== UX-ROUTE-IMPACT-PREVIEW-COMPACT-01 CHECK ===");
 
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
 const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
 const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -85,17 +86,15 @@ const companyOps = read("web/src/panels/company/OperationsPanel.jsx");
 const staged = stagedNames();
 
 must(pkg, '"check:uxrouteimpactpreviewcompact01": "node backend/scripts/ux_route_impact_preview_compact_01_check.js"', "package.json exposes check:uxrouteimpactpreviewcompact01");
-must(runner, "check:uxrouteimpactpreviewcompact01", "product extensions runner includes compact preview check");
-must(verifyChain, '"check:uxrouteimpactpreviewcompact01": "node backend/scripts/ux_route_impact_preview_compact_01_check.js"', "verify chain exposes compact preview check");
-ordered(
-  runner,
+assertProductExtensionsOrder(
   ["check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:uxrouteimpactpreviewcompact01", "check:shiftdispatchapprovalfix01"],
-  "compact preview chain sits between route preview and dispatch approval",
+  "compact preview registry sits between route preview and dispatch approval",
+  registryScripts,
 );
-ordered(
-  verifyChain,
+assertProductExtensionsOrder(
   ["check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:uxrouteimpactpreviewcompact01", "check:shiftdispatchapprovalfix01"],
-  "verify chain keeps compact preview near boarding approval checks",
+  "verify chain registry keeps compact preview near boarding approval checks",
+  registryScripts,
 );
 
 must(harnessCheck, "check:uxrouteimpactpreviewcompact01", "script harness check knows compact preview alias");

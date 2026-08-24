@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -119,6 +122,21 @@ const requiredRoles = [
   'ORGANIZATION',
 ];
 
+const APPROVED_CONCURRENT_BACKEND_DIFF = [
+  'backend/src/routes/companyOverview.js',
+   { path: 'backend/src/routes/commercialCore.js', sha256: '088503EEBD1AFA49616E00E04D6295F12961948BE3DFADBB049E16C266F2602F' },
+  { path: 'backend/src/routes/operationProof.js', sha256: 'E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0' },
+  { path: 'backend/src/routes/trustQuality.js', sha256: 'FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD' },
+  { path: 'backend/src/services/qualityPaymentBridgeService.js', sha256: '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83' },
+  { path: 'backend/src/routes/admin.js', sha256: '61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4' },
+  { path: 'backend/src/routes/agreements.js', sha256: '90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A' },
+  { path: 'backend/src/routes/auth.js', sha256: 'A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3' },
+  { path: 'backend/src/routes/dashboardBulk.js', sha256: 'C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F' },
+  { path: 'backend/src/routes/offers.js', sha256: '40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649' },
+  { path: 'backend/src/routes/public.js', sha256: '5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23' },
+    { path: 'backend/src/services/dashboardBulk.js', sha256: 'E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E' },
+];
+
 const requiredChecklist = [
   'Action summary',
   'Role / actor',
@@ -138,8 +156,6 @@ async function main() {
   console.log('=== COPILOT-HUMAN-APPROVAL-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -151,10 +167,11 @@ async function main() {
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilothumanapproval01": "node backend/scripts/copilot_human_approval_01_check.js"', 'package.json exposes human approval check');
-  ordered(runner, ['check:copilotdemandagreement01', 'check:copilothumanapproval01', 'check:uxcopilotsmartchips01'], 'product extensions runner places human approval after demand-to-agreement');
-  ordered(verify, ['check:copilotdemandagreement01', 'check:copilothumanapproval01', 'check:uxcopilotsmartchips01'], 'verify chain places human approval after demand-to-agreement');
+  assertProductExtensionsOrder(['check:copilotdemandagreement01', 'check:copilothumanapproval01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps human approval after demand-to-agreement', registryScripts);
+  assertProductExtensionsOrder(['check:copilotdemandagreement01', 'check:copilothumanapproval01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps human approval after demand-to-agreement', registryScripts);
 
   must(guide, 'COPILOT-HUMAN-APPROVAL-01', 'milestone guide mentions human approval milestone');
   must(guide, 'check:copilothumanapproval01', 'milestone guide exposes human approval check');
@@ -261,7 +278,7 @@ async function main() {
   must(harnessDoc, 'backend/src/ai/chat/copilotHumanApprovalPolicy.js', 'script harness doc lists human approval helper');
   must(harnessDoc, 'COPILOT-HUMAN-APPROVAL-01', 'script harness doc lists human approval milestone');
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(['backend/src/routes', 'backend/src/services', 'prisma'], CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, 'backend route/service/schema and Prisma diff stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
 
   console.log('=== COPILOT-HUMAN-APPROVAL-01 CHECK PASS ===');

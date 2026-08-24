@@ -1,13 +1,23 @@
 # Architecture docs
 
-Bu klasör, PERSONEL SERVİS V1 için mimari ve iş akışı dokümanlarını toplar.
+Bu klasor, PERSONEL SERVIS V1 icin mimari ve is akisi dokumanlarini toplar.
 
-## Giriş noktaları
-- `../SYSTEM_ARCHITECTURE_V1.md` — katmanlı sistem mimarisi (kanonik ana belge)
-- `workflows/WORKFLOW_OVERVIEW_V1.md` — uçtan uca genel iş akışı
-- `workflows/roles/` — rol bazlı ayrı iş akışları
+## Giris noktasi
+- `../SYSTEM_ARCHITECTURE_V1.md` — katmanli sistem mimarisi (kanonik ana belge)
+
+## Konsolide is akisi girisi
+- `workflows/WORKFLOW_OVERVIEW_V1.md` — uc'tan uca ortak is akisi
+- `workflows/roles/ROLE_WORKFLOW_SUPER_ADMIN_V1.md` — ust rol akis detayi
+- `workflows/roles/ROLE_WORKFLOW_ROOM_V1.md` — operasyon merkezi rol akisi
+- `workflows/roles/ROLE_WORKFLOW_COMPANY_V1.md` — sirket rol akisi
+- `workflows/roles/ROLE_WORKFLOW_DRIVER_V1.md` — surucu rol akisi
+- `workflows/roles/ROLE_WORKFLOW_PERSONEL_V1.md` — personel rol akisi
 
 ## Amaç
-Bu ağaç, şu iki ihtiyacı birlikte karşılar:
-- sistemin teknik yapısını sade ve görsel anlatmak
-- rol rol operasyon akışını repo içinde kalıcı tutmak
+Bu agaç, su iki ihtiyaci birlikte karsilar:
+- sistemin teknik yapisini sade ve gorsel anlatmak
+- rol rol operasyon akisini repo icinde kalici tutmak
+
+## Not
+`workflows/README.md` ve `workflows/roles/README.md` katmanlari bu dosyada birlestirildi.
+Alt klasorlerde asil icerik ayrik kalir; sadece ara README katmani kaldirildi.

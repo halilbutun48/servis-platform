@@ -5,6 +5,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -248,6 +251,18 @@ const requiredRoles = [
   'PERSONEL / PARENT',
 ];
 
+const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF =
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(
+    ({ path }) =>
+      ![
+        'backend/src/routes/commercialCoreRoutes.js',
+        'backend/src/routes/commercialCorePaymentRoutes.js',
+        'backend/src/routes/commercialCorePaymentReportsRoutes.js',
+        'backend/src/routes/commercialCoreRoomRoutes.js',
+        'backend/src/routes/commercialCoreRouteData.js',
+      ].includes(path)
+  );
+
 const ACCEPTED_SCHEMA_PATH = 'backend/prisma/schema.prisma';
 const ACCEPTED_SCHEMA_SHA256 = '7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748';
 const ACCEPTED_PRISMA_MIGRATIONS = [
@@ -389,8 +404,7 @@ async function main() {
   console.log('=== OSRM-ROUTE-DRAFT-FROM-EXCEL-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -409,8 +423,8 @@ async function main() {
   const cachedNames = gitCachedNames();
 
   must(pkg, '"check:osrmroutedraftfromexcel01": "node backend/scripts/osrm_route_draft_from_excel_01_check.js"', 'package.json exposes OSRM route draft from Excel check');
-  ordered(runner, ['check:copilotstoproutedraft01', 'check:osrmroutedraftfromexcel01', 'check:uxcopilotsmartchips01'], 'product extensions runner places OSRM route draft from Excel after stop-route draft');
-  ordered(verify, ['check:copilotstoproutedraft01', 'check:osrmroutedraftfromexcel01', 'check:uxcopilotsmartchips01'], 'verify chain places OSRM route draft from Excel after stop-route draft');
+  assertProductExtensionsOrder(['check:copilotstoproutedraft01', 'check:osrmroutedraftfromexcel01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps OSRM route draft from Excel after stop-route draft', registryScripts);
+  assertProductExtensionsOrder(['check:copilotstoproutedraft01', 'check:osrmroutedraftfromexcel01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps OSRM route draft from Excel after stop-route draft', registryScripts);
 
   must(guide, 'OSRM-ROUTE-DRAFT-FROM-EXCEL-01', 'milestone guide mentions OSRM route draft from Excel milestone');
   must(guide, 'check:osrmroutedraftfromexcel01', 'milestone guide exposes OSRM route draft from Excel check');
@@ -522,9 +536,11 @@ async function main() {
   must(harnessDoc, 'backend/src/ai/chat/osrmRouteDraftFromExcelPolicy.js', 'script harness doc lists OSRM route draft from Excel helper');
   must(harnessDoc, 'OSRM-ROUTE-DRAFT-FROM-EXCEL-01', 'script harness doc lists OSRM route draft from Excel milestone');
 
-  mustNoDiff(['backend/src/routes'], 'backend/src/routes diff empty');
-  mustNoDiff(['backend/src/services'], 'backend service diff remains empty');
-  mustNoDiff(['backend/prisma', 'prisma'], 'backend/prisma diff empty');
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF,
+    'backend route/service/schema and Prisma diff stays empty'
+  );
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${path.posix.basename(path.posix.dirname(entry.path))}`);

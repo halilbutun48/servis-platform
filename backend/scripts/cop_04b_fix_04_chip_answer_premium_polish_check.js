@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -114,8 +115,6 @@ function assertNoRepeatedActionPair(text, label) {
 console.log('=== COP-04B-FIX-04 CHIP + ANSWER PREMIUM POLISH CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const helpComposerSource = read('backend/src/ai/chat/helpComposer.js');
@@ -125,6 +124,7 @@ const agreementFactsSource = read('web/src/utils/agreementCopilotFacts.js');
 const entityRuntimeSource = read('backend/src/ai/chat/helpComposerEntityRuntime.js');
 const selectedRuntimeSource = read('backend/src/ai/chat/helpComposerSelectedRuntime.js');
 const analyzerSource = read('backend/src/ai/chat/screenStateAnalyzer.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop04bfix04": "node backend/scripts/cop_04b_fix_04_chip_answer_premium_polish_check.js"', 'package.json exposes check:cop04bfix04');
 must(pkg, '"check:cop04bfix03"', 'package.json keeps check:cop04bfix03');
@@ -137,8 +137,8 @@ must(pkg, '"check:cop04afix02"', 'package.json keeps check:cop04afix02');
 must(pkg, '"check:cop04afix01"', 'package.json keeps check:cop04afix01');
 must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
 
-must(runner, 'check:cop04bfix04', 'product extensions runner keeps cop04bfix04');
-must(verifyChain, 'check:cop04bfix04', 'verify chain waits for check:cop04bfix04');
+assertProductExtensionsIncludes('check:cop04bfix04', 'product extensions registry references cop04bfix04', registryScripts);
+assertProductExtensionsIncludes('check:cop04bfix04', 'verify chain registry waits for check:cop04bfix04', registryScripts);
 must(guide, 'check:cop04bfix04', 'script guide exposes check:cop04bfix04');
 must(guide, 'check:cop04bfix03', 'script guide keeps check:cop04bfix03');
 must(guide, 'check:cop04bfix02', 'script guide keeps check:cop04bfix02');

@@ -122,9 +122,10 @@ function hasManualNote(shift) {
 
 function buildShiftSignalFlags(shift) {
   const status = normalizeUpper(shift?.status);
+  const gpsState = shift?.vehicle?.gpsState || null;
   const gpsLastAt = shift?.vehicle?.gpsLast?.at || null;
   const gpsFreshness = gpsLastAt ? gpsStatusFromAt(gpsLastAt) : { status: "OFFLINE", ageSec: null };
-  const sourceKey = normalizeUpper(shift?.vehicle?.gpsState?.lastSource) || "BACKEND_VEHICLE_GPS";
+  const sourceKey = normalizeUpper(gpsState?.lastSource) || "BACKEND_VEHICLE_GPS";
   const sourceVisibility = resolveGpsSourceVisibility({
     officialSourceKey: sourceKey,
     freshness: gpsFreshness.status,
@@ -136,7 +137,7 @@ function buildShiftSignalFlags(shift) {
   return {
     shiftStarted: Boolean(shift?.progress?.startedAt || status === "ACTIVE" || status === "DONE"),
     shiftCompleted: Boolean(shift?.progress?.completedAt || status === "DONE"),
-    gpsSeen: Boolean(gpsLastAt || shift?.vehicle?.gpsState?.lastSource),
+    gpsSeen: Boolean(gpsLastAt || gpsState?.lastSource),
     driverPhoneGpsSeen: Boolean(sourceVisibility.isDriverPhone && gpsLastAt),
     vehicleGpsSeen: Boolean(sourceVisibility.isVehicleOfficial && gpsLastAt),
     boardingRecorded: checkinEvents.some((event) => normalizeUpper(event?.eventType) === "BOARD"),
@@ -267,10 +268,10 @@ async function buildOperationProofPayload(resolvedScope) {
           gpsLast: { select: { at: true } },
           gpsState: {
             select: {
-              lastSource: true,
               lastUiStatus: true,
               lastChangedAt: true,
               seenLiveAt: true,
+              lastSource: true,
             },
           },
         },

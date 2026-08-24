@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,12 +56,12 @@ function main() {
 
   const pkg = read("package.json");
   mustContains(pkg, '"check:uxroomopsrelationshippolish01"', "package.json exposes check:uxroomopsrelationshippolish01");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxroomopsrelationshippolish01", "product extensions runner includes room ops relationship polish check");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxroomopsrelationshippolish01", "verify chain includes room ops relationship polish check");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+  assertProductExtensionsIncludes(
+    "check:uxroomopsrelationshippolish01",
+    "product extensions registry includes room ops relationship polish check",
+    registryScripts
+  );
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-ROOM-OPS-RELATIONSHIP-POLISH-01", "script guide mentions UX-ROOM-OPS-RELATIONSHIP-POLISH-01");

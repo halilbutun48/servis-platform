@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -94,8 +95,6 @@ const answerQualityPolicy = read("backend/src/ai/chat/answerQualityPolicy.js");
 const goldenQuestionPack = read("backend/src/ai/chat/goldenQuestionPack.js");
 const qltCheck = read("backend/scripts/qlt_pay_bridge_01_check.js");
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const milestoneDoc = read("docs/SEFER_SCORE_01.md");
 const statusText = gitOutput(["status", "--porcelain"]);
@@ -188,8 +187,7 @@ must(qltCheck, "paymentActionBlocked: true", "QLT check still guards payment blo
 must(qltCheck, "seferScoreSignalsPreview", "QLT check still validates sefer signal bridge");
 
 must(pkg, '"check:seferscore01": "node backend/scripts/sefer_score_01_check.js"', "package.json exposes check:seferscore01");
-must(runner, "check:seferscore01", "product extensions runner includes sefer score check");
-must(verifyChain, "check:seferscore01", "verify chain includes sefer score check");
+assertProductExtensionsIncludes("check:seferscore01", "product extensions registry includes sefer score check");
 must(guide, "SEFER-SCORE-01", "script guide mentions sefer score milestone");
 must(guide, "check:seferscore01", "script guide exposes check:seferscore01");
 must(milestoneDoc, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.", "milestone doc keeps safe boundary");

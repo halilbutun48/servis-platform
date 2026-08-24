@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,7 +74,7 @@ function assertDrawerDefaultSize(drawerSource) {
 console.log('=== UX-SEFER-ABI-LAUNCHER-01 CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const auditDoc = read('docs/UX_PANEL_STRUCTURE_02_AUDIT.md');
 const contextDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
@@ -83,7 +84,7 @@ const navDockSource = read('web/src/layout/NavDock.jsx');
 const appShellSource = read('web/src/layout/AppShell.jsx');
 
 must(pkg, '"check:uxseferabilauncher01": "node backend/scripts/ux_sefer_abi_launcher_01_check.js"', 'package.json exposes check:uxseferabilauncher01');
-must(runner, 'check:uxseferabilauncher01', 'product extensions runner includes launcher check');
+assertProductExtensionsIncludes('check:uxseferabilauncher01', 'product extensions registry includes launcher check', registryScripts);
 must(guide, 'UX-SEFER-ABI-LAUNCHER-01', 'script guide mentions UX-SEFER-ABI-LAUNCHER-01');
 must(guide, 'check:uxseferabilauncher01', 'script guide exposes launcher check');
 must(auditDoc, 'UX-SEFER-ABI-LAUNCHER-01', 'audit doc keeps launcher note');

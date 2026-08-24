@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,22 +92,28 @@ const service = read("backend/src/services/publicLeadService.js");
 const modal = read("web/src/components/public/PublicLeadCaptureModal.jsx");
 const api = read("web/src/api.js");
 const landing = read("web/src/panels/public/PublicLandingPage.jsx");
-const app = read("web/src/App.jsx");
+const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const primer = read("docs/PRIMER_SSOT.md");
 const spec = read("docs/PROJECT_SPEC_V1.md");
 const publicLandingDoc = read("docs/PUBLIC_LANDING_01.md");
 const leadDoc = read("docs/LEAD_CAPTURE_01.md");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', "package.json exposes check:leadcapture01");
-must(runner, "check:leadcapture01", "product extensions runner includes lead capture check");
-must(verifyChain, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', "verify chain exposes lead capture check");
-ordered(
-  runner,
-  ["check:roadmaplockaimarketplace01", "check:publiclanding01", "check:leadcapture01", "check:agreementsourceshiftlineage01"],
-  "lead capture follows public landing in product chain"
+assertProductExtensionsIncludes("check:leadcapture01", "product extensions registry includes lead capture check", registryScripts);
+assertProductExtensionsOrder(
+  [
+    "check:roadmaplockaimarketplace01",
+    "check:publiclanding01",
+    "check:publiclandingplatformfirst01",
+    "check:publiclandingfinalpromise01",
+    "check:leadcapture01",
+    "check:onboardingreview01",
+    "check:agreementsourceshiftlineage01",
+  ],
+  "lead capture follows public landing in product chain",
+  registryScripts,
 );
 
 must(route, '"/api/public/leads"', "public route mounts public lead endpoint");

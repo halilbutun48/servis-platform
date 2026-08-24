@@ -3,6 +3,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,8 +68,7 @@ async function main() {
   console.log('=== UX-NAV-01 PREMIUM NAVDOCK CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const navDockSource = read('web/src/layout/NavDock.jsx');
@@ -77,15 +78,14 @@ const helperSource = read('web/src/utils/copilotFacts.js');
 const labelsSource = read('web/src/utils/labels.js');
 const screenRegistrySource = read('web/src/copilot/screenRegistry.js');
 const panelSource = read('web/src/panels/shared/CopilotPanel.jsx');
-const appSource = read('web/src/App.jsx');
+const appSource = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
 
   must(pkg, '"check:uxnav01": "node backend/scripts/ux_nav_01_premium_navdock_check.js"', 'package.json exposes check:uxnav01');
   must(pkg, '"check:uxcopilotterminal01"', 'package.json keeps check:uxcopilotterminal01');
   must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotpersona01');
   must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
 
-  must(runner, 'check:uxnav01', 'product extensions runner includes UX-NAV-01');
-  must(verifyChain, 'check:uxnav01', 'verify chain includes UX-NAV-01');
+  assertProductExtensionsIncludes('check:uxnav01', 'product extensions registry includes UX-NAV-01', registryScripts);
 
   must(guide, 'UX-NAV-01', 'script guide mentions UX-NAV-01');
   must(guide, 'check:uxnav01', 'script guide exposes check:uxnav01');

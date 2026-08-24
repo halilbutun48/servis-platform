@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { buildSeferAbiReasoningAssistant } from '../src/ai/chat/seferAbiReasoningAssistant.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 import { composeCopilotGuidedTaskEngineReply } from '../src/ai/chat/copilotGuidedTaskEngine.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -733,8 +734,6 @@ const cases = [
 function main() {
   console.log('=== COPILOT CLARIFYING QUESTION ENGINE 01 ===');
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const doc = read('docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md');
@@ -743,10 +742,11 @@ function main() {
   const assistantSource = read('backend/src/ai/chat/seferAbiReasoningAssistant.js');
   const guidedSource = read('backend/src/ai/chat/copilotGuidedTaskEngine.js');
   const responsesSource = read('backend/src/ai/chat/conversationTaskStateResponses.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilotclarifyingquestionengine01": "node backend/scripts/copilot_clarifying_question_engine_01_check.js"', 'package.json exposes clarifying question engine check');
-  ordered(runner, ['check:copilotguidedtaskengine01', 'check:copilotclarifyingquestionengine01', 'check:copilotreasoninganswercomposer01'], 'product extensions runner places clarifying question engine after guided task engine');
-  ordered(verify, ['check:copilotguidedtaskengine01', 'check:copilotclarifyingquestionengine01', 'check:copilotreasoninganswercomposer01'], 'verify chain places clarifying question engine after guided task engine');
+  assertProductExtensionsOrder(['check:copilotguidedtaskengine01', 'check:copilotclarifyingquestionengine01', 'check:copilotreasoninganswercomposer01'], 'product extensions registry keeps clarifying question engine after guided task engine and before reasoning answer composer', registryScripts);
+  assertProductExtensionsOrder(['check:copilotguidedtaskengine01', 'check:copilotclarifyingquestionengine01', 'check:copilotreasoninganswercomposer01'], 'verify chain registry keeps clarifying question engine after guided task engine and before reasoning answer composer', registryScripts);
   must(guide, 'COPILOT-CLARIFYING-QUESTION-ENGINE-01', 'script guide mentions clarifying question engine milestone');
   must(guide, 'check:copilotclarifyingquestionengine01', 'script guide exposes clarifying question engine check');
   must(guide, 'docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md', 'script guide includes clarifying question engine doc');

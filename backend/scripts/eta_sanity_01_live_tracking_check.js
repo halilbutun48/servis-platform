@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,14 +51,16 @@ function main() {
   console.log('=== ETA-SANITY-01 LIVE TRACKING CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 
   mustInclude(pkg, '"check:etasanity01": "node backend/scripts/eta_sanity_01_live_tracking_check.js"', 'package.json exposes check:etasanity01');
-  mustInclude(runner, 'check:etasanity01', 'product extensions chain includes check:etasanity01');
-  mustInclude(verify, 'check:etasanity01', 'verify chain includes check:etasanity01');
+  assertProductExtensionsIncludes(
+    'check:etasanity01',
+    'product extensions registry includes eta sanity',
+    registryScripts
+  );
   mustInclude(guide, 'ETA-SANITY-01', 'script guide mentions ETA-SANITY-01');
   mustInclude(guide, 'check:etasanity01', 'script guide mentions check:etasanity01');
   mustInclude(audit, 'ETA-SANITY-01', 'audit mentions ETA-SANITY-01');

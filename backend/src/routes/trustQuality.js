@@ -2,6 +2,7 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { audit } from "../audit.js";
+import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 import {
   getTrustQualityManifest,
   buildServiceEvaluationTemplate,
@@ -111,9 +112,10 @@ function hasManualNote(shift) {
 
 function buildShiftSignalFlags(shift) {
   const status = normalizeUpper(shift?.status);
+  const gpsState = shift?.vehicle?.gpsState || null;
   const gpsLastAt = shift?.vehicle?.gpsLast?.at || null;
   const gpsFreshness = gpsLastAt ? gpsStatusFromAt(gpsLastAt) : { status: "OFFLINE", ageSec: null };
-  const sourceKey = normalizeUpper(shift?.vehicle?.gpsState?.lastSource) || "BACKEND_VEHICLE_GPS";
+  const sourceKey = normalizeUpper(gpsState?.lastSource) || "BACKEND_VEHICLE_GPS";
   const sourceVisibility = resolveGpsSourceVisibility({
     officialSourceKey: sourceKey,
     freshness: gpsFreshness.status,
@@ -125,7 +127,7 @@ function buildShiftSignalFlags(shift) {
   return {
     shiftStarted: Boolean(shift?.progress?.startedAt || status === "ACTIVE" || status === "DONE"),
     shiftCompleted: Boolean(shift?.progress?.completedAt || status === "DONE"),
-    gpsSeen: Boolean(gpsLastAt || shift?.vehicle?.gpsState?.lastSource),
+    gpsSeen: Boolean(gpsLastAt || gpsState?.lastSource),
     driverPhoneGpsSeen: Boolean(sourceVisibility.isDriverPhone && gpsLastAt),
     vehicleGpsSeen: Boolean(sourceVisibility.isVehicleOfficial && gpsLastAt),
     boardingRecorded: checkinEvents.some((event) => normalizeUpper(event?.eventType) === "BOARD"),
@@ -270,18 +272,18 @@ async function buildOperationProofPayload(resolvedScope) {
           completedAt: true,
         },
       },
-      vehicle: {
-        select: {
-          id: true,
-          gpsLast: { select: { at: true } },
-          gpsState: {
-            select: {
-              lastSource: true,
-              lastUiStatus: true,
-              lastChangedAt: true,
-              seenLiveAt: true,
+        vehicle: {
+          select: {
+            id: true,
+            gpsLast: { select: { at: true } },
+            gpsState: {
+              select: {
+                lastUiStatus: true,
+                lastChangedAt: true,
+                seenLiveAt: true,
+                lastSource: true,
+              },
             },
-          },
         },
       },
       checkinEvents: {
@@ -367,6 +369,7 @@ async function buildQualityReviewDecisionPayload(resolvedScope, reviewScopeKey) 
 
 export function trustQualityRouter() {
   const r = express.Router();
+  wrapAsyncRouterMethods(r);
 
   function userScope(user) {
     return {
@@ -418,7 +421,7 @@ export function trustQualityRouter() {
   });
   r.get("/provider-score/:roomId", authRequired(), requireRole("COMPANY", "SCHOOL", "ORGANIZATION", "SUPER_ADMIN"), async (req, res) => {
     const roomId = Number(req.params.roomId || 0) || 0;
-    const payload = await rememberResponse(`trust-quality:provider-score:${roomId}`, () => getProviderScore(roomId), { ttlMs: 45000, scope: userScope(req.user) });
+    const payload = await rememberResponse(`trust-quality:provider-score:${roomId}`, () => getProviderScore(roomId, req.user), { ttlMs: 45000, scope: userScope(req.user) });
     return res.json(payload);
   });
   r.get("/provider-scores", authRequired(), requireRole("COMPANY", "SCHOOL", "ORGANIZATION", "SUPER_ADMIN"), async (req, res) => {
@@ -430,7 +433,7 @@ export function trustQualityRouter() {
     const uniqueIds = Array.from(new Set(ids));
     const byId = {};
     await Promise.all(uniqueIds.map(async (roomId) => {
-      byId[String(roomId)] = await rememberResponse(`trust-quality:provider-score:${roomId}`, () => getProviderScore(roomId), { ttlMs: 45000, scope: userScope(req.user) });
+      byId[String(roomId)] = await rememberResponse(`trust-quality:provider-score:${roomId}`, () => getProviderScore(roomId, req.user), { ttlMs: 45000, scope: userScope(req.user) });
     }));
     return res.json({ byId, count: uniqueIds.length });
   });
@@ -449,7 +452,7 @@ export function trustQualityRouter() {
           ? null
           : await buildCompanyServiceEvaluationSummary({ companyId: Number(resolvedScope.scope?.companyId || 0) || 0 });
         const providerScore = scopeRole === "ROOM"
-          ? await getProviderScore(resolvedScope.scope?.roomId)
+          ? await getProviderScore(resolvedScope.scope?.roomId, resolvedScope.scope)
           : null;
 
         return buildQualityProofSignalSummary({

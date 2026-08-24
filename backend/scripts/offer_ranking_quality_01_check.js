@@ -2,9 +2,19 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+} from "./lib/currentHeadScopePolicy.js";
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +46,18 @@ function fail(label) {
 
 function must(text, needle, label) {
   if (normalize(text).includes(normalize(needle))) ok(label);
+  else fail(label);
+}
+
+function mustEqual(actual, expected, label) {
+  const actualText = JSON.stringify(actual);
+  const expectedText = JSON.stringify(expected);
+  if (actualText === expectedText) ok(label);
+  else fail(`${label}: ${actualText} != ${expectedText}`);
+}
+
+function mustCondition(condition, label) {
+  if (condition) ok(label);
   else fail(label);
 }
 
@@ -75,24 +97,36 @@ function gitCachedNames() {
     .filter(Boolean);
 }
 
-function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
-  if (files.length > 0) fail(`${label}: ${files.join(", ")}`);
-  ok(label);
-}
-
-function mustNoDiffExcept(paths, allowedFiles, label) {
-  const files = gitDiffNames(paths).filter((file) => !allowedFiles.includes(file));
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(', ')}`);
-  }
-  ok(label);
-}
-
 function mustNoStagedPrefix(names, prefixes, label) {
   const hits = names.filter((name) => prefixes.some((prefix) => normalize(name).startsWith(normalize(prefix))));
   if (hits.length > 0) fail(`${label}: ${hits.join(", ")}`);
   ok(label);
+}
+
+async function loadOfferQualityRankingModule() {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "offer-ranking-quality-"));
+
+  const writePatchedCopy = (sourceRel, targetRel, replacements = []) => {
+    let text = fs.readFileSync(path.join(root, sourceRel), "utf8");
+    for (const [pattern, replacement] of replacements) {
+      text = text.replace(pattern, replacement);
+    }
+    fs.writeFileSync(path.join(tempDir, targetRel), text, "utf8");
+  };
+
+  try {
+    writePatchedCopy("web/src/utils/etaSanity.js", "etaSanity.js");
+    writePatchedCopy("web/src/utils/safeDriveSummary.js", "safeDriveSummary.js", [
+      [/from\s+["']\.\/etaSanity["']/g, 'from "./etaSanity.js"'],
+    ]);
+    writePatchedCopy("web/src/utils/offerQualityRanking.js", "offerQualityRanking.js", [
+      [/from\s+["']\.\/safeDriveSummary["']/g, 'from "./safeDriveSummary.js"'],
+    ]);
+
+    return await import(pathToFileURL(path.join(tempDir, "offerQualityRanking.js")).href);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 }
 
 function normalizePath(relPath) {
@@ -238,12 +272,10 @@ const ACCEPTED_PRISMA_FILES = [
 ];
 const ACCEPTED_PRISMA_PATHS = ACCEPTED_PRISMA_FILES.map((entry) => entry.path);
 
-function main() {
+async function main() {
   console.log("=== OFFER-RANKING-QUALITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const primer = read("docs/PRIMER_SSOT.md");
   const roadmap = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
@@ -258,10 +290,24 @@ function main() {
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+  const approvedRouteEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
+    entryPath.startsWith("backend/src/routes/") &&
+    ![
+      "backend/src/routes/commercialCoreRoutes.js",
+      "backend/src/routes/commercialCorePaymentRoutes.js",
+      "backend/src/routes/commercialCorePaymentReportsRoutes.js",
+      "backend/src/routes/commercialCoreRoomRoutes.js",
+      "backend/src/routes/commercialCoreRouteData.js",
+    ].includes(entryPath),
+  );
+  const approvedServiceEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
+    entryPath.startsWith("backend/src/services/"),
+  );
 
   must(pkg, '"check:offerrankingquality01": "node backend/scripts/offer_ranking_quality_01_check.js"', "package.json exposes offer ranking quality check");
-  ordered(runner, ["check:safedrive01", "check:offerrankingquality01", "check:pay01e"], "product extensions runner places offer ranking quality after safe drive");
-  ordered(verify, ["check:safedrive01", "check:offerrankingquality01", "check:pay01e"], "verify chain places offer ranking quality after safe drive");
+  assertProductExtensionsIncludes("check:offerrankingquality01", "product extensions registry includes offer ranking quality check", registryScripts);
+  assertProductExtensionsOrder(["check:safedrive01", "check:offerrankingquality01", "check:pay01e"], "product extensions registry places offer ranking quality after safe drive", registryScripts);
 
   must(guide, "OFFER-RANKING-QUALITY-01", "milestone guide mentions offer ranking quality milestone");
   must(guide, "check:offerrankingquality01", "milestone guide exposes offer ranking quality check");
@@ -350,9 +396,243 @@ function main() {
   must(harnessDoc, "web/src/utils/offerQualityRanking.js", "script harness doc lists offer ranking quality helper");
   must(harnessDoc, "web/src/panels/shared/OfferQualityRankingCard.jsx", "script harness doc lists offer ranking quality card");
 
-  mustNoDiff(["backend/src/routes"], "backend/src/routes diff empty");
-  mustNoDiff(["backend/src/services"], "backend service diff remains empty");
-  mustNoDiff(["backend/prisma", "prisma"], "backend/prisma diff empty");
+  const { buildOfferQualityRanking } = await loadOfferQualityRankingModule();
+  mustCondition(typeof buildOfferQualityRanking === "function", "offer ranking helper exports buildOfferQualityRanking");
+
+  const readySafeDrive = {
+    status: "READY",
+    summaryText: "Güvenli sürüş özeti: canlı sinyaller uyumlu görünüyor.",
+    nextBestAction: "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma.",
+    signals: [
+      { label: "GPS güvenilirliği", value: "Canlı" },
+      { label: "Hız riski", value: "Sınır içinde" },
+      { label: "Rota ilerleme sinyali", value: "Normal" },
+      { label: "Kanıt / check-in durumu", value: "Hazır" },
+      { label: "Kaynak", value: "Canlı" },
+    ],
+    riskReasons: [],
+    controlNotes: [],
+  };
+
+  const reviewSafeDrive = {
+    status: "REVIEW_NEEDED",
+    summaryText: "Kontrol edilmeli: sinyallerin bir kısmı eksik görünüyor.",
+    nextBestAction: "İnsan onayı gerekir: önce GPS, hız ve rota sinyallerini birlikte kontrol et.",
+    signals: [
+      { label: "GPS güvenilirliği", value: "Kontrol edilmeli" },
+      { label: "Hız riski", value: "Kontrol edilmeli" },
+    ],
+    riskReasons: [],
+    controlNotes: ["GPS güncel değil"],
+  };
+
+  const riskySafeDrive = {
+    status: "RISKY",
+    summaryText: "Risk sinyali: GPS çevrim dışı. Kontrol edilmeli.",
+    nextBestAction: "İnsan onayı gerekir: önce GPS, hız ve rota sinyallerini birlikte kontrol et.",
+    signals: [
+      { label: "GPS güvenilirliği", value: "Risk sinyali" },
+      { label: "Hız riski", value: "Risk sinyali" },
+    ],
+    riskReasons: ["GPS çevrim dışı"],
+    controlNotes: [],
+  };
+
+  const readyProof = {
+    status: "READY_FOR_REVIEW",
+    summaryText: "Kanıt / check-in hazır",
+    nextAction: "Kanıtı incele ve sonraki adıma geç",
+    checklist: [
+      { done: true, label: "Kanıt" },
+      { done: true, label: "Check-in" },
+    ],
+  };
+
+  const readyDraft = {
+    status: "DRAFT_READY_FOR_REVIEW",
+    summaryText: "Taslak kalite skoru hazır",
+    nextAction: "Taslak kaliteyi hazırla",
+    checklist: [{ done: true, label: "Taslak" }],
+  };
+
+  const reviewedDecision = {
+    reviewStatus: "REVIEWED",
+    summaryText: "İncelendi",
+    nextAction: "İnceleme kararını kontrol et",
+    checklist: [{ done: true, label: "İnceleme" }],
+  };
+
+  const mkOffer = (overrides = {}) => ({
+    id: overrides.id ?? 1,
+    roomId: overrides.roomId ?? 11,
+    amountCompany: overrides.amountCompany ?? 100,
+    amountRoom: overrides.amountRoom ?? 120,
+    updatedAt: overrides.updatedAt ?? "2026-08-01T10:00:00Z",
+    room: { id: overrides.roomId ?? 11, name: overrides.roomName ?? "Room A" },
+    shift: {
+      status: overrides.shiftStatus ?? "ready",
+      proofStatus: overrides.proofStatus ?? "READY",
+      checkinStatus: overrides.checkinStatus ?? "READY",
+      evidenceStatus: overrides.evidenceStatus ?? "READY",
+      routeStatus: overrides.routeStatus ?? "READY",
+      gpsSourceLabel: overrides.gpsSourceLabel ?? "GPS",
+      providerStatus: overrides.providerStatus ?? "active",
+      speedKmh: overrides.speedKmh ?? 40,
+      speedLimitKmh: overrides.speedLimitKmh ?? 50,
+    },
+  });
+
+  const normalComparable = buildOfferQualityRanking({
+    offers: [
+      mkOffer({ id: 1, roomId: 11, roomName: "Room A", amountCompany: 100, amountRoom: 120 }),
+      mkOffer({ id: 2, roomId: 12, roomName: "Room B", amountCompany: 150, amountRoom: 140 }),
+    ],
+    roomScores: {
+      11: { averageScore: 4.8, evaluationCount: 20, recommendRate: 95 },
+      12: { averageScore: 4.2, evaluationCount: 10, recommendRate: 80 },
+    },
+    safeDriveSummary: readySafeDrive,
+    proofSummary: readyProof,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "COMPANY" },
+  });
+  mustEqual(normalComparable.rows.map((row) => row.id), [1, 2], "case 1 normal comparable offers resolve deterministically");
+  mustEqual(normalComparable.confidence, 77, "case 1 normal comparable offers keep confidence");
+  mustEqual(normalComparable.rows[0].qualityLabel, "Kalite destekli teklif karşılaştırması", "case 1 normal comparable offers keep quality label");
+  mustCondition(normalComparable.rows[0].comparisonSummary.includes("Güvenli sürüş özeti: canlı sinyaller uyumlu görünüyor."), "case 1 normal comparable offers keep safe-drive readiness");
+  mustCondition(normalComparable.rows[0].humanApprovalRequired, "case 1 normal comparable offers keep human approval");
+  mustCondition(normalComparable.rows[0].autoSelectionBlocked, "case 1 normal comparable offers keep auto-selection blocked");
+  mustCondition(normalComparable.rows[0].autoAcceptBlocked, "case 1 normal comparable offers keep auto-accept blocked");
+  mustCondition(normalComparable.rows[0].comparisonSummary.includes("Kanıt / check-in hazır"), "case 1 normal comparable offers keep evidence summary");
+  mustEqual(normalComparable.nextReviewStep, "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma.", "case 1 normal comparable offers keep next review step");
+
+  const betterQualityWins = buildOfferQualityRanking({
+    offers: [
+      mkOffer({ id: 1, roomId: 11, roomName: "Room A", amountCompany: 100, amountRoom: 120 }),
+      mkOffer({ id: 2, roomId: 12, roomName: "Room B", amountCompany: 100, amountRoom: 120 }),
+    ],
+    roomScores: {
+      11: { averageScore: 4.2, evaluationCount: 5, recommendRate: 80 },
+      12: { averageScore: 4.9, evaluationCount: 25, recommendRate: 98 },
+    },
+    safeDriveSummary: readySafeDrive,
+    proofSummary: readyProof,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "COMPANY" },
+  });
+  mustEqual(betterQualityWins.rows.map((row) => row.id), [2, 1], "case 2 better quality signal changes ranking appropriately");
+  mustEqual(betterQualityWins.rows[0].roomScore.average, 4.9, "case 2 better quality signal preserves room score contribution");
+  mustEqual(betterQualityWins.rows[0].roomScore.evaluationCount, 25, "case 2 better quality signal keeps evaluation count");
+
+  const priceSafety = buildOfferQualityRanking({
+    offers: [
+      mkOffer({ id: 1, amountCompany: 100, amountRoom: 90, providerStatus: "offline", gpsSourceLabel: "Offline" }),
+      mkOffer({ id: 2, amountCompany: 100, amountRoom: 120, providerStatus: "active", gpsSourceLabel: "GPS" }),
+    ],
+    roomScores: {
+      11: { averageScore: 4.9, evaluationCount: 25, recommendRate: 98 },
+      12: { averageScore: 4.2, evaluationCount: 10, recommendRate: 80 },
+    },
+    safeDriveSummary: readySafeDrive,
+    proofSummary: readyProof,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "COMPANY" },
+  });
+  mustEqual(priceSafety.rows.map((row) => row.id), [2, 1], "case 3 price signal contributes but does not bypass safety");
+  mustEqual(priceSafety.rows[0].priceSignal.value, "+20 ₺", "case 3 safe offer keeps visible price signal");
+  mustEqual(priceSafety.rows[1].priceSignal.value, "-10 ₺", "case 3 risky cheaper offer keeps visible price signal");
+  mustEqual(priceSafety.rows[1].qualityLabel, "Risk sinyali", "case 3 risky cheaper offer remains risky");
+  mustCondition(priceSafety.rows[0].comparisonSummary.includes("Güvenli sürüş özeti: canlı sinyaller uyumlu görünüyor."), "case 3 safety contract keeps ready safe-drive summary");
+
+  const proofPresent = buildOfferQualityRanking({
+    offers: [mkOffer({ id: 1 }), mkOffer({ id: 2 })],
+    roomScores: {
+      11: { averageScore: 4.8, evaluationCount: 20, recommendRate: 95 },
+      12: { averageScore: 4.2, evaluationCount: 10, recommendRate: 80 },
+    },
+    safeDriveSummary: readySafeDrive,
+    proofSummary: readyProof,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "COMPANY" },
+  });
+  const proofMissing = buildOfferQualityRanking({
+    offers: [mkOffer({ id: 1 }), mkOffer({ id: 2 })],
+    roomScores: {
+      11: { averageScore: 4.8, evaluationCount: 20, recommendRate: 95 },
+      12: { averageScore: 4.2, evaluationCount: 10, recommendRate: 80 },
+    },
+    safeDriveSummary: readySafeDrive,
+    proofSummary: null,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "COMPANY" },
+  });
+  mustCondition(proofPresent.missingSignals.length === 0, "case 4 proof/evidence present keeps missing signals empty");
+  mustCondition(proofPresent.rows[0].comparisonSummary.includes("Kanıt / check-in hazır"), "case 4 proof/evidence present keeps proof summary");
+  mustCondition(proofMissing.missingSignals.includes("Check-in / evidence readiness"), "case 5 proof/evidence missing keeps missing signal");
+  mustCondition(proofPresent.confidence > proofMissing.confidence, "case 5 proof/evidence missing lowers confidence safely");
+  mustEqual(proofMissing.rows[0].summaryText, "İnceleme önerilir.", "case 5 proof/evidence missing keeps low-confidence summary");
+
+  const reviewNeeded = buildOfferQualityRanking({
+    offers: [
+      mkOffer({ id: 1, providerStatus: "pending", gpsSourceLabel: "pending" }),
+      mkOffer({ id: 2 }),
+    ],
+    safeDriveSummary: reviewSafeDrive,
+    proofSummary: readyProof,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "COMPANY" },
+  });
+  mustEqual(reviewNeeded.rows.map((row) => row.id), [2, 1], "case 6 review-needed signal keeps safer row first");
+  mustEqual(reviewNeeded.rows[1].qualityLabel, "Risk sinyali", "case 6 review-needed signal keeps risk label");
+  mustCondition(reviewNeeded.rows[1].nextReviewStep.includes("Kaynak kontrol edilmeli"), "case 6 review-needed signal keeps approval boundary");
+  mustEqual(reviewNeeded.confidence, 38, "case 6 review-needed signal keeps confidence bounded");
+
+  const missingSignalsNoFalseHigh = buildOfferQualityRanking({
+    offers: [
+      mkOffer({ id: 1, updatedAt: "2026-08-01T09:00:00Z" }),
+      mkOffer({ id: 2, updatedAt: "2026-08-01T09:00:00Z" }),
+    ],
+    safeDriveSummary: readySafeDrive,
+    proofSummary: readyProof,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "SUPER_ADMIN" },
+  });
+  mustEqual(missingSignalsNoFalseHigh.confidence, 50, "case 7 missing signals do not create false high confidence");
+  mustEqual(missingSignalsNoFalseHigh.qualityLabel, "İnceleme önerilir", "case 7 missing signals keep low-information label");
+
+  const tiedDeterministic = buildOfferQualityRanking({
+    offers: [mkOffer({ id: 1, updatedAt: "2026-08-01T09:00:00Z" }), mkOffer({ id: 2, updatedAt: "2026-08-01T09:00:00Z" })],
+    safeDriveSummary: readySafeDrive,
+    proofSummary: readyProof,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "SUPER_ADMIN" },
+  });
+  mustEqual(tiedDeterministic.rows.map((row) => row.id), [1, 2], "case 8 equal offers resolve deterministically");
+
+  mustCondition(normalComparable.rows[0].positiveSignals.includes("Kanıt / check-in hazır"), "case 9 room score contribution keeps positive signals visible");
+  mustCondition(normalComparable.positiveSignals.includes("Telematics hazır"), "case 9 room score contribution keeps telematics signal visible");
+  mustCondition(normalComparable.rows[0].comparisonSummary.includes("Kanıt / check-in hazır"), "case 10 safe-drive/evidence signal contribution preserved");
+  mustCondition(normalComparable.rows[0].humanApprovalRequired, "case 11 readonly result keeps human approval required");
+  mustCondition(normalComparable.rows[0].autoSelectionBlocked, "case 11 readonly result keeps auto-selection blocked");
+  mustCondition(normalComparable.rows[0].autoAcceptBlocked, "case 11 readonly result keeps auto-accept blocked");
+  const riskyApproval = buildOfferQualityRanking({
+    offers: [mkOffer({ id: 1, shiftStatus: "RISKY", providerStatus: "offline", gpsSourceLabel: "Offline" })],
+    proofSummary: readyProof,
+    draftScoreSummary: readyDraft,
+    reviewDecisionSummary: reviewedDecision,
+    summaryParams: { role: "COMPANY" },
+  });
+  mustCondition(riskyApproval.nextReviewStep.includes("İnsan onayı gerekir"), "case 12 human approval remains required");
+
+  mustDiffEmptyOrExactlyWithIdentity(["backend/src/routes", "backend/src/services", "backend/prisma", "prisma"], [...approvedRouteEntries, ...approvedServiceEntries], "backend route/service/schema and Prisma diff stays current-head approved");
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, "accepted Prisma schema SHA matches");
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
@@ -365,9 +645,7 @@ function main() {
   console.log("=== OFFER-RANKING-QUALITY-01 CHECK PASS ===");
 }
 
-try {
-  main();
-} catch (err) {
+main().catch((err) => {
   console.error(err?.stack || String(err));
   process.exit(1);
-}
+});

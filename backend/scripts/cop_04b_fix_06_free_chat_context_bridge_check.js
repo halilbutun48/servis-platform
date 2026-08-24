@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -94,14 +95,13 @@ function assertNoForbiddenVisibleTerms(text, label) {
 console.log('=== COP-04B-FIX-06 FREE CHAT CONTEXT BRIDGE CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const serviceSource = read('backend/src/ai/service.js');
 const helpComposerSource = read('backend/src/ai/chat/helpComposer.js');
 const floatingDrawerSource = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
 const copilotPanelSource = read('web/src/panels/shared/CopilotPanel.jsx');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop04bfix06": "node backend/scripts/cop_04b_fix_06_free_chat_context_bridge_check.js"', 'package.json exposes check:cop04bfix06');
 must(pkg, '"check:cop04bfix05"', 'package.json keeps check:cop04bfix05');
@@ -112,8 +112,8 @@ must(pkg, '"check:cop04bfix01"', 'package.json keeps check:cop04bfix01');
 must(pkg, '"check:cop04b"', 'package.json keeps check:cop04b');
 must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
 
-must(runner, 'check:cop04bfix06', 'product extensions runner keeps cop04bfix06');
-must(verifyChain, 'check:cop04bfix06', 'verify chain waits for check:cop04bfix06');
+assertProductExtensionsIncludes('check:cop04bfix06', 'product extensions registry references cop04bfix06', registryScripts);
+assertProductExtensionsIncludes('check:cop04bfix06', 'verify chain registry waits for check:cop04bfix06', registryScripts);
 must(guide, 'check:cop04bfix06', 'script guide exposes check:cop04bfix06');
 mustAny(guide, ['free-chat submit request', 'selected signal setini', 'Room / Canlı Takip sorularında'], 'script guide keeps fix06 note visible');
 mustAny(auditDoc, ['free-chat submit request', 'selected signal setini', 'header quick answer ile free chat ayni selected signal setini'], 'audit doc keeps fix06 note');

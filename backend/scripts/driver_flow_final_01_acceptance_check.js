@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,8 +54,6 @@ async function main() {
   console.log('=== DRIVER-FLOW-FINAL-01 ACCEPTANCE CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const app = read('web/src/App.jsx');
@@ -72,8 +71,7 @@ async function main() {
   const golden = read('backend/src/ai/chat/goldenQuestionPack.js');
 
   must(pkg, '"check:driverflowfinal01": "node backend/scripts/driver_flow_final_01_acceptance_check.js"', 'package.json exposes check:driverflowfinal01');
-  must(runner, 'check:driverflowfinal01', 'product extensions runner exposes check:driverflowfinal01');
-  must(verify, 'check:driverflowfinal01', 'verify chain exposes check:driverflowfinal01');
+  assertProductExtensionsIncludes('check:driverflowfinal01', 'product extensions registry exposes check:driverflowfinal01');
   must(guide, 'DRIVER-FLOW-FINAL-01', 'script guide mentions DRIVER-FLOW-FINAL-01');
   must(guide, 'check:driverflowfinal01', 'script guide exposes check:driverflowfinal01');
   must(audit, 'DRIVER-FLOW-FINAL-01 acceptance smoke note', 'audit doc mentions DRIVER-FLOW-FINAL-01');

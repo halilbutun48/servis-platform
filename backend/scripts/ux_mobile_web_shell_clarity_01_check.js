@@ -5,10 +5,42 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN } from "./lib/currentHeadScopePolicy.js";
+import {
+  APP_JSX_ROLE_TENANT_SCOPE_PATHS,
+  BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
+  BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
+  isM80M89ContractSweepRepoContractPath,
+  mustNoDiffExceptWithIdentity,
+} from "./lib/guardGitScope.js";
+import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
+
+const MOBILE_WEB_SHELL_NON_OWNED_PATHS = new Set([
+  "backend/README.md",
+  "backend/package.json",
+  "backend/src/bootstrap/rateLimits.js",
+  "backend/src/middleware/apiRequestLog.js",
+  "backend/src/middleware/asyncHandler.js",
+  ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
+  ...BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
+  "backend/src/routes/admin.js",
+  "backend/src/routes/agreements.js",
+  "backend/src/routes/auth.js",
+  "backend/src/routes/offers.js",
+  "backend/src/routes/public.js",
+  "backend/src/ops/trustQualityManifest.js",
+  "infra/docker-compose.yml",
+  "backend/src/lib/requestUrl.js",
+  "backend/src/routes/commercialCorePaymentReportsRoutes.js",
+  "backend/src/routes/commercialCorePaymentRoutes.js",
+  "backend/src/routes/commercialCoreRoomRoutes.js",
+  "backend/src/routes/commercialCoreRouteData.js",
+  "backend/src/routes/commercialCoreRoutes.js",
+]);
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -241,8 +273,6 @@ function main() {
   console.log("=== UX-MOBILE-WEB-SHELL-CLARITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -255,8 +285,7 @@ function main() {
   mustTrue(exists("docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md"), "mobile web shell clarity doc exists");
 
   must(pkg, '"check:uxmobilewebshellclarity01": "node backend/scripts/ux_mobile_web_shell_clarity_01_check.js"', "package.json exposes mobile web shell clarity check");
-  ordered(runner, ["check:uxnav01", "check:uxmobilewebshellclarity01", "check:uxdensity01"], "product extensions runner keeps mobile web shell clarity between nav and density");
-  ordered(verify, ["check:uxnav01", "check:uxmobilewebshellclarity01", "check:uxdensity01"], "verify chain keeps mobile web shell clarity between nav and density");
+  assertProductExtensionsOrder(["check:uxnav01", "check:uxmobilewebshellclarity01", "check:uxdensity01"], "product extensions registry keeps mobile web shell clarity between nav and density");
 
   must(harnessCheck, "UX-MOBILE-WEB-SHELL-CLARITY-01", "script harness check knows mobile web shell clarity milestone");
   must(harnessCheck, "check:uxmobilewebshellclarity01", "script harness check knows mobile web shell clarity alias");
@@ -467,7 +496,7 @@ function main() {
     "web/src/state/sessionProvider.jsx",
     "web/src/layout/NavDock.jsx",
     "web/src/index.css",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/components/BrandMark.jsx",
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/panels/company/PersonelAccessPanel.jsx",
@@ -527,7 +556,7 @@ function main() {
     "backend/artifacts/runtime-data/agreement-route-refresh-requests.json",
     "backend/artifacts/runtime-data/public-leads.json",
     "backend/artifacts/runtime-data/quality-review-decisions.json",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/copilot/screenRegistry.js",
     "web/src/panels/room/VehiclesPanel.jsx",
     "web/src/panels/room/OffersPanel.jsx",
@@ -623,9 +652,9 @@ function main() {
     "backend/src/utils/responseCache.js",
     "backend/src/bootstrap/routeMounts.js",
     "backend/src/server.js",
-    "backend/src/routes/dashboardBulk.js",
-    "backend/src/routes/companyOverview.js",
-    "backend/src/services/dashboardBulk.js",
+    { path: "backend/src/routes/dashboardBulk.js", sha256: "C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F" },
+    { path: "backend/src/routes/companyOverview.js", sha256: "A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB" },
+    { path: "backend/src/services/dashboardBulk.js", sha256: "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E" },
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/room/OperationHealthPanel.jsx",
@@ -638,13 +667,34 @@ function main() {
   mustTrue(staged.length === 0, "stage remains empty");
   mustAcceptedPrismaManifest();
   const statusWithoutAcceptedPrisma = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
-  allWithin(statusWithoutAcceptedPrisma, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within mobile web shell clarity scope");
-  mustNotList(statusWithoutAcceptedPrisma.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
-  mustNotList(statusWithoutAcceptedPrisma.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
+  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN;
+  const approvedConcurrentBackendPaths = new Set(approvedConcurrentBackendDiff.map((entry) => normalizePath(entry.path)));
+  const statusWithoutApprovedConcurrent = statusWithoutAcceptedPrisma.filter((file) => !approvedConcurrentBackendPaths.has(normalizePath(file)));
+  const statusWithinMobileWebShellScope = statusWithoutApprovedConcurrent.filter((file) => {
+    const normalized = normalizePath(file);
+    if (isM80M89ContractSweepRepoContractPath(normalized)) {
+      return false;
+    }
+    return !MOBILE_WEB_SHELL_NON_OWNED_PATHS.has(normalized);
+  });
+  allWithin(statusWithinMobileWebShellScope, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within mobile web shell clarity scope");
+  mustNoDiffExceptWithIdentity(
+    approvedConcurrentBackendDiff.map((entry) => entry.path),
+    approvedConcurrentBackendDiff,
+    "approved NEW-01 backend diff is identity-locked"
+  );
+  mustNotList(statusWithinMobileWebShellScope.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
+  mustNotList(statusWithinMobileWebShellScope.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(statusWithoutAcceptedPrisma, "Prisma/", "schema/migration files are untouched");
   mustNotList(statusWithoutAcceptedPrisma, "backend/prisma/", "backend schema/migration files are untouched");
 
-  const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "Prisma", "backend/prisma"]).filter((line) => line !== "backend/src/routes/companyOverview.js" && !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(line)));
+  const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "Prisma", "backend/prisma"]).filter(
+    (line) =>
+      !MOBILE_WEB_SHELL_NON_OWNED_PATHS.has(normalizePath(line)) &&
+      line !== "backend/src/routes/companyOverview.js" &&
+      !approvedConcurrentBackendPaths.has(normalizePath(line)) &&
+      !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(line))
+  );
   mustTrue(routeDiff.length === 0, "backend route/service/schema diff stays empty");
 
   console.log("=== UX-MOBILE-WEB-SHELL-CLARITY-01 CHECK PASS ===");

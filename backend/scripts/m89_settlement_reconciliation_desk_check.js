@@ -29,7 +29,7 @@ function includesText(text, needle) {
 function includesAnyText(text, needles) {
   return (needles || []).some((needle) => includesText(text, needle));
 }
-const routePath = path.join(repoRoot, "backend", "src", "routes", "commercialCore.js");
+const routePath = path.join(repoRoot, "backend", "src", "routes", "commercialCorePaymentRoutes.js");
 const opsPath = path.join(repoRoot, "backend", "src", "ops", "settlementReconciliationDesk.js");
 
 function fail(msg) {

@@ -5,6 +5,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import { getCanonicalProvenanceRecord } from "./lib/canonicalProvenanceRegistry.js";
+import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -242,6 +246,19 @@ function allWithin(files, exactPaths, prefixes, label) {
   const unexpected = files.filter((file) => !exactPaths.has(file) && !prefixes.some((prefix) => file.startsWith(prefix)));
   if (unexpected.length) fail(`${label}: ${unexpected.join(", ")}`);
   ok(label);
+}
+
+function step172CanonicalConcurrentBackendDiffEntry(relPath, label) {
+  const record = getCanonicalProvenanceRecord(relPath);
+  mustTrue(Boolean(record), `${label}: missing canonical provenance record for ${relPath}`);
+  mustTrue(record.path === relPath, `${label}: canonical provenance path mismatch for ${relPath}`);
+  mustTrue(record.baselinePresence === "ABSENT", `${label}: ${relPath} baseline must be ABSENT`);
+  mustTrue(record.workingTreeState === "UNTRACKED_CANONICAL_NEW_FILE", `${label}: ${relPath} working tree state must be UNTRACKED_CANONICAL_NEW_FILE`);
+  mustTrue(record.provenanceClass === "CONCURRENT_CANONICAL", `${label}: ${relPath} provenance class must be CONCURRENT_CANONICAL`);
+  mustTrue(record.lifecycleStatus === "ACTIVE_PROVEN", `${label}: ${relPath} lifecycle status must be ACTIVE_PROVEN`);
+  mustTrue(record.currentHeadPolicyState === "APPROVED", `${label}: ${relPath} current-head policy state must be APPROVED`);
+  mustFileSha256(relPath, record.currentSha256, `${label}: ${relPath} canonical provenance SHA matches`);
+  return { path: relPath, sha256: record.currentSha256 };
 }
 
 function roleLabelFromPath(rel) {
@@ -550,8 +567,6 @@ function main() {
   console.log("=== UX-PANEL-STANDARD-ARCHITECTURE-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -653,8 +668,8 @@ function main() {
   }
 
   must(pkg, '"check:uxpanelstandardarchitecture01": "node backend/scripts/ux_panel_standard_architecture_01_check.js"', "package.json exposes panel standard architecture check");
-  ordered(runner, ["check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01"], "product extensions runner keeps panel standard architecture before final smoke");
-  ordered(verify, ["check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01"], "verify chain keeps panel standard architecture before final smoke");
+  assertProductExtensionsOrder(["check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01"], "product extensions registry keeps panel standard architecture before final smoke");
+  assertProductExtensionsOrder(["check:uxdensity01", "check:uxpanelstandardarchitecture01", "check:finaluxsmoke01"], "verify chain registry keeps panel standard architecture before final smoke");
 
   must(harnessCheck, "UX-PANEL-STANDARD-ARCHITECTURE-01", "script harness check knows panel standard architecture milestone");
   must(harnessCheck, "check:uxpanelstandardarchitecture01", "script harness check knows panel standard architecture alias");
@@ -829,7 +844,7 @@ function main() {
     "backend/src/ai/jobGuide/screenCatalog.js",
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "docs/UX_PANEL_REALITY_AUDIT_02C.md",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/copilot/screenRegistry.js",
     "web/src/panels/room/roomVehiclesPanelRows.jsx",
     "web/src/panels/room/useRoomVehicleTelematics.js",
@@ -845,284 +860,38 @@ function main() {
   const status = statusNames().filter(
     (file) => !cleanupScopeFiles.includes(file) && !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file))
   );
-  const exactAllowed = new Set([
-    "backend/scripts/ai03b_semantic_visible_audit_01_check.js",
-    "backend/scripts/copilot_context_memory_task_state_01_check.js",
-    "backend/src/ai/chat/conversationTaskState.js",
-    "backend/src/ai/chat/conversationTaskStateResponses.js",
-    "backend/src/ai/chat/conversationTaskStateShared.js",
-    "backend/src/ai/chat/conversationTaskStateClarifiers.js",
-    "backend/src/ai/chat/conversationTaskStateSelectedRecord.js",
-    "backend/src/ai/chat/conversationTaskStateFollowUps.js",
-    "backend/src/ai/chat/conversationTaskStateBuilders.js",
-    "backend/src/ai/chat/conversationTaskStateCompanyReplies.js",
-    "backend/src/ai/chat/conversationTaskStateRoomReplies.js",
-    "backend/src/ai/chat/screenStateAnalyzer.js",
-    "backend/src/ai/jobGuide/screenCatalog.roomCompany.js",
-    "backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js",
-    "docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md",
-    "backend/scripts/ux_panel_standard_architecture_01_check.js",
-    "backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js",
-    "backend/scripts/ux_company_mobile_action_clarity_01_check.js",
-    "web/src/panels/company/companyAgreementsBridgeSection.jsx",
-    "web/src/panels/company/companyAgreementsPanelHelpers.js",
-    "web/src/panels/room/roomAgreementsBridgeSection.jsx",
-    "web/src/panels/room/roomAgreementsPanelHelpers.js",
-    ".gitignore",
-    "backend/scripts/load_test_2000_users_01_check.js",
-    "backend/scripts/load_test_2000_users_01_harness.js",
-    "docs/LOAD_TEST_2000_USERS_01.md",
-    "backend/scripts/copilot_dynamic_question_engine_01_check.js",
-    "backend/scripts/ux_company_personel_access_mobile_parity_01_check.js",
-    "backend/scripts/copilot_reasoning_answer_composer_01_check.js",
-    "backend/src/ai/chat/copilotReasoningAnswerComposer.js",
-    "backend/src/ai/schemas.js",
-    "backend/scripts/copilot_route_review_human_approval_01_check.js",
-    "backend/scripts/invite_based_membership_01_check.js",
-    "backend/scripts/onboarding_review_final_audit_01_check.js",
-    "backend/scripts/verified_supplier_01_check.js",
-    "backend/scripts/product_flow_button_audit_01.mjs",
-    "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
-    "web/src/components/copilot/FloatingCopilotDrawer.jsx",
-    "web/src/components/copilot/uiSurface.js",
-    "web/src/panels/company/GuidedPlanModal.jsx",
-    "web/src/panels/company/ShiftPeopleTab.jsx",
-    "web/src/panels/company/guidedPlanModalActions.js",
-    "web/src/panels/company/guidedPlanModalCards.jsx",
-    "web/src/panels/company/guidedPlanModalDestinationCards.jsx",
-    "web/src/panels/company/guidedPlanModalPeopleStep.jsx",
-    "web/src/panels/company/guidedPlanModalPlanCards.jsx",
-    "web/src/panels/company/guidedPlanModalSections.jsx",
-    "web/src/panels/company/guidedPlanModalShell.jsx",
-    "web/src/panels/company/guidedPlanModalUtils.js",
-    "web/src/panels/company/shiftPeopleTabActions.js",
-    "web/src/panels/company/shiftPeopleTabSections.jsx",
-    "web/src/utils/planCenterOverlayLayer.js",
-    "backend/scripts/ux_panel_inventory_02a_check.js",
-    "backend/src/ai/jobGuide/screenCatalog.js",
-    "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
-    "docs/UX_PANEL_REALITY_AUDIT_02C.md",
-    "web/src/App.jsx",
-    "web/src/copilot/screenRegistry.js",
-    "web/src/panels/room/roomVehiclesPanelRows.jsx",
-    "web/src/panels/room/useRoomVehicleTelematics.js",
-    "web/src/panels/superadmin/TelematicsHubPanel.jsx",
-    "backend/scripts/copilot_stop_route_draft_01_check.js",
-    "backend/src/ai/chat/copilotStopRouteDraftPolicy.js",
-    "docs/COPILOT_STOP_ROUTE_DRAFT_01.md",
-    "backend/scripts/copilot_route_review_human_approval_01_check.js",
-    "backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js",
-    "docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md",
-    "backend/scripts/excel_to_route_readiness_redteam_01_check.js",
-    "backend/src/ai/chat/excelToRouteReadinessRedteamPack.js",
-    "docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md",
-    "backend/scripts/copilot_clarifying_question_engine_01_check.js",
-    "docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md",
-    "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js",
-    "backend/scripts/offer_ranking_quality_01_check.js",
-    "backend/scripts/ux_live_panel_smoke_audit_01_check.js",
-    "backend/scripts/ux_parent_personel_live_error_clarity_01_check.js",
-    "backend/scripts/ux_room_panel_clarity_01_check.js",
-    "backend/scripts/ux_premium_critical_fix_room_01_check.js",
-    "backend/scripts/safe_drive_01_check.js",
-    "backend/src/ai/jobGuide/screenCatalog.js",
-    "docs/SAFE_DRIVE_01.md",
-    "web/src/panels/company/MapPanel.jsx",
-    "web/src/panels/driver/MapPanel.jsx",
-    "web/src/panels/driver/RoutePanel.jsx",
-    "web/src/panels/room/MapPanel.jsx",
-    "web/src/panels/shared/SafeDriveSummaryCard.jsx",
-    "web/src/utils/safeDriveSummary.js",
-    "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
-    "backend/scripts/ux_room_shifts_tabs_01_check.js",
-    "backend/scripts/ux_room_shifts_density_dedup_01_check.js",
-    "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
-    "backend/scripts/public_landing_platform_first_01_check.js",
-    "backend/scripts/public_landing_final_promise_01_check.js",
-    "backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js",
-    "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md",
-    "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md",
-    "tools/PRIMER_SNAPSHOT.md",
-    "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
-    "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
-    "backend/src/ai/chat/seferAbiReasoningAssistant.js",
-    "docs/SEFER_ABI_REASONING_ASSISTANT_01.md",
-    "docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md",
-    "backend/src/ai/chat/conversationTaskStateDynamicQuestions.js",
-    "docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md",
-    "backend/scripts/copilot_smart_diagnostic_engine_01_check.js",
-    "backend/src/ai/chat/conversationSmartDiagnostics.js",
-    "docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md",
-    "backend/scripts/copilot_risk_scoring_engine_01_check.js",
-    "backend/src/ai/chat/conversationRiskScoringEngine.js",
-    "docs/COPILOT_RISK_SCORING_ENGINE_01.md",
-    "backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js",
-    "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
-    "backend/scripts/ux_shifts_responsive_layout_fix_01_check.js",
-    "docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md",
-    "backend/scripts/mobile_web_final_01_check.js",
-    "backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js",
-    "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
-    "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
-    "backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js",
-    "backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js",
-    "backend/scripts/product_flow_button_audit_01_check.js",
-    "backend/scripts/product_flow_button_audit_01.mjs",
-    "web/src/panels/room/RoomDriversQuickPenaltyCard.jsx",
-    "backend/scripts/room_vehicle_driver_uppercase_normalization_01_check.js",
-    "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
-    "backend/scripts/ux_smoke_pass_minus_evidence_01_check.js",
-    "backend/scripts/ux_brand_login_premium_01_check.js",
-    "backend/scripts/onboarding_review_01_check.js",
-    "backend/scripts/onboarding_review_final_audit_01_check.js",
-    "backend/scripts/quality_gate_final_01_check.js",
-    "web/src/layout/AppShell.jsx",
-    "web/src/layout/NavDock.jsx",
-    "web/src/App.jsx",
-    "web/src/copilot/screenRegistry.js",
-    "web/src/components/BrandMark.jsx",
-    "web/src/panels/organization/PlansPanel.jsx",
-    "web/src/panels/organization/organizationPlansShared.jsx",
-    "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
-    "web/src/panels/shared/OfferQualityRankingCard.jsx",
-    "web/src/components/map/ReadableMiniRouteMap.jsx",
-    "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
-    "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md",
-    "docs/OFFER_RANKING_QUALITY_01.md",
-    "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md",
-    "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
-    "docs/UX_MOBILE_WEB_SHELL_CLARITY_01.md",
-    "docs/MOBILE_WEB_FINAL_01.md",
-    "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md",
-    "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
-    "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md",
-    "docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md",
-    "docs/UX_MOBILE_OVERFLOW_MINIMAP_POLISH_02.md",
-    "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
-    "docs/UX_PANEL_REALITY_AUDIT_02C.md",
-    "docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md",
-    "backend/scripts/m44_telematics_t1_t5_check.js",
-    "docs/DB_SCHEMA_V1.md",
-    "docs/M44_TELEMATICS_T1_T5.md",
-    "docs/PRODUCT_FLOW_BUTTON_AUDIT_01.md",
-    "docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md",
-    "docs/ONBOARDING_REVIEW_01.md",
-    "docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md",
-    "docs/QUALITY_GATE_FINAL_01.md",
-    "docs/PUBLIC_LANDING_01.md",
-    "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md",
-    "package.json",
-    "backend/scripts/run_product_extensions_check_chain.js",
-    "backend/scripts/verify_chain_01_product_extensions_check.js",
-    "backend/scripts/script_harness_consolidation_01_check.js",
-    "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
-    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
-    "docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md",
-    "docs/UX_PARENT_PERSONEL_LIVE_ERROR_CLARITY_01.md",
-    "docs/INVITE_BASED_MEMBERSHIP_01.md",
-    "web/src/index.css",
-    "web/src/components/AgreementOpsBridgeCard.jsx",
-    "web/src/panels/company/AgreementsPanel.jsx",
-    "web/src/panels/company/companyAgreementsMobileCards.jsx",
-    "web/src/panels/company/WorkflowPanel.jsx",
-    "web/src/panels/company/companyShiftsPanelCards.jsx",
-    "web/src/panels/company/PersonelAccessPanel.jsx",
-    "web/src/panels/company/companyShiftsPanelSections.jsx",
-    "web/src/panels/company/companyShiftsPanelFilters.jsx",
-    "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
-    "web/src/panels/room/AgreementsPanel.jsx",
-    "web/src/panels/room/OffersPanel.jsx",
-    "web/src/panels/room/DriversPanel.jsx",
-    "web/src/panels/room/RoomDriversEditModal.jsx",
-    "web/src/panels/room/RoomDriversShiftsTable.jsx",
-    "web/src/panels/room/RoomDriversStatusTable.jsx",
-    "web/src/panels/room/ShiftsPanel.jsx",
-    "web/src/panels/room/roomShiftsMainSections.jsx",
-    "web/src/panels/room/roomShiftsPanelRows.jsx",
-    "web/src/panels/room/roomShiftsPanelSections.jsx",
-    "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
-    "web/src/panels/driver/TodayPanel.jsx",
-    "web/src/panels/organization/CenterPanel.jsx",
-    "web/src/panels/public/PassengerLivePanel.jsx",
-    "web/src/panels/shared/NotificationsPanel.jsx",
-    "web/src/panels/shared/ReportsPanel.jsx",
-    "web/src/panels/superadmin/UsersPanel.jsx",
-    "web/src/panels/superadmin/TrustQualityPanel.jsx",
-    "web/src/panels/company/CommercialFlowPanel.jsx",
-    "web/src/panels/company/companyAgreementsSourceShiftSection.jsx",
-    "web/src/panels/parent/LivePanel.jsx",
-    "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
-    "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
-    "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
-    "backend/scripts/invite_based_membership_01_check.js",
-    "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md",
-    "docs/UX_BRAND_LOGIN_PREMIUM_01.md",
-    "backend/scripts/ux_smoke_pass_minus_zero_01_check.js",
-    "docs/UX_SMOKE_PASS_MINUS_ZERO_01.md",
-    "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
-    "docs/PRIMER_SSOT.md",
-    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
-    "backend/scripts/verified_supplier_01_check.js",
-    "docs/VERIFIED_SUPPLIER_01.md",
-    "backend/scripts/m44_telematics_t1_t5_check.js",
-    "docs/DB_SCHEMA_V1.md",
-    "docs/M44_TELEMATICS_T1_T5.md",
-    "backend/scripts/telematics_provider_hub_01_check.js",
-    "docs/TELEMATICS_PROVIDER_HUB_01.md",
-    "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
-    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
-    "docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md",
-    "backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js",
-    "backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js",
-    "backend/src/ai/chat/answerQualityPolicy.js",
-    "backend/src/ai/chat/helpComposer.js",
-    "backend/src/ai/chat/intentRouter.js",
-    "backend/src/ai/chat/intentRouterCore.js",
-    "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
-    "web/src/state/sessionProvider.jsx",
-    "web/src/components/brand/SeferPaktLogo.jsx",
-    "web/public/vardis-logo.svg",
-    "web/public/vardis-favicon.svg",
-    "web/public/seferpakt-lockup.png",
-    "web/public/seferpakt-app-icon.png",
-    "web/public/seferpakt-favicon.png",
-    "web/src/panels/room/roomVehiclesPanelRows.jsx",
-    "web/src/panels/room/useRoomVehicleTelematics.js",
-    "web/src/panels/superadmin/TelematicsHubPanel.jsx",
-    "web/src/utils/offerQualityRanking.js",
-    "backend/src/ai/chat/conversationRootCauseEngine.js",
-    "backend/src/ai/chat/copilotGuidedTaskEngine.js",
-    "backend/src/ai/chat/goldenQuestionPack.js",
-    "backend/src/ai/chat/qualityScorer.js",
-    "backend/scripts/copilot_guided_task_engine_01_check.js",
-    "backend/scripts/copilot_root_cause_engine_01_check.js",
-    "docs/COPILOT_GUIDED_TASK_ENGINE_01.md",
-    "docs/COPILOT_ROOT_CAUSE_ENGINE_01.md",
-    "web/src/utils/uiDataCache.js",
-    "backend/src/utils/responseCache.js",
-    "backend/src/bootstrap/routeMounts.js",
-    "backend/src/server.js",
-    "backend/src/routes/dashboardBulk.js",
-    "backend/src/routes/companyOverview.js",
-    "backend/src/services/dashboardBulk.js",
-    "web/src/panels/company/OperationsPanel.jsx",
-    "web/src/panels/room/CommercialFlowPanel.jsx",
-    "web/src/panels/room/OperationHealthPanel.jsx",
-    "web/src/panels/superadmin/SuperAdminPanel.jsx",
-    "web/src/panels/school/OperationsPanel.jsx",
-    "web/src/panels/shared/FinancialOperationsPanel.jsx",
-  ]);
-  allWithin(
-    status,
-    exactAllowed,
-    ["backend/artifacts/runtime-data/", "tools/repo_contract_state.json", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"],
-    "working tree stays within panel standard architecture scope",
-  );
+  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
+  const step172CanonicalConcurrentBackendDiff = [
+    step172CanonicalConcurrentBackendDiffEntry(
+      "backend/src/routes/commercialCorePaymentReportsRoutes.js",
+      "STEP-172 canonical concurrent backend diff"
+    ),
+    step172CanonicalConcurrentBackendDiffEntry(
+      "backend/src/routes/commercialCorePaymentRoutes.js",
+      "STEP-172 canonical concurrent backend diff"
+    ),
+    step172CanonicalConcurrentBackendDiffEntry(
+      "backend/src/routes/commercialCoreRoomRoutes.js",
+      "STEP-172 canonical concurrent backend diff"
+    ),
+    step172CanonicalConcurrentBackendDiffEntry(
+      "backend/src/routes/commercialCoreRouteData.js",
+      "STEP-172 canonical concurrent backend diff"
+    ),
+    step172CanonicalConcurrentBackendDiffEntry(
+      "backend/src/routes/commercialCoreRoutes.js",
+      "STEP-172 canonical concurrent backend diff"
+    ),
+  ];
+  const step172ConcurrentBackendDiff = [...approvedConcurrentBackendDiff, ...step172CanonicalConcurrentBackendDiff];
+  const step172ConcurrentBackendPaths = new Set(step172ConcurrentBackendDiff.map((entry) => normalizePath(entry.path)));
+  const statusWithoutStep172Concurrent = status.filter((file) => !step172ConcurrentBackendPaths.has(normalizePath(file)));
 
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
-  mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
-  mustNotList(status, "Prisma/", "schema/migration files are untouched");
+  mustStatusEmptyOrExactlyWithIdentity(["backend/src/routes", "backend/src/services"], step172ConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");
+  mustNotList(statusWithoutStep172Concurrent, "backend/src/routes/", "backend routes are untouched");
+  mustNotList(statusWithoutStep172Concurrent, "backend/src/services/", "backend services are untouched");
+  mustNotList(statusWithoutStep172Concurrent, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
+  mustNotList(statusWithoutStep172Concurrent, "Prisma/", "schema/migration files are untouched");
   console.log("=== UX-PANEL-STANDARD-ARCHITECTURE-01 CHECK PASS ===");
 }
 

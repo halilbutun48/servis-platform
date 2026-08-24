@@ -16,6 +16,7 @@ import { ENV } from "../env.js";
 import { clearPasswordChangeRequired, isPasswordChangeRequired } from "../auth/passwordChangeRequirementStore.js";
 import { getPasswordPolicySummary, validatePasswordPolicy } from "../auth/passwordPolicy.js";
 import { getEffectiveUsername, resolveUserIdByUsername, visibleEmail } from "../auth/usernameDirectory.js";
+import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 
 const DISABLED_PREFIX = "$DISABLED$";
 function isDisabledHash(hash) {
@@ -117,6 +118,7 @@ async function findLoginUser(identifierRaw) {
 }
 
 export const authRouter = express.Router();
+wrapAsyncRouterMethods(authRouter);
 
 // ✅ M41: login now supports optional device binding + refresh session
 // Backward compatible: existing clients can still ignore refreshToken/deviceId.

@@ -173,6 +173,19 @@ Bu primer yaşayan hattın resmi özetidir.
 - `M88` — settlement operasyon masası
 - `M89` — settlement mutabakat masası
 
+## BATCH-10 provenance & canonical technical closure
+- BATCH-09 kapandı; `Product Extensions 198/198 GREEN`.
+- Executable SSOT sahipleri: `backend/scripts/lib/currentHeadScopePolicy.js`, `backend/scripts/lib/canonicalProvenanceRegistry.js`, `backend/scripts/lib/guardGitScope.js`, `backend/scripts/lib/guardTextIntegrity.js`, `backend/scripts/lib/guardSmokeEvidence.js`.
+- Teknik kapanış ailesi 6 kanonik kayıttan oluşur: beş `CONCURRENT_CANONICAL` route dosyası ve bir `LEGITIMATE_CANONICAL_NEW_FILE` olan `backend/src/lib/requestUrl.js`.
+- `CONCURRENT_CANONICAL` route dosyaları: `backend/src/routes/commercialCoreRoutes.js`, `backend/src/routes/commercialCorePaymentRoutes.js`, `backend/src/routes/commercialCorePaymentReportsRoutes.js`, `backend/src/routes/commercialCoreRoomRoutes.js`, `backend/src/routes/commercialCoreRouteData.js`.
+- `backend/src/lib/requestUrl.js` için `currentHeadPolicyState = ABSENT` intentional durumdur; eksik registration, stale policy, orphan source veya geçici exception değildir.
+- `backend/src/lib/requestUrl.js` canonical request/source-route sanitization helper'ıdır; bilinen consumers: `backend/src/server.js`, `backend/src/bootstrap/rateLimits.js`, `backend/src/middleware/apiRequestLog.js`, `backend/src/routes/public.js`.
+- Bu helper missing-input handling, absolute/relative URL parse, query sanitization/redaction, safe pathname/source-route preservation, parse fallback ve token/secret/signature-like leakage prevention sağlar; authorization veya tenant/role access genişletmez.
+- RAW file-byte identity ile NORMALIZED text identity farklı modellerdir; current-head policy raw identity kullanır, text-integrity consumers normalized text identity kullanır.
+- `commercialCore.js` raw/normalized SHA ayrımı bu modelin kasıtlı örneğidir; iki model birbirinin yerine geçmez.
+- Role/security/audit checkers canonical owners'ın consumer'ıdır; ikinci bir global SSOT değildir.
+- BATCH-10 teknik provenance closure green'dir; bu dosya insan-okunur kapanış anlatısı ve runbook SSOT coverage referansıdır.
+
 Compatibility aliases for legacy checks:
 - `M83` — field prep packet / saha hazırlık paketi
 - `M84` — field feedback loop / saha geri bildirim döngüsü

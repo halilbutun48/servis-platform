@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,8 +49,7 @@ function main() {
   console.log('=== BOARDING-OPS-01B APPLY ACCEPTED CHANGE CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const doc = read('docs/BOARDING_OPS_01B_ACCEPTED_CHANGE_APPLICATION.md');
@@ -70,8 +70,11 @@ function main() {
   const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
 
   must(pkg, '"check:boardingops01b": "node backend/scripts/boarding_ops_01b_apply_accepted_change_check.js"', 'package.json exposes check:boardingops01b');
-  must(runner, 'check:boardingops01b', 'product extensions runner includes BOARDING-OPS-01B');
-  must(verifyChain, 'check:boardingops01b', 'verify chain includes BOARDING-OPS-01B');
+  assertProductExtensionsIncludes(
+    'check:boardingops01b',
+    'product extensions registry includes BOARDING-OPS-01B',
+    registryScripts
+  );
   must(guide, 'BOARDING-OPS-01B', 'script guide mentions BOARDING-OPS-01B');
   must(guide, 'check:boardingops01b', 'script guide exposes check:boardingops01b');
   must(auditDoc, 'BOARDING-OPS-01B kapsam notu', 'copilot context audit keeps BOARDING-OPS-01B note');

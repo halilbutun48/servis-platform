@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,8 +79,6 @@ function ordered(text, needles, label) {
 console.log('=== COP-04B-FIX-01 SUPERADMIN + ROOM LIVE CONTEXT CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const service = read('backend/src/ai/service.js');
@@ -90,6 +89,7 @@ const copilotPanel = read('web/src/panels/shared/CopilotPanel.jsx');
 const mapPanel = read('web/src/panels/room/MapPanel.jsx');
 const operationHealthPanel = read('web/src/panels/room/OperationHealthPanel.jsx');
 const superAdminOperationsPanel = read('web/src/panels/superadmin/OperationsPanel.jsx');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop04bfix01": "node backend/scripts/cop_04b_fix_01_superadmin_room_live_context_check.js"', 'package.json exposes check:cop04bfix01');
 must(pkg, '"check:cop04b"', 'package.json keeps check:cop04b');
@@ -99,7 +99,7 @@ must(pkg, '"check:cop04afix02"', 'package.json keeps check:cop04afix02');
 must(pkg, '"check:cop04afix01"', 'package.json keeps check:cop04afix01');
 must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
 
-ordered(runner, [
+assertProductExtensionsOrder([
   'check:op04',
   'check:qlt04b',
   'check:pay01e',
@@ -128,9 +128,10 @@ ordered(runner, [
   'check:cop04afix01',
   'check:cop04b',
   'check:cop04bfix01',
-], 'product extensions runner order keeps cop04bfix01 last');
+], 'product extensions registry order keeps cop04bfix01 last', registryScripts);
 
-must(verifyChain, 'check:cop04bfix01', 'verify chain waits for check:cop04bfix01');
+assertProductExtensionsIncludes('check:cop04bfix01', 'product extensions registry references cop04bfix01', registryScripts);
+assertProductExtensionsIncludes('check:cop04bfix01', 'verify chain registry waits for check:cop04bfix01', registryScripts);
 must(guide, 'check:cop04bfix01', 'script guide exposes check:cop04bfix01');
 must(guide, 'check:cop04b', 'script guide keeps check:cop04b');
 must(guide, 'check:cop04afix04', 'script guide keeps check:cop04afix04');

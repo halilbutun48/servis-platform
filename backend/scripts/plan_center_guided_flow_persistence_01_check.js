@@ -17,6 +17,8 @@ const SLOW_MO = Number(process.env.SLOW_MO || 0) || 0;
 const artifactRoot = path.join(repoRoot, "backend", "artifacts", "browser-smoke", "PLAN_CENTER_GUIDED_FLOW_PERSISTENCE_01");
 const reportJsonPath = path.join(artifactRoot, "report.json");
 const reportMdPath = path.join(artifactRoot, "report.md");
+const chromiumDebugLogPath = path.join(artifactRoot, "chromium-debug.log");
+const repoDebugLogPath = path.join(repoRoot, "debug.log");
 
 const DEMO_USER = { identifier: "company@demo.com", password: "demo123" };
 
@@ -34,6 +36,18 @@ function nextSelectableWeekdayIsoDate(minDaysAhead = 1) {
 
 async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
+}
+
+async function relocateRepoDebugLogIfPresent() {
+  try {
+    await fs.access(repoDebugLogPath);
+  } catch {
+    return false;
+  }
+  await ensureDir(artifactRoot);
+  await fs.rm(chromiumDebugLogPath, { force: true });
+  await fs.rename(repoDebugLogPath, chromiumDebugLogPath);
+  return true;
 }
 
 async function loginCompany() {
@@ -139,7 +153,14 @@ async function main() {
   console.log(`Artifact root: ${path.relative(repoRoot, artifactRoot).replace(/\\/g, "/")}`);
 
   const loginToken = await loginCompany();
-  const browser = await chromium.launch({ headless: HEADLESS, slowMo: SLOW_MO || 0 });
+  const browser = await chromium.launch({
+    headless: HEADLESS,
+    slowMo: SLOW_MO || 0,
+    env: {
+      ...process.env,
+      CHROME_LOG_FILE: chromiumDebugLogPath,
+    },
+  });
   const context = await browser.newContext({
     viewport: { width: 1440, height: 980 },
     locale: "tr-TR",
@@ -385,6 +406,7 @@ async function main() {
     await ensureDir(artifactRoot);
     await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
     await fs.writeFile(reportMdPath, `${renderMarkdown(report)}\n`, "utf8");
+    await relocateRepoDebugLogIfPresent();
 
     console.log(`PASS ${summary.pass} / FAIL ${summary.fail}`);
     console.log(`WROTE ${path.relative(repoRoot, reportJsonPath).replace(/\\/g, "/")}`);
@@ -394,6 +416,7 @@ async function main() {
       process.exitCode = 1;
     }
   } finally {
+    await relocateRepoDebugLogIfPresent().catch(() => false);
     await browser.close().catch(() => {});
   }
 }
@@ -405,5 +428,6 @@ main().catch(async (error) => {
   } catch {
     // ignore
   }
+  await relocateRepoDebugLogIfPresent().catch(() => false);
   process.exit(1);
 });

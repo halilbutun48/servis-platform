@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,8 +92,6 @@ function main() {
   console.log("=== UX-SMOKE-PASS-MINUS-EVIDENCE-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -104,16 +103,7 @@ function main() {
     '"check:uxlivepanelsmokeaudit01": "node backend/scripts/ux_live_panel_smoke_audit_01_check.js"',
     "package.json keeps the live panel smoke audit gate"
   );
-  mustContains(
-    runner,
-    "'check:uxsmokepassminusevidence01'",
-    "product extensions runner includes PASS-minus evidence check"
-  );
-  mustContains(
-    verify,
-    '"check:uxsmokepassminusevidence01"',
-    "verify chain exposes PASS-minus evidence check"
-  );
+  assertProductExtensionsIncludes("check:uxsmokepassminusevidence01", "product extensions registry includes PASS-minus evidence check");
   mustContains(
     harnessCheck,
     "check:uxsmokepassminusevidence01",

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,13 +61,9 @@ function main() {
   console.log("=== UX-COMPANY-SHIFTS-TABS-01 CHECK ===");
 
   const pkg = read("package.json");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   mustContains(pkg, '"check:uxcompanyshiftstabs01"', "package.json exposes check:uxcompanyshiftstabs01");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxcompanyshiftstabs01", "product extensions runner includes company shifts tabs check");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxcompanyshiftstabs01", "verify chain includes company shifts tabs check");
+  assertProductExtensionsIncludes("check:uxcompanyshiftstabs01", "product extensions registry includes company shifts tabs check", registryScripts);
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-COMPANY-SHIFTS-TABS-01", "script guide mentions UX-COMPANY-SHIFTS-TABS-01");

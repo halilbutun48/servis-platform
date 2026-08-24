@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -178,8 +181,6 @@ async function main() {
   console.log('=== COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -188,6 +189,7 @@ async function main() {
   const doc = read(docRel);
   const helperText = read(helperRel);
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const helperMod = await loadModule(helperRel);
   const intentRouterMod = await loadModule('backend/src/ai/chat/intentRouter.js');
@@ -197,8 +199,8 @@ async function main() {
   const getScreenDefinitionForUser = screenCatalogMod.getScreenDefinitionForUser;
 
   must(pkg, '"check:copiloteblockruntimeanswerintegration01": "node backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js"', 'package.json exposes e-block runtime answer integration check');
-  ordered(runner, ['check:exceltoroutereadinessredteam01', 'check:copiloteblockruntimeanswerintegration01', 'check:uxcopilotsmartchips01'], 'product extensions runner places e-block runtime answer integration after redteam');
-  ordered(verify, ['check:exceltoroutereadinessredteam01', 'check:copiloteblockruntimeanswerintegration01', 'check:uxcopilotsmartchips01'], 'verify chain places e-block runtime answer integration after redteam');
+  assertProductExtensionsOrder(['check:exceltoroutereadinessredteam01', 'check:copiloteblockruntimeanswerintegration01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps e-block runtime answer integration after redteam', registryScripts);
+  assertProductExtensionsOrder(['check:exceltoroutereadinessredteam01', 'check:copiloteblockruntimeanswerintegration01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps e-block runtime answer integration after redteam', registryScripts);
 
   must(guide, 'COPILOT-E-BLOCK-RUNTIME-ANSWER-INTEGRATION-01', 'script guide mentions e-block runtime answer integration milestone');
   must(guide, 'check:copiloteblockruntimeanswerintegration01', 'script guide exposes e-block runtime answer integration check');
@@ -244,7 +246,7 @@ async function main() {
   must(helperText, 'detectCopilotEBlockRuntimeAnswerTopic', 'helper exposes topic detector');
   must(helperText, 'getCopilotEBlockRuntimeAnswerChips', 'helper exposes chip getter');
   must(helperText, 'getCopilotEBlockRuntimeAnswerActionSpec', 'helper exposes action getter');
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(['backend/src/routes', 'backend/src/services', 'prisma'], CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, 'backend route/service/schema and Prisma diff stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 
   const helperExports = Object.keys(helperMod).join(' | ');

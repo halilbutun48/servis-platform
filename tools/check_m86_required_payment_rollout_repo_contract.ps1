@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "=== M86 Repo Contract ==="
 @(
   "backend\src\services\paymentBackbone.js",
-  "backend\src\routes\commercialCore.js",
+  "backend\src\routes\commercialCorePaymentRoutes.js",
   "backend\scripts\m86_required_payment_rollout_check.js",
   "web\src\panels\superadmin\CommercialCorePanel.jsx",
   "web\src\components\CommercialReadonlySummary.jsx",
@@ -19,7 +19,7 @@ Write-Host "=== M86 Repo Contract ==="
 ) | ForEach-Object { Assert-RepoContractExists -RepoRoot $RepoRoot -RelativePath $_ }
 
 $service = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "backend\src\services\paymentBackbone.js"
-$route = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "backend\src\routes\commercialCore.js"
+$route = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "backend\src\routes\commercialCorePaymentRoutes.js"
 $panel = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "web\src\panels\superadmin\CommercialCorePanel.jsx"
 $summary = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "web\src\components\CommercialReadonlySummary.jsx"
 $runbook = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "docs\RUNBOOK_M86_REQUIRED_PAYMENT_ROLLOUT.md"

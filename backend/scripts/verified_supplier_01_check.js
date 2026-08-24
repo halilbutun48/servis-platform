@@ -2,8 +2,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, gitCachedNames, mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import { mustCurrentHeadCommittedState } from "./lib/guardValidationEnvironment.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,40 +52,6 @@ function ordered(text, needles, label) {
   ok(label);
 }
 
-function gitDiffNames(paths) {
-  const args = ["diff", "--name-only", "--", ...paths];
-  const out = execFileSync("git", args, {
-    cwd: root,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  return String(out || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function gitCachedNames() {
-  const out = execFileSync("git", ["diff", "--cached", "--name-only"], {
-    cwd: root,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  return String(out || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function mustNoDiffExcept(paths, allowedFiles, label) {
-  const allowed = new Set(allowedFiles);
-  const files = gitDiffNames(paths).filter((file) => !allowed.has(file));
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(", ")}`);
-  }
-  ok(label);
-}
-
 function mustNoStagedPrefix(names, prefixes, label) {
   const hits = names.filter((name) => prefixes.some((prefix) => normalize(name).startsWith(normalize(prefix))));
   if (hits.length > 0) {
@@ -96,8 +64,6 @@ function main() {
   console.log("=== VERIFIED-SUPPLIER-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const roadmapCheck = read("backend/scripts/roadmap_lock_ai_marketplace_01_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
@@ -112,18 +78,22 @@ function main() {
   const reviewPanel = read("web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
   const statusPalette = read("web/src/utils/statusPalette.js");
   const displayStatus = read("web/src/utils/displayStatus.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const cachedNames = gitCachedNames();
 
   must(pkg, '"check:verifiedsupplier01": "node backend/scripts/verified_supplier_01_check.js"', "package.json exposes check:verifiedsupplier01");
-  must(runner, "check:verifiedsupplier01", "product extensions runner includes verified supplier check");
-  must(verifyChain, '"check:verifiedsupplier01": "node backend/scripts/verified_supplier_01_check.js"', "verify chain exposes verified supplier check");
-  ordered(runner, [
-    "check:onboardingreviewfinalaudit01",
-    "check:invitebasedmembership01",
-    "check:verifiedsupplier01",
-    "check:productflowbuttonaudit01",
-  ], "verified supplier sits right after invite-based membership");
+  assertProductExtensionsIncludes("check:verifiedsupplier01", "product extensions registry includes verified supplier check", registryScripts);
+  assertProductExtensionsOrder(
+    [
+      "check:onboardingreviewfinalaudit01",
+      "check:invitebasedmembership01",
+      "check:verifiedsupplier01",
+      "check:productflowbuttonaudit01",
+    ],
+    "verified supplier sits right after invite-based membership",
+    registryScripts,
+  );
 
   must(guide, "VERIFIED-SUPPLIER-01", "script guide mentions verified supplier milestone");
   must(guide, "check:verifiedsupplier01", "script guide exposes verified supplier check");
@@ -245,10 +215,11 @@ function main() {
   must(statusPalette, "APPROVED_FOR_INVITE", "status palette supports invite-ready state");
   must(displayStatus, "APPROVED_FOR_INVITE", "display status supports invite-ready state");
 
-  mustNoDiffExcept(
-    ["backend/src/routes", "backend/src/services", "backend/src/bootstrap", "backend/src/server.js", "web/src/panels/superadmin", "web/src/panels/company", "web/src/panels/room", "web/src/utils"],
+  mustCurrentHeadCommittedState({ label: "verified supplier current head committed state" });
+  mustNoDiffExceptWithIdentity(
+    ["backend/src/bootstrap", "backend/src/server.js", "web/src/panels/superadmin", "web/src/panels/company", "web/src/panels/room", "web/src/utils"],
     [
-      "web/src/App.jsx",
+      ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
       "web/src/copilot/screenRegistry.js",
       "web/src/layout/NavDock.jsx",
       "web/src/panels/superadmin/SuperAdminPanel.jsx",
@@ -256,9 +227,8 @@ function main() {
       "web/src/panels/superadmin/TelematicsHubPanel.jsx",
       "web/src/panels/superadmin/TrustQualityPanel.jsx",
       "backend/src/bootstrap/routeMounts.js",
+      { path: "backend/src/bootstrap/rateLimits.js", sha256: "D493701282D68ABA6F1DAFCAD4F01F9A65A432ECCA91F6A168A1058F119D3A2C" },
       "backend/src/server.js",
-      "backend/src/routes/dashboardBulk.js",
-      "backend/src/routes/companyOverview.js",
       "backend/src/services/dashboardBulk.js",
       "web/src/panels/room/ShiftsPanel.jsx",
       "web/src/panels/room/VehiclesPanel.jsx",

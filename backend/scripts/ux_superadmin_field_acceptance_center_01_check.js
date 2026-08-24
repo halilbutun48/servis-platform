@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const cwd = process.cwd();
 const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
@@ -46,16 +47,15 @@ function count(text, needle) {
 console.log("=== UX SUPERADMIN FIELD ACCEPTANCE CENTER CHECK ===");
 
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const audit = read("docs/UX_PANEL_STRUCTURE_02_AUDIT.md");
 const context = read("docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md");
 const panel = read("web/src/panels/superadmin/FieldAcceptanceCenter.jsx");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(includes(pkg, '"check:uxsuperadminfieldacceptancecenter01": "node backend/scripts/ux_superadmin_field_acceptance_center_01_check.js"'), "package.json exposes check:uxsuperadminfieldacceptancecenter01");
-must(includes(runner, "check:uxsuperadminfieldacceptancecenter01"), "product extensions runner references acceptance center check");
-must(includes(verify, "check:uxsuperadminfieldacceptancecenter01"), "verify chain exposes acceptance center check");
+assertProductExtensionsIncludes("check:uxsuperadminfieldacceptancecenter01", "product extensions registry references acceptance center check", registryScripts);
+assertProductExtensionsIncludes("check:uxsuperadminfieldacceptancecenter01", "verify-chain registry exposes acceptance center check", registryScripts);
 must(includes(guide, "UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01"), "script guide mentions UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01");
 must(includes(guide, "check:uxsuperadminfieldacceptancecenter01"), "script guide exposes check:uxsuperadminfieldacceptancecenter01");
 must(includes(audit, "UX-SUPERADMIN-FIELD-ACCEPTANCE-CENTER-01"), "panel structure audit mentions acceptance center mapping");

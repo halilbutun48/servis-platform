@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,24 +41,13 @@ function main() {
   console.log("=== UX-SMOKE-PASS-MINUS-ZERO-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const doc = read("docs/UX_SMOKE_PASS_MINUS_ZERO_01.md");
 
   mustContains(pkg, '"check:uxsmokepassminuszero01"', "package.json exposes check:uxsmokepassminuszero01");
-  mustContains(
-    runner,
-    "'check:uxsmokepassminuszero01'",
-    "product extensions runner includes PASS-minus zero check"
-  );
-  mustContains(
-    verify,
-    '"check:uxsmokepassminuszero01"',
-    "verify chain exposes PASS-minus zero check"
-  );
+  assertProductExtensionsIncludes("check:uxsmokepassminuszero01", "product extensions registry includes PASS-minus zero check");
   mustContains(
     harnessCheck,
     "check:uxsmokepassminuszero01",

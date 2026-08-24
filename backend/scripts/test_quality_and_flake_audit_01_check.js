@@ -5,6 +5,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS,
+} from "./lib/currentHeadScopePolicy.js";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -214,6 +220,7 @@ const ACCEPTED_PRISMA_FILES = [
   ...ACCEPTED_PRISMA_MIGRATIONS,
 ];
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_FILES.map((entry) => normalizePath(entry.path)));
+const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS);
 const NORMALIZED_PRISMA_PATH_SET = new Set([
   "backend/prisma/migrations/20260125133200_driver_telematics_route_learning_baseline/migration.sql",
   "backend/prisma/migrations/20260303011000_add_company_region_id_missing_bridge/migration.sql",
@@ -240,8 +247,6 @@ async function main() {
   console.log("=== TEST-QUALITY-AND-FLAKE-AUDIT-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -276,11 +281,11 @@ async function main() {
   });
 
   addGuard("wiring", "product extensions runner includes the new audit check", () => {
-    mustContains(runner, "'check:testqualityandflakeaudit01'", "product extensions runner includes check:testqualityandflakeaudit01");
+    assertProductExtensionsIncludes("check:testqualityandflakeaudit01", "product extensions registry includes check:testqualityandflakeaudit01");
   });
 
   addGuard("wiring", "verify chain includes the new audit check", () => {
-    mustContains(verify, '"check:testqualityandflakeaudit01"', "verify chain includes check:testqualityandflakeaudit01");
+    assertProductExtensionsIncludes("check:testqualityandflakeaudit01", "verify chain registry includes check:testqualityandflakeaudit01");
   });
 
   addGuard("wiring", "harness check knows the new milestone", () => {
@@ -596,22 +601,16 @@ async function main() {
   });
 
   addGuard("threshold", "product extensions chain keeps the known smoke/check wiring intact", () => {
-    mustAll(runner, [
-      ["check:hotfilesplitaichatcomposers01", "AI chat split check"],
-      ["check:hotfilesplitwebpanels01", "web panels split check"],
-      ["check:copilotnextbestactionengine01", "next best action check"],
-      ["check:seferabiturkishterminology01", "Turkish terminology audit"],
-      ["check:qualitygatefinal01", "quality gate final check"],
-      ["check:testqualityandflakeaudit01", "new audit check"],
-    ], "product extensions runner wiring");
-    mustAll(verify, [
-      ["check:hotfilesplitaichatcomposers01", "AI chat split check"],
-      ["check:hotfilesplitwebpanels01", "web panels split check"],
-      ["check:copilotnextbestactionengine01", "next best action check"],
-      ["check:seferabiturkishterminology01", "Turkish terminology audit"],
-      ["check:qualitygatefinal01", "quality gate final check"],
-      ["check:testqualityandflakeaudit01", "new audit check"],
-    ], "verify chain wiring");
+    for (const script of [
+      "check:hotfilesplitaichatcomposers01",
+      "check:hotfilesplitwebpanels01",
+      "check:copilotnextbestactionengine01",
+      "check:seferabiturkishterminology01",
+      "check:qualitygatefinal01",
+      "check:testqualityandflakeaudit01",
+    ]) {
+      assertProductExtensionsIncludes(script, `product extensions registry includes ${script}`);
+    }
   });
 
   addGuard("selector", "company agreements panel keeps smoke-critical aria and button texts", () => {
@@ -664,10 +663,15 @@ async function main() {
   });
 
   mustAcceptedPrismaManifest();
+  mustNoDiffExceptWithIdentity(
+    ["backend/src/routes", "backend/src/services"],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    "approved NEW-01 backend diff is identity-locked"
+  );
 
   addGuard("commit-external", "route/service/prisma diff stays empty", () => {
     const residual = sortedUniquePaths(gitRouteDiff).filter(
-      (file) => !ALLOWED_ROUTE_PATHS.has(normalizePath(file)) && !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file))
+      (file) => !ALLOWED_ROUTE_PATHS.has(normalizePath(file)) && !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(file)) && !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file))
     );
     must(residual.length === 0, "route/service/prisma diff stays empty");
   });
@@ -691,7 +695,7 @@ async function main() {
   addGuard("allowlist", "route review guard stays exact-scope only", () => {
     mustAll(routeReviewCheck, [
       ["mustNoDiffExcept(['backend/src/routes'], ['backend/src/routes/companyOverview.js'], 'backend route diff limited to companyOverview.js');", "backend route diff limited to companyOverview.js"],
-      ["mustNoDiff(['backend/src/services'], 'backend service diff remains empty')", "backend services stay empty"],
+      ["mustDiffEmptyOrExactlyWithIdentity( ['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'],", "backend route/service/schema and Prisma diff stays empty"],
       ["mustExactGitPaths(['backend/prisma', 'prisma'], ACCEPTED_PRISMA_PATHS,", "accepted Prisma manifest is exact"],
       ["mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256,", "accepted schema SHA is enforced"],
       ["mustMigrationDirectoryShape(path.posix.dirname(entry.path),", "accepted migration directory shape is enforced"],
@@ -701,9 +705,17 @@ async function main() {
     mustNotContains(routeReviewCheck, "allow all", "route review guard does not open a global allowlist");
   });
 
-  addGuard("allowlist", "redteam guard keeps the split path reference narrow", () => {
+  addGuard("allowlist", "redteam guard keeps the owned-file scope contract narrow", () => {
     mustAll(redteamCheck, [
-      ["backend/scripts/_m91_route_preview_checks.js", "split path reference"],
+      ["const redteamOwnedScopePaths = [", "owned-file scope path list"],
+      ["const redteamAllowedStatusPaths = [", "owned-file scope status list"],
+      ["mustDiffEmptyOrExactlyWithIdentity(", "identity-locked backend diff helper"],
+      ["backend/src/routes/commercialCore.js", "identity-locked backend diff routes"],
+      ["backend/src/routes/operationProof.js", "identity-locked backend diff routes"],
+      ["backend/src/routes/trustQuality.js", "identity-locked backend diff routes"],
+      ["backend/src/services/qualityPaymentBridgeService.js", "identity-locked backend diff services"],
+      ["mustExactStatusPaths(status, redteamAllowedStatusPaths, 'redteam owned-file scope stays within expected files');", "owned-file scope status contract"],
+      ["mustRejectScope(", "owned-file scope rejection contract"],
       ["backend/artifacts/runtime-data/", "runtime-data boundary"],
       ["backend/artifacts/browser-smoke/", "browser-smoke boundary"],
       ["debug.log", "debug.log boundary"],

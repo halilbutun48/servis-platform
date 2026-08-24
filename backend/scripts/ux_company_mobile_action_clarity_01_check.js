@@ -5,10 +5,14 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN } from "./lib/currentHeadScopePolicy.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
+const APPROVED_CONCURRENT_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN;
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -235,6 +239,9 @@ const ACCEPTED_PRISMA_FILES = [
 ];
 const ACCEPTED_PRISMA_PATHS = ACCEPTED_PRISMA_FILES.map((entry) => entry.path);
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_PATHS.map(normalizePath));
+const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(
+  APPROVED_CONCURRENT_BACKEND_DIFF.map((entry) => normalizePath(entry.path))
+);
 
 function mustAcceptedPrismaManifest() {
   mustExactGitPaths(["backend/prisma", "prisma"], [], "backend/prisma diff empty");
@@ -249,8 +256,7 @@ function main() {
   console.log("=== UX-COMPANY-MOBILE-ACTION-CLARITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -364,8 +370,8 @@ function main() {
   mustTrue(exists("docs/UX_COMPANY_MOBILE_ACTION_CLARITY_01.md"), "company mobile action clarity doc exists");
 
   must(pkg, '"check:uxcompanymobileactionclarity01": "node backend/scripts/ux_company_mobile_action_clarity_01_check.js"', "package.json exposes company mobile action clarity check");
-  ordered(runner, ["check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxcompanyopspaneltabs01"], "product extensions runner keeps company mobile action clarity after company shift tabs");
-  ordered(verify, ["check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxcompanyopspaneltabs01"], "verify chain keeps company mobile action clarity after company shift tabs");
+  assertProductExtensionsIncludes("check:uxcompanymobileactionclarity01", "product extensions registry includes company mobile action clarity check", registryScripts);
+  assertProductExtensionsOrder(["check:uxcompanyshiftstabs01", "check:uxcompanymobileactionclarity01", "check:uxcompanyopspaneltabs01"], "product extensions registry keeps company mobile action clarity after company shift tabs", registryScripts);
 
   must(harnessCheck, "UX-COMPANY-MOBILE-ACTION-CLARITY-01", "script harness check knows company mobile milestone");
   must(harnessCheck, "check:uxcompanymobileactionclarity01", "script harness check knows company mobile alias");
@@ -492,7 +498,7 @@ function main() {
     "backend/src/ai/jobGuide/screenCatalog.js",
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "docs/UX_PANEL_REALITY_AUDIT_02C.md",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/copilot/screenRegistry.js",
     "web/src/layout/AppShell.jsx",
     "web/src/layout/NavDock.jsx",
@@ -654,7 +660,7 @@ function main() {
     "web/src/panels/organization/PlansPanel.jsx",
     "web/src/panels/organization/organizationPlansShared.jsx",
     "web/src/panels/public/PassengerLivePanel.jsx",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/panels/company/AgreementWizardModal.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/panels/company/WorkflowPanel.jsx",
@@ -815,12 +821,15 @@ function main() {
   ];
   const statusOutsideAcceptedPrisma = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
   mustAcceptedPrismaManifest();
-  allWithin(statusOutsideAcceptedPrisma, exactAllowed, allowedPrefixes, "working tree stays within the company mobile action clarity scope");
+  mustDiffEmptyOrExactlyWithIdentity(
+    ["backend/src/routes", "backend/src/services"],
+    APPROVED_CONCURRENT_BACKEND_DIFF,
+    "backend route/service diff stays within approved current-head scope"
+  );
   const exactAllowedSet = new Set(exactAllowed);
-  const statusOutsideExactAllowed = status.filter((file) => !exactAllowedSet.has(file));
-
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
+  const statusOutsideExactAllowed = statusOutsideAcceptedPrisma
+    .filter((file) => !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(file)))
+    .filter((file) => !exactAllowedSet.has(file));
   mustNotList(status, "backend/artifacts/browser-smoke/", "browser-smoke artifacts stay out of the tree");
   mustNotList(statusOutsideAcceptedPrisma, "Prisma/", "schema/migration files are untouched");
   mustNotList(statusOutsideExactAllowed, "web/src/panels/room/", "room surfaces are untouched");

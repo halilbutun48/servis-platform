@@ -24,7 +24,6 @@ import {
   requireHubPairOrThrow,
 } from "../../services/companyShiftValidation.js";
 import {
-  auditCompanyShiftMutation,
   publishCompanyShiftMutation,
   refreshCompanyShiftRouteStateAfterMutation,
   syncCompanyShiftCommercialBackbone,
@@ -187,8 +186,9 @@ export function attachShiftCompanyRoutes(r, io) {
           await syncCompanyShiftCommercialBackbone(shift.id);
           const full = await loadFullShift(shift.id);
           fullItems.push(full);
-          await auditCompanyShiftMutation(req, {
+          await audit(req, {
             action: "SHIFT_CREATE",
+            entity: "Shift",
             entityId: shift.id,
             meta: { status: "DRAFT", via: "GUIDED_BATCH" },
           });
@@ -256,8 +256,9 @@ export function attachShiftCompanyRoutes(r, io) {
         await syncCompanyShiftCommercialBackbone(shift.id);
         const full = await loadFullShift(shift.id);
 
-        await auditCompanyShiftMutation(req, {
+        await audit(req, {
           action: "SHIFT_CREATE",
+          entity: "Shift",
           entityId: shift.id,
           meta: { status: effectiveStatus },
         });
@@ -524,8 +525,9 @@ export function attachShiftCompanyRoutes(r, io) {
 
         await refreshCompanyShiftRouteStateAfterMutation(id, routeShapeChanged);
 
-        await auditCompanyShiftMutation(req, {
+        await audit(req, {
           action: "SHIFT_UPDATE",
+          entity: "Shift",
           entityId: id,
         });
 
@@ -588,8 +590,9 @@ export function attachShiftCompanyRoutes(r, io) {
           },
         });
 
-        await auditCompanyShiftMutation(req, {
+        await audit(req, {
           action: "SHIFT_COMPANY_OFFER",
+          entity: "Shift",
           entityId: id,
         });
 
@@ -640,8 +643,9 @@ export function attachShiftCompanyRoutes(r, io) {
           },
         });
 
-        await auditCompanyShiftMutation(req, {
+        await audit(req, {
           action: "SHIFT_ROOM_OFFER_DECISION",
+          entity: "Shift",
           entityId: id,
           meta: { decision: body.decision },
         });
@@ -735,8 +739,9 @@ r.put(
         },
       });
 
-      await auditCompanyShiftMutation(req, {
+      await audit(req, {
         action: "SHIFT_EXTEND_REQUEST",
+        entity: "Shift",
         entityId: id,
         meta: { requestedEndAt: next.toISOString() },
       });

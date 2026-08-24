@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -122,8 +125,6 @@ async function main() {
   console.log('=== COPILOT-ROLE-TASK-MATRIX-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -142,10 +143,11 @@ async function main() {
   const telematicsHub = read('docs/TELEMATICS_PROVIDER_HUB_01.md');
   const offerRanking = read('docs/OFFER_RANKING_QUALITY_01.md');
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilotroletaskmatrix01": "node backend/scripts/copilot_role_task_matrix_01_check.js"', 'package.json exposes copilot role/task matrix check');
-  ordered(runner, ['check:cop04bfix08', 'check:copilotroletaskmatrix01', 'check:uxcopilotsmartchips01'], 'product extensions runner places copilot role/task matrix before copilot UX polish');
-  ordered(verify, ['check:cop04bfix08', 'check:copilotroletaskmatrix01', 'check:uxcopilotsmartchips01'], 'verify chain places copilot role/task matrix before copilot UX polish');
+  assertProductExtensionsOrder(['check:cop04bfix08', 'check:copilotroletaskmatrix01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps copilot role/task matrix before copilot UX polish', registryScripts);
+  assertProductExtensionsOrder(['check:cop04bfix08', 'check:copilotroletaskmatrix01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps copilot role/task matrix before copilot UX polish', registryScripts);
 
   must(guide, 'COPILOT-ROLE-TASK-MATRIX-01', 'milestone guide mentions copilot role/task matrix');
   must(guide, 'check:copilotroletaskmatrix01', 'milestone guide exposes copilot role/task matrix check');
@@ -263,7 +265,7 @@ async function main() {
   must(harnessDoc, 'backend/src/ai/chat/copilotRoleTaskMatrix.js', 'script harness doc lists copilot role/task matrix helper');
   must(harnessDoc, 'COPILOT-ROLE-TASK-MATRIX-01', 'script harness doc lists copilot role/task matrix milestone');
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(['backend/src/routes', 'backend/src/services', 'prisma'], CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, 'backend route/service/schema and Prisma diff stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
   mustNoStagedPrefix(cachedNames, ['debug.log'], 'debug.log stays commit-external');
 

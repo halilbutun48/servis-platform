@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,13 +31,17 @@ function main() {
   const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const vehicles = read("web/src/panels/room/VehiclesPanel.jsx");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg.includes('"check:uxroomvehiclestelematicsfix"'), "package.json exposes check:uxroomvehiclestelematicsfix");
   must(pkg.includes('"check:uxpanelstructure02b"'), "package.json keeps check:uxpanelstructure02b");
   must(pkg.includes('"check:uxpaneltabsfix01"'), "package.json keeps check:uxpaneltabsfix01");
 
-  must(runner.includes("'check:uxroomvehiclestelematicsfix'"), "product extensions runner includes check:uxroomvehiclestelematicsfix");
-  must(verify.includes('"check:uxroomvehiclestelematicsfix"'), "verify chain includes check:uxroomvehiclestelematicsfix");
+  assertProductExtensionsIncludes(
+    "check:uxroomvehiclestelematicsfix",
+    "product extensions registry includes check:uxroomvehiclestelematicsfix",
+    registryScripts
+  );
   must(guide.includes("UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-01"), "script guide mentions UX-ROOM-VEHICLES-TELEMATICS-COUNTS-FIX-01");
   must(guide.includes("check:uxroomvehiclestelematicsfix"), "script guide exposes check:uxroomvehiclestelematicsfix");
 

@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
@@ -62,8 +64,6 @@ async function main() {
   console.log('=== HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const doc = read('docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md');
@@ -71,10 +71,11 @@ async function main() {
   const safeReplies = read('backend/src/ai/chat/helpComposerSafeReplies.js');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:hotfilesplitaichatcomposers01": "node backend/scripts/hot_file_split_ai_chat_composers_01_check.js"', 'package.json exposes hot file split check');
-  ordered(runner, ['check:copilotworkflowreasoningengine01', 'check:hotfilesplitaichatcomposers01', 'check:copilotreasoninganswercomposer01'], 'product extensions runner places hot-file split between workflow reasoning and reasoning answer composer');
-  ordered(verify, ['check:copilotworkflowreasoningengine01', 'check:hotfilesplitaichatcomposers01', 'check:copilotreasoninganswercomposer01'], 'verify chain places hot-file split between workflow reasoning and reasoning answer composer');
+  assertProductExtensionsOrder(['check:copilotworkflowreasoningengine01', 'check:hotfilesplitaichatcomposers01', 'check:copilotreasoninganswercomposer01'], 'product extensions registry places hot-file split between workflow reasoning and reasoning answer composer', registryScripts);
+  assertProductExtensionsOrder(['check:copilotworkflowreasoningengine01', 'check:hotfilesplitaichatcomposers01', 'check:copilotreasoninganswercomposer01'], 'verify chain registry places hot-file split between workflow reasoning and reasoning answer composer', registryScripts);
 
   must(guide, 'HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01', 'milestone guide mentions hot file split milestone');
   must(guide, 'check:hotfilesplitaichatcomposers01', 'milestone guide exposes hot file split check');

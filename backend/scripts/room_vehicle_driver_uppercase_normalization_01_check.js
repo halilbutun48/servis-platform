@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,8 +72,6 @@ function main() {
   console.log("=== ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const doc = read("docs/ROOM_VEHICLE_DRIVER_UPPERCASE_NORMALIZATION_01.md");
   const drivers = read("web/src/panels/room/DriversPanel.jsx");
@@ -81,13 +80,17 @@ function main() {
   const vehicleSections = read("web/src/panels/room/roomVehiclesPanelSections.jsx");
   const driverRoute = read("backend/src/routes/drivers.js");
   const vehicleRoute = read("backend/src/routes/vehicles.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   mustContains(pkg, '"check:roomvehicledriveruppercase01"', "package.json exposes check:roomvehicledriveruppercase01");
   mustContains(pkg, '"check:uxsuperadminpanelclarity01"', "package.json keeps check:uxsuperadminpanelclarity01");
   mustContains(pkg, '"check:uxlivepanelpremiumsmoke01"', "package.json keeps check:uxlivepanelpremiumsmoke01");
 
-  mustContains(runner, "'check:roomvehicledriveruppercase01'", "product extensions runner includes room uppercase normalization check");
-  mustContains(verify, '"check:roomvehicledriveruppercase01"', "verify chain includes room uppercase normalization check");
+  assertProductExtensionsIncludes(
+    "check:roomvehicledriveruppercase01",
+    "product extensions registry includes room uppercase normalization check",
+    registryScripts
+  );
   mustContains(guide, "ROOM-VEHICLE-DRIVER-UPPERCASE-NORMALIZATION-01", "script guide mentions room uppercase normalization milestone");
   mustContains(guide, "check:roomvehicledriveruppercase01", "script guide exposes room uppercase normalization check");
   mustContains(doc, "Plaka", "room normalization doc mentions plate normalization");

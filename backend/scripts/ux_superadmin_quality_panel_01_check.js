@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,13 +57,10 @@ function main() {
   console.log("=== UX-SUPERADMIN-QUALITY-PANEL-01 CHECK ===");
 
   const pkg = read("package.json");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   mustContains(pkg, '"check:uxsuperadminqualitypanel01"', "package.json exposes check:uxsuperadminqualitypanel01");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxsuperadminqualitypanel01", "product extensions runner includes superadmin quality panel check");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxsuperadminqualitypanel01", "verify chain includes superadmin quality panel check");
+  assertProductExtensionsIncludes("check:uxsuperadminqualitypanel01", "product extensions registry includes superadmin quality panel check", registryScripts);
+  assertProductExtensionsIncludes("check:uxsuperadminqualitypanel01", "verify-chain registry includes superadmin quality panel check", registryScripts);
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-SUPERADMIN-QUALITY-PANEL-01", "script guide mentions UX-SUPERADMIN-QUALITY-PANEL-01");

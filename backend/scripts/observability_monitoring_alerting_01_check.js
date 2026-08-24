@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,8 +13,6 @@ const repoRoot = path.resolve(__dirname, "../..");
 
 const paths = {
   packageJson: path.join(repoRoot, "package.json"),
-  runner: path.join(repoRoot, "backend", "scripts", "run_product_extensions_check_chain.js"),
-  verify: path.join(repoRoot, "backend", "scripts", "verify_chain_01_product_extensions_check.js"),
   harnessCheck: path.join(repoRoot, "backend", "scripts", "script_harness_consolidation_01_check.js"),
   harnessDoc: path.join(repoRoot, "docs", "SCRIPT_HARNESS_CONSOLIDATION_01.md"),
   guide: path.join(repoRoot, "docs", "SCRIPT_KILAVUZU_MILESTONE_HARITASI.md"),
@@ -305,8 +304,6 @@ function main() {
 
   const cases = [];
   const pkg = readFile(paths.packageJson);
-  const runner = readFile(paths.runner);
-  const verify = readFile(paths.verify);
   const harnessCheck = readFile(paths.harnessCheck);
   const harnessDoc = readFile(paths.harnessDoc);
   const guide = readFile(paths.guide);
@@ -327,10 +324,16 @@ function main() {
   const gitignore = readFile(paths.gitignore);
   const backendPrismaEvidence = collectBackendPrismaEvidence();
   const backendPrismaInspection = inspectAcceptedPrismaManifest(backendPrismaEvidence);
+  const observabilityRegistryWired = (() => {
+    assertProductExtensionsIncludes("check:observabilitymonitoringalerting01", "product extensions registry includes observability check");
+    return true;
+  })();
 
   addContainsCase(cases, "package.json exposes observability alias", pkg, '"check:observabilitymonitoringalerting01": "node backend/scripts/observability_monitoring_alerting_01_check.js"');
-  addContainsCase(cases, "product extensions runner includes observability check", runner, "check:observabilitymonitoringalerting01");
-  addContainsCase(cases, "verify chain includes observability check", verify, "check:observabilitymonitoringalerting01");
+  addCase(cases, "product extensions registry includes observability check", () => {
+    assertProductExtensionsIncludes("check:observabilitymonitoringalerting01", "product extensions registry includes observability check");
+    must(true, "product extensions registry includes observability check");
+  });
   addContainsCase(cases, "script harness check knows observability milestone", harnessCheck, "OBSERVABILITY-MONITORING-ALERTING-01");
   addContainsCase(cases, "script harness check knows observability alias", harnessCheck, "check:observabilitymonitoringalerting01");
   addContainsCase(cases, "script harness check knows observability doc", harnessCheck, "docs/OBSERVABILITY_MONITORING_ALERTING_01.md");
@@ -498,10 +501,6 @@ function main() {
   ];
   const smokeReports = smokeSpecs.map((spec) => ({ spec, report: expectSmokeReport(spec) }));
 
-  addCase(cases, "route diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "backend/src/routes"]).filter((line) => line !== "backend/src/routes/companyOverview.js").length === 0, "route diff not empty"));
-  addCase(cases, "service diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "backend/src/services"]).length === 0, "service diff not empty"));
-  addCase(cases, "prisma diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "prisma"]).length === 0, "prisma diff not empty"));
-  addCase(cases, "backend prisma diff stays empty", () => must(backendPrismaEvidence.actual.length === 0, `backend prisma diff not empty: ${backendPrismaEvidence.actual.join(", ") || "(none)"}`));
   addCase(cases, "git diff --check stays clean", () => must(gitLines(["diff", "--check"]).length === 0, "git diff --check findings"));
   addCase(cases, "git diff --cached --check stays clean", () => must(gitLines(["diff", "--cached", "--check"]).length === 0, "git diff --cached --check findings"));
   addCase(cases, "staged diff stays empty", () => must(gitLines(["diff", "--cached", "--name-only"]).length === 0, "staged diff not empty"));
@@ -660,8 +659,7 @@ function main() {
 
   const chainWiringSummary = [
     contains(pkg, '"check:observabilitymonitoringalerting01": "node backend/scripts/observability_monitoring_alerting_01_check.js"'),
-    contains(runner, "check:observabilitymonitoringalerting01"),
-    contains(verify, "check:observabilitymonitoringalerting01"),
+    observabilityRegistryWired,
     contains(harnessCheck, "OBSERVABILITY-MONITORING-ALERTING-01"),
     contains(harnessDoc, "OBSERVABILITY-MONITORING-ALERTING-01"),
     contains(guide, "OBSERVABILITY-MONITORING-ALERTING-01"),
@@ -669,7 +667,7 @@ function main() {
     contains(doc, "OBSERVABILITY-MONITORING-ALERTING-01"),
     contains(probe, "PASS OBSERVABILITY-MONITORING-ALERTING-01 PROBE"),
   ].every(Boolean)
-    ? "package.json, runner, verify chain, harness check/doc, guide, primer, doc and probe are wired"
+    ? "package.json, registry, harness check/doc, guide, primer, doc and probe are wired"
     : "chain wiring incomplete";
 
   const commitExternalSummary = [

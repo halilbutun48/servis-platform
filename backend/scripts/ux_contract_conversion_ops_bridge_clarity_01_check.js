@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,8 +72,8 @@ function stagedNames() {
 console.log("=== UX-CONTRACT-CONVERSION-AND-OPS-BRIDGE-CLARITY-01 CHECK ===");
 
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
 const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
 const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -87,8 +88,8 @@ const roomAgreementsBridgeSection = read("web/src/panels/room/roomAgreementsBrid
 const staged = stagedNames();
 
 must(pkg, '"check:uxcontractconversionopsbridgeclarity01": "node backend/scripts/ux_contract_conversion_ops_bridge_clarity_01_check.js"', "package.json exposes contract conversion clarity check");
-must(runner, "check:uxcontractconversionopsbridgeclarity01", "product extensions runner includes contract conversion clarity check");
-must(verifyChain, '"check:uxcontractconversionopsbridgeclarity01": "node backend/scripts/ux_contract_conversion_ops_bridge_clarity_01_check.js"', "verify chain exposes contract conversion clarity check");
+assertProductExtensionsIncludes("check:uxcontractconversionopsbridgeclarity01", "product extensions registry includes contract conversion clarity check", registryScripts);
+assertProductExtensionsIncludes("check:uxcontractconversionopsbridgeclarity01", "verify chain registry exposes contract conversion clarity check", registryScripts);
 must(harnessCheck, "check:uxcontractconversionopsbridgeclarity01", "script harness check knows contract conversion clarity alias");
 must(harnessCheck, "docs/UX_CONTRACT_CONVERSION_OPS_BRIDGE_CLARITY_01.md", "script harness check knows contract conversion clarity doc");
 must(harnessCheck, "UX-CONTRACT-CONVERSION-AND-OPS-BRIDGE-CLARITY-01", "script harness check knows contract conversion clarity milestone");
@@ -98,7 +99,7 @@ must(harnessDoc, "check:uxcontractconversionopsbridgeclarity01", "script harness
 must(harnessDoc, "UX-CONTRACT-CONVERSION-AND-OPS-BRIDGE-CLARITY-01", "script harness doc names contract conversion clarity milestone");
 
 ordered(
-  runner,
+  registryScripts,
   [
     "check:boardingops01a",
     "check:bugrouteimpactpreviewbutton01",
@@ -109,7 +110,7 @@ ordered(
   "product extensions runner keeps contract conversion clarity between compact preview and dispatch approval",
 );
 ordered(
-  verifyChain,
+  registryScripts,
   [
     "check:boardingops01a",
     "check:bugrouteimpactpreviewbutton01",

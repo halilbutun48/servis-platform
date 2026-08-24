@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,8 +59,6 @@ async function main() {
   console.log('=== LIVE-TRACKING-FINAL-01 ACCEPTANCE CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const route = read('backend/src/routes/eta.js');
@@ -89,8 +88,7 @@ async function main() {
   must(pkg, '"check:uxnav01"', 'package.json keeps check:uxnav01');
   must(pkg, '"check:uxdensity01"', 'package.json keeps check:uxdensity01');
 
-  must(runner, 'check:livetrackingfinal01', 'product extensions runner includes live tracking final check');
-  must(verify, 'check:livetrackingfinal01', 'verify chain includes live tracking final check');
+  assertProductExtensionsIncludes('check:livetrackingfinal01', 'product extensions registry includes live tracking final check');
   must(guide, 'LIVE-TRACKING-FINAL-01', 'script guide mentions LIVE-TRACKING-FINAL-01');
   must(guide, 'check:livetrackingfinal01', 'script guide exposes check:livetrackingfinal01');
   must(audit, 'LIVE-TRACKING-FINAL-01 acceptance smoke', 'audit doc mentions live tracking final smoke');

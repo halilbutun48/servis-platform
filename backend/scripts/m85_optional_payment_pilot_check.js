@@ -59,7 +59,7 @@ function mustMentionMilestone(text, milestone, descriptors, label) {
 }
 
 const service = read("backend/src/services/paymentBackbone.js");
-const route = read("backend/src/routes/commercialCore.js");
+const route = read("backend/src/routes/commercialCorePaymentRoutes.js");
 const panel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const readonlySummary = read("web/src/components/CommercialReadonlySummary.jsx");
 const backendPkg = read("backend/package.json");
@@ -74,10 +74,10 @@ mustInclude(service, "buildOptionalPaymentPilotStatus", "payment backbone servic
 mustInclude(service, "listOptionalPaymentPilotCandidates", "payment backbone service exposes optional pilot candidate list");
 mustInclude(service, "activateOptionalPaymentPilot", "payment backbone service exposes pilot activation");
 mustInclude(service, "deactivateOptionalPaymentPilot", "payment backbone service exposes pilot deactivation");
-mustInclude(route, "/payment-backbone/pilot/status", "commercial core route exposes pilot status endpoint");
-mustInclude(route, "/payment-backbone/pilot/candidates", "commercial core route exposes pilot candidate endpoint");
-mustInclude(route, "/payment-backbone/pilot/activate", "commercial core route exposes pilot activate endpoint");
-mustInclude(route, "/payment-backbone/pilot/deactivate", "commercial core route exposes pilot deactivate endpoint");
+mustInclude(route, "/payment-backbone/pilot/status", "commercial core payment route exposes pilot status endpoint");
+mustInclude(route, "/payment-backbone/pilot/candidates", "commercial core payment route exposes pilot candidate endpoint");
+mustInclude(route, "/payment-backbone/pilot/activate", "commercial core payment route exposes pilot activate endpoint");
+mustInclude(route, "/payment-backbone/pilot/deactivate", "commercial core payment route exposes pilot deactivate endpoint");
 mustInclude(panel, "M85 opsiyonel ödeme pilotu", "commercial core panel renders M85 section");
 mustInclude(panel, "Opsiyonel ödeme pilot listesi", "commercial core panel renders pilot list");
 mustInclude(panel, "Pilot READY yap", "commercial core panel renders pilot activate action");

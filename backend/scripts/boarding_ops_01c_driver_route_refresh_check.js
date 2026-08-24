@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,8 +57,7 @@ function main() {
   console.log('=== BOARDING-OPS-01C DRIVER ROUTE REFRESH CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const docs = read('docs/BOARDING_OPS_01C_DRIVER_ROUTE_REFRESH.md');
@@ -89,8 +89,11 @@ function main() {
   const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
 
   must(pkg, '"check:boardingops01c": "node backend/scripts/boarding_ops_01c_driver_route_refresh_check.js"', 'package.json exposes check:boardingops01c');
-  must(runner, 'check:boardingops01c', 'product extensions runner includes BOARDING-OPS-01C');
-  must(verifyChain, 'check:boardingops01c', 'verify chain includes BOARDING-OPS-01C');
+  assertProductExtensionsIncludes(
+    'check:boardingops01c',
+    'product extensions registry includes BOARDING-OPS-01C',
+    registryScripts
+  );
   must(guide, 'BOARDING-OPS-01C', 'script guide mentions BOARDING-OPS-01C');
   must(guide, 'check:boardingops01c', 'script guide exposes check:boardingops01c');
   must(audit, 'BOARDING-OPS-01C kapsam notu', 'copilot context audit keeps BOARDING-OPS-01C note');

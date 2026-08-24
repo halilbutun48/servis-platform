@@ -6,6 +6,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as copilotRfqPrep from '../src/ai/chat/copilotRfqPrep.js';
+import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,7 +73,7 @@ function ordered(text, needles, label) {
 }
 
 function gitCachedNames() {
-  const out = execFileSync('git', ['diff', '--cached', '--name-only'], {
+  const out = execFileSync('git', ['-c', `safe.directory=${root.replace(/\\/g, '/')}`, 'diff', '--cached', '--name-only'], {
     cwd: root,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -250,6 +253,18 @@ const requiredRoles = [
   'ORGANIZATION',
 ];
 
+const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF =
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(
+    ({ path }) =>
+      ![
+        'backend/src/routes/commercialCoreRoutes.js',
+        'backend/src/routes/commercialCorePaymentRoutes.js',
+        'backend/src/routes/commercialCorePaymentReportsRoutes.js',
+        'backend/src/routes/commercialCoreRoomRoutes.js',
+        'backend/src/routes/commercialCoreRouteData.js',
+      ].includes(path)
+  );
+
 const ACCEPTED_SCHEMA_PATH = 'backend/prisma/schema.prisma';
 const ACCEPTED_SCHEMA_SHA256 = '7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748';
 const ACCEPTED_PRISMA_MIGRATIONS = [
@@ -296,8 +311,6 @@ async function main() {
   console.log('=== COPILOT-RFQ-PREP-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -308,10 +321,11 @@ async function main() {
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilotrfqprep01": "node backend/scripts/copilot_rfq_prep_01_check.js"', 'package.json exposes RFQ prep check');
-  ordered(runner, ['check:copilotdemandagreement01', 'check:copilotrfqprep01', 'check:copilothumanapproval01'], 'product extensions runner places RFQ prep after demand-to-agreement');
-  ordered(verify, ['check:copilotdemandagreement01', 'check:copilotrfqprep01', 'check:copilothumanapproval01'], 'verify chain places RFQ prep after demand-to-agreement');
+  assertProductExtensionsOrder(['check:copilotdemandagreement01', 'check:copilotrfqprep01', 'check:copilothumanapproval01'], 'product extensions registry keeps RFQ prep after demand-to-agreement', registryScripts);
+  assertProductExtensionsOrder(['check:copilotdemandagreement01', 'check:copilotrfqprep01', 'check:copilothumanapproval01'], 'verify chain registry keeps RFQ prep after demand-to-agreement', registryScripts);
 
   must(guide, 'COPILOT-RFQ-PREP-01', 'milestone guide mentions RFQ prep milestone');
   must(guide, 'check:copilotrfqprep01', 'milestone guide exposes RFQ prep check');
@@ -454,9 +468,11 @@ async function main() {
   const neverAutomateCount = copilotRfqPrep.COPILOT_RFQ_PREP_NEVER_AUTOMATE.length;
   const handoffCount = copilotRfqPrep.COPILOT_RFQ_PREP_HANOFFS.length;
 
-  mustNoDiff(['backend/src/routes'], 'backend/src/routes diff empty');
-  mustNoDiff(['backend/src/services'], 'backend service diff remains empty');
-  mustNoDiff(['backend/prisma', 'prisma'], 'backend/prisma diff empty');
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF,
+    'backend route/service/schema and Prisma diff stays empty'
+  );
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);

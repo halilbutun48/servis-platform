@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
+import { buildSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +19,20 @@ const artifactRoot = path.join(repoRoot, "backend", "artifacts", "browser-smoke"
 const screenshotRoot = path.join(artifactRoot, "screenshots");
 const reportJsonPath = path.join(artifactRoot, "report.json");
 const reportMdPath = path.join(artifactRoot, "report.md");
+const chromiumDebugLogPath = path.join(artifactRoot, "chromium-debug.log");
+const repoDebugLogPath = path.join(repoRoot, "debug.log");
+
+async function relocateRepoDebugLogIfPresent() {
+  try {
+    await fs.access(repoDebugLogPath);
+  } catch {
+    return;
+  }
+
+  await ensureDir(artifactRoot);
+  await fs.rm(chromiumDebugLogPath, { force: true });
+  await fs.rename(repoDebugLogPath, chromiumDebugLogPath);
+}
 
 const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
@@ -982,6 +997,9 @@ function renderMarkdown(report) {
   lines.push("# PRODUCT FLOW BUTTON AUDIT 01");
   lines.push("");
   lines.push(`- Generated at: \`${report.generatedAt}\``);
+  lines.push(`- Git HEAD: \`${report.gitHead}\``);
+  lines.push(`- Schema SHA256: \`${report.schemaSha256}\``);
+  lines.push(`- Source identity SHA256: \`${report.sourceIdentitySha256}\``);
   lines.push(`- Web base URL: \`${report.webBaseUrl}\``);
   lines.push(`- API base URL: \`${report.apiBaseUrl}\``);
   lines.push(`- Playwright: \`${report.playwrightVersion}\``);
@@ -1047,11 +1065,22 @@ async function main() {
   const rootPkg = JSON.parse(await fs.readFile(path.join(repoRoot, "package.json"), "utf8"));
   const playwrightVersionSpec = rootPkg.devDependencies?.["@playwright/test"] || "unknown";
 
-  const browser = await chromium.launch({ headless: HEADLESS, slowMo: SLOW_MO });
+  const browser = await chromium.launch({
+    headless: HEADLESS,
+    slowMo: SLOW_MO,
+    env: {
+      ...process.env,
+      CHROME_LOG_FILE: chromiumDebugLogPath,
+    },
+  });
   const browserVersion = browser.version();
+  const evidenceIdentity = buildSmokeEvidenceIdentity({
+    sourceFiles: [...COVERAGE_SOURCES, "backend/scripts/product_flow_button_audit_01.mjs"],
+  });
 
   const report = {
     generatedAt: new Date().toISOString(),
+    ...evidenceIdentity,
     repoRoot,
     artifactRoot: path.relative(repoRoot, artifactRoot).replace(/\\/g, "/"),
     webBaseUrl: WEB_BASE_URL,
@@ -1137,6 +1166,7 @@ async function main() {
   const md = renderMarkdown(report);
   await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   await fs.writeFile(reportMdPath, `${md}\n`, "utf8");
+  await relocateRepoDebugLogIfPresent();
 
   console.log(`WROTE ${path.relative(repoRoot, reportJsonPath).replace(/\\/g, "/")}`);
   console.log(`WROTE ${path.relative(repoRoot, reportMdPath).replace(/\\/g, "/")}`);
@@ -1156,6 +1186,7 @@ async function main() {
 main().catch(async (error) => {
   try {
     await ensureDir(artifactRoot);
+    await relocateRepoDebugLogIfPresent();
     const failureReport = {
       generatedAt: new Date().toISOString(),
       repoRoot,

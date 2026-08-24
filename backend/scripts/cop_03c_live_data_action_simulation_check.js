@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,8 +62,6 @@ function ordered(text, needles, label) {
 console.log('=== COP-03C LIVE DATA ACTION SIMULATION CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const doc = read('docs/COPILOT_LIVE_DATA_ACTION_SIMULATION_V1.md');
 const facts = read('web/src/utils/copilotFacts.js');
@@ -74,6 +73,7 @@ const intentRouter = read('backend/src/ai/chat/intentRouter.js');
 const screenCatalog = read('backend/src/ai/jobGuide/screenCatalog.js');
 const roomCompanyCatalog = read('backend/src/ai/jobGuide/screenCatalog.roomCompany.js');
 const goldenPack = read('backend/src/ai/chat/goldenQuestionPack.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop03c": "node backend/scripts/cop_03c_live_data_action_simulation_check.js"', 'package.json exposes check:cop03c');
 must(pkg, '"check:cop03b"', 'package.json keeps check:cop03b');
@@ -84,7 +84,7 @@ must(pkg, '"check:cop03cfix01"', 'package.json keeps check:cop03cfix01');
 must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json exposes check:product-extensions');
 must(pkg, '"verify:final"', 'package.json keeps verify:final');
 
-ordered(runner, [
+assertProductExtensionsOrder([
   'check:cop03a',
   'check:cop03afix01',
   'check:cop03afix02',
@@ -92,12 +92,10 @@ ordered(runner, [
   'check:cop03c',
   'check:cop03cfix01',
   'check:uxkvkk01',
-], 'product extensions runner order');
-must(runner, 'check:cop03c', 'product extensions runner includes check:cop03c');
-must(runner, 'check:cop03cfix01', 'product extensions runner includes check:cop03cfix01');
+], 'product extensions registry order', registryScripts);
+assertProductExtensionsIncludes('check:cop03c', 'product extensions registry references check:cop03c', registryScripts);
+assertProductExtensionsIncludes('check:cop03cfix01', 'product extensions registry references check:cop03cfix01', registryScripts);
 
-must(verifyChain, 'check:cop03c', 'verify chain waits for check:cop03c');
-must(verifyChain, 'check:cop03cfix01', 'verify chain waits for check:cop03cfix01');
 must(guide, 'check:cop03c', 'script guide exposes check:cop03c');
 must(guide, 'check:cop03cfix01', 'script guide exposes check:cop03cfix01');
 

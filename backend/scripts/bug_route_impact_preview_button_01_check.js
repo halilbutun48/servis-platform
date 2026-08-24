@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,8 +65,8 @@ function main() {
   console.log('=== BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const docs = read('docs/BUG_ROUTE_IMPACT_PREVIEW_BUTTON_01.md');
   const boardingChangeUi = read('web/src/panels/shared/boardingChangeUi.js');
@@ -82,8 +83,8 @@ function main() {
   must(pkg, '"check:bugrouteimpactpreviewbutton01": "node backend/scripts/bug_route_impact_preview_button_01_check.js"', 'package.json exposes check:bugrouteimpactpreviewbutton01');
   must(guide, 'BUG-ROUTE-IMPACT-PREVIEW-BUTTON-01', 'script guide mentions bug route impact preview button milestone');
   must(guide, 'check:bugrouteimpactpreviewbutton01', 'script guide exposes check:bugrouteimpactpreviewbutton01');
-  ordered(runner, ['check:boardingops01a', 'check:bugrouteimpactpreviewbutton01', 'check:boardingops01b'], 'product extensions runner keeps bug check near boarding ops preview');
-  ordered(verifyChain, ['check:boardingops01a', 'check:bugrouteimpactpreviewbutton01', 'check:boardingops01b'], 'verify chain keeps bug check near boarding ops preview');
+  assertProductExtensionsOrder(['check:boardingops01a', 'check:bugrouteimpactpreviewbutton01', 'check:boardingops01b'], 'product extensions registry keeps bug check near boarding ops preview', registryScripts);
+  assertProductExtensionsOrder(['check:boardingops01a', 'check:bugrouteimpactpreviewbutton01', 'check:boardingops01b'], 'verify chain registry keeps bug check near boarding ops preview', registryScripts);
 
   must(docs, 'Readonly önizleme', 'bug doc keeps readonly preview wording');
   must(docs, 'Rota uygulanmaz', 'bug doc keeps route boundary');

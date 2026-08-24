@@ -22,6 +22,15 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `docs/_archive/legacy-notes/script-guide-redirects/` altındaki tarihsel yönlendirme dosyaları artık aktif rehber değildir.
 - Güncel rota için yalnız bu dosya, `PRIMER_SSOT`, `MILESTONE_REGISTRY` ve `CHECKLIST_SSOT` birlikte okunur.
 
+### Canonical owner map
+- `backend/scripts/current_head_scope_policy_01_check.js` -> `backend/scripts/lib/currentHeadScopePolicy.js`
+- `backend/scripts/canonical_provenance_registry_01_check.js` -> `backend/scripts/lib/canonicalProvenanceRegistry.js`
+- `backend/scripts/lib/guardGitScope.js` -> exact diff/status identity semantics
+- `backend/scripts/lib/guardTextIntegrity.js` -> normalized-text identity semantics
+- `backend/scripts/lib/guardSmokeEvidence.js` -> smoke evidence identity semantics
+- Role/security/audit checkers are consumers of those owners; they are not independent global SSOTs.
+- Canonical closure baseline for this guide: `Product Extensions 198/198 GREEN`. See `docs/PRIMER_SSOT.md` for the human-readable closure narrative.
+
 ## 4) Master orchestration
 ### Ana komutlar
 - `npm run verify:repo`

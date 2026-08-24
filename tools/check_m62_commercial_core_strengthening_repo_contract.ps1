@@ -48,6 +48,7 @@ Write-Host 'INFO Checking M62 files'
  'backend\scripts\m62_commercial_core_strengthening_check.js',
  'backend\src\ops\commercialCoreManifest.js',
  'backend\src\routes\commercialCore.js',
+ 'backend\src\routes\commercialCoreRoutes.js',
  'web\src\panels\superadmin\CommercialCorePanel.jsx',
  'docs\RUNBOOK_M62_COMMERCIAL_CORE_STRENGTHENING.md',
  'docs\MILESTONE_M62_COMMERCIAL_CORE_STRENGTHENING.md',
@@ -77,7 +78,8 @@ $toolsReadme = ReadText 'tools\README.md'
 $registry = ReadText 'docs\MILESTONE_REGISTRY_V1.md'
 $runbook = ReadText 'docs\RUNBOOK_M62_COMMERCIAL_CORE_STRENGTHENING.md'
 $milestone = ReadText 'docs\MILESTONE_M62_COMMERCIAL_CORE_STRENGTHENING.md'
-$route = ReadText 'backend\src\routes\commercialCore.js'
+$routeWrapper = ReadText 'backend\src\routes\commercialCore.js'
+$routeBundle = ReadText 'backend\src\routes\commercialCoreRoutes.js'
 $manifest = ReadText 'backend\src\ops\commercialCoreManifest.js'
 $panel = ReadText 'web\src\panels\superadmin\CommercialCorePanel.jsx'
 $pack = ReadText 'tools\pack_m62_commercial_core_strengthening.ps1'
@@ -94,7 +96,8 @@ MustContainAny $toolsReadme @('TOOLS_README_ROUTE_M62_COMMERCIAL_CORE_V1') 'tool
 MustContainAny $registry @('m61 - ssot + milestone hizasi','m62 - ticari omurga guclendirme','aktif','m75 - living baseline','m76a-1 - minimum normalization','m77 - kvkk + uyum katmani') 'registry lists current official route'
 MustContainAny $runbook @('m62 ticari omurga guclendirme','talep / ihtiyac karti','m62 green olmadan m63') 'runbook defines M62 scope'
 MustContainAny $milestone @('m62 ticari omurga guclendirme','commercialcorepanel.jsx','pack_m62_commercial_core_strengthening.ps1') 'milestone documents M62 outputs'
-MustContainAny $route @('/manifest','/lifecycle-template','/rules') 'commercial core route exposes summary endpoints'
+MustContainAny $routeWrapper @('attachCommercialCoreRoutes','./commercialCoreRoutes.js') 'commercial core wrapper delegates to split route bundle'
+MustContainAny $routeBundle @('/manifest','/lifecycle-template','/rules') 'commercial core route bundle exposes summary endpoints'
 MustContainAny $manifest @('commercial_core_steps','talep karti','sozlesmeye gecis kapisi') 'manifest defines M62 trade steps'
 MustContainAny $panel @('m62 ticari omurga guclendirme','izlenen ticari adimlar','sozlesmeye gecis') 'web panel shows M62 cards'
 MustContainAny $pack @('m62_commercial_core_strengthening_check.js','check_m62_commercial_core_strengthening_repo_contract.ps1','pack pass ok') 'm62 pack wires runtime and repo contract'

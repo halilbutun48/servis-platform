@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,8 +67,6 @@ function ordered(text, needles, label) {
 console.log('=== COP-04A GLOBAL ANSWER QUALITY CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const doc = read('docs/COPILOT_GLOBAL_ANSWER_QUALITY_V1.md');
 const policy = read('backend/src/ai/chat/answerQualityPolicy.js');
@@ -77,6 +76,7 @@ const screenStateAnalyzer = read('backend/src/ai/chat/screenStateAnalyzer.js');
 const facts = read('web/src/utils/copilotFacts.js');
 const golden = read('backend/src/ai/chat/goldenQuestionPack.js');
 const http = read('backend/src/errors/http.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop04a": "node backend/scripts/cop_04a_global_answer_quality_check.js"', 'package.json exposes check:cop04a');
 must(pkg, '"check:cop03cfix03"', 'package.json keeps check:cop03cfix03');
@@ -84,7 +84,7 @@ must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
 must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 must(pkg, '"check:product-extensions"', 'package.json keeps check:product-extensions');
 
-ordered(runner, [
+assertProductExtensionsOrder([
   'check:op04',
   'check:qlt04b',
   'check:pay01e',
@@ -107,9 +107,10 @@ ordered(runner, [
   'check:cop03cfix02',
   'check:cop03cfix03',
   'check:cop04a',
-], 'product extensions runner order keeps cop04a last');
+], 'product extensions registry order keeps cop04a last', registryScripts);
 
-must(verifyChain, 'check:cop04a', 'verify chain waits for check:cop04a');
+assertProductExtensionsIncludes('check:cop04a', 'product extensions registry references cop04a', registryScripts);
+assertProductExtensionsIncludes('check:cop04a', 'verify chain registry waits for check:cop04a', registryScripts);
 must(guide, 'check:cop04a', 'script guide exposes check:cop04a');
 must(guide, 'check:cop03cfix03', 'script guide keeps check:cop03cfix03');
 must(guide, 'check:e2esmoke01', 'script guide keeps check:e2esmoke01');

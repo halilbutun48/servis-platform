@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,14 +57,10 @@ function main() {
   console.log("=== UX-LIVE-MAP-TABS-SIMPLIFY-01 CHECK ===");
 
   const pkg = read("package.json");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   mustContains(pkg, '"check:uxlivemaptabssimplify01"', "package.json exposes check:uxlivemaptabssimplify01");
   mustContains(pkg, '"check:uxlivemaptabsfix01"', "package.json keeps check:uxlivemaptabsfix01");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxlivemaptabssimplify01", "product extensions runner includes UX-LIVE-MAP-TABS-SIMPLIFY-01");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxlivemaptabssimplify01", "verify chain includes UX-LIVE-MAP-TABS-SIMPLIFY-01");
+  assertProductExtensionsIncludes("check:uxlivemaptabssimplify01", "product extensions registry includes UX-LIVE-MAP-TABS-SIMPLIFY-01", registryScripts);
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-LIVE-MAP-TABS-SIMPLIFY-01", "milestone guide mentions UX-LIVE-MAP-TABS-SIMPLIFY-01");

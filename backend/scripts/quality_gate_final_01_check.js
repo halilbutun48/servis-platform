@@ -5,6 +5,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS,
+} from "./lib/currentHeadScopePolicy.js";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -178,6 +184,7 @@ const ACCEPTED_PRISMA_FILES = [
   ...ACCEPTED_PRISMA_MIGRATIONS,
 ];
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_FILES.map((entry) => normalizePath(entry.path)));
+const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS);
 
 function mustAcceptedPrismaManifest() {
   must(gitLines(["diff", "--name-only", "--", "backend/prisma"]).length === 0, "backend prisma diff not empty");
@@ -245,8 +252,6 @@ function main() {
   console.log("=== QUALITY-GATE-FINAL-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -254,8 +259,7 @@ function main() {
   const roadmapLock = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
 
   mustContains(pkg, '"check:qualitygatefinal01": "node backend/scripts/quality_gate_final_01_check.js"', "package.json exposes quality gate final check");
-  mustContains(runner, "'check:qualitygatefinal01'", "product extensions runner includes quality gate final check");
-  mustContains(verify, '"check:qualitygatefinal01"', "verify chain exposes quality gate final check");
+  assertProductExtensionsIncludes("check:qualitygatefinal01", "product extensions registry includes quality gate final check");
   mustContains(harnessCheck, "QUALITY-GATE-FINAL-01", "script harness check knows quality gate final milestone");
   mustContains(harnessCheck, "check:qualitygatefinal01", "script harness check knows quality gate final alias");
   mustContains(harnessCheck, "docs/QUALITY_GATE_FINAL_01.md", "script harness check knows quality gate final doc");
@@ -425,6 +429,11 @@ function main() {
   must(!normalize(stagedText).includes("backend/artifacts/browser-smoke"), "browser-smoke artifacts are not staged");
   must(staged.length === 0, "stage remains empty");
   mustAcceptedPrismaManifest();
+  mustNoDiffExceptWithIdentity(
+    ["backend/src/routes", "backend/src/services"],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    "approved NEW-01 backend diff is identity-locked"
+  );
 
   const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes"]).join("\n");
   const serviceDiff = gitLines(["diff", "--name-only", "--", "backend/src/services"]).join("\n");
@@ -433,11 +442,15 @@ function main() {
 
   const routeDiffFiltered = routeDiff
     .split(/\r?\n/)
-    .filter((line) => line && line !== "backend/src/routes/companyOverview.js")
+    .filter((line) => line && line !== "backend/src/routes/companyOverview.js" && !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(line)))
     .join("\n");
 
   must(routeDiffFiltered === "", "backend routes stay unchanged");
-  must(serviceDiff === "", "backend services stay unchanged");
+  const serviceDiffFiltered = serviceDiff
+    .split(/\r?\n/)
+    .filter((line) => line && !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(line)))
+    .join("\n");
+  must(serviceDiffFiltered === "", "backend services stay unchanged");
   const prismaDiffFiltered = sortedUniquePaths([
     ...prismaDiff.split(/\r?\n/).filter(Boolean),
     ...backendPrismaDiff.split(/\r?\n/).filter(Boolean),

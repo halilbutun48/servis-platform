@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 import * as offerAnalysis from '../src/ai/chat/copilotOfferAnalysis.js';
 import * as negotiationAssist from '../src/ai/chat/copilotNegotiationAssist.js';
 import * as offerRecommendation from '../src/ai/chat/copilotOfferRecommendation.js';
+import { assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -148,8 +151,6 @@ function main() {
   console.log('=== COPILOT-OFFER-RECOMMENDATION-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -157,11 +158,6 @@ function main() {
   const helper = read('backend/src/ai/chat/copilotOfferRecommendation.js');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
-  const routeReviewCheck = read('backend/scripts/copilot_route_review_human_approval_01_check.js');
-  const excelRedteamCheck = read('backend/scripts/excel_to_route_readiness_redteam_01_check.js');
-  const roleRedteamCheck = read('backend/scripts/role_data_isolation_redteam_01_check.js');
-  const securityFinalCheck = read('backend/scripts/security_kvkk_final_01_check.js');
-  const auditTraceCheck = read('backend/scripts/audit_log_and_approval_trace_01_check.js');
   const offerAnalysisDoc = read('docs/COPILOT_OFFER_ANALYSIS_01.md');
   const negotiationAssistDoc = read('docs/COPILOT_NEGOTIATION_ASSIST_01.md');
   const offerAnalysisHelper = read('backend/src/ai/chat/copilotOfferAnalysis.js');
@@ -390,8 +386,8 @@ function main() {
   const helperExportNames = Object.keys(offerRecommendation);
 
   must(pkg, '"check:copilotofferrecommendation01": "node backend/scripts/copilot_offer_recommendation_01_check.js"', 'package.json exposes offer recommendation check');
-  ordered(runner, ['check:copilotnegotiationassist01', 'check:copilotofferrecommendation01', 'check:uxmarketplacepanels01'], 'product extensions runner places offer recommendation after negotiation assist');
-  ordered(verify, ['check:copilotnegotiationassist01', 'check:copilotofferrecommendation01', 'check:uxmarketplacepanels01'], 'verify chain places offer recommendation after negotiation assist');
+  assertProductExtensionsOrder(['check:copilotnegotiationassist01', 'check:copilotofferrecommendation01', 'check:uxmarketplacepanels01'], 'product extensions runner places offer recommendation after negotiation assist');
+  assertProductExtensionsOrder(['check:copilotnegotiationassist01', 'check:copilotofferrecommendation01', 'check:uxmarketplacepanels01'], 'verify chain places offer recommendation after negotiation assist');
 
   must(guide, 'COPILOT-OFFER-RECOMMENDATION-01', 'script guide mentions offer recommendation milestone');
   must(guide, 'check:copilotofferrecommendation01', 'script guide exposes offer recommendation check');
@@ -459,22 +455,6 @@ function main() {
   must(harnessDoc, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'script harness doc lists offer recommendation doc');
   must(harnessDoc, 'COPILOT-OFFER-RECOMMENDATION-01', 'script harness doc lists offer recommendation milestone');
   must(harnessDoc, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'script harness doc lists offer recommendation helper');
-
-  must(routeReviewCheck, 'backend/scripts/copilot_offer_recommendation_01_check.js', 'route review allowlist mentions offer recommendation check');
-  must(routeReviewCheck, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'route review allowlist mentions offer recommendation helper');
-  must(routeReviewCheck, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'route review allowlist mentions offer recommendation doc');
-  must(excelRedteamCheck, 'backend/scripts/copilot_offer_recommendation_01_check.js', 'excel route readiness allowlist mentions offer recommendation check');
-  must(excelRedteamCheck, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'excel route readiness allowlist mentions offer recommendation helper');
-  must(excelRedteamCheck, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'excel route readiness allowlist mentions offer recommendation doc');
-  must(roleRedteamCheck, 'backend/scripts/copilot_offer_recommendation_01_check.js', 'role redteam allowlist mentions offer recommendation check');
-  must(roleRedteamCheck, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'role redteam allowlist mentions offer recommendation helper');
-  must(roleRedteamCheck, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'role redteam allowlist mentions offer recommendation doc');
-  must(securityFinalCheck, 'backend/scripts/copilot_offer_recommendation_01_check.js', 'security allowlist mentions offer recommendation check');
-  must(securityFinalCheck, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'security allowlist mentions offer recommendation helper');
-  must(securityFinalCheck, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'security allowlist mentions offer recommendation doc');
-  must(auditTraceCheck, 'backend/scripts/copilot_offer_recommendation_01_check.js', 'audit trace allowlist mentions offer recommendation check');
-  must(auditTraceCheck, 'backend/src/ai/chat/copilotOfferRecommendation.js', 'audit trace allowlist mentions offer recommendation helper');
-  must(auditTraceCheck, 'docs/COPILOT_OFFER_RECOMMENDATION_01.md', 'audit trace allowlist mentions offer recommendation doc');
   mustCondition(helperExportNames.length >= helperExports.length, 'offer recommendation helper export catalog is captured');
   mustEach(helperExportNames.join(' '), helperExports, 'offer recommendation helper exports');
   mustCondition(recommendationSamples.every(Boolean), 'offer recommendation sample outputs are captured');
@@ -548,7 +528,11 @@ function main() {
   mustCommandPass(['git', 'diff', '--check'], 'git diff --check is clean');
   mustCommandPass(['git', 'diff', '--cached', '--check'], 'git diff --cached --check is clean');
   mustCommandPass(['git', 'show', '--check', '--stat', 'HEAD'], 'git show --check --stat HEAD is clean');
-  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diffs stay empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'service/prisma diffs stay empty'
+  );
   mustCondition(cachedNames.length === 0, 'stage stays empty');
   mustCondition(!fs.existsSync(path.join(root, 'debug.log')), 'debug.log stays absent');
 

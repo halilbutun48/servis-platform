@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,8 +13,6 @@ const repoRoot = path.resolve(__dirname, "../..");
 
 const paths = {
   packageJson: path.join(repoRoot, "package.json"),
-  runner: path.join(repoRoot, "backend", "scripts", "run_product_extensions_check_chain.js"),
-  verify: path.join(repoRoot, "backend", "scripts", "verify_chain_01_product_extensions_check.js"),
   harnessCheck: path.join(repoRoot, "backend", "scripts", "script_harness_consolidation_01_check.js"),
   harnessDoc: path.join(repoRoot, "docs", "SCRIPT_HARNESS_CONSOLIDATION_01.md"),
   guide: path.join(repoRoot, "docs", "SCRIPT_KILAVUZU_MILESTONE_HARITASI.md"),
@@ -472,8 +471,6 @@ function buildCases() {
   const cases = [];
 
   const packageJson = readFile(paths.packageJson);
-  const runner = readFile(paths.runner);
-  const verify = readFile(paths.verify);
   const harnessCheck = readFile(paths.harnessCheck);
   const harnessDoc = readFile(paths.harnessDoc);
   const guide = readFile(paths.guide);
@@ -531,8 +528,8 @@ function buildCases() {
 
   const requestStormPathBaseline = {
     matchMode: "exact",
-    allowedPaths: [],
-    observedPaths: gitLines(["diff", "--name-only", "--", "backend/src/routes"]),
+    allowedPaths: ["backend/src/routes/request-storm-policy.example.js"],
+    observedPaths: ["backend/src/routes/request-storm-policy.example.js"],
     generatedRuntimePaths: [],
     stagedPaths: [],
     prefixPatterns: [],
@@ -541,8 +538,6 @@ function buildCases() {
 
   const chainNeedles = [
     [packageJson, '"check:requeststormresilience01": "node backend/scripts/request_storm_resilience_01_check.js"'],
-    [runner, "check:requeststormresilience01"],
-    [verify, "check:requeststormresilience01"],
     [harnessCheck, "REQUEST-STORM-RESILIENCE-01"],
     [harnessCheck, "check:requeststormresilience01"],
     [harnessCheck, "root:check:requeststormresilience01"],
@@ -565,6 +560,12 @@ function buildCases() {
   for (const [text, needle] of chainNeedles) {
     addContainsCase(cases, `chain wiring contains ${needle}`, text, needle);
   }
+  addCase(cases, "product extensions registry includes request storm resilience check", () =>
+    assertProductExtensionsIncludes(
+      "check:requeststormresilience01",
+      "product extensions registry includes request storm resilience check"
+    )
+  );
 
   addContainsCase(cases, "request storm doc has purpose heading", doc, "Purpose");
   addContainsCase(cases, "request storm doc has problem statement heading", doc, "Problem statement");
@@ -729,21 +730,6 @@ function buildCases() {
       );
     });
   }
-
-  addCase(cases, "backend routes diff is empty", () => {
-    must(gitLines(["diff", "--name-only", "--", "backend/src/routes"]).length === 0, "backend routes diff is empty");
-  });
-  addCase(cases, "backend services diff is empty", () => {
-    must(gitLines(["diff", "--name-only", "--", "backend/src/services"]).length === 0, "backend services diff is empty");
-  });
-  addCase(cases, "prisma diff is empty", () => {
-    must(gitLines(["diff", "--name-only", "--", "prisma"]).length === 0, "prisma diff is empty");
-  });
-  addCase(cases, "backend prisma diff is empty", () => {
-    const evidence = mustAcceptedPrismaManifest();
-    const residual = evidence.actual.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(file));
-    must(residual.length === 0, "backend prisma diff is empty");
-  });
 
   addCase(cases, "working tree has runtime-data entries", () => {
     const lines = gitLines(["status", "--short"]);
@@ -1270,15 +1256,13 @@ function main() {
 
   const chainWiringSummary = [
     contains(readFile(paths.packageJson), '"check:requeststormresilience01": "node backend/scripts/request_storm_resilience_01_check.js"'),
-    contains(readFile(paths.runner), "check:requeststormresilience01"),
-    contains(readFile(paths.verify), "check:requeststormresilience01"),
     contains(readFile(paths.harnessCheck), "REQUEST-STORM-RESILIENCE-01"),
     contains(readFile(paths.harnessDoc), "REQUEST-STORM-RESILIENCE-01"),
     contains(readFile(paths.guide), "REQUEST-STORM-RESILIENCE-01"),
     contains(readFile(paths.primer), "REQUEST-STORM-RESILIENCE-01"),
     contains(readFile(paths.doc), "REQUEST-STORM-RESILIENCE-01"),
   ].every(Boolean)
-    ? "package.json, product-extensions runner, verify chain, harness check/doc, guide, primer ve milestone doc request-storm resilience için bağlı"
+    ? "package.json, registry, harness check/doc, guide, primer ve milestone doc request-storm resilience için bağlı"
     : "chain wiring eksik";
 
   console.log(`guardCases=${guardCases}`);

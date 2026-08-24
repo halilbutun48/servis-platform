@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { buildSeferAbiReasoningAssistant } from '../src/ai/chat/seferAbiReasoningAssistant.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -296,8 +297,6 @@ function main() {
   console.log('=== COPILOT DYNAMIC QUESTION ENGINE 01 ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
@@ -307,10 +306,11 @@ function main() {
   const helpComposerSource = read('backend/src/ai/chat/helpComposer.js');
   const assistantSource = read('backend/src/ai/chat/seferAbiReasoningAssistant.js');
   const guidedSource = read('backend/src/ai/chat/copilotGuidedTaskEngine.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   checkSource('package.json exposes dynamic question engine check', pkg, '"check:copilotdynamicquestionengine01": "node backend/scripts/copilot_dynamic_question_engine_01_check.js"');
-  checkSource('product extensions runner includes dynamic question engine check', runner, 'check:copilotdynamicquestionengine01');
-  checkSource('verify chain includes dynamic question engine check', verify, 'check:copilotdynamicquestionengine01');
+  assertProductExtensionsOrder(['check:copilotguidedtaskengine01', 'check:copilotdynamicquestionengine01', 'check:copilotsmartdiagnosticengine01'], 'product extensions registry keeps dynamic question engine after guided task engine and before smart diagnostic', registryScripts);
+  assertProductExtensionsOrder(['check:copilotguidedtaskengine01', 'check:copilotdynamicquestionengine01', 'check:copilotsmartdiagnosticengine01'], 'verify chain registry keeps dynamic question engine after guided task engine and before smart diagnostic', registryScripts);
   checkSource('guide mentions dynamic question engine milestone', guide, 'COPILOT-DYNAMIC-QUESTION-ENGINE-01');
   checkSource('primer mentions dynamic question engine milestone', primer, 'COPILOT-DYNAMIC-QUESTION-ENGINE-01');
   checkSource('harness doc mentions dynamic question engine milestone', harnessDoc, 'COPILOT-DYNAMIC-QUESTION-ENGINE-01');

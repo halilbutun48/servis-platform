@@ -3,6 +3,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,7 +79,6 @@ async function main() {
   console.log('=== AGREEMENT-SOURCE-SHIFT-LINEAGE-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const docs = read('docs/AGREEMENT_SOURCE_SHIFT_LINEAGE_01.md');
   const harness = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
@@ -92,10 +96,11 @@ async function main() {
   const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
   const helpComposer = read('backend/src/ai/chat/helpComposer.js');
   const goldenPack = read('backend/src/ai/chat/goldenQuestionPack.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes source-lineage check');
-  must(runner, 'check:agreementsourceshiftlineage01', 'product extensions runner includes source-lineage check');
-  ordered(runner, ['check:seferscore01', 'check:agreementsourceshiftlineage01', 'check:marketplacefreetooperate01'], 'product extensions order keeps source-lineage before marketplace');
+  assertProductExtensionsIncludes('check:agreementsourceshiftlineage01', 'product extensions registry includes source-lineage check', registryScripts);
+  assertProductExtensionsOrder(['check:seferscore01', 'check:agreementsourceshiftlineage01', 'check:marketplacefreetooperate01'], 'product extensions registry order keeps source-lineage before marketplace', registryScripts);
 
   must(guide, 'AGREEMENT-SOURCE-SHIFT-LINEAGE-01', 'script guide mentions source-lineage milestone');
   must(guide, 'check:agreementsourceshiftlineage01', 'script guide exposes source-lineage check');

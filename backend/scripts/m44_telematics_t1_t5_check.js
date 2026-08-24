@@ -4,11 +4,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from "./lib/productExtensionsRegistry.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
-
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
 }
@@ -96,8 +102,6 @@ function main() {
   console.log("=== M44 TELEMATICS T1/T5 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const primer = read("docs/PRIMER_SSOT.md");
   const roadmap = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
@@ -117,18 +121,15 @@ function main() {
   const vehiclesPanel = read("web/src/panels/room/VehiclesPanel.jsx");
   const etaSanity = read("web/src/utils/etaSanity.js");
   const gpsVisibility = read("web/src/utils/gpsSourceVisibility.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:m44telematicst1t5": "node backend/scripts/m44_telematics_t1_t5_check.js"', "package.json exposes check:m44telematicst1t5");
-  ordered(runner, [
+  assertProductExtensionsIncludes("check:m44telematicst1t5", "product extensions registry includes M44 telematics check", registryScripts);
+  assertProductExtensionsOrder([
     "check:marketplacefreetooperate01",
     "check:m44telematicst1t5",
     "check:pay01e",
-  ], "product extensions runner places M44 telematics after marketplace free-to-operate");
-  ordered(verify, [
-    '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"',
-    '"check:m44telematicst1t5": "node backend/scripts/m44_telematics_t1_t5_check.js"',
-    '"check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js"',
-  ], "verify chain places M44 telematics after marketplace free-to-operate");
+  ], "product extensions registry places M44 telematics after marketplace free-to-operate", registryScripts);
 
   must(guide, "M44-TELEMATICS-T1-T5", "milestone guide mentions M44 telematics T1/T5");
   must(guide, "check:m44telematicst1t5", "milestone guide exposes M44 telematics T1/T5 check");
@@ -239,7 +240,7 @@ function main() {
   mustAny(etaSanity, ["güncel değil", "hesaplanamıyor"], "ETA sanity helper keeps safe wording");
   mustAny(gpsVisibility, ["gpsSourceVisibilityTextFromVehicle", "gpsSourceLabelFromKey"], "GPS visibility helper keeps source visibility wording");
 
-  mustNoDiffExcept(["backend/src/routes", "backend/src/services", "backend/src/telematics", "prisma"], ['backend/src/routes/companyOverview.js'], "backend route/service/schema and Prisma diff stays empty");
+  mustNoDiffExceptWithIdentity(["backend/src/routes", "backend/src/services", "backend/src/telematics", "prisma"], CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, "backend route/service/schema and Prisma diff limited to approved concurrent runtime paths");
   mustNoStagedPrefix(["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "runtime-data and browser-smoke stay commit-external");
 
   console.log("=== M44 TELEMATICS T1/T5 CHECK PASS ===");

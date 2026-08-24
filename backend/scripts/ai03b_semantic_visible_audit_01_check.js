@@ -11,10 +11,14 @@ import {
   buildSeferAbiReasoningAssistant,
 } from '../src/ai/chat/seferAbiReasoningAssistant.js';
 import { normalizeCopilotRequestInput } from '../src/ai/schemas.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
+const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith('backend/src/services/'));
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -463,13 +467,12 @@ function main() {
   console.log('=== AI-03B-SEMANTIC-VISIBLE-AUDIT-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:ai03bsemanticvisibleaudit01": "node backend/scripts/ai03b_semantic_visible_audit_01_check.js"', 'package.json exposes the AI-03B semantic visible audit');
-  ordered(runner, ['check:copilotreasoninganswercomposer01', 'check:ai03bparaphraseintentaudit01', 'check:ai03bsemanticvisibleaudit01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01'], 'product extensions runner order keeps semantic visible audit in the AI-03B lane');
-  ordered(verifyChain, ['check:copilotreasoninganswercomposer01', 'check:ai03bparaphraseintentaudit01', 'check:ai03bsemanticvisibleaudit01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01'], 'verify chain order keeps semantic visible audit in the AI-03B lane');
+  assertProductExtensionsOrder(['check:copilotreasoninganswercomposer01', 'check:ai03bparaphraseintentaudit01', 'check:ai03bsemanticvisibleaudit01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01'], 'product extensions registry order keeps semantic visible audit in the AI-03B lane', registryScripts);
+  assertProductExtensionsOrder(['check:copilotreasoninganswercomposer01', 'check:ai03bparaphraseintentaudit01', 'check:ai03bsemanticvisibleaudit01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01'], 'verify chain registry order keeps semantic visible audit in the AI-03B lane', registryScripts);
   must(harnessDoc, 'ai03b_semantic_visible_audit_01_check.js', 'script harness doc tracks the semantic visible audit file');
   must(harnessDoc, 'check:ai03bsemanticvisibleaudit01', 'script harness doc exposes the semantic visible audit command');
 
@@ -982,7 +985,11 @@ function main() {
   assert(continueFlowAssistant.reasoningAssistant?.interactionIntentFamily === 'CONTINUE_FLOW', 'continue-flow assistant keeps CONTINUE_FLOW intent family');
   assert(clarifyingAssistant.mode === 'CLARIFYING_QUESTION', 'clarifying assistant stays in CLARIFYING_QUESTION mode');
 
-  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diff stays empty');
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF,
+    'service/prisma diff stays empty'
+  );
   assert(gitCachedNames().length === 0, 'stage stays empty');
   mustNoStagedPrefix(gitCachedNames(), ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 

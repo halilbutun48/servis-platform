@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,8 +90,6 @@ function main() {
   console.log("=== UX-SUPERADMIN-PANEL-CLARITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const harness = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
@@ -102,9 +101,10 @@ function main() {
   const logExport = read("web/src/panels/superadmin/LogExportPanel.jsx");
   const commercial = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
   const onboarding = read("web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   must(pkg, '"check:uxsuperadminpanelclarity01": "node backend/scripts/ux_superadmin_panel_clarity_01_check.js"', "package.json exposes Super Admin clarity check");
-  must(runner, "check:uxsuperadminpanelclarity01", "product extensions runner includes Super Admin clarity check");
-  must(verifyChain, "check:uxsuperadminpanelclarity01", "verify chain includes Super Admin clarity check");
+  assertProductExtensionsIncludes("check:uxsuperadminpanelclarity01", "product extensions registry includes Super Admin clarity check", registryScripts);
+  assertProductExtensionsIncludes("check:uxsuperadminpanelclarity01", "verify-chain registry includes Super Admin clarity check", registryScripts);
   must(guide, "UX-SUPERADMIN-PANEL-CLARITY-01", "milestone guide mentions Super Admin clarity milestone");
   must(guide, "check:uxsuperadminpanelclarity01", "milestone guide exposes Super Admin clarity check");
   must(guide, "node backend\\scripts\\ux_superadmin_panel_clarity_01_check.js", "milestone guide includes Super Admin clarity command");

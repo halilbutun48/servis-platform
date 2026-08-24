@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,8 +92,7 @@ function assertNoForbiddenVisibleTerms(actual, label) {
 console.log('=== UX-COPILOT-TERMINAL-01 CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const personaDoc = read('docs/COPILOT_PERSONA_SEFER_ABI_V1.md');
@@ -108,13 +108,12 @@ must(pkg, '"check:uxcopilotpersona01"', 'package.json keeps check:uxcopilotperso
 must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
 must(pkg, '"check:product-extensions"', 'package.json keeps check:product-extensions');
 
-must(runner, 'check:uxcopilotterminal01', 'product extensions runner includes terminal check');
-must(runner, 'check:uxcopilotpersona01', 'product extensions runner keeps persona check');
-must(runner, 'check:uxcopilotsmartchips01', 'product extensions runner keeps smart chips check');
-
-must(verifyChain, 'check:uxcopilotterminal01', 'verify chain includes terminal check');
-must(verifyChain, 'check:uxcopilotpersona01', 'verify chain keeps persona check');
-must(verifyChain, 'check:uxcopilotsmartchips01', 'verify chain keeps smart chips check');
+assertProductExtensionsIncludes('check:uxcopilotterminal01', 'product extensions registry includes terminal check', registryScripts);
+assertProductExtensionsIncludes('check:uxcopilotpersona01', 'product extensions registry keeps persona check', registryScripts);
+assertProductExtensionsIncludes('check:uxcopilotsmartchips01', 'product extensions registry keeps smart chips check', registryScripts);
+assertProductExtensionsIncludes('check:uxcopilotterminal01', 'verify chain registry includes terminal check', registryScripts);
+assertProductExtensionsIncludes('check:uxcopilotpersona01', 'verify chain registry keeps persona check', registryScripts);
+assertProductExtensionsIncludes('check:uxcopilotsmartchips01', 'verify chain registry keeps smart chips check', registryScripts);
 
 must(guide, 'UX-COPILOT-TERMINAL-01', 'script guide mentions UX-COPILOT-TERMINAL-01');
 must(guide, 'check:uxcopilotterminal01', 'script guide exposes check:uxcopilotterminal01');

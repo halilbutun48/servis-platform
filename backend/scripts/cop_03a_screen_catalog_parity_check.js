@@ -3,10 +3,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const root = path.resolve(__dirname, '../..');
+  const root = path.resolve(__dirname, '../..');
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -68,8 +69,6 @@ function main() {
   console.log('=== COP-03A SCREEN CATALOG PARITY CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const registry = read('docs/MILESTONE_REGISTRY_V1.md');
@@ -82,6 +81,7 @@ function main() {
   const aiRoute = read('backend/src/routes/ai.js');
   const screenStateAnalyzer = read('backend/src/ai/chat/screenStateAnalyzer.js');
   const goldenPack = read('backend/src/ai/chat/goldenQuestionPack.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const backendCatalog = `${screenCatalog}\n${roomCompanyCatalog}`;
 
   must(pkg, '"check:cop03a": "node backend/scripts/cop_03a_screen_catalog_parity_check.js"', 'package.json exposes check:cop03a');
@@ -89,8 +89,8 @@ function main() {
   must(pkg, '"check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js"', 'package.json keeps check:verifychain01');
   must(pkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', 'package.json keeps verify:final');
 
-  must(runner, 'check:cop03a', 'product extensions runner includes check:cop03a');
-  must(verifyChain, 'check:cop03a', 'verify chain expects check:cop03a');
+  assertProductExtensionsIncludes('check:cop03a', 'product extensions registry includes check:cop03a', registryScripts);
+  assertProductExtensionsIncludes('check:cop03a', 'verify-chain registry includes check:cop03a', registryScripts);
   must(guide, 'check:cop03a', 'script guide exposes check:cop03a');
   must(parityDoc, 'COPILOT SCREEN KNOWLEDGE PARITY V1', 'parity doc exists');
   must(parityDoc, 'Geri Bildirim', 'parity doc covers feedback');

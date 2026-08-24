@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -86,20 +88,9 @@ function gitDiffNames(paths) {
     .filter(Boolean);
 }
 
-function mustNoDiffExcept(paths, allowedFiles, label) {
-  const allowed = new Set(allowedFiles);
-  const files = gitDiffNames(paths).filter((file) => !allowed.has(file));
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(", ")}`);
-  }
-  ok(label);
-}
-
 console.log("=== ONBOARDING-REVIEW-01 FINAL AUDIT CHECK ===");
 
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const primer = read("docs/PRIMER_SSOT.md");
 const roadmap = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
@@ -115,12 +106,13 @@ const server = read("backend/src/server.js");
 const service = read("backend/src/services/publicLeadService.js");
 const reviewPanel = read("web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
 const api = read("web/src/api.js");
-const app = read("web/src/App.jsx");
+const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
 const copilotFacts = read("web/src/utils/copilotFacts.js");
 const screenRegistry = read("web/src/copilot/screenRegistry.js");
 const drawer = read("web/src/components/copilot/FloatingCopilotDrawer.jsx");
 const statusPalette = read("web/src/utils/statusPalette.js");
 const displayStatus = read("web/src/utils/displayStatus.js");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 const codeSurface = readMany([
   "backend/src/routes/publicLeadReview.js",
@@ -129,7 +121,7 @@ const codeSurface = readMany([
   "backend/src/server.js",
   "backend/src/services/publicLeadService.js",
   "web/src/api.js",
-  "web/src/App.jsx",
+  ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
   "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
   "web/src/utils/copilotFacts.js",
   "web/src/copilot/screenRegistry.js",
@@ -139,10 +131,8 @@ const codeSurface = readMany([
 ]);
 
 must(pkg, '"check:onboardingreviewfinalaudit01": "node backend/scripts/onboarding_review_final_audit_01_check.js"', "package.json exposes onboarding review final audit check");
-must(runner, "check:onboardingreviewfinalaudit01", "product extensions runner includes onboarding review final audit");
-must(verifyChain, '"check:onboardingreviewfinalaudit01": "node backend/scripts/onboarding_review_final_audit_01_check.js"', "verify chain exposes onboarding review final audit");
-ordered(
-  runner,
+assertProductExtensionsIncludes("check:onboardingreviewfinalaudit01", "product extensions registry includes onboarding review final audit", registryScripts);
+assertProductExtensionsOrder(
   [
     "check:publiclandingfinalpromise01",
     "check:leadcapture01",
@@ -153,7 +143,8 @@ ordered(
     "check:uxmarketplacepanels01",
     "check:productflowbuttonaudit01",
   ],
-  "onboarding review final audit stays after review and before product flow audit"
+  "onboarding review final audit stays after review and before product flow audit",
+  registryScripts,
 );
 
 must(guide, "ONBOARDING-REVIEW-01 FINAL AUDIT", "script guide mentions onboarding review final audit");
@@ -279,17 +270,17 @@ const cachedNames = gitCachedNames();
 mustNot(cachedNames, "backend/artifacts/runtime-data/", "runtime-data is not staged");
 mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not staged");
 
-mustNoDiffExcept(
-  [
-    "backend/src/routes",
-    "backend/src/services",
+  mustNoDiffExceptWithIdentity(
+    [
+      "backend/src/routes",
+      "backend/src/services",
     "backend/src/bootstrap",
     "backend/src/server.js",
     "web/src/panels/public",
     "web/src/panels/superadmin",
     "web/src/components/copilot",
     "web/src/api.js",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/utils",
     "web/src/copilot",
     "web/src/components/public",
@@ -301,19 +292,31 @@ mustNoDiffExcept(
     "web/src/panels/superadmin/TrustQualityPanel.jsx",
     "backend/src/bootstrap/routeMounts.js",
     "backend/src/server.js",
-    "backend/src/routes/dashboardBulk.js",
-    "backend/src/routes/companyOverview.js",
-    "backend/src/services/dashboardBulk.js",
-    "web/src/utils/copilotFacts.js",
-    "web/src/panels/room/ShiftsPanel.jsx",
-    "web/src/panels/room/roomVehiclesPanelSections.jsx",
-    "web/src/panels/room/roomShiftsPanelWorkflow.js",
-    "web/src/panels/room/roomVehiclesPanelActions.js",
-    "web/src/App.jsx",
-    "web/src/copilot/screenRegistry.js",
-    "web/src/utils/uiDataCache.js",
-    "web/src/utils/dashboardBulk.js",
-    "web/src/utils/etaSanity.js",
+    { path: "backend/src/routes/dashboardBulk.js", sha256: "C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F" },
+    { path: "backend/src/routes/companyOverview.js", sha256: "A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB" },
+    { path: "backend/src/services/dashboardBulk.js", sha256: "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E" },
+    { path: "backend/src/bootstrap/rateLimits.js", sha256: "D493701282D68ABA6F1DAFCAD4F01F9A65A432ECCA91F6A168A1058F119D3A2C" },
+    { path: "backend/src/routes/admin.js", sha256: "61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4" },
+    { path: "backend/src/routes/agreements.js", sha256: "90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A" },
+    { path: "backend/src/routes/auth.js", sha256: "A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3" },
+    { path: "backend/src/routes/commercialCore.js", sha256: "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F" },
+    { path: "backend/src/routes/offers.js", sha256: "40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649" },
+    { path: "backend/src/routes/public.js", sha256: "5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23" },
+    { path: "backend/src/routes/operationProof.js", sha256: "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0" },
+    { path: "backend/src/routes/trustQuality.js", sha256: "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD" },
+    { path: "backend/src/services/qualityPaymentBridgeService.js", sha256: "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83" },
+    { path: "backend/src/routes/shifts/company.js", sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0" },
+    { path: "backend/src/services/companyShiftMutationTail.js", sha256: "FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78" },
+      "web/src/utils/copilotFacts.js",
+      "web/src/panels/room/ShiftsPanel.jsx",
+      "web/src/panels/room/roomVehiclesPanelSections.jsx",
+      "web/src/panels/room/roomShiftsPanelWorkflow.js",
+      "web/src/panels/room/roomVehiclesPanelActions.js",
+      ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
+      "web/src/copilot/screenRegistry.js",
+      "web/src/utils/uiDataCache.js",
+      "web/src/utils/dashboardBulk.js",
+      "web/src/utils/etaSanity.js",
       "web/src/utils/offerQualityRanking.js",
       "web/src/components/copilot/FloatingCopilotDrawer.jsx",
       "web/src/components/copilot/uiSurface.js",

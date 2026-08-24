@@ -3,6 +3,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { mustSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
+import {
+  assertProductExtensionsIncludes,
+  productExtensionsChecks,
+} from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,6 +44,21 @@ const expectedKindCounts = {
   personelLive: 2,
   parentLive: 2,
 };
+
+const COVERAGE_SOURCES = [
+  "web/src/panels/public/PublicLandingPage.jsx",
+  "web/src/components/public/PublicLeadCaptureModal.jsx",
+  "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
+  "web/src/panels/superadmin/CommercialCorePanel.jsx",
+  "web/src/components/PaymentReadinessReadonlyCard.jsx",
+  "web/src/panels/company/companyShiftsPanelRows.jsx",
+  "web/src/panels/company/AgreementsPanel.jsx",
+  "web/src/panels/room/roomShiftsPanelRows.jsx",
+  "web/src/panels/room/AgreementsPanel.jsx",
+  "web/src/panels/personel/LivePanel.jsx",
+  "web/src/panels/parent/LivePanel.jsx",
+  "web/src/components/RoutePreviewModal.jsx",
+];
 
 function read(relPath) {
   return fs.readFileSync(path.join(repoRoot, relPath), "utf8");
@@ -106,8 +126,10 @@ function main() {
 
   mustContains(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', "package.json exposes product flow button audit check");
   mustContains(pkg, '"smoke:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01.mjs"', "package.json exposes product flow button audit smoke");
-  mustContains(runner, "'check:productflowbuttonaudit01'", "product extensions runner includes product flow button audit check");
+  mustNotContains(runner, "'check:productflowbuttonaudit01'", "product extensions runner does not hardcode product flow button audit check");
   mustContains(verify, '"check:productflowbuttonaudit01"', "verify chain exposes product flow button audit check");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+  assertProductExtensionsIncludes("check:productflowbuttonaudit01", "product extensions registry includes product flow button audit check", registryScripts);
   mustContains(harnessCheck, "PRODUCT-FLOW-BUTTON-AUDIT-01", "script harness check knows product flow button audit milestone");
   mustContains(harnessCheck, "check:productflowbuttonaudit01", "script harness check knows product flow button audit alias");
   mustContains(harnessCheck, "smoke:productflowbuttonaudit01", "script harness check knows product flow button audit smoke alias");
@@ -158,6 +180,11 @@ function main() {
   must(fs.existsSync(reportJsonPath), "product flow smoke report exists");
 
   const report = readJson(reportJsonPath);
+  mustSmokeEvidenceIdentity(report, {
+    sourceFiles: [...COVERAGE_SOURCES, "backend/scripts/product_flow_button_audit_01.mjs"],
+    schemaPath: "backend/prisma/schema.prisma",
+    label: "product flow smoke report",
+  });
   must(Array.isArray(report.routes), "smoke report keeps routes array");
   must(report.routeCount === report.routes.length, "smoke report route count matches rows");
   must(report.routeCount === 18, "smoke report keeps 18 route checks");
@@ -185,20 +212,7 @@ function main() {
   }
 
   if (Array.isArray(report.coverageSources)) {
-    for (const source of [
-      "web/src/panels/public/PublicLandingPage.jsx",
-      "web/src/components/public/PublicLeadCaptureModal.jsx",
-      "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
-      "web/src/panels/superadmin/CommercialCorePanel.jsx",
-      "web/src/components/PaymentReadinessReadonlyCard.jsx",
-      "web/src/panels/company/companyShiftsPanelRows.jsx",
-      "web/src/panels/company/AgreementsPanel.jsx",
-      "web/src/panels/room/roomShiftsPanelRows.jsx",
-      "web/src/panels/room/AgreementsPanel.jsx",
-      "web/src/panels/personel/LivePanel.jsx",
-      "web/src/panels/parent/LivePanel.jsx",
-      "web/src/components/RoutePreviewModal.jsx",
-    ]) {
+    for (const source of COVERAGE_SOURCES) {
       must(report.coverageSources.includes(source), `smoke report keeps coverage source ${source}`);
     }
   }

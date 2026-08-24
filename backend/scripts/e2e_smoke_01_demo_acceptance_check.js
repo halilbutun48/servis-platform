@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,10 +56,9 @@ console.log("=== E2E-SMOKE-01 DEMO ACCEPTANCE CHECK ===");
 
 const doc = read("docs/E2E_SMOKE_01_DEMO_ACCEPTANCE.md");
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const backlog = read("docs/NEXT_BACKLOG_V1.md");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:e2esmoke01": "node backend/scripts/e2e_smoke_01_demo_acceptance_check.js"', "package.json exposes check:e2esmoke01");
 
@@ -93,13 +93,13 @@ must(backlog, "P1:", "backlog keeps P1 section");
 must(guide, "check:e2esmoke01", "script guide exposes check:e2esmoke01");
 must(guide, "E2E-SMOKE-01 — demo acceptance pack", "script guide exposes E2E-SMOKE-01 section");
 
-ordered(runner, [
+assertProductExtensionsOrder([
   "check:docsstate01",
   "check:e2esmoke01",
   "check:cop03cfix02",
-], "product extensions runner order");
+], "product extensions registry order", registryScripts);
 
-must(verify, "check:e2esmoke01", "verify chain includes e2esmoke01");
-must(runner, "check:e2esmoke01", "runner includes e2esmoke01");
+assertProductExtensionsIncludes("check:e2esmoke01", "product extensions registry references e2esmoke01", registryScripts);
+assertProductExtensionsIncludes("check:e2esmoke01", "verify chain registry includes e2esmoke01", registryScripts);
 
 console.log("=== E2E-SMOKE-01 DEMO ACCEPTANCE CHECK PASS ===");

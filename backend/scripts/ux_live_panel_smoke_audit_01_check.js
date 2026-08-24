@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,8 +116,6 @@ function main() {
   console.log("=== UX-LIVE-PANEL-COVERAGE-MATRIX-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -125,8 +124,8 @@ function main() {
   const inventoryAudit = read("docs/UX_PANEL_INVENTORY_02A_AUDIT.md");
 
   mustContains(pkg, '"check:uxlivepanelsmokeaudit01"', "package.json exposes check:uxlivepanelsmokeaudit01");
-  mustContains(runner, "'check:uxlivepanelsmokeaudit01'", "product extensions runner includes live panel smoke audit check");
-  mustContains(verify, '"check:uxlivepanelsmokeaudit01"', "verify chain exposes live panel smoke audit check");
+  assertProductExtensionsIncludes("check:uxlivepanelsmokeaudit01", "product extensions registry includes live panel smoke audit check");
+  assertProductExtensionsIncludes("check:uxlivepanelsmokeaudit01", "verify chain registry includes live panel smoke audit check");
   mustContains(harnessCheck, "check:uxlivepanelsmokeaudit01", "script harness check knows live panel smoke audit alias");
   mustContains(harnessCheck, "UX-LIVE-PANEL-COVERAGE-MATRIX-01", "script harness check knows coverage matrix milestone");
   mustContains(harnessCheck, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "script harness check knows live panel smoke audit doc");

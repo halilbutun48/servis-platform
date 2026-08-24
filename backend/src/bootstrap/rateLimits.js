@@ -2,6 +2,7 @@
 import rateLimit from "express-rate-limit";
 import { RedisRateLimitStore } from "../middleware/rateLimitRedisStore.js";
 import { isGreenpackBypassAllowed } from "../auth/securityPolicy.js";
+import { sanitizeRequestUrl } from "../lib/requestUrl.js";
 
 export function createApiRateLimiters({ ENV, verifyToken, rateLimitStoreMode, getRedis }) {
   const useRedisRateLimitStore = String(rateLimitStoreMode || "").toLowerCase() === "redis";
@@ -61,7 +62,7 @@ export function createApiRateLimiters({ ENV, verifyToken, rateLimitStoreMode, ge
       code: "RATE_LIMITED",
       message,
       retryAfterSec,
-      path: req.originalUrl || req.path || null,
+      path: sanitizeRequestUrl(req.originalUrl || req.path || null),
     });
   }
 

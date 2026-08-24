@@ -50,7 +50,7 @@ function mustInclude(text, needle, label) {
 }
 
 const service = read("backend/src/services/paymentBackbone.js");
-const route = read("backend/src/routes/commercialCore.js");
+const route = read("backend/src/routes/commercialCorePaymentRoutes.js");
 const panel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const toolsReadme = read("tools/README.md");
 const toolsPrimer = read("tools/PRIMER_SNAPSHOT.md");
@@ -62,9 +62,9 @@ mustInclude(service, "buildPaymentBackboneSettings", "payment backbone service e
 mustInclude(service, "upsertGlobalCommissionRule", "payment backbone service supports global rule upsert");
 mustInclude(service, "upsertRoomCommissionRule", "payment backbone service supports room rule upsert");
 mustInclude(service, "disableRoomCommissionRule", "payment backbone service supports room override disable");
-mustInclude(route, "/payment-backbone/settings", "commercial core route exposes settings endpoint");
-mustInclude(route, "/payment-backbone/settings/global", "commercial core route exposes global save endpoint");
-mustInclude(route, "/payment-backbone/settings/room", "commercial core route exposes room save endpoint");
+mustInclude(route, "/payment-backbone/settings", "commercial core payment route exposes settings endpoint");
+mustInclude(route, "/payment-backbone/settings/global", "commercial core payment route exposes global save endpoint");
+mustInclude(route, "/payment-backbone/settings/room", "commercial core payment route exposes room save endpoint");
 mustInclude(panel, "Super Admin ticari ayarlar", "superadmin panel renders commercial settings section");
 mustInclude(panel, "Global ayar", "superadmin panel renders global settings card");
 mustInclude(panel, "Oda bazlı override", "superadmin panel renders room override card");
@@ -78,4 +78,3 @@ mustInclude(registry, "M82.10", "registry lists M82.10");
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("OK M82.10 super admin commercial settings check passed");
-

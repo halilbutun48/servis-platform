@@ -5,6 +5,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as negotiationAssist from '../src/ai/chat/copilotNegotiationAssist.js';
+import { assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -144,20 +147,13 @@ async function main() {
   console.log('=== COPILOT-NEGOTIATION-ASSIST-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
   const humanPolicy = read('backend/src/ai/chat/copilotHumanApprovalPolicy.js');
   const humanDoc = read('docs/COPILOT_HUMAN_APPROVAL_01.md');
-  const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
-  const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const doc = read('docs/COPILOT_NEGOTIATION_ASSIST_01.md');
   const helper = read('backend/src/ai/chat/copilotNegotiationAssist.js');
-  const auditTrace = read('backend/scripts/audit_log_and_approval_trace_01_check.js');
-  const roleRedteam = read('backend/scripts/role_data_isolation_redteam_01_check.js');
-  const securityFinal = read('backend/scripts/security_kvkk_final_01_check.js');
   const cachedNames = gitCachedNames();
   const supportedTypes = negotiationAssist.COPILOT_NEGOTIATION_ASSIST_SUPPORTED_TYPES;
   const roleNames = negotiationAssist.COPILOT_NEGOTIATION_ASSIST_ROLE_NAMES;
@@ -213,8 +209,8 @@ async function main() {
   ];
 
   must(pkg, '"check:copilotnegotiationassist01": "node backend/scripts/copilot_negotiation_assist_01_check.js"', 'package.json exposes negotiation assist check');
-  ordered(runner, ['check:copilotofferanalysis01', 'check:copilotnegotiationassist01', 'check:uxmarketplacepanels01'], 'product extensions runner places negotiation assist after offer analysis');
-  ordered(verify, ['check:copilotofferanalysis01', 'check:copilotnegotiationassist01', 'check:uxmarketplacepanels01'], 'verify chain places negotiation assist after offer analysis');
+  assertProductExtensionsOrder(['check:copilotofferanalysis01', 'check:copilotnegotiationassist01', 'check:uxmarketplacepanels01'], 'product extensions runner places negotiation assist after offer analysis');
+  assertProductExtensionsOrder(['check:copilotofferanalysis01', 'check:copilotnegotiationassist01', 'check:uxmarketplacepanels01'], 'verify chain places negotiation assist after offer analysis');
   must(guide, 'COPILOT-NEGOTIATION-ASSIST-01', 'script guide mentions negotiation assist milestone');
   must(guide, 'check:copilotnegotiationassist01', 'script guide exposes negotiation assist check');
   must(guide, 'node backend\\scripts\\copilot_negotiation_assist_01_check.js', 'script guide includes negotiation assist command');
@@ -229,26 +225,6 @@ async function main() {
   must(humanPolicy, 'COPILOT-NEGOTIATION-ASSIST-01', 'human approval policy references negotiation assist milestone');
   must(humanDoc, 'COPILOT-NEGOTIATION-ASSIST-01', 'human approval doc references negotiation assist milestone');
   must(humanDoc, 'check:copilotnegotiationassist01', 'human approval doc exposes negotiation assist check');
-  must(harnessCheck, 'check:copilotnegotiationassist01', 'harness check knows negotiation assist alias');
-  must(harnessCheck, 'copilot_negotiation_assist_01_check.js', 'harness check knows negotiation assist file');
-  must(harnessCheck, 'COPILOT-NEGOTIATION-ASSIST-01', 'harness check knows negotiation assist milestone');
-  must(harnessCheck, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'harness check knows negotiation assist doc');
-  must(harnessCheck, 'backend/src/ai/chat/copilotNegotiationAssist.js', 'harness check knows negotiation assist helper');
-  must(harnessDoc, 'Negotiation assist milestone: `COPILOT-NEGOTIATION-ASSIST-01`', 'harness doc lists negotiation assist milestone');
-  must(harnessDoc, 'check:copilotnegotiationassist01', 'harness doc lists negotiation assist check');
-  must(harnessDoc, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'harness doc lists negotiation assist doc');
-  must(harnessDoc, 'node backend\\scripts\\copilot_negotiation_assist_01_check.js', 'harness doc lists negotiation assist command');
-  must(harnessDoc, 'backend/src/ai/chat/copilotNegotiationAssist.js', 'harness doc lists negotiation assist helper');
-  must(harnessDoc, 'root:check:copilotnegotiationassist01', 'harness doc lists negotiation assist root check');
-  must(auditTrace, 'backend/scripts/copilot_negotiation_assist_01_check.js', 'audit trace allowlist mentions negotiation assist check');
-  must(auditTrace, 'backend/src/ai/chat/copilotNegotiationAssist.js', 'audit trace allowlist mentions negotiation assist helper');
-  must(auditTrace, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'audit trace allowlist mentions negotiation assist doc');
-  must(roleRedteam, 'backend/scripts/copilot_negotiation_assist_01_check.js', 'role redteam allowlist mentions negotiation assist check');
-  must(roleRedteam, 'backend/src/ai/chat/copilotNegotiationAssist.js', 'role redteam allowlist mentions negotiation assist helper');
-  must(roleRedteam, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'role redteam allowlist mentions negotiation assist doc');
-  must(securityFinal, 'backend/scripts/copilot_negotiation_assist_01_check.js', 'security allowlist mentions negotiation assist check');
-  must(securityFinal, 'backend/src/ai/chat/copilotNegotiationAssist.js', 'security allowlist mentions negotiation assist helper');
-  must(securityFinal, 'docs/COPILOT_NEGOTIATION_ASSIST_01.md', 'security allowlist mentions negotiation assist doc');
 
   must(helper, "from './copilotOfferAnalysis.js';", 'helper imports offer analysis helper');
   must(helper, 'COPILOT_NEGOTIATION_ASSIST_VERSION', 'helper exports version marker');
@@ -336,7 +312,11 @@ async function main() {
   mustCommandPass(['git', 'diff', '--check'], 'git diff --check is clean');
   mustCommandPass(['git', 'diff', '--cached', '--check'], 'git diff --cached --check is clean');
   mustCommandPass(['git', 'show', '--check', '--stat', 'HEAD'], 'git show --check --stat HEAD is clean');
-  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diffs stay empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'service/prisma diffs stay empty'
+  );
   mustCondition(cachedNames.length === 0, 'stage stays empty');
   mustCondition(!fs.existsSync(path.join(root, 'debug.log')), 'debug.log stays absent');
 

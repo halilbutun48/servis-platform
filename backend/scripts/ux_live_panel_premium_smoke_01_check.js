@@ -4,12 +4,17 @@ import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
+import { PREMIUM_SMOKE_COVERAGE_SOURCES, buildPremiumSmokeEvidenceSourceFiles, mustSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
 
 const read = (relPath) => fs.readFileSync(path.join(repoRoot, relPath), "utf8");
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
 const must = (cond, label) => {
   if (!cond) throw new Error(`FAIL ${label}`);
   console.log(`OK ${label}`);
@@ -20,7 +25,6 @@ const notHas = (text, needle) => !String(text).includes(needle);
 const pkg = read("package.json");
 const smoke = read("backend/scripts/ux_live_panel_premium_smoke_01.mjs");
 const doc = read("docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
 const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -28,6 +32,14 @@ const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
 const gitCached = execFileSync("git", ["diff", "--cached", "--name-only"], { cwd: repoRoot, encoding: "utf8", shell: true }).trim();
 const gitIgnore = read(".gitignore");
 const packageLock = fs.existsSync(path.join(repoRoot, "package-lock.json")) ? read("package-lock.json") : "";
+const reportJsonPath = path.join(
+  repoRoot,
+  "backend",
+  "artifacts",
+  "browser-smoke",
+  "UX_LIVE_PANEL_PREMIUM_SMOKE_01",
+  "report.json"
+);
 
 must(has(pkg, '"smoke:uxlivepanelpremium01": "node backend/scripts/ux_live_panel_premium_smoke_01.mjs"'), "package.json exposes smoke:uxlivepanelpremium01");
 must(has(pkg, '"check:uxlivepanelpremiumsmoke01": "node backend/scripts/ux_live_panel_premium_smoke_01_check.js"'), "package.json exposes check:uxlivepanelpremiumsmoke01");
@@ -79,7 +91,7 @@ must(has(guide, "check:uxlivepanelpremiumsmoke01"), "milestone guide exposes pre
 must(has(guide, "node backend\\scripts\\ux_live_panel_premium_smoke_01.mjs"), "milestone guide includes premium smoke command");
 must(has(guide, "backend/artifacts/browser-smoke/UX_LIVE_PANEL_PREMIUM_SMOKE_01"), "milestone guide documents browser-smoke artifacts");
 
-must(has(runner, "check:uxlivepanelpremiumsmoke01"), "product extensions runner includes premium smoke check");
+assertProductExtensionsIncludes("check:uxlivepanelpremiumsmoke01", "product extensions registry includes premium smoke check");
 must(has(verify, "check:uxlivepanelpremiumsmoke01"), "verify chain includes premium smoke check");
 must(has(harnessCheck, "UX-LIVE-PANEL-PREMIUM-SMOKE-01"), "script harness check knows premium smoke milestone");
 must(has(harnessCheck, "docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md"), "script harness check knows premium smoke doc");
@@ -92,6 +104,23 @@ must(has(gitIgnore, "backend/artifacts/browser-smoke/"), "gitignore keeps browse
 must(notHas(gitCached, "backend/artifacts/runtime-data"), "runtime-data is not staged");
 must(notHas(gitCached, "public-leads.json"), "public-leads runtime data is not staged");
 must(notHas(gitCached, "backend/artifacts/browser-smoke"), "browser-smoke artifacts are not staged");
+
+must(fs.existsSync(reportJsonPath), "premium smoke report exists");
+const report = readJson(reportJsonPath);
+mustSmokeEvidenceIdentity(
+  report,
+  {
+    repoRoot,
+    sourceFiles: buildPremiumSmokeEvidenceSourceFiles(),
+    schemaPath: "backend/prisma/schema.prisma",
+  },
+  "premium smoke report identity"
+);
+if (Array.isArray(report.coverageSources)) {
+  for (const source of PREMIUM_SMOKE_COVERAGE_SOURCES) {
+    must(report.coverageSources.includes(source), `premium smoke report keeps coverage source ${source}`);
+  }
+}
 
 must(notHas(doc, "payment execute açma"), "doc avoids action wording for payment execute");
 must(notHas(doc, "billing execute açma"), "doc avoids action wording for billing execute");

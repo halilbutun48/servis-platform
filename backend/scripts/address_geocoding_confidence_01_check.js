@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -178,8 +181,7 @@ async function main() {
   console.log('=== ADDRESS-GEOCODING-CONFIDENCE-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -194,8 +196,8 @@ async function main() {
   const cachedNames = gitCachedNames();
 
   must(pkg, '"check:addressgeocodingconfidence01": "node backend/scripts/address_geocoding_confidence_01_check.js"', 'package.json exposes address geocoding confidence check');
-  ordered(runner, ['check:copilotexceldemandimport01', 'check:addressgeocodingconfidence01', 'check:uxcopilotsmartchips01'], 'product extensions runner places address geocoding confidence after Excel demand import');
-  ordered(verify, ['check:copilotexceldemandimport01', 'check:addressgeocodingconfidence01', 'check:uxcopilotsmartchips01'], 'verify chain places address geocoding confidence after Excel demand import');
+  assertProductExtensionsOrder(['check:copilotexceldemandimport01', 'check:addressgeocodingconfidence01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps address geocoding confidence after Excel demand import', registryScripts);
+  assertProductExtensionsOrder(['check:copilotexceldemandimport01', 'check:addressgeocodingconfidence01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps address geocoding confidence after Excel demand import', registryScripts);
 
   must(guide, 'ADDRESS-GEOCODING-CONFIDENCE-01', 'milestone guide mentions address geocoding confidence milestone');
   must(guide, 'check:addressgeocodingconfidence01', 'milestone guide exposes address geocoding confidence check');
@@ -307,7 +309,11 @@ async function main() {
   must(harnessDoc, 'backend/src/ai/chat/addressGeocodingConfidencePolicy.js', 'script harness doc lists address geocoding confidence helper');
   must(harnessDoc, 'ADDRESS-GEOCODING-CONFIDENCE-01', 'script harness doc lists address geocoding confidence milestone');
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'backend route/service/schema and Prisma diff stays empty'
+  );
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
 
   console.log('=== ADDRESS-GEOCODING-CONFIDENCE-01 CHECK PASS ===');

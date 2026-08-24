@@ -5,6 +5,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS,
+} from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
+import { assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -267,8 +273,6 @@ function main() {
   console.log('=== UX-DENSITY-01 PANEL/CARD DENSITY CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const cssSource = read('web/src/index.css');
@@ -283,8 +287,8 @@ function main() {
   const drawerSource = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
 
   must(pkg, '"check:uxdensity01": "node backend/scripts/ux_density_01_panel_card_density_check.js"', 'package.json exposes check:uxdensity01');
-  must(runner, 'check:uxdensity01', 'product extensions runner includes UX-DENSITY-01');
-  must(verifyChain, 'check:uxdensity01', 'verify chain includes UX-DENSITY-01');
+  assertProductExtensionsOrder(['check:uxmobileoverflowminimappolish02', 'check:uxdensity01', 'check:uxpanelstandardarchitecture01'], 'product extensions registry keeps UX-DENSITY-01 after mobile overflow mini-map polish');
+  assertProductExtensionsOrder(['check:uxmobileoverflowminimappolish02', 'check:uxdensity01', 'check:uxpanelstandardarchitecture01'], 'verify chain registry keeps UX-DENSITY-01 after mobile overflow mini-map polish');
 
   must(guide, 'UX-DENSITY-01', 'script guide mentions UX-DENSITY-01');
   must(guide, 'check:uxdensity01', 'script guide exposes check:uxdensity01');
@@ -338,7 +342,15 @@ function main() {
   mustTrue(staged.length === 0, 'stage remains empty');
   mustAcceptedPrismaManifest();
 
-  const changed = changedFiles().filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
+  const approvedConcurrentBackendPaths = new Set(CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS);
+  const changed = changedFiles().filter(
+    (file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)) && !approvedConcurrentBackendPaths.has(normalizePath(file))
+  );
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/routes', 'backend/src/services'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'approved NEW-01 backend diff is identity-locked'
+  );
   assertNoRestrictedBackendPaths(changed);
 
   const visibleText = [

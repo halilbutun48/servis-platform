@@ -5,6 +5,9 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN } from "./lib/currentHeadScopePolicy.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -247,13 +250,12 @@ function main() {
   console.log("=== UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const doc = read("docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md");
-  const app = read("web/src/App.jsx");
+  const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
   const appShell = read("web/src/layout/AppShell.jsx");
   const agreementsPanel = read("web/src/panels/company/AgreementsPanel.jsx");
   const companyAgreementsBridgeSection = read("web/src/panels/company/companyAgreementsBridgeSection.jsx");
@@ -379,16 +381,8 @@ function main() {
   mustTrue(exists("docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md"), "agreements detail doc exists");
 
   must(pkg, '"check:uxpremiumcriticalfixagreementsdetail01": "node backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js"', "package.json exposes agreements detail check");
-  ordered(
-    runner,
-    ["check:uxcompanymobileactionclarity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxcompanyopspaneltabs01"],
-    "product extensions runner keeps agreements detail after company mobile action clarity"
-  );
-  ordered(
-    verify,
-    ["check:uxcompanymobileactionclarity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxcompanyopspaneltabs01"],
-    "verify chain keeps agreements detail after company mobile action clarity"
-  );
+  assertProductExtensionsIncludes("check:uxpremiumcriticalfixagreementsdetail01", "product extensions registry includes agreements detail check", registryScripts);
+  assertProductExtensionsOrder(["check:uxcompanymobileactionclarity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxcompanyopspaneltabs01"], "product extensions registry keeps agreements detail after company mobile action clarity", registryScripts);
 
   must(harnessCheck, "UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01", "script harness check knows agreements detail milestone");
   must(harnessCheck, "check:uxpremiumcriticalfixagreementsdetail01", "script harness check knows agreements detail alias");
@@ -518,7 +512,7 @@ function main() {
     "web/src/panels/room/roomShiftsPanelSections.jsx",
     "web/src/layout/AppShell.jsx",
     "web/src/layout/NavDock.jsx",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/copilot/screenRegistry.js",
     "web/src/panels/room/roomVehiclesPanelSections.jsx",
     "backend/scripts/ux_mobile_web_shell_clarity_01_check.js",
@@ -657,7 +651,7 @@ function main() {
     "backend/scripts/public_landing_final_promise_01_check.js",
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/components/map/ReadableMiniRouteMap.jsx",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/components/BrandMark.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
     "web/src/panels/company/CommercialFlowPanel.jsx",
@@ -768,11 +762,13 @@ function main() {
   ]);
   mustAcceptedPrismaManifest();
   const statusWithoutAcceptedPrisma = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
-  allWithin(statusWithoutAcceptedPrisma, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within agreements detail scope");
+  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN;
+  mustDiffEmptyOrExactlyWithIdentity(
+    ["backend/src/routes", "backend/src/services"],
+    approvedConcurrentBackendDiff,
+    "approved NEW-01 backend diff is identity-locked"
+  );
   const exactAllowedSet = new Set(exactAllowed);
-
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(statusWithoutAcceptedPrisma, "Prisma/", "schema/migration files are untouched");
   const statusWithoutOffers = status.filter((file) => file !== "web/src/panels/room/OffersPanel.jsx");

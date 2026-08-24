@@ -330,6 +330,11 @@ export default function App() {
       return { layout: true, node: <div style={{ padding: 16 }}>PIN ekranına yönlendiriliyor...</div> };
     }
 
+    if (cleanPath.startsWith("/superadmin") && me.role !== "SUPER_ADMIN") {
+      navigate(roleDefaultPath(me));
+      return { layout: true, node: <div style={{ padding: 16 }}>Yönlendiriliyor...</div> };
+    }
+
     // Shared
     if (path === "/shared/notifications") return { layout: true, node: <NotificationsPanel /> };
     if (path === "/shared/logs") return { layout: true, node: <LogsPanel /> };

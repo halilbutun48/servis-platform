@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,12 +72,11 @@ function main() {
   console.log("=== UX-ROOM-PANEL-CLARITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const doc = read("docs/UX_ROOM_PANEL_CLARITY_01.md");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const shiftsPanel = read("web/src/panels/room/ShiftsPanel.jsx");
   const shiftsOverview = read("web/src/panels/room/roomShiftsOverviewSection.jsx");
@@ -88,8 +89,11 @@ function main() {
   const roomOpsBoard = read("web/src/panels/room/roomOperationsBoard.jsx");
 
   must(pkg, '"check:uxroompanelclarity01": "node backend/scripts/ux_room_panel_clarity_01_check.js"', "package.json exposes room panel clarity check");
-  must(runner, "check:uxroompanelclarity01", "product extensions runner includes room panel clarity check");
-  must(verify, "check:uxroompanelclarity01", "verify chain includes room panel clarity check");
+  assertProductExtensionsIncludes(
+    "check:uxroompanelclarity01",
+    "product extensions registry includes room panel clarity check",
+    registryScripts
+  );
   must(harnessCheck, "docs/UX_ROOM_PANEL_CLARITY_01.md", "script harness check knows room panel clarity doc");
   must(harnessCheck, "UX-ROOM-PANEL-CLARITY-01", "script harness check knows room panel clarity milestone");
   must(harnessDoc, "docs/UX_ROOM_PANEL_CLARITY_01.md", "script harness doc lists room panel clarity doc");
@@ -331,7 +335,7 @@ function main() {
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "docs/UX_PANEL_REALITY_AUDIT_02C.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/copilot/screenRegistry.js",
     "web/src/layout/NavDock.jsx",
     "web/src/panels/room/VehiclesPanel.jsx",

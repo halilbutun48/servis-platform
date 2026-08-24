@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const root = process.argv[2] || process.cwd();
 
@@ -35,7 +36,7 @@ const fail = (m) => {
   process.exit(1);
 };
 
-const app = read('web/src/App.jsx');
+const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
 const eb = read('web/src/components/ErrorBoundary.jsx');
 
 if (!includesText(app, 'const routeResetKey = cleanPath || path || "default";')) fail('route reset key missing'); else ok('route reset key exists');

@@ -4,11 +4,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from "./lib/productExtensionsRegistry.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const root = path.resolve(__dirname, "../..");
-
+  const root = path.resolve(__dirname, "../..");
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
 }
@@ -101,8 +107,6 @@ function main() {
   console.log("=== UX-MARKETPLACE-PANELS-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const primer = read("docs/PRIMER_SSOT.md");
   const roadmap = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
@@ -113,14 +117,14 @@ function main() {
   const cachedNames = gitCachedNames();
 
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', "package.json exposes marketplace panels check");
-  must(runner, "check:uxmarketplacepanels01", "product extensions runner includes marketplace panels check");
-  must(verify, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', "verify chain exposes marketplace panels check");
-  ordered(runner, [
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+  assertProductExtensionsIncludes("check:uxmarketplacepanels01", "product extensions registry includes marketplace panels check", registryScripts);
+  assertProductExtensionsOrder([
     "check:invitebasedmembership01",
     "check:verifiedsupplier01",
     "check:uxmarketplacepanels01",
     "check:productflowbuttonaudit01",
-  ], "marketplace panels sits right after verified supplier");
+  ], "product extensions registry order for marketplace panels", registryScripts);
 
   must(guide, "UX-MARKETPLACE-PANELS-01", "script guide mentions marketplace panels milestone");
   must(guide, "check:uxmarketplacepanels01", "script guide exposes marketplace panels check");
@@ -196,7 +200,7 @@ function main() {
   must(harnessDoc, "docs/UX_MARKETPLACE_PANELS_01.md", "script harness doc lists marketplace panels doc");
   must(harnessDoc, "UX-MARKETPLACE-PANELS-01", "script harness doc lists marketplace panels milestone");
 
-  mustNoDiffExcept(["backend/src/routes", "backend/src/services", "prisma"], ['backend/src/routes/companyOverview.js'], "backend route/service/schema and Prisma diff stays empty");
+  mustNoDiffExceptWithIdentity(["backend/src/routes", "backend/src/services", "prisma"], CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, "backend route/service/schema and Prisma diff limited to approved concurrent runtime paths");
   mustNoStagedPrefix(cachedNames, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "runtime-data and browser-smoke stay commit-external");
 
   console.log("=== UX-MARKETPLACE-PANELS-01 CHECK PASS ===");

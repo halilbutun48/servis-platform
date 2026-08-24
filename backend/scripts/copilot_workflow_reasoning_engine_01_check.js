@@ -10,6 +10,7 @@ import {
   buildWorkflowReasoningState,
 } from '../src/ai/chat/conversationWorkflowReasoningEngine.js';
 import { buildSeferAbiReasoningAssistant } from '../src/ai/chat/seferAbiReasoningAssistant.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -278,19 +279,18 @@ const helperSource = read('backend/src/ai/chat/conversationWorkflowReasoningEngi
 const assistantSource = read('backend/src/ai/chat/seferAbiReasoningAssistant.js');
 const barrelSource = read('backend/src/ai/chat/conversationTaskStateResponses.js');
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const primer = read('docs/PRIMER_SSOT.md');
 const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
 const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
 const workflowDoc = read('docs/COPILOT_WORKFLOW_REASONING_ENGINE_01.md');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 let assertionCount = 0;
 
 must(pkg, '"check:copilotworkflowreasoningengine01": "node backend/scripts/copilot_workflow_reasoning_engine_01_check.js"', 'package.json exposes workflow reasoning engine check');
-must(runner, 'check:copilotworkflowreasoningengine01', 'product extensions runner includes workflow reasoning engine check');
-must(verifyChain, 'check:copilotworkflowreasoningengine01', 'verify chain check includes workflow reasoning engine');
+assertProductExtensionsOrder(['check:copilotclarifyingquestionengine01', 'check:copilotworkflowreasoningengine01', 'check:copilotreasoninganswercomposer01'], 'product extensions registry keeps workflow reasoning engine between clarifying and composer', registryScripts);
+assertProductExtensionsOrder(['check:copilotclarifyingquestionengine01', 'check:copilotworkflowreasoningengine01', 'check:copilotreasoninganswercomposer01'], 'verify chain registry keeps workflow reasoning engine between clarifying and composer', registryScripts);
 must(guide, 'COPILOT-WORKFLOW-REASONING-ENGINE-01', 'script guide mentions workflow reasoning engine');
 must(guide, 'check:copilotworkflowreasoningengine01', 'script guide exposes workflow reasoning engine check');
 must(guide, 'node backend\\scripts\\copilot_workflow_reasoning_engine_01_check.js', 'script guide includes workflow reasoning engine command');

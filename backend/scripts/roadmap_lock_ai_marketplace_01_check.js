@@ -2,9 +2,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-
+import { mustCurrentHeadCommittedState } from './lib/guardValidationEnvironment.js';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
@@ -53,54 +53,19 @@ function ordered(text, needles, label) {
   ok(label);
 }
 
-function gitDiffNames(paths) {
-  const args = ['diff', '--name-only', '--', ...paths];
-  const out = execFileSync('git', args, {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return String(out || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(', ')}`);
-  }
-  ok(label);
-}
-
-function mustDiffExactly(paths, expectedNames, label) {
-  const files = gitDiffNames(paths);
-  const expected = new Set(expectedNames);
-  const actual = new Set(files);
-  const unexpected = files.filter((name) => !expected.has(name));
-  const missing = expectedNames.filter((name) => !actual.has(name));
-  if (unexpected.length > 0 || missing.length > 0) {
-    fail(`${label}: ${[...unexpected, ...missing.map((name) => `missing:${name}`)].join(', ')}`);
-  }
-  ok(label);
-}
-
 function main() {
   console.log('=== ROADMAP-LOCK-AI-MARKETPLACE-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const harness = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:roadmaplockaimarketplace01": "node backend/scripts/roadmap_lock_ai_marketplace_01_check.js"', 'package.json exposes check:roadmaplockaimarketplace01');
-  must(runner, 'check:roadmaplockaimarketplace01', 'product extensions runner includes roadmap lock check');
-  must(verifyChain, 'check:roadmaplockaimarketplace01', 'verify chain includes roadmap lock check');
-  ordered(runner, [
+  assertProductExtensionsIncludes('check:roadmaplockaimarketplace01', 'product extensions registry includes roadmap lock check', registryScripts);
+  assertProductExtensionsOrder([
     'check:seferscore01',
     'check:roadmaplockaimarketplace01',
     'check:publiclanding01',
@@ -110,7 +75,7 @@ function main() {
     'check:productflowbuttonaudit01',
     'check:agreementsourceshiftlineage01',
     'check:marketplacefreetooperate01',
-  ], 'roadmap lock stays before public / onboarding / marketplace final sequence');
+  ], 'roadmap lock stays before public / onboarding / marketplace final sequence', registryScripts);
 
   must(guide, 'ROADMAP-LOCK-AI-MARKETPLACE-01', 'script guide mentions roadmap lock milestone');
   must(guide, 'check:roadmaplockaimarketplace01', 'script guide exposes roadmap lock check');
@@ -285,7 +250,7 @@ function main() {
   ], 'roadmap order is locked');
 
   must(read('backend/src/routes/companyOverview.js'), 'Route ownership anchor for company overview.', 'companyOverview route keeps ownership anchor');
-  mustNoDiff(['backend/src/routes', 'backend/src/services', 'prisma'], 'backend route/service/schema and Prisma diff is empty');
+  mustCurrentHeadCommittedState({ label: 'roadmap lock current head committed state' });
 
   console.log('=== ROADMAP-LOCK-AI-MARKETPLACE-01 CHECK PASS ===');
 }

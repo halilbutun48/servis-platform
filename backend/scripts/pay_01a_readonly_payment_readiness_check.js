@@ -56,7 +56,7 @@ console.log("=== PAY-01A READONLY PAYMENT READINESS CHECK ===");
 const rootPkg = read("package.json");
 const panel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const card = read("web/src/components/PaymentReadinessReadonlyCard.jsx");
-const route = read("backend/src/routes/commercialCore.js");
+const route = read("backend/src/routes/commercialCorePaymentRoutes.js");
 const schema = read("backend/prisma/schema.prisma");
 
 must(rootPkg, '"check:pay01a": "node backend/scripts/pay_01a_readonly_payment_readiness_check.js"', "root package exposes check:pay01a");

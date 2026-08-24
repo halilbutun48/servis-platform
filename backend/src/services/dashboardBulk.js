@@ -292,7 +292,11 @@ async function loadCompanyShifts(user, { status = ["APPROVED", "ACTIVE", "DONE"]
               lat: true,
               lng: true,
               speed: true,
-              sourceLabel: true,
+            },
+          },
+          gpsState: {
+            select: {
+              lastSource: true,
             },
           },
         },
@@ -322,7 +326,25 @@ async function loadCompanyShifts(user, { status = ["APPROVED", "ACTIVE", "DONE"]
       },
     },
   });
-  return safeArray(items);
+  return safeArray(items).map((item) => {
+    const sourceLabel = String(item?.vehicle?.gpsState?.lastSource || "").trim() || null;
+    if (!item?.vehicle) return item;
+
+    const { gpsState: _gpsState, ...vehicle } = item.vehicle;
+
+    return {
+      ...item,
+      vehicle: item.vehicle.gpsLast
+        ? {
+            ...vehicle,
+            gpsLast: {
+              ...item.vehicle.gpsLast,
+              sourceLabel,
+            },
+          }
+        : vehicle,
+    };
+  });
 }
 
 function buildRequestFiltersForUser(user) {

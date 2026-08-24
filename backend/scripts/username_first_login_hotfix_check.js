@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const cwd = process.cwd();
 const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
@@ -39,7 +40,7 @@ const files = [
   "backend/src/routes/auth.js",
   "backend/src/routes/admin.js",
   "backend/src/routes/me.js",
-  "web/src/App.jsx",
+  APP_JSX_ROLE_TENANT_SCOPE_PATHS[0],
   "web/src/panels/superadmin/UsersPanel.jsx",
   "backend/src/auth/usernameDirectory.js",
 ];

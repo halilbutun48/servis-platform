@@ -54,7 +54,8 @@ function mustNoMigrationMarker(marker, label) {
 console.log("=== PAY-SAFE-01 PAYMENT WRITE GATE CHECK ===");
 
 const rootPkg = read("package.json");
-const route = read("backend/src/routes/commercialCore.js");
+const route = read("backend/src/routes/commercialCorePaymentRoutes.js");
+const reportsRoute = read("backend/src/routes/commercialCorePaymentReportsRoutes.js");
 const service = read("backend/src/services/paymentBackbone.js");
 const panel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const safetyBadge = read("web/src/components/PaymentReadonlySafetyBadge.jsx");
@@ -113,10 +114,40 @@ for (const needle of [
   'r.get("/payment-backbone/accounts/candidates"',
   'r.get("/payment-backbone/settlement/status"',
   'r.get("/payment-backbone/settlement/queue"',
-  'r.get("/payment-backbone/readiness/preview"',
-  'r.get("/payment-backbone/readiness/preview.csv"',
 ]) {
   must(route, needle, `commercial core route keeps readonly endpoint: ${needle}`);
+}
+
+for (const needle of [
+  "/payment-backbone/sources",
+  "/payment-backbone/sources/export.csv",
+  "/payment-backbone/settlement/ledger/export.csv",
+  "/payment-backbone/readiness/preview",
+  "/payment-backbone/readiness/preview.csv",
+]) {
+  mustNot(route, needle, `commercial core route keeps report endpoint out of write owner: ${needle}`);
+  must(reportsRoute, needle, `commercial core payment reports route keeps report endpoint: ${needle}`);
+}
+
+for (const needle of [
+  "paymentBackboneWriteGuard",
+  "paymentBackboneWrite",
+  "assertPaymentBackboneWriteEnabled",
+  'r.post("/payment-backbone/settings/global"',
+  'r.post("/payment-backbone/settings/room"',
+  'r.delete("/payment-backbone/settings/room/:roomId"',
+  'r.post("/payment-backbone/pilot/activate"',
+  'r.post("/payment-backbone/pilot/deactivate"',
+  'r.post("/payment-backbone/required/activate"',
+  'r.post("/payment-backbone/required/deactivate"',
+  'r.post("/payment-backbone/accounts/upsert"',
+  'r.post("/payment-backbone/settlement/entries/plan"',
+  'r.post("/payment-backbone/settlement/entries/ready"',
+  'r.post("/payment-backbone/settlement/entries/execute"',
+  'r.post("/payment-backbone/settlement/entries/cancel"',
+  'r.post("/payment-backbone/reconciliation/records/upsert"',
+]) {
+  mustNot(reportsRoute, needle, `commercial core payment reports route keeps write owner code out: ${needle}`);
 }
 
 must(panel, "paymentBackboneWriteEnabled", "commercial core panel derives payment write gate");

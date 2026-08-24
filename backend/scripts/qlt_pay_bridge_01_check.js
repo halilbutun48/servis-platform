@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,8 +82,6 @@ const intentRouter = read("backend/src/ai/chat/intentRouter.js");
 const answerQualityPolicy = read("backend/src/ai/chat/answerQualityPolicy.js");
 const goldenQuestionPack = read("backend/src/ai/chat/goldenQuestionPack.js");
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const milestoneDoc = read("docs/QLT_PAY_BRIDGE_01.md");
 const companyBridgeSection = read("web/src/panels/company/companyAgreementsBridgeSection.jsx");
@@ -179,8 +178,7 @@ must(goldenQuestionPack, "Kalite hakedişi etkiliyor mu?", "golden questions inc
 must(goldenQuestionPack, "Bu servis kanıt açısından güvenli mi?", "golden questions include proof safety preview");
 
 must(pkg, '"check:qltpaybridge01": "node backend/scripts/qlt_pay_bridge_01_check.js"', "package exposes qlt pay bridge check");
-must(runner, "check:qltpaybridge01", "product extensions runner includes qlt pay bridge check");
-must(verifyChain, "check:qltpaybridge01", "verify chain includes qlt pay bridge check");
+assertProductExtensionsIncludes("check:qltpaybridge01", "product extensions registry includes qlt pay bridge check");
 must(guide, "QLT-PAY-BRIDGE-01", "script guide mentions qlt pay bridge milestone");
 must(guide, "check:qltpaybridge01", "script guide exposes qlt pay bridge check");
 must(milestoneDoc, "Sadece önizleme — ödeme başlatılmaz", "milestone doc keeps safe preview boundary");

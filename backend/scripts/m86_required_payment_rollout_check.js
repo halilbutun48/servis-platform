@@ -59,7 +59,7 @@ function mustMentionMilestone(text, milestone, descriptors, label) {
 }
 
 const service = read("backend/src/services/paymentBackbone.js");
-const route = read("backend/src/routes/commercialCore.js");
+const route = read("backend/src/routes/commercialCorePaymentRoutes.js");
 const panel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const readonlySummary = read("web/src/components/CommercialReadonlySummary.jsx");
 const backendPkg = read("backend/package.json");

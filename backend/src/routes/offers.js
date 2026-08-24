@@ -11,6 +11,7 @@ import { rememberResponse } from "../utils/responseCache.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { validateWithZod } from "../z.js";
 import { findPackageShiftIdsByShiftId } from "../services/shiftPackage.js";
+import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 
 import { counterShiftOfferSchema } from "./shifts/schemas.js";
 import * as H from "./shifts/helpers.js";
@@ -251,6 +252,7 @@ function parseStatusFilter(raw) {
 
 export function offersRouter(io) {
   const r = express.Router();
+  wrapAsyncRouterMethods(r);
   r.use(authRequired(), requireRole("ROOM", "COMPANY", "SUPER_ADMIN"), requireStepUpWrite("COMPANY", "ROOM", "SUPER_ADMIN"));
 
   // ROOM: inbox

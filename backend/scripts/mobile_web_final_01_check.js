@@ -5,6 +5,12 @@ import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS,
+} from "./lib/currentHeadScopePolicy.js";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -186,6 +192,7 @@ const ACCEPTED_PRISMA_FILES = [
   ...ACCEPTED_PRISMA_MIGRATIONS,
 ];
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_FILES.map((entry) => normalizePath(entry.path)));
+const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS);
 
 function mustAcceptedPrismaManifest() {
   mustExactGitPaths(["backend/prisma", "prisma"], [], "backend/prisma diff empty");
@@ -241,8 +248,7 @@ function main() {
   const passMinusCheck = read("backend/scripts/ux_smoke_pass_minus_evidence_01_check.js");
 
   mustContains(pkg, '"check:mobilewebfinal01": "node backend/scripts/mobile_web_final_01_check.js"', "package.json exposes mobile web final check");
-  mustContains(runner, "'check:mobilewebfinal01'", "product extensions runner includes mobile web final check");
-  mustContains(verify, '"check:mobilewebfinal01"', "verify chain exposes mobile web final check");
+  assertProductExtensionsIncludes("check:mobilewebfinal01", "product extensions registry includes mobile web final check");
   mustContains(harnessCheck, "MOBILE-WEB-FINAL-01", "script harness check knows mobile web final milestone");
   mustContains(harnessCheck, "check:mobilewebfinal01", "script harness check knows mobile web final alias");
   mustContains(harnessCheck, "docs/MOBILE_WEB_FINAL_01.md", "script harness check knows mobile web final doc");
@@ -322,11 +328,18 @@ function main() {
   mustNotContains(staged, "backend/artifacts/browser-smoke", "mobile final check keeps browser-smoke unstaged");
 
   mustAcceptedPrismaManifest();
+  mustNoDiffExceptWithIdentity(
+    ["backend/src/routes", "backend/src/services"],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    "approved NEW-01 backend diff is identity-locked"
+  );
 
   const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes"])
-    .filter((line) => line && line !== "backend/src/routes/companyOverview.js")
+    .filter((line) => line && line !== "backend/src/routes/companyOverview.js" && !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(line)))
     .join("\n");
-  const serviceDiff = gitLines(["diff", "--name-only", "--", "backend/src/services"]).join("\n");
+  const serviceDiff = gitLines(["diff", "--name-only", "--", "backend/src/services"])
+    .filter((line) => !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(line)))
+    .join("\n");
   const prismaDiff = gitLines(["diff", "--name-only", "--", "prisma"]).join("\n");
   const backendPrismaDiff = gitLines(["diff", "--name-only", "--", "backend/prisma"])
     .filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)))

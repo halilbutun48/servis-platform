@@ -3,6 +3,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,7 +79,6 @@ async function main() {
   console.log('=== MARKETPLACE-FREE-TO-OPERATE-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const docs = read('docs/MARKETPLACE_FREE_TO_OPERATE_01.md');
   const lineageDocs = read('docs/AGREEMENT_SOURCE_SHIFT_LINEAGE_01.md');
@@ -94,10 +98,11 @@ async function main() {
   const answerPolicy = read('backend/src/ai/chat/answerQualityPolicy.js');
   const helpComposer = read('backend/src/ai/chat/helpComposer.js');
   const goldenPack = read('backend/src/ai/chat/goldenQuestionPack.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:marketplacefreetooperate01": "node backend/scripts/marketplace_free_to_operate_01_check.js"', 'package.json exposes marketplace check');
-  must(runner, 'check:marketplacefreetooperate01', 'product extensions runner includes marketplace check');
-  ordered(runner, ['check:qltpaybridge01', 'check:seferscore01', 'check:agreementsourceshiftlineage01', 'check:marketplacefreetooperate01', 'check:pay01e'], 'product extensions order keeps source-lineage before marketplace and payment preview');
+  assertProductExtensionsIncludes('check:marketplacefreetooperate01', 'product extensions registry includes marketplace check', registryScripts);
+  assertProductExtensionsOrder(['check:qltpaybridge01', 'check:seferscore01', 'check:agreementsourceshiftlineage01', 'check:marketplacefreetooperate01', 'check:pay01e'], 'product extensions registry order keeps source-lineage before marketplace and payment preview', registryScripts);
   must(guide, 'MARKETPLACE-FREE-TO-OPERATE-01', 'script guide mentions marketplace milestone');
   must(guide, 'check:marketplacefreetooperate01', 'script guide exposes marketplace check');
   must(lineageDocs, 'AGREEMENT-SOURCE-SHIFT-LINEAGE-01', 'lineage doc names the milestone');

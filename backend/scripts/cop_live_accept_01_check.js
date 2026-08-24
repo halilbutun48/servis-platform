@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -283,8 +284,7 @@ async function main() {
   console.log('=== COP-LIVE-ACCEPT-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const matrixDoc = read(matrixDocPath);
@@ -304,8 +304,8 @@ async function main() {
   must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json keeps product extensions runner');
   must(pkg, '"check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js"', 'package.json keeps verify chain');
 
-  must(runner, 'check:copliveaccept01', 'product extensions runner includes COP-LIVE-ACCEPT-01');
-  must(verifyChain, 'check:copliveaccept01', 'verify chain includes COP-LIVE-ACCEPT-01');
+  assertProductExtensionsIncludes('check:copliveaccept01', 'product extensions registry includes COP-LIVE-ACCEPT-01', registryScripts);
+  assertProductExtensionsIncludes('check:copliveaccept01', 'verify chain registry includes COP-LIVE-ACCEPT-01', registryScripts);
   must(guide, 'COP-LIVE-ACCEPT-01', 'script guide mentions COP-LIVE-ACCEPT-01');
   must(guide, 'check:copliveaccept01', 'script guide exposes check:copliveaccept01');
   must(auditDoc, 'COP-LIVE-ACCEPT-01 kapsam notu', 'copilot context audit keeps live accept scope note');

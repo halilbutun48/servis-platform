@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +48,7 @@ function mustContains(text, needle, label) {
 
 function main() {
   console.log("=== UX-PANEL-LAYOUT-WIDTH-02C-FIX-02 CHECK ===");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const auditPath = "docs/UX_PANEL_STRUCTURE_02_AUDIT.md";
   must(exists(auditPath), "structure audit doc exists");
@@ -81,12 +83,7 @@ function main() {
 
   const pkg = read("package.json");
   mustContains(pkg, '"check:uxpanellayoutwidth02cfix02"', "package.json exposes width fix 02 check");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxpanellayoutwidth02cfix02", "product extensions runner includes width fix 02 check");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxpanellayoutwidth02cfix02", "verify chain includes width fix 02 check");
+  assertProductExtensionsIncludes("check:uxpanellayoutwidth02cfix02", "product extensions registry includes width fix 02 check", registryScripts);
 
   console.log("=== UX-PANEL-LAYOUT-WIDTH-02C-FIX-02 CHECK PASS ===");
 }

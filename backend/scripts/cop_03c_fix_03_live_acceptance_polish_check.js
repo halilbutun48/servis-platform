@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,8 +67,6 @@ function ordered(text, needles, label) {
 console.log('=== COP-03C-FIX-03 LIVE ACCEPTANCE POLISH CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const facts = read('web/src/utils/copilotFacts.js');
 const service = read('backend/src/ai/service.js');
@@ -76,13 +75,14 @@ const helpComposer = read('backend/src/ai/chat/helpComposer.js');
 const helpComposerEntityRuntime = read('backend/src/ai/chat/helpComposerEntityRuntime.js');
 const intentRouter = read('backend/src/ai/chat/intentRouter.js');
 const operationHealthPanel = read('web/src/panels/room/OperationHealthPanel.jsx');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop03cfix03": "node backend/scripts/cop_03c_fix_03_live_acceptance_polish_check.js"', 'package.json exposes check:cop03cfix03');
 must(pkg, '"check:cop03cfix02"', 'package.json keeps check:cop03cfix02');
 must(pkg, '"check:cop03cfix01"', 'package.json keeps check:cop03cfix01');
 must(pkg, '"check:cop03c"', 'package.json keeps check:cop03c');
 
-ordered(runner, [
+assertProductExtensionsOrder([
   'check:op04',
   'check:qlt04b',
   'check:pay01e',
@@ -104,9 +104,10 @@ ordered(runner, [
   'check:fieldlaunch01',
   'check:cop03cfix02',
   'check:cop03cfix03',
-], 'product extensions runner order keeps cop03cfix03 last');
+], 'product extensions registry order keeps cop03cfix03 last', registryScripts);
 
-must(verifyChain, 'check:cop03cfix03', 'verify chain waits for check:cop03cfix03');
+assertProductExtensionsIncludes('check:cop03cfix03', 'product extensions registry references cop03cfix03', registryScripts);
+assertProductExtensionsIncludes('check:cop03cfix03', 'verify chain registry waits for check:cop03cfix03', registryScripts);
 must(guide, 'check:cop03cfix03', 'script guide exposes check:cop03cfix03');
 
 must(helpComposerEntityRuntime, 'Önerilen adım:', 'entity runtime uses recommendation wording');

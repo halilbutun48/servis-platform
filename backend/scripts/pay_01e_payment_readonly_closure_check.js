@@ -58,7 +58,7 @@ const panel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const safetyBadge = read("web/src/components/PaymentReadonlySafetyBadge.jsx");
 const readinessCard = read("web/src/components/PaymentReadinessReadonlyCard.jsx");
 const previewCard = read("web/src/components/PaymentPreviewReadonlyCard.jsx");
-const route = read("backend/src/routes/commercialCore.js");
+const route = read("backend/src/routes/commercialCorePaymentReportsRoutes.js");
 const schema = read("backend/prisma/schema.prisma");
 
 must(rootPkg, '"check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js"', "root package exposes check:pay01e");
@@ -112,12 +112,12 @@ mustNot(previewCard, "hash", "payment preview card does not expose hash wording"
 mustNot(previewCard, "debug", "payment preview card does not expose debug wording");
 mustNot(previewCard, "ödemeyi başlat", "payment preview card does not expose start-payment wording");
 
-must(route, 'r.get("/payment-backbone/readiness/preview", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {', "commercial core route keeps readonly payment preview GET endpoint");
-must(route, 'r.get("/payment-backbone/readiness/preview.csv", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {', "commercial core route keeps readonly payment preview CSV GET endpoint");
-mustNot(route, 'r.post("/payment-backbone/readiness/preview.csv"', "commercial core route does not add payment preview CSV POST endpoint");
-mustNot(route, 'r.put("/payment-backbone/readiness/preview.csv"', "commercial core route does not add payment preview CSV PUT endpoint");
-mustNot(route, 'r.patch("/payment-backbone/readiness/preview.csv"', "commercial core route does not add payment preview CSV PATCH endpoint");
-mustNot(route, 'r.delete("/payment-backbone/readiness/preview.csv"', "commercial core route does not add payment preview CSV DELETE endpoint");
+must(route, 'r.get("/payment-backbone/readiness/preview", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {', "commercial core payment route keeps readonly payment preview GET endpoint");
+must(route, 'r.get("/payment-backbone/readiness/preview.csv", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {', "commercial core payment route keeps readonly payment preview CSV GET endpoint");
+mustNot(route, 'r.post("/payment-backbone/readiness/preview.csv"', "commercial core payment route does not add payment preview CSV POST endpoint");
+mustNot(route, 'r.put("/payment-backbone/readiness/preview.csv"', "commercial core payment route does not add payment preview CSV PUT endpoint");
+mustNot(route, 'r.patch("/payment-backbone/readiness/preview.csv"', "commercial core payment route does not add payment preview CSV PATCH endpoint");
+mustNot(route, 'r.delete("/payment-backbone/readiness/preview.csv"', "commercial core payment route does not add payment preview CSV DELETE endpoint");
 
 must(schema, "model PaymentAccount", "schema keeps payment account model");
 must(schema, "model CommissionRule", "schema keeps commission rule model");

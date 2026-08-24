@@ -131,7 +131,7 @@
                                 "policyVersion":  1,
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
-    "currentLargeFileCount":  17,
+    "currentLargeFileCount":  19,
     "currentWarningHotFileCount":  12,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
@@ -253,9 +253,17 @@
                                                                                                       "class":  "safe-candidate-review",
                                                                                                       "note":  "request storm resilience hot path; controlled cleanup adayi"
                                                                                                   },
-                                                        "backend/scripts/ux_panel_standard_architecture_01_check.js":  {
+                                                       "backend/scripts/ai03b_semantic_visible_audit_01_check.js":  {
                                                                                                      "class":  "safe-candidate-review",
-                                                                                                     "note":  "ux panel standard architecture hot path; controlled cleanup adayi"
+                                                                                                     "note":  "semantic visible audit runner; controlled cleanup adayi"
+                                                                                                 },
+                                                       "backend/scripts/security_kvkk_final_01_check.js":  {
+                                                                                                     "class":  "acceptance-sensitive / later",
+                                                                                                     "note":  "security / KVKK final gate; explicit acceptance gerekcesi olmadan acilmaz"
+                                                                                                 },
+                                                       "backend/scripts/ux_live_panel_premium_smoke_01.mjs":  {
+                                                                                                     "class":  "acceptance-sensitive / later",
+                                                                                                     "note":  "premium smoke manual entrypoint; acceptance evidence only"
                                                                                                  }
                                 }
                            },
@@ -372,8 +380,8 @@
                                                    ],
                                     "allowExactFiles":  [
                                                             "artifacts/.gitkeep",
-                                                            "artifacts/backend-dev.err.log",
-                                                            "artifacts/backend-dev.out.log",
+                                                            "tools/backend-dev.err.log",
+                                                            "tools/backend-dev.out.log",
                                                             "artifacts/pack_m89_full_latest.log",
                                                             "artifacts/repo_deep_audit_latest.json",
                                                             "artifacts/repo_deep_audit_latest.md"

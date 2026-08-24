@@ -3,9 +3,8 @@
 - Express REST + Socket.IO
 - Prisma (PostgreSQL)
 
-Container start komutu:
-- npm install
-- prisma generate
-- prisma migrate deploy
-- npm run seed
+Container normal start komutu:
 - npm run dev
+
+Ayrı bootstrap (explicit setup):
+- npm run bootstrap

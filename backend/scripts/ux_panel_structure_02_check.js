@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +57,7 @@ function panelUsesTabs(text) {
 
 function main() {
   console.log("=== UX-PANEL-STRUCTURE-02 CHECK ===");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const auditPath = "docs/UX_PANEL_STRUCTURE_02_AUDIT.md";
   must(exists(auditPath), "audit doc exists");
@@ -182,19 +184,15 @@ function main() {
   mustContains(pkg, '"check:uxpanelstructure02"', "package.json exposes check:uxpanelstructure02");
   mustContains(pkg, '"check:uxcollapsiblepanels01"', "package.json keeps check:uxcollapsiblepanels01");
 
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxpanelstructure02", "product extensions chain keeps panel structure check");
-  mustContains(runner, "check:uxcollapsiblepanels01", "product extensions chain keeps collapsible panels check");
-  mustContains(runner, "check:etaosrm02", "product extensions chain keeps ETA-OSRM-02");
-  mustContains(runner, "check:livetrackingfinal01", "product extensions chain keeps LIVE-TRACKING-FINAL-01");
-  mustContains(runner, "check:driverflowfinal01", "product extensions chain keeps DRIVER-FLOW-FINAL-01");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxpanelstructure02", "verify chain keeps panel structure check");
-  mustContains(verify, "check:uxcollapsiblepanels01", "verify chain keeps collapsible panels check");
-  mustContains(verify, "check:etaosrm02", "verify chain keeps ETA-OSRM-02");
-  mustContains(verify, "check:livetrackingfinal01", "verify chain keeps LIVE-TRACKING-FINAL-01");
-  mustContains(verify, "check:driverflowfinal01", "verify chain keeps DRIVER-FLOW-FINAL-01");
+  assertProductExtensionsIncludes("check:uxpanelstructure02", "product extensions registry keeps panel structure check", registryScripts);
+  assertProductExtensionsIncludes("check:uxcollapsiblepanels01", "product extensions registry keeps collapsible panels check", registryScripts);
+  assertProductExtensionsIncludes("check:etaosrm02", "product extensions registry keeps ETA-OSRM-02", registryScripts);
+  assertProductExtensionsIncludes(
+    "check:livetrackingfinal01",
+    "product extensions registry keeps LIVE-TRACKING-FINAL-01",
+    registryScripts
+  );
+  assertProductExtensionsIncludes("check:driverflowfinal01", "product extensions registry keeps DRIVER-FLOW-FINAL-01", registryScripts);
 
   mustContains(audit, "Room / Araçlar", "audit mentions room vehicle surface");
   mustContains(audit, "Room / Sürücüler", "audit mentions room drivers surface");
@@ -209,4 +207,3 @@ function main() {
 }
 
 main();
-

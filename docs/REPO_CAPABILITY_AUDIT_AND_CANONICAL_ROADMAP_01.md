@@ -188,6 +188,10 @@ Bu sıra, mevcut verified chain'i zayıflatmadan ilerlemek için hazırlanmışt
 
 ## 5) Open Notes
 
+- BATCH-09 kapandı; `Product Extensions 198/198 GREEN`.
+- BATCH-10 technical provenance/current-head closure green.
+- Bu patch BATCH-10 doc/runbook SSOT closure'ını tamamlıyor; executable policy owners zaten canonical durumda.
+- Sonraki planlama kovası: BATCH-11 Repository Knowledge Backbone. Burada başlatılmıyor.
 - Route / service / Prisma / backend-prisma diff boş kaldı.
 - Stage boş kaldı.
 - `debug.log` absent kaldı.

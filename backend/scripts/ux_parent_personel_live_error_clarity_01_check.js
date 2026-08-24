@@ -5,6 +5,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { getCanonicalProvenanceRecord } from "./lib/canonicalProvenanceRegistry.js";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -220,6 +224,34 @@ const ACCEPTED_PRISMA_FILES = [
   ...ACCEPTED_PRISMA_MIGRATIONS,
 ];
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_FILES.map((entry) => normalizePath(entry.path)));
+const APPROVED_CONCURRENT_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
+const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(APPROVED_CONCURRENT_BACKEND_DIFF.map((entry) => normalizePath(entry.path)));
+const STEP181_PROVENANCE_BACKED_CONCURRENT_PATHS = Object.freeze([
+  "backend/src/routes/commercialCorePaymentReportsRoutes.js",
+  "backend/src/routes/commercialCorePaymentRoutes.js",
+  "backend/src/routes/commercialCoreRoomRoutes.js",
+  "backend/src/routes/commercialCoreRouteData.js",
+  "backend/src/routes/commercialCoreRoutes.js",
+]);
+
+function buildStep181ProvenanceBackedConcurrentEntries() {
+  return STEP181_PROVENANCE_BACKED_CONCURRENT_PATHS.map((relPath) => {
+    mustTrue(exists(relPath), `step 181 provenance-backed concurrent path exists for ${relPath}`);
+    const record = getCanonicalProvenanceRecord(relPath);
+    mustTrue(Boolean(record), `step 181 provenance record present for ${relPath}`);
+    mustTrue(record.path === relPath, `step 181 provenance path matches for ${relPath}`);
+    mustTrue(record.baselinePresence === "ABSENT", `step 181 provenance baseline remains ABSENT for ${relPath}`);
+    mustTrue(
+      record.workingTreeState === "UNTRACKED_CANONICAL_NEW_FILE",
+      `step 181 provenance working tree remains canonical for ${relPath}`
+    );
+    mustTrue(record.provenanceClass === "CONCURRENT_CANONICAL", `step 181 provenance class remains concurrent canonical for ${relPath}`);
+    mustTrue(record.lifecycleStatus === "ACTIVE_PROVEN", `step 181 provenance lifecycle remains active proven for ${relPath}`);
+    mustTrue(record.currentHeadPolicyState === "APPROVED", `step 181 provenance current-head policy remains approved for ${relPath}`);
+    mustFileSha256(relPath, record.currentSha256, `step 181 provenance SHA matches for ${relPath}`);
+    return { path: relPath, sha256: record.currentSha256 };
+  });
+}
 
 function mustAcceptedPrismaManifest() {
   mustExactGitPaths(["backend/prisma", "prisma"], [], "backend/prisma diff empty");
@@ -230,24 +262,10 @@ function mustAcceptedPrismaManifest() {
   }
 }
 
-function ordered(text, needles, label) {
-  const haystack = normalize(text);
-  let cursor = 0;
-  for (const needle of needles) {
-    const target = normalize(needle);
-    const idx = haystack.indexOf(target, cursor);
-    if (idx < 0) fail(`${label}: missing ${needle}`);
-    cursor = idx + target.length;
-  }
-  ok(label);
-}
-
 function main() {
   console.log("=== UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -367,8 +385,15 @@ function main() {
   mustTrue(exists("backend/scripts/ux_parent_personel_live_error_clarity_01_check.js"), "parent/personel live error clarity check exists");
 
   must(pkg, '"check:uxparentpersonelliveerrorclarity01": "node backend/scripts/ux_parent_personel_live_error_clarity_01_check.js"', "package.json exposes parent/personel live error clarity check");
-  ordered(runner, ["check:uxlivepanelsmokeaudit01", "check:uxlivepanelpremiumsmoke01", "check:uxparentpersonelliveerrorclarity01", "check:livetrackingfinal01"], "product extensions runner keeps parent/personel live error clarity in live chain");
-  ordered(verify, ["check:uxlivepanelsmokeaudit01", "check:uxlivepanelpremiumsmoke01", "check:uxparentpersonelliveerrorclarity01", "check:livetrackingfinal01"], "verify chain keeps parent/personel live error clarity in live chain");
+  assertProductExtensionsOrder(
+    [
+      "check:uxlivepanelsmokeaudit01",
+      "check:uxlivepanelpremiumsmoke01",
+      "check:uxparentpersonelliveerrorclarity01",
+      "check:livetrackingfinal01",
+    ],
+    "product extensions registry keeps parent/personel live error clarity in live chain"
+  );
 
   must(harnessCheck, "UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01", "script harness check knows parent/personel live error clarity milestone");
   must(harnessCheck, "check:uxparentpersonelliveerrorclarity01", "script harness check knows parent/personel live error clarity alias");
@@ -573,13 +598,27 @@ function main() {
   mustTrue(staged.length === 0, "stage remains empty");
 
   mustAcceptedPrismaManifest();
+  mustNoDiffExceptWithIdentity(["backend/src/routes", "backend/src/services"], APPROVED_CONCURRENT_BACKEND_DIFF, "approved NEW-01 backend diff is identity-locked");
+  const step181ProvenanceBackedConcurrentEntries = buildStep181ProvenanceBackedConcurrentEntries();
+  const step181ProvenanceBackedConcurrentPathSet = new Set(
+    step181ProvenanceBackedConcurrentEntries.map((entry) => normalizePath(entry.path))
+  );
 
   const status = statusNames()
     .filter((file) => !cleanupScopeFiles.includes(file))
     .filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md" && file !== "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md" && file !== "web/src/components/AgreementOpsBridgeCard.jsx" && file !== "web/src/panels/company/AgreementsPanel.jsx" && file !== "web/src/panels/company/companyAgreementsBridgeSection.jsx" && file !== "web/src/panels/company/companyAgreementsPanelHelpers.js" && file !== "web/src/panels/company/companyShiftsPanelSections.jsx" && file !== "web/src/panels/company/WorkflowPanel.jsx" && file !== "web/src/panels/company/companyShiftsPanelCards.jsx");
   const residualStatus = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
-  mustNotList(residualStatus.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
-  mustNotList(residualStatus.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
+  const step181RouteServiceRemainder = residualStatus.filter((file) => !step181ProvenanceBackedConcurrentPathSet.has(normalizePath(file)));
+  mustNotList(
+    step181RouteServiceRemainder.filter((file) => !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(file))),
+    "backend/src/routes/",
+    "backend routes are untouched"
+  );
+  mustNotList(
+    step181RouteServiceRemainder.filter((file) => !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(file))),
+    "backend/src/services/",
+    "backend services are untouched"
+  );
   mustNotList(residualStatus, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustNotList(residualStatus, "Prisma/", "schema/migration files are untouched");
   mustNotList(residualStatus, "web/src/panels/room/", "room surfaces are untouched");

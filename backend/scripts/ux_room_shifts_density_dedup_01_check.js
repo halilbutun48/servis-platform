@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,8 +44,7 @@ function main() {
   console.log("=== UX-ROOM-SHIFTS-DENSITY-DEDUP-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -60,8 +60,7 @@ function main() {
   const utils = read("web/src/panels/room/roomShiftsPanelUtils.js");
 
   mustContains(pkg, '"check:uxroomshiftsdensitydedup01": "node backend/scripts/ux_room_shifts_density_dedup_01_check.js"', "package.json exposes room shifts density dedup check");
-  mustContains(runner, "'check:uxroomshiftsdensitydedup01'", "product extensions runner includes room shifts density dedup check");
-  mustContains(verify, '"check:uxroomshiftsdensitydedup01"', "verify chain exposes room shifts density dedup check");
+  assertProductExtensionsIncludes("check:uxroomshiftsdensitydedup01", "product extensions registry includes room shifts density dedup check", registryScripts);
   mustContains(harnessCheck, "UX-ROOM-SHIFTS-DENSITY-DEDUP-01", "script harness check knows room shifts density dedup milestone");
   mustContains(harnessCheck, "check:uxroomshiftsdensitydedup01", "script harness check knows room shifts density dedup alias");
   mustContains(harnessCheck, "docs/UX_ROOM_SHIFTS_DENSITY_DEDUP_01.md", "script harness check knows room shifts density dedup doc");

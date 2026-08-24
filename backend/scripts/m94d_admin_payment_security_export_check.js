@@ -23,7 +23,9 @@ function extractQuotedList(text, marker) {
 const state = JSON.parse(read("tools/repo_contract_state.json"));
 const adminJs = read("backend/src/routes/admin.js");
 const adminLogsJs = read("backend/src/routes/admin_logs.js");
-const commercialCoreJs = read("backend/src/routes/commercialCore.js");
+const commercialCoreJs = read("backend/src/routes/commercialCorePaymentReportsRoutes.js");
+const commercialCorePaymentRoutesJs = read("backend/src/routes/commercialCorePaymentRoutes.js");
+const commercialCoreRouteDataJs = read("backend/src/routes/commercialCoreRouteData.js");
 const backendPackage = JSON.parse(read("backend/package.json"));
 const primer = read("docs/PRIMER_SSOT.md");
 const registry = read("docs/MILESTONE_REGISTRY_V1.md");
@@ -69,16 +71,19 @@ must("admin logs export remains step-up protected and audited", includesAll(admi
 ]));
 
 must("commercial core settlement ledger export exists and uses standardized audit action", includesAll(commercialCoreJs, [
-  'r.get("/payment-backbone/settlement/ledger/export.csv", authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")',
+  '/payment-backbone/settlement/ledger/export.csv',
+  'authRequired()',
+  'requireStepUpWrite("SUPER_ADMIN")',
+  'requireRole("SUPER_ADMIN")',
   'PAYMENT_LEDGER_EXPORT',
   'PAYMENT_BACKBONE_EXPORT',
-  'csvEscapeLedger',
-  'r.get("/payment-backbone/sources/export.csv", authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")',
+  'buildSettlementLedgerCsvRow',
+  '/payment-backbone/sources/export.csv',
 ]));
 must("commercial core does not keep the old settlement ledger audit action name in route code", !includesText(commercialCoreJs, 'action: "SETTLEMENT_LEDGER_EXPORT"'));
 must(
   "commercial core ledger export columns are standardized and unique",
-  JSON.stringify(extractQuotedList(commercialCoreJs, "const settlementLedgerExportColumns")) === JSON.stringify([
+  JSON.stringify(extractQuotedList(commercialCoreRouteDataJs, "const settlementLedgerExportColumns")) === JSON.stringify([
     "commercialSourceId",
     "sourceType",
     "sourceKey",
@@ -106,13 +111,20 @@ must(
     "updatedAt",
   ])
 );
-must("commercial core ledger export row builder maps from the shared column list", includesText(commercialCoreJs, "settlementLedgerExportColumns.map((key) => csvEscapeLedger(row?.[key] ?? \"\"))"));
+must(
+  "commercial core ledger export row builder maps from the shared column list",
+  includesAll(commercialCoreRouteDataJs, [
+    "function buildSettlementLedgerCsvRow(row)",
+    "settlementLedgerExportColumns",
+    "csvEscapeLedger",
+  ])
+);
 must(
   "commercial core ledger export audit action appears only as PAYMENT_LEDGER_EXPORT in route code",
   countOccurrences(commercialCoreJs, '"PAYMENT_LEDGER_EXPORT"') >= 1 && !includesText(commercialCoreJs, '"SETTLEMENT_LEDGER_EXPORT"')
 );
 
-must("commercial core settlement messages use proper Turkish characters", includesAll(commercialCoreJs, [
+must("commercial core settlement messages use proper Turkish characters", includesAll(commercialCorePaymentRoutesJs, [
   "Zorunlu ödeme rollout kaynakları ACTIVE durumuna alındı",
   "Zorunlu ödeme rollout kaynakları DISABLED durumuna alındı",
   "Ödeme hesabı metadata kaydedildi",

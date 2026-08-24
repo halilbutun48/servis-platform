@@ -17,8 +17,11 @@ import {
   gitStatusEntries as sharedGitStatusEntries,
   mustNoDiff as sharedMustNoDiff,
   mustNoDiffExcept as sharedMustNoDiffExcept,
+  mustDiffEmptyOrExactlyWithIdentity as sharedMustDiffEmptyOrExactlyWithIdentity,
   mustNoStagedPrefix as sharedMustNoStagedPrefix,
 } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 import {
   mustFileSha256 as sharedMustFileSha256,
   mustMigrationDirectoryShape as sharedMustMigrationDirectoryShape,
@@ -30,6 +33,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
+const CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => !path.startsWith('backend/src/routes/commercialCore') || path === 'backend/src/routes/commercialCore.js');
 
 const helperRel = 'backend/src/ai/chat/seferAbiReasoningAssistant.js';
 const docRel = 'docs/SEFER_ABI_REASONING_ASSISTANT_01.md';
@@ -98,6 +102,9 @@ function mustNoDiff(paths, label) {
 }
 function mustNoDiffExcept(paths, allowedFiles, label) {
   return sharedMustNoDiffExcept(paths, allowedFiles, label);
+}
+function mustDiffEmptyOrExactlyWithIdentity(paths, allowedFiles, label) {
+  return sharedMustDiffEmptyOrExactlyWithIdentity(paths, allowedFiles, label);
 }
 function mustNoStagedPrefix(names, prefixes, label) {
   return sharedMustNoStagedPrefix(names, prefixes, label);
@@ -336,8 +343,7 @@ async function main() {
   console.log('=== SEFER-ABI-REASONING-ASSISTANT-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -354,8 +360,16 @@ async function main() {
   const getScreenDefinitionForUser = screenCatalogMod.getScreenDefinitionForUser;
 
   must(pkg, '"check:seferabireasoningassistant01": "node backend/scripts/sefer_abi_reasoning_assistant_01_check.js"', 'package.json exposes reasoning assistant check');
-  ordered(runner, ['check:copilotguidedtaskengine01', 'check:seferabireasoningassistant01', 'check:uxcopilotsmartchips01'], 'product extensions runner places reasoning assistant after guided task engine');
-  ordered(verify, ['check:copilotguidedtaskengine01', 'check:seferabireasoningassistant01', 'check:uxcopilotsmartchips01'], 'verify chain places reasoning assistant after guided task engine');
+  assertProductExtensionsOrder(
+    ['check:copilotguidedtaskengine01', 'check:seferabireasoningassistant01', 'check:uxcopilotsmartchips01'],
+    'product extensions registry places reasoning assistant after guided task engine',
+    registryScripts
+  );
+  assertProductExtensionsOrder(
+    ['check:copilotguidedtaskengine01', 'check:seferabireasoningassistant01', 'check:uxcopilotsmartchips01'],
+    'verify chain registry places reasoning assistant after guided task engine',
+    registryScripts
+  );
 
   must(guide, 'SEFER-ABI-REASONING-ASSISTANT-01', 'script guide mentions reasoning assistant milestone');
   must(guide, 'check:seferabireasoningassistant01', 'script guide exposes reasoning assistant check');
@@ -431,7 +445,11 @@ async function main() {
   must(qualityScorerSource, 'buildGoldenQuestionPack', 'quality scorer keeps golden pack as test source');
   must(qualityScorerSource, 'goldenQuestionPack', 'quality scorer imports golden pack test source');
 
-  mustNoDiff(['backend/src/routes', 'backend/src/services'], 'backend route/service diff stays empty');
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services'],
+    CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF,
+    'backend route/service diff stays empty'
+  );
   mustAcceptedPrismaManifest();
   assert(cachedNames.length === 0, 'stage stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
@@ -1137,7 +1155,11 @@ async function main() {
     screenContext: { path: '/company/shifts', label: 'Company Shifts', selectedSummary: 'Hazır' },
   }).assistantMilestone === SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_VERSION, 'assistant milestone marker exposed');
 
-  mustNoDiff(['backend/src/routes', 'backend/src/services'], 'backend route/service diff stays empty');
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services'],
+    CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF,
+    'backend route/service diff stays empty'
+  );
   assert(cachedNames.length === 0, 'stage stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 

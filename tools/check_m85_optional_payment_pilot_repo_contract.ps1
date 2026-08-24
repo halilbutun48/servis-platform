@@ -6,6 +6,7 @@ Write-Host "=== M85 Repo Contract ==="
 @(
   "backend\src\services\paymentBackbone.js",
   "backend\src\routes\commercialCore.js",
+  "backend\src\routes\commercialCorePaymentRoutes.js",
   "backend\scripts\m85_optional_payment_pilot_check.js",
   "web\src\panels\superadmin\CommercialCorePanel.jsx",
   "web\src\components\CommercialReadonlySummary.jsx",
@@ -19,7 +20,7 @@ Write-Host "=== M85 Repo Contract ==="
 ) | ForEach-Object { Assert-RepoContractExists -RepoRoot $RepoRoot -RelativePath $_ }
 
 $service = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "backend\src\services\paymentBackbone.js"
-$route = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "backend\src\routes\commercialCore.js"
+$route = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "backend\src\routes\commercialCorePaymentRoutes.js"
 $panel = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "web\src\panels\superadmin\CommercialCorePanel.jsx"
 $summary = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "web\src\components\CommercialReadonlySummary.jsx"
 $runbook = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "docs\RUNBOOK_M85_OPTIONAL_PAYMENT_PILOT.md"
@@ -30,7 +31,7 @@ $backlog = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "docs\NEXT_BA
 $pack = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath "tools\pack_m85_optional_payment_pilot.ps1"
 
 Assert-RepoContractContainsAny -Text $service -Needles @('buildOptionalPaymentPilotStatus','listOptionalPaymentPilotCandidates','activateOptionalPaymentPilot','deactivateOptionalPaymentPilot') -Label 'payment backbone service carries M85 pilot builders'
-Assert-RepoContractContainsAny -Text $route -Needles @('/payment-backbone/pilot/status','/payment-backbone/pilot/candidates','/payment-backbone/pilot/activate','/payment-backbone/pilot/deactivate') -Label 'commercial core route wires M85 pilot endpoints'
+Assert-RepoContractContainsAny -Text $route -Needles @('/payment-backbone/pilot/status','/payment-backbone/pilot/candidates','/payment-backbone/pilot/activate','/payment-backbone/pilot/deactivate') -Label 'commercial core payment route wires M85 pilot endpoints'
 Assert-RepoContractContainsAny -Text $panel -Needles @('M85 opsiyonel ödeme pilotu','Opsiyonel ödeme pilot listesi','Pilot READY yap') -Label 'commercial core panel renders M85 pilot sections'
 Assert-RepoContractContainsAny -Text $summary -Needles @('Opsiyonel ödeme pilotu','paymentmode === "OPTIONAL"','paymentMode === "OPTIONAL"','Hazır','Beklemede') -Label 'readonly summary reflects optional pilot state'
 Assert-RepoContractContainsAny -Text $runbook -Needles @('M85','pack_m85_optional_payment_pilot.ps1','m85check','OPTIONAL') -Label 'runbook captures M85 route'

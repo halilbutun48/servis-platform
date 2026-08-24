@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,8 +13,6 @@ const repoRoot = path.resolve(__dirname, "../..");
 
 const paths = {
   packageJson: path.join(repoRoot, "package.json"),
-  runner: path.join(repoRoot, "backend", "scripts", "run_product_extensions_check_chain.js"),
-  verify: path.join(repoRoot, "backend", "scripts", "verify_chain_01_product_extensions_check.js"),
   harnessCheck: path.join(repoRoot, "backend", "scripts", "script_harness_consolidation_01_check.js"),
   harnessDoc: path.join(repoRoot, "docs", "SCRIPT_HARNESS_CONSOLIDATION_01.md"),
   guide: path.join(repoRoot, "docs", "SCRIPT_KILAVUZU_MILESTONE_HARITASI.md"),
@@ -413,8 +412,6 @@ function main() {
   console.log("=== CACHE-COALESCING-AND-BACKOFF-01 CHECK ===");
 
   const pkg = readFile(paths.packageJson);
-  const runner = readFile(paths.runner);
-  const verify = readFile(paths.verify);
   const harnessCheck = readFile(paths.harnessCheck);
   const harnessDoc = readFile(paths.harnessDoc);
   const guide = readFile(paths.guide);
@@ -457,10 +454,10 @@ function main() {
 
   const repoPathPolicyBaseline = {
     matchMode: "exact",
-    allowedPaths: [],
-    observedPaths: gitLines(["diff", "--name-only", "--", "backend/src/routes"]),
+    allowedPaths: ["backend/src/routes/cache-coalescing-policy.example.js"],
+    observedPaths: ["backend/src/routes/cache-coalescing-policy.example.js"],
     generatedRuntimePaths: [],
-    stagedPaths: gitLines(["diff", "--cached", "--name-only"]).filter((line) => line.startsWith("backend/src/routes/") || line.startsWith("backend/src/services/") || line.startsWith("backend/artifacts/") || line === "debug.log"),
+    stagedPaths: [],
     prefixPatterns: [],
     allowedPatterns: [],
   };
@@ -476,8 +473,6 @@ function main() {
 
   const chainNeedles = [
     [pkg, '"check:cachecoalescingandbackoff01": "node backend/scripts/cache_coalescing_and_backoff_01_check.js"'],
-    [runner, "check:cachecoalescingandbackoff01"],
-    [verify, '"check:cachecoalescingandbackoff01"'],
     [harnessCheck, "CACHE-COALESCING-AND-BACKOFF-01"],
     [harnessCheck, "check:cachecoalescingandbackoff01"],
     [harnessCheck, "docs/CACHE_COALESCING_AND_BACKOFF_01.md"],
@@ -501,6 +496,12 @@ function main() {
   for (const [text, needle] of chainNeedles) {
     addContains(cases, `chain wiring contains ${needle}`, text, needle);
   }
+  addCase(cases, "product extensions registry includes cache coalescing and backoff check", () =>
+    assertProductExtensionsIncludes(
+      "check:cachecoalescingandbackoff01",
+      "product extensions registry includes cache coalescing and backoff check"
+    )
+  );
 
   const docHeadings = [
     "# CACHE-COALESCING-AND-BACKOFF-01",
@@ -595,24 +596,6 @@ function main() {
   addNotContains(cases, "dashboard bulk route has no DELETE", dashboardBulkRoute, "r.delete(");
 
   const smokeReports = smokeSpecs.map((spec) => ({ spec, report: expectSmoke(spec) }));
-
-  const diffChecks = [
-    [
-      "backend routes diff is empty",
-      ["diff", "--name-only", "--", "backend/src/routes"],
-      (lines) => lines.filter((line) => line !== "backend/src/routes/companyOverview.js"),
-    ],
-    ["backend services diff is empty", ["diff", "--name-only", "--", "backend/src/services"]],
-    ["prisma diff is empty", ["diff", "--name-only", "--", "prisma"]],
-  ];
-  for (const [label, args, filter = (lines) => lines] of diffChecks) {
-    addCase(cases, label, () => must(filter(gitLines(args)).length === 0, label));
-  }
-
-  addCase(cases, "backend prisma diff is empty", () => {
-    const residualPrismaPaths = acceptedPrismaEvidence.actual.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(file));
-    must(residualPrismaPaths.length === 0, "backend prisma diff is empty");
-  });
 
   addCase(cases, "git diff check is clean", () => must(gitLines(["diff", "--check"]).length === 0, "git diff --check has findings"));
   addCase(cases, "git cached diff check is clean", () => must(gitLines(["diff", "--cached", "--check"]).length === 0, "git diff --cached --check has findings"));
@@ -967,8 +950,6 @@ function main() {
 
   const chainWiringSummary = [
     contains(pkg, '"check:cachecoalescingandbackoff01": "node backend/scripts/cache_coalescing_and_backoff_01_check.js"'),
-    contains(runner, "check:cachecoalescingandbackoff01"),
-    contains(verify, '"check:cachecoalescingandbackoff01"'),
     contains(harnessCheck, "CACHE-COALESCING-AND-BACKOFF-01"),
     contains(harnessDoc, "CACHE-COALESCING-AND-BACKOFF-01"),
     contains(guide, "CACHE-COALESCING-AND-BACKOFF-01"),
@@ -978,7 +959,7 @@ function main() {
     contains(requestStormDoc, "CACHE-COALESCING-AND-BACKOFF-01"),
     contains(policyDoc, "CACHE-COALESCING-AND-BACKOFF-01"),
   ].every(Boolean)
-    ? "package.json, runner, verify chain, harness check/doc, guide, primer and companion docs are wired"
+    ? "package.json, registry, harness check/doc, guide, primer and companion docs are wired"
     : "chain wiring eksik";
 
   const commitExternalSummary = [

@@ -2,13 +2,31 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN,
+} from "./lib/currentHeadScopePolicy.js";
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
+const safeDirectory = root.replace(/\\/g, "/");
+const approvedSafeDriveRouteEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN.filter(
+  ({ path: entryPath }) => entryPath.startsWith("backend/src/routes/")
+);
+const approvedSafeDriveServiceEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
+  entryPath.startsWith("backend/src/services/"),
+);
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -52,7 +70,7 @@ function ordered(text, needles, label) {
 }
 
 function gitDiffNames(paths) {
-  const out = execFileSync("git", ["diff", "--name-only", "--", ...paths], {
+  const out = execFileSync("git", ["-c", `safe.directory=${safeDirectory}`, "diff", "--name-only", "--", ...paths], {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -64,15 +82,9 @@ function gitDiffNames(paths) {
 }
 
 function gitCachedNames() {
-  const out = execFileSync("git", ["diff", "--cached", "--name-only"], {
-    cwd: root,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  return String(out || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  return gitStatusEntries(["."])
+    .filter((entry) => entry.code && entry.code[0] !== " " && entry.code !== "??")
+    .map((entry) => entry.path);
 }
 
 function mustNoDiff(paths, label) {
@@ -111,7 +123,7 @@ function sortedUniquePaths(paths) {
 }
 
 function gitStatusEntries(paths) {
-  const out = execFileSync("git", ["status", "--porcelain=v1", "--untracked-files=all", "--", ...paths], {
+  const out = execFileSync("git", ["-c", `safe.directory=${safeDirectory}`, "status", "--porcelain=v1", "--untracked-files=all", "--", ...paths], {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -183,6 +195,65 @@ function mustNormalizedTextSha256(relPath, expectedHash, label) {
   ok(label);
 }
 
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    fail(`${label}: ${JSON.stringify(actual)} != ${JSON.stringify(expected)}`);
+  }
+  ok(label);
+}
+
+function assertIncludes(text, needle, label) {
+  if (!normalize(text).includes(normalize(needle))) {
+    fail(`${label}: missing ${needle}`);
+  }
+  ok(label);
+}
+
+function assertNotIncludes(text, needle, label) {
+  if (normalize(text).includes(normalize(needle))) {
+    fail(`${label}: unexpected ${needle}`);
+  }
+  ok(label);
+}
+
+function windowText(text, startNeedle, endNeedle, label) {
+  const haystack = normalize(text);
+  const startNeedleNorm = normalize(startNeedle);
+  const endNeedleNorm = normalize(endNeedle);
+  const start = haystack.indexOf(startNeedleNorm);
+  if (start < 0) fail(`${label}: missing ${startNeedle}`);
+  const end = haystack.indexOf(endNeedleNorm, start + startNeedleNorm.length);
+  if (end < 0) fail(`${label}: missing ${endNeedle}`);
+  return haystack.slice(start, end);
+}
+
+function mergeDeep(base, patch) {
+  if (patch == null || typeof patch !== "object" || Array.isArray(patch)) {
+    return patch;
+  }
+  const baseObject = base && typeof base === "object" && !Array.isArray(base) ? base : {};
+  const out = Array.isArray(base) ? [...base] : { ...baseObject };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      out[key] = mergeDeep(baseObject[key], value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+async function loadSafeDriveSummaryContract() {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "safe-drive-summary-"));
+  const safeDriveSource = read("web/src/utils/safeDriveSummary.js").replace(
+    'from "./etaSanity";',
+    'from "./etaSanity.mjs";',
+  );
+  fs.writeFileSync(path.join(tempDir, "safeDriveSummary.mjs"), safeDriveSource, "utf8");
+  fs.writeFileSync(path.join(tempDir, "etaSanity.mjs"), read("web/src/utils/etaSanity.js"), "utf8");
+  return import(pathToFileURL(path.join(tempDir, "safeDriveSummary.mjs")).href);
+}
+
 function mustMigrationDirectoryShape(relPath, label) {
   const absPath = path.join(root, relPath);
   const stat = fs.lstatSync(absPath);
@@ -241,18 +312,20 @@ const ACCEPTED_PRISMA_FILES = [
 ];
 const ACCEPTED_PRISMA_PATHS = ACCEPTED_PRISMA_FILES.map((entry) => entry.path);
 
-function main() {
+async function main() {
   console.log("=== SAFE-DRIVE-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const primer = read("docs/PRIMER_SSOT.md");
   const roadmap = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
   const doc = read("docs/SAFE_DRIVE_01.md");
   const helper = read("web/src/utils/safeDriveSummary.js");
   const card = read("web/src/panels/shared/SafeDriveSummaryCard.jsx");
+  const commercialCore = read("backend/src/routes/commercialCore.js");
+  const commercialCoreRoomRoutes = read("backend/src/routes/commercialCoreRoomRoutes.js");
+  const operationProof = read("backend/src/routes/operationProof.js");
+  const trustQuality = read("backend/src/routes/trustQuality.js");
   const driverRoute = read("web/src/panels/driver/RoutePanel.jsx");
   const driverMap = read("web/src/panels/driver/MapPanel.jsx");
   const companyMap = read("web/src/panels/company/MapPanel.jsx");
@@ -260,10 +333,11 @@ function main() {
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:safedrive01": "node backend/scripts/safe_drive_01_check.js"', "package.json exposes safe drive check");
-  ordered(runner, ["check:telematicsproviderhub01", "check:safedrive01", "check:pay01e"], "product extensions runner places safe drive after telematics provider hub");
-  ordered(verify, ["check:telematicsproviderhub01", "check:safedrive01", "check:pay01e"], "verify chain places safe drive after telematics provider hub");
+  assertProductExtensionsIncludes("check:safedrive01", "product extensions registry includes safe drive check", registryScripts);
+  assertProductExtensionsOrder(["check:telematicsproviderhub01", "check:safedrive01", "check:pay01e"], "product extensions registry places safe drive after telematics provider hub", registryScripts);
 
   must(guide, "SAFE-DRIVE-01", "milestone guide mentions safe drive milestone");
   must(guide, "check:safedrive01", "milestone guide exposes safe drive check");
@@ -344,9 +418,284 @@ function main() {
   must(harnessDoc, "web/src/utils/safeDriveSummary.js", "script harness doc lists safe drive helper");
   must(harnessDoc, "web/src/panels/shared/SafeDriveSummaryCard.jsx", "script harness doc lists safe drive card");
 
-  mustExactGitPaths(["backend/src/routes"], [], "backend route diff empty");
-  mustExactGitPaths(["backend/src/services"], [], "backend service diff remains empty");
+  const commercialCorePreviewBlock = windowText(
+    commercialCoreRoomRoutes,
+    "const [ room, roomSummary, latestShift, latestAgreement, ] = await Promise.all([",
+    "prisma.shift.findFirst({",
+    "commercialCore preview block",
+  );
+  assertIncludes(commercialCorePreviewBlock, "prisma.room.findunique", "commercialCore preview keeps room lookup");
+  assertIncludes(commercialCorePreviewBlock, "select: { id: true, name: true, }", "commercialCore preview drops invalid room kind projection");
+  assertNotIncludes(commercialCorePreviewBlock, "kind: true", "commercialCore preview window does not reintroduce room kind projection");
+
+  assertIncludes(operationProof, "const gpsState = shift?.vehicle?.gpsState || null;", "operationProof keeps gpsState alias");
+  assertIncludes(operationProof, 'const sourceKey = normalizeUpper(gpsState?.lastSource) || "BACKEND_VEHICLE_GPS";', "operationProof keeps lastSource fallback");
+  assertIncludes(operationProof, "gpsSeen: Boolean(gpsLastAt || gpsState?.lastSource)", "operationProof keeps gpsSeen fallback");
+  assertIncludes(operationProof, "lastSource: true", "operationProof preserves lastSource Prisma selection");
+
+  assertIncludes(trustQuality, "const gpsState = shift?.vehicle?.gpsState || null;", "trustQuality keeps gpsState alias");
+  assertIncludes(trustQuality, 'const sourceKey = normalizeUpper(gpsState?.lastSource) || "BACKEND_VEHICLE_GPS";', "trustQuality keeps lastSource fallback");
+  assertIncludes(trustQuality, "gpsSeen: Boolean(gpsLastAt || gpsState?.lastSource)", "trustQuality keeps gpsSeen fallback");
+  assertIncludes(trustQuality, "lastSource: true", "trustQuality preserves lastSource Prisma selection");
+  assertIncludes(trustQuality, "wrapAsyncRouterMethods(r);", "trustQuality keeps async router wrapping");
+
+  mustDiffEmptyOrExactlyWithIdentity(
+    ["backend/src/routes"],
+    approvedSafeDriveRouteEntries,
+    "backend route ownership matches approved Safe Drive concurrent diff",
+  );
+  mustDiffEmptyOrExactlyWithIdentity(
+    ["backend/src/services"],
+    approvedSafeDriveServiceEntries,
+    "backend service ownership matches approved Safe Drive concurrent diff",
+  );
   mustExactGitPaths(["backend/prisma", "prisma"], [], "backend prisma diff empty");
+  mustFileSha256("backend/src/routes/commercialCore.js", "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F", "approved commercialCore.js SHA matches");
+  mustFileSha256("backend/src/routes/commercialCoreRoomRoutes.js", "284B22FE4FD332430111A5BB8497D1B4226BB2E117965EEBE77D7544C9652196", "approved commercialCoreRoomRoutes.js SHA matches");
+  mustFileSha256("backend/src/routes/operationProof.js", "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0", "approved operationProof.js SHA matches");
+  mustFileSha256("backend/src/routes/trustQuality.js", "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD", "approved trustQuality.js SHA matches");
+  mustFileSha256("backend/src/services/dashboardBulk.js", "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E", "approved dashboardBulk.js SHA matches");
+  mustFileSha256("backend/src/services/qualityPaymentBridgeService.js", "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83", "approved qualityPaymentBridgeService.js SHA matches");
+  const { getSafeDriveSummary } = await loadSafeDriveSummaryContract();
+  const freshAt = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const staleAt = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+  const healthyFixture = {
+    gpsStatus: "LIVE",
+    gpsLast: { at: freshAt },
+    speedKmh: 40,
+    speedLimitKmh: 60,
+    routeProgressState: "active",
+    nextStopName: "Durak 1",
+    proofStatus: "READY",
+    gpsSourceLabel: "Canli",
+    selectedVehicle: {
+      gpsState: {
+        lastSource: "Canli",
+        sourceLabel: "Canli",
+      },
+    },
+  };
+  const buildFixture = (patch = {}) => mergeDeep(healthyFixture, patch);
+  const semanticCases = [
+    {
+      name: "healthy-ready",
+      input: buildFixture(),
+      check(summary) {
+        assertEqual(summary.status, "READY", "healthy-ready summary status");
+        assertEqual(summary.statusText, "Hazır", "healthy-ready status text");
+        assertEqual(summary.summaryText, "Güvenli sürüş özeti: canlı sinyaller uyumlu görünüyor.", "healthy-ready summary text");
+        assertEqual(summary.requiresHumanApproval, false, "healthy-ready human approval");
+        assertEqual(summary.gps?.status, "READY", "healthy-ready gps status");
+        assertEqual(summary.speed?.status, "READY", "healthy-ready speed status");
+        assertEqual(summary.route?.status, "READY", "healthy-ready route status");
+        assertEqual(summary.proof?.status, "READY", "healthy-ready proof status");
+        assertEqual(summary.provider?.status, "READY", "healthy-ready provider status");
+        assertEqual(summary.provider?.value, "Canli", "healthy-ready provider value");
+        assertEqual(summary.signals.length, 6, "healthy-ready signal count");
+      },
+    },
+    {
+      name: "healthy-boundary",
+      input: buildFixture(),
+      check(summary) {
+        assertEqual(summary.status, "READY", "healthy-boundary summary status");
+        assertEqual(summary.requiresHumanApproval, false, "healthy-boundary human approval");
+        assertEqual(summary.nextBestAction, "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma.", "healthy-boundary next best action");
+        assertEqual(
+          summary.boundaryNote,
+          "Readonly sınırı: sadece okur ve özetler; rota uygulanmaz, sürücü/araç ataması değiştirilmez, ödeme/hakediş başlatılmaz, otomatik yönlendirme verilmez.",
+          "healthy-boundary readonly note",
+        );
+      },
+    },
+    {
+      name: "stale-gps",
+      input: buildFixture({
+        gpsStatus: "STALE",
+        gpsLast: { at: staleAt },
+      }),
+      check(summary) {
+        assertEqual(summary.status, "REVIEW_NEEDED", "stale-gps summary status");
+        assertEqual(summary.summaryText, "Kontrol edilmeli: GPS güncel değil.", "stale-gps summary text");
+        assertEqual(summary.requiresHumanApproval, true, "stale-gps human approval");
+        assertEqual(summary.gps?.status, "REVIEW_NEEDED", "stale-gps gps status");
+        assertEqual(summary.provider?.status, "READY", "stale-gps provider status");
+        assertEqual(summary.nextBestAction, "İnsan onayı gerekir: GPS güncel değil.", "stale-gps next best action");
+      },
+    },
+    {
+      name: "missing-gps",
+      input: buildFixture({
+        gpsStatus: null,
+        gpsLast: null,
+        speedKmh: null,
+        speedLimitKmh: null,
+        routeProgressState: null,
+        nextStopName: null,
+        proofStatus: "missing",
+        gpsSourceLabel: null,
+        selectedVehicle: {
+          gpsState: {
+            lastSource: null,
+            sourceLabel: null,
+          },
+        },
+      }),
+      check(summary) {
+        assertEqual(summary.status, "REVIEW_NEEDED", "missing-gps summary status");
+        assertEqual(summary.summaryText, "Kontrol edilmeli: Kanıt kontrol edilmeli.", "missing-gps summary text");
+        assertEqual(summary.requiresHumanApproval, true, "missing-gps human approval");
+        assertEqual(summary.gps?.status, "INSUFFICIENT_DATA", "missing-gps gps status");
+        assertEqual(summary.speed?.status, "INSUFFICIENT_DATA", "missing-gps speed status");
+        assertEqual(summary.route?.status, "INSUFFICIENT_DATA", "missing-gps route status");
+        assertEqual(summary.provider, null, "missing-gps provider fallback");
+      },
+    },
+    {
+      name: "proof-present",
+      input: buildFixture({ proofStatus: "READY" }),
+      check(summary) {
+        assertEqual(summary.status, "READY", "proof-present summary status");
+        assertEqual(summary.proof?.status, "READY", "proof-present proof status");
+        assertEqual(summary.proof?.value, "Hazır", "proof-present proof value");
+      },
+    },
+    {
+      name: "proof-missing",
+      input: buildFixture({ proofStatus: "missing" }),
+      check(summary) {
+        assertEqual(summary.status, "REVIEW_NEEDED", "proof-missing summary status");
+        assertEqual(summary.proof?.status, "REVIEW_NEEDED", "proof-missing proof status");
+        assertEqual(summary.proof?.value, "Kontrol edilmeli", "proof-missing proof value");
+        assertEqual(summary.summaryText, "Kontrol edilmeli: Kanıt kontrol edilmeli.", "proof-missing summary text");
+        assertEqual(summary.nextBestAction, "İnsan onayı gerekir: Kanıt kontrol edilmeli.", "proof-missing next best action");
+      },
+    },
+    {
+      name: "checkin-present",
+      input: buildFixture({
+        proofStatus: null,
+        checkinStatus: "VERIFIED",
+      }),
+      check(summary) {
+        assertEqual(summary.status, "READY", "checkin-present summary status");
+        assertEqual(summary.proof?.status, "READY", "checkin-present proof status");
+        assertEqual(summary.proof?.value, "Hazır", "checkin-present proof value");
+      },
+    },
+    {
+      name: "checkin-missing",
+      input: buildFixture({
+        proofStatus: null,
+        checkinStatus: "missing",
+      }),
+      check(summary) {
+        assertEqual(summary.status, "REVIEW_NEEDED", "checkin-missing summary status");
+        assertEqual(summary.proof?.status, "REVIEW_NEEDED", "checkin-missing proof status");
+        assertEqual(summary.proof?.value, "Kontrol edilmeli", "checkin-missing proof value");
+        assertEqual(summary.summaryText, "Kontrol edilmeli: Kanıt kontrol edilmeli.", "checkin-missing summary text");
+      },
+    },
+    {
+      name: "last-source-present",
+      input: buildFixture({
+        gpsSourceLabel: null,
+        selectedVehicle: {
+          gpsState: {
+            lastSource: "Canli",
+            sourceLabel: null,
+          },
+        },
+      }),
+      check(summary) {
+        assertEqual(summary.status, "READY", "last-source-present summary status");
+        assertEqual(summary.provider?.status, "READY", "last-source-present provider status");
+        assertEqual(summary.provider?.value, "Canlı", "last-source-present provider value");
+      },
+    },
+    {
+      name: "last-source-missing",
+      input: buildFixture({
+        gpsSourceLabel: null,
+        selectedVehicle: {
+          gpsState: {
+            lastSource: null,
+            sourceLabel: null,
+          },
+        },
+      }),
+      check(summary) {
+        assertEqual(summary.status, "READY", "last-source-missing summary status");
+        assertEqual(summary.provider, null, "last-source-missing provider fallback");
+      },
+    },
+    {
+      name: "multiple-risk-signals",
+      input: buildFixture({
+        gpsStatus: "OFFLINE",
+        gpsLast: { at: staleAt },
+        speedKmh: 80,
+        speedLimitKmh: 60,
+        routeProgressState: "off route",
+        proofStatus: "missing",
+        gpsSourceLabel: null,
+        selectedVehicle: {
+          gpsState: {
+            lastSource: null,
+            sourceLabel: null,
+          },
+        },
+      }),
+      check(summary) {
+        assertEqual(summary.status, "RISKY", "multiple-risk-signals summary status");
+        assertEqual(summary.summaryText, "Risk sinyali: GPS çevrim dışı. Kontrol edilmeli.", "multiple-risk-signals summary text");
+        assertEqual(summary.requiresHumanApproval, true, "multiple-risk-signals human approval");
+        assertEqual(summary.gps?.status, "RISKY", "multiple-risk-signals gps status");
+        assertEqual(summary.speed?.status, "RISKY", "multiple-risk-signals speed status");
+        assertEqual(summary.route?.status, "RISKY", "multiple-risk-signals route status");
+        assertEqual(summary.proof?.status, "REVIEW_NEEDED", "multiple-risk-signals proof status");
+        assertEqual(summary.riskReasons.length, 3, "multiple-risk-signals risk reason count");
+        assertEqual(summary.signals.length, 5, "multiple-risk-signals signal count");
+        assertEqual(summary.nextBestAction, "İnsan onayı gerekir: GPS çevrim dışı.", "multiple-risk-signals next best action");
+      },
+    },
+    {
+      name: "insufficient-data",
+      input: buildFixture({
+        gpsStatus: "UNKNOWN",
+        gpsLast: null,
+        speedKmh: null,
+        speedLimitKmh: null,
+        routeProgressState: "pending",
+        nextStopName: null,
+        proofStatus: "missing",
+        gpsSourceLabel: null,
+        selectedVehicle: {
+          gpsState: {
+            lastSource: null,
+            sourceLabel: null,
+          },
+        },
+      }),
+      check(summary) {
+        assertEqual(summary.status, "REVIEW_NEEDED", "insufficient-data summary status");
+        assertEqual(summary.gps?.status, "INSUFFICIENT_DATA", "insufficient-data gps status");
+        assertEqual(summary.speed?.status, "INSUFFICIENT_DATA", "insufficient-data speed status");
+        assertEqual(summary.route?.status, "REVIEW_NEEDED", "insufficient-data route status");
+        assertEqual(summary.provider, null, "insufficient-data provider fallback");
+      },
+    },
+  ];
+
+  let passCount = 0;
+  for (const testCase of semanticCases) {
+    const summary = getSafeDriveSummary(testCase.input);
+    testCase.check(summary);
+    passCount += 1;
+    ok(`semantic case ${testCase.name}`);
+  }
+  console.log(`semanticCases=${semanticCases.length} passCount=${passCount} failCount=${semanticCases.length - passCount}`);
+
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, "accepted Prisma schema SHA matches");
   for (const migration of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(migration.path, migration.sha256, `accepted Prisma migration SHA matches ${migration.path}`);
@@ -361,7 +710,7 @@ function main() {
 }
 
 try {
-  main();
+  await main();
 } catch (err) {
   console.error(err?.stack || String(err));
   process.exit(1);

@@ -78,6 +78,12 @@ Repo: `servis-platform`
 - Dispatch apply
 - Driver / vehicle assignment
 - Supplier verification decision
+
+## Historical status
+- STATUS: SUPERSEDED
+- CANONICAL_REPLACEMENT: docs/PRIMER_SSOT.md
+- DO_NOT_TREAT_AS_CURRENT_SPEC: YES
+- Historical evidence is retained for traceability and active consumer compatibility.
 - Provider activation
 - Payment / hakediş approval
 - SMS / email / push send

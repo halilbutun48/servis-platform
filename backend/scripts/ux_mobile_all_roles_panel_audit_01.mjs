@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import { listScreensForUser } from "../src/ai/jobGuide/screenCatalog.js";
 import { prisma } from "../src/prisma.js";
+import { buildSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +28,8 @@ const artifactRoot = path.join(
 const screenshotRoot = path.join(artifactRoot, "screenshots");
 const reportJsonPath = path.join(artifactRoot, "report.json");
 const reportMdPath = path.join(artifactRoot, "report.md");
+const chromiumDebugLogPath = path.join(artifactRoot, "chromium-debug.log");
+const repoDebugLogPath = path.join(repoRoot, "debug.log");
 const AUDIT_SOURCE_FILES = [
   "web/src/App.jsx",
   "web/src/layout/NavDock.jsx",
@@ -34,6 +38,8 @@ const AUDIT_SOURCE_FILES = [
   "backend/src/ai/jobGuide/screenCatalog.roomCompany.js",
   "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
 ];
+const SMOKE_SCHEMA_PATH = "backend/prisma/schema.prisma";
+const SMOKE_EVIDENCE_SOURCE_FILES = ["backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs", ...AUDIT_SOURCE_FILES];
 
 const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
@@ -252,6 +258,18 @@ async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
+async function relocateRepoDebugLogIfPresent() {
+  try {
+    await fs.access(repoDebugLogPath);
+  } catch {
+    return false;
+  }
+
+  await fs.rm(chromiumDebugLogPath, { force: true }).catch(() => {});
+  await fs.rename(repoDebugLogPath, chromiumDebugLogPath);
+  return true;
+}
+
 async function resolveDriverDeviceId(email = "driver@demo.com") {
   const user = await prisma.user.findUnique({
     where: { email },
@@ -327,7 +345,41 @@ async function screenshot(page, scenario, viewportName, stage) {
 
 async function getText(page) {
   try {
-    return await page.locator("body").innerText({ timeout: 8000 });
+    return await page.evaluate(() => {
+      const blockedTags = new Set(["script", "style", "template", "noscript"]);
+      const isVisibleElement = (el) => {
+        for (let node = el; node && node.nodeType === Node.ELEMENT_NODE; node = node.parentElement) {
+          const tag = String(node.tagName || "").toLowerCase();
+          if (blockedTags.has(tag)) return false;
+          if (node.hidden || node.getAttribute("aria-hidden") === "true") return false;
+          const style = getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          if (
+            style.display === "none" ||
+            style.visibility === "hidden" ||
+            Number.parseFloat(style.opacity || "1") === 0 ||
+            rect.width <= 0 ||
+            rect.height <= 0
+          ) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+      const root = document.body || document.documentElement;
+      if (!root) return "";
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const parts = [];
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const text = String(node.nodeValue || "").replace(/\s+/g, " ").trim();
+        if (!text) continue;
+        if (!isVisibleElement(node.parentElement)) continue;
+        parts.push(text);
+      }
+      return parts.join(" ");
+    }).catch(() => "");
   } catch {
     return "";
   }
@@ -348,6 +400,15 @@ async function getButtons(page) {
   } catch {
     return [];
   }
+}
+
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function termMatchesVisibleText(haystack, term) {
+  const pattern = new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(term)}(?:$|[^a-z0-9])`);
+  return pattern.test(haystack);
 }
 
 async function isVisible(page, role, name) {
@@ -397,8 +458,8 @@ async function ensureMobileDrawerClosed(page) {
 
 function classifyTextSignals(text, status, notes) {
   const hay = normalize(text);
-  const techHits = TECH_TERMS.filter((term) => hay.includes(term));
-  const badAiHits = BAD_AI_PHRASES.filter((term) => hay.includes(term));
+  const techHits = TECH_TERMS.filter((term) => termMatchesVisibleText(hay, term));
+  const badAiHits = BAD_AI_PHRASES.filter((term) => termMatchesVisibleText(hay, term));
 
   if (badAiHits.length > 0) {
     status = bumpStatus(status, "BLOCKER");
@@ -583,6 +644,13 @@ async function runScenario(page, scenario, viewportName, output) {
   result.url = page.url();
   result.title = await page.title().catch(() => "");
   let bodyText = await getText(page);
+  if (scenario.kind === "routePreview" && scenario.role === "company" && viewportName === "mobile" && (!bodyText || notFoundSeen(bodyText))) {
+    // The company operations preview sometimes needs longer to settle on mobile
+    // after a long audit sequence. Keep this fallback narrow so other routes stay unchanged.
+    await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(6500);
+    bodyText = await getText(page);
+  }
   result.textLength = bodyText.length;
   result.textPreview = bodyText.slice(0, 4000);
   result.headings = await getHeadings(page);
@@ -851,6 +919,9 @@ function renderMarkdown(report) {
   lines.push("# UX Mobile All Roles Panel Audit 01");
   lines.push("");
   lines.push(`- Generated at: \`${report.generatedAt}\``);
+  lines.push(`- Git HEAD: \`${report.gitHead}\``);
+  lines.push(`- Schema SHA256: \`${report.schemaSha256}\``);
+  lines.push(`- Source identity SHA256: \`${report.sourceIdentitySha256}\``);
   lines.push(`- Web base URL: \`${report.webBaseUrl}\``);
   lines.push(`- API base URL: \`${report.apiBaseUrl}\``);
   lines.push(`- Playwright: \`${report.playwrightVersion}\``);
@@ -951,6 +1022,7 @@ async function main() {
   }
 
   let browserVersion = "";
+  const evidenceIdentity = buildSmokeEvidenceIdentity({ repoRoot, sourceFiles: SMOKE_EVIDENCE_SOURCE_FILES, schemaPath: SMOKE_SCHEMA_PATH });
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -964,6 +1036,11 @@ async function main() {
     browserVersion,
     viewports: VIEWPORTS.map(({ name, width, height }) => ({ name, width, height })),
     coverageSources: AUDIT_SOURCE_FILES,
+    gitHead: evidenceIdentity.gitHead,
+    schemaSha256: evidenceIdentity.schemaSha256,
+    sourceIdentityFiles: evidenceIdentity.sourceIdentityFiles,
+    sourceIdentityFileHashes: evidenceIdentity.sourceIdentityFileHashes,
+    sourceIdentitySha256: evidenceIdentity.sourceIdentitySha256,
     routeCount: 0,
     screenshotCount: 0,
     consoleErrorCount: 0,
@@ -975,90 +1052,110 @@ async function main() {
     success: true,
   };
 
-  for (const group of ROUTE_GROUPS) {
-    // Fresh browser per role group keeps Chromium from accumulating buffer pressure
-    // across the long audit sequence and avoids false NOT-FOUND blanks.
-    const browser = await chromium.launch({ headless: HEADLESS, slowMo: SLOW_MO });
-    if (!browserVersion) browserVersion = browser.version();
+  const originalCwd = process.cwd();
+  const chromiumCwd = await fs.mkdtemp(path.join(os.tmpdir(), "ux-mobile-all-roles-audit-"));
+  process.chdir(chromiumCwd);
+  try {
+    for (const group of ROUTE_GROUPS) {
+      // Fresh browser per role group keeps Chromium from accumulating buffer pressure
+      // across the long audit sequence and avoids false NOT-FOUND blanks.
+      const browser = await chromium.launch({
+        headless: HEADLESS,
+        slowMo: SLOW_MO,
+        env: {
+          ...process.env,
+          CHROME_LOG_FILE: chromiumDebugLogPath,
+        },
+      });
+      if (!browserVersion) browserVersion = browser.version();
 
-    try {
-      let authState = { role: group.role, token: null, loginInfo: null, error: null };
-      let sharedStorageState = null;
-      if (group.auth) {
-        authState = await loginRole(group.role);
-        report.authResults.push(authState);
-        if (authState.error) {
-          report.totalLoginFailures += 1;
-          console.log(`AUTH ${group.role}: ${authState.error}`);
-        } else {
-          console.log(`AUTH ${group.role}: ok`);
+      try {
+        let authState = { role: group.role, token: null, loginInfo: null, error: null };
+        let sharedStorageState = null;
+        if (group.auth) {
+          authState = await loginRole(group.role);
+          report.authResults.push(authState);
+          if (authState.error) {
+            report.totalLoginFailures += 1;
+            console.log(`AUTH ${group.role}: ${authState.error}`);
+          } else {
+            console.log(`AUTH ${group.role}: ok`);
+          }
         }
+
+        for (const viewport of VIEWPORTS) {
+          const contextOptions = {
+            viewport: { width: viewport.width, height: viewport.height },
+            deviceScaleFactor: viewport.deviceScaleFactor,
+            isMobile: viewport.isMobile,
+            hasTouch: viewport.hasTouch,
+            locale: "tr-TR",
+            timezoneId: "Europe/Istanbul",
+          };
+
+          if (sharedStorageState) {
+            contextOptions.storageState = sharedStorageState;
+          }
+
+          const context = await browser.newContext(contextOptions);
+
+          if (authState.token) {
+            await context.addInitScript((token) => {
+              localStorage.setItem("token", token);
+            }, authState.token);
+          }
+
+          for (const scenario of group.routes) {
+            const page = await context.newPage();
+            const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
+            report.routeCount += 1;
+            report.screenshotCount += row.screenshots.length;
+            report.consoleErrorCount += row.consoleErrors.length;
+            report.pageErrorCount += row.pageErrors.length;
+            report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
+            report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
+            console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
+            await page.close().catch(() => {});
+          }
+
+          if (viewport.name === "desktop") {
+            sharedStorageState = await context.storageState().catch(() => null);
+          }
+
+          await context.close().catch(() => {});
+        }
+      } finally {
+        await browser.close().catch(() => {});
       }
-
-      for (const viewport of VIEWPORTS) {
-        const contextOptions = {
-          viewport: { width: viewport.width, height: viewport.height },
-          deviceScaleFactor: viewport.deviceScaleFactor,
-          isMobile: viewport.isMobile,
-          hasTouch: viewport.hasTouch,
-          locale: "tr-TR",
-          timezoneId: "Europe/Istanbul",
-        };
-
-        if (sharedStorageState) {
-          contextOptions.storageState = sharedStorageState;
-        }
-
-        const context = await browser.newContext(contextOptions);
-
-        if (authState.token) {
-          await context.addInitScript((token) => {
-            localStorage.setItem("token", token);
-          }, authState.token);
-        }
-
-        for (const scenario of group.routes) {
-          const page = await context.newPage();
-          const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
-          report.routeCount += 1;
-          report.screenshotCount += row.screenshots.length;
-          report.consoleErrorCount += row.consoleErrors.length;
-          report.pageErrorCount += row.pageErrors.length;
-          report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
-          report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
-          console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
-          await page.close().catch(() => {});
-        }
-
-        if (viewport.name === "desktop") {
-          sharedStorageState = await context.storageState().catch(() => null);
-        }
-
-        await context.close().catch(() => {});
-      }
-    } finally {
-      await browser.close().catch(() => {});
     }
-  }
 
-  report.browserVersion = browserVersion || report.browserVersion;
+    report.browserVersion = browserVersion || report.browserVersion;
 
-  const md = renderMarkdown(report);
-  await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  await fs.writeFile(reportMdPath, `${md}\n`, "utf8");
+    const md = renderMarkdown(report);
+    await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+    await fs.writeFile(reportMdPath, `${md}\n`, "utf8");
 
-  console.log(`WROTE ${path.relative(repoRoot, reportJsonPath).replace(/\\/g, "/")}`);
-  console.log(`WROTE ${path.relative(repoRoot, reportMdPath).replace(/\\/g, "/")}`);
-  console.log(`STATUS PASS: ${report.statusCounts.PASS || 0}`);
-  console.log(`STATUS PASS-: ${report.statusCounts["PASS-"] || 0}`);
-  console.log(`STATUS UX-FIX: ${report.statusCounts["UX-FIX"] || 0}`);
-  console.log(`STATUS BLOCKER: ${report.statusCounts.BLOCKER || 0}`);
-  console.log(`STATUS AUTH-BLOCKED: ${report.statusCounts["AUTH-BLOCKED"] || 0}`);
-  console.log(`STATUS NOT-FOUND: ${report.statusCounts["NOT-FOUND"] || 0}`);
+    console.log(`WROTE ${path.relative(repoRoot, reportJsonPath).replace(/\\/g, "/")}`);
+    console.log(`WROTE ${path.relative(repoRoot, reportMdPath).replace(/\\/g, "/")}`);
+    console.log(`STATUS PASS: ${report.statusCounts.PASS || 0}`);
+    console.log(`STATUS PASS-: ${report.statusCounts["PASS-"] || 0}`);
+    console.log(`STATUS UX-FIX: ${report.statusCounts["UX-FIX"] || 0}`);
+    console.log(`STATUS BLOCKER: ${report.statusCounts.BLOCKER || 0}`);
+    console.log(`STATUS AUTH-BLOCKED: ${report.statusCounts["AUTH-BLOCKED"] || 0}`);
+    console.log(`STATUS NOT-FOUND: ${report.statusCounts["NOT-FOUND"] || 0}`);
 
-  if (!report.success) {
-    console.error("Audit found blocker or 404 outcomes; see report files for details.");
-    process.exit(1);
+    const relocatedDebugLog = await relocateRepoDebugLogIfPresent().catch(() => false);
+    if (relocatedDebugLog) {
+      console.log(`WROTE ${path.relative(repoRoot, chromiumDebugLogPath).replace(/\\/g, "/")}`);
+    }
+
+    if (!report.success) {
+      console.error("Audit found blocker or 404 outcomes; see report files for details.");
+      process.exit(1);
+    }
+  } finally {
+    process.chdir(originalCwd);
+    await fs.rm(chromiumCwd, { recursive: true, force: true }).catch(() => {});
   }
 }
 
@@ -1077,6 +1174,10 @@ main().catch(async (error) => {
     };
     await fs.writeFile(reportJsonPath, `${JSON.stringify(failureReport, null, 2)}\n`, "utf8");
     await fs.writeFile(reportMdPath, `# UX Mobile All Roles Panel Audit 01\n\nAudit runner failed before completion.\n\n\`\`\`\n${failureReport.error}\n\`\`\`\n`, "utf8");
+    const relocatedDebugLog = await relocateRepoDebugLogIfPresent().catch(() => false);
+    if (relocatedDebugLog) {
+      console.log(`WROTE ${path.relative(repoRoot, chromiumDebugLogPath).replace(/\\/g, "/")}`);
+    }
   } catch {
     // ignore secondary write failures
   }

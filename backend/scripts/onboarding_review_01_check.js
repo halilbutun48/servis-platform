@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -85,15 +87,14 @@ const landing = read("web/src/panels/public/PublicLandingPage.jsx");
 const modal = read("web/src/components/public/PublicLeadCaptureModal.jsx");
 const reviewPanel = read("web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
 const superAdminPanel = read("web/src/panels/superadmin/SuperAdminPanel.jsx");
-const app = read("web/src/App.jsx");
+const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
 const api = read("web/src/api.js");
 const copilotFacts = read("web/src/utils/copilotFacts.js");
 const screenRegistry = read("web/src/copilot/screenRegistry.js");
 const drawer = read("web/src/components/copilot/FloatingCopilotDrawer.jsx");
 const statusPalette = read("web/src/utils/statusPalette.js");
 const displayStatus = read("web/src/utils/displayStatus.js");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
 const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
 const milestoneDoc = read("docs/ONBOARDING_REVIEW_01.md");
@@ -108,7 +109,7 @@ const codeSurface = readMany([
   "backend/src/server.js",
   "backend/src/services/publicLeadService.js",
   "web/src/api.js",
-  "web/src/App.jsx",
+  ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
   "web/src/panels/public/PublicLandingPage.jsx",
   "web/src/components/public/PublicLeadCaptureModal.jsx",
   "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
@@ -123,8 +124,21 @@ const codeSurface = readMany([
 must(pkg, '"check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js"', "package.json exposes onboarding review check");
 must(pkg, '"check:leadcapture01": "node backend/scripts/lead_capture_01_check.js"', "package.json keeps lead capture check");
 must(pkg, '"check:publiclanding01": "node backend/scripts/public_landing_01_check.js"', "package.json keeps public landing check");
-must(runner, "check:onboardingreview01", "product extensions runner includes onboarding review check");
-must(verifyChain, '"check:onboardingreview01": "node backend/scripts/onboarding_review_01_check.js"', "verify chain exposes onboarding review check");
+assertProductExtensionsIncludes("check:onboardingreview01", "product extensions registry includes onboarding review check", registryScripts);
+assertProductExtensionsOrder(
+  [
+    "check:roadmaplockaimarketplace01",
+    "check:publiclanding01",
+    "check:publiclandingplatformfirst01",
+    "check:publiclandingfinalpromise01",
+    "check:leadcapture01",
+    "check:onboardingreview01",
+    "check:onboardingreviewfinalaudit01",
+    "check:invitebasedmembership01",
+  ],
+  "public onboarding chain order stays locked",
+  registryScripts,
+);
 must(guide, "ONBOARDING-REVIEW-01", "milestone guide mentions onboarding review");
 must(guide, "check:onboardingreview01", "milestone guide exposes onboarding review check");
 must(guide, "node backend\\scripts\\onboarding_review_01_check.js", "milestone guide includes onboarding review command");
@@ -198,13 +212,5 @@ mustNot(codeSurface, "raw payload", "code surface does not expose raw payload co
 const cachedNames = gitCachedNames();
 mustNot(cachedNames, "backend/artifacts/runtime-data/", "runtime-data is not staged");
 mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not staged");
-
-ordered(runner, [
-  "check:roadmaplockaimarketplace01",
-  "check:publiclanding01",
-  "check:leadcapture01",
-  "check:onboardingreview01",
-  "check:agreementsourceshiftlineage01",
-], "public onboarding chain order stays locked");
 
 console.log("=== ONBOARDING-REVIEW-01 CHECK PASS ===");

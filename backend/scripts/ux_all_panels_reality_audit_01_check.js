@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, isAppJsxRoleTenantScopePath } from "./lib/guardGitScope.js";
+import { mustSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +18,19 @@ const reportJsonPath = path.join(
   "UX_ALL_PANELS_REALITY_AUDIT_01",
   "report.json"
 );
+const expectedCoverageSources = [
+  APP_JSX_ROLE_TENANT_SCOPE_PATHS[0],
+  "web/src/layout/NavDock.jsx",
+  "web/src/copilot/screenRegistry.js",
+  "backend/src/ai/jobGuide/screenCatalog.js",
+  "backend/src/ai/jobGuide/screenCatalog.roomCompany.js",
+  "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
+];
+const expectedIdentitySources = [
+  "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
+  ...expectedCoverageSources,
+  "backend/scripts/ux_all_panels_reality_audit_01.mjs",
+];
 
 function read(relPath) {
   return fs.readFileSync(path.join(repoRoot, relPath), "utf8");
@@ -64,6 +79,14 @@ function main() {
   mustContains(docLower, "empty/loading/error", "doc covers empty/loading/error readability");
   mustContains(docLower, "console, page, and network error signals were clean", "doc covers error-free browser signals");
   mustContains(docLower, "browser-smoke artifacts stay outside the commit set", "doc keeps commit-outside boundary");
+  must(
+    isAppJsxRoleTenantScopePath(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]),
+    "all panels reality audit App.jsx path delegates to canonical owner",
+  );
+  must(
+    !isAppJsxRoleTenantScopePath("web/src/AppShell.jsx"),
+    "all panels reality audit rejects unrelated App shell source",
+  );
 
   if (fs.existsSync(reportJsonPath)) {
     const report = readJson(reportJsonPath);
@@ -72,7 +95,21 @@ function main() {
 
     must(report.auditName === "UX_ALL_PANELS_REALITY_AUDIT_01", "report uses the new audit name");
     must(report.sourceAuditName === "UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01", "report tracks the source audit");
-    must(Array.isArray(report.coverageSources) && report.coverageSources.includes("backend/scripts/ux_all_panels_reality_audit_01.mjs"), "report coverage includes the new runner");
+    mustSmokeEvidenceIdentity(
+      report,
+      {
+        repoRoot,
+        sourceFiles: expectedIdentitySources,
+        schemaPath: "backend/prisma/schema.prisma",
+      },
+      "all panels smoke report identity"
+    );
+    must(
+      Array.isArray(report.coverageSources) &&
+        expectedCoverageSources.every((source) => report.coverageSources.includes(source)) &&
+        report.coverageSources.includes("backend/scripts/ux_all_panels_reality_audit_01.mjs"),
+      "report coverage includes the source audit sources and the new runner"
+    );
     must(report.routeCount === 82, "report keeps 82 route checks");
     must(report.screenshotCount === 164, "report keeps 164 screenshots");
     must(report.statusCounts.PASS === 82, "report keeps PASS 82");
@@ -101,6 +138,7 @@ function main() {
 
     const nonPassRows = rows.filter((row) => row.status !== "PASS");
     must(nonPassRows.length === 0, "report keeps 0 non-PASS rows");
+    must(nonPassRows.every((row) => row.status === "UX-FIX"), "report keeps only UX-FIX non-PASS rows");
   } else {
     console.warn(`WARN audit report missing; run npm run smoke:uxallpanelsrealityaudit01 to refresh ${reportJsonPath}.`);
   }

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,16 +61,11 @@ function main() {
   console.log("=== UX-COMPANY-OPS-PANEL-TABS-01 CHECK ===");
 
   const pkg = read("package.json");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   mustContains(pkg, '"check:uxcompanyopspaneltabs01"', "package.json exposes check:uxcompanyopspaneltabs01");
   mustContains(pkg, '"check:uxcompanypanelssmoke01"', "package.json exposes check:uxcompanypanelssmoke01");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxcompanyopspaneltabs01", "product extensions runner includes company ops tabs check");
-  mustContains(runner, "check:uxcompanypanelssmoke01", "product extensions runner includes company ops smoke check");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxcompanyopspaneltabs01", "verify chain includes company ops tabs check");
-  mustContains(verify, "check:uxcompanypanelssmoke01", "verify chain includes company ops smoke check");
+  assertProductExtensionsIncludes("check:uxcompanyopspaneltabs01", "product extensions registry includes company ops tabs check", registryScripts);
+  assertProductExtensionsOrder(["check:uxcompanyagreementsmobileparity01", "check:uxcompanyopspaneltabs01", "check:uxcompanypanelssmoke01"], "product extensions registry keeps company ops tabs check in company panel lane", registryScripts);
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-COMPANY-OPS-PANEL-TABS-01", "script guide mentions UX-COMPANY-OPS-PANEL-TABS-01");

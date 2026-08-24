@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,13 +55,9 @@ function main() {
   console.log("=== UX-SCHOOL-ORGANIZATION-PANELS-01 CHECK ===");
 
   const pkg = read("package.json");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   mustContains(pkg, '"check:uxschoolorganizationpanels01"', "package.json exposes check:uxschoolorganizationpanels01");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxschoolorganizationpanels01", "product extensions runner includes school/organization check");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxschoolorganizationpanels01", "verify chain includes school/organization check");
+  assertProductExtensionsIncludes("check:uxschoolorganizationpanels01", "product extensions registry includes school/organization check", registryScripts);
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-SCHOOL-ORGANIZATION-PANELS-01", "milestone guide mentions UX-SCHOOL-ORGANIZATION-PANELS-01");

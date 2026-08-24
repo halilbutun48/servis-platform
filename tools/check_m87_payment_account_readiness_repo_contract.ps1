@@ -6,7 +6,7 @@ Write-Host "=== M87 Repo Contract ==="
 
 $required = @(
   "backend\src\services\paymentBackbone.js",
-  "backend\src\routes\commercialCore.js",
+  "backend\src\routes\commercialCorePaymentRoutes.js",
   "backend\scripts\m87_payment_account_readiness_check.js",
   "web\src\panels\superadmin\CommercialCorePanel.jsx",
   "docs\RUNBOOK_M87_PAYMENT_ACCOUNT_READINESS.md",

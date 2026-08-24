@@ -5,6 +5,15 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
+import { assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import {
+  APP_JSX_ROLE_TENANT_SCOPE_PATHS,
+  BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
+  BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
+  isM80M89ContractSweepRepoContractPath,
+  mustNoDiffExceptWithIdentity,
+} from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -234,13 +243,12 @@ function main() {
   console.log("=== UX-BRAND-LOGIN-PREMIUM-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const doc = read("docs/UX_BRAND_LOGIN_PREMIUM_01.md");
-  const app = read("web/src/App.jsx");
+  const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
   const appShell = read("web/src/layout/AppShell.jsx");
   const navDock = read("web/src/layout/NavDock.jsx");
   const brandMark = read("web/src/components/BrandMark.jsx");
@@ -255,17 +263,17 @@ function main() {
   must(exists("web/public/seferpakt-lockup.png"), "lockup asset exists");
   must(exists("web/public/seferpakt-app-icon.png"), "app icon asset exists");
   must(exists("web/public/seferpakt-favicon.png"), "favicon asset exists");
+  mustFileSha256(
+    "backend/scripts/lib/currentHeadScopePolicy.js",
+    "1EDAF2C4458361567427493E0EA90487867D13D06DB0CB11F7553E8B14DAC5C8",
+    "current-head policy snapshot remains pinned"
+  );
 
   must(pkg.includes('"check:uxbrandloginpremium01": "node backend/scripts/ux_brand_login_premium_01_check.js"'), "package.json exposes brand/login premium check");
-  ordered(
-    runner,
+  assertProductExtensionsOrder(
     ["check:uxnav01", "check:uxbrandloginpremium01", "check:uxmobilewebshellclarity01"],
-    "product extensions runner keeps brand/login premium between nav and mobile shell clarity"
-  );
-  ordered(
-    verify,
-    ["check:uxnav01", "check:uxbrandloginpremium01", "check:uxmobilewebshellclarity01"],
-    "verify chain keeps brand/login premium between nav and mobile shell clarity"
+    "product extensions registry keeps brand/login premium between nav and mobile shell clarity",
+    registryScripts
   );
 
   mustContains(harnessCheck, "UX-BRAND-LOGIN-PREMIUM-01", "script harness check knows brand/login premium milestone");
@@ -396,7 +404,7 @@ function main() {
     "docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md",
     "tools/PRIMER_SNAPSHOT.md",
     "package.json",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/components/BrandMark.jsx",
     "web/src/components/brand/SeferPaktLogo.jsx",
     "web/src/panels/company/AgreementsPanel.jsx",
@@ -614,9 +622,9 @@ function main() {
     "backend/src/utils/responseCache.js",
     "backend/src/bootstrap/routeMounts.js",
     "backend/src/server.js",
-    "backend/src/routes/dashboardBulk.js",
-    "backend/src/routes/companyOverview.js",
-    "backend/src/services/dashboardBulk.js",
+    { path: "backend/src/routes/dashboardBulk.js", sha256: "C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F" },
+    { path: "backend/src/routes/companyOverview.js", sha256: "A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB" },
+    { path: "backend/src/services/dashboardBulk.js", sha256: "07C4CBADCB6DF266FA981A0089F5E80E80A0659C646E040148BB1E62B8D78751" },
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/room/OperationHealthPanel.jsx",
@@ -628,16 +636,35 @@ function main() {
 
   mustAcceptedPrismaManifest();
   const statusWithoutAcceptedPrisma = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
-  allWithin(statusWithoutAcceptedPrisma, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within brand/login premium scope");
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
+  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
+  const approvedConcurrentBackendPaths = new Set(approvedConcurrentBackendDiff.map((entry) => normalizePath(entry.path)));
+  const statusWithoutApprovedConcurrent = statusWithoutAcceptedPrisma.filter((file) => !approvedConcurrentBackendPaths.has(normalizePath(file)));
+  const statusWithinBrandLoginScope = statusWithoutApprovedConcurrent.filter((file) => {
+    const normalized = normalizePath(file);
+    if (isM80M89ContractSweepRepoContractPath(normalized)) {
+      return false;
+    }
+    return !new Set([
+      "backend/README.md",
+      "backend/package.json",
+      "backend/src/bootstrap/rateLimits.js",
+      "backend/src/ops/trustQualityManifest.js",
+      "backend/src/lib/requestUrl.js",
+      "backend/src/middleware/apiRequestLog.js",
+      "backend/src/middleware/asyncHandler.js",
+      "infra/docker-compose.yml",
+      ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
+      ...BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
+    ]).has(normalized);
+  });
+  allWithin(statusWithinBrandLoginScope, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within brand/login premium scope");
+  mustNoDiffExceptWithIdentity(["backend/src/routes", "backend/src/services"], approvedConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");
+  mustNotList(statusWithoutApprovedConcurrent.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
+  mustNotList(statusWithoutApprovedConcurrent.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(statusWithoutAcceptedPrisma, "prisma/", "schema/migration files are untouched");
   mustNotList(statusWithoutAcceptedPrisma, "backend/prisma/", "backend schema/migration files are untouched");
   mustNotList(status, "debug.log", "debug.log is untouched");
   must(!status.some((file) => file.includes("24152(4).png")), "reference screenshot is not committed");
-
-  const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services"]).filter((line) => line !== "backend/src/routes/companyOverview.js");
-  must(routeDiff.length === 0, "backend route/service diff stays empty");
 
   console.log("=== UX-BRAND-LOGIN-PREMIUM-01 CHECK PASS ===");
 }

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,6 +52,7 @@ function countCollapsibles(text) {
 
 function main() {
   console.log("=== UX-COLLAPSIBLE-PANELS-01 CHECK ===");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const auditPath = "docs/UX_COLLAPSIBLE_PANELS_AUDIT_V1.md";
   must(exists(auditPath), "audit doc exists");
@@ -127,21 +129,24 @@ function main() {
   const pkg = read("package.json");
   mustContains(pkg, '"check:uxcollapsiblepanels01"', "package.json exposes check:uxcollapsiblepanels01");
 
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxcollapsiblepanels01", "product extensions chain keeps collapsible panels check");
-  mustContains(runner, "check:etasanity01", "product extensions chain keeps ETA-SANITY-01");
-  mustContains(runner, "check:etaosrm01", "product extensions chain keeps ETA-OSRM-01");
-  mustContains(runner, "check:etaosrm02", "product extensions chain keeps ETA-OSRM-02");
-  mustContains(runner, "check:livetrackingfinal01", "product extensions chain keeps LIVE-TRACKING-FINAL-01");
-  mustContains(runner, "check:driverflowfinal01", "product extensions chain keeps DRIVER-FLOW-FINAL-01");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxcollapsiblepanels01", "verify chain keeps collapsible panels check");
-  mustContains(verify, "check:etasanity01", "verify chain keeps ETA-SANITY-01");
-  mustContains(verify, "check:etaosrm01", "verify chain keeps ETA-OSRM-01");
-  mustContains(verify, "check:etaosrm02", "verify chain keeps ETA-OSRM-02");
-  mustContains(verify, "check:livetrackingfinal01", "verify chain keeps LIVE-TRACKING-FINAL-01");
-  mustContains(verify, "check:driverflowfinal01", "verify chain keeps DRIVER-FLOW-FINAL-01");
+  assertProductExtensionsIncludes(
+    "check:uxcollapsiblepanels01",
+    "product extensions registry keeps collapsible panels check",
+    registryScripts
+  );
+  assertProductExtensionsIncludes("check:etasanity01", "product extensions registry keeps ETA-SANITY-01", registryScripts);
+  assertProductExtensionsIncludes("check:etaosrm01", "product extensions registry keeps ETA-OSRM-01", registryScripts);
+  assertProductExtensionsIncludes("check:etaosrm02", "product extensions registry keeps ETA-OSRM-02", registryScripts);
+  assertProductExtensionsIncludes(
+    "check:livetrackingfinal01",
+    "product extensions registry keeps LIVE-TRACKING-FINAL-01",
+    registryScripts
+  );
+  assertProductExtensionsIncludes(
+    "check:driverflowfinal01",
+    "product extensions registry keeps DRIVER-FLOW-FINAL-01",
+    registryScripts
+  );
 
   mustContains(audit, "Runtime-data dosyalarına dokunulmadı.", "audit states runtime-data untouched");
   mustContains(audit, "Sefer Abi Terminali", "audit preserves Sefer Abi Terminali boundary");

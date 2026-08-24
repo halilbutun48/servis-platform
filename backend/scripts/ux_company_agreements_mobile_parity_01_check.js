@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,8 +63,7 @@ async function main() {
   console.log("=== UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -76,16 +76,8 @@ async function main() {
   mustTrue(exists("docs/UX_COMPANY_AGREEMENTS_MOBILE_PARITY_01.md"), "company agreements mobile parity doc exists");
 
   must(pkg, '"check:uxcompanyagreementsmobileparity01": "node backend/scripts/ux_company_agreements_mobile_parity_01_check.js"', "package.json exposes company agreements mobile parity check");
-  ordered(
-    runner,
-    ["check:uxcompanymobileactionclarity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxcompanyagreementsmobileparity01", "check:uxcompanyopspaneltabs01"],
-    "product extensions runner keeps company agreements mobile parity after agreements detail and before company ops tabs"
-  );
-  ordered(
-    verify,
-    ["check:uxcompanymobileactionclarity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxcompanyagreementsmobileparity01", "check:uxcompanyopspaneltabs01"],
-    "verify chain keeps company agreements mobile parity after agreements detail and before company ops tabs"
-  );
+  assertProductExtensionsIncludes("check:uxcompanyagreementsmobileparity01", "product extensions registry includes company agreements mobile parity check", registryScripts);
+  assertProductExtensionsOrder(["check:uxcompanymobileactionclarity01", "check:uxpremiumcriticalfixagreementsdetail01", "check:uxcompanyagreementsmobileparity01", "check:uxcompanyopspaneltabs01"], "product extensions registry keeps company agreements mobile parity after agreements detail and before company ops tabs", registryScripts);
 
   must(harnessCheck, "UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01", "script harness check knows company agreements mobile parity milestone");
   must(harnessCheck, "check:uxcompanyagreementsmobileparity01", "script harness check knows company agreements mobile parity alias");

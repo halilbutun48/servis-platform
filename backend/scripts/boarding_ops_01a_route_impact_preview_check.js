@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,8 +80,8 @@ function main() {
   console.log('=== BOARDING-OPS-01A ROUTE IMPACT PREVIEW CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const docs = read('docs/BOARDING_OPS_01A_ROUTE_IMPACT_PREVIEW.md');
@@ -106,10 +107,11 @@ function main() {
   must(guide, 'BOARDING-OPS-01B', 'script guide mentions BOARDING-OPS-01B');
   must(guide, 'BOARDING-OPS-01C', 'script guide mentions BOARDING-OPS-01C');
   must(verifyChain, 'BOARDING-OPS-01A', 'verify chain mentions BOARDING-OPS-01A');
-  must(verifyChain, 'check:boardingops01a', 'verify chain exposes check:boardingops01a');
   must(audit, 'BOARDING-OPS-01A', 'copilot audit mentions BOARDING-OPS-01A');
   must(audit, 'readonly önizleme', 'copilot audit keeps readonly preview wording');
-  ordered(runner, ['check:copliveaccept01', 'check:boardingops01a', 'check:etasanity01'], 'product extensions runner keeps boarding ops order');
+  assertProductExtensionsIncludes('check:boardingops01a', 'product extensions registry includes boarding ops check', registryScripts);
+  assertProductExtensionsIncludes('check:boardingops01a', 'verify chain registry includes boarding ops check', registryScripts);
+  assertProductExtensionsOrder(['check:copliveaccept01', 'check:boardingops01a', 'check:etasanity01'], 'product extensions registry keeps boarding ops order', registryScripts);
   must(docs, 'Bu sadece önizlemedir. Rota/atama uygulanmadı.', 'boarding ops doc keeps readonly boundary');
   must(docs, 'StopAssignment', 'boarding ops doc mentions stop assignment boundary');
   must(docs, 'BOARDING-OPS-01B', 'boarding ops doc mentions BOARDING-OPS-01B');

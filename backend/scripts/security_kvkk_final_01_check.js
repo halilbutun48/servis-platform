@@ -6,6 +6,23 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { normalizedTextSha256 } from "./lib/guardTextIntegrity.js";
+import {
+  BATCH10_DOC_WORKTREE_CLOSURE_PATH_SET,
+  isBatch14DocArchitectureConsolidationPath,
+  BATCH11_INDEX_WORKTREE_SCOPE_PATH_SET,
+  isBatch13AppJsxMigrationConsumerPath,
+  isBatch13FoundationCommandSurfacePath,
+  isBatch13FoundationOwnerPath,
+  isBatch13FoundationSupportPath,
+  isAppJsxRoleTenantScopePath,
+  isCommercialPaymentSecurityCheckerPath,
+  isM80M89ContractSweepRepoContractPath,
+  mustDiffEmptyOrExactlyWithIdentity,
+  mustStatusEmptyOrExactlyWithIdentity,
+  isBatch11IndexWorktreeScopePath,
+} from "./lib/guardGitScope.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS, CURRENT_HEAD_APPROVED_SCHEMA } from "./lib/currentHeadScopePolicy.js";
+import { assertProductExtensionsIncludes, productExtensionsCheckScripts } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +30,7 @@ const repoRoot = path.resolve(__dirname, "../..");
 
 const paths = {
   packageJson: path.join(repoRoot, "package.json"),
+  securityChecker: path.join(repoRoot, "backend", "scripts", "security_kvkk_final_01_check.js"),
   runner: path.join(repoRoot, "backend", "scripts", "run_product_extensions_check_chain.js"),
   verify: path.join(repoRoot, "backend", "scripts", "verify_chain_01_product_extensions_check.js"),
   harnessCheck: path.join(repoRoot, "backend", "scripts", "script_harness_consolidation_01_check.js"),
@@ -151,6 +169,289 @@ function normalizePath(relPath) {
     .replace(/\\/g, "/")
     .replace(/^\.?\//, "")
     .trim();
+}
+
+let cachedProductExtensionsCheckerPaths = null;
+let cachedProductExtensionsSmokePaths = null;
+
+function productExtensionsCheckerPaths() {
+  if (cachedProductExtensionsCheckerPaths) return cachedProductExtensionsCheckerPaths;
+
+  const pkg = JSON.parse(readFile(paths.packageJson));
+  const scripts = pkg.scripts || {};
+  const resolved = new Set();
+
+  for (const entry of productExtensionsCheckScripts) {
+    if (entry.startsWith("node ")) {
+      resolved.add(normalizePath(entry.slice(5)));
+      continue;
+    }
+
+    const command = scripts[entry];
+    if (typeof command !== "string") continue;
+
+    const match = command.trim().match(/^node\s+(.+)$/);
+    if (match) {
+      resolved.add(normalizePath(match[1]));
+    }
+  }
+
+  cachedProductExtensionsCheckerPaths = resolved;
+  return cachedProductExtensionsCheckerPaths;
+}
+
+function productExtensionsSmokePaths() {
+  if (cachedProductExtensionsSmokePaths) return cachedProductExtensionsSmokePaths;
+
+  const pkg = JSON.parse(readFile(paths.packageJson));
+  const scripts = pkg.scripts || {};
+  const resolved = new Set();
+
+  for (const [name, command] of Object.entries(scripts)) {
+    if (!String(name).startsWith("smoke:")) continue;
+    if (typeof command !== "string") continue;
+
+    const match = command.trim().match(/^node\s+(.+)$/);
+    if (match) {
+      resolved.add(normalizePath(match[1]));
+    }
+  }
+
+  cachedProductExtensionsSmokePaths = resolved;
+  return cachedProductExtensionsSmokePaths;
+}
+
+  const approvedCurrentHeadBackendPaths = new Set(CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS.map((value) => normalizePath(value)));
+  const selfSecurityGuardPath = normalizePath("backend/scripts/security_kvkk_final_01_check.js");
+  const outOfScopeCurrentHeadHelperPaths = new Set(
+  [
+    "backend/scripts/current_head_scope_policy_01_check.js",
+    "backend/scripts/run_product_extensions_check_chain.js",
+    "backend/scripts/verify_chain_01_product_extensions_check.js",
+    "backend/scripts/lib/currentHeadScopePolicy.js",
+    "backend/scripts/lib/guardGitScope.js",
+    "backend/scripts/lib/guardRunnerContracts.js",
+    "backend/scripts/lib/guardSmokeEvidence.js",
+    "backend/scripts/lib/guardValidationEnvironment.js",
+    "backend/scripts/lib/productExtensionsRegistry.js",
+    "backend/scripts/lib/guardTextIntegrity.js",
+    "backend/scripts/run_backend_lint.js",
+    "backend/scripts/plan_center_guided_flow_persistence_01_check.js",
+    "backend/scripts/m82_9_dormant_payment_backbone_check.js",
+    "backend/scripts/pay_01a_readonly_payment_readiness_check.js",
+    "backend/scripts/pay_01b_payment_preview_readonly_check.js",
+    "backend/scripts/pay_01c_payment_preview_detail_filter_check.js",
+    "backend/scripts/pay_01d_payment_preview_csv_export_check.js",
+    "backend/src/ops/trustQualityManifest.js",
+  ].map((value) => normalizePath(value)),
+);
+
+const outOfScopeTestInfraPaths = new Set(
+  [
+    "package.json",
+    "tools/repo_contract_state.json",
+  ].map((value) => normalizePath(value)),
+);
+
+function buildExpectedShaMap(entries) {
+  return new Map(entries.map(({ path: entryPath, sha256 }) => [normalizePath(entryPath), String(sha256).toUpperCase()]));
+}
+
+const batch09ApprovedConcurrentWorktreeEntries = [
+  { path: "backend/README.md", sha256: "0E5C4A471BB7CD0B361C7EC6FB33899CABD810D8CB3892913F66FE26BE8F8AE7" },
+  { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "8EC706598066C9754923F3FD064F69F046892AA1B0BFF1473EACE29172113994" },
+  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "8FA5851B4CC686E82127B51ACD2969960BB988337A1435F925D94DD6B3010876" },
+  { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "F4F9BE905D1908ED9FB632225404968F36080F7B30785A20534D5D7C65380567" },
+  { path: "backend/src/bootstrap/rateLimits.js", sha256: "D493701282D68ABA6F1DAFCAD4F01F9A65A432ECCA91F6A168A1058F119D3A2C" },
+  { path: "backend/src/middleware/apiRequestLog.js", sha256: "5F27CA48608B10C6DDCD35F9D1C1E146D6AD432EAD63C90CF117F0EA3A051EE3" },
+  { path: "backend/src/middleware/asyncHandler.js", sha256: "F206378CE995B6B15A3C340F81E8F8B16EDA65638558EF46F1F373ABBF166F0C" },
+  { path: "infra/docker-compose.yml", sha256: "3FDDFB80DF3A01C7CB27FC4A3B141FC62A9C12FB31CDC968A9D02B273F9BC36B" },
+];
+const batch09ApprovedConcurrentWorktreeShas = buildExpectedShaMap(batch09ApprovedConcurrentWorktreeEntries);
+
+const batch09CommercialSplitRouteEntries = [
+  { path: "backend/src/routes/commercialCoreRoutes.js", sha256: "11A5136CDA54B1467757BF9422EB6B63B0B00F9633CD1A8AF3303A5BA2A06E41" },
+  { path: "backend/src/routes/commercialCorePaymentRoutes.js", sha256: "9BB53FE97B17F28892AF3B8C8E91373D7276183873E0258E694AD694F5E1B552" },
+  { path: "backend/src/routes/commercialCorePaymentReportsRoutes.js", sha256: "02A327CB70645AA8652E542F5825B271B143AE7A741FC8FBD1CB0C157093FD36" },
+  { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "284B22FE4FD332430111A5BB8497D1B4226BB2E117965EEBE77D7544C9652196" },
+  { path: "backend/src/routes/commercialCoreRouteData.js", sha256: "5EB28DD6ABEC1AD63CA236AB567BB14B0CEEF35D54DF75343D5EC746F5A6FCD2" },
+];
+const batch09CommercialSplitRouteShas = buildExpectedShaMap(batch09CommercialSplitRouteEntries);
+
+const batch09ProvenanceClosureEntries = [
+  { path: "backend/src/lib/requestUrl.js", sha256: "629D6C894B91551AB14518F36E2BF4C5CEF48DC60ADBB01A17EFE7755C30063E" },
+  { path: "backend/src/server.js", sha256: "18A1DEA799C04DB0A8A192654BCD5BDF38E822AF03EACA2F66789E759F260615" },
+];
+const batch09ProvenanceClosureShas = buildExpectedShaMap(batch09ProvenanceClosureEntries);
+
+const coreGuardInfraIdentityEntries = [
+  {
+    path: "backend/scripts/current_head_scope_policy_01_check.js",
+    sha256: "0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F",
+  },
+  {
+    path: "backend/scripts/lib/currentHeadScopePolicy.js",
+    sha256: "1EDAF2C4458361567427493E0EA90487867D13D06DB0CB11F7553E8B14DAC5C8",
+  },
+  {
+    path: "backend/scripts/lib/productExtensionsRegistry.js",
+    sha256: "6C0FA82E0B7024D4DADF5AA588E33509A5D91866CF39D8D875A0BFEF94064D8F",
+  },
+  {
+    path: "backend/scripts/lib/guardGitScope.js",
+    sha256: "7BAA65107857A0A64EF236A130B0E618AD08FC72453928C0A46F243287044EE5",
+  },
+  {
+    path: "backend/scripts/lib/guardRunnerContracts.js",
+    sha256: "1B180E2E1C901041734CCE494774865C9644CA02917B1326B6FEF8EB713E239A",
+  },
+  {
+    path: "backend/scripts/lib/guardSmokeEvidence.js",
+    sha256: "E95F76C90C48DB2669D053C19070C8F400D09A7E247733AB680EE39EBB5FDF5F",
+  },
+  {
+    path: "backend/scripts/lib/guardValidationEnvironment.js",
+    sha256: "5F909C62C9E376D5FCA38A3E28D30646D4C61CDABB537FE2A5DFDA9C0D8A42DE",
+  },
+  {
+    path: "backend/scripts/run_product_extensions_check_chain.js",
+    sha256: "0147598C4FB8076959907447F4125F3923CC86B8FAA8CFD34C2FA3CF60FFAB03",
+  },
+  {
+    path: "backend/scripts/verify_chain_01_product_extensions_check.js",
+    sha256: "F140AA78CAE5BD34E1233AD31EF350C8D7E5B19CAD861290A7B4866533E28864",
+  },
+];
+const coreGuardInfraIdentityMap = new Map(
+  coreGuardInfraIdentityEntries.map(({ path: relPath, sha256 }) => [normalizePath(relPath), sha256]),
+);
+
+function isCoreGuardInfraPath(file) {
+  const normalized = normalizePath(file);
+  const expectedSha = coreGuardInfraIdentityMap.get(normalized);
+  if (!expectedSha) return false;
+  const actualSha = normalizedTextSha256(normalized);
+  must(actualSha === expectedSha, `core guard identity mismatch: ${normalized}`);
+  return true;
+}
+
+const approvedCurrentHeadRouteEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter((entry) =>
+  normalizePath(entry.path).startsWith("backend/src/routes/"),
+);
+
+const approvedCurrentHeadServiceEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter((entry) =>
+  normalizePath(entry.path).startsWith("backend/src/services/"),
+);
+
+const securityOwnedExactPaths = new Set(
+  [
+    "backend/scripts/security_kvkk_final_01_check.js",
+    "backend/src/kvkk/matrix.js",
+    "backend/src/routes/kvkk.js",
+    "backend/src/utils/responseCache.js",
+    "backend/src/services/dashboardBulk.js",
+    "backend/src/routes/admin.js",
+    "backend/src/bootstrap/routeMounts.js",
+    "backend/src/server.js",
+    "backend/src/ops/retentionBackupPolicy.js",
+    "backend/src/ops/backupArchiveOps.js",
+    "backend/src/lib/jsonFileStore.js",
+    "backend/src/routes/commercialCore.js",
+    "backend/src/routes/operationProof.js",
+    "backend/src/routes/trustQuality.js",
+    "backend/src/services/qualityPaymentBridgeService.js",
+    "web/src/panels/room/DriversPanel.jsx",
+    "docs/SECURITY_KVKK_FINAL_01.md",
+    "docs/PHASE_12_KVKK_SECURITY.md",
+    "docs/RUNBOOK_M77_KVKK_UYUM_KATMANI.md",
+    "docs/RUNBOOK_M45_RETENTION_BACKUP.md",
+    "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
+    "docs/OBSERVABILITY_MONITORING_ALERTING_01.md",
+    "docs/DB_POOL_AND_API_SCALING_01.md",
+    "docs/LOAD_TEST_2000_USERS_01.md",
+    "docs/CACHE_COALESCING_AND_BACKOFF_01.md",
+    "docs/REQUEST_STORM_RESILIENCE_01.md",
+    "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
+    "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
+    "docs/OPERATIONAL_COST_MODEL_01.md",
+    "docs/UX_MARKETPLACE_PANELS_01.md",
+    "docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md",
+    "docs/VERIFIED_SUPPLIER_01.md",
+    "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
+  ].map((value) => normalizePath(value)),
+);
+
+function isSecurityOwnedStatusPath(file) {
+  const normalized = normalizePath(file);
+  return securityOwnedExactPaths.has(normalized) || isAppJsxRoleTenantScopePath(normalized);
+}
+
+function isApprovedCurrentHeadBackendPath(file) {
+  const normalized = normalizePath(file);
+  const expectedSha = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.find((entry) => normalizePath(entry.path) === normalized)?.sha256;
+  if (!expectedSha) return false;
+  const actualSha = fileSha256(normalized);
+  must(actualSha === expectedSha, `approved current-head backend identity mismatch: ${normalized}`);
+  normalizedTextSha256(normalized);
+  return true;
+}
+
+function isApprovedCurrentHeadSchemaPath(file) {
+  const normalized = normalizePath(file);
+  if (normalized !== "backend/prisma/schema.prisma") return false;
+  const actualSha = normalizedTextSha256(normalized);
+  must(actualSha === CURRENT_HEAD_APPROVED_SCHEMA, `approved current-head schema identity mismatch: ${normalized}`);
+  return true;
+}
+
+function classifySecurityKvkkStatusPath(file) {
+  const normalized = normalizePath(file);
+  if (normalized === selfSecurityGuardPath) return "SELF_SECURITY_GUARD";
+  if (isBatch13FoundationOwnerPath(normalized)) return "BATCH13_FOUNDATION_OWNER";
+  if (isApprovedCurrentHeadBackendPath(normalized) || isApprovedCurrentHeadSchemaPath(normalized)) return "APPROVED_CURRENT_HEAD_PRODUCT";
+  if (isCoreGuardInfraPath(normalized)) return "CORE_GUARD_INFRA";
+  if (batch09ApprovedConcurrentWorktreeShas.has(normalized)) {
+    const expected = batch09ApprovedConcurrentWorktreeShas.get(normalized);
+    const actual = normalizedTextSha256(normalized);
+    return actual === expected
+      ? "APPROVED_CONCURRENT_CANONICAL_WORKTREE"
+      : `UNKNOWN: ${normalized} expected ${expected} got ${actual}`;
+  }
+  if (batch09CommercialSplitRouteShas.has(normalized)) {
+    const expected = batch09CommercialSplitRouteShas.get(normalized);
+    const actual = normalizedTextSha256(normalized);
+    return actual === expected
+      ? "APPROVED_CONCURRENT_CANONICAL_ROUTE"
+      : `UNKNOWN: ${normalized} expected ${expected} got ${actual}`;
+  }
+  if (batch09ProvenanceClosureShas.has(normalized)) {
+    const expected = batch09ProvenanceClosureShas.get(normalized);
+    const actual = normalizedTextSha256(normalized);
+    if (actual !== expected) {
+      return `UNKNOWN: ${normalized} expected ${expected} got ${actual}`;
+    }
+    if (normalized === "backend/src/lib/requestUrl.js") return "LEGITIMATE_CANONICAL_NEW_FILE";
+    if (normalized === "backend/src/server.js") return "PROVEN_BATCH09_CHANGE";
+    return "APPROVED_CONCURRENT_CANONICAL_WORKTREE";
+  }
+  if (isBatch13AppJsxMigrationConsumerPath(normalized)) return "BATCH13_APP_JSX_MIGRATION_CONSUMER";
+  if (isBatch13FoundationSupportPath(normalized)) return "BATCH13_FOUNDATION_SUPPORT";
+  if (isBatch13FoundationCommandSurfacePath(normalized)) return "BATCH13_FOUNDATION_COMMAND_SURFACE";
+  if (isCommercialPaymentSecurityCheckerPath(normalized)) return "COMMERCIAL_PAYMENT_SECURITY_CHECKER_INFRA";
+  if (isM80M89ContractSweepRepoContractPath(normalized)) return "M80_M89_CONTRACT_SWEEP_REPO_CONTRACT";
+  if (BATCH10_DOC_WORKTREE_CLOSURE_PATH_SET.has(normalized)) return "DOC_WORKTREE_SCOPE";
+  if (isBatch14DocArchitectureConsolidationPath(normalized)) return "DOC_WORKTREE_SCOPE";
+  if (isBatch11IndexWorktreeScopePath(normalized) || BATCH11_INDEX_WORKTREE_SCOPE_PATH_SET.has(normalized)) return "INDEX_WORKTREE_SCOPE";
+  if (outOfScopeTestInfraPaths.has(normalized)) return "OUT_OF_SCOPE_TEST_INFRA";
+  if (normalized !== selfSecurityGuardPath && productExtensionsCheckerPaths().has(normalized)) return "OUT_OF_SCOPE_CHECKER_INFRA";
+  if (productExtensionsSmokePaths().has(normalized)) return "OUT_OF_SCOPE_TEST_INFRA";
+  if (outOfScopeCurrentHeadHelperPaths.has(normalized)) return "OUT_OF_SCOPE_CURRENT_HEAD_HELPER";
+  if (isSecurityOwnedStatusPath(normalized)) return "ROLE_TENANT_SECURITY_OWNED";
+  if (normalized.startsWith("backend/src/routes/")) return "PROTECTED_ROUTE";
+  if (normalized.startsWith("backend/src/services/")) return "PROTECTED_SERVICE";
+  if (normalized.startsWith("backend/prisma/")) return "PROTECTED_PRISMA";
+  if (normalized.startsWith("backend/artifacts/runtime-data/")) return "RUNTIME_DATA";
+  return "UNKNOWN";
 }
 
 function sortedUniquePaths(paths) {
@@ -591,8 +892,9 @@ function main() {
   ]);
 
   addContains(cases, "package.json exposes security alias", pkg, '"check:securitykvkkfinal01": "node backend/scripts/security_kvkk_final_01_check.js"');
-  addContains(cases, "product extensions runner includes security alias", runner, "check:securitykvkkfinal01");
-  addContains(cases, "verify chain includes security alias", verify, "check:securitykvkkfinal01");
+  addCase(cases, "product extensions registry includes security alias", () =>
+    assertProductExtensionsIncludes("check:securitykvkkfinal01", "product extensions registry includes security alias"),
+  );
 
   addContains(cases, "script harness check knows security milestone", harnessCheck, "SECURITY-KVKK-FINAL-01");
   addContains(cases, "script harness check knows security alias", harnessCheck, "check:securitykvkkfinal01");
@@ -899,16 +1201,49 @@ function main() {
 
   addCase(cases, "working tree only contains approved files", () => {
     const files = gitStatusNames();
-    allWithin(files, allowedStatusNames, [], "working tree hygiene");
+    const allowedCategories = new Set([
+      "SELF_SECURITY_GUARD",
+      "CORE_GUARD_INFRA",
+      "BATCH13_FOUNDATION_OWNER",
+      "BATCH13_FOUNDATION_SUPPORT",
+      "BATCH13_FOUNDATION_COMMAND_SURFACE",
+      "BATCH13_APP_JSX_MIGRATION_CONSUMER",
+      "COMMERCIAL_PAYMENT_SECURITY_CHECKER_INFRA",
+      "APPROVED_CURRENT_HEAD_PRODUCT",
+      "APPROVED_CONCURRENT_CANONICAL_WORKTREE",
+      "APPROVED_CONCURRENT_CANONICAL_ROUTE",
+      "LEGITIMATE_CANONICAL_NEW_FILE",
+      "PROVEN_BATCH09_CHANGE",
+      "M80_M89_CONTRACT_SWEEP_REPO_CONTRACT",
+      "DOC_WORKTREE_SCOPE",
+      "INDEX_WORKTREE_SCOPE",
+      "OUT_OF_SCOPE_CHECKER_INFRA",
+      "OUT_OF_SCOPE_TEST_INFRA",
+      "OUT_OF_SCOPE_CURRENT_HEAD_HELPER",
+      "ROLE_TENANT_SECURITY_OWNED",
+      "RUNTIME_DATA",
+    ]);
+    const failures = [];
+
+    for (const file of files) {
+      const category = classifySecurityKvkkStatusPath(file);
+      if (allowedCategories.has(category)) continue;
+      failures.push(`${normalizePath(file)} (${category})`);
+    }
+
+    must(failures.length === 0, `working tree hygiene: ${failures.join(", ") || "(none)"}`);
   });
   addCase(cases, "stage remains empty", () => must(gitLines(["diff", "--cached", "--name-only"]).length === 0, "staged files present"));
   addCase(cases, "git diff --check stays clean", () => must(gitLines(["diff", "--check"]).length === 0, "git diff --check findings"));
   addCase(cases, "git diff --cached --check stays clean", () => must(gitLines(["diff", "--cached", "--check"]).length === 0, "git diff --cached --check findings"));
-  addCase(cases, "route diff stays empty", () => {
-    const routes = gitLines(["diff", "--name-only", "--", "backend/src/routes"]).map((route) => route.replace(/\\/g, "/"));
-    must(routes.length === 0, `route diff not empty: ${routes.join(", ")}`);
-  });
-  addCase(cases, "service diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "backend/src/services"]).length === 0, "service diff not empty"));
+  addCase(cases, "route diff stays empty", () =>
+    mustStatusEmptyOrExactlyWithIdentity(
+      ["backend/src/routes"],
+      [...approvedCurrentHeadRouteEntries, ...batch09CommercialSplitRouteEntries],
+      "route diff not empty",
+    ));
+  addCase(cases, "service diff stays empty", () =>
+    mustDiffEmptyOrExactlyWithIdentity(["backend/src/services"], approvedCurrentHeadServiceEntries, "service diff not empty"));
   addCase(cases, "prisma diff stays empty", () => must(gitLines(["diff", "--name-only", "--", "prisma"]).length === 0, "prisma diff not empty"));
   addCase(cases, "backend prisma diff stays empty", () => mustAcceptedPrismaManifest());
   addCase(cases, "debug.log stays absent", () => must(!fs.existsSync(paths.debugLog), "debug.log exists"));

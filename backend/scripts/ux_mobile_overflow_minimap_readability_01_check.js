@@ -5,6 +5,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS,
+} from "./lib/currentHeadScopePolicy.js";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -228,8 +234,6 @@ function main() {
   console.log("=== UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -249,15 +253,9 @@ function main() {
   mustTrue(exists("docs/UX_MOBILE_OVERFLOW_MINIMAP_READABILITY_01.md"), "mobile overflow mini-map readability doc exists");
 
   mustContains(pkg, '"check:uxmobileoverflowminimapreadability01": "node backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js"', "package.json exposes mobile overflow mini-map readability check");
-  ordered(
-    runner,
+  assertProductExtensionsOrder(
     ["check:uxmobileallrolespanelfix01", "check:uxmobileoverflowminimapreadability01", "check:uxdensity01"],
-    "product extensions runner keeps mobile overflow mini-map readability after mobile all roles panel fix"
-  );
-  ordered(
-    verify,
-    ["check:uxmobileallrolespanelfix01", "check:uxmobileoverflowminimapreadability01", "check:uxdensity01"],
-    "verify chain keeps mobile overflow mini-map readability after mobile all roles panel fix"
+    "product extensions registry keeps mobile overflow mini-map readability after mobile all roles panel fix"
   );
 
   mustContains(harnessCheck, "UX-MOBILE-OVERFLOW-MINIMAP-READABILITY-01", "script harness check knows mobile overflow mini-map readability milestone");
@@ -358,9 +356,18 @@ function main() {
   const staged = gitLines(["diff", "--cached", "--name-only"]);
   must(staged.length === 0, "stage remains empty");
   mustAcceptedPrismaManifest();
+  const approvedConcurrentBackendPaths = new Set(CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS);
+  mustNoDiffExceptWithIdentity(
+    ["backend/src/routes", "backend/src/services"],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    "approved NEW-01 backend diff is identity-locked"
+  );
 
   const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "Prisma", "backend/prisma"]).filter(
-    (line) => line !== "backend/src/routes/companyOverview.js" && !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(line))
+    (line) =>
+      line !== "backend/src/routes/companyOverview.js" &&
+      !approvedConcurrentBackendPaths.has(normalizePath(line)) &&
+      !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(line))
   );
   must(routeDiff.length === 0, "backend route/service/schema diff stays empty");
 

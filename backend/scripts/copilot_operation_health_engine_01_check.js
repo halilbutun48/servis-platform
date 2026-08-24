@@ -20,6 +20,7 @@ import {
   OPERATION_HEALTH_TERMINOLOGY,
   OPERATION_HEALTH_TRIGGER_PHRASES,
 } from '../src/ai/chat/conversationOperationHealthEngine.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -584,9 +585,11 @@ function runRegressionCase(spec) {
 }
 
 function runSourceGuardAssertions(bundle) {
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+
   must(bundle.packageJson, '"check:copilotoperationhealthengine01": "node backend/scripts/copilot_operation_health_engine_01_check.js"', 'package.json exposes operation-health check');
-  ordered(bundle.runner, ['check:copilotworkflowreasoningengine01', 'check:copilotoperationhealthengine01', 'check:copilotplanreviewengine01', 'check:hotfilesplitaichatcomposers01'], 'product extensions runner keeps operation-health between workflow reasoning and plan review');
-  ordered(bundle.verify, ['check:copilotworkflowreasoningengine01', 'check:copilotoperationhealthengine01', 'check:copilotplanreviewengine01', 'check:hotfilesplitaichatcomposers01'], 'verify chain keeps operation-health between workflow reasoning and plan review');
+  assertProductExtensionsOrder(['check:copilotworkflowreasoningengine01', 'check:copilotoperationhealthengine01', 'check:copilotplanreviewengine01', 'check:hotfilesplitaichatcomposers01'], 'product extensions registry keeps operation-health between workflow reasoning and plan review', registryScripts);
+  assertProductExtensionsOrder(['check:copilotworkflowreasoningengine01', 'check:copilotoperationhealthengine01', 'check:copilotplanreviewengine01', 'check:hotfilesplitaichatcomposers01'], 'verify chain registry keeps operation-health between workflow reasoning and plan review', registryScripts);
 
   must(bundle.guide, 'COPILOT-OPERATION-HEALTH-ENGINE-01', 'milestone guide mentions operation-health milestone');
   must(bundle.guide, 'check:copilotoperationhealthengine01', 'milestone guide exposes operation-health check');
@@ -705,8 +708,6 @@ async function main() {
 
   const sourceBundle = {
     packageJson: read('package.json'),
-    runner: read('backend/scripts/run_product_extensions_check_chain.js'),
-    verify: read('backend/scripts/verify_chain_01_product_extensions_check.js'),
     guide: read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md'),
     primer: read('docs/PRIMER_SSOT.md'),
     helpComposer: read('backend/src/ai/chat/helpComposer.js'),

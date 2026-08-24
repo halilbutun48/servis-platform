@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,8 +60,6 @@ function ordered(text, needles, label) {
 console.log("=== PUBLIC-LANDING-PLATFORM-FIRST-01 CHECK ===");
 
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const primer = read("docs/PRIMER_SSOT.md");
 const spec = read("docs/PROJECT_SPEC_V1.md");
@@ -67,18 +67,18 @@ const landingDocLegacy = read("docs/PUBLIC_LANDING_01.md");
 const landingDoc = read("docs/PUBLIC_LANDING_PLATFORM_FIRST_01.md");
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
 const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
-const app = read("web/src/App.jsx");
+const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
 const landing = read("web/src/panels/public/PublicLandingPage.jsx");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:publiclandingplatformfirst01": "node backend/scripts/public_landing_platform_first_01_check.js"', "package.json exposes check:publiclandingplatformfirst01");
-must(runner, "check:publiclandingplatformfirst01", "product extensions runner includes public landing platform-first check");
-must(runner, "check:publiclandingfinalpromise01", "product extensions runner includes public landing final promise check");
-must(verifyChain, '"check:publiclandingplatformfirst01": "node backend/scripts/public_landing_platform_first_01_check.js"', "verify chain exposes public landing platform-first check");
-must(verifyChain, '"check:publiclandingfinalpromise01": "node backend/scripts/public_landing_final_promise_01_check.js"', "verify chain exposes public landing final promise check");
-ordered(
-  runner,
+assertProductExtensionsIncludes("check:publiclandingplatformfirst01", "product extensions registry includes public landing platform-first check", registryScripts);
+assertProductExtensionsIncludes("check:publiclandingfinalpromise01", "product extensions registry includes public landing final promise check", registryScripts);
+assertProductExtensionsOrder(
   ["check:roadmaplockaimarketplace01", "check:publiclanding01", "check:publiclandingplatformfirst01", "check:publiclandingfinalpromise01", "check:leadcapture01", "check:onboardingreview01"],
   "public landing platform-first chain order follows public landing"
+  ,
+  registryScripts,
 );
 
 must(guide, "PUBLIC-LANDING-PLATFORM-FIRST-01", "script guide mentions public landing platform-first milestone");

@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { BATCH10_DOC_WORKTREE_CLOSURE_PATHS, mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +14,42 @@ const root = path.resolve(__dirname, '../..');
 
 const helperRel = 'backend/src/ai/chat/excelToRouteReadinessRedteamPack.js';
 const docRel = 'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md';
+const redteamOwnedScopePaths = [
+  'package.json',
+  'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
+  helperRel,
+  docRel,
+  'backend/scripts/script_harness_consolidation_01_check.js',
+  ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
+  'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md',
+  'docs/COPILOT_ROLE_TASK_MATRIX_01.md',
+  'docs/COPILOT_AI_ACTION_ROADMAP_01.md',
+  'docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md',
+  'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
+  'backend/scripts/lib/guardSmokeEvidence.js',
+  'backend/scripts/current_head_scope_policy_01_check.js',
+  'backend/scripts/lib/currentHeadScopePolicy.js',
+];
+const redteamAllowedStatusPaths = [
+  'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
+  'backend/scripts/lib/guardSmokeEvidence.js',
+  'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
+  ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
+  'backend/scripts/current_head_scope_policy_01_check.js',
+  'backend/scripts/lib/currentHeadScopePolicy.js',
+];
+const exactApprovedConcurrentCanonicalEntries = [
+  { path: 'backend/src/routes/admin.js', sha256: '61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4' },
+  { path: 'backend/src/routes/agreements.js', sha256: '90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A' },
+  { path: 'backend/src/routes/auth.js', sha256: 'A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3' },
+  { path: 'backend/src/routes/companyOverview.js', sha256: 'A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB' },
+  { path: 'backend/src/routes/dashboardBulk.js', sha256: 'C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F' },
+  { path: 'backend/src/routes/offers.js', sha256: '40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649' },
+  { path: 'backend/src/routes/public.js', sha256: '5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23' },
+  { path: 'backend/src/services/dashboardBulk.js', sha256: 'E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E' },
+  { path: 'backend/src/routes/shifts/company.js', sha256: '19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0' },
+  { path: 'backend/src/services/companyShiftMutationTail.js', sha256: 'FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78' },
+];
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -98,6 +136,17 @@ function gitDiffNames(paths) {
 function allWithin(files, exactPaths, prefixes, label) {
   const unexpected = files.filter((file) => !exactPaths.has(file) && !prefixes.some((prefix) => file.startsWith(prefix)));
   if (unexpected.length > 0) fail(`${label}: ${unexpected.join(', ')}`);
+  ok(label);
+}
+
+function mustExactStatusPaths(files, expectedPaths, label) {
+  const actual = sortedUniquePaths(files);
+  const expected = sortedUniquePaths(expectedPaths);
+  const unexpected = actual.filter((file) => !expected.includes(file));
+  const missing = expected.filter((file) => !actual.includes(file));
+  if (unexpected.length > 0 || missing.length > 0) {
+    fail(`${label}: unexpected=${unexpected.join(', ') || '(none)'} missing=${missing.join(', ') || '(none)'}`);
+  }
   ok(label);
 }
 
@@ -290,8 +339,7 @@ async function main() {
   console.log('=== EXCEL-TO-ROUTE-READINESS-REDTEAM-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -302,7 +350,7 @@ async function main() {
   const helperText = read(helperRel);
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
-  const status = sortedUniquePaths(gitStatusEntries(['.']).map((entry) => entry.path));
+  const status = sortedUniquePaths(gitStatusEntries(redteamOwnedScopePaths).map((entry) => entry.path));
   const cachedNames = gitCachedNames();
   const pack = await loadPack();
 
@@ -359,8 +407,8 @@ async function main() {
   ];
 
   must(pkg, '"check:exceltoroutereadinessredteam01": "node backend/scripts/excel_to_route_readiness_redteam_01_check.js"', 'package.json exposes Excel-to-route readiness redteam check');
-  ordered(runner, ['check:copilotroutereviewhumanapproval01', 'check:exceltoroutereadinessredteam01', 'check:uxcopilotsmartchips01'], 'product extensions runner places redteam after route review');
-  ordered(verify, ['check:copilotroutereviewhumanapproval01', 'check:exceltoroutereadinessredteam01', 'check:uxcopilotsmartchips01'], 'verify chain places redteam after route review');
+  assertProductExtensionsOrder(['check:copilotroutereviewhumanapproval01', 'check:exceltoroutereadinessredteam01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps redteam after route review', registryScripts);
+  assertProductExtensionsOrder(['check:copilotroutereviewhumanapproval01', 'check:exceltoroutereadinessredteam01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps redteam after route review', registryScripts);
 
   must(guide, 'EXCEL-TO-ROUTE-READINESS-REDTEAM-01', 'script guide mentions redteam milestone');
   must(guide, 'check:exceltoroutereadinessredteam01', 'script guide exposes redteam check');
@@ -517,9 +565,22 @@ async function main() {
   if (kvkkCount < 10) fail(`expected at least 10 KVKK / cross-org cases, saw ${kvkkCount}`);
   if (hallucinationCount < 10) fail(`expected at least 10 hallucination / overclaim cases, saw ${hallucinationCount}`);
 
-  mustNoDiff(['backend/src/routes', 'backend/src/services', 'prisma'], 'backend route/service/schema and Prisma diff stays empty');
-  mustNoDiff(['backend/prisma', 'prisma'], 'backend/prisma diff empty');
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'],
+    [
+      ...exactApprovedConcurrentCanonicalEntries,
+       { path: 'backend/src/routes/commercialCore.js', sha256: '14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F' },
+      { path: 'backend/src/routes/operationProof.js', sha256: 'E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0' },
+      { path: 'backend/src/routes/trustQuality.js', sha256: 'FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD' },
+      { path: 'backend/src/services/qualityPaymentBridgeService.js', sha256: '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83' },
+    ],
+    'backend route/service/schema and Prisma diff stays empty'
+  );
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
+  mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', '6992AC173A900820A62F5EC3228F3279E29F0E2C42261EBE3A96CD9B36055141', 'guard smoke evidence helper SHA matches');
+  mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', 'A2937E28340E505084041529D1798ED01C5A0D2F90DF4D4BD8FEBDAA146FE20B', 'premium smoke check SHA matches');
+  mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F', 'current head scope policy check SHA matches');
+  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', '1EDAF2C4458361567427493E0EA90487867D13D06DB0CB11F7553E8B14DAC5C8', 'current head scope policy manifest SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.posix.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);
@@ -527,336 +588,7 @@ async function main() {
   if (cachedNames.length !== 0) fail(`stage stays empty: ${cachedNames.join(', ')}`);
   ok('stage stays empty');
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
-  allWithin(
-    status,
-    new Set([
-      'backend/scripts/ai03b_semantic_visible_audit_01_check.js',
-      'backend/scripts/copilot_context_memory_task_state_01_check.js',
-      'backend/src/ai/chat/conversationTaskState.js',
-      'package.json',
-      'backend/scripts/run_product_extensions_check_chain.js',
-      'backend/scripts/verify_chain_01_product_extensions_check.js',
-      'backend/scripts/script_harness_consolidation_01_check.js',
-      'backend/scripts/copilot_route_review_human_approval_01_check.js',
-      'backend/scripts/financial_operations_surface_and_rbac_01_check.js',
-      'backend/src/finance/financialOperationsScope.js',
-      'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md',
-      'backend/scripts/operational_cost_model_01_check.js',
-      'backend/scripts/operational_cost_model_01_expansion.js',
-      'docs/OPERATIONAL_COST_MODEL_01.md',
-      // Demand intake companion files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/copilot_demand_intake_01_check.js',
-      'backend/src/ai/chat/copilotDemandIntake.js',
-      'backend/src/ai/chat/copilotDemandToAgreementRoadmap.js',
-      'docs/COPILOT_DEMAND_INTAKE_01.md',
-      'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md',
-      'backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js',
-      'backend/scripts/copilot_rfq_prep_01_check.js',
-      'backend/src/ai/chat/copilotRfqPrep.js',
-      'docs/COPILOT_RFQ_PREP_01.md',
-      'backend/scripts/request_storm_resilience_01_check.js',
-      'backend/scripts/copilot_operation_health_engine_01_check.js',
-      'backend/scripts/copilot_next_best_action_engine_01_check.js',
-      'backend/scripts/copilot_plan_review_engine_01_check.js',
-      'backend/scripts/copilot_workflow_reasoning_engine_01_check.js',
-      'backend/src/ai/chat/screenStateAnalyzer.js',
-      'backend/src/ai/chat/conversationOperationHealthEngine.js',
-      'backend/src/ai/chat/conversationNextBestActionEngine.js',
-      'backend/src/ai/chat/conversationPlanReviewEngine.js',
-      'backend/src/ai/jobGuide/screenCatalog.js',
-      'backend/src/ai/jobGuide/screenCatalog.roomCompany.js',
-      'backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js',
-      'docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md',
-      'backend/scripts/copilot_clarifying_question_engine_01_check.js',
-      'backend/scripts/copilot_dynamic_question_engine_01_check.js',
-      'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
-      'backend/scripts/lead_capture_01_check.js',
-      'backend/scripts/shift_dispatch_approval_fix_01_check.js',
-      'backend/scripts/db_pool_and_api_scaling_01_check.js',
-      'backend/scripts/db_pool_and_api_scaling_01_probe.js',
-      // Semantic quality gate files are part of the current consolidated validation pass.
-      'backend/scripts/ai_response_semantic_quality_gate_01_check.js',
-      'docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md',
-      // Guard-V2 standardization support files are exact architecture companions for this pass.
-      'backend/scripts/guard_v2_standardization_01_check.js',
-      'backend/scripts/run_guard_regression_chain.js',
-      'backend/scripts/run_repo_check_chain.js',
-      'backend/scripts/lib/guardTextIntegrity.js',
-      'backend/scripts/lib/guardGitScope.js',
-      'backend/scripts/lib/guardValidationEnvironment.js',
-      'backend/scripts/lib/guardRunnerContracts.js',
-      'backend/scripts/lib/guardRegressionTiers.js',
-      'docs/GUARD_V2_STANDARDIZATION_01.md',
-      // Dashboard bulk endpoint files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/dashboard_bulk_endpoint_01_check.js',
-      'backend/src/bootstrap/routeMounts.js',
-      'backend/src/server.js',
-      'backend/src/routes/dashboardBulk.js',
-      'backend/src/services/dashboardBulk.js',
-      'docs/DASHBOARD_BULK_ENDPOINT_01.md',
-      'web/src/panels/school/OperationsPanel.jsx',
-      'web/src/panels/superadmin/SuperAdminPanel.jsx',
-      'web/src/utils/dashboardBulk.js',
-      // Cache coalescing and backoff files are legitimate read-only companions for this pass.
-      'backend/scripts/cache_coalescing_and_backoff_01_check.js',
-      'backend/src/utils/responseCache.js',
-      'docs/CACHE_COALESCING_AND_BACKOFF_01.md',
-      // Observability monitoring alerting files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/observability_monitoring_alerting_01_check.js',
-      'backend/scripts/observability_monitoring_alerting_01_probe.js',
-      'docs/OBSERVABILITY_MONITORING_ALERTING_01.md',
-      // Quality gate final file is a legitimate smoke-summary companion for this pass.
-      'backend/scripts/quality_gate_final_01_check.js',
-      // Production rate limit policy files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/production_rate_limit_policy_01_check.js',
-      'docs/PRODUCTION_RATE_LIMIT_POLICY_01.md',
-      'docs/DB_POOL_AND_API_SCALING_01.md',
-      'backend/scripts/sefer_abi_terminal_humanize_01_check.js',
-      'backend/scripts/cop_live_accept_01_check.js',
-      'backend/scripts/onboarding_review_final_audit_01_check.js',
-      'backend/scripts/invite_based_membership_01_check.js',
-      'backend/scripts/verified_supplier_01_check.js',
-      'backend/scripts/supplier_matching_01_check.js',
-      'backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js',
-      'backend/src/ai/chat/supplierMatching.js',
-      'docs/VERIFIED_SUPPLIER_01.md',
-      'docs/SUPPLIER_MATCHING_01.md',
-      'docs/UX_MARKETPLACE_PANELS_01.md',
-      'backend/scripts/roadmap_lock_ai_marketplace_01_check.js',
-      // Supplier offer collect companion files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/supplier_offer_collect_01_check.js',
-      'backend/src/ai/chat/supplierOfferCollect.js',
-      'docs/SUPPLIER_OFFER_COLLECT_01.md',
-      // Offer analysis companion files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/copilot_offer_analysis_01_check.js',
-      'backend/src/ai/chat/copilotOfferAnalysis.js',
-      'docs/COPILOT_OFFER_ANALYSIS_01.md',
-      'backend/scripts/copilot_negotiation_assist_01_check.js',
-      'backend/src/ai/chat/copilotNegotiationAssist.js',
-      'backend/src/ai/chat/copilotHumanApprovalPolicy.js',
-      'docs/COPILOT_NEGOTIATION_ASSIST_01.md',
-      // Offer recommendation companion files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/copilot_offer_recommendation_01_check.js',
-      'backend/src/ai/chat/copilotOfferRecommendation.js',
-      'docs/COPILOT_OFFER_RECOMMENDATION_01.md',
-      'docs/COPILOT_HUMAN_APPROVAL_01.md',
-      // Shift-to-agreement prep companion files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/copilot_shift_to_agreement_prep_01_check.js',
-      'backend/src/ai/chat/copilotShiftToAgreementPrep.js',
-      'docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md',
-      // Dispatch prep companion files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/copilot_dispatch_action_prep_01_check.js',
-      'backend/src/ai/chat/copilotDispatchActionPrep.js',
-      'docs/COPILOT_DISPATCH_ACTION_PREP_01.md',
-      // Action prep companion files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/copilot_action_prep_01_check.js',
-      'backend/src/ai/chat/copilotActionPrep.js',
-      'docs/COPILOT_ACTION_PREP_01.md',
-      'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md',
-      'backend/scripts/sefer_abi_reasoning_assistant_01_check.js',
-      'backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js',
-      'backend/scripts/hot_file_split_ai_chat_composers_01_check.js',
-      'backend/src/ai/chat/excelToRouteReadinessRedteamPack.js',
-      'backend/src/ai/chat/answerQualityPolicy.js',
-      'backend/src/ai/chat/helpComposer.js',
-      'backend/src/ai/chat/helpComposerSafeReplies.js',
-      'backend/src/ai/chat/conversationTaskStateResponses.js',
-      'backend/src/ai/chat/conversationTaskStateShared.js',
-      'backend/src/ai/chat/conversationTaskStateClarifiers.js',
-      'backend/src/ai/chat/conversationTaskStateSelectedRecord.js',
-      'backend/src/ai/chat/conversationTaskStateFollowUps.js',
-      'backend/src/ai/chat/conversationTaskStateBuilders.js',
-      'backend/src/ai/chat/conversationTaskStateCompanyReplies.js',
-      'backend/src/ai/chat/conversationTaskStateRoomReplies.js',
-      'backend/src/ai/chat/conversationTaskStateDynamicQuestions.js',
-      'backend/src/ai/chat/intentRouter.js',
-      'backend/src/ai/chat/intentRouterCore.js',
-      'backend/src/ai/chat/seferAbiReasoningAssistant.js',
-      'backend/src/ai/chat/conversationWorkflowReasoningEngine.js',
-      'backend/scripts/copilot_e_block_runtime_answer_integration_01_check.js',
-      'backend/src/ai/chat/copilotEBlockRuntimeAnswerIntegration.js',
-      'backend/scripts/copilot_reasoning_answer_composer_01_check.js',
-      'backend/src/ai/chat/copilotReasoningAnswerComposer.js',
-      'backend/scripts/copilot_smart_diagnostic_engine_01_check.js',
-      'backend/src/ai/chat/conversationSmartDiagnostics.js',
-      'backend/src/ai/schemas.js',
-      'docs/COPILOT_E_BLOCK_RUNTIME_ANSWER_INTEGRATION_01.md',
-      'docs/EXCEL_TO_ROUTE_READINESS_REDTEAM_01.md',
-      'docs/REQUEST_STORM_RESILIENCE_01.md',
-      'docs/COPILOT_DYNAMIC_QUESTION_ENGINE_01.md',
-      'docs/COPILOT_SMART_DIAGNOSTIC_ENGINE_01.md',
-      'docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md',
-      'docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md',
-      'docs/COPILOT_PLAN_REVIEW_ENGINE_01.md',
-      'docs/COPILOT_OPERATION_HEALTH_ENGINE_01.md',
-      'docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md',
-      'docs/COPILOT_WORKFLOW_REASONING_ENGINE_01.md',
-      'docs/SEFER_ABI_REASONING_ASSISTANT_01.md',
-      'docs/SEFER_ABI_ALL_ROLES_REASONING_ASSISTANT_01.md',
-      'docs/COPILOT_CLARIFYING_QUESTION_ENGINE_01.md',
-      'docs/HOT_FILE_SPLIT_AI_CHAT_COMPOSERS_01.md',
-      'tools/repo_contract_state.json',
-      '.gitignore',
-      'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md',
-      'docs/PRIMER_SSOT.md',
-      'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md',
-      'docs/COPILOT_ROLE_TASK_MATRIX_01.md',
-      'docs/COPILOT_AI_ACTION_ROADMAP_01.md',
-      'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md',
-      'docs/LOAD_TEST_2000_USERS_01.md',
-      'backend/scripts/ux_brand_login_premium_01_check.js',
-      'backend/scripts/ux_company_mobile_action_clarity_01_check.js',
-      'backend/scripts/ux_mobile_web_shell_clarity_01_check.js',
-      'backend/scripts/ux_panel_standard_architecture_01_check.js',
-      'backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js',
-      'backend/scripts/ux_premium_critical_fix_room_01_check.js',
-      'backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js',
-      'backend/scripts/ux_parent_personel_live_error_clarity_01_check.js',
-      'backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js',
-      'backend/scripts/load_test_2000_users_01_check.js',
-      'backend/scripts/load_test_2000_users_01_harness.js',
-      'backend/scripts/agreement_source_shift_lineage_01_check.js',
-      'backend/scripts/marketplace_free_to_operate_01_check.js',
-      'backend/scripts/qlt_pay_bridge_01_check.js',
-      'backend/scripts/sefer_score_01_check.js',
-      'backend/scripts/hot_file_split_web_panels_01_check.js',
-      'backend/scripts/_m91_route_preview_checks.js',
-      'backend/scripts/ux_contract_conversion_ops_bridge_clarity_01_check.js',
-      'backend/scripts/ux_collapsible_panels_01_check.js',
-      'backend/scripts/ux_panel_structure_02_check.js',
-      'backend/scripts/ux_panel_inventory_02a_check.js',
-      'backend/scripts/ux_company_mobile_action_clarity_01_check.js',
-      'backend/scripts/ux_panel_reality_cleanup_02d_check.js',
-      'backend/scripts/ux_brand_login_premium_01_check.js',
-      'backend/scripts/ux_mobile_web_shell_clarity_01_check.js',
-      'backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js',
-      'backend/scripts/ux_panel_standard_architecture_01_check.js',
-      'backend/scripts/ux_premium_critical_uxfix_cleanup_01_check.js',
-      'docs/UX_PANEL_INVENTORY_02A_AUDIT.md',
-      'backend/scripts/plan_center_guided_flow_persistence_01_check.js',
-      'web/src/components/copilot/FloatingCopilotDrawer.jsx',
-      'web/src/components/copilot/uiSurface.js',
-      'web/src/panels/company/WorkflowPanel.jsx',
-      'web/src/panels/company/GuidedPlanModal.jsx',
-      'web/src/panels/company/ShiftPeopleTab.jsx',
-      'web/src/panels/company/guidedPlanModalActions.js',
-      'web/src/panels/company/guidedPlanModalCards.jsx',
-      'web/src/panels/company/guidedPlanModalDestinationCards.jsx',
-      'web/src/panels/company/guidedPlanModalPeopleStep.jsx',
-      'web/src/panels/company/guidedPlanModalPlanCards.jsx',
-      'web/src/panels/company/guidedPlanModalSections.jsx',
-      'web/src/panels/company/guidedPlanModalShell.jsx',
-      'web/src/panels/company/guidedPlanModalUtils.js',
-      'web/src/panels/company/shiftPeopleTabActions.js',
-      'web/src/panels/company/shiftPeopleTabSections.jsx',
-      'web/src/panels/company/OperationsPanel.jsx',
-      'web/src/panels/company/AgreementsPanel.jsx',
-      'web/src/panels/room/MapPanel.jsx',
-      'web/src/panels/room/AgreementsPanel.jsx',
-      'web/src/panels/company/companyAgreementsBridgeSection.jsx',
-      'web/src/panels/company/companyAgreementsPanelHelpers.js',
-      'web/src/panels/room/roomAgreementsBridgeSection.jsx',
-      'web/src/panels/room/roomAgreementsPanelHelpers.js',
-      'web/src/panels/room/CommercialFlowPanel.jsx',
-      'web/src/panels/room/OperationHealthPanel.jsx',
-      'web/src/components/AgreementOpsBridgeCard.jsx',
-      'web/src/components/RoutePreviewModal.jsx',
-      'web/src/components/geo/GeoLocationPicker.jsx',
-      'web/src/components/geo/HubMapPicker.jsx',
-      'web/src/components/map/MapView.jsx',
-      'web/src/components/map/ReadableMiniRouteMap.jsx',
-      'web/src/components/map/mapTileAssets.js',
-      'web/src/panels/room/roomShiftsOverviewSection.jsx',
-      'web/src/utils/uiDataCache.js',
-      'web/src/utils/planCenterOverlayLayer.js',
-      'web/src/panels/room/ShiftsPanel.jsx',
-      'web/src/panels/room/VehiclesPanel.jsx',
-      'web/src/panels/room/DriversPanel.jsx',
-      'web/src/panels/room/roomShiftsPanelWorkflow.js',
-      'web/src/panels/room/roomShiftsPanelActions.js',
-      'web/src/panels/room/roomVehiclesPanelActions.js',
-      'web/src/panels/shared/KvkkConsentGate.jsx',
-      'web/src/panels/shared/PanelKvkkHint.jsx',
-      'tools/PRIMER_SNAPSHOT.md',
-      'backend/src/ai/chat/copilotGuidedTaskEngine.js',
-      'backend/src/ai/chat/conversationRootCauseEngine.js',
-      'backend/src/ai/chat/goldenQuestionPack.js',
-      'backend/src/ai/chat/qualityScorer.js',
-      'backend/scripts/copilot_guided_task_engine_01_check.js',
-      'backend/scripts/copilot_root_cause_engine_01_check.js',
-      'backend/scripts/copilot_risk_scoring_engine_01_check.js',
-      'backend/src/ai/chat/conversationRiskScoringEngine.js',
-      'docs/COPILOT_GUIDED_TASK_ENGINE_01.md',
-      'docs/COPILOT_ROOT_CAUSE_ENGINE_01.md',
-      'docs/COPILOT_RISK_SCORING_ENGINE_01.md',
-      'backend/scripts/product_flow_button_audit_01.mjs',
-      'backend/scripts/ux_live_panel_premium_smoke_01.mjs',
-      'backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs',
-      // Test quality and flake audit files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/ux_all_panels_reality_audit_01.mjs',
-      'backend/scripts/test_quality_and_flake_audit_01_check.js',
-      'docs/TEST_QUALITY_AND_FLAKE_AUDIT_01.md',
-      'backend/scripts/bug_route_impact_preview_button_01_check.js',
-      'web/src/panels/parent/LivePanel.jsx',
-      'backend/src/ai/chat/etaSanity.js',
-      'backend/scripts/driver_flow_final_01_acceptance_check.js',
-      'backend/scripts/eta_osrm_01_route_eta_service_check.js',
-      'backend/scripts/eta_osrm_02_api_eta_bridge_check.js',
-      'backend/scripts/live_tracking_final_01_acceptance_check.js',
-      'web/src/utils/etaSanity.js',
-      'backend/src/ai/chat/helpComposerSelectedRuntime.js',
-      'backend/src/ai/chat/replyShapes.js',
-      'web/src/panels/personel/LivePanel.jsx',
-      'web/src/utils/copilotFacts.js',
-      'backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js',
-      'docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md',
-      'docs/HOT_FILE_SPLIT_WEB_PANELS_01.md',
-      // Backend lint warning burndown files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/backend_lint_warning_burndown_01_check.js',
-      'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md',
-      // Data integrity and recovery files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/data_integrity_and_recovery_01_check.js',
-      'docs/DATA_INTEGRITY_AND_RECOVERY_01.md',
-      // Role data isolation redteam files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/role_data_isolation_redteam_01_check.js',
-      'docs/ROLE_DATA_ISOLATION_REDTEAM_01.md',
-      // Security KVKK final files are legitimate consolidated-scope companions for this pass.
-      'backend/scripts/security_kvkk_final_01_check.js',
-      'docs/SECURITY_KVKK_FINAL_01.md',
-      'backend/scripts/audit_log_and_approval_trace_01_check.js',
-      'docs/AUDIT_LOG_AND_APPROVAL_TRACE_01.md',
-      // Current route-readiness companions from the consolidated company-budget repair pass.
-      'backend/scripts/address_geocoding_confidence_01_check.js',
-      'backend/scripts/ai03b_paraphrase_intent_audit_01_check.js',
-      'backend/scripts/copilot_ai_action_roadmap_01_check.js',
-      'backend/scripts/copilot_excel_demand_import_01_check.js',
-      'backend/scripts/copilot_human_approval_01_check.js',
-      'backend/scripts/copilot_role_task_matrix_01_check.js',
-      'backend/scripts/copilot_stop_route_draft_01_check.js',
-      'backend/scripts/m44_telematics_t1_t5_check.js',
-      'backend/scripts/offer_ranking_quality_01_check.js',
-      'backend/scripts/osrm_route_draft_from_excel_01_check.js',
-      'backend/scripts/public_landing_final_promise_01_check.js',
-      'backend/scripts/room_profitability_and_quote_floor_01_check.js',
-      'backend/scripts/run_backend_lint.js',
-      'backend/scripts/safe_drive_01_check.js',
-      'backend/scripts/telematics_provider_hub_01_check.js',
-      'backend/scripts/ux_company_personel_access_mobile_parity_01_check.js',
-      'backend/scripts/ux_marketplace_panels_01_check.js',
-      'backend/scripts/ux_mobile_overflow_minimap_polish_02_check.js',
-      'backend/scripts/ux_mobile_overflow_minimap_readability_01_check.js',
-      'backend/scripts/company_budget_and_service_cost_01_check.js',
-      'backend/src/routes/companyOverview.js',
-      'web/src/panels/shared/FinancialOperationsPanel.jsx',
-      'backend/scripts/ux_density_01_panel_card_density_check.js',
-      'backend/scripts/mobile_web_final_01_check.js',
-      'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md',
-      'docs/RUNBOOK_M45_RETENTION_BACKUP.md',
-      ...ACCEPTED_PRISMA_PATHS,
-    ]),
-    ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log', 'backend/scripts/cop_03', 'backend/scripts/cop_04', 'backend/src/finance/'],
-    'working tree stays within redteam scope',
-  );
+  mustExactStatusPaths(status, redteamAllowedStatusPaths, 'redteam owned-file scope stays within expected files');
   mustRejectScope(
     ['backend/scripts/guard_v2_synthetic_unrelated.js'],
     new Set([

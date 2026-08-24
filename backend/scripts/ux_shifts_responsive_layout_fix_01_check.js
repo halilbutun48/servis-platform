@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,8 +63,6 @@ function main() {
   console.log("=== UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -78,8 +77,10 @@ function main() {
   mustTrue(exists("docs/UX_SHIFTS_RESPONSIVE_LAYOUT_FIX_01.md"), "shifts responsive layout fix doc exists");
 
   must(pkg, '"check:uxshiftsresponsivelayoutfix01": "node backend/scripts/ux_shifts_responsive_layout_fix_01_check.js"', "package.json exposes shifts responsive layout fix check");
-  ordered(runner, ["check:uxroomcompanyshiftsmobilecardfix01", "check:uxshiftsresponsivelayoutfix01", "check:uxmobileoverflowminimapreadability01"], "product extensions runner keeps shifts responsive layout fix after room/company shifts mobile card fix");
-  ordered(verify, ["check:uxroomcompanyshiftsmobilecardfix01", "check:uxshiftsresponsivelayoutfix01", "check:uxmobileoverflowminimapreadability01"], "verify chain keeps shifts responsive layout fix after room/company shifts mobile card fix");
+  assertProductExtensionsOrder(
+    ["check:uxroomcompanyshiftsmobilecardfix01", "check:uxshiftsresponsivelayoutfix01", "check:uxmobileoverflowminimapreadability01"],
+    "product extensions registry keeps shifts responsive layout fix after room/company shifts mobile card fix"
+  );
 
   must(harnessCheck, "UX-SHIFTS-RESPONSIVE-LAYOUT-FIX-01", "script harness check knows shifts responsive layout fix milestone");
   must(harnessCheck, "check:uxshiftsresponsivelayoutfix01", "script harness check knows shifts responsive layout fix alias");

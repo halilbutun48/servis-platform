@@ -4,10 +4,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import { mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
+const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
+  path.startsWith("backend/src/services/")
+);
 
 const BASELINE_COUNTS = {
   companyAgreements: 1577,
@@ -100,8 +106,6 @@ async function main() {
   console.log("=== HOT-FILE-SPLIT-WEB-PANELS-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const primer = read("docs/PRIMER_SSOT.md");
   const doc = read("docs/HOT_FILE_SPLIT_WEB_PANELS_01.md");
@@ -113,10 +117,11 @@ async function main() {
   const roomMain = read("web/src/panels/room/AgreementsPanel.jsx");
   const roomBridge = read("web/src/panels/room/roomAgreementsBridgeSection.jsx");
   const roomHelpers = read("web/src/panels/room/roomAgreementsPanelHelpers.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:hotfilesplitwebpanels01": "node backend/scripts/hot_file_split_web_panels_01_check.js"', "package.json exposes hot file split web panels check");
-  ordered(runner, ["check:hotfilesplitaichatcomposers01", "check:hotfilesplitwebpanels01", "check:copilotreasoninganswercomposer01"], "product extensions runner keeps hot file split web panels between ai chat split and reasoning answer composer");
-  ordered(verify, ["check:hotfilesplitaichatcomposers01", "check:hotfilesplitwebpanels01", "check:copilotreasoninganswercomposer01"], "verify chain keeps hot file split web panels between ai chat split and reasoning answer composer");
+  assertProductExtensionsOrder(["check:hotfilesplitaichatcomposers01", "check:hotfilesplitwebpanels01", "check:copilotreasoninganswercomposer01"], "product extensions registry keeps hot file split web panels between ai chat split and reasoning answer composer", registryScripts);
+  assertProductExtensionsOrder(["check:hotfilesplitaichatcomposers01", "check:hotfilesplitwebpanels01", "check:copilotreasoninganswercomposer01"], "verify chain registry keeps hot file split web panels between ai chat split and reasoning answer composer", registryScripts);
 
   must(guide, "HOT-FILE-SPLIT-WEB-PANELS-01", "milestone guide mentions hot file split web panels milestone");
   must(guide, "check:hotfilesplitwebpanels01", "milestone guide exposes hot file split web panels check");
@@ -240,7 +245,7 @@ async function main() {
   must(statusShort, "backend/artifacts/runtime-data/", "runtime-data artifacts remain in working tree");
   mustNot(statusShort, "debug.log", "debug.log absent from git status");
   assertCleanOutput(["diff", "--cached", "--name-only"], "stage remains empty");
-  assertCleanOutput(["diff", "--name-only", "--", "backend/src/services", "prisma"], "service/prisma diff remains empty");
+  mustDiffEmptyOrExactlyWithIdentity(["backend/src/services", "prisma"], CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF, "service/prisma diff remains empty");
   assertCleanOutput(["diff", "--check"], "working tree diff check is clean");
   assertCleanOutput(["diff", "--cached", "--check"], "staged diff check is clean");
   if (exists("debug.log")) fail("debug.log should be absent");

@@ -1,9 +1,11 @@
 import express from "express";
 import { authRequired } from "../auth/middleware.js";
 import { buildDashboardBulkBundle, getDashboardBulkBundleNames } from "../services/dashboardBulk.js";
+import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 
 export function dashboardBulkRouter() {
   const r = express.Router();
+  wrapAsyncRouterMethods(r);
 
   r.get("/bulk", authRequired(), async (req, res) => {
     try {

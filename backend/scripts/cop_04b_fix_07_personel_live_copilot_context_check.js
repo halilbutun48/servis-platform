@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -100,8 +101,6 @@ function assertNoForbiddenVisibleTerms(text, label) {
 console.log('=== COP-04B-FIX-07 PERSONEL LIVE COPILOT CONTEXT CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const auditDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const aiRouteSource = read('backend/src/routes/ai.js');
@@ -114,6 +113,7 @@ const drawerSource = read('web/src/components/copilot/FloatingCopilotDrawer.jsx'
 const copilotPanelSource = read('web/src/panels/shared/CopilotPanel.jsx');
 const personelLivePanelSource = read('web/src/panels/personel/LivePanel.jsx');
 const personelMyRidePanelSource = read('web/src/panels/personel/MyRidePanel.jsx');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop04bfix07": "node backend/scripts/cop_04b_fix_07_personel_live_copilot_context_check.js"', 'package.json exposes check:cop04bfix07');
 must(pkg, '"check:cop04bfix06"', 'package.json keeps check:cop04bfix06');
@@ -126,8 +126,8 @@ must(pkg, '"check:cop04b"', 'package.json keeps check:cop04b');
 must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
 must(pkg, '"check:product-extensions"', 'package.json keeps check:product-extensions');
 
-must(runner, 'check:cop04bfix07', 'product extensions runner keeps cop04bfix07');
-must(verifyChain, 'check:cop04bfix07', 'verify chain waits for check:cop04bfix07');
+assertProductExtensionsIncludes('check:cop04bfix07', 'product extensions registry references cop04bfix07', registryScripts);
+assertProductExtensionsIncludes('check:cop04bfix07', 'verify chain registry waits for check:cop04bfix07', registryScripts);
 must(guide, 'check:cop04bfix07', 'script guide exposes check:cop04bfix07');
 must(guide, 'check:cop04bfix06', 'script guide keeps check:cop04bfix06');
 must(guide, 'check:cop04bfix05', 'script guide keeps check:cop04bfix05');

@@ -3,6 +3,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, isAppJsxRoleTenantScopePath } from "./lib/guardGitScope.js";
+import { mustSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,13 +68,14 @@ const expectedViewports = [
 ];
 
 const expectedCoverageSources = [
-  "web/src/App.jsx",
+  APP_JSX_ROLE_TENANT_SCOPE_PATHS[0],
   "web/src/layout/NavDock.jsx",
   "web/src/copilot/screenRegistry.js",
   "backend/src/ai/jobGuide/screenCatalog.js",
   "backend/src/ai/jobGuide/screenCatalog.roomCompany.js",
   "backend/scripts/ux_live_panel_premium_smoke_01.mjs",
 ];
+const expectedIdentitySources = ["backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs", ...expectedCoverageSources];
 
 function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), "utf8");
@@ -129,7 +133,6 @@ function main() {
   console.log("=== UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
   const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
@@ -138,8 +141,8 @@ function main() {
 
   mustContains(pkg, '"check:uxmobileallrolespanelaudit01"', "package.json exposes mobile all roles panel audit check");
   mustContains(pkg, '"smoke:uxmobileallrolespanelaudit01": "node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs"', "package.json exposes mobile all roles panel audit smoke");
-  mustContains(runner, "'check:uxmobileallrolespanelaudit01'", "product extensions runner includes mobile all roles panel audit check");
   mustContains(verify, '"check:uxmobileallrolespanelaudit01"', "verify chain exposes mobile all roles panel audit check");
+  assertProductExtensionsIncludes("check:uxmobileallrolespanelaudit01", "product extensions registry includes mobile all roles panel audit check");
   mustContains(harnessCheck, "check:uxmobileallrolespanelaudit01", "script harness check knows mobile all roles panel audit alias");
   mustContains(harnessCheck, "UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01", "script harness check knows mobile all roles panel audit milestone");
   mustContains(harnessCheck, "docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md", "script harness check knows mobile all roles panel audit doc");
@@ -177,18 +180,36 @@ function main() {
   mustContains(doc, "360x800", "mobile all roles panel audit doc keeps next compact viewport candidate framing");
   mustContains(doc, "browser-smoke", "mobile all roles panel audit doc keeps browser-smoke boundary");
   mustContains(doc, "runtime-data", "mobile all roles panel audit doc keeps runtime-data boundary");
-  mustContains(doc, "web/src/App.jsx", "mobile all roles panel audit doc keeps app route source");
+  mustContains(
+    doc,
+    APP_JSX_ROLE_TENANT_SCOPE_PATHS[0],
+    "mobile all roles panel audit doc keeps app route source",
+  );
   mustContains(doc, "web/src/layout/NavDock.jsx", "mobile all roles panel audit doc keeps NavDock source");
   mustContains(doc, "web/src/copilot/screenRegistry.js", "mobile all roles panel audit doc keeps screen registry source");
   mustContains(doc, "backend/src/ai/jobGuide/screenCatalog.js", "mobile all roles panel audit doc keeps screen catalog source");
   mustContains(doc, "backend/src/ai/jobGuide/screenCatalog.roomCompany.js", "mobile all roles panel audit doc keeps room/company screen catalog source");
   mustContains(doc, "backend/scripts/ux_live_panel_premium_smoke_01.mjs", "mobile all roles panel audit doc keeps premium smoke route source");
+  must(
+    isAppJsxRoleTenantScopePath(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]),
+    "mobile all roles panel audit App.jsx path delegates to canonical owner",
+  );
+  must(
+    !isAppJsxRoleTenantScopePath("web/src/AppShell.jsx"),
+    "mobile all roles panel audit rejects unrelated App shell source",
+  );
 
   mustNotContains(doc, "force push", "mobile all roles panel audit doc avoids force push wording");
   mustNotContains(doc, "tag taşıma", "mobile all roles panel audit doc avoids tag rewrite wording");
 
   if (fs.existsSync(reportJsonPath)) {
     const report = readJson(reportJsonPath);
+    mustSmokeEvidenceIdentity(report, {
+      repoRoot: root,
+      sourceFiles: expectedIdentitySources,
+      schemaPath: "backend/prisma/schema.prisma",
+      label: "mobile all roles panel audit report",
+    });
     must(Array.isArray(report.routes), "mobile all roles panel audit report keeps routes array");
     must(report.routeCount === report.routes.length, "mobile all roles panel audit report route count matches rows");
     must(report.routeCount === 82, "mobile all roles panel audit report keeps 82 route checks");

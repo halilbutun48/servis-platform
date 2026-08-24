@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,7 +67,7 @@ function main() {
   const panel = read('web/src/panels/superadmin/SuperAdminPanel.jsx');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(panel, 'Süper Yönetici', 'superadmin title present');
   must(panel, 'SystemModeSummaryBand', 'system status band present');
@@ -101,8 +106,8 @@ function main() {
   must(pkg, '"check:uxsuperadminoverviewcleanup01"', 'package.json exposes check:uxsuperadminoverviewcleanup01');
   must(guide, 'UX-SUPERADMIN-OVERVIEW-CLEANUP-01', 'script guide mentions UX-SUPERADMIN-OVERVIEW-CLEANUP-01');
   must(guide, 'check:uxsuperadminoverviewcleanup01', 'script guide exposes check:uxsuperadminoverviewcleanup01');
-  must(runner, 'check:uxsuperadminoverviewcleanup01', 'product extensions runner includes superadmin overview cleanup check');
-  ordered(runner, ['check:web01a', 'check:web01b', 'check:uxsuperadminoverviewcleanup01', 'check:cop01e'], 'product extensions runner order keeps superadmin overview near web01b');
+  assertProductExtensionsIncludes('check:uxsuperadminoverviewcleanup01', 'product extensions registry includes superadmin overview cleanup check', registryScripts);
+  assertProductExtensionsOrder(['check:web01a', 'check:web01b', 'check:uxsuperadminoverviewcleanup01', 'check:cop01e'], 'product extensions registry order keeps superadmin overview near web01b', registryScripts);
 
   console.log('=== UX-SUPERADMIN-OVERVIEW-CLEANUP-01 CHECK PASS ===');
 }

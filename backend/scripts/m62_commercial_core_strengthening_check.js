@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,6 +47,11 @@ function exists(rel) {
   return fs.existsSync(path.join(repoRoot, rel));
 }
 function includesAny(text, needles) { return includesAnyText(text, needles); }
+function listRoutePaths(router) {
+  return (router?.stack || [])
+    .map((layer) => layer?.route?.path)
+    .filter(Boolean);
+}
 const server = read("backend/src/server.js");
 const mountTxt = exists("backend/src/bootstrap/routeMounts.js") ? read("backend/src/bootstrap/routeMounts.js") : "";
 
@@ -58,6 +63,7 @@ async function main() {
     "backend/scripts/m62_commercial_core_strengthening_check.js",
     "backend/src/ops/commercialCoreManifest.js",
     "backend/src/routes/commercialCore.js",
+    "backend/src/routes/commercialCoreRoutes.js",
     "web/src/panels/superadmin/CommercialCorePanel.jsx",
     "docs/RUNBOOK_M62_COMMERCIAL_CORE_STRENGTHENING.md",
     "docs/MILESTONE_M62_COMMERCIAL_CORE_STRENGTHENING.md",
@@ -79,9 +85,14 @@ async function main() {
   const startpack = read("docs/STARTPACK_V1.md");
   const checklist = read("docs/CHECKLIST_SSOT.md");
   const manifest = read("backend/src/ops/commercialCoreManifest.js");
-  const route = read("backend/src/routes/commercialCore.js");
+  const routeWrapper = read("backend/src/routes/commercialCore.js");
+  const routeBundle = read("backend/src/routes/commercialCoreRoutes.js");
   const panel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
   const runbook = read("docs/RUNBOOK_M62_COMMERCIAL_CORE_STRENGTHENING.md");
+  const { commercialCoreRouter } = await import(
+    pathToFileURL(path.join(repoRoot, "backend/src/routes/commercialCore.js")).href
+  );
+  const runtimeRoutePaths = listRoutePaths(commercialCoreRouter());
 
   console.log("INFO checking updated route and SSOT status");
     must("project spec reflects commercial layer", includesAny(projectSpec, ["talep kartı", "teklif yaşam döngüsü", "pazarlık geçmişi", "talep karti", "teklif yasam dongusu", "pazarlik gecmisi"]));
@@ -91,7 +102,9 @@ async function main() {
   must("server imports commercial core router", includesAny(server, ["commercialCoreRouter", "./routes/commercialCore.js"]) || includesAny(mountTxt, ["commercialCoreRouter"]));
   must("server mounts /api/commercial-core", includesAny(server, ["/api/commercial-core"]) || includesAny(mountTxt, ["/api/commercial-core"]));
   must("manifest defines commercial steps", includesAny(manifest, ["COMMERCIAL_CORE_STEPS", "Talep karti", "Sozlesmeye gecis kapisi", "Talep kartı", "Sözleşmeye geçiş kapısı"]));
-  must("route exposes manifest and lifecycle template", includesAny(route, ["/manifest", "/lifecycle-template", "/rules"]));
+  must("commercial core router exposes manifest and lifecycle template at runtime", ["/manifest", "/lifecycle-template", "/rules"].every((needle) => runtimeRoutePaths.includes(needle)));
+  must("route wrapper delegates to split commercial core routes", includesAny(routeWrapper, ["attachCommercialCoreRoutes", "./commercialCoreRoutes.js"]));
+  must("route bundle exposes manifest and lifecycle template", includesAny(routeBundle, ["/manifest", "/lifecycle-template", "/rules"]));
   must("panel shows M62 cards", includesAny(panel, ["M62 Ticari Omurga Güçlendirme", "İzlenen ticari adımlar", "Sözleşmeye geçiş", "M62 Ticari Omurga Guclendirme", "Izlenen ticari adimlar", "Sozlesmeye gecis"]));
   must("runbook explains M62 scope", includesAny(runbook, ["ticari akis omurgasi", "talep / ihtiyac karti", "M62 green olmadan M63'e gecilmez", "ticari akış omurgası", "talep / ihtiyaç kartı", "M62 green olmadan M63"]));
 

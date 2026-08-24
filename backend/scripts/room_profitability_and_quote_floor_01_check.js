@@ -12,10 +12,39 @@ import {
   isFinancialOperationsCompanyKindDenied,
 } from "../src/finance/roomProfitabilityAndQuoteFloor.js";
 import { runRoomProfitabilityAndQuoteFloorExpansionChecks } from "./room_profitability_and_quote_floor_01_expansion.js";
+import {
+  assertProductExtensionsIncludes,
+  productExtensionsChecks,
+} from "./lib/productExtensionsRegistry.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import {
+  mustNoDiffExceptWithIdentity,
+  mustStatusEmptyOrExactlyWithIdentity,
+} from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
+const roomOwnedCommercialRoutePaths = new Set([
+  "backend/src/routes/commercialCore.js",
+  "backend/src/routes/commercialCoreRoutes.js",
+  "backend/src/routes/commercialCoreRoomRoutes.js",
+  "backend/src/routes/commercialCoreRouteData.js",
+]);
+const roomOwnedCommercialRouteEntries = Object.freeze(
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => roomOwnedCommercialRoutePaths.has(path))
+);
+const financeOwnedRoutePaths = new Set([
+  "backend/src/routes/companyOverview.js",
+  "backend/src/routes/operationProof.js",
+]);
+const financeOwnedRouteEntries = Object.freeze(
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => financeOwnedRoutePaths.has(path))
+);
+const financeOwnedServiceEntries = Object.freeze([
+  { path: "backend/src/services/qualityPaymentBridgeService.js", sha256: "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83" },
+  { path: "backend/src/services/dashboardBulk.js", sha256: "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E" },
+]);
 
 function read(relPath) {
   return fs.readFileSync(path.join(repoRoot, relPath), "utf8");
@@ -125,8 +154,6 @@ const navPath = "web/src/layout/NavDock.jsx";
 const registryPath = "web/src/copilot/screenRegistry.js";
 const expansionPath = "backend/scripts/room_profitability_and_quote_floor_01_expansion.js";
 const packagePath = "package.json";
-const runnerPath = "backend/scripts/run_product_extensions_check_chain.js";
-const verifyPath = "backend/scripts/verify_chain_01_product_extensions_check.js";
 const guidePath = "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md";
 const primerPath = "docs/PRIMER_SSOT.md";
 const roadmapPath = "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md";
@@ -144,8 +171,6 @@ const appText = read(appPath);
 const navText = read(navPath);
 const registryText = read(registryPath);
 const packageText = read(packagePath);
-const runnerText = read(runnerPath);
-const verifyText = read(verifyPath);
 const guideText = read(guidePath);
 const primerText = read(primerPath);
 const roadmapText = read(roadmapPath);
@@ -353,8 +378,8 @@ function main() {
   check(textHas(registryText, "/organization/financial-operations"), "registry organization path present");
 
   check(textHas(packageText, '"check:roomprofitabilityandquotefloor01": "node backend/scripts/room_profitability_and_quote_floor_01_check.js"'), "package alias present");
-  check(textHas(runnerText, "check:roomprofitabilityandquotefloor01"), "product extensions runner includes room profitability");
-  check(textHas(verifyText, "check:roomprofitabilityandquotefloor01"), "verify chain includes room profitability");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+  assertProductExtensionsIncludes("check:roomprofitabilityandquotefloor01", "product extensions registry includes room profitability", registryScripts);
   check(textHas(guideText, "check:roomprofitabilityandquotefloor01"), "script guide exposes room profitability check");
   check(textHas(guideText, "docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md"), "script guide links room profitability doc");
   check(textHas(guideText, "backend/src/finance/roomProfitabilityAndQuoteFloor.js"), "script guide links room profitability helper");
@@ -373,16 +398,11 @@ function main() {
   check(textHas(harnessDocText, "check:roomprofitabilityandquotefloor01"), "harness doc lists room profitability check");
   check(textHas(harnessDocText, "docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md"), "harness doc links room profitability doc");
 
-  const routeServicePrismaDiff = gitOutput(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "prisma"])
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  check(
-    textHas(companyRouteText, "Route ownership anchor for company overview.") && routeServicePrismaDiff.length === 0,
-    "backend route/service/schema and Prisma diff is empty",
-    !textHas(companyRouteText, "Route ownership anchor for company overview.")
-      ? "missing route ownership anchor"
-      : routeServicePrismaDiff.join(", ")
+  check(textHas(companyRouteText, "Route ownership anchor for company overview."), "company overview route ownership anchor present");
+  mustStatusEmptyOrExactlyWithIdentity(
+    ["backend/src/routes", "backend/src/services", "prisma"],
+    [...financeOwnedRouteEntries, ...roomOwnedCommercialRouteEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, ...financeOwnedServiceEntries],
+    "backend route/service/schema and Prisma diff limited to approved concurrent runtime paths",
   );
 
   const roomPreview = buildRoomProfitabilityAndQuoteFloorPreview(buildRoomInput());
@@ -451,7 +471,7 @@ function main() {
   check(fileLines(registryPath) < 1000, "registry stays under 1000 lines", String(fileLines(registryPath)));
   check(fileLines(expansionPath) < 1000, "expansion stays under 1000 lines", String(fileLines(expansionPath)));
 
-  assertEmptyDiff(["backend/src/services"], "backend/src/services diff empty");
+  mustNoDiffExceptWithIdentity(["backend/src/services"], [...financeOwnedServiceEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF], "backend/src/services diff limited to finance-owned runtime paths");
   assertEmptyDiff(["prisma"], "prisma diff empty");
   assertEmptyDiff(["prisma"], "prisma diff empty");
   runRoomProfitabilityAndQuoteFloorExpansionChecks(check);

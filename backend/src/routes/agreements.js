@@ -22,6 +22,7 @@ import { createAndEmitNotification } from "../notifications/service.js";
 import { buildAgreementRouteRefreshRouter } from "./agreementRouteRefreshRouter.js";
 import { buildAgreementExtendNegotiationRouter } from "./agreementExtendNegotiationRouter.js";
 import { requireStepUpWrite } from "../auth/middleware.js";
+import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 import {
   clampMin,
   clampWeekMask,
@@ -37,6 +38,7 @@ import {
 
 export function agreementsRouter(io) {
   const r = express.Router();
+  wrapAsyncRouterMethods(r);
   r.use(authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), requireStepUpWrite("COMPANY", "ROOM", "SUPER_ADMIN"));
 
   // LIST

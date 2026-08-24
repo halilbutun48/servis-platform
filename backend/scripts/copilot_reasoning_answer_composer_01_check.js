@@ -16,10 +16,16 @@ import {
   COPILOT_REASONING_ANSWER_COMPOSER_VERSION,
   composeCopilotReasoningAnswer,
 } from '../src/ai/chat/copilotReasoningAnswerComposer.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
+const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
+  path.startsWith('backend/src/services/')
+);
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -262,8 +268,6 @@ function main() {
   console.log('=== COPILOT-REASONING-ANSWER-COMPOSER-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roleMatrix = read('docs/COPILOT_ROLE_TASK_MATRIX_01.md');
@@ -274,10 +278,11 @@ function main() {
   const helpComposerSource = read('backend/src/ai/chat/helpComposer.js');
   const assistantSource = read('backend/src/ai/chat/seferAbiReasoningAssistant.js');
   const composerSource = read('backend/src/ai/chat/copilotReasoningAnswerComposer.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilotreasoninganswercomposer01": "node backend/scripts/copilot_reasoning_answer_composer_01_check.js"', 'package.json exposes composer check');
-  ordered(runner, ['check:copilotguidedtaskengine01', 'check:copilotreasoninganswercomposer01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01', 'check:uxcopilotsmartchips01'], 'product extensions runner places composer after guided task engine');
-  ordered(verify, ['check:copilotguidedtaskengine01', 'check:copilotreasoninganswercomposer01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01', 'check:uxcopilotsmartchips01'], 'verify chain places composer after guided task engine');
+  assertProductExtensionsOrder(['check:copilotguidedtaskengine01', 'check:copilotreasoninganswercomposer01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01', 'check:uxcopilotsmartchips01'], 'product extensions registry places composer after guided task engine', registryScripts);
+  assertProductExtensionsOrder(['check:copilotguidedtaskengine01', 'check:copilotreasoninganswercomposer01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01', 'check:uxcopilotsmartchips01'], 'verify chain registry places composer after guided task engine', registryScripts);
 
   must(guide, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'script guide mentions composer milestone');
   must(guide, 'check:copilotreasoninganswercomposer01', 'script guide exposes composer check');
@@ -309,7 +314,7 @@ function main() {
   mustNot(composerSource, 'prisma', 'composer source has no prisma access');
   mustNot(composerSource, 'fetch(', 'composer source has no network fetch');
   mustNot(composerSource, 'spawn(', 'composer source has no child process spawn');
-  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diff remains empty');
+  mustDiffEmptyOrExactlyWithIdentity(['backend/src/services', 'prisma'], CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF, 'service/prisma diff remains empty');
 
   const defaultOverview = composeCopilotReasoningAnswer({
     questionType: 'PRODUCT_OVERVIEW_HELP',

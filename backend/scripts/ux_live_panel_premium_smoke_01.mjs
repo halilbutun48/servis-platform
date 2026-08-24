@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
+import { PREMIUM_SMOKE_COVERAGE_SOURCES, buildPremiumSmokeEvidenceSourceFiles, buildSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,24 @@ const artifactRoot = path.join(
 const screenshotRoot = path.join(artifactRoot, "screenshots");
 const reportJsonPath = path.join(artifactRoot, "report.json");
 const reportMdPath = path.join(artifactRoot, "report.md");
+const chromiumDebugLogPath = path.join(artifactRoot, "chromium-debug.log");
+let chromiumWorkingDir = null;
+
+const SMOKE_SCHEMA_PATH = "backend/prisma/schema.prisma";
+const SMOKE_EVIDENCE_SOURCE_FILES = buildPremiumSmokeEvidenceSourceFiles();
+
+async function relocateRepoDebugLogIfPresent() {
+  const debugLogPath = chromiumWorkingDir ? path.join(chromiumWorkingDir, "debug.log") : path.join(repoRoot, "debug.log");
+  try {
+    await fs.access(debugLogPath);
+  } catch {
+    return;
+  }
+
+  await ensureDir(artifactRoot);
+  await fs.rm(chromiumDebugLogPath, { force: true });
+  await fs.rename(debugLogPath, chromiumDebugLogPath);
+}
 
 const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
@@ -285,6 +304,112 @@ async function getButtons(page) {
   }
 }
 
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function termMatchesVisibleText(haystack, term) {
+  const pattern = new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(term)}(?:$|[^a-z0-9])`);
+  return pattern.test(haystack);
+}
+
+async function getVisibleText(page) {
+  try {
+    return await page.evaluate(() => {
+      const blockedTags = new Set(["script", "style", "template", "noscript"]);
+      const isVisibleElement = (el) => {
+        for (let node = el; node && node.nodeType === Node.ELEMENT_NODE; node = node.parentElement) {
+          const tag = String(node.tagName || "").toLowerCase();
+          if (blockedTags.has(tag)) return false;
+          if (node.hidden || node.getAttribute("aria-hidden") === "true") return false;
+          const style = getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          if (
+            style.display === "none" ||
+            style.visibility === "hidden" ||
+            Number.parseFloat(style.opacity || "1") === 0 ||
+            rect.width <= 0 ||
+            rect.height <= 0
+          ) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+      const root = document.body || document.documentElement;
+      if (!root) return "";
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const parts = [];
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const text = String(node.nodeValue || "").replace(/\s+/g, " ").trim();
+        if (!text) continue;
+        if (!isVisibleElement(node.parentElement)) continue;
+        parts.push(text);
+      }
+      return parts.join(" ");
+    }).catch(() => "");
+  } catch {
+    return "";
+  }
+}
+
+async function getDispatchSemanticState(page, viewportName) {
+  try {
+    return await page.evaluate((vp) => {
+      const isVisibleElement = (el) => {
+        for (let node = el; node && node.nodeType === Node.ELEMENT_NODE; node = node.parentElement) {
+          const tag = String(node.tagName || "").toLowerCase();
+          if (["script", "style", "template", "noscript"].includes(tag)) return false;
+          if (node.hidden || node.getAttribute("aria-hidden") === "true") return false;
+          const style = getComputedStyle(node);
+          const rect = node.getBoundingClientRect();
+          if (
+            style.display === "none" ||
+            style.visibility === "hidden" ||
+            Number.parseFloat(style.opacity || "1") === 0 ||
+            rect.width <= 0 ||
+            rect.height <= 0
+          ) {
+            return false;
+          }
+        }
+        return true;
+      };
+      const countVisible = (selector) =>
+        Array.from(document.querySelectorAll(selector)).filter((el) => isVisibleElement(el)).length;
+      const selectedCount = vp === "desktop"
+        ? countVisible("tbody tr")
+        : countVisible("article.shiftCard, .shiftCard");
+      const applyButton = Array.from(document.querySelectorAll("button")).find((btn) => {
+        if (!isVisibleElement(btn)) return false;
+        return /Önizlemeyi Uygula: Böl & Onayla/i.test(String(btn.textContent || "").trim());
+      }) || null;
+      return {
+        selectedCount,
+        applyVisible: Boolean(applyButton),
+        applyEnabled: Boolean(applyButton && !applyButton.disabled),
+      };
+    }, viewportName);
+  } catch {
+    return { selectedCount: 0, applyVisible: false, applyEnabled: false };
+  }
+}
+
+async function waitForDispatchSemanticReadiness(page, viewportName, timeoutMs = 10000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastState = { selectedCount: 0, applyVisible: false, applyEnabled: false };
+  while (Date.now() < deadline) {
+    lastState = await getDispatchSemanticState(page, viewportName);
+    if (lastState.selectedCount > 0 && lastState.applyVisible) {
+      return lastState;
+    }
+    await page.waitForTimeout(250);
+  }
+  return lastState;
+}
+
 async function isVisible(page, role, name) {
   try {
     return await page.getByRole(role, { name }).first().isVisible({ timeout: 3000 });
@@ -308,8 +433,8 @@ async function clickIfVisible(page, role, name) {
 
 function classifyTextSignals(text, status, notes) {
   const hay = normalize(text);
-  const techHits = TECH_TERMS.filter((term) => hay.includes(term));
-  const badAiHits = BAD_AI_PHRASES.filter((term) => hay.includes(term));
+  const techHits = TECH_TERMS.filter((term) => termMatchesVisibleText(hay, term));
+  const badAiHits = BAD_AI_PHRASES.filter((term) => termMatchesVisibleText(hay, term));
 
   if (badAiHits.length > 0) {
     status = bumpStatus(status, "BLOCKER");
@@ -375,7 +500,7 @@ async function runScenario(page, scenario, viewportName, output) {
 
   result.url = page.url();
   result.title = await page.title().catch(() => "");
-  const bodyText = await getText(page);
+  let bodyText = await getVisibleText(page);
   result.textLength = bodyText.length;
   result.textPreview = bodyText.slice(0, 4000);
   result.headings = await getHeadings(page);
@@ -418,8 +543,6 @@ async function runScenario(page, scenario, viewportName, output) {
       result.notes.push("Login root görünür ve anlaşılır.");
     }
   }
-
-  result.status = classifyTextSignals(bodyText, result.status, result.notes);
 
   if (result.consoleErrors.length > 0) {
     result.notes.push(`Console error sayısı: ${result.consoleErrors.length}.`);
@@ -478,6 +601,18 @@ async function runScenario(page, scenario, viewportName, output) {
   }
 
   if (scenario.kind === "dispatch") {
+    const readiness = await waitForDispatchSemanticReadiness(page, viewportName);
+    result.checks.dispatchReadySelectionCount = readiness.selectedCount;
+    result.checks.dispatchReadyApplyVisible = readiness.applyVisible;
+    result.checks.dispatchReadyApplyEnabled = readiness.applyEnabled;
+    if (readiness.selectedCount <= 0 || !readiness.applyVisible) {
+      result.status = bumpStatus(result.status, "BLOCKER");
+      result.notes.push("ROOM shifts seeded selection readiness timeout.");
+    } else {
+      bodyText = await getVisibleText(page);
+      result.textPreview = bodyText.slice(0, 4000);
+      result.textLength = bodyText.length;
+    }
     const applyButton = page.getByRole("button", { name: /Önizlemeyi Uygula: Böl & Onayla/i }).first();
     if (await applyButton.count().catch(() => 0)) {
       const enabled = await applyButton.isEnabled().catch(() => false);
@@ -737,6 +872,8 @@ async function runScenario(page, scenario, viewportName, output) {
     result.notes.push("Sefer Abi launcher secondary copilot olarak görünür.");
   }
 
+  result.status = classifyTextSignals(bodyText, result.status, result.notes);
+
   // If we navigated away in a scenario, refresh the final snapshot before exit.
   if (result.screenshots.length === 1) {
     const finalShot = await screenshot(page, scenario, viewportName, "after");
@@ -775,6 +912,9 @@ function renderMarkdown(report) {
   lines.push("# UX Live Panel Premium Smoke 01");
   lines.push("");
   lines.push(`- Generated at: \`${report.generatedAt}\``);
+  lines.push(`- Git HEAD: \`${report.gitHead}\``);
+  lines.push(`- Schema SHA256: \`${report.schemaSha256}\``);
+  lines.push(`- Source identity SHA256: \`${report.sourceIdentitySha256}\``);
   lines.push(`- Web base URL: \`${report.webBaseUrl}\``);
   lines.push(`- API base URL: \`${report.apiBaseUrl}\``);
   lines.push(`- Playwright: \`${report.playwrightVersion}\``);
@@ -786,6 +926,13 @@ function renderMarkdown(report) {
   lines.push(`- Console errors: \`${report.consoleErrorCount}\``);
   lines.push(`- Page errors: \`${report.pageErrorCount}\``);
   lines.push(`- Artifact root: \`${report.artifactRoot}\``);
+  lines.push("");
+  lines.push("## Coverage Sources");
+  lines.push("");
+  for (const source of report.coverageSources || []) {
+    lines.push(`- \`${source}\``);
+  }
+  lines.push("");
   lines.push("");
   lines.push("## Status Counts");
   lines.push("");
@@ -852,115 +999,140 @@ async function main() {
 
   await ensureDir(artifactRoot);
   await ensureDir(screenshotRoot);
+  const originalCwd = process.cwd();
+  chromiumWorkingDir = await fs.mkdtemp(path.join(artifactRoot, "ux-live-panel-premium-smoke-"));
+  process.chdir(chromiumWorkingDir);
 
-  const rootPkg = JSON.parse(await fs.readFile(path.join(repoRoot, "package.json"), "utf8"));
-  const playwrightVersionSpec = rootPkg.devDependencies?.["@playwright/test"] || "unknown";
+  try {
+    const rootPkg = JSON.parse(await fs.readFile(path.join(repoRoot, "package.json"), "utf8"));
+    const playwrightVersionSpec = rootPkg.devDependencies?.["@playwright/test"] || "unknown";
 
-  const browser = await chromium.launch({ headless: HEADLESS, slowMo: SLOW_MO });
-  const browserVersion = browser.version();
+    const browser = await chromium.launch({
+      headless: HEADLESS,
+      slowMo: SLOW_MO,
+      env: {
+        ...process.env,
+        CHROME_LOG_FILE: chromiumDebugLogPath,
+      },
+    });
+    const browserVersion = browser.version();
+    const evidenceIdentity = buildSmokeEvidenceIdentity({ repoRoot, sourceFiles: SMOKE_EVIDENCE_SOURCE_FILES, schemaPath: SMOKE_SCHEMA_PATH });
 
-  const report = {
-    generatedAt: new Date().toISOString(),
-    repoRoot,
-    artifactRoot: path.relative(repoRoot, artifactRoot).replace(/\\/g, "/"),
-    webBaseUrl: WEB_BASE_URL,
-    apiBaseUrl: API_BASE_URL,
-    headless: HEADLESS,
-    slowMo: SLOW_MO,
-    playwrightVersion: playwrightVersionSpec,
-    browserVersion,
-    routeCount: 0,
-    screenshotCount: 0,
-    consoleErrorCount: 0,
-    pageErrorCount: 0,
-    statusCounts: { PASS: 0, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
-    routes: [],
-    authResults: [],
-    totalLoginFailures: 0,
-    success: true,
-  };
+    const report = {
+      generatedAt: new Date().toISOString(),
+      repoRoot,
+      artifactRoot: path.relative(repoRoot, artifactRoot).replace(/\\/g, "/"),
+      webBaseUrl: WEB_BASE_URL,
+      apiBaseUrl: API_BASE_URL,
+      headless: HEADLESS,
+      slowMo: SLOW_MO,
+      playwrightVersion: playwrightVersionSpec,
+      browserVersion,
+      coverageSources: PREMIUM_SMOKE_COVERAGE_SOURCES,
+      gitHead: evidenceIdentity.gitHead,
+      schemaSha256: evidenceIdentity.schemaSha256,
+      sourceIdentityFiles: evidenceIdentity.sourceIdentityFiles,
+      sourceIdentityFileHashes: evidenceIdentity.sourceIdentityFileHashes,
+      sourceIdentitySha256: evidenceIdentity.sourceIdentitySha256,
+      routeCount: 0,
+      screenshotCount: 0,
+      consoleErrorCount: 0,
+      pageErrorCount: 0,
+      statusCounts: { PASS: 0, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
+      routes: [],
+      authResults: [],
+      totalLoginFailures: 0,
+      success: true,
+    };
 
-  for (const group of ROUTE_GROUPS) {
-    let authState = { role: group.role, token: null, loginInfo: null, error: null };
-    let sharedStorageState = null;
-    if (group.auth) {
-      authState = await loginRole(group.role);
-      report.authResults.push(authState);
-      if (authState.error) {
-        report.totalLoginFailures += 1;
-        console.log(`AUTH ${group.role}: ${authState.error}`);
-      } else {
-        console.log(`AUTH ${group.role}: ok`);
+    for (const group of ROUTE_GROUPS) {
+      let authState = { role: group.role, token: null, loginInfo: null, error: null };
+      let sharedStorageState = null;
+      if (group.auth) {
+        authState = await loginRole(group.role);
+        report.authResults.push(authState);
+        if (authState.error) {
+          report.totalLoginFailures += 1;
+          console.log(`AUTH ${group.role}: ${authState.error}`);
+        } else {
+          console.log(`AUTH ${group.role}: ok`);
+        }
+      }
+
+      for (const viewport of VIEWPORTS) {
+        const contextOptions = {
+          viewport: { width: viewport.width, height: viewport.height },
+          deviceScaleFactor: viewport.deviceScaleFactor,
+          isMobile: viewport.isMobile,
+          hasTouch: viewport.hasTouch,
+          locale: "tr-TR",
+          timezoneId: "Europe/Istanbul",
+        };
+
+        if (sharedStorageState) {
+          contextOptions.storageState = sharedStorageState;
+        }
+
+        const context = await browser.newContext(contextOptions);
+
+        if (authState.token) {
+          await context.addInitScript((token) => {
+            localStorage.setItem("token", token);
+          }, authState.token);
+        }
+
+        for (const scenario of group.routes) {
+          const page = await context.newPage();
+          const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
+          report.routeCount += 1;
+          report.screenshotCount += row.screenshots.length;
+          report.consoleErrorCount += row.consoleErrors.length;
+          report.pageErrorCount += row.pageErrors.length;
+          report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
+          report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
+          console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
+          await page.close().catch(() => {});
+        }
+
+        if (viewport.name === "desktop") {
+          sharedStorageState = await context.storageState().catch(() => null);
+        }
+
+        await context.close().catch(() => {});
       }
     }
 
-    for (const viewport of VIEWPORTS) {
-      const contextOptions = {
-        viewport: { width: viewport.width, height: viewport.height },
-        deviceScaleFactor: viewport.deviceScaleFactor,
-        isMobile: viewport.isMobile,
-        hasTouch: viewport.hasTouch,
-        locale: "tr-TR",
-        timezoneId: "Europe/Istanbul",
-      };
+    await browser.close().catch(() => {});
 
-      if (sharedStorageState) {
-        contextOptions.storageState = sharedStorageState;
-      }
+    const md = renderMarkdown(report);
+    await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+    await fs.writeFile(reportMdPath, `${md}\n`, "utf8");
+    await relocateRepoDebugLogIfPresent();
 
-      const context = await browser.newContext(contextOptions);
+    console.log(`WROTE ${path.relative(repoRoot, reportJsonPath).replace(/\\/g, "/")}`);
+    console.log(`WROTE ${path.relative(repoRoot, reportMdPath).replace(/\\/g, "/")}`);
+    console.log(`STATUS PASS: ${report.statusCounts.PASS || 0}`);
+    console.log(`STATUS PASS-: ${report.statusCounts["PASS-"] || 0}`);
+    console.log(`STATUS UX-FIX: ${report.statusCounts["UX-FIX"] || 0}`);
+    console.log(`STATUS BLOCKER: ${report.statusCounts.BLOCKER || 0}`);
+    console.log(`STATUS AUTH-BLOCKED: ${report.statusCounts["AUTH-BLOCKED"] || 0}`);
+    console.log(`STATUS NOT-FOUND: ${report.statusCounts["NOT-FOUND"] || 0}`);
 
-      if (authState.token) {
-        await context.addInitScript((token) => {
-          localStorage.setItem("token", token);
-        }, authState.token);
-      }
-
-      for (const scenario of group.routes) {
-        const page = await context.newPage();
-        const row = await runScenario(page, { ...scenario, role: group.role }, viewport.name, report.routes);
-        report.routeCount += 1;
-        report.screenshotCount += row.screenshots.length;
-        report.consoleErrorCount += row.consoleErrors.length;
-        report.pageErrorCount += row.pageErrors.length;
-        report.statusCounts[row.status] = (report.statusCounts[row.status] || 0) + 1;
-        report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
-        console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
-        await page.close().catch(() => {});
-      }
-
-      if (viewport.name === "desktop") {
-        sharedStorageState = await context.storageState().catch(() => null);
-      }
-
-      await context.close().catch(() => {});
+    if (!report.success) {
+      console.error("Smoke found blocker or 404 outcomes; see report files for details.");
+      process.exit(1);
     }
-  }
-
-  await browser.close().catch(() => {});
-
-  const md = renderMarkdown(report);
-  await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  await fs.writeFile(reportMdPath, `${md}\n`, "utf8");
-
-  console.log(`WROTE ${path.relative(repoRoot, reportJsonPath).replace(/\\/g, "/")}`);
-  console.log(`WROTE ${path.relative(repoRoot, reportMdPath).replace(/\\/g, "/")}`);
-  console.log(`STATUS PASS: ${report.statusCounts.PASS || 0}`);
-  console.log(`STATUS PASS-: ${report.statusCounts["PASS-"] || 0}`);
-  console.log(`STATUS UX-FIX: ${report.statusCounts["UX-FIX"] || 0}`);
-  console.log(`STATUS BLOCKER: ${report.statusCounts.BLOCKER || 0}`);
-  console.log(`STATUS AUTH-BLOCKED: ${report.statusCounts["AUTH-BLOCKED"] || 0}`);
-  console.log(`STATUS NOT-FOUND: ${report.statusCounts["NOT-FOUND"] || 0}`);
-
-  if (!report.success) {
-    console.error("Smoke found blocker or 404 outcomes; see report files for details.");
-    process.exit(1);
+  } finally {
+    process.chdir(originalCwd);
+    await fs.rm(chromiumWorkingDir, { recursive: true, force: true }).catch(() => {});
+    chromiumWorkingDir = null;
   }
 }
 
 main().catch(async (error) => {
   try {
     await ensureDir(artifactRoot);
+    await relocateRepoDebugLogIfPresent();
     const failureReport = {
       generatedAt: new Date().toISOString(),
       repoRoot,

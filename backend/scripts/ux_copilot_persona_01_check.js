@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -103,11 +104,12 @@ const bubbleSource = read('web/src/components/copilot/ChatMessageBubble.jsx');
 const helperSource = read('web/src/utils/copilotFacts.js');
 const screenRegistrySource = read('web/src/copilot/screenRegistry.js');
 const smartChipsCheck = read('backend/scripts/ux_copilot_smart_chips_01_check.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:uxcopilotpersona01": "node backend/scripts/ux_copilot_persona_01_check.js"', 'package.json exposes check:uxcopilotpersona01');
 must(pkg, '"check:uxcopilotsmartchips01"', 'package.json keeps check:uxcopilotsmartchips01');
-must(runner, 'check:uxcopilotpersona01', 'product extensions runner includes persona check');
-must(verifyChain, 'check:uxcopilotpersona01', 'verify chain includes persona check');
+assertProductExtensionsIncludes('check:uxcopilotpersona01', 'product extensions registry includes persona check', registryScripts);
+assertProductExtensionsIncludes('check:uxcopilotpersona01', 'verify chain registry includes persona check', registryScripts);
 must(guide, 'UX-COPILOT-PERSONA-01', 'script guide mentions UX-COPILOT-PERSONA-01');
 must(guide, 'check:uxcopilotpersona01', 'script guide exposes check:uxcopilotpersona01');
 must(auditDoc, 'UX-COPILOT-PERSONA-01 brand voice note', 'audit doc keeps persona note');

@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,8 +62,8 @@ function main() {
   console.log('=== ROUTE-CHANGE-FINAL-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const doc = read('docs/ROUTE_CHANGE_FINAL_01.md');
@@ -88,11 +89,11 @@ function main() {
   must(audit, 'Company / Sözleşmeler', 'copilot audit mentions company agreements');
   must(audit, 'Room / Sözleşmeler', 'copilot audit mentions room agreements');
   must(audit, 'driver route refresh bu milestone kapsamında değildir', 'copilot audit keeps driver refresh out of scope');
-  ordered(runner, [
+  assertProductExtensionsOrder([
     'check:boardingops01c',
     'check:routechangefinal01',
     'check:etasanity01',
-  ], 'product extensions runner order around route final');
+  ], 'product extensions registry order around route final', registryScripts);
   must(verify, 'check:routechangefinal01', 'verify chain exposes route final gate');
   must(verify, 'ROUTE-CHANGE-FINAL-01', 'verify chain mentions route final milestone');
   must(companySection, 'AgreementRouteChangePreviewCard', 'company route refresh section uses shared preview card');

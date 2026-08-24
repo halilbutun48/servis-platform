@@ -18,6 +18,7 @@ import {
   detectNextBestActionSurface,
   looksLikeNextBestActionQuestion,
 } from '../src/ai/chat/conversationNextBestActionEngine.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -513,8 +514,6 @@ function main() {
   console.log('=== COPILOT-NEXT-BEST-ACTION-ENGINE-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runChain = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const routeReviewCheck = read('backend/scripts/copilot_route_review_human_approval_01_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
@@ -524,12 +523,11 @@ function main() {
   const reasoningAssistantSource = read('backend/src/ai/chat/seferAbiReasoningAssistant.js');
   const helperSource = read('backend/src/ai/chat/conversationNextBestActionEngine.js');
   const doc = read('docs/COPILOT_NEXT_BEST_ACTION_ENGINE_01.md');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilotnextbestactionengine01": "node backend/scripts/copilot_next_best_action_engine_01_check.js"', 'package.json exposes next best action check');
-  must(runChain, 'check:copilotnextbestactionengine01', 'product extensions chain includes next best action check');
-  must(verifyChain, 'check:copilotnextbestactionengine01', 'verify chain includes next best action check');
-  ordered(runChain, ['check:copilotoperationhealthengine01', 'check:copilotnextbestactionengine01', 'check:copilotplanreviewengine01'], 'product extensions chain keeps next best action between operation health and plan review');
-  ordered(verifyChain, ['check:copilotoperationhealthengine01', 'check:copilotnextbestactionengine01', 'check:copilotplanreviewengine01'], 'verify chain keeps next best action between operation health and plan review');
+  assertProductExtensionsOrder(['check:copilotoperationhealthengine01', 'check:copilotnextbestactionengine01', 'check:copilotplanreviewengine01'], 'product extensions registry keeps next best action between operation health and plan review', registryScripts);
+  assertProductExtensionsOrder(['check:copilotoperationhealthengine01', 'check:copilotnextbestactionengine01', 'check:copilotplanreviewengine01'], 'verify chain registry keeps next best action between operation health and plan review', registryScripts);
 
   must(routeReviewCheck, 'backend/scripts/copilot_next_best_action_engine_01_check.js', 'route review scope gate lists next best action check');
   must(routeReviewCheck, 'backend/src/ai/chat/conversationNextBestActionEngine.js', 'route review scope gate lists next best action helper');

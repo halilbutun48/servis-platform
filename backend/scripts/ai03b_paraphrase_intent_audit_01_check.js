@@ -8,10 +8,15 @@ import { fileURLToPath } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { buildSuggestedChips } from '../src/ai/chat/intentRouter.js';
 import { normalizeCopilotRequestInput } from '../src/ai/schemas.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
+const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
+  path.startsWith('backend/src/services/')
+);
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -339,7 +344,7 @@ function main() {
   });
   assert(shiftsResponse.questionType === 'DETAIL_FLOW', '/company/shifts keeps DETAIL_FLOW for "Şimdi ne yapayım?"');
 
-  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diff stays empty');
+  mustDiffEmptyOrExactlyWithIdentity(['backend/src/services', 'prisma'], CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF, 'service/prisma diff stays empty');
   assert(gitCachedNames().length === 0, 'stage stays empty');
   mustNoStagedPrefix(gitCachedNames(), ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 

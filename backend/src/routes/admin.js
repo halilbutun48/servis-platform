@@ -31,6 +31,7 @@ import { markPasswordChangeRequired } from "../auth/passwordChangeRequirementSto
 import { validatePasswordPolicy } from "../auth/passwordPolicy.js";
 import { buildInternalLoginEmail, getUserLoginMeta, isUsernameTaken, setStoredLogin, validateUsernameOrThrow } from "../auth/usernameDirectory.js";
 import { buildKvkkRetentionEnforcementSummary, buildKvkkRetentionRunAuditMeta } from "../kvkk/retention.js";
+import { wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 
 const DISABLED_PREFIX = "$DISABLED$";
 function isDisabledHash(hash) {
@@ -133,6 +134,7 @@ const updateUserSchema = z
 
 export function adminRouter(io = null) {
   const r = express.Router();
+  wrapAsyncRouterMethods(r);
   const superAdminWrite = [authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")];
 
   async function auditAdminWrite(req, action, entity, entityId, meta = {}) {

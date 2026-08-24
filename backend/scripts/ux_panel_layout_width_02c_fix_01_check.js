@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,6 +52,7 @@ function mustNotContains(text, needle, label) {
 
 function main() {
   console.log("=== UX-PANEL-LAYOUT-WIDTH-02C-FIX-01 CHECK ===");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const auditPath = "docs/UX_PANEL_STRUCTURE_02_AUDIT.md";
   must(exists(auditPath), "structure audit doc exists");
@@ -112,30 +114,18 @@ function main() {
   mustContains(pkg, '"check:uxpanelstructure02"', "package.json keeps check:uxpanelstructure02");
   mustContains(pkg, '"check:uxpanelinventory02a"', "package.json keeps check:uxpanelinventory02a");
   mustContains(pkg, '"check:uxcollapsiblepanels01"', "package.json keeps check:uxcollapsiblepanels01");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxpanellayoutwidth02cfix01", "product extensions runner includes width fix check");
-  mustContains(runner, "check:uxpaneltabsfix01", "product extensions runner keeps tabs fix check");
-  mustContains(runner, "check:uxpanelreality02c", "product extensions runner keeps reality audit check");
-  mustContains(runner, "check:uxpanelstructure02b", "product extensions runner keeps structure 02B check");
-  mustContains(runner, "check:uxpanelstructure02", "product extensions runner keeps structure 02 check");
-  mustContains(runner, "check:uxpanelinventory02a", "product extensions runner keeps inventory 02A check");
-  mustContains(runner, "check:uxcollapsiblepanels01", "product extensions runner keeps collapsible panels check");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxpanellayoutwidth02cfix01", "verify chain includes width fix check");
-  mustContains(verify, "check:uxpaneltabsfix01", "verify chain keeps tabs fix check");
-  mustContains(verify, "check:uxpanelreality02c", "verify chain keeps reality audit check");
-  mustContains(verify, "check:uxpanelstructure02b", "verify chain keeps structure 02B check");
-  mustContains(verify, "check:uxpanelstructure02", "verify chain keeps structure 02 check");
-  mustContains(verify, "check:uxpanelinventory02a", "verify chain keeps inventory 02A check");
-  mustContains(verify, "check:uxcollapsiblepanels01", "verify chain keeps collapsible panels check");
-  mustContains(verify, "check:uxnav01", "verify chain keeps uxnav01");
-  mustContains(verify, "check:uxdensity01", "verify chain keeps uxdensity01");
+  assertProductExtensionsIncludes("check:uxpanellayoutwidth02cfix01", "product extensions registry includes width fix check", registryScripts);
+  assertProductExtensionsIncludes("check:uxpaneltabsfix01", "product extensions registry includes tabs fix check", registryScripts);
+  assertProductExtensionsIncludes("check:uxpanelreality02c", "product extensions registry includes reality audit check", registryScripts);
+  assertProductExtensionsIncludes("check:uxpanelstructure02b", "product extensions registry includes structure 02B check", registryScripts);
+  assertProductExtensionsIncludes("check:uxpanelstructure02", "product extensions registry includes structure 02 check", registryScripts);
+  assertProductExtensionsIncludes("check:uxpanelinventory02a", "product extensions registry includes inventory 02A check", registryScripts);
+  assertProductExtensionsIncludes("check:uxcollapsiblepanels01", "product extensions registry includes collapsible panels check", registryScripts);
+  assertProductExtensionsIncludes("check:uxnav01", "product extensions registry includes uxnav01", registryScripts);
+  assertProductExtensionsIncludes("check:uxdensity01", "product extensions registry includes uxdensity01", registryScripts);
 
   console.log("=== UX-PANEL-LAYOUT-WIDTH-02C-FIX-01 CHECK PASS ===");
 }
 
 main();
-
 

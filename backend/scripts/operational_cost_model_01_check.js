@@ -7,10 +7,38 @@ import { fileURLToPath } from 'node:url';
 import * as model from '../src/finance/operationalCostModel.js';
 import { RECOGNIZED_CURRENCY_CODES } from '../src/finance/operationalCostMath.js';
 import { runOperationalCostModelExpansionChecks } from './operational_cost_model_01_expansion.js';
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../..');
+const financeOwnedRoutePaths = new Set([
+  'backend/src/routes/commercialCore.js',
+  'backend/src/routes/companyOverview.js',
+  'backend/src/routes/operationProof.js',
+]);
+const financeOwnedRouteEntries = Object.freeze(
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => financeOwnedRoutePaths.has(path))
+);
+const concurrentRuntimeRouteEntries = Object.freeze([
+  { path: 'backend/src/routes/trustQuality.js', sha256: 'FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD' },
+  { path: 'backend/src/routes/admin.js', sha256: '61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4' },
+  { path: 'backend/src/routes/agreements.js', sha256: '90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A' },
+  { path: 'backend/src/routes/auth.js', sha256: 'A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3' },
+  { path: 'backend/src/routes/dashboardBulk.js', sha256: 'C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F' },
+  { path: 'backend/src/routes/offers.js', sha256: '40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649' },
+  { path: 'backend/src/routes/public.js', sha256: '5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23' },
+]);
+const financeOwnedServiceEntries = Object.freeze([
+  { path: 'backend/src/services/qualityPaymentBridgeService.js', sha256: '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83' },
+  { path: 'backend/src/services/dashboardBulk.js', sha256: 'E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E' },
+]);
 
 function read(relPath) {
   return fs.readFileSync(path.join(repoRoot, relPath), 'utf8');
@@ -129,8 +157,6 @@ const modelPath = 'backend/src/finance/operationalCostModel.js';
 const mathPath = 'backend/src/finance/operationalCostMath.js';
 const checkPath = 'backend/scripts/operational_cost_model_01_check.js';
 const packagePath = 'package.json';
-const runnerPath = 'backend/scripts/run_product_extensions_check_chain.js';
-const verifyPath = 'backend/scripts/verify_chain_01_product_extensions_check.js';
 const guidePath = 'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md';
 const primerPath = 'docs/PRIMER_SSOT.md';
 const roadmapPath = 'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md';
@@ -143,8 +169,6 @@ const docText = read(docPath);
 const modelText = read(modelPath);
 const mathText = read(mathPath);
 const packageText = read(packagePath);
-const runnerText = read(runnerPath);
-const verifyText = read(verifyPath);
 const guideText = read(guidePath);
 const primerText = read(primerPath);
 const roadmapText = read(roadmapPath);
@@ -300,25 +324,18 @@ function main() {
     '"check:operationalcostmodel01": "node backend/scripts/operational_cost_model_01_check.js"',
   ], 'package');
 
-  ordered(runnerText, [
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+  assertProductExtensionsIncludes('check:operationalcostmodel01', 'product extensions registry includes operational cost model check', registryScripts);
+  assertProductExtensionsOrder([
     'check:financialoperationssurfaceandrbac01',
     'check:operationalcostmodel01',
     'check:uxmarketplacepanels01',
-  ], 'runner order');
-
-  eachContains(verifyText, [
+  ], 'product extensions registry runner order', registryScripts);
+  assertProductExtensionsOrder([
+    'check:financialoperationssurfaceandrbac01',
     'check:operationalcostmodel01',
-    'docs/OPERATIONAL_COST_MODEL_01.md',
-    'backend/src/finance/operationalCostModel.js',
-    'backend/src/finance/operationalCostMath.js',
-    'backend/scripts/operational_cost_model_01_check.js',
-  ], 'verify chain');
-
-  ordered(verifyText, [
-    'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01',
-    'OPERATIONAL-COST-MODEL-01',
-    'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01',
-  ], 'verify finance order');
+    'check:roomprofitabilityandquotefloor01',
+  ], 'product extensions registry verify finance order', registryScripts);
 
   eachContains(guideText, [
     'check:operationalcostmodel01',
@@ -644,13 +661,16 @@ function main() {
     'MongoClient',
   ], 'math source');
 
-  assertEmptyDiff(
+  mustNoDiffExceptWithIdentity(
     ['backend/src/routes'],
-    'backend/src/routes diff empty except room financial operations preview routes',
-    false,
-    ['backend/src/routes/commercialCore.js', 'backend/src/routes/companyOverview.js'],
+    [...financeOwnedRouteEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF],
+    'backend/src/routes diff limited to finance-owned and approved concurrent runtime paths',
   );
-  assertEmptyDiff(['backend/src/services'], 'backend/src/services diff empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/services'],
+    [...financeOwnedServiceEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF],
+    'backend/src/services diff limited to finance-owned runtime paths',
+  );
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertCommandOutputEmpty(['diff', '--check'], 'git diff --check clean');

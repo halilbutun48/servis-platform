@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { buildDynamicQuestionReply, buildSmartDiagnosticChips, buildSmartDiagnosticReply, buildSmartDiagnosticState } from '../src/ai/chat/conversationTaskStateResponses.js';
 import { buildSeferAbiReasoningAssistant } from '../src/ai/chat/seferAbiReasoningAssistant.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -241,7 +242,6 @@ function main() {
   console.log('=== COPILOT SMART DIAGNOSTIC ENGINE 01 ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
@@ -251,9 +251,10 @@ function main() {
   const smartSource = read('backend/src/ai/chat/conversationSmartDiagnostics.js');
   const helpComposerSource = read('backend/src/ai/chat/helpComposer.js');
   const assistantSource = read('backend/src/ai/chat/seferAbiReasoningAssistant.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilotsmartdiagnosticengine01": "node backend/scripts/copilot_smart_diagnostic_engine_01_check.js"', 'package.json exposes check:copilotsmartdiagnosticengine01');
-  must(runner, 'check:copilotsmartdiagnosticengine01', 'product extensions runner includes smart diagnostic engine check');
+  assertProductExtensionsOrder(['check:copilotdynamicquestionengine01', 'check:copilotsmartdiagnosticengine01', 'check:copilotrootcauseengine01'], 'product extensions registry keeps smart diagnostic engine after dynamic question engine and before root cause engine', registryScripts);
   must(guide, 'COPILOT-SMART-DIAGNOSTIC-ENGINE-01', 'script guide mentions smart diagnostic engine milestone');
   must(guide, 'check:copilotsmartdiagnosticengine01', 'script guide exposes smart diagnostic engine check');
   must(guide, 'node backend\\scripts\\copilot_smart_diagnostic_engine_01_check.js', 'script guide includes smart diagnostic engine command');

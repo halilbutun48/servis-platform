@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,15 +74,16 @@ function main() {
 
   must(exists("docs/BOARDING_CHANGE_REQUEST_ENTRY_01.md"), "milestone doc exists");
   must(exists("backend/scripts/boarding_change_request_entry_01_check.js"), "check script exists");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const pkg = read("package.json");
   mustContain(pkg, '"check:boardingchangerequestentry01": "node backend/scripts/boarding_change_request_entry_01_check.js"', "package.json exposes check:boardingchangerequestentry01");
 
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContain(runner, "check:boardingchangerequestentry01", "product extensions runner includes boarding change request entry");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContain(verify, "check:boardingchangerequestentry01", "verify chain includes boarding change request entry");
+  assertProductExtensionsIncludes(
+    "check:boardingchangerequestentry01",
+    "product extensions registry includes boarding change request entry",
+    registryScripts
+  );
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContain(guide, "BOARDING-CHANGE-REQUEST-ENTRY-01", "milestone guide mentions boarding change request entry");

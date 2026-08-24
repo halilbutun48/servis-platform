@@ -5,10 +5,14 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN } from "./lib/currentHeadScopePolicy.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
+const CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN;
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -226,8 +230,7 @@ function main() {
   console.log("=== UX-PREMIUM-CRITICAL-FIX-ROOM-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -341,8 +344,7 @@ function main() {
   mustTrue(exists("docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md"), "room critical fix doc exists");
 
   must(pkg, '"check:uxpremiumcriticalfixroom01": "node backend/scripts/ux_premium_critical_fix_room_01_check.js"', "package.json exposes room critical fix check");
-  must(runner, "check:uxpremiumcriticalfixroom01", "product extensions runner includes room critical fix check");
-  must(verify, "check:uxpremiumcriticalfixroom01", "verify chain includes room critical fix check");
+  assertProductExtensionsIncludes("check:uxpremiumcriticalfixroom01", "product extensions registry includes room critical fix check", registryScripts);
 
   must(harnessCheck, "UX-PREMIUM-CRITICAL-FIX-ROOM-01", "script harness check knows room critical fix milestone");
   must(harnessCheck, "check:uxpremiumcriticalfixroom01", "script harness check knows room critical fix alias");
@@ -546,7 +548,7 @@ function main() {
     "docs/UX_PANEL_INVENTORY_02A_AUDIT.md",
     "docs/UX_PANEL_REALITY_AUDIT_02C.md",
     "docs/UX_PANEL_STANDARD_ARCHITECTURE_01.md",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/copilot/screenRegistry.js",
     "web/src/layout/NavDock.jsx",
     "web/src/panels/room/VehiclesPanel.jsx",
@@ -563,8 +565,11 @@ function main() {
   mustNotList(staged, "debug.log", "debug.log is not staged");
 
   const status = statusNames().filter((file) => !cleanupScopeFiles.includes(file));
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
-  mustNotList(status.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
+  mustDiffEmptyOrExactlyWithIdentity(
+    ["backend/src/routes", "backend/src/services"],
+    CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF,
+    "backend route/service diff stays within approved current-head scope"
+  );
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustAcceptedPrismaManifest();
   mustNotList(status, "web/src/panels/company/DriversPanel.jsx", "company drivers panel is untouched");

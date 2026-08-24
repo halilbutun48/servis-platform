@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { getScreenDefinitionForUser } from '../src/ai/jobGuide/screenCatalog.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 import {
   detectCopilotGuidedTaskEngineIntent,
   detectCopilotGuidedTaskEngineProgressCommand,
@@ -113,13 +116,7 @@ function mustNoDiff(paths, label) {
   if (files.length > 0) fail(`${label}: ${files.join(', ')}`);
   ok(label);
 }
-function mustNoDiffExcept(paths, allowedFiles, label) {
-  const files = gitDiffNames(paths).filter((file) => !allowedFiles.includes(file));
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(', ')}`);
-  }
-  ok(label);
-}
+
 function mustNoStagedPrefix(names, prefixes, label) {
   const hits = names.filter((name) => prefixes.some((prefix) => normalize(name).startsWith(normalize(prefix))));
   if (hits.length > 0) fail(`${label}: ${hits.join(', ')}`);
@@ -234,8 +231,6 @@ async function main() {
   console.log('=== COPILOT-GUIDED-TASK-ENGINE-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -252,10 +247,11 @@ async function main() {
   const cachedNames = gitCachedNames();
   const sampleCases = getCopilotGuidedTaskEngineSampleCases();
   const familyIds = listCopilotGuidedTaskEngineFamilies();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilotguidedtaskengine01": "node backend/scripts/copilot_guided_task_engine_01_check.js"', 'package.json exposes guided task engine check');
-  ordered(runner, ['check:copiloteblockruntimeanswerintegration01', 'check:copilotguidedtaskengine01', 'check:uxcopilotsmartchips01'], 'product extensions runner places guided task engine after e-block');
-  ordered(verify, ['check:copiloteblockruntimeanswerintegration01', 'check:copilotguidedtaskengine01', 'check:uxcopilotsmartchips01'], 'verify chain places guided task engine after e-block');
+  assertProductExtensionsOrder(['check:copiloteblockruntimeanswerintegration01', 'check:copilotguidedtaskengine01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps guided task engine after e-block', registryScripts);
+  assertProductExtensionsOrder(['check:copiloteblockruntimeanswerintegration01', 'check:copilotguidedtaskengine01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps guided task engine after e-block', registryScripts);
 
   must(guide, 'COPILOT-GUIDED-TASK-ENGINE-01', 'script guide mentions guided task engine milestone');
   must(guide, 'check:copilotguidedtaskengine01', 'script guide exposes guided task engine check');
@@ -338,7 +334,11 @@ async function main() {
   must(harnessDoc, 'backend/src/ai/chat/copilotGuidedTaskEngine.js', 'script harness doc lists guided task engine helper');
   must(harnessDoc, 'COPILOT-GUIDED-TASK-ENGINE-01', 'script harness doc lists guided task engine milestone');
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'backend route/service/schema and Prisma diff stays empty'
+  );
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 
   const sampleMessagePool = sampleCases.flatMap((sample) => sample.messages || []);

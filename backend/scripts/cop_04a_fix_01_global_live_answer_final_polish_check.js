@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,12 +67,11 @@ function ordered(text, needles, label) {
 console.log('=== COP-04A-FIX-01 GLOBAL LIVE ANSWER FINAL POLISH CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const policy = read('backend/src/ai/chat/answerQualityPolicy.js');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
 const facts = read('web/src/utils/copilotFacts.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop04afix01": "node backend/scripts/cop_04a_fix_01_global_live_answer_final_polish_check.js"', 'package.json exposes check:cop04afix01');
 must(pkg, '"check:cop04afix02": "node backend/scripts/cop_04a_fix_02_contract_generation_intent_check.js"', 'package.json exposes check:cop04afix02');
@@ -80,7 +80,7 @@ must(pkg, '"check:cop03cfix03"', 'package.json keeps check:cop03cfix03');
 must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
 must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 
-ordered(runner, [
+assertProductExtensionsOrder([
   'check:op04',
   'check:qlt04b',
   'check:pay01e',
@@ -105,10 +105,10 @@ ordered(runner, [
   'check:cop04a',
   'check:cop04afix02',
   'check:cop04afix01',
-], 'product extensions runner order keeps cop04afix01 last');
+], 'product extensions registry order keeps cop04afix01 last', registryScripts);
 
-must(verifyChain, 'check:cop04afix01', 'verify chain waits for check:cop04afix01');
-must(verifyChain, 'check:cop04afix02', 'verify chain waits for check:cop04afix02');
+assertProductExtensionsIncludes('check:cop04afix01', 'product extensions registry references cop04afix01', registryScripts);
+assertProductExtensionsIncludes('check:cop04afix02', 'product extensions registry references cop04afix02', registryScripts);
 must(guide, 'check:cop04afix01', 'script guide exposes check:cop04afix01');
 must(guide, 'check:cop04afix02', 'script guide exposes check:cop04afix02');
 must(guide, 'check:cop04a', 'script guide keeps check:cop04a');

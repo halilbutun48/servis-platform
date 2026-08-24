@@ -4,6 +4,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import {
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+} from "./lib/currentHeadScopePolicy.js";
+import {
+  assertProductExtensionsIncludes,
+  assertProductExtensionsOrder,
+  productExtensionsChecks,
+} from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -101,8 +110,6 @@ function main() {
   console.log("=== TELEMATICS-PROVIDER-HUB-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const doc = read("docs/TELEMATICS_PROVIDER_HUB_01.md");
   const navDock = read("web/src/layout/NavDock.jsx");
@@ -118,10 +125,11 @@ function main() {
   const screenRegistry = read("web/src/copilot/screenRegistry.js");
   const screenCatalog = read("backend/src/ai/jobGuide/screenCatalog.js");
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:telematicsproviderhub01": "node backend/scripts/telematics_provider_hub_01_check.js"', "package.json exposes telematics provider hub check");
-  ordered(runner, ["check:m44telematicst1t5", "check:telematicsproviderhub01", "check:pay01e"], "product extensions runner places telematics provider hub after M44");
-  ordered(verify, ["check:m44telematicst1t5", "check:telematicsproviderhub01", "check:pay01e"], "verify chain places telematics provider hub after M44");
+  assertProductExtensionsIncludes("check:telematicsproviderhub01", "product extensions registry includes telematics provider hub check", registryScripts);
+  assertProductExtensionsOrder(["check:m44telematicst1t5", "check:telematicsproviderhub01", "check:pay01e"], "product extensions registry places telematics provider hub after M44", registryScripts);
 
   must(guide, "TELEMATICS-PROVIDER-HUB-01", "milestone guide mentions telematics provider hub milestone");
   must(guide, "check:telematicsproviderhub01", "milestone guide exposes telematics provider hub check");
@@ -231,7 +239,7 @@ function main() {
   must(screenCatalog, "/superadmin/telematics", "screen catalog includes telematics hub route");
   must(screenCatalog, "Telematik / GPS Sağlayıcıları", "screen catalog keeps telematics hub label");
 
-  mustNoDiffExcept(["backend/src/routes", "backend/src/services", "prisma"], ['backend/src/routes/companyOverview.js'], "backend route/service/schema and Prisma diff stays empty");
+  mustNoDiffExceptWithIdentity(["backend/src/routes", "backend/src/services", "prisma"], CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, "backend route/service/schema and Prisma diff limited to approved concurrent runtime paths");
   mustNoStagedPrefix(cachedNames, ["backend/src/routes/", "backend/src/services/", "prisma/"], "backend route/service/schema and Prisma stay unstaged");
   mustNoStagedPrefix(cachedNames, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/"], "runtime-data and browser-smoke stay commit-external");
 

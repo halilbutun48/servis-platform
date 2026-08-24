@@ -16,6 +16,7 @@ import {
   PLAN_REVIEW_TRIGGER_PHRASES,
   looksLikePlanReviewQuestion,
 } from '../src/ai/chat/conversationPlanReviewEngine.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -409,9 +410,11 @@ function runRegressionCase(config) {
 }
 
 function runSourceGuardAssertions(sourceBundle) {
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+
   must(sourceBundle.packageJson, '"check:copilotplanreviewengine01": "node backend/scripts/copilot_plan_review_engine_01_check.js"', 'package.json exposes plan review engine check');
-  ordered(sourceBundle.runner, ['check:copilotworkflowreasoningengine01', 'check:copilotplanreviewengine01', 'check:hotfilesplitaichatcomposers01'], 'product extensions runner places plan review after workflow reasoning and before hot-file split');
-  ordered(sourceBundle.verify, ['check:copilotworkflowreasoningengine01', 'check:copilotplanreviewengine01', 'check:hotfilesplitaichatcomposers01'], 'verify chain places plan review after workflow reasoning and before hot-file split');
+  assertProductExtensionsOrder(['check:copilotworkflowreasoningengine01', 'check:copilotplanreviewengine01', 'check:hotfilesplitaichatcomposers01'], 'product extensions registry places plan review after workflow reasoning and before hot-file split', registryScripts);
+  assertProductExtensionsOrder(['check:copilotworkflowreasoningengine01', 'check:copilotplanreviewengine01', 'check:hotfilesplitaichatcomposers01'], 'verify chain registry places plan review after workflow reasoning and before hot-file split', registryScripts);
 
   must(sourceBundle.guide, 'COPILOT-PLAN-REVIEW-ENGINE-01', 'milestone guide mentions plan review milestone');
   must(sourceBundle.guide, 'check:copilotplanreviewengine01', 'milestone guide exposes plan review check');
@@ -480,8 +483,6 @@ async function main() {
 
   const sourceBundle = {
     packageJson: readRoot('package.json'),
-    runner: readRoot('backend/scripts/run_product_extensions_check_chain.js'),
-    verify: readRoot('backend/scripts/verify_chain_01_product_extensions_check.js'),
     guide: readRoot('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md'),
     primer: readRoot('docs/PRIMER_SSOT.md'),
     helpComposer: readRoot('backend/src/ai/chat/helpComposer.js'),

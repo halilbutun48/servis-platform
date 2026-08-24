@@ -6,15 +6,18 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { normalizedTextSha256 } from './lib/guardTextIntegrity.js';
+import { CANONICAL_PROVENANCE_RECORDS } from './lib/canonicalProvenanceRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsIncludes, productExtensionsCheckScripts } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../..');
+const roleDataIsolationScript = 'check:roledataisolationredteam01';
+const roleDataCheckerPath = 'backend/scripts/role_data_isolation_redteam_01_check.js';
 
 const paths = {
   packageJson: path.join(repoRoot, 'package.json'),
-  runner: path.join(repoRoot, 'backend', 'scripts', 'run_product_extensions_check_chain.js'),
-  verify: path.join(repoRoot, 'backend', 'scripts', 'verify_chain_01_product_extensions_check.js'),
   harnessCheck: path.join(repoRoot, 'backend', 'scripts', 'script_harness_consolidation_01_check.js'),
   harnessDoc: path.join(repoRoot, 'docs', 'SCRIPT_HARNESS_CONSOLIDATION_01.md'),
   guide: path.join(repoRoot, 'docs', 'SCRIPT_KILAVUZU_MILESTONE_HARITASI.md'),
@@ -27,6 +30,7 @@ const paths = {
   cacheDoc: path.join(repoRoot, 'docs', 'CACHE_COALESCING_AND_BACKOFF_01.md'),
   requestStormDoc: path.join(repoRoot, 'docs', 'REQUEST_STORM_RESILIENCE_01.md'),
   rateLimitDoc: path.join(repoRoot, 'docs', 'PRODUCTION_RATE_LIMIT_POLICY_01.md'),
+  roleDataChecker: path.join(repoRoot, 'backend', 'scripts', 'role_data_isolation_redteam_01_check.js'),
   responseCache: path.join(repoRoot, 'backend', 'src', 'utils', 'responseCache.js'),
   dashboardBulk: path.join(repoRoot, 'backend', 'src', 'services', 'dashboardBulk.js'),
   adminRoute: path.join(repoRoot, 'backend', 'src', 'routes', 'admin.js'),
@@ -71,13 +75,218 @@ function gitLines(args) {
   return String(out || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 }
 
-function gitStatusNames() {
-  const out = execFileSync('git', ['status', '--short'], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+function gitStatusNames(paths = []) {
+  const args = ['status', '--short', '--untracked-files=all'];
+  const scopedPaths = Array.isArray(paths) ? paths : [...paths];
+  if (scopedPaths.length > 0) {
+    args.push('--', ...scopedPaths.map(normalizeStatusPath));
+  }
+  const out = execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   return String(out || '')
     .split(/\r?\n/)
     .filter(Boolean)
     .map((line) => line.replace(/^.{2}\s+/, '').replace(/\\/g, '/').trim())
     .filter(Boolean);
+}
+
+const approvedCurrentHeadProductHashes = new Map([
+  ['backend/src/routes/admin.js', '61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4'],
+  ['backend/src/routes/agreements.js', 'BE08F0BBC59424075605CE388363CF57581FF28637934C581757A2FE07E7A928'],
+  ['backend/src/routes/auth.js', 'A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3'],
+  ['backend/src/routes/companyOverview.js', 'A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB'],
+  ['backend/src/routes/dashboardBulk.js', 'C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F'],
+  ['backend/src/routes/shifts/company.js', 'A9FA0C8A737DF701505E71FAEB16EF3402E883DCA82DB71B8E4A95507AE232AA'],
+  ['backend/src/routes/commercialCore.js', '14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F'],
+  ['backend/src/routes/commercialCorePaymentReportsRoutes.js', 'DA3C9CEE5DF38EB89EE315475F9C37EB94D1EE7E95A11E5E2039C4FDFB21AE3F'],
+  ['backend/src/routes/commercialCorePaymentRoutes.js', '53C908A0C414D73A9BC397DCC89FC1D8DD285AC0D842FD949426911307DFA993'],
+  ['backend/src/routes/commercialCoreRoomRoutes.js', '13571F1358DEFA75E9D8EB960EDBEFB868326DB4A3655680433A66B7D049833B'],
+  ['backend/src/routes/commercialCoreRouteData.js', '2DF560872A4B6B94C576DD7DA0610C44F053B1EA494EA57B307BFED5030A5A6C'],
+  ['backend/src/routes/commercialCoreRoutes.js', 'AF17E5ADBAB36C2509A9CE67B7BF7E977D597C1B410FEF41C67DDF1D629003FC'],
+  ['backend/src/routes/offers.js', '40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649'],
+  ['backend/src/routes/operationProof.js', 'E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0'],
+  ['backend/src/routes/public.js', '5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23'],
+  ['backend/src/routes/trustQuality.js', 'FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD'],
+  ['backend/src/services/dashboardBulk.js', 'E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E'],
+  ['backend/src/services/companyShiftMutationTail.js', 'FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78'],
+  ['backend/src/services/qualityPaymentBridgeService.js', '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83'],
+]);
+
+const approvedCanonicalProvenanceHashes = new Map([
+  ['backend/src/lib/requestUrl.js', '629D6C894B91551AB14518F36E2BF4C5CEF48DC60ADBB01A17EFE7755C30063E'],
+]);
+
+const workingTreeHygieneScopePaths = [
+  ...new Set([
+    ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.map(({ path: value }) => normalizeStatusPath(value)),
+    ...CANONICAL_PROVENANCE_RECORDS.map(({ path: value }) => normalizeStatusPath(value)),
+    roleDataCheckerPath,
+  ]),
+];
+
+const roleTenantOwnedRoutePaths = new Set([
+  'backend/src/routes/admin.js',
+  'backend/src/routes/companyOverview.js',
+]);
+
+const roleTenantOwnedServicePaths = new Set([
+  'backend/src/services/dashboardBulk.js',
+  'backend/src/finance/companyBudgetAndServiceCost.js',
+]);
+
+const roleTenantOwnedUtilityPaths = new Set([
+  'backend/src/utils/responseCache.js',
+  'web/src/panels/shared/FinancialOperationsPanel.jsx',
+]);
+
+const outOfScopeCurrentHeadHelperPaths = new Set([
+  'backend/scripts/current_head_scope_policy_01_check.js',
+  'backend/scripts/run_product_extensions_check_chain.js',
+  'backend/scripts/verify_chain_01_product_extensions_check.js',
+  'backend/scripts/run_backend_lint.js',
+  'backend/scripts/lib/currentHeadScopePolicy.js',
+  'backend/scripts/lib/guardGitScope.js',
+  'backend/scripts/lib/guardRunnerContracts.js',
+  'backend/scripts/lib/guardSmokeEvidence.js',
+  'backend/scripts/lib/guardValidationEnvironment.js',
+  'backend/scripts/lib/productExtensionsRegistry.js',
+]);
+
+const outOfScopeTestInfraPaths = new Set([
+  'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md',
+  'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md',
+  'docs/PRIMER_SSOT.md',
+  'package.json',
+  'tools/repo_contract_state.json',
+]);
+
+let cachedProductExtensionsCheckerPaths = null;
+let cachedProductExtensionsSmokePaths = null;
+
+function normalizeStatusPath(file) {
+  return String(file || '').replace(/\\/g, '/').trim();
+}
+
+function isApprovedCurrentHeadProductPath(file) {
+  const normalized = normalizeStatusPath(file);
+  const expectedSha = approvedCurrentHeadProductHashes.get(normalized);
+  if (!expectedSha) return false;
+  const actualSha = normalizedTextSha256(normalized);
+  must(actualSha === expectedSha, `approved current-head product identity mismatch: ${normalized}`);
+  return true;
+}
+
+function isApprovedCanonicalProvenancePath(file) {
+  const normalized = normalizeStatusPath(file);
+  const expectedSha = approvedCanonicalProvenanceHashes.get(normalized);
+  if (!expectedSha) return false;
+  const actualSha = normalizedTextSha256(normalized);
+  must(actualSha === expectedSha, `approved canonical provenance identity mismatch: ${normalized}`);
+  return true;
+}
+
+function productExtensionsCheckerPaths() {
+  if (cachedProductExtensionsCheckerPaths) return cachedProductExtensionsCheckerPaths;
+
+  const pkg = JSON.parse(readFile(paths.packageJson));
+  const scripts = pkg.scripts || {};
+  const resolved = new Set();
+
+  for (const entry of productExtensionsCheckScripts) {
+    if (entry.startsWith('node ')) {
+      resolved.add(normalizeStatusPath(entry.slice(5)));
+      continue;
+    }
+
+    const command = scripts[entry];
+    if (typeof command !== 'string') continue;
+
+    const match = command.trim().match(/^node\s+(.+)$/);
+    if (match) {
+      resolved.add(normalizeStatusPath(match[1]));
+    }
+  }
+
+  cachedProductExtensionsCheckerPaths = resolved;
+  return cachedProductExtensionsCheckerPaths;
+}
+
+function productExtensionsSmokePaths() {
+  if (cachedProductExtensionsSmokePaths) return cachedProductExtensionsSmokePaths;
+
+  const pkg = JSON.parse(readFile(paths.packageJson));
+  const scripts = pkg.scripts || {};
+  const resolved = new Set();
+
+  for (const [name, command] of Object.entries(scripts)) {
+    if (!String(name).startsWith('smoke:')) continue;
+    if (typeof command !== 'string') continue;
+
+    const match = command.trim().match(/^node\s+(.+)$/);
+    if (match) {
+      resolved.add(normalizeStatusPath(match[1]));
+    }
+  }
+
+  cachedProductExtensionsSmokePaths = resolved;
+  return cachedProductExtensionsSmokePaths;
+}
+
+function validateRoleDataCheckerSource(source) {
+  must(contains(source, 'classifyRoleDataIsolationStatusPath'), 'role data checker keeps classified status contract');
+  must(contains(source, 'productExtensionsCheckerPaths'), 'role data checker keeps registry checker path resolver');
+  must(contains(source, 'productExtensionsSmokePaths'), 'role data checker keeps smoke path resolver');
+  must(contains(source, 'OUT_OF_SCOPE_CHECKER_INFRA'), 'role data checker keeps checker infra category');
+  must(contains(source, 'OUT_OF_SCOPE_TEST_INFRA'), 'role data checker keeps test infra category');
+  must(contains(source, 'OUT_OF_SCOPE_CURRENT_HEAD_HELPER'), 'role data checker keeps helper category');
+  must(contains(source, 'APPROVED_CURRENT_HEAD_PRODUCT'), 'role data checker keeps approved current-head product category');
+  must(contains(source, 'CANONICAL_PROVENANCE_FILE'), 'role data checker keeps canonical provenance category');
+  must(contains(source, 'PROTECTED_ROUTE'), 'role data checker keeps protected route category');
+  must(contains(source, 'PROTECTED_SERVICE'), 'role data checker keeps protected service category');
+  must(contains(source, 'PROTECTED_PRISMA'), 'role data checker keeps protected prisma category');
+  must(contains(source, 'ROLE_TENANT_SECURITY_OWNED'), 'role data checker keeps owned-surface category');
+  const legacyWorkingTreeCaseLabel = ['working tree', ' only contains approved files'].join('');
+  const legacyWorkingTreeHygieneCall = ['allWithin(gitStatusNames(), ', 'allowedStatusNames, [], ', "'working tree hygiene'"].join('');
+  must(!contains(source, legacyWorkingTreeCaseLabel), 'role data checker removed legacy global hygiene wording');
+  must(!contains(source, legacyWorkingTreeHygieneCall), 'role data checker removed legacy global hygiene call');
+}
+
+function classifyRoleDataIsolationStatusPath(file) {
+  const normalized = normalizeStatusPath(file);
+  if (isApprovedCurrentHeadProductPath(normalized)) return 'APPROVED_CURRENT_HEAD_PRODUCT';
+  if (isApprovedCanonicalProvenancePath(normalized)) return 'CANONICAL_PROVENANCE_FILE';
+  if (normalized === roleDataCheckerPath) return 'ROLE_TENANT_SECURITY_OWNED';
+  if (roleTenantOwnedRoutePaths.has(normalized)) return 'PROTECTED_ROUTE';
+  if (roleTenantOwnedServicePaths.has(normalized)) return 'PROTECTED_SERVICE';
+  if (roleTenantOwnedUtilityPaths.has(normalized)) return 'ROLE_TENANT_SECURITY_OWNED';
+  if (normalized.startsWith('backend/src/routes/')) return 'PROTECTED_ROUTE';
+  if (normalized.startsWith('backend/src/services/')) return 'PROTECTED_SERVICE';
+  if (normalized.startsWith('backend/prisma/')) return 'PROTECTED_PRISMA';
+  if (normalized.startsWith('backend/artifacts/runtime-data/')) return 'RUNTIME_DATA';
+  if (outOfScopeCurrentHeadHelperPaths.has(normalized)) return 'OUT_OF_SCOPE_CURRENT_HEAD_HELPER';
+  if (normalized !== roleDataCheckerPath && productExtensionsCheckerPaths().has(normalized)) return 'OUT_OF_SCOPE_CHECKER_INFRA';
+  if (productExtensionsSmokePaths().has(normalized)) return 'OUT_OF_SCOPE_TEST_INFRA';
+  if (
+    normalized === 'backend/scripts/run_product_extensions_check_chain.js' ||
+    normalized === 'backend/scripts/verify_chain_01_product_extensions_check.js' ||
+    normalized === 'backend/scripts/current_head_scope_policy_01_check.js' ||
+    normalized === 'backend/scripts/run_backend_lint.js'
+  ) {
+    return 'OUT_OF_SCOPE_CURRENT_HEAD_HELPER';
+  }
+  if (outOfScopeTestInfraPaths.has(normalized)) return 'OUT_OF_SCOPE_TEST_INFRA';
+  return 'UNKNOWN';
+}
+
+function assertClassifiedPaths(label, files, allowedCategories) {
+  const allowed = new Set(allowedCategories);
+  const unexpected = [];
+  for (const file of files) {
+    const category = classifyRoleDataIsolationStatusPath(file);
+    if (!allowed.has(category)) {
+      unexpected.push(`${normalizeStatusPath(file)} [${category}]`);
+    }
+  }
+  must(unexpected.length === 0, `${label}: ${unexpected.join(', ')}`);
 }
 
 function allWithin(files, exactPaths, prefixes, label) {
@@ -299,8 +508,7 @@ function main() {
   console.log('=== ROLE-DATA-ISOLATION-REDTEAM-01 CHECK ===');
 
   const pkg = readFile(paths.packageJson);
-  const runner = readFile(paths.runner);
-  const verify = readFile(paths.verify);
+  const roleDataChecker = readFile(paths.roleDataChecker);
   const harnessCheck = readFile(paths.harnessCheck);
   const harnessDoc = readFile(paths.harnessDoc);
   const guide = readFile(paths.guide);
@@ -527,8 +735,8 @@ function main() {
 
   // Wiring
   addContains(cases, 'package.json exposes role data isolation alias', pkg, '"check:roledataisolationredteam01": "node backend/scripts/role_data_isolation_redteam_01_check.js"');
-  addContains(cases, 'runner includes role data isolation check', runner, 'check:roledataisolationredteam01');
-  addContains(cases, 'verify chain includes role data isolation check', verify, 'check:roledataisolationredteam01');
+  addCase(cases, 'role data checker source keeps approved contract', () => validateRoleDataCheckerSource(roleDataChecker));
+  addCase(cases, 'registry includes role data isolation check', () => assertProductExtensionsIncludes(roleDataIsolationScript, 'registry includes role data isolation check'));
   addContains(cases, 'harness check includes role data isolation milestone', harnessCheck, 'ROLE-DATA-ISOLATION-REDTEAM-01');
   addContains(cases, 'harness check includes role data isolation alias', harnessCheck, 'check:roledataisolationredteam01');
   addContains(cases, 'harness check includes role data isolation doc', harnessCheck, 'docs/ROLE_DATA_ISOLATION_REDTEAM_01.md');
@@ -652,16 +860,45 @@ function main() {
   ['no write-action', 'no destructive query', 'no schema/migration', 'no production DB', 'no public URL', 'no real credentials', 'no runtime/model execution', 'No stage/commit/tag/push'].forEach((needle) => addContains(cases, `doc not changed ${needle}`, doc, needle));
 
   // Commit-external / repo hygiene
-  addCase(cases, 'working tree only contains approved files', () => {
-    allWithin(gitStatusNames(), allowedStatusNames, [], 'working tree hygiene');
+  addCase(cases, 'working tree hygiene is classified', () => {
+    const dirtyPaths = gitStatusNames(workingTreeHygieneScopePaths);
+    const unexpected = [];
+    for (const file of dirtyPaths) {
+      const category = classifyRoleDataIsolationStatusPath(file);
+      if (category === 'APPROVED_CURRENT_HEAD_PRODUCT') continue;
+      if (category === 'CANONICAL_PROVENANCE_FILE') continue;
+      if (category === 'OUT_OF_SCOPE_CHECKER_INFRA') continue;
+      if (category === 'OUT_OF_SCOPE_TEST_INFRA') continue;
+      if (category === 'OUT_OF_SCOPE_CURRENT_HEAD_HELPER') continue;
+      if (category === 'RUNTIME_DATA') continue;
+      if (category === 'ROLE_TENANT_SECURITY_OWNED' && normalizeStatusPath(file) === roleDataCheckerPath) {
+        validateRoleDataCheckerSource(roleDataChecker);
+        continue;
+      }
+      unexpected.push(`${normalizeStatusPath(file)} [${category}]`);
+    }
+    must(unexpected.length === 0, `working tree hygiene: ${unexpected.join(', ') || '(none)'}`);
   });
   addCase(cases, 'stage remains empty', () => must(gitLines(['diff', '--cached', '--name-only']).length === 0, 'staged files present'));
   addCase(cases, 'git diff --check stays clean', () => must(gitLines(['diff', '--check']).length === 0, 'git diff --check findings'));
   addCase(cases, 'git diff --cached --check stays clean', () => must(gitLines(['diff', '--cached', '--check']).length === 0, 'git diff --cached --check findings'));
-  const allowedRouteDiffNames = new Set(['backend/src/routes/companyOverview.js']);
-  addCase(cases, 'route diff stays within exact scope', () => allWithin(gitLines(['diff', '--name-only', '--', 'backend/src/routes']), allowedRouteDiffNames, [], 'route diff'));
-  addCase(cases, 'service diff stays empty', () => must(gitLines(['diff', '--name-only', '--', 'backend/src/services']).length === 0, 'service diff not empty'));
-  addCase(cases, 'prisma diff stays empty', () => must(gitLines(['diff', '--name-only', '--', 'prisma']).length === 0, 'prisma diff not empty'));
+  addCase(cases, 'route diff stays within approved current-head product', () => {
+    assertClassifiedPaths(
+      'route diff',
+      gitLines(['diff', '--name-only', '--', 'backend/src/routes']),
+      ['APPROVED_CURRENT_HEAD_PRODUCT'],
+    );
+  });
+  addCase(cases, 'service diff stays within approved current-head product', () => {
+    assertClassifiedPaths(
+      'service diff',
+      gitLines(['diff', '--name-only', '--', 'backend/src/services']),
+      ['APPROVED_CURRENT_HEAD_PRODUCT'],
+    );
+  });
+  addCase(cases, 'prisma diff stays empty', () => {
+    assertClassifiedPaths('prisma diff', gitLines(['diff', '--name-only', '--', 'backend/prisma']), []);
+  });
   addCase(cases, 'backend prisma accepted manifest stays exact', () => mustAcceptedPrismaManifest());
   addCase(cases, 'debug.log stays absent', () => must(!fs.existsSync(paths.debugLog), 'debug.log still present'));
   addCase(cases, 'git show --check --stat HEAD stays clean', () => must(gitLines(['show', '--check', '--stat', 'HEAD']).length >= 1, 'git show --check --stat HEAD missing output'));

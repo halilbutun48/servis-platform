@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +49,7 @@ function countMatches(text, pattern) {
 
 function main() {
   console.log("=== UX-PANEL-REALITY-CLEANUP-02D CHECK ===");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const pkg = read("package.json");
   mustContains(pkg, '"check:uxpanelrealitycleanup02d"', "package.json exposes check:uxpanelrealitycleanup02d");
@@ -56,20 +58,11 @@ function main() {
   mustContains(pkg, '"check:uxlivemaptabsfix01"', "package.json keeps check:uxlivemaptabsfix01");
   mustContains(pkg, '"check:uxpanelreality02c"', "package.json keeps check:uxpanelreality02c");
   mustContains(pkg, '"check:uxpanellayoutwidth02cfix03"', "package.json keeps check:uxpanellayoutwidth02cfix03");
-
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxpanelrealitycleanup02d", "product extensions runner includes UX-PANEL-REALITY-CLEANUP-02D");
-  mustContains(runner, "check:uxpaneltabsfix01", "product extensions runner keeps UX-PANEL-TABS-FUNCTIONAL-02B-FIX-01");
-  mustContains(runner, "check:uxlivemaptabsfix01", "product extensions runner keeps UX-LIVE-MAP-TABS-FIX-01");
-  mustContains(runner, "check:uxpanelreality02c", "product extensions runner keeps UX-PANEL-REALITY-AUDIT-02C");
-  mustContains(runner, "check:uxpanellayoutwidth02cfix03", "product extensions runner keeps UX-PANEL-LAYOUT-WIDTH-02C-FIX-03");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxpanelrealitycleanup02d", "verify chain includes UX-PANEL-REALITY-CLEANUP-02D");
-  mustContains(verify, "check:uxpaneltabsfix01", "verify chain keeps UX-PANEL-TABS-FUNCTIONAL-02B-FIX-01");
-  mustContains(verify, "check:uxlivemaptabsfix01", "verify chain keeps UX-LIVE-MAP-TABS-FIX-01");
-  mustContains(verify, "check:uxpanelreality02c", "verify chain keeps UX-PANEL-REALITY-AUDIT-02C");
-  mustContains(verify, "check:uxpanellayoutwidth02cfix03", "verify chain keeps UX-PANEL-LAYOUT-WIDTH-02C-FIX-03");
+  assertProductExtensionsIncludes("check:uxpanelrealitycleanup02d", "product extensions registry includes UX-PANEL-REALITY-CLEANUP-02D", registryScripts);
+  assertProductExtensionsIncludes("check:uxpaneltabsfix01", "product extensions registry includes UX-PANEL-TABS-FUNCTIONAL-02B-FIX-01", registryScripts);
+  assertProductExtensionsIncludes("check:uxlivemaptabsfix01", "product extensions registry includes UX-LIVE-MAP-TABS-FIX-01", registryScripts);
+  assertProductExtensionsIncludes("check:uxpanelreality02c", "product extensions registry includes UX-PANEL-REALITY-AUDIT-02C", registryScripts);
+  assertProductExtensionsIncludes("check:uxpanellayoutwidth02cfix03", "product extensions registry includes UX-PANEL-LAYOUT-WIDTH-02C-FIX-03", registryScripts);
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-PANEL-REALITY-CLEANUP-02D", "milestone guide mentions UX-PANEL-REALITY-CLEANUP-02D");

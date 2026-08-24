@@ -78,6 +78,12 @@ Repo: `servis-platform`
 - Runtime AI action yok.
 
 ### STAGE 8 - Dispatch / Operation Prep
+
+## Historical status
+- STATUS: SUPERSEDED
+- CANONICAL_REPLACEMENT: docs/PRIMER_SSOT.md
+- DO_NOT_TREAT_AS_CURRENT_SPEC: YES
+- Historical evidence is retained for traceability and active consumer compatibility.
 - `COPILOT-DISPATCH-ACTION-PREP-01` bu stage için read-only dispatch prep companion milestone'ıdır; `check:copilotdispatchactionprep01`, `docs/COPILOT_DISPATCH_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotDispatchActionPrep.js` ile yaşar.
 - Operasyon başlamadan önce dispatch readiness, driver/vehicle readiness, GPS/safe-drive readiness ve evidence checklist hazırlar.
 - Dispatch apply, route apply ve driver/vehicle assignment yok.

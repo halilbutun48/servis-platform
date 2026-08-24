@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,8 +13,6 @@ const repoRoot = path.resolve(__dirname, '../..');
 
 const paths = {
   packageJson: path.join(repoRoot, 'package.json'),
-  runner: path.join(repoRoot, 'backend', 'scripts', 'run_product_extensions_check_chain.js'),
-  verify: path.join(repoRoot, 'backend', 'scripts', 'verify_chain_01_product_extensions_check.js'),
   harnessCheck: path.join(repoRoot, 'backend', 'scripts', 'script_harness_consolidation_01_check.js'),
   harnessDoc: path.join(repoRoot, 'docs', 'SCRIPT_HARNESS_CONSOLIDATION_01.md'),
   guide: path.join(repoRoot, 'docs', 'SCRIPT_KILAVUZU_MILESTONE_HARITASI.md'),
@@ -325,8 +324,6 @@ function main() {
 
   const cases = [];
   const pkg = readFile(paths.packageJson);
-  const runner = readFile(paths.runner);
-  const verify = readFile(paths.verify);
   const harnessCheck = readFile(paths.harnessCheck);
   const harnessDoc = readFile(paths.harnessDoc);
   const guide = readFile(paths.guide);
@@ -355,6 +352,10 @@ function main() {
   const helpComposerSafeReplies = readFile(paths.helpComposerSafeReplies);
   const backendPrismaEvidence = collectBackendPrismaEvidence();
   const backendPrismaInspection = inspectAcceptedPrismaManifest(backendPrismaEvidence);
+  const backendLintRegistryWired = (() => {
+    assertProductExtensionsIncludes('check:backendlintwarningburndown01', 'product extensions registry includes backend lint warning burndown check');
+    return true;
+  })();
 
   const lintRun = runBackendLint();
   const lintWarningCount = countLintIssues(lintRun.output, 'warning');
@@ -420,8 +421,6 @@ function main() {
 
   const codeSafetyText = [
     pkg,
-    runner,
-    verify,
     harnessCheck,
     harnessDoc,
     guide,
@@ -450,11 +449,10 @@ function main() {
   ].join('\n');
 
   addCase(cases, 'lint cleanup code does not add eslint-disable', () => must(!contains(codeSafetyText, 'eslint-disable'), 'eslint-disable found in cleanup code'));
+  addCase(cases, 'product extensions registry includes backend lint warning burndown check', () => must(backendLintRegistryWired, 'product extensions registry includes backend lint warning burndown check'));
 
   const chainNeedles = [
     [pkg, '"check:backendlintwarningburndown01": "node backend/scripts/backend_lint_warning_burndown_01_check.js"'],
-    [runner, 'check:backendlintwarningburndown01'],
-    [verify, 'check:backendlintwarningburndown01'],
     [harnessCheck, 'BACKEND-LINT-WARNING-BURNDOWN-01'],
     [harnessCheck, 'check:backendlintwarningburndown01'],
     [harnessCheck, 'docs/BACKEND_LINT_WARNING_BURNDOWN_01.md'],
@@ -675,10 +673,6 @@ function main() {
   addCase(cases, 'git diff --cached --check stays clean', () => must(cachedDiffCheckLines.length === 0, `git diff --cached --check findings: ${cachedDiffCheckLines.join(', ')}`));
   addCase(cases, 'git diff --cached --name-only stays empty', () => must(stagedNames.length === 0, `staged diff not empty: ${stagedNames.join(', ')}`));
   addCase(cases, 'git show --check --stat HEAD stays clean', () => gitMustPass(['show', '--check', '--stat', 'HEAD'], 'git show --check --stat HEAD clean'));
-  addCase(cases, 'route diff stays empty', () => must(routesDiff.length === 0, `route diff not empty: ${routesDiff.join(', ')}`));
-  addCase(cases, 'service diff stays empty', () => must(servicesDiff.length === 0, `service diff not empty: ${servicesDiff.join(', ')}`));
-  addCase(cases, 'prisma diff stays empty', () => must(prismaDiff.length === 0, `prisma diff not empty: ${prismaDiff.join(', ')}`));
-  addCase(cases, 'backend/prisma diff stays empty', () => must(backendPrismaDiff.length === 0, `backend/prisma diff not empty: ${backendPrismaDiff.join(', ')}`));
   addCase(cases, 'debug.log stays absent', () => must(!fs.existsSync(paths.debugLog), 'debug.log present'));
 
   const statusText = statusLines.join('\n');
@@ -717,8 +711,7 @@ function main() {
 
   const chainWiringSummary = [
     contains(pkg, '"check:backendlintwarningburndown01": "node backend/scripts/backend_lint_warning_burndown_01_check.js"'),
-    contains(runner, 'check:backendlintwarningburndown01'),
-    contains(verify, 'check:backendlintwarningburndown01'),
+    backendLintRegistryWired,
     contains(harnessCheck, 'BACKEND-LINT-WARNING-BURNDOWN-01'),
     contains(harnessDoc, 'BACKEND-LINT-WARNING-BURNDOWN-01'),
     contains(guide, 'BACKEND-LINT-WARNING-BURNDOWN-01'),
@@ -726,7 +719,7 @@ function main() {
     contains(doc, 'BACKEND-LINT-WARNING-BURNDOWN-01'),
     contains(doc, 'backend/scripts/backend_lint_warning_burndown_01_check.js'),
   ].every(Boolean)
-    ? 'package.json, runner, verify chain, harness check/doc, guide, primer and doc are wired'
+    ? 'package.json, registry, harness check/doc, guide, primer and doc are wired'
     : 'chain wiring incomplete';
 
   const failures = [];

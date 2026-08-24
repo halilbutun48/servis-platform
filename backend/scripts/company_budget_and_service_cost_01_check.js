@@ -8,10 +8,20 @@ import {
   buildCompanyBudgetAndServiceCostPreview,
   buildFinancialOperationsCompanyKindDeniedPreview,
 } from '../src/finance/companyBudgetAndServiceCost.js';
+import {
+  assertProductExtensionsIncludes,
+  productExtensionsChecks,
+} from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../..');
+const financeOwnedServiceEntries = Object.freeze([
+  { path: 'backend/src/services/qualityPaymentBridgeService.js', sha256: '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83' },
+  { path: 'backend/src/services/dashboardBulk.js', sha256: 'E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E' },
+]);
 
 function read(relPath) {
   return fs.readFileSync(path.join(repoRoot, relPath), 'utf8');
@@ -133,8 +143,6 @@ const panelPath = 'web/src/panels/shared/FinancialOperationsPanel.jsx';
 const scopePath = 'backend/src/finance/financialOperationsScope.js';
 const financialSurfaceDocPath = 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md';
 const packagePath = 'package.json';
-const runnerPath = 'backend/scripts/run_product_extensions_check_chain.js';
-const verifyPath = 'backend/scripts/verify_chain_01_product_extensions_check.js';
 const guidePath = 'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md';
 const primerPath = 'docs/PRIMER_SSOT.md';
 const roadmapPath = 'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md';
@@ -150,8 +158,6 @@ const panelText = read(panelPath);
 const scopeText = read(scopePath);
 const financialSurfaceDocText = read(financialSurfaceDocPath);
 const packageText = read(packagePath);
-const runnerText = read(runnerPath);
-const verifyText = read(verifyPath);
 const guideText = read(guidePath);
 const primerText = read(primerPath);
 const roadmapText = read(roadmapPath);
@@ -395,15 +401,8 @@ function assertStaticContract() {
   assertFragments(packageText, [
     '"check:companybudgetandservicecost01": "node backend/scripts/company_budget_and_service_cost_01_check.js"',
   ], 'package');
-  assertFragments(runnerText, [
-    'check:companybudgetandservicecost01',
-  ], 'runner');
-  assertFragments(verifyText, [
-    'check:companybudgetandservicecost01',
-    'COMPANY-BUDGET-AND-SERVICE-COST-01',
-    'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md',
-    'backend/src/finance/companyBudgetAndServiceCost.js',
-  ], 'verify chain');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
+  assertProductExtensionsIncludes('check:companybudgetandservicecost01', 'product extensions registry includes company budget and service cost', registryScripts);
   assertFragments(guideText, [
     'COMPANY-BUDGET-AND-SERVICE-COST-01',
     'check:companybudgetandservicecost01',
@@ -445,7 +444,7 @@ function assertStaticContract() {
   check(fileLines(panelPath) < 1000, 'panel stays under 1000 lines', String(fileLines(panelPath)));
   check(fileLines(scopePath) < 1000, 'scope stays under 1000 lines', String(fileLines(scopePath)));
   check(fileLines(financialSurfaceDocPath) < 1000, 'financial surface doc stays under 1000 lines', String(fileLines(financialSurfaceDocPath)));
-  assertEmptyDiff(['backend/src/services'], 'backend/src/services diff empty');
+  mustNoDiffExceptWithIdentity(['backend/src/services'], [...financeOwnedServiceEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF], 'backend/src/services diff limited to finance-owned runtime paths');
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertCommandOutputEmpty(['diff', '--cached', '--name-only'], 'stage empty');

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -96,7 +97,7 @@ async function main() {
   }
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const harness = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
@@ -118,8 +119,8 @@ async function main() {
   const agreementFactsSource = read('web/src/utils/agreementCopilotFacts.js');
 
   must(pkg, '"check:seferabiterminalhumanize01": "node backend/scripts/sefer_abi_terminal_humanize_01_check.js"', 'package.json exposes Sefer Abi terminal humanize check');
-  must(runner, 'check:seferabiterminalhumanize01', 'product extensions runner includes Sefer Abi terminal humanize check');
-  must(verifyChain, 'check:seferabiterminalhumanize01', 'verify chain includes Sefer Abi terminal humanize check');
+  assertProductExtensionsIncludes('check:seferabiterminalhumanize01', 'product extensions registry includes Sefer Abi terminal humanize check', registryScripts);
+  assertProductExtensionsIncludes('check:seferabiterminalhumanize01', 'verify chain registry includes Sefer Abi terminal humanize check', registryScripts);
   must(verifyChain, 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'verify chain mentions milestone id');
   must(guide, 'SEFER-ABI-TERMINAL-HUMANIZE-01', 'milestone guide mentions milestone id');
   must(guide, 'check:seferabiterminalhumanize01', 'milestone guide exposes new check');

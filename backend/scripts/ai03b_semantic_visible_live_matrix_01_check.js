@@ -8,10 +8,14 @@ import { fileURLToPath } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { normalizeCopilotRequestInput } from '../src/ai/schemas.js';
 import { getScreenDefinitionForUser, listScreensForUser } from '../src/ai/jobGuide/screenCatalog.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
+const CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith('backend/src/services/'));
 
 const ROLE_SPECS = [
   {
@@ -726,13 +730,12 @@ function main() {
   console.log('=== AI-03B-SEMANTIC-VISIBLE-LIVE-MATRIX-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:ai03bsemanticvisiblelivematrix01": "node backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js"', 'package.json exposes the AI-03B semantic visible live matrix');
-  ordered(runner, ['check:copilotreasoninganswercomposer01', 'check:ai03bparaphraseintentaudit01', 'check:ai03bsemanticvisibleaudit01', 'check:ai03bsemanticvisiblelivematrix01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01'], 'product extensions runner keeps the AI-03B live matrix in order');
-  ordered(verifyChain, ['check:copilotreasoninganswercomposer01', 'check:ai03bparaphraseintentaudit01', 'check:ai03bsemanticvisibleaudit01', 'check:ai03bsemanticvisiblelivematrix01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01'], 'verify chain keeps the AI-03B live matrix in order');
+  assertProductExtensionsOrder(['check:copilotreasoninganswercomposer01', 'check:ai03bparaphraseintentaudit01', 'check:ai03bsemanticvisibleaudit01', 'check:ai03bsemanticvisiblelivematrix01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01'], 'product extensions registry keeps the AI-03B live matrix in order', registryScripts);
+  assertProductExtensionsOrder(['check:copilotreasoninganswercomposer01', 'check:ai03bparaphraseintentaudit01', 'check:ai03bsemanticvisibleaudit01', 'check:ai03bsemanticvisiblelivematrix01', 'check:seferabireasoningassistant01', 'check:seferabiallrolesreasoningassistant01'], 'verify chain registry keeps the AI-03B live matrix in order', registryScripts);
   must(harnessDoc, 'ai03b_semantic_visible_live_matrix_01_check.js', 'script harness doc tracks the AI-03B live matrix file');
   must(harnessDoc, 'check:ai03bsemanticvisiblelivematrix01', 'script harness doc exposes the AI-03B live matrix command');
 
@@ -794,7 +797,11 @@ function main() {
 
   console.log(JSON.stringify(report, null, 2));
 
-  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diff stays empty');
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF,
+    'service/prisma diff stays empty'
+  );
   assert(gitCachedNames().length === 0, 'stage stays empty');
   mustNoStagedPrefix(gitCachedNames(), ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/'], 'runtime-data and browser-smoke stay commit-external');
 

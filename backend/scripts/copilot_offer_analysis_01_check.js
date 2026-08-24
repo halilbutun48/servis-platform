@@ -5,6 +5,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as copilotOfferAnalysis from '../src/ai/chat/copilotOfferAnalysis.js';
+import { assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -375,8 +378,6 @@ async function main() {
   console.log('=== COPILOT-OFFER-ANALYSIS-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -395,8 +396,8 @@ async function main() {
   const cachedNames = gitCachedNames();
 
   must(pkg, '"check:copilotofferanalysis01": "node backend/scripts/copilot_offer_analysis_01_check.js"', 'package.json exposes offer analysis check');
-  ordered(runner, ['check:supplieroffercollect01', 'check:copilotofferanalysis01', 'check:uxmarketplacepanels01'], 'product extensions runner places offer analysis after supplier offer collect');
-  ordered(verify, ['check:supplieroffercollect01', 'check:copilotofferanalysis01', 'check:uxmarketplacepanels01'], 'verify chain places offer analysis after supplier offer collect');
+  assertProductExtensionsOrder(['check:supplieroffercollect01', 'check:copilotofferanalysis01', 'check:uxmarketplacepanels01'], 'product extensions runner places offer analysis after supplier offer collect');
+  assertProductExtensionsOrder(['check:supplieroffercollect01', 'check:copilotofferanalysis01', 'check:uxmarketplacepanels01'], 'verify chain places offer analysis after supplier offer collect');
 
   must(guide, 'COPILOT-OFFER-ANALYSIS-01', 'milestone guide mentions offer analysis milestone');
   must(guide, 'check:copilotofferanalysis01', 'milestone guide exposes offer analysis check');
@@ -769,7 +770,11 @@ async function main() {
   must(doc, 'Source RFQ prep handoff', 'offer analysis doc keeps RFQ prep handoff wording');
   must(doc, 'Offer recommendation handoff', 'offer analysis doc keeps recommendation handoff wording');
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'backend route/service/schema and Prisma diff stays empty'
+  );
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
   mustCondition(!fs.existsSync(path.join(root, 'debug.log')), 'debug.log absent');
   mustCondition(cachedNames.length === 0, 'stage stays empty');

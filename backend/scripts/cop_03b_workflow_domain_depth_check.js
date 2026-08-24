@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scoreGoldenQuestionPack } from '../src/ai/chat/qualityScorer.js';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,8 +78,6 @@ function assertTypeCount(byType, type, minCount, label) {
 console.log('=== COP-03B WORKFLOW DOMAIN DEPTH CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const doc = read('docs/COPILOT_WORKFLOW_DOMAIN_DEPTH_V1.md');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
@@ -89,6 +88,7 @@ const screenCatalog = read('backend/src/ai/jobGuide/screenCatalog.js');
 const roomCompanyCatalog = read('backend/src/ai/jobGuide/screenCatalog.roomCompany.js');
 const goldenPackText = read('backend/src/ai/chat/goldenQuestionPack.js');
 const facts = read('web/src/utils/copilotFacts.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop03b": "node backend/scripts/cop_03b_workflow_domain_depth_check.js"', 'package.json exposes check:cop03b');
 must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json keeps check:product-extensions');
@@ -98,7 +98,7 @@ must(pkg, '"check:cop03afix01"', 'package.json keeps check:cop03afix01');
 must(pkg, '"check:cop03afix02"', 'package.json keeps check:cop03afix02');
 must(pkg, '"verify:final"', 'package.json keeps verify:final');
 
-ordered(runner, [
+assertProductExtensionsOrder([
   'check:op04',
   'check:qlt04b',
   'check:pay01e',
@@ -114,9 +114,9 @@ ordered(runner, [
   'check:cop03b',
   'check:uxkvkk01',
   'check:docsstate01',
-], 'product extensions runner order');
-must(runner, 'check:cop03b', 'product extensions runner includes check:cop03b');
-must(verifyChain, 'check:cop03b', 'verify chain waits for check:cop03b');
+], 'product extensions registry order', registryScripts);
+assertProductExtensionsIncludes('check:cop03b', 'product extensions registry references check:cop03b', registryScripts);
+assertProductExtensionsIncludes('check:cop03b', 'verify chain registry waits for check:cop03b', registryScripts);
 must(guide, 'check:cop03b', 'script guide exposes check:cop03b');
 
 has('docs/COPILOT_WORKFLOW_DOMAIN_DEPTH_V1.md');

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,8 +27,7 @@ function main() {
 
   const pkg = read("package.json");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const cleanupDoc = read("docs/DOCS_SSOT_BRAND_ARTIFACT_CLEANUP_01.md");
   const readme = read("README.md");
   const docsReadme = read("docs/README.md");
@@ -43,8 +43,11 @@ function main() {
   const quality = read("web/src/components/copilot/ChatQualitySummary.jsx");
 
   must(has(pkg, '"check:docsbrandcleanup01": "node backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js"'), "package.json exposes check:docsbrandcleanup01");
-  must(has(runner, "check:docsbrandcleanup01"), "product extensions runner includes docs brand cleanup");
-  must(has(verifyChain, "check:docsbrandcleanup01"), "verify chain includes docs brand cleanup");
+  assertProductExtensionsIncludes(
+    'check:docsbrandcleanup01',
+    'product extensions registry includes docs brand cleanup',
+    registryScripts
+  );
   must(has(guide, "DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01"), "milestone guide mentions cleanup milestone");
   must(has(guide, "check:docsbrandcleanup01"), "milestone guide exposes cleanup check");
 

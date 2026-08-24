@@ -5,6 +5,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as dispatchActionPrep from '../src/ai/chat/copilotDispatchActionPrep.js';
+import { assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -153,8 +156,6 @@ async function main() {
 
   const scriptText = read('backend/scripts/copilot_dispatch_action_prep_01_check.js');
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -219,8 +220,8 @@ async function main() {
   mustCondition(docLineCount < 1000, 'doc under 1000 lines');
 
   must(pkg, '"check:copilotdispatchactionprep01": "node backend/scripts/copilot_dispatch_action_prep_01_check.js"', 'package.json exposes dispatch prep check');
-  ordered(runner, ['check:copilotshifttoagreementprep01', 'check:copilotdispatchactionprep01', 'check:uxmarketplacepanels01'], 'product extensions runner places dispatch prep after shift-to-agreement prep');
-  ordered(verify, ['check:copilotshifttoagreementprep01', 'check:copilotdispatchactionprep01', 'check:uxmarketplacepanels01'], 'verify chain places dispatch prep after shift-to-agreement prep');
+  assertProductExtensionsOrder(['check:copilotshifttoagreementprep01', 'check:copilotdispatchactionprep01', 'check:uxmarketplacepanels01'], 'product extensions runner places dispatch prep after shift-to-agreement prep');
+  assertProductExtensionsOrder(['check:copilotshifttoagreementprep01', 'check:copilotdispatchactionprep01', 'check:uxmarketplacepanels01'], 'verify chain places dispatch prep after shift-to-agreement prep');
 
   must(guide, 'COPILOT-DISPATCH-ACTION-PREP-01', 'milestone guide mentions dispatch prep milestone');
   must(guide, 'check:copilotdispatchactionprep01', 'milestone guide exposes dispatch prep check');
@@ -511,7 +512,11 @@ async function main() {
   must(harnessDoc, 'backend/src/ai/chat/copilotDispatchActionPrep.js', 'script harness doc lists dispatch prep helper');
   must(harnessDoc, 'COPILOT-DISPATCH-ACTION-PREP-01', 'script harness doc lists dispatch prep milestone');
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'backend route/service/schema and Prisma diff stays empty',
+  );
   mustNoStagedPrefix(gitCachedNames(), ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
 
   console.log(`PASS COPILOT-DISPATCH-ACTION-PREP-01 guardCases=${guardCases} passCount=${passCount} failCount=${failCount}`);

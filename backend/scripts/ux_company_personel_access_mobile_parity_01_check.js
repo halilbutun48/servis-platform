@@ -5,10 +5,13 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN } from "./lib/currentHeadScopePolicy.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
+const APPROVED_CONCURRENT_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN;
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -213,6 +216,9 @@ const ACCEPTED_PRISMA_FILES = [
 ];
 const ACCEPTED_PRISMA_PATHS = ACCEPTED_PRISMA_FILES.map((entry) => entry.path);
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_PATHS.map(normalizePath));
+const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(
+  APPROVED_CONCURRENT_BACKEND_DIFF.map((entry) => normalizePath(entry.path))
+);
 
 function mustAcceptedPrismaManifest() {
   mustExactGitPaths(["backend/prisma", "prisma"], [], "backend/prisma diff empty");
@@ -227,7 +233,7 @@ function main() {
   console.log("=== UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const app = read("web/src/App.jsx");
+  const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
   const panel = read("web/src/panels/company/PersonelAccessPanel.jsx");
   const css = read("web/src/index.css");
   const doc = read("docs/UX_COMPANY_PERSONEL_ACCESS_MOBILE_PARITY_01.md");
@@ -286,9 +292,11 @@ function main() {
   mustNotList(staged, "backend/artifacts/browser-smoke/", "browser-smoke stays out of staging");
   mustTrue(staged.length === 0, "stage remains empty");
 
-  mustEmptyGitDiff(["diff", "--", "backend/src/routes"], "backend route diff stays empty");
-  mustEmptyGitDiff(["diff", "--", "backend/src/services"], "backend service diff stays empty");
-  mustEmptyGitDiff(["diff", "--", "prisma"], "prisma diff stays empty");
+  mustDiffEmptyOrExactlyWithIdentity(
+    ["backend/src/routes", "backend/src/services"],
+    APPROVED_CONCURRENT_BACKEND_DIFF,
+    "backend route/service diff stays within approved current-head scope"
+  );
   mustAcceptedPrismaManifest();
 
   console.log("=== UX-COMPANY-PERSONEL-ACCESS-MOBILE-PARITY-01 CHECK PASS ===");

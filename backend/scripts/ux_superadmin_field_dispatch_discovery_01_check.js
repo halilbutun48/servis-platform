@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,8 +64,6 @@ function main() {
   console.log("=== UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const audit = read("docs/UX_PANEL_STRUCTURE_02_AUDIT.md");
   const context = read("docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md");
@@ -75,10 +74,11 @@ function main() {
   const feedback = read("backend/src/ops/fieldFeedbackLoop.js");
   const acceptanceManifest = read("backend/src/ops/fieldAcceptanceManifest.js");
   const acceptanceState = read("backend/src/ops/fieldAcceptanceState.js");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:uxsuperadminfielddispatchdiscovery01": "node backend/scripts/ux_superadmin_field_dispatch_discovery_01_check.js"', "package.json exposes field dispatch discovery check");
-  must(runner, "check:uxsuperadminfielddispatchdiscovery01", "product extensions runner includes field dispatch discovery check");
-  must(verify, "check:uxsuperadminfielddispatchdiscovery01", "verify chain includes field dispatch discovery check");
+  assertProductExtensionsIncludes("check:uxsuperadminfielddispatchdiscovery01", "product extensions registry includes field dispatch discovery check", registryScripts);
+  assertProductExtensionsIncludes("check:uxsuperadminfielddispatchdiscovery01", "verify-chain registry includes field dispatch discovery check", registryScripts);
   must(guide, "UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01", "script guide mentions field dispatch discovery milestone");
   must(guide, "check:uxsuperadminfielddispatchdiscovery01", "script guide exposes field dispatch discovery check");
   must(audit, "UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01", "panel structure audit includes field dispatch discovery note");

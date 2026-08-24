@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -95,8 +96,7 @@ function isTracked(relPath) {
 console.log("=== SHIFT-DISPATCH-APPROVAL-FIX-01 CHECK ===");
 
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const doc = read("docs/SHIFT_DISPATCH_APPROVAL_FIX_01.md");
 const displayStatus = read("web/src/utils/displayStatus.js");
@@ -117,21 +117,20 @@ const router = read("backend/src/routes/shifts/shiftsRoomDispatchRouter.js");
 const leadRunner = read("backend/scripts/run_product_extensions_check_chain.js");
 
 must(pkg, '"check:shiftdispatchapprovalfix01": "node backend/scripts/shift_dispatch_approval_fix_01_check.js"', "package.json exposes check:shiftdispatchapprovalfix01");
-must(runner, "check:shiftdispatchapprovalfix01", "product extensions runner includes dispatch approval fix");
-must(verifyChain, '"check:shiftdispatchapprovalfix01": "node backend/scripts/shift_dispatch_approval_fix_01_check.js"', "verify chain exposes dispatch approval fix");
-ordered(
-  runner,
+assertProductExtensionsIncludes("check:shiftdispatchapprovalfix01", "product extensions registry includes dispatch approval fix", registryScripts);
+assertProductExtensionsOrder(
   ["check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:shiftdispatchapprovalfix01", "check:boardingchangerequestentry01"],
-  "dispatch fix follows bug route preview and stays near boarding/approval checks"
+  "dispatch fix follows bug route preview and stays near boarding/approval checks",
+  registryScripts,
 );
-ordered(
-  verifyChain,
+assertProductExtensionsOrder(
   ["check:boardingops01a", "check:bugrouteimpactpreviewbutton01", "check:shiftdispatchapprovalfix01", "check:boardingchangerequestentry01"],
-  "verify chain keeps dispatch fix near boarding/approval checks"
+  "verify chain keeps dispatch fix near boarding/approval checks",
+  registryScripts,
 );
-must(leadRunner, "check:publiclanding01", "product chain keeps public landing check");
-must(leadRunner, "check:leadcapture01", "product chain keeps lead capture check");
-must(leadRunner, "check:onboardingreview01", "product chain keeps onboarding review check");
+assertProductExtensionsIncludes("check:publiclanding01", "product chain keeps public landing check", registryScripts);
+assertProductExtensionsIncludes("check:leadcapture01", "product chain keeps lead capture check", registryScripts);
+assertProductExtensionsIncludes("check:onboardingreview01", "product chain keeps onboarding review check", registryScripts);
 
 must(guide, "SHIFT-DISPATCH-APPROVAL-FIX-01", "milestone guide mentions dispatch approval fix");
 must(guide, "check:shiftdispatchapprovalfix01", "milestone guide exposes dispatch approval fix check");
@@ -153,9 +152,9 @@ must(statusPalette, '"SPLIT"', "split dispatch is styled as a success state");
 must(roomCommercialManifest, 'FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED", "SPLIT"])', "room commercial manifest treats split as final");
 must(roomCommercialManifest, 'status: { in: ["APPROVED", "ACTIVE", "SPLIT"] }', "room commercial summary counts split as accepted/active");
 must(roomCommercialManifest, 'shiftStatus === "SPLIT" ? "Bölünmüş vardiya kayıtlarını aç" : "Vardiya kaydini incele"', "room commercial copy distinguishes split approval");
-must(companyOverview, 'FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED", "SPLIT"])', "company overview treats split as final");
+must(companyOverview, 'FINAL_SHIFT_STATUSES = new Set([ "APPROVED", "ACTIVE", "DONE", "REJECTED", "SPLIT", ])', "company overview treats split as final");
 mustNot(companyOverview, '.filter((shift) => !isSplitRootShift(shift))', "company overview no longer hides split root records");
-must(companyOverview, 'status: { in: ["APPROVED", "ACTIVE", "SPLIT"] }', "company overview counts split as active/accepted");
+must(companyOverview, 'status: { in: [ "APPROVED", "ACTIVE", "SPLIT", ], }', "company overview counts split as active/accepted");
 must(companyOverview, 'nextStep: status === "SPLIT" ? "Bölünmüş vardiya kaydını aç" : "Vardiya / hizmet tarafını aç"', "company overview shows split-aware next step");
 must(companyDataHub, 'withQuery("/api/company/overview/commercial-flow-summary", { force: force ? 1 : null })', "company commercial flow can bypass cache on refresh");
 must(roomCommercialPanel, 'useAutoReload("shifts"', "room commercial flow auto refreshes after dispatch approval");

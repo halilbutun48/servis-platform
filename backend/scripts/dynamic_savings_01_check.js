@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,6 +40,7 @@ function assertNotContains(relPath, needles, failures) {
 
 function main() {
   const failures = [];
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const requiredFiles = [
     "docs/DYNAMIC_SAVINGS_01.md",
     "web/src/panels/shared/DynamicSavingsPreviewCard.jsx",
@@ -61,8 +63,15 @@ function main() {
   }
 
   assertContains("package.json", ['"check:dynamicsavings01": "node backend/scripts/dynamic_savings_01_check.js"'], failures);
-  assertContains("backend/scripts/run_product_extensions_check_chain.js", ["check:dynamicsavings01"], failures);
-  assertContains("backend/scripts/verify_chain_01_product_extensions_check.js", ["check:dynamicsavings01", "DYNAMIC-SAVINGS-01"], failures);
+  try {
+    assertProductExtensionsIncludes(
+      'check:dynamicsavings01',
+      'product extensions registry includes dynamic savings',
+      registryScripts
+    );
+  } catch (err) {
+    failures.push(String(err?.message || err));
+  }
   assertContains("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md", ["DYNAMIC-SAVINGS-01", "check:dynamicsavings01"], failures);
   assertContains("docs/DYNAMIC_SAVINGS_01.md", [
     "readonly dinamik tasarruf önizlemesi",

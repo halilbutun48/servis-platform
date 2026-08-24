@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,8 +12,6 @@ const repoRoot = path.resolve(__dirname, "../..");
 
 const paths = {
   packageJson: path.join(repoRoot, "package.json"),
-  runner: path.join(repoRoot, "backend", "scripts", "run_product_extensions_check_chain.js"),
-  verify: path.join(repoRoot, "backend", "scripts", "verify_chain_01_product_extensions_check.js"),
   harnessCheck: path.join(repoRoot, "backend", "scripts", "script_harness_consolidation_01_check.js"),
   harnessDoc: path.join(repoRoot, "docs", "SCRIPT_HARNESS_CONSOLIDATION_01.md"),
   guide: path.join(repoRoot, "docs", "SCRIPT_KILAVUZU_MILESTONE_HARITASI.md"),
@@ -204,8 +203,6 @@ function main() {
 
   const cases = [];
   const pkg = readFile(paths.packageJson);
-  const runner = readFile(paths.runner);
-  const verify = readFile(paths.verify);
   const harnessCheck = readFile(paths.harnessCheck);
   const harnessDoc = readFile(paths.harnessDoc);
   const guide = readFile(paths.guide);
@@ -221,11 +218,10 @@ function main() {
   });
 
   addCase(cases, "product extensions runner includes the policy check", () => {
-    must(contains(runner, "check:productionratelimitpolicy01"), "runner wiring");
-  });
-
-  addCase(cases, "verify chain includes the policy check", () => {
-    must(contains(verify, '"check:productionratelimitpolicy01"'), "verify wiring");
+    assertProductExtensionsIncludes(
+      "check:productionratelimitpolicy01",
+      "product extensions registry includes production rate limit policy check"
+    );
   });
 
   addCase(cases, "script harness check knows the policy milestone", () => {
@@ -485,8 +481,6 @@ function main() {
     : "route/service/prisma scope dışında değişiklik var";
   const chainWiringSummary = [
     contains(pkg, '"check:productionratelimitpolicy01": "node backend/scripts/production_rate_limit_policy_01_check.js"'),
-    contains(runner, "check:productionratelimitpolicy01"),
-    contains(verify, "check:productionratelimitpolicy01"),
     contains(harnessCheck, "PRODUCTION-RATE-LIMIT-POLICY-01"),
     contains(harnessCheck, "check:productionratelimitpolicy01"),
     contains(harnessDoc, "PRODUCTION-RATE-LIMIT-POLICY-01"),
@@ -495,7 +489,7 @@ function main() {
     contains(primer, "PRODUCTION-RATE-LIMIT-POLICY-01"),
     contains(policyDoc, "PRODUCTION-RATE-LIMIT-POLICY-01"),
   ].every(Boolean)
-    ? "package.json, runner, verify chain, harness check/doc, guide, primer ve policy doc production rate limit policy için bağlı"
+    ? "package.json, registry, harness check/doc, guide, primer ve policy doc production rate limit policy için bağlı"
     : "chain wiring eksik";
 
   console.log(`guardCases=${guardCases}`);

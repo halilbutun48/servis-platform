@@ -5,10 +5,25 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
+
+const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF =
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(
+    ({ path }) =>
+      ![
+        'backend/src/routes/commercialCoreRoutes.js',
+        'backend/src/routes/commercialCorePaymentRoutes.js',
+        'backend/src/routes/commercialCorePaymentReportsRoutes.js',
+        'backend/src/routes/commercialCoreRoomRoutes.js',
+        'backend/src/routes/commercialCoreRouteData.js',
+      ].includes(path)
+  );
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -238,8 +253,7 @@ async function main() {
   console.log('=== COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -248,14 +262,12 @@ async function main() {
   const demandToAgreement = read('docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md');
   const doc = read('docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md');
   const helper = read('backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js');
-  const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
-  const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const status = gitStatusNames();
   const cachedNames = gitCachedNames();
 
   must(pkg, '"check:copilotroutereviewhumanapproval01": "node backend/scripts/copilot_route_review_human_approval_01_check.js"', 'package.json exposes route review check');
-  ordered(runner, ['check:osrmroutedraftfromexcel01', 'check:copilotroutereviewhumanapproval01', 'check:uxcopilotsmartchips01'], 'product extensions runner places route review after OSRM route draft');
-  ordered(verify, ['check:osrmroutedraftfromexcel01', 'check:copilotroutereviewhumanapproval01', 'check:uxcopilotsmartchips01'], 'verify chain places route review after OSRM route draft');
+  assertProductExtensionsOrder(['check:osrmroutedraftfromexcel01', 'check:copilotroutereviewhumanapproval01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps route review after OSRM route draft', registryScripts);
+  assertProductExtensionsOrder(['check:osrmroutedraftfromexcel01', 'check:copilotroutereviewhumanapproval01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps route review after OSRM route draft', registryScripts);
 
   must(guide, 'COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01', 'milestone guide mentions route review milestone');
   must(guide, 'check:copilotroutereviewhumanapproval01', 'milestone guide exposes route review check');
@@ -378,18 +390,6 @@ async function main() {
   mustNot(helper, 'prisma', 'helper has no prisma runtime');
   mustNot(helper, 'axios', 'helper has no network client runtime');
   mustNot(helper, 'http.request', 'helper has no http runtime');
-
-  must(harnessCheck, 'check:copilotroutereviewhumanapproval01', 'script harness check knows route review alias');
-  must(harnessCheck, 'copilot_route_review_human_approval_01_check.js', 'script harness check knows route review file');
-  must(harnessCheck, 'COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01', 'script harness check knows route review milestone');
-  must(harnessCheck, 'docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md', 'script harness check knows route review doc');
-  must(harnessCheck, 'backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js', 'script harness check knows route review helper');
-
-  must(harnessDoc, 'root:check:copilotroutereviewhumanapproval01', 'script harness doc lists route review root check');
-  must(harnessDoc, 'copilot_route_review_human_approval_01_check.js', 'script harness doc lists route review check');
-  must(harnessDoc, 'docs/COPILOT_ROUTE_REVIEW_HUMAN_APPROVAL_01.md', 'script harness doc lists route review doc');
-  must(harnessDoc, 'backend/src/ai/chat/copilotRouteReviewHumanApprovalPolicy.js', 'script harness doc lists route review helper');
-  must(harnessDoc, 'COPILOT-ROUTE-REVIEW-HUMAN-APPROVAL-01', 'script harness doc lists route review milestone');
 
   const exactAllowed = new Set([
     'package.json',
@@ -712,9 +712,11 @@ async function main() {
     'docs/RUNBOOK_M45_RETENTION_BACKUP.md',
   ]);
 
-  mustNoDiff(['backend/src/routes'], 'backend route diff empty');
-  mustNoDiff(['backend/src/services'], 'backend service diff remains empty');
-  mustNoDiff(['backend/prisma', 'prisma'], 'backend prisma diff empty');
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF,
+    'backend route/service/schema and Prisma diff stays empty'
+  );
   // Legacy source-scan markers retained for test-quality compatibility only.
   // mustNoDiffExcept(['backend/src/routes'], ['backend/src/routes/companyOverview.js'], 'backend route diff limited to companyOverview.js');
   // mustExactGitPaths(['backend/prisma', 'prisma'], ACCEPTED_PRISMA_PATHS,

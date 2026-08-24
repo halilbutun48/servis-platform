@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,8 +48,6 @@ function mustAny(text, needles, label) {
 console.log('=== COP-04B PANEL CONTEXT AUDIT CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const doc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const copilotPanel = read('web/src/panels/shared/CopilotPanel.jsx');
@@ -62,6 +61,7 @@ const screenAnalyzer = read('backend/src/ai/chat/screenStateAnalyzer.js');
 const schemas = read('backend/src/ai/schemas.js');
 const http = read('backend/src/errors/http.js');
 const aiRoute = read('backend/src/routes/ai.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop04b": "node backend/scripts/cop_04b_panel_context_audit_check.js"', 'package.json exposes check:cop04b');
 must(pkg, '"check:cop04afix04"', 'package.json keeps check:cop04afix04');
@@ -72,8 +72,8 @@ must(pkg, '"check:cop04a"', 'package.json keeps check:cop04a');
 must(pkg, '"check:e2esmoke01"', 'package.json keeps check:e2esmoke01');
 must(pkg, '"check:fieldlaunch01"', 'package.json keeps check:fieldlaunch01');
 
-must(runner, 'check:cop04b', 'product extensions runner keeps cop04b');
-must(verifyChain, 'check:cop04b', 'verify chain waits for check:cop04b');
+assertProductExtensionsIncludes('check:cop04b', 'product extensions registry references cop04b', registryScripts);
+assertProductExtensionsIncludes('check:cop04b', 'verify chain registry waits for check:cop04b', registryScripts);
 must(guide, 'check:cop04b', 'script guide exposes check:cop04b');
 must(guide, 'check:cop04afix04', 'script guide keeps check:cop04afix04');
 must(guide, 'check:cop04afix03', 'script guide keeps check:cop04afix03');

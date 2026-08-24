@@ -5,6 +5,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as actionPrep from '../src/ai/chat/copilotActionPrep.js';
+import { assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -156,8 +157,6 @@ async function main() {
   console.log('=== COPILOT-ACTION-PREP-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -181,8 +180,8 @@ async function main() {
   mustCondition(cachedNames.length === 0, 'stage stays empty');
 
   must(pkg, '"check:copilotactionprep01": "node backend/scripts/copilot_action_prep_01_check.js"', 'package.json exposes action prep check');
-  ordered(runner, ['check:copilotshifttoagreementprep01', 'check:copilotdispatchactionprep01', 'check:copilotactionprep01', 'check:uxmarketplacepanels01'], 'product extensions runner places action prep after dispatch');
-  ordered(verify, ['check:copilotshifttoagreementprep01', 'check:copilotdispatchactionprep01', 'check:copilotactionprep01', 'check:uxmarketplacepanels01'], 'verify chain places action prep after dispatch');
+  assertProductExtensionsOrder(['check:copilotshifttoagreementprep01', 'check:copilotdispatchactionprep01', 'check:copilotactionprep01', 'check:uxmarketplacepanels01'], 'product extensions runner places action prep after dispatch');
+  assertProductExtensionsOrder(['check:copilotshifttoagreementprep01', 'check:copilotdispatchactionprep01', 'check:copilotactionprep01', 'check:uxmarketplacepanels01'], 'verify chain places action prep after dispatch');
 
   must(guide, 'COPILOT-ACTION-PREP-01', 'milestone guide mentions action prep milestone');
   must(guide, 'check:copilotactionprep01', 'milestone guide exposes action prep check');

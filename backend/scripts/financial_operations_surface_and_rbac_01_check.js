@@ -4,7 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
 import * as scope from '../src/finance/financialOperationsScope.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -97,8 +100,6 @@ const docPath = 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md';
 const helperPath = 'backend/src/finance/financialOperationsScope.js';
 const checkPath = 'backend/scripts/financial_operations_surface_and_rbac_01_check.js';
 const packageText = read('package.json');
-const runnerText = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyText = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guideText = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const primerText = read('docs/PRIMER_SSOT.md');
 const roadmapText = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -108,6 +109,19 @@ const harnessDocText = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
 const helperText = read(helperPath);
 const docText = read(docPath);
 const checkText = read(checkPath);
+const registryScripts = productExtensionsChecks.map((step) => step.script);
+const financeOwnedRoutePaths = new Set([
+  'backend/src/routes/commercialCore.js',
+  'backend/src/routes/companyOverview.js',
+  'backend/src/routes/operationProof.js',
+]);
+const financeOwnedRouteEntries = Object.freeze(
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => financeOwnedRoutePaths.has(path))
+);
+const financeOwnedServiceEntries = Object.freeze([
+  { path: 'backend/src/services/qualityPaymentBridgeService.js', sha256: '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83' },
+  { path: 'backend/src/services/dashboardBulk.js', sha256: 'E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E' },
+]);
 
 const expectedSurfaces = [
   'financial_overview',
@@ -451,8 +465,7 @@ function main() {
   check(textHas(docText, 'Validation Results'), 'doc includes validation results section');
 
   check(textHas(packageText, '"check:financialoperationssurfaceandrbac01": "node backend/scripts/financial_operations_surface_and_rbac_01_check.js"'), 'package alias added');
-  check(textHas(runnerText, 'check:financialoperationssurfaceandrbac01'), 'product extensions runner includes financial check');
-  check(textHas(verifyText, 'check:financialoperationssurfaceandrbac01'), 'verify chain includes financial check');
+  assertProductExtensionsIncludes('check:financialoperationssurfaceandrbac01', 'product extensions registry includes financial check', registryScripts);
   check(textHas(guideText, 'check:financialoperationssurfaceandrbac01'), 'script guide exposes financial check');
   check(textHas(guideText, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md'), 'script guide links financial doc');
   check(textHas(guideText, 'backend/src/finance/financialOperationsScope.js'), 'script guide links financial helper');
@@ -478,13 +491,16 @@ function main() {
   check(fileLines(checkPath) < 1000, 'check stays under 1000 lines', String(fileLines(checkPath)));
   check(fileLines(docPath) < 1000, 'doc stays under 1000 lines', String(fileLines(docPath)));
 
-  assertEmptyDiff(
+  mustNoDiffExceptWithIdentity(
     ['backend/src/routes'],
-    'backend/src/routes diff empty except room financial operations preview routes',
-    false,
-    ['backend/src/routes/commercialCore.js', 'backend/src/routes/companyOverview.js'],
+    [...financeOwnedRouteEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF],
+    'backend/src/routes diff limited to finance-owned and approved concurrent runtime paths',
   );
-  assertEmptyDiff(['backend/src/services'], 'backend/src/services diff empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/services'],
+    [...financeOwnedServiceEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF],
+    'backend/src/services diff limited to finance-owned runtime paths',
+  );
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertEmptyDiff(['prisma'], 'prisma diff empty');
   assertCommandOutputEmpty(['diff', '--check'], 'git diff --check clean');

@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,6 +90,7 @@ function groupRoutes(routes) {
 
 function main() {
   console.log("=== UX-PANEL-INVENTORY-02A CHECK ===");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   const auditPath = "docs/UX_PANEL_INVENTORY_02A_AUDIT.md";
   must(exists(auditPath), "audit doc exists");
@@ -104,7 +107,7 @@ function main() {
   mustContains(audit, "103", "audit states route surface count");
   mustContains(audit, "104", "audit states unique route literal count");
 
-  const app = read("web/src/App.jsx");
+  const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
   const routeLiterals = extractRouteLiterals(app);
   const screenImports = extractScreenImports(app);
   const panelFiles = walk(path.join(root, "web/src/panels"));
@@ -201,16 +204,14 @@ function main() {
   mustContains(pkg, '"check:uxpanelinventory02a"', "package.json exposes check:uxpanelinventory02a");
   mustContains(pkg, '"check:uxcollapsiblepanels01"', "package.json keeps check:uxcollapsiblepanels01");
 
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  mustContains(runner, "check:uxpanelinventory02a", "product extensions runner includes UX-PANEL-INVENTORY-02A");
-  mustContains(runner, "check:uxcollapsiblepanels01", "product extensions runner keeps UX-COLLAPSIBLE-PANELS-01");
-  mustContains(runner, "check:uxpanelstructure02", "product extensions runner keeps UX-PANEL-STRUCTURE-02");
-
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
-  mustContains(verify, "check:uxpanelinventory02a", "verify chain includes UX-PANEL-INVENTORY-02A");
-  mustContains(verify, "check:uxcollapsiblepanels01", "verify chain keeps UX-COLLAPSIBLE-PANELS-01");
-  mustContains(verify, "check:uxpanelstructure02", "verify chain keeps UX-PANEL-STRUCTURE-02");
-  mustContains(verify, "check:uxnav01", "verify chain keeps UX-NAV-01");
+  assertProductExtensionsIncludes("check:uxpanelinventory02a", "product extensions registry includes UX-PANEL-INVENTORY-02A", registryScripts);
+  assertProductExtensionsIncludes(
+    "check:uxcollapsiblepanels01",
+    "product extensions registry keeps UX-COLLAPSIBLE-PANELS-01",
+    registryScripts
+  );
+  assertProductExtensionsIncludes("check:uxpanelstructure02", "product extensions registry keeps UX-PANEL-STRUCTURE-02", registryScripts);
+  assertProductExtensionsIncludes("check:uxnav01", "product extensions registry keeps UX-NAV-01", registryScripts);
 
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   mustContains(guide, "UX-PANEL-INVENTORY-02A", "milestone guide mentions UX-PANEL-INVENTORY-02A");

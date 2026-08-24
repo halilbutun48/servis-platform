@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,8 +54,7 @@ async function main() {
   console.log('=== ETA-OSRM-01 ROUTE ETA SERVICE CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const route = read('backend/src/routes/eta.js');
@@ -63,8 +63,11 @@ async function main() {
   const backendEtaSanity = read('backend/src/ai/chat/etaSanity.js');
 
   must(pkg, '"check:etaosrm01": "node backend/scripts/eta_osrm_01_route_eta_service_check.js"', 'package.json exposes check:etaosrm01');
-  must(runner, 'check:etaosrm01', 'product extensions runner exposes check:etaosrm01');
-  must(verify, 'check:etaosrm01', 'verify chain exposes check:etaosrm01');
+  assertProductExtensionsIncludes(
+    'check:etaosrm01',
+    'product extensions registry includes eta osrm',
+    registryScripts
+  );
   must(guide, 'ETA-OSRM-01', 'script guide mentions ETA-OSRM-01');
   must(guide, 'check:etaosrm01', 'script guide exposes check:etaosrm01');
   must(audit, 'ETA-OSRM-01 readonly OSRM ETA helper note', 'audit doc mentions ETA-OSRM-01');

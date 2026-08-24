@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,13 +62,12 @@ function ordered(text, needles, label) {
 console.log('=== COP-03C-FIX-01 LIVE WORKFLOW ANSWER QUALITY CHECK ===');
 
 const pkg = read('package.json');
-const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const doc = read('docs/COPILOT_LIVE_DATA_ACTION_SIMULATION_V1.md');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
 const intentRouter = read('backend/src/ai/chat/intentRouter.js');
 const facts = read('web/src/utils/copilotFacts.js');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:cop03cfix01": "node backend/scripts/cop_03c_fix_01_live_workflow_answer_quality_check.js"', 'package.json exposes check:cop03cfix01');
 must(pkg, '"check:cop03c"', 'package.json keeps check:cop03c');
@@ -75,7 +75,7 @@ must(pkg, '"check:cop03b"', 'package.json keeps check:cop03b');
 must(pkg, '"check:cop03afix02"', 'package.json keeps check:cop03afix02');
 must(pkg, '"check:cop03afix01"', 'package.json keeps check:cop03afix01');
 
-ordered(runner, [
+assertProductExtensionsOrder([
   'check:cop03a',
   'check:cop03afix01',
   'check:cop03afix02',
@@ -84,9 +84,10 @@ ordered(runner, [
   'check:cop03cfix01',
   'check:uxkvkk01',
   'check:docsstate01',
-], 'product extensions runner order keeps cop03cfix01 after cop03c');
+], 'product extensions registry order keeps cop03cfix01 after cop03c', registryScripts);
 
-must(verifyChain, 'check:cop03cfix01', 'verify chain keeps check:cop03cfix01');
+assertProductExtensionsIncludes('check:cop03cfix01', 'product extensions registry references check:cop03cfix01', registryScripts);
+assertProductExtensionsIncludes('check:cop03cfix01', 'verify chain registry keeps check:cop03cfix01', registryScripts);
 must(guide, 'check:cop03cfix01', 'script guide exposes check:cop03cfix01');
 must(doc, 'COP-03C-FIX-01', 'workflow doc keeps fix heading visible');
 must(doc, 'selected-record mismatch', 'workflow doc keeps mismatch wording visible');

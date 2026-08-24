@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,8 +62,8 @@ function main() {
 
   const panel = read("web/src/panels/superadmin/ObservabilityPanel.jsx");
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(panel, "Canlı Sağlık ve Risk Özeti", "title kept");
   must(panel, "PanelKvkkHint panelKey=\"observability\"", "kvkk hint kept");
@@ -110,7 +111,7 @@ function main() {
   mustNot(panel, "Claims hash:", "raw claims hash label removed");
   mustNot(panel, "Raw parse error:", "raw parse error label removed");
   must(pkg, '"check:uxsuperadminlivemonitoring01"', "package exposes live monitoring check");
-  must(runner, 'check:uxsuperadminlivemonitoring01', "runner includes live monitoring check");
+  assertProductExtensionsIncludes("check:uxsuperadminlivemonitoring01", "product extensions registry includes live monitoring check", registryScripts);
   must(guide, 'UX-SUPERADMIN-LIVE-MONITORING-01', "guide mentions live monitoring milestone");
   must(guide, 'check:uxsuperadminlivemonitoring01', "guide exposes live monitoring check");
   ordered(panel, [

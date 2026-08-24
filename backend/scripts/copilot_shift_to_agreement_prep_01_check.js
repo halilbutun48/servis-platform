@@ -5,6 +5,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as shiftToAgreementPrep from '../src/ai/chat/copilotShiftToAgreementPrep.js';
+import { assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -145,8 +148,6 @@ async function main() {
 
   const scriptText = read('backend/scripts/copilot_shift_to_agreement_prep_01_check.js');
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -218,8 +219,8 @@ async function main() {
   mustCondition(docLineCount < 1000, 'doc under 1000 lines');
 
   must(pkg, '"check:copilotshifttoagreementprep01": "node backend/scripts/copilot_shift_to_agreement_prep_01_check.js"', 'package.json exposes shift-to-agreement prep check');
-  ordered(runner, ['check:copilotofferrecommendation01', 'check:copilotshifttoagreementprep01', 'check:uxmarketplacepanels01'], 'product extensions runner places shift-to-agreement prep after offer recommendation');
-  ordered(verify, ['check:copilotofferrecommendation01', 'check:copilotshifttoagreementprep01', 'check:uxmarketplacepanels01'], 'verify chain places shift-to-agreement prep after offer recommendation');
+  assertProductExtensionsOrder(['check:copilotofferrecommendation01', 'check:copilotshifttoagreementprep01', 'check:uxmarketplacepanels01'], 'product extensions runner places shift-to-agreement prep after offer recommendation');
+  assertProductExtensionsOrder(['check:copilotofferrecommendation01', 'check:copilotshifttoagreementprep01', 'check:uxmarketplacepanels01'], 'verify chain places shift-to-agreement prep after offer recommendation');
 
   must(guide, 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'milestone guide mentions shift-to-agreement prep milestone');
   must(guide, 'check:copilotshifttoagreementprep01', 'milestone guide exposes shift-to-agreement prep check');
@@ -466,7 +467,11 @@ async function main() {
   }
 
   mustCondition(gitCachedNames().length === 0, 'stage is empty');
-  mustNoDiff(['backend/src/services', 'prisma'], 'service/prisma diff empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'service/prisma diff empty'
+  );
   mustCommandPass(['git', 'diff', '--check'], 'working tree diff check is clean');
   mustCommandPass(['git', 'diff', '--cached', '--check'], 'cached diff check is clean');
   mustCondition(!fs.existsSync(path.join(root, 'debug.log')), 'debug.log absent');

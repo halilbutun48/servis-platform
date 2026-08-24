@@ -2,9 +2,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as supplierOfferCollect from '../src/ai/chat/supplierOfferCollect.js';
+import { assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
+import { gitCachedNames } from './lib/guardGitScope.js';
+import { mustCurrentHeadCommittedState } from './lib/guardValidationEnvironment.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,42 +70,6 @@ function ordered(text, needles, label) {
   ok(label);
 }
 
-function gitCachedNames() {
-  const out = execFileSync('git', ['diff', '--cached', '--name-only'], {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return String(out || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function gitDiffNames(paths) {
-  const out = execFileSync('git', ['diff', '--name-only', '--', ...paths], {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return String(out || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
-  if (files.length > 0) fail(`${label}: ${files.join(', ')}`);
-  ok(label);
-}
-function mustNoDiffExcept(paths, allowedFiles, label) {
-  const files = gitDiffNames(paths).filter((file) => !allowedFiles.includes(file));
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(', ')}`);
-  }
-  ok(label);
-}
 function mustNoStagedPrefix(names, prefixes, label) {
   const hits = names.filter((name) => prefixes.some((prefix) => normalize(name).startsWith(normalize(prefix))));
   if (hits.length > 0) fail(`${label}: ${hits.join(', ')}`);
@@ -246,8 +212,6 @@ async function main() {
   console.log('=== SUPPLIER-OFFER-COLLECT-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -258,8 +222,8 @@ async function main() {
   const cachedNames = gitCachedNames();
 
   must(pkg, '"check:supplieroffercollect01": "node backend/scripts/supplier_offer_collect_01_check.js"', 'package.json exposes supplier offer collect check');
-  ordered(runner, ['check:suppliermatching01', 'check:supplieroffercollect01', 'check:uxmarketplacepanels01'], 'product extensions runner places supplier offer collect after supplier matching');
-  ordered(verify, ['check:suppliermatching01', 'check:supplieroffercollect01', 'check:uxmarketplacepanels01'], 'verify chain places supplier offer collect after supplier matching');
+  assertProductExtensionsOrder(['check:suppliermatching01', 'check:supplieroffercollect01', 'check:uxmarketplacepanels01'], 'product extensions runner places supplier offer collect after supplier matching');
+  assertProductExtensionsOrder(['check:suppliermatching01', 'check:supplieroffercollect01', 'check:uxmarketplacepanels01'], 'verify chain places supplier offer collect after supplier matching');
 
   must(guide, 'SUPPLIER-OFFER-COLLECT-01', 'milestone guide mentions supplier offer collect milestone');
   must(guide, 'check:supplieroffercollect01', 'milestone guide exposes supplier offer collect check');
@@ -541,7 +505,7 @@ async function main() {
     mustCondition(typeof policy.visible === 'boolean', `helper policy visible flag exists for role ${role}`);
   }
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustCurrentHeadCommittedState({ label: 'supplier offer collect current head committed state' });
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
   mustCondition(!fs.existsSync(path.join(root, 'debug.log')), 'debug.log absent');
 

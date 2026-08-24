@@ -57,7 +57,9 @@ const agreements = read("backend/src/routes/agreements.js");
 const shiftsCompany = read("backend/src/routes/shifts/company.js");
 const shiftsRoom = read("backend/src/routes/shifts/room.js");
 const shiftsRoomDispatch = read("backend/src/routes/shifts/shiftsRoomDispatchRouter.js");
-const commercialCore = read("backend/src/routes/commercialCore.js");
+const commercialCoreRoutes = read("backend/src/routes/commercialCoreRoutes.js");
+const commercialCorePaymentRoutes = read("backend/src/routes/commercialCorePaymentRoutes.js");
+const commercialCorePaymentReportsRoutes = read("backend/src/routes/commercialCorePaymentReportsRoutes.js");
 const webPanel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const toolsReadme = read("tools/README.md");
 const toolsPrimer = read("tools/PRIMER_SNAPSHOT.md");
@@ -85,8 +87,10 @@ if (!includesAnyText([shiftsRoom, shiftsRoomDispatch], ["upsertShiftSeriesCommer
 } else {
   ok("room shifts route refreshes shift series backbone after split");
 }
-mustInclude(commercialCore, "/payment-backbone/status", "commercial core route exposes payment backbone status endpoint");
-mustInclude(commercialCore, "/payment-backbone/sources", "commercial core route exposes payment backbone sources endpoint");
+mustInclude(commercialCoreRoutes, "attachCommercialCorePaymentRoutes", "commercial core route bundle attaches payment routes");
+mustInclude(commercialCoreRoutes, "attachCommercialCoreRoomRoutes", "commercial core route bundle attaches room routes");
+mustInclude(commercialCorePaymentRoutes, "/payment-backbone/status", "commercial core payment route exposes payment backbone status endpoint");
+mustInclude(commercialCorePaymentReportsRoutes, "/payment-backbone/sources", "commercial core payment reports route exposes payment backbone sources endpoint");
 mustInclude(webPanel, "/api/commercial-core/payment-backbone/status", "superadmin commercial core panel reads payment backbone status");
 mustInclude(toolsReadme, "pack_m82_9_dormant_payment_backbone.ps1", "tools readme lists M82.9 pack");
 mustInclude(toolsPrimer, "M82.9", "tools primer lists M82.9");

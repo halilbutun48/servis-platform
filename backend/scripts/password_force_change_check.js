@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const cwd = process.cwd();
 const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
@@ -44,5 +45,5 @@ must("backend/src/routes/auth.js", "pwdChangeOnly", "limited token flag exists")
 must("backend/src/routes/admin.js", "markPasswordChangeRequired", "admin marks password change required");
 must("backend/src/routes/me.js", "requirePasswordChange", "me route exposes password change flag");
 must("web/src/panels/shared/ForcePasswordChangePanel.jsx", "Şifrenizi değiştirin", "force password panel exists");
-must("web/src/App.jsx", '"/auth/change-password"', "app routes to forced password page");
+must(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0], '"/auth/change-password"', "app routes to forced password page");
 console.log("PASS password force change check");

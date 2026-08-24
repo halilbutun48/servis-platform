@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -324,7 +325,7 @@ function routeRows() {
 function main() {
   console.log("=== FINAL-UX-SMOKE-01 CHECK ===");
 
-  const app = read("web/src/App.jsx");
+  const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
   const navDock = read("web/src/layout/NavDock.jsx");
   const screenRegistry = read("web/src/copilot/screenRegistry.js");
   const screenCatalog = read("backend/src/ai/jobGuide/screenCatalog.js");

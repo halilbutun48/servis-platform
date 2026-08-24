@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,18 +58,17 @@ function main() {
   console.log("=== UX-SUPERADMIN-AUDIT-PANEL-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const audit = read("docs/UX_PANEL_STRUCTURE_02_AUDIT.md");
   const context = read("docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md");
   const app = read("web/src/App.jsx");
   const screenRegistry = read("web/src/copilot/screenRegistry.js");
   const panel = read("web/src/panels/superadmin/OperationsPanel.jsx");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:uxsuperadminauditpanel01"', "package.json exposes audit panel check");
-  must(runner, "check:uxsuperadminauditpanel01", "runner includes audit panel check");
-  must(verify, "check:uxsuperadminauditpanel01", "verify chain includes audit panel check");
+  assertProductExtensionsIncludes("check:uxsuperadminauditpanel01", "product extensions registry includes audit panel check", registryScripts);
+  assertProductExtensionsIncludes("check:uxsuperadminauditpanel01", "verify-chain registry includes audit panel check", registryScripts);
   must(guide, "UX-SUPERADMIN-AUDIT-PANEL-01", "script guide mentions audit panel milestone");
   must(guide, "check:uxsuperadminauditpanel01", "script guide exposes audit panel check");
   must(audit, "UX-SUPERADMIN-AUDIT-PANEL-01", "panel structure audit includes audit panel note");

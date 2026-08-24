@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,11 +42,10 @@ const runbook = read("docs/FIELD_LAUNCH_PACK_01_RUNBOOK.md");
 const evidence = read("docs/FIELD_LAUNCH_PACK_01_EVIDENCE_TEMPLATE.md");
 const rollback = read("docs/FIELD_LAUNCH_PACK_01_ROLLBACK_NO_GO.md");
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const backlog = read("docs/NEXT_BACKLOG_V1.md");
 const registry = read("docs/MILESTONE_REGISTRY_V1.md");
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:fieldlaunch01": "node backend/scripts/field_launch_pack_01_readiness_check.js"', "package.json exposes check:fieldlaunch01");
 must(runbook, "E2E-SMOKE-01", "runbook references E2E-SMOKE-01");
@@ -100,8 +100,7 @@ must(guide, "check:fieldlaunch01", "script guide exposes check:fieldlaunch01");
 must(guide, "FIELD-LAUNCH-PACK-01 — saha/pilot öncesi launch hazırlık paketi", "script guide exposes field launch section");
 must(guide, "check:e2esmoke01", "script guide keeps E2E-SMOKE-01 alias visible");
 must(guide, "E2E-SMOKE-01 — demo acceptance pack", "script guide keeps E2E-SMOKE-01 section");
-must(runner, "check:fieldlaunch01", "product extensions runner includes fieldlaunch01");
-must(verify, "check:fieldlaunch01", "verify chain includes fieldlaunch01");
+assertProductExtensionsIncludes("check:fieldlaunch01", "product extensions registry references fieldlaunch01", registryScripts);
+assertProductExtensionsIncludes("check:fieldlaunch01", "verify chain registry includes fieldlaunch01", registryScripts);
 
 console.log("=== FIELD-LAUNCH-PACK-01 READINESS CHECK PASS ===");
-

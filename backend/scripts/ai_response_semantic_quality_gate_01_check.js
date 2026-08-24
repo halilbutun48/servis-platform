@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertProductExtensionsIncludes } from './lib/productExtensionsRegistry.js';
 
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { getScreenDefinitionForUser, listScreensForUser } from '../src/ai/jobGuide/screenCatalog.js';
@@ -1019,16 +1020,16 @@ async function main() {
   console.log('=== AI-RESPONSE-SEMANTIC-QUALITY-GATE-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const doc = read('docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md');
 
   must(pkg.includes('"check:airesponsesemanticqualitygate01": "node backend/scripts/ai_response_semantic_quality_gate_01_check.js"'), 'package.json exposes AI response semantic quality gate check');
-  must(runner.includes('check:airesponsesemanticqualitygate01'), 'product extensions runner includes AI response semantic quality gate check');
-  must(verify.includes('check:airesponsesemanticqualitygate01'), 'verify chain includes AI response semantic quality gate check');
+  assertProductExtensionsIncludes(
+    'check:airesponsesemanticqualitygate01',
+    'product extensions registry includes AI response semantic quality gate check'
+  );
   must(harnessCheck.includes('AI-RESPONSE-SEMANTIC-QUALITY-GATE-01'), 'script harness check knows AI response semantic quality gate milestone');
   must(harnessCheck.includes('check:airesponsesemanticqualitygate01'), 'script harness check knows AI response semantic quality gate alias');
   must(harnessCheck.includes('docs/AI_RESPONSE_SEMANTIC_QUALITY_GATE_01.md'), 'script harness check knows AI response semantic quality gate doc');

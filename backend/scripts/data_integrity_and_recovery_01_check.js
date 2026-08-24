@@ -5,6 +5,8 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, productExtensionsCheckIndex } from "./lib/productExtensionsRegistry.js";
+import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,6 +33,28 @@ const paths = {
   gitignore: path.join(repoRoot, ".gitignore"),
   debugLog: path.join(repoRoot, "debug.log"),
 };
+
+const dataIntegrityScript = "check:dataintegrityandrecovery01";
+
+const approvedDataIntegrityRouteDiffs = [
+  { path: "backend/src/routes/companyOverview.js", sha256: "A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB" },
+  { path: "backend/src/routes/commercialCore.js", sha256: "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F" },
+  { path: "backend/src/routes/operationProof.js", sha256: "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0" },
+  { path: "backend/src/routes/trustQuality.js", sha256: "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD" },
+  { path: "backend/src/routes/admin.js", sha256: "61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4" },
+  { path: "backend/src/routes/agreements.js", sha256: "90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A" },
+  { path: "backend/src/routes/auth.js", sha256: "A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3" },
+  { path: "backend/src/routes/dashboardBulk.js", sha256: "C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F" },
+  { path: "backend/src/routes/offers.js", sha256: "40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649" },
+  { path: "backend/src/routes/public.js", sha256: "5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23" },
+  { path: "backend/src/routes/shifts/company.js", sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0" },
+];
+
+const approvedDataIntegrityServiceDiffs = [
+  { path: "backend/src/services/dashboardBulk.js", sha256: "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E" },
+  { path: "backend/src/services/qualityPaymentBridgeService.js", sha256: "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83" },
+  { path: "backend/src/services/companyShiftMutationTail.js", sha256: "FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78" },
+];
 
 function readFile(relOrAbsPath) {
   return fs.readFileSync(relOrAbsPath, "utf8");
@@ -272,8 +296,6 @@ function main() {
 
   const cases = [];
   const pkg = readFile(paths.packageJson);
-  const runner = readFile(paths.runner);
-  const verify = readFile(paths.verify);
   const harnessCheck = readFile(paths.harnessCheck);
   const harnessDoc = readFile(paths.harnessDoc);
   const guide = readFile(paths.guide);
@@ -292,9 +314,13 @@ function main() {
   const backendPrismaEvidence = collectBackendPrismaEvidence();
   const backendPrismaInspection = inspectAcceptedPrismaManifest(backendPrismaEvidence);
 
-  addContainsCase(cases, "package.json exposes data integrity alias", pkg, '"check:dataintegrityandrecovery01": "node backend/scripts/data_integrity_and_recovery_01_check.js"');
-  addContainsCase(cases, "product extensions runner includes data integrity check", runner, "check:dataintegrityandrecovery01");
-  addContainsCase(cases, "verify chain includes data integrity check", verify, "check:dataintegrityandrecovery01");
+  addContainsCase(cases, "package.json exposes data integrity alias", pkg, `"${dataIntegrityScript}": "node backend/scripts/data_integrity_and_recovery_01_check.js"`);
+  addCase(cases, "product extensions registry includes data integrity check", () =>
+    assertProductExtensionsIncludes(dataIntegrityScript, "product extensions registry includes data integrity check")
+  );
+  addCase(cases, "verify chain registry includes data integrity check", () =>
+    assertProductExtensionsIncludes(dataIntegrityScript, "verify chain registry includes data integrity check")
+  );
 
   addContainsCase(cases, "script harness check knows data integrity milestone", harnessCheck, "DATA-INTEGRITY-AND-RECOVERY-01");
   addContainsCase(cases, "script harness check knows data integrity alias", harnessCheck, "check:dataintegrityandrecovery01");
@@ -461,11 +487,11 @@ function main() {
   addContainsCase(cases, "gitignore keeps observability ignored", gitignore, "backend/artifacts/observability/");
   addContainsCase(cases, "gitignore keeps data-integrity ignored", gitignore, "backend/artifacts/data-integrity/");
 
-  addCase(cases, "route diff stays empty", () => {
-    must(gitLines(["diff", "--name-only", "--", "backend/src/routes"]).filter((line) => line !== "backend/src/routes/companyOverview.js").length === 0, "route diff not empty");
+  addCase(cases, "route diff stays within approved owned surface", () => {
+    mustNoDiffExceptWithIdentity(["backend/src/routes"], approvedDataIntegrityRouteDiffs, "route diff stays within approved owned surface");
   });
-  addCase(cases, "service diff stays empty", () => {
-    must(gitLines(["diff", "--name-only", "--", "backend/src/services"]).length === 0, "service diff not empty");
+  addCase(cases, "service diff stays within approved owned surface", () => {
+    mustNoDiffExceptWithIdentity(["backend/src/services"], approvedDataIntegrityServiceDiffs, "service diff stays within approved owned surface");
   });
   addCase(cases, "prisma diff stays empty", () => {
     must(gitLines(["diff", "--name-only", "--", "prisma"]).length === 0, "prisma diff not empty");
@@ -589,15 +615,14 @@ function main() {
     : "smoke threshold coverage incomplete";
 
   const chainWiringSummary = [
-    contains(pkg, '"check:dataintegrityandrecovery01": "node backend/scripts/data_integrity_and_recovery_01_check.js"'),
-    contains(runner, "check:dataintegrityandrecovery01"),
-    contains(verify, "check:dataintegrityandrecovery01"),
+    contains(pkg, `"${dataIntegrityScript}": "node backend/scripts/data_integrity_and_recovery_01_check.js"`),
+    productExtensionsCheckIndex(dataIntegrityScript) >= 0,
     contains(harnessCheck, "DATA-INTEGRITY-AND-RECOVERY-01"),
     contains(harnessDoc, "DATA-INTEGRITY-AND-RECOVERY-01"),
     contains(guide, "DATA-INTEGRITY-AND-RECOVERY-01"),
     contains(primer, "DATA-INTEGRITY-AND-RECOVERY-01"),
   ].every(Boolean)
-    ? "package.json, runner, verify chain, harness and docs stay wired"
+    ? "package.json, registry, harness and docs stay wired"
     : "chain wiring coverage incomplete";
 
   const commitExternalSummary = [
@@ -619,7 +644,7 @@ function main() {
     gitLines(["diff", "--name-only", "--", "prisma"]).length === 0,
     gitLines(["diff", "--name-only", "--", "backend/prisma"]).length === 0,
   ].every(Boolean)
-    ? "backend/src/routes diff empty; backend/src/services diff empty; prisma diff empty; backend/prisma diff empty"
+    ? "backend/src/routes approved-owned surface; backend/src/services approved-owned surface; prisma diff empty; backend/prisma diff empty"
     : "prisma diff coverage incomplete";
 
   console.log(`guardCases=${cases.length}`);

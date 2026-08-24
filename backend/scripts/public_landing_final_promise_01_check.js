@@ -2,8 +2,11 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
+import { mustNoDiff } from "./lib/guardGitScope.js";
+import { mustCurrentHeadCommittedState } from "./lib/guardValidationEnvironment.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,32 +59,9 @@ function ordered(text, needles, label) {
   ok(label);
 }
 
-function gitDiffNames(paths) {
-  const args = ["diff", "--name-only", "--", ...paths];
-  const out = execFileSync("git", args, {
-    cwd: root,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  return String(out || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(", ")}`);
-  }
-  ok(label);
-}
-
 console.log("=== PUBLIC-LANDING-01 FINAL PROMISE CHECK ===");
 
 const pkg = read("package.json");
-const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const primer = read("docs/PRIMER_SSOT.md");
 const roadmap = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
@@ -92,13 +72,12 @@ const finalPromiseDoc = read("docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md");
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
 const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
 const landing = read("web/src/panels/public/PublicLandingPage.jsx");
-const app = read("web/src/App.jsx");
+const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must(pkg, '"check:publiclandingfinalpromise01": "node backend/scripts/public_landing_final_promise_01_check.js"', "package.json exposes check:publiclandingfinalpromise01");
-must(runner, "check:publiclandingfinalpromise01", "product extensions runner includes public landing final promise check");
-must(verifyChain, '"check:publiclandingfinalpromise01": "node backend/scripts/public_landing_final_promise_01_check.js"', "verify chain exposes public landing final promise check");
-ordered(
-  runner,
+assertProductExtensionsIncludes("check:publiclandingfinalpromise01", "product extensions registry includes public landing final promise check", registryScripts);
+assertProductExtensionsOrder(
   [
     "check:roadmaplockaimarketplace01",
     "check:publiclanding01",
@@ -108,7 +87,8 @@ ordered(
     "check:onboardingreview01",
     "check:productflowbuttonaudit01",
   ],
-  "public landing final promise stays before lead capture and onboarding review"
+  "public landing final promise stays before lead capture and onboarding review",
+  registryScripts,
 );
 
 must(guide, "PUBLIC-LANDING-01 FINAL PROMISE CHECK", "script guide mentions public landing final promise milestone");
@@ -198,7 +178,7 @@ must(harnessDoc, "public_landing_final_promise_01_check.js", "script harness doc
 must(harnessDoc, "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md", "script harness doc lists public landing final promise doc");
 
 must(read("backend/src/routes/companyOverview.js"), "Route ownership anchor for company overview.", "companyOverview route keeps ownership anchor");
-mustNoDiff(["backend/src/routes", "backend/src/services", "prisma"], "backend route/service/schema and Prisma diff is empty");
+mustCurrentHeadCommittedState({ label: "public landing current head committed state" });
 mustNoDiff(["web/src/index.css", "web/src/panels/public/PublicLandingPage.jsx"], "public landing UI diff is empty");
 
 console.log("=== PUBLIC-LANDING-01 FINAL PROMISE CHECK PASS ===");

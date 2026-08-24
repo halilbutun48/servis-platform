@@ -106,9 +106,10 @@ function buildShiftSignalCounts(shifts = []) {
 
   for (const shift of Array.isArray(shifts) ? shifts : []) {
     const status = upper(shift?.status || "", "");
+    const gpsState = shift?.vehicle?.gpsState || null;
     const gpsLastAt = shift?.vehicle?.gpsLast?.at || null;
     const gpsFreshness = gpsLastAt ? gpsStatusFromAt(gpsLastAt) : { status: "OFFLINE", ageSec: null };
-    const sourceKey = upper(shift?.vehicle?.gpsState?.lastSource || "", "") || "BACKEND_VEHICLE_GPS";
+    const sourceKey = upper(gpsState?.lastSource || "", "") || "BACKEND_VEHICLE_GPS";
     const sourceVisibility = resolveGpsSourceVisibility({
       officialSourceKey: sourceKey,
       freshness: gpsFreshness.status,
@@ -127,7 +128,7 @@ function buildShiftSignalCounts(shifts = []) {
 
     if (status === "ACTIVE" || status === "DONE" || shift?.progress?.startedAt) counts.shiftStartedCount += 1;
     if (status === "DONE" || shift?.progress?.completedAt) counts.shiftCompletedCount += 1;
-    if (gpsLastAt || shift?.vehicle?.gpsState?.lastSource) counts.gpsSeenCount += 1;
+    if (gpsLastAt || gpsState?.lastSource) counts.gpsSeenCount += 1;
     if (sourceVisibility.isDriverPhone && gpsLastAt) counts.driverPhoneGpsSeenCount += 1;
     if (sourceVisibility.isVehicleOfficial && gpsLastAt) counts.vehicleGpsSeenCount += 1;
     if (checkinEvents.some((event) => upper(event?.eventType || "", "") === "BOARD")) counts.boardingRecordedCount += 1;
@@ -522,10 +523,10 @@ async function resolveAgreementQualityPaymentBridgePreview({
             gpsLast: { select: { at: true } },
             gpsState: {
               select: {
-                lastSource: true,
                 lastUiStatus: true,
                 lastChangedAt: true,
                 seenLiveAt: true,
+                lastSource: true,
               },
             },
           },

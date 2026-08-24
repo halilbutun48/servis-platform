@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,8 +62,6 @@ function main() {
   console.log("=== UX-MOBILE-ALL-ROLES-PANEL-FIX-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -77,8 +76,7 @@ function main() {
   const personelLive = read("web/src/panels/personel/LivePanel.jsx");
 
   mustContains(pkg, '"check:uxmobileallrolespanelfix01": "node backend/scripts/ux_mobile_all_roles_panel_fix_01_check.js"', "package.json exposes mobile all roles panel fix check");
-  mustContains(runner, "'check:uxmobileallrolespanelfix01'", "product extensions runner includes mobile all roles panel fix check");
-  mustContains(verify, '"check:uxmobileallrolespanelfix01"', "verify chain exposes mobile all roles panel fix check");
+  assertProductExtensionsIncludes("check:uxmobileallrolespanelfix01", "product extensions registry includes mobile all roles panel fix check");
   mustContains(harnessCheck, "UX-MOBILE-ALL-ROLES-PANEL-FIX-01", "script harness check knows mobile all roles panel fix milestone");
   mustContains(harnessCheck, "check:uxmobileallrolespanelfix01", "script harness check knows mobile all roles panel fix alias");
   mustContains(harnessCheck, "docs/UX_MOBILE_ALL_ROLES_PANEL_FIX_01.md", "script harness check knows mobile all roles panel fix doc");

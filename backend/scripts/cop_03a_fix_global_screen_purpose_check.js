@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { buildSuggestedChips } from '../src/ai/chat/intentRouter.js';
 import { getScreenDefinitionForUser } from '../src/ai/jobGuide/screenCatalog.js';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -106,14 +107,13 @@ function main() {
   console.log('=== COP-03A FIX GLOBAL SCREEN PURPOSE CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verifyChain = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const schemas = read('backend/src/ai/schemas.js');
   const help = read('backend/src/ai/chat/helpComposer.js');
   const intent = read('backend/src/ai/chat/intentRouter.js');
   const catalog = read('backend/src/ai/jobGuide/screenCatalog.js');
   const roomCompany = read('backend/src/ai/jobGuide/screenCatalog.roomCompany.js');
   const pack = read('backend/src/ai/chat/goldenQuestionPack.js');
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:cop03afix01": "node backend/scripts/cop_03a_fix_global_screen_purpose_check.js"', 'package.json exposes check:cop03afix01');
   must(pkg, '"check:cop03a"', 'package.json keeps check:cop03a');
@@ -121,7 +121,7 @@ function main() {
   must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json keeps check:product-extensions');
   must(pkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', 'package.json keeps verify:final product extension step');
 
-  ordered(runner, [
+  assertProductExtensionsOrder([
     'check:op04',
     'check:qlt04b',
     'check:pay01e',
@@ -135,9 +135,9 @@ function main() {
     'check:cop03afix01',
     'check:uxkvkk01',
     'check:docsstate01',
-  ], 'product extensions runner order');
+  ], 'product extensions registry order', registryScripts);
 
-  must(verifyChain, 'check:cop03afix01', 'verify chain expects cop03afix01');
+  assertProductExtensionsIncludes('check:cop03afix01', 'verify-chain registry includes cop03afix01', registryScripts);
 
   must(schemas, 'function isShortNaturalScreenPrompt(message)', 'schemas keeps short natural prompt helper');
   must(schemas, 'bura ne', 'schemas keeps bura ne phrase');

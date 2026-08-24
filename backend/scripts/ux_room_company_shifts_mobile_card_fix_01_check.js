@@ -5,6 +5,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { getCanonicalProvenanceRecord } from "./lib/canonicalProvenanceRegistry.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import {
+  APP_JSX_ROLE_TENANT_SCOPE_PATHS,
+  BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
+  BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
+  M80_M89_CONTRACT_SWEEP_REPO_CONTRACT_PATHS,
+  mustNoDiffExceptWithIdentity,
+} from "./lib/guardGitScope.js";
+import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +101,14 @@ function normalizePath(relPath) {
     .trim();
 }
 
+const STEP167_CONCURRENT_CANONICAL_PATHS = Object.freeze([
+  "backend/src/routes/commercialCorePaymentReportsRoutes.js",
+  "backend/src/routes/commercialCorePaymentRoutes.js",
+  "backend/src/routes/commercialCoreRoomRoutes.js",
+  "backend/src/routes/commercialCoreRouteData.js",
+  "backend/src/routes/commercialCoreRoutes.js",
+]);
+
 function compareText(a, b) {
   return a < b ? -1 : a > b ? 1 : 0;
 }
@@ -166,6 +184,29 @@ function mustMigrationDirectoryShape(relPath, label) {
   ok(label);
 }
 
+function buildStep167ConcurrentCanonicalEntries() {
+  return STEP167_CONCURRENT_CANONICAL_PATHS.map((relPath) => {
+    const record = getCanonicalProvenanceRecord(relPath);
+    must(record, `step 167 canonical provenance record present for ${relPath}`);
+    must(record.baselinePresence === "ABSENT", `step 167 canonical provenance baseline remains absent for ${relPath}`);
+    must(
+      record.workingTreeState === "UNTRACKED_CANONICAL_NEW_FILE",
+      `step 167 canonical provenance working-tree state remains canonical for ${relPath}`
+    );
+    must(
+      record.provenanceClass === "CONCURRENT_CANONICAL",
+      `step 167 canonical provenance class remains concurrent canonical for ${relPath}`
+    );
+    must(record.lifecycleStatus === "ACTIVE_PROVEN", `step 167 canonical provenance lifecycle remains active proven for ${relPath}`);
+    must(
+      record.currentHeadPolicyState === "APPROVED",
+      `step 167 canonical provenance current-head policy remains approved for ${relPath}`
+    );
+    mustFileSha256(relPath, record.currentSha256, `step 167 canonical provenance SHA matches ${relPath}`);
+    return { path: relPath, sha256: record.currentSha256 };
+  });
+}
+
 const ACCEPTED_SCHEMA_PATH = "backend/prisma/schema.prisma";
 const ACCEPTED_SCHEMA_SHA256 = "7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748";
 const ACCEPTED_PRISMA_MIGRATIONS = [
@@ -237,8 +278,6 @@ function main() {
   console.log("=== UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
@@ -255,15 +294,9 @@ function main() {
   mustTrue(exists("docs/UX_ROOM_COMPANY_SHIFTS_MOBILE_CARD_FIX_01.md"), "room/company shifts mobile card fix doc exists");
 
   must(pkg, '"check:uxroomcompanyshiftsmobilecardfix01": "node backend/scripts/ux_room_company_shifts_mobile_card_fix_01_check.js"', "package.json exposes room/company shifts mobile card fix check");
-  ordered(
-    runner,
+  assertProductExtensionsOrder(
     ["check:uxmobileallrolespanelfix01", "check:uxroomcompanyshiftsmobilecardfix01", "check:uxmobileoverflowminimapreadability01"],
-    "product extensions runner keeps room/company shifts mobile card fix between mobile role fix and overflow readability"
-  );
-  ordered(
-    verify,
-    ["check:uxmobileallrolespanelfix01", "check:uxroomcompanyshiftsmobilecardfix01", "check:uxmobileoverflowminimapreadability01"],
-    "verify chain keeps room/company shifts mobile card fix between mobile role fix and overflow readability"
+    "product extensions registry keeps room/company shifts mobile card fix between mobile role fix and overflow readability"
   );
 
   must(harnessCheck, "UX-ROOM-COMPANY-SHIFTS-MOBILE-CARD-FIX-01", "script harness check knows room/company shifts mobile card fix milestone");
@@ -370,6 +403,33 @@ function main() {
   must(staged.length === 0, "stage remains empty");
   mustAcceptedPrismaManifest();
   const statusWithoutAcceptedPrisma = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
+  const step167ConcurrentCanonicalEntries = buildStep167ConcurrentCanonicalEntries();
+  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
+  const approvedConcurrentBackendPaths = new Set(approvedConcurrentBackendDiff.map((entry) => normalizePath(entry.path)));
+  const statusWithoutApprovedConcurrent = statusWithoutAcceptedPrisma.filter((file) => !approvedConcurrentBackendPaths.has(normalizePath(file)));
+  const step167NonOwnedExactPaths = new Set([
+    "backend/README.md",
+    "backend/package.json",
+    "backend/src/bootstrap/rateLimits.js",
+    "backend/src/middleware/apiRequestLog.js",
+    "backend/src/middleware/asyncHandler.js",
+    "backend/src/ops/trustQualityManifest.js",
+    "backend/src/lib/requestUrl.js",
+    "infra/docker-compose.yml",
+    ...BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
+    "backend/src/routes/admin.js",
+    "backend/src/routes/agreements.js",
+    "backend/src/routes/auth.js",
+    "backend/src/routes/offers.js",
+    "backend/src/routes/public.js",
+    "backend/src/routes/commercialCorePaymentReportsRoutes.js",
+    "backend/src/routes/commercialCorePaymentRoutes.js",
+    "backend/src/routes/commercialCoreRoomRoutes.js",
+    "backend/src/routes/commercialCoreRouteData.js",
+    "backend/src/routes/commercialCoreRoutes.js",
+    ...M80_M89_CONTRACT_SWEEP_REPO_CONTRACT_PATHS,
+  ]);
+  const statusWithoutStep167LocalityDebt = statusWithoutApprovedConcurrent.filter((file) => !step167NonOwnedExactPaths.has(normalizePath(file)));
   const exactAllowed = new Set([
     "backend/scripts/ai03b_semantic_visible_audit_01_check.js",
     "backend/scripts/copilot_context_memory_task_state_01_check.js",
@@ -518,7 +578,7 @@ function main() {
     "package.json",
     "tools/repo_contract_state.json",
     "web/src/index.css",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/components/BrandMark.jsx",
     "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
     "web/src/panels/company/companyShiftsPanelFilters.jsx",
@@ -575,7 +635,7 @@ function main() {
     "docs/ADDRESS_GEOCODING_CONFIDENCE_01.md",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
-    "web/src/App.jsx",
+    ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
     "web/src/copilot/screenRegistry.js",
     "web/src/layout/NavDock.jsx",
     "web/src/panels/room/VehiclesPanel.jsx",
@@ -608,6 +668,7 @@ function main() {
     "backend/src/ai/chat/intentRouter.js",
     "backend/src/ai/chat/intentRouterCore.js",
     "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
+    ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
     "backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js",
     "backend/src/ai/chat/copilotDemandToAgreementRoadmap.js",
     "docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md",
@@ -639,9 +700,9 @@ function main() {
     "backend/src/utils/responseCache.js",
     "backend/src/bootstrap/routeMounts.js",
     "backend/src/server.js",
-    "backend/src/routes/dashboardBulk.js",
-    "backend/src/routes/companyOverview.js",
-    "backend/src/services/dashboardBulk.js",
+    { path: "backend/src/routes/dashboardBulk.js", sha256: "C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F" },
+    { path: "backend/src/routes/companyOverview.js", sha256: "A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB" },
+    { path: "backend/src/services/dashboardBulk.js", sha256: "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E" },
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
@@ -649,14 +710,18 @@ function main() {
     "web/src/panels/shared/FinancialOperationsPanel.jsx",
   ]);
 
-  allWithin(statusWithoutAcceptedPrisma, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within room/company shifts mobile card fix scope");
-  mustNotList(statusWithoutAcceptedPrisma.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
-  mustNotList(statusWithoutAcceptedPrisma.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
+  allWithin(statusWithoutStep167LocalityDebt, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within room/company shifts mobile card fix scope");
+  mustNoDiffExceptWithIdentity(["backend/src/routes", "backend/src/services"], approvedConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");
+  mustNotList(statusWithoutApprovedConcurrent.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
+  mustNotList(statusWithoutApprovedConcurrent.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(statusWithoutAcceptedPrisma, "Prisma/", "schema/migration files are untouched");
   mustNotList(statusWithoutAcceptedPrisma, "backend/prisma/", "backend schema/migration files are untouched");
 
   const routeDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "prisma", "backend/prisma"]).filter(
-    (line) => line !== "backend/src/routes/companyOverview.js" && !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(line))
+    (line) =>
+      line !== "backend/src/routes/companyOverview.js" &&
+      !approvedConcurrentBackendPaths.has(normalizePath(line)) &&
+      !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(line))
   );
   must(routeDiff.length === 0, "backend route/service/schema diff stays empty");
 

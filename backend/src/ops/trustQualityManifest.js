@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { httpError } from "../errors/http.js";
 import { readServiceEvaluations, upsertServiceEvaluation } from "./serviceEvaluationStore.js";
 
 export const TRUST_QUALITY_DIMENSIONS = [
@@ -40,6 +41,61 @@ function formatStars(score) {
   const n = Number(score);
   if (!Number.isFinite(n) || n <= 0) return "-";
   return `${n.toFixed(1)} / 5`;
+}
+
+function normalizeRole(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+async function assertProviderScoreRoomVisibleOrThrow(roomId, access = {}) {
+  const rid = Number(roomId || 0);
+  if (!rid) throw httpError(400, "BAD_REQUEST", "Oda kapsamı eksik.");
+
+  const role = normalizeRole(access?.role);
+  const room = await prisma.room.findUnique({
+    where: { id: rid },
+    select: { id: true, regionId: true, status: true },
+  });
+
+  if (!room || room.status === "DELETED") {
+    throw httpError(404, "NOT_FOUND", "Oda bulunamadı.");
+  }
+
+  if (role === "SUPER_ADMIN") {
+    return room;
+  }
+
+  if (role === "ROOM") {
+    const ownRoomId = Number(access?.roomId || 0);
+    if (!ownRoomId || ownRoomId !== rid) {
+      throw httpError(404, "NOT_FOUND", "Oda bulunamadı.");
+    }
+    return room;
+  }
+
+  if (["COMPANY", "SCHOOL", "ORGANIZATION"].includes(role)) {
+    const companyId = Number(access?.companyId || 0);
+    if (!companyId) throw httpError(400, "BAD_REQUEST", "Firma kapsamı eksik.");
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, regionId: true },
+    });
+
+    if (!company) {
+      throw httpError(404, "NOT_FOUND", "Firma bulunamadı.");
+    }
+
+    if (company.regionId != null) {
+      if (room.regionId == null || Number(room.regionId) !== Number(company.regionId)) {
+        throw httpError(404, "NOT_FOUND", "Oda bulunamadı.");
+      }
+    }
+
+    return room;
+  }
+
+  throw httpError(403, "FORBIDDEN", "Forbidden");
 }
 
 function buildProviderScoreMapFromEvaluations(evaluations, roomIds) {
@@ -130,9 +186,10 @@ export async function buildCompanyServiceEvaluationSummary(user) {
   return { activeMilestone: "M63-R1B", cards: { completedServices, pendingEvaluation, activeServices, providerCount } };
 }
 
-export async function getProviderScore(roomId) {
+export async function getProviderScore(roomId, access = {}) {
   const rid = Number(roomId || 0);
   if (!rid) return { roomId: 0, averageScore: null, evaluationCount: 0, recommendRate: null, summaryLabel: "Henüz puan yok" };
+  await assertProviderScoreRoomVisibleOrThrow(rid, access);
   const map = buildProviderScoreMapFromEvaluations(await readServiceEvaluations(), [rid]);
   return map.get(rid) || { roomId: rid, averageScore: null, evaluationCount: 0, recommendRate: null, summaryLabel: "Henüz puan yok" };
 }

@@ -1,6 +1,7 @@
 // backend/src/middleware/apiRequestLog.js
 import { prisma } from "../prisma.js";
 import { verifyToken } from "../auth/jwt.js";
+import { sanitizeRequestUrl } from "../lib/requestUrl.js";
 
 function tryUserFromReq(req) {
   try {
@@ -28,7 +29,7 @@ export function apiRequestLog() {
       // fire-and-forget (do not block response)
       (async () => {
         try {
-          const path = req.originalUrl || req.url || "";
+          const path = sanitizeRequestUrl(req.originalUrl || req.url || "");
 
           // skip noisy
           if (

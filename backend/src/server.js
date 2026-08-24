@@ -12,6 +12,7 @@ import { prisma } from "./prisma.js";
 import { verifyToken } from "./auth/jwt.js";
 import { authRequired, requireStepUp, requireStepUpWrite } from "./auth/middleware.js";
 import { scopeRoomsForUser } from "./ws/scope.js";
+import { sanitizeRequestUrl } from "./lib/requestUrl.js";
 
 import { authRouter } from "./routes/auth.js";
 import { authStep2Router } from "./routes/auth_step2.js";
@@ -180,6 +181,7 @@ app.use((req, res, next) => {
   res.on("close", finish);
   next();
 });
+morgan.token("url", (req) => sanitizeRequestUrl(req.originalUrl || req.url || ""));
 app.use(morgan("dev"));
 
 // M10: request log (must be early)

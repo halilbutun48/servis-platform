@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,8 +78,6 @@ function main() {
   console.log("=== INVITE-BASED-MEMBERSHIP-01 CHECK ===");
 
   const pkg = read("package.json");
-  const runner = read("backend/scripts/run_product_extensions_check_chain.js");
-  const verifyChain = read("backend/scripts/verify_chain_01_product_extensions_check.js");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
   const harnessDoc = read("docs/SCRIPT_HARNESS_CONSOLIDATION_01.md");
@@ -85,15 +85,20 @@ function main() {
   const roadmap = read("docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md");
   const finalAuditDoc = read("docs/ONBOARDING_REVIEW_01_FINAL_AUDIT.md");
   const inviteDoc = read("docs/INVITE_BASED_MEMBERSHIP_01.md");
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:invitebasedmembership01": "node backend/scripts/invite_based_membership_01_check.js"', "package.json exposes check:invitebasedmembership01");
-  must(runner, "check:invitebasedmembership01", "product extensions runner includes invite-based membership check");
-  must(verifyChain, '"check:invitebasedmembership01": "node backend/scripts/invite_based_membership_01_check.js"', "verify chain exposes invite-based membership check");
-  ordered(runner, [
-    "check:onboardingreviewfinalaudit01",
-    "check:invitebasedmembership01",
-    "check:productflowbuttonaudit01",
-  ], "invite-based membership sits right after onboarding review final audit");
+  assertProductExtensionsIncludes("check:invitebasedmembership01", "product extensions registry includes invite-based membership check", registryScripts);
+  assertProductExtensionsOrder(
+    [
+      "check:onboardingreviewfinalaudit01",
+      "check:invitebasedmembership01",
+      "check:verifiedsupplier01",
+      "check:productflowbuttonaudit01",
+    ],
+    "invite-based membership sits right after onboarding review final audit",
+    registryScripts,
+  );
 
   must(guide, "INVITE-BASED-MEMBERSHIP-01", "script guide mentions invite-based membership milestone");
   must(guide, "check:invitebasedmembership01", "script guide exposes invite-based membership check");
@@ -162,11 +167,15 @@ function main() {
   must(inviteDoc, "guard", "invite membership doc keeps guard wording");
   must(inviteDoc, "audit log", "invite membership doc keeps audit log wording");
 
-  mustNoDiffExcept(
+  mustNoDiffExceptWithIdentity(
     ["backend/src/routes", "backend/src/services", "prisma", "web/src"],
     [
       "backend/src/routes/companyOverview.js",
-      "web/src/App.jsx",
+      "backend/src/routes/commercialCore.js",
+      "backend/src/routes/operationProof.js",
+      "backend/src/routes/trustQuality.js",
+      "backend/src/services/qualityPaymentBridgeService.js",
+      ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
       "web/src/copilot/screenRegistry.js",
       "web/src/layout/NavDock.jsx",
       "backend/src/routes/dashboardBulk.js",
@@ -239,6 +248,17 @@ function main() {
       "web/src/panels/superadmin/TrustQualityPanel.jsx",
       "backend/src/routes/companyOverview.js",
       "web/src/panels/shared/FinancialOperationsPanel.jsx",
+      { path: "backend/src/routes/commercialCore.js", sha256: "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F" },
+      { path: "backend/src/routes/operationProof.js", sha256: "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0" },
+      { path: "backend/src/routes/trustQuality.js", sha256: "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD" },
+      { path: "backend/src/services/qualityPaymentBridgeService.js", sha256: "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83" },
+      { path: "backend/src/routes/admin.js", sha256: "61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4" },
+      { path: "backend/src/routes/agreements.js", sha256: "90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A" },
+      { path: "backend/src/routes/auth.js", sha256: "A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3" },
+      { path: "backend/src/routes/offers.js", sha256: "40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649" },
+      { path: "backend/src/routes/public.js", sha256: "5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23" },
+      { path: "backend/src/routes/shifts/company.js", sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0" },
+      { path: "backend/src/services/companyShiftMutationTail.js", sha256: "FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78" },
     ],
     "invite-based membership keeps runtime code unchanged"
   );

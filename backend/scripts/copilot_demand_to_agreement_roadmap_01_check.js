@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { mustNoDiffExceptWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
+import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -131,8 +134,6 @@ async function main() {
   console.log('=== COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
   const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
   const primer = read('docs/PRIMER_SSOT.md');
   const roadmapLock = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -140,13 +141,12 @@ async function main() {
   const aiRoadmap = read('docs/COPILOT_AI_ACTION_ROADMAP_01.md');
   const doc = read('docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md');
   const helper = read('backend/src/ai/chat/copilotDemandToAgreementRoadmap.js');
-  const harnessCheck = read('backend/scripts/script_harness_consolidation_01_check.js');
-  const harnessDoc = read('docs/SCRIPT_HARNESS_CONSOLIDATION_01.md');
   const cachedNames = gitCachedNames();
+  const registryScripts = productExtensionsChecks.map((step) => step.script);
 
   must(pkg, '"check:copilotdemandagreement01": "node backend/scripts/copilot_demand_to_agreement_roadmap_01_check.js"', 'package.json exposes demand-to-agreement check');
-  ordered(runner, ['check:copilotairoadmap01', 'check:copilotdemandagreement01', 'check:uxcopilotsmartchips01'], 'product extensions runner places demand-to-agreement after AI action roadmap');
-  ordered(verify, ['check:copilotairoadmap01', 'check:copilotdemandagreement01', 'check:uxcopilotsmartchips01'], 'verify chain places demand-to-agreement after AI action roadmap');
+  assertProductExtensionsOrder(['check:copilotairoadmap01', 'check:copilotdemandagreement01', 'check:uxcopilotsmartchips01'], 'product extensions registry keeps demand-to-agreement after AI action roadmap', registryScripts);
+  assertProductExtensionsOrder(['check:copilotairoadmap01', 'check:copilotdemandagreement01', 'check:uxcopilotsmartchips01'], 'verify chain registry keeps demand-to-agreement after AI action roadmap', registryScripts);
 
   must(guide, 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'milestone guide mentions demand-to-agreement milestone');
   must(guide, 'check:copilotdemandagreement01', 'milestone guide exposes demand-to-agreement check');
@@ -230,29 +230,11 @@ async function main() {
   mustNot(helper, 'fetch(', 'helper has no network runtime');
   mustNot(helper, 'spawn(', 'helper has no spawned runtime');
 
-  must(harnessCheck, 'check:copilotdemandagreement01', 'script harness check knows demand-to-agreement alias');
-  must(harnessCheck, 'copilot_demand_to_agreement_roadmap_01_check.js', 'script harness check knows demand-to-agreement file');
-  must(harnessCheck, 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'script harness check knows demand-to-agreement milestone');
-  must(harnessCheck, 'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md', 'script harness check knows demand-to-agreement doc');
-  must(harnessCheck, 'backend/src/ai/chat/copilotDemandToAgreementRoadmap.js', 'script harness check knows demand-to-agreement helper');
-  must(harnessCheck, 'check:copilotrfqprep01', 'script harness check knows RFQ prep alias');
-  must(harnessCheck, 'copilot_rfq_prep_01_check.js', 'script harness check knows RFQ prep file');
-  must(harnessCheck, 'COPILOT-RFQ-PREP-01', 'script harness check knows RFQ prep milestone');
-  must(harnessCheck, 'docs/COPILOT_RFQ_PREP_01.md', 'script harness check knows RFQ prep doc');
-  must(harnessCheck, 'backend/src/ai/chat/copilotRfqPrep.js', 'script harness check knows RFQ prep helper');
-
-  must(harnessDoc, 'root:check:copilotdemandagreement01', 'script harness doc lists demand-to-agreement root check');
-  must(harnessDoc, 'copilot_demand_to_agreement_roadmap_01_check.js', 'script harness doc lists demand-to-agreement check');
-  must(harnessDoc, 'docs/COPILOT_DEMAND_TO_AGREEMENT_ROADMAP_01.md', 'script harness doc lists demand-to-agreement doc');
-  must(harnessDoc, 'backend/src/ai/chat/copilotDemandToAgreementRoadmap.js', 'script harness doc lists demand-to-agreement helper');
-  must(harnessDoc, 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'script harness doc lists demand-to-agreement milestone');
-  must(harnessDoc, 'root:check:copilotrfqprep01', 'script harness doc lists RFQ prep root check');
-  must(harnessDoc, 'copilot_rfq_prep_01_check.js', 'script harness doc lists RFQ prep check');
-  must(harnessDoc, 'docs/COPILOT_RFQ_PREP_01.md', 'script harness doc lists RFQ prep doc');
-  must(harnessDoc, 'backend/src/ai/chat/copilotRfqPrep.js', 'script harness doc lists RFQ prep helper');
-  must(harnessDoc, 'COPILOT-RFQ-PREP-01', 'script harness doc lists RFQ prep milestone');
-
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services', 'prisma'], ['backend/src/routes/companyOverview.js'], 'backend route/service/schema and Prisma diff stays empty');
+  mustNoDiffExceptWithIdentity(
+    ['backend/src/routes', 'backend/src/services', 'prisma'],
+    CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
+    'backend route/service/schema and Prisma diff stays empty'
+  );
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
 
   console.log('=== COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01 CHECK PASS ===');

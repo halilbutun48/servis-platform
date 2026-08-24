@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 import { getScreenDefinitionForUser } from '../src/ai/jobGuide/screenCatalog.js';
+import { assertProductExtensionsIncludes, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,11 +72,10 @@ function makeResponse({ role, path: screenPath, message, selectedLabel = '', sel
 console.log('=== COP-03A FIX-02 VISIBLE REPLY CHIP POLISH CHECK ===');
 
 const pkg = fs.readFileSync(path.join(root, 'package.json'), 'utf8');
-const runner = fs.readFileSync(path.join(root, 'backend/scripts/run_product_extensions_check_chain.js'), 'utf8');
-const verify = fs.readFileSync(path.join(root, 'backend/scripts/verify_chain_01_product_extensions_check.js'), 'utf8');
 const helpComposer = fs.readFileSync(path.join(root, 'backend/src/ai/chat/helpComposer.js'), 'utf8');
 const intentRouter = fs.readFileSync(path.join(root, 'backend/src/ai/chat/intentRouter.js'), 'utf8');
 const catalog = fs.readFileSync(path.join(root, 'backend/src/ai/jobGuide/screenCatalog.roomCompany.js'), 'utf8');
+const registryScripts = productExtensionsChecks.map((step) => step.script);
 
 must('check:cop03afix02 exists in package.json', pkg.includes('"check:cop03afix02": "node backend/scripts/cop_03a_fix_02_visible_reply_chip_polish_check.js"'));
 must('package.json keeps check:cop03afix01', pkg.includes('"check:cop03afix01"'));
@@ -83,8 +83,8 @@ must('package.json keeps check:cop03a', pkg.includes('"check:cop03a"'));
 must('package.json keeps check:product-extensions', pkg.includes('"check:product-extensions"'));
 must('package.json keeps check:verifychain01', pkg.includes('"check:verifychain01"'));
 must('package.json keeps verify:final', pkg.includes('"verify:final"'));
-must('product extensions runner includes cop03afix02', runner.includes('check:cop03afix02'));
-must('verify chain expects cop03afix02', verify.includes('"check:cop03afix02"'));
+assertProductExtensionsIncludes('check:cop03afix02', 'product extensions registry references cop03afix02', registryScripts);
+assertProductExtensionsIncludes('check:cop03afix02', 'verify chain registry exposes cop03afix02', registryScripts);
 must('helpComposer keeps screen-purpose carry reply', helpComposer.includes('composeScreenPurposeWithCarry'));
 must('helpComposer keeps selection-aware chips', helpComposer.includes('Bu ekranda seçili kayıt da var:'));
 must('helpComposer keeps generic screen-purpose chip', helpComposer.includes('Bu ekranı detaylı anlat'));

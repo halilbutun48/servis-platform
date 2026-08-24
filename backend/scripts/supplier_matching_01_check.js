@@ -2,9 +2,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import * as supplierMatching from '../src/ai/chat/supplierMatching.js';
+import { assertProductExtensionsIncludes, assertProductExtensionsOrder } from './lib/productExtensionsRegistry.js';
+import { gitCachedNames } from './lib/guardGitScope.js';
+import { mustCurrentHeadCommittedState } from './lib/guardValidationEnvironment.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,42 +65,6 @@ function ordered(text, needles, label) {
   ok(label);
 }
 
-function gitCachedNames() {
-  const out = execFileSync('git', ['diff', '--cached', '--name-only'], {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return String(out || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function gitDiffNames(paths) {
-  const out = execFileSync('git', ['diff', '--name-only', '--', ...paths], {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return String(out || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function mustNoDiff(paths, label) {
-  const files = gitDiffNames(paths);
-  if (files.length > 0) fail(`${label}: ${files.join(', ')}`);
-  ok(label);
-}
-function mustNoDiffExcept(paths, allowedFiles, label) {
-  const files = gitDiffNames(paths).filter((file) => !allowedFiles.includes(file));
-  if (files.length > 0) {
-    fail(`${label}: ${files.join(', ')}`);
-  }
-  ok(label);
-}
 function mustNoStagedPrefix(names, prefixes, label) {
   const hits = names.filter((name) => prefixes.some((prefix) => normalize(name).startsWith(normalize(prefix))));
   if (hits.length > 0) fail(`${label}: ${hits.join(', ')}`);
@@ -116,8 +82,6 @@ async function main() {
   console.log('=== SUPPLIER-MATCHING-01 CHECK ===');
 
   const pkg = read('package.json');
-  const runner = read('backend/scripts/run_product_extensions_check_chain.js');
-  const verify = read('backend/scripts/verify_chain_01_product_extensions_check.js');
 const guide = read('docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md');
 const primer = read('docs/PRIMER_SSOT.md');
 const roadmap = read('docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md');
@@ -183,11 +147,11 @@ const doc = read('docs/SUPPLIER_MATCHING_01.md');
   ]);
 
   must(pkg, '"check:suppliermatching01": "node backend/scripts/supplier_matching_01_check.js"', 'package.json exposes supplier matching check');
-  must(runner, 'check:suppliermatching01', 'product extensions runner includes supplier matching check');
-  must(verify, 'check:suppliermatching01', 'verify chain includes supplier matching check');
+  assertProductExtensionsIncludes('check:suppliermatching01', 'product extensions runner includes supplier matching check');
+  assertProductExtensionsIncludes('check:suppliermatching01', 'verify chain includes supplier matching check');
 
-  ordered(runner, ['check:verifiedsupplier01', 'check:suppliermatching01', 'check:uxmarketplacepanels01'], 'product extensions runner keeps supplier matching after verified supplier');
-  ordered(verify, ['check:verifiedsupplier01', 'check:suppliermatching01', 'check:uxmarketplacepanels01'], 'verify chain keeps supplier matching after verified supplier');
+  assertProductExtensionsOrder(['check:verifiedsupplier01', 'check:suppliermatching01', 'check:uxmarketplacepanels01'], 'product extensions runner keeps supplier matching after verified supplier');
+  assertProductExtensionsOrder(['check:verifiedsupplier01', 'check:suppliermatching01', 'check:uxmarketplacepanels01'], 'verify chain keeps supplier matching after verified supplier');
 
   must(guide, 'SUPPLIER-MATCHING-01', 'milestone guide mentions supplier matching milestone');
   must(guide, 'check:suppliermatching01', 'milestone guide exposes supplier matching check');
@@ -497,7 +461,7 @@ const doc = read('docs/SUPPLIER_MATCHING_01.md');
   must(harnessDoc, 'backend/src/ai/chat/supplierMatching.js', 'script harness doc lists supplier matching helper');
   must(harnessDoc, 'SUPPLIER-MATCHING-01', 'script harness doc lists supplier matching milestone');
 
-  mustNoDiffExcept(['backend/src/routes', 'backend/src/services'], ['backend/src/routes/companyOverview.js'], 'backend route/service diff stays empty');
+  mustCurrentHeadCommittedState({ label: 'supplier matching current head committed state' });
   mustNoStagedPrefix(cachedNames, ['backend/artifacts/runtime-data/', 'backend/artifacts/browser-smoke/', 'debug.log'], 'runtime-data, browser-smoke and debug.log stay commit-external');
 
   mustCondition(guardCases >= 200, 'supplier matching check keeps at least 200 guard cases');
