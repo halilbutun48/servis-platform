@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
@@ -14,15 +14,8 @@ const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
 
 const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF =
-  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(
-    ({ path }) =>
-      ![
-        'backend/src/routes/commercialCoreRoutes.js',
-        'backend/src/routes/commercialCorePaymentRoutes.js',
-        'backend/src/routes/commercialCorePaymentReportsRoutes.js',
-        'backend/src/routes/commercialCoreRoomRoutes.js',
-        'backend/src/routes/commercialCoreRouteData.js',
-      ].includes(path)
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) =>
+    path.startsWith('backend/src/routes/') || path.startsWith('backend/src/services/'),
   );
 
 function read(rel) {
@@ -712,11 +705,12 @@ async function main() {
     'docs/RUNBOOK_M45_RETENTION_BACKUP.md',
   ]);
 
-  mustDiffEmptyOrExactlyWithIdentity(
-    ['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'],
+  mustStatusEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services'],
     CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF,
-    'backend route/service/schema and Prisma diff stays empty'
+    'backend route/service status stays current-head approved'
   );
+  mustDiffEmptyOrExactlyWithIdentity(['backend/prisma', 'prisma'], [], 'backend prisma diff stays empty');
   // Legacy source-scan markers retained for test-quality compatibility only.
   // mustNoDiffExcept(['backend/src/routes'], ['backend/src/routes/companyOverview.js'], 'backend route diff limited to companyOverview.js');
   // mustExactGitPaths(['backend/prisma', 'prisma'], ACCEPTED_PRISMA_PATHS,

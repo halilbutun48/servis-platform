@@ -6,10 +6,9 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 import {
   CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
-  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN,
 } from "./lib/currentHeadScopePolicy.js";
 import {
   assertProductExtensionsIncludes,
@@ -21,8 +20,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
 const safeDirectory = root.replace(/\\/g, "/");
-const approvedSafeDriveRouteEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN.filter(
-  ({ path: entryPath }) => entryPath.startsWith("backend/src/routes/")
+const approvedSafeDriveRouteEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
+  entryPath.startsWith("backend/src/routes/"),
 );
 const approvedSafeDriveServiceEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
   entryPath.startsWith("backend/src/services/"),
@@ -439,19 +438,19 @@ async function main() {
   assertIncludes(trustQuality, "lastSource: true", "trustQuality preserves lastSource Prisma selection");
   assertIncludes(trustQuality, "wrapAsyncRouterMethods(r);", "trustQuality keeps async router wrapping");
 
-  mustDiffEmptyOrExactlyWithIdentity(
+  mustStatusEmptyOrExactlyWithIdentity(
     ["backend/src/routes"],
     approvedSafeDriveRouteEntries,
-    "backend route ownership matches approved Safe Drive concurrent diff",
+    "backend route ownership matches approved Safe Drive current head policy",
   );
-  mustDiffEmptyOrExactlyWithIdentity(
+  mustStatusEmptyOrExactlyWithIdentity(
     ["backend/src/services"],
     approvedSafeDriveServiceEntries,
-    "backend service ownership matches approved Safe Drive concurrent diff",
+    "backend service ownership matches approved Safe Drive current head policy",
   );
   mustExactGitPaths(["backend/prisma", "prisma"], [], "backend prisma diff empty");
   mustFileSha256("backend/src/routes/commercialCore.js", "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F", "approved commercialCore.js SHA matches");
-  mustFileSha256("backend/src/routes/commercialCoreRoomRoutes.js", "CE6B509004F1BCF5F23DFC4754858BB82361B8528C6174FFD9036A648A73258D", "approved commercialCoreRoomRoutes.js SHA matches");
+  mustFileSha256("backend/src/routes/commercialCoreRoomRoutes.js", "11A0C1B1CDE82470871EBBBD90CEE37F4CAA5C2AD6C25AB7B39586F11CBFDD1F", "approved commercialCoreRoomRoutes.js SHA matches");
   mustFileSha256("backend/src/routes/operationProof.js", "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0", "approved operationProof.js SHA matches");
   mustFileSha256("backend/src/routes/trustQuality.js", "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD", "approved trustQuality.js SHA matches");
   mustFileSha256("backend/src/services/dashboardBulk.js", "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E", "approved dashboardBulk.js SHA matches");

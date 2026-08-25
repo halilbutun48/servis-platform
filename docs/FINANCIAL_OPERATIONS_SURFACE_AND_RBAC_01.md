@@ -2,23 +2,23 @@
 
 ## Purpose
 - Finansal Operasyon ve Maliyet Yönetimi bloğu için resmi scope registry.
-- FINANCIAL OPERATIONS AND COST MANAGEMENT: read-only/preview/karar destek yüzeyi; muhasebe programı değildir.
+- FINANCIAL OPERATIONS AND COST MANAGEMENT: ROOM için read-only/preview, COMPANY için lifecycle + preview yüzeyi; muhasebe programı değildir.
 - Bu milestone maliyet motoru yazmaz, kârlılık hesaplaması yazmaz ve muhasebe programı açmaz.
-- Amaç, ROOM ve COMPANY yüzeylerini read-only/preview/RBAC sınırında bağlamaktır.
+- Amaç, ROOM ve COMPANY yüzeylerini preview/lifecycle/RBAC sınırında bağlamaktır.
 
 ## Product Positioning
 - SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik operasyon kuran, canlı GPS ve kanıtla servisi denetleyen, kaliteye göre hakedişi güvenli önizleyen ve yapay zekâ ile maliyet/saha risklerini önceden yakalayan kurumsal servis operasyon platformudur.
 - Bu blok, ürünün operasyon takip katmanını finansal karar desteğine genişletir.
 - "Muhasebe programı değil; finansal operasyon ve maliyet yönetimi" ayrımı korunur.
 - "Bu milestone’da hesaplama motoru değil, güvenli yüzey ve yetki sınırı hazırlanmıştır."
-- "Veriler read-only/preview olarak gösterilir; fatura, ödeme veya muhasebe kaydı oluşturulmaz."
+- "ROOM verileri read-only/preview olarak gösterilir; COMPANY budget lifecycle server-enforced çalışır; fatura, ödeme veya muhasebe kaydı oluşturulmaz."
 
 ## Role Access Matrix
 | Role | Visible surfaces | Hidden surfaces | Notes |
 | --- | --- | --- | --- |
 | SUPER_ADMIN | finansal operasyon özeti, room profitability, route/vehicle/agreement preview, company budget preview, supplier price/quality compare, reconciliation preview, scenario forecast/savings, accounting export contract | tenant-sensitive ham payloadlar | policy, readiness ve reuse map görünür |
 | ROOM | financial overview, room profitability, quote floor preview, route cost preview, vehicle cost preview, agreement margin preview, supplier compare, reconciliation preview, savings preview | company budget ham detayları, accounting export contract | room-centric read-only önizleme |
-| COMPANY | financial overview, company budget, company service cost, cost per person, supplier compare, reconciliation preview, savings preview | room iç marj ve quote floor ham detayları, accounting export contract | company-centric read-only önizleme |
+| COMPANY | financial overview, company budget lifecycle, company service cost, cost per person, supplier compare, reconciliation preview, savings preview | room iç marj ve quote floor ham detayları, accounting export contract | company-centric lifecycle + preview önizleme |
 | DRIVER | yok | tüm finansal operasyon yüzeyleri | güvenli denial mesajı |
 | PERSONEL | yok | tüm finansal operasyon yüzeyleri | güvenli denial mesajı |
 | PARENT | yok | tüm finansal operasyon yüzeyleri | default deny |
@@ -34,7 +34,7 @@
 | `route_cost_preview` | SUPER_ADMIN, ROOM | current | Km / süre / rota maliyeti önizlemesi |
 | `vehicle_cost_preview` | SUPER_ADMIN, ROOM | current | Araç / sürücü maliyeti önizlemesi |
 | `agreement_margin_preview` | SUPER_ADMIN, ROOM | current | Sözleşme fiyatı ve marj önizlemesi |
-| `company_budget` | SUPER_ADMIN, COMPANY | current | Şirket bütçesi önizlemesi |
+| `company_budget` | SUPER_ADMIN, COMPANY | current | Şirket bütçesi yaşam döngüsü ve önizlemesi |
 | `company_service_cost` | SUPER_ADMIN, COMPANY | current | Servis maliyeti önizlemesi |
 | `cost_per_person` | SUPER_ADMIN, COMPANY | current | Kişi başı maliyet önizlemesi |
 | `supplier_price_quality_compare` | SUPER_ADMIN, ROOM, COMPANY | current | Fiyat / kalite karşılaştırma önizlemesi |
@@ -47,7 +47,7 @@
 - `OPERATIONAL-COST-MODEL-01`
 - `OPERATIONAL-COST-MODEL-01`: `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile yaşar.
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`
-- `COMPANY-BUDGET-AND-SERVICE-COST-01`: `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md` ve `backend/src/finance/companyBudgetAndServiceCost.js` ile yaşar; company budget ve service cost preview katmanını read-only tutar.
+- `COMPANY-BUDGET-AND-SERVICE-COST-01`: `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`, `backend/src/finance/companyBudgetAndServiceCost.js` ve `backend/src/services/financialOperationsLifecycle.js` ile yaşar; company budget lifecycle + service cost preview katmanını bağlar.
 - `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01`
 - `COST-SCENARIO-FORECAST-AND-SAVINGS-01`
 - `SEFER-ABI-COST-ANALYSIS-ASSISTANT-01`
@@ -174,9 +174,9 @@
 - "Bu ay maliyet neden arttı?" gibi sorular sonraki cost assistant milestone’una bırakılır.
 
 ## UI / Surface Notes
-- Eğer web mimarisi izin verirse ROOM ve COMPANY için yalnızca minimal read-only shell/card açılır.
+- Eğer web mimarisi izin verirse ROOM için minimal preview shell/card, COMPANY için lifecycle + preview shell/card açılır.
 - Yetkisiz durumda net Türkçe RBAC mesajı gösterilir.
-- UI metinleri "Finansal Operasyon ve Maliyet Yönetimi", "muhasebe programı değildir", "read-only/preview/karar destek" çizgisini korur.
+- UI metinleri "Finansal Operasyon ve Maliyet Yönetimi", "muhasebe programı değildir", "preview/lifecycle/karar destek" çizgisini korur.
 - UI hiçbir şekilde işlem yapılmış gibi iddia eden ifadeler kullanmaz.
 
 ## Validation Contract
@@ -206,7 +206,7 @@
 - No payment execution.
 - Tenant isolation kept.
 - RBAC kept.
-- ROOM and COMPANY visible surfaces are read-only/preview only.
+- ROOM visible surfaces are read-only/preview only; COMPANY budget surface includes lifecycle actions.
 - SUPER_ADMIN visible surfaces cover the full registry.
 - DRIVER / PERSONEL denied surfaces stay empty.
 

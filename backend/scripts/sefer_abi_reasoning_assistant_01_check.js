@@ -18,6 +18,7 @@ import {
   mustNoDiff as sharedMustNoDiff,
   mustNoDiffExcept as sharedMustNoDiffExcept,
   mustDiffEmptyOrExactlyWithIdentity as sharedMustDiffEmptyOrExactlyWithIdentity,
+  mustStatusEmptyOrExactlyWithIdentity as sharedMustStatusEmptyOrExactlyWithIdentity,
   mustNoStagedPrefix as sharedMustNoStagedPrefix,
 } from './lib/guardGitScope.js';
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
@@ -33,7 +34,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, '../..');
-const CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => !path.startsWith('backend/src/routes/commercialCore') || path === 'backend/src/routes/commercialCore.js');
+const CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith('backend/src/routes/') || path.startsWith('backend/src/services/'));
 
 const helperRel = 'backend/src/ai/chat/seferAbiReasoningAssistant.js';
 const docRel = 'docs/SEFER_ABI_REASONING_ASSISTANT_01.md';
@@ -104,7 +105,7 @@ function mustNoDiffExcept(paths, allowedFiles, label) {
   return sharedMustNoDiffExcept(paths, allowedFiles, label);
 }
 function mustDiffEmptyOrExactlyWithIdentity(paths, allowedFiles, label) {
-  return sharedMustDiffEmptyOrExactlyWithIdentity(paths, allowedFiles, label);
+  return sharedMustStatusEmptyOrExactlyWithIdentity(paths, allowedFiles, label);
 }
 function mustNoStagedPrefix(names, prefixes, label) {
   return sharedMustNoStagedPrefix(names, prefixes, label);

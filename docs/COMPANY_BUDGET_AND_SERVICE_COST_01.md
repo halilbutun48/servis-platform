@@ -1,20 +1,22 @@
 # COMPANY-BUDGET-AND-SERVICE-COST-01
 
 ## Purpose
-- Finansal Operasyon ve Maliyet Yönetimi bloğundaki company-centric read-only preview milestone.
-- Amaç, COMPANY için bütçe, servis maliyeti, kişi başı maliyet ve tedarikçi karşılaştırmasını güvenli önizleme olarak göstermek.
+- Finansal Operasyon ve Maliyet Yönetimi bloğundaki company-centric lifecycle + preview milestone.
+- Amaç, COMPANY için bütçe yaşam döngüsünü, servis maliyeti, kişi başı maliyet ve tedarikçi karşılaştırmasını explainable preview ile birlikte göstermek.
 - Bu milestone muhasebe programı değildir.
-- Bu milestone room iç marj, quote floor, dispatch apply, route apply veya write-action açmaz.
+- Bu milestone room iç marj, quote floor, dispatch apply, route apply veya payment/accounting execute açmaz.
 
 ## Scope
-- COMPANY yüzeyi: budget, service cost, cost per person, supplier compare, empty states.
+- COMPANY yüzeyi: budget lifecycle, service cost, cost per person, supplier compare, empty states.
+- Budget plan lifecycle: create, edit, draft persistence, save, reload, submit, approve, activate, archive.
 - ROOM yüzeyi: room profitability ve quote floor özel kalır; COMPANY tarafına taşınmaz.
 - Preview sonucu karar destek amaçlıdır.
-- Çıktı read-only/preview/karar destek olarak kalır.
+- Çıktı lifecycle + preview/karar destek olarak kalır.
 
 ## Reuse Map
 - `backend/src/finance/companyBudgetAndServiceCost.js`
 - `backend/src/finance/financialOperationsScope.js`
+- `backend/src/services/financialOperationsLifecycle.js`
 - `backend/src/routes/companyOverview.js`
 - `web/src/panels/shared/FinancialOperationsPanel.jsx`
 - `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md`
@@ -22,8 +24,8 @@
 - `docs/PRIMER_SSOT.md`
 - `docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md`
 
-## No Write-Action Boundary
-- Write-action yok.
+## Lifecycle Boundary
+- Budget plan write-action var; server-enforced lifecycle ile çalışır.
 - payment/hakediş execute yok.
 - invoice create/update/delete yok.
 - accounting posting yok.
@@ -46,6 +48,7 @@
 - `check:companybudgetandservicecost01`
 - `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`
 - `backend/src/finance/companyBudgetAndServiceCost.js`
+- `backend/src/services/financialOperationsLifecycle.js`
 - `backend/src/routes/companyOverview.js`
 - `web/src/panels/shared/FinancialOperationsPanel.jsx`
 - `package.json`
@@ -63,7 +66,8 @@
 - debug.log absent
 
 ## Validation Notes
-- COMPANY preview read-only olarak çalışır.
+- COMPANY budget lifecycle + preview server-authoritative çalışır.
+- Draft persistence, reload ve versioned submit/approve/activate/archive akışı vardır.
 - Budget ve service cost birlikte görünür.
 - Tedarikçi karşılaştırması otomatik seçim yapmaz.
 - Eksik veri varsa empty state gösterilir.

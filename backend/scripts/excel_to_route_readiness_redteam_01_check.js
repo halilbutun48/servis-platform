@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { BATCH10_DOC_WORKTREE_CLOSURE_PATHS, mustDiffEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { BATCH10_DOC_WORKTREE_CLOSURE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from './lib/guardGitScope.js';
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,7 +35,11 @@ const redteamTrackedCleanPaths = [
   'backend/scripts/lib/guardSmokeEvidence.js',
   'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
   ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS.filter(
-    (path) => path !== 'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md'
+    (path) =>
+      path !== 'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md' &&
+      path !== 'docs/PRIMER_SSOT.md' &&
+      path !== 'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md' &&
+      path !== 'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md'
   ),
   'backend/scripts/current_head_scope_policy_01_check.js',
 ];
@@ -42,19 +47,12 @@ const redteamAuthorizedFollowupPaths = [
   'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
   'backend/scripts/lib/currentHeadScopePolicy.js',
   'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md',
+  'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md',
+  'docs/PRIMER_SSOT.md',
+  'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md',
+  'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md',
 ];
-const exactApprovedConcurrentCanonicalEntries = [
-  { path: 'backend/src/routes/admin.js', sha256: '61A3D7CF98653E6E413E787BCBFD9D8DD9AECE77A7663DCA78E9CE446D2C5DA4' },
-  { path: 'backend/src/routes/agreements.js', sha256: '90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A' },
-  { path: 'backend/src/routes/auth.js', sha256: 'A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3' },
-  { path: 'backend/src/routes/companyOverview.js', sha256: 'A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB' },
-  { path: 'backend/src/routes/dashboardBulk.js', sha256: 'C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F' },
-  { path: 'backend/src/routes/offers.js', sha256: '40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649' },
-  { path: 'backend/src/routes/public.js', sha256: '5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23' },
-  { path: 'backend/src/services/dashboardBulk.js', sha256: 'E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E' },
-  { path: 'backend/src/routes/shifts/company.js', sha256: '19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0' },
-  { path: 'backend/src/services/companyShiftMutationTail.js', sha256: 'FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78' },
-];
+const exactApprovedConcurrentCanonicalEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
@@ -628,22 +626,23 @@ async function main() {
   if (kvkkCount < 10) fail(`expected at least 10 KVKK / cross-org cases, saw ${kvkkCount}`);
   if (hallucinationCount < 10) fail(`expected at least 10 hallucination / overclaim cases, saw ${hallucinationCount}`);
 
-  mustDiffEmptyOrExactlyWithIdentity(
-    ['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'],
+  mustStatusEmptyOrExactlyWithIdentity(
+    ['backend/src/routes', 'backend/src/services'],
     [
       ...exactApprovedConcurrentCanonicalEntries,
-       { path: 'backend/src/routes/commercialCore.js', sha256: '14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F' },
-      { path: 'backend/src/routes/operationProof.js', sha256: 'E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0' },
-      { path: 'backend/src/routes/trustQuality.js', sha256: 'FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD' },
-      { path: 'backend/src/services/qualityPaymentBridgeService.js', sha256: '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83' },
     ],
-    'backend route/service/schema and Prisma diff stays empty'
+    'backend route/service status stays current-head approved'
+  );
+  mustDiffEmptyOrExactlyWithIdentity(
+    ['backend/prisma', 'prisma'],
+    [],
+    'backend prisma diff stays empty'
   );
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
   mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', '6992AC173A900820A62F5EC3228F3279E29F0E2C42261EBE3A96CD9B36055141', 'guard smoke evidence helper SHA matches');
   mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', 'A2937E28340E505084041529D1798ED01C5A0D2F90DF4D4BD8FEBDAA146FE20B', 'premium smoke check SHA matches');
   mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F', 'current head scope policy check SHA matches');
-  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', 'E5716C9033F3834280709467A62D77CC6AFCBCBDA55AEF825B3CE69761F45D19', 'current head scope policy manifest SHA matches');
+  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', '3D5222A95430F3099E5A120EFAEC6AB3FA9A31B926D320C56CB6219E28F1EDFC', 'current head scope policy manifest SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.posix.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);

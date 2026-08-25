@@ -139,7 +139,9 @@ function assertCommandOutputEmpty(args, label) {
 const docPath = 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md';
 const helperPath = 'backend/src/finance/companyBudgetAndServiceCost.js';
 const routePath = 'backend/src/routes/companyOverview.js';
+const lifecycleRoutePath = 'backend/src/routes/companyBudgetLifecycleRoutes.js';
 const panelPath = 'web/src/panels/shared/FinancialOperationsPanel.jsx';
+const companyPanelPath = 'web/src/panels/shared/FinancialOperationsCompanyPreview.jsx';
 const scopePath = 'backend/src/finance/financialOperationsScope.js';
 const financialSurfaceDocPath = 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md';
 const packagePath = 'package.json';
@@ -154,7 +156,9 @@ function main() {
 const docText = read(docPath);
 const helperText = read(helperPath);
 const routeText = read(routePath);
+const lifecycleRouteText = read(lifecycleRoutePath);
 const panelText = read(panelPath);
+const companyPanelText = read(companyPanelPath);
 const scopeText = read(scopePath);
 const financialSurfaceDocText = read(financialSurfaceDocPath);
 const packageText = read(packagePath);
@@ -264,7 +268,9 @@ function assertStaticContract() {
   check(exists(docPath), 'doc exists');
   check(exists(helperPath), 'helper exists');
   check(exists(routePath), 'route exists');
+  check(exists(lifecycleRoutePath), 'lifecycle route exists');
   check(exists(panelPath), 'panel exists');
+  check(exists(companyPanelPath), 'company panel exists');
   check(exists(scopePath), 'scope helper exists');
   check(exists(financialSurfaceDocPath), 'financial surface doc exists');
   check(exists(harnessCheckPath), 'harness check exists');
@@ -272,10 +278,11 @@ function assertStaticContract() {
 
   assertFragments(docText, [
     '# COMPANY-BUDGET-AND-SERVICE-COST-01',
-    'Finansal Operasyon ve Maliyet Yönetimi bloğundaki company-centric read-only preview milestone.',
+    'Finansal Operasyon ve Maliyet Yönetimi bloğundaki company-centric lifecycle + preview milestone.',
     'check:companybudgetandservicecost01',
     'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md',
     'backend/src/finance/companyBudgetAndServiceCost.js',
+    'backend/src/services/financialOperationsLifecycle.js',
     'backend/src/routes/companyOverview.js',
     'web/src/panels/shared/FinancialOperationsPanel.jsx',
     'package.json',
@@ -288,10 +295,10 @@ function assertStaticContract() {
     'docs/PRIMER_SSOT.md',
     'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md',
     'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md',
-    'No Write-Action Boundary',
+    'Lifecycle Boundary',
     'Next Milestone',
     'HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01',
-    'read-only/preview/karar destek',
+    'lifecycle + preview/karar destek',
     'room iç marj, quote floor',
   ], 'doc');
 
@@ -336,9 +343,11 @@ function assertStaticContract() {
 
   assertFragments(routeText, [
     '../finance/companyBudgetAndServiceCost.js',
+    './companyBudgetLifecycleRoutes.js',
     'buildCompanyBudgetAndServiceCostPreview',
     'buildFinancialOperationsCompanyKindDeniedPreview',
-    'budgetInputs: req.query || {}',
+    'getCompanyBudgetPlanOverview',
+    'buildCompanyBudgetPlanPreviewInputs(',
     'serviceCostInputs: req.query || {}',
     'supplierInputs: req.query || {}',
     'previewInputs: req.query || {}',
@@ -348,18 +357,76 @@ function assertStaticContract() {
   assertMissingFragments(routeText, [
     'roomProfitabilityAndQuoteFloor.js',
     'buildRoomProfitabilityAndQuoteFloorPreview',
+    'saveCompanyBudgetPlanDraft',
+    'submitCompanyBudgetPlan',
+    'approveCompanyBudgetPlan',
+    'activateCompanyBudgetPlan',
+    'archiveCompanyBudgetPlan',
+    '/financial-operations/budget-plans/current',
+    '/financial-operations/budget-plans',
+    '/financial-operations/budget-plans/:id/submit',
+    '/financial-operations/budget-plans/:id/approve',
+    '/financial-operations/budget-plans/:id/activate',
+    '/financial-operations/budget-plans/:id/archive',
     'payment execute',
     'invoice create',
     'accounting posting',
   ], 'route');
 
+  assertFragments(lifecycleRouteText, [
+    '../services/financialOperationsLifecycle.js',
+    'buildFinancialOperationsCompanyKindDeniedPreview',
+    'getCompanyBudgetPlanOverview',
+    'saveCompanyBudgetPlanDraft',
+    'submitCompanyBudgetPlan',
+    'approveCompanyBudgetPlan',
+    'activateCompanyBudgetPlan',
+    'archiveCompanyBudgetPlan',
+    '/financial-operations/budget-plans/current',
+    '/financial-operations/budget-plans',
+    '/financial-operations/budget-plans/:id/submit',
+    '/financial-operations/budget-plans/:id/approve',
+    '/financial-operations/budget-plans/:id/activate',
+    '/financial-operations/budget-plans/:id/archive',
+    'attachCompanyBudgetLifecycleRoutes',
+  ], 'lifecycle route');
+  assertMissingFragments(lifecycleRouteText, [
+    'roomProfitabilityAndQuoteFloor.js',
+    'buildRoomProfitabilityAndQuoteFloorPreview',
+    'payment execute',
+    'invoice create',
+    'accounting posting',
+  ], 'lifecycle route');
+
   assertFragments(panelText, [
+    'FinancialOperationsCompanyPreview',
+    'Finansal Operasyonlar',
+    'read-only/preview',
+    'Quote floor',
+    'Gelişmiş maliyet girdileri',
+    'Manuel maliyet tabanı',
+    'Hedef katkı bps',
+    'Risk rezervi bps',
+    'Servis mesafesi (km)',
+    'Rota süresi (dk)',
+    'Araç kapasitesi',
+    'Yakıt tüketimi (L/100km)',
+    'Sürücü temel maliyeti',
+    'Aylık araç kira maliyeti',
+  ], 'panel');
+
+  assertFragments(companyPanelText, [
     'Bütçe ve Servis Maliyeti',
     'Tedarikçi Karşılaştırması',
     'CompanyComparisonBlock',
-    'renderCompanyFinancialPreview',
     'preview?.supplierComparisonSummaryText',
-    'read-only/preview',
+    'Bütçe yaşam döngüsü',
+    'Bütçe girdileri',
+    'Taslak kaydet',
+    'Gönder',
+    'Onayla',
+    'Aktive et',
+    'Arşivle',
     'Yenile',
     'Dönem Bütçesi',
     'Gerçekleşen Servis Harcaması',
@@ -367,7 +434,7 @@ function assertStaticContract() {
     'Vardiya Başı Maliyet',
     'Sefer Başı Maliyet',
     'Gün Başı Maliyet',
-  ], 'panel');
+  ], 'company panel');
 
   assertFragments(scopeText, [
     'COMPANY-BUDGET-AND-SERVICE-COST-01',
@@ -378,11 +445,11 @@ function assertStaticContract() {
     'hakedis_invoice_reconciliation_preview',
     'scenario_forecast_savings',
     'accounting_export_contract',
-    'Company tarafında bütçe, servis maliyeti ve reconciliation önizleme görünür.',
+    'Company tarafında bütçe yaşam döngüsü, servis maliyeti ve reconciliation önizleme görünür.',
     'Room iç marj ve teklif tabanı ham detayları kapalıdır.',
     'no write-action',
     'tenant isolation preserved',
-    'read-only preview only',
+    'preview surfaces plus company budget lifecycle',
   ], 'scope');
 
   assertFragments(financialSurfaceDocText, [
@@ -390,12 +457,13 @@ function assertStaticContract() {
     'check:companybudgetandservicecost01',
     'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md',
     'backend/src/finance/companyBudgetAndServiceCost.js',
-    'company budget preview',
+    'backend/src/services/financialOperationsLifecycle.js',
+    'company budget lifecycle',
     'company service cost',
     'cost per person',
     'supplier price/quality compare',
     'room iç marj ve quote floor ham detayları',
-    'company-centric read-only önizleme',
+    'company-centric lifecycle + preview önizleme',
   ], 'financial surface doc');
 
   assertFragments(packageText, [
@@ -441,7 +509,9 @@ function assertStaticContract() {
   check(fileLines(docPath) < 1000, 'doc stays under 1000 lines', String(fileLines(docPath)));
   check(fileLines(helperPath) < 1000, 'helper stays under 1000 lines', String(fileLines(helperPath)));
   check(fileLines(routePath) < 1000, 'route stays under 1000 lines', String(fileLines(routePath)));
+  check(fileLines(lifecycleRoutePath) < 1000, 'lifecycle route stays under 1000 lines', String(fileLines(lifecycleRoutePath)));
   check(fileLines(panelPath) < 1000, 'panel stays under 1000 lines', String(fileLines(panelPath)));
+  check(fileLines(companyPanelPath) < 1000, 'company panel stays under 1000 lines', String(fileLines(companyPanelPath)));
   check(fileLines(scopePath) < 1000, 'scope stays under 1000 lines', String(fileLines(scopePath)));
   check(fileLines(financialSurfaceDocPath) < 1000, 'financial surface doc stays under 1000 lines', String(fileLines(financialSurfaceDocPath)));
   mustNoDiffExceptWithIdentity(['backend/src/services'], [...financeOwnedServiceEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF], 'backend/src/services diff limited to finance-owned runtime paths');
@@ -911,15 +981,17 @@ function assertStaticContract() {
   assertFragments(JSON.stringify(derivedServicePreview), ['"status":"within_budget"', '"companyVisibleServiceSpendMinor":135000', '"serviceCostSource":"delivered_shift_count_x_per_shift_price"', '"deliveredShiftCount":3', '"deliveredTripCount":6', '"deliveredServiceDayCount":9', '"supplierComparisonState":"balanced"', '"supplierComparisons":[', '"valueBand":"balanced"', '"costPerShiftMinor":45000', '"costPerTripMinor":22500', '"costPerServiceDayMinor":15000'], 'derived service serialized');
   assertFragments(JSON.stringify(incompleteSupplierPreview), ['"status":"within_budget"', '"supplierComparisonState":"incomplete"', '"supplierComparisons":[]', '"companyVisibleServiceSpendMinor":180000', '"supplierComparisonSummaryText":"Tedarikçi karşılaştırması için veri bekleniyor; otomatik seçim yapılmadı."'], 'incomplete supplier serialized');
   assertFragments(JSON.stringify(deniedPreview), ['"allowed":false', '"deniedByCompanyKind":true', '"companyBudget":null', '"companyServiceCost":null', '"supplierComparisons":[]', '"unitCosts":{}', '"nextSafeStep":"HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01"', '"summaryText":"Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan read-only/preview olarak kalır."'], 'denied preview serialized');
-  assertFragments(JSON.stringify(completePreview.surface), ['"exists":true', '"allowed":true', '"role":"COMPANY"', '"surfaceId":"company_budget"', '"title":"Company budget preview"', '"summaryText":"Şirket bütçesi için read-only karar destek yüzeyi."', '"rbacText":"Company tarafında bütçe, servis maliyeti ve reconciliation önizleme görünür."', '"nextAction":"Bütçe ve servis maliyeti kartlarını kontrol et."', '"previewOnly":true', '"phase":"current"', '"nextMilestone":"COMPANY-BUDGET-AND-SERVICE-COST-01"', '"reuseCapabilities":["Dashboard maliyet kartları","Sefer Abi maliyet cevapları"]', '"excludedScope":["budget write","accounting posting","ERP integration"]'], 'complete surface serialized');
-  assertFragments(JSON.stringify(completePreview.access), ['"role":"COMPANY"', '"summaryText":"Company tarafında bütçe, servis maliyeti ve reconciliation önizleme görünür."', '"denialText":"Room iç marj ve teklif tabanı ham detayları kapalıdır."', '"nextAction":"Bütçe ve servis maliyeti kartlarını kontrol et."', '"tenantIsolationText":"Tenant isolation korunur; ham veri role göre daraltılır."', '"visibleSurfaceIds":["financial_overview","company_budget","company_service_cost","cost_per_person","supplier_price_quality_compare","hakedis_invoice_reconciliation_preview","scenario_forecast_savings"]', '"visibleSurfaceTitles":["Finansal operasyon özeti","Company budget preview","Company service cost preview","Cost per person preview","Supplier price / quality compare","Hakediş / invoice reconciliation preview","Scenario forecast / savings preview"]', '"policyNotes":["room internal margin hidden","supplier credential hidden"]'], 'complete access serialized');
+  assertFragments(JSON.stringify(completePreview.surface), ['"exists":true', '"allowed":true', '"role":"COMPANY"', '"surfaceId":"company_budget"', '"title":"Company budget preview"', '"summaryText":"Şirket bütçesi yaşam döngüsü ve explainable preview yüzeyi."', '"rbacText":"Company tarafında bütçe yaşam döngüsü, servis maliyeti ve reconciliation önizleme görünür."', '"nextAction":"Bütçe yaşam döngüsü kartlarını kontrol et."', '"previewOnly":false', '"phase":"current"', '"nextMilestone":"COMPANY-BUDGET-AND-SERVICE-COST-01"', '"reuseCapabilities":["Dashboard maliyet kartları","Sefer Abi maliyet cevapları"]', '"excludedScope":["accounting posting","ERP integration"]'], 'complete surface serialized');
+  assertFragments(JSON.stringify(completePreview.access), ['"role":"COMPANY"', '"summaryText":"Company tarafında bütçe yaşam döngüsü, servis maliyeti ve reconciliation önizleme görünür."', '"denialText":"Room iç marj ve teklif tabanı ham detayları kapalıdır."', '"nextAction":"Bütçe yaşam döngüsü kartlarını kontrol et."', '"tenantIsolationText":"Tenant isolation korunur; ham veri role göre daraltılır."', '"visibleSurfaceIds":["financial_overview","company_budget","company_service_cost","cost_per_person","supplier_price_quality_compare","hakedis_invoice_reconciliation_preview","scenario_forecast_savings"]', '"visibleSurfaceTitles":["Finansal operasyon özeti","Company budget preview","Company service cost preview","Cost per person preview","Supplier price / quality compare","Hakediş / invoice reconciliation preview","Scenario forecast / savings preview"]', '"policyNotes":["room internal margin hidden","supplier credential hidden"]'], 'complete access serialized');
   assertFragments(JSON.stringify(completePreview.tenantIsolation), ['"companyId":21', '"role":"COMPANY"', '"scope":"COMPANY"', '"tenantIsolationText":"Tenant isolation korunur; ham veri role göre daraltılır."'], 'complete tenantIsolation serialized');
   assertFragments(JSON.stringify(completePreview.serviceCostComponents), ['"key":"actual_service_spend"', '"label":"Gerçekleşen servis harcaması"', '"amountMinor":180000', '"source":"actualServiceSpendMinor"', '"key":"agreement_price"', '"label":"Agreement price"', '"source":"agreementPriceMinor"', '"key":"offer_price"', '"label":"Offer price"', '"source":"offerPriceMinor"'], 'complete serviceCostComponents serialized');
 
   check(fileLines(docPath) < 1000, 'doc remains under 1000 lines', String(fileLines(docPath)));
   check(fileLines(helperPath) < 1000, 'helper remains under 1000 lines', String(fileLines(helperPath)));
   check(fileLines(routePath) < 1000, 'route remains under 1000 lines', String(fileLines(routePath)));
+  check(fileLines(lifecycleRoutePath) < 1000, 'lifecycle route remains under 1000 lines', String(fileLines(lifecycleRoutePath)));
   check(fileLines(panelPath) < 1000, 'panel remains under 1000 lines', String(fileLines(panelPath)));
+  check(fileLines(companyPanelPath) < 1000, 'company panel remains under 1000 lines', String(fileLines(companyPanelPath)));
   check(fileLines(scopePath) < 1000, 'scope remains under 1000 lines', String(fileLines(scopePath)));
   check(fileLines(financialSurfaceDocPath) < 1000, 'financial surface doc remains under 1000 lines', String(fileLines(financialSurfaceDocPath)));
 

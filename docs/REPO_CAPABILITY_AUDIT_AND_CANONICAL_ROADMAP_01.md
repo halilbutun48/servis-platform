@@ -148,7 +148,7 @@ Not:
 - Kanonik yüzey kaydı: `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md`, `backend/src/finance/financialOperationsScope.js`.
 - `OPERATIONAL-COST-MODEL-01` `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile takip edilir; pure deterministic read-only cost modeldir.
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01` `check:roomprofitabilityandquotefloor01`, `docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md` ve `backend/src/finance/roomProfitabilityAndQuoteFloor.js` ile takip edilir; room profitability ve quote floor preview katmanını yeniden kullanır.
-- `COMPANY-BUDGET-AND-SERVICE-COST-01` `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md` ve `backend/src/finance/companyBudgetAndServiceCost.js` ile takip edilir; company budget ve service cost preview katmanını read-only tutar.
+- `COMPANY-BUDGET-AND-SERVICE-COST-01` `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`, `backend/src/finance/companyBudgetAndServiceCost.js` ve `backend/src/services/financialOperationsLifecycle.js` ile takip edilir; company budget lifecycle + service cost preview katmanını bağlar.
 - `PROACTIVE-COPILOT-01` harness içinde açıkça `MISSING_FUTURE_MILESTONE` olarak işaretli.
 - `PROACTIVE-COPILOT-NEXT-BEST-ACTION-01` docs-only companion milestone'dır; `docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md` ile yaşar ve `COPILOT-NEXT-BEST-ACTION-01` ile aynı şey değildir.
 - `VOICE-COPILOT-ROLE-ASSISTANT-01` için web tarafında text-to-speech / voice readout yardımcı kodu mevcut olsa da, dedicated check script ve tamamlanmış voice-command execution zinciri görünmüyor.

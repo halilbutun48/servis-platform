@@ -13,6 +13,10 @@ const roleKey = (value) => normalizeText(value).toUpperCase() || 'DEFAULT';
 
 const surfaceKey = (value) => normalizeText(value);
 
+const WRITE_ENABLED_SURFACE_IDS = Object.freeze(new Set([
+  'company_budget',
+]));
+
 const freezeSurface = (surface) => Object.freeze({
   ...surface,
   visibleToRoles: Object.freeze([...(surface.visibleToRoles || [])]),
@@ -37,7 +41,7 @@ export const FINANCIAL_OPERATIONS_MILESTONES = Object.freeze([
 ]);
 
 export const FINANCIAL_OPERATIONS_SCOPE_BOUNDARY = Object.freeze([
-  'read-only preview only',
+  'preview surfaces plus company budget lifecycle',
   'RBAC enforced',
   'tenant isolation preserved',
   'no write-action',
@@ -143,13 +147,13 @@ export const FINANCIAL_OPERATIONS_SURFACES = Object.freeze([
   freezeSurface({
     id: 'company_budget',
     title: 'Company budget preview',
-    summary: 'Şirket bütçesi için read-only karar destek yüzeyi.',
+    summary: 'Şirket bütçesi yaşam döngüsü ve explainable preview yüzeyi.',
     visibleToRoles: ['SUPER_ADMIN', 'COMPANY'],
     phase: 'current',
     nextMilestone: 'COMPANY-BUDGET-AND-SERVICE-COST-01',
     reuseCapabilities: ['Dashboard maliyet kartları', 'Sefer Abi maliyet cevapları'],
-    excludedScope: ['budget write', 'accounting posting', 'ERP integration'],
-    readOnlyActions: ['budget', 'overview', 'summary', 'preview'],
+    excludedScope: ['accounting posting', 'ERP integration'],
+    readOnlyActions: ['overview', 'summary', 'preview'],
   }),
   freezeSurface({
     id: 'company_service_cost',
@@ -283,9 +287,9 @@ export const FINANCIAL_OPERATIONS_ROLE_ACCESS = Object.freeze({
   ),
   COMPANY: buildRoleAccess(
     'COMPANY',
-    'Company tarafında bütçe, servis maliyeti ve reconciliation önizleme görünür.',
+    'Company tarafında bütçe yaşam döngüsü, servis maliyeti ve reconciliation önizleme görünür.',
     'Room iç marj ve teklif tabanı ham detayları kapalıdır.',
-    'Bütçe ve servis maliyeti kartlarını kontrol et.',
+    'Bütçe yaşam döngüsü kartlarını kontrol et.',
     ['room internal margin hidden', 'supplier credential hidden'],
   ),
   DRIVER: buildRoleAccess(
@@ -373,6 +377,7 @@ export function describeFinancialSurface(surface, role = 'DEFAULT') {
     });
   }
   const allowed = access.visibleSurfaceIds.includes(entry.id);
+  const previewOnly = !WRITE_ENABLED_SURFACE_IDS.has(entry.id);
   return Object.freeze({
     exists: true,
     allowed,
@@ -382,7 +387,7 @@ export function describeFinancialSurface(surface, role = 'DEFAULT') {
     summaryText: entry.summary,
     rbacText: allowed ? access.summaryText : access.denialText,
     nextAction: allowed ? access.nextAction : access.nextAction,
-    previewOnly: true,
+    previewOnly,
     phase: entry.phase,
     nextMilestone: entry.nextMilestone,
     reuseCapabilities: entry.reuseCapabilities,
@@ -409,14 +414,15 @@ export function buildFinancialOperationsEmptyState(role, surface) {
   if (!description.allowed) {
     return buildFinancialOperationsRbacDenial(role, surface);
   }
+  const readOnly = isFinancialOperationReadOnlyAction(description.surfaceId);
   return Object.freeze({
     title: description.title,
     allowed: true,
     role: roleKey(role),
     surfaceId: description.surfaceId,
-    summaryText: `${description.title} için henüz veri yok. Bu yüzey sadece read-only/preview olarak hazırlanır.`,
+    summaryText: `${description.title} için henüz veri yok. Bu yüzey ${readOnly ? 'sadece read-only/preview olarak' : 'lifecycle ve preview olarak'} hazırlanır.`,
     nextAction: `Sonraki aşama: ${FINANCIAL_OPERATIONS_NEXT_MILESTONE}.`,
-    readOnly: true,
+    readOnly,
     tenantIsolationText: getFinancialOperationsAccessForRole(role).tenantIsolationText,
   });
 }
@@ -641,7 +647,6 @@ const READ_ONLY_ACTION_KEYWORDS = Object.freeze([
   'route_cost',
   'vehicle_cost',
   'agreement_margin',
-  'budget',
   'service_cost',
   'cost_per_person',
   'supplier_price_quality_compare',
@@ -661,6 +666,7 @@ export function isFinancialOperationReadOnlyAction(action) {
   const normalized = normalizeText(action);
   if (!normalized) return false;
   if (isAccountingExecutionBlocked(normalized)) return false;
+  if (WRITE_ENABLED_SURFACE_IDS.has(normalized)) return false;
   if (SURFACE_INDEX.has(normalized)) return true;
   return READ_ONLY_ACTION_KEYWORDS.some((needle) => normalized.includes(normalizeText(needle)));
 }

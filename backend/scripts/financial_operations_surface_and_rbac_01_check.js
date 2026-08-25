@@ -216,7 +216,6 @@ const readOnlyActionCases = [
   'route_cost_preview',
   'vehicle_cost_preview',
   'agreement_margin_preview',
-  'company_budget',
   'company_service_cost',
   'cost_per_person',
   'supplier_price_quality_compare',
@@ -264,7 +263,7 @@ function main() {
   check(textHas(docText, 'FINANCIAL OPERATIONS AND COST MANAGEMENT'), 'doc title present');
   check(textHas(docText, 'Finansal Operasyon ve Maliyet Yönetimi'), 'doc product name present');
   check(textHas(docText, 'muhasebe programı değildir'), 'doc excludes accounting-program framing');
-  check(textHas(docText, 'read-only/preview/karar destek'), 'doc read-only decision-support wording present');
+  check(textHas(docText, 'preview/lifecycle/RBAC'), 'doc preview/lifecycle wording present');
   check(textHas(docText, 'Role Access Matrix'), 'doc role access matrix heading present');
   check(textHas(docText, 'Surface Registry'), 'doc surface registry heading present');
   check(textHas(docText, 'Future Milestone Mapping'), 'doc future milestone mapping heading present');
@@ -335,7 +334,7 @@ function main() {
   check(scope.isAccountingExecutionBlocked('backend write route') === true, 'backend write route is blocked');
   check(scope.isFinancialOperationReadOnlyAction('financial_overview') === true, 'financial overview is read-only');
   check(scope.isFinancialOperationReadOnlyAction('room_profitability') === true, 'room profitability is read-only');
-  check(scope.isFinancialOperationReadOnlyAction('company_budget') === true, 'company budget is read-only');
+  check(scope.isFinancialOperationReadOnlyAction('company_budget') === false, 'company budget is lifecycle-enabled');
   check(scope.isFinancialOperationReadOnlyAction('scenario_forecast_savings') === true, 'scenario forecast savings is read-only');
   check(scope.isFinancialOperationReadOnlyAction('accounting_export_contract') === true, 'accounting export contract is read-only');
   check(scope.isFinancialOperationReadOnlyAction('payment execute') === false, 'payment execute is not read-only');
@@ -360,6 +359,7 @@ function main() {
     check(describedSuper.allowed === true, `super admin can view ${surfaceId}`);
     check(describedRoom.exists === true, `room describe exists for ${surfaceId}`);
     check(describedCompany.exists === true, `company describe exists for ${surfaceId}`);
+    check(describedCompany.previewOnly === (surfaceId !== 'company_budget'), `company previewOnly flag for ${surfaceId}`);
     check(scope.canViewFinancialSurface('SUPER_ADMIN', surfaceId) === true, `super admin access for ${surfaceId}`);
     check(scope.canViewFinancialSurface('ROOM', surfaceId) === expectedRoleVisibility.ROOM.includes(surfaceId), `room access for ${surfaceId}`);
     check(scope.canViewFinancialSurface('COMPANY', surfaceId) === expectedRoleVisibility.COMPANY.includes(surfaceId), `company access for ${surfaceId}`);
@@ -382,7 +382,7 @@ function main() {
     }
     check(scope.buildFinancialOperationsEmptyState('SUPER_ADMIN', surfaceId).allowed === true, `super admin empty state allowed for ${surfaceId}`);
     check(scope.buildFinancialOperationsEmptyState('ROOM', surfaceId).readOnly === true, `room empty state is read-only for ${surfaceId}`);
-    check(scope.buildFinancialOperationsEmptyState('COMPANY', surfaceId).readOnly === true, `company empty state is read-only for ${surfaceId}`);
+    check(scope.buildFinancialOperationsEmptyState('COMPANY', surfaceId).readOnly === (surfaceId === 'company_budget' ? false : true), `company empty state readOnly flag for ${surfaceId}`);
   }
 
   check(scope.getFinancialOperationsAccessForRole('SUPER_ADMIN').visibleSurfaceIds.length === expectedRoleVisibility.SUPER_ADMIN.length, 'super admin sees all surfaces');
@@ -454,11 +454,14 @@ function main() {
   check(textHas(helperText, 'no ERP live integration'), 'helper blocks ERP integration');
   check(textHas(helperText, 'no DB write'), 'helper blocks DB write');
   check(textHas(helperText, 'no backend write route'), 'helper blocks backend write route');
-  check(textHas(helperText, 'read-only preview only'), 'helper boundary stays preview only');
+  check(textHas(helperText, 'preview surfaces plus company budget lifecycle'), 'helper boundary reflects lifecycle split');
   check(textHas(helperText, 'Next milestone summary'), 'helper next milestone summary present');
   check(textHas(helperText, 'OPERATIONAL-COST-MODEL-01'), 'helper mentions next milestone');
 
-  check(textHas(docText, 'ROOM and COMPANY visible surfaces'), 'doc mentions room/company visibility');
+  check(
+    textHas(docText, 'ROOM visible surfaces are read-only/preview only; COMPANY budget surface includes lifecycle actions.'),
+    'doc mentions room/company visibility'
+  );
   check(textHas(docText, 'SUPER_ADMIN visible surfaces'), 'doc mentions super admin visibility');
   check(textHas(docText, 'DRIVER / PERSONEL denied surfaces'), 'doc mentions driver/personel denial');
   check(textHas(docText, 'No write-action boundary'), 'doc mentions write-action boundary');

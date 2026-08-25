@@ -462,7 +462,7 @@ Kullanılmayacak cümleler:
 - COPILOT-SHIFT-TO-AGREEMENT-PREP-01: offer recommendation sonrası gelen read-only agreement prep companion milestone; `check:copilotshifttoagreementprep01`, `docs/COPILOT_SHIFT_TO_AGREEMENT_PREP_01.md` ve `backend/src/ai/chat/copilotShiftToAgreementPrep.js` ile yaşar; supplier selection, offer accept/reject, supplier contact, RFQ send, agreement/contract execute, dispatch apply, route apply ve provider credential management açmaz.
 - COPILOT-DISPATCH-ACTION-PREP-01: shift sonrası gelen read-only dispatch prep companion milestone; `check:copilotdispatchactionprep01`, `docs/COPILOT_DISPATCH_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotDispatchActionPrep.js` ile yaşar; supplier selection, offer accept/reject, supplier contact, RFQ send, agreement/contract execute, dispatch apply, route apply, driver/vehicle assignment ve provider credential management açmaz.
 - COPILOT-ACTION-PREP-01: dispatch, shift ve human approval için ortak read-only owner pack milestone'u; `check:copilotactionprep01`, `docs/COPILOT_ACTION_PREP_01.md` ve `backend/src/ai/chat/copilotActionPrep.js` ile yaşar; dispatch apply, route apply, driver/vehicle assignment, agreement/contract execute, payment/hakediş ve messaging/email/SMS/push açmaz.
-- FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01: `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md` ve `backend/src/finance/financialOperationsScope.js` ile yaşar; read-only/preview/RBAC sınırını korur, write-action ve muhasebe/program açmaz.
+- FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01: `check:financialoperationssurfaceandrbac01`, `docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md` ve `backend/src/finance/financialOperationsScope.js` ile yaşar; preview/lifecycle/RBAC sınırını korur, write-action ve muhasebe/program açmaz.
 - OPERATIONAL-COST-MODEL-01: `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile yaşar; pure deterministic read-only cost modeldir, write-action ve muhasebe/ERP açmaz.
 
 ### F) FINANSAL OPERASYON VE MALİYET YÖNETİMİ
@@ -475,7 +475,7 @@ Kullanılmayacak cümleler:
 - SEFER-ABI-COST-ANALYSIS-ASSISTANT-01
 - ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`: `check:roomprofitabilityandquotefloor01`, `docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md` ve `backend/src/finance/roomProfitabilityAndQuoteFloor.js` ile yaşar; room profitability, quote floor ve company budget preview katmanını yeniden kullanır.
-- `COMPANY-BUDGET-AND-SERVICE-COST-01`: `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md` ve `backend/src/finance/companyBudgetAndServiceCost.js` ile yaşar; company budget ve service cost preview katmanını read-only tutar.
+- `COMPANY-BUDGET-AND-SERVICE-COST-01`: `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`, `backend/src/finance/companyBudgetAndServiceCost.js` ve `backend/src/services/financialOperationsLifecycle.js` ile yaşar; company budget lifecycle + service cost preview katmanını bağlar.
 - Bu blok, mevcut dynamic savings, hakediş önizleme, kalite/komisyon sinyali, payment preview, CSV export ve Sefer Abi maliyet cevaplarını yeniden kullanır; full muhasebe, e-Fatura, e-Defter veya vergi programı değildir.
 - ROOM ve COMPANY yüzeyleri RBAC ile bağlanır; write-action, payment execute, tahsilat, fatura oluşturma, muhasebe kayıt yazma ve provider credential açmaz.
 

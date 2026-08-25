@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 import {
   CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF,
 } from "./lib/currentHeadScopePolicy.js";
@@ -292,14 +292,7 @@ async function main() {
   const cachedNames = gitCachedNames();
   const registryScripts = productExtensionsChecks.map((step) => step.script);
   const approvedRouteEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
-    entryPath.startsWith("backend/src/routes/") &&
-    ![
-      "backend/src/routes/commercialCoreRoutes.js",
-      "backend/src/routes/commercialCorePaymentRoutes.js",
-      "backend/src/routes/commercialCorePaymentReportsRoutes.js",
-      "backend/src/routes/commercialCoreRoomRoutes.js",
-      "backend/src/routes/commercialCoreRouteData.js",
-    ].includes(entryPath),
+    entryPath.startsWith("backend/src/routes/"),
   );
   const approvedServiceEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
     entryPath.startsWith("backend/src/services/"),
@@ -632,7 +625,8 @@ async function main() {
   });
   mustCondition(riskyApproval.nextReviewStep.includes("İnsan onayı gerekir"), "case 12 human approval remains required");
 
-  mustDiffEmptyOrExactlyWithIdentity(["backend/src/routes", "backend/src/services", "backend/prisma", "prisma"], [...approvedRouteEntries, ...approvedServiceEntries], "backend route/service/schema and Prisma diff stays current-head approved");
+  mustStatusEmptyOrExactlyWithIdentity(["backend/src/routes", "backend/src/services"], [...approvedRouteEntries, ...approvedServiceEntries], "backend route/service status stays current-head approved");
+  mustDiffEmptyOrExactlyWithIdentity(["backend/prisma", "prisma"], [], "backend prisma diff stays empty");
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, "accepted Prisma schema SHA matches");
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);

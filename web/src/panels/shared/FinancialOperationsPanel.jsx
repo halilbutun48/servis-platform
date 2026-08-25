@@ -2,7 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
 import { getApiErrorInfo } from "../../utils/apiContract";
-import { getCompanyFinancialOperationsPreview, getRoomFinancialOperationsPreview } from "../../api";
+import {
+  activateCompanyBudgetPlan,
+  approveCompanyBudgetPlan,
+  archiveCompanyBudgetPlan,
+  createCompanyBudgetPlan,
+  createRoomQuoteFloorDraft,
+  getCompanyFinancialOperationsPreview,
+  getRoomFinancialOperationsPreview,
+  applyRoomQuoteFloorDraft,
+  archiveRoomQuoteFloorDraft,
+  submitCompanyBudgetPlan,
+  updateRoomQuoteFloorDraft,
+  updateCompanyBudgetPlan,
+} from "../../api";
+import FinancialOperationsCompanyPreview from "./FinancialOperationsCompanyPreview";
 
 const INPUT_STYLE = {
   width: "100%",
@@ -27,12 +41,14 @@ function normalizeText(value) {
 }
 
 function formatTRY(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return "-";
   const n = Number(value);
   if (!Number.isFinite(n)) return "-";
   return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(n)} ₺`;
 }
 
 function formatBps(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return "-";
   const n = Number(value);
   if (!Number.isFinite(n)) return "-";
   return `%${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 }).format(n / 100)}`;
@@ -50,6 +66,11 @@ function formatMinutes(value) {
   if (!Number.isFinite(n)) return "-";
   if (n <= 0) return "-";
   return `${Math.round(n)} dk`;
+}
+
+function formatTextOrDash(value) {
+  const text = String(value ?? "").trim();
+  return text || "-";
 }
 
 function MetricCard({ title, value, note, tone = "default" }) {
@@ -85,7 +106,7 @@ function scopeMeta(scope) {
   if (scope === "ROOM") {
     return {
       title: "Finansal Operasyonlar",
-      subtitle: "Oda kârlılığı ve quote floor için read-only preview.",
+      subtitle: "Oda kârlılığı ve quote floor draft yaşam döngüsü.",
       currentLabel: "Mevcut oda teklifi",
       baselineLabel: "Maliyet tabanı",
       resultLabel: "Quote floor",
@@ -96,208 +117,14 @@ function scopeMeta(scope) {
   }
   return {
     title: "Bütçe ve Servis Maliyeti",
-    subtitle: "Şirket tarafı bütçe ve servis maliyeti için read-only preview.",
-    currentLabel: "Mevcut bütçe / teklif",
+    subtitle: "Şirket bütçe planı yaşam döngüsü ve servis maliyeti önizlemesi.",
+    currentLabel: "Mevcut bütçe planı",
     baselineLabel: "Servis maliyeti",
     resultLabel: "Bütçe farkı",
     amountLabel: "Bütçe sinyali",
     amountGapLabel: "Bütçe farkı",
     endpointLabel: "Company preview",
   };
-}
-
-function formatMoney(value, currencyCode = "TRY") {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "-";
-  const suffix = currencyCode === "TRY" ? " ₺" : currencyCode ? ` ${currencyCode}` : "";
-  return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(n)}${suffix}`;
-}
-
-function CompanyComparisonBlock({ comparison, currencyCode }) {
-  if (!comparison) return null;
-  return (
-    <div className="card" style={{ padding: 12, background: "rgba(255,255,255,0.02)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontWeight: 800 }}>{comparison.safeSupplierLabel || comparison.supplierRef || "Tedarikçi"}</div>
-          <div className="muted" style={{ marginTop: 4 }}>
-            {comparison.verifiedSupplierState ? `Durum: ${comparison.verifiedSupplierState}` : "Durum: unknown"}
-          </div>
-        </div>
-        <div className="muted">{comparison.pricePeriod || "-"}</div>
-      </div>
-      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-        <MetricCard title="Fiyat" value={formatMoney(comparison.normalizedPriceMinor, currencyCode)} note="Dönemsel fiyat" />
-        <MetricCard title="Kalite" value={comparison.qualityScore ?? "-"} note="Kalite göstergesi" />
-        <MetricCard title="Güvenilirlik" value={comparison.reliabilityScore ?? "-"} note="Güvenilirlik göstergesi" />
-        <MetricCard title="Kanıt" value={comparison.serviceEvidenceCount ?? "-"} note="Veri / kanıt kapsamı" />
-      </div>
-      <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>
-        {comparison.valueBand ? `Value band: ${comparison.valueBand}` : "Value band: incomplete"}
-      </div>
-      {Array.isArray(comparison.comparisonWarnings) && comparison.comparisonWarnings.length ? (
-        <ChipRow items={comparison.comparisonWarnings} emptyText="Karşılaştırma uyarısı yok." />
-      ) : null}
-    </div>
-  );
-}
-
-function renderCompanyFinancialPreview({ meta, me, preview, loading, err, setRefreshTick }) {
-  const companyBudget = preview?.companyBudget || {};
-  const companyServiceCost = preview?.companyServiceCost || {};
-  const unitCosts = preview?.unitCosts || {};
-  const period = preview?.period || {};
-  const supplierComparisons = Array.isArray(preview?.supplierComparisons) ? preview.supplierComparisons : [];
-  const companyStatus = String(preview?.status || "unknown").toUpperCase();
-  const statusTone = {
-    WITHIN_BUDGET: "good",
-    OVER_BUDGET: "danger",
-    PARTIAL_PERIOD: "warm",
-    MIXED_CURRENCY: "danger",
-    PERIOD_MISMATCH: "danger",
-    REVIEW_REQUIRED: "warm",
-    NO_BUDGET: "warm",
-    NO_SERVICE_COST: "warm",
-    BLOCKED: "danger",
-  }[companyStatus] || "default";
-
-  return (
-    <PanelChrome
-      title={meta.title}
-      subtitle={meta.subtitle}
-      actions={(
-        <button type="button" className="btn sm" onClick={() => setRefreshTick((n) => n + 1)} disabled={loading}>
-          {loading ? "Yenileniyor..." : "Yenile"}
-        </button>
-      )}
-    >
-      <div className="muted" style={{ lineHeight: 1.45 }}>
-        Bu yüzey sadece read-only/preview amaçlıdır; write-action, payment, invoice ve accounting kapalıdır.
-      </div>
-
-      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <span className="pill" data-status="OK">{normalizeText(me?.role) || "-"}</span>
-        {normalizeText(me?.companyKind) ? <span className="pill">{normalizeText(me?.companyKind)}</span> : null}
-        <span className="pill" data-status={statusTone.toUpperCase()}>{companyStatus}</span>
-        <span className="pill">{period.periodLabel || "Dönem eksik"}</span>
-        <span className="pill">{preview?.currencyCode || "CUR?"}</span>
-        <span className="pill">{preview?.budgetSource || "budget missing"}</span>
-      </div>
-
-      {err ? (
-        <div className="card" style={{ marginTop: 12, border: "1px solid rgba(240,68,56,0.25)" }}>
-          {err}
-        </div>
-      ) : null}
-
-      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-        <MetricCard title="Dönem Bütçesi" value={formatMoney(companyBudget.effectiveBudgetMinor, preview?.currencyCode)} note={companyBudget.summaryText || "Onaylı bütçe yok"} tone={companyBudget.effectiveBudgetMinor != null ? "good" : "warm"} />
-        <MetricCard title="Gerçekleşen Servis Harcaması" value={formatMoney(companyServiceCost.companyVisibleServiceSpendMinor, preview?.currencyCode)} note={companyServiceCost.summaryText || "Servis harcaması yok"} tone={companyServiceCost.companyVisibleServiceSpendMinor != null ? "good" : "warm"} />
-        <MetricCard title="Kalan Bütçe" value={formatMoney(companyBudget.remainingBudgetMinor, preview?.currencyCode)} note={companyBudget.budgetSource || "-"} tone={companyBudget.remainingBudgetMinor != null && Number(companyBudget.remainingBudgetMinor) >= 0 ? "good" : "danger"} />
-        <MetricCard title="Bütçe Sapması" value={formatMoney(companyBudget.varianceMinor, preview?.currencyCode)} note={companyBudget.varianceDirection || "unknown"} tone={companyBudget.varianceMinor != null && Number(companyBudget.varianceMinor) >= 0 ? "good" : "danger"} />
-        <MetricCard title="Bütçe Kullanım Oranı" value={formatBps(companyBudget.usageBps)} note={companyBudget.budgetApprovalState || "unknown"} />
-        <MetricCard title="Personel Başı Maliyet" value={formatMoney(unitCosts.costPerActivePersonMinor, preview?.currencyCode)} note={`Aktif personel: ${unitCosts.activePersonCount ?? "-"}`} />
-        <MetricCard title="Vardiya Başı Maliyet" value={formatMoney(unitCosts.costPerShiftMinor, preview?.currencyCode)} note={`Vardiya: ${unitCosts.deliveredShiftCount ?? "-"}`} />
-        <MetricCard title="Sefer Başı Maliyet" value={formatMoney(unitCosts.costPerTripMinor, preview?.currencyCode)} note={`Sefer: ${unitCosts.deliveredTripCount ?? "-"}`} />
-        <MetricCard title="Gün Başı Maliyet" value={formatMoney(unitCosts.costPerServiceDayMinor, preview?.currencyCode)} note={`Gün: ${unitCosts.deliveredServiceDayCount ?? "-"}`} />
-        <MetricCard title="Veri Güveni" value={String(preview?.confidence?.level || preview?.dataQuality?.level || "-").toUpperCase()} note={`Puan ${Number(preview?.confidence?.score || preview?.dataQuality?.score || 0) || 0}/100`} />
-      </div>
-
-      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Servis Bütçesi</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            {companyBudget.summaryText || "Onaylı bütçe bulunamadığı için bütçe sapması hesaplanmadı."}
-          </div>
-          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-            <div className="muted">Bütçe kaynağı: <b>{companyBudget.budgetSource || "-"}</b></div>
-            <div className="muted">Onay durumu: <b>{companyBudget.budgetApprovalState || "-"}</b></div>
-            <div className="muted">Dönem: <b>{companyBudget.periodLabel || period.periodLabel || "-"}</b></div>
-            <div className="muted">Kalan / sapma: <b>{formatMoney(companyBudget.remainingBudgetMinor, preview?.currencyCode)}</b> / <b>{formatMoney(companyBudget.varianceMinor, preview?.currencyCode)}</b></div>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <div className="muted">Eksik alanlar</div>
-            <ChipRow items={Array.isArray(preview?.missingFields) ? preview.missingFields : []} emptyText="Eksik alan görünmüyor." />
-          </div>
-        </div>
-
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Gerçekleşen Servis Maliyeti</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            {companyServiceCost.summaryText || "Servis harcaması için yeterli kaynak bulunamadı."}
-          </div>
-          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-            <div className="muted">Kaynak: <b>{companyServiceCost.serviceCostSource || "-"}</b></div>
-            <div className="muted">Para birimi: <b>{companyServiceCost.currencyCode || "-"}</b></div>
-            <div className="muted">Vergi / baz: <b>{companyServiceCost.taxBasis || "-"}</b></div>
-            <div className="muted">Aktif kişi: <b>{companyServiceCost.activePersonCount ?? "-"}</b> • Planlı kişi: <b>{companyServiceCost.plannedPersonCount ?? "-"}</b></div>
-            <div className="muted">Gün / vardiya / sefer: <b>{companyServiceCost.deliveredServiceDayCount ?? "-"}</b> / <b>{companyServiceCost.deliveredShiftCount ?? "-"}</b> / <b>{companyServiceCost.deliveredTripCount ?? "-"}</b></div>
-          </div>
-          {Array.isArray(preview?.serviceCostComponents) && preview.serviceCostComponents.length ? (
-            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-              {preview.serviceCostComponents.map((component) => (
-                <div key={component.key} className="card" style={{ padding: 10, background: "rgba(255,255,255,0.02)" }}>
-                  <div style={{ fontWeight: 800 }}>{component.label}</div>
-                  <div className="muted" style={{ marginTop: 4 }}>{formatMoney(component.amountMinor, preview?.currencyCode)}</div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Tedarikçi Karşılaştırması</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            {preview?.supplierComparisonSummaryText || "Tedarikçi karşılaştırması için veri bekleniyor; otomatik seçim yapılmadı."}
-          </div>
-          <div style={{ marginTop: 10 }}>
-            {supplierComparisons.length ? (
-              <div style={{ display: "grid", gap: 10 }}>
-                {supplierComparisons.map((comparison) => (
-                  <CompanyComparisonBlock key={comparison.supplierRef || comparison.safeSupplierLabel || comparison.pricePeriod || "supplier"} comparison={comparison} currencyCode={preview?.currencyCode} />
-                ))}
-              </div>
-            ) : (
-              <div className="card" style={{ padding: 12, background: "rgba(255,255,255,0.02)" }}>
-                Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz otomatik tedarikçi seçimi yapılmıyor.
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Hakediş / Fatura Kontrolü</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz fatura, hakediş, tasarruf veya dışa aktarım işlemi yapılmıyor.
-          </div>
-        </div>
-
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Tasarruf Senaryoları</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz forecast veya savings hesaplanmıyor.
-          </div>
-        </div>
-
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Dışa Aktarım</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz Excel / CSV dışa aktarım yapılmıyor.
-          </div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 12 }} className="card">
-        <div className="panelSectionTitle">Genel Not</div>
-        <div style={{ marginTop: 8 }} className="muted">
-          {preview?.summaryText || "Bütçe ve servis maliyeti önizlemesi için veri bekleniyor."}
-        </div>
-        <div style={{ marginTop: 10 }} className="muted">
-          {preview?.nextSafeStep ? `Sonraki güvenli adım: ${preview.nextSafeStep}` : "Sonraki güvenli adım henüz belirlenmedi."}
-        </div>
-      </div>
-    </PanelChrome>
-  );
 }
 
 function initialForm() {
@@ -316,6 +143,126 @@ function initialForm() {
     driverBasePerShiftMinor: "",
     maintenancePerKmMinor: "",
     vehicleLeaseMonthlyMinor: "",
+    budgetPlanId: "",
+    budgetPlanVersion: "",
+    budgetAmountMinor: "",
+    periodStart: "",
+    periodEnd: "",
+    budgetSource: "",
+    budgetApprovalState: "draft",
+    description: "",
+    warningThresholdBps: "",
+    currencyCode: "TRY",
+    roomQuoteFloorDraftId: "",
+    roomQuoteFloorDraftVersion: "",
+    quoteFloorMinor: "",
+    quoteFloorPerPassengerMinor: "",
+    baselineSource: "",
+    calculationVersion: "ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01",
+  };
+}
+
+const COMPANY_PLAN_FIELD_KEYS = [
+  "budgetPlanId",
+  "budgetPlanVersion",
+  "budgetAmountMinor",
+  "periodStart",
+  "periodEnd",
+  "budgetSource",
+  "budgetApprovalState",
+  "description",
+  "warningThresholdBps",
+  "currencyCode",
+];
+
+const ROOM_DRAFT_FIELD_KEYS = [
+  "roomQuoteFloorDraftId",
+  "roomQuoteFloorDraftVersion",
+  "manualBaselineOperationalCostMinor",
+  "targetContributionBps",
+  "riskReserveBps",
+  "quoteFloorMinor",
+  "quoteFloorPerPassengerMinor",
+  "baselineSource",
+  "calculationVersion",
+  "currencyCode",
+];
+
+function companyPlanFormFromPlan(plan = null) {
+  if (!plan) return {};
+  return {
+    budgetPlanId: plan.id != null ? String(plan.id) : "",
+    budgetPlanVersion: plan.version != null ? String(plan.version) : "",
+    budgetAmountMinor: plan.budgetAmountMinor != null ? String(plan.budgetAmountMinor) : "",
+    periodStart: plan.periodStart || "",
+    periodEnd: plan.periodEnd || "",
+    budgetSource: plan.budgetSource || "",
+    budgetApprovalState: plan.budgetApprovalState || (plan.status === "ACTIVE" ? "approved" : "draft"),
+    description: plan.description || "",
+    warningThresholdBps: plan.warningThresholdBps != null ? String(plan.warningThresholdBps) : "",
+    currencyCode: plan.currencyCode || "TRY",
+  };
+}
+
+function companyPlanFormIsBlank(form = {}) {
+  return COMPANY_PLAN_FIELD_KEYS.every((key) => {
+    const value = String(form?.[key] ?? "").trim();
+    if (!value) return true;
+    if (key === "budgetApprovalState" && value.toLowerCase() === "draft") return true;
+    if (key === "currencyCode" && value.toUpperCase() === "TRY") return true;
+    return false;
+  });
+}
+
+function companyPlanPayloadFromForm(form = {}) {
+  return {
+    budgetAmountMinor: String(form?.budgetAmountMinor ?? "").trim(),
+    periodStart: String(form?.periodStart ?? "").trim(),
+    periodEnd: String(form?.periodEnd ?? "").trim(),
+    budgetSource: String(form?.budgetSource ?? "").trim(),
+    budgetApprovalState: String(form?.budgetApprovalState ?? "").trim(),
+    description: String(form?.description ?? "").trim(),
+    warningThresholdBps: String(form?.warningThresholdBps ?? "").trim(),
+    currencyCode: String(form?.currencyCode ?? "").trim() || "TRY",
+  };
+}
+
+function roomDraftFormFromDraft(draft = null) {
+  if (!draft) return {};
+  return {
+    roomQuoteFloorDraftId: draft.id != null ? String(draft.id) : "",
+    roomQuoteFloorDraftVersion: draft.version != null ? String(draft.version) : "",
+    manualBaselineOperationalCostMinor: draft.manualBaselineOperationalCostMinor != null ? String(draft.manualBaselineOperationalCostMinor) : "",
+    targetContributionBps: draft.targetContributionBps != null ? String(draft.targetContributionBps) : "",
+    riskReserveBps: draft.riskReserveBps != null ? String(draft.riskReserveBps) : "",
+    quoteFloorMinor: draft.quoteFloorMinor != null ? String(draft.quoteFloorMinor) : "",
+    quoteFloorPerPassengerMinor: draft.quoteFloorPerPassengerMinor != null ? String(draft.quoteFloorPerPassengerMinor) : "",
+    baselineSource: draft.baselineSource || "",
+    calculationVersion: draft.calculationVersion || "ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01",
+    currencyCode: draft.currencyCode || "TRY",
+  };
+}
+
+function roomDraftFormIsBlank(form = {}) {
+  return ROOM_DRAFT_FIELD_KEYS.every((key) => {
+    const value = String(form?.[key] ?? "").trim();
+    if (!value) return true;
+    if (key === "calculationVersion" && value === "ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01") return true;
+    if (key === "currencyCode" && value.toUpperCase() === "TRY") return true;
+    return false;
+  });
+}
+
+function roomDraftPayloadFromForm(form = {}) {
+  return {
+    manualBaselineOperationalCostMinor: String(form?.manualBaselineOperationalCostMinor ?? "").trim(),
+    targetContributionBps: String(form?.targetContributionBps ?? "").trim(),
+    riskReserveBps: String(form?.riskReserveBps ?? "").trim(),
+    quoteFloorMinor: String(form?.quoteFloorMinor ?? "").trim(),
+    quoteFloorPerPassengerMinor: String(form?.quoteFloorPerPassengerMinor ?? "").trim(),
+    baselineSource: String(form?.baselineSource ?? "").trim(),
+    calculationVersion: String(form?.calculationVersion ?? "").trim() || "ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01",
+    currencyCode: String(form?.currencyCode ?? "").trim() || "TRY",
   };
 }
 
@@ -356,6 +303,9 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
   const [form, setForm] = useState(() => initialForm());
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [actionBusy, setActionBusy] = useState("");
+  const [actionErr, setActionErr] = useState("");
+  const [actionOk, setActionOk] = useState("");
   const [err, setErr] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -363,8 +313,41 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
     setForm(initialForm());
     setPreview(null);
     setErr("");
+    setActionBusy("");
+    setActionErr("");
+    setActionOk("");
     setRefreshTick(0);
   }, [scope]);
+
+  useEffect(() => {
+    if (scope !== "COMPANY") return;
+    const currentPlan = preview?.budgetPlan?.current || null;
+    if (!currentPlan) return;
+    setForm((prev) => {
+      if (!companyPlanFormIsBlank(prev)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        ...companyPlanFormFromPlan(currentPlan),
+      };
+    });
+  }, [preview, scope]);
+
+  useEffect(() => {
+    if (scope !== "ROOM") return;
+    const currentDraft = preview?.quoteFloorDraft?.current || null;
+    if (!currentDraft) return;
+    setForm((prev) => {
+      if (!roomDraftFormIsBlank(prev)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        ...roomDraftFormFromDraft(currentDraft),
+      };
+    });
+  }, [preview, scope]);
 
   useEffect(() => {
     if (!token || !canView) return undefined;
@@ -399,7 +382,131 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
   const roomProfitability = preview?.roomProfitability || null;
   const companyBudget = preview?.companyBudget || null;
   const missingFields = Array.from(new Set([...(model?.missingFields || []), ...(quoteFloor?.missingFields || [])]));
-  const readOnlyNote = "Bu yüzey sadece read-only/preview amaçlıdır; write-action, payment, invoice ve accounting kapalıdır.";
+  const surfaceNote = scope === "COMPANY"
+    ? "Bu yüzey budget lifecycle ve explainable preview sunar; payment, invoice ve accounting kapalıdır."
+    : "Bu yüzey quote floor draft lifecycle sunar; dispatch apply, payment, invoice ve accounting kapalıdır.";
+  const currentBudgetPlan = preview?.budgetPlan?.current || preview?.budgetPlan?.draft || preview?.budgetPlan?.active || null;
+
+  async function handleCompanyBudgetAction(action, { createNew = false } = {}) {
+    if (scope !== "COMPANY") return;
+    setActionErr("");
+    setActionOk("");
+
+    try {
+      setActionBusy(action);
+      const payload = companyPlanPayloadFromForm(form);
+      const currentId = createNew ? "" : String(currentBudgetPlan?.id ?? form.budgetPlanId ?? "").trim();
+      const currentVersion = String(currentBudgetPlan?.version ?? form.budgetPlanVersion ?? "").trim();
+      let result = null;
+
+      if (action === "new") {
+        setForm((prev) => ({
+          ...prev,
+          budgetPlanId: "",
+          budgetPlanVersion: "",
+        }));
+        setActionOk("Yeni taslak için plan kimliği temizlendi.");
+        return;
+      }
+
+      if (action === "save") {
+        const body = {
+          ...payload,
+          version: currentVersion || undefined,
+        };
+        if (currentId) {
+          result = await updateCompanyBudgetPlan(currentId, body, { token });
+        } else {
+          result = await createCompanyBudgetPlan(body, { token });
+        }
+      } else if (action === "submit") {
+        if (!currentId) throw new Error("Önce bir taslak kaydetmelisin.");
+        result = await submitCompanyBudgetPlan(currentId, { version: currentVersion }, { token });
+      } else if (action === "approve") {
+        if (!currentId) throw new Error("Önce bir taslak kaydetmelisin.");
+        result = await approveCompanyBudgetPlan(currentId, { version: currentVersion }, { token });
+      } else if (action === "activate") {
+        if (!currentId) throw new Error("Önce bir taslak kaydetmelisin.");
+        result = await activateCompanyBudgetPlan(currentId, { version: currentVersion }, { token });
+      } else if (action === "archive") {
+        if (!currentId) throw new Error("Önce bir taslak kaydetmelisin.");
+        result = await archiveCompanyBudgetPlan(currentId, { version: currentVersion }, { token });
+      } else {
+        throw new Error("Bilinmeyen bütçe aksiyonu.");
+      }
+
+      if (result?.item) {
+        setForm((prev) => ({
+          ...prev,
+          ...companyPlanFormFromPlan(result.item),
+        }));
+        setActionOk(`Plan #${result.item.id} ${String(result.item.status || "-").toUpperCase()} durumuna alındı.`);
+      }
+
+      setRefreshTick((n) => n + 1);
+    } catch (e) {
+      const info = getApiErrorInfo(e, "Bütçe yaşam döngüsü işlemi tamamlanamadı.");
+      setActionErr(info.message || "Bütçe yaşam döngüsü işlemi tamamlanamadı.");
+    } finally {
+      setActionBusy("");
+    }
+  }
+
+  const currentRoomQuoteFloorDraft = preview?.quoteFloorDraft?.current || preview?.quoteFloorDraft?.draft || preview?.quoteFloorDraft?.applied || null;
+
+  async function handleRoomQuoteFloorAction(action, { createNew = false } = {}) {
+    if (scope !== "ROOM") return;
+    setActionErr("");
+    setActionOk("");
+
+    try {
+      setActionBusy(action);
+      const payload = roomDraftPayloadFromForm(form);
+      const currentId = createNew ? "" : String(currentRoomQuoteFloorDraft?.id ?? form.roomQuoteFloorDraftId ?? "").trim();
+      const currentVersion = String(currentRoomQuoteFloorDraft?.version ?? form.roomQuoteFloorDraftVersion ?? "").trim();
+      let result = null;
+
+      if (action === "save") {
+        const body = {
+          ...payload,
+          version: currentVersion || undefined,
+        };
+        if (currentId) {
+          result = await updateRoomQuoteFloorDraft(currentId, body, { token });
+        } else {
+          result = await createRoomQuoteFloorDraft(body, { token });
+        }
+      } else if (action === "apply") {
+        if (!currentId) throw new Error("Önce bir taslak kaydetmelisin.");
+        result = await applyRoomQuoteFloorDraft(currentId, { version: currentVersion }, { token });
+      } else if (action === "archive") {
+        if (!currentId) throw new Error("Önce bir taslak kaydetmelisin.");
+        result = await archiveRoomQuoteFloorDraft(currentId, { version: currentVersion }, { token });
+      } else if (action === "new") {
+        result = await createRoomQuoteFloorDraft({
+          ...payload,
+          version: undefined,
+        }, { token });
+      } else {
+        throw new Error("Bilinmeyen quote floor aksiyonu.");
+      }
+
+      if (result?.item) {
+        setForm((prev) => ({
+          ...prev,
+          ...roomDraftFormFromDraft(result.item),
+        }));
+        setActionOk(`Draft #${result.item.id} ${String(result.item.status || "-").toUpperCase()} durumuna alındı.`);
+      }
+
+      setRefreshTick((n) => n + 1);
+    } catch (e) {
+      const info = getApiErrorInfo(e, "Quote floor yaşam döngüsü işlemi tamamlanamadı.");
+      setActionErr(info.message || "Quote floor yaşam döngüsü işlemi tamamlanamadı.");
+    } finally {
+      setActionBusy("");
+    }
+  }
 
   if (!canView) {
     return (
@@ -412,21 +519,34 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
           <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
             {buildDeniedText(scope, me)}
           </div>
-          <div className="muted" style={{ marginTop: 10 }}>{readOnlyNote}</div>
+          <div className="muted" style={{ marginTop: 10 }}>{surfaceNote}</div>
         </div>
       </PanelChrome>
     );
   }
 
   if (scope === "COMPANY") {
-    return renderCompanyFinancialPreview({
-      meta,
-      me,
-      preview,
-      loading,
-      err,
-      setRefreshTick,
-    });
+    return (
+      <FinancialOperationsCompanyPreview
+        meta={meta}
+        me={me}
+        preview={preview}
+        loading={loading}
+        err={err}
+        setRefreshTick={setRefreshTick}
+        form={form}
+        setForm={setForm}
+        onBudgetAction={handleCompanyBudgetAction}
+        budgetActionBusy={actionBusy}
+        budgetActionErr={actionErr}
+        budgetActionOk={actionOk}
+        normalizeText={normalizeText}
+        MetricCard={MetricCard}
+        ChipRow={ChipRow}
+        formatBps={formatBps}
+        INPUT_STYLE={INPUT_STYLE}
+      />
+    );
   }
 
   const scopeTitle = meta.title;
@@ -442,6 +562,10 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
     : String(model?.status || "").toLowerCase() === "blocked"
       ? "danger"
       : "warm";
+  const currentRoomQuoteFloorDraftStatus = String(currentRoomQuoteFloorDraft?.status || "").toUpperCase();
+  const roomDraftEditable = !currentRoomQuoteFloorDraft?.id || currentRoomQuoteFloorDraftStatus === "DRAFT";
+  const roomDraftCanApply = roomDraftEditable;
+  const roomDraftCanArchive = Boolean(currentRoomQuoteFloorDraft?.id) && currentRoomQuoteFloorDraftStatus !== "ARCHIVED";
 
   return (
     <PanelChrome
@@ -453,7 +577,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         </button>
       )}
     >
-      <div className="muted" style={{ lineHeight: 1.45 }}>{readOnlyNote}</div>
+      <div className="muted" style={{ lineHeight: 1.45 }}>{surfaceNote}</div>
 
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
         <span className="pill" data-status="OK">{normalizeText(me?.role) || "-"}</span>
@@ -480,6 +604,46 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
       </div>
 
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        <div className="card" style={{ minWidth: 0 }}>
+          <div className="panelSectionTitle">Quote floor yaşam döngüsü</div>
+          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+            {currentRoomQuoteFloorDraft
+              ? "Sunucuda hesaplanan quote floor taslağı sürüm ile korunur."
+              : "Henüz kayıtlı quote floor taslağı yok; yeni bir draft oluşturabilirsin."}
+          </div>
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+            <MetricCard title="Durum" value={String(currentRoomQuoteFloorDraft?.status || "DRAFT").toUpperCase()} note={currentRoomQuoteFloorDraft?.lifecycleState || "draft"} tone={currentRoomQuoteFloorDraft?.status === "APPLIED" ? "good" : currentRoomQuoteFloorDraft?.status === "ARCHIVED" ? "danger" : "warm"} />
+            <MetricCard title="Sürüm" value={formatTextOrDash(currentRoomQuoteFloorDraft?.version ?? form.roomQuoteFloorDraftVersion)} note={currentRoomQuoteFloorDraft?.id ? `Draft #${currentRoomQuoteFloorDraft.id}` : "Yeni draft"} />
+            <MetricCard title="Taban" value={formatTRY(currentRoomQuoteFloorDraft?.manualBaselineOperationalCostMinor ?? form.manualBaselineOperationalCostMinor)} note={currentRoomQuoteFloorDraft?.baselineSource || "manual"} />
+            <MetricCard title="Quote floor" value={formatTRY(currentRoomQuoteFloorDraft?.quoteFloorMinor ?? form.quoteFloorMinor)} note={currentRoomQuoteFloorDraft?.quoteFloorPerPassengerMinor != null ? `Kişi başı ${formatTRY(currentRoomQuoteFloorDraft.quoteFloorPerPassengerMinor)}` : "Hesap bekliyor"} />
+          </div>
+          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("save")} disabled={loading || actionBusy.length > 0 || (currentRoomQuoteFloorDraft?.id && !roomDraftEditable)}>
+              {actionBusy === "save" ? "Kaydediliyor..." : "Taslak kaydet"}
+            </button>
+            <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("apply")} disabled={loading || !currentRoomQuoteFloorDraft?.id || !roomDraftCanApply || actionBusy.length > 0}>
+              {actionBusy === "apply" ? "Uygulanıyor..." : "Uygula"}
+            </button>
+            <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("archive")} disabled={loading || !currentRoomQuoteFloorDraft?.id || !roomDraftCanArchive || actionBusy.length > 0}>
+              {actionBusy === "archive" ? "Arşivleniyor..." : "Arşivle"}
+            </button>
+            <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("save", { createNew: true })} disabled={loading || actionBusy.length > 0}>
+              Yeni taslak
+            </button>
+          </div>
+
+          {actionErr ? (
+            <div className="card" style={{ marginTop: 10, border: "1px solid rgba(240,68,56,0.25)" }}>
+              {actionErr}
+            </div>
+          ) : null}
+          {actionOk ? (
+            <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>
+              {actionOk}
+            </div>
+          ) : null}
+        </div>
+
         <div className="card" style={{ minWidth: 0 }}>
           <div className="panelSectionTitle">Açık parametreler</div>
           <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>

@@ -316,8 +316,96 @@ export function getRoomFinancialOperationsPreview(token, params = {}, { signal, 
   return cachedGet(`/api/commercial-core/room/financial-operations/preview${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
 }
 
+export function getCurrentRoomQuoteFloorDraft(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
+  return cachedGet(`/api/commercial-core/room/financial-operations/quote-floor-drafts/current${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
+}
+
+export async function createRoomQuoteFloorDraft(payload = {}, { token } = {}) {
+  return api("/api/commercial-core/room/financial-operations/quote-floor-drafts", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function updateRoomQuoteFloorDraft(draftId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/quote-floor-drafts/${Number(draftId)}`, {
+    method: "PATCH",
+    token,
+    body: payload,
+  });
+}
+
+export async function applyRoomQuoteFloorDraft(draftId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/quote-floor-drafts/${Number(draftId)}/apply`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function archiveRoomQuoteFloorDraft(draftId, payload = {}, { token } = {}) {
+  return api(`/api/commercial-core/room/financial-operations/quote-floor-drafts/${Number(draftId)}/archive`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
 export function getCompanyFinancialOperationsPreview(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
   return cachedGet(`/api/company/overview/financial-operations/preview${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
+}
+
+export function getCurrentCompanyBudgetPlan(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
+  return cachedGet(`/api/company/overview/financial-operations/budget-plans/current${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
+}
+
+export async function createCompanyBudgetPlan(payload = {}, { token } = {}) {
+  return api("/api/company/overview/financial-operations/budget-plans", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function updateCompanyBudgetPlan(planId, payload = {}, { token } = {}) {
+  return api(`/api/company/overview/financial-operations/budget-plans/${Number(planId)}`, {
+    method: "PATCH",
+    token,
+    body: payload,
+  });
+}
+
+export async function submitCompanyBudgetPlan(planId, payload = {}, { token } = {}) {
+  return api(`/api/company/overview/financial-operations/budget-plans/${Number(planId)}/submit`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function approveCompanyBudgetPlan(planId, payload = {}, { token } = {}) {
+  return api(`/api/company/overview/financial-operations/budget-plans/${Number(planId)}/approve`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function activateCompanyBudgetPlan(planId, payload = {}, { token } = {}) {
+  return api(`/api/company/overview/financial-operations/budget-plans/${Number(planId)}/activate`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function archiveCompanyBudgetPlan(planId, payload = {}, { token } = {}) {
+  return api(`/api/company/overview/financial-operations/budget-plans/${Number(planId)}/archive`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
 }
 
 export async function getAgreementQualityPaymentBridgePreview(agreementId, { token, signal } = {}) {

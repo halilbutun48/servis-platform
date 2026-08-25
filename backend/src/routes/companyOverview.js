@@ -1,7 +1,7 @@
 import express from "express";
 import { asyncHandler, wrapAsyncRouterMethods } from "../middleware/asyncHandler.js";
 import { prisma } from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { rememberResponse } from "../utils/responseCache.js";
 import {
   ymdTR,
@@ -14,6 +14,11 @@ import {
   buildCompanyBudgetAndServiceCostPreview,
   buildFinancialOperationsCompanyKindDeniedPreview,
 } from "../finance/companyBudgetAndServiceCost.js";
+import {
+  buildCompanyBudgetPlanPreviewInputs,
+  getCompanyBudgetPlanOverview,
+} from "../services/financialOperationsLifecycle.js";
+import { attachCompanyBudgetLifecycleRoutes } from "./companyBudgetLifecycleRoutes.js";
 
 function scopeOf(user) {
   return {
@@ -46,6 +51,45 @@ async function resolveCompany(req) {
       name: true,
     },
   });
+}
+
+async function resolveTargetCompany(req) {
+  const role = String(req.user?.role || "").toUpperCase();
+  const rawCompanyId =
+    role === "COMPANY"
+      ? req.user?.companyId
+      : Number(req.body?.companyId || req.query?.companyId || 0);
+
+  const companyId = Number(rawCompanyId || 0) || 0;
+
+  if (!companyId) {
+    return null;
+  }
+
+  return prisma.company.findUnique({
+    where: {
+      id: companyId,
+    },
+    select: {
+      id: true,
+      kind: true,
+      name: true,
+    },
+  });
+}
+
+function isBlockedCompanyKindForWrite(req, company) {
+  return (
+    String(req.user?.role || "").toUpperCase() === "COMPANY" &&
+    [
+      "SCHOOL",
+      "ORGANIZATION",
+    ].includes(
+      String(
+        company?.kind || ""
+      ).toUpperCase()
+    )
+  );
 }
 
 function fmtTRY(value) {
@@ -487,6 +531,10 @@ export function companyOverviewRouter() {
     requireRole(
       "COMPANY",
       "SUPER_ADMIN"
+    ),
+    requireStepUpWrite(
+      "COMPANY",
+      "SUPER_ADMIN"
     )
   );
 
@@ -572,6 +620,14 @@ export function companyOverviewRouter() {
     })
   );
 
+  attachCompanyBudgetLifecycleRoutes(
+    r,
+    {
+      resolveTargetCompany,
+      isBlockedCompanyKindForWrite,
+    }
+  );
+
   r.get(
     "/financial-operations/preview",
     asyncHandler(async (req, res) => {
@@ -615,6 +671,7 @@ export function companyOverviewRouter() {
       const [
         workflowSummary,
         commercialFlowSummary,
+        budgetPlanOverview,
         latestShift,
         latestAgreement,
       ] = await Promise.all([
@@ -739,6 +796,10 @@ export function companyOverviewRouter() {
             },
           },
         }),
+
+        getCompanyBudgetPlanOverview(
+          company.id
+        ),
       ]);
 
       const mergedCompanySummary = {
@@ -756,7 +817,8 @@ export function companyOverviewRouter() {
       };
 
       return res.json(
-        buildCompanyBudgetAndServiceCostPreview({
+        {
+          ...buildCompanyBudgetAndServiceCostPreview({
           role:
             req.user?.role,
           companyKind:
@@ -769,14 +831,21 @@ export function companyOverviewRouter() {
           companySummary:
             mergedCompanySummary,
           budgetInputs:
-            req.query || {},
+            {
+              ...buildCompanyBudgetPlanPreviewInputs(
+                budgetPlanOverview?.current
+              ),
+              ...(req.query || {}),
+            },
           serviceCostInputs:
             req.query || {},
           supplierInputs:
             req.query || {},
           previewInputs:
             req.query || {},
-        })
+        }),
+          budgetPlan: budgetPlanOverview,
+        }
       );
     })
   );

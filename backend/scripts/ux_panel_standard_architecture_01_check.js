@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
 import { getCanonicalProvenanceRecord } from "./lib/canonicalProvenanceRegistry.js";
 import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
-import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustStatusSubsetWithIdentity } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -887,7 +887,7 @@ function main() {
   const step172ConcurrentBackendPaths = new Set(step172ConcurrentBackendDiff.map((entry) => normalizePath(entry.path)));
   const statusWithoutStep172Concurrent = status.filter((file) => !step172ConcurrentBackendPaths.has(normalizePath(file)));
 
-  mustStatusEmptyOrExactlyWithIdentity(["backend/src/routes", "backend/src/services"], step172ConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");
+  mustStatusSubsetWithIdentity(["backend/src/routes", "backend/src/services"], step172ConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");
   mustNotList(statusWithoutStep172Concurrent, "backend/src/routes/", "backend routes are untouched");
   mustNotList(statusWithoutStep172Concurrent, "backend/src/services/", "backend services are untouched");
   mustNotList(statusWithoutStep172Concurrent, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");

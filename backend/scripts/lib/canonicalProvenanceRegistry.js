@@ -207,7 +207,7 @@ const rawCanonicalProvenanceRecords = [
   },
   {
     path: "backend/src/routes/commercialCoreRoomRoutes.js",
-    currentSha256: "CE6B509004F1BCF5F23DFC4754858BB82361B8528C6174FFD9036A648A73258D",
+    currentSha256: "11A0C1B1CDE82470871EBBBD90CEE37F4CAA5C2AD6C25AB7B39586F11CBFDD1F",
     baselinePresence: "ABSENT",
     workingTreeState: "TRACKED_UNMODIFIED",
     provenanceClass: "CONCURRENT_CANONICAL",

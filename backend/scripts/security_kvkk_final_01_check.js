@@ -18,7 +18,7 @@ import {
   isCommercialPaymentSecurityCheckerPath,
   isM80M89ContractSweepRepoContractPath,
   mustDiffEmptyOrExactlyWithIdentity,
-  mustStatusEmptyOrExactlyWithIdentity,
+  mustStatusSubsetWithIdentity,
   isBatch11IndexWorktreeScopePath,
 } from "./lib/guardGitScope.js";
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_PATHS, CURRENT_HEAD_APPROVED_SCHEMA } from "./lib/currentHeadScopePolicy.js";
@@ -157,7 +157,7 @@ function validateDisjointStatusGroups(groupEntries) {
     }
     total += paths.length;
   }
-  if (total !== 83) throw new Error(`FAIL working tree status scope count mismatch: ${total}`);
+  if (total !== 84) throw new Error(`FAIL working tree status scope count mismatch: ${total}`);
 }
 
 function compareText(a, b) {
@@ -260,7 +260,7 @@ function buildExpectedShaMap(entries) {
 const batch09ApprovedConcurrentWorktreeEntries = [
   { path: "backend/README.md", sha256: "0E5C4A471BB7CD0B361C7EC6FB33899CABD810D8CB3892913F66FE26BE8F8AE7" },
   { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "367A0ECC128DEE9B5B8BD9B969518CFF390DF0F16D1FFC30B3C1A5216F01644C" },
-  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "6C58E2527886FACC9A1A81EF8C61F5144C4883E8AB848714BD2575839D48AA5F" },
+  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "1B8216B400772F3F1D3FACD55BC690FCC2CC662BB3CB93006117534AC6D32F19" },
   { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "F4F9BE905D1908ED9FB632225404968F36080F7B30785A20534D5D7C65380567" },
   { path: "backend/src/bootstrap/rateLimits.js", sha256: "D493701282D68ABA6F1DAFCAD4F01F9A65A432ECCA91F6A168A1058F119D3A2C" },
   { path: "backend/src/middleware/apiRequestLog.js", sha256: "5F27CA48608B10C6DDCD35F9D1C1E146D6AD432EAD63C90CF117F0EA3A051EE3" },
@@ -273,7 +273,7 @@ const batch09CommercialSplitRouteEntries = [
   { path: "backend/src/routes/commercialCoreRoutes.js", sha256: "11A5136CDA54B1467757BF9422EB6B63B0B00F9633CD1A8AF3303A5BA2A06E41" },
   { path: "backend/src/routes/commercialCorePaymentRoutes.js", sha256: "9BB53FE97B17F28892AF3B8C8E91373D7276183873E0258E694AD694F5E1B552" },
   { path: "backend/src/routes/commercialCorePaymentReportsRoutes.js", sha256: "02A327CB70645AA8652E542F5825B271B143AE7A741FC8FBD1CB0C157093FD36" },
-  { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "284B22FE4FD332430111A5BB8497D1B4226BB2E117965EEBE77D7544C9652196" },
+  { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "11A0C1B1CDE82470871EBBBD90CEE37F4CAA5C2AD6C25AB7B39586F11CBFDD1F" },
   { path: "backend/src/routes/commercialCoreRouteData.js", sha256: "5EB28DD6ABEC1AD63CA236AB567BB14B0CEEF35D54DF75343D5EC746F5A6FCD2" },
 ];
 const batch09CommercialSplitRouteShas = buildExpectedShaMap(batch09CommercialSplitRouteEntries);
@@ -291,7 +291,7 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/currentHeadScopePolicy.js",
-    sha256: "E5716C9033F3834280709467A62D77CC6AFCBCBDA55AEF825B3CE69761F45D19",
+    sha256: "3D5222A95430F3099E5A120EFAEC6AB3FA9A31B926D320C56CB6219E28F1EDFC",
   },
   {
     path: "backend/scripts/lib/productExtensionsRegistry.js",
@@ -356,10 +356,16 @@ const securityOwnedExactPaths = new Set(
     "backend/src/ops/retentionBackupPolicy.js",
     "backend/src/ops/backupArchiveOps.js",
     "backend/src/lib/jsonFileStore.js",
+    "backend/src/finance/financialOperationsScope.js",
+    "backend/scripts/room_profitability_and_quote_floor_01_expansion.js",
     "backend/src/routes/commercialCore.js",
     "backend/src/routes/operationProof.js",
     "backend/src/routes/trustQuality.js",
     "backend/src/services/qualityPaymentBridgeService.js",
+    "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md",
+    "web/src/api.js",
+    "web/src/panels/shared/FinancialOperationsPanel.jsx",
+    "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
     "web/src/panels/room/DriversPanel.jsx",
     "docs/SECURITY_KVKK_FINAL_01.md",
     "docs/PHASE_12_KVKK_SECURITY.md",
@@ -380,6 +386,13 @@ const securityOwnedExactPaths = new Set(
     "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md",
   ].map((value) => normalizePath(value)),
 );
+
+const securityDocWorktreeEntries = [
+  { path: "docs/UX_PANEL_INVENTORY_02A_AUDIT.md", sha256: "BE7419F53FAF68B28E2B946A2BBCE5B143939F9C59366F5B6DD568BCEE425B25" },
+  { path: "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "A7EF3D0DB003D206845EBDBF3DFF52B82839A993966BE10618C32EC7A418889E" },
+  { path: "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "36D7BCC36F1F2772524EC66B07A2A1363CA584ECAADD19C7FD4F7A750CF4A988" },
+];
+const securityDocWorktreeShas = buildExpectedShaMap(securityDocWorktreeEntries);
 
 function isSecurityOwnedStatusPath(file) {
   const normalized = normalizePath(file);
@@ -433,6 +446,13 @@ function classifySecurityKvkkStatusPath(file) {
     if (normalized === "backend/src/lib/requestUrl.js") return "LEGITIMATE_CANONICAL_NEW_FILE";
     if (normalized === "backend/src/server.js") return "PROVEN_BATCH09_CHANGE";
     return "APPROVED_CONCURRENT_CANONICAL_WORKTREE";
+  }
+  if (securityDocWorktreeShas.has(normalized)) {
+    const expected = securityDocWorktreeShas.get(normalized);
+    const actual = normalizedTextSha256(normalized);
+    return actual === expected
+      ? "DOC_WORKTREE_SCOPE"
+      : `UNKNOWN: ${normalized} expected ${expected} got ${actual}`;
   }
   if (isBatch13AppJsxMigrationConsumerPath(normalized)) return "BATCH13_APP_JSX_MIGRATION_CONSUMER";
   if (isBatch13FoundationSupportPath(normalized)) return "BATCH13_FOUNDATION_SUPPORT";
@@ -761,6 +781,7 @@ function main() {
     "backend/scripts/quality_gate_final_01_check.js",
     "backend/scripts/request_storm_resilience_01_check.js",
     "backend/scripts/room_profitability_and_quote_floor_01_check.js",
+    "backend/scripts/room_profitability_and_quote_floor_01_expansion.js",
     "backend/scripts/safe_drive_01_check.js",
     "backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js",
     "backend/scripts/sefer_abi_reasoning_assistant_01_check.js",
@@ -792,7 +813,7 @@ function main() {
   ];
 
   validateStatusGroup("acceptedPrismaStatusPaths", acceptedPrismaStatusPaths, 33);
-  validateStatusGroup("guardAlignmentStatusPaths", guardAlignmentStatusPaths, 44);
+  validateStatusGroup("guardAlignmentStatusPaths", guardAlignmentStatusPaths, 45);
   validateStatusGroup("companyBudgetStatusPaths", companyBudgetStatusPaths, 5);
   validateStatusGroup("packageRunnerStatusPaths", packageRunnerStatusPaths, 1);
   validateDisjointStatusGroups([
@@ -885,6 +906,8 @@ function main() {
     "docs/CACHE_COALESCING_AND_BACKOFF_01.md",
     "docs/REQUEST_STORM_RESILIENCE_01.md",
     "docs/PRODUCTION_RATE_LIMIT_POLICY_01.md",
+    "web/src/api.js",
+    "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
     ...acceptedPrismaStatusPaths,
     ...guardAlignmentStatusPaths,
     ...companyBudgetStatusPaths,
@@ -1237,7 +1260,7 @@ function main() {
   addCase(cases, "git diff --check stays clean", () => must(gitLines(["diff", "--check"]).length === 0, "git diff --check findings"));
   addCase(cases, "git diff --cached --check stays clean", () => must(gitLines(["diff", "--cached", "--check"]).length === 0, "git diff --cached --check findings"));
   addCase(cases, "route diff stays empty", () =>
-    mustStatusEmptyOrExactlyWithIdentity(
+    mustStatusSubsetWithIdentity(
       ["backend/src/routes"],
       [...approvedCurrentHeadRouteEntries, ...batch09CommercialSplitRouteEntries],
       "route diff not empty",

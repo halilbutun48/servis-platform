@@ -6,13 +6,13 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
 import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN } from "./lib/currentHeadScopePolicy.js";
-import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
-const CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN;
+const CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path }) => path.startsWith("backend/src/routes/") || path.startsWith("backend/src/services/"));
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -565,10 +565,10 @@ function main() {
   mustNotList(staged, "debug.log", "debug.log is not staged");
 
   const status = statusNames().filter((file) => !cleanupScopeFiles.includes(file));
-  mustDiffEmptyOrExactlyWithIdentity(
+  mustStatusEmptyOrExactlyWithIdentity(
     ["backend/src/routes", "backend/src/services"],
     CURRENT_HEAD_APPROVED_TRACKED_BACKEND_DIFF,
-    "backend route/service diff stays within approved current-head scope"
+    "backend route/service status stays within approved current-head scope"
   );
   mustNotList(status, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
   mustAcceptedPrismaManifest();

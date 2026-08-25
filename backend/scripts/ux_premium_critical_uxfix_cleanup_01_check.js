@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import crypto from "node:crypto";
-import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
 import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry.js";
-import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN } from "./lib/currentHeadScopePolicy.js";
+import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -653,8 +653,8 @@ function main() {
 
   mustAcceptedPrismaManifest();
   const status = statusNames().filter((file) => !cleanupScopeFiles.includes(file) && !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
-  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF_WITHOUT_COMMERCIAL_CORE_CHILDREN;
-  mustDiffEmptyOrExactlyWithIdentity(
+  const approvedConcurrentBackendDiff = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
+  mustStatusEmptyOrExactlyWithIdentity(
     ["backend/src/routes", "backend/src/services"],
     approvedConcurrentBackendDiff,
     "approved NEW-01 backend diff is identity-locked"

@@ -694,8 +694,8 @@ async function main() {
 
   addGuard("allowlist", "route review guard stays exact-scope only", () => {
     mustAll(routeReviewCheck, [
-      ["mustNoDiffExcept(['backend/src/routes'], ['backend/src/routes/companyOverview.js'], 'backend route diff limited to companyOverview.js');", "backend route diff limited to companyOverview.js"],
-      ["mustDiffEmptyOrExactlyWithIdentity( ['backend/src/routes', 'backend/src/services', 'backend/prisma', 'prisma'],", "backend route/service/schema and Prisma diff stays empty"],
+      ["mustStatusEmptyOrExactlyWithIdentity(", "backend route/service status stays current-head approved"],
+      ["CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF", "current-head route/service diff helper"],
       ["mustExactGitPaths(['backend/prisma', 'prisma'], ACCEPTED_PRISMA_PATHS,", "accepted Prisma manifest is exact"],
       ["mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256,", "accepted schema SHA is enforced"],
       ["mustMigrationDirectoryShape(path.posix.dirname(entry.path),", "accepted migration directory shape is enforced"],
@@ -710,11 +710,8 @@ async function main() {
       ["const redteamOwnedScopePaths = [", "owned-file scope path list"],
       ["const redteamTrackedCleanPaths = [", "owned-file committed-clean scope list"],
       ["const redteamAuthorizedFollowupPaths = [", "owned-file authorized follow-up scope list"],
-      ["mustDiffEmptyOrExactlyWithIdentity(", "identity-locked backend diff helper"],
-      ["backend/src/routes/commercialCore.js", "identity-locked backend diff routes"],
-      ["backend/src/routes/operationProof.js", "identity-locked backend diff routes"],
-      ["backend/src/routes/trustQuality.js", "identity-locked backend diff routes"],
-      ["backend/src/services/qualityPaymentBridgeService.js", "identity-locked backend diff services"],
+      ["const exactApprovedConcurrentCanonicalEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;", "identity-locked backend diff helper"],
+      ["mustStatusEmptyOrExactlyWithIdentity(", "backend route/service status stays current-head approved"],
       ["mustTrackedAndCleanPaths(redteamTrackedCleanPaths, 'redteam committed scope stays tracked and clean');", "owned-file committed-clean status contract"],
       ["mustTrackedPaths(redteamAuthorizedFollowupPaths, 'redteam authorized follow-up scope stays tracked');", "owned-file authorized follow-up tracked contract"],
       ["mustDirtyOnlyWithin(", "owned-file follow-up dirty contract"],

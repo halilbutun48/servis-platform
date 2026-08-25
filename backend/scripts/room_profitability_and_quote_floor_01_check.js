@@ -19,7 +19,6 @@ import {
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
 import {
   mustNoDiffExceptWithIdentity,
-  mustStatusEmptyOrExactlyWithIdentity,
 } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -146,6 +145,7 @@ function assertDiffExactly(paths, expectedNames, label, cached = false) {
 const docPath = "docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md";
 const helperPath = "backend/src/finance/roomProfitabilityAndQuoteFloor.js";
 const panelPath = "web/src/panels/shared/FinancialOperationsPanel.jsx";
+const companyPanelPath = "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx";
 const routePath = "backend/src/routes/commercialCore.js";
 const roomRoutePath = "backend/src/routes/commercialCoreRoomRoutes.js";
 const companyRoutePath = "backend/src/routes/companyOverview.js";
@@ -165,6 +165,7 @@ const harnessDocPath = "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md";
 const docText = read(docPath);
 const helperText = read(helperPath);
 const panelText = read(panelPath);
+const companyPanelText = read(companyPanelPath);
 const routeText = readHead(routePath);
 const roomRouteText = readHead(roomRoutePath);
 const companyRouteText = readHead(companyRoutePath);
@@ -284,6 +285,7 @@ function main() {
   check(exists(docPath), "doc exists");
   check(exists(helperPath), "helper exists");
   check(exists(panelPath), "panel exists");
+  check(exists(companyPanelPath), "company panel exists");
   check(exists(routePath), "commercial route exists");
   check(exists(companyRoutePath), "company route exists");
   check(exists(apiPath), "api bridge exists");
@@ -349,7 +351,7 @@ function main() {
   check(textHas(panelText, "read-only/preview"), "panel keeps read-only wording");
   check(textHas(panelText, "Quote floor"), "panel shows quote floor");
   check(textHas(panelText, "Finansal Operasyonlar"), "panel room title present");
-  check(textHas(panelText, "Bütçe ve Servis Maliyeti"), "panel company title present");
+  check(textHas(panelText, "FinancialOperationsCompanyPreview"), "panel imports company preview component");
   check(textHas(panelText, "Yenile"), "panel refresh action present");
   check(textHas(panelText, "Gelişmiş maliyet girdileri"), "panel advanced inputs present");
   check(textHas(panelText, "Manuel maliyet tabanı"), "panel baseline input present");
@@ -361,6 +363,24 @@ function main() {
   check(textHas(panelText, "Yakıt tüketimi (L/100km)"), "panel fuel consumption input present");
   check(textHas(panelText, "Sürücü temel maliyeti"), "panel driver cost input present");
   check(textHas(panelText, "Aylık araç kira maliyeti"), "panel lease input present");
+
+  check(textHas(companyPanelText, "Bütçe ve Servis Maliyeti"), "company panel title present");
+  check(textHas(companyPanelText, "Tedarikçi Karşılaştırması"), "company panel comparison present");
+  check(textHas(companyPanelText, "CompanyComparisonBlock"), "company panel comparison component present");
+  check(textHas(companyPanelText, "preview?.supplierComparisonSummaryText"), "company panel supplier summary present");
+  check(textHas(companyPanelText, "Bütçe yaşam döngüsü"), "company panel lifecycle present");
+  check(textHas(companyPanelText, "Bütçe girdileri"), "company panel budget inputs present");
+  check(textHas(companyPanelText, "Taslak kaydet"), "company panel save action present");
+  check(textHas(companyPanelText, "Gönder"), "company panel submit action present");
+  check(textHas(companyPanelText, "Onayla"), "company panel approve action present");
+  check(textHas(companyPanelText, "Aktive et"), "company panel activate action present");
+  check(textHas(companyPanelText, "Arşivle"), "company panel archive action present");
+  check(textHas(companyPanelText, "Dönem Bütçesi"), "company panel budget metric present");
+  check(textHas(companyPanelText, "Gerçekleşen Servis Harcaması"), "company panel spend metric present");
+  check(textHas(companyPanelText, "Personel Başı Maliyet"), "company panel per-person metric present");
+  check(textHas(companyPanelText, "Vardiya Başı Maliyet"), "company panel per-shift metric present");
+  check(textHas(companyPanelText, "Sefer Başı Maliyet"), "company panel per-trip metric present");
+  check(textHas(companyPanelText, "Gün Başı Maliyet"), "company panel per-day metric present");
 
   check(textHas(roomRouteText, "/room/financial-operations/preview"), "room route path present");
   check(textHas(companyRouteText, "/financial-operations/preview"), "company route path present");
@@ -401,7 +421,7 @@ function main() {
   check(textHas(harnessDocText, "docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md"), "harness doc links room profitability doc");
 
   check(textHas(companyRouteText, "Route ownership anchor for company overview."), "company overview route ownership anchor present");
-  mustStatusEmptyOrExactlyWithIdentity(
+  mustNoDiffExceptWithIdentity(
     ["backend/src/routes", "backend/src/services", "prisma"],
     [...financeOwnedRouteEntries, ...roomOwnedCommercialRouteEntries, ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF, ...financeOwnedServiceEntries],
     "backend route/service/schema and Prisma diff limited to approved concurrent runtime paths",
@@ -465,6 +485,7 @@ function main() {
   check(fileLines(docPath) < 1000, "doc stays under 1000 lines", String(fileLines(docPath)));
   check(fileLines(helperPath) < 1000, "helper stays under 1000 lines", String(fileLines(helperPath)));
   check(fileLines(panelPath) < 1000, "panel stays under 1000 lines", String(fileLines(panelPath)));
+  check(fileLines(companyPanelPath) < 1000, "company panel stays under 1000 lines", String(fileLines(companyPanelPath)));
   check(fileLines(routePath) < 1000, "commercial route stays under 1000 lines", String(fileLines(routePath)));
   check(fileLines(companyRoutePath) < 1000, "company route stays under 1000 lines", String(fileLines(companyRoutePath)));
   check(fileLines(apiPath) < 1000, "api bridge stays under 1000 lines", String(fileLines(apiPath)));

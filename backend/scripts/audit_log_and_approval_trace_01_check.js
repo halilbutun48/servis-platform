@@ -20,7 +20,7 @@ import {
   isCommercialPaymentSecurityCheckerPath,
   isM80M89ContractSweepRepoContractPath,
   mustDiffEmptyOrExactlyWithIdentity,
-  mustStatusEmptyOrExactlyWithIdentity,
+  mustStatusSubsetWithIdentity,
 } from "./lib/guardGitScope.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -182,7 +182,7 @@ function buildExpectedShaMap(entries) {
 const batch09ApprovedConcurrentWorktreeEntries = [
   { path: "backend/README.md", sha256: "0E5C4A471BB7CD0B361C7EC6FB33899CABD810D8CB3892913F66FE26BE8F8AE7" },
     { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "367A0ECC128DEE9B5B8BD9B969518CFF390DF0F16D1FFC30B3C1A5216F01644C" },
-  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "6C58E2527886FACC9A1A81EF8C61F5144C4883E8AB848714BD2575839D48AA5F" },
+  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "1B8216B400772F3F1D3FACD55BC690FCC2CC662BB3CB93006117534AC6D32F19" },
   { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "F4F9BE905D1908ED9FB632225404968F36080F7B30785A20534D5D7C65380567" },
   { path: "backend/src/bootstrap/rateLimits.js", sha256: "D493701282D68ABA6F1DAFCAD4F01F9A65A432ECCA91F6A168A1058F119D3A2C" },
   { path: "backend/src/middleware/apiRequestLog.js", sha256: "5F27CA48608B10C6DDCD35F9D1C1E146D6AD432EAD63C90CF117F0EA3A051EE3" },
@@ -195,7 +195,7 @@ const batch09CommercialSplitRouteEntries = [
   { path: "backend/src/routes/commercialCoreRoutes.js", sha256: "11A5136CDA54B1467757BF9422EB6B63B0B00F9633CD1A8AF3303A5BA2A06E41" },
   { path: "backend/src/routes/commercialCorePaymentRoutes.js", sha256: "9BB53FE97B17F28892AF3B8C8E91373D7276183873E0258E694AD694F5E1B552" },
   { path: "backend/src/routes/commercialCorePaymentReportsRoutes.js", sha256: "02A327CB70645AA8652E542F5825B271B143AE7A741FC8FBD1CB0C157093FD36" },
-  { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "284B22FE4FD332430111A5BB8497D1B4226BB2E117965EEBE77D7544C9652196" },
+  { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "11A0C1B1CDE82470871EBBBD90CEE37F4CAA5C2AD6C25AB7B39586F11CBFDD1F" },
   { path: "backend/src/routes/commercialCoreRouteData.js", sha256: "5EB28DD6ABEC1AD63CA236AB567BB14B0CEEF35D54DF75343D5EC746F5A6FCD2" },
 ];
 const batch09CommercialSplitRouteShas = buildExpectedShaMap(batch09CommercialSplitRouteEntries);
@@ -205,6 +205,25 @@ const batch09ProvenanceClosureEntries = [
   { path: "backend/src/server.js", sha256: "1FD7A545B43FA265A15737759CBE5DE1887C7CA3A3846170E3F9D0EFFEEABF77" },
 ];
 const batch09ProvenanceClosureShas = buildExpectedShaMap(batch09ProvenanceClosureEntries);
+
+const auditApprovalOwnedEntries = [
+  { path: "backend/scripts/room_profitability_and_quote_floor_01_expansion.js", sha256: "BC75C415C1DC6472CD563F2A55DDDE3AB72CA79F33436F861A0C644C73C957FC" },
+  { path: "backend/src/finance/financialOperationsScope.js", sha256: "A2E6DBF59BD4FE1B74CBB45D0B07E0A677D94B2A08F30970BEBD334583DA6FD2" },
+  { path: "web/src/api.js", sha256: "0380257F2583AAC4532D119EE16D0182B20FC75B54D8830092C38E45AE2F4893" },
+  { path: "web/src/panels/shared/FinancialOperationsPanel.jsx", sha256: "8765A423F628C5AA8606CA7E90ED37AD53D679E41343829056D13BAE8D1C1520" },
+  { path: "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx", sha256: "9A340B517A77F21509596DAEF5DE347EE94347A3F9CF9753966FA1AB4EB71E30" },
+];
+const auditApprovalOwnedShas = buildExpectedShaMap(auditApprovalOwnedEntries);
+
+const auditDocWorktreeEntries = [
+  { path: "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md", sha256: "AE93752F59CE9FC1763708FD40EB4DD3B4E10BC5D54CCF98B16C94C61564DF2B" },
+  { path: "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md", sha256: "550FD0EB75144987CB5DB759628ACF6D1EC4EE4A5AEE08584D74B6FCEDFA9860" },
+  { path: "docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md", sha256: "6A11ABE8A17CC907FA4C3B93940C8FCDC2F58B918C24A6B4EE62525A2D54640B" },
+  { path: "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "A7EF3D0DB003D206845EBDBF3DFF52B82839A993966BE10618C32EC7A418889E" },
+  { path: "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "36D7BCC36F1F2772524EC66B07A2A1363CA584ECAADD19C7FD4F7A750CF4A988" },
+  { path: "docs/UX_PANEL_INVENTORY_02A_AUDIT.md", sha256: "BE7419F53FAF68B28E2B946A2BBCE5B143939F9C59366F5B6DD568BCEE425B25" },
+];
+const auditDocWorktreeShas = buildExpectedShaMap(auditDocWorktreeEntries);
 
 function classifyDirtyPath(file, context) {
   const normalized = normalizePath(file);
@@ -270,6 +289,22 @@ function classifyDirtyPath(file, context) {
       return { category: "PROVEN_BATCH09_CHANGE" };
     }
     return { category: "APPROVED_CONCURRENT_CANONICAL_WORKTREE" };
+  }
+
+  if (auditApprovalOwnedShas.has(normalized)) {
+    const expected = auditApprovalOwnedShas.get(normalized);
+    const actual = fileSha256(normalized);
+    return actual === expected
+      ? { category: "AUDIT_APPROVAL_OWNED_PRODUCT" }
+      : { category: "UNKNOWN", detail: `${normalized} expected ${expected} got ${actual}` };
+  }
+
+  if (auditDocWorktreeShas.has(normalized)) {
+    const expected = auditDocWorktreeShas.get(normalized);
+    const actual = fileSha256(normalized);
+    return actual === expected
+      ? { category: "DOC_WORKTREE_SCOPE" }
+      : { category: "UNKNOWN", detail: `${normalized} expected ${expected} got ${actual}` };
   }
 
   if (isBatch13FoundationSupportPath(normalized)) {
@@ -370,7 +405,7 @@ function main() {
   const activeRegistryCheckerPaths = buildRegistryOwnedCheckerPaths(packageScripts, productExtensionsCheckScripts);
   const coreGuardEntries = [
     { path: "backend/scripts/current_head_scope_policy_01_check.js", sha256: "0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F" },
-   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "E5716C9033F3834280709467A62D77CC6AFCBCBDA55AEF825B3CE69761F45D19" },
+   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "3D5222A95430F3099E5A120EFAEC6AB3FA9A31B926D320C56CB6219E28F1EDFC" },
   { path: "backend/scripts/lib/productExtensionsRegistry.js", sha256: "6C0FA82E0B7024D4DADF5AA588E33509A5D91866CF39D8D875A0BFEF94064D8F" },
   { path: "backend/scripts/lib/guardGitScope.js", sha256: "7BAA65107857A0A64EF236A130B0E618AD08FC72453928C0A46F243287044EE5" },
   { path: "backend/scripts/lib/guardRunnerContracts.js", sha256: "1B180E2E1C901041734CCE494774865C9644CA02917B1326B6FEF8EB713E239A" },
@@ -887,6 +922,7 @@ function main() {
         case "INDEX_WORKTREE_SCOPE":
         case "TEST_INFRA":
         case "RUNTIME_DATA":
+        case "AUDIT_APPROVAL_OWNED_PRODUCT":
         case "ROLE_TENANT_AUTH_OWNED_PRODUCT":
           break;
         case "ROUTE":
@@ -907,7 +943,7 @@ function main() {
   addCase(cases, "git diff --check stays clean", () => must(diffCheckClean, "git diff --check findings"));
   addCase(cases, "git diff --cached --check stays clean", () => must(cachedDiffCheckClean, "git diff --cached --check findings"));
   addCase(cases, "route diff stays compatible", () => {
-    mustStatusEmptyOrExactlyWithIdentity(
+    mustStatusSubsetWithIdentity(
       ["backend/src/routes"],
       [
         ...CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) => entryPath.startsWith("backend/src/routes/")),

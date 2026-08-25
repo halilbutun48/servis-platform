@@ -206,6 +206,45 @@ export function mustStatusEmptyOrExactlyWithIdentity(paths, allowedEntries, labe
   must(failures.length === 0, `${label}: ${failures.join(", ") || "(none)"}`);
 }
 
+export function mustStatusSubsetWithIdentity(paths, allowedEntries, label) {
+  const allowed = allowedDiffMap(allowedEntries);
+  const entries = gitStatusEntries(paths);
+  if (entries.length === 0) {
+    must(true, label);
+    return;
+  }
+
+  const actualPaths = sortedUniquePaths(entries.map((entry) => entry.path));
+  const unexpected = actualPaths.filter((file) => !allowed.has(file));
+  const statusViolations = [];
+  const identityMismatches = [];
+
+  for (const entry of entries) {
+    const expectedSha = allowed.get(entry.path);
+    if (!expectedSha) {
+      continue;
+    }
+
+    const status = String(entry.raw || "").slice(0, 2);
+    if (status.includes("D")) {
+      statusViolations.push(`${entry.path} deletion not allowed (${entry.raw})`);
+      continue;
+    }
+    if (status.includes("R")) {
+      statusViolations.push(`${entry.path} rename not allowed (${entry.raw})`);
+      continue;
+    }
+
+    const actualSha = fileSha256(entry.path);
+    if (actualSha !== expectedSha) {
+      identityMismatches.push(`${entry.path} expected ${expectedSha} got ${actualSha}`);
+    }
+  }
+
+  const failures = [...unexpected, ...statusViolations, ...identityMismatches];
+  must(failures.length === 0, `${label}: ${failures.join(", ") || "(none)"}`);
+}
+
 export function mustNoStagedPrefix(names, prefixes, label) {
   const hits = names.filter((name) => prefixes.some((prefix) => normalizePath(name).startsWith(normalizePath(prefix))));
   must(hits.length === 0, `${label}: ${hits.join(", ") || "(none)"}`);

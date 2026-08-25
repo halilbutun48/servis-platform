@@ -256,7 +256,7 @@ function runBoundaryChecks() {
   check(Object.isFrozen(FINANCIAL_OPERATIONS_ROLE_ACCESS), "role access registry frozen");
   check(FINANCIAL_OPERATIONS_SURFACES.length === 13, "surface registry size");
   check(FINANCIAL_OPERATIONS_REUSE_MAP.length >= 13, "reuse map size");
-  check(FINANCIAL_OPERATIONS_SCOPE_BOUNDARY.includes("read-only preview only"), "scope boundary read-only");
+  check(FINANCIAL_OPERATIONS_SCOPE_BOUNDARY.includes("preview surfaces plus company budget lifecycle"), "scope boundary lifecycle");
   check(FINANCIAL_OPERATIONS_SCOPE_BOUNDARY.includes("no write-action"), "scope boundary no write");
   check(FINANCIAL_OPERATIONS_SCOPE_BOUNDARY.includes("tenant isolation preserved"), "scope boundary tenant isolation");
   check(FINANCIAL_OPERATIONS_EXCLUDED_SCOPE.includes("provider credential read/write/use"), "excluded scope provider credential");
@@ -330,7 +330,10 @@ function runActionClassificationChecks() {
   }
 
   for (const surface of FINANCIAL_OPERATIONS_SURFACES) {
-    check(isFinancialOperationReadOnlyAction(surface.id) === true, `surface read-only action ${surface.id}`);
+    check(
+      isFinancialOperationReadOnlyAction(surface.id) === (surface.id === "company_budget" ? false : true),
+      `surface read-only action ${surface.id}`,
+    );
     check(isAccountingExecutionBlocked(surface.id) === false, `surface not blocked action ${surface.id}`);
   }
 
@@ -554,7 +557,7 @@ function runPreviewChecks() {
   check(companyDeniedState.readOnly === true, "company denied state read only");
   check(companyDeniedState.summaryText.includes("read-only/preview"), "company denied state copy");
   check(companyEmptyState.allowed === true, "company empty state allowed");
-  check(companyEmptyState.readOnly === true, "company empty state read only");
+  check(companyEmptyState.readOnly === false, "company empty state read only");
   check(companyEmptyState.summaryText.includes("henüz veri yok"), "company empty state copy");
   check(companyEmptyState.nextAction.includes(FINANCIAL_OPERATIONS_NEXT_MILESTONE), "company empty state next action");
 

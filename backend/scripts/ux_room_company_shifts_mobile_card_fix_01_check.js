@@ -13,6 +13,7 @@ import {
   BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
   M80_M89_CONTRACT_SWEEP_REPO_CONTRACT_PATHS,
   mustNoDiffExceptWithIdentity,
+  mustStatusEmptyOrExactlyWithIdentity,
 } from "./lib/guardGitScope.js";
 import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
@@ -697,18 +698,20 @@ function main() {
     "backend/src/utils/responseCache.js",
     "backend/src/bootstrap/routeMounts.js",
     "backend/src/server.js",
+    "web/src/api.js",
     { path: "backend/src/routes/dashboardBulk.js", sha256: "C1FA734271C1B3FF73CA3393B781EAF966710A66AD57BC31290B829CFFF5754F" },
-    { path: "backend/src/routes/companyOverview.js", sha256: "A06E604912CF323307E4257A4AC8FD116ADF04C1476201EB8C55F44C4C9356BB" },
+    { path: "backend/src/routes/companyOverview.js", sha256: "EB2E7956FD7C02891687815D389AB9E9C5374CAB2FD684E2ADE7CE42C83F8528" },
     { path: "backend/src/services/dashboardBulk.js", sha256: "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E" },
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
     "web/src/panels/room/DriversPanel.jsx",
     "web/src/panels/shared/FinancialOperationsPanel.jsx",
+    "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
   ]);
 
   allWithin(statusWithoutStep167LocalityDebt, exactAllowed, ["backend/artifacts/runtime-data/", "backend/artifacts/browser-smoke/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within room/company shifts mobile card fix scope");
-  mustNoDiffExceptWithIdentity(["backend/src/routes", "backend/src/services"], approvedConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");
+  mustStatusEmptyOrExactlyWithIdentity(["backend/src/routes", "backend/src/services"], approvedConcurrentBackendDiff, "approved NEW-01 backend diff is identity-locked");
   mustNotList(statusWithoutApprovedConcurrent.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/routes/companyOverview.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/routes/", "backend routes are untouched");
   mustNotList(statusWithoutApprovedConcurrent.filter((file) => file !== "backend/src/routes/dashboardBulk.js" && file !== "backend/src/services/dashboardBulk.js"), "backend/src/services/", "backend services are untouched");
   mustNotList(statusWithoutAcceptedPrisma, "Prisma/", "schema/migration files are untouched");
