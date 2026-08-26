@@ -10,6 +10,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildMapFacts } from "../../utils/copilotFacts";
 import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
@@ -32,6 +33,14 @@ function gpsAtIso(v) {
 
 function gpsAgeLabel(v) {
   return getGpsAgeText(v);
+}
+
+function routeSourceLabel(value) {
+  const key = String(value || "").toUpperCase();
+  if (key === "ESTIMATED") return "Tahmini rota";
+  if (key === "OSRM") return "Yol ağı rotası";
+  if (key === "OFFLINE") return "Çevrim dışı";
+  return key || "Belirtilmemiş";
 }
 
 function gpsCoord(v) {
@@ -111,7 +120,7 @@ function shiftTitle(s) {
   if (!s) return "-";
   const id = s.id ? `#${s.id}` : "";
   const st = String(s.status || "").toUpperCase();
-  return `Shift ${id} • ${displayStatusLabel(st)}`;
+  return `Vardiya ${id} • ${displayStatusLabel(st)}`;
 }
 
 function fmtTR(iso) {
@@ -323,22 +332,26 @@ export default function RoomMapPanel() {
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
   const safeDriveSummaryParams = useMemo(
-    () => ({
+    () => {
+      const rawGpsSource = selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel;
+      const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : undefined;
+      return ({
       gpsStatus: uiStatusFromVehicle(selected),
       gpsAge: gpsAgeLabel(selected),
       gpsLast: selected?.gpsLast,
-      gpsSourceLabel: selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel,
+      gpsSourceLabel,
       speedKmh: selected?.gpsLast?.speed || selected?.speed || selected?.speedKmh,
       speedLimitKmh: selected?.speedLimitKmh,
       routeProgressState: selectedShift?.status || selected?.gpsState?.lastUiStatus || selected?.gpsState?.lastStatus,
       nextStopName: selectedNext?.name,
       proofStatus: selectedShift?.operationProofStatus || selectedShift?.proofStatus || selected?.operationProofStatus || selected?.proofStatus,
       providerStatus: selected?.gpsState?.lastUiStatus || selected?.gpsState?.lastStatus,
-      providerLabel: selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel,
+      providerLabel: gpsSourceLabel,
       selectedVehicle: selected,
       selectedShift,
       nextStop: selectedNext,
-    }),
+      });
+    },
     [selected, selectedShift, selectedNext]
   );
   const selectedRiskLines = useMemo(() => {
@@ -356,7 +369,7 @@ export default function RoomMapPanel() {
       lines.push("GPS düşük sinyal");
     }
 
-    if (!selectedShift) lines.push("Shift yok");
+    if (!selectedShift) lines.push("Vardiya yok");
     if (!selectedNext?.name) lines.push("Sıradaki durak bekleniyor");
     if (selectedEta == null) lines.push("Tahmini süre hesaplanamıyor");
     return lines.length ? lines : ["Belirgin risk yok"];
@@ -367,7 +380,7 @@ export default function RoomMapPanel() {
     const parts = [
       `Son güncelleme: ${fmtTR(selectedShift?.updatedAt || selectedShift?.lastUpdatedAt || selectedShift?.startAt)}`,
       `Son GPS: ${gpsAgeLabel(selected)}`,
-      `Rota kaynağı: ${routePreview?.source || "ESTIMATED"}`,
+      `Rota kaynağı: ${routeSourceLabel(routePreview?.source)}`,
     ];
     return parts.join(" • ");
   }, [selected, selectedShift?.updatedAt, selectedShift?.lastUpdatedAt, selectedShift?.startAt, routePreview?.source]);
@@ -378,7 +391,7 @@ export default function RoomMapPanel() {
     if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
     if (selected?.plate) parts.push(`Araç ${selected.plate}`);
     const ui = uiStatusFromVehicle(selected);
-    if (ui) parts.push(`GPS ${ui}`);
+    if (ui) parts.push(`GPS ${gpsSourcePresentationLabel(ui)}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     return parts.join(" - ");
   }, [selected, selectedShift?.id, selectedNext]);
@@ -389,7 +402,7 @@ export default function RoomMapPanel() {
     const ui = uiStatusFromVehicle(selected);
     if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
     if (selected?.plate) parts.push(`Araç ${selected.plate}`);
-    if (ui) parts.push(`GPS ${ui}`);
+    if (ui) parts.push(`GPS ${gpsSourcePresentationLabel(ui)}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     if (selectedEta != null) {
       const etaText = etaDisplayText(selected, selectedEta, selectedNext);
@@ -627,13 +640,13 @@ export default function RoomMapPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title="ROOM • Canlı Takip"
+        title="Taşımacılık Firması • Canlı Takip"
         subtitle="Tek panel: canlı liste + seçili araç + duraklar + harita"
         actions={
           <div className="toolbar" style={{ justifyContent: "flex-end" }}>
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(Boolean(e.target.checked))} />
-              Sadece ACTIVE
+              Yalnızca aktif
             </label>
 
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -649,7 +662,7 @@ export default function RoomMapPanel() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Plaka / sürücü / şirket / id"
+              placeholder="Plaka / sürücü / hizmet alan firma / kayıt no"
               style={{ width: 280 }}
             />
 
@@ -698,7 +711,7 @@ export default function RoomMapPanel() {
                   <div>
                     <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Seçili Araç</div>
                     <div className="muted" style={{ fontSize: 12, lineHeight: 1.1 }}>
-                      {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
+                      {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Vardiya yok"}
                     </div>
                   </div>
 
@@ -772,7 +785,7 @@ export default function RoomMapPanel() {
                           marginLeft: 4,
                         }}
                       >
-                        <span className="muted" style={{ fontSize: 12 }}>Mini Timeline</span>
+                        <span className="muted" style={{ fontSize: 12 }}>Kısa zaman çizelgesi</span>
                         <div style={{ display: "flex", alignItems: "center" }}>
                           <StopTimeline
                             stops={selectedStops}
@@ -847,7 +860,7 @@ export default function RoomMapPanel() {
               <div className="card">
                 <div className="title" style={{ fontSize: 16 }}>Seçili Araç</div>
                 <div className="muted" style={{ fontSize: 12 }}>
-                  {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
+                  {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Vardiya yok"}
                 </div>
                 <div className="col" style={{ gap: 8, marginTop: 10 }}>
                   <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>{displayStatusLabel(uiStatusFromVehicle(selected))}</span>

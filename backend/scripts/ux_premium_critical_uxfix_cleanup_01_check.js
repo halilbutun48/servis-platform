@@ -454,6 +454,7 @@ function main() {
     "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
     "web/src/panels/parent/LivePanel.jsx",
     "web/src/panels/personel/LivePanel.jsx",
+    "web/src/panels/personel/MyRidePanel.jsx",
     "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
     "backend/scripts/ux_superadmin_panel_clarity_01_check.js",
     "web/src/panels/company/AgreementsPanel.jsx",
@@ -561,7 +562,7 @@ function main() {
   mustContains(roomDriversShifts, "Sürücü kaydı", "cleanup room driver shifts keeps safe driver wording");
   mustContains(roomDriversEdit, "Sürücü kaydı", "cleanup room driver edit keeps safe driver wording");
   mustContains(companyAgreementsPanel, 'scrollIntoView({ block: "center"', "cleanup company agreements keeps centered detail scroll");
-  mustContains(companyAgreementsOverview, "Sözleşmeler (Company)", "cleanup company agreements keeps company label");
+  mustContains(companyAgreementsOverview, "Hizmet Alan Firma Sözleşmeleri", "cleanup company agreements keeps company label");
   mustContains(companyAgreementsSource, "Kaynak vardiya bağlantısı", "cleanup company agreements keeps source shift link wording");
   mustContains(etaSanity, "Çevrim dışı", "cleanup ETA sanity keeps offline wording");
 

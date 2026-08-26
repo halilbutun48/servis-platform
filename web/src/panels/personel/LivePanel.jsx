@@ -11,6 +11,7 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 import {
   getLiveTrackingApiFeedback,
   getLiveTrackingGeoErrorMessage,
@@ -331,7 +332,8 @@ export default function PersonelLivePanel() {
   const routeQualityText = etaQualityText(eta);
   const routeQualityTone = etaQualityTone(eta);
   const nextActionTextValue = nextActionText(eta);
-  const gpsSourceLabel = vehicle?.gpsState?.lastSource || vehicle?.gpsState?.sourceLabel || vehicle?.gpsLast?.sourceLabel || (vehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
+  const rawGpsSource = vehicle?.gpsState?.lastSource || vehicle?.gpsState?.sourceLabel || vehicle?.gpsLast?.sourceLabel;
+  const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : (vehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
   const gpsStatusText = getGpsReliabilityLabel(ui);
   const copilotFacts = useMemo(() => buildMapFacts({
     selected: vehicle,
@@ -485,7 +487,7 @@ export default function PersonelLivePanel() {
                 </span>
               </div>
 
-              <div className="muted">Oda: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
+              <div className="muted">Taşımacılık Firması: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
 
               <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <span>
@@ -539,7 +541,7 @@ export default function PersonelLivePanel() {
                   Seçili Araç
                 </div>
                 <div className="muted" style={{ fontSize: 12 }}>
-                  {vehicle?.plate || "-"} • Vardiya #{myShift?.id || "-"} • {String(myShift?.status || "-").toUpperCase()}
+                  {vehicle?.plate || "-"} • Vardiya #{myShift?.id || "-"} • {displayStatusLabel(String(myShift?.status || "-").toUpperCase())}
                 </div>
               </div>
               <button className="btn sm" onClick={fitAll}>
@@ -628,7 +630,7 @@ export default function PersonelLivePanel() {
 
             {viewMode === "timeline" ? (
               <div style={{ marginTop: 10 }}>
-                <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
+                <div className="muted" style={{ marginBottom: 6 }}>Kısa zaman çizelgesi</div>
                 <StopTimeline
                   stops={stops}
                   nextStopId={nextStopId}

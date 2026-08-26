@@ -18,6 +18,7 @@ import {
   detectNextBestActionSurface,
   looksLikeNextBestActionQuestion,
 } from '../src/ai/chat/conversationNextBestActionEngine.js';
+import { normalizeVisibleReplyFragment } from '../src/ai/chat/conversationTaskStateShared.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -111,7 +112,7 @@ function buildSurfaceRuntimeSpecs() {
       selectedSummary: 'Şirket operasyon panosu seçili kayıt',
       selectedRecordStatus: 'Hazır',
       replyTokens: ['Şirket Operasyon Panosu', 'Eksik atama', 'Güncel olmayan konum', 'Plan onayı'],
-      chipsTokens: ['Eksik atama', 'Güncel olmayan konum', 'Plan onayı', 'İnsan onayı'],
+      chipsTokens: ['Eksik atama', 'Güncel olmayan konum', 'Plan onayı', 'Kullanıcı onayı'],
     },
     {
       role: 'COMPANY',
@@ -123,7 +124,7 @@ function buildSurfaceRuntimeSpecs() {
       selectedSummary: 'Planlama merkezi seçili kayıt',
       selectedRecordStatus: 'Hazır',
       replyTokens: ['Planlama Merkezi', 'Paket, tarih, saat', 'Personel satırı', 'Adres / konum'],
-      chipsTokens: ['Paket / tarih / saat', 'Personel satırı', 'Adres / konum', 'İnsan onayı'],
+      chipsTokens: ['Paket / tarih / saat', 'Personel satırı', 'Adres / konum', 'Kullanıcı onayı'],
     },
     {
       role: 'COMPANY',
@@ -159,7 +160,7 @@ function buildSurfaceRuntimeSpecs() {
       selectedSummary: 'Organizasyon seçili kayıt',
       selectedRecordStatus: 'Hazır',
       replyTokens: ['Organizasyon Planlama', 'Plan kapsamı', 'Konum doğrulama', 'Rota önizleme'],
-      chipsTokens: ['Plan kapsamı', 'Konum doğrulama', 'Rota önizleme', 'İnsan onayı'],
+      chipsTokens: ['Plan kapsamı', 'Konum doğrulama', 'Rota önizleme', 'Kullanıcı onayı'],
     },
     {
       role: 'SCHOOL',
@@ -170,8 +171,8 @@ function buildSurfaceRuntimeSpecs() {
       menuPurpose: 'Okul planlama ve servis hazırlığı için kullanılır.',
       selectedSummary: 'Okul planı seçili kayıt',
       selectedRecordStatus: 'Hazır',
-      replyTokens: ['Okul Planlama', 'Servis planı', 'Yetkili görünüm', 'İnsan onayı'],
-      chipsTokens: ['Servis planı', 'Katılımcı etkisi', 'Yetkili görünüm', 'İnsan onayı'],
+      replyTokens: ['Okul Planlama', 'Servis planı', 'Yetkili görünüm', 'Kullanıcı onayı'],
+      chipsTokens: ['Servis planı', 'Katılımcı etkisi', 'Yetkili görünüm', 'Kullanıcı onayı'],
     },
     {
       role: 'ROOM',
@@ -471,15 +472,15 @@ function makeScreenCase(caseSpec) {
     check(reply === state.reply, `${caseSpec.surfaceKey} helper reply matches state reply`);
     must(state.reply, 'Sıradaki en doğru güvenli adım', `${caseSpec.surfaceKey} reply keeps safe next-action wording`);
     must(state.reply, 'Önce yapılacak güvenli kontrol', `${caseSpec.surfaceKey} reply keeps safe control wording`);
-    must(state.reply, 'İnsan onayı gerekir', `${caseSpec.surfaceKey} reply keeps human approval boundary`);
-    must(state.reply, caseSpec.surfaceLabel, `${caseSpec.surfaceKey} reply mentions surface label`);
-    must(state.reply, caseSpec.selectedSummary, `${caseSpec.surfaceKey} reply mentions selected summary`);
+    must(state.reply, 'Onayınız gerekli', `${caseSpec.surfaceKey} reply keeps human approval boundary`);
+    must(state.reply, normalizeVisibleReplyFragment(caseSpec.surfaceLabel), `${caseSpec.surfaceKey} reply mentions surface label`);
+    must(state.reply, normalizeVisibleReplyFragment(caseSpec.selectedSummary), `${caseSpec.surfaceKey} reply mentions selected summary`);
     must(state.reply, caseSpec.selectedRecordStatus, `${caseSpec.surfaceKey} reply mentions selected record status`);
     for (const token of caseSpec.prioritySignals || []) {
-      must(state.reply, token, `${caseSpec.surfaceKey} reply keeps prioritization signal ${token}`);
+      must(state.reply, normalizeVisibleReplyFragment(token), `${caseSpec.surfaceKey} reply keeps prioritization signal ${token}`);
     }
     if (caseSpec.singleActionLead) {
-      must(state.reply, caseSpec.singleActionLead, `${caseSpec.surfaceKey} reply keeps single-action lead ${caseSpec.singleActionLead}`);
+      must(state.reply, normalizeVisibleReplyFragment(caseSpec.singleActionLead), `${caseSpec.surfaceKey} reply keeps single-action lead ${caseSpec.singleActionLead}`);
     }
   } else {
     check(!state.shouldRespond, `${caseSpec.surfaceKey} state stays silent`);
@@ -499,7 +500,7 @@ function makeScreenCase(caseSpec) {
   }
 
   for (const token of caseSpec.chipsTokens || []) {
-    must(state.chips.join(' • '), token, `${caseSpec.surfaceKey} chips keep ${token}`);
+    must(state.chips.join(' • '), normalizeVisibleReplyFragment(token), `${caseSpec.surfaceKey} chips keep ${token}`);
   }
 
   return {
@@ -621,7 +622,7 @@ function main() {
     selectedRecordStatus: 'Belirsiz',
     shouldRespond: false,
     replyTokens: ['Önce seçili kayıt ve eksik sinyali birlikte okuyorum.', 'Eksik sinyal', 'Seçili kayıt'],
-    chipsTokens: ['Seçili kayıt', 'Eksik sinyal', 'İlgili ekran', 'İnsan onayı'],
+    chipsTokens: ['Seçili kayıt', 'Eksik sinyal', 'İlgili ekran', 'Kullanıcı onayı'],
   });
 
   const runtimeStates = [];

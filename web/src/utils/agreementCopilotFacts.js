@@ -162,7 +162,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
     routeRefreshProposedText ? `Yeni rota: ${routeRefreshProposedText}` : "",
     routeRefreshDiffText ? `Fark: ${routeRefreshDiffText}` : "",
     routeRefreshPriceImpactText ? `Ücret etkisi: ${routeRefreshPriceImpactText}` : "",
-    routeRefreshRoomCounterText ? `Oda karşı teklifi: ${routeRefreshRoomCounterText}` : "",
+    routeRefreshRoomCounterText ? `Taşımacılık Firması karşı teklifi: ${routeRefreshRoomCounterText}` : "",
   ].filter(Boolean).join(" • "), "");
   const dynamicSavingsPreview = summary.dynamicSavingsPreview && typeof summary.dynamicSavingsPreview === "object"
     ? summary.dynamicSavingsPreview
@@ -254,7 +254,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const selectedRecordSummary = compactText([
     summary.selectedRecordSummary || buildSelectedSummary({
       statusText,
-      roomName: roomName || compactText(summary.roomName || `Oda #${item?.roomId || "-"}`),
+      roomName: roomName || compactText(summary.roomName || `Taşımacılık Firması #${item?.roomId || "-"}`),
       startDate: summary.startDate || item?.startDate || "",
       endDate: summary.endDate || item?.endDate || "",
       sourceShiftId: safeInt(summary.sourceShiftId || summary.sourceShift?.id || item?.sourceShiftId || 0),
@@ -289,7 +289,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
   const driverLabel = compactText(summary.driverLabel || summary.agreementDriverLabel || (item?.driverId ? `#${item.driverId}` : ""));
   const hasProductionSignal = generatedShiftCount > 0 || todayGeneratedShift || Boolean(lastGeneratedShiftId);
   const status = compactText(statusText, "-");
-  const roomLabel = compactText(summary.roomLabel || roomName || `Oda #${item?.roomId || "-"}`);
+  const roomLabel = compactText(summary.roomLabel || roomName || `Taşımacılık Firması #${item?.roomId || "-"}`);
   const todayProductionSummary = todayGeneratedShift ? "Bugün üretim: Var" : "Bugün üretim: Yok";
   const productionSummary = hasProductionSignal
     ? `Bu sözleşme için bugün vardiya üretim sinyali görünüyor. Üretilen vardiya sayısı ${generatedShiftCount}${lastGeneratedShiftId ? ` • Son üretilen vardiya #${lastGeneratedShiftId}` : ""}`
@@ -345,7 +345,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
         platformFeeMarketShiftId ? `Kaynak vardiya: #${platformFeeMarketShiftId}` : "",
         platformFeeOrganizationPlanId ? `Organizasyon planı: #${platformFeeOrganizationPlanId}` : "",
         platformFeeSelectedOfferId ? `Seçili teklif: #${platformFeeSelectedOfferId}` : "",
-        platformFeeRoomId ? `Oda: #${platformFeeRoomId}` : "",
+        platformFeeRoomId ? `Taşımacılık Firması: #${platformFeeRoomId}` : "",
         platformFeeMissingSignals.length ? `Eksik sinyaller: ${platformFeeMissingSignals.join(", ")}` : "",
       ], 3).join(" • ") || platformFeeSafeExplanation || "Kaynak vardiya / organizasyon planı sinyali görünmüyor.",
     } : null,
@@ -457,7 +457,7 @@ export function buildAgreementCopilotFacts(item, summary = {}) {
           platformFeeMarketShiftId ? `Kaynak vardiya: #${platformFeeMarketShiftId}` : "",
           platformFeeOrganizationPlanId ? `Organizasyon planı: #${platformFeeOrganizationPlanId}` : "",
           platformFeeSelectedOfferId ? `Seçili teklif: #${platformFeeSelectedOfferId}` : "",
-          platformFeeRoomId ? `Oda: #${platformFeeRoomId}` : "",
+          platformFeeRoomId ? `Taşımacılık Firması: #${platformFeeRoomId}` : "",
           platformFeeMissingSignals.length ? `Eksik sinyaller: ${platformFeeMissingSignals.join(", ")}` : "",
         ], 3).join(" • ") || platformFeeSafeExplanation || "Kaynak vardiya / organizasyon planı sinyali görünmüyor.",
       })] : []),

@@ -1,7 +1,23 @@
 export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = [
   {
+    path: "backend/src/routes/commercialCoreRoutes.js",
+    sha256: "11A5136CDA54B1467757BF9422EB6B63B0B00F9633CD1A8AF3303A5BA2A06E41",
+  },
+  {
+    path: "backend/src/routes/commercialCorePaymentRoutes.js",
+    sha256: "9BB53FE97B17F28892AF3B8C8E91373D7276183873E0258E694AD694F5E1B552",
+  },
+  {
+    path: "backend/src/routes/commercialCorePaymentReportsRoutes.js",
+    sha256: "02A327CB70645AA8652E542F5825B271B143AE7A741FC8FBD1CB0C157093FD36",
+  },
+  {
     path: "backend/src/routes/commercialCoreRoomRoutes.js",
     sha256: "11A0C1B1CDE82470871EBBBD90CEE37F4CAA5C2AD6C25AB7B39586F11CBFDD1F",
+  },
+  {
+    path: "backend/src/routes/commercialCoreRouteData.js",
+    sha256: "5EB28DD6ABEC1AD63CA236AB567BB14B0CEEF35D54DF75343D5EC746F5A6FCD2",
   },
   {
     path: "backend/src/routes/companyOverview.js",
@@ -14,6 +30,14 @@ export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = [
   {
     path: "backend/src/services/financialOperationsLifecycle.js",
     sha256: "0767FB5A163CCB19B06F111FE8B00B2340913E29C613A9DEDA93B2CCAA711FF2",
+  },
+  {
+    path: "backend/Dockerfile",
+    sha256: "BC81A199698A5758B51B0EA35A4C9B1C6640E22684E09FC4CD19BC977D21113D",
+  },
+  {
+    path: "backend/scripts/smoke.js",
+    sha256: "A6FC4C039803A5A8FFA61BC733FA2B13C51707F1C1B00EF6007EF0326F328C12",
   },
 ];
 

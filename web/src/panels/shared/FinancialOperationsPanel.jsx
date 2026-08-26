@@ -8,6 +8,8 @@ import {
   archiveCompanyBudgetPlan,
   createCompanyBudgetPlan,
   createRoomQuoteFloorDraft,
+  getCurrentCompanyBudgetPlan,
+  getCurrentRoomQuoteFloorDraft,
   getCompanyFinancialOperationsPreview,
   getRoomFinancialOperationsPreview,
   applyRoomQuoteFloorDraft,
@@ -17,6 +19,20 @@ import {
   updateCompanyBudgetPlan,
 } from "../../api";
 import FinancialOperationsCompanyPreview from "./FinancialOperationsCompanyPreview";
+import {
+  baselineSourceLabel,
+  confidenceLabel,
+  confidenceTone,
+  financeFieldLabels,
+  lifecycleStateLabel,
+  normalizeFinanceVisibleText,
+  preferredScopeSubtitle,
+  preferredScopeTitle,
+  modelStatusLabel,
+  modelStatusTone,
+  previewStatusLabel,
+  previewStatusTone,
+} from "./financialOperationsPresentation";
 
 const INPUT_STYLE = {
   width: "100%",
@@ -54,23 +70,27 @@ function formatBps(value) {
   return `%${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 }).format(n / 100)}`;
 }
 
-function formatKm(value) {
+function formatBpsInput(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return "";
   const n = Number(value);
-  if (!Number.isFinite(n)) return "-";
-  if (n <= 0) return "-";
-  return n >= 10 ? `${Math.round(n)} km` : `${n.toFixed(2)} km`;
+  return Number.isFinite(n) ? String(n / 100) : "";
 }
 
-function formatMinutes(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "-";
-  if (n <= 0) return "-";
-  return `${Math.round(n)} dk`;
+function parseBpsInput(value) {
+  const text = String(value ?? "").trim().replace(",", ".");
+  if (!text) return "";
+  const n = Number(text);
+  return Number.isFinite(n) ? String(Math.round(n * 100)) : "";
 }
 
 function formatTextOrDash(value) {
   const text = String(value ?? "").trim();
   return text || "-";
+}
+
+function visibleText(value, fallback = "-") {
+  const text = normalizeFinanceVisibleText(String(value ?? "").trim());
+  return text || fallback;
 }
 
 function MetricCard({ title, value, note, tone = "default" }) {
@@ -79,7 +99,11 @@ function MetricCard({ title, value, note, tone = "default" }) {
     warm: { border: "1px solid rgba(247,144,9,0.35)", title: "#f7b267", value: "#ffd38a" },
     good: { border: "1px solid rgba(18,183,106,0.35)", title: "#6ce9a6", value: "#d1fadf" },
     danger: { border: "1px solid rgba(240,68,56,0.35)", title: "#fda29b", value: "#fecaca" },
-  }[tone] || null;
+  }[tone] || {
+    border: "1px solid rgba(255,255,255,0.08)",
+    title: "#98a2b3",
+    value: "#f8fafc",
+  };
 
   return (
     <div style={{ padding: 14, border: palette.border, borderRadius: 12, minWidth: 0 }}>
@@ -105,25 +129,25 @@ function ChipRow({ items = [], emptyText = "-" }) {
 function scopeMeta(scope) {
   if (scope === "ROOM") {
     return {
-      title: "Finansal Operasyonlar",
-      subtitle: "Oda kârlılığı ve quote floor draft yaşam döngüsü.",
-      currentLabel: "Mevcut oda teklifi",
-      baselineLabel: "Maliyet tabanı",
-      resultLabel: "Quote floor",
-      amountLabel: "Oda teklif sinyali",
-      amountGapLabel: "Oda farkı",
-      endpointLabel: "Room preview",
+      title: preferredScopeTitle("ROOM"),
+      subtitle: preferredScopeSubtitle("ROOM"),
+      currentLabel: "Planlanan teklif",
+      baselineLabel: "Tahmini maliyet",
+      resultLabel: "Önerilen minimum teklif",
+      amountLabel: "Teklif sinyali",
+      amountGapLabel: "Tahmini kâr / zarar",
+      endpointLabel: "Taşımacılık Firması önizlemesi",
     };
   }
   return {
-    title: "Bütçe ve Servis Maliyeti",
-    subtitle: "Şirket bütçe planı yaşam döngüsü ve servis maliyeti önizlemesi.",
+    title: preferredScopeTitle("COMPANY"),
+    subtitle: preferredScopeSubtitle("COMPANY"),
     currentLabel: "Mevcut bütçe planı",
     baselineLabel: "Servis maliyeti",
     resultLabel: "Bütçe farkı",
     amountLabel: "Bütçe sinyali",
     amountGapLabel: "Bütçe farkı",
-    endpointLabel: "Company preview",
+    endpointLabel: "Hizmet Alan Firma önizlemesi",
   };
 }
 
@@ -289,11 +313,11 @@ function buildDeniedText(scope, me) {
   const role = normalizeText(me?.role) || "-";
   const kind = normalizeText(me?.companyKind) || "-";
   if (role === "COMPANY" && (kind === "SCHOOL" || kind === "ORGANIZATION")) {
-    return "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan read-only/preview olarak kalır.";
+    return "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan salt okunur önizleme olarak kalır.";
   }
   return scope === "ROOM"
-    ? "Bu rol için oda finansal operasyon yüzeyi görünmez. Bu alan read-only/preview olarak kalır."
-    : "Bu rol için şirket finansal operasyon yüzeyi görünmez. Bu alan read-only/preview olarak kalır.";
+    ? "Bu rol için taşımacılık firması finansal operasyon yüzeyi görünmez. Bu alan salt okunur önizleme olarak kalır."
+    : "Bu rol için hizmet alan firma finansal operasyon yüzeyi görünmez. Bu alan salt okunur önizleme olarak kalır.";
 }
 
 export default function FinancialOperationsPanel({ scope = "ROOM" }) {
@@ -308,6 +332,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
   const [actionOk, setActionOk] = useState("");
   const [err, setErr] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
+  const [roomDetailsOpen, setRoomDetailsOpen] = useState(false);
 
   useEffect(() => {
     setForm(initialForm());
@@ -317,6 +342,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
     setActionErr("");
     setActionOk("");
     setRefreshTick(0);
+    setRoomDetailsOpen(false);
   }, [scope]);
 
   useEffect(() => {
@@ -357,10 +383,25 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
       setErr("");
       try {
         const params = cleanParams(form);
-        const payload = scope === "ROOM"
-          ? await getRoomFinancialOperationsPreview(token, params, { signal: controller.signal })
-          : await getCompanyFinancialOperationsPreview(token, params, { signal: controller.signal });
-        if (!controller.signal.aborted) setPreview(payload || null);
+        const [payload, currentScopeOverview] = scope === "ROOM"
+          ? await Promise.all([
+            getRoomFinancialOperationsPreview(token, params, { signal: controller.signal, force: true }),
+            getCurrentRoomQuoteFloorDraft(token, params, { signal: controller.signal, force: true }),
+          ])
+          : await Promise.all([
+            getCompanyFinancialOperationsPreview(token, params, { signal: controller.signal, force: true }),
+            getCurrentCompanyBudgetPlan(token, params, { signal: controller.signal, force: true }),
+          ]);
+        const mergedPayload = scope === "ROOM"
+          ? {
+            ...(payload || {}),
+            quoteFloorDraft: currentScopeOverview || payload?.quoteFloorDraft || null,
+          }
+          : {
+            ...(payload || {}),
+            budgetPlan: currentScopeOverview || payload?.budgetPlan || null,
+          };
+        if (!controller.signal.aborted) setPreview(mergedPayload || null);
       } catch (e) {
         if (e?.name === "AbortError" || controller.signal.aborted) return;
         const info = getApiErrorInfo(e, "Finansal operasyon önizlemesi okunamadı.");
@@ -380,11 +421,11 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
   const model = preview?.operationalCostModel || {};
   const quoteFloor = preview?.quoteFloor || {};
   const roomProfitability = preview?.roomProfitability || null;
-  const companyBudget = preview?.companyBudget || null;
   const missingFields = Array.from(new Set([...(model?.missingFields || []), ...(quoteFloor?.missingFields || [])]));
+  const missingFieldLabels = financeFieldLabels(missingFields);
   const surfaceNote = scope === "COMPANY"
-    ? "Bu yüzey budget lifecycle ve explainable preview sunar; payment, invoice ve accounting kapalıdır."
-    : "Bu yüzey quote floor draft lifecycle sunar; dispatch apply, payment, invoice ve accounting kapalıdır.";
+    ? "Bu yüzey bütçe yaşam döngüsü ve açıklanabilir önizleme sunar; ödeme, fatura ve muhasebe kapalıdır."
+    : "Bu yüzey teklif tabanı taslak yaşam döngüsü sunar; sevk uygulama, ödeme, fatura ve muhasebe kapalıdır.";
   const currentBudgetPlan = preview?.budgetPlan?.current || preview?.budgetPlan?.draft || preview?.budgetPlan?.active || null;
 
   async function handleCompanyBudgetAction(action, { createNew = false } = {}) {
@@ -440,7 +481,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
           ...prev,
           ...companyPlanFormFromPlan(result.item),
         }));
-        setActionOk(`Plan #${result.item.id} ${String(result.item.status || "-").toUpperCase()} durumuna alındı.`);
+        setActionOk(`Bütçe planı #${result.item.id} ${lifecycleStateLabel(result.item.status || "-")} durumuna alındı.`);
       }
 
       setRefreshTick((n) => n + 1);
@@ -496,13 +537,13 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
           ...prev,
           ...roomDraftFormFromDraft(result.item),
         }));
-        setActionOk(`Draft #${result.item.id} ${String(result.item.status || "-").toUpperCase()} durumuna alındı.`);
+        setActionOk(`Taslak #${result.item.id} ${lifecycleStateLabel(result.item.status || "-")} durumuna alındı.`);
       }
 
       setRefreshTick((n) => n + 1);
     } catch (e) {
-      const info = getApiErrorInfo(e, "Quote floor yaşam döngüsü işlemi tamamlanamadı.");
-      setActionErr(info.message || "Quote floor yaşam döngüsü işlemi tamamlanamadı.");
+      const info = getApiErrorInfo(e, "Teklif tabanı yaşam döngüsü işlemi tamamlanamadı.");
+      setActionErr(info.message || "Teklif tabanı yaşam döngüsü işlemi tamamlanamadı.");
     } finally {
       setActionBusy("");
     }
@@ -551,21 +592,69 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
 
   const scopeTitle = meta.title;
   const currentAmountMinor = scope === "ROOM"
-    ? Number(snapshot.currentRoomOfferMinor || 0) || null
+    ? Number(snapshot.currentRoomOfferMinor || snapshot.currentCommercialAmountMinor || 0) || null
     : Number(snapshot.currentCommercialAmountMinor || snapshot.currentCompanyOfferMinor || 0) || null;
   const baselineMinor = Number(quoteFloor?.baselineOperationalCostMinor || preview?.baselineOperationalCostMinor || 0) || null;
-  const currentGapMinor = preview?.roomProfitability?.profitMinor ?? preview?.companyBudget?.budgetGapMinor ?? null;
+  const currentGapMinor = currentAmountMinor != null && baselineMinor != null
+    ? (preview?.roomProfitability?.profitMinor ?? preview?.companyBudget?.budgetGapMinor ?? null)
+    : null;
   const quoteFloorGapMinor = Number.isFinite(Number(quoteFloor?.marginGapMinor)) ? Number(quoteFloor.marginGapMinor) : null;
   const quoteFloorComputed = Boolean(quoteFloor?.computed);
-  const modelStatusTone = String(model?.status || "").toLowerCase() === "complete"
-    ? "good"
-    : String(model?.status || "").toLowerCase() === "blocked"
-      ? "danger"
-      : "warm";
   const currentRoomQuoteFloorDraftStatus = String(currentRoomQuoteFloorDraft?.status || "").toUpperCase();
   const roomDraftEditable = !currentRoomQuoteFloorDraft?.id || currentRoomQuoteFloorDraftStatus === "DRAFT";
   const roomDraftCanApply = roomDraftEditable;
   const roomDraftCanArchive = Boolean(currentRoomQuoteFloorDraft?.id) && currentRoomQuoteFloorDraftStatus !== "ARCHIVED";
+  const previewStatusValue = previewStatusLabel(preview?.status || preview?.modelStatus || "");
+  const previewStatusToneValue = previewStatusTone(preview?.status || preview?.modelStatus || "");
+  const modelStatusValue = modelStatusLabel(model?.status || "");
+  const modelStatusToneValue = modelStatusTone(model?.status || "");
+  const confidenceKey = model?.confidence?.level || preview?.confidence?.level || preview?.dataQuality?.level || "";
+  const confidenceValue = confidenceLabel(confidenceKey);
+  const confidenceToneValue = confidenceTone(confidenceKey);
+  const confidenceMetricTone = confidenceToneValue === "ready"
+    ? "good"
+    : confidenceToneValue === "warning"
+      ? "warm"
+      : confidenceToneValue === "danger"
+        ? "danger"
+        : "default";
+  const quoteFloorStateLabel = quoteFloorComputed ? "Teklif tabanı hazır" : "Teklif tabanı bekliyor";
+  const quoteFloorStateTone = quoteFloorComputed ? "good" : "warm";
+  const currentRoomDraftLabel = lifecycleStateLabel(currentRoomQuoteFloorDraft?.status || "DRAFT");
+  const baselineSourceHuman = baselineSourceLabel(quoteFloor?.baselineSource || currentRoomQuoteFloorDraft?.baselineSource || form.baselineSource);
+  const periodLabel = visibleText(
+    preview?.period?.periodLabel
+      || preview?.periodLabel
+      || currentRoomQuoteFloorDraft?.periodLabel
+      || form.periodLabel
+      || "-",
+  );
+  const roomSummaryText = visibleText(roomProfitability?.summaryText || "Taşımacılık Firması kârlılığı önizlemesi için veri bekleniyor.");
+  const decisionSummary = visibleText(preview?.summaryText || "Sadece önizleme. Yazma aksiyonu yok.");
+  const snapshotTitle = "Hesaplama özeti";
+  const surfaceIntro = "Maliyet ve teklif kararınızı güvenle değerlendirin.";
+  const snapshotSourceLabel = visibleText(snapshot.sourceLabel || "-");
+  const snapshotRoomName = visibleText(snapshot.roomName || "-");
+  const snapshotCompanyName = visibleText(snapshot.companyName || "-");
+  const snapshotCurrentAmountLabel = visibleText(snapshot.currentCommercialAmountLabel || snapshot.currentCommercialCounterLabel || "Mevcut teklif");
+  const snapshotCounterLabel = visibleText(snapshot.currentCommercialAmountCounterLabel || snapshot.currentCommercialCounterLabel || "-");
+  const modelSummaryText = visibleText(model?.summaryText || "Maliyet modeli henüz hesaplanmadı.");
+  const modelConfidenceReason = visibleText(model?.confidence?.reason || "-");
+  const roomDataGuidance = quoteFloorComputed
+    ? roomSummaryText.replace(/;?\s*bu alan salt okunur önizleme olarak kalır\.?/i, ".")
+    : "Kârlılık hesabı için bazı maliyet bilgileri eksik. Eksik bilgileri tamamladığınızda tahmini kârınızı gösterebiliriz.";
+  const roomPrimaryAction = currentRoomQuoteFloorDraft?.id && roomDraftCanApply
+    ? { label: "Taslağı uygula", action: "apply" }
+    : currentRoomQuoteFloorDraft?.id
+      ? { label: "Teklif detaylarını aç", action: "open" }
+      : { label: "Taslak oluştur", action: "open" };
+
+  function handleRoomPrimaryAction() {
+    setRoomDetailsOpen(true);
+    if (roomPrimaryAction.action !== "open") {
+      handleRoomQuoteFloorAction(roomPrimaryAction.action);
+    }
+  }
 
   return (
     <PanelChrome
@@ -577,13 +666,12 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         </button>
       )}
     >
-      <div className="muted" style={{ lineHeight: 1.45 }}>{surfaceNote}</div>
+      <div className="muted" style={{ lineHeight: 1.45 }}>{surfaceIntro}</div>
 
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <span className="pill" data-status="OK">{normalizeText(me?.role) || "-"}</span>
-        {normalizeText(me?.companyKind) ? <span className="pill">{normalizeText(me?.companyKind)}</span> : null}
-        <span className="pill" data-status={modelStatusTone.toUpperCase()}>{String(model?.status || "unknown").toUpperCase()}</span>
-        <span className="pill" data-status={quoteFloorComputed ? "OK" : "WARN"}>{quoteFloorComputed ? "Quote floor hazır" : "Quote floor bekliyor"}</span>
+        <span className="pill" data-status={previewStatusToneValue.toUpperCase()}>{previewStatusValue || "Durum bekleniyor"}</span>
+        <span className="pill" data-status={confidenceToneValue.toUpperCase()}>{confidenceValue || "Bilinmiyor"}</span>
+        <span className="pill" data-status={quoteFloorStateTone.toUpperCase()}>{quoteFloorStateLabel}</span>
       </div>
 
       {err ? (
@@ -592,45 +680,91 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         </div>
       ) : null}
 
-      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-        <MetricCard title="Kaynak" value={snapshot.sourceLabel || "-"} note={snapshot.roomName || snapshot.companyName || "-"} />
-        <MetricCard title="Mesafe" value={formatKm(snapshot.routeDistanceKm)} note="Rota snapshot mesafesi" />
-        <MetricCard title="Süre" value={formatMinutes(snapshot.routeDurationMin)} note="Rota snapshot süresi" />
-        <MetricCard title="Yolcu" value={Number(snapshot.passengerCount || 0)} note="Snapshot yolcu / pax" />
-        <MetricCard title="Kapasite" value={Number(snapshot.vehicleCapacity || 0) || "-"} note="Araç kapasitesi" />
-        <MetricCard title={meta.currentLabel} value={formatTRY(currentAmountMinor)} note={snapshot.currentCommercialAmountLabel || "-"} />
-        <MetricCard title={meta.baselineLabel} value={formatTRY(baselineMinor)} note={quoteFloor?.baselineSource || model?.status || "-"} tone={quoteFloorComputed ? "good" : "warm"} />
-        <MetricCard title={meta.resultLabel} value={formatTRY(quoteFloor?.quoteFloorMinor)} note={quoteFloorComputed ? `Kişi başı ${formatTRY(quoteFloor?.quoteFloorPerPassengerMinor)}` : "Açık parametre bekleniyor"} tone={quoteFloorComputed ? "good" : "warm"} />
+      <div className="card" style={{ marginTop: 12, border: "1px solid rgba(247,144,9,0.3)", background: "rgba(247,144,9,0.05)" }}>
+        <div className="panelSectionTitle">Şimdi ne yapmalıyım?</div>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.5 }}>{roomDataGuidance}</div>
+        <button type="button" className="btn primary" style={{ marginTop: 14 }} onClick={handleRoomPrimaryAction} disabled={loading || actionBusy.length > 0}>
+          {roomPrimaryAction.label}
+        </button>
       </div>
 
-      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Quote floor yaşam döngüsü</div>
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <MetricCard title={meta.currentLabel} value={formatTRY(currentAmountMinor)} note={snapshotCurrentAmountLabel} tone={currentAmountMinor != null ? "good" : "default"} />
+        <MetricCard title={meta.baselineLabel} value={formatTRY(baselineMinor)} note={baselineSourceHuman} tone={quoteFloorComputed ? "good" : "warm"} />
+        <MetricCard title={meta.resultLabel} value={formatTRY(quoteFloor?.quoteFloorMinor)} note={quoteFloorComputed ? `Kişi başı ${formatTRY(quoteFloor?.quoteFloorPerPassengerMinor)}` : "Maliyet bilgileri bekleniyor"} tone={quoteFloorComputed ? "good" : "warm"} />
+        <MetricCard title={meta.amountGapLabel} value={formatTRY(currentGapMinor)} note="Planlanan teklif - tahmini maliyet" tone={currentGapMinor != null && Number(currentGapMinor) >= 0 ? "good" : "warm"} />
+        <MetricCard title="Veri güveni" value={confidenceValue || "Bilinmiyor"} note={modelStatusValue || "Model durumu"} tone={confidenceMetricTone} />
+      </div>
+
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+        <details className="card" style={{ minWidth: 0 }} open={roomDetailsOpen} onToggle={(event) => setRoomDetailsOpen(event.currentTarget.open)}>
+          <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Teklif detayları</summary>
+          <div className="card" style={{ minWidth: 0, marginTop: 12 }}>
+          <div className="panelSectionTitle">Teklif tabanı yaşam döngüsü</div>
           <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
             {currentRoomQuoteFloorDraft
-              ? "Sunucuda hesaplanan quote floor taslağı sürüm ile korunur."
-              : "Henüz kayıtlı quote floor taslağı yok; yeni bir draft oluşturabilirsin."}
+              ? "Sunucuda hesaplanan teklif tabanı taslağı sürüm ile korunur."
+              : "Henüz kayıtlı teklif tabanı taslağı yok; yeni bir taslak oluşturabilirsin."}
           </div>
           <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-            <MetricCard title="Durum" value={String(currentRoomQuoteFloorDraft?.status || "DRAFT").toUpperCase()} note={currentRoomQuoteFloorDraft?.lifecycleState || "draft"} tone={currentRoomQuoteFloorDraft?.status === "APPLIED" ? "good" : currentRoomQuoteFloorDraft?.status === "ARCHIVED" ? "danger" : "warm"} />
-            <MetricCard title="Sürüm" value={formatTextOrDash(currentRoomQuoteFloorDraft?.version ?? form.roomQuoteFloorDraftVersion)} note={currentRoomQuoteFloorDraft?.id ? `Draft #${currentRoomQuoteFloorDraft.id}` : "Yeni draft"} />
-            <MetricCard title="Taban" value={formatTRY(currentRoomQuoteFloorDraft?.manualBaselineOperationalCostMinor ?? form.manualBaselineOperationalCostMinor)} note={currentRoomQuoteFloorDraft?.baselineSource || "manual"} />
-            <MetricCard title="Quote floor" value={formatTRY(currentRoomQuoteFloorDraft?.quoteFloorMinor ?? form.quoteFloorMinor)} note={currentRoomQuoteFloorDraft?.quoteFloorPerPassengerMinor != null ? `Kişi başı ${formatTRY(currentRoomQuoteFloorDraft.quoteFloorPerPassengerMinor)}` : "Hesap bekliyor"} />
+            <MetricCard
+              title="Durum"
+              value={currentRoomDraftLabel}
+              note={currentRoomQuoteFloorDraft?.id ? `Taslak #${currentRoomQuoteFloorDraft.id}` : "Yeni taslak"}
+              tone={currentRoomQuoteFloorDraftStatus === "APPLIED" ? "good" : currentRoomQuoteFloorDraftStatus === "ARCHIVED" ? "danger" : "warm"}
+            />
+            <MetricCard
+              title="Sürüm"
+              value={formatTextOrDash(currentRoomQuoteFloorDraft?.version ?? form.roomQuoteFloorDraftVersion)}
+              note={currentRoomQuoteFloorDraft?.id ? `Taslak #${currentRoomQuoteFloorDraft.id}` : "Yeni taslak"}
+            />
+            <MetricCard
+              title="Taban"
+              value={formatTRY(currentRoomQuoteFloorDraft?.manualBaselineOperationalCostMinor ?? form.manualBaselineOperationalCostMinor)}
+              note={baselineSourceHuman}
+            />
+            <MetricCard
+              title="Teklif tabanı"
+              value={formatTRY(currentRoomQuoteFloorDraft?.quoteFloorMinor ?? form.quoteFloorMinor)}
+              note={currentRoomQuoteFloorDraft?.quoteFloorPerPassengerMinor != null ? `Kişi başı ${formatTRY(currentRoomQuoteFloorDraft.quoteFloorPerPassengerMinor)}` : "Hesap bekliyor"}
+            />
+          </div>
+          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            <div className="muted">Dönem: <b>{periodLabel}</b></div>
+            <div className="muted">Önizleme durumu: <b>{previewStatusValue || "Durum bekleniyor"}</b></div>
+            <div className="muted">Taban kaynağı: <b>{baselineSourceHuman}</b></div>
           </div>
           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("save")} disabled={loading || actionBusy.length > 0 || (currentRoomQuoteFloorDraft?.id && !roomDraftEditable)}>
-              {actionBusy === "save" ? "Kaydediliyor..." : "Taslak kaydet"}
-            </button>
-            <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("apply")} disabled={loading || !currentRoomQuoteFloorDraft?.id || !roomDraftCanApply || actionBusy.length > 0}>
-              {actionBusy === "apply" ? "Uygulanıyor..." : "Uygula"}
-            </button>
-            <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("archive")} disabled={loading || !currentRoomQuoteFloorDraft?.id || !roomDraftCanArchive || actionBusy.length > 0}>
-              {actionBusy === "archive" ? "Arşivleniyor..." : "Arşivle"}
-            </button>
-            <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("save", { createNew: true })} disabled={loading || actionBusy.length > 0}>
-              Yeni taslak
-            </button>
+            {!currentRoomQuoteFloorDraft?.id ? (
+              <button type="button" className="btn primary" onClick={() => handleRoomQuoteFloorAction("save")} disabled={loading || actionBusy.length > 0}>
+                {actionBusy === "save" ? "Kaydediliyor..." : "Taslak kaydet"}
+              </button>
+            ) : null}
+            {currentRoomQuoteFloorDraft?.id && roomDraftEditable ? (
+              <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("save")} disabled={loading || actionBusy.length > 0}>
+                {actionBusy === "save" ? "Kaydediliyor..." : "Taslağı güncelle"}
+              </button>
+            ) : null}
+            {currentRoomQuoteFloorDraft?.id && roomDraftCanApply ? (
+              <button type="button" className="btn primary" onClick={() => handleRoomQuoteFloorAction("apply")} disabled={loading || actionBusy.length > 0}>
+                {actionBusy === "apply" ? "Uygulanıyor..." : "Uygula"}
+              </button>
+            ) : null}
           </div>
+
+          <details style={{ marginTop: 12 }}>
+            <summary className="muted" style={{ cursor: "pointer" }}>Diğer teklif işlemleri</summary>
+            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {roomDraftCanArchive ? (
+                <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("archive")} disabled={loading || actionBusy.length > 0}>
+                  {actionBusy === "archive" ? "Arşivleniyor..." : "Arşivle"}
+                </button>
+              ) : null}
+              <button type="button" className="btn sm" onClick={() => handleRoomQuoteFloorAction("save", { createNew: true })} disabled={loading || actionBusy.length > 0}>
+                Yeni taslak
+              </button>
+            </div>
+          </details>
 
           {actionErr ? (
             <div className="card" style={{ marginTop: 10, border: "1px solid rgba(240,68,56,0.25)" }}>
@@ -642,54 +776,46 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
               {actionOk}
             </div>
           ) : null}
-        </div>
-
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Açık parametreler</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            Quote floor ve maliyet önizlemesi açıkça girilen parametrelerle çalışır. Gizli varsayılan kullanılmaz.
-          </div>
-          <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-            <label className="muted">
-              Manuel maliyet tabanı
-              <input
-                inputMode="numeric"
-                placeholder="örn. 125000"
-                value={form.manualBaselineOperationalCostMinor}
-                onChange={(e) => setForm((prev) => ({ ...prev, manualBaselineOperationalCostMinor: e.target.value }))}
-                style={INPUT_STYLE}
-              />
-            </label>
-            <label className="muted">
-              Hedef katkı bps
-              <input
-                inputMode="numeric"
-                placeholder="örn. 1200"
-                value={form.targetContributionBps}
-                onChange={(e) => setForm((prev) => ({ ...prev, targetContributionBps: e.target.value }))}
-                style={INPUT_STYLE}
-              />
-            </label>
-            <label className="muted">
-              Risk rezervi bps
-              <input
-                inputMode="numeric"
-                placeholder="örn. 300"
-                value={form.riskReserveBps}
-                onChange={(e) => setForm((prev) => ({ ...prev, riskReserveBps: e.target.value }))}
-                style={INPUT_STYLE}
-              />
-            </label>
-          </div>
 
           <details style={{ marginTop: 12 }}>
-            <summary className="muted" style={{ cursor: "pointer" }}>Gelişmiş maliyet girdileri</summary>
+            <summary className="muted" style={{ cursor: "pointer" }}>Maliyet girdileri</summary>
             <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+              <div className="panelMeta">Otomatik hesaplanan değerler üstteki hesaplama özetinde gösterilir. Aşağıdaki alanlar yalnızca gerektiğinde manuel düzeltme içindir.</div>
+              <label className="muted">
+                Manuel maliyet tabanı (₺)
+                <input
+                  inputMode="numeric"
+                  placeholder="örn. 125000"
+                  value={form.manualBaselineOperationalCostMinor}
+                  onChange={(e) => setForm((prev) => ({ ...prev, manualBaselineOperationalCostMinor: e.target.value }))}
+                  style={INPUT_STYLE}
+                />
+              </label>
+              <label className="muted">
+                Hedef katkı oranı (%)
+                <input
+                  inputMode="decimal"
+                  placeholder="örn. 12"
+                  value={formatBpsInput(form.targetContributionBps)}
+                  onChange={(e) => setForm((prev) => ({ ...prev, targetContributionBps: parseBpsInput(e.target.value) }))}
+                  style={INPUT_STYLE}
+                />
+              </label>
+              <label className="muted">
+                Risk payı (%)
+                <input
+                  inputMode="decimal"
+                  placeholder="örn. 3"
+                  value={formatBpsInput(form.riskReserveBps)}
+                  onChange={(e) => setForm((prev) => ({ ...prev, riskReserveBps: parseBpsInput(e.target.value) }))}
+                  style={INPUT_STYLE}
+                />
+              </label>
               <label className="muted">
                 Servis mesafesi (km)
                 <input
                   inputMode="decimal"
-                  placeholder="otomatik snapshot kullanılır"
+                  placeholder="otomatik hesaplama özeti kullanılır"
                   value={form.serviceDistanceKm}
                   onChange={(e) => setForm((prev) => ({ ...prev, serviceDistanceKm: e.target.value }))}
                   style={INPUT_STYLE}
@@ -699,7 +825,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
                 Rota süresi (dk)
                 <input
                   inputMode="decimal"
-                  placeholder="otomatik snapshot kullanılır"
+                  placeholder="otomatik hesaplama özeti kullanılır"
                   value={form.routeDurationMinutes}
                   onChange={(e) => setForm((prev) => ({ ...prev, routeDurationMinutes: e.target.value }))}
                   style={INPUT_STYLE}
@@ -709,7 +835,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
                 Yolcu sayısı
                 <input
                   inputMode="numeric"
-                  placeholder="otomatik snapshot kullanılır"
+                  placeholder="otomatik hesaplama özeti kullanılır"
                   value={form.passengerCount}
                   onChange={(e) => setForm((prev) => ({ ...prev, passengerCount: e.target.value }))}
                   style={INPUT_STYLE}
@@ -719,7 +845,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
                 Araç kapasitesi
                 <input
                   inputMode="numeric"
-                  placeholder="otomatik snapshot kullanılır"
+                  placeholder="otomatik hesaplama özeti kullanılır"
                   value={form.vehicleCapacity}
                   onChange={(e) => setForm((prev) => ({ ...prev, vehicleCapacity: e.target.value }))}
                   style={INPUT_STYLE}
@@ -736,7 +862,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
                 />
               </label>
               <label className="muted">
-                Yakıt birim fiyatı (minor)
+                Yakıt birim fiyatı (₺/L)
                 <input
                   inputMode="numeric"
                   placeholder="örn. 5000"
@@ -746,7 +872,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
                 />
               </label>
               <label className="muted">
-                Sürücü temel maliyeti
+                Sürücü temel maliyeti (₺/vardiya)
                 <input
                   inputMode="numeric"
                   placeholder="örn. 1200"
@@ -756,7 +882,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
                 />
               </label>
               <label className="muted">
-                Km başı bakım maliyeti
+                Km başı bakım maliyeti (₺/km)
                 <input
                   inputMode="numeric"
                   placeholder="örn. 15"
@@ -766,7 +892,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
                 />
               </label>
               <label className="muted">
-                Aylık araç kira maliyeti
+                Aylık araç kira maliyeti (₺/ay)
                 <input
                   inputMode="numeric"
                   placeholder="örn. 25000"
@@ -778,71 +904,65 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
             </div>
           </details>
         </div>
+        </details>
 
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Maliyet modeli</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            {model?.summaryText || "Maliyet modeli henüz hesaplanmadı."}
-          </div>
-          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-            <MetricCard title="Durum" value={String(model?.status || "-").toUpperCase()} note={model?.confidence?.reason || "-"} tone={modelStatusTone} />
-            <MetricCard title="Güven" value={String(model?.confidence?.level || "-").toUpperCase()} note={`Puan ${Number(model?.confidence?.score || 0) || 0}/100`} />
-            <MetricCard title="Birim km" value={formatTRY(model?.unitCosts?.costPerTotalKmMinor)} note="Toplam km başı" />
-            <MetricCard title="Birim yolcu" value={formatTRY(model?.unitCosts?.costPerPassengerMinor)} note="Yolcu başı" />
-          </div>
+        <details className="card" style={{ minWidth: 0 }}>
+          <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Hesaplama detayları</summary>
           <div style={{ marginTop: 12 }}>
-            <div className="muted">Eksik alanlar</div>
-            <ChipRow items={missingFields} emptyText="Eksik alan görünmüyor." />
+            <div className="panelSectionTitle">Karar özeti</div>
+            <div className="muted" style={{ lineHeight: 1.45 }}>{decisionSummary}</div>
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              <div className="muted">Taban kaynağı: <b>{baselineSourceHuman}</b></div>
+              <div className="muted">Hedef katkı oranı: <b>{formatBps(quoteFloor?.targetContributionBps)}</b> • Risk payı: <b>{formatBps(quoteFloor?.riskReserveBps)}</b></div>
+              <div className="muted">Fark: <b>{formatTRY(quoteFloorGapMinor)}</b></div>
+            </div>
+            <div className="card" style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+              <MetricCard title={meta.currentLabel} value={formatTRY(currentAmountMinor)} note={snapshotCounterLabel} tone={currentAmountMinor != null ? "good" : "default"} />
+              <MetricCard title={meta.amountGapLabel} value={formatTRY(currentGapMinor)} note="Planlanan teklif - tahmini maliyet" tone={currentGapMinor != null && Number(currentGapMinor) >= 0 ? "good" : "warm"} />
+              <MetricCard title={meta.resultLabel} value={formatTRY(quoteFloor?.quoteFloorMinor)} note={quoteFloorComputed ? `Kişi başı ${formatTRY(quoteFloor?.quoteFloorPerPassengerMinor)}` : "Maliyet bilgileri bekleniyor"} tone={quoteFloorComputed ? "good" : "warm"} />
+            </div>
           </div>
-        </div>
+        </details>
       </div>
 
-      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">{scope === "ROOM" ? "Oda kârlılığı" : "Bütçe sinyali"}</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            {scope === "ROOM"
-              ? roomProfitability?.summaryText || "Oda kârlılığı önizlemesi için veri bekleniyor."
-              : companyBudget?.summaryText || "Bütçe önizlemesi için veri bekleniyor."}
+      <details className="card" style={{ marginTop: 12, padding: 12 }}>
+        <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Gelişmiş bilgiler</summary>
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <div className="panelSectionTitle" style={{ gridColumn: "1 / -1" }}>Ayrıntılı maliyet verileri</div>
+          <div className="card" style={{ minWidth: 0 }}>
+            <div className="panelSectionTitle">Maliyet modeli</div>
+            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+              {modelSummaryText}
+            </div>
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+              <MetricCard title="Durum" value={modelStatusValue || "-"} note={modelConfidenceReason} tone={modelStatusToneValue} />
+              <MetricCard title="Güven" value={confidenceValue || "-"} note={`Puan ${Number(model?.confidence?.score || 0) || 0}/100`} tone={confidenceMetricTone} />
+              <MetricCard title="Birim km" value={formatTRY(model?.unitCosts?.costPerTotalKmMinor)} note="Toplam km başı" />
+              <MetricCard title="Birim yolcu" value={formatTRY(model?.unitCosts?.costPerPassengerMinor)} note="Yolcu başı" />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <div className="muted">Eksik alanlar</div>
+              <ChipRow items={missingFieldLabels} emptyText="Eksik alan görünmüyor." />
+            </div>
           </div>
-          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-            <MetricCard title={meta.currentLabel} value={formatTRY(currentAmountMinor)} note={snapshot.currentCommercialAmountCounterLabel || snapshot.currentCommercialCounterLabel || "-"} tone={currentAmountMinor != null ? "good" : "default"} />
-            <MetricCard title={scope === "ROOM" ? "Kâr / zarar" : "Bütçe farkı"} value={formatTRY(currentGapMinor)} note={scope === "ROOM" ? "Mevcut teklif - maliyet" : "Mevcut bütçe - servis maliyeti"} tone={currentGapMinor != null && Number(currentGapMinor) >= 0 ? "good" : "warm"} />
-            <MetricCard title={meta.resultLabel} value={formatTRY(quoteFloor?.quoteFloorMinor)} note={quoteFloorComputed ? `Kişi başı ${formatTRY(quoteFloor?.quoteFloorPerPassengerMinor)}` : "Açık parametre bekliyor"} tone={quoteFloorComputed ? "good" : "warm"} />
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <div className="muted">Quote floor açıklığı</div>
-            <div className="card" style={{ marginTop: 8, padding: 12, background: "rgba(255,255,255,0.02)" }}>
-              <div className="muted">Taban kaynağı</div>
-              <div style={{ fontWeight: 800, marginTop: 4 }}>{quoteFloor?.baselineSource || "-"}</div>
-              <div className="muted" style={{ marginTop: 6 }}>Hedef katkı: <b>{formatBps(quoteFloor?.targetContributionBps)}</b> • Risk rezervi: <b>{formatBps(quoteFloor?.riskReserveBps)}</b></div>
-              <div className="muted" style={{ marginTop: 6 }}>Fark: <b>{formatTRY(quoteFloorGapMinor)}</b></div>
+
+          <div className="card" style={{ minWidth: 0 }}>
+            <div className="panelSectionTitle">{snapshotTitle}</div>
+            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+              {snapshotRoomName || snapshotCompanyName ? `${snapshotRoomName || "-"} • ${snapshotCompanyName || "-"}` : "Hesaplama özeti adı yok."}
+            </div>
+            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+              <div className="muted">Kaynak: <b>{snapshotSourceLabel}</b></div>
+              <div className="muted">Durum: <b>{lifecycleStateLabel(snapshot.shiftStatus || "-")}</b></div>
+              <div className="muted">Aktif vardiya: <b>{snapshot.activeShiftCount || 0}</b></div>
+              <div className="muted">Aktif sözleşme: <b>{snapshot.activeAgreementCount || 0}</b></div>
+              <div className="muted">Açık teklif: <b>{snapshot.openOfferCount || 0}</b></div>
+              <div className="muted">Karşı teklif: <b>{snapshot.counterOfferCount || 0}</b></div>
+              <div className="muted">Firma rolü: <b>{snapshotCounterLabel}</b></div>
             </div>
           </div>
         </div>
-
-        <div className="card" style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">Snapshot</div>
-          <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-            {snapshot.roomName || snapshot.companyName ? `${snapshot.roomName || "-"} • ${snapshot.companyName || "-"}` : "Snapshot adı yok."}
-          </div>
-          <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-            <div className="muted">Kaynak: <b>{snapshot.sourceLabel || "-"}</b></div>
-            <div className="muted">Durum: <b>{snapshot.shiftStatus || "-"}</b></div>
-            <div className="muted">Aktif vardiya: <b>{snapshot.activeShiftCount || 0}</b></div>
-            <div className="muted">Aktif sözleşme: <b>{snapshot.activeAgreementCount || 0}</b></div>
-            <div className="muted">Açık teklif: <b>{snapshot.openOfferCount || 0}</b></div>
-            <div className="muted">Karşı teklif: <b>{snapshot.counterOfferCount || 0}</b></div>
-            <div className="muted">Oda / şirket etiketi: <b>{snapshot.currentCommercialCounterLabel || "-"}</b></div>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <div className="muted">Genel not</div>
-            <div className="card" style={{ marginTop: 8, padding: 12, background: "rgba(255,255,255,0.02)" }}>
-              {preview?.summaryText || "Sadece önizleme. Yazma aksiyonu yok."}
-            </div>
-          </div>
-        </div>
-      </div>
+      </details>
     </PanelChrome>
   );
 }

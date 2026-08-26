@@ -1,5 +1,7 @@
 import { getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from "./etaSanity";
 
+import { gpsSourcePresentationLabel } from "./gpsSource";
+
 function compactText(value, fallback = "") {
   const text = String(value ?? "")
     .normalize("NFKC")
@@ -258,11 +260,15 @@ function classifyProvider(input) {
   ));
 
   if (!raw) return null;
+  const providerDisplayValue = (fallback, ...values) => {
+    const value = firstText(...values);
+    return value ? gpsSourcePresentationLabel(value) : fallback;
+  };
   if (/(ready|active|live|canli|canlı|connected|available|ok)/.test(raw)) {
     return {
       status: "READY",
       label: "Kaynak",
-      value: compactText(firstText(input?.providerLabel, input?.gpsSourceLabel), "Canlı"),
+      value: compactText(providerDisplayValue("Canlı", input?.providerLabel, input?.gpsSourceLabel), "Canlı"),
       note: "Kaynak hazır",
     };
   }
@@ -270,14 +276,14 @@ function classifyProvider(input) {
     return {
       status: "REVIEW_NEEDED",
       label: "Kaynak",
-      value: compactText(firstText(input?.providerLabel, input?.gpsSourceLabel, input?.providerStatus), "Kontrol edilmeli"),
+      value: compactText(providerDisplayValue("Kontrol edilmeli", input?.providerLabel, input?.gpsSourceLabel, input?.providerStatus), "Kontrol edilmeli"),
       note: "Kaynak kontrol edilmeli",
     };
   }
   return {
     status: "INFO",
     label: "Kaynak",
-    value: compactText(firstText(input?.providerLabel, input?.gpsSourceLabel, input?.providerStatus), "Bekleniyor"),
+    value: compactText(providerDisplayValue("Bekleniyor", input?.providerLabel, input?.gpsSourceLabel, input?.providerStatus), "Bekleniyor"),
     note: "Kaynak etiketi okundu",
   };
 }
@@ -337,9 +343,9 @@ export function getSafeDriveSummary(input = {}) {
   const requiresHumanApproval = status !== "READY";
   const nextBestAction =
     status === "RISKY"
-      ? `İnsan onayı gerekir: ${primaryReason || "önce GPS, hız ve rota sinyallerini birlikte kontrol et"}.`
+      ? `Onayınız gerekli: ${primaryReason || "önce GPS, hız ve rota sinyallerini birlikte kontrol et"}.`
       : status === "REVIEW_NEEDED"
-        ? `İnsan onayı gerekir: ${primaryReason || "sinyallerin tamamını doğrula"}.`
+        ? `Onayınız gerekli: ${primaryReason || "sinyallerin tamamını doğrula"}.`
         : "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma.";
 
   const signals = [
@@ -348,10 +354,10 @@ export function getSafeDriveSummary(input = {}) {
     buildSignal(route.label, route.value, route.status),
     buildSignal(proof.label, proof.value, proof.status),
     provider ? buildSignal(provider.label, provider.value, provider.status) : null,
-    buildSignal("İnsan onayı gerekir", requiresHumanApproval ? "Evet" : "Hayır", requiresHumanApproval ? "REVIEW_NEEDED" : "READY"),
+    buildSignal("Kullanıcı onayı gerekir", requiresHumanApproval ? "Evet" : "Hayır", requiresHumanApproval ? "REVIEW_NEEDED" : "READY"),
   ].filter(Boolean);
 
-  const boundaryNote = "Readonly sınırı: sadece okur ve özetler; rota uygulanmaz, sürücü/araç ataması değiştirilmez, ödeme/hakediş başlatılmaz, otomatik yönlendirme verilmez.";
+  const boundaryNote = "Salt okunur sınır: sadece okur ve özetler; rota uygulanmaz, sürücü/araç ataması değiştirilmez, ödeme/hakediş başlatılmaz, otomatik yönlendirme verilmez.";
 
   return {
     title: "Güvenli sürüş özeti",

@@ -39,13 +39,13 @@ export function ProviderScoreBadge({ score, prominent = false, showLabel = false
       }}
       title={meta.tooltip}
     >
-      {showLabel ? <span style={{ opacity: 0.9 }}>Room puanı</span> : null}
+      {showLabel ? <span style={{ opacity: 0.9 }}>Taşımacılık Firması puanı</span> : null}
       <span>{meta.shortText}</span>
     </span>
   );
 }
 
-export function ProviderScoreCard({ score, title = "Seçili Room Puanı", style = null }) {
+export function ProviderScoreCard({ score, title = "Seçili Taşımacılık Firması puanı", style = null }) {
   if (!score) return null;
   const meta = metaFromScore(score);
   const has = meta.has;

@@ -75,7 +75,7 @@ must(has(quickBar, 'path: base + "/operations"'), "tablet quick bar keeps operat
 must(has(superAdminPanel, 'navigate("/superadmin/operations")'), "super admin quick access opens operations panel");
 must(has(superAdminPanel, 'Denetim Paneli'), "super admin quick access keeps denetim label");
 
-must(has(companyPanel, 'Şirket Operasyon Paneli'), "company operations panel title is visible");
+must(has(companyPanel, 'Hizmet Alan Firma Operasyon Paneli'), "company operations panel title is visible");
 must(has(companyPanel, 'Personel servis atamaları'), "company operations panel keeps assignment section");
 must(has(companyPanel, 'Bugün servisi kullanmayacak personeller'), "company operations panel keeps no-board section");
 must(has(companyPanel, 'Farklı duraktan binecek personeller'), "company operations panel keeps different-stop section");
@@ -95,7 +95,7 @@ must(has(superOpsPanel, 'Biniş değişikliği kayıtları'), "super admin opera
 
 must(has(screenRegistry, '{ id: 2117, path: "/company/operations", label: "Operasyon Paneli" }'), "copilot registry keeps company operations");
 must(has(screenRegistry, '{ id: 2218, path: "/school/operations", label: "Okul Operasyon Paneli" }'), "copilot registry keeps school operations");
-must(has(screenRegistry, '{ id: 2315, path: "/organization/operations", label: "Kurum Operasyon Paneli" }'), "copilot registry keeps organization operations");
+must(has(screenRegistry, '{ id: 2315, path: "/organization/operations", label: "Organizasyon Operasyon Paneli" }'), "copilot registry keeps organization operations");
 must(has(screenRegistry, '{ id: 6117, path: "/superadmin/operations", label: "Denetim Paneli" }'), "copilot registry keeps super admin operations");
 
 must(has(packageJson, '"m97opscheck": "node scripts/m97_panel_operations_check.js"'), "backend package exposes m97opscheck");

@@ -165,7 +165,7 @@ must(safetyBadge, "Ödeme başlatılmaz", "safety badge keeps non-final wording"
 must(safetyBadge, "Canlı ödeme daha sonra açılacak", "safety badge keeps future live-payment wording");
 must(safetyBadge, "Hakediş güvenli modda", "safety badge keeps safe mode title");
 
-must(readinessCard, "Bu kart readonly kontrol içindir; işlem başlatmaz.", "readiness card remains readonly");
+must(readinessCard, "Bu kart salt okunur kontrol içindir; işlem başlatmaz.", "readiness card remains readonly");
 must(previewCard, "Ödeme başlatılmaz", "preview card remains non-final");
 must(previewCard, "CSV taslağı indir", "preview card keeps csv draft export");
 must(previewCard, "Detayı gör", "preview card keeps detail view");

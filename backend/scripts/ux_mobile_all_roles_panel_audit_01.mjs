@@ -711,7 +711,7 @@ async function runScenario(page, scenario, viewportName, output) {
   }
 
   if (scenario.kind === "driverCheckin") {
-    if (!/check[- ]?in|görev|bugün/i.test(normalize(bodyText))) {
+    if (!/check[- ]?in|görev|gorev|bugün|bugun/i.test(normalize(bodyText))) {
       result.status = bumpStatus(result.status, "PASS-");
       result.notes.push("Driver check-in yüzeyi sade ama sinyal sınırlı.");
     }
@@ -777,7 +777,7 @@ async function runScenario(page, scenario, viewportName, output) {
         await page.waitForTimeout(350);
 
         const draftHeadingVisible = await page.getByText("Sözleşme oluşturma kuralı").first().isVisible({ timeout: 4000 }).catch(() => false);
-        const wizardBodyVisible = await page.getByText("Company tarafında sözleşme artık doğrudan bu ekrandan açılmaz.").first().isVisible({ timeout: 4000 }).catch(() => false);
+        const wizardBodyVisible = await page.getByText("Hizmet Alan Firma tarafında sözleşme artık doğrudan bu ekrandan açılmaz.").first().isVisible({ timeout: 4000 }).catch(() => false);
         convertedToAgreementDraft = draftHeadingVisible && wizardBodyVisible;
       } catch (error) {
         result.notes.push(`Company shift conversion navigation warning: ${String(error?.message || error).split("\n")[0]}`);

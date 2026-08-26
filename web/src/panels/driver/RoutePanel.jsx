@@ -15,6 +15,8 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { boardingChangeRouteRefreshLabel, boardingChangeRouteRefreshNote } from "../shared/boardingChangeUi";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import { displayStatusLabel } from "../../utils/displayStatus";
+import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 
 function getQueryParam(name) {
   try {
@@ -99,7 +101,8 @@ export default function RoutePanel() {
   const hasBoardingChangeVisibility = boardingChangeEffects.length > 0 || (routeRefreshState && routeRefreshState !== "NONE");
   const gpsAge = useMemo(() => gpsAgeText(data?.last || selectedVehicle?.gpsLast), [data?.last, selectedVehicle?.gpsLast]);
   const gpsStatusText = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || data?.last?.status || data?.liveLocation?.routeProgressState || data?.liveLocation?.officialSource || (selectedVehicle ? "LIVE" : "-"));
-  const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel || (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
+  const rawGpsSource = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel;
+  const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
   const routeProofText = String(data?.operationProofStatus || selectedVehicle?.operationProofStatus || selectedVehicle?.proofStatus || data?.liveLocation?.operationProofStatus || "").trim() || "Belirgin değil";
   const routeEta = Number.isFinite(Number(nextStop?.etaMin))
     ? Number(nextStop.etaMin)
@@ -285,7 +288,7 @@ function gpsAgeText(gpsLast) {
     if (!isOnline()) {
       enqueueRequest({ method: 'POST', url, body, label });
       setQLen(queueSize());
-      showToast('OFFLINE: Kuyruğa alındı');
+      showToast('Çevrim dışı: Kuyruğa alındı');
       return { queued: true };
     }
 
@@ -602,7 +605,7 @@ async function undoLast() {
           <h3 style={{ margin: 0 }}>Bugün Rotam</h3>
           <div className="row" style={{ gap: 8, alignItems: "center" }}>
             {!online ? (
-              <span className="pill" style={{ fontWeight: 900 }} data-status="REJECTED">OFFLINE {qLen ? `(${qLen})` : ""}</span>
+              <span className="pill" style={{ fontWeight: 900 }} data-status="REJECTED">Çevrim dışı {qLen ? `(${qLen})` : ""}</span>
             ) : qLen ? (
               <span className="pill" style={{ fontWeight: 900 }} data-status="APPROVED">KUYRUK: {qLen}</span>
             ) : null}
@@ -746,7 +749,7 @@ async function undoLast() {
                       Vardiyayı aç
                     </button>
                   </div>
-                  <div className="panelMeta" style={{ marginTop: 8 }}>Readonly önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez.</div>
+                  <div className="panelMeta" style={{ marginTop: 8 }}>Salt okunur önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez.</div>
                 </div>
               );
             })}
@@ -779,7 +782,7 @@ async function undoLast() {
               <div>
                 <b>Vardiya #{shift.id}</b> •{" "}
                 <span className="pill" data-status={shift.status}>
-                  {paused ? `${shift.status} (MOLA)` : shift.status}
+                  {paused ? `${displayStatusLabel(shift.status)} (MOLA)` : displayStatusLabel(shift.status)}
                 </span>
               </div>
               <div className="muted">Başlangıç: {String(shift.startAt)} | Bitiş: {String(shift.endAt)}</div>

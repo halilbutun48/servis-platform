@@ -86,7 +86,7 @@ function buildShiftLabel(shift = null) {
     shift?.id ? `Vardiya #${shift.id}` : null,
     shift?.vehicle?.plate ? `Araç ${shift.vehicle.plate}` : null,
     shift?.driver?.fullName ? `Sürücü ${shift.driver.fullName}` : null,
-    shift?.room?.name ? `Oda ${shift.room.name}` : null,
+    shift?.room?.name ? `Taşımacılık Firması ${shift.room.name}` : null,
   ].filter(Boolean);
   return parts.length ? parts.join(" • ") : "Aktif servis";
 }
@@ -485,7 +485,7 @@ export default function BoardingChangeRequestEntryCard({
             {intro || "Bu form yalnızca boarding-change request kaydı oluşturur. Rota uygulanmaz, sürücü rotası yenilenmez."}
           </div>
         </div>
-        <span className="pill" data-status={statusTone}>{normalizedMode === "PARENT" ? "Veli" : "Personel"} • Readonly akış</span>
+        <span className="pill" data-status={statusTone}>{normalizedMode === "PARENT" ? "Veli" : "Personel"} • Salt okunur akış</span>
       </div>
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
@@ -621,7 +621,7 @@ export default function BoardingChangeRequestEntryCard({
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <button type="submit" disabled={loading || Boolean(disabledReason)}>{loading ? "Gönderiliyor..." : "Talep oluştur"}</button>
-            <div className="muted">Readonly önizleme - talep oluşturulur, rota uygulanmaz.</div>
+            <div className="muted">Salt okunur önizleme - talep oluşturulur, rota uygulanmaz.</div>
           </div>
           {disabledReason ? <div className="card err" style={{ padding: 12 }}>{disabledReason}</div> : null}
           {success ? <div className="card" style={{ padding: 12, border: "1px solid rgba(16,185,129,.35)", background: "rgba(16,185,129,.08)" }}>{success}</div> : null}
@@ -678,7 +678,7 @@ export default function BoardingChangeRequestEntryCard({
       {previewRequest ? (
         <div style={{ marginTop: 18 }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            <div className="panelSectionTitle" style={{ fontSize: 16 }}>Readonly önizleme</div>
+            <div className="panelSectionTitle" style={{ fontSize: 16 }}>Salt okunur önizleme</div>
             <button type="button" className="ghostButton" onClick={() => setSelectedRequestId("")}>Seçimi temizle</button>
           </div>
           <BoardingRouteImpactPreviewCard
@@ -692,7 +692,7 @@ export default function BoardingChangeRequestEntryCard({
         </div>
       ) : (
         <div className="muted" style={{ marginTop: 18 }}>
-          Talep seçilince readonly önizleme burada görünür.
+          Talep seçilince salt okunur önizleme burada görünür.
         </div>
       )}
     </div>

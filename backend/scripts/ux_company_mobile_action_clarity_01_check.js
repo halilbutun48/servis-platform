@@ -199,6 +199,10 @@ function allWithin(files, exactPaths, prefixes, label) {
 
 const ACCEPTED_SCHEMA_PATH = "backend/prisma/schema.prisma";
 const ACCEPTED_SCHEMA_SHA256 = "7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748";
+const APPROVED_COMPANY_CHECKIN_PRESENTATION = {
+  path: "web/src/panels/company/CheckinPanel.jsx",
+  sha256: "EE5AFE21578A32E69AA8748E38A1976329EE98088EDBFA0449625A957B9C9588",
+};
 const ACCEPTED_PRISMA_MIGRATIONS = [
   { path: "backend/prisma/migrations/20260125133000_seed_root_baseline/migration.sql", sha256: "27DF5155D24311AA9199AC7B8FC94DB615EC6457401B2BA0105C7FD30A5587DD" },
   { path: "backend/prisma/migrations/20260125133100_organization_shift_import_baseline/migration.sql", sha256: "864CB0607DB2F7833C834BFD9747D9518806CE9EC206C0C19F1A79271ACE3FBD" },
@@ -306,6 +310,7 @@ function main() {
     "backend/scripts/invite_based_membership_01_check.js",
     "docs/INVITE_BASED_MEMBERSHIP_01.md",
     "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/components/ShiftReassignModal.jsx",
     "web/src/panels/company/companyAgreementsMobileCards.jsx",
     "web/src/components/checkin/CameraQrScannerCard.jsx",
     "web/src/index.css",
@@ -418,7 +423,7 @@ function main() {
   must(shiftsRows, "className=\"btn sm primary\"", "company shifts rows keeps primary small CTA");
   must(shiftsRows, "Vardiyayı sözleşmeye dönüştür", "company shifts rows exposes the convert-flow phrase");
   must(shiftsRows, "Sözleşmeye Dönüştür", "company shifts rows keeps convert CTA text");
-  must(shiftsRows, "Vardiyayı sözleşmeye dönüştür: tıkladığında vardiya Company Sözleşmeler ekranında taslak olarak açılır.", "company shifts rows gives precondition hint");
+  must(shiftsRows, "Vardiyayı sözleşmeye dönüştür: tıkladığında vardiya Hizmet Alan Firma Sözleşmeleri ekranında taslak olarak açılır.", "company shifts rows gives precondition hint");
 
   must(agreementsPanel, "companyActionClarityScope", "company agreements panel uses action clarity scope");
   must(agreementsOverview, "Vardiyadan getirilen sözleşme taslağı hazır", "company agreements overview explains draft");
@@ -565,6 +570,7 @@ function main() {
     "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
     "web/src/panels/company/OperationsPanel.jsx",
     "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
+    "web/src/panels/company/CheckinPanel.jsx",
     "web/src/panels/personel/LivePanel.jsx",
     "web/src/panels/room/CommercialFlowPanel.jsx",
     "web/src/panels/school/OperationsPanel.jsx",
@@ -836,7 +842,11 @@ function main() {
   mustNotList(status, "web/src/panels/company/DriversPanel.jsx", "company drivers panel is untouched");
   mustNotList(status, "web/src/panels/company/VehiclesPanel.jsx", "company vehicles panel is untouched");
   mustNotList(status, "web/src/panels/company/MapPanel.jsx", "company map panel is untouched");
-  mustNotList(status, "web/src/panels/company/CheckinPanel.jsx", "company check-in panel is untouched");
+  mustStatusEmptyOrExactlyWithIdentity(
+    [APPROVED_COMPANY_CHECKIN_PRESENTATION.path],
+    [APPROVED_COMPANY_CHECKIN_PRESENTATION],
+    "company check-in panel stays within the approved presentation identity"
+  );
   mustNotList(status, "web/src/panels/company/OffersPanel.jsx", "company offers panel is untouched");
   mustNotList(status, "web/src/components/ShiftOperationEventsModal.jsx", "shift operation modal is untouched");
   mustNotList(status, "web/src/components/ShiftReassignModal.jsx", "shift reassign modal is untouched");

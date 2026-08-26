@@ -1,4 +1,4 @@
-import { gpsSourceLabelFromKey } from "./gpsSource";
+import { gpsSourceLabelFromKey, gpsSourcePresentationLabel } from "./gpsSource";
 
 function normalizeSourceKey(source) {
   const key = String(source || "").trim().toUpperCase();
@@ -27,8 +27,10 @@ export function gpsSourceVisibilityTextFromVehicle(vehicle) {
       ""
   );
   const fallbackLabel = gpsSourceLabelFromKey(officialSource);
-  const label = String(sourceVisibility?.label || fallbackLabel || "").trim() || fallbackLabel;
-  const text = String(sourceVisibility?.text || sourceVisibility?.label || fallbackLabel || "").trim() || fallbackLabel;
+  const rawLabel = String(sourceVisibility?.label || fallbackLabel || "").trim() || fallbackLabel;
+  const rawText = String(sourceVisibility?.text || sourceVisibility?.label || fallbackLabel || "").trim() || fallbackLabel;
+  const label = gpsSourcePresentationLabel(rawLabel);
+  const text = gpsSourcePresentationLabel(rawText);
 
   return {
     label,

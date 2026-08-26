@@ -68,6 +68,7 @@
 - `OP-04 - green/closed`
 - `UX-KVKK-01 - green/closed`
 - `MOBILE-TEXT-01 - green/closed`
+- `COMPANY-BUDGET-AND-SERVICE-COST-01 - green/closed`
 - `DOCS-STATE-01 - active/next`
 - `VERIFY-CHAIN-01 - active/next`
 - `M95-EXPORT-01 - active/next`

@@ -120,7 +120,7 @@ function main() {
 
   mustContains(companyShifts, "mainTab", "Company / Shifts keeps main tab state");
   mustContains(companyShifts, "trackTab", "Company / Shifts keeps track tab state");
-  mustContains(companyShiftsIntro, "Shifts (COMPANY)", "Company / Shifts intro keeps summary title");
+  mustContains(companyShiftsIntro, "Hizmet Alan Firma Vardiyaları", "Company / Shifts intro keeps summary title");
   mustContains(companyShiftsIntro, "trackCounts", "Company / Shifts intro keeps summary counts");
   mustNotContains(companyShiftsIntro, "PanelSegmentTabs", "Company / Shifts intro is summary-only");
   mustNotContains(companyShiftsIntro, "mainTab === \"create\"", "Company / Shifts intro removes create branch");

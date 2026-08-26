@@ -8,12 +8,12 @@ Repo: `servis-platform`
 - Company, School, Room ve Organization operasyon yüzeylerinde `Rota etkisini önizle` butonu artık görünür sonuç üretir.
 - Önizleme alanı seçilen satıra scroll/focus ile taşınır.
 - Seçili satır vurgulanır.
-- Readonly önizleme dili korunur.
+- Salt okunur önizleme dili korunur.
 
 ## Davranış
 
 - Butona basınca preview alanı açılır ve seçili satır görünür hale gelir.
-- Preview alanında `Readonly önizleme` dili yer alır.
+- Preview alanında `Salt okunur önizleme` dili yer alır.
 - `Rota uygulanmaz`.
 - `Sürücü rotası yenilenmez`.
 - `Bildirim gönderilmez`.

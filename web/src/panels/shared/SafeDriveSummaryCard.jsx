@@ -86,12 +86,12 @@ export default function SafeDriveSummaryCard({
       <SectionChips title="Kontrol edilmeli notları" items={controlNotes.map((item) => ({ text: item, tone: "WARN" }))} emptyText="Kontrol notu yok." />
 
       <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-        <div className="muted">İnsan onayı gerekir / operasyon kontrol önerisi</div>
+        <div className="muted">Kullanıcı onayı gerekir / operasyon kontrol önerisi</div>
         <div style={{ fontWeight: 800, marginTop: 4 }}>{safeDrive?.nextBestAction || "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma."}</div>
       </div>
 
       <div className="muted" style={{ lineHeight: 1.45 }}>
-        {safeDrive?.boundaryNote || "Readonly sınırı: sadece okur ve özetler."}
+        {safeDrive?.boundaryNote || "Salt okunur sınır: sadece okur ve özetler."}
       </div>
     </div>
   );

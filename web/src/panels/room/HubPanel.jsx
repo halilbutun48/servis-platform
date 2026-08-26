@@ -34,7 +34,7 @@ export default function HubPanel() {
       const r = await api("/api/rooms?take=5", { token });
       const item = r?.items?.[0];
       if (!item) {
-        setErr("Room bulunamadı.");
+        setErr("Taşımacılık Firması bulunamadı.");
         return;
       }
       setRoomId(item.id);
@@ -114,7 +114,7 @@ export default function HubPanel() {
     setErr("");
     setMsg("");
     if (!roomId) {
-      setErr("Room id yok.");
+        setErr("Taşımacılık Firması kimliği yok.");
       return;
     }
     const a = lat === "" ? null : Number(lat);
@@ -134,15 +134,15 @@ export default function HubPanel() {
   return (
     <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
       <PanelChrome
-        title="Oda Konumu"
-        subtitle="Operasyon merkezi/garaj için konum belirle. Company için zorunlu değildir."
+        title="Taşımacılık Firması Konumu"
+        subtitle="Operasyon merkezi/garaj için konum belirle. Hizmet Alan Firma için zorunlu değildir."
         actions={<button type="button" className="btn sm ghost" onClick={load} disabled={busy}>Yenile</button>}
       />
 
       <div className="toolbar" style={{ gap: 8, flexWrap: "wrap" }}>
-        {roomName ? <span className="pill" data-status="ROLE">Oda: {roomName}</span> : null}
-        {roomId ? <span className="pill" data-status="COUNT">Oda ID: {roomId}</span> : null}
-        <span className="pill" data-status="ROLE">Oda Konumu: {lat && lng ? `${lat}, ${lng}` : "-"}</span>
+        {roomName ? <span className="pill" data-status="ROLE">Taşımacılık Firması: {roomName}</span> : null}
+        {roomId ? <span className="pill" data-status="COUNT">Taşımacılık Firması ID: {roomId}</span> : null}
+        <span className="pill" data-status="ROLE">Taşımacılık Firması Konumu: {lat && lng ? `${lat}, ${lng}` : "-"}</span>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -151,7 +151,7 @@ export default function HubPanel() {
       <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 360px) minmax(0, 1fr)", alignItems: "start" }}>
         <PanelChrome
           title="Adres ve Koordinat"
-          subtitle="Oda konumu koordinatını elle, konumla ya da harita üstünden seç."
+          subtitle="Taşımacılık Firması konumu koordinatını elle, konumla ya da harita üstünden seç."
         >
           <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
             <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
@@ -166,11 +166,11 @@ export default function HubPanel() {
 
             <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", minWidth: 0 }}>
               <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                <div className="panelMeta">Oda Konumu Lat</div>
+                <div className="panelMeta">Taşımacılık Firması Konumu enlemi</div>
                 <input type="number" step="0.000001" value={lat} onChange={(e) => setLat(e.target.value)} disabled={busy} />
               </div>
               <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                <div className="panelMeta">Oda Konumu Lng</div>
+                <div className="panelMeta">Taşımacılık Firması Konumu boylamı</div>
                 <input type="number" step="0.000001" value={lng} onChange={(e) => setLng(e.target.value)} disabled={busy} />
               </div>
             </div>
@@ -197,7 +197,7 @@ export default function HubPanel() {
             lat={lat}
             lng={lng}
             busy={busy}
-            subjectLabel="Oda Konumu"
+            subjectLabel="Taşımacılık Firması Konumu"
             previewHeight={580}
             onPick={(nextLat, nextLng) => {
               setLat(String(nextLat));

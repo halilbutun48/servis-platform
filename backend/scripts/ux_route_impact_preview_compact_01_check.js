@@ -146,7 +146,7 @@ must(card, "Kısa karar", "shared preview card keeps compact decision copy");
 must(card, "Detayı aç", "shared preview card exposes details toggle");
 must(card, "Haritada göster", "shared preview card exposes map toggle");
 must(card, "Mini harita önizlemesi", "shared preview card keeps mini map label");
-must(card, "Readonly önizleme — rota uygulanmaz", "shared preview card keeps readonly boundary copy");
+must(card, "Salt okunur önizleme — rota uygulanmaz", "shared preview card keeps readonly boundary copy");
 must(card, "Uyarılar", "shared preview card keeps warnings section");
 must(card, "Sıradaki önerilen işlem", "shared preview card keeps next action section");
 must(card, "Kapasite", "shared preview card keeps capacity chip");
@@ -174,7 +174,7 @@ must(boardingUi, "Sadece önizleme", "boarding helper keeps preview-only label")
 must(boardingUi, "Kabul bekliyor", "boarding helper keeps ready label");
 must(boardingUi, "Operasyona ulaştı", "boarding helper keeps applied label");
 must(boardingUi, "Uygulanmadı", "boarding helper keeps rejected label");
-must(boardingUi, "Readonly önizleme.", "boarding helper keeps readonly note");
+must(boardingUi, "Salt okunur önizleme.", "boarding helper keeps readonly note");
 
 must(roomHealth, "RoomOperationsBoard", "room operation health surface mounts room operations board");
 must(roomOps, "BoardingRouteImpactPreviewCard", "room operations board uses shared compact preview card");

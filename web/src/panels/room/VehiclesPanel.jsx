@@ -578,8 +578,8 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   return (
     <div>
       <div className="card">
-        <h3>Vehicles</h3>
-        <div className="muted">ROOM: günlük izleme + yönetim</div>
+        <h3>Araçlar</h3>
+        <div className="muted">Taşımacılık Firması: günlük izleme + yönetim</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>

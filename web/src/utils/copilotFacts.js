@@ -11,6 +11,7 @@ import {
   getLiveTrackingNoVehicleReason,
 } from "./liveTrackingCopy.js";
 import { resolvePersonDisplayLabel } from "./labels.js";
+import { gpsSourcePresentationLabel } from "./gpsSource.js";
 
 function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
@@ -1059,7 +1060,7 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
       enabled: offerCount > 0,
       reason: 'Bu kayıtta görünen açık teklif yok.',
       purpose: 'Bu vardiyaya bağlı teklif veya karar akışını açar.',
-      whenToUse: 'Karar kapanmadıysa ve oda/firma teklifi incelenecekse kullanılır.',
+      whenToUse: 'Karar kapanmadıysa ve taşımacılık firması/firma teklifi incelenecekse kullanılır.',
       whatHappens: 'Teklif listesi veya teklif modalı açılır.',
       required: ['Görünen teklif olmalı'],
       blockedBy: offerCount > 0 ? [] : ['Açık teklif yok'],
@@ -1111,8 +1112,10 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
     }),
   ];
   const actionMatrix = splitActions(actions);
-  const gpsSource = compactText(shift?.vehicle?.gpsLast?.sourceLabel || shift?.vehicle?.gpsState?.sourceLabel || shift?.vehicle?.gpsSourceLabel || shift?.gpsSourceLabel || '', '');
-  const gpsState = compactText(shift?.vehicle?.gpsState?.lastUiStatus || shift?.vehicle?.gpsState?.status || shift?.gpsStatus || shift?.vehicle?.gpsLast?.status || '', '');
+  const gpsSourceRaw = compactText(shift?.vehicle?.gpsLast?.sourceLabel || shift?.vehicle?.gpsState?.sourceLabel || shift?.vehicle?.gpsSourceLabel || shift?.gpsSourceLabel || '', '');
+  const gpsStateRaw = compactText(shift?.vehicle?.gpsState?.lastUiStatus || shift?.vehicle?.gpsState?.status || shift?.gpsStatus || shift?.vehicle?.gpsLast?.status || '', '');
+  const gpsSource = gpsSourceRaw ? gpsSourcePresentationLabel(gpsSourceRaw) : '';
+  const gpsState = gpsStateRaw ? gpsSourcePresentationLabel(gpsStateRaw) : '';
   const proofState = compactText(shift?.operationProofStatus || shift?.proofStatus || shift?.serviceProofStatus || '', '');
   const boardingChangeEffects = Array.isArray(shift?.boardingChangeEffects) ? shift.boardingChangeEffects : [];
   const boardingChangeSummary = shift?.boardingChangeSummary || null;
@@ -1276,7 +1279,7 @@ export function buildBoardingRouteImpactCopilotFacts({
     if (requestApplicationText) evidence.push(`Uygulama özeti: ${requestApplicationText}`);
     if (requestApplicationBoundaryNote) evidence.push(`Sınır: ${requestApplicationBoundaryNote}`);
     if (requestDecisionOwnerLabel || requestDecisionOwnerNote) {
-      evidence.push(`Karar sahibi: ${requestDecisionOwnerLabel || 'Oda'}`);
+      evidence.push(`Karar sahibi: ${requestDecisionOwnerLabel || 'Taşımacılık Firması'}`);
       if (requestDecisionOwnerNote) evidence.push(`Karar notu: ${requestDecisionOwnerNote}`);
     }
   }
@@ -1288,7 +1291,7 @@ export function buildBoardingRouteImpactCopilotFacts({
     { id: 'boarding-duration', label: 'Süre etkisi', value: `${durationDeltaMin} dk`, note: 'ETA güncel değilse kesin bilgi gibi okunmaz.' },
     { id: 'boarding-capacity', label: 'Kapasite etkisi', value: capacityImpact.status || 'UNKNOWN', note: `Önceki yük ${currentPeopleCount}, önizleme yükü ${previewPeopleCount}.` },
     { id: 'boarding-reliability', label: 'Güvenilirlik', value: reliability.label || 'ETA hesaplanamıyor', note: reliability.note || 'ETA hesaplanamıyor' },
-    { id: 'boarding-decision-owner', label: 'Karar sahibi', value: requestDecisionOwnerLabel || 'Oda', note: requestDecisionOwnerNote || 'Oda tarafında karar bekliyor.' },
+    { id: 'boarding-decision-owner', label: 'Karar sahibi', value: requestDecisionOwnerLabel || 'Taşımacılık Firması', note: requestDecisionOwnerNote || 'Taşımacılık Firması tarafında karar bekliyor.' },
   ];
   if (hasApplicationContext) {
     copilotSignals.unshift(
@@ -1610,14 +1613,14 @@ export function buildParentLiveNoVehicleFacts({
     headerText,
     `Çocuk: ${childLabel}`,
     'Araç: 0',
-    `Okul/Şirket: ${school}`,
+    `Okul/Firma: ${school}`,
     `Bölge: ${region}`,
     reasonText,
   ].filter(Boolean).join(' • ');
   const selectedRecordStatus = [
     `Çocuk: ${childLabel}`,
     'Araç: 0',
-    `Okul/Şirket: ${school}`,
+    `Okul/Firma: ${school}`,
     `Bölge: ${region}`,
     'Aktif servis görünmüyor',
   ].join(' • ');
@@ -1636,7 +1639,7 @@ export function buildParentLiveNoVehicleFacts({
       { label: 'Çocuk', value: childLabel, help: 'Seçili öğrenciyi güvenli şekilde gösterir.' },
       { label: 'Aktif servis', value: 'Görünmüyor', help: getLiveTrackingNoVehicleReason('parent') },
       { label: 'Araç', value: '0', help: 'Canlı araç olmadığını gösterir.' },
-      { label: 'Okul/Şirket', value: school, help: 'Bağlı kurum bilgisini gösterir.' },
+      { label: 'Okul/Firma', value: school, help: 'Bağlı kurum bilgisini gösterir.' },
       { label: 'Bölge', value: region, help: 'Bağlı bölge bilgisini gösterir.' },
       { label: 'Konum', value: 'Henüz alınmadı', help: `${locationText}. ${getLiveTrackingNoVehicleDetail('parent')}` },
     ],
@@ -2182,7 +2185,7 @@ export function buildCopilotStarterChips({
       'Reddedilenleri göster',
     ];
   } else if (isAgreementRouteRefresh) {
-    chips = ['Bu sözleşmede rota değişikliği var mı?', 'Room’a rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
+    chips = ['Bu sözleşmede rota değişikliği var mı?', 'Taşımacılık Firması tarafına rota güncelleme talebi gitti mi?', 'Eski rota ile yeni rota farkı ne?', 'Teklif mi, kabul mü?'];
   } else if (isDynamicSavingsPreview) {
     chips = ['Tasarruf hesabını göster', 'Km / süre farkını açıkla', 'Kapasite etkisini göster', 'Yaklaşık maliyet etkisini açıkla'];
   } else if (isAgreementSurface) {

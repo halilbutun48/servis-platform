@@ -116,8 +116,10 @@ async function loadOfferQualityRankingModule() {
 
   try {
     writePatchedCopy("web/src/utils/etaSanity.js", "etaSanity.js");
+    writePatchedCopy("web/src/utils/gpsSource.js", "gpsSource.js");
     writePatchedCopy("web/src/utils/safeDriveSummary.js", "safeDriveSummary.js", [
       [/from\s+["']\.\/etaSanity["']/g, 'from "./etaSanity.js"'],
+      [/from\s+["']\.\/gpsSource["']/g, 'from "./gpsSource.js"'],
     ]);
     writePatchedCopy("web/src/utils/offerQualityRanking.js", "offerQualityRanking.js", [
       [/from\s+["']\.\/safeDriveSummary["']/g, 'from "./safeDriveSummary.js"'],
@@ -340,15 +342,15 @@ async function main() {
   must(helper, "contractExecuteBlocked", "helper exposes contract execute blocked boundary");
   must(helper, "paymentExecuteBlocked", "helper exposes payment execute blocked boundary");
   must(helper, "aiRuntimeActionBlocked", "helper exposes AI runtime blocked boundary");
-  must(helper, "Kalite, güven, telematics, kanıt/check-in ve operasyon riski", "helper keeps summary wording");
+  must(helper, "Kalite, güven, telematik, kanıt-biniş doğrulaması ve operasyon riski", "helper keeps summary wording");
 
   must(card, "OfferQualityRankingCard", "shared card exports offer quality ranking component");
   must(card, "Kalite karşılaştırması", "shared card keeps quality comparison wording");
-  must(card, "readonly", "shared card keeps readonly wording");
-  must(card, "auto-selection", "shared card keeps auto-selection boundary wording");
-  must(card, "auto-accept", "shared card keeps auto-accept boundary wording");
-  must(card, "telematics", "shared card keeps telematics wording");
-  must(card, "evidence/check-in", "shared card keeps evidence/check-in wording");
+  must(card, "salt okunur", "shared card keeps readonly wording");
+  must(card, "otomatik seçim", "shared card keeps auto-selection boundary wording");
+  must(card, "otomatik kabul", "shared card keeps auto-accept boundary wording");
+  must(card, "telematik", "shared card keeps telematics wording");
+  must(card, "kanıt-biniş doğrulaması", "shared card keeps evidence/check-in wording");
 
   must(workflow, "OfferQualityRankingCard", "workflow panel wires offer quality ranking card");
   must(workflow, "Kalite karşılaştırması", "workflow panel keeps quality comparison wording");
@@ -369,7 +371,7 @@ async function main() {
 
   must(roomOffers, "OfferQualityRankingCard", "room offers panel wires offer quality ranking card");
   must(roomOffers, "Kalite karşılaştırması", "room offers panel keeps quality comparison wording");
-  must(roomOffers, "Room teklif karşılaştırması", "room offers panel keeps room scope wording");
+  must(roomOffers, "Taşımacılık Firması teklif karşılaştırması", "room offers panel keeps room scope wording");
 
   must(trustQuality, "OfferQualityRankingCard", "trust quality panel wires offer quality ranking card");
   must(trustQuality, "Teklif kalite karşılaştırma rayı", "trust quality panel keeps super admin quality lane wording");
@@ -623,7 +625,7 @@ async function main() {
     reviewDecisionSummary: reviewedDecision,
     summaryParams: { role: "COMPANY" },
   });
-  mustCondition(riskyApproval.nextReviewStep.includes("İnsan onayı gerekir"), "case 12 human approval remains required");
+  mustCondition(riskyApproval.nextReviewStep.includes("Onayınız gerekli"), "case 12 human approval remains required");
 
   mustStatusEmptyOrExactlyWithIdentity(["backend/src/routes", "backend/src/services"], [...approvedRouteEntries, ...approvedServiceEntries], "backend route/service status stays current-head approved");
   mustDiffEmptyOrExactlyWithIdentity(["backend/prisma", "prisma"], [], "backend prisma diff stays empty");

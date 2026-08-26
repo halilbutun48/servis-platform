@@ -576,7 +576,7 @@ export default function GuidedPlanModal({
     orgDestinationAudit,
     hubSaveFeedback: {
       organization: "Toplanma konumu kaydedildi.",
-      company: "Şirket konumu kaydedildi.",
+      company: "Firma konumu kaydedildi.",
     },
     getApiErrorMessage,
     sentOk,

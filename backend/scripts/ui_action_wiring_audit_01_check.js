@@ -98,7 +98,7 @@ const keyFileExpectations = [
       'Kabul et',
       'Reddet',
       'Sürücü tarafında karar bekliyor.',
-      'Readonly önizleme seçildi.',
+      'Salt okunur önizleme seçildi.',
       'Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok.',
     ],
   },
@@ -110,7 +110,7 @@ const keyFileExpectations = [
       'Kabul et',
       'Reddet',
       'Sürücü tarafında karar bekliyor.',
-      'Readonly önizleme seçildi.',
+      'Salt okunur önizleme seçildi.',
       'Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok.',
     ],
   },
@@ -120,7 +120,7 @@ const keyFileExpectations = [
       'selectedPreviewRequestId',
       'previewLoading',
       'Kişi bilgisi eksik',
-      'Readonly önizleme seçildi.',
+      'Salt okunur önizleme seçildi.',
       'Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok.',
       'decisionOwnerNote',
     ],
@@ -145,7 +145,7 @@ const keyFileExpectations = [
       'decisionOwnerRole || "DRIVER"',
       'Kabul et',
       'Reddet',
-      'Readonly önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez.',
+      'Salt okunur önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez.',
       'Yenile',
     ],
   },
@@ -154,7 +154,7 @@ const keyFileExpectations = [
     mustContain: [
       'Harita önizlemesi için durak koordinatı eksik.',
       'Bu değişiklik için rota etkisi metinsel olarak önizleniyor.',
-      'Readonly önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez',
+      'Salt okunur önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez',
       'Önizleme açılıyor…',
       'Önizleme gösterilemedi',
       'Seçimi temizle',
@@ -367,7 +367,7 @@ function main() {
 
   must(countMatches(fileText.get("web/src/panels/room/roomOperationsBoard.jsx"), /Kabul et/g) === 0, "room boarding board does not show accept action");
   must(countMatches(fileText.get("web/src/panels/room/roomOperationsBoard.jsx"), /Reddet/g) === 0, "room boarding board does not show reject action");
-  must(countMatches(fileText.get("web/src/panels/room/roomOperationsBoard.jsx"), /Readonly önizleme seçildi\./g) > 0, "room boarding board keeps readonly preview note");
+  must(countMatches(fileText.get("web/src/panels/room/roomOperationsBoard.jsx"), /Salt okunur önizleme seçildi\./g) > 0, "room boarding board keeps readonly preview note");
 
   must(countMatches(fileText.get("web/src/panels/room/OperationHealthPanel.jsx"), /Kabul et/g) === 0, "room operation health does not show accept action");
   must(countMatches(fileText.get("web/src/panels/room/OperationHealthPanel.jsx"), /Reddet/g) === 0, "room operation health does not show reject action");
@@ -375,7 +375,7 @@ function main() {
   must(countMatches(fileText.get("web/src/panels/driver/RoutePanel.jsx"), /decisionOwnerRole\s*\|\|\s*"DRIVER"/g) > 0, "driver route owns same-route decisions");
   must(countMatches(fileText.get("web/src/panels/driver/RoutePanel.jsx"), /Kabul et/g) > 0, "driver route shows accept action");
   must(countMatches(fileText.get("web/src/panels/driver/RoutePanel.jsx"), /Reddet/g) > 0, "driver route shows reject action");
-  must(countMatches(fileText.get("web/src/panels/driver/RoutePanel.jsx"), /Readonly önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez\./g) > 0, "driver route keeps readonly boundary");
+  must(countMatches(fileText.get("web/src/panels/driver/RoutePanel.jsx"), /Salt okunur önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez\./g) > 0, "driver route keeps readonly boundary");
 
   must(countMatches(fileText.get("web/src/utils/copilotFacts.js"), /fallback = \['Bu ekranda neye bakmalıyım\?'/g) > 0, "copilot facts keep starter-chip fallback");
   must(countMatches(fileText.get("web/src/utils/copilotFacts.js"), /finalizeStarterChips\(/g) > 0, "copilot facts finalize starter chips");
@@ -389,7 +389,7 @@ function main() {
   must(countMatches(fileText.get("web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx"), /Bir satırdaki ‘Rota etkisini önizle’ butonuna basınca burada readonly önizleme açılır\./g) === 0, "old duplicate placeholder removed");
   must(countMatches(fileText.get("web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx"), /Harita önizlemesi için durak koordinatı eksik\./g) > 0, "preview card has map fallback");
   must(countMatches(fileText.get("web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx"), /Seçimi temizle/g) > 0, "preview card has clear-selection action");
-  must(countMatches(fileText.get("web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx"), /Readonly önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez/g) > 0, "preview card keeps readonly boundary");
+  must(countMatches(fileText.get("web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx"), /Salt okunur önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez/g) > 0, "preview card keeps readonly boundary");
 
   const bannedBackendTerms = [
     { rx: /\bpayment\b/i, label: "payment" },

@@ -193,7 +193,7 @@ export default function OrganizationPlansPanel() {
         noteCompany: offerNote || null,
       });
 
-      setMsg(`Teklifler gönderildi. Shift #${data.shiftId} • Şirket: ${data.roomIds.length}`);
+      setMsg(`Teklifler gönderildi. Vardiya #${data.shiftId} • Taşımacılık firması sayısı: ${data.roomIds.length}`);
       setOfferOpen(false);
       await load();
 
@@ -337,10 +337,10 @@ export default function OrganizationPlansPanel() {
   return (
     <div className="wrap" style={{ maxWidth: "none", width: "100%", paddingRight: 12, overflowX: "hidden" }}>
       <div className="card" style={{ width: "100%" }}>
-        <div className="title">Kurum Planları (Legacy)</div>
+        <div className="title">Organizasyon Planları (eski görünüm)</div>
         <div className="muted">
           Yeni plan oluşturma akışı <b>Planlama Merkezi</b> ekranına taşındı. Bu sayfa eski
-          kurum planlarını görmek için korunur. Yeni iş kurarken <b>Planlama Merkezi</b>
+          organizasyon planlarını görmek için korunur. Yeni iş kurarken <b>Planlama Merkezi</b>
           kullanılmalıdır.
         </div>
         <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -446,7 +446,7 @@ export default function OrganizationPlansPanel() {
               }}
             >
               <label style={fieldLabelStyle}>
-                Room ID (sadece agreement)
+                Taşımacılık Firması kimliği (yalnız sözleşmede)
                 <input
                   style={inputStyle}
                   value={current.roomId}
@@ -561,7 +561,7 @@ export default function OrganizationPlansPanel() {
                 }}
               >
                 <div>
-                  <div className="title">Şirketlere Teklif Gönder</div>
+                  <div className="title">Taşımacılık Firmalarına Teklif Gönder</div>
                   <div className="muted">
                     Bu akış karşı tarafta <b>Offers</b> bölümüne düşer.
                   </div>
@@ -581,7 +581,7 @@ export default function OrganizationPlansPanel() {
                 }}
               >
                 <label style={fieldLabelStyle}>
-                  Şirket ara
+                  Taşımacılık firması ara
                   <input
                     style={inputStyle}
                     value={roomSearch}
@@ -612,7 +612,7 @@ export default function OrganizationPlansPanel() {
               </div>
 
               <div className="muted" style={{ marginBottom: 8 }}>
-                Toplam şirket: {filteredRooms.length}
+                Toplam taşımacılık firması: {filteredRooms.length}
               </div>
 
               <div className="card" style={{ padding: 10, display: "grid", gap: 8 }}>
@@ -630,7 +630,7 @@ export default function OrganizationPlansPanel() {
                     {r.name} #{r.id}
                   </label>
                 ))}
-                {!filteredRooms.length ? <div className="muted">Şirket bulunamadı.</div> : null}
+                {!filteredRooms.length ? <div className="muted">Taşımacılık firması bulunamadı.</div> : null}
               </div>
 
               <div

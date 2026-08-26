@@ -16,6 +16,21 @@ function fmt(dt) {
   }
 }
 
+function eventTypeLabel(value) {
+  const key = String(value || "").trim().toUpperCase();
+  if (key === "BOARD") return "Biniş";
+  if (key === "ALIGHT") return "İniş";
+  return "Bilinmiyor";
+}
+
+function eventSourceLabel(value) {
+  const key = String(value || "").trim().toUpperCase();
+  if (key === "QR") return "QR";
+  if (key === "NFC") return "NFC";
+  if (key === "MANUAL") return "Manuel";
+  return "Bilinmiyor";
+}
+
 export default function DriverCheckinPanel() {
   const { token, me } = useSession();
   const featureOn = true;
@@ -153,13 +168,13 @@ export default function DriverCheckinPanel() {
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <h3 style={{ margin: 0 }}>Driver Check-in</h3>
+            <h3 style={{ margin: 0 }}>Sürücü okutma</h3>
             <div className="muted" style={{ marginTop: 6 }}>
-              Aktif vardiyada QR/NFC okutarak BOARD / ALIGHT event üret. Shift ACTIVE değilse önce Bugün ekranından görevi başlat.
+              Aktif vardiyada QR/NFC okutarak biniş veya iniş kaydı oluşturur. Vardiya aktif değilse önce Bugün ekranından görevi başlat.
             </div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="pill" data-status="COUNT">Opsiyonel check-in</span>
+            <span className="pill" data-status="COUNT">Opsiyonel okutma</span>
             <button type="button" className="btn" onClick={loadAll} disabled={loading}>{loading ? "..." : "Yenile"}</button>
           </div>
         </div>
@@ -184,10 +199,10 @@ export default function DriverCheckinPanel() {
                 </select>
               </label>
               <label className="col">
-                <span className="muted">Event</span>
+                <span className="muted">Kayıt türü</span>
                 <select value={eventType} onChange={(e) => setEventType(e.target.value)}>
-                  <option value="BOARD">BOARD</option>
-                  <option value="ALIGHT">ALIGHT</option>
+                  <option value="BOARD">Biniş</option>
+                  <option value="ALIGHT">İniş</option>
                 </select>
               </label>
               <label className="col">
@@ -195,7 +210,7 @@ export default function DriverCheckinPanel() {
                 <select value={source} onChange={(e) => setSource(e.target.value)}>
                   <option value="QR">QR</option>
                   <option value="NFC">NFC</option>
-                  <option value="MANUAL">MANUAL</option>
+                  <option value="MANUAL">Manuel</option>
                 </select>
               </label>
             </div>
@@ -221,15 +236,15 @@ export default function DriverCheckinPanel() {
                 <span className="muted">Kamera okursa kod otomatik gönderilir.</span>
               </div>
               <label className="col">
-                <span className="muted">Device ID (opsiyonel)</span>
+                <span className="muted">Cihaz kimliği (isteğe bağlı)</span>
                 <input value={deviceId} onChange={(e) => setDeviceId(e.target.value)} placeholder="scanner-1" />
               </label>
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                 <button type="submit" className="btn primary" disabled={scanBusy || !selectedShiftId || !tokenValue.trim()}>
                   {scanBusy ? "..." : "Okut"}
                 </button>
-                <span className="pill" data-status="COUNT">BOARD {counts.BOARD || 0}</span>
-                <span className="pill" data-status="COUNT">ALIGHT {counts.ALIGHT || 0}</span>
+                <span className="pill" data-status="COUNT">Biniş {counts.BOARD || 0}</span>
+                <span className="pill" data-status="COUNT">İniş {counts.ALIGHT || 0}</span>
               </div>
             </form>
 
@@ -245,9 +260,9 @@ export default function DriverCheckinPanel() {
               <div className="card" style={{ marginTop: 12, marginBottom: 0 }}>
                 <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <span className="pill" data-status={lastResult?.deduped ? "REQUESTED" : "APPROVED"}>
-                    {lastResult?.deduped ? "DEDUPED" : "OK"}
+                    {lastResult?.deduped ? "Yinelenen kayıt" : "Tamamlandı"}
                   </span>
-                  <span className="muted">Son event: {displayStatusLabel(lastResult?.lastEvent?.eventType || "-")} • {fmt(lastResult?.lastEvent?.at)}</span>
+                  <span className="muted">Son kayıt: {eventTypeLabel(lastResult?.lastEvent?.eventType)} • {fmt(lastResult?.lastEvent?.at)}</span>
                 </div>
               </div>
             ) : null}
@@ -255,7 +270,7 @@ export default function DriverCheckinPanel() {
         </div>
 
         <div className="card" style={{ overflowX: "auto" }}>
-          <h3 style={{ marginTop: 0 }}>Son eventler</h3>
+          <h3 style={{ marginTop: 0 }}>Son kayıtlar</h3>
           <table className="tbl" style={{ whiteSpace: "nowrap" }}>
             <thead>
               <tr>
@@ -271,10 +286,10 @@ export default function DriverCheckinPanel() {
                   <td>{fmt(it.at)}</td>
                   <td>{it.personel?.fullName || `#${it.personelId}`}</td>
                   <td><span className="pill" data-status={String(it.eventType || "").toUpperCase()}>{displayStatusLabel(String(it.eventType || "").toUpperCase())}</span></td>
-                  <td>{it.source || "-"}</td>
+                  <td>{eventSourceLabel(it.source)}</td>
                 </tr>
               )) : (
-                <tr><td colSpan={4} className="muted">Henüz event yok.</td></tr>
+                <tr><td colSpan={4} className="muted">Henüz kayıt yok.</td></tr>
               )}
             </tbody>
           </table>

@@ -177,6 +177,20 @@ function mustMigrationDirectoryShape(relPath, label) {
 
 const ACCEPTED_SCHEMA_PATH = "backend/prisma/schema.prisma";
 const ACCEPTED_SCHEMA_SHA256 = "7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748";
+const APPROVED_COMPANY_CHECKIN_PRESENTATION = {
+  path: "web/src/panels/company/CheckinPanel.jsx",
+  sha256: "EE5AFE21578A32E69AA8748E38A1976329EE98088EDBFA0449625A957B9C9588",
+};
+const APPROVED_SUPERADMIN_PRESENTATION = [
+  { path: "web/src/panels/superadmin/AuditLogsPanel.jsx", sha256: "2F839DAB142DAEF2BEC4BDD4E6667F4836CCE6E9A44568AFDC8CE555931634FE" },
+  { path: "web/src/panels/superadmin/CommercialCorePanel.jsx", sha256: "3A0392D66E6AF3AAA70DEC456A435B0A78A4828EDB9FF11F1554F1E0FB13E123" },
+  { path: "web/src/panels/superadmin/CompaniesPanel.jsx", sha256: "BC811B33D764D56ACC2C0D22ABA6F725A9E65DE824E2180E7CEF840B6E786FF4" },
+  { path: "web/src/panels/superadmin/PublicLeadReviewPanel.jsx", sha256: "1B8C958B5864FDCE7E670D9A5A8B8D4146CF0ACFDECE697BF374FA1581C9C4EF" },
+  { path: "web/src/panels/superadmin/RegionsPanel.jsx", sha256: "3FEA849F097B082E6F57CE5E2F04657738452AA7E8291A3AC83B04161CB1F21B" },
+  { path: "web/src/panels/superadmin/RoomsPanel.jsx", sha256: "85A442A7B1E0E82297D3BC91FEB13FF7136466BF930BB7A37BAD590AABA15165" },
+  { path: "web/src/panels/superadmin/UsersPanel.jsx", sha256: "903ED1F7B0CA5CA7F20F8823E3ED06EDF5EF271F073DD930B8DEF44FA7538C4B" },
+  { path: "web/src/panels/superadmin/commercialCorePanelShared.jsx", sha256: "9FAE47E7E24DB70A0ADB6F89E41C1BABD8868FDEF9A690CFEAE9D64F8CC9896D" },
+];
 const ACCEPTED_PRISMA_MIGRATIONS = [
   { path: "backend/prisma/migrations/20260125133000_seed_root_baseline/migration.sql", sha256: "27DF5155D24311AA9199AC7B8FC94DB615EC6457401B2BA0105C7FD30A5587DD" },
   { path: "backend/prisma/migrations/20260125133100_organization_shift_import_baseline/migration.sql", sha256: "864CB0607DB2F7833C834BFD9747D9518806CE9EC206C0C19F1A79271ACE3FBD" },
@@ -306,7 +320,12 @@ function main() {
     "web/src/panels/superadmin/OperationsPanel.jsx",
     "web/src/panels/superadmin/SuperAdminPanel.jsx",
     "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
+    "web/src/panels/superadmin/CompaniesPanel.jsx",
+    "web/src/panels/superadmin/RegionsPanel.jsx",
+    "web/src/panels/superadmin/RoomsPanel.jsx",
+    "web/src/panels/superadmin/UsersPanel.jsx",
     "web/src/panels/personel/LivePanel.jsx",
+    "web/src/panels/personel/MyRidePanel.jsx",
     "web/src/panels/parent/LivePanel.jsx",
     "web/src/utils/dashboardBulk.js",
     "backend/scripts/ux_superadmin_overview_cleanup_01_check.js",
@@ -319,6 +338,7 @@ function main() {
     "web/src/panels/driver/CheckinPanel.jsx",
     "web/src/panels/driver/MapPanel.jsx",
     "web/src/panels/driver/RoutePanel.jsx",
+    "web/src/panels/driver/TodayPanel.jsx",
     "web/src/panels/driver/RoutePanel.jsx",
     "web/src/panels/room/AgreementsPanel.jsx",
     "web/src/panels/room/DriversPanel.jsx",
@@ -575,19 +595,33 @@ function main() {
   mustNotList(status, "web/src/panels/company/DriversPanel.jsx", "company drivers panel is untouched");
   mustNotList(status, "web/src/panels/company/VehiclesPanel.jsx", "company vehicles panel is untouched");
   mustNotList(status, "web/src/panels/company/MapPanel.jsx", "company map panel is untouched");
-  mustNotList(status, "web/src/panels/company/CheckinPanel.jsx", "company check-in panel is untouched");
+  mustStatusEmptyOrExactlyWithIdentity(
+    [APPROVED_COMPANY_CHECKIN_PRESENTATION.path],
+    [APPROVED_COMPANY_CHECKIN_PRESENTATION],
+    "company check-in panel stays within the approved presentation identity"
+  );
   mustNotList(status, "web/src/panels/company/OffersPanel.jsx", "company offers panel is untouched");
   mustNotList(status, "web/src/panels/parent/", "parent surfaces are untouched");
   mustNotList(status, "web/src/panels/personel/", "personel surfaces are untouched");
   const superadminStatus = status.filter((file) =>
     file !== "web/src/panels/superadmin/SuperAdminPanel.jsx" &&
     file !== "web/src/panels/superadmin/TelematicsHubPanel.jsx" &&
-    file !== "web/src/panels/superadmin/TrustQualityPanel.jsx"
+    file !== "web/src/panels/superadmin/TrustQualityPanel.jsx" &&
+    !APPROVED_SUPERADMIN_PRESENTATION.some((entry) => entry.path === file)
   );
   mustNotList(superadminStatus, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
+  mustStatusEmptyOrExactlyWithIdentity(
+    APPROVED_SUPERADMIN_PRESENTATION.map((entry) => entry.path),
+    APPROVED_SUPERADMIN_PRESENTATION,
+    "superadmin surfaces stay within the approved presentation identities"
+  );
   mustNotList(status, "web/src/panels/driver/CheckinPanel.jsx", "driver check-in surface is untouched");
   mustNotList(status, "web/src/panels/driver/RoutePanel.jsx", "driver route surface is untouched");
-  mustNotList(status, "web/src/panels/driver/TodayPanel.jsx", "driver today surface is untouched");
+  mustStatusEmptyOrExactlyWithIdentity(
+    ["web/src/panels/driver/TodayPanel.jsx"],
+    [{ path: "web/src/panels/driver/TodayPanel.jsx", sha256: "ACB5EB64D24F958A725D751EBE2F1DDAA2F6818D50605B0849F55CB828E11F02" }],
+    "driver today surface stays within the approved presentation identity"
+  );
   mustNotList(status, "web/src/panels/room/VehiclesPanel.jsx", "room vehicles surface is untouched");
   mustNotList(status, "web/src/panels/room/roomVehiclesPanel", "room vehicles helpers are untouched");
   mustNotList(status, "web/src/panels/shared/PanelKvkkHint.jsx", "shared KVKK hint is untouched");

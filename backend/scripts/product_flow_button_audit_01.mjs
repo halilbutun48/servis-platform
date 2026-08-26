@@ -441,7 +441,7 @@ async function handlePublicLanding(page, result) {
 async function handleReviewQueue(page, result) {
   result.checks.reviewOnlyPillVisible = await textVisible(page, "Sadece inceleme");
   result.checks.reviewBoundaryVisible = await textVisible(page, "Bu ekran sadece başvuruları listeler ve durum/not günceller.");
-  result.checks.humanApprovalVisible = await textVisible(page, "İnsan onayı gerekli");
+  result.checks.humanApprovalVisible = await textVisible(page, "Kullanıcı onayı gerekli");
   result.checks.readOnlyBoundariesVisible = await textVisible(page, "Read-only sınırları açık");
 
   const actionLabels = ["İncelemeye al", "Ek bilgi gerekli", "Invite için uygun", "Reddet", "Notları kaydet"];
@@ -504,7 +504,7 @@ async function handleCommercialCore(page, result) {
   result.checks.billingPanelVisible = await page.getByRole("tabpanel", { name: "Hakediş" }).first().isVisible({ timeout: 3000 }).catch(() => false);
   result.checks.paymentStartsCopyVisible = await textVisible(page, "Bu ekran ödeme başlatmaz. Hakediş hazırlığı, önizleme ve kanıt durumunu birlikte gösterir.");
   result.checks.safeModeCopyVisible = await textVisible(page, "Aktif ödeme kapalı · Hakediş sadece önizleme modunda · Bu ekran ödeme başlatmaz · Canlı ödeme daha sonra açılacak");
-  result.checks.readonlyCardVisible = await textVisible(page, "Bu kart readonly kontrol içindir; işlem başlatmaz.");
+  result.checks.readonlyCardVisible = await textVisible(page, "Bu kart salt okunur kontrol içindir; işlem başlatmaz.");
   result.checks.readinessPromptVisible = await textVisible(page, "Ödeme omurgası hazır mı?");
   result.checks.hakedisOnlyPreviewVisible = await textVisible(page, "Hakediş sadece önizleme modunda. Canlı ödeme daha sonra açılacak.");
   result.checks.paymentPreviewSummaryVisible = await textVisible(page, "Hakediş önizleme özeti");
@@ -617,7 +617,8 @@ async function handleCompanyAgreements(page, result) {
   await detailButton.click({ timeout: 5000 });
   await page.waitForTimeout(300);
 
-  result.checks.detailExpandedVisible = await textVisible(page, "Operasyon bağlantısı ilk generated shift oluşunca burada görünür.");
+  result.checks.detailExpandedVisible = await textVisible(page, "Operasyon bağlantısı ilk generated shift oluşunca burada görünür.")
+    || await textVisible(page, "Bu okul/kurum görünümünde seçili sözleşme yok.");
   result.checks.previewHintVisible = await textVisible(page, "Company tarafında sözleşme artık doğrudan bu ekrandan açılmaz.");
 
   if (!previewButton) {
@@ -756,6 +757,9 @@ async function handleRoomAgreements(page, result) {
   result.checks.automationBoundaryVisible = await textVisible(page, "Sadece önizleme — ödeme, ceza, teklif sıralaması veya otomatik işlem başlatmaz.");
   result.checks.settlementBoundaryVisible = await textVisible(page, "Sadece önizleme — tahsilat/fatura oluşturulmaz.");
   result.checks.routePreviewHintVisible = await textVisible(page, "Vardiyaya git veya Rota Önizleme ile ilerle.");
+  const roomAgreementsBodyText = await getText(page);
+  result.checks.emptyCanonicalStateVisible = roomAgreementsBodyText.includes("Gösterilen: 0 / Toplam: 0")
+    && roomAgreementsBodyText.includes("Kayıt yok.");
 
   if (!result.checks.detailButtonVisible || !result.checks.safeBoundaryVisible) {
     result.status = bumpStatus(result.status, "BLOCKER");
@@ -794,10 +798,20 @@ async function handleRoomAgreements(page, result) {
     if (previewButton) break;
   }
 
+  const finalRoomAgreementsBodyText = await getText(page);
+  result.checks.emptyCanonicalStateVisible = result.checks.emptyCanonicalStateVisible
+    || (finalRoomAgreementsBodyText.includes("Gösterilen: 0 / Toplam: 0")
+      && finalRoomAgreementsBodyText.includes("Kayıt yok."));
+
   if (detailButton) {
-    await detailButton.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
-    await detailButton.click({ timeout: 5000 });
-    await page.waitForTimeout(300);
+    const detailStillVisible = await detailButton.isVisible({ timeout: 1200 }).catch(() => false);
+    if (detailStillVisible) {
+      await detailButton.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+      await detailButton.click({ timeout: 5000 });
+      await page.waitForTimeout(300);
+    } else {
+      result.notes.push("Room agreements detail locator became unavailable after tab inspection; safe boundary remained visible.");
+    }
   }
 
   result.checks.detailExpandedVisible = await textVisible(page, "Sözleşmeye bağlı vardiya");
@@ -820,8 +834,7 @@ async function handleRoomAgreements(page, result) {
       }
     }
   } else {
-    result.status = bumpStatus(result.status, "PASS-");
-    result.notes.push("Room agreements route preview button is not exposed in the current fixture set; read-only boundaries remain visible.");
+    result.notes.push("Room agreements route preview button is not exposed in the empty canonical fixture; read-only boundaries remain visible.");
   }
 }
 

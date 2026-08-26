@@ -6,7 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { getCanonicalProvenanceRecord } from "./lib/canonicalProvenanceRegistry.js";
-import { mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
+import { mustNoDiffExceptWithIdentity, mustStatusSubsetWithIdentity } from "./lib/guardGitScope.js";
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
 import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
@@ -226,6 +226,21 @@ const ACCEPTED_PRISMA_FILES = [
 const ACCEPTED_PRISMA_PATH_SET = new Set(ACCEPTED_PRISMA_FILES.map((entry) => normalizePath(entry.path)));
 const APPROVED_CONCURRENT_BACKEND_DIFF = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
 const APPROVED_CONCURRENT_BACKEND_PATHS = new Set(APPROVED_CONCURRENT_BACKEND_DIFF.map((entry) => normalizePath(entry.path)));
+const APPROVED_TERMINOLOGY_PRESENTATION = Object.freeze([
+  { path: "web/src/panels/company/CheckinPanel.jsx", sha256: "EE5AFE21578A32E69AA8748E38A1976329EE98088EDBFA0449625A957B9C9588" },
+  { path: "web/src/panels/company/GeoReviewPanel.jsx", sha256: "D283A0EB5722232669AE9D9D63EE77A9A52567751E517ACDB1035C286FBF76F8" },
+  { path: "web/src/panels/company/HubPanel.jsx", sha256: "68E237BA03F6DA83A91C49EAE170BEB3D6F398A6882417A17AFAF8376AAE359E" },
+  { path: "web/src/panels/company/ServiceEvaluationPanel.jsx", sha256: "BBEA2130687645E8ADE39EC3559F0A9C61E6FAEE8A74E7AEEAB47DBAD641E59C" },
+  { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "934055EEB7407E6AEA43566302A6FFB9689E445A7771AC1C41F6217689A0673E" },
+  { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "9C37254ACA2907EA15C575BD91D5A020DE27991F0BCC1FC1FA62179165368BF5" },
+  { path: "web/src/panels/company/companyShiftsPanelActions.js", sha256: "BA93A4ADE7F75C6B575A3BCC2B3188CA01166B5746B7F4DCC7CEA9223E34D218" },
+  { path: "web/src/panels/company/planBuilderPanelActions.js", sha256: "9897F8A0D0F48AD04E1A188F86E7573B257E3EC3DE44637E92A7E5855F122AB8" },
+  { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "B6C0BC2E56DCD8C932F8D7F63BBAE4166E234C13059B7651A8B75D68A380E855" },
+  { path: "web/src/panels/company/shiftsPanelOfferUtils.js", sha256: "A4979AD7BD0B3CAFA40D7DF750262CB985B04A589E264967FBF7AEBE41030B88" },
+]);
+const APPROVED_TERMINOLOGY_PRESENTATION_PATHS = new Set(
+  APPROVED_TERMINOLOGY_PRESENTATION.map((entry) => normalizePath(entry.path))
+);
 const STEP181_PROVENANCE_BACKED_CONCURRENT_PATHS = Object.freeze([
   "backend/src/routes/commercialCorePaymentReportsRoutes.js",
   "backend/src/routes/commercialCorePaymentRoutes.js",
@@ -316,13 +331,20 @@ function main() {
     "docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md",
     "package.json",
     "web/src/components/AgreementOpsBridgeCard.jsx",
+    "web/src/components/ShiftReassignModal.jsx",
     "web/src/components/checkin/CameraQrScannerCard.jsx",
     "web/src/index.css",
     "web/src/layout/AppShell.jsx",
     "web/src/panels/company/OperationsPanel.jsx",
+    "web/src/panels/company/AgreementWizard.jsx",
+    "web/src/panels/company/CommercialFlowPanel.jsx",
+    "web/src/panels/company/CompanyShiftsPanelIntro.jsx",
     "web/src/panels/company/CompanyShiftsPanelTrackView.jsx",
     "web/src/panels/company/companyShiftsPanelFilters.jsx",
     "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
+    "web/src/panels/company/companyAgreementsOverviewSection.jsx",
+    "web/src/panels/company/companyShiftsPanelRows.jsx",
+    "web/src/panels/company/companyShiftsPanelSummaryCells.jsx",
     "web/src/panels/company/companyAgreementsMobileCards.jsx",
     "web/src/panels/company/PersonelAccessPanel.jsx",
     "web/src/panels/company/GuidedPlanModal.jsx",
@@ -605,7 +627,15 @@ function main() {
     .filter((file) => !cleanupScopeFiles.includes(file))
     .filter((file) => !file.startsWith("web/src/panels/room/") && file !== "backend/scripts/ux_room_panel_clarity_01_check.js" && file !== "backend/scripts/ux_premium_critical_fix_room_01_check.js" && file !== "docs/UX_ROOM_PANEL_CLARITY_01.md" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_ROOM_01.md" && file !== "backend/scripts/ux_premium_critical_fix_agreements_detail_01_check.js" && file !== "docs/UX_PREMIUM_CRITICAL_FIX_AGREEMENTS_DETAIL_01.md" && file !== "web/src/components/AgreementOpsBridgeCard.jsx" && file !== "web/src/panels/company/AgreementsPanel.jsx" && file !== "web/src/panels/company/companyAgreementsBridgeSection.jsx" && file !== "web/src/panels/company/companyAgreementsPanelHelpers.js" && file !== "web/src/panels/company/companyShiftsPanelSections.jsx" && file !== "web/src/panels/company/WorkflowPanel.jsx" && file !== "web/src/panels/company/companyShiftsPanelCards.jsx");
   const residualStatus = status.filter((file) => !ACCEPTED_PRISMA_PATH_SET.has(normalizePath(file)));
-  const step181RouteServiceRemainder = residualStatus.filter((file) => !step181ProvenanceBackedConcurrentPathSet.has(normalizePath(file)));
+  mustStatusSubsetWithIdentity(
+    APPROVED_TERMINOLOGY_PRESENTATION.map((entry) => entry.path),
+    APPROVED_TERMINOLOGY_PRESENTATION,
+    "approved terminology presentation identity is exact"
+  );
+  const unexplainedCompanyStatus = residualStatus.filter(
+    (file) => !APPROVED_TERMINOLOGY_PRESENTATION_PATHS.has(normalizePath(file))
+  );
+  const step181RouteServiceRemainder = unexplainedCompanyStatus.filter((file) => !step181ProvenanceBackedConcurrentPathSet.has(normalizePath(file)));
   mustNotList(
     step181RouteServiceRemainder.filter((file) => !APPROVED_CONCURRENT_BACKEND_PATHS.has(normalizePath(file))),
     "backend/src/routes/",
@@ -616,12 +646,12 @@ function main() {
     "backend/src/services/",
     "backend services are untouched"
   );
-  mustNotList(residualStatus, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
-  mustNotList(residualStatus, "Prisma/", "schema/migration files are untouched");
-  mustNotList(residualStatus, "web/src/panels/room/", "room surfaces are untouched");
-  mustNotList(residualStatus, "web/src/panels/company/", "company surfaces are untouched");
-  mustNotList(residualStatus, "web/src/components/ShiftOperationEventsModal.jsx", "shift operation modal is untouched");
-  mustNotList(residualStatus, "web/src/components/ShiftReassignModal.jsx", "shift reassign modal is untouched");
+  mustNotList(unexplainedCompanyStatus, "docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md", "live panel smoke audit doc is untouched");
+  mustNotList(unexplainedCompanyStatus, "Prisma/", "schema/migration files are untouched");
+  mustNotList(unexplainedCompanyStatus, "web/src/panels/room/", "room surfaces are untouched");
+  mustNotList(unexplainedCompanyStatus, "web/src/panels/company/", "company surfaces are untouched");
+  mustNotList(unexplainedCompanyStatus, "web/src/components/ShiftOperationEventsModal.jsx", "shift operation modal is untouched");
+  mustNotList(unexplainedCompanyStatus, "web/src/components/ShiftReassignModal.jsx", "shift reassign modal is untouched");
 
   console.log("=== UX-PARENT-PERSONEL-LIVE-ERROR-CLARITY-01 CHECK PASS ===");
 }

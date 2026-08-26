@@ -25,8 +25,8 @@ const DECISION_LABELS = {
   AUTO_ACCEPTED: "Otomatik onay",
   MANUAL_REVIEW: "İncelemede",
   CUTOFF_REVIEW: "Cutoff incelemesi",
-  ROOM_ACCEPTED: "Oda onayı",
-  ROOM_CANCELLED: "Oda iptali",
+  ROOM_ACCEPTED: "Taşımacılık Firması onayı",
+  ROOM_CANCELLED: "Taşımacılık Firması iptali",
   DRIVER_ACCEPTED: "Sürücü onayı",
   DRIVER_CANCELLED: "Sürücü iptali",
   COMPANY_ACCEPTED: "Hizmet alan taraf onayı",
@@ -187,7 +187,7 @@ export function boardingChangePreviewStateNote(itemOrState, context = {}) {
   if (state === "APPLIED") return "Günlük atamaya işlendi.";
   if (state === "READY") return "İnsan onayı bekliyor.";
   if (state === "REJECTED") return "İstek kapandı.";
-  return "Readonly önizleme.";
+  return "Salt okunur önizleme.";
 }
 
 export function boardingChangeApplyBoundaryNote() {
@@ -233,7 +233,7 @@ export function boardingChangeRequestStatusLabel(itemOrState, context = {}) {
   if (status === "NO_SHOW") return REQUEST_STATUS_LABELS.NO_SHOW;
   if (status === "CUTOFF_REVIEW") return REQUEST_STATUS_LABELS.CUTOFF_REVIEW;
   if (ownerRole === "DRIVER") return "Sürücüde bekliyor";
-  if (ownerRole === "COMPANY") return "Firma/Okul/Kurum tarafında bekliyor";
+  if (ownerRole === "COMPANY") return "Firma/Okul/Organizasyon tarafında bekliyor";
   if (status === "OPEN" || status === "MANUAL_REVIEW") return REQUEST_STATUS_LABELS.MANUAL_REVIEW;
   return REQUEST_STATUS_LABELS.OPEN;
 }

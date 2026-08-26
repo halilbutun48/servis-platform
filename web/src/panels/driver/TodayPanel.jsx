@@ -13,6 +13,7 @@ import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import { useAutoReload } from "../../live/useAutoReload";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 function fmt(dt) {
   try {
     const d = new Date(dt);
@@ -103,7 +104,8 @@ export default function DriverTodayPanel() {
   const copilotSelection = useMemo(() => {
     if (!selectedShift) return null;
     const gpsStateLabel = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus || selectedVehicle?.gpsLast?.status || (selectedShift ? "GPS bekleniyor" : "-"));
-    const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel || (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
+    const rawGpsSource = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel;
+    const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
     const gpsAge = gpsAgeText(selectedVehicle?.gpsLast || selectedShift?.vehicle?.gpsLast || selectedShift?.gpsLast);
     const routeProofText = String(selectedShift?.operationProofStatus || selectedShift?.proofStatus || selectedShift?.serviceProofStatus || selectedShift?.vehicle?.operationProofStatus || selectedShift?.vehicle?.proofStatus || "").trim() || "Belirgin değil";
     return {
@@ -530,5 +532,4 @@ useEffect(() => {
     </div>
   );
 }
-
 

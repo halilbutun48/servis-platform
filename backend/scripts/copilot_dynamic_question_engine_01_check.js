@@ -713,7 +713,7 @@ function main() {
       fixture: driverRouteFixture,
       message: 'Geldim.',
       expectedQuestionTypes: ['SCREEN_PURPOSE'],
-      replyIncludes: ['Rota 12', 'durak', 'şirket/varış', 'tamamlanma', 'yazma işlemi'],
+      replyIncludes: ['Rota 12', 'durak', 'Hizmet Alan Firma/varış', 'tamamlanma', 'yazma işlemi'],
     },
     {
       id: 'driver-route-clarify-2',
@@ -721,7 +721,7 @@ function main() {
       fixture: driverRouteFixture,
       message: 'tamam',
       expectedQuestionTypes: ['SCREEN_PURPOSE'],
-      replyIncludes: ['Devam edelim', 'durak sırası', 'şirket/varış', 'tamamlanma durumunu', 'yazma işlemi'],
+      replyIncludes: ['Devam edelim', 'durak sırası', 'Hizmet Alan Firma/varış', 'tamamlanma durumunu', 'yazma işlemi'],
     },
     {
       id: 'feedback-generic-1',

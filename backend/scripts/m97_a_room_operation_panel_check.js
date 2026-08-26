@@ -51,8 +51,8 @@ const registry = read("../docs/MILESTONE_REGISTRY_V1.md");
 const scriptMap = read("../docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const state = read("../tools/repo_contract_state.json");
 
-must(has(panel, "Oda Operasyon Paneli"), "room panel title is visible");
-must(has(panel, "Room için görev, servis, sürücü, araç ve biniş değişikliği görünürlüğü"), "room panel subtitle is visible");
+must(has(panel, "Taşımacılık Firması Operasyon Paneli"), "room panel title is visible");
+must(has(panel, "Canlı Sağlık ve Risk Özeti"), "room panel subtitle is visible");
 must(has(panel, "/api/reports/shifts/summary?from="), "room panel fetches shift summary");
 must(has(panel, "/api/reports/vehicles/summary?from="), "room panel fetches vehicle summary");
 must(has(panel, "/api/reports/drivers/summary?from="), "room panel fetches driver summary");
@@ -60,7 +60,7 @@ must(has(panel, "/api/drivers?take=200"), "room panel fetches room driver signal
 must(has(panel, "/api/requests"), "room panel fetches room requests");
 must(has(panel, "RoomOperationsBoard"), "room panel mounts the room operations board");
 
-must(has(board, "Oda Operasyon Özeti"), "room operations board headline exists");
+must(has(board, "Operasyon Özeti"), "room operations board headline exists");
 must(has(board, "Bugünkü görevler"), "room operations board keeps today tasks");
 must(has(board, "Aktif servisler"), "room operations board keeps active services");
 must(has(board, "Sürücü durumu"), "room operations board keeps driver status");

@@ -190,6 +190,30 @@ function mustMigrationDirectoryShape(relPath, label) {
 
 const ACCEPTED_SCHEMA_PATH = "backend/prisma/schema.prisma";
 const ACCEPTED_SCHEMA_SHA256 = "7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748";
+const APPROVED_SUPERADMIN_PRESENTATION = [
+  { path: "web/src/panels/superadmin/AuditLogsPanel.jsx", sha256: "2F839DAB142DAEF2BEC4BDD4E6667F4836CCE6E9A44568AFDC8CE555931634FE" },
+  { path: "web/src/panels/superadmin/CommercialCorePanel.jsx", sha256: "3A0392D66E6AF3AAA70DEC456A435B0A78A4828EDB9FF11F1554F1E0FB13E123" },
+  { path: "web/src/panels/superadmin/commercialCorePanelShared.jsx", sha256: "9FAE47E7E24DB70A0ADB6F89E41C1BABD8868FDEF9A690CFEAE9D64F8CC9896D" },
+];
+const APPROVED_ROOM_PRESENTATION = [
+  { path: "web/src/panels/room/AgreementsPanel.jsx", sha256: "A95D9BC43959CC0ED6417B2376CA9BB5A20B4F05D99B5A93BAEEF9824799D309" },
+  { path: "web/src/panels/room/CommercialFlowPanel.jsx", sha256: "221744071AD73366242BCA96C6986F76B51BDD4703FCC8FF5806D622B7C29DEE" },
+  { path: "web/src/panels/room/DriversPanel.jsx", sha256: "7E1E31C2813A24B95D384441FDFD587924EC3672CA8F7047CE3D35E0AFDF3DD4" },
+  { path: "web/src/panels/room/HubPanel.jsx", sha256: "5D862BDA535D75AB91F788C63D9AD9B0F33DEB93BC288162D62E3F7845BA0C4E" },
+  { path: "web/src/panels/room/MapPanel.jsx", sha256: "AB49A5566EDD95B31EE03FC42AD352E45C17E5EEA616188965212DC78376C6C0" },
+  { path: "web/src/panels/room/OperationHealthPanel.jsx", sha256: "597E1D7B915FF732A768AB4662D7623961A2557BEE815B7D8CB56FDEAC0FD068" },
+  { path: "web/src/panels/room/ShiftsPanel.jsx", sha256: "7C4258644A9E5998059BDD07FA57682C297A826FEC9C6BAFE431B4FB7846EC4A" },
+  { path: "web/src/panels/room/VehiclesPanel.jsx", sha256: "6AF5573297F292976419FF0BC5635EEB06A9CEA7BC023AAD0EE11D0B7AB4D14D" },
+  { path: "web/src/panels/room/roomShiftsMainSections.jsx", sha256: "54492ACB7BDA42CBD10122A5891C6D12E44B271C06CF0B9B7ACD45F37D6FB854" },
+  { path: "web/src/panels/room/roomShiftsPanelCards.jsx", sha256: "676EBDF58A97169715581AC857EB51DEA3280BE6DD9CE26D1A363F4C3B059BDF" },
+  { path: "web/src/panels/room/roomShiftsPanelMobileCards.jsx", sha256: "012306CE28A65467D41605957CE82006374386301FA82594F32626C7A7F24878" },
+  { path: "web/src/panels/room/roomShiftsPanelRows.jsx", sha256: "1A5FF81F47851A7EB44AA20E55BEEDE70F5F5275D68CBB4BFDEF8E87CE702549" },
+  { path: "web/src/panels/room/roomShiftsPanelSections.jsx", sha256: "BA8DDA6EA8F2E65776FBD68E58E749097D6E1B3DD98E42D72BCED3F379509B38" },
+  { path: "web/src/panels/room/roomShiftsPanelUtils.js", sha256: "F75CE13DF998CEF7C100CD315F9C1196674671B289289D3598B88795077F2078" },
+  { path: "web/src/panels/room/roomVehiclesPanelCards.jsx", sha256: "33CB799B71B0848FA6BE8A31E44063A35E7F2A5E86C1CDD134959967E0BEC278" },
+  { path: "web/src/panels/room/roomVehiclesPanelSections.jsx", sha256: "185BEFC7E0BDF848924ADF20E89738DC7AAF6407985B73BE1C146EA81E714C51" },
+  { path: "web/src/panels/room/roomVehiclesPanelRows.jsx", sha256: "A710286C91187E486089002B578F6EC930CAFE97049A4141F5614CFBDEE3ECD6" },
+];
 const ACCEPTED_PRISMA_MIGRATIONS = [
   { path: "backend/prisma/migrations/20260125133000_seed_root_baseline/migration.sql", sha256: "27DF5155D24311AA9199AC7B8FC94DB615EC6457401B2BA0105C7FD30A5587DD" },
   { path: "backend/prisma/migrations/20260125133100_organization_shift_import_baseline/migration.sql", sha256: "864CB0607DB2F7833C834BFD9747D9518806CE9EC206C0C19F1A79271ACE3FBD" },
@@ -660,6 +684,27 @@ function main() {
     "web/src/panels/company/companyAgreementsPanelHelpers.js",
     "web/src/panels/room/roomAgreementsBridgeSection.jsx",
     "web/src/panels/room/roomAgreementsPanelHelpers.js",
+    "web/src/panels/room/roomAgreementsPanelSections.jsx",
+    "web/src/panels/room/roomOperationsBoard.jsx",
+    "web/src/panels/room/AgreementsPanel.jsx",
+    "web/src/panels/room/CommercialFlowPanel.jsx",
+    "web/src/panels/room/DriversPanel.jsx",
+    "web/src/panels/room/HubPanel.jsx",
+    "web/src/panels/room/MapPanel.jsx",
+    "web/src/panels/room/OperationHealthPanel.jsx",
+    "web/src/panels/room/ShiftsPanel.jsx",
+    "web/src/panels/room/VehiclesPanel.jsx",
+    "web/src/panels/room/roomShiftsMainSections.jsx",
+    "web/src/panels/room/roomShiftsPanelCards.jsx",
+    "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
+    "web/src/panels/room/roomShiftsPanelRows.jsx",
+    "web/src/panels/room/roomShiftsPanelSections.jsx",
+    "web/src/panels/room/roomShiftsPanelUtils.js",
+    "web/src/panels/room/roomVehiclesPanelCards.jsx",
+    "web/src/panels/room/roomVehiclesPanelSections.jsx",
+    "web/src/panels/room/roomVehiclesPanelRows.jsx",
+    "web/src/panels/room/roomShiftsPanelActions.js",
+    "web/src/panels/room/CheckinPanel.jsx",
     "web/src/panels/organization/PlansPanel.jsx",
     "web/src/panels/organization/organizationPlansShared.jsx",
     "web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx",
@@ -677,6 +722,13 @@ function main() {
     "web/src/panels/shared/OfferQualityRankingCard.jsx",
     "web/src/panels/superadmin/TrustQualityPanel.jsx",
     "web/src/panels/superadmin/PublicLeadReviewPanel.jsx",
+    "web/src/panels/superadmin/CompaniesPanel.jsx",
+    "web/src/panels/superadmin/RegionsPanel.jsx",
+    "web/src/panels/superadmin/RoomsPanel.jsx",
+    "web/src/panels/superadmin/UsersPanel.jsx",
+    "web/src/panels/superadmin/AuditLogsPanel.jsx",
+    "web/src/panels/superadmin/CommercialCorePanel.jsx",
+    "web/src/panels/superadmin/commercialCorePanelShared.jsx",
     "web/src/panels/parent/LivePanel.jsx",
     "web/src/copilot/screenRegistry.js",
     "backend/scripts/roadmap_lock_ai_marketplace_01_check.js",
@@ -775,8 +827,22 @@ function main() {
   const statusWithoutTrustQuality = statusWithoutOffers.filter((file) => file !== "web/src/panels/superadmin/TrustQualityPanel.jsx" && file !== "web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
 
   mustNotList(statusWithoutTrustQuality.filter((file) => !exactAllowedSet.has(file)), "web/src/panels/room/", "room surfaces are untouched");
-  mustNotList(status, "web/src/panels/driver/", "driver surfaces are untouched");
-  mustNotList(statusWithoutTrustQuality, "web/src/panels/superadmin/", "superadmin surfaces are untouched");
+  mustStatusEmptyOrExactlyWithIdentity(
+    APPROVED_ROOM_PRESENTATION.map((entry) => entry.path),
+    APPROVED_ROOM_PRESENTATION,
+    "room surfaces stay within the approved presentation identities"
+  );
+  mustStatusEmptyOrExactlyWithIdentity(
+    ["web/src/panels/driver/TodayPanel.jsx"],
+    [{ path: "web/src/panels/driver/TodayPanel.jsx", sha256: "ACB5EB64D24F958A725D751EBE2F1DDAA2F6818D50605B0849F55CB828E11F02" }],
+    "driver today surface stays within the approved presentation identity"
+  );
+  mustNotList(statusWithoutTrustQuality.filter((file) => !exactAllowedSet.has(file)), "web/src/panels/superadmin/", "superadmin surfaces are untouched");
+  mustStatusEmptyOrExactlyWithIdentity(
+    APPROVED_SUPERADMIN_PRESENTATION.map((entry) => entry.path),
+    APPROVED_SUPERADMIN_PRESENTATION,
+    "superadmin surfaces stay within the approved presentation identities"
+  );
 
   console.log("=== UX-PREMIUM-CRITICAL-FIX-AGREEMENTS-DETAIL-01 CHECK PASS ===");
 }

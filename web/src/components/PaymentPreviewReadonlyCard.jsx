@@ -157,12 +157,12 @@ function formatAccountStatus(companyAccountStatus = null, roomAccountStatus = nu
   const companyReady = typeof companyAccountReady === "boolean" ? companyAccountReady : null;
   const roomReady = typeof roomAccountReady === "boolean" ? roomAccountReady : null;
   const parts = [];
-  if (companyReady === true || companyStatus === "ACTIVE" || companyStatus === "VERIFIED") parts.push("Şirket hesabı hazır");
-  else if (companyReady === false || companyStatus === "MISSING" || companyStatus === "INACTIVE" || companyStatus === "ERROR") parts.push("Şirket hesabı eksik");
-  else parts.push("Şirket hesabı belirsiz");
-  if (roomReady === true || roomStatus === "ACTIVE" || roomStatus === "VERIFIED") parts.push("Oda hesabı hazır");
-  else if (roomReady === false || roomStatus === "MISSING" || roomStatus === "INACTIVE" || roomStatus === "ERROR") parts.push("Oda hesabı eksik");
-  else parts.push("Oda hesabı belirsiz");
+  if (companyReady === true || companyStatus === "ACTIVE" || companyStatus === "VERIFIED") parts.push("Hizmet Alan Firma hesabı hazır");
+  else if (companyReady === false || companyStatus === "MISSING" || companyStatus === "INACTIVE" || companyStatus === "ERROR") parts.push("Hizmet Alan Firma hesabı eksik");
+  else parts.push("Hizmet Alan Firma hesabı belirsiz");
+  if (roomReady === true || roomStatus === "ACTIVE" || roomStatus === "VERIFIED") parts.push("Taşımacılık Firması hesabı hazır");
+  else if (roomReady === false || roomStatus === "MISSING" || roomStatus === "INACTIVE" || roomStatus === "ERROR") parts.push("Taşımacılık Firması hesabı eksik");
+  else parts.push("Taşımacılık Firması hesabı belirsiz");
   return parts.join(" • ");
 }
 

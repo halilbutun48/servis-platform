@@ -106,7 +106,7 @@ export default function TotpStepUpCard() {
       <div className="title">Güvenlik — {providerLabel} Step-up</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {needsSetup
-          ? `Bu rol için ${providerLabel} kurulumu zorunlu. Kritik ROOM / COMPANY / SUPER_ADMIN işlemleri kurulum tamamlanmadan açılmaz.`
+          ? `Bu rol için ${providerLabel} kurulumu zorunlu. Kritik taşımacılık firması / hizmet alan firma / süper yönetici işlemleri kurulum tamamlanmadan açılmaz.`
           : steppedUp
           ? "Step-up aktif. Kritik işlemler bu oturumda açık."
           : `${providerLabel} kurulu ama step-up doğrulaması yapılmamış. Kritik işlemler için kod doğrulayın.`}

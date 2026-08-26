@@ -67,7 +67,7 @@ mustInclude(route, "/payment-backbone/settings/global", "commercial core payment
 mustInclude(route, "/payment-backbone/settings/room", "commercial core payment route exposes room save endpoint");
 mustInclude(panel, "Super Admin ticari ayarlar", "superadmin panel renders commercial settings section");
 mustInclude(panel, "Global ayar", "superadmin panel renders global settings card");
-mustInclude(panel, "Oda bazlı override", "superadmin panel renders room override card");
+mustInclude(panel, "Taşımacılık Firması bazlı düzenleme", "superadmin panel renders room override card");
 mustInclude(panel, "Override kapat", "superadmin panel renders room override disable action");
 mustInclude(toolsReadme, "pack_m82_10_super_admin_commercial_settings.ps1", "tools readme lists M82.10 pack");
 mustInclude(toolsPrimer, "M82.10", "tools primer lists M82.10");

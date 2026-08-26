@@ -97,9 +97,9 @@ function buildSnapshot({
   const companyName = pickText(company?.name, shift?.company?.name, agreement?.company?.name);
   const status = pickText(shift?.status, agreement?.status, "DRAFT");
   const sourceLabel = pickText(
-    shift?.id ? `shift #${shift.id}` : "",
-    agreement?.id ? `agreement #${agreement.id}` : "",
-    scopeKey === "ROOM" ? "room snapshot" : "company snapshot",
+    shift?.id ? `Vardiya #${shift.id}` : "",
+    agreement?.id ? `Sözleşme #${agreement.id}` : "",
+    scopeKey === "ROOM" ? "Oda özeti" : "Şirket özeti",
   );
 
   return {
@@ -233,8 +233,8 @@ function buildQuoteFloorPreview({
     marginGapMinor,
     missingFields,
     summaryText: computed
-      ? `Quote floor preview hazırlandı; herhangi bir ödeme, fatura veya muhasebe kaydı oluşturulmadı.`
-      : `Quote floor preview için açık parametreler bekleniyor; herhangi bir ödeme, fatura veya muhasebe kaydı oluşturulmadı.`,
+      ? `Teklif tabanı önizlemesi hazırlandı; herhangi bir ödeme, fatura veya muhasebe kaydı oluşturulmadı.`
+      : `Teklif tabanı önizlemesi için açık parametreler bekleniyor; herhangi bir ödeme, fatura veya muhasebe kaydı oluşturulmadı.`,
     previewOnly: true,
     readOnly: true,
     writeAction: false,
@@ -251,7 +251,7 @@ function buildRoomProfitabilitySection(snapshot, model, quoteFloor, costInputs =
     ? Math.round((profitMinor / Number(currentOfferMinor || 1)) * 10000)
     : null;
   return {
-    title: "Room profitability preview",
+    title: "Teklif ve kârlılık önizlemesi",
     currentOfferMinor,
     baselineOperationalCostMinor: baselineMinor,
     profitMinor,
@@ -265,8 +265,8 @@ function buildRoomProfitabilitySection(snapshot, model, quoteFloor, costInputs =
       manualBaselineOperationalCostMinor: costInputs.manualBaselineOperationalCostMinor ?? costInputs.baselineOperationalCostMinor ?? null,
     },
     summaryText: currentOfferMinor != null && baselineMinor != null
-      ? `Oda kârlılığı önizlemesi hazırlandı; bu alan read-only preview olarak kalır.`
-      : `Oda kârlılığı önizlemesi için daha fazla veri gerekli; bu alan read-only preview olarak kalır.`,
+      ? `Oda kârlılığı önizlemesi hazırlandı; bu alan salt okunur önizleme olarak kalır.`
+      : `Oda kârlılığı önizlemesi için daha fazla veri gerekli; bu alan salt okunur önizleme olarak kalır.`,
   };
 }
 
@@ -277,7 +277,7 @@ function buildCompanyBudgetSection(snapshot, model, quoteFloor, costInputs = {})
     ? Number(currentBudgetMinor || 0) - Number(serviceCostMinor || 0)
     : null;
   return {
-    title: "Company budget preview",
+    title: "Bütçe ve servis maliyeti önizlemesi",
     currentBudgetMinor,
     serviceCostMinor,
     budgetGapMinor,
@@ -290,8 +290,8 @@ function buildCompanyBudgetSection(snapshot, model, quoteFloor, costInputs = {})
       manualBaselineOperationalCostMinor: costInputs.manualBaselineOperationalCostMinor ?? costInputs.baselineOperationalCostMinor ?? null,
     },
     summaryText: currentBudgetMinor != null && serviceCostMinor != null
-      ? `Bütçe ve servis maliyeti önizlemesi hazırlandı; bu alan read-only preview olarak kalır.`
-      : `Bütçe ve servis maliyeti önizlemesi için daha fazla veri gerekli; bu alan read-only preview olarak kalır.`,
+      ? `Bütçe ve servis maliyeti önizlemesi hazırlandı; bu alan salt okunur önizleme olarak kalır.`
+      : `Bütçe ve servis maliyeti önizlemesi için daha fazla veri gerekli; bu alan salt okunur önizleme olarak kalır.`,
   };
 }
 
@@ -324,15 +324,15 @@ function buildBasePreview({
       scope: scopeKey,
       surfaceId,
       surface,
-      access,
-      readOnly: true,
-      previewOnly: true,
-      writeAction: false,
-      title: surface.title,
-      summaryText: "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan read-only/preview olarak kalır.",
-      nextAction: "Yetkili COMPANY kimliği ile tekrar aç.",
-      tenantIsolationText: access.tenantIsolationText,
-    };
+    access,
+    readOnly: true,
+    previewOnly: true,
+    writeAction: false,
+    title: surface.title,
+    summaryText: "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan salt okunur önizleme olarak kalır.",
+    nextAction: "Yetkili COMPANY kimliği ile tekrar aç.",
+    tenantIsolationText: access.tenantIsolationText,
+  };
   }
 
   const snapshot = buildSnapshot({ scope: scopeKey, room, company, shift, agreement, roomSummary, companySummary });
@@ -354,7 +354,7 @@ function buildBasePreview({
     passengerCount: snapshot.passengerCount,
     targetContributionBps,
     riskReserveBps,
-    baselineSource: manualBaseline != null ? "manual-baseline-override" : (model?.status || "partial-model"),
+    baselineSource: manualBaseline != null ? "MANUAL_BASELINE_OVERRIDE" : (model?.status || "PARTIAL"),
   });
 
   const roomProfitability = scopeKey === "ROOM"
@@ -368,7 +368,7 @@ function buildBasePreview({
     ? roomProfitability?.summaryText || "Oda kârlılığı önizlemesi hazırlandı."
     : companyBudget?.summaryText || "Bütçe ve servis maliyeti önizlemesi hazırlandı.";
   const nextAction = scopeKey === "ROOM"
-    ? "Quote floor parametrelerini açıkça ver ve maliyet tabanını doğrula."
+    ? "Teklif tabanı parametrelerini açıkça ver ve maliyet tabanını doğrula."
     : "Bütçe ve servis maliyeti önizlemesini açık parametrelerle tamamla.";
 
   return {
@@ -434,7 +434,7 @@ export function buildFinancialOperationsCompanyKindDeniedPreview({ role = "COMPA
     previewOnly: true,
     writeAction: false,
     title: surface.title,
-    summaryText: "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan read-only/preview olarak kalır.",
+    summaryText: "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan salt okunur önizleme olarak kalır.",
     nextAction: "Yetkili COMPANY kimliği ile tekrar aç.",
     tenantIsolationText: "Tenant isolation korunur; alt kimlikler daraltılır.",
   };

@@ -8,6 +8,17 @@ export function gpsSourceLabelFromKey(source) {
   return 'GPS bekleniyor';
 }
 
+export function gpsSourcePresentationLabel(source) {
+  const text = String(source || '').trim();
+  const key = text.toUpperCase();
+  if (!key) return 'GPS bekleniyor';
+  if (key === 'OFFLINE') return 'Çevrim dışı';
+  if (key === 'LIVE' || key === 'ONLINE' || key === 'CANLI') return 'Canlı';
+  if (key === 'STALE') return 'Güncel değil';
+  if (/GPS|TELEFON|ARAÇ|ONBELLEK|ÖNBELLEK|ÖNIZLEME|ÖNİZLEME/.test(key)) return text;
+  return gpsSourceLabelFromKey(text);
+}
+
 export function gpsFreshnessLabelFromUiStatus(status) {
   const key = String(status || '').trim().toUpperCase();
   if (key === 'LIVE') return 'Canlı';

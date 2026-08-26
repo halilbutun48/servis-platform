@@ -11,7 +11,7 @@ import {
   BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
   BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
   isM80M89ContractSweepRepoContractPath,
-  mustStatusEmptyOrExactlyWithIdentity,
+  mustStatusSubsetWithIdentity,
 } from "./lib/guardGitScope.js";
 import { assertProductExtensionsOrder } from "./lib/productExtensionsRegistry.js";
 
@@ -41,6 +41,40 @@ const MOBILE_WEB_SHELL_NON_OWNED_PATHS = new Set([
   "backend/src/routes/commercialCoreRouteData.js",
   "backend/src/routes/commercialCoreRoutes.js",
 ]);
+
+const APPROVED_TERMINOLOGY_PRESENTATION = [
+  { path: "backend/src/ai/jobGuide/levels.js", sha256: "5E75C97EEB12975244E4634DDA4AFF9F3016DA7FAC9732756CEB4035569259AB" },
+  { path: "mobile/src/screens/ParentActivationCard.js", sha256: "84FD1481A050B5757C8FA54BAED869B46EC4B15BB86F20017BD7C33DDA914E5E" },
+  { path: "web/src/components/PaymentReadinessReadonlyCard.jsx", sha256: "DCFA5652EF4B23A2E4BDA052EB1492FCBD4001DFC5CEF53F43BE9F2063D237EC" },
+  { path: "web/src/panels/driver/CheckinPanel.jsx", sha256: "7737404647D0FCE22198BFA3A143DC185702E98FEC5AAEA00DBFBFA13C357FDB" },
+  { path: "web/src/panels/public/PassengerLivePanel.jsx", sha256: "79E4AEAF56B106F966E923701CD07B85A97C8959A47F477872426B60F91944DF" },
+  { path: "web/src/panels/company/CheckinPanel.jsx", sha256: "EE5AFE21578A32E69AA8748E38A1976329EE98088EDBFA0449625A957B9C9588" },
+  { path: "web/src/panels/company/GeoReviewPanel.jsx", sha256: "D283A0EB5722232669AE9D9D63EE77A9A52567751E517ACDB1035C286FBF76F8" },
+  { path: "web/src/panels/company/HubPanel.jsx", sha256: "68E237BA03F6DA83A91C49EAE170BEB3D6F398A6882417A17AFAF8376AAE359E" },
+  { path: "web/src/panels/company/ServiceEvaluationPanel.jsx", sha256: "BBEA2130687645E8ADE39EC3559F0A9C61E6FAEE8A74E7AEEAB47DBAD641E59C" },
+  { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "934055EEB7407E6AEA43566302A6FFB9689E445A7771AC1C41F6217689A0673E" },
+  { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "9C37254ACA2907EA15C575BD91D5A020DE27991F0BCC1FC1FA62179165368BF5" },
+  { path: "web/src/panels/company/companyShiftsPanelActions.js", sha256: "BA93A4ADE7F75C6B575A3BCC2B3188CA01166B5746B7F4DCC7CEA9223E34D218" },
+  { path: "web/src/panels/company/planBuilderPanelActions.js", sha256: "9897F8A0D0F48AD04E1A188F86E7573B257E3EC3DE44637E92A7E5855F122AB8" },
+  { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "B6C0BC2E56DCD8C932F8D7F63BBAE4166E234C13059B7651A8B75D68A380E855" },
+  { path: "web/src/panels/company/shiftsPanelOfferUtils.js", sha256: "A4979AD7BD0B3CAFA40D7DF750262CB985B04A589E264967FBF7AEBE41030B88" },
+  { path: "web/src/panels/public/PublicLandingPage.jsx", sha256: "0C5C4FA0BD3239D86466BCC032FF693C946040B9940C1606D7F361C977FDBBD2" },
+  { path: "web/src/panels/room/HubPanel.jsx", sha256: "5D862BDA535D75AB91F788C63D9AD9B0F33DEB93BC288162D62E3F7845BA0C4E" },
+  { path: "web/src/panels/room/roomShiftsPanelCards.jsx", sha256: "676EBDF58A97169715581AC857EB51DEA3280BE6DD9CE26D1A363F4C3B059BDF" },
+  { path: "web/src/panels/room/roomShiftsPanelUtils.js", sha256: "F75CE13DF998CEF7C100CD315F9C1196674671B289289D3598B88795077F2078" },
+  { path: "web/src/panels/shared/KvkkPanel.jsx", sha256: "DA76C50480A5FE02FD12CDDC34707E2E213831117ED00268AFA31AA2BD60A653" },
+  { path: "web/src/panels/shared/NotificationsPanel.jsx", sha256: "99FEA93C853E268B36938E3A16F12E88DCBDAA9D450AF56FDB68870711991BF6" },
+  { path: "web/src/panels/shared/PlatformFeePreviewCard.jsx", sha256: "552FCB7B157D01E32E0FF38057097F7D7FD137BF9C11038F107345672DEDC829" },
+  { path: "web/src/panels/shared/ReportsPanel.jsx", sha256: "1C887505BA91EDA5310D70A71B3CA50B9952F22D42F08C0318142717740BB9C4" },
+  { path: "web/src/panels/shared/TotpStepUpCard.jsx", sha256: "21ACB25DB2AFF07643D401AC5C1E16F9E3E2AC0CF028610D895AC38786F48998" },
+  { path: "web/src/panels/shared/boardingChangeUi.js", sha256: "01A06C914530EFE950F9FA0E22BE39A411D69C065C226416E4B73E426FF3D175" },
+  { path: "web/src/panels/shared/operationsDigestUtils.js", sha256: "7C5921796E17B9708151EA7954FD9B4438591701962588C9DFE98A9F83383DF8" },
+  { path: "web/src/panels/superadmin/AuditLogsPanel.jsx", sha256: "2F839DAB142DAEF2BEC4BDD4E6667F4836CCE6E9A44568AFDC8CE555931634FE" },
+  { path: "web/src/panels/superadmin/CommercialCorePanel.jsx", sha256: "3A0392D66E6AF3AAA70DEC456A435B0A78A4828EDB9FF11F1554F1E0FB13E123" },
+  { path: "web/src/panels/superadmin/commercialCorePanelShared.jsx", sha256: "9FAE47E7E24DB70A0ADB6F89E41C1BABD8868FDEF9A690CFEAE9D64F8CC9896D" },
+  { path: "web/src/lib/markers/vehicleMarkerC.js", sha256: "8C7EA82D00D4E0C9A8D823855629292B894937D60545FBC1C428D0373550B964" },
+  { path: "web/src/panels/driver/TodayPanel.jsx", sha256: "ACB5EB64D24F958A725D751EBE2F1DDAA2F6818D50605B0849F55CB828E11F02" },
+];
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -356,6 +390,7 @@ function main() {
   const status = statusNames();
   const staged = gitLines(["diff", "--cached", "--name-only"]);
   const exactAllowed = new Set([
+    ...APPROVED_TERMINOLOGY_PRESENTATION.map((entry) => entry.path),
     "backend/scripts/ai03b_semantic_visible_audit_01_check.js",
     "backend/scripts/copilot_context_memory_task_state_01_check.js",
     "backend/src/ai/chat/conversationTaskState.js",
@@ -497,6 +532,33 @@ function main() {
     "web/src/layout/NavDock.jsx",
     "web/src/index.css",
     ...APP_JSX_ROLE_TENANT_SCOPE_PATHS,
+    "mobile/src/app/kvkkVisibilityMatrixState.js",
+    "mobile/src/app/notificationState.js",
+    "mobile/src/lib/roleSurface.js",
+    "mobile/src/screens/DriverAvailabilityCard.js",
+    "mobile/src/screens/DriverTaskSummaryCard.js",
+    "web/src/components/PanelFeedbackEntryCard.jsx",
+    "web/src/components/PaymentPreviewReadonlyCard.jsx",
+    "web/src/components/ProviderScoreBadge.jsx",
+    "web/src/components/ShiftReassignModal.jsx",
+    "web/src/components/TabletOpsQuickBar.jsx",
+    "web/src/components/public/PublicLeadCaptureModal.jsx",
+    "web/src/panels/company/AgreementWizard.jsx",
+    "web/src/panels/company/CompanyShiftsPanelIntro.jsx",
+    "web/src/panels/company/companyAgreementsOverviewSection.jsx",
+    "web/src/panels/company/companyShiftsPanelRows.jsx",
+    "web/src/panels/company/companyShiftsPanelSummaryCells.jsx",
+    "web/src/panels/personel/MyRidePanel.jsx",
+    "web/src/panels/room/CheckinPanel.jsx",
+    "web/src/panels/room/roomAgreementsPanelSections.jsx",
+    "web/src/panels/room/roomOperationsBoard.jsx",
+    "web/src/panels/shared/AgreementRouteChangePreviewCard.jsx",
+    "web/src/panels/shared/BoardingChangeRequestEntryCard.jsx",
+    "web/src/panels/shared/CopilotPanel.jsx",
+    "web/src/panels/superadmin/CompaniesPanel.jsx",
+    "web/src/panels/superadmin/RegionsPanel.jsx",
+    "web/src/panels/superadmin/RoomsPanel.jsx",
+    "web/src/panels/superadmin/UsersPanel.jsx",
     "web/src/components/BrandMark.jsx",
     "web/src/components/AgreementOpsBridgeCard.jsx",
     "web/src/panels/company/PersonelAccessPanel.jsx",
@@ -664,6 +726,7 @@ function main() {
     "web/src/panels/school/OperationsPanel.jsx",
     "web/src/panels/shared/FinancialOperationsPanel.jsx",
     "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
+    "web/src/panels/shared/financialOperationsPresentation.js",
     "tools/repo_contract_state.json",
   ]);
   mustTrue(staged.length === 0, "stage remains empty");
@@ -680,7 +743,12 @@ function main() {
     return !MOBILE_WEB_SHELL_NON_OWNED_PATHS.has(normalized);
   });
   allWithin(statusWithinMobileWebShellScope, exactAllowed, ["backend/artifacts/runtime-data/", "web/public/seferpakt-", "web/public/vardis-", "web/src/components/brand/", "backend/scripts/", "backend/src/ai/chat/", "backend/src/finance/", "web/src/utils/", "docs/"], "working tree stays within mobile web shell clarity scope");
-  mustStatusEmptyOrExactlyWithIdentity(
+  mustStatusSubsetWithIdentity(
+    APPROVED_TERMINOLOGY_PRESENTATION.map((entry) => entry.path),
+    APPROVED_TERMINOLOGY_PRESENTATION,
+    "terminology presentation status stays within approved identities"
+  );
+  mustStatusSubsetWithIdentity(
     approvedConcurrentBackendDiff.map((entry) => entry.path),
     approvedConcurrentBackendDiff,
     "approved NEW-01 backend diff is identity-locked"

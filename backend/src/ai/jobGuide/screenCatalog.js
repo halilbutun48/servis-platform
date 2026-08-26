@@ -209,7 +209,12 @@ const SHARED = [
 ];
 
 function roleLabelForKey(key) {
-  return key === 'SCHOOL' ? 'OKUL' : key === 'ORGANIZATION' ? 'ORGANİZASYON' : key;
+  if (key === 'ROOM') return 'Turizm/Taşımacılık Firması';
+  if (key === 'COMPANY') return 'Hizmet Alan Firma';
+  if (key === 'SCHOOL') return 'Okul';
+  if (key === 'ORGANIZATION') return 'Organizasyon';
+  if (key === 'SUPER_ADMIN') return 'Süper Yönetici';
+  return key;
 }
 
 function buildSafeUnknownScreenDefinition(user, screenContext = {}, entityId = null) {
@@ -453,55 +458,55 @@ const SUPER_ADMIN = [
     menuPurpose: 'Sistem genelini üst seviyede görmek için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce hangi alana ineceğine karar ver.',
-    nextStep: 'Gerekirse şirket, oda veya kullanıcı ekranına geç.',
+    nextStep: 'Gerekirse firma, taşımacılık firması veya kullanıcı ekranına geç.',
     doNotDo: 'Özet ekranı detay ekranı sanma.',
     stepByStep: ['Özet kartları oku.', 'İlgili yönetim ekranına geç.', 'Detayı orada incele.'],
     commonMistakes: ['Özet bilgiyi detay sanmak.'],
     doneChecklist: ['Doğru yönetim alanı seçildi.'],
     buttonGuides: [button('Alanı aç', 'Özetten ilgili yönetim alanına geçer.', 'Detaya inmek istediğinde kullan.', 'İlgili ekran açılır.')],
       screenMenus: [
-        { label: 'Şirketler', path: '/superadmin/companies', purpose: 'Şirket yönetimi için açılır.' },
-        { label: 'Operasyon Odaları', path: '/superadmin/rooms', purpose: 'Oda yönetimi için açılır.' },
+        { label: 'Firmalar', path: '/superadmin/companies', purpose: 'Firma yönetimi için açılır.' },
+        { label: 'Taşımacılık Firmaları', path: '/superadmin/rooms', purpose: 'Taşımacılık firması yönetimi için açılır.' },
         { label: 'Ticari Akış', path: '/superadmin/commercial-core', purpose: 'Hakediş hazırlığı, önizleme ve CSV taslağını görmek için açılır.' },
         { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', purpose: 'Kanıt, taslak skor, inceleme ve denetim izini birlikte okumak için açılır.' },
         { label: 'Sefer Abi Terminali', path: '/superadmin/copilot', purpose: 'Yardım için açılır.' },
       ],
     }),
-  screen(6102, '/superadmin/companies', 'Şirketler', {
-    menuPurpose: 'Şirket kayıtlarını yönetmek için kullanılır.',
+  screen(6102, '/superadmin/companies', 'Firmalar', {
+    menuPurpose: 'Firma kayıtlarını yönetmek için kullanılır.',
     forWhom: 'Super admin içindir.',
-    firstStep: 'Önce doğru şirketi seç.',
-    nextStep: 'Gerekirse kullanıcı veya oda tarafına geç.',
-    doNotDo: 'Yanlış şirket üzerinde değişiklik yapma.',
-    stepByStep: ['Şirketi seç.', 'Detayı incele.', 'Gerekirse diğer yönetime geç.'],
-    commonMistakes: ['Yanlış şirketi açmak.'],
-    doneChecklist: ['Doğru şirket seçildi.'],
-    buttonGuides: [button('Şirketi aç', 'Şirket detayını açar.', 'Detay görmek için kullan.', 'Detay alanı açılır.')],
-    screenMenus: [{ label: 'Operasyon Odaları', path: '/superadmin/rooms', purpose: 'Oda bağlantısını görmek için açılır.' }, { label: 'Kullanıcılar', path: '/superadmin/users', purpose: 'Kullanıcı bağlantısını görmek için açılır.' }],
+    firstStep: 'Önce doğru firmayı seç.',
+    nextStep: 'Gerekirse kullanıcı veya taşımacılık firması tarafına geç.',
+    doNotDo: 'Yanlış firma üzerinde değişiklik yapma.',
+    stepByStep: ['Firmayı seç.', 'Detayı incele.', 'Gerekirse diğer yönetime geç.'],
+    commonMistakes: ['Yanlış firmayı açmak.'],
+    doneChecklist: ['Doğru firma seçildi.'],
+    buttonGuides: [button('Firmayı aç', 'Firma detayını açar.', 'Detay görmek için kullan.', 'Detay alanı açılır.')],
+    screenMenus: [{ label: 'Taşımacılık Firmaları', path: '/superadmin/rooms', purpose: 'Taşımacılık firması bağlantısını görmek için açılır.' }, { label: 'Kullanıcılar', path: '/superadmin/users', purpose: 'Kullanıcı bağlantısını görmek için açılır.' }],
   }),
-  screen(6105, '/superadmin/rooms', 'Operasyon Odaları', {
-    menuPurpose: 'Oda kayıtlarını, bağlantılarını ve kapsama alanını yönetmek için kullanılır.',
+  screen(6105, '/superadmin/rooms', 'Taşımacılık Firmaları', {
+    menuPurpose: 'Taşımacılık firması kayıtlarını, bağlantılarını ve kapsama alanını yönetmek için kullanılır.',
     forWhom: 'Super admin içindir.',
-    firstStep: 'Önce doğru odayı seç.',
-    nextStep: 'Gerekirse şirkete, kullanıcıya veya kalite ekranına geç.',
-    doNotDo: 'Oda bağlantısını hangi şirkete ait olduğunu okumadan değiştirme.',
-    stepByStep: ['Odayı seç.', 'Bağlı şirket ve kapsamı kontrol et.', 'Gerekirse ilişkili yönetim ekranına geç.'],
-    commonMistakes: ['Yanlış odayı açmak.', 'Kapsamı görmeden karar vermek.'],
-    doneChecklist: ['Doğru oda seçildi.', 'Bağlantı bilgisi okundu.'],
-    buttonGuides: [button('Odayı aç', 'Seçili odayı detaylı incelemeye götürür.', 'Bağlantı ve kapsamı görmek istediğinde kullan.', 'Oda detay akışı açılır.')],
-    screenMenus: [{ label: 'Şirketler', path: '/superadmin/companies', purpose: 'Bağlı şirketi kontrol etmek için açılır.' }, { label: 'Kullanıcılar', path: '/superadmin/users', purpose: 'Yetkili kullanıcıları görmek için açılır.' }, { label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Rol ve operasyon yüzeyini doğrulamak için açılır.' }],
+    firstStep: 'Önce doğru taşımacılık firmasını seç.',
+    nextStep: 'Gerekirse firmaya, kullanıcıya veya kalite ekranına geç.',
+    doNotDo: 'Taşımacılık firması bağlantısını hangi firmaya ait olduğunu okumadan değiştirme.',
+    stepByStep: ['Taşımacılık firmasını seç.', 'Bağlı firma ve kapsamı kontrol et.', 'Gerekirse ilişkili yönetim ekranına geç.'],
+    commonMistakes: ['Yanlış taşımacılık firmasını açmak.', 'Kapsamı görmeden karar vermek.'],
+    doneChecklist: ['Doğru taşımacılık firması seçildi.', 'Bağlantı bilgisi okundu.'],
+    buttonGuides: [button('Taşımacılık firmasını aç', 'Seçili taşımacılık firmasını detaylı incelemeye götürür.', 'Bağlantı ve kapsamı görmek istediğinde kullan.', 'Taşımacılık firması detay akışı açılır.')],
+    screenMenus: [{ label: 'Firmalar', path: '/superadmin/companies', purpose: 'Bağlı firmayı kontrol etmek için açılır.' }, { label: 'Kullanıcılar', path: '/superadmin/users', purpose: 'Yetkili kullanıcıları görmek için açılır.' }, { label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Rol ve operasyon yüzeyini doğrulamak için açılır.' }],
   }),
   screen(6106, '/superadmin/users', 'Kullanıcılar', {
     menuPurpose: 'Kullanıcı kayıtlarını, rollerini ve erişim durumunu yönetmek için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce doğru kullanıcıyı veya rol filtresini seç.',
-    nextStep: 'Gerekirse oda, şirket veya güven ekranına geç.',
+    nextStep: 'Gerekirse taşımacılık firması, firma veya güven ekranına geç.',
     doNotDo: 'Rol ve erişim kapsamını okumadan kullanıcı üzerinde karar verme.',
     stepByStep: ['Kullanıcıyı veya rolü seç.', 'Erişim ve rol bilgisini oku.', 'Gerekirse ilişkili yönetim ekranına geç.'],
-    commonMistakes: ['Yanlış kullanıcı üzerinde işlem yapmak.', 'Rol ile şirket/oda kapsamını karıştırmak.'],
+    commonMistakes: ['Yanlış kullanıcı üzerinde işlem yapmak.', 'Rol ile firma/taşımacılık firması kapsamını karıştırmak.'],
     doneChecklist: ['Doğru kullanıcı veya rol filtresi seçildi.', 'Erişim durumu okundu.'],
     buttonGuides: [button('Kullanıcıyı aç', 'Seçili kullanıcıyı detaylı incelemeye götürür.', 'Rol veya erişim durumunu netleştirmek istediğinde kullan.', 'Kullanıcı detay akışı açılır.')],
-    screenMenus: [{ label: 'Operasyon Odaları', path: '/superadmin/rooms', purpose: 'Kullanıcının bağlı olduğu oda tarafını görmek için açılır.' }, { label: 'Şirketler', path: '/superadmin/companies', purpose: 'Kullanıcının bağlı olduğu şirketi görmek için açılır.' }, { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', purpose: 'Kritik rol ve kalite sinyalini birlikte okumak için açılır.' }],
+    screenMenus: [{ label: 'Taşımacılık Firmaları', path: '/superadmin/rooms', purpose: 'Kullanıcının bağlı olduğu taşımacılık firması tarafını görmek için açılır.' }, { label: 'Firmalar', path: '/superadmin/companies', purpose: 'Kullanıcının bağlı olduğu firmayı görmek için açılır.' }, { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', purpose: 'Kritik rol ve kalite sinyalini birlikte okumak için açılır.' }],
   }),
   screen(6103, '/superadmin/audit', 'İşlem Kayıtları', {
     menuPurpose: 'İşlem kayıtlarını ve izleri görmek için kullanılır.',

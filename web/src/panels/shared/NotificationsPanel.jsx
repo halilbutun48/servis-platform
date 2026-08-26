@@ -5,7 +5,7 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 import CollapsibleSection from "../../components/CollapsibleSection";
-import { normalizeNotifV1 } from "../../utils/notificationV1";
+import { normalizeNotifV1, notificationKindLabel, notificationTitleLabel } from "../../utils/notificationV1";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { pillKeyFromAny } from "../../utils/uiStatus";
 import { formatDateTimeTR } from "../../utils/time";
@@ -86,16 +86,17 @@ export default function NotificationsPanel() {
       const rawPayload = n?.payloadJson ?? n?.payload ?? null;
       const p = normalizeNotifV1(rawPayload);
 
-      const title = p.title || fmt(n?.type) || "-";
+      const rawKind = p.kind ?? n?.kind ?? n?.type;
+      const title = notificationTitleLabel(p.title || fmt(n?.type) || "-", rawKind);
       const message = p.message || "";
       const vehicleId = p.vehicleId ?? n?.vehicleId ?? "";
       const atRaw = p.at ?? n?.createdAt ?? "";
       const at = fmtAtCompact(atRaw);
 
       // UI text fields
-      const type = fmt(n?.type ?? "-");
-      const typeLabel = fmt(p.kind ?? n?.type ?? "-"); // önce kind yoksa type
-      const kind = fmt(p.kind ?? "");
+      const type = notificationKindLabel(n?.type) || "-";
+      const typeLabel = notificationKindLabel(p.kind ?? n?.type) || "-";
+      const kind = notificationKindLabel(p.kind ?? "");
       const status = fmt(p.status ?? "");
       const regionLabel = formatRegionOwnership(n?.regionOwnership);
 

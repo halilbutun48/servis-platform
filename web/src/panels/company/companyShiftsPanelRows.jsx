@@ -98,7 +98,7 @@ function CompanyOpsCell({ busy, shift, agreementConversion, onOpenOpsEvents, onC
           <span
             className="pill"
             data-status={agreementConversion?.status || "REQUESTED"}
-            title={conversionTitle || "Bu vardiya için sözleşme talebi oda kararını bekliyor."}
+            title={conversionTitle || "Bu vardiya için sözleşme talebi taşımacılık firması kararını bekliyor."}
           >
             Sözleşme talebi bekliyor
           </span>
@@ -117,14 +117,14 @@ function CompanyOpsCell({ busy, shift, agreementConversion, onOpenOpsEvents, onC
             type="button"
             className="btn sm primary"
             disabled={busy || !canConvert}
-            title={!Number(shift?.roomId || 0) ? "Önce room seçili olmalı. Sonra taslak Company Sözleşmeler ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
+            title={!Number(shift?.roomId || 0) ? "Önce taşımacılık firması seçili olmalı. Sonra taslak Hizmet Alan Firma Sözleşmeleri ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
             onClick={() => onConvertShiftToAgreement?.(shift)}
           >
             {hadClosedAgreementRequest ? "Yeniden Dönüştür" : "Sözleşmeye Dönüştür"}
           </button>
           {canConvert ? (
             <div className="muted" style={{ fontSize: 12, lineHeight: 1.35 }}>
-            Vardiyayı sözleşmeye dönüştür: tıkladığında vardiya Company Sözleşmeler ekranında taslak olarak açılır.
+            Vardiyayı sözleşmeye dönüştür: tıkladığında vardiya Hizmet Alan Firma Sözleşmeleri ekranında taslak olarak açılır.
             </div>
           ) : null}
         </>

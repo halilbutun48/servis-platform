@@ -5,8 +5,8 @@ import SystemModeSummaryBand from "../../components/SystemModeSummaryBand";
 
 function trRole(role) {
   if (role === "SUPER_ADMIN") return "Süper Yönetici";
-  if (role === "ROOM") return "Operasyon Odası";
-  if (role === "COMPANY") return "Şirket";
+  if (role === "ROOM") return "Taşımacılık Firması";
+  if (role === "COMPANY") return "Hizmet Alan Firma";
   if (role === "DRIVER") return "Sürücü";
   if (role === "PERSONEL") return "Personel";
   if (role === "PARENT") return "Veli";
@@ -110,7 +110,7 @@ export default function TelematicsHubPanel() {
             Super Admin platform provider kataloğunu, adapter şablonlarını ve güvenlik / KVKK kurallarını yönetir.
           </div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Room kendi GPS hesabını yalnızca onaylı provider kataloğu üzerinden bağlar; gerçek provider entegrasyonu, webhook ingest, polling job, TCP bridge ve secret saklama bu sürümde açılmaz.
+            Taşımacılık Firması kendi GPS hesabını yalnızca onaylı provider kataloğu üzerinden bağlar; gerçek provider entegrasyonu, webhook ingest, polling job, TCP bridge ve secret saklama bu sürümde açılmaz.
           </div>
         </div>
 
@@ -118,7 +118,7 @@ export default function TelematicsHubPanel() {
           <Pill status="OK">Provider kataloğu hazır</Pill>
           <Pill status="INFO">Adapter şablonları okunur</Pill>
           <Pill status="WARN">Özel entegrasyonlar insan incelemesi ister</Pill>
-          <Pill status="PASS">Room self-service izinli provider üzerinden</Pill>
+          <Pill status="PASS">Taşımacılık Firması kendi işlemleri izinli provider üzerinden</Pill>
         </div>
       </div>
 
@@ -159,7 +159,7 @@ export default function TelematicsHubPanel() {
             ))}
           </div>
           <div className="panelMeta">
-            Not: `secret/token policy`, `webhook signature requirement`, `rate limit` ve `IP allowlist` kararları platform tarafından yönetilir; Room bu detayları görmez.
+            Not: `secret/token policy`, `webhook signature requirement`, `rate limit` ve `IP allowlist` kararları platform tarafından yönetilir; Taşımacılık Firması bu detayları görmez.
           </div>
         </div>
 
@@ -184,15 +184,15 @@ export default function TelematicsHubPanel() {
           ))}
         </div>
         <div className="panelMeta">
-          Room kendi araçlarını plate / IMEI / deviceId / externalDeviceId / serial üzerinden eşleştirir; platform yönetimi burada kalır.
+          Taşımacılık Firması kendi araçlarını plate / IMEI / deviceId / externalDeviceId / serial üzerinden eşleştirir; platform yönetimi burada kalır.
         </div>
       </div>
       </div>
 
       <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
-        <div className="panelSectionTitle">Room self-service notu</div>
+        <div className="panelSectionTitle">Taşımacılık Firması işlemleri notu</div>
         <div className="panelMeta">
-          Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar, bağlantı readiness durumunu okur ve eşleşmeyen cihazları inceleyerek araçlarını eşler.
+            Taşımacılık Firması kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar, bağlantı readiness durumunu okur ve eşleşmeyen cihazları inceleyerek araçlarını eşler.
         </div>
         <div className="panelMeta">
           Bu yüzeyde platform genelindeki adapter güvenlik kuralları, secret saklama veya raw payload gösterimi yapılmaz.

@@ -115,7 +115,7 @@ export const PLAN_REVIEW_TERMINOLOGY = Object.freeze([
   'tarih',
   'saat',
   'onay',
-  'insan onayı',
+  'onayınız gerekli',
   'eksik',
   'belirsiz',
   'yetkili görünüm',
@@ -595,7 +595,7 @@ function buildPlanReviewChipsInternal(surface, text = '', roleMode = 'OPERATIONS
     surfaceChips.unshift('Yetkili görünüm');
   }
   const maxItems = String(roleMode || '').toUpperCase() === 'SIMPLE' ? 4 : 6;
-  return surfaceChips.slice(0, maxItems);
+  return surfaceChips.map((chip) => normalizeVisibleReplyFragment(chip)).slice(0, maxItems);
 }
 
 function buildPlanReviewReplyParts({

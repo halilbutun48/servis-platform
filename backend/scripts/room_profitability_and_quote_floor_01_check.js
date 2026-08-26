@@ -340,23 +340,25 @@ function main() {
   check(textHas(helperText, "riskReserveBps"), "helper contains risk reserve field");
   check(textHas(helperText, "readOnly: true"), "helper keeps read-only boundary");
   check(textHas(helperText, "writeAction: false"), "helper keeps write-action boundary");
-  check(textHas(helperText, "Quote floor preview"), "helper contains quote floor wording");
-  check(textHas(helperText, "Room profitability preview"), "helper contains room profitability wording");
-  check(textHas(helperText, "Company budget preview"), "helper contains company budget wording");
+  check(textHas(helperText, "Teklif tabanı önizlemesi"), "helper contains quote floor wording");
+  check(textHas(helperText, "Teklif ve kârlılık önizlemesi"), "helper contains room profitability wording");
+  check(textHas(helperText, "Bütçe ve servis maliyeti önizlemesi"), "helper contains company budget wording");
   for (const needle of ["fetch(", "axios", "http://", "https://", "prisma", "MongoClient", "mongoose"]) {
     check(textLacks(helperText, needle), `helper lacks ${needle}`);
   }
 
   check(textHas(panelText, "FinancialOperationsPanel"), "panel file exists by text");
-  check(textHas(panelText, "read-only/preview"), "panel keeps read-only wording");
-  check(textHas(panelText, "Quote floor"), "panel shows quote floor");
-  check(textHas(panelText, "Finansal Operasyonlar"), "panel room title present");
+  check(textHas(panelText, 'preferredScopeTitle("ROOM")'), "panel uses room scope title helper");
+  check(textHas(panelText, 'preferredScopeSubtitle("ROOM")'), "panel uses room scope subtitle helper");
+  check(textHas(panelText, "Teklif tabanı yaşam döngüsü"), "panel shows quote floor lifecycle");
+  check(textHas(panelText, "Karar özeti"), "panel shows decision summary");
+  check(textHas(panelText, "Ayrıntılı maliyet verileri"), "panel shows cost details gate");
   check(textHas(panelText, "FinancialOperationsCompanyPreview"), "panel imports company preview component");
   check(textHas(panelText, "Yenile"), "panel refresh action present");
-  check(textHas(panelText, "Gelişmiş maliyet girdileri"), "panel advanced inputs present");
-  check(textHas(panelText, "Manuel maliyet tabanı"), "panel baseline input present");
-  check(textHas(panelText, "Hedef katkı bps"), "panel target contribution input present");
-  check(textHas(panelText, "Risk rezervi bps"), "panel risk reserve input present");
+  check(textHas(panelText, "Maliyet girdileri"), "panel advanced inputs present");
+  check(textHas(panelText, "Manuel maliyet tabanı (₺)"), "panel baseline input present");
+  check(textHas(panelText, "Hedef katkı oranı (%)"), "panel target contribution input present");
+  check(textHas(panelText, "Risk payı (%)"), "panel risk reserve input present");
   check(textHas(panelText, "Servis mesafesi (km)"), "panel service distance input present");
   check(textHas(panelText, "Rota süresi (dk)"), "panel route duration input present");
   check(textHas(panelText, "Araç kapasitesi"), "panel vehicle capacity input present");
@@ -369,18 +371,27 @@ function main() {
   check(textHas(companyPanelText, "CompanyComparisonBlock"), "company panel comparison component present");
   check(textHas(companyPanelText, "preview?.supplierComparisonSummaryText"), "company panel supplier summary present");
   check(textHas(companyPanelText, "Bütçe yaşam döngüsü"), "company panel lifecycle present");
-  check(textHas(companyPanelText, "Bütçe girdileri"), "company panel budget inputs present");
+  check(textHas(companyPanelText, "Bütçe ayrıntıları"), "company panel budget inputs present");
+  check(textHas(companyPanelText, "Onaylı bütçe"), "company panel approved budget metric present");
+  check(textHas(companyPanelText, "Gerçekleşen servis maliyeti"), "company panel service cost metric present");
+  check(textHas(companyPanelText, "Kalan bütçe"), "company panel remaining budget metric present");
+  check(textHas(companyPanelText, "Bütçe sapması"), "company panel variance metric present");
+  check(textHas(companyPanelText, "Bütçe kullanım oranı"), "company panel usage metric present");
+  check(textHas(companyPanelText, "Servis bütçesi"), "company panel service budget card present");
+  check(textHas(companyPanelText, "Ayrıntılı sonuçlar"), "company panel detail gate present");
+  check(textHas(companyPanelText, "Hakediş / fatura kontrolü"), "company panel invoice panel present");
+  check(textHas(companyPanelText, "Tasarruf senaryoları"), "company panel savings panel present");
+  check(textHas(companyPanelText, "Dışa aktarım"), "company panel export panel present");
+  check(textHas(companyPanelText, "Genel not"), "company panel general note present");
   check(textHas(companyPanelText, "Taslak kaydet"), "company panel save action present");
   check(textHas(companyPanelText, "Gönder"), "company panel submit action present");
   check(textHas(companyPanelText, "Onayla"), "company panel approve action present");
   check(textHas(companyPanelText, "Aktive et"), "company panel activate action present");
   check(textHas(companyPanelText, "Arşivle"), "company panel archive action present");
-  check(textHas(companyPanelText, "Dönem Bütçesi"), "company panel budget metric present");
-  check(textHas(companyPanelText, "Gerçekleşen Servis Harcaması"), "company panel spend metric present");
   check(textHas(companyPanelText, "Personel Başı Maliyet"), "company panel per-person metric present");
   check(textHas(companyPanelText, "Vardiya Başı Maliyet"), "company panel per-shift metric present");
   check(textHas(companyPanelText, "Sefer Başı Maliyet"), "company panel per-trip metric present");
-  check(textHas(companyPanelText, "Gün Başı Maliyet"), "company panel per-day metric present");
+  check(textHas(companyPanelText, "Bütçe tutarı"), "company panel budget amount label present");
 
   check(textHas(roomRouteText, "/room/financial-operations/preview"), "room route path present");
   check(textHas(companyRouteText, "/financial-operations/preview"), "company route path present");
@@ -438,8 +449,8 @@ function main() {
   check(roomPreview.quoteFloor?.quoteFloorMinor === 115000, "room quote floor value");
   check(roomPreview.quoteFloor?.computed === true, "room quote floor computed");
   check(roomPreview.companyBudget === null, "room preview company budget hidden");
-  check(roomPreview.summaryText.includes("read-only"), "room preview summary is read-only");
-  check(roomPreview.nextAction.includes("Quote floor"), "room preview next action mentions quote floor");
+  check(roomPreview.summaryText.includes("salt okunur"), "room preview summary is salt okunur");
+  check(roomPreview.nextAction.includes("Teklif tabanı"), "room preview next action mentions quote floor");
 
   const companyPreview = buildCompanyBudgetAndServiceCostPreview(buildCompanyInput());
   check(companyPreview.allowed === true, "company preview allowed");
@@ -452,7 +463,7 @@ function main() {
   check(companyPreview.quoteFloor?.quoteFloorMinor === 100800, "company quote floor value");
   check(companyPreview.quoteFloor?.computed === true, "company quote floor computed");
   check(companyPreview.roomProfitability === null, "company preview room profitability hidden");
-  check(companyPreview.summaryText.includes("read-only"), "company preview summary is read-only");
+  check(companyPreview.summaryText.includes("salt okunur"), "company preview summary is salt okunur");
   check(companyPreview.nextAction.includes("Bütçe"), "company preview next action mentions budget");
 
   const deniedPreview = buildFinancialOperationsCompanyKindDeniedPreview({

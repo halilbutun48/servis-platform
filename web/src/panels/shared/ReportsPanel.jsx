@@ -6,6 +6,8 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 import PanelChrome from "../../components/PanelChrome";
+import { roleLabelForUser } from "../../utils/labels";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 const TABS = [
   ["shifts", "Vardiyalar"],
@@ -50,20 +52,35 @@ const NON_SHIFT_LABELS = {
 const SHIFT_COLUMNS = [
   ["id", "ID"],
   ["status", "Durum"],
-  ["companyName", "Şirket"],
-  ["roomName", "Oda"],
+  ["companyName", "Hizmet Alan Firma"],
+  ["roomName", "Taşımacılık Firması"],
   ["vehiclePlate", "Araç"],
   ["driverName", "Sürücü"],
   ["startAt", "Başlangıç"],
   ["endAt", "Bitiş"],
   ["direction", "Yön"],
-  ["pattern", "Pattern"],
+  ["pattern", "Rota düzeni"],
   ["stopCount", "Durak"],
   ["personCount", "Kişi"],
   ["requiredPax", "Gerekli Kapasite"],
   ["splitTotal", "Paket"],
   ["createdAt", "Oluşturma"],
 ];
+
+const DIRECTION_LABELS = {
+  INBOUND: "Toplama",
+  OUTBOUND: "Dağıtım",
+};
+
+const PATTERN_LABELS = {
+  ONE_WAY: "Tek yön",
+  ROUND_TRIP: "Gidiş-dönüş",
+};
+
+function reportEnumLabel(value, labels, fallback = "-") {
+  const key = String(value || "").trim().toUpperCase();
+  return labels[key] || (key ? String(value) : fallback);
+}
 
 function fmtDateInput(d) {
   return ymdTR(d);
@@ -79,15 +96,15 @@ function fmtCellDate(v) {
 function normalizeShiftRows(rows) {
   return rows.map((row) => ({
     id: row.id,
-    status: row.status || "-",
+    status: row.status ? displayStatusLabel(row.status) : "-",
     companyName: row.company?.name || (row.companyId ? `#${row.companyId}` : "-"),
     roomName: row.room?.name || (row.roomId ? `#${row.roomId}` : "-"),
     vehiclePlate: row.vehicle?.plate || "-",
     driverName: row.driver?.fullName || "-",
     startAt: fmtCellDate(row.startAt),
     endAt: fmtCellDate(row.endAt),
-    direction: row.direction || "-",
-    pattern: row.pattern || "-",
+    direction: reportEnumLabel(row.direction, DIRECTION_LABELS),
+    pattern: reportEnumLabel(row.pattern, PATTERN_LABELS),
     stopCount: Array.isArray(row.stops) ? row.stops.length : 0,
     personCount: Array.isArray(row.people) ? row.people.length : 0,
     requiredPax: Math.max(Number(row.requiredPaxOverride || 0), Array.isArray(row.people) ? row.people.length : 0, 0),
@@ -286,7 +303,7 @@ export default function ReportsPanel() {
       </PanelChrome>
       {err ? <div className="card err" style={{ minWidth: 0 }}>{err}</div> : null}
       <div className="card" style={{ minWidth: 0 }}>
-        <div className="panelMeta">Rol: {me?.role} • Ekran: {base}/reports</div>
+        <div className="panelMeta">Rol: {roleLabelForUser(me)} • Ekran: {base}/reports</div>
         <ListSelectionBanner
           selectedLabel={selectedRow ? `${TABS.find(([k]) => k === tab)?.[1] || "Rapor"} satırı` : ""}
           selectedSummary={selectedRow ? buildSelectedSummary(headers, selectedRow) : ""}

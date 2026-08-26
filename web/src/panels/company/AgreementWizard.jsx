@@ -356,7 +356,7 @@ function guessPackKey(prefill) {
     if (!roomsSupported) return setErr("Odalar endpointi yok. Önce /api/rooms çalışmalı.");
 
     const rid = Number(roomId || 0);
-    if (!rid) return setErr("Oda seçmelisin.");
+    if (!rid) return setErr("Taşımacılık Firması seçmelisin.");
     if (!isYmd(startDate) || !isYmd(endDate)) return setErr("Tarih formatı YYYY-MM-DD olmalı.");
     if (!weekMask) return setErr("Gün seçmelisin.");
 
@@ -470,7 +470,7 @@ function guessPackKey(prefill) {
       .filter(([, v]) => Boolean(v))
       .map(([k]) => Number(k))
       .filter((n) => Number.isFinite(n) && n > 0);
-    if (!pickedRooms.length) return setMarketErr("En az 1 room seçmelisin.");
+  if (!pickedRooms.length) return setMarketErr("En az 1 taşımacılık firması seçmelisin.");
 
     const sMin = parseHHMM(marketStartHHMM);
     const eMin = parseHHMM(marketEndHHMM);
@@ -566,7 +566,7 @@ function guessPackKey(prefill) {
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div>
             <div className="title">Hızlı Sözleşme</div>
-            <div className="muted">Az tık → preset plan seç → room seç → tarih aralığı → oluştur</div>
+            <div className="muted">Az tık → hazır plan seç → taşımacılık firması seç → tarih aralığı → oluştur</div>
           </div>
           <button type="button" disabled={busy} onClick={() => setOpen(false)}>
             Kapat
@@ -612,7 +612,7 @@ function guessPackKey(prefill) {
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
             <div>
               <div className="title">Market Teklif Topla</div>
-              <div className="muted">Tek modal: market shift aç → birden fazla room seç → teklifi gönder</div>
+              <div className="muted">Tek pencere: pazar vardiyası aç → birden fazla taşımacılık firması seç → teklifi gönder</div>
             </div>
             <button type="button" disabled={marketBusy} onClick={() => setMarketOpen(false)}>
               Kapat
@@ -658,7 +658,7 @@ function guessPackKey(prefill) {
 
               <div style={{ marginTop: 12, fontWeight: 900 }}>2) Teklif</div>
               <div className="col" style={{ marginTop: 6 }}>
-                <label className="muted">Şirket Tutarı (₺) (opsiyonel)</label>
+                <label className="muted">Hizmet Alan Firma tutarı (₺) (opsiyonel)</label>
                 <input value={marketAmountCompany} onChange={(e) => setMarketAmountCompany(onlyDigits(e.target.value))} placeholder="örn 25000" />
               </div>
               <div className="col" style={{ marginTop: 8 }}>
@@ -668,10 +668,10 @@ function guessPackKey(prefill) {
             </div>
 
             <div className="card">
-              <div style={{ fontWeight: 900, marginBottom: 8 }}>3) Oda seç</div>
+                <div style={{ fontWeight: 900, marginBottom: 8 }}>3) Taşımacılık Firması seç</div>
               <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <input
-                  placeholder="Oda ara"
+                  placeholder="Taşımacılık Firması ara"
                   value={marketQ}
                   onChange={(e) => setMarketQ(e.target.value)}
                   style={{ minWidth: 220 }}
@@ -710,7 +710,7 @@ function guessPackKey(prefill) {
                         />
                         <span style={{ display: "grid", gap: 4 }}>
                           <span>
-                            <b>{r.name ?? `Oda #${r.id}`}</b> <span className="muted">(#{r.id})</span>
+                            <b>{r.name ?? `Taşımacılık Firması #${r.id}`}</b> <span className="muted">(#{r.id})</span>
                           </span>
                           <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Toplanma konumu hazır" : "Toplanma konumu eksik"}</span>
                         </span>
@@ -719,7 +719,7 @@ function guessPackKey(prefill) {
                     </div>
                   </label>
                 );})}
-                {!filteredMarketRooms.length ? <div className="muted" style={{ padding: 10 }}>Oda bulunamadı.</div> : null}
+                {!filteredMarketRooms.length ? <div className="muted" style={{ padding: 10 }}>Taşımacılık Firması bulunamadı.</div> : null}
               </div>
 
               <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
@@ -738,7 +738,7 @@ function guessPackKey(prefill) {
         <>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
           <div className="card">
-            <div style={{ fontWeight: 800, marginBottom: 6 }}>1) Oda seç</div>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>1) Taşımacılık Firması seç</div>
             <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <input
                 placeholder="Ara (name / id)"
@@ -783,7 +783,7 @@ function guessPackKey(prefill) {
                       />
                       <span style={{ display: "grid", gap: 4 }}>
                         <span>
-                          <b>{r.name ?? `Oda #${r.id}`}</b> <span className="muted">(#{r.id})</span>
+                          <b>{r.name ?? `Taşımacılık Firması #${r.id}`}</b> <span className="muted">(#{r.id})</span>
                         </span>
                         <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Toplanma konumu hazır" : "Toplanma konumu eksik"}</span>
                       </span>
@@ -792,7 +792,7 @@ function guessPackKey(prefill) {
                   </div>
                 </label>
               );})}
-              {!filteredRooms.length ? <div className="muted" style={{ padding: 10 }}>Oda bulunamadı.</div> : null}
+              {!filteredRooms.length ? <div className="muted" style={{ padding: 10 }}>Taşımacılık Firması bulunamadı.</div> : null}
             </div>
             <ProviderScoreCard score={selectedRoomScore} />
           </div>
@@ -955,7 +955,7 @@ function guessPackKey(prefill) {
             <div style={{ fontWeight: 800, marginBottom: 6 }}>Teklif (opsiyonel)</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <label className="muted">
-                Şirket Tutarı (₺)
+                Hizmet Alan Firma tutarı (₺)
                 <input value={companyOfferAmount} onChange={(e) => setCompanyOfferAmount(e.target.value)} placeholder="örn 25000" disabled={busy} />
               </label>
               <label className="muted">

@@ -177,7 +177,7 @@ async function decideExtend(shiftId, decision) {
       const lng = Number(room?.hubLng);
       return Number.isFinite(lat) && Number.isFinite(lng) && !(Math.abs(lat) < 1e-9 && Math.abs(lng) < 1e-9);
     }) || null;
-    const fallbackRoom = currentRoom || roomWithHub || rooms[0] || { id: meRoomId || 0, name: meRoomId ? `Oda ID ${meRoomId}` : "Oda" };
+    const fallbackRoom = currentRoom || roomWithHub || rooms[0] || { id: meRoomId || 0, name: meRoomId ? `Taşımacılık Firması ID ${meRoomId}` : "Taşımacılık Firması" };
 
     const hubLatRaw = Number(fallbackRoom?.hubLat);
     const hubLngRaw = Number(fallbackRoom?.hubLng);
@@ -191,9 +191,9 @@ async function decideExtend(shiftId, decision) {
 
     return {
       room: fallbackRoom,
-      title: `${fallbackRoom?.name || `Oda ID ${fallbackRoom?.id || meRoomId || "?"}`} — Rota Önizleme`,
+      title: `${fallbackRoom?.name || `Taşımacılık Firması ID ${fallbackRoom?.id || meRoomId || "?"}`} — Rota Önizleme`,
       hint: hasRoomHub
-        ? "Bekleyen kayıt yok; oda hub'ı üzerinden yalnızca okuma önizlemesi açılır."
+        ? "Bekleyen kayıt yok; taşımacılık firmasının buluşma noktası üzerinden yalnızca okuma önizlemesi açılır."
         : "Bekleyen kayıt yok; örnek konum üzerinden yalnızca okuma önizlemesi açılır.",
       shift: {
         id: null,

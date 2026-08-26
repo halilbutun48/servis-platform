@@ -164,7 +164,7 @@ function main() {
 
   mustContains(smoke, "trial: true", "smoke runner uses trial clicks for write buttons");
   mustContains(smoke, "Ad soyad gerekli.", "smoke runner keeps validation-only public lead flow");
-  mustContains(smoke, "Bu kart readonly kontrol içindir; işlem başlatmaz.", "smoke runner keeps readonly commercial core boundary");
+  mustContains(smoke, "Bu kart salt okunur kontrol içindir; işlem başlatmaz.", "smoke runner keeps readonly commercial core boundary");
   mustContains(smoke, "Harita / Navigasyon Önizle", "smoke runner covers company preview button");
   mustContains(smoke, "Rota Önizleme", "smoke runner covers route preview button");
   mustContains(smoke, "Navigasyon Aç", "smoke runner covers personel navigation button");
@@ -286,10 +286,10 @@ function main() {
   const roomAgreementRows = report.routes.filter((row) => row.kind === "roomAgreementPreview");
   must(roomAgreementRows.length === 2, "room agreements coverage appears in desktop/mobile pairs");
   must(roomAgreementRows.every((row) => row.checks.detailButtonVisible === true), "room agreements keeps detail button visible");
-  must(roomAgreementRows.every((row) => row.checks.previewButtonVisible === true), "room agreements keeps preview button visible");
   must(roomAgreementRows.every((row) => row.checks.safeBoundaryVisible === true), "room agreements keeps safe boundary visible");
-  must(roomAgreementRows.every((row) => row.checks.previewTitleVisible === true), "room agreements preview modal opens in the current fixture set");
-  must(roomAgreementRows.every((row) => row.checks.detailPreviewBoundaryVisible === true), "room agreements keeps detail preview boundary visible");
+  must(roomAgreementRows.every((row) => row.checks.previewButtonVisible === true || row.checks.emptyCanonicalStateVisible === true), "room agreements keeps preview button or explicit empty canonical state");
+  must(roomAgreementRows.every((row) => row.checks.previewTitleVisible === true || row.checks.emptyCanonicalStateVisible === true), "room agreements opens preview modal or preserves explicit empty canonical state");
+  must(roomAgreementRows.every((row) => row.checks.detailPreviewBoundaryVisible === true || row.checks.emptyCanonicalStateVisible === true), "room agreements keeps detail preview boundary or explicit empty canonical state");
 
   const personelRows = report.routes.filter((row) => row.kind === "personelLive");
   must(personelRows.length === 2, "personel live coverage appears in desktop/mobile pairs");

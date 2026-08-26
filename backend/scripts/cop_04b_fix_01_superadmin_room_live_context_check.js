@@ -275,7 +275,7 @@ const roomMapHelp = buildChatHelpResponse({
 const roomMapReply = String(roomMapHelp?.reply || roomMapHelp?.summary || '');
 mustNot(roomMapReply, 'seçili araç bilgisi net görünmüyor', 'room map reply avoids generic no-selection fallback');
 mustAny(roomMapReply, ['34ABC123', 'Seçili araç 34ABC123 görünüyor.'], 'room map reply keeps selected vehicle plate');
-mustAny(roomMapReply, ['konum sinyali: Güncel değil', 'konum sinyali: Zayıf / STALE', 'konum sinyali: Çevrim dışı', 'konum sinyali: Bekleniyor', 'konum sinyali güncel değil', 'konum sinyali canlı', 'konum sinyali çevrim dışı'], 'room map reply keeps gps state');
+mustAny(roomMapReply, ['konum sinyali: Zayıf / güncel değil', 'konum sinyali: Güncel değil', 'konum sinyali: Zayıf / STALE', 'konum sinyali: Çevrim dışı', 'konum sinyali: Bekleniyor', 'konum sinyali güncel değil', 'konum sinyali canlı', 'konum sinyali çevrim dışı'], 'room map reply keeps gps state');
 mustAny(roomMapReply, ['Son konum bilgisi: 47 sn önce', 'Son konum bilgisi 47 sn önce', 'Son konum bilgisi: 47 dk önce', 'Son konum bilgisi 47s', 'Son konum bilgisi 47 saniye önce'], 'room map reply keeps last gps age');
 mustAny(roomMapReply, ['Pickup 6', 'toplam durak 6'], 'room map reply keeps next stop and stop count');
 mustAny(roomMapReply, ['Sürücünün telefonundan konum sinyali durumunu kontrol et', 'Sürücünün telefonundan konum sinyali devrede mi?'], 'room map reply keeps driver phone gps wording');

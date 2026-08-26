@@ -90,7 +90,7 @@ export default function PaymentReadinessReadonlyCard({
         <div>
           <div className="panelSectionTitle">Hakediş hazırlığı</div>
           <div className="panelMeta" style={{ marginTop: 4 }}>
-            Bu kart readonly kontrol içindir; işlem başlatmaz.
+            Bu kart salt okunur kontrol içindir; işlem başlatmaz.
           </div>
           <div className="panelMeta" style={{ marginTop: 4 }}>
             Hakediş, Hazırlık, Eksik bilgi ve Kontrol gerekli görünürlüğü sunar.

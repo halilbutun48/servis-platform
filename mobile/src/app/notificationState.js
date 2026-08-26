@@ -123,9 +123,9 @@ function resolveNotificationScopeLabel(scope = '') {
     case 'PARENT':
       return 'Veli';
     case 'ROOM':
-      return 'Oda';
+      return 'Taşımacılık Firması';
     case 'COMPANY':
-      return 'Şirket';
+      return 'Hizmet Alan Firma';
     default:
       return 'Genel';
   }

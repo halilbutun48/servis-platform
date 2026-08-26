@@ -399,7 +399,7 @@ export default function PassengerLivePanel() {
           <div style={{ marginTop: 12 }}>
             <CollapsibleSection
               title="Detay"
-              subtitle="Shift durakları ve en yakın durak bilgisi kontrollü alanda gösterilir."
+              subtitle="Vardiya durakları ve en yakın durak bilgisi kontrollü alanda gösterilir."
               badge={shiftStops.length}
               defaultOpen={false}
               compact

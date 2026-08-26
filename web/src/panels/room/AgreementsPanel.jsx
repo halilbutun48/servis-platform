@@ -426,7 +426,7 @@ export default function AgreementsPanel() {
         qualityBridgePreview ? {
           label: 'Hazırlık',
           value: qualityBridgeSettlementReadiness || '-',
-          help: 'Settlement hazırlığı yalnızca readonly görünür.',
+          help: 'Mutabakat hazırlığı yalnızca salt okunur görünür.',
         } : null,
         qualityBridgePreview ? {
           label: 'Sıradaki işlem',
@@ -971,8 +971,8 @@ export default function AgreementsPanel() {
     <div className="card roomCriticalFixScope">
       <div className="topbar">
         <div>
-          <div className="title">Room / Sözleşmeler</div>
-          <div className="muted">Bekleyen sözleşmeler burada karar bekler. Oda bu ekranda kabul / karşı teklif / red kararını verir. Not: sözleşme durumu zaman bazlıdır (endDate+endMin). Sürücü vardiyayı bitirse bile sözleşme endDate geçene kadar devam ediyor görünebilir. Uzatma talepleri de burada yönetilir.</div>
+          <div className="title">Taşımacılık Firması / Sözleşmeler</div>
+          <div className="muted">Bekleyen sözleşmeler burada karar bekler. Taşımacılık Firması bu ekranda kabul / karşı teklif / red kararını verir. Not: sözleşme durumu zaman bazlıdır. Sürücü vardiyayı bitirse bile sözleşme bitiş tarihine kadar devam ediyor görünebilir. Uzatma talepleri de burada yönetilir.</div>
         </div>
         <button type="button" className="btn sm ghost" disabled={busy} onClick={loadAll}>
           Yenile
@@ -1139,8 +1139,8 @@ export default function AgreementsPanel() {
                   <th>Dir/Pat</th>
                   <th>Vardiyalar</th>
                   <th>Toplanma Konumu</th>
-                  <th>Şirket Teklifi</th>
-                  <th>Oda Karşı Teklifi</th>
+                  <th>Hizmet Alan Firma Teklifi</th>
+                  <th>Taşımacılık Firması Karşı Teklifi</th>
                   <th>Aksiyon</th>
                 </tr>
               </thead>
@@ -1260,8 +1260,8 @@ export default function AgreementsPanel() {
                   <th>Saat</th>
                   <th>Günler</th>
                   <th>Dir/Pat</th>
-                  <th>Şirket Teklifi</th>
-                  <th>Oda Karşı Teklifi</th>
+                  <th>Hizmet Alan Firma Teklifi</th>
+                  <th>Taşımacılık Firması Karşı Teklifi</th>
                   <th>Araç</th>
                   <th>Sürücü</th>
                   <th>Aksiyon</th>

@@ -135,7 +135,7 @@ export default function RegionsPanel() {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
         <div>
           <div className="panelTitle" style={{ marginBottom: 6 }}>İller ve Bölgeler</div>
-          <div className="panelMeta">SUPER_ADMIN il ve bölge tanımlarını yönetir. Company/Room tarafındaki ilçe/bölge alanı bu tanımın alt kırılımı olarak görünür.</div>
+          <div className="panelMeta">Yönetim il ve bölge tanımlarını yönetir. Hizmet Alan Firma ve Taşımacılık Firması tarafındaki ilçe/bölge alanı bu tanımın alt kırılımı olarak görünür.</div>
         </div>
         <div className="saActions">
           <span className="pill" data-status="COUNT">
@@ -165,8 +165,8 @@ export default function RegionsPanel() {
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           <span className="pill" data-status="COUNT">Bölge: {totals.regions}</span>
-          <span className="pill" data-status="COUNT">Şirket: {totals.companies}</span>
-          <span className="pill" data-status="COUNT">Oda: {totals.rooms}</span>
+          <span className="pill" data-status="COUNT">Hizmet Alan Firma: {totals.companies}</span>
+          <span className="pill" data-status="COUNT">Taşımacılık Firması: {totals.rooms}</span>
           <span className="pill" data-status="COUNT">Araç: {totals.vehicles} / Aktif {totals.activeVehicles}</span>
           <span className="pill" data-status="COUNT">Şoför: {totals.drivers}</span>
           <span className="pill" data-status="COUNT">Vardiya: {totals.openShifts} / Aktif {totals.activeShifts}</span>
@@ -284,7 +284,7 @@ export default function RegionsPanel() {
                   </button>
                   <button
                     className="btn sm"
-                    title={Number(r.companyCount || 0) + Number(r.roomCount || 0) > 0 ? "Önce bağlı company/room kayıtlarını boşaltın" : ""}
+                    title={Number(r.companyCount || 0) + Number(r.roomCount || 0) > 0 ? "Önce bağlı firma kayıtlarını boşaltın" : ""}
                     disabled={busy || Number(r.companyCount || 0) + Number(r.roomCount || 0) > 0}
                     onClick={() => del(r.id)}
                   >
@@ -300,7 +300,7 @@ export default function RegionsPanel() {
       </div>
 
       <div className="muted" style={{ marginTop: 12 }}>
-        Not: Bir ili silebilmek için o ile bağlı ACTIVE/PASSIVE Company/Room olmamalı.
+        Not: Bir ili silebilmek için o ile bağlı aktif/pasif firma kaydı olmamalı.
       </div>
     </div>
   );

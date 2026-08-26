@@ -41,8 +41,7 @@ export function makeVehicleMarkerC({ plate, status = "online", heading = 0 }) {
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
-  // ✅ UI label: ONLINE yerine LIVE
-  const labelText = st === "online" ? "LIVE" : st.toUpperCase();
+  const labelText = st === "online" ? "Canlı" : st === "stale" ? "Güncel değil" : st === "offline" ? "Çevrim dışı" : "Bekleniyor";
 
   const html = `
     <div class="vmc vmc--${st}">

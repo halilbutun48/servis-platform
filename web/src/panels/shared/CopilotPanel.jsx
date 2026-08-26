@@ -554,7 +554,7 @@ export default function CopilotPanel() {
     if (!entryHint) return "";
     const title = String(entryHint.title || "Operasyon sağlığı uyarısı");
     const detail = String(entryHint.detail || "");
-    if (mode === "note") return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Room için paylaşılabilir kısa operasyon notu hazırla.`;
+    if (mode === "note") return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Taşımacılık Firması için paylaşılabilir kısa operasyon notu hazırla.`;
     if (mode === "driver") return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Sürücüye sade Türkçe ile ne söylemem gerektiğini yaz.`;
     if (mode === "next") return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Şimdi ne yapmam gerektiğini sade Türkçe ile söyle.`;
     return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Bunun ne anlama geldiğini sade Türkçe ile açıkla.`;
@@ -593,7 +593,7 @@ export default function CopilotPanel() {
             <button type="button" onClick={() => askEntryHint("explain")}>Bunu açıkla</button>
             <button type="button" onClick={() => askEntryHint("next")}>Şimdi ne yapayım?</button>
             <button type="button" onClick={() => askEntryHint("driver")}>Sürücüye ne söyleyeyim?</button>
-            <button type="button" onClick={() => askEntryHint("note")}>Room notu hazırla</button>
+            <button type="button" onClick={() => askEntryHint("note")}>Taşımacılık Firması notu hazırla</button>
             <button type="button" onClick={clearEntryHint}>Kapat</button>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -732,7 +732,7 @@ export default function CopilotPanel() {
 
                 <label className="muted">
                   Kayıt ID
-                  <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={activeEntityType === "vehicle" ? "vehicleId" : "shiftId"} />
+                  <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={activeEntityType === "vehicle" ? "Araç no" : "Vardiya no"} />
                 </label>
               </div>
 
@@ -772,7 +772,7 @@ export default function CopilotPanel() {
           <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <label className="muted">
               Hızlı seçim arama {loadingRefs ? "(yükleniyor...)" : ""}
-              <input value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} placeholder={activeEntityType === "vehicle" ? "plaka / durum ara" : activeEntityType === "screen" ? "ekran / menü ara" : "durum / şirket / room ara"} />
+              <input value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} placeholder={activeEntityType === "vehicle" ? "plaka / durum ara" : activeEntityType === "screen" ? "ekran / menü ara" : "durum / firma / taşımacılık firması ara"} />
             </label>
 
             <label className="muted">
@@ -804,7 +804,7 @@ export default function CopilotPanel() {
           ) : null}
 
           <div className="muted">
-            Desteklenen roller: ROOM / COMPANY / SCHOOL / ORGANIZATION / SUPER_ADMIN. DRIVER / PERSONEL / PARENT için ekran ve buton rehberi sade modda açıktır. ROOM ve SUPER_ADMIN için ek güvenlik doğrulaması gerekir.
+            Desteklenen alanlar: Taşımacılık Firması, Hizmet Alan Firma, okul, organizasyon ve yönetim. Sürücü, personel ve veli için ekran ve buton rehberi sade modda açıktır. Yönetim alanı için ek güvenlik doğrulaması gerekir.
           </div>
 
           {err ? <div className="muted" style={{ color: "crimson" }}>{err}</div> : null}

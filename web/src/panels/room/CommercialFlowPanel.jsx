@@ -406,7 +406,7 @@ export default function CommercialFlowPanel() {
             compact
           >
             <div style={{ display: "grid", gap: 8 }}>
-              <div className="panelMeta">• Oda tarafında hakediş görünürlüğü, sözleşme ve aktif operasyon bağlantısıyla okunur.</div>
+              <div className="panelMeta">• Taşımacılık Firması tarafında hakediş görünürlüğü, sözleşme ve aktif operasyon bağlantısıyla okunur.</div>
               <div className="panelMeta">• Kesin ödeme / komisyon ayrıntısı başka omurgada kalır; bu ekran sadece yolu gösterir.</div>
               <div className="panelMeta">• Kullanıcı bu sekmede ödeme başlatmaz, yalnızca özet ve bağlantı görür.</div>
             </div>
@@ -482,7 +482,7 @@ export default function CommercialFlowPanel() {
               selectedId={selectedItem?.id}
               onSelect={(item) => setPreferredId(String(item?.id || ""))}
               onAction={openAction}
-              emptyText="Bu oda için teklif satırı bulunamadı."
+              emptyText="Bu taşımacılık firması için teklif satırı bulunamadı."
               actionLabel="Teklifleri aç"
             />
             {offerItems.length > 8 ? <div className="panelMeta">İlk 8 kayıt gösteriliyor. Daha uzun bakış için Geçmiş sekmesine geç.</div> : null}
@@ -545,7 +545,7 @@ export default function CommercialFlowPanel() {
           <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
             <div className="panelSectionTitle">Ödeme & Komisyon</div>
             <div className="panelMeta">
-              Bu oda ekranı ödeme başlatmaz; ödeme / komisyon yolu yalnızca okuma ve yönlendirme için özetlenir.
+              Bu taşımacılık firması ekranı ödeme başlatmaz; ödeme / komisyon yolu yalnızca okuma ve yönlendirme için özetlenir.
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
               <MetricCard title="Aktif Sözleşme" value={summary?.cards?.activeAgreements ?? "-"} note="Komisyon yolunun bağlı olduğu kayıtlar" accent={summary?.cards?.activeAgreements ? "good" : "default"} />
@@ -577,7 +577,7 @@ export default function CommercialFlowPanel() {
         <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
           <div className="panelSectionTitle">Geçmiş kayıtlar</div>
           <div className="panelMeta">
-            Tüm oda ticari kayıtları bu sekmede filtrelenir. İlk açılışta kısa ve okunur görünüm, detaylı taramada ise tam tablo vardır.
+            Tüm taşımacılık firması ticari kayıtları bu sekmede filtrelenir. İlk açılışta kısa ve okunur görünüm, detaylı taramada ise tam tablo vardır.
           </div>
           <div style={{ display: "grid", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -649,7 +649,7 @@ export default function CommercialFlowPanel() {
             selectedId={selectedItem?.id}
             onSelect={(item) => setPreferredId(String(item?.id || ""))}
             onAction={openAction}
-            emptyText={items.length ? "Filtreye uyan ticari kayıt yok." : "Henüz oda kapsamına düşen ticari kayıt yok. Kural: pazarlık Market/Teklifler ekranında, operasyon hazırlığı Bekleyen Taleplerde ilerler."}
+            emptyText={items.length ? "Filtreye uyan ticari kayıt yok." : "Henüz taşımacılık firması kapsamına düşen ticari kayıt yok. Kural: pazarlık Market/Teklifler ekranında, operasyon hazırlığı Bekleyen Taleplerde ilerler."}
             actionLabel="Aç"
           />
         </div>
@@ -676,7 +676,7 @@ export default function CommercialFlowPanel() {
       <div className="roomCommercialWorkspaceFull">
       <PanelChrome
         title="Ticari Akışım"
-        subtitle="Room için ticari görünüm artık kısa özet + sekmeli bölümlerle açılıyor. Hakediş, sözleşme, teklif, kalite, ödeme ve geçmiş ayrı okunur; kritik özet hep açık kalır."
+        subtitle="Taşımacılık Firması için ticari görünüm artık kısa özet + sekmeli bölümlerle açılıyor. Hakediş, sözleşme, teklif, kalite, ödeme ve geçmiş ayrı okunur; kritik özet hep açık kalır."
         actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
         style={{ width: "100%" }}
       />
@@ -728,7 +728,7 @@ export default function CommercialFlowPanel() {
 
             <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
               <div className="panelSectionTitle">Hızlı erişim</div>
-              <div className="panelMeta">Sık kullanılan oda yüzeylerine kısa yol.</div>
+              <div className="panelMeta">Sık kullanılan taşımacılık firması yüzeylerine kısa yol.</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button type="button" onClick={() => navigate("/room/offers")}>Teklifler</button>
                 <button type="button" onClick={() => navigate("/room/agreements")}>Sözleşmeler</button>

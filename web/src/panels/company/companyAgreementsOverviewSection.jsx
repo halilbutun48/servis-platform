@@ -14,7 +14,7 @@ export default function CompanyAgreementsOverviewSection({
   return (
     <>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div className="panelTitle">Sözleşmeler (Company)</div>
+        <div className="panelTitle">Hizmet Alan Firma Sözleşmeleri</div>
         <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <label className="muted">
             Durum
@@ -37,7 +37,7 @@ export default function CompanyAgreementsOverviewSection({
           </label>
           <label className="muted">
             Filtre
-            <input value={filterQ} onChange={(e) => onFilterChange(e.target.value)} placeholder="Oda / durum / not / tarih" disabled={busy} />
+            <input value={filterQ} onChange={(e) => onFilterChange(e.target.value)} placeholder="Taşımacılık Firması / durum / not / tarih" disabled={busy} />
           </label>
           <button type="button" disabled={busy} onClick={onReload}>
             Yenile

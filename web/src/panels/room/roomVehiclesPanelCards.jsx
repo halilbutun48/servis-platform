@@ -13,7 +13,7 @@ export function RoomTelematicsReadinessCard({ focusVehicle, loadDevices, deviceB
         </div>
       </div>
       <div className="panelMeta">
-        Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
+        Taşımacılık Firması kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <span className="pill" data-status={freshness.status === "OFFLINE" ? "WARN" : freshness.status === "STALE" ? "INFO" : "OK"}>

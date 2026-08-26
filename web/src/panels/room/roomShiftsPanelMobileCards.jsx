@@ -164,11 +164,11 @@ export function RoomPendingShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Şirket / Oda"
+          label="Hizmet Alan Firma / Taşımacılık Firması"
           value={
             <div className="shiftCardValueStack">
               <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Oda ID ${effectiveRoomId || shift.roomId || "-"}`}</div>
+              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Taşımacılık Firması ID ${effectiveRoomId || shift.roomId || "-"}`}</div>
               {hasRegionOwnership(room) ? <div className="shiftCardSubtle">{formatRegionOwnership(room)}</div> : null}
             </div>
           }
@@ -200,10 +200,10 @@ export function RoomPendingShiftCard({
               <RoomStatusPill status={marketOffer.status} />
             </div>
             <div className="shiftCardSubtle">
-              Firma: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Oda: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
+              Hizmet Alan Firma: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Taşımacılık Firması: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
             </div>
             {marketOffer.noteCompany ? <div className="shiftCardSubtle">Not (Firma): {marketOffer.noteCompany}</div> : null}
-            {marketOffer.noteRoom ? <div className="shiftCardSubtle">Not (Oda): {marketOffer.noteRoom}</div> : null}
+            {marketOffer.noteRoom ? <div className="shiftCardSubtle">Not (Taşımacılık Firması): {marketOffer.noteRoom}</div> : null}
           </div>
         ) : (
           <div className="shiftCardInfoBlock">
@@ -426,11 +426,11 @@ export function RoomAllShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Şirket / Oda"
+          label="Hizmet Alan Firma / Taşımacılık Firması"
           value={
             <div className="shiftCardValueStack">
               <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Oda ID ${shift.roomId || "-"}`}</div>
+              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Taşımacılık Firması ID ${shift.roomId || "-"}`}</div>
               {hasRegionOwnership(room) ? <div className="shiftCardSubtle">{formatRegionOwnership(room)}</div> : null}
             </div>
           }
@@ -464,16 +464,16 @@ export function RoomAllShiftCard({
                   <RoomStatusPill status={marketOffer.status} />
                 </div>
                 <div className="shiftCardSubtle">
-                  Firma: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Oda: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
+                  Hizmet Alan Firma: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Taşımacılık Firması: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
                 </div>
               </div>
             ) : null}
             <div className="shiftCardInfoBlock">
-              <div><b>Firma→Oda</b></div>
+              <div><b>Hizmet Alan Firma → Taşımacılık Firması</b></div>
               <RoomCompanyOfferSummary shift={shift} vehiclesById={vehiclesById} />
             </div>
             <div className="shiftCardInfoBlock">
-              <div><b>Oda→Firma</b></div>
+              <div><b>Taşımacılık Firması → Hizmet Alan Firma</b></div>
               <RoomOfferSummary shift={shift} vehiclesById={vehiclesById} />
             </div>
           </div>

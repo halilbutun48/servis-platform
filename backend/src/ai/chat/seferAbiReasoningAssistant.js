@@ -119,8 +119,8 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
   }),
   COMPANY: Object.freeze({
     role: 'COMPANY',
-    label: 'Company',
-    frame: 'Şirket açısından:',
+    label: 'Hizmet Alan Firma',
+    frame: 'Hizmet Alan Firma açısından:',
     tone: 'planlayıcı',
     voice: 'plan / teklif / sözleşme',
     intro: 'vardiya, teklif ve sözleşme akışını düzenlemek için kullanılır.',
@@ -134,8 +134,8 @@ export const SEFER_ABI_REASONING_ASSISTANT_ROLE_PROFILES = Object.freeze({
   }),
   ROOM: Object.freeze({
     role: 'ROOM',
-    label: 'Room',
-    frame: 'Oda açısından:',
+    label: 'Taşımacılık Firması',
+    frame: 'Taşımacılık Firması açısından:',
     tone: 'operasyonel',
     voice: 'araç / sürücü / operasyon',
     intro: 'araç, sürücü ve operasyon akışını birlikte görmek için kullanılır.',
@@ -1227,7 +1227,7 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
       'Şimdi: Rotayı uygulayamam.',
       screenLead,
       'route apply, dispatch apply ve günlük atamaya işleme kapalı.',
-      'Yapabileceğim güvenli şeyler: preview, risk özeti, insan onayı ve geri alma notunu kontrol etmek.',
+      'Yapabileceğim güvenli şeyler: preview, risk özeti, kullanıcı onayı ve geri alma notunu kontrol etmek.',
       `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce preview, risk özeti ve onay durumunu kontrol et.')}`,
     ], roleProfile.maxLength);
   }
@@ -1238,8 +1238,8 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
       'Şimdi: Bu Excel’i sisteme kaydedemem.',
       screenLead,
       'Toplu yazma, DB write ve personel oluşturma kapalı.',
-      'Yapabileceğim güvenli şeyler: eksik kolonları bulmak, KVKK sınırını kontrol etmek ve insan onayı checklist’i hazırlamak.',
-      `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce eksik kolonları ve insan onayını kontrol et.')}`,
+      'Eksik kolonları, KVKK sınırını ve kullanıcı onayını kontrol edebilirim.',
+      `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce eksik kolonları ve kullanıcı onayını kontrol et.')}`,
     ], roleProfile.maxLength);
   }
 
@@ -1248,7 +1248,7 @@ export function composeSeferAbiReasoningReply(snapshot = {}) {
     return joinReply([
       'Şimdi: Bu rota için gerçek uygulama başlatamam.',
       screenLead,
-      'Önce insan onayı gerekir; ben yalnızca preview ve risk özeti okuyabilirim.',
+      'Onayınız gerekli; ben yalnızca preview ve risk özeti okuyabilirim.',
       'Yapabileceğim güvenli şeyler: preview, risk özeti, geri alma notu ve onay durumunu kontrol etmek.',
       `Önce şunu kontrol et: ${firstNonEmpty(snapshot?.safeAlternative, roleProfile.safeAlternative, 'Önce preview, risk özeti ve onay durumunu kontrol et.')}`,
     ], roleProfile.maxLength);

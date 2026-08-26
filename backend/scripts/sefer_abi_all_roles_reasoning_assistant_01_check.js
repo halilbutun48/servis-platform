@@ -430,8 +430,8 @@ async function main() {
 
   const rolePlaybookCases = [
     { role: 'SUPER_ADMIN', frame: 'Sistem açısından:', firstStep: 'Sistem durumu bandını aç' },
-    { role: 'COMPANY', frame: 'Şirket açısından:', firstStep: 'Planlama Merkezi\'ni aç' },
-    { role: 'ROOM', frame: 'Oda açısından:', firstStep: 'Teklifleri incele' },
+    { role: 'COMPANY', frame: 'Hizmet Alan Firma açısından:', firstStep: 'Planlama Merkezi\'ni aç' },
+    { role: 'ROOM', frame: 'Taşımacılık Firması açısından:', firstStep: 'Teklifleri incele' },
     { role: 'DRIVER', frame: 'Kısaca:', firstStep: 'Aktif rotanı aç' },
     { role: 'PERSONEL', frame: 'Sade cevap:', firstStep: 'Servis durumunu / my ride ekranını aç' },
     { role: 'PARENT', frame: 'Kısa cevap:', firstStep: 'Yetkili öğrenci servis görünümünü aç' },
@@ -465,7 +465,7 @@ async function main() {
   const companyOverview = buildReply({ message: 'Bu program ne?', role: 'COMPANY' });
   const driverOverview = buildReply({ message: 'Bu program ne?', role: 'DRIVER', roleMode: 'SIMPLE' });
   const roomOverview = buildReply({ message: 'Bu program ne?', role: 'ROOM' });
-  must(companyOverview.reply, 'Şirket rolünde', 'company overview names the role');
+  must(companyOverview.reply, 'Hizmet Alan Firma rolünde', 'company overview names the role');
   must(companyOverview.reply, 'teklif', 'company overview mentions the plan / offer lane');
   must(companyOverview.reply, 'sözleşme', 'company overview mentions contracts');
   must(companyOverview.reply, 'vardiya', 'company overview mentions shifts');
@@ -473,7 +473,7 @@ async function main() {
   must(driverOverview.reply, 'rota', 'driver overview mentions route');
   must(driverOverview.reply, 'durağı', 'driver overview stays field-oriented');
   assert(driverOverview.reply.length <= 320, 'driver overview stays short');
-  must(roomOverview.reply, 'Oda rolünde', 'room overview names the role');
+  must(roomOverview.reply, 'Taşımacılık Firması rolünde', 'room overview names the role');
   must(roomOverview.reply, 'araç', 'room overview mentions vehicle');
   must(roomOverview.reply, 'sürücü', 'room overview mentions driver');
   must(roomOverview.reply, 'operasyon', 'room overview stays operational');
@@ -493,7 +493,7 @@ async function main() {
     roleMode: 'OPERATIONS',
   });
   assert(roleExplanation.questionType === 'ROLE_EXPLANATION_HELP', 'role explanation routes correctly');
-  must(roleExplanation.reply, 'Oda rolünde', 'role explanation names the role');
+  must(roleExplanation.reply, 'Taşımacılık Firması açısından', 'role explanation names the role');
   must(roleExplanation.reply, 'operasyon, sürücü ve araç', 'role explanation explains the role');
   must(roleExplanation.reply, 'Önce', 'role explanation gives a first step');
   mustNot(roleExplanation.reply, 'bulamadım', 'role explanation drops repetitive fallback');

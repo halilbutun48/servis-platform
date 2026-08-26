@@ -342,7 +342,7 @@ function main() {
   mustContains(boardingImpact, "Eski", "boarding route impact mini map keeps old-stop label");
   mustContains(boardingImpact, "Yeni", "boarding route impact mini map keeps requested-stop label");
   mustContains(boardingImpact, "1..N", "boarding route impact mini map keeps sequential legend");
-  mustContains(boardingImpact, "Readonly önizleme — rota uygulanmaz", "boarding route impact mini map keeps readonly wording");
+  mustContains(boardingImpact, "Salt okunur önizleme — rota uygulanmaz", "boarding route impact mini map keeps readonly wording");
   mustContains(boardingImpact, "Harita için yeterli koordinat yok. Rota etkisi metinsel olarak önizleniyor.", "boarding route impact mini map keeps fallback wording");
   mustContains(boardingImpact, "Leaflet mini-harita", "boarding route impact mini map mentions leaflet mini map");
   mustNotContain(boardingImpact, "boardingRoutePreviewGrid", "boarding route impact mini map no longer uses abstract grid");

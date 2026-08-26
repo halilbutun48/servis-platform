@@ -207,7 +207,7 @@ export default function PersonelAccessPanel() {
   }
 
   if (me?.role !== "COMPANY") {
-    return <div className="card err">Bu panel yalnızca COMPANY / ORGANIZATION scope için görünür.</div>;
+    return <div className="card err">Bu panel yalnızca firma / kurum kapsamı için görünür.</div>;
   }
 
   return (
@@ -216,7 +216,7 @@ export default function PersonelAccessPanel() {
         title="Personel erişimi"
         subtitle={
           isOrganization
-            ? "Kurum personeline 7 gün geçerli kullanıcı kodu ve geçici PIN verin."
+            ? "Organizasyon personeline 7 gün geçerli kullanıcı kodu ve geçici PIN verin."
             : "Personele 7 gün geçerli kullanıcı kodu ve geçici PIN verin."
         }
         actions={(

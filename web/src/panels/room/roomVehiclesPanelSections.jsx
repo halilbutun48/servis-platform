@@ -686,7 +686,7 @@ export function RoomVehicleTelematicsSection({
         <div>
           <h3 style={{ marginBottom: 6 }}>GPS Eşleştirme / Telematik Bağlantısı</h3>
           <div className="muted">
-            Provider kataloğu ve güvenlik kuralları Super Admin tarafından yönetilir. Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
+            Provider kataloğu ve güvenlik kuralları Süper Yönetici tarafından yönetilir. Taşımacılık Firması kendi GPS hesabını onaylı sağlayıcı kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
           </div>
         </div>
 
@@ -694,7 +694,7 @@ export function RoomVehicleTelematicsSection({
           <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
             <div className="panelSectionTitle">Onaylı provider kataloğu</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              Room yalnızca platformun izin verdiği provider listesini görür.
+              Taşımacılık Firması yalnızca platformun izin verdiği sağlayıcı listesini görür.
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               {TELEMATICS_PROVIDER_OPTIONS.map((item) => (

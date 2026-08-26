@@ -420,7 +420,7 @@ loadRef.current = load;
     }
     for (const s of items) {
       const rid = Number(s?.room?.id || s?.roomId || 0);
-      if (rid > 0 && !m.has(rid)) m.set(rid, s?.room || { id: rid, name: `Room #${rid}` });
+      if (rid > 0 && !m.has(rid)) m.set(rid, s?.room || { id: rid, name: `Taşımacılık Firması #${rid}` });
     }
     return m;
   }, [rooms, items]);
@@ -495,7 +495,7 @@ loadRef.current = load;
       ? fallbackRooms
       : Array.from(new Set(vehicles.map((v) => v?.roomId).filter(Boolean).map((x) => Number(x)))).map((id) => ({
           id,
-          name: `Room #${id}`,
+          name: `Taşımacılık Firması #${id}`,
         }));
 
     // M22: client-side search (directory)
@@ -768,7 +768,7 @@ loadRef.current = load;
     const parts = [];
     parts.push(`Vardiya #${copilotShift.id}`);
     if (copilotShift?.status) parts.push(`Durum ${String(copilotShift.status).toUpperCase()}`);
-    if (copilotShift?.room?.name) parts.push(`Room ${copilotShift.room.name}`);
+    if (copilotShift?.room?.name) parts.push(`Taşımacılık Firması ${copilotShift.room.name}`);
     if (copilotShift?.vehicle?.plate) parts.push(`Araç ${copilotShift.vehicle.plate}`);
     else if (copilotShift?.vehicleId) parts.push(`Araç #${copilotShift.vehicleId}`);
     if (copilotShift?.driver?.fullName) parts.push(`Sürücü ${copilotShift.driver.fullName}`);
@@ -793,7 +793,7 @@ loadRef.current = load;
       summary: copilotShiftSummary,
       fields: [
         { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'Seçili vardiyanın sistem içindeki kimliğini gösterir.' },
-        { label: 'Room', value: copilotShift?.room?.name || '-', help: 'İşin bağlı olduğu room veya operasyon oda bilgisini gösterir.' },
+        { label: 'Taşımacılık Firması', value: copilotShift?.room?.name || '-', help: 'İşin bağlı olduğu taşımacılık firması bilgisini gösterir.' },
         { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya bağlı araç bilgisini gösterir.' },
         { label: 'Sürücü', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmış sürücü bilgisini gösterir.' },
         { label: 'Durak Sayısı', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaç durak bulunduğunu gösterir.' },

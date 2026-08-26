@@ -123,7 +123,7 @@ export function CompanyOfferDecisionCard({
       <div className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
         <div style={{ display: "grid", gap: 8 }}>
           <div style={{ fontWeight: 800 }}>
-            {offer.room ? `${roomLabel(offer.room)} (#${offer.room.id})` : `Room #${offer.roomId}`}
+            {offer.room ? `${roomLabel(offer.room)} (#${offer.room.id})` : `Taşımacılık Firması #${offer.roomId}`}
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             {isRecommended ? <RecommendationBadge reason={recommendationReason} /> : null}
@@ -154,8 +154,8 @@ export function CompanyOfferDecisionCard({
       </div>
 
       <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-        <OfferSignalPill label="Company" value={offer.amountCompany != null ? `${formatTRY(offer.amountCompany)} ₺` : "-"} tone="neutral" />
-        <OfferSignalPill label="Room" value={offer.amountRoom != null ? `${formatTRY(offer.amountRoom)} ₺` : "-"} tone={canAccept ? "warn" : "neutral"} />
+        <OfferSignalPill label="Hizmet Alan Firma" value={offer.amountCompany != null ? `${formatTRY(offer.amountCompany)} ₺` : "-"} tone="neutral" />
+        <OfferSignalPill label="Taşımacılık Firması" value={offer.amountRoom != null ? `${formatTRY(offer.amountRoom)} ₺` : "-"} tone={canAccept ? "warn" : "neutral"} />
         <OfferSignalPill label={gap.label} value={gap.value} tone={gap.tone} />
       </div>
 
@@ -175,11 +175,11 @@ export function CompanyOfferDecisionCard({
       {!isClosed ? (
         <div className="card" style={{ marginTop: 10, border: "1px dashed rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.01)" }}>
           <div className="muted" style={{ marginBottom: 6 }}>
-            {packageSize > 1 ? "Bu room için pakete karşı teklif ver." : "Bu teklif için company karşı teklif ver."}
+            {packageSize > 1 ? "Bu taşımacılık firması için paket karşı teklifi ver." : "Bu teklif için firma karşı teklifi ver."}
           </div>
           <div className="row" style={{ gap: 8, alignItems: "end", flexWrap: "wrap" }}>
             <div className="col" style={{ minWidth: 160 }}>
-              <label className="muted">Company Karşı Teklif (₺)</label>
+              <label className="muted">Hizmet Alan Firma Karşı Teklifi (₺)</label>
               <input
                 value={counterState?.amountCompany ?? ""}
                 onChange={(e) => onSetOfferCounter(offer.id, { amountCompany: e.target.value })}

@@ -283,7 +283,7 @@ export default function CompanyCheckinPanel() {
         <div className="card" style={{ overflowX: "auto" }}>
           <h3 style={{ marginTop: 0 }}>Check-in eventleri</h3>
           <div className="muted" style={{ marginBottom: 10 }}>
-            ROOM ve DRIVER tarafında aynı event akışı okunur. Bu panel WS invalidate ile kendi kendine tazelenir.
+            Taşımacılık Firması ve Sürücü tarafında aynı olay akışı okunur. Bu panel canlı güncellemeyle kendi kendine tazelenir.
           </div>
           <table className="tbl" style={{ whiteSpace: "nowrap" }}>
             <thead>

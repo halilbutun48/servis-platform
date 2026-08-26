@@ -171,7 +171,8 @@ const PARENT_MISSING_SERVICE_DETAIL_COPY = "Servis saati, araç ataması veya ko
 const PARENT_LIVE_NO_VEHICLE_HINT = "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.";
 
 export default function ParentLivePanel() {
-  const { token } = useSession();
+  const { token, me } = useSession();
+  const consentBlocked = me?.role === "PARENT" && Number(me?.kvkk?.requiredCount || 0) > 0;
 
   const [children, setChildren] = useState([]);
   const [childId, setChildId] = useState("");
@@ -198,7 +199,7 @@ export default function ParentLivePanel() {
 
   const loadVehicles = useCallback(async (cid) => {
     const resolvedChildId = String(cid || "");
-    if (!resolvedChildId) {
+    if (!resolvedChildId || consentBlocked) {
       setVehicles([]);
       setSelectedVehicleId("");
       lastRequestedChildRef.current = "";
@@ -215,7 +216,7 @@ export default function ParentLivePanel() {
       return items[0]?.id ? String(items[0].id) : "";
     });
     return items;
-  }, [token]);
+  }, [token, consentBlocked]);
 
   const loadAll = useCallback(async () => {
     setBusy(true);
@@ -482,7 +483,7 @@ export default function ParentLivePanel() {
     <div className="wrap">
       <div className="card">
         <div className="title">Veli • Canlı Takip</div>
-        <div className="muted">KVKK kuralı: Canlı konum sadece <b>vardiya saat aralığında</b> gösterilir. Çocuğun durağı, tüm shift durakları ve size göre en yakın durak birlikte gösterilir.</div>
+        <div className="muted">KVKK kuralı: Canlı konum sadece <b>vardiya saat aralığında</b> gösterilir. Çocuğun durağı, tüm vardiya durakları ve size göre en yakın durak birlikte gösterilir.</div>
       </div>
       <div className="card" style={{ marginTop: 12, padding: 12, border: "1px solid rgba(59,130,246,.18)", background: "rgba(59,130,246,.06)" }}>
         <div className="muted" style={{ fontWeight: 700 }}>Canlı takip bandı</div>
@@ -526,7 +527,7 @@ export default function ParentLivePanel() {
           <button type="button" className="btn" disabled={geoBusy} onClick={requestMyLocation}>{geoBusy ? "..." : (myPos ? "Konumumu Yenile" : "Konumumu Al")}</button>
 
           <div className="muted">Araç: <b>{vehicles.length}</b></div>
-          {selected?.company?.name ? <div className="muted">Okul/Şirket: <b>{selected.company.name}</b></div> : null}
+          {selected?.company?.name ? <div className="muted">Okul/Hizmet Alan Firma: <b>{selected.company.name}</b></div> : null}
           {selected?.company ? <div className="muted">Bölge: <b>{regionText(selected.company)}</b></div> : null}
         </div>
 
@@ -570,7 +571,7 @@ export default function ParentLivePanel() {
           <div className="card" style={{ marginTop: 12, padding: 12 }}>
             <div className="title">Çocuk durağı ve yaklaşım</div>
             <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>
-              Aktif servis seçilmediği için canlı yönlendirme butonları pasif kalır. Planlı servis açılınca çocuğun durağı, en yakın durak ve no-show aksiyonları burada görünür.
+              Aktif servis seçilmediği için canlı yönlendirme butonları pasif kalır. Planlı servis açılınca çocuğun durağı, en yakın durak ve gelmeme aksiyonları burada görünür.
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
               <button type="button" className="btn" disabled title="Aktif servis yok">
@@ -657,8 +658,8 @@ export default function ParentLivePanel() {
 
                 {allStops.length ? (
                   <CollapsibleSection
-                    title="Shift durakları"
-                    subtitle="Çocuğun durağı yeşil, size en yakın durak mavi vurgulanır. Tüm koordinatlı shift durakları listelenir."
+                    title="Vardiya durakları"
+                    subtitle="Çocuğun durağı yeşil, size en yakın durak mavi vurgulanır. Tüm koordinatlı vardiya durakları listelenir."
                     badge={allStops.length}
                     defaultOpen={false}
                     compact

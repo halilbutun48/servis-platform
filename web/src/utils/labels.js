@@ -14,6 +14,22 @@ export function personLabel(me) {
   return "Personel";
 }
 
+export function roleLabelForUser(meOrRole, maybeUser) {
+  const user = typeof meOrRole === "object" && meOrRole !== null
+    ? meOrRole
+    : maybeUser || { role: meOrRole };
+  const role = String(user?.role || "").toUpperCase();
+  if (role === "ROOM") return "Turizm/Taşımacılık Firması";
+  if (role === "COMPANY" && user?.companyKind === "SCHOOL") return "Okul";
+  if (role === "COMPANY" && user?.companyKind === "ORGANIZATION") return "Organizasyon";
+  if (role === "COMPANY") return "Hizmet Alan Firma";
+  if (role === "SUPER_ADMIN") return "Süper Yönetici";
+  if (role === "DRIVER") return "Sürücü";
+  if (role === "PERSONEL") return "Personel";
+  if (role === "PARENT") return "Veli";
+  return role || "Kullanıcı";
+}
+
 function firstText(...values) {
   for (const value of values) {
     const text = String(value || "").trim();
@@ -74,7 +90,7 @@ export function hubLabelForKind(kind) {
   const normalized = String(kind || "").toUpperCase();
   if (normalized === "SCHOOL") return "Okul Konumu";
   if (normalized === "ORGANIZATION") return "Toplanma Konumu";
-  return "Şirket Konumu";
+  return "Hizmet Alan Firma Konumu";
 }
 
 export function hubLabel(me) {

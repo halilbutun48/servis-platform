@@ -47,6 +47,16 @@ const BANNED_TERMS = [
   'rota bağı',
 ];
 
+const RAW_ROLE_PATTERNS = [
+  ['COMPANY', /(^|[^A-Z0-9])COMPANY(?=$|[^A-Z0-9])/i],
+  ['ROOM', /(^|[^A-Z0-9])ROOM(?=$|[^A-Z0-9])/i],
+  ['Oda', /(^|[^\p{L}])Oda(?=$|[^\p{L}])/iu],
+  ['Şirket', /(^|[^\p{L}])Şirket(?=$|[^\p{L}])/iu],
+  ['İnsan onayı', /(^|[^\p{L}])İnsan onayı(?=$|[^\p{L}])/iu],
+  ['human approval', /(^|[^\p{L}])human approval(?=$|[^\p{L}])/iu],
+  ['human confirmation', /(^|[^\p{L}])human confirmation(?=$|[^\p{L}])/iu],
+];
+
 const ROLE_CONFIGS = [
   {
     role: 'SUPER_ADMIN',
@@ -522,6 +532,11 @@ function findBlockedTerms(text) {
   return [...new Set(hits)];
 }
 
+function findRawRoleTerms(text) {
+  const value = String(text || '');
+  return RAW_ROLE_PATTERNS.filter(([, pattern]) => pattern.test(value)).map(([term]) => term);
+}
+
 function summarize(values, limit = 220) {
   const text = uniqueStrings(values).join(' | ');
   const compact = String(text || '').replace(/\s+/g, ' ').trim();
@@ -543,7 +558,7 @@ function mustIncludeAny(text, needles, label) {
 
 function assertNoLeaks(label, values, meta) {
   const haystack = uniqueStrings(values).join(' | ');
-  const hits = findBlockedTerms(haystack);
+  const hits = [...new Set([...findBlockedTerms(haystack), ...findRawRoleTerms(haystack)])];
   must(
     hits.length === 0,
     `${label} blockedTerms found: ${hits.join(' / ') || 'none'} | role=${meta.role} | screen=${meta.screenPath} | question=${meta.question} | actual excerpt=${summarize(values)}`
@@ -679,6 +694,29 @@ function main() {
     passCount += 1;
     console.log(`OK ${testCase.label}`);
   }
+
+  testedCases += 1;
+  runCase({
+    role: 'COMPANY',
+    fixtureSource: {
+      path: '/company/agreements',
+      label: 'ROOM / COMPANY',
+      menuPurpose: 'ROOM teklifi için COMPANY onayı ve kullanıcı adımı',
+      firstStep: 'ROOM teklifini aç.',
+      nextStep: 'COMPANY onayını kontrol et.',
+      selectedLabel: 'ROOM teklifi',
+      selectedSummary: 'COMPANY onayı bekleniyor',
+      selectedRecordStatus: 'İnsan onayı gerekir',
+      rawReply: 'ROOM teklifi için COMPANY onayı bekleniyor. İnsan onayı gerekir. Human confirmation olmadan ilerleme.',
+    },
+    helpMessage: 'ROOM teklifi için COMPANY onayı bekleniyor.',
+    assistantMessage: 'ROOM teklifi için COMPANY onayı bekleniyor.',
+    assistantQuestionType: 'SCREEN_EXPLANATION_HELP',
+    helpAnchors: ['Hizmet Alan Firma', 'Taşımacılık Firması', 'Kullanıcı onayı'],
+    assistantAnchors: ['Hizmet Alan Firma', 'Taşımacılık Firması', 'Kullanıcı onayı'],
+  });
+  passCount += 1;
+  console.log('OK role-approval-canonical-presentation');
 
   must(runtimeCases >= 80, `runtimeCases >= 80 (actual ${runtimeCases})`);
   must(testedCases >= 80, `testedCases >= 80 (actual ${testedCases})`);

@@ -15,7 +15,7 @@ import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwn
 export function ShiftCompact({ s, open, onToggle }) {
   if (!s) return <span className="muted">—</span>;
 
-  const companyName = s.company?.name || (s.companyId ? `company#${s.companyId}` : "");
+  const companyName = s.company?.name || (s.companyId ? `Hizmet Alan Firma #${s.companyId}` : "");
   const hasAgreement = Number(s.agreementId) > 0;
 
   return (
@@ -37,8 +37,8 @@ export function ShiftCompact({ s, open, onToggle }) {
       {open ? (
         <div className="muted" style={{ fontSize: 12, display: "grid", gap: 4 }}>
           <div>{shiftWindowLabel(s)}</div>
-          <div>Company: <b>{companyName || "-"}</b></div>
-          <div>Oda: <b>{s.room?.name || (s.roomId ? `oda#${s.roomId}` : "-")}</b></div>
+          <div>Hizmet Alan Firma: <b>{companyName || "-"}</b></div>
+          <div>Taşımacılık Firması: <b>{s.room?.name || (s.roomId ? `taşımacılık firması #${s.roomId}` : "-")}</b></div>
           <div>Route: <b>{s.route?.name || (s.routeId ? `route#${s.routeId}` : "-")}</b></div>
           <div>Direction: <b>{s.direction || "-"}</b></div>
           {s.note ? <div>Not: <b>{s.note}</b></div> : null}

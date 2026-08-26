@@ -141,7 +141,7 @@ function CompanyAgreementMobileCard({
       </div>
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
-        <Field label="Oda" value={roomText} wide />
+        <Field label="Taşımacılık Firması" value={roomText} wide />
         <Field
           label="Tarih"
           value={(
@@ -160,12 +160,12 @@ function CompanyAgreementMobileCard({
       <CardSection title="Teklif özeti">
         <div className="shiftCardInfoBlock">
           <div className="shiftCardInfoRow">
-            <div className="shiftCardInfoTitle">Şirket teklifi</div>
-            <span className="pill" title="Şirket teklif tutarı">{companyOfferText}</span>
+            <div className="shiftCardInfoTitle">Firma teklifi</div>
+            <span className="pill" title="Firma teklif tutarı">{companyOfferText}</span>
           </div>
-          <div className="shiftCardSubtle">Oda karşı teklifi: <b>{roomOfferText}</b></div>
-          {agreement?.companyOfferNote ? <div className="shiftCardSubtle">Şirket notu: {agreement.companyOfferNote}</div> : null}
-          {agreement?.roomOfferNote ? <div className="shiftCardSubtle">Oda notu: {agreement.roomOfferNote}</div> : null}
+          <div className="shiftCardSubtle">Taşımacılık Firması karşı teklifi: <b>{roomOfferText}</b></div>
+          {agreement?.companyOfferNote ? <div className="shiftCardSubtle">Firma notu: {agreement.companyOfferNote}</div> : null}
+          {agreement?.roomOfferNote ? <div className="shiftCardSubtle">Taşımacılık Firması notu: {agreement.roomOfferNote}</div> : null}
         </div>
       </CardSection>
 

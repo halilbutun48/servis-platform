@@ -378,8 +378,8 @@ function runPreviewChecks() {
   checkEqual(roomPreview.quoteFloor?.quoteFloorMinor, 115000, "room quote floor");
   checkEqual(roomPreview.quoteFloor?.quoteFloorPerPassengerMinor, 5227, "room quote floor per passenger");
   checkEqual(roomPreview.quoteFloor?.marginGapMinor, 65000, "room quote gap");
-  check(roomPreview.summaryText.includes("read-only"), "room summary copy");
-  check(roomPreview.nextAction.includes("Quote floor"), "room next action copy");
+  check(roomPreview.summaryText.includes("salt okunur"), "room summary copy");
+  check(roomPreview.nextAction.includes("Teklif tabanı"), "room next action copy");
   check(roomPreview.companyBudget === null, "room company budget hidden");
 
   const companyPreview = buildCompanyBudgetAndServiceCostPreview(companyBase);
@@ -398,7 +398,7 @@ function runPreviewChecks() {
   checkEqual(companyPreview.companyBudget?.budgetGapMinor, 119200, "company budget gap");
   checkEqual(companyPreview.companyBudget?.serviceCostMinor, 100800, "company service cost");
   check(companyPreview.roomProfitability === null, "company room profitability hidden");
-  check(companyPreview.summaryText.includes("read-only"), "company summary copy");
+  check(companyPreview.summaryText.includes("salt okunur"), "company summary copy");
   check(companyPreview.nextAction.includes("Bütçe"), "company next action copy");
 
   for (const companyKind of ["SCHOOL", "ORGANIZATION"]) {
@@ -443,7 +443,7 @@ function runPreviewChecks() {
   checkEqual(roomNoBaselinePreview.quoteFloor?.baselineSource, "incomplete", "room missing baseline source");
   checkEqual(roomNoBaselinePreview.quoteFloor?.baselineOperationalCostMinor, 63425, "room missing baseline fallback amount");
   checkEqual(roomNoBaselinePreview.quoteFloor?.quoteFloorMinor, 72939, "room missing baseline fallback floor");
-  check(roomNoBaselinePreview.roomProfitability?.summaryText.includes("read-only"), "room missing baseline profitability summary");
+  check(roomNoBaselinePreview.roomProfitability?.summaryText.includes("salt okunur"), "room missing baseline profitability summary");
 
   const roomNoReservePreview = buildRoomProfitabilityAndQuoteFloorPreview(
     buildRoomPreviewArgs({
@@ -545,7 +545,7 @@ function runPreviewChecks() {
   const roomEmptyState = buildFinancialOperationsEmptyState("ROOM", "room_profitability");
   check(roomDeniedState.allowed === false, "room denied state allowed false");
   check(roomDeniedState.readOnly === true, "room denied state read only");
-  check(roomDeniedState.summaryText.includes("read-only/preview"), "room denied state copy");
+  check(roomDeniedState.summaryText.includes("salt okunur önizleme"), "room denied state copy");
   check(roomEmptyState.allowed === true, "room empty state allowed");
   check(roomEmptyState.readOnly === true, "room empty state read only");
   check(roomEmptyState.summaryText.includes("henüz veri yok"), "room empty state copy");
@@ -555,7 +555,7 @@ function runPreviewChecks() {
   const companyEmptyState = buildFinancialOperationsEmptyState("COMPANY", "company_budget");
   check(companyDeniedState.allowed === false, "company denied state allowed false");
   check(companyDeniedState.readOnly === true, "company denied state read only");
-  check(companyDeniedState.summaryText.includes("read-only/preview"), "company denied state copy");
+  check(companyDeniedState.summaryText.includes("salt okunur önizleme"), "company denied state copy");
   check(companyEmptyState.allowed === true, "company empty state allowed");
   check(companyEmptyState.readOnly === false, "company empty state read only");
   check(companyEmptyState.summaryText.includes("henüz veri yok"), "company empty state copy");

@@ -84,7 +84,7 @@ export async function submitCompanyOfferModal({ offerModal, offerModalPkgIds, to
     return;
   }
   if (!roomIds.length) {
-    setErr("En az 1 room seç");
+    setErr("En az 1 taşımacılık firması seç");
     return;
   }
 
@@ -263,7 +263,7 @@ export async function sendCompanyCounterOfferAction({ shift, offerSel, vehiclesB
   if (vId) {
     const v = vehiclesById.get(Number(vId));
     if (v?.roomId && Number(v.roomId) !== Number(shift.roomId)) {
-      setErr("Seçtiğin teklif aracı bu shift’in room’una ait değil.");
+      setErr("Seçtiğin teklif aracı bu vardiyanın taşımacılık firmasına ait değil.");
       return;
     }
   }

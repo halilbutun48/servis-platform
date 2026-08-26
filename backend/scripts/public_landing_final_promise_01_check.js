@@ -4,13 +4,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
-import { APP_JSX_ROLE_TENANT_SCOPE_PATHS } from "./lib/guardGitScope.js";
-import { mustNoDiff } from "./lib/guardGitScope.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustNoDiffExceptWithIdentity } from "./lib/guardGitScope.js";
 import { mustCurrentHeadCommittedState } from "./lib/guardValidationEnvironment.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "../..");
+
+const approvedPublicLandingTerminologySha256 = "0C5C4FA0BD3239D86466BCC032FF693C946040B9940C1606D7F361C977FDBBD2";
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
@@ -179,6 +180,10 @@ must(harnessDoc, "docs/PUBLIC_LANDING_01_FINAL_PROMISE_CHECK.md", "script harnes
 
 must(read("backend/src/routes/companyOverview.js"), "Route ownership anchor for company overview.", "companyOverview route keeps ownership anchor");
 mustCurrentHeadCommittedState({ label: "public landing current head committed state" });
-mustNoDiff(["web/src/index.css", "web/src/panels/public/PublicLandingPage.jsx"], "public landing UI diff is empty");
+mustNoDiffExceptWithIdentity(
+  ["web/src/index.css", "web/src/panels/public/PublicLandingPage.jsx"],
+  [{ path: "web/src/panels/public/PublicLandingPage.jsx", sha256: approvedPublicLandingTerminologySha256 }],
+  "public landing UI diff stays limited to the approved presentation path"
+);
 
 console.log("=== PUBLIC-LANDING-01 FINAL PROMISE CHECK PASS ===");

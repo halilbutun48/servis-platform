@@ -11,6 +11,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildMapFacts } from "../../utils/copilotFacts";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 
 
 function isReached(stop) {
@@ -141,7 +142,8 @@ export default function DriverMapPanel() {
   const stats = useMemo(() => routeStats(stops), [stops]);
   const gpsAge = useMemo(() => gpsAgeText(selectedVehicle?.gpsLast), [selectedVehicle?.gpsLast]);
   const gpsStatusText = getGpsReliabilityLabel(selectedVehicle?.gpsState?.lastUiStatus || selectedVehicle?.gpsState?.lastStatus || (selectedVehicle ? "LIVE" : "-"));
-  const gpsSourceLabel = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel || (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
+  const rawGpsSource = selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsState?.sourceLabel || selectedVehicle?.gpsLast?.sourceLabel;
+  const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : (selectedVehicle ? "Araç GPS’i" : "GPS bekleniyor");
   const routeProofText = String(activeShift?.operationProofStatus || activeShift?.proofStatus || selectedVehicle?.operationProofStatus || "").trim() || "Belirgin değil";
   const routeEta = Number.isFinite(Number(nextStop?.etaMin))
     ? Number(nextStop.etaMin)

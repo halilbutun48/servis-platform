@@ -137,18 +137,18 @@ export async function bulkMarketCounterAction(ctx, refOffer, mode) {
   const amountRoom = st.amountRoom == null || st.amountRoom === "" ? undefined : ctx.parseTryInput(st.amountRoom);
   const noteRoom = String(st.noteRoom ?? "").trim() || undefined;
   if (amountRoom == null && !noteRoom) {
-    ctx.setErr("Toplu counter için tutar veya not gir. (Bir satırda doldurup Pakete/Şirkete Uygula)");
+    ctx.setErr("Toplu karşı teklif için tutar veya not gir. (Bir satırda doldurup Pakete/Hizmet Alan Firmaya Uygula)");
     return;
   }
   const refShift = refOffer?.shift || {};
   const refCompanyId = Number(refShift?.companyId ?? refShift?.company?.id);
   if (!refCompanyId) {
-    ctx.setErr("Company bulunamadı.");
+    ctx.setErr("Hizmet Alan Firma bulunamadı.");
     return;
   }
   const refBundleKey = offerBundleKey(refOffer);
   if (mode === "bundle" && !refBundleKey) {
-    ctx.setErr("Paket anahtarı bulunamadı (createdAt yok). Şirkete Uygula'yı kullan.");
+    ctx.setErr("Paket anahtarı bulunamadı. Hizmet Alan Firmaya Uygula'yı kullan.");
     return;
   }
   const targets = (ctx.offers || []).filter((o) => {

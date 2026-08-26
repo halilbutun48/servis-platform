@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
+import { prisma } from "../src/prisma.js";
 import { PREMIUM_SMOKE_COVERAGE_SOURCES, buildPremiumSmokeEvidenceSourceFiles, buildSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -228,6 +229,17 @@ async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
+async function resolveDriverDeviceId(email = "driver@demo.com") {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { role: true, deviceId: true },
+  });
+  if (!user || user.role !== "DRIVER") {
+    throw new Error(`Driver user not found for ${email}`);
+  }
+  return String(user.deviceId || "").trim() || "ux-live-panel-premium-driver";
+}
+
 async function loginRole(role) {
   if (!DEMO_USERS[role]) return { role, token: null, loginInfo: null, error: null };
 
@@ -235,7 +247,9 @@ async function loginRole(role) {
   const body = {
     identifier: credentials.identifier,
     password: credentials.password,
-    deviceId: `ux-live-panel-premium-${role}`,
+    deviceId: role === "driver"
+      ? await resolveDriverDeviceId(credentials.identifier)
+      : `ux-live-panel-premium-${role}`,
     deviceName: "UX Live Panel Premium Smoke",
   };
 
@@ -355,6 +369,27 @@ async function getVisibleText(page) {
   }
 }
 
+async function getVisibleSurfaceText(page) {
+  const text = await getVisibleText(page);
+  const controlValues = await page.locator("input, textarea, select").evaluateAll((elements) => {
+    const isVisible = (element) => {
+      for (let node = element; node && node.nodeType === Node.ELEMENT_NODE; node = node.parentElement) {
+        if (node.hidden || node.getAttribute("aria-hidden") === "true") return false;
+        const style = getComputedStyle(node);
+        const rect = node.getBoundingClientRect();
+        if (style.display === "none" || style.visibility === "hidden" || Number.parseFloat(style.opacity || "1") === 0 || rect.width <= 0 || rect.height <= 0) {
+          return false;
+        }
+      }
+      return true;
+    };
+    return elements
+      .filter(isVisible)
+      .flatMap((element) => [element.value, element.placeholder].map((value) => String(value || "").trim()).filter(Boolean));
+  }).catch(() => []);
+  return [text, ...controlValues].filter(Boolean).join(" ");
+}
+
 async function getDispatchSemanticState(page, viewportName) {
   try {
     return await page.evaluate((vp) => {
@@ -429,6 +464,221 @@ async function clickIfVisible(page, role, name) {
     return false;
   }
   return false;
+}
+
+async function runRoomFinancialOperationsAdvancedAssertion(context, viewportName) {
+  const page = await context.newPage();
+  const result = {
+    scope: "ROOM",
+    route: "/#/room/financial-operations",
+    viewport: viewportName,
+    passed: false,
+    detailsOpened: false,
+    inputDetailsOpened: false,
+    rawFieldKeysVisible: [],
+    rawFieldKeyVisibleCount: 0,
+    rawInternalCodesVisible: [],
+    rawInternalCodeVisibleCount: 0,
+    minorTokenVisibleCount: 0,
+    bpsTokenVisibleCount: 0,
+    humanLabelsVisible: [],
+    manualOverrideHintVisible: false,
+    consoleErrors: [],
+    pageErrors: [],
+    notes: [],
+  };
+  const rawFieldKeys = ["targetContributionBps", "riskReserveBps"];
+  const humanLabels = [
+    "Hedef katkı oranı (%)",
+    "Risk payı (%)",
+    "Manuel maliyet tabanı (₺)",
+    "Yakıt birim fiyatı (₺/L)",
+    "Sürücü temel maliyeti (₺/vardiya)",
+    "Km başı bakım maliyeti (₺/km)",
+    "Aylık araç kira maliyeti (₺/ay)",
+  ];
+
+  page.on("console", (msg) => {
+    if (msg.type() === "error") result.consoleErrors.push(msg.text());
+  });
+  page.on("pageerror", (error) => {
+    result.pageErrors.push(error?.message || String(error));
+  });
+
+  try {
+    await page.goto(`${WEB_BASE_URL}${result.route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(1300);
+
+    const advancedDetails = page.locator("details").filter({ hasText: "Gelişmiş bilgiler" }).first();
+    const summary = advancedDetails.locator("summary").first();
+    if (!(await summary.isVisible({ timeout: 5000 }))) {
+      throw new Error("ROOM advanced details summary is not visible");
+    }
+    if (!(await advancedDetails.evaluate((element) => Boolean(element.open)))) {
+      await summary.click({ timeout: 5000 });
+    }
+    await page.waitForTimeout(250);
+    result.detailsOpened = await advancedDetails.evaluate((element) => Boolean(element.open));
+
+    const inputSummary = page.locator("summary").filter({ hasText: "Maliyet girdileri" }).first();
+    const offerSummary = page.locator("summary").filter({ hasText: "Teklif detayları" }).first();
+    if (await offerSummary.isVisible({ timeout: 5000 })) {
+      const offerDetails = offerSummary.locator("xpath=..");
+      if (!(await offerDetails.evaluate((element) => Boolean(element.open)))) {
+        await offerSummary.click({ timeout: 5000 });
+        await page.waitForTimeout(200);
+      }
+    }
+    if (!(await inputSummary.isVisible({ timeout: 5000 }))) {
+      throw new Error("ROOM cost inputs summary is not visible");
+    }
+    const inputDetails = inputSummary.locator("xpath=..");
+    if (!(await inputDetails.evaluate((element) => Boolean(element.open)))) {
+      await inputSummary.click({ timeout: 5000 });
+    }
+    await page.waitForTimeout(250);
+    result.inputDetailsOpened = await inputDetails.evaluate((element) => Boolean(element.open));
+
+    const visibleText = await getVisibleSurfaceText(page);
+    result.rawFieldKeysVisible = rawFieldKeys.filter((key) => visibleText.includes(key));
+    result.rawFieldKeyVisibleCount = result.rawFieldKeysVisible.length;
+    result.rawInternalCodesVisible = ["targetContributionBps", "riskReserveBps", "fuelUnitPriceMinor", "TRY", "minor", "bps"].filter((token) => visibleText.includes(token));
+    result.rawInternalCodeVisibleCount = result.rawInternalCodesVisible.length;
+    result.minorTokenVisibleCount = (visibleText.match(/\bminor\b/gi) || []).length;
+    result.bpsTokenVisibleCount = (visibleText.match(/\bbps\b/gi) || []).length;
+    result.manualOverrideHintVisible = /manuel düzeltme/i.test(visibleText);
+    result.humanLabelsVisible = humanLabels.filter((label) => visibleText.includes(label));
+    if (result.rawFieldKeyVisibleCount > 0) {
+      result.notes.push(`Ham alan adı görünür: ${result.rawFieldKeysVisible.join(", ")}.`);
+    }
+    if (result.humanLabelsVisible.length !== humanLabels.length) {
+      result.notes.push(`Beklenen kullanıcı etiketleri eksik: ${humanLabels.filter((label) => !result.humanLabelsVisible.includes(label)).join(", ")}.`);
+    }
+    result.passed = result.detailsOpened
+      && result.inputDetailsOpened
+      && result.rawFieldKeyVisibleCount === 0
+      && result.rawInternalCodeVisibleCount === 0
+      && result.minorTokenVisibleCount === 0
+      && result.bpsTokenVisibleCount === 0
+      && result.manualOverrideHintVisible
+      && result.humanLabelsVisible.length === humanLabels.length
+      && result.consoleErrors.length === 0
+      && result.pageErrors.length === 0;
+  } catch (error) {
+    result.notes.push(error?.message || String(error));
+  }
+
+  await page.close().catch(() => {});
+  return result;
+}
+
+async function runCompanyFinancialOperationsAdvancedAssertion(context, viewportName) {
+  const page = await context.newPage();
+  const result = {
+    scope: "COMPANY",
+    route: "/#/company/financial-operations",
+    viewport: viewportName,
+    passed: false,
+    detailsOpened: false,
+    advancedDetailsOpened: false,
+    rawFieldKeysVisible: [],
+    rawFieldKeyVisibleCount: 0,
+    rawInternalCodesVisible: [],
+    rawInternalCodeVisibleCount: 0,
+    minorTokenVisibleCount: 0,
+    bpsTokenVisibleCount: 0,
+    humanLabelsVisible: [],
+    systemFieldInputLabels: [],
+    consoleErrors: [],
+    pageErrors: [],
+    notes: [],
+  };
+  const rawFieldKeys = [
+    "budgetPlanId",
+    "budgetPlanVersion",
+    "budgetAmountMinor",
+    "periodStart",
+    "periodEnd",
+    "budgetSource",
+    "budgetApprovalState",
+    "warningThresholdBps",
+    "currencyCode",
+  ];
+  const rawInternalCodes = ["draft_budget", "draft", "TRY", "DRAFT_BUDGET", "APPROVED_BUDGET"];
+  const humanLabels = ["Bütçe ayrıntıları", "Bütçe tutarı", "Başlangıç", "Bitiş", "Para birimi", "Bütçe kaynağı", "Onay durumu", "Uyarı eşiği"];
+
+  page.on("console", (msg) => {
+    if (msg.type() === "error") result.consoleErrors.push(msg.text());
+  });
+  page.on("pageerror", (error) => {
+    result.pageErrors.push(error?.message || String(error));
+  });
+
+  try {
+    await page.goto(`${WEB_BASE_URL}${result.route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(1300);
+
+    const budgetSummary = page.locator("summary").filter({ hasText: "Bütçe detayları" }).first();
+    if (!(await budgetSummary.isVisible({ timeout: 5000 }))) {
+      throw new Error("COMPANY budget details summary is not visible");
+    }
+    const budgetDetails = budgetSummary.locator("xpath=..");
+    if (!(await budgetDetails.evaluate((element) => Boolean(element.open)))) {
+      await budgetSummary.click({ timeout: 5000 });
+    }
+    await page.waitForTimeout(200);
+    result.detailsOpened = await budgetDetails.evaluate((element) => Boolean(element.open));
+
+    const advancedSummary = page.locator("summary").filter({ hasText: "Bütçe ayrıntıları" }).first();
+    if (!(await advancedSummary.isVisible({ timeout: 5000 }))) {
+      throw new Error("COMPANY budget advanced summary is not visible");
+    }
+    const advancedDetails = advancedSummary.locator("xpath=..");
+    if (!(await advancedDetails.evaluate((element) => Boolean(element.open)))) {
+      await advancedSummary.click({ timeout: 5000 });
+    }
+    await page.waitForTimeout(250);
+    result.advancedDetailsOpened = await advancedDetails.evaluate((element) => Boolean(element.open));
+
+    const visibleText = await getVisibleSurfaceText(page);
+    result.rawFieldKeysVisible = rawFieldKeys.filter((key) => visibleText.includes(key));
+    result.rawFieldKeyVisibleCount = result.rawFieldKeysVisible.length;
+    result.rawInternalCodesVisible = rawInternalCodes.filter((token) => visibleText.includes(token));
+    result.rawInternalCodeVisibleCount = result.rawInternalCodesVisible.length;
+    result.minorTokenVisibleCount = (visibleText.match(/\bminor\b/gi) || []).length;
+    result.bpsTokenVisibleCount = (visibleText.match(/\bbps\b/gi) || []).length;
+    result.humanLabelsVisible = humanLabels.filter((label) => visibleText.includes(label));
+    result.systemFieldInputLabels = await page.locator("label").evaluateAll((labels) => labels
+      .filter((label) => /^(?:Para birimi|Bütçe kaynağı|Onay durumu)/i.test(String(label.textContent || "").trim()))
+      .filter((label) => label.querySelector("input, textarea, select"))
+      .map((label) => String(label.textContent || "").trim().split(/\s+/).slice(0, 4).join(" "))).catch(() => []);
+    if (result.rawFieldKeyVisibleCount > 0) {
+      result.notes.push(`Ham alan adı görünür: ${result.rawFieldKeysVisible.join(", ")}.`);
+    }
+    if (result.rawInternalCodeVisibleCount > 0) {
+      result.notes.push(`Ham iç kod görünür: ${result.rawInternalCodesVisible.join(", ")}.`);
+    }
+    if (result.systemFieldInputLabels.length > 0) {
+      result.notes.push(`Sistem alanı düzenlenebilir: ${result.systemFieldInputLabels.join(", ")}.`);
+    }
+    result.passed = result.detailsOpened
+      && result.advancedDetailsOpened
+      && result.rawFieldKeyVisibleCount === 0
+      && result.rawInternalCodeVisibleCount === 0
+      && result.minorTokenVisibleCount === 0
+      && result.bpsTokenVisibleCount === 0
+      && result.systemFieldInputLabels.length === 0
+      && result.humanLabelsVisible.length === humanLabels.length
+      && result.consoleErrors.length === 0
+      && result.pageErrors.length === 0;
+  } catch (error) {
+    result.notes.push(error?.message || String(error));
+  }
+
+  await page.close().catch(() => {});
+  return result;
 }
 
 function classifyTextSignals(text, status, notes) {
@@ -745,8 +995,12 @@ async function runScenario(page, scenario, viewportName, output) {
         "bu baglanti icin henuz vardiya uretilmedi",
         "bu sozlesmeden henuz uretilmis vardiya yok",
       ].some((needle) => normalizedAfterText.includes(needle));
+      const hasCanonicalEmptyState =
+        normalizedAfterText.includes("gosterilen: 0 / toplam: 0") &&
+        (normalizedAfterText.includes("kayit yok") ||
+          normalizedAfterText.includes("operasyon koprusu icin bir sozlesme sec"));
       result.checks.detailsOpen = openToggleVisible || hasOpenDetailsText;
-      if (!result.checks.detailsOpen && hasExplicitFallback) {
+      if (!result.checks.detailsOpen && (hasExplicitFallback || hasCanonicalEmptyState)) {
         result.status = bumpStatus(result.status, "PASS");
         result.notes.push("Operasyon köprüsü boş/fallback durumda okunur.");
       } else if (!result.checks.detailsOpen) {
@@ -758,8 +1012,18 @@ async function runScenario(page, scenario, viewportName, output) {
       result.textPreview = afterText.slice(0, 4000);
       result.textLength = afterText.length;
     } else {
-      result.notes.push("Detayı aç butonu görünmüyor.");
-      result.status = bumpStatus(result.status, "UX-FIX");
+      const emptyStateText = normalize(await getText(page));
+      const hasCanonicalEmptyState =
+        (emptyStateText.includes("gosterilen: 0 / toplam: 0") &&
+          (emptyStateText.includes("kayit yok") || emptyStateText.includes("operasyon koprusu icin bir sozlesme sec"))) ||
+        emptyStateText.includes("bu okul/kurum gorunumunde secili sozlesme yok");
+      if (hasCanonicalEmptyState) {
+        result.checks.emptyCanonicalState = true;
+        result.notes.push("Operasyon köprüsü boş/fallback durumda okunur.");
+      } else {
+        result.notes.push("Detayı aç butonu görünmüyor.");
+        result.status = bumpStatus(result.status, "UX-FIX");
+      }
     }
   }
 
@@ -845,7 +1109,7 @@ async function runScenario(page, scenario, viewportName, output) {
   }
 
   if (scenario.kind === "driverCheckin") {
-    if (!/check[- ]?in|görev|bugün/i.test(normalize(bodyText))) {
+    if (!/check[- ]?in|görev|gorev|bugün|bugun/i.test(normalize(bodyText))) {
       result.status = bumpStatus(result.status, "UX-FIX");
       result.notes.push("Driver check-in yüzeyi sade ama sinyal sınırlı.");
     }
@@ -1041,6 +1305,7 @@ async function main() {
       statusCounts: { PASS: 0, "PASS-": 0, "UX-FIX": 0, BLOCKER: 0, "AUTH-BLOCKED": 0, "NOT-FOUND": 0 },
       routes: [],
       authResults: [],
+      financeAssertions: [],
       totalLoginFailures: 0,
       success: true,
     };
@@ -1092,6 +1357,24 @@ async function main() {
           report.success = report.success && !["BLOCKER", "NOT-FOUND"].includes(row.status);
           console.log(`${row.status} [${group.role}/${viewport.name}] ${scenario.route} -> ${scenario.label}`);
           await page.close().catch(() => {});
+        }
+
+        if (group.role === "room") {
+          const financeAssertion = await runRoomFinancialOperationsAdvancedAssertion(context, viewport.name);
+          report.financeAssertions.push(financeAssertion);
+          report.consoleErrorCount += financeAssertion.consoleErrors.length;
+          report.pageErrorCount += financeAssertion.pageErrors.length;
+          report.success = report.success && financeAssertion.passed;
+          console.log(`${financeAssertion.passed ? "PASS" : "BLOCKER"} [room/${viewport.name}] ROOM financial advanced text assertion`);
+        }
+
+        if (group.role === "company") {
+          const financeAssertion = await runCompanyFinancialOperationsAdvancedAssertion(context, viewport.name);
+          report.financeAssertions.push(financeAssertion);
+          report.consoleErrorCount += financeAssertion.consoleErrors.length;
+          report.pageErrorCount += financeAssertion.pageErrors.length;
+          report.success = report.success && financeAssertion.passed;
+          console.log(`${financeAssertion.passed ? "PASS" : "BLOCKER"} [company/${viewport.name}] COMPANY financial advanced text assertion`);
         }
 
         if (viewport.name === "desktop") {

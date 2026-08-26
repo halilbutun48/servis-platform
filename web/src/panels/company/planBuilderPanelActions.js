@@ -38,7 +38,7 @@ export async function sendPlanBuilderBulkOffers({ api, token, bulkOffer, setBulk
 
   if (!bulkOffer.shiftIds?.length) return;
   if (!roomIds.length) {
-    setBulkOffer((p) => ({ ...p, err: "En az 1 room seç." }));
+    setBulkOffer((p) => ({ ...p, err: "En az 1 taşımacılık firması seç." }));
     return;
   }
 
@@ -78,7 +78,7 @@ export async function sendPlanBuilderBulkOffers({ api, token, bulkOffer, setBulk
 
     const skippedRoomIds = Array.from(skipped);
     const info = skippedRoomIds.length
-      ? `Not: ${skippedRoomIds.length} room teklif atlandı (aktif sözleşme çakışması).`
+      ? `Not: ${skippedRoomIds.length} taşımacılık firması teklifi atlandı (aktif sözleşme çakışması).`
       : "";
 
     setBulkOffer((p) => ({ ...p, done: true, busy: false, info, skippedRoomIds }));

@@ -2,6 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, fmtBps, fmtDateTime, InputRow, stripHtmlNoise } from "./commercialCorePanelShared";
 import { readOptional } from "./commercialCorePanelOptionalStates";
 import { buildPaymentSourceQuery } from "./commercialCorePanelUtils";
+
+function percentInputFromBps(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return "0";
+  return String(n / 100);
+}
+
+function bpsFromPercentInput(value) {
+  const normalized = String(value ?? "").trim().replace(",", ".");
+  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized)) return 0;
+  const [whole, fraction = ""] = normalized.split(".");
+  return Number(whole) * 100 + Number((fraction + "00").slice(0, 2));
+}
 import { createCommercialCorePanelActions } from "./commercialCorePanelActions";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialCoreCopilotFacts } from "../../utils/copilotFacts";
@@ -266,7 +279,7 @@ export default function CommercialCorePanel() {
     {
       title: "Önizleme",
       value: paymentPreviewSummary?.statusText || paymentPreviewSummary?.summaryText || paymentPreviewSummary?.status || "Bekliyor",
-      help: "Readonly hakediş önizleme durumu",
+      help: "Salt okunur hakediş önizleme durumu",
       tone: "normal",
     },
     {
@@ -465,7 +478,7 @@ export default function CommercialCorePanel() {
             </Card>
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Card title="Readonly sınırı" wide>
+            <Card title="Salt okunur sınırı" wide>
               <div>{paymentBackboneSafeMode ? "Ödeme başlatılmaz" : "Hazırlık modu açık"}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
                 Ticari omurga yalnızca okuma ve hazırlık sinyali taşır.
@@ -531,14 +544,14 @@ export default function CommercialCorePanel() {
                         <option value="CANCELLED">CANCELLED</option>
                       </select>
                     </InputRow>
-                    <InputRow label="Şirket ID">
+                    <InputRow label="Hizmet Alan Firma ID">
                       <input type="number" min="1" value={paymentSourceFilters.companyId} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, companyId: e.target.value }))} placeholder="örn. 12" />
                     </InputRow>
-                    <InputRow label="Oda ID">
+                    <InputRow label="Taşımacılık Firması ID">
                       <input type="number" min="1" value={paymentSourceFilters.roomId} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, roomId: e.target.value }))} placeholder="örn. 4" />
                     </InputRow>
                     <InputRow label="Ara">
-                      <input value={paymentSourceFilters.q} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, q: e.target.value }))} placeholder="sourceKey / şirket / oda" />
+                      <input value={paymentSourceFilters.q} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, q: e.target.value }))} placeholder="kaynak adı / firma / taşımacılık firması" />
                     </InputRow>
                     <InputRow label="Başlangıç">
                       <input type="datetime-local" value={paymentSourceFilters.from} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, from: e.target.value }))} />
@@ -581,7 +594,7 @@ export default function CommercialCorePanel() {
                             <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
                             <div>{item.settlementStatus || item?.settlementPlan?.status || "DORMANT"}</div>
                           </div>
-                          <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                          <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                           <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                           <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                         </div>
@@ -630,19 +643,19 @@ export default function CommercialCorePanel() {
             </Card>
           </div>
 
-          <CollapsibleSection title="Super Admin ticari ayarlar" subtitle="Global payment mode ve oda bazlı komisyon override ayarları." defaultOpen={false}>
+          <CollapsibleSection title="Süper Yönetici ticari ayarları" subtitle="Global ödeme modu ve taşımacılık firması bazlı komisyon düzenlemeleri." defaultOpen={false}>
             <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Card title="Global ayar">
                 <div style={{ display: "grid", gap: 12 }}>
-                  <InputRow label="Payment mode" help="Tüm sistem için varsayılan mod.">
+                  <InputRow label="Ödeme modu" help="Tüm sistem için varsayılan mod.">
                     <select value={globalForm.paymentMode} onChange={(e) => setGlobalForm((prev) => ({ ...prev, paymentMode: e.target.value }))}>
                       {(settings?.paymentModes || ["OFF", "OPTIONAL", "REQUIRED"]).map((mode) => (
                         <option key={mode} value={mode}>{mode}</option>
                       ))}
                     </select>
                   </InputRow>
-                  <InputRow label="Global komisyon (bps)" help="Örnek: 250 = %2.50">
-                    <input type="number" min="0" max="10000" value={globalForm.commissionBps} onChange={(e) => setGlobalForm((prev) => ({ ...prev, commissionBps: e.target.value }))} />
+                  <InputRow label="Global komisyon (%)" help="Örnek: %2,50">
+                    <input type="number" min="0" max="100" step="0.01" value={percentInputFromBps(globalForm.commissionBps)} onChange={(e) => setGlobalForm((prev) => ({ ...prev, commissionBps: bpsFromPercentInput(e.target.value) }))} />
                   </InputRow>
                   <InputRow label="Not" help="İç not. Ticari snapshot içine doğrudan yazılmaz.">
                     <textarea rows="3" value={globalForm.note} onChange={(e) => setGlobalForm((prev) => ({ ...prev, note: e.target.value }))} />
@@ -653,61 +666,61 @@ export default function CommercialCorePanel() {
                   </button>
                 </div>
               </Card>
-              <Card title="Oda bazlı override">
+              <Card title="Taşımacılık Firması bazlı düzenleme">
                 <div style={{ display: "grid", gap: 12 }}>
-                  <InputRow label="Oda ara" help="Önce odayı seç, sonra override kaydet.">
-                    <input value={roomQuery} onChange={(e) => setRoomQuery(e.target.value)} placeholder="Oda adı yaz" disabled={!settingsWritable} />
+                  <InputRow label="Taşımacılık Firması ara" help="Önce taşımacılık firmasını seç, sonra düzenlemeyi kaydet.">
+                    <input value={roomQuery} onChange={(e) => setRoomQuery(e.target.value)} placeholder="Taşımacılık firması adı yaz" disabled={!settingsWritable} />
                   </InputRow>
                   <div style={{ maxHeight: 180, overflow: "auto", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 8 }}>
-                    {!settingsWritable ? <div className="panelMeta">Ayar endpointi hazır olmadan oda override seçimi kapalı.</div> : filteredRooms.length ? filteredRooms.map((room) => (
+                    {!settingsWritable ? <div className="panelMeta">Ayar endpointi hazır olmadan taşımacılık firması düzenlemesi kapalı.</div> : filteredRooms.length ? filteredRooms.map((room) => (
                       <button key={room.id} className="btn sm" style={{ width: "100%", justifyContent: "space-between", marginBottom: 6 }} onClick={() => applyRoom(room)} disabled={!settingsWritable}>
                         <span>{room.name}</span>
                         <span>#{room.id}</span>
                       </button>
-                    )) : <div className="panelMeta">Eşleşen oda bulunamadı.</div>}
+                    )) : <div className="panelMeta">Eşleşen taşımacılık firması bulunamadı.</div>}
                   </div>
-                  <InputRow label="Seçili oda">
-                    <input value={roomForm.roomId} readOnly placeholder="Önce oda seç" />
+                  <InputRow label="Seçili taşımacılık firması">
+                    <input value={roomForm.roomId} readOnly placeholder="Önce taşımacılık firması seç" />
                   </InputRow>
-                  <InputRow label="Payment mode">
+                  <InputRow label="Ödeme modu">
                     <select value={roomForm.paymentMode} onChange={(e) => setRoomForm((prev) => ({ ...prev, paymentMode: e.target.value }))}>
                       {(settings?.paymentModes || ["OFF", "OPTIONAL", "REQUIRED"]).map((mode) => (
                         <option key={mode} value={mode}>{mode}</option>
                       ))}
                     </select>
                   </InputRow>
-                  <InputRow label="Oda komisyonu (bps)">
-                    <input type="number" min="0" max="10000" value={roomForm.commissionBps} onChange={(e) => setRoomForm((prev) => ({ ...prev, commissionBps: e.target.value }))} />
+                  <InputRow label="Taşımacılık Firması komisyonu (yüzde)">
+                    <input type="number" min="0" max="100" step="0.01" value={percentInputFromBps(roomForm.commissionBps)} onChange={(e) => setRoomForm((prev) => ({ ...prev, commissionBps: bpsFromPercentInput(e.target.value) }))} />
                   </InputRow>
                   <InputRow label="Not">
                     <textarea rows="3" value={roomForm.note} onChange={(e) => setRoomForm((prev) => ({ ...prev, note: e.target.value }))} />
                   </InputRow>
                   <button className="btn" onClick={saveRoomOverride} disabled={busyKey === "room" || !roomForm.roomId || !settingsWritable}>
-                    {busyKey === "room" ? "Kaydediliyor..." : "Oda override kaydet"}
+                    {busyKey === "room" ? "Kaydediliyor..." : "Taşımacılık firması düzenlemesini kaydet"}
                   </button>
                 </div>
               </Card>
             </div>
             <div style={{ marginTop: 14 }}>
-              <Card title={`Aktif oda override listesi (${settings?.roomOverrideCount || 0})`}>
+              <Card title={`Aktif taşımacılık firması düzenlemeleri (${settings?.roomOverrideCount || 0})`}>
                 {roomOverrides.length ? (
                   <div style={{ display: "grid", gap: 8 }}>
                     {roomOverrides.map((item) => (
                       <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                          <div style={{ fontWeight: 700 }}>{item.roomName || `Oda #${item.roomId}`}</div>
+                          <div style={{ fontWeight: 700 }}>{item.roomName || `Taşımacılık Firması #${item.roomId}`}</div>
                           <button className="btn sm" disabled={busyKey === `disable:${item.roomId}` || !settingsWritable} onClick={() => disableRoomOverride(item.roomId)}>
                             {busyKey === `disable:${item.roomId}` ? "Kapatılıyor..." : "Override kapat"}
                           </button>
                         </div>
                         <div>{item.paymentMode} • {fmtBps(item.commissionBps)}</div>
-                        <div className="panelMeta">Room #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                        <div className="panelMeta">Taşımacılık Firması #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                         {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="panelMeta">Aktif oda override yok. Tüm yeni ticari kaynaklar global ayarı kullanır.</div>
+                  <div className="panelMeta">Aktif taşımacılık firması düzenlemesi yok. Tüm yeni ticari kaynaklar global ayarı kullanır.</div>
                 )}
               </Card>
             </div>
@@ -735,7 +748,7 @@ export default function CommercialCorePanel() {
               </Card>
               <Card title="OPTIONAL adaylar">
                 <div>{pilotStatus?.candidateCount || 0} kaynak</div>
-                <div className="panelMeta" style={{ marginTop: 6 }}>Global veya oda override OPTIONAL ise yeni ticari kaynak burada görünür.</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Global veya taşımacılık firması düzenlemesi isteğe bağlıysa yeni ticari kaynak burada görünür.</div>
               </Card>
             </div>
             <div style={{ marginTop: 14 }}>
@@ -753,7 +766,7 @@ export default function CommercialCorePanel() {
                             <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
                             <div>{isReady ? "READY" : settlementStatus}</div>
                           </div>
-                          <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                          <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                           <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                           <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -794,7 +807,7 @@ export default function CommercialCorePanel() {
               </Card>
               <Card title="REQUIRED adaylar">
                 <div>{requiredStatus?.candidateCount || 0} kaynak</div>
-                <div className="panelMeta" style={{ marginTop: 6 }}>Global veya oda override REQUIRED ise yeni ticari kaynak burada zorunlu rollout adayı olarak görünür.</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Global veya taşımacılık firması düzenlemesi zorunluysa yeni ticari kaynak burada zorunlu geçiş adayı olarak görünür.</div>
               </Card>
             </div>
             <div style={{ marginTop: 14 }}>
@@ -813,7 +826,7 @@ export default function CommercialCorePanel() {
                             <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
                             <div>{settlementStatus}</div>
                           </div>
-                          <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                          <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                           <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                           <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -835,7 +848,7 @@ export default function CommercialCorePanel() {
             </div>
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
               <div className="panelSectionTitle">M87 ödeme hesabı hazırlığı</div>
-              <div className="panelMeta">{accountStatus?.summary || "Şirket ve oda tarafındaki ödeme hesabı metadata/readiness durumu bu yüzeyde görünür. Bu faz gerçek charge/payout açmaz."}</div>
+              <div className="panelMeta">{accountStatus?.summary || "Hizmet alan firma ve taşımacılık firması tarafındaki ödeme hesabı hazırlık durumu bu yüzeyde görünür. Bu faz gerçek tahsilat veya ödeme başlatmaz."}</div>
               {accountEndpointStatus !== "ok" || accountCandidatesEndpointStatus !== "ok" ? (
                 <div className="panelMeta" style={{ color: "#ffb17b" }}>
                   {accountEndpointStatus === "forbidden"
@@ -849,7 +862,7 @@ export default function CommercialCorePanel() {
             <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Card title="Hesap hazırlık özeti">
                 <div>{accountStatus?.activeMilestone || "M87"}</div>
-                <div className="panelMeta" style={{ marginTop: 6 }}>Şirket hazır: {accountStatus?.companyReadyCount || 0}/{accountStatus?.companyCandidateCount || 0} • Oda hazır: {accountStatus?.roomReadyCount || 0}/{accountStatus?.roomCandidateCount || 0}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Hizmet Alan Firma hazır: {accountStatus?.companyReadyCount || 0}/{accountStatus?.companyCandidateCount || 0} • Taşımacılık Firması hazır: {accountStatus?.roomReadyCount || 0}/{accountStatus?.roomCandidateCount || 0}</div>
               </Card>
               <Card title="Eksik / hata">
                 <div>Eksik: {(accountStatus?.companyMissingCount || 0) + (accountStatus?.roomMissingCount || 0)}</div>
@@ -859,9 +872,9 @@ export default function CommercialCorePanel() {
             <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Card title="Ödeme hesabı metadata formu">
                 <div style={{ display: "grid", gap: 12 }}>
-                  <InputRow label="Sahip tipi" help="Company veya Room için owner id girilir.">
+                  <InputRow label="Sahip tipi" help="Hizmet Alan Firma veya Taşımacılık Firması için sahip numarası girilir.">
                     <select value={accountForm.ownerType} onChange={(e) => setAccountForm((prev) => ({ ...prev, ownerType: e.target.value }))}>
-                      {["COMPANY", "ROOM", "PLATFORM"].map((mode) => <option key={mode} value={mode}>{mode}</option>)}
+                      {["COMPANY", "ROOM", "PLATFORM"].map((mode) => <option key={mode} value={mode}>{mode === "COMPANY" ? "Hizmet Alan Firma" : mode === "ROOM" ? "Taşımacılık Firması" : "Platform"}</option>)}
                     </select>
                   </InputRow>
                   <InputRow label="Owner id" help="PLATFORM için boş bırakabilirsin.">
@@ -876,7 +889,7 @@ export default function CommercialCorePanel() {
                     </select>
                   </InputRow>
                   <InputRow label="Etiket">
-                    <input value={accountForm.label} onChange={(e) => setAccountForm((prev) => ({ ...prev, label: e.target.value }))} placeholder="ör: Şirket ana hesap" />
+                    <input value={accountForm.label} onChange={(e) => setAccountForm((prev) => ({ ...prev, label: e.target.value }))} placeholder="ör: Firma ana hesap" />
                   </InputRow>
                   <InputRow label="Maskeli IBAN">
                     <input value={accountForm.maskedIban} onChange={(e) => setAccountForm((prev) => ({ ...prev, maskedIban: e.target.value }))} placeholder="TR** **** **** 1234" />
@@ -959,9 +972,9 @@ export default function CommercialCorePanel() {
                           <div style={{ fontWeight: 700 }}>{item.entryKind} • {item.sourceKey}</div>
                           <div>{status}</div>
                         </div>
-                        <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                        <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                         <div className="panelMeta">Tutar: {item.amount || 0} {item.currencyCode || "TRY"} • Mode: {item.paymentModeSnapshot} • Plan: {item.settlementPlanStatus}</div>
-                        <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Şirket hesap: {item?.companyAccount?.status || "MISSING"} • Oda hesap: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "N/A"}</div>
+                        <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Hizmet Alan Firma hesabı: {item?.companyAccount?.status || "MISSING"} • Taşımacılık Firması hesabı: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "Yok"}</div>
                         <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                         {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1115,7 +1128,7 @@ export default function CommercialCorePanel() {
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
         <div className="panelSectionTitle">Super Admin ticari ayarlar</div>
         <div className="panelMeta">
-          {settings?.summary || "Global payment mode ve oda bazlı komisyon override ayarları dormant omurgaya yazılır."}
+          {settings?.summary || "Global ödeme modu ve taşımacılık firması bazlı komisyon düzenlemeleri hazırlık omurgasına yazılır."}
         </div>
         {paymentBackboneEndpointStatus !== "ok" || settingsEndpointStatus !== "ok" ? (
           <div className="panelMeta" style={{ color: "#ffb17b" }}>
@@ -1133,20 +1146,21 @@ export default function CommercialCorePanel() {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Global ayar">
           <div style={{ display: "grid", gap: 12 }}>
-            <InputRow label="Payment mode" help="Tüm sistem için varsayılan mod.">
+            <InputRow label="Ödeme modu" help="Tüm sistem için varsayılan mod.">
               <select value={globalForm.paymentMode} onChange={(e) => setGlobalForm((prev) => ({ ...prev, paymentMode: e.target.value }))}>
                 {(settings?.paymentModes || ["OFF", "OPTIONAL", "REQUIRED"]).map((mode) => (
                   <option key={mode} value={mode}>{mode}</option>
                 ))}
               </select>
             </InputRow>
-            <InputRow label="Global komisyon (bps)" help="Örnek: 250 = %2.50">
+            <InputRow label="Global komisyon (%)" help="Örnek: %2,50">
               <input
                 type="number"
                 min="0"
-                max="10000"
-                value={globalForm.commissionBps}
-                onChange={(e) => setGlobalForm((prev) => ({ ...prev, commissionBps: e.target.value }))}
+                max="100"
+                step="0.01"
+                value={percentInputFromBps(globalForm.commissionBps)}
+                onChange={(e) => setGlobalForm((prev) => ({ ...prev, commissionBps: bpsFromPercentInput(e.target.value) }))}
               />
             </InputRow>
             <InputRow label="Not" help="İç not. Ticari snapshot içine doğrudan yazılmaz.">
@@ -1159,13 +1173,13 @@ export default function CommercialCorePanel() {
           </div>
         </Card>
 
-        <Card title="Oda bazlı override">
+        <Card title="Taşımacılık Firması bazlı düzenleme">
           <div style={{ display: "grid", gap: 12 }}>
-            <InputRow label="Oda ara" help="Önce odayı seç, sonra override kaydet.">
-              <input value={roomQuery} onChange={(e) => setRoomQuery(e.target.value)} placeholder="Oda adı yaz" disabled={!settingsWritable} />
+            <InputRow label="Taşımacılık Firması ara" help="Önce taşımacılık firmasını seç, sonra düzenlemeyi kaydet.">
+              <input value={roomQuery} onChange={(e) => setRoomQuery(e.target.value)} placeholder="Taşımacılık firması adı yaz" disabled={!settingsWritable} />
             </InputRow>
               <div style={{ maxHeight: 180, overflow: "auto", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 8 }}>
-              {!settingsWritable ? <div className="panelMeta">Ayar endpointi hazır olmadan oda override seçimi kapalı.</div> : filteredRooms.length ? filteredRooms.map((room) => (
+              {!settingsWritable ? <div className="panelMeta">Ayar endpointi hazır olmadan taşımacılık firması düzenlemesi kapalı.</div> : filteredRooms.length ? filteredRooms.map((room) => (
                 <button
                   key={room.id}
                   className="btn sm"
@@ -1176,10 +1190,10 @@ export default function CommercialCorePanel() {
                   <span>{room.name}</span>
                   <span>#{room.id}</span>
                 </button>
-              )) : <div className="panelMeta">Eşleşen oda bulunamadı.</div>}
+              )) : <div className="panelMeta">Eşleşen taşımacılık firması bulunamadı.</div>}
             </div>
-            <InputRow label="Seçili oda">
-              <input value={roomForm.roomId} readOnly placeholder="Önce oda seç" />
+            <InputRow label="Seçili taşımacılık firması">
+              <input value={roomForm.roomId} readOnly placeholder="Önce taşımacılık firması seç" />
             </InputRow>
             <InputRow label="Payment mode">
               <select value={roomForm.paymentMode} onChange={(e) => setRoomForm((prev) => ({ ...prev, paymentMode: e.target.value }))}>
@@ -1188,45 +1202,46 @@ export default function CommercialCorePanel() {
                 ))}
               </select>
             </InputRow>
-            <InputRow label="Oda komisyonu (bps)">
+            <InputRow label="Taşımacılık Firması komisyonu (yüzde)">
               <input
                 type="number"
                 min="0"
-                max="10000"
-                value={roomForm.commissionBps}
-                onChange={(e) => setRoomForm((prev) => ({ ...prev, commissionBps: e.target.value }))}
+                max="100"
+                step="0.01"
+                value={percentInputFromBps(roomForm.commissionBps)}
+                onChange={(e) => setRoomForm((prev) => ({ ...prev, commissionBps: bpsFromPercentInput(e.target.value) }))}
               />
             </InputRow>
             <InputRow label="Not">
               <textarea rows="3" value={roomForm.note} onChange={(e) => setRoomForm((prev) => ({ ...prev, note: e.target.value }))} />
             </InputRow>
             <button className="btn" onClick={saveRoomOverride} disabled={busyKey === "room" || !roomForm.roomId || !settingsWritable}>
-              {busyKey === "room" ? "Kaydediliyor..." : "Oda override kaydet"}
+              {busyKey === "room" ? "Kaydediliyor..." : "Taşımacılık firması düzenlemesini kaydet"}
             </button>
           </div>
         </Card>
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <Card title={`Aktif oda override listesi (${settings?.roomOverrideCount || 0})`}>
+        <Card title={`Aktif taşımacılık firması düzenlemeleri (${settings?.roomOverrideCount || 0})`}>
           {roomOverrides.length ? (
             <div style={{ display: "grid", gap: 8 }}>
               {roomOverrides.map((item) => (
                 <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                    <div style={{ fontWeight: 700 }}>{item.roomName || `Oda #${item.roomId}`}</div>
+                    <div style={{ fontWeight: 700 }}>{item.roomName || `Taşımacılık Firması #${item.roomId}`}</div>
                     <button className="btn sm" disabled={busyKey === `disable:${item.roomId}` || !settingsWritable} onClick={() => disableRoomOverride(item.roomId)}>
                       {busyKey === `disable:${item.roomId}` ? "Kapatılıyor..." : "Override kapat"}
                     </button>
                   </div>
                   <div>{item.paymentMode} • {fmtBps(item.commissionBps)}</div>
-                  <div className="panelMeta">Room #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                  <div className="panelMeta">Taşımacılık Firması #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                   {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="panelMeta">Aktif oda override yok. Tüm yeni ticari kaynaklar global ayarı kullanır.</div>
+            <div className="panelMeta">Aktif taşımacılık firması düzenlemesi yok. Tüm yeni ticari kaynaklar global ayarı kullanır.</div>
           )}
         </Card>
       </div>
@@ -1257,7 +1272,7 @@ export default function CommercialCorePanel() {
         <Card title="OPTIONAL adaylar">
           <div>{pilotStatus?.candidateCount || 0} kaynak</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Global veya oda override OPTIONAL ise yeni ticari kaynak burada görünür.
+            Global veya taşımacılık firması düzenlemesi isteğe bağlıysa yeni ticari kaynak burada görünür.
           </div>
         </Card>
       </div>
@@ -1277,7 +1292,7 @@ export default function CommercialCorePanel() {
                       <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
                       <div>{isReady ? "READY" : settlementStatus}</div>
                     </div>
-                    <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                    <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                     <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                     <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1324,7 +1339,7 @@ export default function CommercialCorePanel() {
         <Card title="REQUIRED adaylar">
           <div>{requiredStatus?.candidateCount || 0} kaynak</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Global veya oda override REQUIRED ise yeni ticari kaynak burada zorunlu rollout adayı olarak görünür.
+            Global veya taşımacılık firması düzenlemesi zorunluysa yeni ticari kaynak burada zorunlu geçiş adayı olarak görünür.
           </div>
         </Card>
       </div>
@@ -1345,7 +1360,7 @@ export default function CommercialCorePanel() {
                       <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
                       <div>{settlementStatus}</div>
                     </div>
-                    <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                    <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                     <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                     <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1368,7 +1383,7 @@ export default function CommercialCorePanel() {
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
         <div className="panelSectionTitle">M87 ödeme hesabı hazırlığı</div>
         <div className="panelMeta">
-          {accountStatus?.summary || "Şirket ve oda tarafındaki ödeme hesabı metadata/readiness durumu bu yüzeyde görünür. Bu faz gerçek charge/payout açmaz."}
+          {accountStatus?.summary || "Hizmet alan firma ve taşımacılık firması tarafındaki ödeme hesabı hazırlık durumu bu yüzeyde görünür. Bu faz gerçek tahsilat veya ödeme başlatmaz."}
         </div>
         {accountEndpointStatus !== "ok" || accountCandidatesEndpointStatus !== "ok" ? (
           <div className="panelMeta" style={{ color: "#ffb17b" }}>
@@ -1385,7 +1400,7 @@ export default function CommercialCorePanel() {
         <Card title="Hesap hazırlık özeti">
           <div>{accountStatus?.activeMilestone || "M87"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Şirket hazır: {accountStatus?.companyReadyCount || 0}/{accountStatus?.companyCandidateCount || 0} • Oda hazır: {accountStatus?.roomReadyCount || 0}/{accountStatus?.roomCandidateCount || 0}
+            Hizmet Alan Firma hazır: {accountStatus?.companyReadyCount || 0}/{accountStatus?.companyCandidateCount || 0} • Taşımacılık Firması hazır: {accountStatus?.roomReadyCount || 0}/{accountStatus?.roomCandidateCount || 0}
           </div>
         </Card>
         <Card title="Eksik / hata">
@@ -1399,9 +1414,9 @@ export default function CommercialCorePanel() {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Ödeme hesabı metadata formu">
           <div style={{ display: "grid", gap: 12 }}>
-            <InputRow label="Sahip tipi" help="Company veya Room için owner id girilir.">
+          <InputRow label="Sahip tipi" help="Hizmet Alan Firma veya Taşımacılık Firması için sahip numarası girilir.">
               <select value={accountForm.ownerType} onChange={(e) => setAccountForm((prev) => ({ ...prev, ownerType: e.target.value }))}>
-                {["COMPANY", "ROOM", "PLATFORM"].map((mode) => <option key={mode} value={mode}>{mode}</option>)}
+                {["COMPANY", "ROOM", "PLATFORM"].map((mode) => <option key={mode} value={mode}>{mode === "COMPANY" ? "Hizmet Alan Firma" : mode === "ROOM" ? "Taşımacılık Firması" : "Platform"}</option>)}
               </select>
             </InputRow>
             <InputRow label="Owner id" help="PLATFORM için boş bırakabilirsin.">
@@ -1416,7 +1431,7 @@ export default function CommercialCorePanel() {
               </select>
             </InputRow>
             <InputRow label="Etiket">
-              <input value={accountForm.label} onChange={(e) => setAccountForm((prev) => ({ ...prev, label: e.target.value }))} placeholder="ör: Şirket ana hesap" />
+              <input value={accountForm.label} onChange={(e) => setAccountForm((prev) => ({ ...prev, label: e.target.value }))} placeholder="ör: Firma ana hesap" />
             </InputRow>
             <InputRow label="Maskeli IBAN">
               <input value={accountForm.maskedIban} onChange={(e) => setAccountForm((prev) => ({ ...prev, maskedIban: e.target.value }))} placeholder="TR** **** **** 1234" />
@@ -1506,9 +1521,9 @@ export default function CommercialCorePanel() {
                       <div style={{ fontWeight: 700 }}>{item.entryKind} • {item.sourceKey}</div>
                       <div>{status}</div>
                     </div>
-                    <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                    <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                     <div className="panelMeta">Tutar: {item.amount || 0} {item.currencyCode || "TRY"} • Mode: {item.paymentModeSnapshot} • Plan: {item.settlementPlanStatus}</div>
-                    <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Şirket hesap: {item?.companyAccount?.status || "MISSING"} • Oda hesap: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "N/A"}</div>
+                    <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Hizmet Alan Firma hesabı: {item?.companyAccount?.status || "MISSING"} • Taşımacılık Firması hesabı: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "Yok"}</div>
                     <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                     {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1581,7 +1596,7 @@ export default function CommercialCorePanel() {
                       <div style={{ fontWeight: 700 }}>{item.entryKind} • {item.sourceKey}</div>
                       <div>{state}</div>
                     </div>
-                    <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                    <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                     <div className="panelMeta">Beklenen: {item.reconciliationExpectedAmount ?? item.amount ?? 0} • Gelen: {item.reconciliationReceivedAmount ?? item.amount ?? 0} • Delta: {item.reconciliationDeltaAmount ?? 0}</div>
                     <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Harici ref: {item.reconciliationExternalRef || "-"} • Son güncelleme: {fmtDateTime(item.reconciliationLastUpdatedAt)}</div>
                     <div className="panelMeta">{item.missingProviderRef ? "Eksik provider ref var. " : ""}{item.overduePlanned ? "Plan vadesi geçti. " : ""}{item.reconciliationNote ? `Not: ${item.reconciliationNote}` : "Mutabakat notu yok."}</div>
@@ -1633,4 +1648,3 @@ export default function CommercialCorePanel() {
     </div>
   );
 }
-

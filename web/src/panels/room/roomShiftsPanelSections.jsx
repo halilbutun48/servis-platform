@@ -25,14 +25,14 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
   return (
     <div className="card roomShiftsSectionCard">
       {showTitle ? <h3>Bekleyen Talepler</h3> : null}
-      {showTitle ? <div className="muted roomShiftsSectionSubtitle">Firma talebi, Room onayı ve karar bekleyen vardiyalar.</div> : null}
+      {showTitle ? <div className="muted roomShiftsSectionSubtitle">Hizmet Alan Firma talebi, Taşımacılık Firması onayı ve karar bekleyen vardiyalar.</div> : null}
       <div className="toolbarLeft" style={{ marginBottom: 10 }}>
         <select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}>
           <option value="OPEN">Açık (DRAFT + REQUESTED)</option>
           <option value="REQUESTED">Bekliyor</option>
           <option value="DRAFT">Taslak</option>
         </select>
-        <input value={pendingQ} onChange={(e) => setPendingQ(e.target.value)} placeholder="Ara (id / şirket / plaka / sürücü / not)" style={{ width: "min(100%, 280px)" }} />
+        <input value={pendingQ} onChange={(e) => setPendingQ(e.target.value)} placeholder="Ara (id / hizmet alan firma / plaka / sürücü / not)" style={{ width: "min(100%, 280px)" }} />
         <button type="button" className="btn sm" onClick={() => { setPendingQ(""); setPendingStatus("OPEN"); }}>Temizle</button>
       </div>
       {pendingFiltered.length ? (
@@ -42,7 +42,7 @@ export function RoomPendingSection({ showTitle = true, pendingStatus, setPending
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Şirket</th>
+                <th>Hizmet Alan Firma</th>
                 <th>Başlangıç</th>
                 <th>Bitiş</th>
                 <th>Harita</th>
@@ -145,7 +145,7 @@ export function RoomDispatchPoolSummary({
   return (
     <div className="card roomShiftsDispatchPoolCard" style={{ padding: 10 }}>
       <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-        <div className="muted"><b>Room havuz özeti</b></div>
+            <div className="muted"><b>Taşımacılık Firması havuz özeti</b></div>
         <button
           type="button"
           className="btn sm"
@@ -203,7 +203,7 @@ export function RoomDispatchPoolSummary({
             </div>
           ) : (
             <div className="muted">
-              Öneri üretilemedi. Room havuzunda bu zaman için uygun araç/şoför çifti bulunamadı.
+              Öneri üretilemedi. Taşımacılık Firması havuzunda bu zaman için uygun araç/şoför çifti bulunamadı.
             </div>
           )}
 
@@ -259,7 +259,7 @@ export function RoomDispatchPoolSummary({
           </div>
         </div>
       ) : state?.status === "loading" ? (
-        <div className="muted" style={{ marginTop: 8 }}>Room havuz özeti hesaplanıyor…</div>
+        <div className="muted" style={{ marginTop: 8 }}>Taşımacılık Firması havuz özeti hesaplanıyor…</div>
       ) : (
         <div className="muted" style={{ marginTop: 8 }}>
           Çoklu araç/şoför havuzunu görmek için yükle.
@@ -278,7 +278,7 @@ export function RoomFinalListSection({
   listFiltered,
   items,
   emptyText = "Kayıt yok.",
-  searchPlaceholder = "Ara (id / şirket / plaka / sürücü / not)",
+          searchPlaceholder = "Ara (id / hizmet alan firma / plaka / sürücü / not)",
   ...props
 }) {
   const splitEligibleShift = Number(copilotShift?.splitRootId || 0) > 0
@@ -328,7 +328,7 @@ export function RoomFinalListSection({
               <tr>
                 <th>ID</th>
                 <th>Durum</th>
-                <th>Şirket</th>
+                <th>Hizmet Alan Firma</th>
                 <th>Teklifler</th>
                 <th>Araç</th>
                 <th>Sürücü</th>

@@ -249,26 +249,26 @@ export function buildCopilotEBlockRuntimeAnswerReply({ questionType, message, sc
   if (!topicMeta) return '';
   const screenLabel = firstNonEmpty(prettyScreenLabel(screenDefinition?.label), prettyScreenLabel(sourceScreenDefinition?.label), 'bu ekran');
   const why = firstNonEmpty(topicMeta.why, 'Bu isteği güvenli sınırda okudum.');
-  const advice = firstNonEmpty(topicMeta.advice, 'İnsan onayını ve eksik veriyi kontrol et.');
+  const advice = firstNonEmpty(topicMeta.advice, 'Kullanıcı onayını ve eksik veriyi kontrol et.');
   const screenLead = `Şu an ${screenLabel} ekranındasın.`;
 
   switch (topicId) {
     case 'EXCEL_ROUTE_PREVIEW':
-      return `Şimdi: Doğrudan rota oluşturamam. ${screenLead} Excel’den satırları yorumlayabilirim ama otomatik import, veri yazma, rota oluşturma ve dış rota çağrısı başlatmam. Yapabileceğim güvenli şeyler: kolonları yorumlamak, eksik adresleri bulmak, adres güvenini açıklamak, hazırlık durumunu anlatmak ve insan onayı checklist’i hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Excel satırlarını, eksik adresleri ve insan onayını kontrol et.`;
+      return `Şimdi: Doğrudan rota oluşturamam. ${screenLead} Excel’den satırları yorumlayabilirim ama otomatik import, veri yazma, rota oluşturma ve dış rota çağrısı başlatmam. Yapabileceğim güvenli şeyler: kolonları yorumlamak, eksik adresleri bulmak, adres güvenini açıklamak, hazırlık durumunu anlatmak ve kullanıcı onayı kontrol listesi hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Excel satırlarını, eksik adresleri ve kullanıcı onayını kontrol et.`;
     case 'ADDRESS_GEOCODE_PREVIEW':
       return `Şimdi: Doğrudan adres düzeltmesi yapamam. ${screenLead} Adresleri yorumlayabilirim ama otomatik adres yazma ve sistem güncellemesi başlatmam. Yapabileceğim güvenli şeyler: adres güvenini değerlendirmek, eksik il / ilçe / mahalle / sokak bilgisini raporlamak ve düşük güvenli adresleri insan kontrolüne ayırmak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik adres alanlarını ve insan kontrolünü sırala.`;
     case 'OSRM_ROUTE_DRAFT_PREVIEW':
-      return `Şimdi: Mesafe ve süre önizlemesini çıkaramam. ${screenLead} Rota taslağını yorumlayabilirim ama otomatik rota hesaplama ve uygulama başlatmam. Yapabileceğim güvenli şeyler: adres ve durak hazırlığını kontrol etmek, insan onayı gereksinimini sıralamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önce adres ve durak listesini kontrol et.`;
+      return `Şimdi: Mesafe ve süre önizlemesini çıkaramam. ${screenLead} Rota taslağını yorumlayabilirim ama otomatik rota hesaplama ve uygulama başlatmam. Yapabileceğim güvenli şeyler: adres ve durak hazırlığını kontrol etmek, kullanıcı onayı gereksinimini sıralamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önce adres ve durak listesini kontrol et.`;
     case 'ROUTE_REVIEW_HUMAN_APPROVAL':
-      return `Şimdi: Bu rota için gerçek uygulama başlatamam. ${screenLead} Önce insan onayı gerekir; ben yalnızca önizleme ve risk özetini okuyabilirim. Yapabileceğim güvenli şeyler: önizleme, risk özeti, geri alma notu ve onay durumunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önizleme, risk özeti ve onay durumunu kontrol et.`;
+      return `Şimdi: Bu rota için gerçek uygulama başlatamam. ${screenLead} Onayınız gerekli; ben yalnızca önizleme ve risk özetini okuyabilirim. Yapabileceğim güvenli şeyler: önizleme, risk özeti, geri alma notu ve onay durumunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önizleme, risk özeti ve onay durumunu kontrol et.`;
     case 'ROUTE_APPLY_BLOCKED':
-      return `Şimdi: Rotayı uygulayamam. ${screenLead} Uygulama, dağıtım ve günlük atamaya işleme kapalı. Yapabileceğim güvenli şeyler: önizleme, risk özeti, insan onayı ve geri alma notunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Uygulama yerine önizleme ve onay durumunu kontrol et.`;
+      return `Şimdi: Rotayı uygulayamam. ${screenLead} Uygulama, dağıtım ve günlük atamaya işleme kapalı. Yapabileceğim güvenli şeyler: önizleme, risk özeti, kullanıcı onayı ve geri alma notunu kontrol etmek. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Uygulama yerine önizleme ve onay durumunu kontrol et.`;
     case 'IMPORT_WRITE_BLOCKED':
-      return `Şimdi: Bu Excel’i sisteme kaydedemem. ${screenLead} Toplu yazma, DB write ve personel oluşturma kapalı. Yapabileceğim güvenli şeyler: eksik kolonları bulmak, KVKK sınırını kontrol etmek ve insan onayı checklist’i hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik kolonları ve insan onayını kontrol et.`;
+      return `Şimdi: Bu Excel’i sisteme kaydedemem. ${screenLead} Toplu yazma, DB write ve personel oluşturma kapalı. Yapabileceğim güvenli şeyler: eksik kolonları bulmak, KVKK sınırını kontrol etmek ve kullanıcı onayı kontrol listesi hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik kolonları ve kullanıcı onayını kontrol et.`;
     case 'FAKE_SUCCESS_REQUEST_BLOCKED':
       return `Şimdi: Yapmış gibi söyleyemem. ${screenLead} Sahte başarı üretmem; gerçek yapmadan yalnızca gerçekten doğrulanmış sinyali paylaşırım. Yapabileceğim güvenli şeyler: gerçekten yapılanı, eksik kalanları ve sonraki doğru adımı açıkça ayırmak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Gerçek sinyali ve eksik kalan adımı açıkça ayır.`;
     default:
-      return `Şimdi: ${screenLead} ${why} Öneri: ${advice} Sıradaki doğru işlem: İnsan onayını ve eksik veriyi kontrol et.`;
+      return `Şimdi: ${screenLead} ${why} Öneri: ${advice} Sıradaki doğru işlem: Kullanıcı onayını ve eksik veriyi kontrol et.`;
   }
 }
 
@@ -284,8 +284,8 @@ export function buildCopilotEBlockRuntimeAnswerGuide({ topicMeta, guideLevel, sc
     jobPurpose: why || advice,
     plainSummary: why || advice || `${screenLabel} için güvenli hazırlık rehberi.`,
     summary: why || advice || `${screenLabel} için güvenli hazırlık rehberi.`,
-    whatToDoNow: advice || 'İnsan onayını ve eksik veriyi kontrol et.',
-    whatToDoNext: advice || 'İnsan onayını ve eksik veriyi kontrol et.',
+    whatToDoNow: advice || 'Kullanıcı onayını ve eksik veriyi kontrol et.',
+    whatToDoNext: advice || 'Kullanıcı onayını ve eksik veriyi kontrol et.',
     doNotDo: blocked.length ? blocked.join(' • ') : neverAutomate.join(' • '),
     stepByStep: [why, advice].filter(Boolean),
     commonMistakes: neverAutomate.length ? [...neverAutomate] : [],

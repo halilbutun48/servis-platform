@@ -129,7 +129,7 @@ const schemaText = read("backend/prisma/schema.prisma");
 
 textIncludes(guidedText, "const offerOsrmGate = useMemo(", "offerOsrmGate memo present");
 if (!includesText(guidedText, "Sadece hub’lı")) ok("hub-only filter removed"); else fail("hub-only filter removed");
-if (includesAnyText(guidedText, ["Şirket konumu koordinat olarak hazır"]) || includesAnyText(guidedCardsText, ["Şirket konumu koordinat olarak hazır"])) ok("company wording localized"); else fail("company wording localized");
+if (includesAnyText(guidedText, ["Firma konumu koordinat olarak hazır"]) || includesAnyText(guidedCardsText, ["Firma konumu koordinat olarak hazır"])) ok("company wording localized"); else fail("company wording localized");
 if (includesAnyText(guidedText, ["Toplanma Konumu eksik • teklif engeli değil"]) || includesAnyText(guidedCardsText, ["Toplanma Konumu eksik • teklif engeli değil"])) ok("hub warning non-blocking"); else fail("hub warning non-blocking");
 if (includesAnyText(guidedText, ["Toplam taslak: <b>{offerOsrmGate.total}</b>"]) || includesAnyText(guidedCardsText, ["Toplam taslak: <b>{offerOsrmGate.total}</b>"])) ok("osrm prerequisite summary present"); else fail("osrm prerequisite summary present");
 textIncludes(guidedText, "(!organization && offerOsrmGate.blocking)", "send gate uses offerOsrmGate");

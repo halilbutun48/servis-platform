@@ -247,9 +247,13 @@ async function loadSafeDriveSummaryContract() {
   const safeDriveSource = read("web/src/utils/safeDriveSummary.js").replace(
     'from "./etaSanity";',
     'from "./etaSanity.mjs";',
+  ).replace(
+    'from "./gpsSource";',
+    'from "./gpsSource.mjs";',
   );
   fs.writeFileSync(path.join(tempDir, "safeDriveSummary.mjs"), safeDriveSource, "utf8");
   fs.writeFileSync(path.join(tempDir, "etaSanity.mjs"), read("web/src/utils/etaSanity.js"), "utf8");
+  fs.writeFileSync(path.join(tempDir, "gpsSource.mjs"), read("web/src/utils/gpsSource.js"), "utf8");
   return import(pathToFileURL(path.join(tempDir, "safeDriveSummary.mjs")).href);
 }
 
@@ -382,7 +386,7 @@ async function main() {
   must(helper, "Rota ilerleme sinyali", "safe drive helper keeps route wording");
   must(helper, "Kanıt / check-in durumu", "safe drive helper keeps proof wording");
   must(helper, "Operasyon kontrol önerisi", "safe drive helper keeps control recommendation wording");
-  must(helper, "İnsan onayı gerekir", "safe drive helper keeps human approval wording");
+  must(helper, "Kullanıcı onayı gerekir", "safe drive helper keeps human approval wording");
   must(helper, "normalizeGpsFreshness", "safe drive helper reuses GPS freshness helper");
   must(helper, "getGpsReliabilityLabel", "safe drive helper reuses GPS reliability helper");
   must(helper, "getGpsAgeText", "safe drive helper reuses GPS age helper");
@@ -391,7 +395,7 @@ async function main() {
   must(card, "Güvenli sürüş özeti", "safe drive card keeps summary wording");
   must(card, "Risk sinyali", "safe drive card keeps risk wording");
   must(card, "Kontrol edilmeli", "safe drive card keeps control wording");
-  must(card, "İnsan onayı gerekir", "safe drive card keeps human approval wording");
+  must(card, "Kullanıcı onayı gerekir", "safe drive card keeps human approval wording");
   must(card, "Kanıt / check-in durumu", "safe drive card keeps proof wording");
 
   must(driverRoute, "SafeDriveSummaryCard", "driver route panel wires safe drive card");
@@ -489,7 +493,7 @@ async function main() {
         assertEqual(summary.route?.status, "READY", "healthy-ready route status");
         assertEqual(summary.proof?.status, "READY", "healthy-ready proof status");
         assertEqual(summary.provider?.status, "READY", "healthy-ready provider status");
-        assertEqual(summary.provider?.value, "Canli", "healthy-ready provider value");
+        assertEqual(summary.provider?.value, "Canlı", "healthy-ready provider value");
         assertEqual(summary.signals.length, 6, "healthy-ready signal count");
       },
     },
@@ -502,7 +506,7 @@ async function main() {
         assertEqual(summary.nextBestAction, "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma.", "healthy-boundary next best action");
         assertEqual(
           summary.boundaryNote,
-          "Readonly sınırı: sadece okur ve özetler; rota uygulanmaz, sürücü/araç ataması değiştirilmez, ödeme/hakediş başlatılmaz, otomatik yönlendirme verilmez.",
+          "Salt okunur sınır: sadece okur ve özetler; rota uygulanmaz, sürücü/araç ataması değiştirilmez, ödeme/hakediş başlatılmaz, otomatik yönlendirme verilmez.",
           "healthy-boundary readonly note",
         );
       },
@@ -519,7 +523,7 @@ async function main() {
         assertEqual(summary.requiresHumanApproval, true, "stale-gps human approval");
         assertEqual(summary.gps?.status, "REVIEW_NEEDED", "stale-gps gps status");
         assertEqual(summary.provider?.status, "READY", "stale-gps provider status");
-        assertEqual(summary.nextBestAction, "İnsan onayı gerekir: GPS güncel değil.", "stale-gps next best action");
+        assertEqual(summary.nextBestAction, "Onayınız gerekli: GPS güncel değil.", "stale-gps next best action");
       },
     },
     {
@@ -567,7 +571,7 @@ async function main() {
         assertEqual(summary.proof?.status, "REVIEW_NEEDED", "proof-missing proof status");
         assertEqual(summary.proof?.value, "Kontrol edilmeli", "proof-missing proof value");
         assertEqual(summary.summaryText, "Kontrol edilmeli: Kanıt kontrol edilmeli.", "proof-missing summary text");
-        assertEqual(summary.nextBestAction, "İnsan onayı gerekir: Kanıt kontrol edilmeli.", "proof-missing next best action");
+        assertEqual(summary.nextBestAction, "Onayınız gerekli: Kanıt kontrol edilmeli.", "proof-missing next best action");
       },
     },
     {
@@ -655,7 +659,7 @@ async function main() {
         assertEqual(summary.proof?.status, "REVIEW_NEEDED", "multiple-risk-signals proof status");
         assertEqual(summary.riskReasons.length, 3, "multiple-risk-signals risk reason count");
         assertEqual(summary.signals.length, 5, "multiple-risk-signals signal count");
-        assertEqual(summary.nextBestAction, "İnsan onayı gerekir: GPS çevrim dışı.", "multiple-risk-signals next best action");
+        assertEqual(summary.nextBestAction, "Onayınız gerekli: GPS çevrim dışı.", "multiple-risk-signals next best action");
       },
     },
     {

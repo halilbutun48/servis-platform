@@ -15,7 +15,10 @@ function hasCoord(lat, lng) {
 function buildSourceSummary({ shift, room, sourceDate, startHHMM, endHHMM, stopCount, peopleCount }) {
   const parts = [];
   parts.push(`Vardiya #${Number(shift?.id || 0) || "?"}`);
-  if (room?.name) parts.push(`Room ${room.name}`);
+  if (room?.name) {
+    const roomName = String(room.name).replace(/^(Room|Oda)\s+/i, "").trim();
+    parts.push(`Taşımacılık Firması ${roomName}`);
+  }
   parts.push(`${formatDateTR(shift?.startAt || sourceDate)} ${startHHMM} → ${endHHMM}`);
   if (stopCount > 0) parts.push(`${stopCount} durak`);
   if (peopleCount > 0) parts.push(`${peopleCount} personel`);

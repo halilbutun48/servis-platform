@@ -562,17 +562,17 @@ function main() {
       companyKind: 'ORGANIZATION',
       fixture: {
         path: '/organization/operations',
-        label: 'Kurum Operasyon',
-        menuPurpose: 'Kurum operasyon özeti',
+        label: 'Organizasyon Operasyon',
+        menuPurpose: 'Organizasyon operasyon özeti',
         firstStep: 'İlk kontrolü aç.',
         nextStep: 'Sıradaki adımı aç.',
-        selectedLabel: 'Kurum satırı',
-        selectedSummary: 'Kurum operasyon özeti',
+        selectedLabel: 'Organizasyon satırı',
+        selectedSummary: 'Organizasyon operasyon özeti',
       },
       helpMessage: 'İlk neye bakayım?',
-      helpAnchors: ['Kurum', 'bakayım', 'operasyon'],
+      helpAnchors: ['Organizasyon', 'bakayım', 'operasyon'],
       assistantQuestionType: 'NEXT_BEST_ACTION',
-      assistantAnchors: ['kurum', 'öncelik', 'adım'],
+      assistantAnchors: ['organizasyon', 'öncelik', 'adım'],
     },
   ];
 

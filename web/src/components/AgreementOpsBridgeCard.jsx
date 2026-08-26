@@ -58,7 +58,7 @@ export default function AgreementOpsBridgeCard({
     : (typeof bridge?.plan?.hubLat === "number" && typeof bridge?.plan?.hubLng === "number"
       ? `${bridge.plan.hubLat.toFixed(4)}, ${bridge.plan.hubLng.toFixed(4)}`
       : "-");
-  const contextText = room?.name || (room?.id ? `Oda ID ${room.id}` : agreementStatusText(agreement?.status));
+  const contextText = room?.name || (room?.id ? `Taşımacılık Firması no ${room.id}` : agreementStatusText(agreement?.status));
   const agreementStatus = agreementStatusText(agreement?.status);
   const routeStateLabel = hasLastShift ? "Operasyona ulaştı" : generatedCount > 0 ? "Taslak bekliyor" : "Sadece önizleme";
   const riskLabel = hasLastShift ? "Düşük" : "Bilgi eksik";

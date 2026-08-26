@@ -162,7 +162,7 @@ function RowCard({ row }) {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
         <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
           <div style={{ fontWeight: 900 }}>
-            {row?.roomName || "Oda"} {row?.roomId ? `(#${row.roomId})` : ""}
+            {row?.roomName || "Taşımacılık Firması"} {row?.roomId ? `(#${row.roomId})` : ""}
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <Pill label="Kalite" value={row?.qualityLabel || "-"} tone={rowTone} />
@@ -174,8 +174,8 @@ function RowCard({ row }) {
 
         <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
           <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <Pill label="Company" value={row?.amountCompany != null ? `${formatTRY(row.amountCompany)} ₺` : "-"} tone="neutral" />
-            <Pill label="Room" value={row?.amountRoom != null ? `${formatTRY(row.amountRoom)} ₺` : "-"} tone="neutral" />
+            <Pill label="Hizmet Alan Firma" value={row?.amountCompany != null ? `${formatTRY(row.amountCompany)} ₺` : "-"} tone="neutral" />
+            <Pill label="Taşımacılık Firması" value={row?.amountRoom != null ? `${formatTRY(row.amountRoom)} ₺` : "-"} tone="neutral" />
             <Pill label="Fiyat" value={row?.priceSignal?.value || "-"} tone={row?.priceSignal?.tone || "neutral"} title={row?.priceSignal?.reason || row?.priceSignal?.value || "-"} />
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -202,7 +202,7 @@ function RowCard({ row }) {
 
 export default function OfferQualityRankingCard({
   title = "Teklif kalite karşılaştırması",
-  subtitle = "Kalite, güven, telematics, evidence/check-in ve operasyon riski readonly okunur.",
+  subtitle = "Kalite, güven, telematik, kanıt/check-in ve operasyon riski salt okunur gösterilir.",
   offers = [],
   roomScores = {},
   me = null,
@@ -320,17 +320,17 @@ export default function OfferQualityRankingCard({
       </div>
 
       <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)", lineHeight: 1.5 }}>
-        <div className="muted">Kalite / güven / telematics / evidence-check-in / operasyon riski</div>
+        <div className="muted">Kalite / güven / telematik / kanıt-biniş doğrulaması / operasyon riski</div>
         <div style={{ fontWeight: 800, marginTop: 4 }}>{ranking.summaryText || "Teklif karşılaştırması hazır."}</div>
         <div className="muted" style={{ marginTop: 4 }}>
-          {ranking.summaryNote || "Readonly karşılaştırma satırı; auto-selection ve auto-accept kapalıdır."}
+          {ranking.summaryNote || "Salt okunur karşılaştırma satırı; otomatik seçim ve otomatik kabul kapalıdır."}
         </div>
       </div>
 
       <div style={{ display: "grid", gap: 10 }}>
         {hasRows ? topRows.map((row) => <RowCard key={row.id} row={row} />) : (
           <div className="muted" style={{ padding: 12, borderRadius: 12, border: "1px dashed rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.01)" }}>
-            Karşılaştırılacak teklif yok. Readonly kalite satırı boş görünüyor.
+            Karşılaştırılacak teklif yok. Salt okunur kalite satırı boş görünüyor.
           </div>
         )}
         {ranking.rows.length > topRows.length ? (
@@ -341,7 +341,7 @@ export default function OfferQualityRankingCard({
       </div>
 
       <div className="muted" style={{ lineHeight: 1.5 }}>
-        {ranking.humanApprovalRequired ? "İnsan onayı gerekir. " : ""}
+        {ranking.humanApprovalRequired ? "Kullanıcı onayı gerekir. " : ""}
         {ranking.autoSelectionBlocked ? "Otomatik tedarikçi sıralama kapalı. " : ""}
         {ranking.autoAcceptBlocked ? "Otomatik teklif kabulü kapalı. " : ""}
         Contract execute, payment/hakediş execute ve AI runtime action açılmaz.

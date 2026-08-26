@@ -21,7 +21,7 @@ export default function ParentActivationCard({ roleLive = null, selectedChildId 
       <Info label="Bağlantı" value={activation.inviteLabel} />
       <Info label="Kapanış" value={activation.closureLabel} />
       <Info label="Seçili öğrenci" value={activation.selectedChildName} />
-      <Info label="Okul / şirket" value={activation.selectedChildCompany} />
+      <Info label="Okul / firma" value={activation.selectedChildCompany} />
       <Text style={styles.muted}>{activation.summary}</Text>
       <Text style={styles.muted}>Canlı takip yetkisi rolüne göre açılır.</Text>
       <Text style={styles.muted}>Kullanıcı kodu ve PIN ile giriş yapılır.</Text>

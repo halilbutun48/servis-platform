@@ -311,7 +311,7 @@ export default function BoardingRouteImpactPreviewCard({
   const decisionOwnerLabelText = firstText(decisionOwnerLabel, request?.decisionOwnerLabel, boardingChangeDecisionOwnerLabel(request));
   const decisionOwnerNoteText = firstText(decisionOwnerNote, request?.decisionOwnerNote, boardingChangeDecisionOwnerNote(request));
   const previewPersonLabel = resolvePersonDisplayLabel(preview, "Kişi bilgisi eksik");
-  const safePreviewNote = String(preview?.previewOnlyNote || "Bu sadece önizlemedir. Rota/atama uygulanmadı. Readonly önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez; sadece etki analizi gösterilir.");
+  const safePreviewNote = String(preview?.previewOnlyNote || "Bu sadece önizlemedir. Rota/atama uygulanmadı. Salt okunur önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez; sadece etki analizi gösterilir.");
   const hasSelection = Boolean(selectionLabelText);
   const mapModel = buildMapModel(request, preview);
   const selectionTime = firstText(
@@ -352,7 +352,7 @@ export default function BoardingRouteImpactPreviewCard({
         </div>
         <div style={{ marginTop: 12, padding: 12, borderRadius: 10, border: "1px solid rgba(96, 165, 250, 0.22)", background: "rgba(255,255,255,0.03)" }}>
           <div style={{ fontWeight: 800 }}>Önizleme açılıyor…</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>Readonly sonuç hazırlanıyor. Rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez.</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Salt okunur sonuç hazırlanıyor. Rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez.</div>
         </div>
       </div>
     );
@@ -373,7 +373,7 @@ export default function BoardingRouteImpactPreviewCard({
           }}
           aria-live="polite"
         >
-          <span className="pill" data-status="INFO">Readonly önizleme</span>
+              <span className="pill" data-status="INFO">Salt okunur önizleme</span>
           <span>Bir satır seçince rota/durak etkisi burada görünür.</span>
         </div>
       );
@@ -508,7 +508,7 @@ export default function BoardingRouteImpactPreviewCard({
             {/* compact mini map height: 160 */}
             <ReadableMiniRouteMap
               title="Mini harita önizlemesi"
-              subtitle="Readonly önizleme — rota uygulanmaz"
+              subtitle="Salt okunur önizleme — rota uygulanmaz"
               linePoints={mapModel.linePoints}
               markers={mapModel.markers}
               legendItems={mapModel.legendItems}

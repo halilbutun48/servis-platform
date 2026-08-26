@@ -191,14 +191,14 @@ function main() {
   must(telematicsHubPanel, "KVKK / veri minimizasyonu", "telematics hub panel keeps KVKK wording");
   must(telematicsHubPanel, "raw payload masking", "telematics hub panel keeps payload masking wording");
   must(telematicsHubPanel, "Custom provider review", "telematics hub panel keeps review wording");
-  must(telematicsHubPanel, "Room self-service notu", "telematics hub panel keeps room self-service note");
+  must(telematicsHubPanel, "Taşımacılık Firması işlemleri notu", "telematics hub panel keeps room self-service note");
   must(telematicsHubPanel, "onboarding-review", "telematics hub panel links review queue");
   must(telematicsHubPanel, "Genel Bakış", "telematics hub panel keeps overview fallback wording");
-  must(telematicsHubPanel, "Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar", "telematics hub panel keeps room self-service boundary");
+  must(telematicsHubPanel, "Taşımacılık Firması kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar", "telematics hub panel keeps room self-service boundary");
 
   must(roomTelematics, "GPS Eşleştirme / Telematik Bağlantısı", "room telematics keeps matching title");
   must(roomTelematics, "Onaylı provider kataloğu", "room telematics keeps approved provider catalog wording");
-  must(roomTelematics, "Provider kataloğu ve güvenlik kuralları Super Admin tarafından yönetilir.", "room telematics keeps super admin boundary note");
+  must(roomTelematics, "Provider kataloğu ve güvenlik kuralları Süper Yönetici tarafından yönetilir.", "room telematics keeps super admin boundary note");
   must(roomTelematics, "Eşleştirme hazırlığı", "room telematics keeps preparation CTA");
   must(roomTelematics, "Test eşleştirme", "room telematics keeps test CTA");
   must(roomTelematics, "IMEI", "room telematics keeps imei field");
@@ -208,7 +208,7 @@ function main() {
   must(roomTelematics, "LIVE / STALE / OFFLINE", "room telematics keeps freshness status wording");
   must(roomTelematics, "Secret/token/API key görünmez.", "room telematics keeps secret boundary wording");
   must(roomTelematics, "RoomTelematicsReadinessCard", "room telematics keeps readiness card");
-  must(roomTelematics, "Room kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar", "room telematics keeps room self-service wording");
+  must(roomTelematics, "Taşımacılık Firması kendi GPS hesabını onaylı sağlayıcı kataloğu üzerinden bağlar", "room telematics keeps room self-service wording");
   must(roomTelematics, "Plaka", "room telematics keeps plate field");
   must(roomTelematics, "Provider", "room telematics keeps provider field");
 

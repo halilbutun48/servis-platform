@@ -2,21 +2,13 @@
 import { useMemo, useState } from "react";
 import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
-import { hubLabelForKind } from "../utils/labels";
+import { hubLabelForKind, roleLabelForUser } from "../utils/labels";
 import { getCopilotMenuEntry } from "../copilot/screenRegistry";
 import BrandMark from "../components/BrandMark";
 import { BRAND_NAME } from "../config/brand.js";
 
 function roleTitle(role, me) {
-  if (role === "SUPER_ADMIN") return "Süper Yönetici";
-  if (role === "ROOM") return "Operasyon Odası";
-  if (role === "DRIVER") return "Sürücü";
-  if (role === "PERSONEL") return "Personel";
-  if (role === "PARENT") return "Veli";
-  if (role === "COMPANY" && me?.companyKind === "SCHOOL") return "Okul";
-  if (role === "COMPANY" && me?.companyKind === "ORGANIZATION") return "Kurum";
-  if (role === "COMPANY") return "Şirket";
-  return role || "-";
+  return roleLabelForUser(me || role);
 }
 
 function Item({ label, path, active, badge, onSelect }) {
@@ -91,7 +83,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
       ? "Operasyon Paneli"
       : isSchool
         ? "Okul Operasyon Paneli"
-        : "Kurum Operasyon Paneli";
+        : "Organizasyon Operasyon Paneli";
     const companyPlanningHomeLabel = isSchool
       ? "Okul Merkezi"
       : isOrganization
@@ -101,7 +93,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
       ? "ÖĞRENCİ VE VELİ"
       : isOrganization
         ? "KATILIMCI VE KONUM"
-        : "PERSONEL";
+        : "Personel";
     const companyPeopleLinkLabel = isSchool ? "Öğrenci Link" : "Personel Link";
     const companyPeopleAccessLabel = isSchool ? "Veli Erişimi" : "Personel Erişimi";
     const companyPeopleGeoLabel = isSchool
@@ -144,7 +136,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
           { label: "Raporlar", path: "/room/reports" },
         ],
       });
-      advanced.push({ label: "Oda Konumu", path: "/room/hub" });
+      advanced.push({ label: "Taşımacılık Firması Konumu", path: "/room/hub" });
       advanced.push({ label: "Check-in", path: "/room/checkin" });
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Dışa Aktarımı", path: "/shared/logs" });
@@ -162,7 +154,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
         title: "PLANLAMA VE SÖZLEŞME",
         items: [
           { label: companyPlanningHomeLabel, path: base },
-          ...(isOrganization ? [{ label: "Kurum Planları", path: base + "/plans" }] : []),
+          ...(isOrganization ? [{ label: "Organizasyon Planları", path: base + "/plans" }] : []),
           { label: "Vardiyalar", path: base + "/shifts" },
           { label: "Sözleşmeler", path: base + "/agreements" },
         ],
@@ -228,8 +220,8 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
         title: "Temel Yönetim",
         items: [
           { label: "Genel Bakış", path: "/superadmin" },
-          { label: "Şirketler", path: "/superadmin/companies" },
-          { label: "Operasyon Odaları", path: "/superadmin/rooms" },
+          { label: "Firmalar", path: "/superadmin/companies" },
+          { label: "Taşımacılık Firmaları", path: "/superadmin/rooms" },
           { label: "Kullanıcılar", path: "/superadmin/users" },
           { label: "İller ve Bölgeler", path: "/superadmin/regions" },
         ],

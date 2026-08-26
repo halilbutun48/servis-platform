@@ -49,7 +49,7 @@ const AUDIENCE_CARDS = [
     ],
   },
   {
-    title: "Room / servis tedarikçisi",
+    title: "Taşımacılık Firması / servis tedarikçisi",
     bullets: [
       "Uygun işlere teklif verin.",
       "Kapasite, fiyat ve rota uygunluğunu yönetin.",
@@ -81,7 +81,7 @@ const TRUST_ITEMS = [
 const FAQ = [
   {
     q: "Lisans ücreti var mı?",
-    a: "Hayır. Public modelde lisans ücreti yok; mevcut sözleşmelerden pay alınmaz. Yeni/yenilenen SeferPakt kaynaklı işlerde yalnızca kaliteye bağlı readonly başarı payı önizlenebilir.",
+    a: "Hayır. Public modelde lisans ücreti yok; mevcut sözleşmelerden pay alınmaz. Yeni/yenilenen SeferPakt kaynaklı işlerde yalnızca kaliteye bağlı salt okunur başarı payı önizlenebilir.",
   },
   {
     q: "Mevcut sözleşmelerden pay alınıyor mu?",
@@ -89,7 +89,7 @@ const FAQ = [
   },
   {
     q: "SeferPakt başarı payı ne zaman doğar?",
-    a: "Yalnızca kaynak vardiya / market shift zinciri kanıtlı yeni veya yenilenen SeferPakt işlerinde, politika bazlı readonly önizleme olarak görünür.",
+    a: "Yalnızca kaynak vardiya / market zinciri kanıtlı yeni veya yenilenen SeferPakt işlerinde, politika bazlı salt okunur önizleme olarak görünür.",
   },
   {
     q: "Sefer Abi otomatik işlem yapar mı?",

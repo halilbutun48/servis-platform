@@ -118,11 +118,11 @@ function main() {
     "PICKUP_FROM_LOCATION",
     'requestKind === "DIFFERENT_STOP"',
     "Talep oluştur",
-    "Talep seçilince readonly önizleme burada görünür.",
+    "Talep seçilince salt okunur önizleme burada görünür.",
     "Durak seç",
     "Bu servis için koordinatlı durak bulunamadı; talep açıklama üzerinden iletilecek.",
     "request?.locationSummary",
-    "Readonly önizleme - talep oluşturulur, rota uygulanmaz.",
+    "Salt okunur önizleme - talep oluşturulur, rota uygulanmaz.",
     "Seçimi temizle",
     "Bu çocuk için şu an canlı araç görünmüyor. Talep oluşturma, planlı servis bilgisine göre yapılır.",
     "Seçili tarih için planlı servis bağlamı bulunamadı.",
@@ -169,14 +169,14 @@ function main() {
     "Başka durak",
     "Farklı konumdan alınmak istiyorum",
     "Sürücüde bekliyor",
-    "Firma/Okul/Kurum tarafında bekliyor",
+    "Firma/Okul/Organizasyon tarafında bekliyor",
     "Aynı rota üzerindeki talep sürücü tarafında karar bekliyor.",
     "Rota değişikliği içerdiği için hizmet alan taraf karar veriyor.",
   ], "boarding change ui");
 
   const previewCard = read("web/src/panels/shared/BoardingRouteImpactPreviewCard.jsx");
   assertContainsAll(previewCard, [
-    "Readonly önizleme — rota uygulanmaz",
+    "Salt okunur önizleme — rota uygulanmaz",
     "Mini harita önizlemesi",
     "Harita önizlemesi için durak koordinatı eksik.",
     "Bu değişiklik için rota etkisi metinsel olarak önizleniyor.",
@@ -368,11 +368,11 @@ function main() {
   ], "driver route decision owner surface");
   assertContainsAll(roomOps, [
     "decisionOwnerNote",
-    "Readonly önizleme",
+    "Salt okunur önizleme",
   ], "room operations readonly surface");
   assertContainsAll(roomHealth, [
     "decisionOwnerNote",
-    "Readonly önizleme",
+    "Salt okunur önizleme",
   ], "room operation-health readonly surface");
   assertNotContainsAny(roomOps, ["Kabul et", "Reddet"], "room operations no accept/reject");
   assertNotContainsAny(roomHealth, ["Kabul et", "Reddet"], "room operation-health no accept/reject");
@@ -436,7 +436,7 @@ function main() {
   assertContainsAll(sharedPathUi, [
     "TEMPORARY_BOARDING_NOTE",
     "Sürücüde bekliyor",
-    "Firma/Okul/Kurum tarafında bekliyor",
+    "Firma/Okul/Organizasyon tarafında bekliyor",
     "Aynı rota üzerindeki talep sürücü tarafında karar bekliyor.",
   ], "shared boarding change ui states");
 

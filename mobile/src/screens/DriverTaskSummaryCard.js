@@ -112,7 +112,7 @@ export default function DriverTaskSummaryCard({
           ) : null}
         </>
       ) : (
-        <EmptyState title="Görev görünmüyor" text="Bugün ekranında görev görünmüyorsa oda veya şirket atamasını kontrol et." />
+        <EmptyState title="Görev görünmüyor" text="Bugün ekranında görev görünmüyorsa taşımacılık firması veya hizmet alan firma atamasını kontrol et." />
       )}
     </Card>
   );

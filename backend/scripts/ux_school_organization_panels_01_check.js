@@ -108,12 +108,12 @@ function main() {
   mustNotContains(schoolOps, "migration", "School operations avoids migration");
 
   mustContains(schoolIntro, 'Okul Vardiyaları', "School shifts intro uses school label");
-  mustContains(schoolIntro, 'Kurum Vardiyaları', "School shifts intro uses organization label");
+  mustContains(schoolIntro, 'Organizasyon Vardiyaları', "School shifts intro uses organization label");
   mustContains(schoolIntro, 'scopeTitle(companyKind)', "Shifts intro derives title from company kind");
   mustContains(schoolIntro, 'companyKind', "Shifts intro receives company kind");
   mustContains(schoolShifts, 'companyKind={me?.companyKind}', "Shifts panel passes company kind to intro");
 
-  mustContains(orgCenter, 'Kurum Merkezi', "Organization center uses kurum title");
+  mustContains(orgCenter, 'Organizasyon Merkezi', "Organization center uses organization title");
   mustContains(orgCenter, 'Toplam konum', "Organization center uses konum count label");
   mustContains(orgCenter, '<th>Konum</th>', "Organization center uses konum table header");
 
@@ -122,7 +122,7 @@ function main() {
   mustContains(orgPlans, 'Yeni konum kurgusu', "Organization plans uses konum copy");
   mustContains(orgPlans, 'konum sırasını', "Organization plans uses konum ordering copy");
   mustContains(orgPlans, 'Henüz konum yok.', "Organization plans uses konum empty state");
-  mustContains(orgPlans, 'kurum planlarını', "Organization plans uses kurum wording");
+  mustContains(orgPlans, 'organizasyon planlarını', "Organization plans uses organization wording");
 
   mustContains(orgShared, 'Konum:', "Organization shared summary uses konum pill");
   mustContains(orgShared, 'Koordinatlı konum ekleyin.', "Organization shared preview uses konum copy");
@@ -130,16 +130,16 @@ function main() {
   mustContains(orgShared, 'konum', "Organization shared item count uses konum wording");
   mustContains(orgShared, 'Konum ${index + 1}', "Organization shared stop card uses konum label");
 
-  mustContains(workflow, 'Kurum — Gezi / Planlama Merkezi', "Workflow panel uses kurum title");
+  mustContains(workflow, 'Organizasyon — Gezi / Planlama Merkezi', "Workflow panel uses organization title");
   mustContains(workflow, 'Toplanma Konumu', "Workflow panel uses toplanma konumu");
   mustNotContains(workflow, 'Organization —', "Workflow panel removes raw Organization title");
 
-  mustContains(appShell, 'Kurum operasyonu', "AppShell uses kurum operation label");
-  mustContains(appShell, 'KURUM', "AppShell exposes kurum scope label");
-  mustNotContains(appShell, 'Organizasyon operasyonu', "AppShell removes raw organization wording");
+  mustContains(appShell, 'Organizasyon operasyonu', "AppShell uses organization operation label");
+  mustContains(appShell, 'roleLabelForUser', "AppShell uses the canonical role presentation helper");
+  mustNotContains(appShell, 'KURUM', "AppShell does not expose the legacy organization label");
 
-  mustContains(navDock, 'Kurum', "NavDock uses kurum role title");
-  mustNotContains(navDock, 'Organizasyon', "NavDock removes raw organization wording");
+  mustContains(navDock, 'Organizasyon Operasyon Paneli', "NavDock uses organization role title");
+  mustNotContains(navDock, 'Kurum', "NavDock does not expose the legacy organization label");
 
   const visibleCopies = [
     schoolOps,
@@ -154,7 +154,7 @@ function main() {
 
   mustNotContains(visibleCopies, 'Lokasyon', "Visible copy replaces lokasyon with konum");
   mustNotContains(visibleCopies, 'Organization — Gezi / Planlama Merkezi', "Visible copy removes raw Organization header");
-  mustNotContains(visibleCopies, 'Organizasyon operasyonu', "Visible copy removes raw organization operation wording");
+  mustContains(visibleCopies, 'Organizasyon operasyonu', "Visible copy keeps organization operation wording");
 
   console.log("=== UX-SCHOOL-ORGANIZATION-PANELS-01 CHECK PASS ===");
 }

@@ -9,6 +9,7 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel } from "../../utils/etaSanity";
+import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 import {
   getLiveTrackingApiFeedback,
   getLiveTrackingGeoErrorMessage,
@@ -276,7 +277,8 @@ export default function MyRidePanel() {
   const remainingStopsCount = useMemo(() => stops.filter((s) => !isReachedStop(s)).length, [stops]);
   const routeEtaMin = Number.isFinite(Number(eta?.remainingRouteEtaMin)) ? Number(eta.remainingRouteEtaMin) : null;
   const routeKm = Number.isFinite(Number(eta?.remainingRouteKm)) ? Number(eta.remainingRouteKm) : null;
-  const gpsSourceLabel = vehicle?.gpsState?.lastSource || vehicle?.gpsState?.sourceLabel || vehicle?.gpsLast?.sourceLabel || (vehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
+  const rawGpsSource = vehicle?.gpsState?.lastSource || vehicle?.gpsState?.sourceLabel || vehicle?.gpsLast?.sourceLabel;
+  const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : (vehicle ? 'Araç GPS’i' : 'GPS bekleniyor');
   const gpsStatusText = getGpsReliabilityLabel(vehicle?.gpsState?.lastUiStatus || (vehicle ? 'LIVE' : '-'));
   const copilotFacts = useMemo(() => buildMapFacts({
     selected: vehicle,
@@ -416,7 +418,7 @@ export default function MyRidePanel() {
               <div>
                 <b>Vardiya #{myShift.id}</b> — <span className="pill" data-status={String(myShift.status || "").toUpperCase()}>{displayStatusLabel(String(myShift.status || "").toUpperCase())}</span>
               </div>
-              <div className="muted">Oda: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
+              <div className="muted">Taşımacılık Firması: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
               <div className="muted">Araç: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}</div>
               <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
               <div className="muted">Başlangıç: {fmtTR(myShift.startAt)} • Bitiş: {fmtTR(myShift.endAt)}</div>

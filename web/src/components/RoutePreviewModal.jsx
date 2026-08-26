@@ -12,7 +12,7 @@ import StopTimeline from "./StopTimeline";
 import { openFullRouteNavigation } from "../utils/navigation";
 
 function routeSourceLabel(source) {
-  if (String(source || "").toUpperCase() === "LEARNED") return "Learned";
+  if (String(source || "").toUpperCase() === "LEARNED") return "Öğrenilmiş rota";
   return "Tahmini";
 }
 
@@ -29,8 +29,8 @@ function buildRouteQuality(summary, source, stops, people) {
   if (reviewCount > 0) qualityNotes.push(`${reviewCount} review kaydı rota kalitesini sınırlayabilir.`);
   if (!qualityNotes.length) {
     qualityNotes.push(
-      String(source || "").toUpperCase() === "LEARNED"
-        ? "Learned rota verisi kullanıldı."
+        String(source || "").toUpperCase() === "LEARNED"
+        ? "Öğrenilmiş rota verisi kullanıldı."
         : String(source || "").toUpperCase() === "SNAPSHOT"
           ? "Kaydedilmiş rota snapshot kullanıldı; preview yeniden OSRM hesaplamadı."
           : "Önizleme DB stop sırası ve tahmini hat üzerinden gösteriliyor; OSRM Step-4 ve dispatch için ayrıldı."
@@ -414,7 +414,7 @@ function scrollToStopRow(stopId) {
 
           <div className="card routePreviewTimelineCard" style={{ margin: 0, marginBottom: 12, padding: 10 }}>
             <div className="routePreviewSummaryRow">
-              <b>Mini Timeline</b>
+              <b>Kısa zaman çizelgesi</b>
               <span className="muted" style={{ fontSize: 12 }}>Chip'e tıkla → listede o durağa git</span>
             </div>
             <div style={{ marginTop: 8 }}>

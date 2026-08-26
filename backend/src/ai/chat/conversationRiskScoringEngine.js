@@ -187,7 +187,7 @@ function buildCompanyPlanningRiskReply({
     ], riskItems);
   }
   return buildRiskReply([
-    'Veriyle doğrulamak gerekir; şu an Başlıca riskler yüksek görünüyor: şirket konumunun eksik olması, tarih / saat ya da servis yönünün yanlış seçilmesi, kapsamın dar ya da geniş gelmesi, personel listesindeki eksikler, adres / konum hatası ve durak / rota önizlemesinde sapma.',
+    'Veriyle doğrulamak gerekir; şu an Başlıca riskler yüksek görünüyor: hizmet alan firma konumunun eksik olması, tarih / saat ya da servis yönünün yanlış seçilmesi, kapsamın dar ya da geniş gelmesi, personel listesindeki eksikler, adres / konum hatası ve durak / rota önizlemesinde sapma.',
     'Orta risk kapasite / rota uyumsuzluğu olabilir.',
     'Düşük risk açıklama eksikleri olabilir.',
     'Bunlardan biri varsa önce onu düzelt.',
@@ -319,7 +319,7 @@ function buildRoomShiftsRiskReply({
   const riskItems = buildRiskItems({ guide, screenDefinition, screenContext, sourceScreenContext, selectedCarrySummary });
   if (hasAnySignal(message, ['gps'])) {
     return buildRiskReply([
-      'Veriyle doğrulamak gerekir; Oda açısından GPS riski yüksekse canlı takip ve gecikme müdahalesi aksar.',
+      'Veriyle doğrulamak gerekir; Taşımacılık Firması açısından GPS riski yüksekse canlı takip ve gecikme müdahalesi aksar.',
       'En önemli sinyaller son GPS zamanı, GPS verisinin güncel olmaması ve araç-sürücü eşleşmesidir.',
       'Riskli alanı belirle.',
       'Sonra ilgili ekrana geç.',
@@ -327,14 +327,14 @@ function buildRoomShiftsRiskReply({
   }
   if (hasAnySignal(message, ['başlatma', 'başlat'])) {
     return buildRiskReply([
-      'Veriyle doğrulamak gerekir; Oda açısından başlatma riski araç-sürücü ataması veya GPS hazırlığı eksikse yükselir.',
+      'Veriyle doğrulamak gerekir; Taşımacılık Firması açısından başlatma riski araç-sürücü ataması veya GPS hazırlığı eksikse yükselir.',
       'Orta risk vardiya zamanı veya durak / personel hazırlığıdır.',
       'Riskli alanı belirle.',
       'Sonra ilgili ekrana geç.',
     ], riskItems);
   }
   return buildRiskReply([
-    'Veriyle doğrulamak gerekir; Oda açısından başlıca riskler yüksek görünüyor: vardiya onaylı ama canlı başlatılmamış olabilir; araç / sürücü ataması eksik olabilir; GPS yok ya da eski olabilir; durak / rota eksik olabilir; operasyon kanıtı eksik olabilir; teklif / sözleşme bağlantısı net olmayabilir; başlatma zamanı geçmiş olabilir.',
+    'Veriyle doğrulamak gerekir; Taşımacılık Firması açısından başlıca riskler yüksek görünüyor: vardiya onaylı ama canlı başlatılmamış olabilir; araç / sürücü ataması eksik olabilir; GPS yok ya da eski olabilir; durak / rota eksik olabilir; operasyon kanıtı eksik olabilir; teklif / sözleşme bağlantısı net olmayabilir; başlatma zamanı geçmiş olabilir.',
     'Yüksek risk araç-sürücü ataması veya GPS hazırlığı eksikse oluşur.',
     'Orta risk vardiya zamanı veya durak / personel hazırlığıdır.',
     'Riskli alanı belirle.',
@@ -485,7 +485,7 @@ function buildSuperAdminRiskReply({
     ], riskItems);
   }
   return buildRiskReply([
-    'Veriyle doğrulamak gerekir; şirket riskini değerlendirirken kayıt durumu, yetki kapsamı ve operasyon / ödeme / kalite sinyallerine bakmak gerekir.',
+    'Veriyle doğrulamak gerekir; hizmet alan firma riskini değerlendirirken kayıt durumu, yetki kapsamı ve operasyon / ödeme / kalite sinyallerine bakmak gerekir.',
     'En kritik risk boş veya eksik veri nedeniyle yanlış operasyon kararı verilmesidir.',
     'Önce kayıt ve kapsam bilgisini kontrol edelim.',
   ], riskItems);

@@ -101,7 +101,7 @@ export default function CompaniesPanel() {
 
   async function create() {
     const n = normStr(newName);
-    if (!n) return setErr("Şirket adı gerekli");
+    if (!n) return setErr("Firma adı gerekli");
     setBusy(true);
     setErr("");
     try {
@@ -210,8 +210,8 @@ export default function CompaniesPanel() {
       <div style={{ padding: 16 }}>
         <div className="topbar">
           <div>
-            <div className="title">Şirketler / Okullar</div>
-            <div className="muted">SUPER_ADMIN şirket oluşturur/listeler/günceller/siler.</div>
+            <div className="title">Hizmet Alan Firmalar / Okullar</div>
+            <div className="muted">Yönetici, hizmet alan firma kayıtlarını oluşturur, listeler, günceller ve siler.</div>
           </div>
           <div className="pill">{filteredCount} kayıt</div>
         </div>
@@ -230,7 +230,7 @@ export default function CompaniesPanel() {
 
           <select value={kind} onChange={(e) => setKind(e.target.value)} style={{ minWidth: 160 }}>
             <option value="">Tümü</option>
-            <option value="COMPANY">Şirket</option>
+            <option value="COMPANY">Hizmet Alan Firma</option>
             <option value="SCHOOL">Okul</option>
             <option value="ORGANIZATION">Organizasyon</option>
           </select>
@@ -247,12 +247,12 @@ export default function CompaniesPanel() {
           <div style={{ flex: 1 }} />
 
           <select value={newKind} onChange={(e) => setNewKind(e.target.value)} style={{ minWidth: 140 }}>
-            <option value="COMPANY">Şirket</option>
+            <option value="COMPANY">Hizmet Alan Firma</option>
             <option value="SCHOOL">Okul</option>
             <option value="ORGANIZATION">Organizasyon</option>
           </select>
 
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={newKind === "SCHOOL" ? "Yeni okul adı" : newKind === "ORGANIZATION" ? "Yeni organizasyon adı" : "Yeni şirket adı"} style={{ minWidth: 220 }} />
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={newKind === "SCHOOL" ? "Yeni okul adı" : newKind === "ORGANIZATION" ? "Yeni organizasyon adı" : "Yeni hizmet alan firma adı"} style={{ minWidth: 220 }} />
           <button className="btn primary" disabled={busy} onClick={create}>
             Oluştur
           </button>
@@ -310,12 +310,12 @@ export default function CompaniesPanel() {
                 <div>
                   {editing ? (
                     <select value={editForm.kind} onChange={(e) => setEditForm((s) => ({ ...s, kind: e.target.value }))}>
-                      <option value="COMPANY">Şirket</option>
+                      <option value="COMPANY">Hizmet Alan Firma</option>
                       <option value="SCHOOL">Okul</option>
             <option value="ORGANIZATION">Organizasyon</option>
                     </select>
                   ) : (
-                    <div className="muted">{c.kind === "SCHOOL" ? "Okul" : c.kind === "ORGANIZATION" ? "Organizasyon" : "Şirket"}</div>
+                    <div className="muted">{c.kind === "SCHOOL" ? "Okul" : c.kind === "ORGANIZATION" ? "Organizasyon" : "Hizmet Alan Firma"}</div>
                   )}
                 </div>
 
@@ -399,7 +399,7 @@ export default function CompaniesPanel() {
         <div className="modal-backdrop" onClick={() => !busy && setProf(null)}>
           <div className="card modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 820 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingBottom: 10, borderBottom: "1px solid #22314f" }}>
-              <div style={{ fontWeight: 800 }}>Şirket Profili — #{prof.id} {prof.name}</div>
+              <div style={{ fontWeight: 800 }}>Firma Profili — #{prof.id} {prof.name}</div>
               <button className="btn sm" disabled={busy} onClick={() => setProf(null)}>
                 Kapat
               </button>

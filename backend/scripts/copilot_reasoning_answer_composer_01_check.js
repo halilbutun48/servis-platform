@@ -343,7 +343,7 @@ function main() {
     message: 'Bu program ne işe yarıyor?',
   });
   assert(companyOverview !== driverOverview, 'same question produces different role replies');
-  must(companyOverview, 'Şirket', 'company overview uses Turkish role name');
+  must(companyOverview, 'Hizmet Alan Firma', 'company overview uses Turkish role name');
   must(companyOverview, 'vardiya', 'company overview uses plan language');
   must(companyOverview, 'sözleşme', 'company overview uses contract language');
   mustNot(companyOverview, 'Company', 'company overview avoids English role name');
@@ -389,7 +389,7 @@ function main() {
   });
   must(companyChat, 'teklif', 'company chat uses plan language');
   must(companyChat, 'sözleşme', 'company chat uses contract language');
-  must(companyChat, 'Şirket', 'company chat uses Turkish role name');
+  must(companyChat, 'Hizmet Alan Firma', 'company chat uses Turkish role name');
   mustNot(companyChat, 'Company', 'company chat avoids English role name');
   must(driverChat, 'rota', 'driver chat stays field oriented');
   must(driverChat, 'sıradaki', 'driver chat keeps stop language');
@@ -429,7 +429,7 @@ function main() {
   });
   must(roomChat, 'araç', 'room chat uses vehicle language');
   must(roomChat, 'sürücü', 'room chat uses driver language');
-  must(roomChat, 'Oda', 'room chat uses Turkish role name');
+  must(roomChat, 'Taşımacılık Firması', 'room chat uses Turkish role name');
   mustNot(roomChat, 'Room', 'room chat avoids English role name');
   must(superAdminChat, 'sistem', 'super admin chat uses system language');
   must(superAdminChat, 'audit', 'super admin chat uses audit language');
@@ -475,8 +475,8 @@ function main() {
       nextStep: 'Vardiya ya da talebi oluştur.',
     }),
   });
-  must(companyStartReply, 'Şirket', 'company start reply uses Turkish role name');
-  must(companyStartReply, 'Şirket rolünde servis ihtiyacını planlarsın.', 'company start reply gives operational guidance');
+  must(companyStartReply, 'Hizmet Alan Firma', 'company start reply uses Turkish role name');
+  must(companyStartReply, 'Hizmet Alan Firma rolünde servis ihtiyacını planlarsın.', 'company start reply gives operational guidance');
   must(companyStartReply, 'Planlama Merkezi', 'company start reply names the planning center');
   must(companyStartReply, 'Yeni Plan Oluştur', 'company start reply includes the new plan entry');
   must(companyStartReply, 'Rehberi Başlat', 'company start reply includes the guided entry');
@@ -524,7 +524,7 @@ function main() {
     }),
   });
   const screenFocusReply = screenFocusResponse.reply;
-  must(screenFocusReply, 'şirket konumu', 'screen focus reply starts with company location');
+  must(screenFocusReply, 'hizmet alan firma konumu', 'screen focus reply starts with company location');
   must(screenFocusReply, 'tarih / saat', 'screen focus reply includes date and time');
   must(screenFocusReply, 'servis yönü', 'screen focus reply includes service direction');
   must(screenFocusReply, 'kapsam', 'screen focus reply includes scope');
@@ -562,7 +562,7 @@ function main() {
   });
   const riskListReply = riskListResponse.reply;
   must(riskListReply, 'Başlıca riskler', 'risk list reply names the risk lane');
-  must(riskListReply, 'şirket konumunun eksik olması', 'risk list reply includes location risk');
+  must(riskListReply, 'hizmet alan firma konumunun eksik olması', 'risk list reply includes location risk');
   must(riskListReply, 'tarih / saat ya da servis yönünün yanlış seçilmesi', 'risk list reply includes date-time and direction risk');
   must(riskListReply, 'kapsamın dar ya da geniş gelmesi', 'risk list reply includes scope risk');
   must(riskListReply, 'personel listesindeki eksikler', 'risk list reply includes personnel risk');
@@ -911,7 +911,7 @@ function main() {
       nextStep: 'Vardiya ya da talebi oluştur.',
     }),
   });
-  must(companyStartPathReply, 'Şirket', 'company start path reply uses Turkish role name');
+  must(companyStartPathReply, 'Hizmet Alan Firma', 'company start path reply uses Turkish role name');
   must(companyStartPathReply, 'Planlama Merkezi', 'company start path reply uses planning center');
   must(companyStartPathReply, 'vardiya', 'company start path reply uses plan flow language');
   must(companyStartPathReply, 'teklif', 'company start path reply uses offer flow language');
@@ -989,7 +989,7 @@ function main() {
   assert(['HOW_TO_HELP', 'DETAIL_FLOW'].includes(String(companyDetailResponse.questionType || '')), 'detail reply resolves to detail continuation intent');
   ordered(
     companyDetailReply,
-    ['Planlama Merkezi', 'Yeni Plan Oluştur', 'Rehberi Başlat', 'Şirket konumunu ve servis başlangıç noktasını', 'Excel ile toplu ekle', 'tek tek', 'Personel Konum Seçici', 'haritada mevcut konumu düzelt', 'Durakları hazırla', 'yakın adresleri uygun duraklarda topla', 'Taslak vardiyayı oluştur', 'Vardiyalar ekranında takip', 'Oda veya sağlayıcıdan teklif alma hazırlığı', 'sözleşme hazırlığı'],
+    ['Planlama Merkezi', 'Yeni Plan Oluştur', 'Rehberi Başlat', 'Hizmet Alan Firma konumunu ve servis başlangıç noktasını', 'Excel ile toplu ekle', 'tek tek', 'Personel Konum Seçici', 'haritada mevcut konumu düzelt', 'Durakları hazırla', 'yakın adresleri uygun duraklarda topla', 'Taslak vardiyayı oluştur', 'Vardiyalar ekranında takip', 'Taşımacılık Firması veya sağlayıcıdan teklif alma hazırlığı', 'sözleşme hazırlığı'],
     'devamını anlat follows the expanded company shift flow',
   );
   mustNot(companyDetailReply, 'Vardiyalar ekranına gir', 'detail reply does not restart from the shifts screen');
@@ -1063,7 +1063,7 @@ function main() {
       must(refusal, 'Kabul öncesi', `${actionMessage} keeps the safe preparation lane`);
     } else if (actionMessage === 'aracı ata') {
       must(refusal, 'atayamam', `${actionMessage} gets a safe refusal`);
-      must(refusal, 'Şirket tarafında araç / sürücü uygunluğunu kontrol', `${actionMessage} keeps the safe preparation lane`);
+      must(refusal, 'Hizmet Alan Firma tarafında araç / sürücü uygunluğunu kontrol', `${actionMessage} keeps the safe preparation lane`);
     } else {
       must(refusal, 'alamam', `${actionMessage} gets a safe refusal`);
       must(refusal, 'Sözleşme hazırlığı', `${actionMessage} keeps the safe preparation lane`);

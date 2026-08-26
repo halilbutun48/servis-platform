@@ -92,7 +92,7 @@ function buildAgreementConversionMeta(shift, agreementConversion) {
       : hadClosedAgreementRequest
         ? conversionTitle || "Önceki talep sonuçlandı."
         : !canConvert
-          ? "Sözleşmeye dönüştürmek için room seçili olmalı."
+          ? "Sözleşmeye dönüştürmek için taşımacılık firması seçili olmalı."
           : null;
 
   return {
@@ -118,7 +118,7 @@ function AgreementConversionStatus({ shift, busy, meta, onConvertShiftToAgreemen
 
   if (meta.hasPendingAgreementRequest) {
     return (
-      <span className="pill" data-status={meta.conversionState || "REQUESTED"} title={meta.conversionTitle || "Bu vardiya için sözleşme talebi oda kararını bekliyor."}>
+      <span className="pill" data-status={meta.conversionState || "REQUESTED"} title={meta.conversionTitle || "Bu vardiya için sözleşme talebi taşımacılık firması kararını bekliyor."}>
         Sözleşme talebi bekliyor
       </span>
     );
@@ -135,7 +135,7 @@ function AgreementConversionStatus({ shift, busy, meta, onConvertShiftToAgreemen
         type="button"
         className="btn sm primary"
         disabled={busy || !meta.canConvert}
-        title={!Number(shift?.roomId || 0) ? "Önce room seçili olmalı. Sonra taslak Company Sözleşmeler ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
+        title={!Number(shift?.roomId || 0) ? "Önce taşımacılık firması seçili olmalı. Sonra taslak Hizmet Alan Firma Sözleşmeleri ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
         onClick={(e) => {
           stopCardClick(e);
           onConvertShiftToAgreement?.(shift);
@@ -214,11 +214,11 @@ export function CompanyMarketShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Şirket / Oda"
+          label="Hizmet Alan Firma / Taşımacılık Firması"
           value={
             <div className="shiftCardValueStack">
               <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">Oda: Seçilmedi</div>
+              <div className="shiftCardSubtle">Taşımacılık Firması: Seçilmedi</div>
             </div>
           }
           wide
@@ -231,7 +231,7 @@ export function CompanyMarketShiftCard({
       <CardSection title="Teklif / sözleşme özeti">
         <div className="shiftCardInfoBlock">
           <div className="shiftCardInfoTitle">Market talebi</div>
-          <div className="shiftCardSubtle">Room seçilmemiş talep. Teklif burada room havuzuna gönderilir.</div>
+          <div className="shiftCardSubtle">Taşımacılık firması seçilmemiş talep. Teklif burada taşımacılık firması havuzuna gönderilir.</div>
         </div>
       </CardSection>
 
@@ -314,11 +314,11 @@ export function CompanyPendingShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Şirket / Oda"
+          label="Hizmet Alan Firma / Taşımacılık Firması"
           value={
             <div className="shiftCardValueStack">
               <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Oda ID ${shift.roomId}`}</div>
+              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Taşımacılık Firması no ${shift.roomId}`}</div>
               {hasRegionOwnership(room) ? <div className="shiftCardSubtle">{formatRegionOwnership(room)}</div> : null}
             </div>
           }
@@ -329,11 +329,11 @@ export function CompanyPendingShiftCard({
         <Field label="Durum / Hakediş" value={<CommercialReadonlySummary item={shift.commercialBackbone} compact />} wide />
       </div>
 
-      <CardSection title="Room Teklifi">
+      <CardSection title="Taşımacılık Firması Teklifi">
         {renderRoomOfferSummary(shift)}
       </CardSection>
 
-      <CardSection title="Company Teklifi">
+      <CardSection title="Hizmet Alan Firma Teklifi">
         {renderCompanyOfferSummary(shift)}
       </CardSection>
 
@@ -432,11 +432,11 @@ export function CompanyFinalShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Şirket / Oda"
+          label="Hizmet Alan Firma / Taşımacılık Firması"
           value={
             <div className="shiftCardValueStack">
               <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Oda ID ${shift.roomId}`}</div>
+              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Taşımacılık Firması no ${shift.roomId}`}</div>
               {hasRegionOwnership(room) ? <div className="shiftCardSubtle">{formatRegionOwnership(room)}</div> : null}
             </div>
           }
@@ -487,11 +487,11 @@ export function CompanyFinalShiftCard({
         <Field label="Durum / Hakediş" value={<CommercialReadonlySummary item={shift.commercialBackbone} compact />} wide />
       </div>
 
-      <CardSection title="Room Teklifi">
+      <CardSection title="Taşımacılık Firması Teklifi">
         {renderRoomOfferSummary(shift)}
       </CardSection>
 
-      <CardSection title="Company Teklifi">
+      <CardSection title="Hizmet Alan Firma Teklifi">
         {renderCompanyOfferSummary(shift)}
       </CardSection>
 

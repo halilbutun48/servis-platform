@@ -17,8 +17,8 @@ function copyText(s) {
 
 function trRole(role) {
   if (role === "SUPER_ADMIN") return "Süper Yönetici";
-  if (role === "ROOM") return "Operasyon Odası";
-  if (role === "COMPANY") return "Şirket";
+  if (role === "ROOM") return "Taşımacılık Firması";
+  if (role === "COMPANY") return "Hizmet Alan Firma";
   if (role === "DRIVER") return "Sürücü";
   if (role === "PERSONEL") return "Personel";
   if (role === "PARENT") return "Veli";
@@ -41,14 +41,14 @@ function fmtCount(value) {
 
 const MENU_GUIDE = [
   { title: "Genel Bakış", desc: "İlk açılış ekranı. Genel durumu görüp doğru yere buradan geçersin." },
-  { title: "Şirketler", desc: "Şirket kayıtları, kapsam ve bağlı yapıların yönetimi." },
+  { title: "Hizmet Alan Firmalar", desc: "Hizmet alan firma kayıtları, kapsam ve bağlı yapıların yönetimi." },
   { title: "Operasyon Odaları", desc: "Operasyon odaları, araç ve sürücü omurgasının merkezi." },
   { title: "Kullanıcılar", desc: "Kullanıcı hesapları, roller ve erişim görünümü." },
   { title: "İller ve Bölgeler", desc: "İl ve bölge tanımlarının yönetimi." },
   { title: "İşlem Kayıtları", desc: "Kim, ne zaman, hangi işlemi yaptı sorusunun kaydı." },
   { title: "Canlı İzleme", desc: "Sistemin ve sahadaki akışın canlı görünümü." },
   { title: "Kabul Merkezi", desc: "Saha kabul ve doğrulama işlerinin ana ekranı." },
-  { title: "Check-in", desc: "ROOM, COMPANY, SCHOOL ve ORGANIZATION için check-in izleme ve hızlı geçiş alanı." },
+  { title: "Check-in", desc: "Hizmet alan firma, taşımacılık firması, okul ve organizasyon için check-in izleme ve hızlı geçiş alanı." },
   { title: "Operasyon Doğrulama", desc: "Checklist, kanıt ve sonuç kaydı için kullanılan ekran." },
   { title: "Sistem Standartları", desc: "Resmi doküman, paket ve çalışma hattının aynı kurala göre ilerlediğini gösterir." },
   { title: "Ticari Akış", desc: "Talep, teklif, pazarlık ve sözleşme adımlarını tek akışta özetler." },
@@ -70,13 +70,13 @@ const DETAIL_TABS = [
 const DEMO_PASSWORD = "demo123";
 const DEMO_ACCOUNTS = [
   { email: "superadmin@demo.com", role: "SUPER_ADMIN", name: "Süper Yönetici", scope: "-" },
-  { email: "company@demo.com", role: "COMPANY", name: "Şirket Operatörü", scope: "Şirket #1 DemoCompany" },
-  { email: "room@demo.com", role: "ROOM", name: "Operasyon Odası Operatörü", scope: "Oda #1 DemoRoom" },
-  { email: "driver@demo.com", role: "DRIVER", name: "Sürücü Bir", scope: "Oda #1" },
-  { email: "personel@demo.com", role: "PERSONEL", name: "Personel Bir", scope: "Şirket #1" },
+  { email: "company@demo.com", role: "COMPANY", name: "Hizmet Alan Firma Operatörü", scope: "Firma #1 DemoCompany" },
+  { email: "room@demo.com", role: "ROOM", name: "Taşımacılık Firması Operatörü", scope: "Taşımacılık Firması #1 DemoRoom" },
+  { email: "driver@demo.com", role: "DRIVER", name: "Sürücü Bir", scope: "Taşımacılık Firması #1" },
+  { email: "personel@demo.com", role: "PERSONEL", name: "Personel Bir", scope: "Firma #1" },
   { email: "parent@demo.com", role: "PARENT", name: "Demo Veli", scope: "Veli" },
-  { email: "school@demo.com", role: "COMPANY", name: "Okul Operatörü", scope: "Şirket #2 DemoOkul (Okul)" },
-  { email: "organization@demo.com", role: "COMPANY", name: "Organizasyon Operatörü", scope: "Şirket #3 DemoOrganizasyon (Organizasyon)" },
+  { email: "school@demo.com", role: "COMPANY", name: "Okul Operatörü", scope: "Firma #2 DemoOkul (Okul)" },
+  { email: "organization@demo.com", role: "COMPANY", name: "Organizasyon Operatörü", scope: "Firma #3 DemoOrganizasyon (Organizasyon)" },
 ];
 
 function Pill({ children, status }) {
@@ -186,8 +186,8 @@ function SystemDetailsBody({ me, stats, feedbackCount }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
         <StatTile label="Oturum" value={me?.email || "-"} />
         <StatTile label="Rol" value={trRole(me?.role)} />
-        <StatTile label="Şirket" value={fmtCount(stats.companiesTotal ?? stats.companies)} />
-        <StatTile label="Oda" value={fmtCount(stats.roomsTotal ?? stats.rooms)} />
+        <StatTile label="Hizmet Alan Firma" value={fmtCount(stats.companiesTotal ?? stats.companies)} />
+        <StatTile label="Taşımacılık Firması" value={fmtCount(stats.roomsTotal ?? stats.rooms)} />
         <StatTile label="Araç" value={fmtCount(stats.vehiclesTotal ?? stats.vehicles)} />
         <StatTile label="Sürücü" value={fmtCount(stats.driversTotal ?? stats.drivers)} />
         <StatTile label="Geri bildirim" value={String(feedbackCount || 0)} tone={feedbackCount > 0 ? "WARN" : "OK"} />
@@ -202,7 +202,7 @@ function SystemDetailsBody({ me, stats, feedbackCount }) {
 
 const TELEMATICS_OVERVIEW_BULLETS = [
   "GPS sağlayıcı kataloğu hazır",
-  "Room eşleştirme self-service",
+  "Taşımacılık Firması eşleştirme self-service",
   "Provider yönetimi nav menüde",
 ];
 
@@ -466,7 +466,7 @@ export default function SuperAdminPanel() {
         <div className="card" style={{ padding: 14 }}>
           <div className="panelSectionTitle" style={{ marginBottom: 8 }}>Özet</div>
 
-          <div className="panelBody">Şirket (aktif/toplam): {fmtActiveTotal(stats.companies, stats.companiesTotal)}</div>
+          <div className="panelBody">Hizmet Alan Firma (aktif/toplam): {fmtActiveTotal(stats.companies, stats.companiesTotal)}</div>
           <div className="panelBody" style={{ marginTop: 6 }}>Operasyon odası (aktif/toplam): {fmtActiveTotal(stats.rooms, stats.roomsTotal)}</div>
           <div className="panelBody" style={{ marginTop: 6 }}>Araç sayısı: {stats.vehiclesTotal ?? stats.vehicles ?? "-"}</div>
           <div className="panelBody" style={{ marginTop: 6 }}>Şoför sayısı: {stats.driversTotal ?? stats.drivers ?? "-"}</div>

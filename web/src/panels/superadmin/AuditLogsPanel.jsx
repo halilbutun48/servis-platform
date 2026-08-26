@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { formatDateTimeTR } from "../../utils/time";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
 import { cachedGet } from "../../utils/uiDataCache";
+import { roleLabelForUser } from "../../utils/labels";
 
 function fmt(ts) {
   try {
@@ -43,6 +44,15 @@ function summarizeAuditAction(action) {
     return "Güvenlik olayı";
   }
   return text.length > 120 ? `${text.slice(0, 117)}…` : text;
+}
+
+function auditEntityLabel(entity) {
+  const key = String(entity || "").toUpperCase();
+  if (key === "COMPANY") return "Hizmet Alan Firma";
+  if (key === "ROOM") return "Taşımacılık Firması";
+  if (key === "USER") return "Kullanıcı";
+  if (key === "REGION") return "Bölge";
+  return entity || "-";
 }
 
 export default function AuditLogsPanel() {
@@ -106,8 +116,8 @@ export default function AuditLogsPanel() {
             <select value={entity} onChange={(e) => setEntity(e.target.value)}>
               <option value="">(hepsi)</option>
               <option value="User">User</option>
-              <option value="Company">Company</option>
-              <option value="Room">Room</option>
+              <option value="Company">Hizmet Alan Firma</option>
+              <option value="Room">Taşımacılık Firması</option>
               <option value="Region">Region</option>
             </select>
           </label>
@@ -169,12 +179,12 @@ export default function AuditLogsPanel() {
             <div style={{ wordBreak: "break-word" }}>
               <div>{x.actorEmail || "-"}</div>
               <div className="muted" style={{ fontSize: 12 }}>
-                {x.actorRole || "-"}
+                {x.actorRole ? roleLabelForUser(x.actorRole) : "-"}
                 {x.actorUserId ? ` #${x.actorUserId}` : ""}
               </div>
             </div>
             <div style={{ wordBreak: "break-word" }}>{summarizeAuditAction(x.action)}</div>
-            <div>{x.entity}</div>
+            <div>{auditEntityLabel(x.entity)}</div>
             <div>{x.entityId ?? "-"}</div>
             <div className="saMeta">{summarizeAuditMeta(x.meta)}</div>
             <div>

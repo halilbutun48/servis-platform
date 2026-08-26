@@ -561,7 +561,7 @@ export function useGuidedPlanModalActions(ctx) {
     setBusy(true);
     try {
       await saveGuidedCompanyHub({ token, hubLat: lat, hubLng: lng });
-      setInfo(organization ? hubSaveFeedback?.organization || "Toplanma konumu kaydedildi." : hubSaveFeedback?.company || "Şirket konumu kaydedildi.");
+      setInfo(organization ? hubSaveFeedback?.organization || "Toplanma konumu kaydedildi." : hubSaveFeedback?.company || "Firma konumu kaydedildi.");
       setStep(1);
     } catch (e) {
       setErr(getApiErrorMessage(e));

@@ -294,13 +294,16 @@ export default function DriversPanel() {
 
   function driverOps(d) {
     const ops = d?.ops || {};
+    const assignmentKey = String(ops.assignmentLabel || ops.assignmentState || "NONE").toUpperCase();
+    const connectionKey = String(ops.connectionLabel || ops.connectionState || "OFFLINE").toUpperCase();
+    const gpsKey = String(ops.gpsLabel || ops.gpsUiState || "IDLE").toUpperCase();
     return {
       connectionState: String(ops.connectionState || 'OFFLINE').toUpperCase(),
-      connectionLabel: String(ops.connectionLabel || 'Bagli degil'),
+      connectionLabel: connectionKey === "ONLINE" ? "Bağlı" : connectionKey === "OFFLINE" ? "Bağlı değil" : "Bağlantı bekleniyor",
       assignmentState: String(ops.assignmentState || 'NONE').toUpperCase(),
-      assignmentLabel: String(ops.assignmentLabel || 'Gorev yok'),
+      assignmentLabel: assignmentKey === "ACTIVE" ? "Aktif vardiya" : assignmentKey === "ASSIGNED" ? "Vardiya atandı" : assignmentKey === "ASSIGNED_NO_VEHICLE" ? "Araç bekleniyor" : "Görev yok",
       gpsUiState: String(ops.gpsUiState || 'IDLE').toUpperCase(),
-      gpsLabel: String(ops.gpsLabel || 'GPS pasif'),
+      gpsLabel: gpsKey === "LIVE" ? "GPS canlı" : gpsKey === "STALE" ? "GPS güncel değil" : gpsKey === "OFFLINE" ? "GPS çevrim dışı" : "GPS bekliyor",
     };
   }
 
@@ -576,8 +579,8 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
   return (
     <div className="roomCriticalFixScope">
       <div className="card">
-        <h3>Drivers</h3>
-        <div className="muted">ROOM: sürücü yönetimi + operasyon + bağlantı</div>
+        <h3>Sürücüler</h3>
+        <div className="muted">Taşımacılık Firması: sürücü yönetimi + operasyon + bağlantı</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
@@ -604,7 +607,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             {focusVehicle
-              ? `Readonly özet • ${focusStat ? `Durum: ${focusStat.uiLabel}` : "Eşleşme okunuyor"}`
+              ? `Salt okunur özet • ${focusStat ? `Durum: ${focusStat.uiLabel}` : "Eşleşme okunuyor"}`
               : "Araç bağlantısını Araçlar ekranında yönet."}
           </div>
           <button type="button" className="btn sm ghost" style={{ marginTop: 8 }} onClick={() => navigate("/room/vehicles")}>
@@ -666,12 +669,12 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         </div>
         <ListSelectionBanner
           selectedLabel={focusDriverLabel || ""}
-          selectedSummary={[focusVehicle?.plate, focusOps?.assignmentState, focusOps?.gpsLabel].filter(Boolean).join(" • ")}
+          selectedSummary={[focusVehicle?.plate, focusOps?.assignmentLabel, focusOps?.gpsLabel].filter(Boolean).join(" • ")}
           visibleCount={tab === "status" ? visibleStatusDrivers.length : filteredDrivers.length}
           totalCount={drivers.length}
           filterValue={`${q} ${statusFilter} ${boundFilter} ${statusColFilter.driver} ${statusColFilter.phone} ${statusColFilter.connection} ${statusColFilter.task} ${statusColFilter.vehicle} ${statusColFilter.gps}`.trim()}
           onClearFilter={() => { setQ(""); setStatusFilter("ALL"); setBoundFilter("ALL"); clearStatusColumnFilters(); }}
-          helper="Copilot seçili sürücüyü kullanır."
+          helper="Sefer Abi seçili sürücüyü kullanır."
         />
       </div>
 

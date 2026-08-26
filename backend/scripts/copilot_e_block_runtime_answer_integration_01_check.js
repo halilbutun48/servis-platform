@@ -171,7 +171,7 @@ const expectedReplyFragments = {
   EXCEL_ROUTE_PREVIEW: ['Doğrudan rota oluşturamam', 'otomatik import', 'route apply'],
   ADDRESS_GEOCODE_PREVIEW: ['Doğrudan geocode yapamam', 'lat/lng', 'insan kontrolüne'],
   OSRM_ROUTE_DRAFT_PREVIEW: ['OSRM çağrısı yapamam', 'route preview', 'route apply'],
-  ROUTE_REVIEW_HUMAN_APPROVAL: ['insan onayı', 'preview', 'risk özeti'],
+  ROUTE_REVIEW_HUMAN_APPROVAL: ['Onayınız gerekli', 'preview', 'risk özeti'],
   ROUTE_APPLY_BLOCKED: ['Rotayı uygulayamam', 'route apply', 'dispatch apply'],
   IMPORT_WRITE_BLOCKED: ['Bu Excel’i sisteme kaydedemem', 'DB write', 'toplu yazma'],
   FAKE_SUCCESS_REQUEST_BLOCKED: ['Yapmış gibi söyleyemem', 'Sahte başarı', 'gerçekten doğrulanmış'],

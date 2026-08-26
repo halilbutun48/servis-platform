@@ -24,7 +24,7 @@ export default function HubPanel() {
       ? "Okul servislerinin kullandığı konum."
       : me?.companyKind === "ORGANIZATION"
       ? "Toplanma alanının merkez konumu."
-      : "Şirket tesisi/merkez konumu.";
+      : "Firma tesisi/merkez konumu.";
   const [addr, setAddr] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
@@ -145,7 +145,7 @@ export default function HubPanel() {
       <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 360px) minmax(0, 1fr)", alignItems: "start" }}>
         <PanelChrome
           title="Adres ve Koordinat"
-          subtitle="Şirket konumunu elle, konumla ya da harita üstünden seç."
+          subtitle="Firma konumunu elle, konumla ya da harita üstünden seç."
         >
           <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
             <div style={{ display: "grid", gap: 8, minWidth: 0 }}>

@@ -144,7 +144,7 @@ function main() {
   must(agreementFacts, 'routeRefreshPriceImpactText', 'agreement copilot facts expose routeRefreshPriceImpactText');
   must(agreementFacts, 'routeRefreshRoomCounterText', 'agreement copilot facts expose routeRefreshRoomCounterText');
   must(copilotFacts, 'Bu sözleşmede rota değişikliği var mı?', 'copilot starter chips include route final prompt');
-  must(copilotFacts, 'Room’a rota güncelleme talebi gitti mi?', 'copilot starter chips include room route request prompt');
+  must(copilotFacts, 'Taşımacılık Firması tarafına rota güncelleme talebi gitti mi?', 'copilot starter chips include room route request prompt');
   must(helpComposer, 'AGREEMENT_ROUTE_REFRESH', 'help composer knows route final intent');
   must(helpComposer, 'Bu sözleşmedeki rota değişikliği talebi eski rota, yeni rota ve teklif/kabul durumuyla birlikte okunur.', 'help composer topic why covers route final');
   must(helpComposer, 'Önce şirket teklifini, oda karşı teklifini, eski rota ile yeni rota farkını ve kabul durumunu kontrol et; bu yalnızca teklif/önizleme akışıdır.', 'help composer topic advice covers route final');

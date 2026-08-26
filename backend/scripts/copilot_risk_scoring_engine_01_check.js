@@ -328,7 +328,7 @@ function buildCases() {
       menuPurpose: 'Planlama Merkezi yeni plan oluşturma ve rota önizleme için kullanılır.',
       firstStep: 'Plan satırını aç.',
       nextStep: 'Rota ve personel durumunu kontrol et.',
-      genericNeedles: ['Başlıca riskler yüksek görünüyor', 'şirket konumunun eksik olması', 'durak / rota önizlemesinde sapma'],
+      genericNeedles: ['Başlıca riskler yüksek görünüyor', 'hizmet alan firma konumunun eksik olması', 'durak / rota önizlemesinde sapma'],
       special: {
         message: 'Risk var mı? kapasite durumu',
         replyNeedles: ['Planlama Merkezi için yüksek risk kişi sayısının araç kapasitesine yaklaşmasıdır', 'kişi sayısı, araç kapasitesi ve rota önizlemesini kontrol edelim.'],
@@ -352,7 +352,7 @@ function buildCases() {
       theme: 'COMPANY_OPERATIONS',
       role: 'COMPANY',
       path: '/company/operations',
-      label: 'Şirket Operasyon',
+      label: 'Hizmet Alan Firma Operasyon',
       menuPurpose: 'Canlı operasyon ve vardiya izleme için kullanılır.',
       firstStep: 'Aktif vardiyayı aç.',
       nextStep: 'Son GPS ve araç atamasını kontrol et.',
@@ -384,10 +384,10 @@ function buildCases() {
       menuPurpose: 'Vardiyalar ekranı mevcut vardiya ve operasyon akışını takip eder.',
       firstStep: 'Vardiya satırını aç.',
       nextStep: 'Araç ve sürücüyü kontrol et.',
-      genericNeedles: ['Oda açısından başlıca riskler yüksek görünüyor', 'vardiya onaylı ama canlı başlatılmamış olabilir', 'Riskli alanı belirle.'],
+      genericNeedles: ['Taşımacılık Firması açısından başlıca riskler yüksek görünüyor', 'vardiya onaylı ama canlı başlatılmamış olabilir', 'Riskli alanı belirle.'],
       special: {
         message: 'Risk var mı? başlatma',
-      replyNeedles: ['Oda açısından başlatma riski araç-sürücü ataması veya konum sinyali hazırlığı eksikse yükselir', 'Riskli alanı belirle.'],
+      replyNeedles: ['Taşımacılık Firması açısından başlatma riski araç-sürücü ataması veya konum sinyali hazırlığı eksikse yükselir', 'Riskli alanı belirle.'],
       },
     },
     {
@@ -454,7 +454,7 @@ function buildCases() {
       menuPurpose: 'Sistem özet ve denetim alanı.',
       firstStep: 'İlk kartı aç.',
       nextStep: 'Sonraki kartı aç.',
-      genericNeedles: ['şirket riskini değerlendirirken kayıt durumu, yetki kapsamı ve operasyon / ödeme / kalite sinyallerine bakmak gerekir', 'en kritik risk boş veya eksik veri nedeniyle yanlış operasyon kararı verilmesidir', 'kayıt ve kapsam bilgisini kontrol edelim.'],
+      genericNeedles: ['hizmet alan firma riskini değerlendirirken kayıt durumu, yetki kapsamı ve operasyon / ödeme / kalite sinyallerine bakmak gerekir', 'en kritik risk boş veya eksik veri nedeniyle yanlış operasyon kararı verilmesidir', 'kayıt ve kapsam bilgisini kontrol edelim.'],
       special: {
         message: 'Risk var mı? yetki',
         replyNeedles: ['yetki riski varsa rol kapsamı ve görünür kayıtları doğrulamadan kesin hüküm vermeyelim', 'rol, filtre ve kayıt kapsamını kontrol edelim.'],

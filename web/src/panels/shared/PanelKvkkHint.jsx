@@ -7,7 +7,7 @@ const PANEL_RULES = {
     purpose: "Bu ekranda hesap açma, şifre sıfırlama ve erişim yönetimi yapılır.",
   },
   companies: {
-    purpose: "Bu ekranda şirket, okul ve organizasyon kayıtları yönetilir.",
+    purpose: "Bu ekranda firma, okul ve organizasyon kayıtları yönetilir.",
   },
   rooms: {
     purpose: "Bu ekranda operasyon odası ve sağlayıcı kapsamı yönetilir.",
@@ -26,8 +26,8 @@ const PANEL_RULES = {
 function roleTitle(role) {
   const r = String(role || "").toUpperCase();
   if (r === "SUPER_ADMIN") return "Sistem yöneticisi";
-  if (r === "ROOM") return "Oda operasyonu";
-  if (r === "COMPANY") return "Firma / okul / organizasyon";
+  if (r === "ROOM") return "Taşımacılık Firması operasyonu";
+  if (r === "COMPANY") return "Hizmet Alan Firma";
   if (r === "DRIVER") return "Sürücü";
   if (r === "PERSONEL") return "Personel";
   if (r === "PARENT") return "Veli";
@@ -54,6 +54,16 @@ function sanitizeEvidenceText(value) {
     return "Sistem kanıtı hazır";
   }
   return text;
+}
+
+function visibleScopeLabel(scope) {
+  const key = String(scope || "").toLowerCase();
+  if (key === "system") return "sistem";
+  if (key === "company") return "hizmet alan firma";
+  if (key === "room") return "taşımacılık firması";
+  if (key === "school-domain") return "okul alanı";
+  if (key === "organization-domain") return "organizasyon alanı";
+  return String(scope || "");
 }
 
 export default function PanelKvkkHint({ panelKey, effectiveRole }) {
@@ -91,7 +101,7 @@ export default function PanelKvkkHint({ panelKey, effectiveRole }) {
     ? "Detaylar KVKK panelinde"
     : "Detaylar KVKK panelinde";
   const rowMeta = [
-    Array.isArray(row?.dataScopes) && row.dataScopes.length ? `Kapsam: ${row.dataScopes.join(" • ")}` : null,
+    Array.isArray(row?.dataScopes) && row.dataScopes.length ? `Kapsam: ${row.dataScopes.map(visibleScopeLabel).join(" • ")}` : null,
     row?.notes ? `Rol notu: ${sanitizeEvidenceText(row.notes)}` : null,
     matrix?.version ? `Matrix v${matrix.version}` : null,
   ].filter(Boolean);

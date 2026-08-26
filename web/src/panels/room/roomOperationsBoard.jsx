@@ -270,9 +270,9 @@ export default function RoomOperationsBoard({
       return "Açık istek yok; ilk kabul edilen kayıt gösteriliyor.";
     }
     if (selectedPreviewRequestId && selectedPreviewRequest) {
-      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Readonly önizleme seçildi.";
+      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Salt okunur önizleme seçildi.";
     }
-    return "Seçili satırın readonly önizlemesi burada gösterilir.";
+    return "Seçili satırın salt okunur önizlemesi burada gösterilir.";
   }, [requestSelectionCards.length, selectedPreviewRequest, selectedPreviewRequestId]);
 
   const summaryRows = useMemo(() => [
@@ -301,7 +301,7 @@ export default function RoomOperationsBoard({
             <div style={{ fontWeight: 800, fontSize: 16 }}>Operasyon Özeti</div>
             <div className="muted" style={{ marginTop: 6 }}>
               Canlı sürücü, bağlantı ve görev sinyallerinden türetilir. Açık sorun: {roomIssueCount}
-              {/* Oda Operasyon Özeti / Mola ve uygunluk sayıları canlı sürücü, bağlantı ve görev sinyallerinden türetilir. */}
+              {/* Taşımacılık Firması Operasyon Özeti / Mola ve uygunluk sayıları canlı sürücü, bağlantı ve görev sinyallerinden türetilir. */}
             </div>
           </div>
           <div className="muted">Kapsam: canlı operasyon görünümü</div>

@@ -67,8 +67,8 @@ export function normalizeRoleKey(value) {
 
 export function prettyRoleName(roleKey) {
   const map = {
-    company: 'Şirket',
-    room: 'Oda',
+    company: 'Hizmet Alan Firma',
+    room: 'Taşımacılık Firması',
     driver: 'Sürücü',
     parent: 'Veli',
     personel: 'Personel',
@@ -81,9 +81,9 @@ export function prettyRoleName(roleKey) {
 
 export function turkishRoleName(normalizedRole, fallbackRole = '') {
   const map = {
-    company: 'Şirket',
+    company: 'Hizmet Alan Firma',
     organization: 'Organizasyon',
-    room: 'Oda',
+    room: 'Taşımacılık Firması',
     driver: 'Sürücü',
     personel: 'Personel',
     parent: 'Veli',
@@ -98,17 +98,17 @@ export function turkishRoleName(normalizedRole, fallbackRole = '') {
 export function prettyScreenLabel(label) {
   const text = String(label || '').trim();
   if (!text) return '';
-  return text
+  return normalizeVisibleTerminology(text
     .replace(/\bPlan\s*Builder\b/gi, 'Planlama Merkezi')
-    .replace(/\bCompany\b/gi, 'Şirket')
-    .replace(/\bRoom\b/gi, 'Oda')
+    .replace(/\bCompany\b/gi, 'Hizmet Alan Firma')
+    .replace(/\bRoom\b/gi, 'Taşımacılık Firması')
     .replace(/\bDriver\b/gi, 'Sürücü')
     .replace(/\bParent\b/gi, 'Veli')
     .replace(/\bPersonel\b/gi, 'Personel')
     .replace(/\bSchool\b/gi, 'Okul')
     .replace(/\bOrganization\b/gi, 'Organizasyon')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim());
 }
 
 export function detectReferencedRole(message, fallbackRole = '') {
@@ -317,14 +317,14 @@ export function companyPlanningCenterDetailReply() {
   return [
     'Planlama Merkezi > Yeni Plan Oluştur / Rehberi Başlat.',
     'Paket, tarih, saat, servis yönü ve kapsam.',
-    'Şirket konumunu ve servis başlangıç noktasını.',
+    'Hizmet Alan Firma konumunu ve servis başlangıç noktasını.',
     'Excel ile toplu ekle ya da tek tek.',
     'Personel Konum Seçici ile haritada mevcut konumu düzelt.',
     'Adres / konum doğruluğunu kontrol et.',
     'Durakları hazırla; yakın adresleri uygun duraklarda topla; rota önizlemesini kontrol et.',
     'Taslak vardiyayı oluştur.',
     'Vardiyalar ekranında takip et.',
-    'Oda veya sağlayıcıdan teklif alma hazırlığı.',
+    'Taşımacılık Firması veya sağlayıcıdan teklif alma hazırlığı.',
     'Sözleşme hazırlığı.',
   ].join(' ');
 }

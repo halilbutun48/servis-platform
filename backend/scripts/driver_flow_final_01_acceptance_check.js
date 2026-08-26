@@ -106,9 +106,9 @@ async function main() {
   must(driverRoute, 'ETA', 'driver route keeps ETA label');
   mustNot(driverRoute, '<td>{s.etaMin}</td>', 'driver route does not show naked etaMin cell');
 
-  must(driverCheckin, 'Driver Check-in', 'driver check-in surface exists');
-  must(driverCheckin, 'Shift ACTIVE değilse önce Bugün ekranından görevi başlat.', 'driver check-in keeps driver-start guidance');
-  must(driverCheckin, 'Opsiyonel check-in', 'driver check-in keeps optional wording');
+  must(driverCheckin, 'Sürücü okutma', 'driver check-in surface exists');
+  must(driverCheckin, 'Vardiya aktif değilse önce Bugün ekranından görevi başlat.', 'driver check-in keeps driver-start guidance');
+  must(driverCheckin, 'Opsiyonel okutma', 'driver check-in keeps optional wording');
 
   must(vehicleMarker, 'busSvgUrl', 'bus svg marker import remains active');
   must(vehicleMarker, 'bus.svg', 'bus svg marker asset remains referenced');

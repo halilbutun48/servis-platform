@@ -143,7 +143,7 @@ export default function PlatformFeePreviewCard({
     marketShiftId ? `Pazar vardiyası #${marketShiftId}` : "",
     organizationPlanId ? `Organizasyon planı #${organizationPlanId}` : "",
     selectedOfferId ? `Seçili teklif #${selectedOfferId}` : "",
-    roomId ? `Oda #${roomId}` : "",
+    roomId ? `Taşımacılık Firması #${roomId}` : "",
     sourceSignals.isRenewal ? "Yenileme sinyali var" : "",
     sourceSignals.isManual ? "Manuel iç kayıt" : "",
     sourceSignals.isPilot ? "Pilot ücretsiz kayıt" : "",

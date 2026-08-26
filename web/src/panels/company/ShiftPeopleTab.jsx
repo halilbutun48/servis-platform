@@ -678,7 +678,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const roomText = useMemo(() => {
     if (!selectedShift) return "-";
     const r = roomsById?.get ? roomsById.get(Number(selectedShift.roomId)) : null;
-    return r ? `${r.name || r.title || `Oda #${r.id}`} (#${r.id})` : `#${selectedShift.roomId}`;
+    return r ? `${r.name || r.title || `Taşımacılık Firması #${r.id}`} (#${r.id})` : `#${selectedShift.roomId}`;
   }, [selectedShift, roomsById]);
 
   const importWarningSummary = useMemo(() => summarizeWarnings(importWarnings), [importWarnings]);

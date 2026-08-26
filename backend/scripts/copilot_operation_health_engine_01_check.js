@@ -20,6 +20,7 @@ import {
   OPERATION_HEALTH_TERMINOLOGY,
   OPERATION_HEALTH_TRIGGER_PHRASES,
 } from '../src/ai/chat/conversationOperationHealthEngine.js';
+import { normalizeVisibleReplyFragment } from '../src/ai/chat/conversationTaskStateShared.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -293,7 +294,7 @@ function buildRuntimeArgs(profile, promptSpec) {
   const user = roleForProfile(profile);
   const screenPath = pickSurfacePath(profile, user);
   const screenDefinition = buildRuntimeScreenDefinition(profile, user, screenPath);
-  const screenLabel = String(screenDefinition?.label || profile.label || screenPath || '').trim();
+  const screenLabel = normalizeVisibleReplyFragment(String(screenDefinition?.label || profile.label || screenPath || '').trim());
   const visibleLabel = String(profile.label || screenLabel || screenPath || '').trim();
   const selectedSummary = `${visibleLabel} saha özeti`;
   const screenContext = buildSharedContext(visibleLabel, selectedSummary);
@@ -465,12 +466,12 @@ function runtimeAssertions(profile, promptSpec) {
   check(state.healthSignals.length >= 4, `${profile.key} health signals have at least four items`);
   check(state.evidence.length >= 4, `${profile.key} evidence has at least four items`);
   check(state.blockers.length >= 1, `${profile.key} blockers list is populated`);
-  check(containsNormalized(reply, detected.label), `${profile.key} reply mentions surface label`);
-  check(containsNormalized(reply, args.selectedSummary), `${profile.key} reply mentions selected summary`);
+  check(containsNormalized(reply, normalizeVisibleReplyFragment(detected.label)), `${profile.key} reply mentions surface label`);
+  check(containsNormalized(reply, normalizeVisibleReplyFragment(args.selectedSummary)), `${profile.key} reply mentions selected summary`);
   check(containsNormalized(reply, expectedCountSummary), `${profile.key} reply mentions selected record status`);
-  check(containsNormalized(reply, detected.reviewLead), `${profile.key} reply mentions review lead`);
-  check(containsNormalized(reply, detected.compareHint), `${profile.key} reply mentions compare hint`);
-  check(containsNormalized(reply, 'İnsan onayı gerekir'), `${profile.key} reply mentions human approval`);
+  check(containsNormalized(reply, normalizeVisibleReplyFragment(detected.reviewLead)), `${profile.key} reply mentions review lead`);
+  check(containsNormalized(reply, normalizeVisibleReplyFragment(detected.compareHint)), `${profile.key} reply mentions compare hint`);
+  check(containsNormalized(reply, 'Onayınız gerekli'), `${profile.key} reply mentions human approval`);
   check(containsNormalized(reply, 'Riskli cihazı aç'), `${profile.key} reply mentions risky-device control`);
   check(containsNormalized(reply, 'konum sinyali güncel değil / çevrim dışı'), `${profile.key} reply mentions stale/offline control`);
   check(containsNormalized(reply, 'açık sorunları sırala'), `${profile.key} reply mentions open-issue control`);
@@ -500,7 +501,7 @@ function runRegressionCase(spec) {
     : { role: spec.role };
   const screenDefinition = getScreenDefinitionForUser(user, { path: spec.path }, null);
   const screenNames = listScreensForUser(user, { path: spec.path });
-  const screenLabel = String(screenDefinition?.label || spec.path || spec.label || '').trim();
+  const screenLabel = normalizeVisibleReplyFragment(String(screenDefinition?.label || spec.path || spec.label || '').trim());
   const screenContext = {
     label: screenLabel,
     selectedSummary: `${screenLabel} kayıt özeti`,

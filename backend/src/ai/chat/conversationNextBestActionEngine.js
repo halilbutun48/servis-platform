@@ -799,5 +799,5 @@ export function buildNextBestActionChips(options = {}) {
     ...(options?.selectedRecordStatus ? ['Durum satırı'] : []),
     ...(surface.key === 'GENERIC' ? ['İlgili ekran', 'İnsan onayı'] : []),
   ];
-  return uniqueTextList(chips).slice(0, String(options?.roleMode || '') === 'SIMPLE' ? 3 : 5);
+  return uniqueTextList(chips.map((chip) => normalizeVisibleReplyFragment(chip))).slice(0, String(options?.roleMode || '') === 'SIMPLE' ? 3 : 5);
 }

@@ -69,7 +69,7 @@ function vehicleCapacityValue(vehicle) {
 
 function companyName(shift) {
   const company = shift?.company || {};
-  return company?.name || (shift?.companyId ? `Company #${shift.companyId}` : '-');
+  return company?.name || (shift?.companyId ? `Hizmet Alan Firma #${shift.companyId}` : '-');
 }
 
 function minutePackageKey(offer) {
@@ -303,10 +303,10 @@ export default function RoomOffersPanel() {
       summary: [displayStatusLabel(String(focusedOffer?.status || '').toUpperCase()), companyName(shift), shift?.status ? `Vardiya ${displayStatusLabel(String(shift.status).toUpperCase())}` : null].filter(Boolean).join(' • '),
       fields: [
         { label: 'Shift', value: focusedOffer?.shiftId ? `#${focusedOffer.shiftId}` : '-', help: 'Teklifin bağlı olduğu vardiya kaydını gösterir.' },
-        { label: 'Karşı taraf', value: companyName(shift), help: 'Teklifin geldiği company bilgisini gösterir.' },
+        { label: 'Karşı taraf', value: companyName(shift), help: 'Teklifin geldiği hizmet alan firma bilgisini gösterir.' },
         { label: 'Teklif Durumu', value: String(focusedOffer?.status || '-').toUpperCase(), help: 'Pazarlık akışındaki teklif durumunu gösterir.' },
-        { label: 'Company', value: formatTRY(focusedOffer?.amountCompany), help: 'Company tarafından görünen tutarı gösterir.' },
-        { label: 'Room', value: formatTRY(focusedOffer?.amountRoom), help: 'Room tarafından girilen tutarı gösterir.' },
+        { label: 'Hizmet Alan Firma', value: formatTRY(focusedOffer?.amountCompany), help: 'Hizmet Alan Firma tarafından görünen tutarı gösterir.' },
+        { label: 'Taşımacılık Firması', value: formatTRY(focusedOffer?.amountRoom), help: 'Taşımacılık Firması tarafından girilen tutarı gösterir.' },
       ],
       badges: [
         { label: 'Vardiya', value: String(shift?.status || '-').toUpperCase(), help: 'Bağlı vardiyanın durumunu gösterir.' },
@@ -508,17 +508,17 @@ export default function RoomOffersPanel() {
     <div className="wrap wrap--fluid">
       <div className="card">
         <div className="title">Teklifler (Gelen Teklifler)</div>
-        <div className="muted">Şirket tarafının gönderdiği market vardiya teklifleri.</div>
+        <div className="muted">Hizmet Alan Firma tarafının gönderdiği market vardiya teklifleri.</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
 
       <OfferQualityRankingCard
         title="Kalite karşılaştırması"
-        subtitle="Room tarafında teklifler quality, trust, telematics, evidence/check-in ve operasyon riskiyle readonly okunur."
+        subtitle="Taşımacılık Firması tarafında teklifler kalite, güven, telematik, kanıt/check-in ve operasyon riskiyle salt okunur okunur."
         offers={filtered}
         roomScores={roomScores}
-        summaryParams={{ role: "ROOM", scopeLabel: "Room teklif karşılaştırması" }}
+        summaryParams={{ role: "ROOM", scopeLabel: "Taşımacılık Firması teklif karşılaştırması" }}
         maxRows={4}
         style={{ padding: 14 }}
       />
@@ -540,7 +540,7 @@ export default function RoomOffersPanel() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Ara (company / shiftId / shiftStatus / not...)"
+              placeholder="Ara (firma / vardiya no / vardiya durumu / not...)"
               style={{ minWidth: 240 }}
             />
           </div>
@@ -564,7 +564,7 @@ export default function RoomOffersPanel() {
             <button className="btn" disabled={busy || !selectedIds.length} onClick={onBulkCounter}>
               Pakete Karşı Teklif ({selectedIds.length})
             </button>
-            <button className="btn" disabled={busy || !selectedIds.length} onClick={acceptSelectedPackage} title="Seçili company karşı tekliflerini kabul edip ilgili bekleyen taleplere geç">
+            <button className="btn" disabled={busy || !selectedIds.length} onClick={acceptSelectedPackage} title="Seçili firma karşı tekliflerini kabul edip ilgili bekleyen taleplere geç">
               Paketi Kabul Et ve Bekleyen Taleplere Geç
             </button>
             <button className="btn" disabled={busy} onClick={load}>
@@ -639,15 +639,15 @@ export default function RoomOffersPanel() {
 
             <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
               <div className="muted">
-                Şirket: <b>{formatTRY(o.amountCompany)}</b>
+                Hizmet Alan Firma: <b>{formatTRY(o.amountCompany)}</b>
               </div>
               <div className="muted">
-                Oda: <b>{formatTRY(o.amountRoom)}</b>
+                Taşımacılık Firması: <b>{formatTRY(o.amountRoom)}</b>
               </div>
             </div>
 
-            {o.noteCompany ? <div className="muted">Not (Şirket): {o.noteCompany}</div> : null}
-            {o.noteRoom ? <div className="muted">Not (Oda): {o.noteRoom}</div> : null}
+            {o.noteCompany ? <div className="muted">Not (Hizmet Alan Firma): {o.noteCompany}</div> : null}
+            {o.noteRoom ? <div className="muted">Not (Taşımacılık Firması): {o.noteRoom}</div> : null}
 
             {canCounter ? (
               <>
@@ -759,7 +759,7 @@ export default function RoomOffersPanel() {
             {capacityMeta.insufficient ? (
               <div className="card" style={{ marginTop: 8, width: "100%" }}>
                 <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                  <div className="muted"><b>Room havuz özeti</b></div>
+                  <div className="muted"><b>Taşımacılık Firması havuz özeti</b></div>
                   <button type="button" className="btn sm" disabled={busy || poolSummary.status === "loading"} onClick={() => loadPoolSummary(approveModal.shiftId, { force: true })}>
                     {poolSummary.status === "loading" ? "Yükleniyor..." : poolSummary.data ? "Yenile" : "Yükle"}
                   </button>

@@ -9,7 +9,10 @@ export function vehicleMetaLine(v) {
 
 export function roomLabel(r) {
   if (!r) return "";
-  return r.name || r.title || `Room #${r.id}`;
+  const name = r.name || r.title;
+  return name
+    ? String(name).replace(/^(Room|Oda)\s+/i, "").trim()
+    : `Taşımacılık Firması #${r.id}`;
 }
 
 export function trimOrNull(s) {
@@ -41,12 +44,12 @@ export function offerGapMeta(amountCompany, amountRoom) {
   if (hasCompany && hasRoom) {
     const diff = room - company;
     if (diff === 0) return { label: "Fiyat farkı", value: "Hizalı", tone: "good", note: "Aynı tutar" };
-    if (diff > 0) return { label: "Fiyat farkı", value: `+${formatTRY(diff)} ₺`, tone: "warn", note: "Room daha yüksek" };
-    return { label: "Fiyat farkı", value: `-${formatTRY(Math.abs(diff))} ₺`, tone: "good", note: "Company daha yüksek" };
+    if (diff > 0) return { label: "Fiyat farkı", value: `+${formatTRY(diff)} ₺`, tone: "warn", note: "Taşımacılık Firması teklifi daha yüksek" };
+    return { label: "Fiyat farkı", value: `-${formatTRY(Math.abs(diff))} ₺`, tone: "good", note: "Hizmet Alan Firma teklifi daha yüksek" };
   }
 
-  if (hasRoom && !hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(room)} ₺`, tone: "warn", note: "Sadece room teklifi var" };
-  if (!hasRoom && hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(company)} ₺`, tone: "neutral", note: "Room cevabı bekleniyor" };
+  if (hasRoom && !hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(room)} ₺`, tone: "warn", note: "Yalnızca taşımacılık firması teklifi var" };
+  if (!hasRoom && hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(company)} ₺`, tone: "neutral", note: "Taşımacılık Firması cevabı bekleniyor" };
   return { label: "Fiyat farkı", value: "-", tone: "neutral", note: "Tutar sinyali yok" };
 }
 
@@ -133,7 +136,7 @@ function buildRecommendationMeta(offer, bucket = [], roomScores = {}) {
   });
   const bestScore = bucketScores.length ? Math.max(...bucketScores) : scoreValue;
   if (scoreValue > 0 && scoreValue === bestScore && bucketScores.some((value) => value < scoreValue)) {
-    reasons.push("Room puanı daha yüksek");
+    reasons.push("Taşımacılık Firması puanı daha yüksek");
   }
 
   const gapValue = offerPriceSortValue(offer?.amountCompany, offer?.amountRoom);

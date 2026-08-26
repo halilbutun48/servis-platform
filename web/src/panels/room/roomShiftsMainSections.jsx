@@ -102,7 +102,7 @@ export function RoomShiftsMainSections({
     <>
       <div className="card roomShiftsTabCard" style={{ marginTop: 10 }}>
         <PanelSegmentTabs
-          ariaLabel="Room shifts bölümleri"
+          ariaLabel="Taşımacılık Firması vardiya bölümleri"
           tabs={[
             { key: "pending", label: "Bekleyen Talepler", badge: activeCounts.pending || 0 },
             { key: "contract", label: "Sözleşmeden Üretilen", badge: activeCounts.contract || 0 },
@@ -114,7 +114,7 @@ export function RoomShiftsMainSections({
         />
         <div className="muted roomShiftsTabHint" style={{ marginTop: 6 }}>
           {activeLabel === "Bekleyen Talepler"
-            ? "Firma talebi, Room onayı ve karar bekleyen vardiyalar."
+            ? "Hizmet Alan Firma talebi, Taşımacılık Firması onayı ve karar bekleyen vardiyalar."
             : activeLabel === "Sözleşmeden Üretilen"
               ? "Sözleşme kaynaklı vardiyalar; sözleşme kartları burada toplanır."
               : "Sözleşmeye bağlı olmayan normal, guided ve manuel vardiyalar."}
@@ -178,7 +178,7 @@ export function RoomShiftsMainSections({
           listFiltered={contractFiltered}
           items={items}
           emptyText="Sözleşmeden üretilen vardiya yok."
-          searchPlaceholder="Ara (id / şirket / plaka / sürücü / not)"
+          searchPlaceholder="Ara (id / firma / plaka / sürücü / not)"
           offersByShiftId={offersByShiftId}
           vehiclesById={vehiclesById}
           roomsById={roomsById}
@@ -204,7 +204,7 @@ export function RoomShiftsMainSections({
           listFiltered={otherFiltered}
           items={items}
           emptyText="Diğer vardiya yok."
-          searchPlaceholder="Ara (id / şirket / plaka / sürücü / not)"
+          searchPlaceholder="Ara (id / firma / plaka / sürücü / not)"
           offersByShiftId={offersByShiftId}
           vehiclesById={vehiclesById}
           roomsById={roomsById}

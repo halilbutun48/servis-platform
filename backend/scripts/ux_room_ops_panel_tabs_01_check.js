@@ -77,7 +77,7 @@ function main() {
   mustContains(panel, "PanelSegmentTabs", "OperationHealthPanel uses PanelSegmentTabs");
   mustContains(panel, "const [activeTab, setActiveTab] = useState(\"summary\")", "OperationHealthPanel has active tab state");
   mustContains(panel, "Şartlı Küme", "OperationHealthPanel keeps conditional cluster tab");
-  mustContains(panel, "Oda Operasyon Özeti", "OperationHealthPanel keeps summary tab");
+  mustContains(panel, "Taşımacılık Firması Operasyon Özeti", "OperationHealthPanel keeps summary tab");
   mustContains(panel, "Sürücü & Sorunlar", "OperationHealthPanel keeps combined problems tab");
   mustContains(panel, 'activeTab === "proof"', "OperationHealthPanel renders proof tab conditionally");
   mustContains(panel, 'activeTab === "summary"', "OperationHealthPanel renders summary tab conditionally");

@@ -30,9 +30,9 @@ const BASE_ROWS = [
   },
   {
     role: 'COMPANY',
-    roleLabel: 'Şirket',
+    roleLabel: 'Hizmet Alan Firma',
     visibility: 'Kendi personel servisleri',
-    gate: 'Şirket kapsamı + atama',
+    gate: 'Firma kapsamı + atama',
     note: 'Sözleşme ve vardiya ilişkisiyle sınırlıdır.',
   },
   {
@@ -44,9 +44,9 @@ const BASE_ROWS = [
   },
   {
     role: 'ROOM',
-    roleLabel: 'Oda',
-    visibility: 'Kendi operasyon odası',
-    gate: 'Oda kapsamı + yetki',
+    roleLabel: 'Taşımacılık Firması',
+    visibility: 'Kendi operasyon alanı',
+    gate: 'Taşımacılık Firması kapsamı + yetki',
     note: 'Operasyon izleme amaçlıdır.',
   },
   {

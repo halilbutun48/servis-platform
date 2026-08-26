@@ -19,7 +19,7 @@ export function PlanBuilderWorkflowSection() {
     <div className="card" style={{ marginTop: 10 }}>
       <h3 style={{ marginTop: 0 }}>İş Akışı</h3>
       <div className="muted">
-        <b>Plan Builder</b>: sade akış <b>Rota önerisi oluştur</b> → <b>Ön izle</b> → <b>Ayrı market teklifi oluştur</b>. Nihai araç/sürücü/kapasite kararı Room tarafında netleşir.
+        <b>Plan oluşturucu</b>: sade akış <b>Rota önerisi oluştur</b> → <b>Ön izle</b> → <b>Ayrı pazar teklifi oluştur</b>. Nihai araç/sürücü/kapasite kararı taşımacılık firması tarafında netleşir.
         <br />
         <b>Manuel Talep</b>: tekil talep (istisna / düzeltme).
         <br />
@@ -66,7 +66,7 @@ export function PlanBuilderSummaryParamsSection({
           Sadece geoStatus=OK
         </label>
         <div className="muted" style={{ marginTop: 6 }}>
-          Taslak plan kapasiteye göre bölünmez; sistem konum kümelerine göre taslak grup çıkarır. Nihai araç kapasitesi <b>Room</b> tarafında netleşir.
+          Taslak plan kapasiteye göre bölünmez; sistem konum kümelerine göre taslak grup çıkarır. Nihai araç kapasitesi <b>taşımacılık firması</b> tarafında netleşir.
         </div>
         <div style={{ marginTop: 8 }}>
           <button type="button" className="secondary" onClick={() => setShowAdvanced((v) => !v)}>
@@ -171,7 +171,7 @@ export function PlanBuilderDraftGroupsSection({
           <input value={maxWalkM} onChange={(e) => setMaxWalkM(e.target.value)} placeholder="250" />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
             <button type="button" className="btn sm" onClick={() => setMaxWalkM(String(companyDefaultMaxWalkM))}>
-              {companyKind === "SCHOOL" ? "School 50" : "Company 250"}
+              {companyKind === "SCHOOL" ? "Okul 50" : "Firma 250"}
             </button>
             {companyKind === "SCHOOL" ? null : (
               <button type="button" className="btn sm" onClick={() => setMaxWalkM("50")}>School 50</button>
@@ -300,9 +300,9 @@ export function PlanBuilderBulkOfferModal({ bulkOffer, setBulkOffer, pbRooms, pb
 
         <div className="row" style={{ gap: 12, marginTop: 12, flexWrap: "wrap" }}>
           <div className="col" style={{ minWidth: 260 }}>
-            <label className="muted">Room ara</label>
+            <label className="muted">Taşımacılık Firması ara</label>
             <input value={bulkOffer.q} onChange={(e) => setBulkOffer((p) => ({ ...p, q: e.target.value }))} placeholder="name contains" disabled={bulkOffer.busy} />
-            <div className="muted" style={{ marginTop: 8 }}>{pbRoomsBusy ? "Room listesi yükleniyor..." : `Toplam room: ${pbRooms?.length ?? 0}`}</div>
+            <div className="muted" style={{ marginTop: 8 }}>{pbRoomsBusy ? "Taşımacılık Firması listesi yükleniyor..." : `Toplam taşımacılık firması: ${pbRooms?.length ?? 0}`}</div>
           </div>
 
           <div className="col" style={{ minWidth: 160 }}>
@@ -339,7 +339,7 @@ export function PlanBuilderBulkOfferModal({ bulkOffer, setBulkOffer, pbRooms, pb
               {r?.hasHub ? <span className="pill ok">HUB</span> : null}
             </label>
           ))}
-          {!pbRooms?.length ? <div className="muted">Room listesi boş.</div> : null}
+          {!pbRooms?.length ? <div className="muted">Taşımacılık Firması listesi boş.</div> : null}
         </div>
 
         {bulkOffer.err ? <div className="err" style={{ marginTop: 10 }}>{bulkOffer.err}</div> : null}

@@ -31,7 +31,10 @@ export function vehicleMetaLine(v) {
 
 export function roomLabel(r) {
   if (!r) return "";
-  return r.name || r.title || `Oda ID ${r.id}`;
+  const name = r.name || r.title;
+  return name
+    ? String(name).replace(/^(Room|Oda)\s+/i, "").trim()
+    : `Taşımacılık Firması ID ${r.id}`;
 }
 
 export function toPositiveIntOrZero(v) {

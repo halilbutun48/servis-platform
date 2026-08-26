@@ -20,7 +20,7 @@ const LOGIN_HIGHLIGHTS = [
   },
   {
     title: "Hakediş ve maliyet riskleri için güvenli önizleme",
-    body: "Ödeme ve uyum sinyalleri kilit akışları bozmadan readonly önizlenir.",
+    body: "Ödeme ve uyum sinyalleri kilit akışları bozmadan salt okunur önizlenir.",
   },
   {
     title: "Sefer Abi ile rol bazlı operasyon desteği",
@@ -269,11 +269,11 @@ function LoginCard() {
                 gölgelememeleri için ikincil öncelikte sunulur.
               </div>
               <ul className="authDemoList">
-                <li><strong>Room:</strong> room@demo.com / demo123</li>
-                <li><strong>Company:</strong> company@demo.com / demo123</li>
-                <li><strong>School:</strong> school@demo.com / demo123</li>
-                <li><strong>Organization:</strong> organization@demo.com / demo123</li>
-                <li><strong>Driver:</strong> driver@demo.com / demo123</li>
+                <li><strong>Turizm/Taşımacılık Firması:</strong> room@demo.com / demo123</li>
+                <li><strong>Hizmet Alan Firma:</strong> company@demo.com / demo123</li>
+                <li><strong>Okul:</strong> school@demo.com / demo123</li>
+                <li><strong>Organizasyon:</strong> organization@demo.com / demo123</li>
+                <li><strong>Sürücü:</strong> driver@demo.com / demo123</li>
                 <li><strong>Personel:</strong> personel@demo.com / demo123</li>
               </ul>
               <div className="authDemoFoot">

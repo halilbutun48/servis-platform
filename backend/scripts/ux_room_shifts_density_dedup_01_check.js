@@ -129,7 +129,7 @@ function main() {
   mustContains(sections, "roomShiftsSectionCard", "room shifts sections use compact card wrapper");
   mustContains(sections, "roomShiftsSectionSubtitle", "room shifts sections keep optional subtitle styling");
   mustContains(sections, "roomShiftsDispatchPoolCard", "room shifts dispatch summary uses compact card wrapper");
-  mustContains(sections, "Room havuz özeti", "room shifts panel sections keeps dispatch summary card");
+  mustContains(sections, "Taşımacılık Firması havuz özeti", "room shifts panel sections keeps dispatch summary card");
   mustContains(sections, "showDispatchApplyAction = Boolean(data)", "room shifts panel sections keeps dispatch apply gating");
   mustContains(sections, "Önizlemeyi Uygula: Böl & Onayla", "room shifts panel sections keeps dispatch apply CTA");
   mustContains(sections, "roomShiftsDispatchApplyRow", "room shifts panel sections keeps dispatch apply row compact");

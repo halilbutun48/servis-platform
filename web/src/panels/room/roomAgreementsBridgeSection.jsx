@@ -119,7 +119,7 @@ export default function RoomAgreementsBridgeSection({
           <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme ID {counterTarget.id}</div>
 
           <div className="muted" style={{ marginTop: 6 }}>
-            Şirket teklifi: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
+            Hizmet Alan Firma teklifi: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
             {counterTarget.companyOfferNote ? <span> — {counterTarget.companyOfferNote}</span> : null}
           </div>
 
@@ -155,7 +155,7 @@ export default function RoomAgreementsBridgeSection({
           <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme ID {approveTarget.id}</div>
 
           <div className="muted" style={{ marginTop: 6 }}>
-            Şirket teklifi: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
+            Hizmet Alan Firma teklifi: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
             {approveTarget.companyOfferNote ? <span> — {approveTarget.companyOfferNote}</span> : null}
           </div>
 

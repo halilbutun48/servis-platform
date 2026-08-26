@@ -432,7 +432,7 @@ function buildSupplierComparisons(inputs, serviceView, budgetView, periodState) 
     ],
     supplierComparisonState: valueBand,
     supplierComparisonSummaryText: comparisonWarnings.length > 0
-      ? "Tedarikçi karşılaştırması read-only karar destek olarak hazırlandı; otomatik seçim yapılmadı."
+      ? "Tedarikçi karşılaştırması salt okunur karar desteği olarak hazırlandı; otomatik seçim yapılmadı."
       : "Tedarikçi karşılaştırması hazırlandı; otomatik seçim yapılmadı.",
   };
 }
@@ -526,7 +526,7 @@ function buildServiceCostComponents(serviceView) {
   if (serviceView.agreementPriceMinor !== null) {
     components.push({
       key: "agreement_price",
-      label: "Agreement price",
+      label: "Sözleşme fiyatı",
       amountMinor: serviceView.agreementPriceMinor,
       source: "agreementPriceMinor",
     });
@@ -534,7 +534,7 @@ function buildServiceCostComponents(serviceView) {
   if (serviceView.offerPriceMinor !== null) {
     components.push({
       key: "offer_price",
-      label: "Offer price",
+      label: "Teklif fiyatı",
       amountMinor: serviceView.offerPriceMinor,
       source: "offerPriceMinor",
     });
@@ -567,7 +567,7 @@ function buildCompanyBudgetSummaryText({ status, budgetView, serviceView, period
     base.push("Dönem bilgileri eşleşmediği için fiyatlar doğrudan karşılaştırılmadı.");
   }
   if (comparisonState === "incomplete") {
-    base.push("Tedarikçi karşılaştırması eksik veri nedeniyle incomplete kaldı.");
+    base.push("Tedarikçi karşılaştırması eksik veri nedeniyle tamamlanamadı.");
   }
   base.push("Bu sonuç fatura, hakediş, ödeme veya muhasebe kaydı değildir.");
   return base.join(" ");
@@ -588,7 +588,7 @@ function buildBudgetSummaryText({ status, budgetView, periodState }) {
   if (budgetView.remainingBudgetMinor !== null && budgetView.remainingBudgetMinor < 0) {
     return "Bütçe aşıldı; kalan bütçe negatif görünüyor.";
   }
-  return "Bütçe ve servis harcaması read-only olarak karşılaştırıldı.";
+  return "Bütçe ve servis harcaması salt okunur olarak karşılaştırıldı.";
 }
 function buildServiceSummaryText({ serviceView, status, periodState }) {
   if (serviceView.companyVisibleServiceSpendMinor === null) {
@@ -668,7 +668,7 @@ export function buildCompanyBudgetAndServiceCostDeniedPreview({ role = "COMPANY"
     modelVersion: COMPANY_BUDGET_AND_SERVICE_COST_MODEL_VERSION,
     previewId: safeHashId({ roleKey, companyKind, scope }),
     title: scopeEntry.title,
-    summaryText: "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan read-only/preview olarak kalır.",
+    summaryText: "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan salt okunur önizleme olarak kalır.",
     nextAction: "Yetkili COMPANY kimliği ile tekrar aç.",
     readOnly: true,
     previewOnly: true,
@@ -711,20 +711,20 @@ export function buildCompanyBudgetAndServiceCostDeniedPreview({ role = "COMPANY"
     externalPreviewAdjustments: [],
     missingFields: ["budgetAmountMinor", "actualServiceSpendMinor"],
     invalidFields: [],
-    warnings: ["company kind denied"],
-    blockers: ["company kind denied"],
+    warnings: ["şirket türü engellendi"],
+    blockers: ["şirket türü engellendi"],
     dataQuality: {
       score: 0,
       level: "low",
       completenessScore: 0,
       confidenceLevel: "low",
-      summaryText: "Company kind denied.",
-      reason: "company kind denied",
+      summaryText: "Bu alt kimlik için finansal operasyon yüzeyi kapalıdır. Bu alan salt okunur önizleme olarak kalır.",
+      reason: "Şirket türü engellendi.",
     },
     confidence: {
       score: 0,
       level: "low",
-      reason: "company kind denied",
+      reason: "Şirket türü engellendi.",
     },
     evidence: [],
     formulaTrace: [],

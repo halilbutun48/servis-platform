@@ -91,7 +91,7 @@ export default function RoomsPanel() {
 
   async function create() {
     const n = normStr(newName);
-    if (!n) return setErr("Room adı gerekli");
+    if (!n) return setErr("Taşımacılık Firması adı gerekli");
     setBusy(true);
     setErr("");
     try {
@@ -192,8 +192,8 @@ export default function RoomsPanel() {
       <div style={{ padding: 16 }}>
         <div className="topbar">
           <div>
-            <div className="title">Room’lar</div>
-            <div className="muted">Room = servis sağlayan (operator) şirket. Company ile bağ sözleşme üzerinden kurulur.</div>
+            <div className="title">Taşımacılık Firmaları</div>
+            <div className="muted">Turizm/Taşımacılık Firması servis sağlayan taraftır. Hizmet Alan Firma ile bağ sözleşme üzerinden kurulur.</div>
           </div>
           <div className="pill">{filteredCount} kayıt</div>
         </div>
@@ -216,7 +216,7 @@ export default function RoomsPanel() {
 
           <div style={{ flex: 1 }} />
 
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Yeni room adı" style={{ minWidth: 220 }} />
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Yeni taşımacılık firması adı" style={{ minWidth: 220 }} />
           <button className="btn primary" disabled={busy} onClick={create}>
             Oluştur
           </button>
@@ -350,7 +350,7 @@ export default function RoomsPanel() {
         <div className="modal-backdrop" onClick={() => !busy && setProf(null)}>
           <div className="card modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 760 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingBottom: 10, borderBottom: "1px solid #22314f" }}>
-              <div style={{ fontWeight: 800 }}>Room Profili — #{prof.id} {prof.name}</div>
+              <div style={{ fontWeight: 800 }}>Taşımacılık Firması Profili — #{prof.id} {prof.name}</div>
               <button className="btn sm" disabled={busy} onClick={() => setProf(null)}>
                 Kapat
               </button>
@@ -397,4 +397,3 @@ export default function RoomsPanel() {
     </>
   );
 }
-

@@ -160,6 +160,18 @@ export function createApiRateLimiters({ ENV, verifyToken, rateLimitStoreMode, ge
     keyGenerator: authKey,
   });
 
+  // Super-admin decision-support read surfaces fan out across several internal summaries.
+  // Keep them in a dedicated bucket so they do not inherit generic panel pressure.
+  const readAdminLimiter = buildLimiter({
+    windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+    // Super-admin decision-support surfaces fan out across more summary reads
+    // than the generic panel surfaces. Keep this bucket aligned with the other
+    // heavy read buckets so the 82-route browser sweep does not trip 429s.
+    max: Math.max(360, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 3)),
+    store: rlStore("read-admin:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+    keyGenerator: authKey,
+  });
+
   const writeLimiter = buildLimiter({
     windowMs: ENV.WRITE_RATE_LIMIT_WINDOW_MS,
     max: ENV.WRITE_RATE_LIMIT_MAX,
@@ -222,6 +234,18 @@ export function createApiRateLimiters({ ENV, verifyToken, rateLimitStoreMode, ge
     return String(req.path || "") === "/trust-quality/provider-scores";
   }
 
+  function isAdminReadPath(req) {
+    const pathname = String(req.path || "");
+    return (
+      pathname === "/commercial-core" ||
+      pathname.startsWith("/commercial-core/") ||
+      pathname === "/trust-quality" ||
+      pathname.startsWith("/trust-quality/") ||
+      pathname === "/operation-proof" ||
+      pathname.startsWith("/operation-proof/")
+    );
+  }
+
   function isPreviewReadPath(req) {
     return /^\/shifts\/\d+\/route-preview$/.test(String(req.path || ""));
   }
@@ -268,6 +292,7 @@ export function createApiRateLimiters({ ENV, verifyToken, rateLimitStoreMode, ge
     if (req.path.startsWith("/telematics")) return next();
 
     if (req.method === "GET") {
+      if (isAdminReadPath(req)) return readAdminLimiter(req, res, next);
       if (isSummaryReadPath(req)) return readSummaryLimiter(req, res, next);
       if (isReportReadPath(req)) return readReportLimiter(req, res, next);
       if (isScoreReadPath(req)) return readScoreLimiter(req, res, next);

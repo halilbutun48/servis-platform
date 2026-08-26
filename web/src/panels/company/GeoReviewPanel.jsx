@@ -550,7 +550,7 @@ export default function GeoReviewPanel() {
           <div>
             <div className="title">{school ? "Öğrenci Konum Seçici" : `${who} Konum Seçici`}</div>
             <div className="muted">
-              Liste solda, harita sağda. Adresi kullanıp konum üret, sonra KVKK için gereksiz verileri temizle. Bu ekran company/personel ve school/öğrenci için ortak çalışır.
+              Liste solda, harita sağda. Adresi kullanıp konum üret, sonra KVKK için gereksiz verileri temizle. Bu ekran firma/personel ve okul/öğrenci için ortak çalışır.
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -736,6 +736,5 @@ export default function GeoReviewPanel() {
     </div>
   );
 }
-
 
 

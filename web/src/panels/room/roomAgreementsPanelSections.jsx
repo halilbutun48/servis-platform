@@ -164,7 +164,7 @@ function RoomAgreementsRouteRefreshPendingCard({
         <div className="card" style={{ marginTop: 12 }} onClick={(e) => e.stopPropagation()}>
           <div style={{ fontWeight: 900 }}>Rota güncelleme karşı teklifi</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            Şirket teklifi: <b>{moneyTry(item?.initialCompanyOfferAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount)}</b>
+            Hizmet Alan Firma teklifi: <b>{moneyTry(item?.initialCompanyOfferAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount)}</b>
             {item?.initialCompanyOfferNote ? <span> — {item.initialCompanyOfferNote}</span> : (item?.companyOfferNote ? <span> — {item.companyOfferNote}</span> : null)}
           </div>
           <div className="fieldRow" style={{ marginTop: 12 }}>
@@ -214,7 +214,7 @@ export function RoomAgreementsRouteRefreshPendingSection({
     <div className="card">
       <div style={{ fontWeight: 900, marginBottom: 10 }}>Rota Güncelleme Talepleri</div>
       <div className="muted" style={{ marginBottom: 12 }}>
-        Bu alan vardiya pazarlığı değil, aktif sözleşmeye bağlı rota değişiklik talebidir. Oda burada mevcut rota ile önerilen yeni rotayı karşılaştırıp karar verir.
+        Bu alan vardiya pazarlığı değil, aktif sözleşmeye bağlı rota değişiklik talebidir. Taşımacılık Firması burada mevcut rota ile önerilen yeni rotayı karşılaştırıp karar verir.
       </div>
       <div style={{ display: "grid", gap: 12 }}>
         {items.map((item) => {
@@ -353,7 +353,7 @@ export function RoomAgreementsRouteRefreshAcceptedSection({
     <div className="card">
       <div style={{ fontWeight: 900, marginBottom: 10 }}>Uygulanan Rota Güncellemeleri</div>
       <div className="muted" style={{ marginBottom: 12 }}>
-        Kabul edilen rota değişiklikleri burada özet kalır. Oda kabul ettikten sonra eski rota ile uygulanan yeni rotayı tekrar açıp karşılaştırabilir.
+          Kabul edilen rota değişiklikleri burada özet kalır. Taşımacılık Firması kabul ettikten sonra eski rota ile uygulanan yeni rotayı tekrar açıp karşılaştırabilir.
       </div>
       <div style={{ display: "grid", gap: 12 }}>
         {items.slice(0, 6).map((item) => {
@@ -398,7 +398,7 @@ export function RoomAgreementsExtendRequestsSection({
     <div className="card">
       <div style={{ fontWeight: 900, marginBottom: 10 }}>Uzatma Talepleri</div>
       <div className="muted" style={{ marginBottom: 10 }}>
-        Şirket uzatma teklifi gönderir → oda kabul / reddet / karşı teklif verir.
+        Hizmet Alan Firma uzatma teklifi gönderir → taşımacılık firması kabul / reddet / karşı teklif verir.
       </div>
 
       <div className="tableWrap">
@@ -408,8 +408,8 @@ export function RoomAgreementsExtendRequestsSection({
               <th>ID</th>
               <th>Mevcut</th>
               <th>İstenen</th>
-              <th>Şirket Uzatma Teklifi</th>
-              <th>Oda Karşı Teklifi</th>
+              <th>Hizmet Alan Firma Uzatma Teklifi</th>
+              <th>Taşımacılık Firması Karşı Teklifi</th>
               <th>Durum</th>
               <th>Aksiyon</th>
             </tr>
@@ -445,7 +445,7 @@ export function RoomAgreementsExtendRequestsSection({
                       >
                         Karşı Teklif
                       </button>
-                      {ex === "COUNTERED" ? <span className="muted" style={{ fontSize: 12 }}>Şirket kararı bekleniyor…</span> : null}
+                      {ex === "COUNTERED" ? <span className="muted" style={{ fontSize: 12 }}>Hizmet Alan Firma kararı bekleniyor…</span> : null}
                     </div>
 
                     {extendCounterId === item.id ? (

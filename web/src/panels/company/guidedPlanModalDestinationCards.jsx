@@ -109,7 +109,7 @@ export function GuidedOrganizationPlanCard({
 }) {
   return (
     <div className="card">
-      <div style={{ fontWeight: 800 }}>Kurum detayları</div>
+      <div style={{ fontWeight: 800 }}>Organizasyon detayları</div>
       <div className="muted" style={{ marginTop: 4 }}>
         Gezi planını burada kurarsın. Tahmini kişi sayısı, toplanma konumu, gidilecek konumlar ve dönüş tipi aynı ekranda kalır.
       </div>

@@ -261,7 +261,7 @@ export default function OperationHealthPanel() {
       label: copilotIssue?.title || copilotDriver?.driverName || 'Operasyon sağlığı özeti',
       summary: [copilotDriver?.liveState || null, copilotDriver?.issueSummary || null, copilotIssue?.severity || null].filter(Boolean).join(' • '),
       fields: [
-        { label: 'Aktif Sürücü', value: String(summary?.cards?.activeDrivers ?? '-'), help: 'Room içinde şu an görünen aktif sürücü sayısını gösterir.' },
+        { label: 'Aktif Sürücü', value: String(summary?.cards?.activeDrivers ?? '-'), help: 'Taşımacılık Firması içinde şu an görünen aktif sürücü sayısını gösterir.' },
         { label: 'Riskli Cihaz', value: String(summary?.cards?.riskyDevices ?? '-'), help: 'İzin, oturum veya GPS riski taşıyan cihaz sayısını gösterir.' },
         { label: 'Düşük canlılık / Çevrim dışı', value: String(summary?.cards?.staleOrOffline ?? '-'), help: 'Canlı konum akışı zayıf olan sürücü sayısını gösterir.' },
         { label: 'Açık Sorun', value: String(summary?.cards?.openIssues ?? '-'), help: 'Takip edilmesi gereken açık sorun sayısını gösterir.' },
@@ -295,7 +295,7 @@ export default function OperationHealthPanel() {
     },
     {
       key: "summary",
-      label: "Oda Operasyon Özeti",
+      label: "Taşımacılık Firması Operasyon Özeti",
       badge: summary?.cards?.activeDrivers ?? "-",
     },
     {
@@ -309,10 +309,10 @@ export default function OperationHealthPanel() {
     <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <div className="panelTitle">Oda Operasyon Paneli</div>
+            <div className="panelTitle">Taşımacılık Firması Operasyon Paneli</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
               Canlı Sağlık ve Risk Özeti. Özet üstte; ayrıntılar tablarda kalır.
-              {/* Room için görev, servis, sürücü, araç ve biniş değişikliği görünürlüğü */}
+              {/* Taşımacılık Firması için görev, servis, sürücü, araç ve biniş değişikliği görünürlüğü */}
             </div>
           </div>
           <div className="muted">Kapsam: Kendi operasyon alanınız</div>
@@ -337,7 +337,7 @@ export default function OperationHealthPanel() {
       </div>
 
       <PanelSegmentTabs
-        ariaLabel="Oda operasyon bölümleri"
+        ariaLabel="Taşımacılık Firması operasyon bölümleri"
         tabs={tabs}
         value={activeTab}
         onChange={(next) => {
@@ -371,13 +371,13 @@ export default function OperationHealthPanel() {
       ) : null}
 
       {activeTab === "summary" ? (
-        <section role="tabpanel" aria-label="Oda Operasyon Özeti" style={{ marginTop: 14 }}>
+        <section role="tabpanel" aria-label="Taşımacılık Firması Operasyon Özeti" style={{ marginTop: 14 }}>
           <RoomOperationsBoard
             roomSummary={summary}
             roomData={roomOperations}
             onApplyAcceptedRequest={handleApplyAcceptedRequest}
             applyingRequestId={applyingRequestId}
-            decisionOwnerNote="Readonly önizleme"
+            decisionOwnerNote="Salt okunur önizleme"
           />
         </section>
       ) : null}

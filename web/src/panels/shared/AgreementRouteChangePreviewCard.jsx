@@ -42,12 +42,12 @@ export default function AgreementRouteChangePreviewCard({
       ) : null}
       {companyOfferNote ? (
         <div className="muted" style={{ marginTop: 6 }}>
-          Şirket notu: {companyOfferNote}
+          Hizmet Alan Firma notu: {companyOfferNote}
         </div>
       ) : null}
       {roomCounterText ? (
         <div className="muted" style={{ marginTop: 6 }}>
-          Oda karşı teklifi: <b>{roomCounterText}</b>
+          Taşımacılık Firması karşı teklifi: <b>{roomCounterText}</b>
         </div>
       ) : null}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 12 }}>

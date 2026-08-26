@@ -9,7 +9,7 @@ function joinList(arr) {
 function roleTitle(role) {
   const r = String(role || "").toUpperCase();
   if (r === "SUPER_ADMIN") return "Sistem yöneticisi";
-  if (r === "ROOM") return "Oda operasyonu";
+  if (r === "ROOM") return "Taşımacılık Firması operasyonu";
   if (r === "COMPANY") return "Firma operasyonu";
   if (r === "DRIVER") return "Sürücü";
   if (r === "PERSONEL") return "Personel";

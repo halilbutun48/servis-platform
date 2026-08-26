@@ -166,7 +166,7 @@ function main() {
   mustContains(trackView, "CompanyOtherSection", "CompanyShiftsPanelTrackView composes other section");
 
   const intro = read("web/src/panels/company/CompanyShiftsPanelIntro.jsx");
-  mustContains(intro, "Shifts (COMPANY)", "CompanyShiftsPanelIntro keeps summary title");
+  mustContains(intro, "Hizmet Alan Firma Vardiyaları", "CompanyShiftsPanelIntro keeps summary title");
   mustContains(intro, "trackCounts", "CompanyShiftsPanelIntro keeps summary counts");
   mustNotContains(intro, "PanelSegmentTabs", "CompanyShiftsPanelIntro no longer uses PanelSegmentTabs");
   mustNotContains(intro, "mainTab === \"create\"", "CompanyShiftsPanelIntro removes create branch");

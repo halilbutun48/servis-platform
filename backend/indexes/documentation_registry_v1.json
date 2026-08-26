@@ -2,13 +2,13 @@
   "schemaVersion": "docs-registry-v1",
   "generatedAt": "2026-08-20T14:53:21.500Z",
   "repo": {
-    "head": "d837500747fa8664219fd8beb79834c825e0b3b2",
+    "head": "3768171d4fc60d8cf017fad94205ef8234618c58",
     "branch": "m90d1_web_lint_inventory"
   },
   "census": {
-    "total": 1238,
+    "total": 1246,
     "tracked": 637,
-    "untracked": 601
+    "untracked": 609
   },
   "discovery": {
     "description": "Repository documentation-like artifact census, path-exact and deterministic.",
@@ -36,7 +36,7 @@
       "ACTIVE_DOMAIN_DOC": 146,
       "REFERENCE_POINTER": 27,
       "HISTORICAL_EVIDENCE": 464,
-      "DERIVED_GENERATED": 596,
+      "DERIVED_GENERATED": 604,
       "STALE_CONTRADICTORY": 0,
       "UNKNOWN_NEEDS_REVIEW": 0,
       "CHECKER_DEPENDENT": 0,
@@ -46,11 +46,11 @@
     },
     "archiveBlocked": 387,
     "checkerDependent": 270,
-    "generated": 596,
+    "generated": 604,
     "activeCanonical": 151,
     "archiveDispositionCounts": {
       "KEEP_ACTIVE": 151,
-      "KEEP_GENERATED_EVIDENCE": 596,
+      "KEEP_GENERATED_EVIDENCE": 604,
       "KEEP_POINTER": 27,
       "KEEP_IN_ARCHIVE": 464
     }
@@ -7233,6 +7233,110 @@
       "notesStatusReason": "generated evidence artifact; consumerCount=0"
     },
     {
+      "path": "artifacts/backups/servisdb_backup_20260824-185952_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260824-190800_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260824-195045_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260824-201103_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260824-222326_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260825-025923_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260825-051528_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260825-083544_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
       "path": "artifacts/encoding_code_tail.txt",
       "tracked": false,
       "classification": "DERIVED_GENERATED",
@@ -8096,12 +8200,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md",
-      "consumerCount": 13,
+      "consumerCount": 14,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=13"
+      "notesStatusReason": "active domain doc; consumerCount=14"
     },
     {
       "path": "docs/CONVERSATION_CLOSURE_INDEX_V1.md",
@@ -8811,12 +8915,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md",
-      "consumerCount": 15,
+      "consumerCount": 16,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=15"
+      "notesStatusReason": "active domain doc; consumerCount=16"
     },
     {
       "path": "docs/GUARD_V2_STANDARDIZATION_01.md",
@@ -9864,12 +9968,12 @@
       "classification": "HISTORICAL_EVIDENCE",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md",
-      "consumerCount": 7,
+      "consumerCount": 9,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_IN_ARCHIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "historical evidence artifact; consumerCount=7"
+      "notesStatusReason": "historical evidence artifact; consumerCount=9"
     },
     {
       "path": "docs/MILESTONE_M90C_7_EXPORT_PACKAGE_HYGIENE_CLOSURE.md",
@@ -10696,12 +10800,12 @@
       "classification": "HISTORICAL_EVIDENCE",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 14,
+      "consumerCount": 15,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_IN_ARCHIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "historical evidence artifact; consumerCount=14"
+      "notesStatusReason": "historical evidence artifact; consumerCount=15"
     },
     {
       "path": "docs/REPO_CONTRACT_MARKER_POLITIKASI_V1.md",
@@ -10735,12 +10839,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 62,
+      "consumerCount": 63,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=62"
+      "notesStatusReason": "active domain doc; consumerCount=63"
     },
     {
       "path": "docs/ROLE_DATA_ISOLATION_REDTEAM_01.md",
@@ -12087,12 +12191,12 @@
       "classification": "HISTORICAL_EVIDENCE",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md",
-      "consumerCount": 8,
+      "consumerCount": 10,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_IN_ARCHIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "historical evidence artifact; consumerCount=8"
+      "notesStatusReason": "historical evidence artifact; consumerCount=10"
     },
     {
       "path": "docs/RUNBOOK_M90C_7_EXPORT_PACKAGE_HYGIENE_CLOSURE.md",
@@ -12893,12 +12997,12 @@
       "classification": "HISTORICAL_EVIDENCE",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 14,
+      "consumerCount": 16,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_IN_ARCHIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "historical evidence artifact; consumerCount=14"
+      "notesStatusReason": "historical evidence artifact; consumerCount=16"
     },
     {
       "path": "docs/UX_PANEL_REALITY_AUDIT_02C.md",

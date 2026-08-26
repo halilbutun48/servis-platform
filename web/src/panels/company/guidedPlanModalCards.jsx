@@ -6,13 +6,13 @@ export { GuidedDestinationRowCard, GuidedOrganizationPlanCard } from "./guidedPl
 export function GuidedOrganizationReadinessCard({ orgDraftCompletion, orgEstimatedPax }) {
   return (
     <div className="card" style={{ border: orgDraftCompletion.ready ? "1px solid #2a7" : "1px solid #b85" }}>
-      <div style={{ fontWeight: 800 }}>{orgDraftCompletion.ready ? "✅ Kurum planı markete gönderime hazır" : "⚠ Kurum planı henüz tam değil"}</div>
+      <div style={{ fontWeight: 800 }}>{orgDraftCompletion.ready ? "✅ Organizasyon planı markete gönderime hazır" : "⚠ Organizasyon planı henüz tam değil"}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {orgDraftCompletion.ready
           ? `Tahmini kişi: ${Number(orgEstimatedPax || 0) || 0} • Tüm konumlar koordinatlı • Taslak vardiyalarda ${orgDraftCompletion.expectedStops} ziyaret noktası hazır.`
           : orgDraftCompletion.reasons.join(" • ")}
       </div>
-      <div className="muted" style={{ marginTop: 6 }}>Not: Kurum işlerinde plan tam oluşmadan markete düşmez.</div>
+      <div className="muted" style={{ marginTop: 6 }}>Not: Organizasyon işlerinde plan tam oluşmadan markete düşmez.</div>
     </div>
   );
 }
@@ -20,7 +20,7 @@ export function GuidedOrganizationReadinessCard({ orgDraftCompletion, orgEstimat
 export function GuidedCompanyGeoGateCard({ companyGeoGate }) {
   return (
     <div className="card" style={{ border: companyGeoGate.blocking ? "1px solid #b85" : "1px solid #2a7" }}>
-      <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Şirket konumu henüz tam değil" : "✅ Şirket konumu koordinat olarak hazır"}</div>
+      <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Firma konumu henüz tam değil" : "✅ Firma konumu koordinat olarak hazır"}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {companyGeoGate.blocking
           ? `İncelenecek: ${Number(companyGeoGate?.geoStats?.review || 0)} • Hatalı: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak vardiya doğrulanamaz.`
@@ -190,7 +190,7 @@ export function GuidedBulkOffersCard({
 }) {
   const lockedRoomLabel = routeRefreshLaunch?.roomName
     ? `${routeRefreshLaunch.roomName}${routeRefreshLaunch?.roomId ? ` (#${routeRefreshLaunch.roomId})` : ""}`
-    : (routeRefreshLaunch?.roomId ? `Oda #${routeRefreshLaunch.roomId}` : "-");
+    : (routeRefreshLaunch?.roomId ? `Taşımacılık Firması #${routeRefreshLaunch.roomId}` : "-");
 
   return (
     <div className="card">
@@ -199,20 +199,20 @@ export function GuidedBulkOffersCard({
           <div style={{ fontWeight: 800 }}>{routeRefreshMode ? "Rota güncelleme teklifi gönder" : "Toplu teklif gönder"}</div>
           <div className="muted">
             {routeRefreshMode
-              ? "Bu güncelleme yalnızca seçili sözleşmenin aynı odasına gider; market teklif akışı kullanılmaz."
-              : "Seçili odalara tüm taslak vardiyalar için teklif gider."}
+              ? "Bu güncelleme yalnızca seçili sözleşmenin aynı taşımacılık firmasına gider; piyasa teklif akışı kullanılmaz."
+              : "Seçili taşımacılık firmalarına tüm taslak vardiyalar için teklif gider."}
           </div>
         </div>
         {!routeRefreshMode ? (
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => onReloadRooms?.()} disabled={busy || !roomsSupported}>Odaları yenile</button>
+            <button type="button" onClick={() => onReloadRooms?.()} disabled={busy || !roomsSupported}>Taşımacılık firmalarını yenile</button>
           </div>
         ) : null}
       </div>
 
       {!routeRefreshMode && !roomsSupported ? (
         <div className="muted" style={{ marginTop: 8, color: "#b85" }}>
-          Oda listesi bulunamadı. Önce oda dizini çalışmalı.
+          Taşımacılık firması listesi bulunamadı. Önce taşımacılık firması dizini çalışmalı.
         </div>
       ) : null}
 
@@ -221,10 +221,10 @@ export function GuidedBulkOffersCard({
           {routeRefreshMode ? (
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div className="card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
-                <div style={{ fontWeight: 800 }}>Hedef oda</div>
+                <div style={{ fontWeight: 800 }}>Hedef taşımacılık firması</div>
                 <div className="muted" style={{ marginTop: 6 }}>{lockedRoomLabel}</div>
                 <div className="muted" style={{ marginTop: 6 }}>
-                  Kaynak vardiya #{Number(routeRefreshLaunch?.sourceShiftId || 0) || "?"} üzerinden hazırlanan taslak vardiyalar aynı odaya rota güncelleme teklifi olarak gönderilir.
+                  Kaynak vardiya #{Number(routeRefreshLaunch?.sourceShiftId || 0) || "?"} üzerinden hazırlanan taslak vardiyalar aynı taşımacılık firmasına rota güncelleme teklifi olarak gönderilir.
                 </div>
               </div>
               <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -232,7 +232,7 @@ export function GuidedBulkOffersCard({
                   <div style={{ fontWeight: 800 }}>Mevcut sözleşme ücreti</div>
                   <div className="muted" style={{ marginTop: 6 }}>{moneyTry(routeRefreshLaunch?.currentCompanyOfferAmount)}</div>
                   {routeRefreshLaunch?.currentRoomOfferAmount != null ? (
-                    <div className="muted" style={{ marginTop: 6 }}>Oda karşı teklifi: {moneyTry(routeRefreshLaunch?.currentRoomOfferAmount)}</div>
+                    <div className="muted" style={{ marginTop: 6 }}>Taşımacılık Firması karşı teklifi: {moneyTry(routeRefreshLaunch?.currentRoomOfferAmount)}</div>
                   ) : null}
                 </div>
                 <div className="card" style={{ border: "1px solid rgba(88,166,255,.18)" }}>
@@ -266,10 +266,10 @@ export function GuidedBulkOffersCard({
             <>
               <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label className="muted">Oda ara</label>
+                  <label className="muted">Taşımacılık firması ara</label>
                   <input value={roomQ} onChange={(e) => setRoomQ(e.target.value)} placeholder="ad içerir" disabled={busy} />
-                  <div className="muted" style={{ marginTop: 8 }}>Toplam oda: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
-                  <div className="muted" style={{ marginTop: 6 }}>Toplanma konumu eksik odalar da listelenir; konum eksikliği teklif engeli değildir.</div>
+                  <div className="muted" style={{ marginTop: 8 }}>Toplam taşımacılık firması: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
+                  <div className="muted" style={{ marginTop: 6 }}>Toplanma konumu eksik taşımacılık firmaları da listelenir; konum eksikliği teklif engeli değildir.</div>
                 </div>
                 <div>
                   <label className="muted">Tutar (₺) (isteğe bağlı)</label>
@@ -293,7 +293,7 @@ export function GuidedBulkOffersCard({
                     />
                   );
                 })}
-                {!roomsFiltered.length ? <div className="muted">Oda bulunamadı.</div> : null}
+                {!roomsFiltered.length ? <div className="muted">Taşımacılık firması bulunamadı.</div> : null}
               </div>
             </>
           )}
@@ -331,9 +331,9 @@ export function GuidedBulkOffersCard({
       ) : (
         <div className="muted" style={{ marginTop: 10 }}>
           {offerOutcome === "agreement_covered"
-            ? "Bu plan seçilen odalarda zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; devam etmek için Bitir'e bas."
+            ? "Bu plan seçilen taşımacılık firmalarında zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; devam etmek için Bitir'e bas."
             : offerOutcome === "route_refresh_pending"
-              ? "Rota güncelleme teklifi aynı odaya gönderildi. Karar gelene kadar bu sözleşmede bekleyen güncelleme olarak kalır."
+              ? "Rota güncelleme teklifi aynı taşımacılık firmasına gönderildi. Karar gelene kadar bu sözleşmede bekleyen güncelleme olarak kalır."
               : "Teklifler gönderildi. Bu adım tamamlandı; devam etmek için Bitir'e bas."}
         </div>
       )}

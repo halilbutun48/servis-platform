@@ -45,10 +45,10 @@ export function CompanyOffersDecisionModal({
       <div style={{ marginTop: 10 }}>
         <OfferQualityRankingCard
           title="Kalite karşılaştırması"
-          subtitle="Kalite, güven, telematics, evidence/check-in ve operasyon riski readonly okunur; otomatik winner seçilmez."
+          subtitle="Kalite, güven, telematik, kanıt/check-in ve operasyon riski salt okunur gösterilir; otomatik kazanan seçilmez."
           offers={items}
           roomScores={roomScores}
-          summaryParams={{ role: "COMPANY", shiftId: offersModal.shiftId, scopeLabel: "Company teklif karşılaştırması" }}
+          summaryParams={{ role: "COMPANY", shiftId: offersModal.shiftId, scopeLabel: "Hizmet Alan Firma teklif karşılaştırması" }}
           maxRows={4}
           style={{ padding: 14 }}
         />
@@ -63,7 +63,7 @@ export function CompanyOffersDecisionModal({
           <OfferSignalPill label="Toplam" value={String(items.length)} tone="neutral" />
         </div>
         <div className="muted" style={{ marginTop: 8 }}>
-          Kalite sırası: karar verilebilirlik → room puanı → fiyat farkı → güncellik. Bu satır sadece karar desteğidir.
+          Kalite sırası: karar verilebilirlik → taşımacılık firması puanı → fiyat farkı → güncellik. Bu satır sadece karar desteğidir.
         </div>
         {recommendedOffer ? (
           <div className="row" style={{ marginTop: 10, gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
@@ -149,7 +149,7 @@ export function CompanyExtendModal({ extendModal, busy, onClose, onChange, onSub
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontWeight: 800 }}>Süre Uzat — Vardiya #{extendModal.shift?.id}</div>
-          <div className="muted">Bu talep Room’a gider; kabul edilince vardiya süresi uzar.</div>
+          <div className="muted">Bu talep taşımacılık firmasına gider; kabul edilince vardiya süresi uzar.</div>
         </div>
         <button type="button" className="btn sm" disabled={busy} onClick={onClose}>
           Kapat
@@ -190,7 +190,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontWeight: 800 }}>Teklif Gönder — Vardiya #{offerModal.shiftId}</div>
-          <div className="muted">Birden fazla room seçip tek seferde teklif at. Room puanı listede üstte görünür.</div>
+          <div className="muted">Birden fazla taşımacılık firması seçip tek seferde teklif at. Taşımacılık firması puanı listede üstte görünür.</div>
         </div>
         <button type="button" disabled={busy} onClick={onClose}>
           Kapat
@@ -201,7 +201,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
 
       <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <input
-          placeholder="Room ara"
+          placeholder="Taşımacılık firması ara"
           value={offerModal.q}
           onChange={(e) => onChange({ q: e.target.value })}
           style={{ width: "min(100%, 220px)" }}
@@ -242,7 +242,7 @@ export function CompanyOfferSendModal({ offerModal, rooms, roomScores, busy, onC
 
       <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
         <div className="col" style={{ width: "min(100%, 180px)" }}>
-          <label className="muted">Company Tutar (₺) (opsiyonel)</label>
+          <label className="muted">Hizmet Alan Firma tutarı (₺) (opsiyonel)</label>
           <input
             value={offerModal.amountCompany}
             onChange={(e) => onChange({ amountCompany: e.target.value })}
@@ -290,7 +290,7 @@ export function CompanyMarketSection({
       <CompanyAccordionHeader
         title="Market Shifts"
         count={marketItems.length}
-        description="Room seçilmemiş talepler. Teklifi birden fazla room’a gönder."
+        description="Taşımacılık firması seçilmemiş talepler. Teklifi birden fazla taşımacılık firmasına gönder."
         accOpen={accOpen}
         onOpen={(e) => { if (e?.stopPropagation) e.stopPropagation(); onSetOpen(true); }}
         onClose={(e) => { if (e?.stopPropagation) e.stopPropagation(); onSetOpen(false); }}
@@ -416,7 +416,7 @@ export function CompanyPendingSection({
               <table className="tbl" style={{ marginTop: 10 }}>
                 <thead>
                   <tr>
-                    <th>ID</th><th>Durum</th><th>Oda</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Pazarlık</th><th>İptal</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
+                    <th>ID</th><th>Durum</th><th>Taşımacılık Firması</th><th>Taşımacılık Firması Teklifi</th><th>Hizmet Alan Firma Teklifi</th><th>Pazarlık</th><th>İptal</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -536,7 +536,7 @@ function CompanyStatusListSection({
               <table className="tbl" style={{ marginTop: 10 }}>
                 <thead>
                   <tr>
-                    <th>ID</th><th>Durum</th><th>Oda</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Atanan Araç</th><th>Sürücü</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
+                    <th>ID</th><th>Durum</th><th>Taşımacılık Firması</th><th>Taşımacılık Firması Teklifi</th><th>Hizmet Alan Firma Teklifi</th><th>Atanan Araç</th><th>Sürücü</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -699,7 +699,7 @@ export function CompanyOtherSection({
         type="button"
         className="btn sm primary"
         disabled={busy || !Number(localFeaturedShift?.roomId || 0)}
-        title={!Number(localFeaturedShift?.roomId || 0) ? "Önce room seçili olmalı. Sonra taslak Company Sözleşmeler ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
+        title={!Number(localFeaturedShift?.roomId || 0) ? "Önce taşımacılık firması seçili olmalı. Sonra taslak Hizmet Alan Firma Sözleşmeleri ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
         onClick={() => onConvertShiftToAgreement(localFeaturedShift)}
       >
         Sözleşmeye Dönüştür

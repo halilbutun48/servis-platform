@@ -14,6 +14,7 @@ import { getPath } from "../../router";
 import { getCompanyMapShifts, getCompanyVehicles } from "../../utils/companyDataHub";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 import PanelChrome from "../../components/PanelChrome";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 
@@ -66,7 +67,7 @@ function normShiftStatus(s) {
 }
 
 function shiftTitle(s) {
-  if (!s) return "Shift yok";
+  if (!s) return "Vardiya yok";
   return `Vardiya #${s.id} • ${displayStatusLabel(normShiftStatus(s.status))}`;
 }
 
@@ -389,22 +390,26 @@ export default function CompanyMapPanel() {
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
   const safeDriveSummaryParams = useMemo(
-    () => ({
+    () => {
+      const rawGpsSource = selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel;
+      const gpsSourceLabel = rawGpsSource ? gpsSourcePresentationLabel(rawGpsSource) : undefined;
+      return ({
       gpsStatus: uiStatusFromVehicle(selected),
       gpsAge: gpsAgeLabel(selected),
       gpsLast: selected?.gpsLast,
-      gpsSourceLabel: selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel,
+      gpsSourceLabel,
       speedKmh: selected?.gpsLast?.speed || selected?.speed || selected?.speedKmh,
       speedLimitKmh: selected?.speedLimitKmh,
       routeProgressState: selectedShift?.status || selected?.gpsState?.lastUiStatus || selected?.gpsState?.lastStatus,
       nextStopName: selectedNext?.name,
       proofStatus: selectedShift?.operationProofStatus || selectedShift?.proofStatus || selected?.operationProofStatus || selected?.proofStatus,
       providerStatus: selected?.gpsState?.lastUiStatus || selected?.gpsState?.lastStatus,
-      providerLabel: selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel,
+      providerLabel: gpsSourceLabel,
       selectedVehicle: selected,
       selectedShift,
       nextStop: selectedNext,
-    }),
+      });
+    },
     [selected, selectedShift, selectedNext]
   );
 
@@ -414,7 +419,7 @@ export default function CompanyMapPanel() {
     if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
     if (selected?.plate) parts.push(`Araç ${selected.plate}`);
     const ui = uiStatusFromVehicle(selected);
-    if (ui) parts.push(`GPS ${ui}`);
+    if (ui) parts.push(`GPS ${gpsSourcePresentationLabel(ui)}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     return parts.join(" • ");
   }, [selected, selectedShift?.id, selectedNext?.name]);
@@ -502,13 +507,13 @@ export default function CompanyMapPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title={`${scopeKey === "/school/map" ? "Okul" : scopeKey === "/organization/map" ? "Kurum" : "Company"} • Canlı Harita`}
+        title={`${scopeKey === "/school/map" ? "Okul" : scopeKey === "/organization/map" ? "Organizasyon" : "Hizmet Alan Firma"} • Canlı Harita`}
         subtitle="Tek panel: canlı liste + seçili araç + duraklar + harita"
         actions={
           <div className="toolbar" style={{ justifyContent: "flex-end" }}>
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(Boolean(e.target.checked))} />
-              Sadece ACTIVE
+              Yalnızca aktif
             </label>
 
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -524,7 +529,7 @@ export default function CompanyMapPanel() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Plaka / sürücü / room / id"
+              placeholder="Plaka / sürücü / taşımacılık firması / kayıt no"
               style={{ width: 280 }}
             />
 
@@ -655,7 +660,7 @@ export default function CompanyMapPanel() {
               <div>
                 <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Seçili Araç</div>
                 <div className="muted" style={{ fontSize: 12, lineHeight: 1.1 }}>
-                  {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
+                  {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Vardiya yok"}
                 </div>
               </div>
 
@@ -743,7 +748,7 @@ export default function CompanyMapPanel() {
                       marginLeft: 4,
                     }}
                   >
-                    <span className="muted" style={{ fontSize: 12 }}>Mini Timeline</span>
+                    <span className="muted" style={{ fontSize: 12 }}>Kısa zaman çizelgesi</span>
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <StopTimeline
                         stops={selectedStops}

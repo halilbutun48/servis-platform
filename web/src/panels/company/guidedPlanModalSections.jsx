@@ -28,7 +28,7 @@ export function GuidedHubStep({
       <div className="muted">
         {organization
           ? "1. adımda gezi için toplanma konumunu ayarla. Bu nokta turun başlangıç merkezi olur."
-          : "1. adımda şirket kendi konumunu ayarlar."}
+          : "1. adımda firma kendi konumunu ayarlar."}
       </div>
 
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -45,16 +45,16 @@ export function GuidedHubStep({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <label className="muted">{organization ? "Toplanma Konumu Lat" : "Şirket Konumu Lat"}</label>
+          <label className="muted">{organization ? "Toplanma Konumu Lat" : "Firma Konumu Lat"}</label>
           <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
         </div>
         <div>
-          <label className="muted">{organization ? "Toplanma Konumu Lng" : "Şirket Konumu Lng"}</label>
+          <label className="muted">{organization ? "Toplanma Konumu Lng" : "Firma Konumu Lng"}</label>
           <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} disabled={busy} />
         </div>
       </div>
 
-      {!hubLoaded ? <div className="muted">{organization ? "Toplanma Konumu okunuyor..." : "Şirket Konumu okunuyor..."}</div> : null}
+      {!hubLoaded ? <div className="muted">{organization ? "Toplanma Konumu okunuyor..." : "Firma Konumu okunuyor..."}</div> : null}
 
       <div className="row" style={{ justifyContent: "flex-end" }}>
         <button type="button" onClick={saveHub} disabled={busy}>
@@ -224,8 +224,8 @@ export function GuidedSolveOffersStep({
     <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
       <div className="muted">
         {organization
-          ? "4. adım: Ön izle, rota sırasını iyileştir ve plan tamamsa uygun room'lara teklif gönder. Eksik koordinat varsa markete düşmez."
-          : "4. adım: Ön izleme al → rota sırasını iyileştir → uygun room'lara teklif gönder."}
+          ? "4. adım: Ön izle, rota sırasını iyileştir ve plan tamamsa uygun taşımacılık firmalarına teklif gönder. Eksik koordinat varsa piyasa akışına çıkmaz."
+          : "4. adım: Ön izleme al → rota sırasını iyileştir → uygun taşımacılık firmalarına teklif gönder."}
       </div>
 
       {organization ? (

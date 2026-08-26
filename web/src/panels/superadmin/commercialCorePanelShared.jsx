@@ -10,8 +10,8 @@ export function Card({ title, children }) {
 
 export function fmtBps(value) {
   const n = Number(value || 0);
-  if (!Number.isFinite(n)) return "0 bps";
-  return `${n} bps`;
+  if (!Number.isFinite(n)) return "%0";
+  return new Intl.NumberFormat("tr-TR", { style: "percent", minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n / 10000);
 }
 
 export function fmtDateTime(value) {

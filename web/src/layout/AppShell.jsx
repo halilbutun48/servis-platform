@@ -9,10 +9,12 @@ import BrandMark from "../components/BrandMark";
 import FloatingCopilotDrawer from "../components/copilot/FloatingCopilotDrawer";
 import { BRAND_NAME } from "../config/brand.js";
 import { getStepUpProvider, isStepUpEnabled } from "../utils/stepUp";
+import { roleLabelForUser } from "../utils/labels";
 
 export default function AppShell({ path, children }) {
   const { me, logout } = useSession();
   const role = me?.role || "-";
+  const roleDisplayLabel = roleLabelForUser(me || role);
   const isSchool = role === "COMPANY" && me?.companyKind === "SCHOOL";
   const isOrganization = role === "COMPANY" && me?.companyKind === "ORGANIZATION";
   const isTabletOpsRole = role === "ROOM" || role === "COMPANY";
@@ -70,10 +72,10 @@ export default function AppShell({ path, children }) {
           <div className="shellTopMeta">
             <div className="title">{shellHeadline}</div>
             <div className="muted">
-              {isSchool ? "Okul operasyonu" : isOrganization ? "Kurum operasyonu" : "Personel servis operasyonu"}
+              {isSchool ? "Okul operasyonu" : isOrganization ? "Organizasyon operasyonu" : "Personel servis operasyonu"}
             </div>
             <div className="muted">
-              {me?.email || "-"} • {isSchool ? "OKUL" : isOrganization ? "KURUM" : role}
+              {me?.email || "-"} • {roleDisplayLabel}
             </div>
           </div>
           <button className="btn sm shellTopLogout" onClick={logout}>

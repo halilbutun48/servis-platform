@@ -497,7 +497,7 @@ async function main() {
       screenPath: '/company/agreements',
       screenLabel: 'Company Agreements',
       message: 'Bugünkü planı ve eksik veriyi söyle.',
-      expectedFrame: 'Şirket açısından:',
+      expectedFrame: 'Hizmet Alan Firma açısından:',
       expectedNeedle: 'plan',
       selectedSummary: 'Plan satırı eksik veri içeriyor',
       selectedRecordStatus: 'Plan satırı eksik veri içeriyor',
@@ -512,7 +512,7 @@ async function main() {
       screenPath: '/room/shifts',
       screenLabel: 'Room Shifts',
       message: 'Bu vardiya neden ilerlemiyor?',
-      expectedFrame: 'Oda açısından:',
+      expectedFrame: 'Taşımacılık Firması açısından:',
       expectedNeedle: 'araç',
       selectedSummary: 'Vardiya araç ve sürücü bekliyor',
       selectedRecordStatus: 'Vardiya araç ve sürücü bekliyor',
@@ -846,7 +846,7 @@ async function main() {
   assert(productOverview.questionType === 'PRODUCT_OVERVIEW_HELP', 'product overview routes to PRODUCT_OVERVIEW_HELP');
   must(productOverview.reply, 'SeferPakt', 'product overview mentions SeferPakt');
   must(productOverview.reply, 'platform', 'product overview explains platform purpose');
-  must(productOverview.reply, 'Şirket rolünde', 'product overview names the role view');
+  must(productOverview.reply, 'Hizmet Alan Firma rolünde', 'product overview names the role view');
   mustNot(productOverview.reply, 'Company rolünde', 'product overview avoids the English role name');
   must(productOverview.reply, 'vardiya', 'product overview gives a starting path');
   must(productOverview.reply, 'teklif', 'product overview keeps the commercial path');
@@ -854,7 +854,7 @@ async function main() {
 
   const roleExplanation = buildDirectHelpResponse({ message: 'Room rolü ne yapar?', role: 'ROOM' });
   assert(roleExplanation.questionType === 'ROLE_EXPLANATION_HELP', 'role explanation routes to ROLE_EXPLANATION_HELP');
-  must(roleExplanation.reply, 'Oda rolünde', 'role explanation mentions role name');
+  must(roleExplanation.reply, 'Taşımacılık Firması açısından', 'role explanation mentions role name');
   mustNot(roleExplanation.reply, 'Room rolünde', 'role explanation avoids the English role name');
   must(roleExplanation.reply, 'operasyon, sürücü ve araç', 'role explanation explains the role');
   must(roleExplanation.reply, 'Önce', 'role explanation gives first step');

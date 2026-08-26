@@ -26,7 +26,7 @@ function ShiftReassignModalBody({ shift, subtitle = "", vehicles, drivers, busy,
             <div style={{ fontWeight: 900 }}>Vardiya #{shift.id} — Operasyonel Atama Değişikliği</div>
             {subtitle ? <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>{subtitle}</div> : null}
             <div className="muted" style={{ marginTop: 4 }}>
-              Bu işlem ticari pazarlık değildir. Yeni araç / sürücü ataması yapılır, rota / görev paketi yenilenir ve company operasyon kaydında görünür.
+              Bu işlem ticari pazarlık değildir. Yeni araç / sürücü ataması yapılır, rota / görev paketi yenilenir ve hizmet alan firma operasyon kaydında görünür.
             </div>
           </div>
           <button type="button" className="btn sm" disabled={busy} onClick={onClose}>Kapat</button>

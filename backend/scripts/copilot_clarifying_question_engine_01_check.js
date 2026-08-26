@@ -649,7 +649,7 @@ const cases = [
     fixture: roomShiftsFixture,
     message: 'Bunu başlatayım mı?',
     questionType: 'NEXT_STEP',
-    mustIncludeAny: ['Oda açısından', 'Vardiyalar ekranı', 'Araç ve sürücüyü kontrol et', 'Aynı akışı sürdürüyorum'],
+    mustIncludeAny: ['Taşımacılık Firması açısından', 'Vardiyalar ekranı', 'Araç ve sürücüyü kontrol et', 'Aynı akışı sürdürüyorum'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
     allowedQuestionTypes: ['NEXT_STEP'],
   },
@@ -708,7 +708,7 @@ const cases = [
     role: 'COMPANY',
     fixture: roomShiftsFixture,
     message: 'Vardiya oluşturmak mı istiyorsun, yoksa mevcut vardiyaları incelemek mi?',
-    mustIncludeAll: ['Bu rota için gerçek uygulama başlatamam', 'insan onayı'],
+    mustIncludeAll: ['Bu rota için gerçek uygulama başlatamam', 'Onayınız gerekli'],
     mustNotIncludeAny: ['Netleştirelim:', 'Alternatif:'],
   },
   {
@@ -727,7 +727,7 @@ const cases = [
     fixture: roomShiftsFixture,
     message: 'Rota uygula',
     questionType: 'ROUTE_REVIEW_HUMAN_APPROVAL',
-    mustIncludeAll: ['Bu rota için gerçek uygulama başlatamam', 'insan onayı'],
+    mustIncludeAll: ['Bu rota için gerçek uygulama başlatamam', 'Onayınız gerekli'],
   },
 ];
 

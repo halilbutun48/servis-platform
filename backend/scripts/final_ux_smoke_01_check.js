@@ -69,7 +69,7 @@ function inferRole(pathname) {
   if (pathname.startsWith("/room")) return "Room / Oda";
   if (pathname.startsWith("/company")) return "Company / Firma";
   if (pathname.startsWith("/school")) return "School / Okul";
-  if (pathname.startsWith("/organization")) return "Organization / Kurum";
+  if (pathname.startsWith("/organization")) return "Organization / Organizasyon";
   if (pathname.startsWith("/driver")) return "Driver";
   if (pathname.startsWith("/personel")) return "Personel";
   if (pathname.startsWith("/parent")) return "Parent / Veli";
@@ -81,8 +81,8 @@ function inferRole(pathname) {
 
 function inferLabels(pathname) {
   if (pathname === "/superadmin") return { menu: "Genel Bakış", registry: "Genel Bakış", catalog: "Genel Bakış", title: "Süper Yönetici" };
-  if (pathname === "/superadmin/companies") return { menu: "Şirketler", registry: "Şirketler", catalog: "Şirketler", title: "Şirketler" };
-  if (pathname === "/superadmin/rooms") return { menu: "Operasyon Odaları", registry: "Operasyon Odaları", catalog: "Operasyon Odaları", title: "Operasyon Odaları" };
+  if (pathname === "/superadmin/companies") return { menu: "Firmalar", registry: "Firmalar", catalog: "Firmalar", title: "Firmalar" };
+  if (pathname === "/superadmin/rooms") return { menu: "Taşımacılık Firmaları", registry: "Taşımacılık Firmaları", catalog: "Taşımacılık Firmaları", title: "Taşımacılık Firmaları" };
   if (pathname === "/superadmin/users") return { menu: "Kullanıcılar", registry: "Kullanıcılar", catalog: "Kullanıcılar", title: "Kullanıcılar" };
   if (pathname === "/superadmin/regions") return { menu: "İller ve Bölgeler", registry: "İller ve Bölgeler", catalog: "İller ve Bölgeler", title: "İller ve Bölgeler" };
   if (pathname === "/superadmin/audit") return { menu: "İşlem Kayıtları", registry: "İşlem Kayıtları", catalog: "İşlem Kayıtları", title: "İşlem Kayıtları" };
@@ -105,7 +105,7 @@ function inferLabels(pathname) {
   if (pathname === "/room/agreements") return { menu: "Sözleşmeler", registry: "Sözleşmeler", catalog: "Sözleşmeler", title: "Sözleşmeler (Room)" };
   if (pathname === "/room/offers") return { menu: "Teklifler", registry: "Teklifler", catalog: "Teklifler", title: "Teklifler" };
   if (pathname === "/room/commercial-flow") return { menu: "Ticari Akışım", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akışım" };
-  if (pathname === "/room/hub") return { menu: "Oda Konumu", registry: "Oda Konumu", catalog: "Oda Konumu", title: "Oda Konumu" };
+  if (pathname === "/room/hub") return { menu: "Taşımacılık Firması Konumu", registry: "Taşımacılık Firması Konumu", catalog: "Taşımacılık Firması Konumu", title: "Taşımacılık Firması Konumu" };
   if (pathname === "/room/checkin") return { menu: "Check-in", registry: "Check-in", catalog: "Check-in", title: "Check-in" };
   if (pathname === "/room/operation-health") return { menu: "Operasyon Sağlığı", registry: "Operasyon Sağlığı", catalog: "Operasyon Sağlığı", title: "Oda Operasyon Paneli" };
   if (pathname === "/room/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi Terminali", catalog: "Sefer Abi Terminali", title: "Sefer Abi Terminali" };
@@ -113,16 +113,16 @@ function inferLabels(pathname) {
 
   if (pathname === "/company") return { menu: "Planlama Merkezi", registry: "Planlama Merkezi", catalog: "Planlama Merkezi", title: "Company — Planlama Merkezi" };
   if (pathname === "/school") return { menu: "Okul Merkezi", registry: "Okul Merkezi", catalog: "Okul Merkezi", title: "Okul — Planlama Merkezi" };
-  if (pathname === "/organization") return { menu: "Gezi / Planlama Merkezi", registry: "Gezi / Planlama Merkezi", catalog: "Gezi / Planlama Merkezi", title: "Kurum — Gezi / Planlama Merkezi" };
+  if (pathname === "/organization") return { menu: "Gezi / Planlama Merkezi", registry: "Gezi / Planlama Merkezi", catalog: "Gezi / Planlama Merkezi", title: "Organizasyon — Gezi / Planlama Merkezi" };
   if (pathname.endsWith("/operations")) {
     if (pathname.startsWith("/school/")) return { menu: "Okul Operasyon Paneli", registry: "Okul Operasyon Paneli", catalog: "Okul Operasyon Paneli", title: "Okul Operasyon Paneli" };
-    if (pathname.startsWith("/organization/")) return { menu: "Kurum Operasyon Paneli", registry: "Kurum Operasyon Paneli", catalog: "Kurum Operasyon Paneli", title: "Kurum Operasyon Paneli" };
+    if (pathname.startsWith("/organization/")) return { menu: "Organizasyon Operasyon Paneli", registry: "Organizasyon Operasyon Paneli", catalog: "Organizasyon Operasyon Paneli", title: "Organizasyon Operasyon Paneli" };
     return { menu: "Operasyon Paneli", registry: "Operasyon Paneli", catalog: "Operasyon Paneli", title: "Şirket Operasyon Paneli" };
   }
   if (pathname.endsWith("/map")) return { menu: "Harita", registry: "Harita", catalog: "Harita", title: "Canlı Harita" };
   if (pathname.endsWith("/shifts")) {
     if (pathname.startsWith("/school/")) return { menu: "Vardiyalar", registry: "Vardiyalar", catalog: "Vardiyalar", title: "Okul Vardiyaları" };
-    if (pathname.startsWith("/organization/")) return { menu: "Vardiyalar", registry: "Vardiyalar", catalog: "Vardiyalar", title: "Kurum Vardiyaları" };
+    if (pathname.startsWith("/organization/")) return { menu: "Vardiyalar", registry: "Vardiyalar", catalog: "Vardiyalar", title: "Organizasyon Vardiyaları" };
     if (pathname.startsWith("/company/")) return { menu: "Vardiyalar", registry: "Vardiyalar", catalog: "Vardiyalar", title: "Shifts (COMPANY)" };
   }
   if (pathname.endsWith("/agreements")) return { menu: "Sözleşmeler", registry: "Sözleşmeler", catalog: "Sözleşmeler", title: "Sözleşmeler" };
@@ -261,7 +261,7 @@ const ROUTE_GROUPS = [
   { component: "web/src/panels/room/CommercialFlowPanel.jsx", paths: ["/room/commercial-flow"], tabCheck: { stateNeedle: 'const [viewMode, setViewMode] = useState("contractShift")', tabLabels: ["Hakediş", "Sözleşme & Vardiya", "Teklifler", "Kalite / Kanıt", "Ödeme & Komisyon", "Geçmiş"], branchNeedles: ['viewMode === "settlement"', 'viewMode === "contractShift"', 'viewMode === "offers"', 'viewMode === "quality"', 'viewMode === "payment"', 'viewMode === "history"'] } },
   { component: "web/src/panels/room/HubPanel.jsx", paths: ["/room/hub"] },
   { component: "web/src/panels/room/CheckinPanel.jsx", paths: ["/room/checkin"] },
-  { component: "web/src/panels/room/OperationHealthPanel.jsx", paths: ["/room/operation-health"], tabCheck: { stateNeedle: 'const [activeTab, setActiveTab] = useState("summary")', tabLabels: ["Şartlı Küme", "Oda Operasyon Özeti", "Sürücü ve sorunlar"], branchNeedles: ['activeTab === "proof"', 'activeTab === "summary"', 'activeTab === "problems"'] } },
+  { component: "web/src/panels/room/OperationHealthPanel.jsx", paths: ["/room/operation-health"], tabCheck: { stateNeedle: 'const [activeTab, setActiveTab] = useState("summary")', tabLabels: ["Şartlı Küme", "Taşımacılık Firması Operasyon Özeti", "Sürücü ve sorunlar"], branchNeedles: ['activeTab === "proof"', 'activeTab === "summary"', 'activeTab === "problems"'] } },
   { component: "web/src/panels/shared/CopilotPanel.jsx", paths: ["/room/copilot", "/company/copilot", "/school/copilot", "/organization/copilot", "/driver/copilot", "/personel/copilot", "/parent/copilot"] },
   { component: "web/src/panels/shared/ReportsPanel.jsx", paths: ["/room/reports", "/company/reports", "/school/reports", "/organization/reports"] },
 
@@ -388,7 +388,7 @@ function main() {
     if (shouldCheckScreenCatalog(row.path)) {
       mustContains(screenCatalog, row.catalogLabel, `screenCatalog keeps ${row.catalogLabel}`);
     }
-    if (row.path === "/company/hub") mustContains(labels, "Şirket Konumu", "hub label for company stays Şirket Konumu");
+    if (row.path === "/company/hub") mustContains(labels, "Hizmet Alan Firma Konumu", "hub label for company stays Hizmet Alan Firma Konumu");
     if (row.path === "/school/hub") mustContains(labels, "Okul Konumu", "hub label for school stays Okul Konumu");
     if (row.path === "/organization/hub") mustContains(labels, "Toplanma Konumu", "hub label for organization stays Toplanma Konumu");
     if (row.tabCheck) checkTabs(row.tabCheck.source || row.component, row.tabCheck);
@@ -405,7 +405,7 @@ function main() {
   must(roles.has("Room / Oda"), "Room routes covered");
   must(roles.has("Company / Firma"), "Company routes covered");
   must(roles.has("School / Okul"), "School routes covered");
-  must(roles.has("Organization / Kurum"), "Organization routes covered");
+  must(roles.has("Organization / Organizasyon"), "Organization routes covered");
   must(roles.has("Driver"), "Driver routes covered");
   must(roles.has("Personel"), "Personel routes covered");
   must(roles.has("Parent / Veli"), "Parent routes covered");
@@ -434,7 +434,7 @@ function main() {
   mustContains(navDock, "İller ve Bölgeler", "NavDock keeps İller ve Bölgeler");
   mustContains(screenRegistry, "İller ve Bölgeler", "screenRegistry keeps İller ve Bölgeler");
   mustContains(screenCatalog, "İller ve Bölgeler", "screenCatalog keeps İller ve Bölgeler");
-  mustContains(labels, "Şirket Konumu", "labels.js keeps Şirket Konumu");
+  mustContains(labels, "Hizmet Alan Firma Konumu", "labels.js keeps Hizmet Alan Firma Konumu");
   mustContains(labels, "Okul Konumu", "labels.js keeps Okul Konumu");
   mustContains(labels, "Toplanma Konumu", "labels.js keeps Toplanma Konumu");
 

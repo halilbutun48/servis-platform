@@ -402,7 +402,7 @@ export function buildFinancialOperationsRbacDenial(role, surface) {
     allowed: false,
     role: roleKey(role),
     surfaceId: description.surfaceId,
-    summaryText: `${description.rbacText} Bu alan read-only/preview olarak kalır.`,
+    summaryText: `${description.rbacText} Bu alan salt okunur önizleme olarak kalır (read-only/preview).`,
     nextAction: description.nextAction,
     readOnly: true,
     tenantIsolationText: getFinancialOperationsAccessForRole(role).tenantIsolationText,

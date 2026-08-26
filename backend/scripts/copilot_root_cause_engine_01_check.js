@@ -424,7 +424,7 @@ function buildThemeCases() {
       }),
       messages: ['Asıl sebep ne olabilir?', 'Kök neden ne?', 'Neden düzelmiyor?'],
       replyNeedles: ['aktif operasyon/vardiya olmaması', 'araç atamasının eksik olması', 'konum sinyali verisinin gelmemesi'],
-      chipNeedles: ['Aktif vardiya var mı?', 'Son GPS zamanı', 'Araç ataması'],
+      chipNeedles: ['Aktif vardiya var mı?', 'Son konum bilgisi zamanı', 'Araç ataması'],
     },
     {
       id: 'company-operations-repeat',
@@ -442,8 +442,8 @@ function buildThemeCases() {
         selectedEntityId: 8,
       }),
       messages: ['Neden sürekli görünmüyor?', 'Neden tekrar ediyor?', 'Sürekli neden böyle oluyor?'],
-      replyNeedles: ['tarih/filtre bağlamı', 'aktif vardiya üretimi', 'yetki/şirket kapsamı'],
-      chipNeedles: ['Tarih filtresi', 'Şirket/oda kapsamı', 'Aktif vardiya üretimi'],
+      replyNeedles: ['tarih/filtre bağlamı', 'aktif vardiya üretimi', 'yetki/Hizmet Alan Firma kapsamı'],
+      chipNeedles: ['Tarih filtresi', 'Hizmet Alan Firma/Taşımacılık Firması kapsamı', 'Aktif vardiya üretimi'],
     },
     {
       id: 'company-shift',
@@ -519,7 +519,7 @@ function buildThemeCases() {
       }),
       messages: ['Asıl sebep ne olabilir?', 'Kök neden ne?', 'Neden düzelmiyor?'],
       replyNeedles: ['araç-sürücü atamasının eksik olması', 'başlatma zamanının uygun olmaması', 'konum sinyali hazırlığının tamamlanmaması'],
-      chipNeedles: ['Araç-sürücü ataması', 'Başlatma zamanı', 'GPS hazırlığı'],
+      chipNeedles: ['Araç-sürücü ataması', 'Başlatma zamanı', 'Konum sinyali hazırlığı'],
     },
     {
       id: 'room-shift-repeat',
@@ -538,7 +538,7 @@ function buildThemeCases() {
     }),
       messages: ['Asıl sebep ne olabilir, neden sürekli görünmüyor?', 'Kök neden ne, GPS neden sürekli yok?', 'Sürekli neden böyle oluyor, canlı başlangıç niye kopuk?'],
       replyNeedles: ['atama, zaman veya konum sinyali hazırlığının birinde kopukluk', 'canlı başlangıç'],
-      chipNeedles: ['Son atama', 'GPS hazırlığı', 'Başlatma zamanı', 'Canlı başlangıç'],
+      chipNeedles: ['Son atama', 'Konum sinyali hazırlığı', 'Başlatma zamanı', 'Canlı başlangıç'],
     },
     {
       id: 'room-vehicle',
@@ -556,8 +556,8 @@ function buildThemeCases() {
         selectedEntityId: 17,
       }),
       messages: ['Kök neden ne?', 'Asıl sebep ne olabilir?', 'Bunu ne bozuyor olabilir?'],
-      replyNeedles: ['filtre/oda kapsamı', 'araç kaydının pasif olması', 'seçili şirket/oda bağlamının farklı olması'],
-      chipNeedles: ['Filtreleri kontrol et', 'Araç aktif mi?', 'Oda/kapsam'],
+      replyNeedles: ['filtre/Taşımacılık Firması kapsamı', 'araç kaydının pasif olması', 'seçili Hizmet Alan Firma/Taşımacılık Firması bağlamının farklı olması'],
+      chipNeedles: ['Filtreleri kontrol et', 'Araç aktif mi?', 'Taşımacılık Firması/kapsam'],
     },
     {
       id: 'room-vehicle-gps',
@@ -575,8 +575,8 @@ function buildThemeCases() {
       selectedEntityId: 17,
     }),
       messages: ['Asıl sebep ne olabilir, GPS neden sürekli yok?', 'Kök neden ne, konum verisi neden stale kaldı?', 'Sürekli neden böyle oluyor, araç offline mı?'],
-      replyNeedles: ['araç-sürücü eşleşmesi', 'sürücü cihazının konum izni', 'konum sinyali verisinin stale/çevrim dışı kalması'],
-      chipNeedles: ['Son GPS zamanı', 'Araç-sürücü eşleşmesi', 'Konum izni', 'Stale/offline'],
+      replyNeedles: ['araç-sürücü eşleşmesi', 'sürücü cihazının konum izni', 'konum sinyali verisinin güncel değil/çevrim dışı kalması'],
+      chipNeedles: ['Son konum bilgisi zamanı', 'Araç-sürücü eşleşmesi', 'Konum izni', 'Güncellik / bağlantı'],
     },
     {
       id: 'driver-route',
@@ -614,7 +614,7 @@ function buildThemeCases() {
     }),
       messages: ['Asıl sebep ne olabilir, biniş neden sürekli görünmüyor?', 'Kök neden ne, check-in neden düzelmiyor?', 'Sürekli neden böyle oluyor, giriş neden görünmüyor?'],
       replyNeedles: ['yanlış durak', 'uygun olmayan zaman', 'konum sinyali/konum doğrulamasının eksik'],
-      chipNeedles: ['Durak doğrulaması', 'Uygun zaman', 'GPS doğrulaması', 'Konum geldi mi?'],
+      chipNeedles: ['Durak doğrulaması', 'Uygun zaman', 'Konum sinyali doğrulaması', 'Konum geldi mi?'],
     },
     {
       id: 'personel-live',
@@ -633,7 +633,7 @@ function buildThemeCases() {
       }),
       messages: ['Asıl sebep ne olabilir?', 'Kök neden ne?', 'Neden düzelmiyor?'],
       replyNeedles: ['atanmış aktif vardiya olmaması', 'servis saatinin başlamaması', 'araç konum sinyali verisinin gelmemesi'],
-      chipNeedles: ['Atanmış vardiya', 'Son GPS zamanı', 'Araç bağlantısı', 'Servis saati'],
+      chipNeedles: ['Atanmış vardiya', 'Son konum bilgisi zamanı', 'Araç bağlantısı', 'Servis saati'],
     },
     {
       id: 'personel-live-repeat',
@@ -652,7 +652,7 @@ function buildThemeCases() {
     }),
       messages: ['Asıl sebep ne olabilir, neden sürekli görünmüyor?', 'Kök neden ne, GPS neden sürekli gelmiyor?', 'Sürekli neden böyle oluyor, servis akışı neden kesiliyor?'],
       replyNeedles: ['atanan vardiya', 'servis saatinin başlamaması', 'araçtan sinyal gelmemesi'],
-      chipNeedles: ['Atanmış vardiya', 'Servis saati', 'GPS akışı', 'Araç bağlantısı'],
+      chipNeedles: ['Atanmış vardiya', 'Servis saati', 'Konum sinyali akışı', 'Araç bağlantısı'],
     },
     {
       id: 'parent-live',
@@ -689,7 +689,7 @@ function buildThemeCases() {
         selectedEntityId: 7,
       }),
       messages: ['Asıl sebep ne olabilir?', 'Kök neden ne?', 'Neden düzelmiyor?'],
-      replyNeedles: ['filtre/arama', 'şirket kaydının durumu', 'yetki kapsamı'],
+      replyNeedles: ['filtre/arama', 'Hizmet Alan Firma kaydının durumu', 'yetki kapsamı'],
       chipNeedles: ['Arama filtresi', 'Kayıt durumu', 'Yetki kapsamı'],
     },
     {

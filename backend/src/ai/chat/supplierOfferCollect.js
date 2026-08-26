@@ -65,7 +65,7 @@ export const SUPPLIER_OFFER_COLLECT_COLLECTION_STATE_LABELS = Object.freeze({
   missing_fields: 'Eksik alanlar var',
   received_draft: 'Teklif taslağı alındı',
   ready_for_analysis: 'Değerlendirmeye hazır',
-  blocked: 'İnsan onayı gerekir',
+  blocked: 'Onayınız gerekli',
 });
 
 export const SUPPLIER_OFFER_COLLECT_BOUNDARY_FLAGS = Object.freeze([
@@ -229,21 +229,21 @@ export const SUPPLIER_OFFER_COLLECT_POLICY = Object.freeze({
   COMPANY: buildSupplierOfferCollectRole('COMPANY', {
     READ: ['teklif toplama planı', 'eksik alanlar', 'hazırlık notu'],
     EXPLAIN: ['hangi alan eksik', 'hangi teklif taslağı hazır', 'hangi plan onay bekliyor'],
-    RECOMMEND: ['önce hangi aday incelenmeli', 'hangi risk kontrol edilmeli', 'hangi human approval alınmalı'],
+    RECOMMEND: ['önce hangi aday incelenmeli', 'hangi risk kontrol edilmeli', 'hangi kullanıcı onayı alınmalı'],
     PREPARE: ['offer intake table draft', 'teklif toplama checklisti', 'hazırlık notu'],
     DRAFT: ['teklif toplama planı'],
     RISK_SUMMARY: ['price / scope / privacy risk summary'],
-    NEXT_STEP: ['human approval iste', 'kontakt yerine hazırlık notu üret'],
+    NEXT_STEP: ['kullanıcı onayı iste', 'kontakt yerine hazırlık notu üret'],
     HUMAN_APPROVAL_REQUIRED: ['offer send approval', 'offer collection plan approval'],
   }),
   ROOM: buildSupplierOfferCollectRole('ROOM', {
     READ: ['candidate offer readiness', 'price scope', 'vehicle / shift fit', 'risk notes'],
     EXPLAIN: ['hangi teklif eksik', 'hangi aday önce bakılmalı', 'hangi readiness eksik'],
-    RECOMMEND: ['hangi aday önce incelenmeli', 'hangi safety check önce yapılmalı'],
+    RECOMMEND: ['hangi aday önce incelenmeli', 'hangi güvenlik kontrolü önce yapılmalı'],
     PREPARE: ['offer collection status draft', 'supplier intake table'],
     DRAFT: ['offer intake table draft'],
     RISK_SUMMARY: ['supplier / capacity / safety / timing risk summary'],
-    NEXT_STEP: ['human approval iste', 'teklif planını onaya sun'],
+    NEXT_STEP: ['kullanıcı onayı iste', 'teklif planını onaya sun'],
     HUMAN_APPROVAL_REQUIRED: ['offer collection approval', 'offer send approval'],
   }),
   SCHOOL: buildSupplierOfferCollectRole('SCHOOL', {
@@ -253,7 +253,7 @@ export const SUPPLIER_OFFER_COLLECT_POLICY = Object.freeze({
     PREPARE: ['read-only offer plan', 'risk summary'],
     DRAFT: ['offer draft preview'],
     RISK_SUMMARY: ['privacy / capacity / timeline risk summary'],
-    NEXT_STEP: ['human approval iste'],
+    NEXT_STEP: ['kullanıcı onayı iste'],
     HUMAN_APPROVAL_REQUIRED: ['offer send approval'],
   }),
   ORGANIZATION: buildSupplierOfferCollectRole('ORGANIZATION', {
@@ -263,7 +263,7 @@ export const SUPPLIER_OFFER_COLLECT_POLICY = Object.freeze({
     PREPARE: ['read-only offer plan', 'risk summary'],
     DRAFT: ['offer draft preview'],
     RISK_SUMMARY: ['privacy / capacity / timeline risk summary'],
-    NEXT_STEP: ['human approval iste'],
+    NEXT_STEP: ['kullanıcı onayı iste'],
     HUMAN_APPROVAL_REQUIRED: ['offer send approval'],
   }),
   DRIVER: buildSupplierOfferCollectRole('DRIVER', {
@@ -605,7 +605,7 @@ export function getSupplierOfferMissingFields(offerDraft = {}, context = {}) {
     !isMeaningfulValue(model.startAvailability) ? 'Başlangıç uygunluğu eksik' : '',
     !isMeaningfulValue(model.vehicleCapacity) ? 'Araç kapasitesi eksik' : '',
     !isMeaningfulValue(model.slaCommitment) ? 'SLA / kalite taahhüdü eksik' : '',
-    blockedExecutionRequest ? 'İnsan onayı gerekir' : '',
+    blockedExecutionRequest ? 'Onayınız gerekli' : '',
   ].filter(Boolean));
   return Object.freeze({
     offerMissingFields,
@@ -849,7 +849,7 @@ export function composeSupplierOfferCollectAnswer(context = {}) {
     executionState: SUPPLIER_OFFER_COLLECT_EXECUTION_STATE,
     nextSafeStep: SUPPLIER_OFFER_COLLECT_NEXT_SAFE_STEP,
     kvkkSafeSummary: 'raw token, credential, cookie, password, GPS trace ve raw PII yok; maskeli ref kullanılır',
-    auditApprovalSummary: 'human approval boundary korunur; recommendation ve approval trace ayrı kalır',
+    auditApprovalSummary: 'Kullanıcı onayı sınırı korunur; öneri ve onay izi ayrı kalır',
     noWriteActionSummary: 'supplier contact, RFQ send, offer collect, offer accept/reject, agreement execute, dispatch apply, route apply, payment execute ve messaging kapalıdır',
     chainWiringSummary: 'check:suppliermatching01 -> check:supplieroffercollect01 -> check:copilothumanapproval01 -> check:uxmarketplacepanels01',
     smokeThresholdSummary: 'product-flow PASS 18/0/0/0; premium PASS 82/0/0/0; all-panels PASS 82/0/0/0; mobile all-roles PASS 82/0/0/0; consoleErrorCount=0; pageErrorCount=0; 429=none',

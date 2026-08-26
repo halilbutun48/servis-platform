@@ -67,7 +67,7 @@ export function renderRoomOfferSummary(s, { vehiclesById, fmtTR, busy, onOpenOff
       </div>
 
       <div className="muted" style={{ marginTop: 8 }}>
-        Bu alan eski shift room-offer özetidir. Ticari karar artık Market / Teklifler ekranında verilir.
+        Bu alan eski vardiya ve taşımacılık firması teklif özetidir. Ticari karar artık Market / Teklifler ekranında verilir.
       </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>

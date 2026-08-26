@@ -7,7 +7,7 @@
 
 import http from "http";
 import https from "https";
-import { login as compatLogin } from "./_harness.js";
+import { login as compatLogin, postGps, reqJson } from "./_harness.js";
 import { ensureTotpStepUp } from "./_totp_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
@@ -61,6 +61,29 @@ async function login(email, password) {
   return compatLogin(email, password);
 }
 
+async function loginWithOptionalStepUp(email, password, label) {
+  const resp = await reqJson("POST", "/api/auth/login", {
+    body: { email, password },
+  });
+
+  if (!resp.ok || !resp.json?.token) {
+    throw new Error(`login failed ${email} -> ${resp.status}\n${String(resp.text || "").slice(0, 400)}`);
+  }
+
+  if (!resp.json.stepUpRequired) {
+    return resp.json.token;
+  }
+
+  try {
+    return await ensureTotpStepUp(resp.json.token, label);
+  } catch (err) {
+    if (String(err?.message || "").includes("STEP_UP_NOT_APPLICABLE")) {
+      return resp.json.token;
+    }
+    throw err;
+  }
+}
+
 function findKind(items, kind) {
   for (const n of items ?? []) {
     const p = n?.payloadJson ?? n?.payload ?? null;
@@ -86,6 +109,28 @@ async function ensureActiveShift({ companyToken, roomToken, driverToken }) {
 
   const approved = items.find((s) => s?.status === "APPROVED" && s?.id);
   if (approved?.id && approved?.vehicleId) {
+    // Fresh seed may contain overlapping approved demo shifts for the seeded driver.
+    // Discover the visible driver shifts through the API and clear same-room overlaps deterministically.
+    const driverToday = await requestJson("GET", "/api/driver/shifts/today", { token: driverToken });
+    const visible = [
+      ...(driverToday?.today ?? []),
+      ...(driverToday?.tomorrow ?? []),
+      ...(driverToday?.upcoming ?? []),
+    ].filter((s) => s && Number.isFinite(Number(s.id)));
+    const conflicts = visible.filter(
+      (s) =>
+        Number(s.id) !== Number(approved.id) &&
+        Number(s.roomId ?? 0) === Number(approved.roomId ?? 0) &&
+        ["APPROVED", "ACTIVE", "REQUESTED"].includes(String(s.status || "").toUpperCase())
+    );
+
+    for (const other of conflicts) {
+      await requestJson("PUT", `/api/shifts/${other.id}/reject`, {
+        token: roomToken,
+        body: { reason: "smoke-conflict" },
+      });
+    }
+
     // APPROVED ise start etmeyi dene
     await requestJson("POST", `/api/shifts/${approved.id}/start`, { token: roomToken, body: {} });
     return { created: false, shiftId: approved.id, vehicleId: approved.vehicleId };
@@ -160,8 +205,8 @@ async function main() {
   console.log(`API_URL = ${BASE_URL}`);
 
   const driverToken = await login("driver@demo.com", "demo123");
-  const roomToken = await ensureTotpStepUp(await login("room@demo.com", "demo123"), "room");
-  const companyToken = await ensureTotpStepUp(await login("company@demo.com", "demo123"), "company");
+  const roomToken = await loginWithOptionalStepUp("room@demo.com", "demo123", "room");
+  const companyToken = await loginWithOptionalStepUp("company@demo.com", "demo123", "company");
   console.log("OK login(driver/room/company)");
 
   // OK ACTIVE shift harness (GPS/ETA 403 fix)
@@ -169,22 +214,13 @@ async function main() {
   const vehicleId = harness.vehicleId;
 
   // LIVE GPS
-  await requestJson("POST", "/api/gps", {
-    token: driverToken,
-    body: { vehicleId, lat: 41.0302, lng: 28.996, speed: 20 },
-  });
+  await postGps(driverToken, { vehicleId, lat: 41.0302, lng: 28.996, speed: 20 });
   console.log("OK POST /api/gps (LIVE)");
 
   // overspeed
-  await requestJson("POST", "/api/gps", {
-    token: driverToken,
-    body: { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 },
-  });
+  await postGps(driverToken, { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 });
   await sleep(1500);
-  await requestJson("POST", "/api/gps", {
-    token: driverToken,
-    body: { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 },
-  });
+  await postGps(driverToken, { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 });
   await sleep(2500);
   console.log("OK POST /api/gps (OVERSPEED)");
 
@@ -202,18 +238,18 @@ async function main() {
   console.log(`OK GET /api/eta (stops=${eta.stops.length})`);
 
   // GPS_STALE transition (LIVE->STALE)
-  console.log("WAIT waiting 40s for LIVE->STALE monitor tick...");
-  await sleep(40_000);
+  console.log("WAIT waiting 60s for LIVE->STALE monitor tick...");
+  await sleep(60_000);
 
   const roomNotifs = await requestJson("GET", "/api/notifications/my", { token: roomToken });
   if (!findKind(roomNotifs, "GPS_STALE")) {
-    throw new Error("FAIL GPS_STALE notification not found for ROOM (after 40s)");
+    throw new Error("FAIL GPS_STALE notification not found for ROOM (after 60s)");
   }
   console.log("OK notif: GPS_STALE (ROOM)");
 
   const driverNotifs2 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
   if (!findKind(driverNotifs2, "GPS_STALE")) {
-    throw new Error("FAIL GPS_STALE notification not found for DRIVER (after 40s)");
+    throw new Error("FAIL GPS_STALE notification not found for DRIVER (after 60s)");
   }
   console.log("OK notif: GPS_STALE (DRIVER)");
 

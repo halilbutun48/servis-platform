@@ -33,7 +33,6 @@ const redteamOwnedScopePaths = [
 ];
 const redteamTrackedCleanPaths = [
   'backend/scripts/lib/guardSmokeEvidence.js',
-  'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
   ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS.filter(
     (path) =>
       path !== 'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md' &&
@@ -45,6 +44,7 @@ const redteamTrackedCleanPaths = [
 ];
 const redteamAuthorizedFollowupPaths = [
   'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
+  'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
   'backend/scripts/lib/currentHeadScopePolicy.js',
   'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md',
   'docs/ROADMAP_LOCK_AI_MARKETPLACE_01.md',
@@ -640,9 +640,9 @@ async function main() {
   );
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
   mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', '6992AC173A900820A62F5EC3228F3279E29F0E2C42261EBE3A96CD9B36055141', 'guard smoke evidence helper SHA matches');
-  mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', 'A2937E28340E505084041529D1798ED01C5A0D2F90DF4D4BD8FEBDAA146FE20B', 'premium smoke check SHA matches');
+  mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', 'F917B2AB18188BAA13EA96959CB32AA30910F33D3312784AF9C12DA0A46A7E12', 'premium smoke check SHA matches');
   mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F', 'current head scope policy check SHA matches');
-  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', '3D5222A95430F3099E5A120EFAEC6AB3FA9A31B926D320C56CB6219E28F1EDFC', 'current head scope policy manifest SHA matches');
+  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', 'C43639D2662399C296F2DD734E3B88A4415FEA413D1F6BC154E3B042DB21C6E9', 'current head scope policy manifest SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.posix.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);

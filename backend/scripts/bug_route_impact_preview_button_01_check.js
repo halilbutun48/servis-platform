@@ -86,7 +86,7 @@ function main() {
   assertProductExtensionsOrder(['check:boardingops01a', 'check:bugrouteimpactpreviewbutton01', 'check:boardingops01b'], 'product extensions registry keeps bug check near boarding ops preview', registryScripts);
   assertProductExtensionsOrder(['check:boardingops01a', 'check:bugrouteimpactpreviewbutton01', 'check:boardingops01b'], 'verify chain registry keeps bug check near boarding ops preview', registryScripts);
 
-  must(docs, 'Readonly önizleme', 'bug doc keeps readonly preview wording');
+  must(docs, 'Salt okunur önizleme', 'bug doc keeps readonly preview wording');
   must(docs, 'Rota uygulanmaz', 'bug doc keeps route boundary');
   must(docs, 'Sürücü rotası yenilenmez', 'bug doc keeps driver refresh boundary');
   must(docs, 'Bildirim gönderilmez', 'bug doc keeps notification boundary');
@@ -111,7 +111,7 @@ function main() {
   must(previewCard, 'Kişi bilgisi eksik', 'preview card keeps person fallback text');
   must(previewCard, 'Hizmet alan taraf', 'preview card surfaces generic waiting-side label');
   must(previewCard, 'Bekleyen taraf', 'preview card surfaces decision owner chip');
-  must(previewCard, 'Readonly önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez; sadece etki analizi gösterilir.', 'preview card keeps safe readonly language');
+  must(previewCard, 'Salt okunur önizleme — rota uygulanmaz, sürücü rotası yenilenmez, bildirim gönderilmez; sadece etki analizi gösterilir.', 'preview card keeps safe readonly language');
   must(previewCard, 'Mini harita önizlemesi', 'preview card shows mini route map preview');
   must(previewCard, 'Harita önizlemesi için durak koordinatı eksik.', 'preview card keeps coordinate fallback');
   must(previewCard, 'Bu değişiklik için rota etkisi metinsel olarak önizleniyor.', 'preview card keeps textual route fallback');
@@ -145,7 +145,7 @@ function main() {
   must(companyOps, 'resolvePersonDisplayLabel', 'company preview uses null-safe person helper');
   must(companyOps, 'Kişi bilgisi eksik', 'company preview keeps person fallback text');
   must(companyOps, 'Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok.', 'company preview keeps empty state');
-  must(companyOps, 'Seçili satırın readonly önizlemesi burada gösterilir.', 'company preview keeps distinct selection fallback wording');
+  must(companyOps, 'Seçili satırın salt okunur önizlemesi burada gösterilir.', 'company preview keeps distinct selection fallback wording');
   must(companyOps, 'Karar Sahibi', 'company preview shows decision owner in copilot fields');
   must(companyOps, 'decisionOwnerNote', 'company preview keeps decision owner note in request model');
   must(companyOps, 'String(row.decisionOwnerRole || "").toUpperCase() === "COMPANY" && String(row.status || "").toUpperCase() === "OPEN"', 'company preview shows company decision buttons');
@@ -174,7 +174,7 @@ function main() {
   must(schoolOps, 'resolvePersonDisplayLabel', 'school preview uses null-safe person helper');
   must(schoolOps, 'Kişi bilgisi eksik', 'school preview keeps person fallback text');
   must(schoolOps, 'Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok.', 'school preview keeps empty state');
-  must(schoolOps, 'Seçili satırın readonly önizlemesi burada gösterilir.', 'school preview keeps distinct selection fallback wording');
+  must(schoolOps, 'Seçili satırın salt okunur önizlemesi burada gösterilir.', 'school preview keeps distinct selection fallback wording');
   must(schoolOps, 'Karar Sahibi', 'school preview shows decision owner in copilot fields');
   must(schoolOps, 'decisionOwnerNote', 'school preview keeps decision owner note in request model');
   must(schoolOps, 'String(row.decisionOwnerRole || "").toUpperCase() === "COMPANY" && String(row.status || "").toUpperCase() === "OPEN"', 'school preview shows company decision buttons');
@@ -209,7 +209,7 @@ function main() {
   must(roomOps, 'resolvePersonDisplayLabel', 'room preview uses null-safe person helper');
   must(roomOps, 'Kişi bilgisi eksik', 'room preview keeps person fallback text');
   must(roomOps, 'Bu değişiklik için rota etkisi hesaplanamadı / yeterli veri yok.', 'room preview keeps empty state');
-  must(roomOps, 'Seçili satırın readonly önizlemesi burada gösterilir.', 'room preview keeps distinct selection fallback wording');
+  must(roomOps, 'Seçili satırın salt okunur önizlemesi burada gösterilir.', 'room preview keeps distinct selection fallback wording');
   must(roomOps, 'shiftRecord', 'room preview keeps shift record for map fallback');
   must(roomOps, 'nearestStop', 'room preview keeps nearestStop for map fallback');
   must(roomOps, 'differentStopRequests', 'room preview counts different-stop requests from full room request set');

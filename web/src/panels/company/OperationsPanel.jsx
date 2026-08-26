@@ -121,7 +121,7 @@ export default function CompanyOperationsPanel() {
 
   const companyKind = String(me?.companyKind || "COMPANY").toUpperCase();
   const basePath = companyBaseFromKind(companyKind);
-  const title = companyKind === "ORGANIZATION" ? "Kurum Operasyon Paneli" : "Şirket Operasyon Paneli";
+  const title = companyKind === "ORGANIZATION" ? "Organizasyon Operasyon Paneli" : "Hizmet Alan Firma Operasyon Paneli";
   const subtitle = companyKind === "ORGANIZATION"
     ? "Personel, vardiya, biniş değişikliği ve bildirim özetini tek yerde okur."
     : "Personel, vardiya, biniş değişikliği ve bildirim özetini tek yerde okur.";
@@ -442,9 +442,9 @@ export default function CompanyOperationsPanel() {
       return "Açık istek yok; ilk kabul edilen kayıt gösteriliyor.";
     }
     if (selectedPreviewRequestId && selectedPreviewRequest) {
-      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Readonly önizleme seçildi.";
+      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Salt okunur önizleme seçildi.";
     }
-    return "Seçili satırın readonly önizlemesi burada gösterilir.";
+    return "Seçili satırın salt okunur önizlemesi burada gösterilir.";
   }, [requestSelectionRows.length, selectedPreviewRequest, selectedPreviewRequestId]);
 
   useEffect(() => {
@@ -510,7 +510,7 @@ export default function CompanyOperationsPanel() {
   );
 
   if (me?.role !== "COMPANY") {
-    return <div className="card err">Bu panel yalnızca COMPANY scope için görünür.</div>;
+    return <div className="card err">Bu panel yalnızca hizmet alan firma kapsamı için görünür.</div>;
   }
 
   return (
@@ -538,7 +538,7 @@ export default function CompanyOperationsPanel() {
       {decisionError ? <div className="card err">{decisionError}</div> : null}
 
       <PanelSegmentTabs
-        ariaLabel="Şirket operasyon sekmeleri"
+        ariaLabel="Firma operasyon sekmeleri"
         tabs={[
           { key: "summary", label: "Özet", badge: tabCounts.summary || 0 },
           { key: "cluster", label: "Servis Kümesi", badge: tabCounts.cluster || 0 },
@@ -553,7 +553,7 @@ export default function CompanyOperationsPanel() {
       />
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <MiniStat title="Personel" value={metricValue(personels.length)} note="Şirket kapsamındaki personel kaydı" />
+        <MiniStat title="Personel" value={metricValue(personels.length)} note="Hizmet Alan Firma kapsamındaki personel kaydı" />
         <MiniStat title="Servis durumu" value={metricValue(todayShiftCount)} note={`Aktif ${todayActiveCount} • Onaylı ${todayApprovedCount}`} />
         <MiniStat title="Değişiklik" value={metricValue(openRequestRows.length)} note="Açık veya onay bekleyen kayıtlar" />
         <MiniStat title="Servis dışı" value={metricValue(noBoardRows.length)} note="Bildirim akışından türetilir" />
@@ -677,7 +677,7 @@ export default function CompanyOperationsPanel() {
           <SectionCard title="Personel Özet" subtitle="Personel listesi / personel durum özeti">
             <div style={{ display: "grid", gap: 10 }}>
               <div className="panelMeta">
-                Personel servis atamaları, şirket içindeki kayıtlar, atama durumu ve kısa notlar birlikte görünür.
+                Personel servis atamaları, firma içindeki kayıtlar, atama durumu ve kısa notlar birlikte görünür.
               </div>
               {unassignedPersonelRows.length ? (
                 <div className="card" style={{ padding: 10, borderColor: "rgba(245, 158, 11, 0.28)" }}>

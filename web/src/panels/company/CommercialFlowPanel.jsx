@@ -203,9 +203,9 @@ export default function CompanyCommercialFlowPanel() {
 
   const cards = useMemo(() => {
     return [
-      { title: "Market Teklifi", value: counts.market, note: "Room seçilmemiş, pazarlığı açık market talepleri", accent: counts.market ? "warm" : "default" },
+      { title: "Market Teklifi", value: counts.market, note: "Taşımacılık Firması seçilmemiş, pazarlığı açık market talepleri", accent: counts.market ? "warm" : "default" },
       { title: "Karşı Teklif", value: counts.counter, note: "Karşı teklif sinyali taşıyan aktif pazarlık kayıtları", accent: counts.counter ? "warm" : "default" },
-      { title: "Bekleyen", value: counts.pending, note: "Room atanmış, operasyon hazırlığı bekleyen talepler", accent: counts.pending ? "good" : "default" },
+      { title: "Bekleyen", value: counts.pending, note: "Taşımacılık Firması atanmış, operasyon hazırlığı bekleyen talepler", accent: counts.pending ? "good" : "default" },
       { title: "Liste", value: counts.final, note: "kabul edildi / aktif / tamamlandı / reddedildi" },
       { title: "Aktif Operasyon", value: counts.active, note: "Kabul edildi + aktif sahaya inen işler", accent: counts.active ? "good" : "default" },
     ];
@@ -281,7 +281,7 @@ export default function CompanyCommercialFlowPanel() {
         label: `${selectedItem?.counterparty || 'Kayıt'} • ${selectedItem?.flowLabel || '-'}`,
       summary: [selectedItem?.statusLabel || null, selectedItem?.nextStep || null].filter(Boolean).join(' • '),
       fields: [
-        { label: 'Karşı Taraf', value: selectedItem?.counterparty || '-', help: 'Bu kaydın karşı tarafındaki oda veya operasyon birimini gösterir.' },
+        { label: 'Karşı Taraf', value: selectedItem?.counterparty || '-', help: 'Bu kaydın karşı tarafındaki taşımacılık firması veya operasyon birimini gösterir.' },
         { label: 'Akış', value: selectedItem?.flowLabel || '-', help: 'Kayıdın market, kabul veya operasyon tarafında olup olmadığını gösterir.' },
         { label: 'Tutar', value: selectedItem?.amountLabel || '-', help: 'Teklif tutarını veya ticari özet bedelini gösterir.' },
         { label: 'Son Güncelleme', value: fmtTR(selectedItem?.updatedAt), help: 'Bu ticari kaydın en son ne zaman değiştiğini gösterir.' },
@@ -311,7 +311,7 @@ export default function CompanyCommercialFlowPanel() {
     <div className="companyActionClarityScope" style={{ display: "grid", gap: 14 }}>
       <PanelChrome
         title="Ticari Akışım"
-        subtitle="Company için ticari görünüm artık gerçek market tekliflerinden beslenir. Vardiya üstündeki eski room-offer alanları burada referans alınmaz."
+        subtitle="Hizmet Alan Firma için ticari görünüm artık gerçek market tekliflerinden beslenir. Vardiya üstündeki eski taşımacılık firması teklif alanları burada referans alınmaz."
         actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
       />
 

@@ -1,4 +1,4 @@
-import { normalizeNotifV1 } from "../../utils/notificationV1";
+import { normalizeNotifV1, notificationKindLabel, notificationTitleLabel } from "../../utils/notificationV1";
 import { formatDateTimeTR } from "../../utils/time";
 
 export function fmtTR(value) {
@@ -17,10 +17,10 @@ export function normalizeNotificationDigest(items = []) {
       key: n?.id ?? idx,
       id: n?.id ?? "",
       scope: String(n?.scope ?? "-"),
-      type: String(n?.type ?? p.kind ?? "-"),
-      kind: String(p.kind ?? n?.kind ?? n?.type ?? ""),
+      type: notificationKindLabel(n?.type ?? p.kind) || "-",
+      kind: notificationKindLabel(p.kind ?? n?.kind ?? n?.type),
       status: String(p.status ?? n?.status ?? ""),
-      title: String(p.title || n?.type || "-"),
+      title: notificationTitleLabel(p.title || n?.type || "-", p.kind ?? n?.kind ?? n?.type) || "-",
       message: String(p.message || ""),
       at: p.at || n?.createdAt || "",
       payload: p,

@@ -46,7 +46,7 @@ export function CompanyPendingFilters({ pendingQ, onChangePendingQ, pendingFocus
     <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
       <div />
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <input placeholder="Ara (id / durum / not / oda)" value={pendingQ} onChange={(e) => onChangePendingQ(e.target.value)} style={{ width: "min(100%, 240px)" }} />
+        <input placeholder="Ara (id / durum / not / taşımacılık firması)" value={pendingQ} onChange={(e) => onChangePendingQ(e.target.value)} style={{ width: "min(100%, 240px)" }} />
         {pendingFocusIds.length ? (
           <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span>Filtre: {(pendingFocusIds || []).map((id) => "#" + id).join(" ")}</span>
@@ -55,7 +55,7 @@ export function CompanyPendingFilters({ pendingQ, onChangePendingQ, pendingFocus
         ) : null}
         <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input type="checkbox" checked={pendingOnlyRoomOffer} onChange={(e) => onChangePendingOnlyRoomOffer(e.target.checked)} />
-          Sadece oda teklifi olanlar
+          Sadece taşımacılık firması teklifi olanlar
         </label>
         <button type="button" onClick={() => { onChangePendingQ(""); onChangePendingOnlyRoomOffer(false); }}>Temizle</button>
       </div>

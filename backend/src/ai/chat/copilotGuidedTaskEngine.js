@@ -260,7 +260,7 @@ const FAMILY_DEFINITIONS = [
     replyMode: 'BLOCKED',
     guideLabel: 'Excel→rota hazırlık rehberini aç',
     why: 'Excel/import, adres readiness ve rota taslağını birlikte okudum; gerçek rota oluşturma başlatmam.',
-    advice: 'Excel satırlarını, eksik adresleri, koordinat readiness ve insan onayını sırayla kontrol et.',
+    advice: 'Excel satırlarını, eksik adresleri, koordinat hazırlığını ve kullanıcı onayını sırayla kontrol et.',
     summary: 'Excel dosyasıyla rota hazırlığı için güvenli okuma katmanı.',
     jobPurpose: 'Excel / rota hazırlığını güvenli ve açıklayıcı biçimde okumak için kullanılır.',
     clarificationQuestion: 'Rota hazırlığı mı yapmak istiyorsun, yoksa mevcut rotayı görüntülemek mi?',
@@ -281,12 +281,12 @@ const FAMILY_DEFINITIONS = [
       'Excel satırlarını önizle',
       'Adres readiness kontrolü',
       'Rota taslağını göster',
-      'İnsan onayını açıkla',
+      'Kullanıcı onayını açıkla',
     ],
     stepByStep: [
       'Önce Excel satırlarını kontrol et.',
       'Eksik adresleri ve tip hatalarını ayır.',
-      'Koordinat readiness ve insan onayı notlarını sırala.',
+      'Koordinat hazırlığı ve kullanıcı onayı notlarını sırala.',
       'Gerçek rota yerine sadece hazırlığı oku.',
     ],
     quickActions: [
@@ -318,9 +318,9 @@ const FAMILY_DEFINITIONS = [
       'exel dosyasindan rota cikar',
     ],
     progressChips: ['Devam et', 'Bulamadım', 'Baştan al'],
-    progressSteps: ['Excel satırlarını oku.', 'Adresleri ve eksikleri ayır.', 'İnsan onayı checklistini hazırla.'],
+    progressSteps: ['Excel satırlarını oku.', 'Adresleri ve eksikleri ayır.', 'Kullanıcı onayı kontrol listesini hazırla.'],
     riskNote: 'Otomatik rota oluşturma ve yazma kapalı kalır.',
-    safeBoundary: 'Sadece hazırlık, açıklama ve insan onayı konuşulur.',
+    safeBoundary: 'Sadece hazırlık, açıklama ve kullanıcı onayı konuşulur.',
   }),
   freezeFamily({
     familyId: 'ROUTE_PREP_ADDRESS',
@@ -393,7 +393,7 @@ const FAMILY_DEFINITIONS = [
     replyMode: 'BLOCKED',
     guideLabel: 'OSRM rota taslağı rehberini aç',
     why: 'OSRM hazırlığını, mesafe / süre önizlemesini ve rota taslağı sınırını birlikte okudum; gerçek OSRM çağrısı yapmam.',
-    advice: 'Önce address readiness ve stop / route draft sinyallerini kontrol et; sonra insan onayı gereksinimini açıkça göster.',
+    advice: 'Önce adres hazırlığı ve durak / rota taslağı sinyallerini kontrol et; sonra kullanıcı onayı gereksinimini açıkça göster.',
     summary: 'Mesafe, süre ve polyline önizlemesi için güvenli okuma katmanı.',
     jobPurpose: 'Rota önizlemesini güvenli ve açıklayıcı biçimde okumak için kullanılır.',
     clarificationQuestion: 'Km/süre hesabı mı yapmak istiyorsun, yoksa mevcut rotayı sadece görüntülemek mi?',
@@ -414,13 +414,13 @@ const FAMILY_DEFINITIONS = [
       'OSRM readiness kontrolü',
       'Mesafe / süre önizlemesi',
       'Route draft neden kapalı?',
-      'İnsan onayını açıkla',
+      'Kullanıcı onayını açıkla',
     ],
     stepByStep: [
       'Önce adres readiness ve durak listesini kontrol et.',
       'Km ve süre önizlemesini güvenli olarak oku.',
       'Polyline ve route draft ayrımını yap.',
-      'Gerçek OSRM çağrısı yerine insan onayı gereksinimini sırala.',
+      'Gerçek OSRM çağrısı yerine kullanıcı onayı gereksinimini sırala.',
     ],
     quickActions: [
       makeAskAction('Km süre çıkar', 'Km süre çıkar.', 'Güvenli rota önizlemesini sorar.'),
@@ -443,23 +443,23 @@ const FAMILY_DEFINITIONS = [
       'polyline ciz',
     ],
     progressChips: ['Devam et', 'Bulamadım', 'Baştan al'],
-    progressSteps: ['Km ve süre sinyallerini oku.', 'Durak / rota ayrımını yap.', 'İnsan onayı gereksinimini kontrol et.'],
+    progressSteps: ['Km ve süre sinyallerini oku.', 'Durak / rota ayrımını yap.', 'Kullanıcı onayı gereksinimini kontrol et.'],
     riskNote: 'OSRM call ve route apply kapalı kalır.',
     safeBoundary: 'Sadece önizleme ve açıklama konuşulur.',
   }),
   freezeFamily({
     familyId: 'ROUTE_REVIEW_APPROVAL',
-    label: 'Rota review / insan onayı',
+    label: 'Rota incelemesi / kullanıcı onayı',
     questionType: 'ROUTE_REVIEW_HUMAN_APPROVAL',
     guideLevel: 'WHY',
     jobType: 'ASSIGNMENT_READINESS_GUIDE',
     replyMode: 'BLOCKED',
-    guideLabel: 'Rota review / insan onayı rehberini aç',
-    why: 'Route review, risk özeti ve insan onayı gereksinimini birlikte okudum; gerçek uygulama başlatmam.',
+    guideLabel: 'Rota incelemesi / kullanıcı onayı rehberini aç',
+    why: 'Rota incelemesini, risk özetini ve kullanıcı onayı gereksinimini birlikte okudum; gerçek uygulama başlatmam.',
     advice: 'Önce preview, risk özeti, geri alma notu ve açık onay durumunu kontrol et.',
-    summary: 'İnsan onayı ve review aşaması için güvenli okuma katmanı.',
-    jobPurpose: 'Route review aşamasını ve insan onayını güvenli biçimde okumak için kullanılır.',
-    clarificationQuestion: 'Rota uygulamak mı istiyorsun, yoksa insan onayı durumunu mu görmek istiyorsun?',
+    summary: 'Kullanıcı onayı ve inceleme aşaması için güvenli okuma katmanı.',
+    jobPurpose: 'Rota incelemesi aşamasını ve kullanıcı onayını güvenli biçimde okumak için kullanılır.',
+    clarificationQuestion: 'Rota uygulamak mı istiyorsun, yoksa kullanıcı onayı durumunu mu görmek istiyorsun?',
     blockedActions: [
       'runtime AI action',
       'tool execution',
@@ -474,7 +474,7 @@ const FAMILY_DEFINITIONS = [
       'otomatik risk onayı',
     ],
     chips: [
-      'İnsan onayını göster',
+      'Kullanıcı onayını göster',
       'Risk özetini aç',
       'Route review checklisti',
       'Önizleme ile uygulama farkı',
@@ -483,14 +483,14 @@ const FAMILY_DEFINITIONS = [
       'Önizleme ile uygulama farkını ayır.',
       'Risk özeti ve geri alma notunu oku.',
       'Açık onay durumunu kontrol et.',
-      'İnsan onayı yoksa uygulama başlatma.',
+      'Kullanıcı onayı yoksa uygulama başlatma.',
     ],
     quickActions: [
-      makeAskAction('Rota onayı?', 'Bu rota review için insan onayı gerekli mi?', 'Onay durumunu sorar.'),
+      makeAskAction('Rota onayı?', 'Bu rota incelemesi için kullanıcı onayı gerekli mi?', 'Onay durumunu sorar.'),
       makeGuideAction('Review rehberi', { jobType: 'ASSIGNMENT_READINESS_GUIDE' }, 'İnceleme akışını açar.'),
-      makeCopyAction('Onay notu', 'İnsan onayı olmadan uygulama yapılmaz.', 'Güvenli sınır notunu kopyalar.'),
+      makeCopyAction('Onay notu', 'Kullanıcı onayı olmadan uygulama yapılmaz.', 'Güvenli sınır notunu kopyalar.'),
     ],
-    copyOutputs: ['İnsan onayı olmadan uygulama yapılmaz.'],
+    copyOutputs: ['Kullanıcı onayı olmadan uygulama yapılmaz.'],
     screenHints: ['/room/shifts', '/room/agreements', '/superadmin/operation-verification', '/superadmin/acceptance'],
     roleHints: ['ROOM', 'COMPANY', 'SUPER_ADMIN'],
     tokenGroups: [
@@ -504,7 +504,7 @@ const FAMILY_DEFINITIONS = [
       'önizleme ile uygulama farki',
     ],
     progressChips: ['Devam et', 'Bulamadım', 'Baştan al'],
-    progressSteps: ['Preview ve uygulama farkını oku.', 'Risk özetini kontrol et.', 'İnsan onayı durumunu doğrula.'],
+    progressSteps: ['Preview ve uygulama farkını oku.', 'Risk özetini kontrol et.', 'Kullanıcı onayı durumunu doğrula.'],
     riskNote: 'Gerçek uygulama, dispatch apply ve approval açılmaz.',
     safeBoundary: 'Sadece inceleme ve onay konuşulur.',
   }),
@@ -517,7 +517,7 @@ const FAMILY_DEFINITIONS = [
     replyMode: 'BLOCKED',
     guideLabel: 'Route apply engeli rehberini aç',
     why: 'Route apply isteğini gördüm; gerçek uygulama bu milestone’da kapalı ve yalnızca hazırlık / onay konuşuluyor.',
-    advice: 'Önce preview, risk özeti, insan onayı ve geri alma notunu kontrol et; uygulama yapma.',
+    advice: 'Önce preview, risk özeti, kullanıcı onayı ve geri alma notunu kontrol et; uygulama yapma.',
     summary: 'Rota uygulama sınırı için güvenli okuma katmanı.',
     jobPurpose: 'Route apply sınırını güvenli biçimde okumak için kullanılır.',
     clarificationQuestion: 'Rota hazırlığı mı yapmak istiyorsun, yoksa mevcut rotayı görüntülemek mi?',
@@ -538,11 +538,11 @@ const FAMILY_DEFINITIONS = [
       'Route apply neden kapalı?',
       'Günlük atamaya işlenir mi?',
       'Geri alma notu nedir?',
-      'İnsan onayını açıkla',
+      'Kullanıcı onayını açıkla',
     ],
     stepByStep: [
       'Önce preview ve risk özeti oku.',
-      'İnsan onayı durumunu doğrula.',
+      'Kullanıcı onayı durumunu doğrula.',
       'Geri alma notunu kontrol et.',
       'Uygulama yerine hazırlık ve onay konuş.',
     ],
@@ -569,7 +569,7 @@ const FAMILY_DEFINITIONS = [
     progressChips: ['Devam et', 'Bulamadım', 'Baştan al'],
     progressSteps: ['Preview ve onayı kontrol et.', 'Geri alma notunu oku.', 'Gerçek uygulama yerine hazırlığı sürdür.'],
     riskNote: 'Route apply ve dispatch apply kapalı kalır.',
-    safeBoundary: 'Sadece hazırlık, açıklama ve insan onayı konuşulur.',
+    safeBoundary: 'Sadece hazırlık, açıklama ve kullanıcı onayı konuşulur.',
   }),
   freezeFamily({
     familyId: 'IMPORT_WRITE_BLOCKED',
@@ -580,7 +580,7 @@ const FAMILY_DEFINITIONS = [
     replyMode: 'BLOCKED',
     guideLabel: 'Yazma engeli rehberini aç',
     why: 'Toplu yazma / kaydetme isteğini gördüm; gerçek import, DB write veya personel oluşturma bu milestone’da kapalı.',
-    advice: 'Önce eksik kolonları, KVKK sınırını ve human approval gereksinimini kontrol et; gerçek kayıt yazma yapma.',
+    advice: 'Önce eksik kolonları, KVKK sınırını ve kullanıcı onayı gereksinimini kontrol et; gerçek kayıt yazma yapma.',
     summary: 'Excel/CSV yazma ve import sınırı için güvenli okuma katmanı.',
     jobPurpose: 'Toplu yazma sınırını güvenli biçimde okumak için kullanılır.',
     clarificationQuestion: 'Excel’i sisteme kaydetmek mi istiyorsun, yoksa sadece önizlemek mi?',
@@ -633,7 +633,7 @@ const FAMILY_DEFINITIONS = [
     progressChips: ['Devam et', 'Bulamadım', 'Baştan al'],
     progressSteps: ['Eksik kolonları kontrol et.', 'KVKK sınırını incele.', 'Gerçek yazma yerine önizlemeyi sürdür.'],
     riskNote: 'Import execute ve DB write kapalı kalır.',
-    safeBoundary: 'Sadece hazırlık, açıklama ve insan onayı konuşulur.',
+    safeBoundary: 'Sadece hazırlık, açıklama ve kullanıcı onayı konuşulur.',
   }),
   freezeFamily({
     familyId: 'FAKE_SUCCESS_REQUEST_BLOCKED',
@@ -753,7 +753,7 @@ const FAMILY_DEFINITIONS = [
     progressChips: ['Devam et', 'Bulamadım', 'Baştan al'],
     progressSteps: ['Teklif mi inceleme mi karar ver.', 'Eksik alanları ve onayları kontrol et.', 'Doğru ekranda devam et.'],
     riskNote: 'Gerçek teklif execute ve write-action açılmaz.',
-    safeBoundary: 'Sadece hazırlık, açıklama ve insan onayı konuşulur.',
+    safeBoundary: 'Sadece hazırlık, açıklama ve kullanıcı onayı konuşulur.',
   }),
   freezeFamily({
     familyId: 'SHIFT_FLOW_GUIDE',
@@ -814,7 +814,7 @@ const FAMILY_DEFINITIONS = [
     progressChips: ['Devam et', 'Bulamadım', 'Baştan al'],
     progressSteps: ['Vardiya ekranını aç.', 'Araç, sürücü ve durak bilgisini kontrol et.', 'Onay gereksinimini sırala.'],
     riskNote: 'Gerçek vardiya oluşturma ve uygulama açılmaz.',
-    safeBoundary: 'Sadece hazırlık, açıklama ve insan onayı konuşulur.',
+    safeBoundary: 'Sadece hazırlık, açıklama ve kullanıcı onayı konuşulur.',
   }),
   freezeFamily({
     familyId: 'GENERAL_GUIDED_TASK_GUIDE',
@@ -1013,25 +1013,28 @@ function buildClarificationQuestion(family, candidates = []) {
 function buildBlockedReply(family, screenLabel = 'bu ekran') {
   const topicMeta = getCopilotEBlockRuntimeAnswerTopicMeta(family?.questionType || '') || getCopilotEBlockRuntimeAnswerTopicMeta(detectCopilotEBlockRuntimeAnswerTopic({ questionType: family?.questionType || '', screenPath: '' }));
   const why = firstNonEmpty(family?.why, topicMeta?.why, 'Bu isteği güvenli sınırda okudum.');
-  const advice = firstNonEmpty(family?.advice, topicMeta?.advice, 'İnsan onayını ve eksik veriyi kontrol et.');
+  const advice = firstNonEmpty(family?.advice, topicMeta?.advice, 'Kullanıcı onayını ve eksik veriyi kontrol et.');
   const screenLead = `Şu an ${screenLabel} ekranındasın.`;
   if (family?.questionType === 'FAKE_SUCCESS_REQUEST_BLOCKED') {
     return `Şimdi: Yapmış gibi söyleyemem. ${screenLead} Sahte başarı üretmem; gerçek yapmadan yalnızca gerçekten doğrulanmış sinyali paylaşırım. Yapabileceğim güvenli şeyler: gerçekten yapılanı, eksik kalanları ve sonraki doğru adımı açıkça ayırmak. Neden? ${why} Öneri: ${advice}`.trim();
   }
   if (family?.questionType === 'ROUTE_APPLY_BLOCKED' || family?.questionType === 'IMPORT_WRITE_BLOCKED') {
-    return `Şimdi: ${family.questionType === 'IMPORT_WRITE_BLOCKED' ? 'Bu Excel’i sisteme kaydedemem.' : 'Rotayı uygulayamam.'} ${screenLead} ${family.questionType === 'IMPORT_WRITE_BLOCKED' ? 'Toplu yazma, DB write ve personel oluşturma kapalı.' : 'route apply, dispatch apply ve günlük atamaya işleme kapalı.'} Yapabileceğim güvenli şeyler: preview, risk özeti, insan onayı ve geri alma notunu kontrol etmek. Neden? ${why} Öneri: ${advice}`.trim();
+    const safeActionText = family.questionType === 'IMPORT_WRITE_BLOCKED'
+      ? 'Eksik kolonları, KVKK sınırını ve kullanıcı onayını kontrol edebilirim.'
+      : 'Yapabileceğim güvenli şeyler: preview, risk özeti, kullanıcı onayı ve geri alma notunu kontrol etmek.';
+    return `Şimdi: ${family.questionType === 'IMPORT_WRITE_BLOCKED' ? 'Bu Excel’i sisteme kaydedemem.' : 'Rotayı uygulayamam.'} ${screenLead} ${family.questionType === 'IMPORT_WRITE_BLOCKED' ? 'Toplu yazma, DB write ve personel oluşturma kapalı.' : 'route apply, dispatch apply ve günlük atamaya işleme kapalı.'} ${safeActionText} Neden? ${why} Öneri: ${advice}`.trim();
   }
   if (family?.questionType === 'ROUTE_REVIEW_HUMAN_APPROVAL') {
-    return `Şimdi: Bu rota için gerçek uygulama başlatamam. ${screenLead} Önce insan onayı gerekir; ben yalnızca preview ve risk özeti okuyabilirim. Yapabileceğim güvenli şeyler: preview, risk özeti, geri alma notu ve onay durumunu kontrol etmek. Neden? ${why} Öneri: ${advice}`.trim();
+    return `Şimdi: Bu rota için gerçek uygulama başlatamam. ${screenLead} Onayınız gerekli; ben yalnızca preview ve risk özeti okuyabilirim. Yapabileceğim güvenli şeyler: preview, risk özeti, geri alma notu ve onay durumunu kontrol etmek. Neden? ${why} Öneri: ${advice}`.trim();
   }
   if (family?.questionType === 'EXCEL_ROUTE_PREVIEW') {
-    return `Şimdi: Doğrudan rota oluşturamam. ${screenLead} Excel’den satırları yorumlayabilirim ama otomatik import, DB write, rota oluşturma, route apply ve OSRM çağrısı başlatmam. Yapabileceğim güvenli şeyler: kolonları yorumlamak, eksik adresleri bulmak, adres güvenini açıklamak, durak / rota readiness çıkarmak ve insan onayı checklist’i hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Excel satırlarını, eksik adresleri ve insan onayını kontrol et.`.trim();
+    return `Şimdi: Doğrudan rota oluşturamam. ${screenLead} Excel’den satırları yorumlayabilirim ama otomatik import, DB write, rota oluşturma, route apply ve OSRM çağrısı başlatmam. Yapabileceğim güvenli şeyler: kolonları yorumlamak, eksik adresleri bulmak, adres güvenini açıklamak, durak / rota hazırlığını çıkarmak ve kullanıcı onayı kontrol listesi hazırlamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Excel satırlarını, eksik adresleri ve kullanıcı onayını kontrol et.`.trim();
   }
   if (family?.questionType === 'ADDRESS_GEOCODE_PREVIEW') {
     return `Şimdi: Doğrudan geocode yapamam. ${screenLead} Adresleri yorumlayabilirim ama otomatik geocode, lat/lng yazma ve route apply başlatmam. Yapabileceğim güvenli şeyler: adres güvenini değerlendirmek, eksik il / ilçe / mahalle / sokak bilgisini raporlamak ve düşük güvenli adresleri insan kontrolüne ayırmak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Eksik adres alanlarını ve insan kontrolünü sırala.`.trim();
   }
   if (family?.questionType === 'OSRM_ROUTE_DRAFT_PREVIEW') {
-    return `Şimdi: OSRM çağrısı yapamam. ${screenLead} Mesafe / süre önizlemesini ve rota taslağını yorumlayabilirim ama OSRM çağrısı, route preview üretimi ve route apply başlatmam. Yapabileceğim güvenli şeyler: address readiness, durak listesi ve insan onayı kontrolünü sıralamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önce adres readiness ve durak listesi kontrol et.`.trim();
+    return `Şimdi: OSRM çağrısı yapamam. ${screenLead} Mesafe / süre önizlemesini ve rota taslağını yorumlayabilirim ama OSRM çağrısı, route preview üretimi ve route apply başlatmam. Yapabileceğim güvenli şeyler: adres hazırlığı, durak listesi ve kullanıcı onayı kontrolünü sıralamak. Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: Önce adres hazırlığı ve durak listesi kontrol et.`.trim();
   }
   return '';
 }

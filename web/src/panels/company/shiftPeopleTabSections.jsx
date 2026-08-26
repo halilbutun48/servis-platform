@@ -32,7 +32,7 @@ export function ShiftPeopleSummarySection({
           <select value={String(selectedShiftId || "")} onChange={(e) => setSelectedShiftId(e.target.value)} disabled={busy}>
             {shiftOptions.map((s) => (
               <option key={s.id} value={String(s.id)}>
-                #{s.id} • {String(s.status)} • Oda {s.roomId} • {new Date(s.startAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
+                #{s.id} • {String(s.status)} • Taşımacılık Firması {s.roomId} • {new Date(s.startAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
               </option>
             ))}
           </select>
@@ -45,7 +45,7 @@ export function ShiftPeopleSummarySection({
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
           <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM(String(companyKind === "SCHOOL" ? 50 : 250))}>
-            {companyKind === "SCHOOL" ? "Okul 50" : "Şirket 250"}
+            {companyKind === "SCHOOL" ? "Okul 50" : "Firma 250"}
           </button>
           {companyKind === "SCHOOL" ? null : (
             <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM("50")}>Okul 50</button>
@@ -77,7 +77,7 @@ export function ShiftPeopleSummarySection({
       </div>
 
       <div className="muted" style={{ marginTop: 10 }}>
-        <b>Oda:</b> {roomText}
+        <b>Taşımacılık Firması:</b> {roomText}
       </div>
 
       <div className="muted" style={{ marginTop: 6 }}>

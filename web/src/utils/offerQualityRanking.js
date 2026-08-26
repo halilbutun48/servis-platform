@@ -242,7 +242,7 @@ function buildSafeDriveMeta(summary = null, fallbackInput = null) {
   );
   const riskReasons = compactList(Array.isArray(safeDrive?.riskReasons) ? safeDrive.riskReasons : [], 4);
   const controlNotes = compactList(Array.isArray(safeDrive?.controlNotes) ? safeDrive.controlNotes : [], 4);
-  const nextBestAction = compactText(safeDrive?.nextBestAction, reviewNeeded ? "Önce telematics ve güvenli sürüş sinyallerini kontrol et." : "Telematics sinyallerini izle");
+  const nextBestAction = compactText(safeDrive?.nextBestAction, reviewNeeded ? "Önce telematik ve güvenli sürüş sinyallerini kontrol et." : "Telematik sinyallerini izle");
 
   return {
     status,
@@ -283,7 +283,10 @@ function deriveScope(me = null, summaryParams = {}) {
 }
 
 function rowRoomName(offer = {}) {
-  return compactText(offer?.room?.name || offer?.room?.title || offer?.roomName || `Room #${offer?.roomId || offer?.room?.id || "-"}`);
+  const name = offer?.room?.name || offer?.room?.title || offer?.roomName;
+  return compactText(name
+    ? String(name).replace(/^(Room|Oda)\s+/i, "").trim()
+    : `Taşımacılık Firması #${offer?.roomId || offer?.room?.id || "-"}`);
 }
 
 function roomScoreSummary(score = null) {
@@ -570,10 +573,10 @@ export function buildOfferQualityRanking(input = {}) {
     humanApprovalRequired: true,
     autoSelectionBlocked: true,
     summaryText: rows.length
-      ? "Fiyat tek başına karar değildir. Kalite, güven, telematics, kanıt/check-in ve operasyon riski birlikte okunur."
-      : "Karşılaştırılacak teklif yok. Kalite / güven / telematics sinyalleri hazır olduğunda teklifler incelenebilir.",
+      ? "Fiyat tek başına karar değildir. Kalite, güven, telematik, kanıt-biniş doğrulaması ve operasyon riski birlikte okunur."
+      : "Karşılaştırılacak teklif yok. Kalite / güven / telematik sinyalleri hazır olduğunda teklifler incelenebilir.",
     summaryNote: rows.length
-      ? "Önerilen kontrol sırası, karar sırası değildir; auto-selection ve auto-accept kapalıdır."
+      ? "Önerilen kontrol sırası, karar sırası değildir; otomatik seçim ve otomatik kabul kapalıdır."
       : "Eksik veri varsa önce bağlantı ve teklif kaynağını doğrula.",
     safeDriveSummary: safeDriveMeta.summaryText,
     proofSummary: proofMeta.summaryText,

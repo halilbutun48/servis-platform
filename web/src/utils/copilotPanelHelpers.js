@@ -30,7 +30,7 @@ export function selectionApplies(selection, path) {
 
 export function screenOptionLabel(item) {
   if (!item) return "";
-  return `${item.label || "Ekran"} • ${item.path || ""}`;
+  return item.label || "Ekran";
 }
 
 export function firstList(resp) {

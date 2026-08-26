@@ -11,7 +11,7 @@ const LEAD_TYPE_OPTIONS = [
 
 const ROLE_OPTIONS = [
   "Firma / okul / kurum",
-  "Room / tedarikçi",
+  "Taşımacılık Firması / tedarikçi",
   "Sürücü",
   "Personel",
   "Veli",

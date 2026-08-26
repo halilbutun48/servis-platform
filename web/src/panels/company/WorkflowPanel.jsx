@@ -76,12 +76,12 @@ function offerGapMeta(amountCompany, amountRoom) {
   if (hasCompany && hasRoom) {
     const diff = room - company;
     if (diff === 0) return { label: "Fiyat farkı", value: "Hizalı", tone: "good", note: "Aynı tutar" };
-    if (diff > 0) return { label: "Fiyat farkı", value: `+${formatTRY(diff)} ₺`, tone: "warn", note: "Room daha yüksek" };
-    return { label: "Fiyat farkı", value: `-${formatTRY(Math.abs(diff))} ₺`, tone: "good", note: "Company daha yüksek" };
+    if (diff > 0) return { label: "Fiyat farkı", value: `+${formatTRY(diff)} ₺`, tone: "warn", note: "Taşımacılık Firması teklifi daha yüksek" };
+    return { label: "Fiyat farkı", value: `-${formatTRY(Math.abs(diff))} ₺`, tone: "good", note: "Hizmet Alan Firma teklifi daha yüksek" };
   }
 
-  if (hasRoom && !hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(room)} ₺`, tone: "warn", note: "Sadece room teklifi var" };
-  if (!hasRoom && hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(company)} ₺`, tone: "neutral", note: "Room cevabı bekleniyor" };
+  if (hasRoom && !hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(room)} ₺`, tone: "warn", note: "Yalnızca taşımacılık firması teklifi var" };
+  if (!hasRoom && hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(company)} ₺`, tone: "neutral", note: "Taşımacılık Firması cevabı bekleniyor" };
   return { label: "Fiyat farkı", value: "-", tone: "neutral", note: "Tutar sinyali yok" };
 }
 
@@ -197,7 +197,7 @@ function buildRecommendationMeta(offer, bucket = [], roomScores = {}) {
   });
   const bestScore = bucketScores.length ? Math.max(...bucketScores) : scoreValue;
   if (scoreValue > 0 && scoreValue === bestScore && bucketScores.some((value) => value < scoreValue)) {
-    reasons.push("Room puanı daha yüksek");
+    reasons.push("Taşımacılık Firması puanı daha yüksek");
   }
 
   const gapValue = offerPriceSortValue(offer?.amountCompany, offer?.amountRoom);
@@ -495,7 +495,7 @@ export default function WorkflowPanel() {
     {
       done: guide.hasAgreementToday,
       title: "2) Planı oluştur",
-      desc: guide.hasAgreementToday ? "Bugün için plan/taslak var" : "Guided Mode ile gezi planını oluştur",
+      desc: guide.hasAgreementToday ? "Bugün için plan/taslak var" : "Yönlendirmeli Akış ile gezi planını oluştur",
       actionLabel: guide.hasAgreementToday ? "Planları gör" : "Plan oluştur",
       onAction: () => {
         if (guide.hasAgreementToday) navigate(companyPath(me, "/agreements"));
@@ -635,7 +635,7 @@ export default function WorkflowPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title={school ? "Okul — Planlama Merkezi" : organization ? "Kurum — Gezi / Planlama Merkezi" : "Company — Planlama Merkezi"}
+        title={school ? "Okul — Planlama Merkezi" : organization ? "Organizasyon — Gezi / Planlama Merkezi" : "Hizmet Alan Firma — Planlama Merkezi"}
         subtitle={
           organization ? (
             <>
@@ -686,7 +686,7 @@ export default function WorkflowPanel() {
 
 
       <div className="card" style={{ marginTop: 12 }}>
-        <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Guided Mode)</div>
+        <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Yönlendirmeli Akış)</div>
         <div className="muted" style={{ marginTop: 4 }}>
           {organization ? (
             <>
@@ -694,7 +694,7 @@ export default function WorkflowPanel() {
             </>
           ) : (
             <>
-              Sade akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme</b> → <b>Teklif oluştur</b>.
+              Sade akış: <b>Hizmet Alan Firma Konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme</b> → <b>Teklif oluştur</b>.
             </>
           )}
         </div>
@@ -745,7 +745,7 @@ export default function WorkflowPanel() {
               <ChecklistRow
                 done={guide.hasAgreementToday}
                 title="2) Vardiya planı"
-                desc={guide.hasAgreementToday ? "Bugün için plan var" : "Guided Mode ile plan oluştur"}
+                desc={guide.hasAgreementToday ? "Bugün için plan var" : "Yönlendirmeli Akış ile plan oluştur"}
                 actionLabel={guide.hasAgreementToday ? "Sözleşmeleri aç" : "Plan oluştur"}
                 onAction={() => {
                   if (guide.hasAgreementToday) navigate(companyPath(me, "/agreements"));
@@ -780,7 +780,7 @@ export default function WorkflowPanel() {
           <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <div>
               <div style={{ fontWeight: 900 }}>Açık Teklifler</div>
-              <div className="muted">Company’ye gelen/gönderilen market teklifleri (OPEN/COUNTERED).</div>
+              <div className="muted">Hizmet Alan Firmaya gelen/gönderilen market teklifleri (açık/karşı teklif).</div>
             </div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <button type="button" className="btn" onClick={() => loadCompanyOffers(offersModal.status)}>Yenile</button>
@@ -805,7 +805,7 @@ export default function WorkflowPanel() {
             <input
               value={offersModal.q}
               onChange={(e) => setOffersModal((p) => ({ ...p, q: e.target.value }))}
-              placeholder="Ara (shiftId/room/status/not)"
+              placeholder="Ara (vardiya / taşımacılık firması / durum / not)"
               style={{ minWidth: 240 }}
             />
 
@@ -815,11 +815,11 @@ export default function WorkflowPanel() {
           <div style={{ marginTop: 10 }}>
             <OfferQualityRankingCard
               title="Kalite karşılaştırması"
-              subtitle="Kalite, güven, telematics, evidence/check-in ve operasyon riski readonly okunur; otomatik winner seçilmez."
+              subtitle="Kalite, güven, telematik, kanıt/check-in ve operasyon riski salt okunur gösterilir; otomatik kazanan seçilmez."
               offers={offersFiltered}
               roomScores={roomScores}
               me={me}
-              summaryParams={{ role: "COMPANY", companyId: me?.companyId, scopeLabel: "Company teklif karşılaştırması" }}
+              summaryParams={{ role: "COMPANY", companyId: me?.companyId, scopeLabel: "Hizmet Alan Firma teklif karşılaştırması" }}
               maxRows={4}
               style={{ padding: 14 }}
             />
@@ -834,7 +834,7 @@ export default function WorkflowPanel() {
               <OfferSignalPill label="Toplam" value={String(offersFiltered.length)} tone="neutral" />
             </div>
             <div className="muted" style={{ marginTop: 8 }}>
-              Kalite sırası: karar verilebilirlik → room puanı → fiyat farkı → güncellik. Bu satır sadece karar desteğidir.
+              Kalite sırası: karar verilebilirlik → taşımacılık firması puanı → fiyat farkı → güncellik. Bu satır sadece karar desteğidir.
             </div>
             {recommendedOffer ? (
               <div className="row" style={{ marginTop: 10, gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
@@ -884,7 +884,7 @@ export default function WorkflowPanel() {
                   <div className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
                     <div style={{ display: "grid", gap: 8 }}>
                       <div style={{ fontWeight: 800 }}>
-                        {room?.name ? `${room.name} (#${room.id})` : `Room #${o.roomId}`}
+                        {room?.name ? `${room.name} (#${room.id})` : `Taşımacılık Firması #${o.roomId}`}
                       </div>
                       <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                         {isRecommended ? <RecommendationBadge reason={recommendationReason} /> : null}
@@ -903,8 +903,8 @@ export default function WorkflowPanel() {
                   </div>
 
                   <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                    <OfferSignalPill label="Company" value={o.amountCompany != null ? `${formatTRY(o.amountCompany)} ₺` : "-"} tone="neutral" />
-                    <OfferSignalPill label="Room" value={o.amountRoom != null ? `${formatTRY(o.amountRoom)} ₺` : "-"} tone={offerStatus === "COUNTERED" ? "warn" : "neutral"} />
+                    <OfferSignalPill label="Hizmet Alan Firma" value={o.amountCompany != null ? `${formatTRY(o.amountCompany)} ₺` : "-"} tone="neutral" />
+                    <OfferSignalPill label="Taşımacılık Firması" value={o.amountRoom != null ? `${formatTRY(o.amountRoom)} ₺` : "-"} tone={offerStatus === "COUNTERED" ? "warn" : "neutral"} />
                     <OfferSignalPill label={gap.label} value={gap.value} tone={gap.tone} />
                   </div>
 

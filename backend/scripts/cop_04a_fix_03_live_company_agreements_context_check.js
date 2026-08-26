@@ -129,7 +129,7 @@ must(guide, 'check:cop04a', 'script guide keeps check:cop04a');
 must(guide, 'check:cop03cfix03', 'script guide keeps check:cop03cfix03');
 
 must(panel, "screenPath: '/company/agreements'", 'company agreements panel keeps copilot screen path');
-must(panel, "screenTitle: 'Sözleşmeler (Company)'", 'company agreements panel keeps company title');
+must(panel, "screenTitle: 'Hizmet Alan Firma Sözleşmeleri'", 'company agreements panel keeps company title');
 ordered(panel, ['Kaynak vardiya', 'Üretilen vardiya', 'Son üretilen vardiya'], 'company agreements panel keeps bridge fields first');
 must(panel, 'selectedAgreementCopilotContext', 'company agreements panel keeps copilot context bridge');
 must(panel, 'buildAgreementCopilotFacts', 'company agreements panel keeps agreement facts builder');
@@ -215,7 +215,7 @@ const selectedRecord = {
 
 const agreementSummary = {
   screenPath: '/company/agreements',
-  screenTitle: 'Sözleşmeler (Company)',
+  screenTitle: 'Hizmet Alan Firma Sözleşmeleri',
   selectedRecordType: 'agreement',
   selectedRecordLabel: 'Sözleşme #1',
   selectedRecordId: 1,

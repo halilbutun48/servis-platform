@@ -308,7 +308,7 @@ export default function TrustQualityPanel() {
       <div style={{ marginTop: 14 }}>
         <OfferQualityRankingCard
           title="Teklif kalite karşılaştırma rayı"
-          subtitle="Super Admin denetim görünümünde teklif satırı yerine kalite, güven, telematics ve evidence/check-in sinyalleri readonly okunur."
+          subtitle="Süper Yönetici denetim görünümünde teklif satırı yerine kalite, güven, telematik ve kanıt/check-in sinyalleri salt okunur gösterilir."
           offers={[]}
           summaryParams={{ role: "SUPER_ADMIN", scopeLabel: "Super Admin denetim görünümü" }}
           maxRows={2}

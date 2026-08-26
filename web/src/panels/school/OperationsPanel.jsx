@@ -393,9 +393,9 @@ export default function SchoolOperationsPanel() {
       return "Açık istek yok; ilk kabul edilen kayıt gösteriliyor.";
     }
     if (selectedPreviewRequestId && selectedPreviewRequest) {
-      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Readonly önizleme seçildi.";
+      return selectedPreviewRequest?.decisionOwnerNote || selectedPreviewRequest?.routeRefreshNote || selectedPreviewRequest?.routeRefreshLabel || "Salt okunur önizleme seçildi.";
     }
-    return "Seçili satırın readonly önizlemesi burada gösterilir.";
+    return "Seçili satırın salt okunur önizlemesi burada gösterilir.";
   }, [requestSelectionRows.length, selectedPreviewRequest, selectedPreviewRequestId]);
 
   useEffect(() => {

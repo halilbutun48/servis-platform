@@ -186,7 +186,7 @@ export default function AgreementsPanel() {
     } catch (e) {
       setRooms([]);
       setRoomsSupported(false);
-      setRoomErr(e?.message || "Odalar endpointi yok");
+       setRoomErr(e?.message || "Taşımacılık firmaları hizmeti kullanılamıyor");
     }
   }, [token]);
 
@@ -456,14 +456,14 @@ export default function AgreementsPanel() {
       });
       await load();
     } catch (e) {
-      setErr(e?.message || "Company counter failed");
+       setErr(e?.message || "Firma karşı teklifi başarısız oldu");
     } finally {
       setBusy(false);
     }
   }
 
   function askCompanyCounter(a) {
-    const raw = prompt("Yeni şirket teklifi (₺):", String(a?.companyOfferAmount ?? a?.roomOfferAmount ?? ""));
+    const raw = prompt("Yeni firma teklifi (₺):", String(a?.companyOfferAmount ?? a?.roomOfferAmount ?? ""));
     if (raw == null) return;
     const n = Number(String(raw).replace(/[^\d]/g, ""));
     if (!Number.isFinite(n) || n <= 0) {
@@ -838,7 +838,7 @@ export default function AgreementsPanel() {
     const todayDone = Number(shiftStats?.[a.id]?.todayDone || 0);
     const horizonOpen = Number(shiftStats?.[a.id]?.horizonOpen || 0);
     const statusText = agreementStatusText(a?.status);
-    const roomText = room?.name || `Oda #${a?.roomId || '-'}`;
+    const roomText = room?.name || `Taşımacılık Firması #${a?.roomId || '-'}`;
     const sourceShiftId = Number(origin?.sourceShiftId || 0);
     const generatedShiftCount = Number(bridge?.generatedCount || 0);
     const lastGeneratedShiftId = Number(lastShift?.id || 0);
@@ -866,7 +866,7 @@ export default function AgreementsPanel() {
     const selectedRecordType = 'agreement';
     const selectionFacts = buildAgreementCopilotFacts(a, {
       screenPath: '/company/agreements',
-      screenTitle: 'Sözleşmeler (Company)',
+      screenTitle: 'Hizmet Alan Firma Sözleşmeleri',
       selectedRecordType,
       selectedRecordLabel,
       selectedRecordId: Number(a.id || 0),
@@ -983,7 +983,7 @@ export default function AgreementsPanel() {
       platformFeePreviewData ? { label: 'Kaynak zinciri', value: platformFeeSignals?.hasLineageSignal ? 'Sinyal var' : 'Yok', help: platformFeeLineageSummary || 'Kaynak vardiya / market shift sinyali görünmüyor.' } : null,
       { label: 'Araç', value: bridge?.agreementVehicle?.plate || (a?.vehicleId ? `#${a.vehicleId}` : '-'), help: 'Onay veya üretim sırasında seçilen aracı gösterir.' },
       { label: 'Sürücü', value: bridge?.agreementDriver?.fullName || (a?.driverId ? `#${a.driverId}` : '-'), help: 'Onay veya üretim sırasında seçilen sürücüyü gösterir.' },
-      { label: 'Oda', value: roomText, help: 'Sözleşmenin bağlı olduğu operasyon odasını gösterir.' },
+      { label: 'Taşımacılık Firması', value: roomText, help: 'Sözleşmenin bağlı olduğu taşımacılık firmasını gösterir.' },
       { label: 'Durum', value: statusText, help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
       selectedRouteRefreshPending ? { label: 'Rota güncellemesi', value: selectedRouteRefreshCountered ? 'Karşı teklif' : 'Bekliyor', help: selectedRouteRefreshSummaryText || 'Sözleşmeye bağlı rota güncelleme talebi.' } : null,
       { label: 'Bugün / Ufuk', value: `${todayDone}/${todayTotal} tamamlandı • ${horizonOpen} kabul edildi`, help: 'Bugünkü ilerleme ve ufuktaki vardiya sayısını özetler.' },
@@ -1179,7 +1179,7 @@ export default function AgreementsPanel() {
           <div className="card">
             <div style={{ fontWeight: 900 }}>Sözleşme oluşturma kuralı</div>
             <div className="muted" style={{ marginTop: 4 }}>
-              Company tarafında sözleşme artık doğrudan bu ekrandan açılmaz. Önce bir vardiya oluştur, ardından ilgili vardiyada <b>Sözleşmeye Dönüştür</b> aksiyonunu kullan.
+              Hizmet Alan Firma tarafında sözleşme artık doğrudan bu ekrandan açılmaz. Önce bir vardiya oluştur, ardından ilgili vardiyada <b>Sözleşmeye Dönüştür</b> aksiyonunu kullan.
             </div>
             <div style={{ marginTop: 10 }}>
               <AgreementWizard
@@ -1245,13 +1245,13 @@ export default function AgreementsPanel() {
                   <tr>
                     <th>ID</th>
                     <th>Durum</th>
-                    <th>Oda</th>
+                    <th>Taşımacılık Firması</th>
                     <th>Tarih</th>
                     <th>Günler</th>
                     <th>Saat</th>
                     <th>Dir/Pat</th>
-                    <th>Şirket Teklifi</th>
-                    <th>Oda Karşı Teklifi</th>
+                    <th>Hizmet Alan Firma Teklifi</th>
+                    <th>Taşımacılık Firması Karşı Teklifi</th>
                     <th>Vardiyalar</th>
                     <th>Aksiyonlar</th>
                   </tr>

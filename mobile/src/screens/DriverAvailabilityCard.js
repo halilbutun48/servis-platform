@@ -45,7 +45,7 @@ export default function DriverAvailabilityCard({
         </>
       )}
       <QuickActionsGrid actions={quickActions} />
-      {compact ? null : <Text style={styles.muted}>Yeni iş atamasını oda/operasyon yapar.</Text>}
+      {compact ? null : <Text style={styles.muted}>Yeni iş atamasını taşımacılık firması veya operasyon yapar.</Text>}
     </Card>
   );
 }

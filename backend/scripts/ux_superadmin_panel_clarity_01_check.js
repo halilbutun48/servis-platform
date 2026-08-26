@@ -172,13 +172,13 @@ function main() {
   must(onboarding, "Başvuru İnceleme Kuyruğu", "onboarding review title present");
   must(onboarding, "İnceleme sınırı aktif", "onboarding review summary band present");
   must(onboarding, "Sadece inceleme", "onboarding review only-review badge present");
-  must(onboarding, "İnsan onayı gerekli", "onboarding review human approval badge present");
+  must(onboarding, "Kullanıcı onayı gerekli", "onboarding review human approval badge present");
   must(onboarding, "İncelemeye al", "onboarding review action present");
   must(onboarding, "Ek bilgi gerekli", "onboarding review action present");
   must(onboarding, "Invite için uygun", "onboarding review invite-ready action present");
   must(onboarding, "Reddet", "onboarding review reject action present");
   must(onboarding, "Notları kaydet", "onboarding review save-notes action present");
-  must(onboarding, "Bu yüzey invite, kullanıcı, ödeme, sözleşme veya tedarikçi doğrulama başlatmaz.", "onboarding review boundary copy present");
+  must(onboarding, "Bu yüzey davet, kullanıcı, ödeme, sözleşme veya tedarikçi doğrulama başlatmaz.", "onboarding review boundary copy present");
   mustNot(onboarding, "0/3 actions", "onboarding review does not show opaque action counter");
 
   const staged = stagedNames();

@@ -17,6 +17,7 @@ import {
   looksLikePlanReviewQuestion,
 } from '../src/ai/chat/conversationPlanReviewEngine.js';
 import { assertProductExtensionsOrder, productExtensionsChecks } from './lib/productExtensionsRegistry.js';
+import { normalizeVisibleReplyFragment } from '../src/ai/chat/conversationTaskStateShared.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -314,9 +315,9 @@ function runRuntimeCase(config, prompt) {
   check(state.checklist.length >= 4, `${label} checklist has at least four items`);
   check(chips.length >= 4, `${label} suggested chips has at least four items`);
   check(containsNormalized(reply, 'Sonraki güvenli kontrol'), `${label} reply mentions next safe control`);
-  check(containsNormalized(reply, 'insan onayı'), `${label} reply mentions human approval`);
-  check(containsNormalized(reply, screenLabel), `${label} reply mentions surface label`);
-  check(containsNormalized(reply, selectedSummary), `${label} reply mentions selected summary`);
+  check(containsNormalized(reply, 'Onayınız gerekli'), `${label} reply mentions human approval`);
+  check(containsNormalized(reply, normalizeVisibleReplyFragment(screenLabel)), `${label} reply mentions surface label`);
+  check(containsNormalized(reply, normalizeVisibleReplyFragment(selectedSummary)), `${label} reply mentions selected summary`);
   check(containsNormalized(reply, selectedRecordStatus), `${label} reply mentions selected record status`);
   check(containsNormalized(reply, config.expectedNeedles[0]), `${label} reply mentions ${config.expectedNeedles[0]}`);
   check(containsNormalized(reply, config.expectedNeedles[1]), `${label} reply mentions ${config.expectedNeedles[1]}`);

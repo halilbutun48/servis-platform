@@ -182,7 +182,7 @@ export default function PublicLeadReviewPanel() {
       ],
       badges: [
         { label: "Sadece inceleme", value: "Aktif", help: "Bu ekran invite, kullanıcı, ödeme veya sözleşme açmaz." },
-        { label: "İnsan onayı", value: "Gerekli", help: "Auto-approval kapalıdır." },
+        { label: "Kullanıcı onayı", value: "Gerekli", help: "Otomatik onay kapalıdır." },
       ],
       facts: {
         screenType: "PUBLIC_LEAD_REVIEW",
@@ -267,7 +267,7 @@ export default function PublicLeadReviewPanel() {
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
         title="Başvuru İnceleme Kuyruğu"
-        subtitle="Public lead başvurularını insan onayıyla okur. Bu yüzey invite, kullanıcı, ödeme, sözleşme veya tedarikçi doğrulama başlatmaz."
+        subtitle="Public lead başvurularını kullanıcı onayıyla okur. Bu yüzey davet, kullanıcı, ödeme, sözleşme veya tedarikçi doğrulama başlatmaz."
         actions={(
           <>
             <button className="btn sm" disabled={busy} onClick={() => loadQueue(selectedLead?.id || "")}>{busy ? "Yenileniyor..." : "Yenile"}</button>
@@ -289,7 +289,7 @@ export default function PublicLeadReviewPanel() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span className="pill" data-status="INFO">Sadece inceleme</span>
             <span className="pill" data-status="INFO">KVKK kontrollü</span>
-            <span className="pill" data-status="WARN">İnsan onayı gerekli</span>
+            <span className="pill" data-status="WARN">Kullanıcı onayı gerekli</span>
             <span className="pill" data-status="INFO">Read-only sınırları açık</span>
           </div>
         </div>

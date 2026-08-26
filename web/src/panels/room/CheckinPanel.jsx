@@ -92,9 +92,9 @@ export default function RoomCheckinPanel() {
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <h3 style={{ margin: 0 }}>ROOM Check-in İzleme</h3>
+            <h3 style={{ margin: 0 }}>Taşımacılık Firması Check-in İzleme</h3>
             <div className="muted" style={{ marginTop: 6 }}>
-              ROOM tarafı için read-only operasyon paneli. Sürücü okuttukça BOARD / ALIGHT sayıları ve son eventler burada akar.
+              Taşımacılık Firması tarafı için salt okunur operasyon paneli. Sürücü okuttukça BOARD / ALIGHT sayıları ve son olaylar burada akar.
             </div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>

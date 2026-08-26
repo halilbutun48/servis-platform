@@ -14,13 +14,13 @@ const SEVERITY_OPTIONS = [
 ];
 
 function roleLabel(roleId) {
-  if (roleId === "ROOM") return "Oda";
-  if (roleId === "COMPANY") return "Şirket";
+  if (roleId === "ROOM") return "Taşımacılık Firması";
+  if (roleId === "COMPANY") return "Hizmet Alan Firma";
   if (roleId === "DRIVER") return "Sürücü";
   if (roleId === "PERSONEL") return "Personel";
   if (roleId === "PARENT") return "Veli";
   if (roleId === "SCHOOL") return "Okul";
-  if (roleId === "ORGANIZATION") return "Kurum";
+  if (roleId === "ORGANIZATION") return "Organizasyon";
   return "Kullanıcı";
 }
 

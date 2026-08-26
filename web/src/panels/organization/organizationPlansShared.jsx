@@ -52,7 +52,7 @@ export function SummaryCard({ current, summary, onGoPlanning }) {
       <div className="title">Özet ve Aksiyonlar</div>
       <div className="muted" style={{ marginBottom: 10 }}>
         Yeni üretim akışı artık <b>Planlama Merkezi</b> içinden yürür. Bu ekran eski
-        kurum planlarını incelemek için tutulur; yeni plan açma, teklif gönderme ve
+        organizasyon planlarını incelemek için tutulur; yeni plan açma, teklif gönderme ve
         sözleşme başlatma işlemleri Planlama Merkezi&apos;nden yapılmalıdır.
       </div>
 
@@ -129,7 +129,7 @@ export function MiniMapPreview({ stops, shiftId = null }) {
   return (
     <ReadableMiniRouteMap
       title="Mini Harita Önizleme"
-      subtitle="Kurum planı durakları gerçek Leaflet tile arka planında gösterilir."
+      subtitle="Organizasyon planı durakları gerçek Leaflet tile arka planında gösterilir."
       linePoints={model.linePoints}
       markers={model.markers}
       legendItems={model.legendItems}
@@ -138,7 +138,7 @@ export function MiniMapPreview({ stops, shiftId = null }) {
       height={230}
       routePreviewShiftId={shiftId}
       routeModeLabel={shiftId ? "Yol ağına yakın rota" : "Yaklaşık / kuş uçuşu önizleme"}
-      expandedTitle="Kurum Planı Haritası"
+      expandedTitle="Organizasyon Planı Haritası"
       expandable
       showOpenMapButton
     />

@@ -240,7 +240,7 @@ export default function ServiceEvaluationPanel() {
   const [err, setErr] = useState("");
 
   const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/service-evaluation"), []);
-  const kindLabel = me?.companyKind === "SCHOOL" ? "Okul" : me?.companyKind === "ORGANIZATION" ? "Kurum" : "Firma";
+  const kindLabel = me?.companyKind === "SCHOOL" ? "Okul" : me?.companyKind === "ORGANIZATION" ? "Organizasyon" : "Firma";
 
   const completedCount = Number(summary?.cards?.completedServices || 0);
   const pendingCount = Number(summary?.cards?.pendingEvaluation || 0);
@@ -420,7 +420,7 @@ export default function ServiceEvaluationPanel() {
           <MetricCard
             title="Sağlayıcı Sayısı"
             value={loading ? "…" : providerCount}
-            note="Son hizmetlerde görünen oda / sağlayıcı"
+            note="Son hizmetlerde görünen taşımacılık firması / sağlayıcı"
           />
         </div>
       </div>

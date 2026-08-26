@@ -137,7 +137,7 @@ function main() {
   mustNotContains(agreements, 'label: "Özet"', "Company agreements removes summary tab label");
 
   const shiftsIntro = read("web/src/panels/company/CompanyShiftsPanelIntro.jsx");
-  mustContains(shiftsIntro, "Shifts (COMPANY)", "Company shifts intro keeps title");
+  mustContains(shiftsIntro, "Hizmet Alan Firma Vardiyaları", "Company shifts intro keeps title");
   mustContains(shiftsIntro, "Market", "Company shifts intro keeps market count");
   mustContains(shiftsIntro, "Bekleyen", "Company shifts intro keeps pending count");
   mustContains(shiftsIntro, "Sözleşmeden Üretilen", "Company shifts intro keeps contract count");

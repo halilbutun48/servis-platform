@@ -59,7 +59,7 @@ const ROOT_CAUSE_THEME_LIBRARY = {
   },
   ROOM_VEHICLE_GPS: {
     reply: 'Tekrar ediyorsa kök neden araç-sürücü eşleşmesi, sürücü cihazının konum izni veya GPS verisinin stale/offline kalması ya da bağlantının kesik kalması olabilir. Önce son GPS zamanını ve bağlı araç-sürücü bilgisini kontrol edelim.',
-    chips: ['Son GPS zamanı', 'Araç-sürücü eşleşmesi', 'Konum izni', 'Stale/offline'],
+    chips: ['Son GPS zamanı', 'Araç-sürücü eşleşmesi', 'Konum izni', 'Güncellik / bağlantı'],
   },
   DRIVER_ROUTE: {
     reply: 'Kesin sebebi veriyle doğrulamak gerekir; en olası nedenler sürücüye aktif vardiya atanmaması, rota henüz başlatılmaması veya durak listesinin hazır olmamasıdır. Çünkü sürücü rota ekranı atanmış aktif iş üzerinden dolar. Önce aktif vardiya ve atanmış araç bilgisini kontrol edelim.',
@@ -423,7 +423,7 @@ export function buildRootCauseState(options = {}) {
     theme: theme || (hasRootCauseContext(snapshot) ? 'GENERIC_CONTEXT' : ''),
     hasRootCauseContext: hasRootCauseContext(snapshot),
     reply: normalizeVisibleReplyFragment(reply),
-    chips: uniqueStrings(chips).slice(0, 4),
+    chips: uniqueStrings(chips.map((chip) => normalizeVisibleReplyFragment(chip))).slice(0, 4),
     summary: normalizeVisibleReplyFragment(reply),
     needsContext: !hasRootCauseContext(snapshot),
   };

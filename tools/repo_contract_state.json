@@ -15,7 +15,7 @@
                                    "internalRoot":  "tools/_packs",
                                    "masterPackUsesPublicWrappers":  true,
                                    "upperRouteSubpack":  "tools/_packs/pack_m82.ps1"
-                               },
+                                                                                                            },
     "runtimeJsonStores":  {
                               "backendDataDir":  "artifacts/runtime-data",
                               "legacyBackendDataDir":  "backend/data",
@@ -23,8 +23,8 @@
                               "transactionalUpdate":  true,
                               "trackedRuntimeFiles":  false,
                               "singleWriterRecommended":  true,
-                              "trackedBackupFiles":  false
-                          },
+                               "trackedBackupFiles":  false
+                                                                                                            },
     "phaseDefaults":  {
                           "packLivingTo":  89,
                           "verifyLivingRuntimeTo":  89,
@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  20,
-    "currentWarningHotFileCount":  14,
+    "currentWarningHotFileCount":  13,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -269,13 +269,9 @@
                                                                                                       "class":  "acceptance-sensitive / later",
                                                                                                       "note":  "premium smoke manual entrypoint; acceptance evidence only"
                                                                                                   },
-                                                        "backend/indexes/documentation_registry_v1.json":  {
-                                                                                                              "class":  "safe-candidate-review",
-                                                                                                              "note":  "documentation registry index; controlled cleanup adayi"
-                                                                                                          },
-                                                        "backend/scripts/lib/documentationRegistryV1.js":  {
+                                                         "backend/indexes/documentation_registry_v1.json":  {
                                                                                                                "class":  "safe-candidate-review",
-                                                                                                               "note":  "documentation registry helper; controlled cleanup adayi"
+                                                                                                               "note":  "documentation registry index; controlled cleanup adayi"
                                                                                                            }
                                                          }
                            },

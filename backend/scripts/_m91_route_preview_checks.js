@@ -69,7 +69,7 @@ export function runM91CompanyAgreementFromShiftOnlyCheck() {
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "Sözleşme oluşturma kuralı", "company agreements info card");
   assertIncludes(
     "web/src/panels/company/AgreementsPanel.jsx",
-    "Company tarafında sözleşme artık doğrudan bu ekrandan açılmaz.",
+    "Hizmet Alan Firma tarafında sözleşme artık doğrudan bu ekrandan açılmaz.",
     "company agreements direct create removed"
   );
   assertIncludes("web/src/panels/company/AgreementWizard.jsx", "sourceShiftId", "wizard checks source shift id");

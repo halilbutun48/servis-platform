@@ -28,7 +28,7 @@ export default function OrganizationCenterPanel() {
       const r = await api.get("/api/organization/plans");
       setPlans(Array.isArray(r?.items) ? r.items : []);
     } catch {
-      setErr("Kurum planları şu anda okunamadı. Yenileyip tekrar deneyin.");
+      setErr("Organizasyon planları şu anda okunamadı. Yenileyip tekrar deneyin.");
       setPlans([]);
     } finally {
       setBusy(false);
@@ -60,8 +60,8 @@ export default function OrganizationCenterPanel() {
     <div className="wrap">
       <div className="card">
         <FlowSummaryStrip
-          title="Kurum Merkezi"
-          description="Operasyonun asıl çalışma ekranı Kurum Planları ekranıdır. Buradan planı açar, markete çıkarır, room&apos;lara fiyatlı teklif yollar ve onay sonrası canlı haritadan takip edersin."
+          title="Organizasyon Merkezi"
+          description="Operasyonun asıl çalışma ekranı Organizasyon Planları ekranıdır. Buradan planı açar, markete çıkarır, taşımacılık firmalarına fiyatlı teklif yollar ve onay sonrası canlı haritadan takip edersin."
           statusText={busy ? "Yükleniyor" : err ? "Bağlantı okunamadı" : `${stats.total} plan`}
           tone={stats.total ? "success" : "warning"}
           steps={[
@@ -107,7 +107,7 @@ export default function OrganizationCenterPanel() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => navigate("/organization/plans")}>Kurum Planları</button>
+            <button type="button" onClick={() => navigate("/organization/plans")}>Organizasyon Planları</button>
             <button type="button" onClick={() => navigate("/organization/shifts")}>Vardiyalar</button>
             <button type="button" onClick={() => navigate("/organization/map")}>Canlı Harita</button>
           </div>
@@ -118,7 +118,7 @@ export default function OrganizationCenterPanel() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <div className="title">Son Planlar</div>
-            <div className="muted">Planı açınca Kurum Planları ekranında otomatik seçilir.</div>
+            <div className="muted">Planı açınca Organizasyon Planları ekranında otomatik seçilir.</div>
           </div>
           <button type="button" onClick={load} disabled={busy}>
             {busy ? "..." : "Yenile"}

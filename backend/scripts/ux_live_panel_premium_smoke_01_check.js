@@ -56,6 +56,19 @@ must(has(smoke, "desktop"), "smoke script includes desktop viewport");
 must(has(smoke, "mobile"), "smoke script includes mobile viewport");
 must(has(smoke, "console"), "smoke script captures console errors");
 must(has(smoke, "pageerror"), "smoke script captures page errors");
+must(has(smoke, "runRoomFinancialOperationsAdvancedAssertion"), "smoke script checks ROOM advanced finance text");
+must(has(smoke, "runCompanyFinancialOperationsAdvancedAssertion"), "smoke script checks COMPANY advanced finance text");
+must(has(smoke, "targetContributionBps"), "smoke script checks target contribution raw key");
+must(has(smoke, "riskReserveBps"), "smoke script checks risk reserve raw key");
+must(has(smoke, "budgetAmountMinor"), "smoke script checks budget amount raw key");
+must(has(smoke, "warningThresholdBps"), "smoke script checks warning threshold raw key");
+must(has(smoke, "draft_budget"), "smoke script checks draft budget raw code");
+must(has(smoke, "systemFieldInputLabels"), "smoke script checks system fields are not editable");
+must(has(smoke, "Hedef katkı oranı"), "smoke script checks target contribution Turkish label");
+must(has(smoke, "Risk payı"), "smoke script checks risk reserve Turkish label");
+must(has(smoke, "Bütçe ayrıntıları"), "smoke script checks company advanced Turkish label");
+must(has(smoke, "Bütçe kaynağı"), "smoke script checks company source Turkish label");
+must(has(smoke, "financeAssertions"), "smoke report keeps finance assertions");
 must(has(smoke, '!["BLOCKER", "NOT-FOUND"].includes(row.status)'), "smoke command only fails on blocker and 404 outcomes");
 must(notHas(smoke, '!["BLOCKER", "AUTH-BLOCKED", "NOT-FOUND"].includes(row.status)'), "smoke command no longer fails on AUTH-BLOCKED alone");
 
@@ -107,6 +120,16 @@ must(notHas(gitCached, "backend/artifacts/browser-smoke"), "browser-smoke artifa
 
 must(fs.existsSync(reportJsonPath), "premium smoke report exists");
 const report = readJson(reportJsonPath);
+must(Array.isArray(report.financeAssertions), "premium smoke report keeps finance assertions");
+for (const assertion of report.financeAssertions) {
+  must(assertion.passed === true, `${assertion.scope} finance advanced assertion passes for ${assertion.viewport}`);
+  must(assertion.rawFieldKeyVisibleCount === 0, `${assertion.scope} finance advanced raw field key count is zero for ${assertion.viewport}`);
+  must(assertion.rawInternalCodeVisibleCount === 0, `${assertion.scope} finance advanced raw internal code count is zero for ${assertion.viewport}`);
+  must(assertion.minorTokenVisibleCount === 0, `${assertion.scope} finance advanced minor token count is zero for ${assertion.viewport}`);
+  must(assertion.bpsTokenVisibleCount === 0, `${assertion.scope} finance advanced bps token count is zero for ${assertion.viewport}`);
+  must(assertion.consoleErrors?.length === 0, `${assertion.scope} finance advanced console errors are zero for ${assertion.viewport}`);
+  must(assertion.pageErrors?.length === 0, `${assertion.scope} finance advanced page errors are zero for ${assertion.viewport}`);
+}
 mustSmokeEvidenceIdentity(
   report,
   {

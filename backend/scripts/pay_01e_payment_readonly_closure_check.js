@@ -94,7 +94,7 @@ mustNot(safetyBadge, "ödemeyi başlat", "safety badge does not expose start-pay
 mustNot(safetyBadge, "çalıştır", "safety badge does not expose execute wording");
 
 must(readinessCard, "Hakediş hazırlığı", "readiness card remains present");
-must(readinessCard, "Bu kart readonly kontrol içindir; işlem başlatmaz.", "readiness card remains readonly");
+must(readinessCard, "Bu kart salt okunur kontrol içindir; işlem başlatmaz.", "readiness card remains readonly");
 must(readinessCard, "Ödeme omurgası hazır mı?", "readiness card keeps backbone readiness wording");
 must(readinessCard, "Sözleşme / vardiya ticari özeti var mı?", "readiness card keeps commercial summary wording");
 must(readinessCard, "Komisyon kuralı tanımlı mı?", "readiness card keeps commission rule wording");

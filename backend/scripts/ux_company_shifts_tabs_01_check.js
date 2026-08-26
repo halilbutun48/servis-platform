@@ -110,7 +110,7 @@ function main() {
   mustOrder(panel, "const otherItems = useMemo", "const copilotShift = useMemo", "Company ShiftsPanel initializes otherItems before first use");
   mustNotContains(panel, "const listItems = useMemo", "Company ShiftsPanel removes legacy listItems usage");
 
-  mustContains(intro, "Shifts (COMPANY)", "Company intro keeps Shifts title");
+  mustContains(intro, "Hizmet Alan Firma Vardiyaları", "Company intro keeps Shifts title");
   mustContains(intro, "Market", "Company intro shows market count");
   mustContains(intro, "Bekleyen", "Company intro shows pending count");
   mustContains(intro, "Sözleşmeden Üretilen", "Company intro shows contract count");

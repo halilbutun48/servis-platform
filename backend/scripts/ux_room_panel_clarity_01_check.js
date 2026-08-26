@@ -138,7 +138,7 @@ function main() {
   must(shiftsSections, "Bölme önizlemesi oluştur", "room shifts dispatch preview create CTA present");
   must(shiftsSections, "Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.", "room shifts dispatch success hint present");
 
-  must(agreementsPanel, "Room / Sözleşmeler", "room agreements title present");
+  must(agreementsPanel, "Taşımacılık Firması / Sözleşmeler", "room agreements title present");
   must(agreementsPanel, "Detayı aç", "room agreements detail CTA present");
   must(agreementsPanel, "Sözleşme ID", "room agreements uses safe contract id labels");
   must(agreementsPanel, "Araç ID", "room agreements uses safe vehicle id labels");
@@ -166,7 +166,7 @@ function main() {
   must(operationHealth, "Düşük canlılık / Çevrim dışı", "operation health uses safe health labels");
   must(operationHealth, "Kanıt / Rehber", "operation health keeps evidence guide tab");
 
-  must(bridgeCard, "Oda ID", "agreement ops bridge card uses safe room labels");
+  must(bridgeCard, "Taşımacılık Firması no", "agreement ops bridge card uses safe room labels");
   must(bridgeCard, "Araç ID", "agreement ops bridge card uses safe vehicle labels");
   must(bridgeCard, "Sürücü ID", "agreement ops bridge card uses safe driver labels");
   must(bridgeCard, "Detayı aç", "agreement ops bridge card keeps detail CTA");

@@ -35,8 +35,8 @@ function formatRegionContext(item) {
 function roleLabel(role) {
   const r = String(role || "-").trim().toUpperCase();
   if (r === "SUPER_ADMIN") return "Süper yönetici";
-  if (r === "ROOM") return "Oda";
-  if (r === "COMPANY") return "Şirket";
+  if (r === "ROOM") return "Taşımacılık Firması";
+  if (r === "COMPANY") return "Hizmet Alan Firma";
   if (r === "DRIVER") return "Sürücü";
   if (r === "PERSONEL") return "Personel";
   if (r === "PARENT") return "Veli";
@@ -115,25 +115,25 @@ export default function UsersPanel() {
     return (u) => {
       if (u.role === "COMPANY") {
         const company = companyById.get(Number(u.companyId));
-        const base = `Company #${u.companyId} ${cMap.get(Number(u.companyId)) || ""}`.trim();
+        const base = `Firma #${u.companyId} ${cMap.get(Number(u.companyId)) || ""}`.trim();
         return company ? `${base} • ${formatRegionContext(company)}` : base;
       }
       if (u.role === "ROOM") {
         const room = roomById.get(Number(u.roomId));
-        const base = `Room #${u.roomId} ${rMap.get(Number(u.roomId)) || ""}`.trim();
+        const base = `Taşımacılık Firması #${u.roomId} ${rMap.get(Number(u.roomId)) || ""}`.trim();
         return room ? `${base} • ${formatRegionContext(room)}` : base;
       }
       if (u.role === "DRIVER") {
         const room = roomById.get(Number(u.roomId));
-        const base = u.roomId ? `Room #${u.roomId}` : "-";
+        const base = u.roomId ? `Taşımacılık Firması #${u.roomId}` : "-";
         return room ? `${base} • ${formatRegionContext(room)}` : base;
       }
       if (u.role === "PERSONEL") {
         const company = companyById.get(Number(u.companyId));
-        const base = u.companyId ? `Company #${u.companyId}` : "-";
+        const base = u.companyId ? `Firma #${u.companyId}` : "-";
         return company ? `${base} • ${formatRegionContext(company)}` : base;
       }
-      if (u.role === "PARENT") return "Parent";
+      if (u.role === "PARENT") return "Veli";
       return "-";
     };
   }, [companies, rooms, companyById, roomById]);
@@ -184,12 +184,12 @@ export default function UsersPanel() {
 
       if (body.role === "COMPANY") {
         const cid = Number(createForm.companyId);
-        if (!cid) throw new Error("Company seç");
+        if (!cid) throw new Error("Hizmet alan firmayı seçin");
         body.companyId = cid;
       }
       if (body.role === "ROOM") {
         const rid = Number(createForm.roomId);
-        if (!rid) throw new Error("Room seç");
+        if (!rid) throw new Error("Taşımacılık firmasını seçin");
         body.roomId = rid;
       }
       // PARENT: scope yok
@@ -348,20 +348,20 @@ export default function UsersPanel() {
                 }))
               }
             >
-              <option value="COMPANY">COMPANY</option>
-              <option value="ROOM">ROOM</option>
-              <option value="PARENT">PARENT</option>
+              <option value="COMPANY">Hizmet Alan Firma</option>
+              <option value="ROOM">Taşımacılık Firması</option>
+              <option value="PARENT">Veli</option>
             </select>
           </label>
 
           <label className="muted">
             Kullanıcı Adı
-            <input value={createForm.username} onChange={(e) => setCreateForm((x) => ({ ...x, username: e.target.value.toLowerCase() }))} placeholder="ornek: oda_merkez" />
+            <input value={createForm.username} onChange={(e) => setCreateForm((x) => ({ ...x, username: e.target.value.toLowerCase() }))} placeholder="örnek: tasimacilik_merkez" />
           </label>
 
           {createForm.role === "COMPANY" ? (
             <label className="muted">
-              Company
+              Hizmet Alan Firma
               <select value={createForm.companyId} onChange={(e) => setCreateForm((x) => ({ ...x, companyId: e.target.value }))}>
                 <option value="">Seç</option>
                 {(companies || []).map((c) => (
@@ -373,7 +373,7 @@ export default function UsersPanel() {
             </label>
           ) : createForm.role === "ROOM" ? (
             <label className="muted">
-              Room
+              Taşımacılık Firması
               <select value={createForm.roomId} onChange={(e) => setCreateForm((x) => ({ ...x, roomId: e.target.value }))}>
                 <option value="">Seç</option>
                 {(rooms || []).map((r) => (
@@ -419,12 +419,12 @@ export default function UsersPanel() {
 
           <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="">Tüm roller</option>
-            <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-            <option value="ROOM">ROOM</option>
-            <option value="COMPANY">COMPANY</option>
-            <option value="DRIVER">DRIVER</option>
-            <option value="PERSONEL">PERSONEL</option>
-            <option value="PARENT">PARENT</option>
+            <option value="SUPER_ADMIN">Süper Yönetici</option>
+            <option value="ROOM">Taşımacılık Firması</option>
+            <option value="COMPANY">Hizmet Alan Firma</option>
+            <option value="DRIVER">Sürücü</option>
+            <option value="PERSONEL">Personel</option>
+            <option value="PARENT">Veli</option>
           </select>
 
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -570,7 +570,7 @@ export default function UsersPanel() {
 
               {edit.role === "COMPANY" ? (
                 <label className="muted">
-                  Company
+                  Hizmet Alan Firma
                   <select value={edit.companyId} onChange={(e) => setEdit((x) => ({ ...x, companyId: e.target.value }))}>
                     <option value="">Seç</option>
                     {(companies || []).map((c) => (
@@ -584,7 +584,7 @@ export default function UsersPanel() {
 
               {edit.role === "ROOM" ? (
                 <label className="muted">
-                  Room
+                  Taşımacılık Firması
                   <select value={edit.roomId} onChange={(e) => setEdit((x) => ({ ...x, roomId: e.target.value }))}>
                     <option value="">Seç</option>
                     {(rooms || []).map((r) => (

@@ -11,8 +11,8 @@ function CountCard({ label, value, note }) {
 function scopeTitle(companyKind) {
   const kind = String(companyKind || "").toUpperCase();
   if (kind === "SCHOOL") return "Okul Vardiyaları";
-  if (kind === "ORGANIZATION") return "Kurum Vardiyaları";
-  return "Shifts (COMPANY)";
+  if (kind === "ORGANIZATION") return "Organizasyon Vardiyaları";
+  return "Hizmet Alan Firma Vardiyaları";
 }
 
 export default function CompanyShiftsPanelIntro({ err, applyToast, focusMarketById, setApplyToast, trackCounts, companyKind }) {
@@ -49,9 +49,9 @@ export default function CompanyShiftsPanelIntro({ err, applyToast, focusMarketBy
       ) : null}
 
       <div className="row" style={{ alignItems: "stretch", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
-        <CountCard label="Market" value={String(counts.market || 0)} note="room seçilmemiş / pazara düşmüş" />
+        <CountCard label="Market" value={String(counts.market || 0)} note="taşımacılık firması seçilmemiş / pazara düşmüş" />
         <CountCard label="Bekleyen" value={String(counts.pending || 0)} note="pazarlık / karar bekleyen" />
-        <CountCard label="Sözleşmeden Üretilen" value={String(counts.contract || 0)} note="agreement / contract bağlı" />
+        <CountCard label="Sözleşmeden Üretilen" value={String(counts.contract || 0)} note="sözleşmeye bağlı" />
         <CountCard label="Diğer Vardiyalar" value={String(counts.other || 0)} note="sözleşmesiz normal / guided" />
       </div>
     </>
