@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-08-25
+Tarih: 2026-08-26
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
 - Toplam package script entry: `432`
-- Toplam executable tracked file: `1291`
-- Combined registry row: `1723`
-- Root/backend/web/mobile package dağılımı: root `267`, backend `856`, web `96`, mobile `201`
+- Toplam executable tracked file: `1292`
+- Combined registry row: `1724`
+- Root/backend/web/mobile package dağılımı: root `267`, backend `856`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `68`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -389,7 +389,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `715`
+- NEEDS_REVIEW: `716`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -410,7 +410,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 715 |
+| NEEDS_REVIEW | 716 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1609,6 +1609,7 @@ Repo: `servis-platform`
 | roomVehiclesPanelUtils.js | web/src/panels/room/roomVehiclesPanelUtils.js | web |  | review | NEEDS_REVIEW |  | ROOM-VEHICLES-PANEL-UTILS |  | Owner or chain unclear |  |
 | useRoomVehicleTelematics.js | web/src/panels/room/useRoomVehicleTelematics.js | web |  | review | NEEDS_REVIEW |  | USE-ROOM-VEHICLE-TELEMATICS |  | Owner or chain unclear |  |
 | boardingChangeUi.js | web/src/panels/shared/boardingChangeUi.js | web |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-UI |  | Owner or chain unclear |  |
+| financialOperationsPresentation.js | web/src/panels/shared/financialOperationsPresentation.js | web |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-PRESENTATION |  | Owner or chain unclear |  |
 | operationsDigestUtils.js | web/src/panels/shared/operationsDigestUtils.js | web |  | review | NEEDS_REVIEW |  | OPERATIONS-DIGEST-UTILS |  | Owner or chain unclear |  |
 | commercialCorePanelActions.js | web/src/panels/superadmin/commercialCorePanelActions.js | web |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-PANEL-ACTIONS |  | Owner or chain unclear |  |
 | commercialCorePanelOptionalStates.js | web/src/panels/superadmin/commercialCorePanelOptionalStates.js | web |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-PANEL-OPTIONAL-STATES |  | Owner or chain unclear |  |
@@ -2391,7 +2392,7 @@ Repo: `servis-platform`
 | backend/scripts/_m91_route_preview_checks.js | Hub | ACTIVE |
 | backend/scripts/_m91_smoke_helpers.js | Hub | ACTIVE |
 | backend/scripts/ai03b_semantic_visible_live_matrix_01_check.js | Hub | NEEDS_REVIEW |
-| backend/scripts/audit_log_and_approval_trace_01_check.js | debug payload | NEEDS_REVIEW |
+| backend/scripts/audit_log_and_approval_trace_01_check.js | Hub, debug payload | NEEDS_REVIEW |
 | backend/scripts/audit_logs_session_hotfix_check.mjs | Audit Logs | NEEDS_REVIEW |
 | backend/scripts/backend_lint_warning_burndown_01_check.js | Hub | NEEDS_REVIEW |
 | backend/scripts/boarding_ops_01a_route_impact_preview_check.js | OperationProof | NEEDS_REVIEW |
