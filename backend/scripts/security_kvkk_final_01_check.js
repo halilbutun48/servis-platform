@@ -269,13 +269,11 @@ const batch09ApprovedConcurrentWorktreeEntries = [
 ];
 const batch09ApprovedConcurrentWorktreeShas = buildExpectedShaMap(batch09ApprovedConcurrentWorktreeEntries);
 
-const batch09CommercialSplitRouteEntries = [
-  { path: "backend/src/routes/commercialCoreRoutes.js", sha256: "11A5136CDA54B1467757BF9422EB6B63B0B00F9633CD1A8AF3303A5BA2A06E41" },
-  { path: "backend/src/routes/commercialCorePaymentRoutes.js", sha256: "9BB53FE97B17F28892AF3B8C8E91373D7276183873E0258E694AD694F5E1B552" },
-  { path: "backend/src/routes/commercialCorePaymentReportsRoutes.js", sha256: "02A327CB70645AA8652E542F5825B271B143AE7A741FC8FBD1CB0C157093FD36" },
-  { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "11A0C1B1CDE82470871EBBBD90CEE37F4CAA5C2AD6C25AB7B39586F11CBFDD1F" },
-  { path: "backend/src/routes/commercialCoreRouteData.js", sha256: "5EB28DD6ABEC1AD63CA236AB567BB14B0CEEF35D54DF75343D5EC746F5A6FCD2" },
-];
+const batch09CommercialSplitRouteEntries = Object.freeze(
+  CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter(({ path: entryPath }) =>
+    normalizePath(entryPath).startsWith("backend/src/routes/commercialCore"),
+  ),
+);
 const batch09CommercialSplitRouteShas = buildExpectedShaMap(batch09CommercialSplitRouteEntries);
 
 const batch09ProvenanceClosureEntries = [
@@ -828,6 +826,10 @@ function mustAcceptedPrismaManifest(evidence = collectAcceptedPrismaEvidence()) 
 
 function main() {
   console.log("=== SECURITY-KVKK-FINAL-01 CHECK ===");
+  must(
+    batch09CommercialSplitRouteEntries.length === 5,
+    "commercial split route identity remains the exact five-entry current-head family",
+  );
 
   const cases = [];
   const pkg = readFile(paths.packageJson);
@@ -1424,7 +1426,7 @@ function main() {
   addCase(cases, "route diff stays empty", () =>
     mustStatusSubsetWithIdentity(
       ["backend/src/routes"],
-      [...approvedCurrentHeadRouteEntries, ...batch09CommercialSplitRouteEntries],
+      [...approvedCurrentHeadRouteEntries],
       "route diff not empty",
     ));
   addCase(cases, "service diff stays empty", () =>
