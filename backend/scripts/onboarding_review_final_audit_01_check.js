@@ -308,7 +308,7 @@ mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not s
     { path: "backend/src/services/qualityPaymentBridgeService.js", sha256: "935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83" },
     { path: "backend/src/routes/shifts/company.js", sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0" },
     { path: "backend/src/services/companyShiftMutationTail.js", sha256: "FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78" },
-      { path: "web/src/api.js", sha256: "0380257F2583AAC4532D119EE16D0182B20FC75B54D8830092C38E45AE2F4893" },
+      { path: "web/src/api.js", sha256: "C72688E9EB42D3AA7E5DC96B1A5436D95B9E51920DB4E7A6D624CBF7517E2279" },
       "web/src/utils/copilotFacts.js",
       "web/src/panels/room/ShiftsPanel.jsx",
       "web/src/panels/room/roomVehiclesPanelSections.jsx",

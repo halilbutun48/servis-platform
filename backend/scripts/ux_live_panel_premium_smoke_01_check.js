@@ -24,6 +24,7 @@ const notHas = (text, needle) => !String(text).includes(needle);
 
 const pkg = read("package.json");
 const smoke = read("backend/scripts/ux_live_panel_premium_smoke_01.mjs");
+const referenceCard = read("web/src/panels/shared/ExternalReferenceCard.jsx");
 const doc = read("docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md");
 const verify = read("backend/scripts/verify_chain_01_product_extensions_check.js");
 const harnessCheck = read("backend/scripts/script_harness_consolidation_01_check.js");
@@ -69,6 +70,11 @@ must(has(smoke, "Risk payı"), "smoke script checks risk reserve Turkish label")
 must(has(smoke, "Bütçe ayrıntıları"), "smoke script checks company advanced Turkish label");
 must(has(smoke, "Bütçe kaynağı"), "smoke script checks company source Turkish label");
 must(has(smoke, "financeAssertions"), "smoke report keeps finance assertions");
+must(has(smoke, "runExternalReferenceDataAvailableAssertion"), "smoke script checks external reference available state");
+must(has(smoke, "externalReferenceAssertions"), "smoke report keeps external reference assertions");
+must(has(referenceCard, "Piyasa referansı henüz mevcut değil."), "reference card keeps honest no-data state");
+must(has(referenceCard, "Bu bilgi gerçek maliyetinizin veya sözleşme tutarınızın yerine geçmez."), "reference card keeps no-substitution authority note");
+must(has(smoke, "Tarayıcı doğrulama kaynağı"), "smoke checks isolated available reference fixture");
 must(has(smoke, '!["BLOCKER", "NOT-FOUND"].includes(row.status)'), "smoke command only fails on blocker and 404 outcomes");
 must(notHas(smoke, '!["BLOCKER", "AUTH-BLOCKED", "NOT-FOUND"].includes(row.status)'), "smoke command no longer fails on AUTH-BLOCKED alone");
 
@@ -127,8 +133,19 @@ for (const assertion of report.financeAssertions) {
   must(assertion.rawInternalCodeVisibleCount === 0, `${assertion.scope} finance advanced raw internal code count is zero for ${assertion.viewport}`);
   must(assertion.minorTokenVisibleCount === 0, `${assertion.scope} finance advanced minor token count is zero for ${assertion.viewport}`);
   must(assertion.bpsTokenVisibleCount === 0, `${assertion.scope} finance advanced bps token count is zero for ${assertion.viewport}`);
+  must(assertion.externalReferenceVisible === true, `${assertion.scope} external reference card is visible for ${assertion.viewport}`);
+  must(assertion.externalReferenceNoDataVisible === true, `${assertion.scope} honest external reference no-data state is visible for ${assertion.viewport}`);
+  must(assertion.externalReferenceRawTokensVisible?.length === 0, `${assertion.scope} external reference raw tokens are hidden for ${assertion.viewport}`);
   must(assertion.consoleErrors?.length === 0, `${assertion.scope} finance advanced console errors are zero for ${assertion.viewport}`);
   must(assertion.pageErrors?.length === 0, `${assertion.scope} finance advanced page errors are zero for ${assertion.viewport}`);
+}
+must(Array.isArray(report.externalReferenceAssertions), "premium smoke report keeps external reference assertions");
+for (const assertion of report.externalReferenceAssertions) {
+  must(assertion.passed === true, `${assertion.scope} external reference available-state assertion passes for ${assertion.viewport}`);
+  must(assertion.referenceRequests > 0, `${assertion.scope} external reference fixture was requested for ${assertion.viewport}`);
+  must(assertion.rawTokensVisible?.length === 0, `${assertion.scope} external reference available-state raw tokens are hidden for ${assertion.viewport}`);
+  must(assertion.consoleErrors?.length === 0, `${assertion.scope} external reference console errors are zero for ${assertion.viewport}`);
+  must(assertion.pageErrors?.length === 0, `${assertion.scope} external reference page errors are zero for ${assertion.viewport}`);
 }
 mustSmokeEvidenceIdentity(
   report,

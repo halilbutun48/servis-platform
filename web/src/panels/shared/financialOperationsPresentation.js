@@ -194,6 +194,49 @@ const FINANCE_FIELD_LABELS = Object.freeze({
   currentRoomQuoteFloorDraft: "Mevcut teklif taslağı",
 });
 
+const EXTERNAL_REFERENCE_FRESHNESS_LABELS = Object.freeze({
+  FRESH: "Güncel",
+  STALE: "Güncelliği sınırlı",
+  EXPIRED: "Kullanılamaz",
+  SOURCE_UNAVAILABLE: "Kaynak kullanılamıyor",
+  FALLBACK: "Alternatif kaynak",
+  UNKNOWN: "Güncellik bilinmiyor",
+});
+
+const EXTERNAL_REFERENCE_FRESHNESS_TONES = Object.freeze({
+  FRESH: "good",
+  STALE: "warm",
+  EXPIRED: "danger",
+  SOURCE_UNAVAILABLE: "danger",
+  FALLBACK: "warm",
+  UNKNOWN: "warm",
+});
+
+const EXTERNAL_REFERENCE_CONFIDENCE_LABELS = Object.freeze({
+  HIGH: "Yüksek güven",
+  MEDIUM: "Orta güven",
+  LOW: "Düşük güven",
+  UNKNOWN: "Güven bilinmiyor",
+});
+
+const EXTERNAL_REFERENCE_CONFIDENCE_TONES = Object.freeze({
+  HIGH: "good",
+  MEDIUM: "warm",
+  LOW: "danger",
+  UNKNOWN: "warm",
+});
+
+const EXTERNAL_REFERENCE_UNIT_LABELS = Object.freeze({
+  CURRENCY: "",
+  CURRENCY_PER_L: "/L",
+  CURRENCY_PER_KM: "/km",
+  CURRENCY_PER_MONTH: "/ay",
+  CURRENCY_PER_TRIP: "/sefer",
+  CURRENCY_PER_UNIT: "/birim",
+  RATE: "oran",
+  INDEX_POINT: "endeks puanı",
+});
+
 function normalizeToken(value) {
   return String(value ?? "")
     .normalize("NFKD")
@@ -307,6 +350,56 @@ export function currencyCodeLabel(value) {
   if (!code) return "Para birimi yok";
   if (code === "TRY") return "₺";
   return code;
+}
+
+export function externalReferenceFreshnessLabel(value) {
+  return labelFromMap(value, EXTERNAL_REFERENCE_FRESHNESS_LABELS, "Güncellik bilinmiyor");
+}
+
+export function externalReferenceFreshnessTone(value) {
+  return EXTERNAL_REFERENCE_FRESHNESS_TONES[normalizeToken(value)] || "warm";
+}
+
+export function externalReferenceConfidenceLabel(value) {
+  return labelFromMap(value, EXTERNAL_REFERENCE_CONFIDENCE_LABELS, "Güven bilinmiyor");
+}
+
+export function externalReferenceConfidenceTone(value) {
+  return EXTERNAL_REFERENCE_CONFIDENCE_TONES[normalizeToken(value)] || "warm";
+}
+
+export function externalReferenceUnitLabel(unit, currencyCode) {
+  const unitKey = normalizeToken(unit);
+  const suffix = EXTERNAL_REFERENCE_UNIT_LABELS[unitKey];
+  if (suffix === undefined) return "Birim belirtilmemiş";
+  const currency = currencyCodeLabel(currencyCode);
+  if (unitKey === "RATE" || unitKey === "INDEX_POINT") return suffix;
+  return `${currency}${suffix}`;
+}
+
+function externalReferenceDecimalLabel(value) {
+  const text = String(value ?? "").trim();
+  if (!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(text)) return "-";
+  const [whole, fraction] = text.split(".");
+  const groupedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${groupedWhole}${fraction ? `,${fraction}` : ""}`;
+}
+
+export function externalReferenceValueLabel(value, unit, currencyCode) {
+  const amount = externalReferenceDecimalLabel(value);
+  if (amount === "-") return amount;
+  const unitLabel = externalReferenceUnitLabel(unit, currencyCode);
+  return unitLabel && /^[₺$€£A-Z]/.test(unitLabel)
+    ? `${amount} ${unitLabel}`
+    : `${amount} ${unitLabel}`;
+}
+
+export function externalReferenceFallbackLabel(value) {
+  const key = normalizeToken(value);
+  if (key === "STALE_CACHE") return "Önceki kayıt kullanılıyor";
+  if (key === "FALLBACK_PROVIDER") return "Alternatif kaynak kullanılıyor";
+  if (key === "NO_SAFE_FALLBACK") return "Güvenli alternatif yok";
+  return "";
 }
 
 export function scopeLabel(scope) {

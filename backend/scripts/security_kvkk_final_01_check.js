@@ -367,6 +367,7 @@ const securityOwnedExactPaths = new Set(
     "web/src/api.js",
     "web/src/panels/shared/FinancialOperationsPanel.jsx",
     "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
+    "web/src/panels/shared/ExternalReferenceCard.jsx",
     "web/src/panels/room/DriversPanel.jsx",
     "web/src/panels/parent/LivePanel.jsx",
     "docs/SECURITY_KVKK_FINAL_01.md",
@@ -390,7 +391,7 @@ const securityOwnedExactPaths = new Set(
 );
 
 const securityDocWorktreeEntries = [
-  { path: "docs/UX_PANEL_INVENTORY_02A_AUDIT.md", sha256: "BE7419F53FAF68B28E2B946A2BBCE5B143939F9C59366F5B6DD568BCEE425B25" },
+  { path: "docs/UX_PANEL_INVENTORY_02A_AUDIT.md", sha256: "9999B6173375FF20E09D6C8B0B2AD3221FC4A7AA3B812BDE485EF268FACA38A8" },
   { path: "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "A7EF3D0DB003D206845EBDBF3DFF52B82839A993966BE10618C32EC7A418889E" },
   { path: "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "36D7BCC36F1F2772524EC66B07A2A1363CA584ECAADD19C7FD4F7A750CF4A988" },
 ];

@@ -33,6 +33,7 @@ import {
   previewStatusLabel,
   previewStatusTone,
 } from "./financialOperationsPresentation";
+import ExternalReferenceCard from "./ExternalReferenceCard";
 
 const INPUT_STYLE = {
   width: "100%",
@@ -581,6 +582,13 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         budgetActionBusy={actionBusy}
         budgetActionErr={actionErr}
         budgetActionOk={actionOk}
+        externalReferenceCard={(
+          <ExternalReferenceCard
+            token={token}
+            canView={canView}
+            refreshTick={refreshTick}
+          />
+        )}
         normalizeText={normalizeText}
         MetricCard={MetricCard}
         ChipRow={ChipRow}
@@ -695,6 +703,12 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         <MetricCard title={meta.amountGapLabel} value={formatTRY(currentGapMinor)} note="Planlanan teklif - tahmini maliyet" tone={currentGapMinor != null && Number(currentGapMinor) >= 0 ? "good" : "warm"} />
         <MetricCard title="Veri güveni" value={confidenceValue || "Bilinmiyor"} note={modelStatusValue || "Model durumu"} tone={confidenceMetricTone} />
       </div>
+
+      <ExternalReferenceCard
+        token={token}
+        canView={canView}
+        refreshTick={refreshTick}
+      />
 
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={roomDetailsOpen} onToggle={(event) => setRoomDetailsOpen(event.currentTarget.open)}>

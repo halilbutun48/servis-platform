@@ -775,6 +775,7 @@ function main() {
     "web/src/panels/room/DriversPanel.jsx",
     "web/src/panels/shared/FinancialOperationsPanel.jsx",
     "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
+    "web/src/panels/shared/ExternalReferenceCard.jsx",
     "web/src/panels/shared/financialOperationsPresentation.js",
     ...APPROVED_TERMINOLOGY_PRESENTATION.map((entry) => entry.path),
   ]);

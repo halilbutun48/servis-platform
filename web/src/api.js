@@ -356,6 +356,10 @@ export function getCompanyFinancialOperationsPreview(token, params = {}, { signa
   return cachedGet(`/api/company/overview/financial-operations/preview${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
 }
 
+export function getExternalCostReference(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
+  return cachedGet(`/api/external-cost-references${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
+}
+
 export function getCurrentCompanyBudgetPlan(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
   return cachedGet(`/api/company/overview/financial-operations/budget-plans/current${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
 }

@@ -197,6 +197,7 @@ export default function FinancialOperationsCompanyPreview({
   budgetActionBusy,
   budgetActionErr,
   budgetActionOk,
+  externalReferenceCard,
   formatBps,
   INPUT_STYLE,
 }) {
@@ -340,6 +341,8 @@ export default function FinancialOperationsCompanyPreview({
           />
         )}
       </div>
+
+      {externalReferenceCard}
 
       <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={budgetDetailsOpen} onToggle={(event) => setBudgetDetailsOpen(event.currentTarget.open)}>

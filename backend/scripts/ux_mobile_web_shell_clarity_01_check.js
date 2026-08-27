@@ -726,6 +726,7 @@ function main() {
     "web/src/panels/school/OperationsPanel.jsx",
     "web/src/panels/shared/FinancialOperationsPanel.jsx",
     "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
+    "web/src/panels/shared/ExternalReferenceCard.jsx",
     "web/src/panels/shared/financialOperationsPresentation.js",
     "tools/repo_contract_state.json",
   ]);

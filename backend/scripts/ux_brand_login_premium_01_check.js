@@ -705,6 +705,7 @@ function main() {
     "web/src/panels/school/OperationsPanel.jsx",
     "web/src/panels/shared/FinancialOperationsPanel.jsx",
     "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
+    "web/src/panels/shared/ExternalReferenceCard.jsx",
     "web/src/panels/shared/financialOperationsPresentation.js",
     { path: "web/src/panels/shared/financialOperationsPresentation.js", sha256: "A6DBDE150443AE56D5C4B009F9E6BBE8A8CFF72FC5FCC9EDD293F45B8EA7612A" },
   ]);

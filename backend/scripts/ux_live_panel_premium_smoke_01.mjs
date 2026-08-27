@@ -481,6 +481,9 @@ async function runRoomFinancialOperationsAdvancedAssertion(context, viewportName
     rawInternalCodeVisibleCount: 0,
     minorTokenVisibleCount: 0,
     bpsTokenVisibleCount: 0,
+    externalReferenceVisible: false,
+    externalReferenceNoDataVisible: false,
+    externalReferenceRawTokensVisible: [],
     humanLabelsVisible: [],
     manualOverrideHintVisible: false,
     consoleErrors: [],
@@ -541,6 +544,12 @@ async function runRoomFinancialOperationsAdvancedAssertion(context, viewportName
     result.inputDetailsOpened = await inputDetails.evaluate((element) => Boolean(element.open));
 
     const visibleText = await getVisibleSurfaceText(page);
+    const externalReferenceCard = page.getByTestId("external-reference-card");
+    await page.getByTestId("external-reference-no-data").waitFor({ state: "visible", timeout: 8000 });
+    const externalReferenceText = await externalReferenceCard.innerText();
+    result.externalReferenceVisible = await externalReferenceCard.isVisible();
+    result.externalReferenceNoDataVisible = await page.getByTestId("external-reference-no-data").isVisible();
+    result.externalReferenceRawTokensVisible = ["EXTERNAL_REFERENCE", "FUEL_DIESEL", "CURRENCY_PER_L", "NO_DATA", "providerKey", "valueMinor"].filter((token) => externalReferenceText.includes(token));
     result.rawFieldKeysVisible = rawFieldKeys.filter((key) => visibleText.includes(key));
     result.rawFieldKeyVisibleCount = result.rawFieldKeysVisible.length;
     result.rawInternalCodesVisible = ["targetContributionBps", "riskReserveBps", "fuelUnitPriceMinor", "TRY", "minor", "bps"].filter((token) => visibleText.includes(token));
@@ -557,6 +566,9 @@ async function runRoomFinancialOperationsAdvancedAssertion(context, viewportName
     }
     result.passed = result.detailsOpened
       && result.inputDetailsOpened
+      && result.externalReferenceVisible
+      && result.externalReferenceNoDataVisible
+      && result.externalReferenceRawTokensVisible.length === 0
       && result.rawFieldKeyVisibleCount === 0
       && result.rawInternalCodeVisibleCount === 0
       && result.minorTokenVisibleCount === 0
@@ -588,6 +600,9 @@ async function runCompanyFinancialOperationsAdvancedAssertion(context, viewportN
     rawInternalCodeVisibleCount: 0,
     minorTokenVisibleCount: 0,
     bpsTokenVisibleCount: 0,
+    externalReferenceVisible: false,
+    externalReferenceNoDataVisible: false,
+    externalReferenceRawTokensVisible: [],
     humanLabelsVisible: [],
     systemFieldInputLabels: [],
     consoleErrors: [],
@@ -643,6 +658,12 @@ async function runCompanyFinancialOperationsAdvancedAssertion(context, viewportN
     result.advancedDetailsOpened = await advancedDetails.evaluate((element) => Boolean(element.open));
 
     const visibleText = await getVisibleSurfaceText(page);
+    const externalReferenceCard = page.getByTestId("external-reference-card");
+    await page.getByTestId("external-reference-no-data").waitFor({ state: "visible", timeout: 8000 });
+    const externalReferenceText = await externalReferenceCard.innerText();
+    result.externalReferenceVisible = await externalReferenceCard.isVisible();
+    result.externalReferenceNoDataVisible = await page.getByTestId("external-reference-no-data").isVisible();
+    result.externalReferenceRawTokensVisible = ["EXTERNAL_REFERENCE", "FUEL_DIESEL", "CURRENCY_PER_L", "NO_DATA", "providerKey", "valueMinor"].filter((token) => externalReferenceText.includes(token));
     result.rawFieldKeysVisible = rawFieldKeys.filter((key) => visibleText.includes(key));
     result.rawFieldKeyVisibleCount = result.rawFieldKeysVisible.length;
     result.rawInternalCodesVisible = rawInternalCodes.filter((token) => visibleText.includes(token));
@@ -665,12 +686,116 @@ async function runCompanyFinancialOperationsAdvancedAssertion(context, viewportN
     }
     result.passed = result.detailsOpened
       && result.advancedDetailsOpened
+      && result.externalReferenceVisible
+      && result.externalReferenceNoDataVisible
+      && result.externalReferenceRawTokensVisible.length === 0
       && result.rawFieldKeyVisibleCount === 0
       && result.rawInternalCodeVisibleCount === 0
       && result.minorTokenVisibleCount === 0
       && result.bpsTokenVisibleCount === 0
       && result.systemFieldInputLabels.length === 0
       && result.humanLabelsVisible.length === humanLabels.length
+      && result.consoleErrors.length === 0
+      && result.pageErrors.length === 0;
+  } catch (error) {
+    result.notes.push(error?.message || String(error));
+  }
+
+  await page.close().catch(() => {});
+  return result;
+}
+
+async function runExternalReferenceDataAvailableAssertion(context, viewportName, scope) {
+  const page = await context.newPage();
+  const route = scope === "ROOM" ? "/#/room/financial-operations" : "/#/company/financial-operations";
+  const result = {
+    scope,
+    route,
+    viewport: viewportName,
+    fixture: "playwright-route-interception",
+    passed: false,
+    referenceRequests: 0,
+    availableStateVisible: false,
+    valueVisible: false,
+    unitVisible: false,
+    freshnessVisible: false,
+    confidenceVisible: false,
+    authorityNoteVisible: false,
+    rawTokensVisible: [],
+    consoleErrors: [],
+    pageErrors: [],
+    notes: [],
+  };
+  const now = "2026-08-27T08:00:00.000Z";
+  const fixturePayload = {
+    ok: true,
+    dataClass: "EXTERNAL_REFERENCE",
+    state: "FRESH",
+    marketReference: {
+      dataClass: "EXTERNAL_REFERENCE",
+      family: "FUEL_DIESEL",
+      valueDecimal: "7.42",
+      valueMinor: 742,
+      unit: "CURRENCY_PER_L",
+      currencyCode: "TRY",
+      sourceName: "Tarayıcı doğrulama kaynağı",
+      providerKey: "TEST_BROWSER_REFERENCE",
+      asOf: now,
+      freshness: "FRESH",
+      confidence: "HIGH",
+      completeness: "COMPLETE",
+      conflictState: "NO_CONFLICT",
+      providerStatus: "CONFIGURED",
+      fallbackState: "NONE",
+      retrievedAt: now,
+    },
+    providerStatus: "CONFIGURED",
+    freshness: "FRESH",
+    confidence: "HIGH",
+    completeness: "COMPLETE",
+    conflictState: "NO_CONFLICT",
+    fallbackState: "NONE",
+    actualInternalData: null,
+    authorityNote: "Bu değer gerçek maliyet değildir; gerçek iç veri varsa önceliklidir.",
+  };
+
+  page.on("console", (msg) => {
+    if (msg.type() === "error") result.consoleErrors.push(msg.text());
+  });
+  page.on("pageerror", (error) => {
+    result.pageErrors.push(error?.message || String(error));
+  });
+
+  try {
+    await page.route("**/api/external-cost-references*", async (routeHandler) => {
+      if (routeHandler.request().method() !== "GET") return routeHandler.continue();
+      result.referenceRequests += 1;
+      return routeHandler.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(fixturePayload),
+      });
+    });
+    await page.goto(`${WEB_BASE_URL}${route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+    await page.getByTestId("external-reference-value").waitFor({ state: "visible", timeout: 8000 });
+    const card = page.getByTestId("external-reference-card");
+    const cardText = await card.innerText();
+    result.availableStateVisible = (await card.getAttribute("data-reference-state")) === "available";
+    result.valueVisible = cardText.includes("7,42 ₺/L");
+    result.unitVisible = cardText.includes("₺/L");
+    result.freshnessVisible = cardText.includes("Güncel");
+    result.confidenceVisible = cardText.includes("Yüksek güven");
+    result.authorityNoteVisible = cardText.includes("iç maliyet ve sözleşme verileri önceliklidir");
+    result.rawTokensVisible = ["EXTERNAL_REFERENCE", "FUEL_DIESEL", "CURRENCY_PER_L", "TEST_BROWSER_REFERENCE", "valueMinor", "providerKey", "FRESH", "HIGH", "minor", "bps"].filter((token) => cardText.includes(token));
+    result.passed = result.referenceRequests > 0
+      && result.availableStateVisible
+      && result.valueVisible
+      && result.unitVisible
+      && result.freshnessVisible
+      && result.confidenceVisible
+      && result.authorityNoteVisible
+      && result.rawTokensVisible.length === 0
       && result.consoleErrors.length === 0
       && result.pageErrors.length === 0;
   } catch (error) {
@@ -1306,6 +1431,7 @@ async function main() {
       routes: [],
       authResults: [],
       financeAssertions: [],
+      externalReferenceAssertions: [],
       totalLoginFailures: 0,
       success: true,
     };
@@ -1366,6 +1492,12 @@ async function main() {
           report.pageErrorCount += financeAssertion.pageErrors.length;
           report.success = report.success && financeAssertion.passed;
           console.log(`${financeAssertion.passed ? "PASS" : "BLOCKER"} [room/${viewport.name}] ROOM financial advanced text assertion`);
+          const referenceAssertion = await runExternalReferenceDataAvailableAssertion(context, viewport.name, "ROOM");
+          report.externalReferenceAssertions.push(referenceAssertion);
+          report.consoleErrorCount += referenceAssertion.consoleErrors.length;
+          report.pageErrorCount += referenceAssertion.pageErrors.length;
+          report.success = report.success && referenceAssertion.passed;
+          console.log(`${referenceAssertion.passed ? "PASS" : "BLOCKER"} [room/${viewport.name}] external reference available-state assertion`);
         }
 
         if (group.role === "company") {
@@ -1375,6 +1507,12 @@ async function main() {
           report.pageErrorCount += financeAssertion.pageErrors.length;
           report.success = report.success && financeAssertion.passed;
           console.log(`${financeAssertion.passed ? "PASS" : "BLOCKER"} [company/${viewport.name}] COMPANY financial advanced text assertion`);
+          const referenceAssertion = await runExternalReferenceDataAvailableAssertion(context, viewport.name, "COMPANY");
+          report.externalReferenceAssertions.push(referenceAssertion);
+          report.consoleErrorCount += referenceAssertion.consoleErrors.length;
+          report.pageErrorCount += referenceAssertion.pageErrors.length;
+          report.success = report.success && referenceAssertion.passed;
+          console.log(`${referenceAssertion.passed ? "PASS" : "BLOCKER"} [company/${viewport.name}] external reference available-state assertion`);
         }
 
         if (viewport.name === "desktop") {
