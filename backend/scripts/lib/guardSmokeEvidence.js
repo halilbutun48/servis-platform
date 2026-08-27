@@ -122,12 +122,14 @@ function readGitHead(repoRoot) {
 
 function buildProductInputFiles({ repoRoot, sourceFiles = [], schemaPath = "backend/prisma/schema.prisma" }) {
   if (!repoRoot) throw new Error("FAIL smoke evidence identity: repoRoot is required");
+  // Canonicalize path order so equivalent producer/checker source sets have
+  // one stable product-input identity regardless of caller ordering.
   const paths = uniqueStrings([
     ...SMOKE_EVIDENCE_SHARED_PRODUCT_INPUTS,
     SMOKE_EVIDENCE_HELPER_PATH,
     schemaPath,
     ...sourceFiles,
-  ]);
+  ]).sort();
   return paths.map((relPath) => {
     const absPath = path.join(repoRoot, relPath);
     const stats = fs.statSync(absPath);
