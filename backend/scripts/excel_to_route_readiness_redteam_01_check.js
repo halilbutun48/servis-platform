@@ -639,7 +639,7 @@ async function main() {
     'backend prisma diff stays empty'
   );
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
-  mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', '478DBADB47EA83E21654E9B771C9B21FBE897BACF629438AA499DB55EAA7AE57', 'guard smoke evidence helper SHA matches');
+  mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', 'BB5A4A9658F57496CD39869068842A5D28FDCA3690E0AE39B99F19C702B1FB5D', 'guard smoke evidence helper SHA matches');
   mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', '57EC9539945C5B250122366EA966FC08BC798B6452760C2CED935DE906E1CAAA', 'premium smoke check SHA matches');
   mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F', 'current head scope policy check SHA matches');
   mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', '92FC2E86B735C730F27E033AF15C0A6A759EFE936E4B7724A9C9309E0D01F103', 'current head scope policy manifest SHA matches');
