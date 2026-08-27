@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `433`
-- Toplam executable tracked file: `1297`
-- Combined registry row: `1730`
-- Root/backend/web/mobile package dağılımı: root `268`, backend `861`, web `97`, mobile `201`
+- Toplam package script entry: `436`
+- Toplam executable tracked file: `1302`
+- Combined registry row: `1738`
+- Root/backend/web/mobile package dağılımı: root `271`, backend `866`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `68`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -389,7 +389,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `722`
+- NEEDS_REVIEW: `730`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -410,7 +410,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 722 |
+| NEEDS_REVIEW | 730 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -477,6 +477,9 @@ Repo: `servis-platform`
 | root:check:externalcostdataproviderfreshness01 | package.json | root | node backend/scripts/external_cost_data_provider_freshness_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-EXTERNALCOSTDATAPROVIDERFRESHNESS-01 |  | Owner or chain unclear |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
 | root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Owner or chain unclear |  |
+| root:check:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
+| root:accept:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
+| root:smoke:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
 | root:check:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01_check.js | verify-core | ACTIVE_CORE |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:agreementsourceshiftlineage01 | package.json | root | node backend/scripts/agreement_source_shift_lineage_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-AGREEMENTSOURCESHIFTLINEAGE-01 |  | Owner or chain unclear |  |
@@ -896,6 +899,9 @@ Repo: `servis-platform`
 | guard_v2_standardization_01_check.js | backend/scripts/guard_v2_standardization_01_check.js | backend | root:check:guardv2standardization01 | review | NEEDS_REVIEW |  | GUARD-V-2-STANDARDIZATION-01-CHECK |  | Owner or chain unclear |  |
 | guided_7x21_and_agreement_contract_check.js | backend/scripts/guided_7x21_and_agreement_contract_check.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-7-X-21-AND-AGREEMENT-CONTRACT-CHECK |  | Owner or chain unclear |  |
 | guided_offer_agreement_skip_check.js | backend/scripts/guided_offer_agreement_skip_check.js | backend |  | review | NEEDS_REVIEW |  | GUIDED-OFFER-AGREEMENT-SKIP-CHECK |  | Owner or chain unclear |  |
+| hakedis_invoice_reconciliation_preview_01_acceptance.mjs | backend/scripts/hakedis_invoice_reconciliation_preview_01_acceptance.mjs | backend | root:accept:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01-ACCEPTANCE |  | Owner or chain unclear |  |
+| hakedis_invoice_reconciliation_preview_01_browser.mjs | backend/scripts/hakedis_invoice_reconciliation_preview_01_browser.mjs | backend | root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01-BROWSER |  | Owner or chain unclear |  |
+| hakedis_invoice_reconciliation_preview_01_check.js | backend/scripts/hakedis_invoice_reconciliation_preview_01_check.js | backend | root:check:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01-CHECK |  | Owner or chain unclear |  |
 | hot_file_split_ai_chat_composers_01_check.js | backend/scripts/hot_file_split_ai_chat_composers_01_check.js | backend | root:check:hotfilesplitaichatcomposers01 | review | NEEDS_REVIEW |  | HOT-FILE-SPLIT-AI-CHAT-COMPOSERS-01-CHECK |  | Owner or chain unclear |  |
 | hot_file_split_web_panels_01_check.js | backend/scripts/hot_file_split_web_panels_01_check.js | backend | root:check:hotfilesplitwebpanels01 | review | NEEDS_REVIEW |  | HOT-FILE-SPLIT-WEB-PANELS-01-CHECK |  | Owner or chain unclear |  |
 | impact_aware_validation_planner_v1_check.js | backend/scripts/impact_aware_validation_planner_v1_check.js | backend | backend:check:impactawarevalidationplannerv1 | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-PLANNER-V-1-CHECK |  | Owner or chain unclear |  |
@@ -1365,6 +1371,7 @@ Repo: `servis-platform`
 | router.js | backend/src/externalCost/router.js | backend | root:check:m98e4b | review | NEEDS_REVIEW |  | ROUTER |  | Owner or chain unclear |  |
 | companyBudgetAndServiceCost.js | backend/src/finance/companyBudgetAndServiceCost.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AND-SERVICE-COST |  | Owner or chain unclear |  |
 | financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
+| hakedisInvoiceReconciliation.js | backend/src/finance/hakedisInvoiceReconciliation.js | backend |  | review | NEEDS_REVIEW |  | HAKEDIS-INVOICE-RECONCILIATION |  | Owner or chain unclear |  |
 | operationalCostMath.js | backend/src/finance/operationalCostMath.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MATH |  | Owner or chain unclear |  |
 | operationalCostModel.js | backend/src/finance/operationalCostModel.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MODEL |  | Owner or chain unclear |  |
 | roomProfitabilityAndQuoteFloor.js | backend/src/finance/roomProfitabilityAndQuoteFloor.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR |  | Owner or chain unclear |  |
@@ -1487,6 +1494,7 @@ Repo: `servis-platform`
 | planBuilder.js | backend/src/routes/planBuilder.js | backend |  | review | NEEDS_REVIEW |  | PLAN-BUILDER |  | Owner or chain unclear |  |
 | public.js | backend/src/routes/public.js | backend | root:check:publiclanding01, root:check:publiclandingfinalpromise01, root:check:publiclandingplatformfirst01 | review | NEEDS_REVIEW |  | PUBLIC |  | Owner or chain unclear |  |
 | publicLeadReview.js | backend/src/routes/publicLeadReview.js | backend |  | review | NEEDS_REVIEW |  | PUBLIC-LEAD-REVIEW |  | Owner or chain unclear |  |
+| reconciliation.js | backend/src/routes/reconciliation.js | backend | backend:m89check, root:accept:hakedisinvoicereconciliationpreview01, root:check:hakedisinvoicereconciliationpreview01, root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | RECONCILIATION |  | Owner or chain unclear |  |
 | reports.js | backend/src/routes/reports.js | backend |  | review | NEEDS_REVIEW |  | REPORTS |  | Owner or chain unclear |  |
 | requests.js | backend/src/routes/requests.js | backend |  | review | NEEDS_REVIEW |  | REQUESTS |  | Owner or chain unclear |  |
 | rooms.js | backend/src/routes/rooms.js | backend |  | review | NEEDS_REVIEW |  | ROOMS |  | Owner or chain unclear |  |
@@ -1590,7 +1598,7 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web |  | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
@@ -1844,7 +1852,7 @@ Repo: `servis-platform`
 | release.js | mobile/src/lib/release.js | mobile | mobile:check:m50, mobile:check:m81.4, mobile:check:m82.6, root:check:release-regression | review | NEEDS_REVIEW |  | RELEASE |  | Owner or chain unclear |  |
 | roleSurface.js | mobile/src/lib/roleSurface.js | mobile |  | review | NEEDS_REVIEW |  | ROLE-SURFACE |  | Owner or chain unclear |  |
 | storage.js | mobile/src/lib/storage.js | mobile | mobile:check:m3 | review | NEEDS_REVIEW |  | STORAGE |  | Owner or chain unclear |  |
-| voice.js | mobile/src/lib/voice.js | mobile | mobile:check:m49.1 | review | NEEDS_REVIEW |  | VOICE |  | Owner or chain unclear |  |
+| voice.js | mobile/src/lib/voice.js | mobile | mobile:check:m49.1, root:accept:hakedisinvoicereconciliationpreview01, root:check:hakedisinvoicereconciliationpreview01, root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | VOICE |  | Owner or chain unclear |  |
 | BoardingChangeCard.js | mobile/src/screens/BoardingChangeCard.js | mobile |  | review | NEEDS_REVIEW |  | BOARDING-CHANGE-CARD |  | Owner or chain unclear |  |
 | DriverAvailabilityCard.js | mobile/src/screens/DriverAvailabilityCard.js | mobile |  | review | NEEDS_REVIEW |  | DRIVER-AVAILABILITY-CARD |  | Owner or chain unclear |  |
 | DriverChangeAwarenessCard.js | mobile/src/screens/DriverChangeAwarenessCard.js | mobile |  | review | NEEDS_REVIEW |  | DRIVER-CHANGE-AWARENESS-CARD |  | Owner or chain unclear |  |
