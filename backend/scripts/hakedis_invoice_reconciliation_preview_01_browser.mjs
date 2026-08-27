@@ -53,6 +53,21 @@ const fixtureAgreement = {
   commercialBackbone: null,
 };
 
+const qualityPaymentBridgeFixture = {
+  previewOnly: true,
+  qualityStatus: "INSUFFICIENT_DATA",
+  settlementReadiness: "INSUFFICIENT_DATA",
+  proofCompleteness: 0,
+  paymentPreviewImpact: {
+    status: "NO_IMPACT",
+    reason: "Bu ek bilgi yalnızca önizlemedir; mutabakat tutarını değiştirmez.",
+  },
+  missingProofs: [],
+  riskReasons: [],
+  nextBestAction: "Mutabakat kanıtlarını incele.",
+  previewOnlyNote: "Sadece önizleme — ödeme başlatılmaz.",
+};
+
 const results = [];
 let consoleErrorCount = 0;
 let pageErrorCount = 0;
@@ -99,6 +114,7 @@ async function visitRole(browser, role, token, route, screenshotName, mobile = f
     if (url.pathname === "/api/agreements") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [fixtureAgreement] }) });
     return route.continue();
   });
+  await page.route("**/api/agreements/*/quality-payment-bridge", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(qualityPaymentBridgeFixture) }));
   await page.route("**/api/reconciliation/preview**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, data: fixture }) }));
   await page.goto(`${webBaseUrl}${route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
   const card = page.getByTestId("reconciliation-preview-card");

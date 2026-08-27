@@ -1,6 +1,6 @@
 # HAKEDİŞ-FATURA MUTABAKAT ÖNİZLEMESİ - #3
 
-Durum: `active / preview-only`
+Durum: `green / preview-only / immutable closure`
 
 ## Kapsam
 
@@ -46,5 +46,12 @@ Sonuç; sözleşme, vardiya kimlikleri/tamamlanma sayıları, hakediş referans�
 - Prisma migration: `backend/prisma/migrations/20260827130000_hakedis_invoice_reconciliation_preview_01`
 - Sunucu sahibi: `backend/src/finance/hakedisInvoiceReconciliation.js` ve `backend/src/routes/reconciliation.js`
 - Kullanıcı yüzeyi: `web/src/components/ReconciliationPreviewCard.jsx`
+
+## Kapanış kanıtı
+
+- Saf davranış kontrolü, gerçek API + DB kabulü ve browser kabulü yeşildir.
+- Sonuç salt-okunur önizlemedir; ödeme, fatura onayı, hakediş kesinleştirmesi ve muhasebe yazımı açılmaz.
+- `EXTERNAL_REFERENCE` ve `DEMO_FIXTURE` yalnızca bağlam/test provenance'ı olarak kalır; mutabakat gerçeği değildir.
+- Sonraki kanonik frontier: `#4 COST-SCENARIO-FORECAST-AND-SAVINGS-01`.
 
 Bu milestone ödeme yürütme, muhasebe kaydı, otomatik fatura onayı veya otomatik hakediş kesinleştirmesi değildir.
