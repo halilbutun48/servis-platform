@@ -141,7 +141,7 @@ function buildProductInputFiles({ repoRoot, sourceFiles = [], schemaPath = "back
   });
 }
 
-function buildCurrentSmokeEvidenceIdentity({ repoRoot, sourceFiles = [], schemaPath = "backend/prisma/schema.prisma" } = {}) {
+function buildCurrentSmokeEvidenceIdentity({ repoRoot = process.cwd(), sourceFiles = [], schemaPath = "backend/prisma/schema.prisma" } = {}) {
   const gitHead = readGitHead(repoRoot);
   const sourceIdentityFiles = buildProductInputFiles({ repoRoot, sourceFiles, schemaPath });
   const sourceIdentityFileHashes = sourceIdentityFiles.map(({ path: filePath, sha256 }) => ({ path: filePath, sha256 }));
