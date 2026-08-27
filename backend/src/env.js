@@ -157,4 +157,11 @@ export const ENV = {
   // ✅ M33.2: Plan Builder solver (optional)
   // When running with docker-compose, default is http://solver:8000
   PLAN_SOLVER_URL: process.env.PLAN_SOLVER_URL ?? "",
+
+  // #2: external reference remains optional and has no default network provider.
+  EXTERNAL_REFERENCE_MANUAL_IMPORT_ENABLED:
+    (process.env.EXTERNAL_REFERENCE_MANUAL_IMPORT_ENABLED ?? (IS_PRODUCTION ? "0" : "1")) === "1",
+  EXTERNAL_REFERENCE_PROVIDER: process.env.EXTERNAL_REFERENCE_PROVIDER ?? "none",
+  EXTERNAL_REFERENCE_CACHE_TTL_MS: Number(process.env.EXTERNAL_REFERENCE_CACHE_TTL_MS ?? 30 * 1000),
+  EXTERNAL_REFERENCE_RETRY_MAX_ATTEMPTS: Number(process.env.EXTERNAL_REFERENCE_RETRY_MAX_ATTEMPTS ?? 2),
 };

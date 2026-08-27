@@ -70,6 +70,7 @@ import { naturalCopilotRouter } from "./routes/naturalCopilot.js";
 import { pilotLaunchGateRouter } from "./routes/pilotLaunchGate.js";
 import { operationVerificationRouter } from "./routes/operationVerification.js";
 import * as dashboardBulkMod from "./routes/dashboardBulk.js";
+import { externalCostReferenceRouter } from "./externalCost/router.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -294,6 +295,7 @@ mountCoreRoutes(app, {
   availabilityRoutes,
   adminLogsRouter,
   adminRouter,
+  externalCostReferenceRouter,
 }, io);
 
 // Socket auth: token -> decode -> DB user -> join scopes

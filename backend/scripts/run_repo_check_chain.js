@@ -48,6 +48,7 @@ const phaseDefinitions = {
     nodeStep("m79d1-copilot-acceptance-pack", "backend/scripts/m79_d1_copilot_acceptance_pack.js"),
     nodeStep("m82-1-correctness-guard", "backend/scripts/m82_1_correctness_guard_check.js"),
     nodeStep("m82-1-acceptance-contract", "backend/scripts/m82_1_acceptance_contract_check.js"),
+    nodeStep("external-cost-data-provider-freshness", "backend/scripts/external_cost_data_provider_freshness_01_check.js"),
   ],
   "web-contract": [
     nodeStep("m82-2-web-contract-cache", "backend/scripts/m82_2_web_contract_cache_check.js"),

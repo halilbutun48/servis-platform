@@ -42,6 +42,7 @@ export function mountCoreRoutes(app, routes, io) {
     availabilityRoutes,
     adminLogsRouter,
     adminRouter,
+    externalCostReferenceRouter,
   } = routes;
 
   function resolveRouterMount(routeExport) {
@@ -100,6 +101,7 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/admin/logs", adminLogsRouter());
   app.use("/api/admin/public-leads", resolveRouterMount(publicLeadReviewRouter));
   app.use("/api/admin", adminRouter(io));
+  app.use("/api/external-cost-references", resolveRouterMount(externalCostReferenceRouter));
 }
 
 export function mountIoRoutes(app, io, routes) {

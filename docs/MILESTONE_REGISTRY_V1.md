@@ -53,6 +53,10 @@
 - `M90C.9 - safe closure / final hygiene checklist`
   - amac: release/shareable/export/verify siralamasini tek resmi checklist altinda sabitlemek ve Windows tarafinda pwsh tercih kuralini yazili hale getirmek
   - komut: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
+- `#2 EXTERNAL-COST-DATA-PROVIDER-AND-FRESHNESS-01 - active execution`
+  - amac: provider-bağımsız dış maliyet/referans veri sözleşmesi, provenance, freshness, cache, retry/fallback ve güvenli okuma/import sınırını kurmak; gerçek provider edinimi sonraki entegrasyon kapsamındadır
+  - komut: `npm run check:externalcostdataproviderfreshness01`
+  - kural: `INTERNAL_ACTUAL`, `EXTERNAL_REFERENCE` ve `DEMO_FIXTURE` ayrıdır; dış referans #1'in gerçek maliyet verisinin yerine geçmez
 
 ## 3.1) Son kapanan ürün hatları [green / closed]
 - `WEB-01A - green/closed`
