@@ -7,6 +7,11 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { normalizedTextSha256 } from "./lib/guardTextIntegrity.js";
 import {
+  CANONICAL_PRISMA_SCHEMA_NORMALIZED_SHA256,
+  CANONICAL_PRISMA_SCHEMA_PATH,
+  CANONICAL_PRISMA_SCHEMA_RAW_SHA256,
+} from "./lib/prismaSchemaIdentity.js";
+import {
   BATCH10_DOC_WORKTREE_CLOSURE_PATH_SET,
   isBatch14DocArchitectureConsolidationPath,
   BATCH11_INDEX_WORKTREE_SCOPE_PATH_SET,
@@ -232,6 +237,7 @@ function productExtensionsSmokePaths() {
     "backend/scripts/lib/guardGitScope.js",
     "backend/scripts/lib/guardRunnerContracts.js",
     "backend/scripts/lib/guardSmokeEvidence.js",
+    "backend/scripts/lib/prismaSchemaIdentity.js",
     "backend/scripts/lib/guardValidationEnvironment.js",
     "backend/scripts/lib/productExtensionsRegistry.js",
     "backend/scripts/lib/guardTextIntegrity.js",
@@ -289,7 +295,11 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/currentHeadScopePolicy.js",
-    sha256: "C43639D2662399C296F2DD734E3B88A4415FEA413D1F6BC154E3B042DB21C6E9",
+    sha256: "92FC2E86B735C730F27E033AF15C0A6A759EFE936E4B7724A9C9309E0D01F103",
+  },
+  {
+    path: "backend/scripts/lib/prismaSchemaIdentity.js",
+    sha256: "0C931F9A24EBE4913A665F2A24321606353884CA8FD1A8820B1C76B0CAC9A913",
   },
   {
     path: "backend/scripts/lib/productExtensionsRegistry.js",
@@ -305,7 +315,7 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/guardSmokeEvidence.js",
-    sha256: "E95F76C90C48DB2669D053C19070C8F400D09A7E247733AB680EE39EBB5FDF5F",
+    sha256: "478DBADB47EA83E21654E9B771C9B21FBE897BACF629438AA499DB55EAA7AE57",
   },
   {
     path: "backend/scripts/lib/guardValidationEnvironment.js",
@@ -727,8 +737,8 @@ function validateDisjointPathGroups(groupEntries) {
 // Exact backend Prisma manifest contract: collect tracked, staged, and untracked evidence,
 // then validate only the frozen accepted manifest. The status contract remains separate.
 const ACCEPTED_PRISMA_SCHEMA = {
-  path: "backend/prisma/schema.prisma",
-  sha256: "7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748",
+  path: CANONICAL_PRISMA_SCHEMA_PATH,
+  sha256: CANONICAL_PRISMA_SCHEMA_RAW_SHA256,
 };
 
 const ACCEPTED_PRISMA_MIGRATIONS = [

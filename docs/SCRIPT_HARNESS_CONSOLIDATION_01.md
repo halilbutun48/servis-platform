@@ -2588,3 +2588,12 @@ Repo: `servis-platform`
 - Invite membership doc: `docs/INVITE_BASED_MEMBERSHIP_01.md`
 - Safe cleanup bu turda yalnızca saf alias wrapper dosyalarında yapıldı.
 - Legacy alias girişleri docs ve chain referansları nedeniyle korunuyor.
+
+## 15) POST-#3 IDENTITY AND EVIDENCE LIFECYCLE
+
+- Canonical Prisma schema identity owner: `backend/scripts/lib/prismaSchemaIdentity.js`.
+- Raw-byte and UTF-8/LF-normalized schema identities are explicit projections of the same reviewed `backend/prisma/schema.prisma`; migration manifest identities remain consumer-specific.
+- Focused transition proof: `node backend/scripts/post_3_identity_and_evidence_lifecycle_hardening_01_check.js`.
+- Browser smoke reports retain `gitHead` as execution provenance and use `testedProductInputIdentitySha256` for the exact product/runtime/UI/test input fingerprint.
+- Only the exact quartet checker paths, named registry metadata, and the named canonical documentation owners may reuse evidence across a HEAD-only change; product, backend, auth/RBAC, Prisma, runner, fixture, and unknown changes fail closed.
+- #3 reconciliation browser evidence remains an explicit `PLAYWRIGHT_RESPONSE_FIXTURE_ONLY` artifact and is not promoted to product truth or coupled to the quartet provenance contract.

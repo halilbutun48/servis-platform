@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { CANONICAL_PRISMA_SCHEMA_PATH as ACCEPTED_SCHEMA_PATH, CANONICAL_PRISMA_SCHEMA_RAW_SHA256 as ACCEPTED_SCHEMA_SHA256 } from "./lib/prismaSchemaIdentity.js";
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -256,8 +258,6 @@ const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_ROUTE_SERVICE_DIFF =
     path.startsWith('backend/src/routes/') || path.startsWith('backend/src/services/'),
   );
 
-const ACCEPTED_SCHEMA_PATH = 'backend/prisma/schema.prisma';
-const ACCEPTED_SCHEMA_SHA256 = 'D67FB93C705C1597598D67ECD46806A676703E2153BCE6EF76E0AA10E5E37784';
 const ACCEPTED_PRISMA_MIGRATIONS = [
   {
     path: 'backend/prisma/migrations/20260125133000_seed_root_baseline/migration.sql',

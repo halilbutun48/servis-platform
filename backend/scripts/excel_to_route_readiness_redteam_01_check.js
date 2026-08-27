@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { CANONICAL_PRISMA_SCHEMA_PATH as ACCEPTED_SCHEMA_PATH, CANONICAL_PRISMA_SCHEMA_RAW_SHA256 as ACCEPTED_SCHEMA_SHA256 } from "./lib/prismaSchemaIdentity.js";
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -337,8 +339,6 @@ function mustMigrationDirectoryShape(relPath, label) {
   ok(label);
 }
 
-const ACCEPTED_SCHEMA_PATH = 'backend/prisma/schema.prisma';
-const ACCEPTED_SCHEMA_SHA256 = 'D67FB93C705C1597598D67ECD46806A676703E2153BCE6EF76E0AA10E5E37784';
 const ACCEPTED_PRISMA_MIGRATIONS = [
   { path: 'backend/prisma/migrations/20260125133000_seed_root_baseline/migration.sql', sha256: '27DF5155D24311AA9199AC7B8FC94DB615EC6457401B2BA0105C7FD30A5587DD' },
   { path: 'backend/prisma/migrations/20260125133100_organization_shift_import_baseline/migration.sql', sha256: '864CB0607DB2F7833C834BFD9747D9518806CE9EC206C0C19F1A79271ACE3FBD' },
@@ -639,10 +639,10 @@ async function main() {
     'backend prisma diff stays empty'
   );
   mustFileSha256(ACCEPTED_SCHEMA_PATH, ACCEPTED_SCHEMA_SHA256, 'accepted Prisma schema SHA matches');
-  mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', '6992AC173A900820A62F5EC3228F3279E29F0E2C42261EBE3A96CD9B36055141', 'guard smoke evidence helper SHA matches');
+  mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', '478DBADB47EA83E21654E9B771C9B21FBE897BACF629438AA499DB55EAA7AE57', 'guard smoke evidence helper SHA matches');
   mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', '57EC9539945C5B250122366EA966FC08BC798B6452760C2CED935DE906E1CAAA', 'premium smoke check SHA matches');
   mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F', 'current head scope policy check SHA matches');
-  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', 'C43639D2662399C296F2DD734E3B88A4415FEA413D1F6BC154E3B042DB21C6E9', 'current head scope policy manifest SHA matches');
+  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', '92FC2E86B735C730F27E033AF15C0A6A759EFE936E4B7724A9C9309E0D01F103', 'current head scope policy manifest SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.posix.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);

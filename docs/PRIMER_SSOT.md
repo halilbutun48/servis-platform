@@ -332,6 +332,12 @@ Compatibility aliases for legacy checks:
 - `QLT-02` kontrollü kalite skoru taslak modelidir; `QLT-01` hazırlığı üstünden taslak skor üretir, `QLT-03` kontrollü kalite inceleme kararı sonraki görünür halkadır.
 - `QLT-03` kontrollü kalite inceleme kararıdır; `QLT-04` kalite karar geçmişi / denetim izi görünürlük halkasıdır.
 
+## POST_3_IDENTITY_AND_EVIDENCE_LIFECYCLE_V1
+- `backend/scripts/lib/prismaSchemaIdentity.js` is the single reviewed static owner for the canonical Prisma schema path and its raw/normalized identity projections.
+- Browser evidence keeps `gitHead` as provenance; `testedProductInputIdentitySha256` is the separate exact identity used for reuse and invalidation.
+- Product, runtime, auth/RBAC, Prisma, browser-runner, fixture, and unknown changes require evidence regeneration; only explicitly listed checker/documentation owners are safe reuse paths.
+- Proof command: `node backend/scripts/post_3_identity_and_evidence_lifecycle_hardening_01_check.js`.
+
 ## M90C.9 SAFE CLOSURE / FINAL HYGIENE
 - M90C.9 görünür closure hygiene milestone kaydıdır.
 - Resmi çalışma rotası kontrollü M90 hattında kalır.

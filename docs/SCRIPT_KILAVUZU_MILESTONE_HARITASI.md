@@ -28,6 +28,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `backend/scripts/lib/guardGitScope.js` -> exact diff/status identity semantics
 - `backend/scripts/lib/guardTextIntegrity.js` -> normalized-text identity semantics
 - `backend/scripts/lib/guardSmokeEvidence.js` -> smoke evidence identity semantics
+- `backend/scripts/lib/prismaSchemaIdentity.js` -> reviewed static Prisma schema identity owner
+- `backend/scripts/post_3_identity_and_evidence_lifecycle_hardening_01_check.js` -> post-#3 identity/evidence lifecycle transition proof
 - Role/security/audit checkers are consumers of those owners; they are not independent global SSOTs.
 - Canonical closure baseline for this guide: `Product Extensions 198/198 GREEN`. See `docs/PRIMER_SSOT.md` for the human-readable closure narrative.
 

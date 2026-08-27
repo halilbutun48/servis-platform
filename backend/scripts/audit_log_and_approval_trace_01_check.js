@@ -567,11 +567,12 @@ function main() {
   const activeRegistryCheckerPaths = buildRegistryOwnedCheckerPaths(packageScripts, productExtensionsCheckScripts);
   const coreGuardEntries = [
     { path: "backend/scripts/current_head_scope_policy_01_check.js", sha256: "0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F" },
-   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "C43639D2662399C296F2DD734E3B88A4415FEA413D1F6BC154E3B042DB21C6E9" },
+   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "92FC2E86B735C730F27E033AF15C0A6A759EFE936E4B7724A9C9309E0D01F103" },
+   { path: "backend/scripts/lib/prismaSchemaIdentity.js", sha256: "0C931F9A24EBE4913A665F2A24321606353884CA8FD1A8820B1C76B0CAC9A913" },
   { path: "backend/scripts/lib/productExtensionsRegistry.js", sha256: "6C0FA82E0B7024D4DADF5AA588E33509A5D91866CF39D8D875A0BFEF94064D8F" },
   { path: "backend/scripts/lib/guardGitScope.js", sha256: "7BAA65107857A0A64EF236A130B0E618AD08FC72453928C0A46F243287044EE5" },
   { path: "backend/scripts/lib/guardRunnerContracts.js", sha256: "1B180E2E1C901041734CCE494774865C9644CA02917B1326B6FEF8EB713E239A" },
-    { path: "backend/scripts/lib/guardSmokeEvidence.js", sha256: "6992AC173A900820A62F5EC3228F3279E29F0E2C42261EBE3A96CD9B36055141" },
+    { path: "backend/scripts/lib/guardSmokeEvidence.js", sha256: "478DBADB47EA83E21654E9B771C9B21FBE897BACF629438AA499DB55EAA7AE57" },
     { path: "backend/scripts/lib/guardValidationEnvironment.js", sha256: "5F909C62C9E376D5FCA38A3E28D30646D4C61CDABB537FE2A5DFDA9C0D8A42DE" },
     { path: "backend/scripts/run_product_extensions_check_chain.js", sha256: "0147598C4FB8076959907447F4125F3923CC86B8FAA8CFD34C2FA3CF60FFAB03" },
     { path: "backend/scripts/verify_chain_01_product_extensions_check.js", sha256: "F96EF91D2FE5601222C3EFFE6CA172101D252E635BC604BF1CC8DC703C43C54B" },
@@ -593,6 +594,7 @@ function main() {
     "backend/scripts/pay_01b_payment_preview_readonly_check.js",
     "backend/scripts/pay_01c_payment_preview_detail_filter_check.js",
     "backend/scripts/pay_01d_payment_preview_csv_export_check.js",
+    "backend/scripts/lib/prismaSchemaIdentity.js",
   ]);
   const runtimeDataPaths = new Set([
     "backend/artifacts/runtime-data/password-change-requirements.json",

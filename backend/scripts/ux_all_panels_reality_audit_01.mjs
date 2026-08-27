@@ -163,7 +163,9 @@ function renderMarkdown(report) {
   lines.push("");
   lines.push(`- Generated at: \`${report.generatedAt}\``);
   lines.push(`- Git HEAD: \`${report.gitHead}\``);
+  lines.push(`- Evidence identity version: \`${report.evidenceIdentityVersion}\``);
   lines.push(`- Schema SHA256: \`${report.schemaSha256}\``);
+  lines.push(`- Tested product-input identity SHA256: \`${report.testedProductInputIdentitySha256}\``);
   lines.push(`- Source identity SHA256: \`${report.sourceIdentitySha256}\``);
   lines.push(`- Source audit: \`${SOURCE_AUDIT_NAME}\``);
   lines.push(`- Web base URL: \`${report.webBaseUrl}\``);
@@ -283,14 +285,10 @@ async function main() {
     auditName: TARGET_AUDIT_NAME,
     sourceAuditName: SOURCE_AUDIT_NAME,
     generatedAt: new Date().toISOString(),
+    ...targetEvidenceIdentity,
     artifactRoot: relativeFromRepo(targetReportRoot),
     sourceArtifactRoot: relativeFromRepo(sourceReportRoot),
     coverageSources,
-    gitHead: targetEvidenceIdentity.gitHead,
-    schemaSha256: targetEvidenceIdentity.schemaSha256,
-    sourceIdentityFiles: targetEvidenceIdentity.sourceIdentityFiles,
-    sourceIdentityFileHashes: targetEvidenceIdentity.sourceIdentityFileHashes,
-    sourceIdentitySha256: targetEvidenceIdentity.sourceIdentitySha256,
     summary,
     browserSmokes: {
       source: relativeFromRepo(sourceReportRoot),

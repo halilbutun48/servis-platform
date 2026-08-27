@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { CANONICAL_PRISMA_SCHEMA_PATH as ACCEPTED_SCHEMA_PATH, CANONICAL_PRISMA_SCHEMA_RAW_SHA256 as ACCEPTED_SCHEMA_SHA256 } from "./lib/prismaSchemaIdentity.js";
+
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -187,8 +189,6 @@ function mustMigrationDirectoryShape(relPath, label) {
   ok(label);
 }
 
-const ACCEPTED_SCHEMA_PATH = "backend/prisma/schema.prisma";
-const ACCEPTED_SCHEMA_SHA256 = "D67FB93C705C1597598D67ECD46806A676703E2153BCE6EF76E0AA10E5E37784";
 const APPROVED_TERMINOLOGY_PRESENTATION = [
   { path: "backend/src/ai/jobGuide/levels.js", sha256: "5E75C97EEB12975244E4634DDA4AFF9F3016DA7FAC9732756CEB4035569259AB" },
   { path: "mobile/src/screens/ParentActivationCard.js", sha256: "84FD1481A050B5757C8FA54BAED869B46EC4B15BB86F20017BD7C33DDA914E5E" },
@@ -305,7 +305,7 @@ function main() {
   must(exists("web/public/seferpakt-favicon.png"), "favicon asset exists");
   mustFileSha256(
     "backend/scripts/lib/currentHeadScopePolicy.js",
-    "C43639D2662399C296F2DD734E3B88A4415FEA413D1F6BC154E3B042DB21C6E9",
+    "92FC2E86B735C730F27E033AF15C0A6A759EFE936E4B7724A9C9309E0D01F103",
     "current-head policy snapshot remains pinned"
   );
 

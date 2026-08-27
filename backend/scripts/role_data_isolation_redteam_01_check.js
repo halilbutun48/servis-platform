@@ -6,6 +6,10 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { normalizedTextSha256 } from './lib/guardTextIntegrity.js';
+import {
+  CANONICAL_PRISMA_SCHEMA_PATH,
+  CANONICAL_PRISMA_SCHEMA_RAW_SHA256,
+} from './lib/prismaSchemaIdentity.js';
 import { CANONICAL_PROVENANCE_RECORDS } from './lib/canonicalProvenanceRegistry.js';
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from './lib/currentHeadScopePolicy.js';
 import { assertProductExtensionsIncludes, productExtensionsCheckScripts } from './lib/productExtensionsRegistry.js';
@@ -151,6 +155,7 @@ const outOfScopeCurrentHeadHelperPaths = new Set([
   'backend/scripts/lib/guardGitScope.js',
   'backend/scripts/lib/guardRunnerContracts.js',
   'backend/scripts/lib/guardSmokeEvidence.js',
+  'backend/scripts/lib/prismaSchemaIdentity.js',
   'backend/scripts/lib/guardValidationEnvironment.js',
   'backend/scripts/lib/productExtensionsRegistry.js',
 ]);
@@ -418,8 +423,8 @@ function collectAcceptedPrismaEvidence() {
 }
 
 const ACCEPTED_PRISMA_SCHEMA = {
-  path: 'backend/prisma/schema.prisma',
-  sha256: '7DFBAB959B3535B3F46A96EACCB53724A96B056FC559F993C6095E41CA44E748',
+  path: CANONICAL_PRISMA_SCHEMA_PATH,
+  sha256: CANONICAL_PRISMA_SCHEMA_RAW_SHA256,
 };
 
 const ACCEPTED_PRISMA_MIGRATIONS = [

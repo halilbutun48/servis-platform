@@ -920,7 +920,9 @@ function renderMarkdown(report) {
   lines.push("");
   lines.push(`- Generated at: \`${report.generatedAt}\``);
   lines.push(`- Git HEAD: \`${report.gitHead}\``);
+  lines.push(`- Evidence identity version: \`${report.evidenceIdentityVersion}\``);
   lines.push(`- Schema SHA256: \`${report.schemaSha256}\``);
+  lines.push(`- Tested product-input identity SHA256: \`${report.testedProductInputIdentitySha256}\``);
   lines.push(`- Source identity SHA256: \`${report.sourceIdentitySha256}\``);
   lines.push(`- Web base URL: \`${report.webBaseUrl}\``);
   lines.push(`- API base URL: \`${report.apiBaseUrl}\``);
@@ -1026,6 +1028,7 @@ async function main() {
 
   const report = {
     generatedAt: new Date().toISOString(),
+    ...evidenceIdentity,
     repoRoot,
     artifactRoot: path.relative(repoRoot, artifactRoot).replace(/\\/g, "/"),
     webBaseUrl: WEB_BASE_URL,
@@ -1036,11 +1039,6 @@ async function main() {
     browserVersion,
     viewports: VIEWPORTS.map(({ name, width, height }) => ({ name, width, height })),
     coverageSources: AUDIT_SOURCE_FILES,
-    gitHead: evidenceIdentity.gitHead,
-    schemaSha256: evidenceIdentity.schemaSha256,
-    sourceIdentityFiles: evidenceIdentity.sourceIdentityFiles,
-    sourceIdentityFileHashes: evidenceIdentity.sourceIdentityFileHashes,
-    sourceIdentitySha256: evidenceIdentity.sourceIdentitySha256,
     routeCount: 0,
     screenshotCount: 0,
     consoleErrorCount: 0,

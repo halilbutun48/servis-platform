@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { CANONICAL_PRISMA_SCHEMA_PATH as ACCEPTED_SCHEMA_PATH, CANONICAL_PRISMA_SCHEMA_RAW_SHA256 as ACCEPTED_SCHEMA_SHA256 } from "./lib/prismaSchemaIdentity.js";
+
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -188,8 +190,6 @@ function mustMigrationDirectoryShape(relPath, label) {
   ok(label);
 }
 
-const ACCEPTED_SCHEMA_PATH = "backend/prisma/schema.prisma";
-const ACCEPTED_SCHEMA_SHA256 = "D67FB93C705C1597598D67ECD46806A676703E2153BCE6EF76E0AA10E5E37784";
 const APPROVED_SUPERADMIN_PRESENTATION = [
   { path: "web/src/panels/superadmin/AuditLogsPanel.jsx", sha256: "2F839DAB142DAEF2BEC4BDD4E6667F4836CCE6E9A44568AFDC8CE555931634FE" },
   { path: "web/src/panels/superadmin/CommercialCorePanel.jsx", sha256: "3A0392D66E6AF3AAA70DEC456A435B0A78A4828EDB9FF11F1554F1E0FB13E123" },

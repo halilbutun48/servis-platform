@@ -1011,7 +1011,9 @@ function renderMarkdown(report) {
   lines.push("");
   lines.push(`- Generated at: \`${report.generatedAt}\``);
   lines.push(`- Git HEAD: \`${report.gitHead}\``);
+  lines.push(`- Evidence identity version: \`${report.evidenceIdentityVersion}\``);
   lines.push(`- Schema SHA256: \`${report.schemaSha256}\``);
+  lines.push(`- Tested product-input identity SHA256: \`${report.testedProductInputIdentitySha256}\``);
   lines.push(`- Source identity SHA256: \`${report.sourceIdentitySha256}\``);
   lines.push(`- Web base URL: \`${report.webBaseUrl}\``);
   lines.push(`- API base URL: \`${report.apiBaseUrl}\``);
@@ -1088,6 +1090,7 @@ async function main() {
   });
   const browserVersion = browser.version();
   const evidenceIdentity = buildSmokeEvidenceIdentity({
+    repoRoot,
     sourceFiles: [...COVERAGE_SOURCES, "backend/scripts/product_flow_button_audit_01.mjs"],
   });
 

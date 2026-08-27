@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { CANONICAL_PRISMA_SCHEMA_PATH as ACCEPTED_SCHEMA_PATH, CANONICAL_PRISMA_SCHEMA_RAW_SHA256 as ACCEPTED_SCHEMA_SHA256 } from "./lib/prismaSchemaIdentity.js";
+
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -197,8 +199,6 @@ function allWithin(files, exactPaths, prefixes, label) {
   ok(label);
 }
 
-const ACCEPTED_SCHEMA_PATH = "backend/prisma/schema.prisma";
-const ACCEPTED_SCHEMA_SHA256 = "D67FB93C705C1597598D67ECD46806A676703E2153BCE6EF76E0AA10E5E37784";
 const APPROVED_COMPANY_CHECKIN_PRESENTATION = {
   path: "web/src/panels/company/CheckinPanel.jsx",
   sha256: "EE5AFE21578A32E69AA8748E38A1976329EE98088EDBFA0449625A957B9C9588",

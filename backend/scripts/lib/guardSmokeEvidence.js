@@ -3,78 +3,43 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { gitLines } from "./guardGitScope.js";
-import { normalizedTextSha256 } from "./guardTextIntegrity.js";
 
-function must(condition, label) {
-  if (!condition) {
-    throw new Error(`FAIL ${label}`);
-  }
-  console.log(`OK ${label}`);
-}
+export const SMOKE_EVIDENCE_IDENTITY_VERSION = "PROVENANCE_VS_PRODUCT_INPUT_V1";
+export const SMOKE_EVIDENCE_HELPER_PATH = "backend/scripts/lib/guardSmokeEvidence.js";
 
-function uniqueStrings(items) {
-  return [...new Set((items || []).map((item) => String(item || "").trim()).filter(Boolean))];
-}
+// These files affect browser setup or the shared runtime boundary for every
+// canonical smoke suite. The list is explicit so an unlisted change fails closed.
+export const SMOKE_EVIDENCE_SHARED_PRODUCT_INPUTS = Object.freeze([
+  "package.json",
+  "backend/package.json",
+  "web/package.json",
+  "backend/prisma/schema.prisma",
+  "backend/prisma/seed.js",
+  "backend/src/server.js",
+  "backend/src/bootstrap/routeMounts.js",
+  "backend/src/auth/middleware.js",
+  "backend/src/auth/securityPolicy.js",
+  "backend/src/routes/auth.js",
+  "backend/src/prisma.js",
+  "backend/scripts/lib/guardGitScope.js",
+  "backend/scripts/lib/guardTextIntegrity.js",
+  "backend/scripts/lib/prismaSchemaIdentity.js",
+]);
 
-function sha256Json(value) {
-  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex").toUpperCase();
-}
-
-function hashSourceFile(relPath) {
-  return {
-    path: relPath,
-    sha256: normalizedTextSha256(relPath),
-  };
-}
-
-function sha256Hex(input) {
-  return crypto.createHash("sha256").update(input).digest("hex").toUpperCase();
-}
-
-function readFileSha256(absPath) {
-  return sha256Hex(fs.readFileSync(absPath));
-}
-
-function readGitHead(repoRoot) {
-  const gitPath = path.join(repoRoot, ".git");
-  let gitDir = gitPath;
-  try {
-    const stat = fs.statSync(gitPath);
-    if (stat.isFile()) {
-      const content = fs.readFileSync(gitPath, "utf8").trim();
-      const prefix = "gitdir:";
-      if (content.toLowerCase().startsWith(prefix)) {
-        gitDir = path.resolve(repoRoot, content.slice(prefix.length).trim());
-      }
-    }
-  } catch {
-    // Fall through and let the HEAD lookup fail with a clear filesystem error.
-  }
-
-  const headPath = path.join(gitDir, "HEAD");
-  const head = fs.readFileSync(headPath, "utf8").trim();
-  if (!head.startsWith("ref: ")) return head;
-
-  const refName = head.slice(5).trim();
-  const refPath = path.join(gitDir, ...refName.split("/"));
-  if (fs.existsSync(refPath)) {
-    return fs.readFileSync(refPath, "utf8").trim();
-  }
-
-  const packedRefsPath = path.join(gitDir, "packed-refs");
-  if (fs.existsSync(packedRefsPath)) {
-    const packedRefs = fs.readFileSync(packedRefsPath, "utf8").split(/\r?\n/);
-    const packedMatch = packedRefs.find((line) => {
-      const trimmed = line.trim();
-      return trimmed && !trimmed.startsWith("#") && !trimmed.startsWith("^") && trimmed.endsWith(` ${refName}`);
-    });
-    if (packedMatch) {
-      return packedMatch.trim().split(/\s+/)[0];
-    }
-  }
-
-  throw new Error(`Unable to resolve git HEAD ref ${refName}`);
-}
+// Only these exact guard/check/doc owners can move HEAD without invalidating
+// an otherwise unchanged product-input fingerprint.
+export const SMOKE_EVIDENCE_SAFE_REUSE_PATHS = Object.freeze([
+  "backend/scripts/product_flow_button_audit_01_check.js",
+  "backend/scripts/ux_live_panel_premium_smoke_01_check.js",
+  "backend/scripts/ux_all_panels_reality_audit_01_check.js",
+  "backend/scripts/ux_mobile_all_roles_panel_audit_01_check.js",
+  "backend/scripts/lib/productExtensionsRegistry.js",
+  "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
+  "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+  "docs/PRIMER_SSOT.md",
+  "docs/CHECKLIST_SSOT.md",
+  "docs/MILESTONE_REGISTRY_V1.md",
+]);
 
 export const PREMIUM_SMOKE_COVERAGE_SOURCES = [
   "web/src/panels/public/PublicLandingPage.jsx",
@@ -102,54 +67,165 @@ export function buildPremiumSmokeEvidenceSourceFiles(runnerPath = "backend/scrip
   return [runnerPath, ...PREMIUM_SMOKE_WORKTREE_SOURCE_FILES, ...PREMIUM_SMOKE_COVERAGE_SOURCES];
 }
 
-function buildLegacySmokeEvidenceIdentity({ sourceFiles = [], schemaPath = "backend/prisma/schema.prisma" } = {}) {
-  const sourceIdentityFiles = uniqueStrings(sourceFiles);
-  const sourceIdentityFileHashes = sourceIdentityFiles.map(hashSourceFile);
-
-  return {
-    gitHead: String(gitLines(["rev-parse", "HEAD"])[0] || ""),
-    schemaSha256: normalizedTextSha256(schemaPath),
-    sourceIdentityFiles,
-    sourceIdentityFileHashes,
-    sourceIdentitySha256: sha256Json(sourceIdentityFileHashes),
-  };
+function uniqueStrings(items) {
+  return [...new Set((items || []).map((item) => String(item || "").replace(/\\/g, "/").trim()).filter(Boolean))];
 }
 
-function buildCurrentSmokeEvidenceIdentity({ repoRoot, sourceFiles = [], schemaPath = "backend/prisma/schema.prisma" }) {
-  const gitHead = readGitHead(repoRoot);
-  const sourceIdentityFiles = sourceFiles.map((relPath) => {
+function sha256Json(value) {
+  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex").toUpperCase();
+}
+
+function sha256Hex(input) {
+  return crypto.createHash("sha256").update(input).digest("hex").toUpperCase();
+}
+
+function readFileSha256(absPath) {
+  return sha256Hex(fs.readFileSync(absPath));
+}
+
+function readGitHead(repoRoot) {
+  const gitPath = path.join(repoRoot, ".git");
+  let gitDir = gitPath;
+  try {
+    const stat = fs.statSync(gitPath);
+    if (stat.isFile()) {
+      const content = fs.readFileSync(gitPath, "utf8").trim();
+      const prefix = "gitdir:";
+      if (content.toLowerCase().startsWith(prefix)) {
+        gitDir = path.resolve(repoRoot, content.slice(prefix.length).trim());
+      }
+    }
+  } catch {
+    // Let the HEAD lookup below fail with a clear filesystem error.
+  }
+
+  const headPath = path.join(gitDir, "HEAD");
+  const head = fs.readFileSync(headPath, "utf8").trim();
+  if (!head.startsWith("ref: ")) return head;
+
+  const refName = head.slice(5).trim();
+  const refPath = path.join(gitDir, ...refName.split("/"));
+  if (fs.existsSync(refPath)) return fs.readFileSync(refPath, "utf8").trim();
+
+  const packedRefsPath = path.join(gitDir, "packed-refs");
+  if (fs.existsSync(packedRefsPath)) {
+    const packedRefs = fs.readFileSync(packedRefsPath, "utf8").split(/\r?\n/);
+    const packedMatch = packedRefs.find((line) => {
+      const trimmed = line.trim();
+      return trimmed && !trimmed.startsWith("#") && !trimmed.startsWith("^") && trimmed.endsWith(` ${refName}`);
+    });
+    if (packedMatch) return packedMatch.trim().split(/\s+/)[0];
+  }
+
+  throw new Error(`Unable to resolve git HEAD ref ${refName}`);
+}
+
+function buildProductInputFiles({ repoRoot, sourceFiles = [], schemaPath = "backend/prisma/schema.prisma" }) {
+  if (!repoRoot) throw new Error("FAIL smoke evidence identity: repoRoot is required");
+  const paths = uniqueStrings([
+    ...SMOKE_EVIDENCE_SHARED_PRODUCT_INPUTS,
+    SMOKE_EVIDENCE_HELPER_PATH,
+    schemaPath,
+    ...sourceFiles,
+  ]);
+  return paths.map((relPath) => {
     const absPath = path.join(repoRoot, relPath);
     const stats = fs.statSync(absPath);
     return {
-      path: String(relPath).replace(/\\/g, "/"),
+      path: relPath,
       bytes: stats.size,
       sha256: readFileSha256(absPath),
     };
   });
+}
+
+function buildCurrentSmokeEvidenceIdentity({ repoRoot, sourceFiles = [], schemaPath = "backend/prisma/schema.prisma" } = {}) {
+  const gitHead = readGitHead(repoRoot);
+  const sourceIdentityFiles = buildProductInputFiles({ repoRoot, sourceFiles, schemaPath });
   const sourceIdentityFileHashes = sourceIdentityFiles.map(({ path: filePath, sha256 }) => ({ path: filePath, sha256 }));
-  const schemaSha256 = schemaPath ? readFileSha256(path.join(repoRoot, schemaPath)) : "";
-  const sourceIdentitySha256 = sha256Hex(
-    JSON.stringify({
-      gitHead,
-      schemaSha256,
-      sourceIdentityFiles: sourceIdentityFiles.map(({ path: filePath, bytes, sha256 }) => ({ path: filePath, bytes, sha256 })),
-    })
-  );
+  const schemaSha256 = sourceIdentityFiles.find(({ path: filePath }) => filePath === schemaPath)?.sha256 || "";
+  const testedProductInputIdentitySha256 = sha256Json({
+    schemaPath,
+    schemaSha256,
+    sourceIdentityFiles,
+  });
 
   return {
+    evidenceIdentityVersion: SMOKE_EVIDENCE_IDENTITY_VERSION,
     gitHead,
+    schemaPath,
     schemaSha256,
     sourceIdentityFiles,
     sourceIdentityFileHashes,
-    sourceIdentitySha256,
+    testedProductInputIdentitySha256,
+    // Kept as a compatibility field; it now deliberately excludes gitHead.
+    sourceIdentitySha256: testedProductInputIdentitySha256,
   };
 }
 
-export function buildSmokeEvidenceIdentity(options = {}) {
-  if (options && Object.prototype.hasOwnProperty.call(options, "repoRoot")) {
-    return buildCurrentSmokeEvidenceIdentity(options);
+function normalizePaths(items) {
+  return uniqueStrings(items);
+}
+
+export function classifySmokeEvidenceChangePaths(
+  changedPaths,
+  { sourceFiles = [], schemaPath = "backend/prisma/schema.prisma", safeReusePaths = SMOKE_EVIDENCE_SAFE_REUSE_PATHS } = {}
+) {
+  const productInputPaths = new Set([
+    ...SMOKE_EVIDENCE_SHARED_PRODUCT_INPUTS,
+    SMOKE_EVIDENCE_HELPER_PATH,
+    schemaPath,
+    ...sourceFiles,
+  ].map((item) => String(item || "").replace(/\\/g, "/").trim()).filter(Boolean));
+  const safePaths = new Set(normalizePaths(safeReusePaths));
+  const normalizedChangedPaths = normalizePaths(changedPaths);
+
+  return Object.freeze({
+    changed: Object.freeze(normalizedChangedPaths),
+    invalidating: Object.freeze(normalizedChangedPaths.filter((item) => productInputPaths.has(item))),
+    reusable: Object.freeze(normalizedChangedPaths.filter((item) => safePaths.has(item))),
+    unknown: Object.freeze(normalizedChangedPaths.filter((item) => !productInputPaths.has(item) && !safePaths.has(item))),
+  });
+}
+
+function assertReportInputIdentity(report, expected, fail) {
+  if (report.evidenceIdentityVersion !== SMOKE_EVIDENCE_IDENTITY_VERSION) fail("evidence identity version mismatch");
+  if (typeof report.gitHead !== "string" || !/^[0-9a-f]{40}$/i.test(report.gitHead.trim())) fail("gitHead provenance missing");
+  if (String(report.schemaPath || "") !== String(expected.schemaPath || "")) fail("schemaPath mismatch");
+  if (String(report.schemaSha256 || "") !== String(expected.schemaSha256 || "")) fail("schemaSha256 mismatch");
+  if (!Array.isArray(report.sourceIdentityFiles)) fail("sourceIdentityFiles missing");
+  if (JSON.stringify(report.sourceIdentityFiles) !== JSON.stringify(expected.sourceIdentityFiles)) fail("sourceIdentityFiles mismatch");
+  if (!Array.isArray(report.sourceIdentityFileHashes)) fail("sourceIdentityFileHashes missing");
+  if (JSON.stringify(report.sourceIdentityFileHashes) !== JSON.stringify(expected.sourceIdentityFileHashes)) fail("sourceIdentityFileHashes mismatch");
+  if (String(report.testedProductInputIdentitySha256 || "") !== String(expected.testedProductInputIdentitySha256 || "")) {
+    fail("testedProductInputIdentitySha256 mismatch");
   }
-  return buildLegacySmokeEvidenceIdentity(options);
+  if (String(report.sourceIdentitySha256 || "") !== String(expected.sourceIdentitySha256 || "")) fail("sourceIdentitySha256 mismatch");
+}
+
+function assertReportedHeadCanReuseEvidence(reportHead, currentHead, options, fail) {
+  if (reportHead === currentHead) return;
+
+  try {
+    gitLines(["cat-file", "-e", `${reportHead}^{commit}`]);
+    gitLines(["merge-base", "--is-ancestor", reportHead, currentHead]);
+  } catch {
+    fail("gitHead provenance is not a valid ancestor of current HEAD");
+  }
+
+  let changedPaths;
+  try {
+    changedPaths = gitLines(["diff", "--name-only", `${reportHead}..${currentHead}`]);
+  } catch {
+    fail("gitHead provenance range cannot be inspected");
+  }
+  const classification = classifySmokeEvidenceChangePaths(changedPaths, options);
+  if (classification.invalidating.length > 0) fail(`product input changed since report: ${classification.invalidating.join(", ")}`);
+  if (classification.unknown.length > 0) fail(`unknown changed path since report: ${classification.unknown.join(", ")}`);
+}
+
+export function buildSmokeEvidenceIdentity(options = {}) {
+  return buildCurrentSmokeEvidenceIdentity(options);
 }
 
 export function mustSmokeEvidenceIdentity(report, options = {}, label = "smoke report identity") {
@@ -160,46 +236,7 @@ export function mustSmokeEvidenceIdentity(report, options = {}, label = "smoke r
 
   if (!report || typeof report !== "object") fail("report missing");
   if (typeof report.generatedAt !== "string" || !report.generatedAt.trim()) fail("generatedAt missing");
-  if (String(report.gitHead || "") !== String(expected.gitHead || "")) {
-    fail(`gitHead mismatch (expected ${expected.gitHead || "missing"}, got ${report.gitHead || "missing"})`);
-  }
-  if (String(report.schemaSha256 || "") !== String(expected.schemaSha256 || "")) {
-    fail("schemaSha256 mismatch");
-  }
-  if (!Array.isArray(report.sourceIdentityFiles)) fail("sourceIdentityFiles missing");
-
-  if (expected.sourceIdentityFiles.length > 0 && typeof expected.sourceIdentityFiles[0] === "string") {
-    if (JSON.stringify(report.sourceIdentityFiles) !== JSON.stringify(expected.sourceIdentityFiles)) {
-      fail("sourceIdentityFiles mismatch");
-    }
-    if (!Array.isArray(report.sourceIdentityFileHashes)) fail("sourceIdentityFileHashes missing");
-    if (JSON.stringify(report.sourceIdentityFileHashes) !== JSON.stringify(expected.sourceIdentityFileHashes)) {
-      fail("sourceIdentityFileHashes mismatch");
-    }
-  } else {
-    if (report.sourceIdentityFiles.length !== expected.sourceIdentityFiles.length) {
-      fail(`sourceIdentityFiles count mismatch (expected ${expected.sourceIdentityFiles.length}, got ${report.sourceIdentityFiles.length})`);
-    }
-
-    for (let i = 0; i < expected.sourceIdentityFiles.length; i += 1) {
-      const actual = report.sourceIdentityFiles[i] || {};
-      const expectedFile = expected.sourceIdentityFiles[i];
-      if (actual.path !== expectedFile.path) fail(`sourceIdentityFiles[${i}].path mismatch for ${expectedFile.path}`);
-      if (actual.bytes !== expectedFile.bytes) fail(`sourceIdentityFiles[${i}].bytes mismatch for ${expectedFile.path}`);
-      if (actual.sha256 !== expectedFile.sha256) fail(`sourceIdentityFiles[${i}].sha256 mismatch for ${expectedFile.path}`);
-    }
-
-    if (Array.isArray(report.sourceIdentityFileHashes)) {
-      const expectedFileHashes = expected.sourceIdentityFileHashes;
-      if (JSON.stringify(report.sourceIdentityFileHashes) !== JSON.stringify(expectedFileHashes)) {
-        fail("sourceIdentityFileHashes mismatch");
-      }
-    }
-  }
-
-  if (String(report.sourceIdentitySha256 || "") !== String(expected.sourceIdentitySha256 || "")) {
-    fail("sourceIdentitySha256 mismatch");
-  }
-
+  assertReportInputIdentity(report, expected, fail);
+  assertReportedHeadCanReuseEvidence(String(report.gitHead).trim(), expected.gitHead, options, fail);
   return expected;
 }
