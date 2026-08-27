@@ -299,6 +299,8 @@ model Company {
   budgetPlans       CompanyBudgetPlan[]
   paymentAccounts   PaymentAccount[]
   commercialSources CommercialSource[]
+  hakedisRecords    HakedisRecord[]
+  invoiceRecords    InvoiceRecord[]
 
   @@index([regionId, kind])
   @@index([kind])
@@ -369,6 +371,20 @@ enum RoomQuoteFloorDraftStatus {
   ARCHIVED
 }
 
+enum HakedisRecordStatus {
+  DRAFT
+  READY
+  FINALIZED
+  CANCELLED
+}
+
+enum InvoiceRecordStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+  PAID
+}
+
 enum PersonelKind {
   PERSONEL
   STUDENT
@@ -408,6 +424,8 @@ model Room {
   commissionRules CommissionRule[]
   paymentAccounts PaymentAccount[]
   commercialSources CommercialSource[]
+  hakedisRecords HakedisRecord[]
+  invoiceRecords InvoiceRecord[]
 
   @@index([regionId])
   @@index([district])
@@ -518,6 +536,8 @@ model User {
   roomQuoteFloorDraftsUpdated RoomQuoteFloorDraft[]   @relation("RoomQuoteFloorDraftUpdatedBy")
   roomQuoteFloorDraftsApplied RoomQuoteFloorDraft[]   @relation("RoomQuoteFloorDraftAppliedBy")
   externalCostReferencesCreated ExternalCostReference[] @relation("ExternalReferenceCreatedBy")
+  hakedisRecordsCreated HakedisRecord[] @relation("HakedisRecordCreatedBy")
+  invoiceRecordsCreated InvoiceRecord[] @relation("InvoiceRecordCreatedBy")
 
   @@index([companyId])
   @@index([roomId])
@@ -911,6 +931,8 @@ model Agreement {
   // ✅ M18: agreement -> generated shifts
   shifts Shift[]
   commercialSources CommercialSource[]
+  hakedisRecords HakedisRecord[]
+  invoiceRecords InvoiceRecord[]
 
   @@index([companyId])
   @@index([roomId])
@@ -925,6 +947,64 @@ enum PaymentMode {
   OFF
   OPTIONAL
   REQUIRED
+}
+
+// #3: durable internal evidence used by the read-only reconciliation preview.
+// These records are not payment execution or accounting posting records.
+model HakedisRecord {
+  id              Int                @id @default(autoincrement())
+  reference       String             @unique
+  agreementId     Int
+  companyId       Int
+  roomId          Int
+  periodStart     DateTime           @db.Date
+  periodEnd       DateTime           @db.Date
+  amountMinor     Int
+  currencyCode    String             @default("TRY")
+  status          HakedisRecordStatus @default(READY)
+  calculationVersion String          @default("HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01")
+  source          String?
+  notes           String?
+  createdByUserId Int?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation("HakedisRecordCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([agreementId, periodStart, periodEnd, status])
+  @@index([companyId, periodStart, periodEnd])
+  @@index([roomId, periodStart, periodEnd])
+}
+
+model InvoiceRecord {
+  id              Int                @id @default(autoincrement())
+  reference       String             @unique
+  agreementId     Int?
+  companyId       Int
+  roomId          Int?
+  periodStart     DateTime           @db.Date
+  periodEnd       DateTime           @db.Date
+  amountMinor     Int
+  currencyCode    String             @default("TRY")
+  status          InvoiceRecordStatus @default(ISSUED)
+  source          String?
+  notes           String?
+  issuedAt        DateTime?
+  createdByUserId Int?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  agreement Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room      Room?      @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  createdBy User?      @relation("InvoiceRecordCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([agreementId, periodStart, periodEnd, status])
+  @@index([companyId, periodStart, periodEnd])
+  @@index([roomId, periodStart, periodEnd])
 }
 
 enum CommercialSourceType {

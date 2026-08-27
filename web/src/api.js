@@ -426,6 +426,11 @@ export async function getAgreementPlatformFeePreview(agreementId, { token, signa
   return payload?.platformFeePreview ?? payload;
 }
 
+export async function getReconciliationPreview(agreementId, params = {}, { token, signal } = {}) {
+  const query = buildQueryString({ agreementId, ...params });
+  return cachedGet(`/api/reconciliation/preview${query}`, { token, signal, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
+}
+
 export function normalizeQualityReviewDecisionError(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorInfo(error, fallbackMessage);
 }

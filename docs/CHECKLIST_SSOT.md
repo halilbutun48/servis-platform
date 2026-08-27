@@ -5,6 +5,8 @@
 > Tarihsel tam master anchor `tools\pack.ps1 -To 79` olarak korunur; bu anchor güncel üst hattı inkâr etmez.
 
 ## Aktif hat
+- #3 `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01` aktif ürün hattıdır; canonical contract: `docs/HAKEDIS_INVOICE_RECONCILIATION_PREVIEW_01.md`.
+- #3 saf kontrolü: `npm run check:hakedisinvoicereconciliationpreview01`; gerçek API/DB kabulü: `npm run accept:hakedisinvoicereconciliationpreview01`.
 - Güncel doğrulanmış baz: `M89`
 - Tarihsel tam master anchor: `M79`
 - Yaşayan repo hattı: `M80`, `M80.1`, `M80.2`, `M80.3`, `M81`, `M82.1`, `M82.8`, `M82.9`, `M82.10`, `M82.11`, `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`

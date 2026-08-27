@@ -22,6 +22,7 @@ import {
   RoomAgreementsRouteRefreshPendingSection,
 } from "./roomAgreementsPanelSections";
 import RoomAgreementsBridgeSection from "./roomAgreementsBridgeSection";
+import ReconciliationPreviewCard from "../../components/ReconciliationPreviewCard";
 import {
   daysLeftYmd,
   moneyTry,
@@ -1026,6 +1027,10 @@ export default function AgreementsPanel() {
         onChange={setViewMode}
         compact
       />
+
+      {viewMode === "bridge" ? (
+        <ReconciliationPreviewCard agreementId={copilotAgreementTarget?.id} token={token} style={{ marginTop: 12 }} />
+      ) : null}
 
       {viewMode === "bridge" ? (
         <RoomAgreementsBridgeSection

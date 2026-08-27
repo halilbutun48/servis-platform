@@ -71,6 +71,7 @@ import { pilotLaunchGateRouter } from "./routes/pilotLaunchGate.js";
 import { operationVerificationRouter } from "./routes/operationVerification.js";
 import * as dashboardBulkMod from "./routes/dashboardBulk.js";
 import { externalCostReferenceRouter } from "./externalCost/router.js";
+import { reconciliationRouter } from "./routes/reconciliation.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -296,6 +297,7 @@ mountCoreRoutes(app, {
   adminLogsRouter,
   adminRouter,
   externalCostReferenceRouter,
+  reconciliationRouter,
 }, io);
 
 // Socket auth: token -> decode -> DB user -> join scopes

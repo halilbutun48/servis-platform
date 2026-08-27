@@ -43,6 +43,7 @@ export function mountCoreRoutes(app, routes, io) {
     adminLogsRouter,
     adminRouter,
     externalCostReferenceRouter,
+    reconciliationRouter,
   } = routes;
 
   function resolveRouterMount(routeExport) {
@@ -102,6 +103,7 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/admin/public-leads", resolveRouterMount(publicLeadReviewRouter));
   app.use("/api/admin", adminRouter(io));
   app.use("/api/external-cost-references", resolveRouterMount(externalCostReferenceRouter));
+  app.use("/api/reconciliation", resolveRouterMount(reconciliationRouter));
 }
 
 export function mountIoRoutes(app, io, routes) {

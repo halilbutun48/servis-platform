@@ -21,6 +21,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { getAgreementPlatformFeePreview, getAgreementQualityPaymentBridgePreview, getAgreementSeferScorePreview } from "../../api";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
+import ReconciliationPreviewCard from "../../components/ReconciliationPreviewCard";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CompanyAgreementsOverviewSection from "./companyAgreementsOverviewSection";
 import CompanyAgreementsSelectedSummarySection, {
@@ -1209,6 +1210,7 @@ export default function AgreementsPanel() {
                   onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
                   emptyText="Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür."
                 />
+                <ReconciliationPreviewCard agreementId={selectedAgreementRow.a.id} token={token} style={{ marginTop: 12 }} />
               </div>
             ) : null}
             <CompanyAgreementsSelectedSummarySection

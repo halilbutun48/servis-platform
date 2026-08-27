@@ -32,6 +32,11 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - Canonical closure baseline for this guide: `Product Extensions 198/198 GREEN`. See `docs/PRIMER_SSOT.md` for the human-readable closure narrative.
 
 ## 4) Master orchestration
+### #3 Hakediş/Fatura Mutabakat Önizlemesi
+- Contract: `docs/HAKEDIS_INVOICE_RECONCILIATION_PREVIEW_01.md`
+- Saf davranış kontrolü: `npm run check:hakedisinvoicereconciliationpreview01`
+- Gerçek API + DB kabulü: `npm run accept:hakedisinvoicereconciliationpreview01`
+- Kapsam: dönem-aware, kanıtlı, salt-okunur; ödeme veya muhasebe yazımı yoktur.
 ### Ana komutlar
 - `npm run verify:repo`
 - `tools\check-repo.ps1 -Phase all`

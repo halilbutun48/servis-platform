@@ -35,6 +35,10 @@
 - `M89 - settlement mutabakat masasi - green`
 
 ## 3) Sonraki resmi sira
+- `#3 HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01 - active execution`
+  - amac: sözleşme, operasyon kanıtı, hakediş ve fatura verisini dönem bazında salt-okunur mutabakat önizlemesi ve açıklaması olarak karşılaştırmak
+  - komut: `npm run check:hakedisinvoicereconciliationpreview01` ve gerçek kabul için `npm run accept:hakedisinvoicereconciliationpreview01`
+  - kural: ödeme, fatura onayı, hakediş kesinleştirmesi ve muhasebe yazımı yoktur; `EXTERNAL_REFERENCE` ve `DEMO_FIXTURE` mutabakat gerçeği değildir
 - `M90 - canonical closure / 10-10 kapanis paketi`
   - amac: canonical markdown, state, script-guide, proof-politikasi ve verification orkestrasyonunu tek gercekte toplamak
   - kural: yeni urun ozelligi degil; docs/verify/hijyen hizasi onceliklidir
