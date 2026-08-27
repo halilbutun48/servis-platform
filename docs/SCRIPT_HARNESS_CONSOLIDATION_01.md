@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-08-26
+Tarih: 2026-08-27
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `432`
-- Toplam executable tracked file: `1292`
-- Combined registry row: `1724`
-- Root/backend/web/mobile package dağılımı: root `267`, backend `856`, web `97`, mobile `201`
+- Toplam package script entry: `433`
+- Toplam executable tracked file: `1297`
+- Combined registry row: `1730`
+- Root/backend/web/mobile package dağılımı: root `268`, backend `861`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `68`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -389,11 +389,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `716`
+- NEEDS_REVIEW: `722`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `362`
+- Eski sistem term eşleşmesi: `363`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -410,7 +410,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 716 |
+| NEEDS_REVIEW | 722 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -474,6 +474,7 @@ Repo: `servis-platform`
 | root:check:copilotactionprep01 | package.json | root | node backend/scripts/copilot_action_prep_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTACTIONPREP-01 |  | Owner or chain unclear |  |
 | root:check:financialoperationssurfaceandrbac01 | package.json | root | node backend/scripts/financial_operations_surface_and_rbac_01_check.js | verify-core | ACTIVE_CORE |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Breaks canonical verification chain |  |
 | root:check:operationalcostmodel01 | package.json | root | node backend/scripts/operational_cost_model_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-OPERATIONALCOSTMODEL-01 |  | Breaks canonical verification chain |  |
+| root:check:externalcostdataproviderfreshness01 | package.json | root | node backend/scripts/external_cost_data_provider_freshness_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-EXTERNALCOSTDATAPROVIDERFRESHNESS-01 |  | Owner or chain unclear |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
 | root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Owner or chain unclear |  |
 | root:check:uxmarketplacepanels01 | package.json | root | node backend/scripts/ux_marketplace_panels_01_check.js | verify-core | ACTIVE_CORE |  | UX-MARKETPLACE-PANELS-01 |  | Breaks canonical verification chain |  |
@@ -886,6 +887,7 @@ Repo: `servis-platform`
 | eta_osrm_02_api_eta_bridge_check.js | backend/scripts/eta_osrm_02_api_eta_bridge_check.js | backend | root:check:etaosrm02 | review | NEEDS_REVIEW |  | ETA-OSRM-02-API-ETA-BRIDGE-CHECK |  | Owner or chain unclear |  |
 | eta_sanity_01_live_tracking_check.js | backend/scripts/eta_sanity_01_live_tracking_check.js | backend | root:check:etasanity01 | review | NEEDS_REVIEW |  | ETA-SANITY-01-LIVE-TRACKING-CHECK |  | Owner or chain unclear |  |
 | excel_to_route_readiness_redteam_01_check.js | backend/scripts/excel_to_route_readiness_redteam_01_check.js | backend | root:check:exceltoroutereadinessredteam01 | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01-CHECK |  | Owner or chain unclear |  |
+| external_cost_data_provider_freshness_01_check.js | backend/scripts/external_cost_data_provider_freshness_01_check.js | backend | root:check:externalcostdataproviderfreshness01 | review | NEEDS_REVIEW |  | EXTERNAL-COST-DATA-PROVIDER-FRESHNESS-01-CHECK |  | Owner or chain unclear |  |
 | field_launch_pack_01_readiness_check.js | backend/scripts/field_launch_pack_01_readiness_check.js | backend | root:check:fieldlaunch01 | review | NEEDS_REVIEW |  | FIELD-LAUNCH-PACK-01-READINESS-CHECK |  | Owner or chain unclear |  |
 | final_ux_smoke_01_check.js | backend/scripts/final_ux_smoke_01_check.js | backend | root:check:finaluxsmoke01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | financial_operations_surface_and_rbac_01_check.js | backend/scripts/financial_operations_surface_and_rbac_01_check.js | backend | root:check:financialoperationssurfaceandrbac01 | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Owner or chain unclear |  |
@@ -1357,6 +1359,10 @@ Repo: `servis-platform`
 | routeMounts.js | backend/src/bootstrap/routeMounts.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-MOUNTS |  | Owner or chain unclear |  |
 | env.js | backend/src/env.js | backend | mobile:check:m81.4, mobile:check:m82.6 | review | NEEDS_REVIEW |  | ENV |  | Owner or chain unclear |  |
 | http.js | backend/src/errors/http.js | backend |  | review | NEEDS_REVIEW |  | HTTP |  | Owner or chain unclear |  |
+| externalCostReferenceService.js | backend/src/externalCost/externalCostReferenceService.js | backend |  | review | NEEDS_REVIEW |  | EXTERNAL-COST-REFERENCE-SERVICE |  | Owner or chain unclear |  |
+| providerRegistry.js | backend/src/externalCost/providerRegistry.js | backend |  | review | NEEDS_REVIEW |  | PROVIDER-REGISTRY |  | Owner or chain unclear |  |
+| referenceContract.js | backend/src/externalCost/referenceContract.js | backend |  | review | NEEDS_REVIEW |  | REFERENCE-CONTRACT |  | Owner or chain unclear |  |
+| router.js | backend/src/externalCost/router.js | backend | root:check:m98e4b | review | NEEDS_REVIEW |  | ROUTER |  | Owner or chain unclear |  |
 | companyBudgetAndServiceCost.js | backend/src/finance/companyBudgetAndServiceCost.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AND-SERVICE-COST |  | Owner or chain unclear |  |
 | financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
 | operationalCostMath.js | backend/src/finance/operationalCostMath.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MATH |  | Owner or chain unclear |  |
