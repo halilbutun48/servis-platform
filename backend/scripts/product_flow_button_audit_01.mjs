@@ -280,6 +280,62 @@ async function firstVisibleButtonByText(page, needle) {
   return null;
 }
 
+async function revealFirstVisibleShiftCardDetails(page) {
+  const summaries = page.locator("summary");
+  const deadline = Date.now() + 3500;
+  while (Date.now() < deadline) {
+    const count = await summaries.count().catch(() => 0);
+    for (let i = 0; i < count; i += 1) {
+      const summary = summaries.nth(i);
+      const visible = await summary.isVisible({ timeout: 1200 }).catch(() => false);
+      const label = normalize(await summary.innerText().catch(() => ""));
+      if (!visible || label !== normalize("Detayları göster")) continue;
+      await summary.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+      await summary.click({ timeout: 5000 }).catch(() => {});
+      await page.waitForTimeout(250);
+      return true;
+    }
+    await page.waitForTimeout(150);
+  }
+  return false;
+}
+
+async function revealFirstVisibleShiftOtherActions(page) {
+  const summaries = page.locator("summary");
+  const count = await summaries.count().catch(() => 0);
+  for (let i = 0; i < count; i += 1) {
+    const summary = summaries.nth(i);
+    const visible = await summary.isVisible({ timeout: 1200 }).catch(() => false);
+    const label = normalize(await summary.innerText().catch(() => ""));
+    if (!visible || label !== normalize("Diğer işlemler")) continue;
+    await summary.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+    await summary.click({ timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(250);
+    return true;
+  }
+  return false;
+}
+
+async function waitForShiftCardContent(page, timeoutMs = 10000) {
+  await page.locator('[data-testid="commercial-shift-card"]').first().waitFor({ state: "attached", timeout: timeoutMs }).catch(() => {});
+}
+
+async function firstVisiblePanelTab(page, name) {
+  return await firstVisibleLocator(page, "tab", name)
+    || await firstVisibleLocator(page, "button", name);
+}
+
+async function firstPanelTab(page, name) {
+  const candidates = page.locator("button.panelSegmentTab");
+  const count = await candidates.count().catch(() => 0);
+  for (let i = 0; i < count; i += 1) {
+    const candidate = candidates.nth(i);
+    const label = await candidate.innerText().catch(() => "");
+    if (name instanceof RegExp ? name.test(label) : normalize(label) === normalize(name)) return candidate;
+  }
+  return await firstVisiblePanelTab(page, name);
+}
+
 async function clickVisible(page, role, name) {
   const locator = await firstVisibleLocator(page, role, name);
   if (!locator) return false;
@@ -521,6 +577,8 @@ async function handleCompanyShifts(page, result) {
   const previewLabel = "Harita / Navigasyon Önizle";
   const convertLabels = ["Sözleşmeye Dönüştür", "Yeniden Dönüştür"];
 
+  await waitForShiftCardContent(page);
+  await revealFirstVisibleShiftCardDetails(page);
   const previewButton = await waitForFirstVisibleLocator(page, "button", previewLabel, { timeoutMs: 9000 });
   result.checks.previewButtonVisible = Boolean(previewButton);
   result.checks.convertButtonVisible = false;
@@ -651,14 +709,20 @@ async function handleRoomShifts(page, result) {
   result.checks.dispatchApplyVisible = await isVisible(page, "button", "Önizlemeyi Uygula: Böl & Onayla");
   result.checks.dispatchApplyHintVisible = await textVisible(page, "Önizleme ile aynı bölme planı uygulanır; seçtiğin araç ve şoför eşleşmeleri kullanılır.");
   result.checks.dispatchApplyStateVisible = await textVisible(page, "Tüm öneriler hazır. Önizlemeyi uygulayabilirsin.");
-  result.checks.previewButtonVisible = await isVisible(page, "button", "Rota Önizleme") || Boolean(await firstVisibleButtonByText(page, "Rota Önizleme"));
+  await waitForShiftCardContent(page);
+  await revealFirstVisibleShiftCardDetails(page);
+  await revealFirstVisibleShiftOtherActions(page);
+  result.checks.previewButtonVisible = Boolean(
+    await firstVisibleLocator(page, "button", "Rota Önizleme")
+      || await firstVisibleButtonByText(page, "Rota Önizleme")
+  );
   result.checks.previewBoundaryVisible = await textVisible(page, "Önizleme: rota verisi yalnızca harita üzerinden okunur.");
   result.checks.rejectBoundaryVisible = await textVisible(page, "Onay bu modda aşağıdaki bölme önizleme kartından verilir.");
 
-  const pendingTab = await firstVisibleLocator(page, "tab", /^Bekleyen Talepler\b/i);
+  const pendingTab = await firstPanelTab(page, /^Bekleyen Talepler\b/i);
   if (pendingTab) {
-    await pendingTab.click({ timeout: 5000 }).catch(() => {});
-    await page.waitForTimeout(350);
+    await pendingTab.click({ force: true, timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(700);
   }
   result.checks.pendingEmptyVisible = await textVisible(page, "Bekleyen talep yok.");
   result.checks.approveButtonVisible = await isVisible(page, "button", "Kabul Et");
@@ -691,10 +755,12 @@ async function handleRoomShifts(page, result) {
   let previewButton = null;
   let previewButtonTab = "";
   for (const tabName of previewTabs) {
-    const tab = await firstVisibleLocator(page, "tab", tabName);
+    const tab = await firstPanelTab(page, tabName);
     if (!tab) continue;
-    await tab.click({ timeout: 5000 }).catch(() => {});
-    await page.waitForTimeout(350);
+    await tab.click({ force: true, timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(850);
+    await revealFirstVisibleShiftCardDetails(page);
+    await revealFirstVisibleShiftOtherActions(page);
     for (const label of previewLabels) {
       previewButton = await firstVisibleLocator(page, "button", label) || await firstVisibleButtonByText(page, label);
       if (previewButton) {
