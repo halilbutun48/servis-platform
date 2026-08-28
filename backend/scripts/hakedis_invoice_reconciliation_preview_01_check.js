@@ -1,4 +1,13 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildReconciliationPreview, HAKEDIS_INVOICE_RECONCILIATION_VERSION } from "../src/finance/hakedisInvoiceReconciliation.js";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+function readRepoFile(relativePath) {
+  return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+}
 
 let passed = 0;
 let failed = 0;
@@ -117,6 +126,17 @@ const zero = buildReconciliationPreview({ agreement, periodStart: "2030-01-01", 
 must(zero.data.status === "MATCHED" && zero.data.difference.amountMinor === 0, "sıfır tutar deterministik eşleşir");
 must(Array.isArray(matching.data.reasons) && matching.data.reasons.length > 0, "uyum gerekçesi açıklanır");
 must(matching.data.evidence.hakedis.reference === "HAK-301-01" && matching.data.evidence.invoice.reference === "FAT-301-01", "hakediş ve fatura referansları izlenir");
+
+const entryCard = readRepoFile("web/src/components/HakedisReconciliationEntryCard.jsx");
+const companyCommercialFlow = readRepoFile("web/src/panels/company/CommercialFlowPanel.jsx");
+const roomCommercialFlow = readRepoFile("web/src/panels/room/CommercialFlowPanel.jsx");
+must(entryCard.includes("ReconciliationPreviewCard"), "mutabakat giriş kartı canonical önizlemeyi yeniden kullanır");
+must(entryCard.includes("Henüz mutabakat yapılabilecek sözleşme bulunmuyor."), "mutabakat giriş kartı kanıtsız durumda boş durumu gösterir");
+must(entryCard.includes("Sözleşmeleri aç") && entryCard.includes("Mutabakatı incele"), "mutabakat giriş kartı güvenli ana aksiyonu gösterir");
+must(!entryCard.includes("amountMinor") && !entryCard.includes("/ 100"), "mutabakat giriş kartı hesaplama çoğaltmaz");
+must(companyCommercialFlow.includes("HakedisReconciliationEntryCard") && companyCommercialFlow.includes("getCompanyAgreements"), "COMPANY Ticari Akış mutabakat girişini tenant-scope sözleşmelerle bağlar");
+must(roomCommercialFlow.includes("HakedisReconciliationEntryCard") && roomCommercialFlow.includes("loadRoomAgreementRows"), "ROOM Ticari Akış mutabakat girişini tenant-scope sözleşmelerle bağlar");
+must(roomCommercialFlow.includes('label: "Ödeme Hazırlığı"') && !roomCommercialFlow.includes('label: "Ödeme & Komisyon"'), "ROOM legacy ödeme/komisyon etiketi hazırlık semantiğiyle netleştirilir");
 
 if (failed > 0) {
   console.error(`HAKEDIS_INVOICE_RECONCILIATION_PREVIEW_01 FAIL ${passed}/${passed + failed}`);

@@ -8,6 +8,7 @@ import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getCompanyAgreements, getCompanyCommercialFlowSummary, getCompanyShifts } from "../../utils/companyDataHub";
 import PanelChrome from "../../components/PanelChrome";
+import HakedisReconciliationEntryCard from "../../components/HakedisReconciliationEntryCard";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 import { buildAgreementConversionByShift } from "./companyShiftsPanelStateHelpers";
 
@@ -259,6 +260,10 @@ export default function CompanyCommercialFlowPanel() {
     return map;
   }, [agreementRows, shiftRows]);
   const selectedTarget = useMemo(() => resolveCommercialFlowTarget(selectedItem, agreementByShiftId), [selectedItem, agreementByShiftId]);
+  const reconciliationAgreement = useMemo(
+    () => agreementRows.find((agreement) => ["APPROVED", "ACTIVE"].includes(String(agreement?.status || "").toUpperCase())) || agreementRows[0] || null,
+    [agreementRows]
+  );
 
   const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/commercial-flow"), []);
 
@@ -307,12 +312,22 @@ export default function CompanyCommercialFlowPanel() {
     }, 60);
   }
 
+  function openAgreementReconciliation() {
+    navigate("/company/agreements?detail=bridge");
+  }
+
   return (
     <div className="companyActionClarityScope" style={{ display: "grid", gap: 14 }}>
       <PanelChrome
         title="Ticari Akışım"
         subtitle="Hizmet Alan Firma için ticari görünüm artık gerçek market tekliflerinden beslenir. Vardiya üstündeki eski taşımacılık firması teklif alanları burada referans alınmaz."
         actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
+      />
+
+      <HakedisReconciliationEntryCard
+        agreement={reconciliationAgreement}
+        token={token}
+        onOpenAgreement={openAgreementReconciliation}
       />
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}

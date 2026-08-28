@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
 import { CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF } from "./lib/currentHeadScopePolicy.js";
-import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity } from "./lib/guardGitScope.js";
+import { APP_JSX_ROLE_TENANT_SCOPE_PATHS, mustDiffEmptyOrExactlyWithIdentity, mustStatusEmptyOrExactlyWithIdentity, mustStatusSubsetWithIdentity } from "./lib/guardGitScope.js";
 import { assertProductExtensionsIncludes, assertProductExtensionsOrder, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -197,7 +197,7 @@ const APPROVED_SUPERADMIN_PRESENTATION = [
 ];
 const APPROVED_ROOM_PRESENTATION = [
   { path: "web/src/panels/room/AgreementsPanel.jsx", sha256: "A95D9BC43959CC0ED6417B2376CA9BB5A20B4F05D99B5A93BAEEF9824799D309" },
-  { path: "web/src/panels/room/CommercialFlowPanel.jsx", sha256: "221744071AD73366242BCA96C6986F76B51BDD4703FCC8FF5806D622B7C29DEE" },
+  { path: "web/src/panels/room/CommercialFlowPanel.jsx", sha256: "5EF329EB1A70B3EA2D33F227DAECE0919B815AEEC2B4C62531ECBE92E3C049F8" },
   { path: "web/src/panels/room/DriversPanel.jsx", sha256: "7E1E31C2813A24B95D384441FDFD587924EC3672CA8F7047CE3D35E0AFDF3DD4" },
   { path: "web/src/panels/room/HubPanel.jsx", sha256: "5D862BDA535D75AB91F788C63D9AD9B0F33DEB93BC288162D62E3F7845BA0C4E" },
   { path: "web/src/panels/room/MapPanel.jsx", sha256: "AB49A5566EDD95B31EE03FC42AD352E45C17E5EEA616188965212DC78376C6C0" },
@@ -827,7 +827,7 @@ function main() {
   const statusWithoutTrustQuality = statusWithoutOffers.filter((file) => file !== "web/src/panels/superadmin/TrustQualityPanel.jsx" && file !== "web/src/panels/superadmin/PublicLeadReviewPanel.jsx");
 
   mustNotList(statusWithoutTrustQuality.filter((file) => !exactAllowedSet.has(file)), "web/src/panels/room/", "room surfaces are untouched");
-  mustStatusEmptyOrExactlyWithIdentity(
+  mustStatusSubsetWithIdentity(
     APPROVED_ROOM_PRESENTATION.map((entry) => entry.path),
     APPROVED_ROOM_PRESENTATION,
     "room surfaces stay within the approved presentation identities"

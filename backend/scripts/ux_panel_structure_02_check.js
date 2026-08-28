@@ -125,7 +125,7 @@ function main() {
   mustContains(roomCommercialFlow, "Sözleşme & Vardiya", "Room / Ticari Akışım keeps contract-shift tab visible");
   mustContains(roomCommercialFlow, "Teklifler", "Room / Ticari Akışım keeps offers tab visible");
   mustContains(roomCommercialFlow, "Kalite / Kanıt", "Room / Ticari Akışım keeps quality tab visible");
-  mustContains(roomCommercialFlow, "Ödeme & Komisyon", "Room / Ticari Akışım keeps payment tab visible");
+  mustContains(roomCommercialFlow, "Ödeme Hazırlığı", "Room / Ticari Akışım keeps payment preparation tab visible");
   mustContains(roomCommercialFlow, "Geçmiş", "Room / Ticari Akışım keeps history tab visible");
   mustContains(roomCommercialFlow, "Ticari Akışım", "Room / Ticari Akışım keeps the room title visible");
   mustContains(roomCommercialFlow, "roomCommercialWorkspaceFull", "Room / Ticari Akışım uses full-width workspace container");

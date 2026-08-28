@@ -135,6 +135,56 @@ async function visitRole(browser, role, token, route, screenshotName, mobile = f
   await page.close();
 }
 
+async function visitCommercialFlow(browser, role, token, screenshotName, mobile = false, { useFixture = false, clickCta = false } = {}) {
+  const page = await browser.newPage({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: mobile, hasTouch: mobile });
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      consoleErrorCount += 1;
+      consoleErrors.push({ role, route: "commercial-flow", mobile, text: message.text() });
+    }
+  });
+  page.on("pageerror", (error) => {
+    pageErrorCount += 1;
+    pageErrors.push({ role, route: "commercial-flow", mobile, text: error.message });
+  });
+  page.on("response", (response) => { if (response.status() === 500) unexpected500 += 1; if (response.status() === 429) unexpected429 += 1; });
+  await page.addInitScript((value) => {
+    localStorage.setItem("token", value);
+    localStorage.removeItem("personel_servis_cached_session");
+  }, token);
+  if (useFixture) {
+    await page.route("**/api/agreements**", (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname === "/api/agreements") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [fixtureAgreement] }) });
+      return route.continue();
+    });
+    await page.route("**/api/reconciliation/preview**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, data: previewFixture }) }));
+  }
+  const route = role === "ROOM" ? "/#/room/commercial-flow" : "/#/company/commercial-flow";
+  await page.goto(`${webBaseUrl}${route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
+  if (role === "ROOM") {
+    await page.getByRole("tab", { name: "Hakediş", exact: true }).click();
+  }
+  const entry = page.getByTestId("hakedis-reconciliation-entry");
+  await entry.waitFor({ state: "visible", timeout: 20000 });
+  if (useFixture) {
+    await entry.getByText("Uyumlu", { exact: true }).waitFor({ state: "visible", timeout: 20000 });
+  }
+  const entryText = await entry.innerText();
+  const emptyState = entryText.includes("Henüz mutabakat yapılabilecek sözleşme bulunmuyor.");
+  const fixtureState = entryText.includes("Hakediş ve fatura mutabakat önizlemesi") && entryText.includes("Uyumlu");
+  record(`${role} ${mobile ? "mobile" : "desktop"} commercial flow entry`, useFixture ? fixtureState : emptyState, useFixture ? "reconciliation preview is discoverable" : "real empty state is truthful");
+  const unsafeActionVisible = /Ödeme başlat|Fatura onay|Hakediş kesinleştir|Muhasebe kaydı oluştur/.test(entryText);
+  record(`${role} ${mobile ? "mobile" : "desktop"} commercial flow safety`, !unsafeActionVisible, unsafeActionVisible ? entryText : "no binding financial action");
+  await page.screenshot({ path: path.join(screenshotRoot, screenshotName), fullPage: true });
+  if (clickCta) {
+    await entry.getByTestId("hakedis-reconciliation-cta").click();
+    await page.waitForURL(new RegExp(`#/${role === "ROOM" ? "room" : "company"}/agreements`), { timeout: 20000 });
+    record(`${role} commercial flow safe CTA`, true, "agreements route opened");
+  }
+  await page.close();
+}
+
 await fs.mkdir(screenshotRoot, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 try {
@@ -144,6 +194,10 @@ try {
   await visitRole(browser, "ROOM", roomToken, "/#/room/agreements", "room-desktop.png", false, { ...previewFixture, status: "UNDER_INVOICED", statusLabel: "Eksik faturalandırma", invoice: { ...previewFixture.invoice, amountMinor: 90000 }, difference: { amountMinor: -10000, absoluteAmountMinor: 10000, direction: "INVOICE_UNDER" }, nextAction: "Farkı incele", reasons: [{ code: "UNDER_INVOICED", label: "Fatura tutarı hakediş tutarının altında." }] });
   await visitRole(browser, "COMPANY", companyToken, "/#/company/agreements", "company-mobile.png", true, { ...previewFixture, status: "NO_INVOICE", statusLabel: "Fatura verisi yok", invoice: { ...previewFixture.invoice, amountMinor: null, exists: false, reference: null }, difference: { amountMinor: null, absoluteAmountMinor: null, direction: "NONE" }, missingData: [{ code: "NO_INVOICE", label: "Fatura verisi yok" }], nextAction: "Eksik veriyi tamamla", reasons: [{ code: "NO_INVOICE", label: "Bu dönem için karşılaştırılabilir fatura kaydı bulunamadı." }] });
   await visitRole(browser, "ROOM", roomToken, "/#/room/agreements", "room-mobile.png", true, { ...previewFixture, status: "PARTIAL_OPERATION_EVIDENCE", statusLabel: "Operasyon kanıtı eksik", confidence: "MEDIUM", missingData: [{ code: "PARTIAL_OPERATION_EVIDENCE", label: "Operasyon kanıtı eksik" }], nextAction: "Eksik veriyi tamamla", reasons: [{ code: "PARTIAL_OPERATION_EVIDENCE", label: "Operasyon kayıtlarının tamamlanma kanıtı eksik." }], evidence: { ...previewFixture.evidence, operations: { shiftIds: ["9001"], eligibleCount: 1, completedCount: 0, partialCount: 1 } } });
+  await visitCommercialFlow(browser, "COMPANY", companyToken, "company-commercial-flow-empty-desktop.png");
+  await visitCommercialFlow(browser, "ROOM", roomToken, "room-commercial-flow-empty-desktop.png");
+  await visitCommercialFlow(browser, "COMPANY", companyToken, "company-commercial-flow-fixture-mobile.png", true, { useFixture: true, clickCta: true });
+  await visitCommercialFlow(browser, "ROOM", roomToken, "room-commercial-flow-fixture-mobile.png", true, { useFixture: true, clickCta: true });
 } finally {
   await browser.close();
 }
@@ -152,7 +206,7 @@ const report = {
   milestone: "HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01",
   generatedAt: new Date().toISOString(),
   fixtureMode: "PLAYWRIGHT_RESPONSE_FIXTURE_ONLY",
-  screenshots: ["company-desktop.png", "room-desktop.png", "company-mobile.png", "room-mobile.png"],
+  screenshots: ["company-desktop.png", "room-desktop.png", "company-mobile.png", "room-mobile.png", "company-commercial-flow-empty-desktop.png", "room-commercial-flow-empty-desktop.png", "company-commercial-flow-fixture-mobile.png", "room-commercial-flow-fixture-mobile.png"],
   consoleErrorCount,
   pageErrorCount,
   unexpected500,

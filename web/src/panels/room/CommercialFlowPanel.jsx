@@ -11,13 +11,14 @@ import ListSelectionBanner from "../../components/ListSelectionBanner";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import CollapsibleSection from "../../components/CollapsibleSection";
+import HakedisReconciliationEntryCard from "../../components/HakedisReconciliationEntryCard";
 
 const ROOM_FLOW_TABS = [
   { key: "settlement", label: "Hakediş" },
   { key: "contractShift", label: "Sözleşme & Vardiya" },
   { key: "offers", label: "Teklifler" },
   { key: "quality", label: "Kalite / Kanıt" },
-  { key: "payment", label: "Ödeme & Komisyon" },
+  { key: "payment", label: "Ödeme Hazırlığı" },
   { key: "history", label: "Geçmiş" },
 ];
 
@@ -212,6 +213,12 @@ export default function CommercialFlowPanel() {
   const [statusQ, setStatusQ] = useState("");
   const [nextStepQ, setNextStepQ] = useState("");
   const [preferredId, setPreferredId] = useState("");
+  const [agreementRows, setAgreementRows] = useState([]);
+
+  const loadRoomAgreementRows = useCallback(async ({ signal, force = false } = {}) => {
+    const resp = await cachedGet("/api/agreements?take=200", { token, signal, force, ttlMs: 10 * 60 * 1000, delayMs: 90 });
+    return Array.isArray(resp?.items) ? resp.items : [];
+  }, [token]);
 
   const loadCommercialFlow = useCallback(async ({ signal, force = false } = {}) => {
     const bulk = await loadRoomCommercialFlowBundle({
@@ -240,11 +247,15 @@ export default function CommercialFlowPanel() {
     const controller = new AbortController();
     (async () => {
       try {
-        const data = await loadCommercialFlow({ signal: controller.signal });
+        const [data, agreements] = await Promise.all([
+          loadCommercialFlow({ signal: controller.signal }),
+          loadRoomAgreementRows({ signal: controller.signal }),
+        ]);
         if (cancelled) return;
         setErr("");
         setSummary(data.summary);
         setItems(data.items);
+        setAgreementRows(agreements);
       } catch (e) {
         if (cancelled || e?.name === "AbortError") return;
         setErr(e?.message || String(e));
@@ -254,17 +265,21 @@ export default function CommercialFlowPanel() {
       cancelled = true;
       controller.abort();
     };
-  }, [loadCommercialFlow]);
+  }, [loadCommercialFlow, loadRoomAgreementRows]);
 
   useAutoReload("shifts", () => {
-    loadCommercialFlow({ force: true })
-      .then((data) => {
+    Promise.all([
+      loadCommercialFlow({ force: true }),
+      loadRoomAgreementRows({ force: true }),
+    ])
+      .then(([data, agreements]) => {
         setErr("");
         setSummary(data.summary);
         setItems(data.items);
+        setAgreementRows(agreements);
       })
       .catch(() => {});
-  }, Boolean(token));
+  }, [loadCommercialFlow, loadRoomAgreementRows, token]);
 
   function openAction(item) {
     if (item?.actionPath === "/room/shifts" && Number(item?.shiftId) > 0) {
@@ -361,6 +376,10 @@ export default function CommercialFlowPanel() {
   const selectedSummaryText = selectedItem
     ? [commercialFlowVisibleLabel(selectedItem.flowLabel), commercialFlowVisibleLabel(selectedItem.statusLabel || selectedItem.status), commercialFlowVisibleLabel(selectedItem.nextStep)].filter(Boolean).join(" • ")
     : "";
+  const reconciliationAgreement = useMemo(
+    () => agreementRows.find((agreement) => ["APPROVED", "ACTIVE"].includes(String(agreement?.status || "").toUpperCase())) || agreementRows[0] || null,
+    [agreementRows]
+  );
 
   const tabs = useMemo(() => ROOM_FLOW_TABS.map((tab) => {
     let badge = null;
@@ -398,6 +417,12 @@ export default function CommercialFlowPanel() {
             </div>
             {renderActionButtons()}
           </div>
+
+          <HakedisReconciliationEntryCard
+            agreement={reconciliationAgreement}
+            token={token}
+            onOpenAgreement={() => navigate("/room/agreements")}
+          />
 
           <CollapsibleSection
             title="Hakediş notları"
@@ -543,12 +568,12 @@ export default function CommercialFlowPanel() {
       return (
         <div style={{ display: "grid", gap: 14 }}>
           <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
-            <div className="panelSectionTitle">Ödeme & Komisyon</div>
+            <div className="panelSectionTitle">Ödeme Hazırlığı</div>
             <div className="panelMeta">
-              Bu taşımacılık firması ekranı ödeme başlatmaz; ödeme / komisyon yolu yalnızca okuma ve yönlendirme için özetlenir.
+              Bu taşımacılık firması ekranı ödeme başlatmaz; yalnızca ödeme öncesi bağlı kayıtların hazırlık durumunu ve yönünü gösterir.
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-              <MetricCard title="Aktif Sözleşme" value={summary?.cards?.activeAgreements ?? "-"} note="Komisyon yolunun bağlı olduğu kayıtlar" accent={summary?.cards?.activeAgreements ? "good" : "default"} />
+              <MetricCard title="Aktif Sözleşme" value={summary?.cards?.activeAgreements ?? "-"} note="Ödeme hazırlığına bağlı kayıtlar" accent={summary?.cards?.activeAgreements ? "good" : "default"} />
               <MetricCard title="Aktif Operasyon" value={summary?.cards?.approvedOrActiveShifts ?? "-"} note="Hesap yoluna inen işler" accent={summary?.cards?.approvedOrActiveShifts ? "good" : "default"} />
               <MetricCard title="Sözleşme Bekleyen" value={summary?.cards?.requestedAgreements ?? "-"} note="Ödeme öncesi bağlantı durumu" accent={summary?.cards?.requestedAgreements ? "warm" : "default"} />
             </div>
@@ -556,13 +581,13 @@ export default function CommercialFlowPanel() {
           </div>
 
           <CollapsibleSection
-            title="Ödeme / komisyon notları"
-            subtitle="Read-only görünür kural ve ilişkiler"
+            title="Ödeme hazırlığı notları"
+            subtitle="Salt okunur görünür kural ve ilişkiler"
             badge={paymentCount ? `${paymentCount}` : "0"}
             compact
           >
             <div style={{ display: "grid", gap: 8 }}>
-              <div className="panelMeta">• Ödeme ve komisyon kararı bu ekranda başlatılmaz; yalnızca bağlı kayıtlar görünür.</div>
+              <div className="panelMeta">• Ödeme kararı bu ekranda başlatılmaz; yalnızca bağlı kayıtlar görünür.</div>
               <div className="panelMeta">• Sözleşme ve operasyon ilişkisinin netliği, ödeme tarafını okumayı kolaylaştırır.</div>
               <div className="panelMeta">• Gerektiğinde Sözleşme ve Vardiya sekmesi ile Geçmiş sekmesi referans alınır.</div>
             </div>
@@ -749,7 +774,7 @@ export default function CommercialFlowPanel() {
                 <div className="panelMeta">• Sözleşme & Vardiya: operasyon bağlantılı kayıtlar.</div>
                 <div className="panelMeta">• Teklifler: market ve pazarlık kayıtları.</div>
                 <div className="panelMeta">• Kalite / Kanıt: kalite ve destek yönlendirmesi.</div>
-                <div className="panelMeta">• Ödeme & Komisyon: read-only ödeme yolu.</div>
+                <div className="panelMeta">• Ödeme Hazırlığı: yalnızca salt okunur hazırlık yolu.</div>
                 <div className="panelMeta">• Geçmiş: filtreli tam tablo.</div>
               </div>
             </CollapsibleSection>
