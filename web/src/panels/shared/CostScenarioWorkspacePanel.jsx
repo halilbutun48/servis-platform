@@ -17,28 +17,25 @@ const INPUT_STYLE = {
 };
 
 const FIELD_CONFIG = [
-  ["vehicleCount", "Araç sayısı", "number", "1"],
-  ["vehicleCapacity", "Araç kapasitesi", "number", ""],
-  ["passengerCount", "Yolcu / öğrenci / personel sayısı", "number", ""],
-  ["stopCount", "Durak sayısı", "number", ""],
-  ["serviceDistanceKm", "Mesafe (km)", "number", ""],
-  ["totalDistanceKm", "Toplam mesafe (km)", "number", ""],
-  ["routeDurationMinutes", "Rota süresi (dk)", "number", ""],
-  ["serviceDayCount", "Hizmet günü", "number", "1"],
-  ["shiftCount", "Toplam sefer", "number", ""],
-  ["tripCount", "Toplam yolculuk", "number", ""],
-  ["fuelConsumptionLitersPer100Km", "Yakıt tüketimi (L/100 km)", "number", ""],
-  ["fuelUnitPriceMinor", "Yakıt birim fiyatı (₺)", "number", ""],
-  ["driverBasePerShiftMinor", "Sürücü sefer maliyeti (₺)", "number", ""],
-  ["maintenancePerKmMinor", "Bakım km maliyeti (₺)", "number", ""],
+  { key: "vehicleType", label: "Araç tipi", type: "select", unit: "VEHICLE_TYPE", classification: "PRIMARY_WHAT_IF_INPUT", options: [["", "Belirtilmedi"], ["MINIBUS", "Minibüs"], ["MIDIBUS", "Midibüs"], ["OTOBUS", "Otobüs"]] },
+  { key: "vehicleCount", label: "Araç sayısı (adet)", type: "number", placeholder: "1", unit: "COUNT", classification: "PRIMARY_WHAT_IF_INPUT" },
+  { key: "passengerCount", label: "Yolcu / öğrenci / personel sayısı (kişi)", type: "number", placeholder: "", unit: "PERSON_COUNT", classification: "PRIMARY_WHAT_IF_INPUT" },
+  { key: "serviceDistanceKm", label: "Mesafe / rota varsayımı (km)", type: "number", placeholder: "", unit: "DISTANCE_KM", classification: "PRIMARY_WHAT_IF_INPUT" },
+  { key: "serviceDayCount", label: "Hizmet günü (gün)", type: "number", placeholder: "1", unit: "DATE/DAY_COUNT", classification: "PRIMARY_WHAT_IF_INPUT" },
+  { key: "vehicleCapacity", label: "Araç kapasitesi (kişi)", type: "number", placeholder: "", unit: "PERSON_COUNT", classification: "ADVANCED_ASSUMPTION" },
+  { key: "stopCount", label: "Durak sayısı (durak)", type: "number", placeholder: "", unit: "COUNT", classification: "ADVANCED_ASSUMPTION" },
+  { key: "totalDistanceKm", label: "Toplam mesafe (km)", type: "number", placeholder: "", unit: "DISTANCE_KM", classification: "DERIVED_INPUT" },
+  { key: "routeDurationMinutes", label: "Rota süresi (dk)", type: "number", placeholder: "", unit: "DURATION_MIN", classification: "DERIVED_INPUT" },
+  { key: "shiftCount", label: "Toplam sefer (sefer)", type: "number", placeholder: "", unit: "COUNT", classification: "ADVANCED_ASSUMPTION" },
+  { key: "tripCount", label: "Toplam yolculuk (yolculuk)", type: "number", placeholder: "", unit: "COUNT", classification: "ADVANCED_ASSUMPTION" },
+  { key: "fuelConsumptionLitersPer100Km", label: "Yakıt tüketimi (L/100 km)", type: "number", placeholder: "", unit: "FUEL_CONSUMPTION", classification: "ADVANCED_ASSUMPTION" },
+  { key: "fuelUnitPriceMinor", label: "Yakıt birim fiyatı (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
+  { key: "driverBasePerShiftMinor", label: "Sürücü sefer maliyeti (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
+  { key: "maintenancePerKmMinor", label: "Bakım km maliyeti (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
 ];
 
-const VEHICLE_TYPES = [
-  ["", "Belirtilmedi"],
-  ["MINIBUS", "Minibüs"],
-  ["MIDIBUS", "Midibüs"],
-  ["OTOBUS", "Otobüs"],
-];
+const PRIMARY_FIELD_CONFIG = FIELD_CONFIG.filter((field) => field.classification === "PRIMARY_WHAT_IF_INPUT");
+const ADVANCED_FIELD_CONFIG = FIELD_CONFIG.filter((field) => ["ADVANCED_ASSUMPTION", "DERIVED_INPUT"].includes(field.classification));
 
 function compact(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -124,34 +121,33 @@ function Field({ label, value, onChange, type = "number", placeholder = "", test
   );
 }
 
-function InputGrid({ values, setValues, prefix = "scenario" }) {
+function InputGrid({ values, setValues, prefix = "scenario", fields = FIELD_CONFIG }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-      {FIELD_CONFIG.map(([key, label, type, placeholder]) => (
-        <Field key={key} testId={`${prefix}-input-${key}`} label={label} value={values[key]} placeholder={placeholder} onChange={(value) => setValues((prev) => ({ ...prev, [key]: value }))} type={type} />
-      ))}
-      <label className="muted" style={{ minWidth: 0 }}>
-        Araç tipi
-        <select data-testid={`${prefix}-input-vehicleType`} value={values.vehicleType || ""} onChange={(event) => setValues((prev) => ({ ...prev, vehicleType: event.target.value }))} style={INPUT_STYLE}>
-          {VEHICLE_TYPES.map(([value, label]) => <option key={value || "none"} value={value}>{label}</option>)}
-        </select>
-      </label>
+      {fields.map((field) => field.type === "select" ? (
+        <label key={field.key} className="muted" style={{ minWidth: 0 }}>
+          {field.label}
+          <select data-testid={`${prefix}-input-${field.key}`} value={values[field.key] || ""} onChange={(event) => setValues((prev) => ({ ...prev, [field.key]: event.target.value }))} style={INPUT_STYLE}>
+            {field.options.map(([value, label]) => <option key={value || "none"} value={value}>{label}</option>)}
+          </select>
+        </label>
+      ) : <Field key={field.key} testId={`${prefix}-input-${field.key}`} label={field.label} value={values[field.key]} placeholder={field.placeholder} onChange={(value) => setValues((prev) => ({ ...prev, [field.key]: value }))} type={field.type} />)}
     </div>
   );
 }
 
-function InputSummary({ input, currencyCode }) {
+function InputSummary({ input }) {
   const items = [
-    ["Araç", input.vehicleCount ? `${input.vehicleCount} adet` : null],
-    ["Kapasite", input.vehicleCapacity ? `${input.vehicleCapacity} kişi` : null],
-    ["Yolcu", input.passengerCount ? `${input.passengerCount} kişi` : null],
-    ["Mesafe", input.serviceDistanceKm != null ? formatNumber(input.serviceDistanceKm, " km") : null],
-    ["Rota", input.routeDurationMinutes != null ? formatNumber(input.routeDurationMinutes, " dk") : null],
-    ["Hizmet günü", input.serviceDayCount != null ? input.serviceDayCount : null],
+    ["Araç (adet)", input.vehicleCount ? formatNumber(input.vehicleCount) : null],
+    ["Kapasite (kişi)", input.vehicleCapacity ? formatNumber(input.vehicleCapacity) : null],
+    ["Yolcu (kişi)", input.passengerCount ? formatNumber(input.passengerCount) : null],
+    ["Mesafe (km)", input.serviceDistanceKm != null ? formatNumber(input.serviceDistanceKm) : null],
+    ["Rota süresi (dk)", input.routeDurationMinutes != null ? formatNumber(input.routeDurationMinutes) : null],
+    ["Hizmet günü (gün)", input.serviceDayCount != null ? formatNumber(input.serviceDayCount) : null],
   ];
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
-      {items.map(([label, value]) => <Metric key={label} title={label} value={value ?? "-"} note={label === "Araç" ? "Mevcut plan girdisi" : currencyCode ? `Para birimi: ${currencyCode === "TRY" ? "Türk lirası" : currencyCode}` : "Kaynak bekleniyor"} />)}
+      {items.map(([label, value]) => <Metric key={label} title={label} value={value ?? "-"} note="Mevcut plan girdisi" />)}
     </div>
   );
 }
@@ -269,21 +265,25 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
       <div className="card" style={{ marginTop: 12, border: "1px solid rgba(58,102,255,0.25)", background: "rgba(58,102,255,0.05)" }}>
         <div className="panelSectionTitle">Mevcut plan</div>
         <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>{contextName} · {baseline?.source?.label || "Plan girdisi bekleniyor"}</div>
-        {baseline ? <InputSummary input={baselineValues} currencyCode={currencyCode} /> : <div className="muted" style={{ marginTop: 12 }}>{loading ? "Plan verisi okunuyor..." : "Plan verisi bulunamadı."}</div>}
+        {baseline ? <InputSummary input={baselineValues} /> : <div className="muted" style={{ marginTop: 12 }}>{loading ? "Plan verisi okunuyor..." : "Plan verisi bulunamadı."}</div>}
         <details style={{ marginTop: 12 }}>
           <summary className="muted" style={{ cursor: "pointer" }}>Mevcut plan varsayımlarını düzenle</summary>
           <div style={{ marginTop: 10 }}><InputGrid values={baselineValues} setValues={setBaselineValues} prefix="baseline" /></div>
         </details>
         <div style={{ marginTop: 12, maxWidth: 360 }}>
-          <Field label="Mevcut plan maliyet tabanı (₺)" value={baselineCost} placeholder="Varsa güvenli tutar" onChange={setBaselineCost} />
-          <div className="panelMeta" style={{ marginTop: 8 }}>Bu alan boş bırakılırsa sistem yalnızca tamamlanmış maliyet bileşenlerini kullanır; tutar gerçek muhasebe verisi değildir.</div>
+          <Field label="Senaryo için maliyet varsayımı (₺)" value={baselineCost} placeholder="İsteğe bağlı plan varsayımı" onChange={setBaselineCost} />
+          <div className="panelMeta" style={{ marginTop: 8 }}>Bu yalnızca senaryo için kullanılan bir varsayımdır; mevcut planın gerçek veya kanonik planlanan maliyetini değiştirmez. Boş bırakılırsa sistem yalnızca tamamlanmış maliyet bileşenlerini kullanır.</div>
         </div>
       </div>
 
-      <details className="card" style={{ marginTop: 12 }} open>
+      <details className="card" data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }}>
         <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Alternatif senaryo girdileri</summary>
         <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Değiştirmek istemediğiniz alanlar mevcut plan değerleriyle karşılaştırılır. Boş kalan kritik veriler sonuçta Eksik Veri olarak gösterilir.</div>
-        <div style={{ marginTop: 12 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" /></div>
+        <div style={{ marginTop: 12 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={PRIMARY_FIELD_CONFIG} /></div>
+        <details data-testid="scenario-advanced-fields" style={{ marginTop: 12 }}>
+          <summary className="muted" style={{ cursor: "pointer" }}>Gelişmiş varsayımlar</summary>
+          <div style={{ marginTop: 10 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={ADVANCED_FIELD_CONFIG} /></div>
+        </details>
         <label className="muted" style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 14 }}>
           <input type="checkbox" checked={useExternalFuelPrice} onChange={(event) => setUseExternalFuelPrice(event.target.checked)} style={{ marginTop: 3 }} />
           <span>Piyasa referansını dene <span className="panelMeta">(varsa; güncellik ve kaynak bilgisi korunur)</span></span>

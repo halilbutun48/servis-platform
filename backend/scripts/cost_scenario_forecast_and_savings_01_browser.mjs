@@ -39,6 +39,8 @@ async function visit(browser, { name, identifier, route, mobile = false, fill = 
   if (fill) {
     const p = page;
     await p.getByText("Mevcut plan varsayımlarını düzenle", { exact: true }).click();
+    await p.getByText("Alternatif senaryo girdileri", { exact: true }).click();
+    await p.getByText("Gelişmiş varsayımlar", { exact: true }).click();
     const fillField = async (prefix, key, value) => p.getByTestId(`${prefix}-input-${key}`).fill(String(value));
     for (const [key, value] of Object.entries({ vehicleCount: 1, vehicleCapacity: 16, passengerCount: 10, serviceDistanceKm: 100, totalDistanceKm: 100, routeDurationMinutes: 60, serviceDayCount: 10, shiftCount: 10, tripCount: 10, fuelConsumptionLitersPer100Km: 10, fuelUnitPriceMinor: 4000, driverBasePerShiftMinor: 10000, maintenancePerKmMinor: 100 })) await fillField("baseline", key, value);
     for (const [key, value] of Object.entries({ vehicleCount: 1, vehicleCapacity: 16, passengerCount: 10, serviceDistanceKm: 50, totalDistanceKm: 50, routeDurationMinutes: 30, serviceDayCount: 10, shiftCount: 10, tripCount: 10, fuelConsumptionLitersPer100Km: 10, fuelUnitPriceMinor: 4000, driverBasePerShiftMinor: 10000, maintenancePerKmMinor: 100 })) await fillField("scenario", key, value);

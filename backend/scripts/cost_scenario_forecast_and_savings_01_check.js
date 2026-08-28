@@ -87,12 +87,100 @@ function freshExternal(valueMinor = 5000, freshness = "FRESH") {
   };
 }
 
+function countOccurrences(text, pattern) {
+  return [...String(text || "").matchAll(pattern)].length;
+}
+
+function post4HumanUxCounts({ uiText, navText, financialText, appText, forecastText }) {
+  const fieldRows = [...uiText.matchAll(/\{ key: "([^"]+)", label: "([^"]+)", [^}]*unit: "([^"]+)"[^}]*classification: "([^"]+)"/g)]
+    .map((match) => ({ key: match[1], label: match[2], unit: match[3], classification: match[4] }));
+  const expectedLabelUnits = {
+    vehicleCount: "(adet)",
+    passengerCount: "(kişi)",
+    serviceDistanceKm: "(km)",
+    serviceDayCount: "(gün)",
+    vehicleCapacity: "(kişi)",
+    stopCount: "(durak)",
+    totalDistanceKm: "(km)",
+    routeDurationMinutes: "(dk)",
+    shiftCount: "(sefer)",
+    tripCount: "(yolculuk)",
+    fuelConsumptionLitersPer100Km: "(L/100 km)",
+  };
+  const moneyFields = fieldRows.filter((field) => field.unit === "MONEY");
+  const nonMoneyFields = fieldRows.filter((field) => field.unit !== "MONEY");
+  const summaryStart = uiText.indexOf("function InputSummary");
+  const summaryEnd = uiText.indexOf("export default function CostScenarioWorkspacePanel");
+  const summarySource = summaryStart >= 0 && summaryEnd > summaryStart ? uiText.slice(summaryStart, summaryEnd) : "";
+  const roomNavSource = navText.split('} else if (role === "COMPANY")', 1)[0];
+  const companyNavSource = navText.split('} else if (role === "COMPANY")', 2)[1]?.split('} else if (role === "DRIVER")', 1)[0] || "";
+  const companySeparateScenarioNavCount = countOccurrences(companyNavSource, /\{ label: "Maliyet Senaryoları"/g);
+  const roomSeparateScenarioNavCount = countOccurrences(roomNavSource, /\{ label: "Maliyet Senaryoları"/g);
+  const currencyLabelCount = nonMoneyFields.filter((field) => /₺|para birimi|türk lirası|currency/i.test(field.label)).length;
+  const summaryCurrencyLabelCount = countOccurrences(summarySource, /Para birimi|Türk lirası|currencyCode/gi);
+  const wrongUnitLabelCount = fieldRows.filter((field) => {
+    if (field.unit === "MONEY") return !field.label.includes("₺");
+    const expected = expectedLabelUnits[field.key];
+    return expected ? !field.label.includes(expected) : false;
+  }).length;
+  const requiredUnits = ["(adet)", "(kişi)", "(km)", "(gün)", "(dk)", "(durak)", "(sefer)", "(yolculuk)", "(L/100 km)"];
+  const missingRequiredUnitCount = requiredUnits.filter((unit) => !uiText.includes(unit)).length;
+  const advancedAlwaysVisibleCount = countOccurrences(uiText, /<details className="card" data-testid="scenario-advanced-assumptions"[^>]*\bopen\b/g);
+  const scenarioCapabilityLossCount = [
+    "vehicleType", "vehicleCount", "vehicleCapacity", "passengerCount", "stopCount", "serviceDistanceKm",
+    "totalDistanceKm", "routeDurationMinutes", "serviceDayCount", "shiftCount", "tripCount",
+    "fuelConsumptionLitersPer100Km", "fuelUnitPriceMinor", "driverBasePerShiftMinor", "maintenancePerKmMinor",
+  ].filter((key) => !fieldRows.some((field) => field.key === key)).length;
+  const unexplainedDuplicateScenarioNavCount = roomSeparateScenarioNavCount + companySeparateScenarioNavCount;
+  const unknownScenarioEntryPointCount = [
+    navText.includes('Finansal Operasyonlar'),
+    navText.includes('Bütçe ve Servis Maliyeti'),
+    financialText.includes('scenarioPanel={<CostScenarioWorkspacePanel scope="COMPANY" embedded />}'),
+    financialText.includes('<CostScenarioWorkspacePanel scope="ROOM" embedded />'),
+  ].every(Boolean) ? 0 : 1;
+  const deepLinkRegressionCount = [
+    /path === "\/room\/cost-scenarios"[^\n]*CostScenarioWorkspacePanel/.test(appText),
+    /path === "\/company\/cost-scenarios"[^\n]*CostScenarioWorkspacePanel/.test(appText),
+  ].every(Boolean) ? 0 : 1;
+  const contextualEntryRegressionCount = [
+    financialText.includes('preferredScopeTitle("ROOM")'),
+    financialText.includes('preferredScopeTitle("COMPANY")'),
+    financialText.includes('CostScenarioWorkspacePanel'),
+  ].every(Boolean) ? 0 : 1;
+  const manualBaselineOverridesCanonicalTruthCount = uiText.includes("mevcut planın gerçek veya kanonik planlanan maliyetini değiştirmez") &&
+    forecastText.indexOf("buildOperationalCostModel") < forecastText.indexOf("buildAnchorAmount") ? 0 : 1;
+  const ambiguousBaselineMoneyInputCount = uiText.includes("Mevcut plan maliyet tabanı (₺)") || uiText.includes("Varsa güvenli tutar") ? 1 : 0;
+
+  return {
+    NON_MONEY_FIELD_WITH_CURRENCY_LABEL_COUNT: currencyLabelCount + summaryCurrencyLabelCount,
+    WRONG_UNIT_LABEL_COUNT: wrongUnitLabelCount,
+    MISSING_REQUIRED_UNIT_COUNT: missingRequiredUnitCount,
+    UNKNOWN_SCENARIO_ENTRY_POINT_COUNT: unknownScenarioEntryPointCount,
+    UNEXPLAINED_DUPLICATE_SCENARIO_NAV_COUNT: unexplainedDuplicateScenarioNavCount,
+    ADVANCED_INPUT_ALWAYS_VISIBLE_COUNT: advancedAlwaysVisibleCount,
+    SCENARIO_CAPABILITY_LOSS_COUNT: scenarioCapabilityLossCount,
+    MANUAL_BASELINE_OVERRIDES_CANONICAL_TRUTH_COUNT: manualBaselineOverridesCanonicalTruthCount,
+    AMBIGUOUS_BASELINE_MONEY_INPUT_COUNT: ambiguousBaselineMoneyInputCount,
+    COMPANY_SEPARATE_SCENARIO_NAV_ITEM_COUNT: companySeparateScenarioNavCount,
+    ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT: roomSeparateScenarioNavCount,
+    SCENARIO_DEEP_LINK_REGRESSION_COUNT: deepLinkRegressionCount,
+    SCENARIO_CONTEXTUAL_ENTRY_REGRESSION_COUNT: contextualEntryRegressionCount,
+    moneyFieldCount: moneyFields.length,
+    fieldCount: fieldRows.length,
+  };
+}
+
 function main() {
   console.log(`=== #4 ${COST_SCENARIO_FORECAST_MODEL_VERSION} CHECK ===`);
   const packageText = read("package.json");
   const routeText = read("backend/src/routes/costScenario.js");
   const mountText = read("backend/src/bootstrap/routeMounts.js");
   const docsText = read("docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md");
+  const uiText = read("web/src/panels/shared/CostScenarioWorkspacePanel.jsx");
+  const navText = read("web/src/layout/NavDock.jsx");
+  const financialText = read("web/src/panels/shared/FinancialOperationsPanel.jsx");
+  const appText = read("web/src/App.jsx");
+  const forecastText = read("backend/src/finance/costScenarioForecast.js");
   const base = baseInput();
   const same = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const sameAgain = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
@@ -160,6 +248,30 @@ function main() {
   must(!JSON.stringify(same).includes("paymentExecute") && !JSON.stringify(same).includes("accountingPosting"), "scenario output has no payment or posting action");
   must(!JSON.stringify(same).includes("actualInternalData"), "scenario result does not promote internal data through external response");
   must(same.formulaTrace.some((item) => item.includes("operational cost model")), "scenario formula trace names the canonical cost owner");
+
+  const post4Counts = post4HumanUxCounts({ uiText, navText, financialText, appText, forecastText });
+  console.log("=== POST-#4 HUMAN UX SEMANTIC COUNTS ===");
+  for (const [key, value] of Object.entries(post4Counts)) console.log(`${key}=${value}`);
+  for (const key of [
+    "NON_MONEY_FIELD_WITH_CURRENCY_LABEL_COUNT",
+    "WRONG_UNIT_LABEL_COUNT",
+    "MISSING_REQUIRED_UNIT_COUNT",
+    "UNKNOWN_SCENARIO_ENTRY_POINT_COUNT",
+    "UNEXPLAINED_DUPLICATE_SCENARIO_NAV_COUNT",
+    "ADVANCED_INPUT_ALWAYS_VISIBLE_COUNT",
+    "SCENARIO_CAPABILITY_LOSS_COUNT",
+    "MANUAL_BASELINE_OVERRIDES_CANONICAL_TRUTH_COUNT",
+    "AMBIGUOUS_BASELINE_MONEY_INPUT_COUNT",
+    "COMPANY_SEPARATE_SCENARIO_NAV_ITEM_COUNT",
+    "ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT",
+    "SCENARIO_DEEP_LINK_REGRESSION_COUNT",
+    "SCENARIO_CONTEXTUAL_ENTRY_REGRESSION_COUNT",
+  ]) {
+    must(post4Counts[key] === 0, `post-#4 ${key} is zero`);
+  }
+  must(post4Counts.moneyFieldCount > 0 && post4Counts.fieldCount >= 15, "unit taxonomy covers all scenario fields and money fields remain explicit");
+  must(uiText.includes("Gelişmiş varsayımlar") && uiText.includes('data-testid="scenario-advanced-fields"'), "advanced scenario inputs have a named collapsed owner");
+  must(navText.includes('label: "Planlama Senaryosu"') && appText.includes("/school/cost-scenarios") && appText.includes("/organization/cost-scenarios"), "school and organization planning-only scenario route remains distinct");
 
   if (failCount) {
     console.error(`#4 check failed: ${passCount} passed, ${failCount} failed`);

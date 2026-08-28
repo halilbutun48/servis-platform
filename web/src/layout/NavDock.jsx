@@ -130,7 +130,6 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
         title: operationsTitle,
         items: [
           { label: "Finansal Operasyonlar", path: "/room/financial-operations" },
-          { label: "Maliyet Senaryoları", path: "/room/cost-scenarios" },
           { label: "Operasyon Sağlığı", path: "/room/operation-health" },
           { label: "Araçlar", path: "/room/vehicles" },
           { label: "Sürücüler", path: "/room/drivers" },
@@ -156,7 +155,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
         items: [
           { label: companyPlanningHomeLabel, path: base },
           ...(isOrganization ? [{ label: "Organizasyon Planları", path: base + "/plans" }] : []),
-          ...((isSchool || isOrganization) ? [{ label: "Maliyet Senaryoları", path: base + "/cost-scenarios" }] : []),
+          ...((isSchool || isOrganization) ? [{ label: "Planlama Senaryosu", path: base + "/cost-scenarios" }] : []),
           { label: "Vardiyalar", path: base + "/shifts" },
           { label: "Sözleşmeler", path: base + "/agreements" },
         ],
@@ -167,7 +166,6 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
           { label: "Ticari Akış", path: base + "/commercial-flow" },
           { label: "Hizmet Değerlendirme", path: base + "/service-evaluation" },
           { label: financialOperationsLabel, path: base + "/financial-operations" },
-          ...((isCompany) ? [{ label: "Maliyet Senaryoları", path: base + "/cost-scenarios" }] : []),
           { label: "Raporlar", path: base + "/reports" },
         ],
       });
