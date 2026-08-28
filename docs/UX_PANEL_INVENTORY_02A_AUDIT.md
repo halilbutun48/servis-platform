@@ -17,9 +17,9 @@ Tarama kapsamı:
 - `web/src/App.jsx` route/menu bağlantıları
 
 Özet envanter:
-  - `126` panel-related JSX dosyası: `web/src/panels/**/*.jsx` (commercial shift card presentation owner dahil)
-- `63` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
-- `103` gerçek route surface + `/` root redirect ile `104` unique route literal
+  - `127` panel-related JSX dosyası: `web/src/panels/**/*.jsx` (commercial shift card presentation owner dahil)
+- `64` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
+- `107` gerçek route surface + `/` root redirect ile `108` unique route literal
 
 ### Super Admin (20)
 - `/superadmin`
@@ -41,7 +41,7 @@ Tarama kapsamı:
 - `/superadmin/operation-verification`
 - `/superadmin/copilot`
 
-### Room / Oda (14)
+### Room / Oda (15)
 - `/room/reports`
 - `/room/operation-health`
 - `/room/map`
@@ -53,17 +53,19 @@ Tarama kapsamı:
 - `/room/offers`
 - `/room/commercial-flow`
 - `/room/financial-operations`
+- `/room/cost-scenarios`
 - `/room/hub`
 - `/room/checkin`
 - `/room/copilot`
 
-### Company / Firma (15)
+### Company / Firma (16)
 - `/company`
 - `/company/reports`
 - `/company/operations`
 - `/company/map`
 - `/company/commercial-flow`
 - `/company/financial-operations`
+- `/company/cost-scenarios`
 - `/company/shifts`
 - `/company/georeview`
 - `/company/agreements`
@@ -74,13 +76,14 @@ Tarama kapsamı:
 - `/company/service-evaluation`
 - `/company/copilot`
 
-### School (15)
+### School (16)
 - `/school`
 - `/school/reports`
 - `/school/operations`
 - `/school/map`
 - `/school/commercial-flow`
 - `/school/financial-operations`
+- `/school/cost-scenarios`
 - `/school/shifts`
 - `/school/georeview`
 - `/school/agreements`
@@ -91,7 +94,7 @@ Tarama kapsamı:
 - `/school/parents`
 - `/school/copilot`
 
-### Organization (16)
+### Organization (17)
 - `/organization`
 - `/organization/reports`
 - `/organization/operations`
@@ -99,6 +102,7 @@ Tarama kapsamı:
 - `/organization/map`
 - `/organization/commercial-flow`
 - `/organization/financial-operations`
+- `/organization/cost-scenarios`
 - `/organization/shifts`
 - `/organization/georeview`
 - `/organization/agreements`

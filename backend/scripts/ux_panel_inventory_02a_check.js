@@ -102,27 +102,27 @@ function main() {
   mustContains(audit, "4) Her panel için önerilen yapı", "audit has per-panel structure recommendation");
   mustContains(audit, "5) İlk düzeltilecek 5 panel önerisi", "audit has first five recommendation");
   mustContains(audit, "6) Sonraya bırakılacak paneller", "audit has deferred panel section");
-  mustContains(audit, "126", "audit states total panel-related JSX file count");
-  mustContains(audit, "63", "audit states route-backed screen component count");
-  mustContains(audit, "103", "audit states route surface count");
-  mustContains(audit, "104", "audit states unique route literal count");
+  mustContains(audit, "127", "audit states total panel-related JSX file count");
+  mustContains(audit, "64", "audit states route-backed screen component count");
+  mustContains(audit, "107", "audit states route surface count");
+  mustContains(audit, "108", "audit states unique route literal count");
 
   const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
   const routeLiterals = extractRouteLiterals(app);
   const screenImports = extractScreenImports(app);
   const panelFiles = walk(path.join(root, "web/src/panels"));
-  must(panelFiles.length === 126, "panel-related JSX count matches audit");
-  must(screenImports.length === 63, "route-backed screen component count matches audit");
-  must(routeLiterals.length === 104, "unique route literal count matches audit");
-  must(routeLiterals.filter((route) => route !== "/").length === 103, "route surface count excluding root matches audit");
+  must(panelFiles.length === 127, "panel-related JSX count matches audit");
+  must(screenImports.length === 64, "route-backed screen component count matches audit");
+  must(routeLiterals.length === 108, "unique route literal count matches audit");
+  must(routeLiterals.filter((route) => route !== "/").length === 107, "route surface count excluding root matches audit");
 
   const grouped = groupRoutes(routeLiterals.filter((route) => route !== "/"));
   const expectedCounts = {
     "Super Admin": 20,
-    "Room/Oda": 14,
-    "Company/Firma": 15,
-    "School": 15,
-    "Organization": 16,
+    "Room/Oda": 15,
+    "Company/Firma": 16,
+    "School": 16,
+    "Organization": 17,
     "Driver": 7,
     "Parent/Veli": 3,
     "Personel": 3,
@@ -135,10 +135,10 @@ function main() {
 
   const roleHeadings = [
     "Super Admin (20)",
-    "Room / Oda (14)",
-    "Company / Firma (15)",
-    "School (15)",
-    "Organization (16)",
+    "Room / Oda (15)",
+    "Company / Firma (16)",
+    "School (16)",
+    "Organization (17)",
     "Driver (7)",
     "Parent / Veli (3)",
     "Personel (3)",
