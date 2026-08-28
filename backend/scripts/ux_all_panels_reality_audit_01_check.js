@@ -127,8 +127,8 @@ function main() {
     must(summary.stickyHeaderTabIssueCount === 0, "summary keeps sticky header / tab issues at 0");
     must(summary.emptyLoadingErrorUnreadableCount === 0, "summary keeps unreadable empty/loading/error surfaces at 0");
     must(summary.networkErrorCount === 0, "summary keeps network errors at 0");
-    must(summary.primaryActionVisibleCount === 74, "summary keeps 74 visible primary-action rows");
-    must(summary.primaryActionMissingByDesignCount === 8, "summary keeps 8 by-design CTA-light rows");
+    must(summary.primaryActionVisibleCount === 76, "summary keeps 76 visible primary-action rows");
+    must(summary.primaryActionMissingByDesignCount === 6, "summary keeps 6 by-design CTA-light rows");
     must(summary.launcherVisibleAuthCount === 76, "summary keeps launcher visible on all authenticated rows");
     must(summary.driverMobileDrawerRoutes?.length === 0, "summary lists no driver mobile drawer issue rows");
     must(summary.stickyHeaderRoutes?.length === 0, "summary lists no sticky-header rows");
