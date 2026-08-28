@@ -345,6 +345,12 @@ export default function FinancialOperationsCompanyPreview({
 
       {externalReferenceCard}
 
+      {scenarioPanel ? (
+        <div data-testid="company-contextual-scenario">
+          {scenarioPanel}
+        </div>
+      ) : null}
+
       <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={budgetDetailsOpen} onToggle={(event) => setBudgetDetailsOpen(event.currentTarget.open)}>
           <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Bütçe detayları</summary>
@@ -600,7 +606,9 @@ export default function FinancialOperationsCompanyPreview({
 
             <div className="card" style={{ minWidth: 0 }}>
               <div className="panelSectionTitle">Tasarruf senaryoları</div>
-              {scenarioPanel}
+              <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
+                Maliyet Senaryosu çalışma alanı bu bütçe sayfasının üst bölümünde tekil ve görünür olarak sunulur; burada ikinci bir senaryo paneli veya hesaplama yapılmaz.
+              </div>
             </div>
 
             <div className="card" style={{ minWidth: 0 }}>

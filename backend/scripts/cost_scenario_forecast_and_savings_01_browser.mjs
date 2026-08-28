@@ -23,7 +23,7 @@ async function login(identifier) {
   return body.token;
 }
 
-async function visit(browser, { name, identifier, route, mobile = false, fill = false, planningOnly = false }) {
+async function visit(browser, { name, identifier, route, mobile = false, fill = false, planningOnly = false, contextualHome = "" }) {
   const token = await login(identifier);
   const page = await browser.newPage({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: mobile, hasTouch: mobile });
   page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(`${name}: ${message.text()}`); });
@@ -33,13 +33,19 @@ async function visit(browser, { name, identifier, route, mobile = false, fill = 
   await page.goto(`${WEB_BASE_URL}${route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
   await page.getByTestId("cost-scenario-workspace").waitFor({ state: "visible", timeout: 20000 });
   const initialText = await page.getByTestId("cost-scenario-workspace").innerText();
-  record(`${name} scenario surface`, initialText.includes("Sadece önizleme") && initialText.includes("Mevcut planı alternatif"), initialText.slice(0, 180));
+  const contextualVisible = contextualHome
+    ? await page.getByTestId("company-contextual-scenario").isVisible() && (await page.locator("body").innerText()).includes(contextualHome)
+    : true;
+  record(`${name} scenario surface`, initialText.includes("Sadece önizleme") && initialText.includes("Mevcut plan") && initialText.includes("Mevcut planı alternatif") && initialText.includes("Senaryoyu Karşılaştır") && initialText.includes("Gelişmiş varsayımlar") && contextualVisible, initialText.slice(0, 180));
   record(`${name} planning boundary`, planningOnly ? initialText.includes("Planlama bağlamı") && initialText.includes("normal bütçe yaşam döngüsü") : !initialText.includes("Erişim kapalı"));
 
   if (fill) {
     const p = page;
     await p.getByText("Mevcut plan varsayımlarını düzenle", { exact: true }).click();
-    await p.getByText("Alternatif senaryo girdileri", { exact: true }).click();
+    const alternativeInputs = p.getByTestId("scenario-advanced-assumptions");
+    if (!(await alternativeInputs.evaluate((node) => node.open))) {
+      await p.getByText("Alternatif senaryo girdileri", { exact: true }).click();
+    }
     await p.getByText("Gelişmiş varsayımlar", { exact: true }).click();
     const fillField = async (prefix, key, value) => p.getByTestId(`${prefix}-input-${key}`).fill(String(value));
     for (const [key, value] of Object.entries({ vehicleCount: 1, vehicleCapacity: 16, passengerCount: 10, serviceDistanceKm: 100, totalDistanceKm: 100, routeDurationMinutes: 60, serviceDayCount: 10, shiftCount: 10, tripCount: 10, fuelConsumptionLitersPer100Km: 10, fuelUnitPriceMinor: 4000, driverBasePerShiftMinor: 10000, maintenancePerKmMinor: 100 })) await fillField("baseline", key, value);
@@ -59,7 +65,7 @@ async function main() {
   console.log("=== COST-SCENARIO-FORECAST-AND-SAVINGS-01 BROWSER SMOKE ===");
   const browser = await chromium.launch({ headless: true });
   try {
-    await visit(browser, { name: "COMPANY desktop", identifier: "company@demo.com", route: "/#/company/cost-scenarios", fill: true });
+    await visit(browser, { name: "COMPANY budget contextual desktop", identifier: "company@demo.com", route: "/#/company/financial-operations", contextualHome: "Bütçe ve Servis Maliyeti", fill: true });
     await visit(browser, { name: "ROOM mobile", identifier: "room@demo.com", route: "/#/room/cost-scenarios", mobile: true, fill: true });
     await visit(browser, { name: "SCHOOL planning", identifier: "school@demo.com", route: "/#/school/cost-scenarios", planningOnly: true });
     await visit(browser, { name: "ORGANIZATION planning", identifier: "organization@demo.com", route: "/#/organization/cost-scenarios", planningOnly: true });

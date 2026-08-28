@@ -276,7 +276,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         </div>
       </div>
 
-      <details className="card" data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }}>
+      <details className="card" data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }} open>
         <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Alternatif senaryo girdileri</summary>
         <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Değiştirmek istemediğiniz alanlar mevcut plan değerleriyle karşılaştırılır. Boş kalan kritik veriler sonuçta Eksik Veri olarak gösterilir.</div>
         <div style={{ marginTop: 12 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={PRIMARY_FIELD_CONFIG} /></div>

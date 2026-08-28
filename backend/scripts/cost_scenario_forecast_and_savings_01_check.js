@@ -91,7 +91,7 @@ function countOccurrences(text, pattern) {
   return [...String(text || "").matchAll(pattern)].length;
 }
 
-function post4HumanUxCounts({ uiText, navText, financialText, appText, forecastText }) {
+function post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText, appText, forecastText }) {
   const fieldRows = [...uiText.matchAll(/\{ key: "([^"]+)", label: "([^"]+)", [^}]*unit: "([^"]+)"[^}]*classification: "([^"]+)"/g)]
     .map((match) => ({ key: match[1], label: match[2], unit: match[3], classification: match[4] }));
   const expectedLabelUnits = {
@@ -125,7 +125,7 @@ function post4HumanUxCounts({ uiText, navText, financialText, appText, forecastT
   }).length;
   const requiredUnits = ["(adet)", "(kişi)", "(km)", "(gün)", "(dk)", "(durak)", "(sefer)", "(yolculuk)", "(L/100 km)"];
   const missingRequiredUnitCount = requiredUnits.filter((unit) => !uiText.includes(unit)).length;
-  const advancedAlwaysVisibleCount = countOccurrences(uiText, /<details className="card" data-testid="scenario-advanced-assumptions"[^>]*\bopen\b/g);
+  const advancedAlwaysVisibleCount = countOccurrences(uiText, /<details data-testid="scenario-advanced-fields"[^>]*\bopen\b/g);
   const scenarioCapabilityLossCount = [
     "vehicleType", "vehicleCount", "vehicleCapacity", "passengerCount", "stopCount", "serviceDistanceKm",
     "totalDistanceKm", "routeDurationMinutes", "serviceDayCount", "shiftCount", "tripCount",
@@ -147,6 +147,26 @@ function post4HumanUxCounts({ uiText, navText, financialText, appText, forecastT
     financialText.includes('preferredScopeTitle("COMPANY")'),
     financialText.includes('CostScenarioWorkspacePanel'),
   ].every(Boolean) ? 0 : 1;
+  const companyContextualScenarioVisibleCount = [
+    companyPreviewText.includes('data-testid="company-contextual-scenario"'),
+    companyPreviewText.includes("{scenarioPanel}"),
+    companyPreviewText.indexOf('data-testid="company-contextual-scenario"') < companyPreviewText.indexOf("<details className=\"card\" style={{ minWidth: 0 }} open={budgetDetailsOpen}"),
+  ].every(Boolean) ? 1 : 0;
+  const companyContextualScenarioMissingCount = companyContextualScenarioVisibleCount === 1 ? 0 : 1;
+  const roomContextualScenarioVisibleCount = financialText.includes('<CostScenarioWorkspacePanel scope="ROOM" embedded />') ? 1 : 0;
+  const duplicateScenarioCalculationCount = [
+    countOccurrences(uiText, /postCostScenarioPreview/g) === 2,
+    !financialText.includes("postCostScenarioPreview"),
+    !companyPreviewText.includes("postCostScenarioPreview"),
+  ].every(Boolean) ? 0 : 1;
+  const scenarioLiveMutationCount = [
+    uiText.includes("Sadece önizleme"),
+    uiText.includes("Canlı vardiya"),
+    uiText.includes("Senaryo kaydı oluşturulmaz"),
+    !uiText.includes("updateCostScenario"),
+    !uiText.includes("saveCostScenario"),
+    !uiText.includes("applyCostScenario"),
+  ].every(Boolean) ? 0 : 1;
   const manualBaselineOverridesCanonicalTruthCount = uiText.includes("mevcut planın gerçek veya kanonik planlanan maliyetini değiştirmez") &&
     forecastText.indexOf("buildOperationalCostModel") < forecastText.indexOf("buildAnchorAmount") ? 0 : 1;
   const ambiguousBaselineMoneyInputCount = uiText.includes("Mevcut plan maliyet tabanı (₺)") || uiText.includes("Varsa güvenli tutar") ? 1 : 0;
@@ -165,6 +185,11 @@ function post4HumanUxCounts({ uiText, navText, financialText, appText, forecastT
     ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT: roomSeparateScenarioNavCount,
     SCENARIO_DEEP_LINK_REGRESSION_COUNT: deepLinkRegressionCount,
     SCENARIO_CONTEXTUAL_ENTRY_REGRESSION_COUNT: contextualEntryRegressionCount,
+    COMPANY_CONTEXTUAL_SCENARIO_VISIBLE_COUNT: companyContextualScenarioVisibleCount,
+    COMPANY_CONTEXTUAL_SCENARIO_MISSING_COUNT: companyContextualScenarioMissingCount,
+    ROOM_CONTEXTUAL_SCENARIO_VISIBLE_COUNT: roomContextualScenarioVisibleCount,
+    DUPLICATE_SCENARIO_CALCULATION_COUNT: duplicateScenarioCalculationCount,
+    SCENARIO_LIVE_MUTATION_COUNT: scenarioLiveMutationCount,
     moneyFieldCount: moneyFields.length,
     fieldCount: fieldRows.length,
   };
@@ -179,8 +204,10 @@ function main() {
   const uiText = read("web/src/panels/shared/CostScenarioWorkspacePanel.jsx");
   const navText = read("web/src/layout/NavDock.jsx");
   const financialText = read("web/src/panels/shared/FinancialOperationsPanel.jsx");
+  const companyPreviewText = read("web/src/panels/shared/FinancialOperationsCompanyPreview.jsx");
   const appText = read("web/src/App.jsx");
   const forecastText = read("backend/src/finance/costScenarioForecast.js");
+  const browserText = read("backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs");
   const base = baseInput();
   const same = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const sameAgain = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
@@ -249,7 +276,7 @@ function main() {
   must(!JSON.stringify(same).includes("actualInternalData"), "scenario result does not promote internal data through external response");
   must(same.formulaTrace.some((item) => item.includes("operational cost model")), "scenario formula trace names the canonical cost owner");
 
-  const post4Counts = post4HumanUxCounts({ uiText, navText, financialText, appText, forecastText });
+  const post4Counts = post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText, appText, forecastText });
   console.log("=== POST-#4 HUMAN UX SEMANTIC COUNTS ===");
   for (const [key, value] of Object.entries(post4Counts)) console.log(`${key}=${value}`);
   for (const key of [
@@ -266,12 +293,19 @@ function main() {
     "ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT",
     "SCENARIO_DEEP_LINK_REGRESSION_COUNT",
     "SCENARIO_CONTEXTUAL_ENTRY_REGRESSION_COUNT",
+    "COMPANY_CONTEXTUAL_SCENARIO_MISSING_COUNT",
+    "DUPLICATE_SCENARIO_CALCULATION_COUNT",
+    "SCENARIO_LIVE_MUTATION_COUNT",
   ]) {
     must(post4Counts[key] === 0, `post-#4 ${key} is zero`);
   }
+  must(post4Counts.COMPANY_CONTEXTUAL_SCENARIO_VISIBLE_COUNT === 1, "post-#4 COMPANY_CONTEXTUAL_SCENARIO_VISIBLE_COUNT is one");
+  must(post4Counts.ROOM_CONTEXTUAL_SCENARIO_VISIBLE_COUNT === 1, "post-#4 ROOM_CONTEXTUAL_SCENARIO_VISIBLE_COUNT is one");
   must(post4Counts.moneyFieldCount > 0 && post4Counts.fieldCount >= 15, "unit taxonomy covers all scenario fields and money fields remain explicit");
   must(uiText.includes("Gelişmiş varsayımlar") && uiText.includes('data-testid="scenario-advanced-fields"'), "advanced scenario inputs have a named collapsed owner");
   must(navText.includes('label: "Planlama Senaryosu"') && appText.includes("/school/cost-scenarios") && appText.includes("/organization/cost-scenarios"), "school and organization planning-only scenario route remains distinct");
+  must(browserText.includes('route: "/#/company/financial-operations"') && browserText.includes('contextualHome: "Bütçe ve Servis Maliyeti"'), "browser acceptance opens the actual COMPANY budget surface");
+  must(browserText.includes('page.getByTestId("company-contextual-scenario").isVisible()') && browserText.includes('Senaryoyu Karşılaştır'), "browser acceptance proves the visible COMPANY contextual scenario contract");
 
   if (failCount) {
     console.error(`#4 check failed: ${passCount} passed, ${failCount} failed`);
