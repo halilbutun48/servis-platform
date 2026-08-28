@@ -5,6 +5,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import { buildSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
+import {
+  revealFirstVisibleShiftCardDetails,
+  revealFirstVisibleShiftOtherActions,
+  waitForShiftCardContent,
+} from "./lib/productFlowShiftSmoke.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -278,46 +283,6 @@ async function firstVisibleButtonByText(page, needle) {
     if (text === target || text.includes(target)) return candidate;
   }
   return null;
-}
-
-async function revealFirstVisibleShiftCardDetails(page) {
-  const summaries = page.locator("summary");
-  const deadline = Date.now() + 3500;
-  while (Date.now() < deadline) {
-    const count = await summaries.count().catch(() => 0);
-    for (let i = 0; i < count; i += 1) {
-      const summary = summaries.nth(i);
-      const visible = await summary.isVisible({ timeout: 1200 }).catch(() => false);
-      const label = normalize(await summary.innerText().catch(() => ""));
-      if (!visible || label !== normalize("Detayları göster")) continue;
-      await summary.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
-      await summary.click({ timeout: 5000 }).catch(() => {});
-      await page.waitForTimeout(250);
-      return true;
-    }
-    await page.waitForTimeout(150);
-  }
-  return false;
-}
-
-async function revealFirstVisibleShiftOtherActions(page) {
-  const summaries = page.locator("summary");
-  const count = await summaries.count().catch(() => 0);
-  for (let i = 0; i < count; i += 1) {
-    const summary = summaries.nth(i);
-    const visible = await summary.isVisible({ timeout: 1200 }).catch(() => false);
-    const label = normalize(await summary.innerText().catch(() => ""));
-    if (!visible || label !== normalize("Diğer işlemler")) continue;
-    await summary.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
-    await summary.click({ timeout: 5000 }).catch(() => {});
-    await page.waitForTimeout(250);
-    return true;
-  }
-  return false;
-}
-
-async function waitForShiftCardContent(page, timeoutMs = 10000) {
-  await page.locator('[data-testid="commercial-shift-card"]').first().waitFor({ state: "attached", timeout: timeoutMs }).catch(() => {});
 }
 
 async function firstVisiblePanelTab(page, name) {
