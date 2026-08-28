@@ -307,7 +307,7 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/guardGitScope.js",
-    sha256: "7BAA65107857A0A64EF236A130B0E618AD08FC72453928C0A46F243287044EE5",
+    sha256: "2293510B16AABB37453931C32ADC754F5947BE7BED50AFA395E505022C8FB2E1",
   },
   {
     path: "backend/scripts/lib/guardRunnerContracts.js",
