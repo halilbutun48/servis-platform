@@ -360,6 +360,18 @@ export function getExternalCostReference(token, params = {}, { signal, force = f
   return cachedGet(`/api/external-cost-references${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
 }
 
+export function getCostScenarioBaseline(token, scope = "COMPANY", params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
+  return cachedGet(`/api/cost-scenarios/baseline${buildQueryString({ ...params, scope })}`, { token, signal, force, ttlMs, delayMs });
+}
+
+export async function postCostScenarioPreview(payload = {}, { token } = {}) {
+  return api("/api/cost-scenarios/preview", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
 export function getCurrentCompanyBudgetPlan(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
   return cachedGet(`/api/company/overview/financial-operations/budget-plans/current${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
 }

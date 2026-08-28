@@ -117,6 +117,12 @@ function main() {
   const opCostHelper = read('backend/src/finance/operationalCostModel.js');
   const opCostMathHelper = read('backend/src/finance/operationalCostMath.js');
   const opCostCheck = read('backend/scripts/operational_cost_model_01_check.js');
+  const scenarioDoc = read('docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md');
+  const scenarioHelper = read('backend/src/finance/costScenarioForecast.js');
+  const scenarioRoute = read('backend/src/routes/costScenario.js');
+  const scenarioCheck = read('backend/scripts/cost_scenario_forecast_and_savings_01_check.js');
+  const scenarioAcceptance = read('backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs');
+  const scenarioBrowser = read('backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs');
   const shiftToAgreementCheck = read('backend/scripts/copilot_shift_to_agreement_prep_01_check.js');
   const dispatchActionPrepCheck = read('backend/scripts/copilot_dispatch_action_prep_01_check.js');
   const actionPrepCheck = read('backend/scripts/copilot_action_prep_01_check.js');
@@ -173,6 +179,7 @@ function main() {
   must(pkg, '"check:operationalcostmodel01": "node backend/scripts/operational_cost_model_01_check.js"', 'package.json exposes check:operationalcostmodel01');
   must(pkg, '"check:roomprofitabilityandquotefloor01": "node backend/scripts/room_profitability_and_quote_floor_01_check.js"', 'package.json exposes check:roomprofitabilityandquotefloor01');
   must(pkg, '"check:companybudgetandservicecost01": "node backend/scripts/company_budget_and_service_cost_01_check.js"', 'package.json exposes check:companybudgetandservicecost01');
+  must(pkg, '"check:costscenarioforecastandsavings01": "node backend/scripts/cost_scenario_forecast_and_savings_01_check.js"', 'package.json exposes check:costscenarioforecastandsavings01');
   must(pkg, '"check:uxmarketplacepanels01": "node backend/scripts/ux_marketplace_panels_01_check.js"', 'package.json exposes check:uxmarketplacepanels01');
   must(pkg, '"check:productflowbuttonaudit01": "node backend/scripts/product_flow_button_audit_01_check.js"', 'package.json exposes check:productflowbuttonaudit01');
   must(pkg, '"check:agreementsourceshiftlineage01": "node backend/scripts/agreement_source_shift_lineage_01_check.js"', 'package.json exposes check:agreementsourceshiftlineage01');
@@ -367,6 +374,10 @@ function main() {
   must(harnessDoc, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'script harness doc lists company budget doc');
   must(harnessDoc, 'node backend\\scripts\\company_budget_and_service_cost_01_check.js', 'script harness doc lists company budget command');
   must(harnessDoc, 'backend/src/finance/companyBudgetAndServiceCost.js', 'script harness doc lists company budget helper');
+  must(harnessCheck, 'cost_scenario_forecast_and_savings_01_check.js', 'script harness check knows cost scenario check file');
+  must(harnessDoc, 'root:check:costscenarioforecastandsavings01', 'script harness doc lists cost scenario root check');
+  must(harnessDoc, 'COST-SCENARIO-FORECAST-AND-SAVINGS-01', 'script harness doc lists cost scenario milestone');
+  must(harnessDoc, 'docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md', 'script harness doc lists cost scenario doc');
   must(harnessCheck, 'check:uxmarketplacepanels01', 'script harness check knows marketplace panels alias');
   must(harnessCheck, 'ux_marketplace_panels_01_check.js', 'script harness check knows marketplace panels file');
   must(harnessCheck, 'UX-MARKETPLACE-PANELS-01', 'script harness check knows marketplace panels milestone');
@@ -732,8 +743,14 @@ function main() {
   must(roadmap, 'check:companybudgetandservicecost01', 'roadmap exposes company budget/service cost check');
   must(roadmap, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'roadmap links company budget/service cost doc');
   must(roadmap, 'backend/src/finance/companyBudgetAndServiceCost.js', 'roadmap links company budget/service cost helper');
+  must(roadmap, 'COST-SCENARIO-FORECAST-AND-SAVINGS-01', 'roadmap keeps cost scenario forecast milestone');
+  must(roadmap, 'check:costscenarioforecastandsavings01', 'roadmap exposes cost scenario forecast check');
+  must(roadmap, 'docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md', 'roadmap links cost scenario forecast doc');
+  must(roadmap, 'backend/src/finance/costScenarioForecast.js', 'roadmap links cost scenario forecast helper');
+  must(roadmap, 'backend/src/routes/costScenario.js', 'roadmap links cost scenario route');
   ordered(roadmap, ['COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01'], 'roadmap keeps dispatch prep before action prep and action prep before financial operations');
   ordered(roadmap, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01', 'COMPANY-BUDGET-AND-SERVICE-COST-01'], 'roadmap keeps finance milestones in order');
+  ordered(roadmap, ['COMPANY-BUDGET-AND-SERVICE-COST-01', 'HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01', 'COST-SCENARIO-FORECAST-AND-SAVINGS-01'], 'roadmap keeps #4 after #3');
   must(repoAuditText, 'check:financialoperationssurfaceandrbac01', 'repo audit roadmap exposes financial operations check');
   must(repoAuditText, 'docs/FINANCIAL_OPERATIONS_SURFACE_AND_RBAC_01.md', 'repo audit roadmap links financial operations doc');
   must(repoAuditText, 'backend/src/finance/financialOperationsScope.js', 'repo audit roadmap links financial operations helper');
@@ -750,7 +767,12 @@ function main() {
   must(repoAuditText, 'check:companybudgetandservicecost01', 'repo audit roadmap exposes company budget/service cost check');
   must(repoAuditText, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'repo audit roadmap links company budget/service cost doc');
   must(repoAuditText, 'backend/src/finance/companyBudgetAndServiceCost.js', 'repo audit roadmap links company budget/service cost helper');
+  must(repoAuditText, 'COST-SCENARIO-FORECAST-AND-SAVINGS-01', 'repo audit roadmap mentions cost scenario forecast milestone');
+  must(repoAuditText, 'check:costscenarioforecastandsavings01', 'repo audit roadmap exposes cost scenario forecast check');
+  must(repoAuditText, 'docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md', 'repo audit roadmap links cost scenario forecast doc');
+  must(repoAuditText, 'backend/src/finance/costScenarioForecast.js', 'repo audit roadmap links cost scenario forecast helper');
   ordered(repoAuditText, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'repo audit keeps finance milestones in order');
+  ordered(repoAuditText, ['COMPANY-BUDGET-AND-SERVICE-COST-01', 'HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01', 'COST-SCENARIO-FORECAST-AND-SAVINGS-01'], 'repo audit keeps #4 after #3');
   must(offerAnalysisDoc, 'COPILOT-OFFER-ANALYSIS-01', 'offer analysis doc keeps milestone wording');
   must(offerAnalysisDoc, 'check:copilotofferanalysis01', 'offer analysis doc keeps canonical check wording');
   must(offerAnalysisHelper, 'COPILOT_OFFER_ANALYSIS_VERSION', 'offer analysis helper exports version');
@@ -852,6 +874,10 @@ function main() {
   must(primer, 'COMPANY-BUDGET-AND-SERVICE-COST-01', 'primer mentions company budget/service cost milestone');
   must(primer, 'check:companybudgetandservicecost01', 'primer exposes company budget/service cost check');
   must(primer, 'docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md', 'primer links company budget/service cost doc');
+  must(primer, 'COST-SCENARIO-FORECAST-AND-SAVINGS-01', 'primer mentions cost scenario forecast milestone');
+  must(primer, 'check:costscenarioforecastandsavings01', 'primer exposes cost scenario forecast check');
+  must(primer, 'docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md', 'primer links cost scenario forecast doc');
+  must(primer, 'backend/src/finance/costScenarioForecast.js', 'primer links cost scenario forecast helper');
   must(primer, 'backend/src/finance/companyBudgetAndServiceCost.js', 'primer links company budget/service cost helper');
   must(primer, 'COPILOT-HUMAN-APPROVAL-01', 'primer mentions human approval milestone');
   must(primer, 'check:copilothumanapproval01', 'primer exposes human approval check');
@@ -861,6 +887,7 @@ function main() {
   must(primer, 'docs/COPILOT_EXCEL_DEMAND_IMPORT_01.md', 'primer links Excel demand import doc');
   ordered(primer, ['COPILOT-ROLE-TASK-MATRIX-01', 'COPILOT-AI-ACTION-ROADMAP-01', 'COPILOT-DEMAND-INTAKE-01', 'COPILOT-DEMAND-TO-AGREEMENT-ROADMAP-01', 'COPILOT-RFQ-PREP-01', 'COPILOT-OFFER-ANALYSIS-01', 'COPILOT-NEGOTIATION-ASSIST-01', 'COPILOT-OFFER-RECOMMENDATION-01', 'COPILOT-SHIFT-TO-AGREEMENT-PREP-01', 'COPILOT-DISPATCH-ACTION-PREP-01', 'COPILOT-ACTION-PREP-01', 'FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'COPILOT-HUMAN-APPROVAL-01', 'COPILOT-EXCEL-DEMAND-IMPORT-01'], 'primer keeps action prep between dispatch prep and human approval');
   ordered(primer, ['FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01', 'OPERATIONAL-COST-MODEL-01', 'ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01'], 'primer keeps finance milestones in order');
+  ordered(primer, ['COMPANY-BUDGET-AND-SERVICE-COST-01', 'HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01', 'COST-SCENARIO-FORECAST-AND-SAVINGS-01'], 'primer keeps #4 after #3');
   must(aiRoadmap, 'SEFER-ABI-REASONING-ASSISTANT-01', 'AI action roadmap references reasoning assistant milestone');
   must(aiRoadmap, 'SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01', 'AI action roadmap references all-roles reasoning assistant milestone');
   must(aiRoadmap, 'COPILOT-REASONING-ANSWER-COMPOSER-01', 'AI action roadmap references reasoning answer composer milestone');
@@ -1565,6 +1592,25 @@ function main() {
   must(backlog, 'VERIFY-CHAIN-01', 'backlog keeps VERIFY-CHAIN-01 visible');
   must(backlog, 'P0:', 'backlog keeps P0 section');
   must(backlog, 'DOCS-STATE-01 sonrası resmi sonraki ürün sırası', 'backlog keeps next-product wording');
+
+  must(guide, 'COST-SCENARIO-FORECAST-AND-SAVINGS-01', 'script guide mentions cost scenario forecast milestone');
+  must(guide, 'check:costscenarioforecastandsavings01', 'script guide exposes cost scenario forecast check');
+  must(guide, 'docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md', 'script guide includes cost scenario forecast doc');
+  must(guide, 'node backend\\scripts\\cost_scenario_forecast_and_savings_01_check.js', 'script guide includes cost scenario forecast command');
+  must(scenarioDoc, 'COST-SCENARIO-FORECAST-AND-SAVINGS-01', 'cost scenario doc keeps milestone title');
+  must(scenarioDoc, 'check:costscenarioforecastandsavings01', 'cost scenario doc keeps canonical check');
+  must(scenarioDoc, 'accept:costscenarioforecastandsavings01', 'cost scenario doc keeps API/DB acceptance');
+  must(scenarioDoc, 'smoke:costscenarioforecastandsavings01', 'cost scenario doc keeps browser acceptance');
+  must(scenarioDoc, 'ephemeral', 'cost scenario doc keeps ephemeral boundary');
+  must(scenarioHelper, 'COST_SCENARIO_FORECAST_MODEL_VERSION', 'cost scenario helper exports model version');
+  must(scenarioHelper, 'buildOperationalCostModel', 'cost scenario helper reuses canonical operational cost model');
+  must(scenarioHelper, 'notPostedToAccounting', 'cost scenario helper keeps accounting write boundary');
+  must(scenarioRoute, '/baseline', 'cost scenario route exposes baseline endpoint');
+  must(scenarioRoute, '/preview', 'cost scenario route exposes preview endpoint');
+  must(scenarioRoute, 'SCENARIO_TENANT_MISMATCH', 'cost scenario route keeps tenant mismatch guard');
+  must(scenarioCheck, '#4 check passed:', 'cost scenario check keeps pass marker');
+  must(scenarioAcceptance, 'domainFingerprint', 'cost scenario acceptance fingerprints domain rows');
+  must(scenarioBrowser, 'COST-SCENARIO-FORECAST-AND-SAVINGS-01', 'cost scenario browser smoke keeps milestone marker');
 
   console.log('=== VERIFY-CHAIN-01 PRODUCT EXTENSIONS CHECK PASS ===');
 }

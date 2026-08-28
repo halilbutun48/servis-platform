@@ -61,6 +61,11 @@
   - amac: provider-bağımsız dış maliyet/referans veri sözleşmesi, provenance, freshness, cache, retry/fallback ve güvenli okuma/import sınırını kurmak; gerçek provider edinimi sonraki entegrasyon kapsamındadır
   - komut: `npm run check:externalcostdataproviderfreshness01`
   - kural: `INTERNAL_ACTUAL`, `EXTERNAL_REFERENCE` ve `DEMO_FIXTURE` ayrıdır; dış referans #1'in gerçek maliyet verisinin yerine geçmez
+- `#4 COST-SCENARIO-FORECAST-AND-SAVINGS-01 - active execution`
+  - amaç: mevcut plan ile alternatif araç/kapasite/yolcu/mesafe/süre/hizmet günü/yakıt varsayımlarını açıklanabilir tasarruf veya ek maliyet preview'ı olarak karşılaştırmak
+  - sahipler: `backend/src/finance/costScenarioForecast.js`, `backend/src/routes/costScenario.js`, `web/src/panels/shared/CostScenarioWorkspacePanel.jsx`
+  - komutlar: `npm run check:costscenarioforecastandsavings01`, `npm run accept:costscenarioforecastandsavings01`, `npm run smoke:costscenarioforecastandsavings01`
+  - kural: operational cost model tek hesap sahibidir; scenario ephemeral'dır, canlı veri ve finansal lifecycle yazmaz; #5 başlatılmaz
 
 ## 3.1) Son kapanan ürün hatları [green / closed]
 - `WEB-01A - green/closed`

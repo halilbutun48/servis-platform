@@ -7,6 +7,9 @@
 ## Aktif hat
 - #3 `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01` aktif ürün hattıdır; canonical contract: `docs/HAKEDIS_INVOICE_RECONCILIATION_PREVIEW_01.md`.
 - #3 saf kontrolü: `npm run check:hakedisinvoicereconciliationpreview01`; gerçek API/DB kabulü: `npm run accept:hakedisinvoicereconciliationpreview01`.
+- #4 `COST-SCENARIO-FORECAST-AND-SAVINGS-01` current ürün hattıdır; canonical contract: `docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md`.
+- #4 saf kontrolü: `npm run check:costscenarioforecastandsavings01`; gerçek API/DB kabulü: `npm run accept:costscenarioforecastandsavings01`; browser kabulü: `npm run smoke:costscenarioforecastandsavings01`.
+- #4 senaryo çıktısı ephemeral preview'dır; DB/audit/live shift/route/vehicle assignment/bütçe/hakediş/fatura/ödeme/muhasebe yazmaz.
 - Güncel doğrulanmış baz: `M89`
 - Tarihsel tam master anchor: `M79`
 - Yaşayan repo hattı: `M80`, `M80.1`, `M80.2`, `M80.3`, `M81`, `M82.1`, `M82.8`, `M82.9`, `M82.10`, `M82.11`, `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`

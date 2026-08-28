@@ -5,12 +5,12 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `436`
-- Toplam executable tracked file: `1306`
-- Combined registry row: `1742`
-- Root/backend/web/mobile package dağılımı: root `271`, backend `870`, web `97`, mobile `201`
+- Toplam package script entry: `439`
+- Toplam executable tracked file: `1311`
+- Combined registry row: `1750`
+- Root/backend/web/mobile package dağılımı: root `274`, backend `875`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
-- Docs indexed: `68`
+- Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
 - UX preview milestones: `UX-ROUTE-IMPACT-PREVIEW-COMPACT-01` -> `UX-LIVE-PANEL-COVERAGE-MATRIX-01` -> `UX-SMOKE-PASS-MINUS-EVIDENCE-01` -> `UX-SMOKE-PASS-MINUS-ZERO-01` -> `UX-PREMIUM-CRITICAL-UXFIX-CLEANUP-01` -> `UX-LIVE-PANEL-PREMIUM-SMOKE-01`
 - UX preview docs: `docs/UX_ROUTE_IMPACT_PREVIEW_COMPACT_01.md`, `docs/UX_LIVE_PANEL_SMOKE_AUDIT_01.md`, `docs/UX_MOBILE_ALL_ROLES_PANEL_AUDIT_01.md`, `docs/UX_SMOKE_PASS_MINUS_EVIDENCE_01.md`, `docs/UX_SMOKE_PASS_MINUS_ZERO_01.md`, `docs/UX_LIVE_PANEL_PREMIUM_SMOKE_01.md`
@@ -203,6 +203,12 @@ Repo: `servis-platform`
 - Company budget/service cost docs: `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`
 - Company budget/service cost command: `node backend\scripts\company_budget_and_service_cost_01_check.js`
 - Company budget/service cost helper: `backend/src/finance/companyBudgetAndServiceCost.js`
+- Cost scenario forecast and savings milestone: `COST-SCENARIO-FORECAST-AND-SAVINGS-01`
+- Cost scenario forecast and savings check: `check:costscenarioforecastandsavings01`
+- Cost scenario forecast and savings docs: `docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md`
+- Cost scenario forecast and savings command: `node backend\scripts\cost_scenario_forecast_and_savings_01_check.js`
+- Cost scenario forecast and savings helper: `backend/src/finance/costScenarioForecast.js`
+- Cost scenario forecast and savings route: `backend/src/routes/costScenario.js`
 - Marketplace panels milestone: `UX-MARKETPLACE-PANELS-01`
 - Marketplace panels check: `check:uxmarketplacepanels01`
 - Marketplace panels docs: `docs/UX_MARKETPLACE_PANELS_01.md`
@@ -373,7 +379,7 @@ Repo: `servis-platform`
 - Public lead audit smoke: `smoke:productflowbuttonaudit01`
 - Public lead audit commands: `node backend\scripts\product_flow_button_audit_01_check.js`, `node backend\scripts\product_flow_button_audit_01.mjs`
 - ACTIVE: `388`
-- ACTIVE_CORE: `202`
+- ACTIVE_CORE: `204`
 - ACTIVE_WEB_LINT: `17`
 - ACTIVE_BACKEND_LINT: `2`
 - MANUAL_SMOKE: `10`
@@ -389,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `734`
+- NEEDS_REVIEW: `740`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `363`
+- Eski sistem term eşleşmesi: `364`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -403,14 +409,14 @@ Repo: `servis-platform`
 | --- | --- |
 | ACTIVE | 388 |
 | ACTIVE_BACKEND_LINT | 2 |
-| ACTIVE_CORE | 202 |
+| ACTIVE_CORE | 204 |
 | ACTIVE_RELEASE_ONLY | 275 |
 | ACTIVE_WEB_LINT | 17 |
 | ARCHIVED | 31 |
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 734 |
+| NEEDS_REVIEW | 740 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -475,8 +481,11 @@ Repo: `servis-platform`
 | root:check:financialoperationssurfaceandrbac01 | package.json | root | node backend/scripts/financial_operations_surface_and_rbac_01_check.js | verify-core | ACTIVE_CORE |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Breaks canonical verification chain |  |
 | root:check:operationalcostmodel01 | package.json | root | node backend/scripts/operational_cost_model_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-OPERATIONALCOSTMODEL-01 |  | Breaks canonical verification chain |  |
 | root:check:externalcostdataproviderfreshness01 | package.json | root | node backend/scripts/external_cost_data_provider_freshness_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-EXTERNALCOSTDATAPROVIDERFRESHNESS-01 |  | Owner or chain unclear |  |
+| root:check:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_check.js | verify-core | ACTIVE_CORE |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Breaks canonical verification chain |  |
+| root:accept:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
+| root:smoke:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
-| root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Owner or chain unclear |  |
+| root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Breaks canonical verification chain |  |
 | root:check:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
 | root:accept:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
 | root:smoke:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
@@ -1573,6 +1582,11 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:guardv2standardization01, root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| cost_scenario_forecast_and_savings_01_check.js | backend/scripts/cost_scenario_forecast_and_savings_01_check.js | backend | root:check:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
+| cost_scenario_forecast_and_savings_01_acceptance.mjs | backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | backend | root:accept:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
+| cost_scenario_forecast_and_savings_01_browser.mjs | backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | backend | root:smoke:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
+| costScenarioForecast.js | backend/src/finance/costScenarioForecast.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST |  | Owner or chain unclear |  |
+| costScenario.js | backend/src/routes/costScenario.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |
@@ -1602,7 +1616,7 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web | root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
@@ -2592,12 +2606,3 @@ Repo: `servis-platform`
 - Invite membership doc: `docs/INVITE_BASED_MEMBERSHIP_01.md`
 - Safe cleanup bu turda yalnızca saf alias wrapper dosyalarında yapıldı.
 - Legacy alias girişleri docs ve chain referansları nedeniyle korunuyor.
-
-## 15) POST-#3 IDENTITY AND EVIDENCE LIFECYCLE
-
-- Canonical Prisma schema identity owner: `backend/scripts/lib/prismaSchemaIdentity.js`.
-- Raw-byte and UTF-8/LF-normalized schema identities are explicit projections of the same reviewed `backend/prisma/schema.prisma`; migration manifest identities remain consumer-specific.
-- Focused transition proof: `node backend/scripts/post_3_identity_and_evidence_lifecycle_hardening_01_check.js`.
-- Browser smoke reports retain `gitHead` as execution provenance and use `testedProductInputIdentitySha256` for the exact product/runtime/UI/test input fingerprint.
-- Only the exact quartet checker paths, named registry metadata, and the named canonical documentation owners may reuse evidence across a HEAD-only change; product, backend, auth/RBAC, Prisma, runner, fixture, and unknown changes fail closed.
-- #3 reconciliation browser evidence remains an explicit `PLAYWRIGHT_RESPONSE_FIXTURE_ONLY` artifact and is not promoted to product truth or coupled to the quartet provenance contract.

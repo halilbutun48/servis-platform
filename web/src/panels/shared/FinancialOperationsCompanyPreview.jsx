@@ -198,6 +198,7 @@ export default function FinancialOperationsCompanyPreview({
   budgetActionErr,
   budgetActionOk,
   externalReferenceCard,
+  scenarioPanel,
   formatBps,
   INPUT_STYLE,
 }) {
@@ -599,9 +600,7 @@ export default function FinancialOperationsCompanyPreview({
 
             <div className="card" style={{ minWidth: 0 }}>
               <div className="panelSectionTitle">Tasarruf senaryoları</div>
-              <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-                Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz tahmin veya tasarruf hesabı yapılmıyor.
-              </div>
+              {scenarioPanel}
             </div>
 
             <div className="card" style={{ minWidth: 0 }}>

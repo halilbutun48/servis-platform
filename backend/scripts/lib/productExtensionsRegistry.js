@@ -35,6 +35,7 @@ export const productExtensionsCheckScripts = Object.freeze([
   "check:roomprofitabilityandquotefloor01",
   "check:companybudgetandservicecost01",
   "check:hakedisinvoicereconciliationpreview01",
+  "check:costscenarioforecastandsavings01",
   "check:uxmarketplacepanels01",
   "check:productflowbuttonaudit01",
   "check:agreementsourceshiftlineage01",

@@ -476,6 +476,7 @@ Kullanılmayacak cümleler:
 - ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01`: `check:roomprofitabilityandquotefloor01`, `docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md` ve `backend/src/finance/roomProfitabilityAndQuoteFloor.js` ile yaşar; room profitability, quote floor ve company budget preview katmanını yeniden kullanır.
 - `COMPANY-BUDGET-AND-SERVICE-COST-01`: `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`, `backend/src/finance/companyBudgetAndServiceCost.js` ve `backend/src/services/financialOperationsLifecycle.js` ile yaşar; company budget lifecycle + service cost preview katmanını bağlar.
+- `COST-SCENARIO-FORECAST-AND-SAVINGS-01`: `check:costscenarioforecastandsavings01`, `docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md`, `backend/src/finance/costScenarioForecast.js` ve `backend/src/routes/costScenario.js` ile yaşar; operational cost model tek hesap sahibidir, sonuç ephemeral preview'dır.
 - Bu blok, mevcut dynamic savings, hakediş önizleme, kalite/komisyon sinyali, payment preview, CSV export ve Sefer Abi maliyet cevaplarını yeniden kullanır; full muhasebe, e-Fatura, e-Defter veya vergi programı değildir.
 - ROOM ve COMPANY yüzeyleri RBAC ile bağlanır; write-action, payment execute, tahsilat, fatura oluşturma, muhasebe kayıt yazma ve provider credential açmaz.
 

@@ -36,6 +36,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 ## 4) Master orchestration
 ### #3 Hakediş/Fatura Mutabakat Önizlemesi
 - Contract: `docs/HAKEDIS_INVOICE_RECONCILIATION_PREVIEW_01.md`
+- #4 Cost Scenario Forecast and Savings: `check:costscenarioforecastandsavings01` -> `backend/scripts/cost_scenario_forecast_and_savings_01_check.js`; contract `docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md`; pure owner `backend/src/finance/costScenarioForecast.js`; API `backend/src/routes/costScenario.js`; UI `web/src/panels/shared/CostScenarioWorkspacePanel.jsx`.
+- #4 gerçek kabulü `accept:costscenarioforecastandsavings01`, browser kabulü `smoke:costscenarioforecastandsavings01`; senaryo ephemeral preview'dır ve `operationalCostModel` dışına ikinci hesap motoru çıkarmaz.
 - Saf davranış kontrolü: `npm run check:hakedisinvoicereconciliationpreview01`
 - Gerçek API + DB kabulü: `npm run accept:hakedisinvoicereconciliationpreview01`
 - Kapsam: dönem-aware, kanıtlı, salt-okunur; ödeme veya muhasebe yazımı yoktur.
@@ -291,6 +293,10 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `OPERATIONAL-COST-MODEL-01` `check:operationalcostmodel01`, `docs/OPERATIONAL_COST_MODEL_01.md`, `backend/src/finance/operationalCostModel.js` ve `backend/src/finance/operationalCostMath.js` ile yaşar; pure deterministic read-only cost modeldir, write-action ve muhasebe/ERP açmaz.
 - `ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01` `check:roomprofitabilityandquotefloor01`, `docs/ROOM_PROFITABILITY_AND_QUOTE_FLOOR_01.md` ve `backend/src/finance/roomProfitabilityAndQuoteFloor.js` ile yaşar; oda kârlılığı ve quote floor preview katmanını reuse eder, write-action ve muhasebe/ERP açmaz.
 - `COMPANY-BUDGET-AND-SERVICE-COST-01` `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`, `backend/src/finance/companyBudgetAndServiceCost.js` ve `backend/src/services/financialOperationsLifecycle.js` ile yaşar; company budget lifecycle + service cost preview katmanını bağlar.
+- `COST-SCENARIO-FORECAST-AND-SAVINGS-01` `check:costscenarioforecastandsavings01`, `docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md`, `backend/src/finance/costScenarioForecast.js` ve `backend/src/routes/costScenario.js` ile yaşar; operational cost model tek hesap sahibidir ve sonuç ephemeral preview'dır.
+- Check script: `node backend\scripts\cost_scenario_forecast_and_savings_01_check.js`
+- Gerçek API/DB kabulü: `node backend\scripts\cost_scenario_forecast_and_savings_01_acceptance.mjs`
+- Browser smoke: `node backend\scripts\cost_scenario_forecast_and_savings_01_browser.mjs`
 - `#2 EXTERNAL-COST-DATA-PROVIDER-AND-FRESHNESS-01` `check:externalcostdataproviderfreshness01`, `docs/EXTERNAL_COST_DATA_PROVIDER_AND_FRESHNESS_01.md`, `backend/src/externalCost/referenceContract.js`, `backend/src/externalCost/providerRegistry.js` ve `backend/src/externalCost/externalCostReferenceService.js` ile yaşar; provider-bağımsız dış referans contract/provenance/freshness/cache/fallback/read-import sınırını kurar, gerçek provider edinimi ve external market source entegrasyonu açmaz.
 
 ### COPILOT-EXCEL-DEMAND-IMPORT-01 [CHECK]

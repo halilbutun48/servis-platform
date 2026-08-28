@@ -34,6 +34,7 @@ import {
   previewStatusTone,
 } from "./financialOperationsPresentation";
 import ExternalReferenceCard from "./ExternalReferenceCard";
+import CostScenarioWorkspacePanel from "./CostScenarioWorkspacePanel";
 
 const INPUT_STYLE = {
   width: "100%",
@@ -589,6 +590,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
             refreshTick={refreshTick}
           />
         )}
+        scenarioPanel={<CostScenarioWorkspacePanel scope="COMPANY" embedded />}
         normalizeText={normalizeText}
         MetricCard={MetricCard}
         ChipRow={ChipRow}
@@ -709,6 +711,8 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         canView={canView}
         refreshTick={refreshTick}
       />
+
+      <CostScenarioWorkspacePanel scope="ROOM" embedded />
 
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={roomDetailsOpen} onToggle={(event) => setRoomDetailsOpen(event.currentTarget.open)}>

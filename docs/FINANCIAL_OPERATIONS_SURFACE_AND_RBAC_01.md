@@ -4,7 +4,7 @@
 - Finansal Operasyon ve Maliyet Yönetimi bloğu için resmi scope registry.
 - FINANCIAL OPERATIONS AND COST MANAGEMENT: ROOM için read-only/preview, COMPANY için lifecycle + preview yüzeyi; muhasebe programı değildir.
 - Bu milestone maliyet motoru yazmaz, kârlılık hesaplaması yazmaz ve muhasebe programı açmaz.
-- Amaç, ROOM ve COMPANY yüzeylerini preview/lifecycle/RBAC sınırında bağlamaktır.
+- Amaç, ROOM ve COMPANY yüzeylerini preview/lifecycle/RBAC sınırında bağlamak ve #4 maliyet senaryosu önizlemesini güvenli biçimde görünür kılmaktır.
 
 ## Product Positioning
 - SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik operasyon kuran, canlı GPS ve kanıtla servisi denetleyen, kaliteye göre hakedişi güvenli önizleyen ve yapay zekâ ile maliyet/saha risklerini önceden yakalayan kurumsal servis operasyon platformudur.
@@ -22,8 +22,8 @@
 | DRIVER | yok | tüm finansal operasyon yüzeyleri | güvenli denial mesajı |
 | PERSONEL | yok | tüm finansal operasyon yüzeyleri | güvenli denial mesajı |
 | PARENT | yok | tüm finansal operasyon yüzeyleri | default deny |
-| SCHOOL | yok | tüm finansal operasyon yüzeyleri | default deny |
-| ORGANIZATION | yok | tüm finansal operasyon yüzeyleri | default deny |
+| SCHOOL | yalnız `scenario_forecast_savings` planlama önizlemesi | normal finansal operasyon yüzeyleri | planning-only / default deny |
+| ORGANIZATION | yalnız `scenario_forecast_savings` planlama önizlemesi | normal finansal operasyon yüzeyleri | planning-only / default deny |
 
 ## Surface Registry
 | Surface | Visible roles | Phase | Purpose |
@@ -39,7 +39,7 @@
 | `cost_per_person` | SUPER_ADMIN, COMPANY | current | Kişi başı maliyet önizlemesi |
 | `supplier_price_quality_compare` | SUPER_ADMIN, ROOM, COMPANY | current | Fiyat / kalite karşılaştırma önizlemesi |
 | `hakedis_invoice_reconciliation_preview` | SUPER_ADMIN, ROOM, COMPANY | future-shell | Hakediş / invoice reconciliation preview |
-| `scenario_forecast_savings` | SUPER_ADMIN, ROOM, COMPANY | future-shell | Tasarruf senaryosu / forecast |
+| `scenario_forecast_savings` | SUPER_ADMIN, ROOM, COMPANY, SCHOOL, ORGANIZATION | current | Maliyet senaryosu / forecast; SCHOOL ve ORGANIZATION için yalnız planlama bağlamı |
 | `accounting_export_contract` | SUPER_ADMIN | future-only | Muhasebe / ERP export kontratı shell |
 
 ## Future Milestone Mapping
@@ -50,6 +50,7 @@
 - `COMPANY-BUDGET-AND-SERVICE-COST-01`: `check:companybudgetandservicecost01`, `docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md`, `backend/src/finance/companyBudgetAndServiceCost.js` ve `backend/src/services/financialOperationsLifecycle.js` ile yaşar; company budget lifecycle + service cost preview katmanını bağlar.
 - `HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01`
 - `COST-SCENARIO-FORECAST-AND-SAVINGS-01`
+- `COST-SCENARIO-FORECAST-AND-SAVINGS-01`: `check:costscenarioforecastandsavings01`, `docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md`, `backend/src/finance/costScenarioForecast.js`, `backend/src/routes/costScenario.js` ve `web/src/panels/shared/CostScenarioWorkspacePanel.jsx` ile yaşar; mevcut operasyon maliyet sahibini yeniden yazmaz, ephemeral preview üretir.
 - `SEFER-ABI-COST-ANALYSIS-ASSISTANT-01`
 - `ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01`
 
@@ -116,7 +117,7 @@
 - `minimum teklif tabanı`
 - `bütçe sapması`
 - `hakediş/fatura reconciliation`
-- `senaryo/forecast`
+- uzun dönem senaryo/forecast geçmişi / otomatik forecast optimizasyonu
 - `muhasebe export formatı`
 - `ERP entegrasyonu`
 - `e-Fatura`
@@ -137,7 +138,7 @@
 - Minimum teklif tabanı yok.
 - Bütçe sapması yok.
 - Hakediş / invoice reconciliation hesaplaması yok.
-- Senaryo / forecast motoru yok.
+- Uzun dönem senaryo geçmişi ve otomatik forecast optimizasyonu yok; #4 ayrı ephemeral preview sahibidir.
 - Muhasebe export formatı yok.
 - ERP entegrasyonu yok.
 - e-Fatura / e-Defter / vergi programı yok.
