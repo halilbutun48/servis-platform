@@ -284,6 +284,7 @@ export function CompanyMarketSection({
   onOpenOfferModal,
   onOpenOffersModal,
   computePackageShiftIds,
+  companyKind = "COMPANY",
 }) {
   return (
     <div className="card" ref={sectionRef} role="tabpanel" aria-label="Market">
@@ -346,6 +347,7 @@ export function CompanyMarketSection({
                     onOpenOfferModal={onOpenOfferModal}
                     onOpenOffersModal={onOpenOffersModal}
                     computePackageShiftIds={computePackageShiftIds}
+                    companyKind={companyKind}
                   />
                 ))}
               </div>
@@ -385,6 +387,7 @@ export function CompanyPendingSection({
   onOpenPreview,
   onOpenOpsEvents,
   onConvertShiftToAgreement,
+  companyKind = "COMPANY",
 }) {
   return (
     <div className="card" ref={sectionRef} role="tabpanel" aria-label="Bekleyen">
@@ -438,6 +441,7 @@ export function CompanyPendingSection({
                       onOpenPreview={onOpenPreview}
                       onOpenOpsEvents={onOpenOpsEvents}
                       onConvertShiftToAgreement={onConvertShiftToAgreement}
+                      companyKind={companyKind}
                     />
                   ))}
                 </tbody>
@@ -462,6 +466,7 @@ export function CompanyPendingSection({
                     onOpenPreview={onOpenPreview}
                     onOpenOpsEvents={onOpenOpsEvents}
                     onConvertShiftToAgreement={onConvertShiftToAgreement}
+                    companyKind={companyKind}
                   />
                 ))}
               </div>
@@ -505,6 +510,7 @@ function CompanyStatusListSection({
   rightContent = null,
   emptyLabel,
   searchPlaceholder,
+  companyKind = "COMPANY",
 }) {
   return (
     <div className="card" ref={sectionRef} role="tabpanel" aria-label={title}>
@@ -582,6 +588,7 @@ function CompanyStatusListSection({
                     onOpenPreview={onOpenPreview}
                     onOpenOpsEvents={onOpenOpsEvents}
                     onConvertShiftToAgreement={onConvertShiftToAgreement}
+                    companyKind={companyKind}
                   />
                 ))}
               </div>
@@ -620,6 +627,7 @@ export function CompanyContractSection({
   onOpenPreview,
   onOpenOpsEvents,
   onConvertShiftToAgreement,
+  companyKind = "COMPANY",
 }) {
   return (
     <CompanyStatusListSection
@@ -649,6 +657,7 @@ export function CompanyContractSection({
       onOpenPreview={onOpenPreview}
       onOpenOpsEvents={onOpenOpsEvents}
       onConvertShiftToAgreement={onConvertShiftToAgreement}
+      companyKind={companyKind}
       emptyLabel="Sözleşmeden üretilen vardiya yok."
       searchPlaceholder="Ara (id / durum / plaka / sürücü / not)"
     />
@@ -660,7 +669,6 @@ export function CompanyOtherSection({
   accOpen,
   onSetOpen,
   onToggle,
-  featuredShift = null,
   otherItems,
   otherStatus,
   onChangeOtherStatus,
@@ -681,32 +689,8 @@ export function CompanyOtherSection({
   onOpenPreview,
   onOpenOpsEvents,
   onConvertShiftToAgreement,
+  companyKind = "COMPANY",
 }) {
-  const localFeaturedShift = featuredShift || (otherItems || []).find((shift) => {
-    const conv = agreementConversionByShift?.[String(Number(shift?.id || 0))] || null;
-    const convState = String(conv?.state || "");
-    return Number(shift?.roomId || 0) > 0
-      && !Number(shift?.agreementId || 0)
-      && convState !== "pending"
-      && convState !== "linked";
-  }) || (otherItems || []).find((shift) => Number(shift?.roomId || 0) > 0) || otherItems?.[0] || null;
-  const rightContent = localFeaturedShift ? (
-    <>
-      <button type="button" className="btn sm" disabled={busy} onClick={() => onOpenPreview(localFeaturedShift.id)}>
-        Harita / Navigasyon Önizle
-      </button>
-      <button
-        type="button"
-        className="btn sm primary"
-        disabled={busy || !Number(localFeaturedShift?.roomId || 0)}
-        title={!Number(localFeaturedShift?.roomId || 0) ? "Önce taşımacılık firması seçili olmalı. Sonra taslak Hizmet Alan Firma Sözleşmeleri ekranında açılır." : "Bu vardiya düzenini sözleşme taslağına taşı."}
-        onClick={() => onConvertShiftToAgreement(localFeaturedShift)}
-      >
-        Sözleşmeye Dönüştür
-      </button>
-    </>
-  ) : null;
-
   return (
     <CompanyStatusListSection
       sectionRef={sectionRef}
@@ -735,7 +719,8 @@ export function CompanyOtherSection({
       onOpenPreview={onOpenPreview}
       onOpenOpsEvents={onOpenOpsEvents}
       onConvertShiftToAgreement={onConvertShiftToAgreement}
-      rightContent={rightContent}
+      companyKind={companyKind}
+      rightContent={null}
       emptyLabel="Diğer vardiya yok."
       searchPlaceholder="Ara (id / durum / plaka / sürücü / not)"
     />

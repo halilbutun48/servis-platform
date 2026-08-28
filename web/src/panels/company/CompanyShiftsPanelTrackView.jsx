@@ -104,6 +104,7 @@ export default function CompanyShiftsPanelTrackView(props) {
     companyCounterOffer,
     companyCounterPackage,
     onConvertShiftToAgreement,
+    companyKind = "COMPANY",
   } = props;
   const didAutoScrollRef = useRef(false);
 
@@ -208,6 +209,7 @@ export default function CompanyShiftsPanelTrackView(props) {
           onOpenOfferModal={openOfferModalForShift}
           onOpenOffersModal={openOffersModalForShift}
           computePackageShiftIds={computePackageShiftIds}
+          companyKind={companyKind}
         />
       ) : null}
 
@@ -238,6 +240,7 @@ export default function CompanyShiftsPanelTrackView(props) {
           onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
           onOpenOpsEvents={openOpsEvents}
           onConvertShiftToAgreement={onConvertShiftToAgreement}
+          companyKind={companyKind}
         />
       ) : null}
 
@@ -267,6 +270,7 @@ export default function CompanyShiftsPanelTrackView(props) {
           onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
           onOpenOpsEvents={openOpsEvents}
           onConvertShiftToAgreement={onConvertShiftToAgreement}
+          companyKind={companyKind}
         />
       ) : null}
 
@@ -297,6 +301,7 @@ export default function CompanyShiftsPanelTrackView(props) {
           onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
           onOpenOpsEvents={openOpsEvents}
           onConvertShiftToAgreement={onConvertShiftToAgreement}
+          companyKind={companyKind}
         />
       ) : null}
 

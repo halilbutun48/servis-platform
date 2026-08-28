@@ -1098,6 +1098,101 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   overflow-x: visible;
 }
 
+/* The affected shift surfaces use the same readable card at every viewport. */
+.companyActionClarityScope .shiftsDesktopTable,
+.roomShiftsDensityScope .shiftsDesktopTable {
+  display: none;
+}
+
+.companyActionClarityScope .shiftsMobileCards,
+.roomShiftsDensityScope .shiftsMobileCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 12px;
+}
+
+.shiftCardCommercialSummary,
+.shiftCardLifecycle,
+.shiftCardPrimaryAction {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(58, 102, 255, .16);
+  background: rgba(255, 255, 255, .025);
+}
+
+.shiftCardSummaryValues {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: #e7eefc;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.shiftCardLifecycleSteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.shiftCardLifecycleStep {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.shiftCardLifecycleLabel {
+  color: #a9b7d6;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.shiftCardLifecycleValue {
+  color: #f4f7ff;
+  font-size: 12px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.shiftCardDisclosure {
+  min-width: 0;
+  border-top: 1px solid rgba(148, 163, 184, .16);
+  padding-top: 10px;
+}
+
+.shiftCardDisclosure > summary {
+  cursor: pointer;
+  color: #dbe4ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.shiftCardDisclosureBody {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 10px;
+}
+
+.shiftCardPrimaryButton {
+  width: 100%;
+  min-height: 42px;
+}
+
+.shiftCardOtherActions .shiftCardDisclosureBody {
+  padding-top: 8px;
+}
+
 .shiftsDesktopTable {
   overflow-x: auto;
   overflow-y: hidden;
@@ -2309,6 +2404,9 @@ button, input, select, textarea, .btn, .secondary {
   .shiftsMobileCards {
     display: grid;
     gap: 10px;
+  }
+  .shiftCardLifecycleSteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .tableWrap {
     overflow-x: auto;

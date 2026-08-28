@@ -940,6 +940,7 @@ loadRef.current = load;
         otherQ={otherQ}
         setOtherQ={setOtherQ}
         onConvertShiftToAgreement={convertShiftToAgreement}
+        companyKind={me?.companyKind}
         openVehicleDetail={openVehicleDetail}
         openDriverDetail={openDriverDetail}
         detailModal={detailModal}

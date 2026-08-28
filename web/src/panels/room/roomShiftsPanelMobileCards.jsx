@@ -1,4 +1,3 @@
-import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import { navigate } from "../../router";
 import { rowSelectionStyle } from "../../utils/listUi";
 import { displayStatusLabel } from "../../utils/displayStatus";
@@ -6,17 +5,20 @@ import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwn
 import {
   buildCapacityMeta,
   formatShiftDateTimeTR as fmtTR,
-  formatTRY,
-  roomLabel,
   vehicleMetaLine,
 } from "./roomShiftsPanelUtils";
 import {
   AgreementBadge,
   RoomAvailabilityLine,
-  RoomCompanyOfferSummary,
-  RoomOfferSummary,
-  RoomStatusPill,
 } from "./roomShiftsPanelCards";
+import {
+  ShiftCardDetails,
+  ShiftCardOtherActions,
+  ShiftCardPrimaryAction,
+  ShiftCommercialSummary,
+  ShiftOfferDetails,
+  ShiftLifecycle,
+} from "../shared/CommercialShiftCardPresentation";
 
 function stopCardClick(e) {
   e.stopPropagation();
@@ -42,11 +44,7 @@ function CardSection({ title, children, onClick = null }) {
 
 function ActionGroup({ children, note = null }) {
   return (
-    <div className="shiftCardSection shiftActionGroup" onClick={stopCardClick}>
-      <div className="shiftCardSectionTitle">Aksiyonlar</div>
-      <div className="shiftCardActions">{children}</div>
-      {note ? <div className="shiftCardActionNote">{note}</div> : null}
-    </div>
+    <ShiftCardOtherActions className="shiftActionGroup" note={note}>{children}</ShiftCardOtherActions>
   );
 }
 
@@ -65,17 +63,18 @@ function CardHeader({ shift, selected, children }) {
           </div>
         ) : null}
       </div>
-      <span className="shiftCardSelectionHint" data-selected={selected ? "true" : "false"}>
-        {selected ? "Seçili" : "Kart"}
-      </span>
+      {selected ? <span className="shiftCardSelectionHint" data-selected="true">Seçili</span> : null}
     </div>
   );
 }
 
-function CardShell({ selected, children, onClick }) {
+function CardShell({ selected, children, onClick, shiftId }) {
   return (
     <article
       className="card shiftCard shiftMobileCard"
+      data-testid="commercial-shift-card"
+      data-shift-id={shiftId}
+      data-perspective="room"
       style={{ ...rowSelectionStyle(selected), overflow: "visible" }}
       onClick={onClick}
     >
@@ -119,7 +118,6 @@ export function RoomPendingShiftCard({
   const selectedVehicleId = assignSel[sid] || "";
   const vId = selectedVehicleId ? Number(selectedVehicleId) : null;
   const selectedVehicle = vId ? vehiclesById.get(vId) : null;
-  const room = effectiveRoomId ? roomsById?.get(Number(effectiveRoomId)) || null : null;
   const onlyAvail = Boolean(showAvailableOnly[sid]);
   const availVehicles = roomVehicles.filter((v) => isVehicleAvailableForShift(v.id, shift));
   const dropdownVehicles = onlyAvail ? availVehicles : roomVehicles;
@@ -131,6 +129,14 @@ export function RoomPendingShiftCard({
   const effDriverId = manualDriverId ?? autoDriverId ?? null;
   const capacityMeta = buildCapacityMeta({ shift, vehicle: selectedVehicle, roomVehicles });
   const availability = avail[sid];
+  const offerSummaryShift = marketOffer ? {
+    ...shift,
+    companyOfferAmount: marketOffer.amountCompany,
+    roomOfferAmount: marketOffer.amountRoom,
+    roomOfferDecision: marketOffer.status,
+    companyOfferNote: marketOffer.noteCompany,
+    roomOfferNote: marketOffer.noteRoom,
+  } : shift;
   const approveDisabled =
     busy ||
     !vId ||
@@ -154,7 +160,7 @@ export function RoomPendingShiftCard({
               : "";
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
   return (
-    <CardShell selected={selected} onClick={() => setFocusedTrackShiftId(Number(shift?.id || 0) || null)}>
+    <CardShell selected={selected} shiftId={shift?.id} onClick={() => setFocusedTrackShiftId(Number(shift?.id || 0) || null)}>
       <CardHeader shift={shift} selected={selected}>
         <span className="pill" data-status={shift.status}>
           {displayStatusLabel(shift.status)}
@@ -164,58 +170,42 @@ export function RoomPendingShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Hizmet Alan Firma / Taşımacılık Firması"
+          label="Hizmet Alan Firma"
           value={
             <div className="shiftCardValueStack">
-              <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Taşımacılık Firması ID ${effectiveRoomId || shift.roomId || "-"}`}</div>
-              {hasRegionOwnership(room) ? <div className="shiftCardSubtle">{formatRegionOwnership(room)}</div> : null}
+              <div>{shift.company?.name || "Bilgi yok"}</div>
+              {hasRegionOwnership(shift.company) ? <div className="shiftCardSubtle">{formatRegionOwnership(shift.company)}</div> : null}
             </div>
           }
           wide
         />
         <Field
           label="Araç"
-          value={<div className="shiftCardValueStack"><div>{selectedVehicle?.plate || (vId ? `Araç ID ${vId}` : "-")}</div>{hasRegionOwnership(selectedVehicle) ? <div className="shiftCardSubtle">{formatRegionOwnership(selectedVehicle)}</div> : null}</div>}
+          value={<div className="shiftCardValueStack"><div>{selectedVehicle?.plate || "-"}</div>{hasRegionOwnership(selectedVehicle) ? <div className="shiftCardSubtle">{formatRegionOwnership(selectedVehicle)}</div> : null}</div>}
         />
         <Field
           label="Sürücü"
-          value={<div className="shiftCardValueStack"><div>{autoDriverName}</div>{effDriverId && driversById.get(Number(effDriverId)) ? <div className="shiftCardSubtle">{driversById.get(Number(effDriverId)).fullName || `Sürücü ID ${effDriverId}`}</div> : null}</div>}
+          value={<div className="shiftCardValueStack"><div>{driversById.get(Number(effDriverId))?.fullName || "-"}</div></div>}
         />
         <Field label="Başlangıç" value={fmtTR(shift.startAt)} />
         <Field label="Bitiş" value={fmtTR(shift.endAt)} />
-        <Field label="Durum / Kaynak" value={<CommercialReadonlySummary item={shift.commercialBackbone} compact />} wide />
       </div>
 
-      <CardSection title="Teklif / sözleşme özeti">
-        {isAgreement ? (
-          <div className="shiftCardInfoBlock">
-            <div className="shiftCardInfoTitle">Sözleşmeli vardiya</div>
-            <div className="shiftCardSubtle">Pazarlık kapalı.</div>
-          </div>
-        ) : marketOffer ? (
-          <div className="shiftCardInfoBlock">
-            <div className="shiftCardInfoRow">
-              <div className="shiftCardInfoTitle">Market Teklifi</div>
-              <RoomStatusPill status={marketOffer.status} />
-            </div>
-            <div className="shiftCardSubtle">
-              Hizmet Alan Firma: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Taşımacılık Firması: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
-            </div>
-            {marketOffer.noteCompany ? <div className="shiftCardSubtle">Not (Firma): {marketOffer.noteCompany}</div> : null}
-            {marketOffer.noteRoom ? <div className="shiftCardSubtle">Not (Taşımacılık Firması): {marketOffer.noteRoom}</div> : null}
-          </div>
-        ) : (
-          <div className="shiftCardInfoBlock">
-            <RoomCompanyOfferSummary shift={shift} vehiclesById={vehiclesById} />
-            <RoomOfferSummary shift={shift} vehiclesById={vehiclesById} />
-          </div>
-        )}
-      </CardSection>
-
-      <CardSection title="Ödeme / hakediş">
-        <CommercialReadonlySummary item={shift.commercialBackbone} compact />
-      </CardSection>
+      <ShiftCommercialSummary shift={shift} />
+      <ShiftLifecycle shift={shift} />
+      <ShiftCardPrimaryAction
+        label="Kabul Et"
+        disabled={approveDisabled}
+        onClick={(e) => {
+          stopCardClick(e);
+          approveShift(shift);
+        }}
+        note={approveReason || null}
+      />
+      <ShiftCardDetails>
+        <CardSection title="Teklif ayrıntıları">
+          {isAgreement ? <div className="shiftCardSubtle">Sözleşmeli vardiya. Pazarlık kapalı.</div> : <ShiftOfferDetails shift={offerSummaryShift} />}
+        </CardSection>
 
       <CardSection title="Araç + şoför" onClick={stopCardClick}>
         {capacityMeta.dispatchRequired ? (
@@ -336,8 +326,9 @@ export function RoomPendingShiftCard({
           </div>
         </CardSection>
       )}
+      </ShiftCardDetails>
 
-      <ActionGroup note={approveReason ? `Onay nedeni: ${approveReason}` : null}>
+      <ActionGroup>
         <button
           type="button"
           className="btn sm"
@@ -365,17 +356,6 @@ export function RoomPendingShiftCard({
         ) : null}
         <button
           type="button"
-          className="btn sm primary"
-          disabled={approveDisabled}
-          onClick={(e) => {
-            stopCardClick(e);
-            approveShift(shift);
-          }}
-        >
-          Kabul Et
-        </button>
-        <button
-          type="button"
           className="btn sm"
           disabled={busy}
           onClick={(e) => {
@@ -393,9 +373,7 @@ export function RoomPendingShiftCard({
 
 export function RoomAllShiftCard({
   shift,
-  offersByShiftId,
   vehiclesById,
-  roomsById,
   driversById,
   setFocusedTrackShiftId,
   copilotShiftId,
@@ -407,16 +385,20 @@ export function RoomAllShiftCard({
   openReassignModal,
   openRoutePreview,
 }) {
-  const marketOffer = offersByShiftId.get(Number(shift.id));
-  const room = shift.room || (shift.roomId ? roomsById?.get(Number(shift.roomId)) || null : null);
   const vehicle = shift.vehicle || (shift.vehicleId ? vehiclesById.get(Number(shift.vehicleId)) || null : null);
   const driver = shift.driver || (shift.driverId ? driversById?.get(Number(shift.driverId)) || null : null);
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
   const canReassign = String(shift.status || "").toUpperCase() === "APPROVED" || String(shift.status || "").toUpperCase() === "ACTIVE";
   const extendRequested = Boolean(shift.extendRequestedEndAt && String(shift.extendDecision || "PENDING") === "PENDING");
+  const primaryLabel = canReassign ? "Atamayı Değiştir" : "Rota Önizleme";
+  const handlePrimaryAction = (e) => {
+    stopCardClick(e);
+    if (canReassign) openReassignModal(shift);
+    else openRoutePreview?.(shift);
+  };
 
   return (
-    <CardShell selected={selected} onClick={() => setFocusedTrackShiftId(Number(shift?.id || 0) || null)}>
+    <CardShell selected={selected} shiftId={shift?.id} onClick={() => setFocusedTrackShiftId(Number(shift?.id || 0) || null)}>
       <CardHeader shift={shift} selected={selected}>
         <span className="pill" data-status={shift.status}>
           {displayStatusLabel(shift.status)}
@@ -426,63 +408,34 @@ export function RoomAllShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Hizmet Alan Firma / Taşımacılık Firması"
+          label="Hizmet Alan Firma"
           value={
             <div className="shiftCardValueStack">
-              <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Taşımacılık Firması ID ${shift.roomId || "-"}`}</div>
-              {hasRegionOwnership(room) ? <div className="shiftCardSubtle">{formatRegionOwnership(room)}</div> : null}
+              <div>{shift.company?.name || "Bilgi yok"}</div>
+              {hasRegionOwnership(shift.company) ? <div className="shiftCardSubtle">{formatRegionOwnership(shift.company)}</div> : null}
             </div>
           }
           wide
         />
         <Field
           label="Araç"
-          value={<div className="shiftCardValueStack"><div>{vehicle?.plate || (shift.vehicleId ? `Araç ID ${shift.vehicleId}` : "-")}</div>{hasRegionOwnership(vehicle) ? <div className="shiftCardSubtle">{formatRegionOwnership(vehicle)}</div> : null}</div>}
+          value={<div className="shiftCardValueStack"><div>{vehicle?.plate || "-"}</div>{hasRegionOwnership(vehicle) ? <div className="shiftCardSubtle">{formatRegionOwnership(vehicle)}</div> : null}</div>}
         />
         <Field
           label="Sürücü"
-          value={<div className="shiftCardValueStack"><div>{driver?.fullName || (shift.driverId ? `Sürücü ID ${shift.driverId}` : "-")}</div>{hasRegionOwnership(driver) ? <div className="shiftCardSubtle">{formatRegionOwnership(driver)}</div> : null}</div>}
+          value={<div className="shiftCardValueStack"><div>{driver?.fullName || "-"}</div>{hasRegionOwnership(driver) ? <div className="shiftCardSubtle">{formatRegionOwnership(driver)}</div> : null}</div>}
         />
         <Field label="Başlangıç" value={fmtTR(shift.startAt)} />
         <Field label="Bitiş" value={fmtTR(shift.endAt)} />
-        <Field label="Durum / Hakediş" value={<CommercialReadonlySummary item={shift.commercialBackbone} compact />} wide />
       </div>
 
-      <CardSection title="Teklif / sözleşme özeti">
-        {Number(shift?.agreementId) > 0 ? (
-          <div className="shiftCardInfoBlock">
-            <div className="shiftCardInfoTitle">Sözleşmeli vardiya</div>
-            <div className="shiftCardSubtle">Pazarlık/teklif kapalı (sözleşme kaynaklı).</div>
-          </div>
-        ) : (
-          <div className="shiftCardInfoBlock">
-            {marketOffer ? (
-              <div className="card shiftCardNestedCard">
-                <div className="shiftCardInfoRow">
-                  <div className="shiftCardInfoTitle">Market Teklifi</div>
-                  <RoomStatusPill status={marketOffer.status} />
-                </div>
-                <div className="shiftCardSubtle">
-                  Hizmet Alan Firma: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Taşımacılık Firması: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
-                </div>
-              </div>
-            ) : null}
-            <div className="shiftCardInfoBlock">
-              <div><b>Hizmet Alan Firma → Taşımacılık Firması</b></div>
-              <RoomCompanyOfferSummary shift={shift} vehiclesById={vehiclesById} />
-            </div>
-            <div className="shiftCardInfoBlock">
-              <div><b>Taşımacılık Firması → Hizmet Alan Firma</b></div>
-              <RoomOfferSummary shift={shift} vehiclesById={vehiclesById} />
-            </div>
-          </div>
-        )}
-      </CardSection>
-
-      <CardSection title="Ödeme / hakediş">
-        <CommercialReadonlySummary item={shift.commercialBackbone} compact />
-      </CardSection>
+      <ShiftCommercialSummary shift={shift} />
+      <ShiftLifecycle shift={shift} />
+      <ShiftCardPrimaryAction label={primaryLabel} disabled={busy} onClick={handlePrimaryAction} />
+      <ShiftCardDetails>
+        <CardSection title="Teklif ayrıntıları">
+          {Number(shift?.agreementId) > 0 ? <div className="shiftCardSubtle">Sözleşmeli vardiya. Pazarlık kapalı.</div> : <ShiftOfferDetails shift={shift} />}
+        </CardSection>
 
       {extendRequested ? (
         <CardSection title="Uzatma talebi" onClick={stopCardClick}>
@@ -523,19 +476,22 @@ export function RoomAllShiftCard({
           </div>
         </CardSection>
       ) : null}
+      </ShiftCardDetails>
 
       <ActionGroup note={!canReassign ? "Atamayı Değiştir yalnızca APPROVED / ACTIVE vardiyalarda." : null}>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy}
-          onClick={(e) => {
-            stopCardClick(e);
-            openRoutePreview?.(shift);
-          }}
-        >
-          Rota Önizleme
-        </button>
+        {canReassign ? (
+          <button
+            type="button"
+            className="btn sm"
+            disabled={busy}
+            onClick={(e) => {
+              stopCardClick(e);
+              openRoutePreview?.(shift);
+            }}
+          >
+            Rota Önizleme
+          </button>
+        ) : null}
         <button
           type="button"
           className="btn sm"
@@ -547,19 +503,6 @@ export function RoomAllShiftCard({
         >
           İşlem Kaydı
         </button>
-        {canReassign ? (
-          <button
-            type="button"
-            className="btn sm primary"
-            disabled={busy}
-            onClick={(e) => {
-              stopCardClick(e);
-              openReassignModal(shift);
-            }}
-          >
-            Atamayı Değiştir
-          </button>
-        ) : null}
       </ActionGroup>
     </CardShell>
   );

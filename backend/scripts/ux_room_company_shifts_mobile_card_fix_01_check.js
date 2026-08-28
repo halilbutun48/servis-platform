@@ -286,6 +286,7 @@ function main() {
   const companySections = read("web/src/panels/company/companyShiftsPanelSections.jsx");
   const roomCards = read("web/src/panels/room/roomShiftsPanelMobileCards.jsx");
   const companyCards = read("web/src/panels/company/companyShiftsPanelMobileCards.jsx");
+  const sharedCardPresentation = read("web/src/panels/shared/CommercialShiftCardPresentation.jsx");
   const roomPanel = read("web/src/panels/room/ShiftsPanel.jsx");
   const companyPanel = read("web/src/panels/company/ShiftsPanel.jsx");
 
@@ -396,6 +397,16 @@ function main() {
   must(companyCards, "İşlem Kaydı", "company mobile card file keeps ops log action");
   must(companyCards, "Sözleşmeye Dönüştür", "company mobile card file keeps convert action");
   must(companyCards, "Süre Uzat", "company mobile card file keeps extend action");
+  must(sharedCardPresentation, "ShiftCommercialSummary", "shared shift card presentation owns commercial summary");
+  must(sharedCardPresentation, "ShiftLifecycle", "shared shift card presentation owns derived lifecycle view");
+  must(sharedCardPresentation, "ShiftCardPrimaryAction", "shared shift card presentation owns single primary action");
+  must(sharedCardPresentation, "ShiftCardDetails", "shared shift card presentation owns progressive details");
+  must(sharedCardPresentation, "ShiftCardOtherActions", "shared shift card presentation owns secondary actions");
+  must(sharedCardPresentation, "new Intl.NumberFormat(\"tr-TR\")", "shared shift card presentation keeps humanized TRY formatting");
+  must(companyCards, "data-company-kind", "company card carries company kind guard");
+  must(companyCards, "const restricted", "company card restricts school and organization commercial actions");
+  must(companySections, "companyKind={companyKind}", "company sections pass company kind to cards");
+  must(companyPanel, "companyKind={me?.companyKind}", "company panel passes authenticated company kind");
 
   const staged = gitLines(["diff", "--cached", "--name-only"]);
   const status = statusNames();
@@ -443,7 +454,7 @@ function main() {
     { path: "web/src/panels/company/HubPanel.jsx", sha256: "68E237BA03F6DA83A91C49EAE170BEB3D6F398A6882417A17AFAF8376AAE359E" },
     { path: "web/src/panels/company/ServiceEvaluationPanel.jsx", sha256: "BBEA2130687645E8ADE39EC3559F0A9C61E6FAEE8A74E7AEEAB47DBAD641E59C" },
     { path: "web/src/panels/company/ShiftTemplatesPanel.jsx", sha256: "934055EEB7407E6AEA43566302A6FFB9689E445A7771AC1C41F6217689A0673E" },
-    { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "9C37254ACA2907EA15C575BD91D5A020DE27991F0BCC1FC1FA62179165368BF5" },
+    { path: "web/src/panels/company/ShiftsPanel.jsx", sha256: "068C15257991792008486D46087933B6931938D223BD5869F6C1512171E40305" },
     { path: "web/src/panels/company/companyShiftsPanelActions.js", sha256: "BA93A4ADE7F75C6B575A3BCC2B3188CA01166B5746B7F4DCC7CEA9223E34D218" },
     { path: "web/src/panels/company/planBuilderPanelActions.js", sha256: "9897F8A0D0F48AD04E1A188F86E7573B257E3EC3DE44637E92A7E5855F122AB8" },
     { path: "web/src/panels/company/planBuilderPanelSections.jsx", sha256: "B6C0BC2E56DCD8C932F8D7F63BBAE4166E234C13059B7651A8B75D68A380E855" },
@@ -653,6 +664,7 @@ function main() {
     "web/src/panels/room/roomShiftsPanelMobileCards.jsx",
     "web/src/panels/room/roomShiftsPanelActions.js",
     "web/src/panels/company/companyShiftsPanelMobileCards.jsx",
+    "web/src/panels/shared/CommercialShiftCardPresentation.jsx",
     "web/src/panels/company/WorkflowPanel.jsx",
     "web/src/panels/company/companyShiftsPanelCards.jsx",
     "web/src/panels/company/companyAgreementsMobileCards.jsx",

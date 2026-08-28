@@ -1,9 +1,16 @@
-import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import { rowSelectionStyle } from "../../utils/listUi";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 import { roomLabel } from "./shiftsPanelOfferUtils";
 import { AgreementBadge } from "./companyShiftsPanelRows";
+import {
+  ShiftCardDetails,
+  ShiftCardOtherActions,
+  ShiftCardPrimaryAction,
+  ShiftCommercialSummary,
+  ShiftOfferDetails,
+  ShiftLifecycle,
+} from "../shared/CommercialShiftCardPresentation";
 
 function stopCardClick(e) {
   e.stopPropagation();
@@ -29,11 +36,7 @@ function CardSection({ title, children, onClick = null }) {
 
 function ActionGroup({ children, note = null }) {
   return (
-    <div className="shiftCardSection shiftActionGroup" onClick={stopCardClick}>
-      <div className="shiftCardSectionTitle">Aksiyonlar</div>
-      <div className="shiftCardActions">{children}</div>
-      {note ? <div className="shiftCardActionNote">{note}</div> : null}
-    </div>
+    <ShiftCardOtherActions className="shiftActionGroup" note={note}>{children}</ShiftCardOtherActions>
   );
 }
 
@@ -52,17 +55,19 @@ function CardHeader({ shift, selected, children }) {
           </div>
         ) : null}
       </div>
-      <span className="shiftCardSelectionHint" data-selected={selected ? "true" : "false"}>
-        {selected ? "Seçili" : "Kart"}
-      </span>
+      {selected ? <span className="shiftCardSelectionHint" data-selected="true">Seçili</span> : null}
     </div>
   );
 }
 
-function CardShell({ selected, children, onClick }) {
+function CardShell({ selected, children, onClick, shiftId, companyKind = "COMPANY" }) {
   return (
     <article
       className="card shiftCard shiftMobileCard"
+      data-testid="commercial-shift-card"
+      data-shift-id={shiftId}
+      data-perspective="company"
+      data-company-kind={companyKind || "COMPANY"}
       style={{ ...rowSelectionStyle(selected), overflow: "visible" }}
       onClick={onClick}
     >
@@ -107,13 +112,17 @@ function buildAgreementConversionMeta(shift, agreementConversion) {
   };
 }
 
-function AgreementConversionStatus({ shift, busy, meta, onConvertShiftToAgreement }) {
+function AgreementConversionStatus({ shift, busy, meta, onConvertShiftToAgreement, showAction = true }) {
   if (meta.hasAgreement || meta.hasLinkedAgreementRequest) {
     return (
       <span className="pill" data-status="AGREEMENT" title={meta.conversionTitle || "Bu vardiya zaten bir sözleşmeye bağlandı."}>
         {meta.hasAgreement ? "Sözleşmeye Bağlı" : "Sözleşmeye Taşındı"}
       </span>
     );
+  }
+
+  if (!showAction) {
+    return <span className="shiftCardSubtle">Sözleşme taslağına hazır.</span>;
   }
 
   if (meta.hasPendingAgreementRequest) {
@@ -199,12 +208,14 @@ export function CompanyMarketShiftCard({
   onOpenOfferModal,
   onOpenOffersModal,
   computePackageShiftIds,
+  companyKind = "COMPANY",
 }) {
   const packageIds = computePackageShiftIds(shift);
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
+  const restricted = ["SCHOOL", "ORGANIZATION"].includes(String(companyKind || "").toUpperCase());
 
   return (
-    <CardShell selected={selected} onClick={() => onFocusShift(shift?.id)}>
+    <CardShell selected={selected} shiftId={shift?.id} companyKind={companyKind} onClick={() => onFocusShift(shift?.id)}>
       <CardHeader shift={shift} selected={selected}>
         <span className="pill" data-status={shift.status}>
           {displayStatusLabel(shift.status)}
@@ -214,67 +225,42 @@ export function CompanyMarketShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Hizmet Alan Firma / Taşımacılık Firması"
+          label="Taşımacılık Firması"
           value={
             <div className="shiftCardValueStack">
-              <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">Taşımacılık Firması: Seçilmedi</div>
+              <div className="shiftCardSubtle">Seçilmedi</div>
             </div>
           }
           wide
         />
         <Field label="Başlangıç" value={fmtTR(shift.startAt)} />
         <Field label="Bitiş" value={fmtTR(shift.endAt)} />
-        <Field label="Durum / Hakediş" value={<CommercialReadonlySummary item={shift.commercialBackbone} compact />} wide />
       </div>
 
-      <CardSection title="Teklif / sözleşme özeti">
-        <div className="shiftCardInfoBlock">
-          <div className="shiftCardInfoTitle">Market talebi</div>
-          <div className="shiftCardSubtle">Taşımacılık firması seçilmemiş talep. Teklif burada taşımacılık firması havuzuna gönderilir.</div>
-        </div>
-      </CardSection>
-
-      <CardSection title="Ödeme / hakediş">
-        <CommercialReadonlySummary item={shift.commercialBackbone} compact />
-      </CardSection>
-
-      <ActionGroup note={packageIds.length < 2 ? "Paket Teklif için en az 2 shift gerekir." : null}>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy}
-          onClick={(e) => {
-            stopCardClick(e);
-            onOpenOfferModal(shift.id);
-          }}
-        >
-          Teklif Gönder
-        </button>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy || packageIds.length < 2}
-          onClick={(e) => {
-            stopCardClick(e);
-            onOpenOfferModal(shift.id, packageIds);
-          }}
-          title={packageIds.length < 2 ? "Paket bulunamadı" : `Pakete uygula (${packageIds.length} shift)`}
-        >
-          Paket Teklif
-        </button>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy}
-          onClick={(e) => {
-            stopCardClick(e);
-            onOpenOffersModal(shift.id);
-          }}
-        >
-          Teklifler
-        </button>
-      </ActionGroup>
+      <ShiftCommercialSummary shift={shift} restricted={restricted} />
+      <ShiftLifecycle shift={shift} restricted={restricted} />
+      {restricted ? (
+        <div className="shiftCardActionNote">Bu hesap türünde ticari teklif ve sözleşme işlemleri kullanılamaz.</div>
+      ) : (
+        <>
+          <ShiftCardPrimaryAction label="Teklif Gönder" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOfferModal(shift.id); }} />
+          <ShiftCardDetails>
+            <CardSection title="Teklif / sözleşme özeti">
+              <div className="shiftCardInfoBlock">
+                <div className="shiftCardInfoTitle">Market talebi</div>
+                <div className="shiftCardSubtle">Taşımacılık firması seçilmemiş talep. Teklif bu ekrandan taşımacılık firması havuzuna gönderilir.</div>
+              </div>
+            </CardSection>
+            <CardSection title="Finansal ayrıntılar">
+              <div className="shiftCardSubtle">Bu kartta ödeme sonucu oluşturulmadı. Hakediş bilgisi oluştuğunda Ticari Akış ekranından açılır.</div>
+            </CardSection>
+          </ShiftCardDetails>
+          <ActionGroup note={packageIds.length < 2 ? "Paket teklif için en az iki vardiya gerekir." : null}>
+            <button type="button" className="btn sm" disabled={busy || packageIds.length < 2} onClick={(e) => { stopCardClick(e); onOpenOfferModal(shift.id, packageIds); }} title={packageIds.length < 2 ? "Paket bulunamadı" : `Pakete uygula (${packageIds.length} vardiya)`}>Paket Teklif</button>
+            <button type="button" className="btn sm" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOffersModal(shift.id); }}>Teklifleri Aç</button>
+          </ActionGroup>
+        </>
+      )}
     </CardShell>
   );
 }
@@ -286,8 +272,6 @@ export function CompanyPendingShiftCard({
   copilotShiftId,
   onFocusShift,
   roomsById,
-  renderRoomOfferSummary,
-  renderCompanyOfferSummary,
   onOpenOffersModal,
   onCancelMyRequest,
   onOpenExtendModal,
@@ -295,16 +279,35 @@ export function CompanyPendingShiftCard({
   onOpenOpsEvents,
   agreementConversion,
   onConvertShiftToAgreement,
+  companyKind = "COMPANY",
 }) {
   const room = roomsById?.get(Number(shift.roomId)) || null;
   const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(shift.status));
   const canExtend = ["APPROVED", "ACTIVE"].includes(String(shift.status || "").toUpperCase());
   const agreementMeta = buildAgreementConversionMeta(shift, agreementConversion);
+  const restricted = ["SCHOOL", "ORGANIZATION"].includes(String(companyKind || "").toUpperCase());
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
   const extendRequested = Boolean(shift.extendRequestedEndAt && String(shift.extendDecision || "PENDING") === "PENDING");
+  const primaryLabel = restricted
+    ? "Operasyon Kaydı"
+    : agreementMeta.canConvert
+      ? agreementMeta.hadClosedAgreementRequest ? "Yeniden sözleşme taslağına dönüştür" : "Sözleşmeye Dönüştür"
+      : agreementMeta.hasAgreement || agreementMeta.hasLinkedAgreementRequest
+        ? "Operasyon Kaydı"
+        : "Teklifleri Aç";
+  const handlePrimaryAction = (e) => {
+    stopCardClick(e);
+    if (restricted || agreementMeta.hasAgreement || agreementMeta.hasLinkedAgreementRequest) {
+      onOpenOpsEvents(shift.id);
+    } else if (agreementMeta.canConvert) {
+      onConvertShiftToAgreement(shift);
+    } else {
+      onOpenOffersModal(shift.id);
+    }
+  };
 
   return (
-    <CardShell selected={selected} onClick={() => onFocusShift(shift?.id)}>
+    <CardShell selected={selected} shiftId={shift?.id} companyKind={companyKind} onClick={() => onFocusShift(shift?.id)}>
       <CardHeader shift={shift} selected={selected}>
         <span className="pill" data-status={shift.status}>
           {displayStatusLabel(shift.status)}
@@ -314,11 +317,10 @@ export function CompanyPendingShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Hizmet Alan Firma / Taşımacılık Firması"
+          label="Taşımacılık Firması"
           value={
             <div className="shiftCardValueStack">
-              <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Taşımacılık Firması no ${shift.roomId}`}</div>
+              <div>{room ? roomLabel(room) : "Bilgi yok"}</div>
               {hasRegionOwnership(room) ? <div className="shiftCardSubtle">{formatRegionOwnership(room)}</div> : null}
             </div>
           }
@@ -326,71 +328,36 @@ export function CompanyPendingShiftCard({
         />
         <Field label="Başlangıç" value={fmtTR(shift.startAt)} />
         <Field label="Bitiş" value={fmtTR(shift.endAt)} />
-        <Field label="Durum / Hakediş" value={<CommercialReadonlySummary item={shift.commercialBackbone} compact />} wide />
       </div>
 
-      <CardSection title="Taşımacılık Firması Teklifi">
-        {renderRoomOfferSummary(shift)}
-      </CardSection>
-
-      <CardSection title="Hizmet Alan Firma Teklifi">
-        {renderCompanyOfferSummary(shift)}
-      </CardSection>
-
-      <CardSection title="Ödeme / hakediş">
-        <CommercialReadonlySummary item={shift.commercialBackbone} compact />
-      </CardSection>
-
-      <CompanyExtendCardSection
-        shift={shift}
-        busy={busy}
-        fmtTR={fmtTR}
-        onOpenExtendModal={onOpenExtendModal}
-        onOpenPreview={onOpenPreview}
-        canExtend={canExtend}
-        extendRequested={extendRequested}
-      />
-
-      <ActionGroup note={agreementMeta.note}>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy}
-          onClick={(e) => {
-            stopCardClick(e);
-            onOpenOffersModal(shift.id);
-          }}
-        >
-          Teklifleri Aç
-        </button>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy || !canNegotiate}
-          onClick={(e) => {
-            stopCardClick(e);
-            onCancelMyRequest(shift);
-          }}
-        >
-          Talebi İptal Et
-        </button>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy}
-          onClick={(e) => {
-            stopCardClick(e);
-            onOpenOpsEvents(shift.id);
-          }}
-        >
-          Operasyon Kaydı
-        </button>
-        <AgreementConversionStatus
+      <ShiftCommercialSummary shift={shift} restricted={restricted} />
+      <ShiftLifecycle shift={shift} restricted={restricted} />
+      <ShiftCardPrimaryAction label={primaryLabel} disabled={busy} onClick={handlePrimaryAction} note={restricted ? "Okul ve organizasyon bağlamında ticari yaşam döngüsü kapalıdır." : null} />
+      <ShiftCardDetails>
+        {!restricted ? (
+          <>
+            <CardSection title="Teklif ayrıntıları">
+              <ShiftOfferDetails shift={shift} />
+            </CardSection>
+            <CardSection title="Sözleşme">
+              <AgreementConversionStatus shift={shift} busy={busy} meta={agreementMeta} onConvertShiftToAgreement={onConvertShiftToAgreement} showAction={false} />
+            </CardSection>
+          </>
+        ) : null}
+        <CompanyExtendCardSection
           shift={shift}
           busy={busy}
-          meta={agreementMeta}
-          onConvertShiftToAgreement={onConvertShiftToAgreement}
+          fmtTR={fmtTR}
+          onOpenExtendModal={onOpenExtendModal}
+          onOpenPreview={onOpenPreview}
+          canExtend={canExtend}
+          extendRequested={extendRequested}
         />
+      </ShiftCardDetails>
+      <ActionGroup note={agreementMeta.note}>
+        {!restricted && !agreementMeta.canConvert && !agreementMeta.hasAgreement && !agreementMeta.hasLinkedAgreementRequest ? <button type="button" className="btn sm" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOffersModal(shift.id); }}>Teklifleri Aç</button> : null}
+        <button type="button" className="btn sm" disabled={busy || !canNegotiate} onClick={(e) => { stopCardClick(e); onCancelMyRequest(shift); }}>Talebi İptal Et</button>
+        <button type="button" className="btn sm" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOpsEvents(shift.id); }}>Operasyon Kaydı</button>
       </ActionGroup>
     </CardShell>
   );
@@ -403,8 +370,6 @@ export function CompanyFinalShiftCard({
   copilotShiftId,
   onFocusShift,
   roomsById,
-  renderRoomOfferSummary,
-  renderCompanyOfferSummary,
   onOpenVehicleDetail,
   onOpenDriverDetail,
   onOpenExtendModal,
@@ -412,17 +377,32 @@ export function CompanyFinalShiftCard({
   onOpenOpsEvents,
   agreementConversion,
   onConvertShiftToAgreement,
+  companyKind = "COMPANY",
 }) {
   const room = roomsById?.get(Number(shift.roomId)) || null;
   const hasVehicle = !!(shift.vehicle?.plate || shift.vehicleId);
   const hasDriver = !!(shift.driver?.fullName || shift.driverId);
   const agreementMeta = buildAgreementConversionMeta(shift, agreementConversion);
+  const restricted = ["SCHOOL", "ORGANIZATION"].includes(String(companyKind || "").toUpperCase());
   const canReassign = ["APPROVED", "ACTIVE"].includes(String(shift.status || "").toUpperCase());
   const selected = Number(copilotShiftId || 0) === Number(shift?.id || 0);
   const extendRequested = Boolean(shift.extendRequestedEndAt && String(shift.extendDecision || "PENDING") === "PENDING");
+  const primaryLabel = restricted
+    ? "Operasyon Kaydı"
+    : agreementMeta.canConvert
+      ? agreementMeta.hadClosedAgreementRequest ? "Yeniden sözleşme taslağına dönüştür" : "Sözleşmeye Dönüştür"
+      : "Operasyon Kaydı";
+  const handlePrimaryAction = (e) => {
+    stopCardClick(e);
+    if (!restricted && agreementMeta.canConvert) {
+      onConvertShiftToAgreement(shift);
+      return;
+    }
+    onOpenOpsEvents(shift.id);
+  };
 
   return (
-    <CardShell selected={selected} onClick={() => onFocusShift(shift?.id)}>
+    <CardShell selected={selected} shiftId={shift?.id} companyKind={companyKind} onClick={() => onFocusShift(shift?.id)}>
       <CardHeader shift={shift} selected={selected}>
         <span className="pill" data-status={shift.status}>
           {displayStatusLabel(shift.status)}
@@ -432,11 +412,10 @@ export function CompanyFinalShiftCard({
 
       <div className="shiftCardMetaGrid shiftMetaGrid">
         <Field
-          label="Hizmet Alan Firma / Taşımacılık Firması"
+          label="Taşımacılık Firması"
           value={
             <div className="shiftCardValueStack">
-              <div>{shift.company?.name || `Firma ID ${shift.companyId}`}</div>
-              <div className="shiftCardSubtle">{room ? `${roomLabel(room)} (#${room.id})` : `Taşımacılık Firması no ${shift.roomId}`}</div>
+              <div>{room ? roomLabel(room) : "Bilgi yok"}</div>
               {hasRegionOwnership(room) ? <div className="shiftCardSubtle">{formatRegionOwnership(room)}</div> : null}
             </div>
           }
@@ -484,49 +463,34 @@ export function CompanyFinalShiftCard({
         />
         <Field label="Başlangıç" value={fmtTR(shift.startAt)} />
         <Field label="Bitiş" value={fmtTR(shift.endAt)} />
-        <Field label="Durum / Hakediş" value={<CommercialReadonlySummary item={shift.commercialBackbone} compact />} wide />
       </div>
 
-      <CardSection title="Taşımacılık Firması Teklifi">
-        {renderRoomOfferSummary(shift)}
-      </CardSection>
-
-      <CardSection title="Hizmet Alan Firma Teklifi">
-        {renderCompanyOfferSummary(shift)}
-      </CardSection>
-
-      <CardSection title="Ödeme / hakediş">
-        <CommercialReadonlySummary item={shift.commercialBackbone} compact />
-      </CardSection>
-
-      <CompanyExtendCardSection
-        shift={shift}
-        busy={busy}
-        fmtTR={fmtTR}
-        onOpenExtendModal={onOpenExtendModal}
-        onOpenPreview={onOpenPreview}
-        canExtend={canReassign}
-        extendRequested={extendRequested}
-      />
-
-      <ActionGroup note={agreementMeta.note}>
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy}
-          onClick={(e) => {
-            stopCardClick(e);
-            onOpenOpsEvents(shift.id);
-          }}
-        >
-          İşlem Kaydı
-        </button>
-        <AgreementConversionStatus
+      <ShiftCommercialSummary shift={shift} restricted={restricted} />
+      <ShiftLifecycle shift={shift} restricted={restricted} />
+      <ShiftCardPrimaryAction label={primaryLabel} disabled={busy} onClick={handlePrimaryAction} note={restricted ? "Okul ve organizasyon bağlamında ticari yaşam döngüsü kapalıdır." : null} />
+      <ShiftCardDetails>
+        {!restricted ? (
+          <>
+            <CardSection title="Teklif ayrıntıları">
+              <ShiftOfferDetails shift={shift} />
+            </CardSection>
+            <CardSection title="Sözleşme">
+              <AgreementConversionStatus shift={shift} busy={busy} meta={agreementMeta} onConvertShiftToAgreement={onConvertShiftToAgreement} showAction={false} />
+            </CardSection>
+          </>
+        ) : null}
+        <CompanyExtendCardSection
           shift={shift}
           busy={busy}
-          meta={agreementMeta}
-          onConvertShiftToAgreement={onConvertShiftToAgreement}
+          fmtTR={fmtTR}
+          onOpenExtendModal={onOpenExtendModal}
+          onOpenPreview={onOpenPreview}
+          canExtend={canReassign}
+          extendRequested={extendRequested}
         />
+      </ShiftCardDetails>
+      <ActionGroup note={agreementMeta.note}>
+        <button type="button" className="btn sm" disabled={busy} onClick={(e) => { stopCardClick(e); onOpenOpsEvents(shift.id); }}>İşlem Kaydı</button>
       </ActionGroup>
     </CardShell>
   );
