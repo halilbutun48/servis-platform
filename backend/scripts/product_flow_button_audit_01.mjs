@@ -35,8 +35,28 @@ async function relocateRepoDebugLogIfPresent() {
   }
 
   await ensureDir(artifactRoot);
-  await fs.rm(chromiumDebugLogPath, { force: true });
-  await fs.rename(repoDebugLogPath, chromiumDebugLogPath);
+  let lastError = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await fs.rm(chromiumDebugLogPath, { force: true, maxRetries: 2, retryDelay: 100 });
+      await fs.rename(repoDebugLogPath, chromiumDebugLogPath);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!new Set(["EBUSY", "EPERM", "EACCES"]).has(error?.code)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
+
+  try {
+    await fs.copyFile(repoDebugLogPath, chromiumDebugLogPath);
+    await fs.rm(repoDebugLogPath, { force: true, maxRetries: 5, retryDelay: 200 });
+    await fs.access(repoDebugLogPath);
+    throw lastError || new Error("debug.log could not be removed after artifact copy");
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
 }
 
 const VIEWPORTS = [
