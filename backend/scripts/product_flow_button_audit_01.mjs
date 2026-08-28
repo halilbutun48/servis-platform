@@ -8,6 +8,7 @@ import { buildSmokeEvidenceIdentity } from "./lib/guardSmokeEvidence.js";
 import {
   revealFirstVisibleShiftCardDetails,
   revealFirstVisibleShiftOtherActions,
+  relocateRepoDebugLogIfPresent,
   waitForShiftCardContent,
 } from "./lib/productFlowShiftSmoke.js";
 
@@ -26,38 +27,6 @@ const reportJsonPath = path.join(artifactRoot, "report.json");
 const reportMdPath = path.join(artifactRoot, "report.md");
 const chromiumDebugLogPath = path.join(artifactRoot, "chromium-debug.log");
 const repoDebugLogPath = path.join(repoRoot, "debug.log");
-
-async function relocateRepoDebugLogIfPresent() {
-  try {
-    await fs.access(repoDebugLogPath);
-  } catch {
-    return;
-  }
-
-  await ensureDir(artifactRoot);
-  let lastError = null;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      await fs.rm(chromiumDebugLogPath, { force: true, maxRetries: 2, retryDelay: 100 });
-      await fs.rename(repoDebugLogPath, chromiumDebugLogPath);
-      return;
-    } catch (error) {
-      lastError = error;
-      if (!new Set(["EBUSY", "EPERM", "EACCES"]).has(error?.code)) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
-    }
-  }
-
-  try {
-    await fs.copyFile(repoDebugLogPath, chromiumDebugLogPath);
-    await fs.rm(repoDebugLogPath, { force: true, maxRetries: 5, retryDelay: 200 });
-    await fs.access(repoDebugLogPath);
-    throw lastError || new Error("debug.log could not be removed after artifact copy");
-  } catch (error) {
-    if (error?.code === "ENOENT") return;
-    throw error;
-  }
-}
 
 const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
@@ -1233,7 +1202,7 @@ async function main() {
   const md = renderMarkdown(report);
   await fs.writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   await fs.writeFile(reportMdPath, `${md}\n`, "utf8");
-  await relocateRepoDebugLogIfPresent();
+  await relocateRepoDebugLogIfPresent({ repoDebugLogPath, artifactRoot, chromiumDebugLogPath });
 
   console.log(`WROTE ${path.relative(repoRoot, reportJsonPath).replace(/\\/g, "/")}`);
   console.log(`WROTE ${path.relative(repoRoot, reportMdPath).replace(/\\/g, "/")}`);
@@ -1253,7 +1222,7 @@ async function main() {
 main().catch(async (error) => {
   try {
     await ensureDir(artifactRoot);
-    await relocateRepoDebugLogIfPresent();
+    await relocateRepoDebugLogIfPresent({ repoDebugLogPath, artifactRoot, chromiumDebugLogPath });
     const failureReport = {
       generatedAt: new Date().toISOString(),
       repoRoot,

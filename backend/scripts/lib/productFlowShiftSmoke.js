@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+
 function normalize(text) {
   return String(text || "")
     .normalize("NFKD")
@@ -48,4 +50,36 @@ export async function revealFirstVisibleShiftOtherActions(page) {
 
 export async function waitForShiftCardContent(page, timeoutMs = 10000) {
   await page.locator('[data-testid="commercial-shift-card"]').first().waitFor({ state: "attached", timeout: timeoutMs }).catch(() => {});
+}
+
+export async function relocateRepoDebugLogIfPresent({ repoDebugLogPath, artifactRoot, chromiumDebugLogPath }) {
+  try {
+    await fs.access(repoDebugLogPath);
+  } catch {
+    return;
+  }
+
+  await fs.mkdir(artifactRoot, { recursive: true });
+  let lastError = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await fs.rm(chromiumDebugLogPath, { force: true, maxRetries: 2, retryDelay: 100 });
+      await fs.rename(repoDebugLogPath, chromiumDebugLogPath);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (!new Set(["EBUSY", "EPERM", "EACCES"]).has(error?.code)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
+
+  try {
+    await fs.copyFile(repoDebugLogPath, chromiumDebugLogPath);
+    await fs.rm(repoDebugLogPath, { force: true, maxRetries: 5, retryDelay: 200 });
+    await fs.access(repoDebugLogPath);
+    throw lastError || new Error("debug.log could not be removed after artifact copy");
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
 }
