@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-08-27
+Tarih: 2026-08-28
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
 - Toplam package script entry: `436`
-- Toplam executable tracked file: `1304`
-- Combined registry row: `1740`
-- Root/backend/web/mobile package dağılımı: root `271`, backend `868`, web `97`, mobile `201`
+- Toplam executable tracked file: `1306`
+- Combined registry row: `1742`
+- Root/backend/web/mobile package dağılımı: root `271`, backend `870`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `68`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -389,7 +389,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `730`
+- NEEDS_REVIEW: `734`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -410,7 +410,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 730 |
+| NEEDS_REVIEW | 734 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -921,7 +921,9 @@ Repo: `servis-platform`
 | guardValidationEnvironment.js | backend/scripts/lib/guardValidationEnvironment.js | backend |  | review | NEEDS_REVIEW |  | GUARD-VALIDATION-ENVIRONMENT |  | Owner or chain unclear |  |
 | impactAwareValidationExecutorV1.js | backend/scripts/lib/impactAwareValidationExecutorV1.js | backend |  | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-EXECUTOR-V-1 |  | Owner or chain unclear |  |
 | impactAwareValidationPlannerV1.js | backend/scripts/lib/impactAwareValidationPlannerV1.js | backend |  | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-PLANNER-V-1 |  | Owner or chain unclear |  |
+| prismaSchemaIdentity.js | backend/scripts/lib/prismaSchemaIdentity.js | backend |  | review | NEEDS_REVIEW |  | PRISMA-SCHEMA-IDENTITY |  | Owner or chain unclear |  |
 | productExtensionsRegistry.js | backend/scripts/lib/productExtensionsRegistry.js | backend |  | review | NEEDS_REVIEW |  | PRODUCT-EXTENSIONS |  | Owner or chain unclear |  |
+| productFlowShiftSmoke.js | backend/scripts/lib/productFlowShiftSmoke.js | backend |  | review | NEEDS_REVIEW |  | PRODUCT-FLOW-SHIFT-SMOKE |  | Owner or chain unclear |  |
 | live_gate_readiness_hotfix_check.mjs | backend/scripts/live_gate_readiness_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | LIVE-GATE-READINESS-HOTFIX-CHECK |  | Owner or chain unclear |  |
 | live_tracking_final_01_acceptance_check.js | backend/scripts/live_tracking_final_01_acceptance_check.js | backend | root:check:livetrackingfinal01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | load_test_2000_users_01_check.js | backend/scripts/load_test_2000_users_01_check.js | backend | root:check:loadtest2000users01 | review | NEEDS_REVIEW |  | LOAD-TEST-2000-USERS-01 |  | Owner or chain unclear |  |
@@ -1142,6 +1144,7 @@ Repo: `servis-platform`
 | pay_01e_payment_readonly_closure_check.js | backend/scripts/pay_01e_payment_readonly_closure_check.js | backend | root:check:pay01e | product | ACTIVE |  | PAY-01-E-PAYMENT-READONLY-CLOSURE-CHECK |  | Owner or chain unclear | product check/helper |
 | pay_safe_01_payment_write_gate_check.js | backend/scripts/pay_safe_01_payment_write_gate_check.js | backend | root:check:paysafe01 | product | ACTIVE |  | PAY-SAFE-01-PAYMENT-WRITE-GATE-CHECK |  | Owner or chain unclear | product check/helper |
 | plan_center_guided_flow_persistence_01_check.js | backend/scripts/plan_center_guided_flow_persistence_01_check.js | backend | root:check:plancenterguidedflowpersistence01 | review | NEEDS_REVIEW |  | PLAN-CENTER-GUIDED-FLOW-PERSISTENCE-01-CHECK |  | Owner or chain unclear |  |
+| post_3_identity_and_evidence_lifecycle_hardening_01_check.js | backend/scripts/post_3_identity_and_evidence_lifecycle_hardening_01_check.js | backend |  | review | NEEDS_REVIEW |  | POST-3-IDENTITY-AND-EVIDENCE-LIFECYCLE-HARDENING-01-CHECK |  | Owner or chain unclear |  |
 | product_flow_button_audit_01.mjs | backend/scripts/product_flow_button_audit_01.mjs | backend | root:check:productflowbuttonaudit01, root:smoke:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Owner or chain unclear |  |
 | product_flow_button_audit_01_check.js | backend/scripts/product_flow_button_audit_01_check.js | backend | root:check:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | production_rate_limit_policy_01_check.js | backend/scripts/production_rate_limit_policy_01_check.js | backend | root:check:productionratelimitpolicy01 | product-extensions | NEEDS_REVIEW |  | PRODUCTION-RATE-LIMIT-POLICY-01-CHECK |  | Owner or chain unclear |  |
@@ -1206,6 +1209,7 @@ Repo: `servis-platform`
 | ux_all_panels_reality_audit_01_check.js | backend/scripts/ux_all_panels_reality_audit_01_check.js | backend | root:check:uxallpanelsrealityaudit01 | product | ACTIVE |  | UX-ALL-PANELS-REALITY-AUDIT-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_brand_login_premium_01_check.js | backend/scripts/ux_brand_login_premium_01_check.js | backend | root:check:uxbrandloginpremium01 | product | ACTIVE |  | UX-BRAND-LOGIN-PREMIUM-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_collapsible_panels_01_check.js | backend/scripts/ux_collapsible_panels_01_check.js | backend | root:check:uxcollapsiblepanels01 | product | ACTIVE |  | UX-COLLAPSIBLE-PANELS-01-CHECK |  | Owner or chain unclear | product check/helper |
+| ux_commercial_shift_card_closure_01_browser.mjs | backend/scripts/ux_commercial_shift_card_closure_01_browser.mjs | backend |  | review | NEEDS_REVIEW |  | UX-COMMERCIAL-SHIFT-CARD-CLOSURE-01-BROWSER |  | Owner or chain unclear |  |
 | ux_company_agreements_mobile_parity_01_check.js | backend/scripts/ux_company_agreements_mobile_parity_01_check.js | backend | root:check:uxcompanyagreementsmobileparity01 | product | ACTIVE |  | UX-COMPANY-AGREEMENTS-MOBILE-PARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_mobile_action_clarity_01_check.js | backend/scripts/ux_company_mobile_action_clarity_01_check.js | backend | root:check:uxcompanymobileactionclarity01 | product | ACTIVE |  | UX-COMPANY-MOBILE-ACTION-CLARITY-01-CHECK |  | Owner or chain unclear | product check/helper |
 | ux_company_ops_panel_tabs_01_check.js | backend/scripts/ux_company_ops_panel_tabs_01_check.js | backend | root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelssmoke01 | product | ACTIVE |  | UX-COMPANY-OPS-PANEL-TABS-01-CHECK |  | Owner or chain unclear | product check/helper |
