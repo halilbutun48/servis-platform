@@ -414,9 +414,7 @@ async function getDispatchSemanticState(page, viewportName) {
       };
       const countVisible = (selector) =>
         Array.from(document.querySelectorAll(selector)).filter((el) => isVisibleElement(el)).length;
-      const selectedCount = vp === "desktop"
-        ? countVisible("tbody tr")
-        : countVisible("article.shiftCard, .shiftCard");
+      const selectedCount = countVisible("tbody tr, article.shiftCard, .shiftCard");
       const applyButton = Array.from(document.querySelectorAll("button")).find((btn) => {
         if (!isVisibleElement(btn)) return false;
         return /Önizlemeyi Uygula: Böl & Onayla/i.test(String(btn.textContent || "").trim());

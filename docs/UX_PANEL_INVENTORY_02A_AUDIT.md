@@ -17,7 +17,7 @@ Tarama kapsamı:
 - `web/src/App.jsx` route/menu bağlantıları
 
 Özet envanter:
-  - `125` panel-related JSX dosyası: `web/src/panels/**/*.jsx` (external reference görünürlük kartı dahil)
+  - `126` panel-related JSX dosyası: `web/src/panels/**/*.jsx` (commercial shift card presentation owner dahil)
 - `63` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
 - `103` gerçek route surface + `/` root redirect ile `104` unique route literal
 
