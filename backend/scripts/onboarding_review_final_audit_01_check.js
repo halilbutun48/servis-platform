@@ -300,7 +300,7 @@ mustNot(cachedNames, "public-leads.json", "public lead runtime artifact is not s
     { path: "backend/src/routes/agreements.js", sha256: "90CED5678F26B47AE69CE985D6D436B70DF8886B523ECA8988E51BE53ECD2B9A" },
     { path: "backend/src/routes/auth.js", sha256: "A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3" },
     { path: "backend/src/routes/commercialCore.js", sha256: "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F" },
-    { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "11A0C1B1CDE82470871EBBBD90CEE37F4CAA5C2AD6C25AB7B39586F11CBFDD1F" },
+    { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "AF4576A429E1B7026974DFC18DB5F9EB034580818A7D32159644878A4E7C94C7" },
     { path: "backend/src/routes/offers.js", sha256: "40C553F43D0709D3146D6DA48893B2FDAF9DA3B3814961ECA9C0FD8FA15FF649" },
     { path: "backend/src/routes/public.js", sha256: "5196203AC501B365D52D79D29FA355DF23421180C9337D58EEE3B19707AFFF23" },
     { path: "backend/src/routes/operationProof.js", sha256: "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0" },

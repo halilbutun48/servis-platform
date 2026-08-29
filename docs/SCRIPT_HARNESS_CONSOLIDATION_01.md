@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-08-28
+Tarih: 2026-08-29
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `439`
-- Toplam executable tracked file: `1311`
-- Combined registry row: `1750`
-- Root/backend/web/mobile package dağılımı: root `274`, backend `875`, web `97`, mobile `201`
+- Toplam package script entry: `441`
+- Toplam executable tracked file: `1316`
+- Combined registry row: `1757`
+- Root/backend/web/mobile package dağılımı: root `276`, backend `880`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `740`
+- NEEDS_REVIEW: `747`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `364`
+- Eski sistem term eşleşmesi: `371`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 740 |
+| NEEDS_REVIEW | 747 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -481,6 +481,8 @@ Repo: `servis-platform`
 | root:check:financialoperationssurfaceandrbac01 | package.json | root | node backend/scripts/financial_operations_surface_and_rbac_01_check.js | verify-core | ACTIVE_CORE |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Breaks canonical verification chain |  |
 | root:check:operationalcostmodel01 | package.json | root | node backend/scripts/operational_cost_model_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-OPERATIONALCOSTMODEL-01 |  | Breaks canonical verification chain |  |
 | root:check:externalcostdataproviderfreshness01 | package.json | root | node backend/scripts/external_cost_data_provider_freshness_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-EXTERNALCOSTDATAPROVIDERFRESHNESS-01 |  | Owner or chain unclear |  |
+| root:accept:externalcostdataproviderfreshness01 | package.json | root | node backend/scripts/external_cost_data_provider_freshness_01_live.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-EXTERNALCOSTDATAPROVIDERFRESHNESS-01 |  | Owner or chain unclear |  |
+| root:accept:externalcostdataproviderfreshness01db | package.json | root | node backend/scripts/external_cost_data_provider_freshness_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-EXTERNALCOSTDATAPROVIDERFRESHNESS-01-DB |  | Owner or chain unclear |  |
 | root:check:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_check.js | verify-core | ACTIVE_CORE |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Breaks canonical verification chain |  |
 | root:accept:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
 | root:smoke:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
@@ -883,6 +885,9 @@ Repo: `servis-platform`
 | copilot_smart_diagnostic_engine_01_check.js | backend/scripts/copilot_smart_diagnostic_engine_01_check.js | backend | root:check:copilotsmartdiagnosticengine01 | review | NEEDS_REVIEW |  | COPILOT-SMART-DIAGNOSTIC-ENGINE-01-CHECK |  | Owner or chain unclear |  |
 | copilot_stop_route_draft_01_check.js | backend/scripts/copilot_stop_route_draft_01_check.js | backend | root:check:copilotstoproutedraft01 | review | NEEDS_REVIEW |  | COPILOT-STOP-ROUTE-DRAFT-01-CHECK |  | Owner or chain unclear |  |
 | copilot_workflow_reasoning_engine_01_check.js | backend/scripts/copilot_workflow_reasoning_engine_01_check.js | backend | root:check:copilotworkflowreasoningengine01 | review | NEEDS_REVIEW |  | COPILOT-WORKFLOW-REASONING-ENGINE-01-CHECK |  | Owner or chain unclear |  |
+| cost_scenario_forecast_and_savings_01_acceptance.mjs | backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | backend | root:accept:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
+| cost_scenario_forecast_and_savings_01_browser.mjs | backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | backend | root:smoke:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
+| cost_scenario_forecast_and_savings_01_check.js | backend/scripts/cost_scenario_forecast_and_savings_01_check.js | backend | root:check:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
 | current_head_scope_policy_01_check.js | backend/scripts/current_head_scope_policy_01_check.js | backend |  | review | NEEDS_REVIEW |  | CURRENT-HEAD-SCOPE-POLICY-01-CHECK |  | Owner or chain unclear |  |
 | dashboard_bulk_endpoint_01_check.js | backend/scripts/dashboard_bulk_endpoint_01_check.js | backend | root:check:dashboardbulkendpoint01 | review | NEEDS_REVIEW |  | DASHBOARD-BULK-ENDPOINT-01-CHECK |  | Owner or chain unclear |  |
 | data_integrity_and_recovery_01_check.js | backend/scripts/data_integrity_and_recovery_01_check.js | backend | root:check:dataintegrityandrecovery01 | review | NEEDS_REVIEW |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Owner or chain unclear |  |
@@ -899,7 +904,9 @@ Repo: `servis-platform`
 | eta_osrm_02_api_eta_bridge_check.js | backend/scripts/eta_osrm_02_api_eta_bridge_check.js | backend | root:check:etaosrm02 | review | NEEDS_REVIEW |  | ETA-OSRM-02-API-ETA-BRIDGE-CHECK |  | Owner or chain unclear |  |
 | eta_sanity_01_live_tracking_check.js | backend/scripts/eta_sanity_01_live_tracking_check.js | backend | root:check:etasanity01 | review | NEEDS_REVIEW |  | ETA-SANITY-01-LIVE-TRACKING-CHECK |  | Owner or chain unclear |  |
 | excel_to_route_readiness_redteam_01_check.js | backend/scripts/excel_to_route_readiness_redteam_01_check.js | backend | root:check:exceltoroutereadinessredteam01 | review | NEEDS_REVIEW |  | EXCEL-TO-ROUTE-READINESS-REDTEAM-01-CHECK |  | Owner or chain unclear |  |
+| external_cost_data_provider_freshness_01_acceptance.mjs | backend/scripts/external_cost_data_provider_freshness_01_acceptance.mjs | backend | root:accept:externalcostdataproviderfreshness01db | review | NEEDS_REVIEW |  | EXTERNAL-COST-DATA-PROVIDER-FRESHNESS-01-ACCEPTANCE |  | Owner or chain unclear |  |
 | external_cost_data_provider_freshness_01_check.js | backend/scripts/external_cost_data_provider_freshness_01_check.js | backend | root:check:externalcostdataproviderfreshness01 | review | NEEDS_REVIEW |  | EXTERNAL-COST-DATA-PROVIDER-FRESHNESS-01-CHECK |  | Owner or chain unclear |  |
+| external_cost_data_provider_freshness_01_live.mjs | backend/scripts/external_cost_data_provider_freshness_01_live.mjs | backend | root:accept:externalcostdataproviderfreshness01 | review | NEEDS_REVIEW |  | EXTERNAL-COST-DATA-PROVIDER-FRESHNESS-01-LIVE |  | Owner or chain unclear |  |
 | field_launch_pack_01_readiness_check.js | backend/scripts/field_launch_pack_01_readiness_check.js | backend | root:check:fieldlaunch01 | review | NEEDS_REVIEW |  | FIELD-LAUNCH-PACK-01-READINESS-CHECK |  | Owner or chain unclear |  |
 | final_ux_smoke_01_check.js | backend/scripts/final_ux_smoke_01_check.js | backend | root:check:finaluxsmoke01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | financial_operations_surface_and_rbac_01_check.js | backend/scripts/financial_operations_surface_and_rbac_01_check.js | backend | root:check:financialoperationssurfaceandrbac01 | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SURFACE-AND-RBAC-01 |  | Owner or chain unclear |  |
@@ -1378,11 +1385,15 @@ Repo: `servis-platform`
 | routeMounts.js | backend/src/bootstrap/routeMounts.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-MOUNTS |  | Owner or chain unclear |  |
 | env.js | backend/src/env.js | backend | mobile:check:m81.4, mobile:check:m82.6 | review | NEEDS_REVIEW |  | ENV |  | Owner or chain unclear |  |
 | http.js | backend/src/errors/http.js | backend |  | review | NEEDS_REVIEW |  | HTTP |  | Owner or chain unclear |  |
+| epdkProvider.js | backend/src/externalCost/epdkProvider.js | backend |  | review | NEEDS_REVIEW |  | EPDK-PROVIDER |  | Owner or chain unclear |  |
 | externalCostReferenceService.js | backend/src/externalCost/externalCostReferenceService.js | backend |  | review | NEEDS_REVIEW |  | EXTERNAL-COST-REFERENCE-SERVICE |  | Owner or chain unclear |  |
+| providerFactory.js | backend/src/externalCost/providerFactory.js | backend |  | review | NEEDS_REVIEW |  | PROVIDER-FACTORY |  | Owner or chain unclear |  |
 | providerRegistry.js | backend/src/externalCost/providerRegistry.js | backend |  | review | NEEDS_REVIEW |  | PROVIDER-REGISTRY |  | Owner or chain unclear |  |
 | referenceContract.js | backend/src/externalCost/referenceContract.js | backend |  | review | NEEDS_REVIEW |  | REFERENCE-CONTRACT |  | Owner or chain unclear |  |
+| referenceLayers.js | backend/src/externalCost/referenceLayers.js | backend |  | review | NEEDS_REVIEW |  | REFERENCE-LAYERS |  | Owner or chain unclear |  |
 | router.js | backend/src/externalCost/router.js | backend | root:check:m98e4b | review | NEEDS_REVIEW |  | ROUTER |  | Owner or chain unclear |  |
 | companyBudgetAndServiceCost.js | backend/src/finance/companyBudgetAndServiceCost.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AND-SERVICE-COST |  | Owner or chain unclear |  |
+| costScenarioForecast.js | backend/src/finance/costScenarioForecast.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST |  | Owner or chain unclear |  |
 | financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
 | hakedisInvoiceReconciliation.js | backend/src/finance/hakedisInvoiceReconciliation.js | backend |  | review | NEEDS_REVIEW |  | HAKEDIS-INVOICE-RECONCILIATION |  | Owner or chain unclear |  |
 | operationalCostMath.js | backend/src/finance/operationalCostMath.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MATH |  | Owner or chain unclear |  |
@@ -1479,6 +1490,7 @@ Repo: `servis-platform`
 | companyHub.js | backend/src/routes/companyHub.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-HUB |  | Owner or chain unclear |  |
 | companyOverview.js | backend/src/routes/companyOverview.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-OVERVIEW |  | Owner or chain unclear |  |
 | companyPersonels.js | backend/src/routes/companyPersonels.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-PERSONELS |  | Owner or chain unclear |  |
+| costScenario.js | backend/src/routes/costScenario.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO |  | Owner or chain unclear |  |
 | dashboardBulk.js | backend/src/routes/dashboardBulk.js | backend |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | drivers.js | backend/src/routes/drivers.js | backend |  | review | NEEDS_REVIEW |  | DRIVERS |  | Owner or chain unclear |  |
@@ -1487,7 +1499,7 @@ Repo: `servis-platform`
 | geocode.js | backend/src/routes/geocode.js | backend |  | review | NEEDS_REVIEW |  | GEOCODE |  | Owner or chain unclear |  |
 | gps.js | backend/src/routes/gps.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:securitykvkkfinal01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
-| live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
+| live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:accept:externalcostdataproviderfreshness01, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
 | me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
@@ -1582,11 +1594,6 @@ Repo: `servis-platform`
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
 | z.js | backend/src/z.js | backend | root:check:guardv2standardization01, root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
-| cost_scenario_forecast_and_savings_01_check.js | backend/scripts/cost_scenario_forecast_and_savings_01_check.js | backend | root:check:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
-| cost_scenario_forecast_and_savings_01_acceptance.mjs | backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | backend | root:accept:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
-| cost_scenario_forecast_and_savings_01_browser.mjs | backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | backend | root:smoke:costscenarioforecastandsavings01 | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
-| costScenarioForecast.js | backend/src/finance/costScenarioForecast.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST |  | Owner or chain unclear |  |
-| costScenario.js | backend/src/routes/costScenario.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

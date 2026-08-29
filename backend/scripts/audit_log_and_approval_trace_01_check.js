@@ -182,7 +182,7 @@ function buildExpectedShaMap(entries) {
 const batch09ApprovedConcurrentWorktreeEntries = [
   { path: "backend/README.md", sha256: "0E5C4A471BB7CD0B361C7EC6FB33899CABD810D8CB3892913F66FE26BE8F8AE7" },
     { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "367A0ECC128DEE9B5B8BD9B969518CFF390DF0F16D1FFC30B3C1A5216F01644C" },
-  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "1B8216B400772F3F1D3FACD55BC690FCC2CC662BB3CB93006117534AC6D32F19" },
+  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "081C69CF9F47AAD274BD23A3D60AD9A5ABD1E4556F214398AAFD7CDC571FC831" },
   { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "F4F9BE905D1908ED9FB632225404968F36080F7B30785A20534D5D7C65380567" },
   { path: "backend/src/bootstrap/rateLimits.js", sha256: "92C93F276B04E5B4A3179E5F93D6396A37FA968000AA2FCEAE1E1F51752E0135" },
   { path: "backend/src/middleware/apiRequestLog.js", sha256: "5F27CA48608B10C6DDCD35F9D1C1E146D6AD432EAD63C90CF117F0EA3A051EE3" },
@@ -568,8 +568,8 @@ function main() {
   const activeRegistryCheckerPaths = buildRegistryOwnedCheckerPaths(packageScripts, productExtensionsCheckScripts);
   const coreGuardEntries = [
     { path: "backend/scripts/current_head_scope_policy_01_check.js", sha256: "0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F" },
-   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "92FC2E86B735C730F27E033AF15C0A6A759EFE936E4B7724A9C9309E0D01F103" },
-   { path: "backend/scripts/lib/prismaSchemaIdentity.js", sha256: "0C931F9A24EBE4913A665F2A24321606353884CA8FD1A8820B1C76B0CAC9A913" },
+   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "E64DE05311E0C3EBA157D6B128170D08C27D3ED4D2541BC9014289D42C85A4AE" },
+   { path: "backend/scripts/lib/prismaSchemaIdentity.js", sha256: "014012B45C27F7C17FAD497A0053D95183E5D4BCB50E76CAE2B17C5D4E272689" },
   { path: "backend/scripts/lib/productExtensionsRegistry.js", sha256: "6C0FA82E0B7024D4DADF5AA588E33509A5D91866CF39D8D875A0BFEF94064D8F" },
   { path: "backend/scripts/lib/guardGitScope.js", sha256: "2293510B16AABB37453931C32ADC754F5947BE7BED50AFA395E505022C8FB2E1" },
   { path: "backend/scripts/lib/guardRunnerContracts.js", sha256: "1B180E2E1C901041734CCE494774865C9644CA02917B1326B6FEF8EB713E239A" },

@@ -15,7 +15,7 @@ export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = [
   },
   {
     path: "backend/src/routes/commercialCoreRoomRoutes.js",
-    sha256: "11A0C1B1CDE82470871EBBBD90CEE37F4CAA5C2AD6C25AB7B39586F11CBFDD1F",
+    sha256: "AF4576A429E1B7026974DFC18DB5F9EB034580818A7D32159644878A4E7C94C7",
   },
   {
     path: "backend/src/routes/commercialCoreRouteData.js",

@@ -642,7 +642,7 @@ async function main() {
   mustFileSha256('backend/scripts/lib/guardSmokeEvidence.js', 'BB5A4A9658F57496CD39869068842A5D28FDCA3690E0AE39B99F19C702B1FB5D', 'guard smoke evidence helper SHA matches');
   mustFileSha256('backend/scripts/ux_live_panel_premium_smoke_01_check.js', '57EC9539945C5B250122366EA966FC08BC798B6452760C2CED935DE906E1CAAA', 'premium smoke check SHA matches');
   mustFileSha256('backend/scripts/current_head_scope_policy_01_check.js', '0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F', 'current head scope policy check SHA matches');
-  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', '92FC2E86B735C730F27E033AF15C0A6A759EFE936E4B7724A9C9309E0D01F103', 'current head scope policy manifest SHA matches');
+  mustFileSha256('backend/scripts/lib/currentHeadScopePolicy.js', 'E64DE05311E0C3EBA157D6B128170D08C27D3ED4D2541BC9014289D42C85A4AE', 'current head scope policy manifest SHA matches');
   for (const entry of ACCEPTED_PRISMA_MIGRATIONS) {
     mustNormalizedTextSha256(entry.path, entry.sha256, `accepted Prisma migration SHA matches ${entry.path}`);
     mustMigrationDirectoryShape(path.posix.dirname(entry.path), `accepted Prisma migration directory shape ${entry.path}`);

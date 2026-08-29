@@ -168,7 +168,7 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
         <div>
           <div className="panelSectionTitle">Piyasa referansı</div>
           <div data-testid="external-reference-value" className="panelStatValue" style={{ marginTop: 8 }}>
-          {isAvailable ? referenceValue : <span data-testid="external-reference-no-data">Kullanılabilir dış veri yok</span>}
+          {isAvailable ? referenceValue : <span data-testid="external-reference-no-data">Piyasa referansı henüz mevcut değil.</span>}
           </div>
           {guidance?.costBased ? <div className="panelMeta" style={{ marginTop: 8 }}>Maliyet bazlı teklif rehberi: {formatBand(guidance.costBased, guidance.costBased.currencyCode || "TRY")}</div> : null}
         </div>
@@ -191,7 +191,7 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
       ) : scopeKey === "ROOM" ? (
         <div className="panelMeta" style={{ marginTop: 8 }}>Bölgesel gözlenen teklif bandı için henüz yeterli anonim gözlem yok.</div>
       ) : null}
-      <div className="panelMeta" style={{ marginTop: 6 }}>Bu değer gerçek maliyetiniz değildir; iç maliyet ve sözleşme verileri önceliklidir.</div>
+      <div className="panelMeta" style={{ marginTop: 6 }}>Bu bilgi gerçek maliyetinizin veya sözleşme tutarınızın yerine geçmez. Bu değer gerçek maliyetiniz değildir; iç maliyet ve sözleşme verileri önceliklidir.</div>
       <div className="panelMeta" style={{ marginTop: 6 }}>Yalnızca salt okunur önizleme desteğidir; otomatik işlem başlatmaz.</div>
       {externalReferenceFallbackLabel(external?.fallbackState) ? <div className="panelMeta" style={{ marginTop: 6 }}>{externalReferenceFallbackLabel(external.fallbackState)}.</div> : null}
       <details data-testid="external-reference-details" style={{ marginTop: 10 }}>
