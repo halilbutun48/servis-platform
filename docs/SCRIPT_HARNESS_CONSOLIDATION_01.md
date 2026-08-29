@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `444`
-- Toplam executable tracked file: `1320`
-- Combined registry row: `1764`
-- Root/backend/web/mobile package dağılımı: root `279`, backend `884`, web `97`, mobile `201`
+- Toplam executable tracked file: `1322`
+- Combined registry row: `1766`
+- Root/backend/web/mobile package dağılımı: root `279`, backend `886`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `754`
+- NEEDS_REVIEW: `756`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `373`
+- Eski sistem term eşleşmesi: `377`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 754 |
+| NEEDS_REVIEW | 756 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1406,6 +1406,8 @@ Repo: `servis-platform`
 | operationalCostMath.js | backend/src/finance/operationalCostMath.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MATH |  | Owner or chain unclear |  |
 | operationalCostModel.js | backend/src/finance/operationalCostModel.js | backend |  | review | NEEDS_REVIEW |  | OPERATIONAL-COST-MODEL |  | Owner or chain unclear |  |
 | roomProfitabilityAndQuoteFloor.js | backend/src/finance/roomProfitabilityAndQuoteFloor.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR |  | Owner or chain unclear |  |
+| vehicleConsumptionReferences.js | backend/src/finance/vehicleConsumptionReferences.js | backend |  | review | NEEDS_REVIEW |  | VEHICLE-CONSUMPTION-REFERENCES |  | Owner or chain unclear |  |
+| vehiclePlanReferences.js | backend/src/finance/vehiclePlanReferences.js | backend |  | review | NEEDS_REVIEW |  | VEHICLE-PLAN-REFERENCES |  | Owner or chain unclear |  |
 | geo.js | backend/src/geo.js | backend | root:check:addressgeocodingconfidence01 | review | NEEDS_REVIEW |  | GEO |  | Owner or chain unclear |  |
 | gpsStateGate.js | backend/src/gps/gpsStateGate.js | backend |  | review | NEEDS_REVIEW |  | GPS-STATE-GATE |  | Owner or chain unclear |  |
 | sourceLabel.js | backend/src/gps/sourceLabel.js | backend |  | review | NEEDS_REVIEW |  | SOURCE-LABEL |  | Owner or chain unclear |  |
@@ -2473,8 +2475,8 @@ Repo: `servis-platform`
 | backend/scripts/copilot_role_task_matrix_01_check.js | Hub | NEEDS_REVIEW |
 | backend/scripts/copilot_route_review_human_approval_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_stop_route_draft_01_check.js | Hub | NEEDS_REVIEW |
-| backend/scripts/dashboard_bulk_endpoint_01_check.js | Hub | NEEDS_REVIEW |
-| backend/scripts/data_integrity_and_recovery_01_check.js | Hub, OperationProof | NEEDS_REVIEW |
+| backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | Yer | NEEDS_REVIEW |
+| backend/scripts/cost_scenario_forecast_and_savings_01_check.js | Yer | NEEDS_REVIEW |
 
 ## 11) Cleanup Raporu
 
