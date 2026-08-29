@@ -64,7 +64,10 @@ function minutesFromDate(value) {
 }
 
 function routePointsForShift(shift, stopPoints = null) {
-  const hub = Number.isFinite(Number(shift?.hubLat)) && Number.isFinite(Number(shift?.hubLng))
+  const hasHubCoordinates = shift?.hubLat !== null && shift?.hubLat !== undefined
+    && shift?.hubLng !== null && shift?.hubLng !== undefined
+    && String(shift.hubLat).trim() !== "" && String(shift.hubLng).trim() !== "";
+  const hub = hasHubCoordinates && Number.isFinite(Number(shift.hubLat)) && Number.isFinite(Number(shift.hubLng))
     ? { lat: Number(shift.hubLat), lng: Number(shift.hubLng) }
     : null;
   const stops = Array.isArray(stopPoints)

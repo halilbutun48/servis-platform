@@ -111,8 +111,13 @@ async function main() {
   if (preview.data?.provenance?.scenarioDataClass === "USER_SCENARIO_OVERRIDE" && preview.data?.provenance?.baselineDataClass) pass("preview keeps baseline and scenario provenance distinct");
   else fail("preview keeps baseline and scenario provenance distinct");
 
-  const companyShift = companyBaseline.data?.source?.shiftId
-    ? await prisma.shift.findUnique({ where: { id: Number(companyBaseline.data.source.shiftId) }, select: { _count: { select: { stops: true } }, stops: { orderBy: { order: "asc" }, take: 1, select: { lat: true, lng: true } } } })
+  const companyIdentity = await prisma.user.findUnique({ where: { email: "company@demo.com" }, select: { companyId: true } });
+  const companyShift = companyIdentity?.companyId
+    ? await prisma.shift.findFirst({
+      where: { companyId: companyIdentity.companyId, status: { not: "DRAFT" } },
+      orderBy: [{ routeSnapshotValidatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+      select: { _count: { select: { stops: true } }, stops: { orderBy: { order: "asc" }, take: 1, select: { lat: true, lng: true } } },
+    })
     : null;
   const enrichedBody = {
     ...completeBody,

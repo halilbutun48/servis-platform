@@ -591,11 +591,13 @@ function applyRouteEvidence(values, routeEvidence, side) {
   const next = { ...values };
   const evidence = routeEvidence?.[side] || null;
   if (!evidence) return next;
-  if (numberOrNull(evidence.distanceKm) !== null) {
-    next.serviceDistanceKm = Number(evidence.distanceKm);
-    next.totalDistanceKm = Number(evidence.distanceKm);
+  const distanceKm = numberOrNull(evidence.distanceKm);
+  const durationMinutes = numberOrNull(evidence.durationMinutes);
+  if (evidence.distanceKm !== null && evidence.distanceKm !== undefined && distanceKm !== null) {
+    next.serviceDistanceKm = distanceKm;
+    next.totalDistanceKm = distanceKm;
   }
-  if (numberOrNull(evidence.durationMinutes) !== null) next.routeDurationMinutes = Number(evidence.durationMinutes);
+  if (evidence.durationMinutes !== null && evidence.durationMinutes !== undefined && durationMinutes !== null) next.routeDurationMinutes = durationMinutes;
   if (integerOrNull(evidence.stopCount) !== null) next.stopCount = Number(evidence.stopCount);
   return next;
 }

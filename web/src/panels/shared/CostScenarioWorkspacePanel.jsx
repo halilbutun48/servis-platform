@@ -88,6 +88,14 @@ function statusTone(status) {
   return key === "READY" ? "good" : key === "BLOCKED" ? "danger" : "warm";
 }
 
+function forecastProvenanceLabel(value) {
+  const labels = {
+    "#3_NO_COMPARABLE_INTERNAL_ACTUAL": "Karşılaştırılabilir gerçek maliyet kanıtı yok",
+    "#3_HAKEDIS_INTERNAL_ACTUAL": "Kanonik gerçek maliyet kanıtı",
+  };
+  return labels[String(value || "")] || String(value || "Kanıt kaynağı belirtilmedi").replaceAll("INTERNAL_ACTUAL", "kanonik gerçek maliyet");
+}
+
 function Metric({ title, value, note, tone = "default" }) {
   const palette = {
     default: { border: "1px solid rgba(255,255,255,0.08)", title: "#98a2b3", value: "#f8fafc" },
@@ -439,7 +447,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
               <ComparisonStatus title="Rota alternatifi" item={result.routeAlternative} />
               <ComparisonStatus title="Dispatch sınırı" item={result.dispatchAlternative} />
             </div>
-            {result.forecast?.equation ? <div className="panelMeta" style={{ marginTop: 10 }}>Formül: {result.forecast.equation} · {result.forecast.provenance}</div> : null}
+            {result.forecast?.equation ? <div className="panelMeta" style={{ marginTop: 10 }}>Formül: {result.forecast.equation} · {forecastProvenanceLabel(result.forecast.provenance)}</div> : null}
           </div>
 
           <div className="card" style={{ marginTop: 12 }}>
