@@ -58,6 +58,9 @@ const INTEGER_FIELDS = new Set([
   "vehicleCount",
   "shiftsPerServiceDay",
   "operationsOverheadRateBps",
+  "shiftStartMinutes",
+  "shiftEndMinutes",
+  "shiftDurationMinutes",
 ]);
 
 const DECIMAL_FIELDS = new Set([
@@ -118,6 +121,24 @@ const SCENARIO_LABELS = Object.freeze({
   scenario: "Alternatif Senaryo",
   savings: "Tahmini Tasarruf",
   additionalCost: "Tahmini Ek Maliyet",
+});
+
+const VARIANT_LABELS = Object.freeze({
+  EXPECTED: "Beklenen",
+  BEST: "En uygun",
+  RISK: "Riskli durum",
+});
+
+const COMPARISON_DIMENSION_LABELS = Object.freeze({
+  vehicleCount: "Araç ihtiyacı",
+  vehicleType: "Araç tipi",
+  vehicleCapacity: "Kapasite",
+  passengerCount: "Yolcu sayısı",
+  stopCount: "Durak sayısı",
+  serviceDistanceKm: "Mesafe",
+  totalDistanceKm: "Toplam mesafe",
+  routeDurationMinutes: "Süre",
+  serviceDayCount: "Hizmet günü",
 });
 
 function compact(value, fallback = "") {
@@ -508,6 +529,348 @@ function deltaPercentBps(delta, baseline, issues) {
   return divideBigIntRound(numerator * 10000n, denominator, "deltaPercentBps", issues);
 }
 
+function integerOrNull(value) {
+  const numeric = Number(value);
+  return Number.isSafeInteger(numeric) ? numeric : null;
+}
+
+function numberOrNull(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function addSafeMoney(left, right) {
+  const a = integerOrNull(left);
+  const b = integerOrNull(right);
+  if (a === null || b === null) return null;
+  const result = BigInt(a) + BigInt(b);
+  return result <= BigInt(Number.MAX_SAFE_INTEGER) && result >= BigInt(Number.MIN_SAFE_INTEGER) ? Number(result) : null;
+}
+
+function multiplySafeMoney(value, multiplier) {
+  const amount = integerOrNull(value);
+  const factor = integerOrNull(multiplier);
+  if (amount === null || factor === null || factor < 0) return null;
+  const result = BigInt(amount) * BigInt(factor);
+  return result <= BigInt(Number.MAX_SAFE_INTEGER) && result >= BigInt(Number.MIN_SAFE_INTEGER) ? Number(result) : null;
+}
+
+function normalizeScenarioMeta(input = {}) {
+  const cleanOverrides = { ...(isObject(input) ? input : {}) };
+  const scenarioType = compact(cleanOverrides.scenarioType).toUpperCase() || null;
+  const routeAlternative = isObject(cleanOverrides.routeAlternative) ? { ...cleanOverrides.routeAlternative } : null;
+  const dispatchAlternative = isObject(cleanOverrides.dispatchAlternative) ? { ...cleanOverrides.dispatchAlternative } : null;
+  const stopOperations = Array.isArray(cleanOverrides.scenarioStopOperations)
+    ? cleanOverrides.scenarioStopOperations.slice(0, 24).filter(isObject).map((item) => ({ ...item }))
+    : Array.isArray(cleanOverrides.stopOperations)
+      ? cleanOverrides.stopOperations.slice(0, 24).filter(isObject).map((item) => ({ ...item }))
+      : [];
+  const bestCandidate = isObject(cleanOverrides.bestCandidate) ? { ...cleanOverrides.bestCandidate } : null;
+  const riskAssumptions = isObject(cleanOverrides.riskAssumptions) ? { ...cleanOverrides.riskAssumptions } : {};
+  for (const field of [
+    "scenarioType",
+    "routeAlternative",
+    "dispatchAlternative",
+    "scenarioStopOperations",
+    "stopOperations",
+    "bestCandidate",
+    "riskAssumptions",
+    "riskVehicleCount",
+    "riskPassengerCount",
+    "riskFuelUnitPriceMinor",
+    "riskDistanceKm",
+    "riskDurationMinutes",
+  ]) delete cleanOverrides[field];
+  for (const field of ["riskVehicleCount", "riskPassengerCount", "riskFuelUnitPriceMinor", "riskDistanceKm", "riskDurationMinutes"]) {
+    if (input?.[field] !== undefined) riskAssumptions[field] = input[field];
+  }
+  return { cleanOverrides, scenarioType, routeAlternative, dispatchAlternative, stopOperations, bestCandidate, riskAssumptions };
+}
+
+function applyRouteEvidence(values, routeEvidence, side) {
+  const next = { ...values };
+  const evidence = routeEvidence?.[side] || null;
+  if (!evidence) return next;
+  if (numberOrNull(evidence.distanceKm) !== null) {
+    next.serviceDistanceKm = Number(evidence.distanceKm);
+    next.totalDistanceKm = Number(evidence.distanceKm);
+  }
+  if (numberOrNull(evidence.durationMinutes) !== null) next.routeDurationMinutes = Number(evidence.durationMinutes);
+  if (integerOrNull(evidence.stopCount) !== null) next.stopCount = Number(evidence.stopCount);
+  return next;
+}
+
+function buildTimingComparison({ baselineValues, scenarioValues, context = {}, routeEvidence = null }) {
+  const baselineRoute = routeEvidence?.baseline || {};
+  const scenarioRoute = routeEvidence?.scenario || {};
+  const baselineStart = integerOrNull(context?.schedule?.baselineStartMinutes ?? baselineValues.shiftStartMinutes);
+  const scenarioStart = integerOrNull(scenarioValues.shiftStartMinutes ?? baselineStart);
+  const baselineDuration = numberOrNull(baselineRoute.durationMinutes ?? baselineValues.routeDurationMinutes);
+  const scenarioDuration = numberOrNull(scenarioRoute.durationMinutes ?? scenarioValues.routeDurationMinutes);
+  const baselineEnd = baselineStart !== null && baselineDuration !== null ? Math.round(baselineStart + baselineDuration) : null;
+  const scenarioEnd = scenarioStart !== null && scenarioDuration !== null ? Math.round(scenarioStart + scenarioDuration) : null;
+  const hasTiming = baselineStart !== null && scenarioStart !== null && baselineDuration !== null && scenarioDuration !== null;
+  const shiftTimeChanged = hasTiming && baselineStart !== scenarioStart;
+  const durationChanged = hasTiming && Math.round(baselineDuration) !== Math.round(scenarioDuration);
+  return {
+    status: hasTiming ? "COMPARED" : "INSUFFICIENT_DATA",
+    baselineStartMinutes: baselineStart,
+    scenarioStartMinutes: scenarioStart,
+    baselineEndMinutes: baselineEnd,
+    scenarioEndMinutes: scenarioEnd,
+    baselineDurationMinutes: baselineDuration,
+    scenarioDurationMinutes: scenarioDuration,
+    delayImpactMinutes: hasTiming ? Math.round(scenarioDuration - baselineDuration) : null,
+    shiftTimeChanged,
+    durationChanged,
+    trafficPredictionModeled: false,
+    explanation: hasTiming
+      ? "Zaman etkisi planlanan başlangıç, rota süresi ve vardiya bitişiyle karşılaştırıldı; trafik tahmini modellenmedi."
+      : "Başlangıç veya rota süresi kanıtı bulunmadığı için zaman etkisi hesaplanamadı.",
+    evidence: hasTiming ? ["Planlanan vardiya başlangıç/bitiş zamanları", "Kanonik rota süre metriği"] : [],
+  };
+}
+
+function buildPeriodEndForecast({ baselineCost, scenarioCost, baselineValues, context = {} }) {
+  const evidence = context?.forecastEvidence || {};
+  const periodStart = compact(evidence.periodStart, "") || null;
+  const periodEnd = compact(evidence.periodEnd, "") || null;
+  const actualToDate = integerOrNull(evidence.actualToDateMinor);
+  const remainingQuantity = integerOrNull(evidence.remainingServiceDayCount);
+  const directRemaining = integerOrNull(evidence.remainingForecastMinor);
+  const perDay = integerOrNull(evidence.remainingForecastPerServiceDayMinor);
+  const derivedPerDay = perDay !== null
+    ? perDay
+    : scenarioCost !== null && Number(baselineValues.serviceDayCount || 0) > 0
+      ? Math.round(Number(scenarioCost) / Number(baselineValues.serviceDayCount))
+      : null;
+  const remainingForecast = directRemaining !== null
+    ? directRemaining
+    : remainingQuantity !== null && derivedPerDay !== null
+      ? multiplySafeMoney(derivedPerDay, remainingQuantity)
+      : null;
+  const forecastPeriodEnd = actualToDate !== null && remainingForecast !== null
+    ? addSafeMoney(actualToDate, remainingForecast)
+    : null;
+  const complete = Boolean(periodStart && periodEnd && actualToDate !== null && remainingForecast !== null && forecastPeriodEnd !== null);
+  const missingData = [];
+  if (!periodStart) missingData.push("periodStart");
+  if (!periodEnd) missingData.push("periodEnd");
+  if (actualToDate === null) missingData.push("actualToDateMinor");
+  if (remainingForecast === null) missingData.push("remaining forecast evidence");
+  return {
+    status: complete ? "READY" : "INSUFFICIENT_DATA",
+    periodStart,
+    periodEnd,
+    actualToDateMinor: actualToDate,
+    remainingPlannedQuantity: remainingQuantity,
+    remainingForecastMinor: remainingForecast,
+    forecastPeriodEndMinor: forecastPeriodEnd,
+    baselineBudgetOrPlanMinor: integerOrNull(evidence.budgetAmountMinor ?? context?.plannedInput?.baselineCostMinor),
+    forecastDeltaMinor: forecastPeriodEnd !== null && baselineCost !== null ? forecastPeriodEnd - baselineCost : null,
+    confidence: complete ? "EVIDENCE_BASED" : "INSUFFICIENT",
+    missingData,
+    provenance: evidence.provenance || (complete ? "CANONICAL_PERIOD_AND_ACTUAL_EVIDENCE" : "MISSING_CANONICAL_PERIOD_OR_ACTUAL_EVIDENCE"),
+    equation: "actualToDate + remainingForecast = forecastPeriodEnd",
+  };
+}
+
+function buildBudgetVariance({ forecast, context = {} }) {
+  const budgetAmount = integerOrNull(context?.budgetEvidence?.budgetAmountMinor ?? forecast?.baselineBudgetOrPlanMinor);
+  const comparisonAmount = forecast?.forecastPeriodEndMinor !== null && forecast?.forecastPeriodEndMinor !== undefined
+    ? integerOrNull(forecast.forecastPeriodEndMinor)
+    : integerOrNull(forecast?.actualToDateMinor);
+  const varianceAmount = budgetAmount !== null && comparisonAmount !== null ? comparisonAmount - budgetAmount : null;
+  const variancePercentBps = budgetAmount !== null && budgetAmount > 0 && varianceAmount !== null
+    ? Math.round((varianceAmount * 10000) / budgetAmount)
+    : null;
+  return {
+    status: budgetAmount !== null && comparisonAmount !== null ? "READY" : "INSUFFICIENT_DATA",
+    budgetAmountMinor: budgetAmount,
+    comparisonAmountMinor: comparisonAmount,
+    varianceAmountMinor: varianceAmount,
+    variancePercentBps,
+    direction: varianceAmount === null ? "UNKNOWN" : varianceAmount > 0 ? "OVER_BUDGET" : varianceAmount < 0 ? "UNDER_BUDGET" : "ON_BUDGET",
+    reason: varianceAmount === null ? "Bütçe veya karşılaştırılabilir forecast/actual kanıtı eksik." : "Bütçe ile dönem sonu forecast/actual tutarı ayrı olarak karşılaştırıldı.",
+    confidence: budgetAmount !== null && comparisonAmount !== null ? "EVIDENCE_BASED" : "INSUFFICIENT",
+    evidence: budgetAmount !== null && comparisonAmount !== null ? ["Kanonik bütçe planı", forecast?.forecastPeriodEndMinor !== null ? "Dönem sonu forecast" : "Bugüne kadarki actual kanıt"] : [],
+  };
+}
+
+function buildPlannedVsActual({ plannedInput = {}, actualInput = {}, context = {} }) {
+  const fields = [
+    ["vehicleCount", "adet"],
+    ["vehicleType", "tip"],
+    ["serviceDistanceKm", "km"],
+    ["routeDurationMinutes", "dk"],
+    ["passengerCount", "kişi"],
+    ["vehicleCapacity", "kişi"],
+    ["stopCount", "durak"],
+    ["shiftCount", "sefer"],
+  ];
+  const dimensions = {};
+  for (const [field, unit] of fields) {
+    const planned = plannedInput?.[field] ?? null;
+    const actual = actualInput?.[field] ?? null;
+    dimensions[field] = {
+      planned,
+      actual,
+      delta: planned !== null && actual !== null && typeof planned === "number" && typeof actual === "number" ? actual - planned : null,
+      unit,
+      evidence: actual !== null ? (planned !== null ? "CANONICAL_PLANNED_AND_ACTUAL" : "CANONICAL_ACTUAL_ONLY") : planned !== null ? "CANONICAL_PLANNED_ONLY" : null,
+      confidence: actual !== null && planned !== null ? "EVIDENCE_BASED" : "INSUFFICIENT",
+      status: actual !== null && planned !== null ? "COMPARED" : actual !== null ? "ACTUAL_EVIDENCE_WITHOUT_PLAN" : planned !== null ? "PLANNED_ONLY" : "NOT_APPLICABLE",
+    };
+  }
+  const plannedCost = integerOrNull(context?.plannedInput?.baselineCostMinor);
+  const actualCost = integerOrNull(context?.actualEvidence?.actualCostMinor);
+  dimensions.cost = {
+    planned: plannedCost,
+    actual: actualCost,
+    delta: plannedCost !== null && actualCost !== null ? actualCost - plannedCost : null,
+    unit: "kuruş",
+    evidence: actualCost !== null ? plannedCost !== null ? "CANONICAL_PLANNED_AND_ACTUAL_COST" : "CANONICAL_ACTUAL_COST_ONLY" : plannedCost !== null ? "CANONICAL_PLANNED_COST_ONLY" : null,
+    confidence: actualCost !== null && plannedCost !== null ? "EVIDENCE_BASED" : "INSUFFICIENT",
+    status: actualCost !== null && plannedCost !== null ? "COMPARED" : actualCost !== null ? "ACTUAL_EVIDENCE_WITHOUT_PLAN" : plannedCost !== null ? "PLANNED_ONLY" : "NOT_APPLICABLE",
+  };
+  return { status: Object.values(dimensions).some((item) => item.status === "COMPARED" || item.status === "ACTUAL_EVIDENCE_WITHOUT_PLAN") ? "AVAILABLE" : "INSUFFICIENT_DATA", dimensions };
+}
+
+function buildOperationalRisk({ preview, timing, context = {} }) {
+  const reasons = [];
+  const affectedDimensions = [];
+  const blockers = preview?.blockers || [];
+  if (preview?.scenario?.requiredVehicleCount !== null && preview?.scenario?.requiredVehicleCount !== undefined && Number(preview.scenario.requiredVehicleCount) > Number(preview?.dimensions?.vehicleCount?.scenario || 0)) {
+    reasons.push("Araç kapasitesi yetersiz");
+    affectedDimensions.push("capacity", "vehicleRequirement");
+  }
+  if (blockers.length) {
+    reasons.push(...blockers);
+    affectedDimensions.push("scenarioValidity");
+  }
+  if (preview?.missingData?.length) {
+    reasons.push("Eksik veri sonucu güven sınırlı");
+    affectedDimensions.push("dataSufficiency");
+  }
+  if (timing?.status === "INSUFFICIENT_DATA") {
+    reasons.push("Zamanlama kanıtı eksik");
+    affectedDimensions.push("timing");
+  }
+  const riskState = blockers.length ? "HIGH" : reasons.length ? "MEDIUM" : "LOW";
+  return {
+    riskState,
+    reasons: [...new Set(reasons)],
+    evidence: [...new Set([...(preview?.evidence || []).slice(0, 6), ...(context?.riskEvidence || [])])],
+    affectedDimension: [...new Set(affectedDimensions)],
+    score: null,
+    explained: true,
+  };
+}
+
+function variantEnvelope({ type, preview, side = "scenario", rationale = "", assumptions = {} }) {
+  const selected = side === "baseline" ? preview?.baseline : preview?.scenario;
+  const capacityBlocked = (preview?.blockers || []).some((item) => /kapasite|capacity/i.test(item));
+  return {
+    scenarioType: type,
+    label: VARIANT_LABELS[type] || type,
+    assumptions,
+    evidence: preview?.evidence || [],
+    estimatedCost: selected?.costMinor ?? null,
+    costDelta: side === "baseline" ? 0 : preview?.costDeltaMinor ?? null,
+    vehicleRequirement: selected?.requiredVehicleCount ?? null,
+    distance: preview?.dimensions?.serviceDistanceKm?.[side] ?? null,
+    duration: preview?.dimensions?.routeDurationMinutes?.[side] ?? null,
+    fuel: preview?.fuelDeltaMinor ?? null,
+    capacity: { status: capacityBlocked ? "INVALID" : "VALID", requiredVehicleCount: selected?.requiredVehicleCount ?? null },
+    delayImpact: preview?.timingComparison?.delayImpactMinutes ?? null,
+    operationalRisk: preview?.operationalRisk || null,
+    savings: preview?.savingsMinor ?? null,
+    additionalCost: preview?.additionalCostMinor ?? null,
+    confidence: preview?.confidence || { level: "INSUFFICIENT", score: 0 },
+    missingData: preview?.missingData || [],
+    rationale,
+    status: preview?.status || "INCOMPLETE",
+  };
+}
+
+function buildScenarioVariants({ preview, baselineInput, scenarioOverrides, context, externalReference, now, scenarioMeta }) {
+  const expected = variantEnvelope({
+    type: "EXPECTED",
+    preview,
+    assumptions: scenarioOverrides,
+    rationale: "Mevcut kanonik plan ve açık kullanıcı varsayımlarıyla beklenen projection.",
+  });
+
+  const baselinePreview = buildCostScenarioPreview({
+    baselineInput,
+    scenarioOverrides: {},
+    context,
+    externalReference,
+    now,
+    includeVariants: false,
+  });
+  let bestPreview = baselinePreview;
+  let bestSide = "baseline";
+  let bestRationale = "Daha düşük maliyetli geçerli alternatif kanıtı yok; mevcut plan geçerli en uygun bounded aday olarak korundu.";
+  if (preview?.status === "READY" && preview?.scenario?.costMinor !== null && preview?.scenario?.costMinor < (baselinePreview?.baseline?.costMinor ?? Number.MAX_SAFE_INTEGER)) {
+    bestPreview = preview;
+    bestSide = "scenario";
+    bestRationale = "Mevcut planla karşılaştırılan geçerli alternatifler içinde daha düşük maliyetli seçenek.";
+  }
+  if (scenarioMeta?.bestCandidate) {
+    const candidatePreview = buildCostScenarioPreview({
+      baselineInput,
+      scenarioOverrides: { ...scenarioOverrides, ...scenarioMeta.bestCandidate },
+      context,
+      externalReference,
+      now,
+      includeVariants: false,
+    });
+    if (candidatePreview.status === "READY" && candidatePreview.scenario?.costMinor !== null && candidatePreview.scenario.costMinor < (bestPreview?.[bestSide]?.costMinor ?? Number.MAX_SAFE_INTEGER)) {
+      bestPreview = candidatePreview;
+      bestSide = "scenario";
+      bestRationale = "Kullanıcının açıkça sağladığı geçerli bounded aday, mevcut planla karşılaştırıldı.";
+    }
+  }
+  const best = variantEnvelope({ type: "BEST", preview: bestPreview, side: bestSide, assumptions: scenarioMeta?.bestCandidate || scenarioOverrides, rationale: bestRationale });
+
+  const riskInput = { ...scenarioMeta.riskAssumptions };
+  const riskOverrides = {};
+  if (riskInput.riskVehicleCount !== undefined) riskOverrides.vehicleCount = riskInput.riskVehicleCount;
+  if (riskInput.riskPassengerCount !== undefined) riskOverrides.passengerCount = riskInput.riskPassengerCount;
+  if (riskInput.riskFuelUnitPriceMinor !== undefined) riskOverrides.fuelUnitPriceMinor = riskInput.riskFuelUnitPriceMinor;
+  if (riskInput.riskDistanceKm !== undefined) riskOverrides.serviceDistanceKm = riskInput.riskDistanceKm;
+  if (riskInput.riskDurationMinutes !== undefined) riskOverrides.routeDurationMinutes = riskInput.riskDurationMinutes;
+  const hasRiskBound = Object.keys(riskOverrides).length > 0;
+  const riskPreview = hasRiskBound
+    ? buildCostScenarioPreview({ baselineInput, scenarioOverrides: { ...scenarioOverrides, ...riskOverrides }, context, externalReference, now, includeVariants: false })
+    : null;
+  const risk = riskPreview
+    ? variantEnvelope({ type: "RISK", preview: riskPreview, assumptions: riskInput, rationale: "Yalnızca açıkça verilen risk varsayımlarıyla oluşturuldu; keyfi yüzde veya olasılık kullanılmadı." })
+    : {
+      scenarioType: "RISK",
+      label: VARIANT_LABELS.RISK,
+      assumptions: {},
+      evidence: [],
+      estimatedCost: null,
+      costDelta: null,
+      vehicleRequirement: null,
+      distance: null,
+      duration: null,
+      fuel: null,
+      capacity: { status: "UNKNOWN", requiredVehicleCount: null },
+      delayImpact: null,
+      operationalRisk: { riskState: "UNKNOWN", reasons: ["Açık risk varsayımı yok"], evidence: [], affectedDimension: ["riskAssumption"], score: null, explained: true },
+      savings: null,
+      additionalCost: null,
+      confidence: { level: "INSUFFICIENT", score: 0, reason: "Risk senaryosu için açık bounded varsayım gerekli" },
+      missingData: ["Açık risk varsayımı"],
+      rationale: "Riskli durum keyfi oranlarla uydurulmadı; açık risk varsayımı bekleniyor.",
+      status: "INCOMPLETE",
+    };
+  return { EXPECTED: expected, BEST: best, RISK: risk };
+}
+
 export function normalizeCostScenarioInput(input = {}, label = "Senaryo girdisi") {
   return sanitizeInput(input, label);
 }
@@ -518,12 +881,16 @@ export function buildCostScenarioPreview({
   context = {},
   externalReference = null,
   now = new Date(),
+  includeVariants = true,
 } = {}) {
+  const scenarioMeta = normalizeScenarioMeta(scenarioOverrides);
   const baseSanitized = sanitizeInput(baselineInput, "Mevcut plan");
-  const overrideSanitized = sanitizeInput(scenarioOverrides, "Alternatif senaryo");
+  const overrideSanitized = sanitizeInput(scenarioMeta.cleanOverrides, "Alternatif senaryo");
   const globalIssues = mergeIssues(baseSanitized.issues, overrideSanitized.issues);
-  const baseValues = { ...baseSanitized.values };
-  const scenarioValues = { ...baseValues, ...overrideSanitized.values };
+  let baseValues = { ...baseSanitized.values };
+  let scenarioValues = { ...baseValues, ...overrideSanitized.values };
+  baseValues = applyRouteEvidence(baseValues, context?.routeEvidence, "baseline");
+  scenarioValues = applyRouteEvidence(scenarioValues, context?.routeEvidence, "scenario");
 
   const baselineCurrency = compact(baseValues.currencyCode, "TRY").toUpperCase();
   const scenarioCurrency = compact(scenarioValues.currencyCode, baselineCurrency).toUpperCase();
@@ -596,6 +963,59 @@ export function buildCostScenarioPreview({
     ...(scenarioCapacity?.requiredVehicleCount === null ? ["Alternatif senaryo araç kapasitesi"] : []),
   ])];
 
+  const timingComparison = buildTimingComparison({ baselineValues: baseValues, scenarioValues, context, routeEvidence: context?.routeEvidence });
+  const forecast = buildPeriodEndForecast({ baselineCost, scenarioCost, baselineValues: baseValues, context });
+  const budgetVariance = buildBudgetVariance({ forecast, context });
+  const plannedVsActual = buildPlannedVsActual({ plannedInput: context?.plannedInput || {}, actualInput: context?.actualInput || baseValues, context });
+  const previewShape = {
+    blockers: [...new Set(globalIssues.blockers)],
+    missingData,
+    evidence: [
+      `Mevcut plan kaynağı: ${baseline.basis || "eksik"}`,
+      `Alternatif senaryo kaynağı: ${scenario.basis || "eksik"}`,
+      ...baseline.model.evidence,
+      ...scenario.model.evidence,
+    ],
+    baseline: { costMinor: baselineCost, requiredVehicleCount: baselineCapacity?.requiredVehicleCount ?? null },
+    scenario: { costMinor: scenarioCost, requiredVehicleCount: scenarioCapacity?.requiredVehicleCount ?? null },
+    dimensions,
+    costDeltaMinor,
+    fuelDeltaMinor: baseline.model.components.find((item) => item.componentKey === "fuel")?.includedInBaseline && scenario.model.components.find((item) => item.componentKey === "fuel")?.includedInBaseline
+      ? scenario.model.components.find((item) => item.componentKey === "fuel").amountMinor - baseline.model.components.find((item) => item.componentKey === "fuel").amountMinor
+      : null,
+    savingsMinor,
+    additionalCostMinor,
+    confidence,
+    timingComparison,
+  };
+  const operationalRisk = buildOperationalRisk({ preview: previewShape, timing: timingComparison, context });
+  const routeAlternative = context?.routeEvidence?.alternative || {
+    status: scenarioMeta.routeAlternative ? "INSUFFICIENT_DATA" : "NOT_REQUESTED",
+    type: scenarioMeta.routeAlternative?.type || null,
+    source: null,
+    compared: false,
+    applied: false,
+    reason: scenarioMeta.routeAlternative ? "Rota alternatifi için kanonik rota metriği bulunamadı." : "Rota alternatifi istenmedi.",
+  };
+  const dispatchAlternative = context?.dispatchAlternative || (scenarioMeta.dispatchAlternative
+    ? {
+      status: "SEAM_PROVEN_DEFERRED_TO_#20",
+      typedInput: true,
+      compared: false,
+      applied: false,
+      reason: "Atama alternatifi yalnızca typed preview seam olarak korunur; dispatch önerisi veya uygulaması #20 kapsamındadır.",
+    }
+    : {
+      status: "SEAM_PROVEN_DEFERRED_TO_#20",
+      typedInput: false,
+      compared: false,
+      applied: false,
+      reason: "Dispatch alternatifi çalıştırılmadı; #4 yalnız güvenli preview seam sağlar.",
+    });
+  const scenarioVariants = includeVariants
+    ? buildScenarioVariants({ preview: { ...previewShape, timingComparison, operationalRisk }, baselineInput, scenarioOverrides: scenarioMeta.cleanOverrides, context, externalReference, now, scenarioMeta })
+    : null;
+
   return Object.freeze({
     ok: true,
     modelVersion: COST_SCENARIO_FORECAST_MODEL_VERSION,
@@ -635,6 +1055,25 @@ export function buildCostScenarioPreview({
     invalidFields: [...new Set(globalIssues.invalidFields)],
     blockers: [...new Set(globalIssues.blockers)],
     confidence,
+    scenarioVariants,
+    timingComparison,
+    forecast,
+    budgetVariance,
+    plannedVsActual,
+    operationalRisk,
+    routeAlternative,
+    dispatchAlternative,
+    comparisonDimensions: {
+      labels: COMPARISON_DIMENSION_LABELS,
+      vehicleRequirement: { baseline: baselineCapacity?.requiredVehicleCount ?? null, scenario: scenarioCapacity?.requiredVehicleCount ?? null, unit: "araç" },
+      km: dimensions.serviceDistanceKm,
+      duration: dimensions.routeDurationMinutes,
+      fuel: { baseline: baseline.model.components.find((item) => item.componentKey === "fuel")?.amountMinor ?? null, scenario: scenario.model.components.find((item) => item.componentKey === "fuel")?.amountMinor ?? null, delta: previewShape.fuelDeltaMinor, unit: "kuruş" },
+      cost: { baseline: baselineCost, scenario: scenarioCost, delta: costDeltaMinor, unit: "kuruş" },
+      delay: { baseline: 0, scenario: timingComparison.delayImpactMinutes, unit: "dk", status: timingComparison.status },
+      capacity: { baseline: baselineCapacity?.requiredVehicleCount ?? null, scenario: scenarioCapacity?.requiredVehicleCount ?? null, unit: "kişi/araç" },
+      operationalRisk,
+    },
     evidence: [
       `Mevcut plan kaynağı: ${baseline.basis || "eksik"}`,
       `Alternatif senaryo kaynağı: ${scenario.basis || "eksik"}`,

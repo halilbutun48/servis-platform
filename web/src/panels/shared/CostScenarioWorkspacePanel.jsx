@@ -28,6 +28,7 @@ const FIELD_CONFIG = [
   { key: "routeDurationMinutes", label: "Rota süresi (dk)", type: "number", placeholder: "", unit: "DURATION_MIN", classification: "DERIVED_INPUT" },
   { key: "shiftCount", label: "Toplam sefer (sefer)", type: "number", placeholder: "", unit: "COUNT", classification: "ADVANCED_ASSUMPTION" },
   { key: "tripCount", label: "Toplam yolculuk (yolculuk)", type: "number", placeholder: "", unit: "COUNT", classification: "ADVANCED_ASSUMPTION" },
+  { key: "shiftStartMinutes", label: "Vardiya başlangıcı (dk)", type: "number", placeholder: "", unit: "DURATION_MIN", classification: "ADVANCED_ASSUMPTION" },
   { key: "fuelConsumptionLitersPer100Km", label: "Yakıt tüketimi (L/100 km)", type: "number", placeholder: "", unit: "FUEL_CONSUMPTION", classification: "ADVANCED_ASSUMPTION" },
   { key: "fuelUnitPriceMinor", label: "Yakıt birim fiyatı (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
   { key: "driverBasePerShiftMinor", label: "Sürücü sefer maliyeti (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
@@ -103,6 +104,33 @@ function Metric({ title, value, note, tone = "default" }) {
   );
 }
 
+function VariantCard({ variant, currencyCode }) {
+  if (!variant) return null;
+  const tone = variant.status === "READY" ? "good" : variant.status === "BLOCKED" ? "danger" : "warm";
+  return (
+    <div className="card" data-testid={`scenario-variant-${String(variant.scenarioType || "").toLowerCase()}`} style={{ border: tone === "good" ? "1px solid rgba(18,183,106,0.28)" : "1px solid rgba(255,255,255,0.08)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
+        <div className="panelSectionTitle">{variant.label}</div>
+        <span className="pill">{statusLabel(variant.status)}</span>
+      </div>
+      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+        <Metric title="Tahmini maliyet" value={formatMoney(variant.estimatedCost, currencyCode)} note="Preview sonucu" tone={tone} />
+        <Metric title="Araç ihtiyacı" value={formatNumber(variant.vehicleRequirement, " araç")} note={variant.capacity?.status === "INVALID" ? "Kapasite engeli" : "Kapasite kontrolü"} tone={variant.capacity?.status === "INVALID" ? "danger" : "default"} />
+        <Metric title="Mesafe" value={formatNumber(variant.distance, " km")} note="Kanonik rota metriği" />
+        <Metric title="Süre" value={formatNumber(variant.duration, " dk")} note="Trafik tahmini değildir" />
+        <Metric title="Operasyon riski" value={variant.operationalRisk?.riskState || "Bilinmiyor"} note={variant.operationalRisk?.reasons?.join("; ") || "Açıklanmış risk kanıtı bekleniyor"} tone={variant.operationalRisk?.riskState === "HIGH" ? "danger" : "default"} />
+      </div>
+      <div className="panelMeta" style={{ marginTop: 10, lineHeight: 1.45 }}>{variant.rationale}</div>
+    </div>
+  );
+}
+
+function ComparisonStatus({ title, item, money = false, currencyCode = "TRY" }) {
+  if (!item) return null;
+  const value = money ? formatMoney(item.varianceAmountMinor, currencyCode) : item.status || "INSUFFICIENT_DATA";
+  return <div className="muted" style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "8px 0" }}><span>{title}</span><b>{value}</b></div>;
+}
+
 function Field({ label, value, onChange, type = "number", placeholder = "", testId = "" }) {
   return (
     <label className="muted" style={{ minWidth: 0 }}>
@@ -159,6 +187,11 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
   const [scenarioValues, setScenarioValues] = useState({});
   const [baselineCost, setBaselineCost] = useState("");
   const [useExternalFuelPrice, setUseExternalFuelPrice] = useState(false);
+  const [riskValues, setRiskValues] = useState({ riskFuelUnitPriceMinor: "", riskDistanceKm: "", riskDurationMinutes: "" });
+  const [stopOperations, setStopOperations] = useState([]);
+  const [stopDraft, setStopDraft] = useState({ lat: "", lng: "", index: "" });
+  const [routeAlternativeType, setRouteAlternativeType] = useState("");
+  const [dispatchDraft, setDispatchDraft] = useState({ vehicleId: "", driverId: "", routeReference: "" });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
@@ -178,6 +211,11 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
     const controller = new AbortController();
     setLoading(true);
     setError("");
+    setStopOperations([]);
+    setStopDraft({ lat: "", lng: "", index: "" });
+    setRouteAlternativeType("");
+    setRiskValues({ riskFuelUnitPriceMinor: "", riskDistanceKm: "", riskDurationMinutes: "" });
+    setDispatchDraft({ vehicleId: "", driverId: "", routeReference: "" });
     getCostScenarioBaseline(token, scope, {}, { signal: controller.signal, force: true })
       .then((payload) => {
         if (controller.signal.aborted) return;
@@ -213,7 +251,13 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         scope,
         baselineReferenceId: baseline.baselineReferenceId,
         baselineInput,
-        scenarioOverrides: scenarioValues,
+        scenarioOverrides: {
+          ...scenarioValues,
+          ...(stopOperations.length ? { scenarioStopOperations: stopOperations } : {}),
+          ...(routeAlternativeType ? { routeAlternative: { type: routeAlternativeType } } : {}),
+          ...((dispatchDraft.vehicleId || dispatchDraft.driverId || dispatchDraft.routeReference) ? { dispatchAlternative: dispatchDraft } : {}),
+          riskAssumptions: Object.fromEntries(Object.entries(riskValues).filter(([, value]) => compact(value))),
+        },
         ...(useExternalFuelPrice ? {
           externalReference: {
             family: "FUEL_DIESEL",
@@ -233,6 +277,32 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
     } finally {
       setCalculating(false);
     }
+  }
+
+  function adjustVehicleCount(delta) {
+    setScenarioValues((previous) => {
+      const current = Number(previous.vehicleCount || baselineValues.vehicleCount || 0);
+      return { ...previous, vehicleCount: String(Math.max(0, Math.round(current) + delta)) };
+    });
+  }
+
+  function addScenarioStop() {
+    const lat = Number(stopDraft.lat);
+    const lng = Number(stopDraft.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    setStopOperations((previous) => [...previous, {
+      operation: "ADD",
+      lat,
+      lng,
+      ...(stopDraft.index !== "" ? { index: Number(stopDraft.index) } : {}),
+    }]);
+    setStopDraft((previous) => ({ ...previous, lat: "", lng: "" }));
+  }
+
+  function removeScenarioStop() {
+    const index = Number(stopDraft.index);
+    if (!Number.isInteger(index) || index < 0) return;
+    setStopOperations((previous) => [...previous, { operation: "REMOVE", index }]);
   }
 
   const currencyCode = baseline?.input?.currencyCode || "TRY";
@@ -280,9 +350,49 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Alternatif senaryo girdileri</summary>
         <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Değiştirmek istemediğiniz alanlar mevcut plan değerleriyle karşılaştırılır. Boş kalan kritik veriler sonuçta Eksik Veri olarak gösterilir.</div>
         <div style={{ marginTop: 12 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={PRIMARY_FIELD_CONFIG} /></div>
+        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button data-testid="scenario-vehicle-add" type="button" className="btn" onClick={() => adjustVehicleCount(1)}>+ Araç ekle</button>
+          <button data-testid="scenario-vehicle-remove" type="button" className="btn" onClick={() => adjustVehicleCount(-1)}>− Araç çıkar</button>
+          <span className="panelMeta" style={{ alignSelf: "center" }}>Sadece preview girdisi; araç veya atama kaydı değişmez.</span>
+        </div>
         <details data-testid="scenario-advanced-fields" style={{ marginTop: 12 }}>
           <summary className="muted" style={{ cursor: "pointer" }}>Gelişmiş varsayımlar</summary>
           <div style={{ marginTop: 10 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={ADVANCED_FIELD_CONFIG} /></div>
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+            <Field testId="scenario-risk-fuel" label="Riskli yakıt varsayımı (kuruş/L)" value={riskValues.riskFuelUnitPriceMinor} onChange={(value) => setRiskValues((previous) => ({ ...previous, riskFuelUnitPriceMinor: value }))} />
+            <Field testId="scenario-risk-distance" label="Riskli mesafe (km)" value={riskValues.riskDistanceKm} onChange={(value) => setRiskValues((previous) => ({ ...previous, riskDistanceKm: value }))} />
+            <Field testId="scenario-risk-duration" label="Riskli rota süresi (dk)" value={riskValues.riskDurationMinutes} onChange={(value) => setRiskValues((previous) => ({ ...previous, riskDurationMinutes: value }))} />
+            <label className="muted" style={{ minWidth: 0 }}>
+              Rota alternatifi
+              <select data-testid="scenario-route-alternative" value={routeAlternativeType} onChange={(event) => setRouteAlternativeType(event.target.value)} style={INPUT_STYLE}>
+                <option value="">Yok</option>
+                <option value="REVERSE_STOP_ORDER">Durak sırasını ters çevir (preview)</option>
+              </select>
+            </label>
+          </div>
+          <div className="card" data-testid="scenario-stop-operations" style={{ marginTop: 12, padding: 12 }}>
+            <div className="panelSectionTitle">Durak ekle / çıkar</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>Koordinatlar yalnız alternatif rota hesabında kullanılır; mevcut durak kaydı değişmez.</div>
+            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
+              <Field testId="scenario-stop-add-lat" label="Yeni durak enlem" value={stopDraft.lat} onChange={(value) => setStopDraft((previous) => ({ ...previous, lat: value }))} />
+              <Field testId="scenario-stop-add-lng" label="Yeni durak boylam" value={stopDraft.lng} onChange={(value) => setStopDraft((previous) => ({ ...previous, lng: value }))} />
+              <Field testId="scenario-stop-index" label="Durak sıra no" value={stopDraft.index} onChange={(value) => setStopDraft((previous) => ({ ...previous, index: value }))} />
+            </div>
+            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button data-testid="scenario-stop-add" type="button" className="btn" onClick={addScenarioStop}>Senaryoya durak ekle</button>
+              <button data-testid="scenario-stop-remove" type="button" className="btn" onClick={removeScenarioStop}>Senaryodan durak çıkar</button>
+              <span className="panelMeta" style={{ alignSelf: "center" }}>{stopOperations.length ? `${stopOperations.length} preview durak işlemi hazır` : "Durak işlemi yok"}</span>
+            </div>
+          </div>
+          <div className="card" data-testid="scenario-dispatch-seam" style={{ marginTop: 12, padding: 12 }}>
+            <div className="panelSectionTitle">Atama alternatifi (sınır)</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>Araç/sürücü önerisi oluşturulmaz ve canlı atama yapılmaz; yalnızca #20 için typed preview seam.</div>
+            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+              <Field testId="scenario-dispatch-vehicle" label="Araç referansı" type="text" value={dispatchDraft.vehicleId} onChange={(value) => setDispatchDraft((previous) => ({ ...previous, vehicleId: value }))} />
+              <Field testId="scenario-dispatch-driver" label="Sürücü referansı" type="text" value={dispatchDraft.driverId} onChange={(value) => setDispatchDraft((previous) => ({ ...previous, driverId: value }))} />
+              <Field testId="scenario-dispatch-route" label="Rota referansı" type="text" value={dispatchDraft.routeReference} onChange={(value) => setDispatchDraft((previous) => ({ ...previous, routeReference: value }))} />
+            </div>
+          </div>
         </details>
         <label className="muted" style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 14 }}>
           <input type="checkbox" checked={useExternalFuelPrice} onChange={(event) => setUseExternalFuelPrice(event.target.checked)} style={{ marginTop: 3 }} />
@@ -292,6 +402,18 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
 
       {result ? (
         <>
+          {result.scenarioVariants ? (
+            <div className="card" data-testid="scenario-variant-comparison" style={{ marginTop: 12 }}>
+              <div className="panelSectionTitle">Beklenen / En uygun / Riskli durum</div>
+              <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Üç görünüm de aynı #4 hesaplama ve rota kanıtını kullanır; açıkça verilmeyen risk olasılığı veya tasarruf uydurulmaz.</div>
+              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                <VariantCard variant={result.scenarioVariants.EXPECTED} currencyCode={result.currencyCode || currencyCode} />
+                <VariantCard variant={result.scenarioVariants.BEST} currencyCode={result.currencyCode || currencyCode} />
+                <VariantCard variant={result.scenarioVariants.RISK} currencyCode={result.currencyCode || currencyCode} />
+              </div>
+            </div>
+          ) : null}
+
           <div className="card" style={{ marginTop: 12, border: "1px solid rgba(18,183,106,0.28)", background: "rgba(18,183,106,0.04)" }}>
             <div className="panelSectionTitle">Fark / fırsat</div>
             <div style={{ marginTop: 8, fontSize: 18, fontWeight: 850 }}>{result.summaryText || statusLabel(resultStatus)}</div>
@@ -303,6 +425,21 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
               <Metric title="Maliyet farkı" value={formatMoney(result.costDeltaMinor, result.currencyCode || currencyCode)} note={result.costDeltaPercentBps != null ? `Değişim: %${(Number(result.costDeltaPercentBps) / 100).toLocaleString("tr-TR")}` : "Karşılaştırma yapılamadı"} tone={deltaTone} />
               <Metric title="Veri güveni" value={confidenceLabel(confidence.level)} note={confidence.reason || "Güven açıklaması bekleniyor"} tone={confidenceTone(confidence.level)} />
             </div>
+          </div>
+
+          <div className="card" data-testid="scenario-forecast-evidence" style={{ marginTop: 12 }}>
+            <div className="panelSectionTitle">Dönem ve operasyon kanıtı</div>
+            <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Forecast, bütçe sapması ve planned-vs-actual yalnız kanonik dönem/actual/plan kanıtı varsa hesaplanır.</div>
+            <div style={{ marginTop: 10 }}>
+              <ComparisonStatus title="Dönem sonu forecast" item={result.forecast} />
+              <ComparisonStatus title="Bütçe sapması" item={result.budgetVariance} money currencyCode={result.currencyCode || currencyCode} />
+              <ComparisonStatus title="Planned-vs-actual" item={result.plannedVsActual} />
+              <ComparisonStatus title="Gecikme etkisi" item={{ status: result.timingComparison?.status === "COMPARED" ? `${formatNumber(result.timingComparison?.delayImpactMinutes, " dk")}` : "INSUFFICIENT_DATA" }} />
+              <ComparisonStatus title="Operasyonel risk" item={{ status: result.operationalRisk?.riskState || "UNKNOWN" }} />
+              <ComparisonStatus title="Rota alternatifi" item={result.routeAlternative} />
+              <ComparisonStatus title="Dispatch sınırı" item={result.dispatchAlternative} />
+            </div>
+            {result.forecast?.equation ? <div className="panelMeta" style={{ marginTop: 10 }}>Formül: {result.forecast.equation} · {result.forecast.provenance}</div> : null}
           </div>
 
           <div className="card" style={{ marginTop: 12 }}>

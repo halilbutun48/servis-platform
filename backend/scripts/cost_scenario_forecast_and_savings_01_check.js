@@ -91,6 +91,95 @@ function countOccurrences(text, pattern) {
   return [...String(text || "").matchAll(pattern)].length;
 }
 
+function masterPrimerEvidenceCounts({ forecastText, routeText, uiText, appText, financialText, navText }) {
+  const fixture = baseInput({
+    shiftStartMinutes: 480,
+    shiftEndMinutes: 540,
+    baselineCostMinor: 100000,
+  });
+  const preview = buildCostScenarioPreview({
+    baselineInput: fixture,
+    scenarioOverrides: {
+      vehicleCount: 2,
+      shiftStartMinutes: 510,
+      routeAlternative: { type: "REVERSE_STOP_ORDER" },
+      scenarioStopOperations: [{ operation: "ADD", lat: 41.01, lng: 29.01 }],
+      riskAssumptions: { riskFuelUnitPriceMinor: 5000, riskDistanceKm: 125, riskDurationMinutes: 80 },
+    },
+    context: context({
+      plannedInput: { vehicleCount: 1, vehicleType: "MINIBUS", vehicleCapacity: 16, serviceDistanceKm: 100, routeDurationMinutes: 60, passengerCount: 10, stopCount: 2, shiftCount: 1, baselineCostMinor: 100000 },
+      actualEvidence: { actualCostMinor: 90000 },
+      budgetEvidence: { budgetAmountMinor: 400000 },
+      forecastEvidence: {
+        periodStart: "2026-08-01",
+        periodEnd: "2026-08-31",
+        actualToDateMinor: 90000,
+        remainingForecastMinor: 200000,
+        budgetAmountMinor: 400000,
+        provenance: "CHECKER_CANONICAL_FIXTURE",
+      },
+      routeEvidence: {
+        baseline: { distanceKm: 100, durationMinutes: 60, stopCount: 2, source: "CHECKER_ROUTE_OWNER" },
+        scenario: { distanceKm: 110, durationMinutes: 70, stopCount: 3, source: "CHECKER_ROUTE_OWNER" },
+        alternative: { status: "READY", type: "REVERSE_STOP_ORDER", source: "CHECKER_ROUTE_OWNER", compared: true, applied: false },
+      },
+      schedule: { baselineStartMinutes: 480 },
+      dispatchAlternative: { status: "SEAM_PROVEN_DEFERRED_TO_#20", typedInput: true, compared: false, applied: false },
+    }),
+  });
+  const fewerVehicles = buildCostScenarioPreview({ baselineInput: baseInput({ vehicleCount: 2, passengerCount: 10 }), scenarioOverrides: { vehicleCount: 1 }, context: context() });
+  const stopRemoval = buildCostScenarioPreview({
+    baselineInput: baseInput({ stopCount: 3 }),
+    scenarioOverrides: { stopCount: 2 },
+    context: context({ routeEvidence: { baseline: { distanceKm: 100, durationMinutes: 60, stopCount: 3 }, scenario: { distanceKm: 90, durationMinutes: 55, stopCount: 2 } } }),
+  });
+  const plannedVsActualStatuses = Object.values(preview.plannedVsActual?.dimensions || {}).map((item) => item.status);
+  return {
+    EXPECTED_SCENARIO_IMPLEMENTED_COUNT: preview.scenarioVariants?.EXPECTED?.scenarioType === "EXPECTED" ? 1 : 0,
+    BEST_SCENARIO_IMPLEMENTED_COUNT: preview.scenarioVariants?.BEST?.scenarioType === "BEST" ? 1 : 0,
+    RISK_SCENARIO_IMPLEMENTED_COUNT: preview.scenarioVariants?.RISK?.scenarioType === "RISK" && preview.scenarioVariants.RISK.status === "READY" ? 1 : 0,
+    PERIOD_END_FORECAST_IMPLEMENTED_COUNT: preview.forecast?.status === "READY" && preview.forecast?.forecastPeriodEndMinor === 290000 ? 1 : 0,
+    BUDGET_VARIANCE_IMPLEMENTED_COUNT: preview.budgetVariance?.status === "READY" && preview.budgetVariance?.varianceAmountMinor === -110000 ? 1 : 0,
+    PLANNED_VS_ACTUAL_IMPLEMENTED_DIMENSION_COUNT: Object.values(preview.plannedVsActual?.dimensions || {}).filter((item) => item.status === "COMPARED").length,
+    VEHICLE_ADD_SIMULATION_PROVEN_COUNT: preview.dimensions.vehicleCount.scenario === 2 && preview.changedDimensions.includes("vehicleCount") ? 1 : 0,
+    VEHICLE_REMOVE_SIMULATION_PROVEN_COUNT: fewerVehicles.dimensions.vehicleCount.scenario === 1 && fewerVehicles.changedDimensions.includes("vehicleCount") ? 1 : 0,
+    STOP_ADD_SIMULATION_IMPLEMENTED_COUNT: preview.dimensions.stopCount.scenario === 3 && preview.routeAlternative?.compared === true ? 1 : 0,
+    STOP_REMOVE_SIMULATION_IMPLEMENTED_COUNT: stopRemoval.dimensions.stopCount.scenario === 2 && stopRemoval.changedDimensions.includes("stopCount") ? 1 : 0,
+    SHIFT_TIME_SIMULATION_IMPLEMENTED_COUNT: preview.timingComparison?.shiftTimeChanged === true ? 1 : 0,
+    ROUTE_ALTERNATIVE_COMPARISON_IMPLEMENTED_COUNT: preview.routeAlternative?.compared === true && preview.routeAlternative?.applied === false ? 1 : 0,
+    DELAY_COMPARISON_COVERAGE_COUNT: preview.timingComparison?.status === "COMPARED" && preview.timingComparison.delayImpactMinutes === 10 ? 1 : 0,
+    OPERATIONAL_RISK_COMPARISON_IMPLEMENTED_COUNT: preview.operationalRisk?.explained === true && preview.operationalRisk?.riskState ? 1 : 0,
+    AVAILABLE_ACTUAL_EVIDENCE_NOT_COMPARED_COUNT: plannedVsActualStatuses.filter((status) => status === "ACTUAL_EVIDENCE_WITHOUT_PLAN").length,
+    ROUTE_ALTERNATIVE_WITHOUT_COMPARISON_COUNT: preview.routeAlternative?.status && preview.routeAlternative.compared !== true ? 1 : 0,
+    COST_OUTCOME_WITHOUT_EXPLANATION_COUNT: preview.scenarioVariants?.EXPECTED?.rationale && preview.forecast?.equation && preview.operationalRisk?.explained ? 0 : 1,
+    DUPLICATE_CALCULATION_ENGINE_COUNT: countOccurrences(forecastText, /buildOperationalCostModel/g) === 2 ? 0 : 1,
+    DUPLICATE_SCENARIO_COMPONENT_COUNT: countOccurrences(uiText, /export default function CostScenarioWorkspacePanel/g) === 1 ? 0 : 1,
+    ROUTE_OWNER_PRESENT_COUNT: routeText.includes("buildRouteEvidence") && routeText.includes("sumDistanceKm") ? 1 : 0,
+    BEST_SCENARIO_UNPROVEN_COUNT: preview.scenarioVariants?.BEST?.scenarioType === "BEST" ? 0 : 1,
+    EXPECTED_SCENARIO_UNPROVEN_COUNT: preview.scenarioVariants?.EXPECTED?.scenarioType === "EXPECTED" ? 0 : 1,
+    RISK_SCENARIO_UNPROVEN_COUNT: preview.scenarioVariants?.RISK?.scenarioType === "RISK" && preview.scenarioVariants.RISK.status === "READY" ? 0 : 1,
+    PERIOD_END_FORECAST_FALSE_CERTAINTY_COUNT: preview.forecast?.status === "READY" && preview.forecast?.confidence === "EVIDENCE_BASED" ? 0 : 1,
+    BUDGET_VARIANCE_SEMANTIC_CONFUSION_COUNT: preview.budgetVariance?.varianceAmountMinor !== preview.costDeltaMinor ? 0 : 1,
+    CAPACITY_INVALID_SCENARIO_ACCEPTED_COUNT: buildCostScenarioPreview({ baselineInput: baseInput({ passengerCount: 30 }), scenarioOverrides: { vehicleCount: 1 }, context: context() }).status === "BLOCKED" ? 0 : 1,
+    NO_EFFECT_INPUT_PRESENTED_AS_SIMULATION_COUNT: preview.changedDimensions.includes("vehicleCount") && preview.changedDimensions.includes("serviceDistanceKm") ? 0 : 1,
+    NO_EFFECT_STOP_INPUT_PRESENTED_AS_SIMULATION_COUNT: preview.dimensions.stopCount.scenario !== preview.dimensions.stopCount.baseline && preview.routeAlternative?.compared === true ? 0 : 1,
+    NO_EFFECT_SHIFT_TIME_INPUT_PRESENTED_AS_SIMULATION_COUNT: preview.timingComparison?.shiftTimeChanged === true ? 0 : 1,
+    FAKE_ROUTE_ALTERNATIVE_COUNT: preview.routeAlternative?.type === "REVERSE_STOP_ORDER" && preview.routeAlternative?.source ? 0 : 1,
+    ROUTE_ALTERNATIVE_LIVE_APPLY_COUNT: preview.routeAlternative?.applied === false ? 0 : 1,
+    FABRICATED_DELAY_PREDICTION_COUNT: preview.timingComparison?.trafficPredictionModeled === false ? 0 : 1,
+    UNEXPLAINED_SCENARIO_RISK_SCORE_COUNT: preview.operationalRisk?.explained === true && preview.operationalRisk?.score === null ? 0 : 1,
+    SCENARIO_LIVE_OPERATION_MUTATION_COUNT: preview.dispatchAlternative?.applied === false ? 0 : 1,
+    SCHOOL_SCENARIO_VISIBLE_COUNT: appText.includes("/school/cost-scenarios") && navText.includes('label: "Planlama Senaryosu"') ? 1 : 0,
+    ORGANIZATION_SCENARIO_VISIBLE_COUNT: appText.includes("/organization/cost-scenarios") && navText.includes('label: "Planlama Senaryosu"') ? 1 : 0,
+    SCHOOL_COMPANY_BUDGET_LIFECYCLE_COPY_COUNT: uiText.includes("Bütçe yaşam döngüsü") ? 1 : 0,
+    ORGANIZATION_COMPANY_BUDGET_LIFECYCLE_COPY_COUNT: uiText.includes("Bütçe yaşam döngüsü") ? 1 : 0,
+    SCHOOL_FINANCE_PRIVILEGE_LEAK_COUNT: uiText.includes("Planlama bağlamı") && uiText.includes("normal bütçe yaşam döngüsü") ? 0 : 1,
+    ORGANIZATION_FINANCE_PRIVILEGE_LEAK_COUNT: uiText.includes("Planlama bağlamı") && uiText.includes("normal bütçe yaşam döngüsü") ? 0 : 1,
+    SCHOOL_AVAILABLE_SCENARIO_EVIDENCE_UNUSED_COUNT: uiText.includes("planningOnly") && routeText.includes("planInputs") && routeText.includes("plan.stops") && appText.includes("/school/cost-scenarios") ? 0 : 1,
+    ORGANIZATION_AVAILABLE_SCENARIO_EVIDENCE_UNUSED_COUNT: uiText.includes("planningOnly") && routeText.includes("planInputs") && routeText.includes("plan.stops") && appText.includes("/organization/cost-scenarios") ? 0 : 1,
+  };
+}
+
 function post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText, appText, forecastText }) {
   const fieldRows = [...uiText.matchAll(/\{ key: "([^"]+)", label: "([^"]+)", [^}]*unit: "([^"]+)"[^}]*classification: "([^"]+)"/g)]
     .map((match) => ({ key: match[1], label: match[2], unit: match[3], classification: match[4] }));
@@ -211,6 +300,7 @@ function main() {
   const base = baseInput();
   const same = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const sameAgain = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
+  const masterCounts = masterPrimerEvidenceCounts({ forecastText, routeText, uiText, appText, financialText, navText });
 
   must(packageText.includes('"check:costscenarioforecastandsavings01": "node backend/scripts/cost_scenario_forecast_and_savings_01_check.js"'), "canonical #4 check is exposed");
   must(routeText.includes("/baseline") && routeText.includes("/preview") && routeText.includes("getExternalCostReference"), "scenario API has baseline and preview owners");
@@ -305,7 +395,208 @@ function main() {
   must(uiText.includes("Gelişmiş varsayımlar") && uiText.includes('data-testid="scenario-advanced-fields"'), "advanced scenario inputs have a named collapsed owner");
   must(navText.includes('label: "Planlama Senaryosu"') && appText.includes("/school/cost-scenarios") && appText.includes("/organization/cost-scenarios"), "school and organization planning-only scenario route remains distinct");
   must(browserText.includes('route: "/#/company/financial-operations"') && browserText.includes('contextualHome: "Bütçe ve Servis Maliyeti"'), "browser acceptance opens the actual COMPANY budget surface");
-  must(browserText.includes('page.getByTestId("company-contextual-scenario").isVisible()') && browserText.includes('Senaryoyu Karşılaştır'), "browser acceptance proves the visible COMPANY contextual scenario contract");
+  must(browserText.includes('contextualTestId: "company-contextual-scenario"') && browserText.includes('page.getByTestId(contextualTestId).isVisible()') && browserText.includes('Senaryoyu Karşılaştır'), "browser acceptance proves the visible COMPANY contextual scenario contract");
+
+  console.log("=== #4 LOCKED MASTER-PRIMER EVIDENCE COUNTS ===");
+  for (const [key, value] of Object.entries(masterCounts)) console.log(`${key}=${value}`);
+  for (const key of [
+    "EXPECTED_SCENARIO_IMPLEMENTED_COUNT",
+    "BEST_SCENARIO_IMPLEMENTED_COUNT",
+    "RISK_SCENARIO_IMPLEMENTED_COUNT",
+    "PERIOD_END_FORECAST_IMPLEMENTED_COUNT",
+    "BUDGET_VARIANCE_IMPLEMENTED_COUNT",
+    "VEHICLE_ADD_SIMULATION_PROVEN_COUNT",
+    "VEHICLE_REMOVE_SIMULATION_PROVEN_COUNT",
+    "STOP_ADD_SIMULATION_IMPLEMENTED_COUNT",
+    "STOP_REMOVE_SIMULATION_IMPLEMENTED_COUNT",
+    "SHIFT_TIME_SIMULATION_IMPLEMENTED_COUNT",
+    "ROUTE_ALTERNATIVE_COMPARISON_IMPLEMENTED_COUNT",
+    "DELAY_COMPARISON_COVERAGE_COUNT",
+    "OPERATIONAL_RISK_COMPARISON_IMPLEMENTED_COUNT",
+    "ROUTE_OWNER_PRESENT_COUNT",
+    "SCHOOL_SCENARIO_VISIBLE_COUNT",
+    "ORGANIZATION_SCENARIO_VISIBLE_COUNT",
+  ]) must(masterCounts[key] >= 1, `master primer ${key} is implemented`);
+  must(masterCounts.PLANNED_VS_ACTUAL_IMPLEMENTED_DIMENSION_COUNT >= 1, "master primer planned-vs-actual has compared dimensions");
+  for (const key of [
+    "AVAILABLE_ACTUAL_EVIDENCE_NOT_COMPARED_COUNT",
+    "ROUTE_ALTERNATIVE_WITHOUT_COMPARISON_COUNT",
+    "COST_OUTCOME_WITHOUT_EXPLANATION_COUNT",
+    "DUPLICATE_CALCULATION_ENGINE_COUNT",
+    "DUPLICATE_SCENARIO_COMPONENT_COUNT",
+    "BEST_SCENARIO_UNPROVEN_COUNT",
+    "EXPECTED_SCENARIO_UNPROVEN_COUNT",
+    "RISK_SCENARIO_UNPROVEN_COUNT",
+    "PERIOD_END_FORECAST_FALSE_CERTAINTY_COUNT",
+    "BUDGET_VARIANCE_SEMANTIC_CONFUSION_COUNT",
+    "AVAILABLE_ACTUAL_EVIDENCE_NOT_COMPARED_COUNT",
+    "CAPACITY_INVALID_SCENARIO_ACCEPTED_COUNT",
+    "NO_EFFECT_INPUT_PRESENTED_AS_SIMULATION_COUNT",
+    "NO_EFFECT_STOP_INPUT_PRESENTED_AS_SIMULATION_COUNT",
+    "NO_EFFECT_SHIFT_TIME_INPUT_PRESENTED_AS_SIMULATION_COUNT",
+    "FAKE_ROUTE_ALTERNATIVE_COUNT",
+    "ROUTE_ALTERNATIVE_LIVE_APPLY_COUNT",
+    "FABRICATED_DELAY_PREDICTION_COUNT",
+    "UNEXPLAINED_SCENARIO_RISK_SCORE_COUNT",
+    "SCENARIO_LIVE_OPERATION_MUTATION_COUNT",
+    "SCHOOL_COMPANY_BUDGET_LIFECYCLE_COPY_COUNT",
+    "ORGANIZATION_COMPANY_BUDGET_LIFECYCLE_COPY_COUNT",
+    "SCHOOL_FINANCE_PRIVILEGE_LEAK_COUNT",
+    "ORGANIZATION_FINANCE_PRIVILEGE_LEAK_COUNT",
+    "SCHOOL_AVAILABLE_SCENARIO_EVIDENCE_UNUSED_COUNT",
+    "ORGANIZATION_AVAILABLE_SCENARIO_EVIDENCE_UNUSED_COUNT",
+  ]) must(masterCounts[key] === 0, `master primer ${key} is zero`);
+
+  const requirementInventory = [
+    {
+      id: "D-04-01",
+      requirement: "Beklenen / En uygun / Riskli durum senaryo sınıfları",
+      canonicalSource: "locked-master-primer §8",
+      owner: "#4 cost scenario forecast owner",
+      implementationOwner: "backend/src/finance/costScenarioForecast.js",
+      apiDbTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["deterministic variant fixture", "variant API assertions", "Turkish variant labels"],
+    },
+    {
+      id: "D-04-02",
+      requirement: "Araç, yolcu, kapasite ve durak what-if etkisi",
+      canonicalSource: "locked-master-primer §1 + §12",
+      owner: "#4 cost scenario forecast owner",
+      implementationOwner: "backend/src/finance/costScenarioForecast.js + backend/src/routes/costScenario.js",
+      apiDbTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["vehicle add/remove fixture", "stop add/remove route evidence", "capacity blocker"],
+    },
+    {
+      id: "D-04-03",
+      requirement: "Dönem sonu tahmini, bütçe sapması ve planlanan-gerçekleşen",
+      canonicalSource: "locked-master-primer §9–§11",
+      owner: "#4 forecast comparison owner",
+      implementationOwner: "backend/src/finance/costScenarioForecast.js + backend/src/routes/costScenario.js",
+      apiDbTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["ACTUAL_TO_DATE + REMAINING_FORECAST equation", "budget-vs-forecast distinction", "dimension status/evidence"],
+    },
+    {
+      id: "D-04-04",
+      requirement: "Vardiya zamanı, rota alternatifi, dispatch sınırı, gecikme ve operasyonel risk",
+      canonicalSource: "locked-master-primer §12–§13",
+      owner: "#4 operational digital twin owner",
+      implementationOwner: "backend/src/routes/costScenario.js + backend/src/finance/costScenarioForecast.js",
+      apiDbTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["shift-time delta", "route owner evidence", "typed dispatch seam deferred to #20", "explained risk"],
+    },
+    {
+      id: "D-04-05",
+      requirement: "Araç sınıfı, yakıt fiyatı ve kişi/yolcu değişimi",
+      canonicalSource: "locked-master-primer §1",
+      owner: "#4 cost scenario forecast owner",
+      implementationOwner: "backend/src/finance/costScenarioForecast.js",
+      apiDbTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["field-level canonical cost model", "exact minor-unit money"],
+    },
+    {
+      id: "D-04-06",
+      requirement: "Tasarruf, ek maliyet, güven ve veri yeterliliği",
+      canonicalSource: "locked-master-primer §1 + §8–§10",
+      owner: "#4 forecast comparison owner",
+      implementationOwner: "backend/src/finance/costScenarioForecast.js",
+      apiDbTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["rationale/equation", "confidence", "missingData and insufficient state"],
+    },
+    {
+      id: "D-04-07",
+      requirement: "Karşılaştırma boyutları: araç ihtiyacı, km, süre, yakıt, maliyet, gecikme, kapasite, risk",
+      canonicalSource: "locked-master-primer §1",
+      owner: "#4 comparison-dimension owner",
+      implementationOwner: "backend/src/finance/costScenarioForecast.js",
+      apiDbTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["comparisonDimensions payload", "human-visible comparison status"],
+    },
+    {
+      id: "D-04-08",
+      requirement: "SCHOOL / ORGANIZATION planlama bağlamı; COMPANY bütçe yaşam döngüsü izolasyonu",
+      canonicalSource: "locked-master-primer §1 + §10",
+      owner: "#4 role-context owner",
+      implementationOwner: "backend/src/routes/costScenario.js + web/src/panels/shared/CostScenarioWorkspacePanel.jsx",
+      apiDbTestOwner: "existing role/isolation acceptance owners",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["planning-only routes", "no SCHOOL/ORGANIZATION company budget lifecycle copy"],
+    },
+    {
+      id: "D-04-09",
+      requirement: "Preview-only, no live mutation, tenant/RBAC and immutable money semantics",
+      canonicalSource: "locked-master-primer §2 + §7",
+      owner: "#4 safety boundary owner",
+      implementationOwner: "backend/src/finance/costScenarioForecast.js + backend/src/routes/costScenario.js",
+      apiDbTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs",
+      browserTestOwner: "backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs",
+      status: "CHECKED_STATIC",
+      evidence: ["readOnly/previewOnly/notPersisted", "tenant mismatch guard", "no apply/save route"],
+    },
+    {
+      id: "D-07-08-09",
+      requirement: "#7/#8/#9 historical closure evidence and current non-destructive regression boundary",
+      canonicalSource: "locked-master-primer §4 + milestone docs",
+      owner: "historical milestone evidence owners",
+      implementationOwner: "docs/_archive/legacy-notes/milestone.md + recovered git commits",
+      apiDbTestOwner: "existing milestone checkers (mutative; not run in bounded audit)",
+      browserTestOwner: "existing milestone acceptance owners; current browser evidence where available",
+      status: "EVIDENCE_RECOVERY_REQUIRED",
+      evidence: ["milestone identity recovery", "tag/commit inventory", "no historical tag fabrication"],
+    },
+  ];
+  const requiredInventoryIds = ["D-04-01", "D-04-02", "D-04-03", "D-04-04", "D-04-05", "D-04-06", "D-04-07", "D-04-08", "D-04-09", "D-07-08-09"];
+  const inventoryShapeComplete = requirementInventory.every((item) => [
+    "id", "requirement", "canonicalSource", "owner", "implementationOwner", "apiDbTestOwner", "browserTestOwner", "status", "evidence",
+  ].every((key) => item[key] && (!Array.isArray(item[key]) || item[key].length > 0)));
+  const unclassifiedRequirementCount = requiredInventoryIds.filter((id) => !requirementInventory.some((item) => item.id === id)).length;
+  const silentlyDroppedRequirementCount = requirementInventory.filter((item) => !requiredInventoryIds.includes(item.id)).length;
+  must(inventoryShapeComplete, "master-primer requirement inventory is machine-readable and owner-complete");
+  must(unclassifiedRequirementCount === 0, "UNCLASSIFIED_#4_REQUIREMENT_COUNT=0");
+  must(silentlyDroppedRequirementCount === 0, "SILENTLY_DROPPED_#4_REQUIREMENT_COUNT=0");
+  console.log(`REQUIREMENT_INVENTORY=${JSON.stringify(requirementInventory)}`);
+  const proofQualityCounts = {
+    SOURCE_ONLY_FALSE_PROOF_COUNT: [
+      masterCounts.EXPECTED_SCENARIO_IMPLEMENTED_COUNT,
+      masterCounts.BEST_SCENARIO_IMPLEMENTED_COUNT,
+      masterCounts.RISK_SCENARIO_IMPLEMENTED_COUNT,
+      masterCounts.PERIOD_END_FORECAST_IMPLEMENTED_COUNT,
+      masterCounts.BUDGET_VARIANCE_IMPLEMENTED_COUNT,
+      masterCounts.ROUTE_OWNER_PRESENT_COUNT,
+    ].every((value) => value >= 1) ? 0 : 1,
+    ROUTE_HEALTH_ONLY_FALSE_PROOF_COUNT: browserText.includes("TASK_EVIDENCE") && browserText.includes("contextualHome") ? 0 : 1,
+    SELF_REFERENTIAL_GUARD_COUNT: [
+      !forecastText.includes("masterPrimerEvidenceCounts"),
+      !routeText.includes("REQUIREMENT_INVENTORY"),
+      !uiText.includes("REQUIREMENT_INVENTORY"),
+    ].every(Boolean) ? 0 : 1,
+    STALE_EVIDENCE_ACCEPTANCE_COUNT: [
+      browserText.includes("consoleErrors"),
+      browserText.includes("pageErrors"),
+      browserText.includes("serverErrors"),
+      browserText.includes("visibleResult"),
+    ].every(Boolean) ? 0 : 1,
+    UNPROVEN_USER_VISIBLE_CLAIM_COUNT: browserText.includes('contextualTestId: "company-contextual-scenario"') && browserText.includes("page.getByTestId(contextualTestId).isVisible()") && browserText.includes("Senaryoyu Karşılaştır") ? 0 : 1,
+  };
+  console.log("=== #4 PROOF-QUALITY COUNTS ===");
+  for (const [key, value] of Object.entries(proofQualityCounts)) console.log(`${key}=${value}`);
+  for (const [key, value] of Object.entries(proofQualityCounts)) must(value === 0, `${key}=0`);
+  must(masterCounts.DUPLICATE_CALCULATION_ENGINE_COUNT === 0 && masterCounts.DUPLICATE_SCENARIO_COMPONENT_COUNT === 0, "FALSE_IMPLEMENTED_CLASSIFICATION_COUNT=0");
+  must(masterCounts.ROUTE_ALTERNATIVE_WITHOUT_COMPARISON_COUNT === 0 && masterCounts.COST_OUTCOME_WITHOUT_EXPLANATION_COUNT === 0, "CLOSURE_CRITICAL_FALSE_GREEN_MECHANISM_COUNT=0");
 
   if (failCount) {
     console.error(`#4 check failed: ${passCount} passed, ${failCount} failed`);

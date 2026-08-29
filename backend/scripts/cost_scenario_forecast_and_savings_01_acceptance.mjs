@@ -111,6 +111,49 @@ async function main() {
   if (preview.data?.provenance?.scenarioDataClass === "USER_SCENARIO_OVERRIDE" && preview.data?.provenance?.baselineDataClass) pass("preview keeps baseline and scenario provenance distinct");
   else fail("preview keeps baseline and scenario provenance distinct");
 
+  const companyShift = companyBaseline.data?.source?.shiftId
+    ? await prisma.shift.findUnique({ where: { id: Number(companyBaseline.data.source.shiftId) }, select: { _count: { select: { stops: true } }, stops: { orderBy: { order: "asc" }, take: 1, select: { lat: true, lng: true } } } })
+    : null;
+  const enrichedBody = {
+    ...completeBody,
+    baselineInput: { ...completeInput, shiftStartMinutes: 480, shiftEndMinutes: 540 },
+    scenarioOverrides: {
+      vehicleCount: 2,
+      shiftStartMinutes: 510,
+      riskAssumptions: { riskFuelUnitPriceMinor: 5000, riskDistanceKm: 125, riskDurationMinutes: 80 },
+      routeAlternative: { type: "REVERSE_STOP_ORDER" },
+      dispatchAlternative: { vehicleId: "preview-vehicle", driverId: "preview-driver", routeReference: "preview-route" },
+    },
+  };
+  const enrichedPreview = await request("/api/cost-scenarios/preview", { token: companyToken, method: "POST", body: enrichedBody });
+  if (enrichedPreview.status === 200 && ["EXPECTED", "BEST", "RISK"].every((key) => enrichedPreview.data?.scenarioVariants?.[key]?.scenarioType === key)) pass("master primer variants are API visible");
+  else fail("master primer variants are API visible", `${enrichedPreview.status}/${Object.keys(enrichedPreview.data?.scenarioVariants || {})}`);
+  if (enrichedPreview.status === 200 && enrichedPreview.data?.timingComparison?.shiftTimeChanged === true && enrichedPreview.data?.routeAlternative?.compared === true && enrichedPreview.data?.routeAlternative?.applied === false) pass("timing and route alternatives are compared without apply");
+  else fail("timing and route alternatives are compared without apply", `${enrichedPreview.status}/${enrichedPreview.data?.timingComparison?.status}/${enrichedPreview.data?.routeAlternative?.status}`);
+  if (enrichedPreview.status === 200 && enrichedPreview.data?.scenarioVariants?.RISK?.status === "READY" && enrichedPreview.data?.dispatchAlternative?.status === "SEAM_PROVEN_DEFERRED_TO_#20" && enrichedPreview.data?.dispatchAlternative?.applied === false) pass("risk and dispatch boundary are explicit");
+  else fail("risk and dispatch boundary are explicit", `${enrichedPreview.status}/${enrichedPreview.data?.scenarioVariants?.RISK?.status}/${enrichedPreview.data?.dispatchAlternative?.status}`);
+  if (enrichedPreview.status === 200 && ["READY", "INSUFFICIENT_DATA"].includes(enrichedPreview.data?.forecast?.status) && enrichedPreview.data?.forecast?.equation === "actualToDate + remainingForecast = forecastPeriodEnd" && ["READY", "INSUFFICIENT_DATA"].includes(enrichedPreview.data?.budgetVariance?.status) && enrichedPreview.data?.plannedVsActual?.dimensions) pass("forecast variance and planned-vs-actual report explicit evidence state");
+  else fail("forecast variance and planned-vs-actual report explicit evidence state", `${enrichedPreview.status}/${enrichedPreview.data?.forecast?.status}/${enrichedPreview.data?.budgetVariance?.status}`);
+  if (companyShift?.stops?.[0]) {
+    const stopAdd = await request("/api/cost-scenarios/preview", {
+      token: companyToken,
+      method: "POST",
+      body: { ...completeBody, baselineInput: { ...completeInput, stopCount: companyShift._count.stops }, scenarioOverrides: { scenarioStopOperations: [{ operation: "ADD", lat: companyShift.stops[0].lat, lng: companyShift.stops[0].lng }] } },
+    });
+    const stopRemove = await request("/api/cost-scenarios/preview", {
+      token: companyToken,
+      method: "POST",
+      body: { ...completeBody, baselineInput: { ...completeInput, stopCount: companyShift._count.stops }, scenarioOverrides: { scenarioStopOperations: [{ operation: "REMOVE", index: 0 }] } },
+    });
+    if (stopAdd.status === 200 && stopAdd.data?.dimensions?.stopCount?.scenario === companyShift._count.stops + 1 && stopAdd.data?.routeAlternative?.applied === false) pass("stop add is a route preview comparison");
+    else fail("stop add is a route preview comparison", `${stopAdd.status}/${stopAdd.data?.dimensions?.stopCount?.scenario}`);
+    if (stopRemove.status === 200 && stopRemove.data?.dimensions?.stopCount?.scenario === Math.max(0, companyShift._count.stops - 1) && stopRemove.data?.routeAlternative?.applied === false) pass("stop remove is a route preview comparison");
+    else fail("stop remove is a route preview comparison", `${stopRemove.status}/${stopRemove.data?.dimensions?.stopCount?.scenario}`);
+  } else {
+    fail("stop add is a route preview comparison", "No canonical company shift stop is available");
+    fail("stop remove is a route preview comparison", "No canonical company shift stop is available");
+  }
+
   const roomPreview = await request("/api/cost-scenarios/preview", {
     token: roomToken,
     method: "POST",
