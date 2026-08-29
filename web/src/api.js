@@ -361,7 +361,7 @@ export function getExternalCostReference(token, params = {}, { signal, force = f
 }
 
 export function getExternalCostReferenceLayers(token, params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {
-  return cachedGet(`/api/external-cost-references${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
+  return cachedGet(`/api/external-cost-references/layers${buildQueryString(params)}`, { token, signal, force, ttlMs, delayMs });
 }
 
 export function getCostScenarioBaseline(token, scope = "COMPANY", params = {}, { signal, force = false, ttlMs = DEFAULT_READ_TTL_MS, delayMs = DEFAULT_READ_DELAY_MS } = {}) {

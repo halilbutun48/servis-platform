@@ -25,7 +25,7 @@ import {
   createProviderRegistry,
 } from "../src/externalCost/providerRegistry.js";
 import { rememberResponse, clearResponseCache } from "../src/utils/responseCache.js";
-import { createEpdkPetrolProvider, parseEpdkFuelResponse } from "../src/externalCost/epdkProvider.js";
+import { createEpdkPetrolProvider, isCrossSurfaceScaleCompatible, parseEpdkFuelResponse } from "../src/externalCost/epdkProvider.js";
 import { buildPlatformObservedReference, buildPricingGuidance, resolveRegionScope, resolveThreeReferenceLayers } from "../src/externalCost/referenceLayers.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -115,7 +115,9 @@ async function main() {
   expectFailure(() => normalizeReferenceInput(referenceInput({ dataClass: "DEMO_FIXTURE" }), { now: fixedNow }), "REFERENCE_CLASSIFICATION_FORBIDDEN", "demo promotion is rejected");
   expectFailure(() => normalizeReferenceInput(referenceInput({ unit: "CURRENCY_PER_KM" }), { now: fixedNow }), "UNIT_FAMILY_MISMATCH", "unit mismatch is rejected");
   expectFailure(() => normalizeReferenceInput(referenceInput({ sourceName: "", asOf: null }), { now: fixedNow }), "MISSING_PROVENANCE", "missing provenance is rejected");
-  expectFailure(() => normalizeReferenceInput(referenceInput({ valueDecimal: "42.375" }), { now: fixedNow }), "MONEY_PRECISION_INVALID", "unsafe money precision is rejected");
+  expectFailure(() => normalizeReferenceInput(referenceInput({ family: "TOLL", unit: "CURRENCY_PER_TRIP", valueDecimal: "42.375" }), { now: fixedNow }), "MONEY_PRECISION_INVALID", "invoice money precision is rejected");
+  const preciseRate = normalizeReferenceInput(referenceInput({ valueDecimal: "52.80750", valueMinor: 5281 }), { now: fixedNow });
+  must(preciseRate.valueDecimal === "52.8075" && preciseRate.valueMinor === 5281, "per-litre rate keeps exact decimal beside explicit HALF_UP minor compatibility");
   expectFailure(() => normalizeReferenceInput(referenceInput({ valueDecimal: "42.37", valueMinor: 4238 }), { now: fixedNow }), "MONEY_VALUE_MISMATCH", "tampered duplicate money values are rejected");
   expectFailure(() => normalizeReferenceInput(referenceInput({ family: "FX", unit: "RATE", currencyCode: "" }), { now: fixedNow }), "INVALID_CURRENCY", "FX currency is required");
 
@@ -246,17 +248,22 @@ async function main() {
   must(cacheProducerCalls === 3 && cacheA.dataClass === cacheB.dataClass, "different user scopes do not collide");
   clearResponseCache("external-reference-check");
 
-  const epdkFixture = "<S:Envelope><S:Body><genelSorguResponse><return>&lt;Result&gt;&lt;PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;Tarih&gt;2026-08-27 00:00:00.0&lt;/Tarih&gt;&lt;YakitTipi&gt;Motorin&lt;/YakitTipi&gt;&lt;Il&gt;BURSA&lt;/Il&gt;&lt;FirmaMarkasi&gt;Fixture A&lt;/FirmaMarkasi&gt;&lt;Fiyat&gt;55.1234&lt;/Fiyat&gt;&lt;/PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;Tarih&gt;2026-08-27 00:00:00.0&lt;/Tarih&gt;&lt;YakitTipi&gt;Motorin&lt;/YakitTipi&gt;&lt;Il&gt;BURSA&lt;/Il&gt;&lt;FirmaMarkasi&gt;Fixture B&lt;/FirmaMarkasi&gt;&lt;Fiyat&gt;55.5678&lt;/Fiyat&gt;&lt;/PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;/Result&gt;</return></genelSorguResponse></S:Body></S:Envelope>";
+  const epdkFixture = "<S:Envelope><S:Body><genelSorguResponse><return>&lt;Result&gt;&lt;PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;Tarih&gt;2025-08-27 00:00:00.0&lt;/Tarih&gt;&lt;YakitTipi&gt;Motorin&lt;/YakitTipi&gt;&lt;Il&gt;BURSA&lt;/Il&gt;&lt;FirmaMarkasi&gt;Historical&lt;/FirmaMarkasi&gt;&lt;Fiyat&gt;6.46&lt;/Fiyat&gt;&lt;/PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;Tarih&gt;2026-08-27 00:00:00.0&lt;/Tarih&gt;&lt;YakitTipi&gt;Motorin&lt;/YakitTipi&gt;&lt;Il&gt;BURSA&lt;/Il&gt;&lt;FirmaMarkasi&gt;Fixture A&lt;/FirmaMarkasi&gt;&lt;Fiyat&gt;55.1234&lt;/Fiyat&gt;&lt;/PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;Tarih&gt;2026-08-27 00:00:00.0&lt;/Tarih&gt;&lt;YakitTipi&gt;Motorin&lt;/YakitTipi&gt;&lt;Il&gt;BURSA&lt;/Il&gt;&lt;FirmaMarkasi&gt;Fixture B&lt;/FirmaMarkasi&gt;&lt;Fiyat&gt;55.5678&lt;/Fiyat&gt;&lt;/PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;Tarih&gt;2026-08-27 00:00:00.0&lt;/Tarih&gt;&lt;YakitTipi&gt;Motorin (Diğer)&lt;/YakitTipi&gt;&lt;Il&gt;BURSA&lt;/Il&gt;&lt;FirmaMarkasi&gt;Excluded variant&lt;/FirmaMarkasi&gt;&lt;Fiyat&gt;99.99&lt;/Fiyat&gt;&lt;/PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;/Result&gt;</return></genelSorguResponse></S:Body></S:Envelope>";
   const epdkProvider = createEpdkPetrolProvider({
     endpoint: "https://epdk.test/petrol",
     fetchImpl: async () => ({ ok: true, text: async () => epdkFixture }),
   });
   const epdkReference = await epdkProvider.fetch({ family: "FUEL_DIESEL", regionCode: "16", now: fixedNow });
   must(epdkProvider.key === "EPDK_PETROL" && epdkReference.family === "FUEL_DIESEL", "EPDK fixture provider family contract");
-  must(epdkReference.valueMinor === 5535 && epdkReference.sourceMetadata.recordCount === 2, "EPDK fixture parser uses rounded median without fabricated value");
+  must(epdkReference.valueDecimal === "55.3456" && epdkReference.valueMinor === 5535 && epdkReference.sourceMetadata.recordCount === 2, "EPDK fixture parser uses latest canonical product median without fabricated value");
+  must(epdkReference.sourceMetadata.historicalMatchedRecordCount === 3 && epdkReference.sourceMetadata.sourcePriceField === "Fiyat" && epdkReference.sourceEvidence.rawSamples[0].rawPrice, "EPDK evidence preserves raw lexical price field without persisting XML");
+  must(epdkReference.sourceEvidence.matchedProductNames.length === 1 && epdkReference.sourceEvidence.matchedProductNames[0] === "Motorin", "EPDK diesel mapping accepts only the canonical product label");
   must(epdkReference.sourceMetadata.provinceCode === "16" && epdkReference.rawPayloadHash.length === 64, "EPDK fixture preserves province and payload identity");
   expectFailure(() => parseEpdkFuelResponse(epdkFixture, { family: "FUEL_LPG", regionCode: "16", now: fixedNow }), "NO_DATA", "fuel type mismatch returns no data");
   expectFailure(() => parseEpdkFuelResponse(epdkFixture.replaceAll("BURSA", "ANKARA"), { family: "FUEL_DIESEL", regionCode: "16", now: fixedNow }), "REGION_MISMATCH", "provider province mismatch is rejected");
+  expectFailure(() => parseEpdkFuelResponse(epdkFixture.replace("&lt;Tarih&gt;2026-08-27", "&lt;OlcuBirimi&gt;Kilogram&lt;/OlcuBirimi&gt;&lt;Tarih&gt;2026-08-27"), { family: "FUEL_DIESEL", regionCode: "16", now: fixedNow }), "INVALID_PROVIDER_RESPONSE", "source unit mismatch is rejected");
+  must(isCrossSurfaceScaleCompatible("78.48", "77.39375"), "official cross-surface scale compatibility accepts same TL per litre magnitude");
+  must(!isCrossSurfaceScaleCompatible("784.8", "77.39375") && !isCrossSurfaceScaleCompatible("7848", "77.39375"), "official cross-surface scale guard rejects tenfold and hundredfold transforms");
 
   const bursa = resolveRegionScope({ provinceName: "Bursa" });
   const unknownRegion = resolveRegionScope({ provinceName: "Unknown province" });

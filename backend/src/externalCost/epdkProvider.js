@@ -5,6 +5,8 @@ import { provinceCodeFromName } from "./referenceLayers.js";
 
 export const EPDK_SOURCE_URL = "https://www.epdk.gov.tr/Detay/Icerik/3-0-0-1206/akaryakit-bayi-fiyatlarina-iliskin-xml-web-servis";
 export const EPDK_PETROL_ENDPOINT = "https://lisansws.epdk.gov.tr/services/bildirimPetrolAkaryakitFiyatlari";
+export const EPDK_PETROL_BULLETIN_URL = "https://apigateway.epdk.gov.tr/petrolBayiSatisFiyatBulten";
+export const EPDK_PETROL_BULLETIN_SWAGGER_URL = "https://apigateway.epdk.gov.tr/petrolBayiSatisFiyatBulten?swagger";
 export const EPDK_LPG_ENDPOINT = "https://lisansws.epdk.gov.tr/services/bildirimLPGTarife";
 export const EPDK_PETROL_QUERY_NO = 72;
 
@@ -35,6 +37,19 @@ function tagValue(fields, candidates) {
   return normalizeText(entry?.[1]);
 }
 
+function normalizedProductLabel(value) {
+  return normalizeText(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replaceAll("ı", "i")
+    .toUpperCase();
+}
+
+const SOURCE_PRODUCT_FAMILY = Object.freeze({
+  MOTORIN: DIESEL,
+  "KURSUNSUZ BENZIN 95 OKTAN": GASOLINE_95,
+});
+
 function parseRecordNodes(xml) {
   const nodes = [];
   const stack = [];
@@ -54,7 +69,9 @@ function parseRecordNodes(xml) {
       const province = tagValue(node.fields, ["Il", "İl", "Province", "Sehir"]);
       const price = tagValue(node.fields, ["Fiyat", "Price", "BayiFiyat"]);
       const fuelType = tagValue(node.fields, ["YakitTipi", "YakıtTipi", "UrunTipi", "ÜrünTipi", "ProductType"]);
-      if (date && province && price) nodes.push({ date, province, price, fuelType, recordTag: localName(node.name) });
+      const unit = tagValue(node.fields, ["Ölçü Birimi", "Olcu Birimi", "OlcuBirimi", "Birim", "Unit"]);
+      const brand = tagValue(node.fields, ["FirmaMarkasi", "Firma Markası", "Brand", "Dealer"]);
+      if (date && province && price) nodes.push({ date, province, price, fuelType, unit, brand, recordTag: localName(node.name) });
       if (stack.length) {
         const parent = stack[stack.length - 1];
         parent.text += node.text;
@@ -93,6 +110,8 @@ function parseRecordNodes(xml) {
         province,
         price,
         fuelType: tagValue(fields, ["YakitTipi", "YakıtTipi", "UrunTipi", "ÜrünTipi", "ProductType"]),
+        unit: tagValue(fields, ["Ölçü Birimi", "Olcu Birimi", "OlcuBirimi", "Birim", "Unit"]),
+        brand: tagValue(fields, ["FirmaMarkasi", "Firma Markası", "Brand", "Dealer"]),
         recordTag: localName(match[1]),
       });
     }
@@ -106,26 +125,87 @@ function parseDate(value) {
   return date;
 }
 
-function decimalToMinor(value) {
+function canonicalDecimal(value) {
   const text = normalizeText(value).replace(",", ".");
-  if (!/^\d+(?:\.\d+)?$/.test(text)) return null;
+  if (!/^\d+(?:\.\d{1,12})?$/.test(text)) return null;
   const [whole, fraction = ""] = text.split(".");
-  const cents = (fraction + "00").slice(0, 2);
-  const roundUp = Number((fraction + "000")[2] || 0) >= 5;
-  const minor = Number(whole) * 100 + Number(cents) + (roundUp ? 1 : 0);
-  return Number.isSafeInteger(minor) ? minor : null;
+  const normalizedWhole = whole.replace(/^0+(?=\d)/, "") || "0";
+  const normalizedFraction = fraction.replace(/0+$/, "");
+  return normalizedFraction ? `${normalizedWhole}.${normalizedFraction}` : normalizedWhole;
 }
 
-function minorToDecimal(minor) {
-  return (Number(minor) / 100).toFixed(2);
+function decimalToMinor(value) {
+  const text = canonicalDecimal(value);
+  if (!text) return null;
+  const [whole, fraction = ""] = text.split(".");
+  let minor = BigInt(whole) * 100n + BigInt((fraction + "00").slice(0, 2));
+  if (Number(fraction[2] || 0) >= 5) minor += 1n;
+  return minor <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(minor) : null;
 }
 
 function matchesFamily(family, fuelType) {
-  const text = normalizeText(fuelType).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-  if (family === DIESEL) return text.includes("MOTORIN");
-  if (family === GASOLINE_95) return text.includes("BENZIN") && text.includes("95");
-  if (family === LPG) return text.includes("LPG") || text.includes("OTOGAZ");
-  return false;
+  return SOURCE_PRODUCT_FAMILY[normalizedProductLabel(fuelType)] === family;
+}
+
+function decimalToScaled(value, scale) {
+  const text = canonicalDecimal(value);
+  if (!text) return null;
+  const [whole, fraction = ""] = text.split(".");
+  return BigInt(whole) * (10n ** BigInt(scale)) + BigInt((fraction + "0".repeat(scale)).slice(0, scale) || "0");
+}
+
+function scaledToDecimal(value, scale) {
+  const divisor = 10n ** BigInt(scale);
+  const whole = value / divisor;
+  const fraction = value % divisor;
+  if (fraction === 0n) return whole.toString();
+  return `${whole}.${fraction.toString().padStart(scale, "0").replace(/0+$/, "")}`;
+}
+
+function medianScaled(values, scale) {
+  const sorted = values.map((value) => decimalToScaled(value, scale)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  if (!sorted.length) return null;
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2) return scaledToDecimal(sorted[middle], scale);
+  const sum = sorted[middle - 1] + sorted[middle];
+  return sum % 2n === 0n ? scaledToDecimal(sum / 2n, scale) : scaledToDecimal(sum, scale + 1);
+}
+
+function quartileScaled(values, scale, upper) {
+  const scaled = values.map((value) => decimalToScaled(value, scale)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  if (!scaled.length) return null;
+  const midpoint = Math.floor(scaled.length / 2);
+  const subset = upper ? scaled.slice(Math.ceil(scaled.length / 2)) : scaled.slice(0, midpoint);
+  if (!subset.length) return scaledToDecimal(scaled[0], scale);
+  const middle = Math.floor(subset.length / 2);
+  if (subset.length % 2) return scaledToDecimal(subset[middle], scale);
+  const sum = subset[middle - 1] + subset[middle];
+  return sum % 2n === 0n ? scaledToDecimal(sum / 2n, scale) : scaledToDecimal(sum, scale + 1);
+}
+
+function decimalDistribution(values) {
+  const normalized = values.map(canonicalDecimal).filter(Boolean);
+  const scale = normalized.reduce((maximum, value) => Math.max(maximum, value.split(".")[1]?.length || 0), 0);
+  const sorted = normalized.map((value) => decimalToScaled(value, scale)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  return {
+    count: normalized.length,
+    min: sorted.length ? scaledToDecimal(sorted[0], scale) : null,
+    q1: quartileScaled(normalized, scale, false),
+    median: medianScaled(normalized, scale),
+    q3: quartileScaled(normalized, scale, true),
+    max: sorted.length ? scaledToDecimal(sorted[sorted.length - 1], scale) : null,
+    precision: scale,
+  };
+}
+
+export function isCrossSurfaceScaleCompatible(sourceValue, officialValue) {
+  const source = canonicalDecimal(sourceValue);
+  const official = canonicalDecimal(officialValue);
+  if (!source || !official) return false;
+  const scale = Math.max(source.split(".")[1]?.length || 0, official.split(".")[1]?.length || 0);
+  const left = decimalToScaled(source, scale);
+  const right = decimalToScaled(official, scale);
+  return left * 4n >= right && right * 4n >= left;
 }
 
 function soapBody(queryNo, provinceCode) {
@@ -172,15 +252,15 @@ async function fetchXml({ endpoint, queryNo, provinceCode, fetchImpl = fetch, ti
 
 export function parseEpdkFuelResponse(xml, { family, regionCode, now = new Date() } = {}) {
   const decoded = decodeXml(xml);
-  const rows = parseRecordNodes(decoded)
+  const familyRows = parseRecordNodes(decoded)
     .filter((row) => matchesFamily(family, row.fuelType))
-    .map((row) => ({ ...row, asOf: parseDate(row.date), valueMinor: decimalToMinor(row.price) }))
-    .filter((row) => row.asOf && row.valueMinor !== null && row.valueMinor >= 0);
-  if (!rows.length) {
+    .map((row) => ({ ...row, asOf: parseDate(row.date), sourcePrice: canonicalDecimal(row.price) }))
+    .filter((row) => row.asOf && row.sourcePrice !== null);
+  if (!familyRows.length) {
     throw new ExternalReferenceProviderError("NO_DATA", "EPDK returned no matching fuel record for the requested province.");
   }
   const requestedProvince = String(regionCode || "");
-  const mismatched = rows.find((row) => {
+  const mismatched = familyRows.find((row) => {
     const responseProvince = provinceCodeFromName(row.province);
     if (!responseProvince) return false;
     if (requestedProvince === responseProvince) return false;
@@ -189,13 +269,22 @@ export function parseEpdkFuelResponse(xml, { family, regionCode, now = new Date(
   if (mismatched) {
     throw new ExternalReferenceProviderError("REGION_MISMATCH", "EPDK response province does not match the requested traffic code.");
   }
-  const sorted = rows.map((row) => row.valueMinor).sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  const medianMinor = sorted.length % 2 ? sorted[middle] : Math.round((sorted[middle - 1] + sorted[middle]) / 2);
-  const latestAsOf = rows.reduce((latest, row) => (row.asOf > latest ? row.asOf : latest), rows[0].asOf);
-  const provinceName = rows.find((row) => row.asOf.getTime() === latestAsOf.getTime())?.province || rows[0].province;
+  const latestAsOf = familyRows.reduce((latest, row) => (row.asOf > latest ? row.asOf : latest), familyRows[0].asOf);
+  const rows = familyRows.filter((row) => row.asOf.getTime() === latestAsOf.getTime());
+  const distribution = decimalDistribution(rows.map((row) => row.sourcePrice));
+  const medianDecimal = distribution.median;
+  const medianMinor = decimalToMinor(medianDecimal);
+  if (!medianDecimal || medianMinor === null) {
+    throw new ExternalReferenceProviderError("INVALID_PROVIDER_RESPONSE", "EPDK returned an unsafe decimal fuel price.");
+  }
+  const provinceName = rows[0]?.province || familyRows[0].province;
+  const sourceUnits = [...new Set(rows.map((row) => normalizeText(row.unit)).filter(Boolean))];
+  if (sourceUnits.some((unit) => !/^litre$/i.test(unit))) {
+    throw new ExternalReferenceProviderError("INVALID_PROVIDER_RESPONSE", "EPDK canonical road-fuel records reported a non-litre unit.");
+  }
   return {
     family,
+    valueDecimal: medianDecimal,
     valueMinor: medianMinor,
     unit: "CURRENCY_PER_L",
     currencyCode: "TRY",
@@ -214,13 +303,36 @@ export function parseEpdkFuelResponse(xml, { family, regionCode, now = new Date(
       reportedFuelType: family === DIESEL ? "Motorin" : "Kurşunsuz Benzin 95 Oktan",
       aggregation: "MEDIAN_DEALER_REPORTED_PRICE",
       recordCount: rows.length,
-      minimumValueMinor: sorted[0],
-      maximumValueMinor: sorted[sorted.length - 1],
-      normalization: "Source TRY/liter decimal rounded to nearest kuruş; no raw XML persisted.",
+      historicalMatchedRecordCount: familyRows.length,
+      minimumValueDecimal: distribution.min,
+      q1ValueDecimal: distribution.q1,
+      medianValueDecimal: distribution.median,
+      q3ValueDecimal: distribution.q3,
+      maximumValueDecimal: distribution.max,
+      minimumValueMinor: decimalToMinor(distribution.min),
+      medianValueMinor: medianMinor,
+      maximumValueMinor: decimalToMinor(distribution.max),
+      sourcePriceField: "Fiyat",
+      sourceUnitField: sourceUnits.length ? "Ölçü Birimi" : null,
+      sourceUnit: "Litre",
+      sourceScale: "UNSCALED_DECIMAL_TL_PER_LITER",
+      sourcePricePrecision: distribution.precision,
+      normalizedRatePrecision: medianDecimal.split(".")[1]?.length || 0,
+      minorCompatibilityPolicy: "HALF_UP_TO_TRY_KURUS; valueDecimal remains the exact normalized rate.",
+      normalization: "Latest canonical product-date only; exact decimal rate retained; valueMinor is explicit HALF_UP kuruş compatibility; no raw XML persisted.",
+      officialUnitCrossCheck: EPDK_PETROL_BULLETIN_SWAGGER_URL,
       fetchedAt: new Date(now).toISOString(),
     },
     rawPayloadHash: crypto.createHash("sha256").update(xml).digest("hex"),
-    normalizedValueLabel: minorToDecimal(medianMinor),
+    normalizedValueLabel: medianDecimal,
+    sourceEvidence: {
+      rawPriceField: "Fiyat",
+      rawSamples: rows.slice(0, 3).map((row) => ({ date: row.date, province: row.province, fuelType: row.fuelType, brand: row.brand || null, unit: row.unit || null, rawPrice: row.price })),
+      sourceUnitFieldPresent: sourceUnits.length > 0,
+      latestSourceDate: rows[0]?.date || null,
+      matchedProductNames: [...new Set(familyRows.map((row) => row.fuelType))],
+      excludedProductNames: [...new Set(parseRecordNodes(decoded).map((row) => row.fuelType).filter((fuelType) => fuelType && !matchesFamily(family, fuelType)))].slice(0, 32),
+    },
   };
 }
 

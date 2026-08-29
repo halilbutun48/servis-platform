@@ -124,9 +124,10 @@ const FAMILY_TTL = Object.freeze({
   REGIONAL_COST_REFERENCE: { freshMs: 7 * 24 * 60 * 60 * 1000, staleMs: 30 * 24 * 60 * 60 * 1000 },
 });
 
-const DECIMAL_PATTERN = /^-?(?:0|[1-9]\d*)(?:\.\d{1,8})?$/;
+const DECIMAL_PATTERN = /^-?(?:0|[1-9]\d*)(?:\.\d{1,12})?$/;
 const CODE_PATTERN = /^[A-Z0-9][A-Z0-9_-]{0,31}$/;
 const MAX_FUTURE_AS_OF_MS = 5 * 60 * 1000;
+const HIGH_PRECISION_RATE_UNITS = new Set(["CURRENCY_PER_L"]);
 
 function fail(code, message, details = undefined) {
   const error = new Error(message);
@@ -166,6 +167,14 @@ function decimalFromMinor(value) {
   const whole = Math.floor(value / 100);
   const fraction = String(value % 100).padStart(2, "0").replace(/0+$/, "");
   return fraction ? `${whole}.${fraction}` : String(whole);
+}
+
+function decimalToMinorHalfUp(value) {
+  const normalized = normalizeDecimal(value);
+  const [whole, fraction = ""] = normalized.split(".");
+  let minor = BigInt(whole) * 100n + BigInt((fraction + "00").slice(0, 2));
+  if (Number(fraction[2] || 0) >= 5) minor += 1n;
+  return minor <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(minor) : null;
 }
 
 function normalizeCurrency(value, unit, family) {
@@ -277,7 +286,7 @@ export function normalizeReferenceInput(input = {}, { providerKey = MANUAL_PROVI
     fail("MISSING_VALUE", "valueDecimal or valueMinor is required.");
   }
 
-  if (CURRENCY_UNITS.has(unit) && valueDecimal.split(".")[1]?.length > 2) {
+  if (CURRENCY_UNITS.has(unit) && !HIGH_PRECISION_RATE_UNITS.has(unit) && valueDecimal.split(".")[1]?.length > 2) {
     fail("MONEY_PRECISION_INVALID", "Currency references must use at most two decimal places.");
   }
 
@@ -307,7 +316,11 @@ export function normalizeReferenceInput(input = {}, { providerKey = MANUAL_PROVI
   if (valueMinor !== null && !Number.isSafeInteger(valueMinor)) fail("INVALID_MINOR_VALUE", "valueMinor must be a safe integer.");
   if (valueMinor !== null && !CURRENCY_UNITS.has(unit)) fail("INVALID_MINOR_VALUE", "valueMinor is only valid for currency units.");
   if (valueMinor !== null && input.valueDecimal !== undefined && input.valueDecimal !== null && input.valueDecimal !== "") {
-    if (normalizeDecimal(input.valueDecimal) !== decimalFromMinor(valueMinor)) {
+    const decimalValue = normalizeDecimal(input.valueDecimal);
+    const compatibleMinor = HIGH_PRECISION_RATE_UNITS.has(unit)
+      ? decimalToMinorHalfUp(decimalValue)
+      : valueMinor;
+    if (compatibleMinor !== valueMinor || (!HIGH_PRECISION_RATE_UNITS.has(unit) && decimalValue !== decimalFromMinor(valueMinor))) {
       fail("MONEY_VALUE_MISMATCH", "valueDecimal and valueMinor must describe the same amount.");
     }
   }

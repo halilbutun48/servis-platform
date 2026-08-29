@@ -36,10 +36,13 @@ Bu üç sınıf birbirine dönüştürülmez. `ExternalCostReference` tablosu ya
 İlk gerçek provider `EPDK_PETROL` olarak `genelSorgu` SOAP sözleşmesine
 bağlanır. `sorguNo=72` ve il trafik kodu ile alınan bayi raporları Motorin ve
 Kurşunsuz Benzin 95 Oktan ailelerine normalize edilir. Kayıtlar bayi değerleri
-üzerinde deterministik medyan olarak özetlenir; min/max ve örnek sayısı
-`sourceMetadata` içinde korunur. Fiyat kaynağının bildirdiği litre başı TRY
-ondalık değeri en yakın kuruşa normalize edilir; ham XML saklanmaz, yalnızca
-SHA-256 payload kimliği tutulur.
+üzerinde, yalnızca en güncel kaynak tarihindeki tam resmi ürün etiketleri için
+deterministik medyan olarak özetlenir; varyantlar (`(Diğer)`, biodizel,
+etanol/E10 vb.) temel aileye dahil edilmez. `Fiyat` ham alanı açık ondalık
+değerdir; query-72 yanıtında ayrı bir birim alanı bulunmadığında resmi litre
+bülteniyle çapraz doğrulanır. Exact litre başına TRY oranı `valueDecimal`
+içinde korunur; `valueMinor` yalnızca açık HALF_UP kuruş uyumluluk
+dönüşümüdür. Ham XML saklanmaz, yalnızca SHA-256 payload kimliği tutulur.
 
 EPDK LPG servisi (`EPDK_LPG`) ayrı adapter olarak hazırdır ancak resmi sorgu
 numarası açıkça yapılandırılmadan etkin sayılmaz. Böylece doğrulanmamış LPG
@@ -59,7 +62,9 @@ Her kayıt family, value, unit, currency (uygunsa), source, provider, as-of,
 region, scope, freshness, confidence, completeness, conflict, provider status,
 fallback state, retrieved-at ve geçerlilik pencerelerini taşır. Para değerleri
 plain decimal string veya integer minor-unit olarak doğrulanır; floating-point
-para hesabı yapılmaz. Unit family ile eşleşmezse kayıt reddedilir.
+para hesabı yapılmaz. `CURRENCY_PER_L` biriminde exact rate decimalı 12 haneye
+kadar korunabilir; ayrı `valueMinor` alanı varsa yalnızca HALF_UP kuruş
+uyumluluğu olarak doğrulanır. Unit family ile eşleşmezse kayıt reddedilir.
 
 Supported architecture families:
 
