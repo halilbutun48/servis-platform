@@ -55,7 +55,6 @@ async function loadRoomFinancialContext(roomId, previewUser) {
       select: {
         id: true,
         name: true,
-        region: { select: { id: true, name: true } },
       },
     }),
 
@@ -104,7 +103,6 @@ async function loadRoomFinancialContext(roomId, previewUser) {
           select: {
             id: true,
             name: true,
-            region: { select: { id: true, name: true } },
           },
         },
 
@@ -158,6 +156,7 @@ async function loadRoomFinancialContext(roomId, previewUser) {
           select: {
             id: true,
             name: true,
+            region: { select: { id: true, name: true } },
           },
         },
 
@@ -234,6 +233,7 @@ export function attachCommercialCoreRoomRoutes(r) {
           select: {
             id: true,
             name: true,
+            region: { select: { id: true, name: true } },
           },
         }),
 
@@ -284,6 +284,7 @@ export function attachCommercialCoreRoomRoutes(r) {
               select: {
                 id: true,
                 name: true,
+                region: { select: { id: true, name: true } },
               },
             },
 
