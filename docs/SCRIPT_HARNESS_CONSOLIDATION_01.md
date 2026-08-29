@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `441`
-- Toplam executable tracked file: `1316`
-- Combined registry row: `1757`
-- Root/backend/web/mobile package dağılımı: root `276`, backend `880`, web `97`, mobile `201`
+- Toplam package script entry: `444`
+- Toplam executable tracked file: `1320`
+- Combined registry row: `1764`
+- Root/backend/web/mobile package dağılımı: root `279`, backend `884`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `747`
+- NEEDS_REVIEW: `754`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `371`
+- Eski sistem term eşleşmesi: `373`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 747 |
+| NEEDS_REVIEW | 754 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -486,6 +486,8 @@ Repo: `servis-platform`
 | root:check:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_check.js | verify-core | ACTIVE_CORE |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Breaks canonical verification chain |  |
 | root:accept:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
 | root:smoke:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
+| root:accept:seferabicostanalysisassistant01 | package.json | root | node backend/scripts/sefer_abi_cost_analysis_assistant_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-SEFERABICOSTANALYSISASSISTANT-01 |  | Owner or chain unclear |  |
+| root:smoke:seferabicostanalysisassistant01 | package.json | root | node backend/scripts/sefer_abi_cost_analysis_assistant_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-SEFERABICOSTANALYSISASSISTANT-01 |  | Owner or chain unclear |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
 | root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Breaks canonical verification chain |  |
 | root:check:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
@@ -530,6 +532,7 @@ Repo: `servis-platform`
 | root:check:copilotreasoninganswercomposer01 | package.json | root | node backend/scripts/copilot_reasoning_answer_composer_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTREASONINGANSWERCOMPOSER-01 |  | Owner or chain unclear |  |
 | root:check:seferabireasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_reasoning_assistant_01_check.js | verify-core | ACTIVE_CORE |  | SEFER-ABI-REASONING-ASSISTANT-01 |  | Breaks canonical verification chain |  |
 | root:check:seferabiallrolesreasoningassistant01 | package.json | root | node backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01 |  | Owner or chain unclear |  |
+| root:check:seferabicostanalysisassistant01 | package.json | root | node backend/scripts/sefer_abi_cost_analysis_assistant_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERABICOSTANALYSISASSISTANT-01 |  | Owner or chain unclear |  |
 | root:check:seferabiturkishterminology01 | package.json | root | node backend/scripts/sefer_abi_turkish_user_facing_terminology_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-SEFERABITURKISHTERMINOLOGY-01 |  | Breaks canonical verification chain |  |
 | root:check:seferabiturkishuserfacinglanguage01 | package.json | root | node backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js | core | ACTIVE_CORE |  | SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01 |  | Breaks canonical verification chain |  |
 | root:check:copilotcontextmemorytaskstate01 | package.json | root | node backend/scripts/copilot_context_memory_task_state_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-COPILOTCONTEXTMEMORYTASKSTATE-01 |  | Owner or chain unclear |  |
@@ -1201,6 +1204,9 @@ Repo: `servis-platform`
 | script_harness_consolidation_01_check.js | backend/scripts/script_harness_consolidation_01_check.js | backend | root:check:scriptharnessconsolidation01 | product-extensions | ACTIVE_CORE |  | SCRIPT-HARNESS-CONSOLIDATION-01-CHECK |  | Owner or chain unclear | canonical repo harness inventory |
 | security_kvkk_final_01_check.js | backend/scripts/security_kvkk_final_01_check.js | backend | root:check:securitykvkkfinal01 | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
 | sefer_abi_all_roles_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_all_roles_reasoning_assistant_01_check.js | backend | root:check:seferabiallrolesreasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-ALL-ROLES-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
+| sefer_abi_cost_analysis_assistant_01_acceptance.mjs | backend/scripts/sefer_abi_cost_analysis_assistant_01_acceptance.mjs | backend | root:accept:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-ACCEPTANCE |  | Owner or chain unclear |  |
+| sefer_abi_cost_analysis_assistant_01_browser.mjs | backend/scripts/sefer_abi_cost_analysis_assistant_01_browser.mjs | backend | root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-BROWSER |  | Owner or chain unclear |  |
+| sefer_abi_cost_analysis_assistant_01_check.js | backend/scripts/sefer_abi_cost_analysis_assistant_01_check.js | backend | root:check:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_reasoning_assistant_01_check.js | backend | root:check:seferabireasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_terminal_humanize_01_check.js | backend/scripts/sefer_abi_terminal_humanize_01_check.js | backend | root:check:seferabiterminalhumanize01 | review | NEEDS_REVIEW |  | SEFER-ABI-TERMINAL-HUMANIZE-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_turkish_user_facing_language_01_check.js | backend/scripts/sefer_abi_turkish_user_facing_language_01_check.js | backend | root:check:seferabiturkishuserfacinglanguage01 | review | NEEDS_REVIEW |  | SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-01-CHECK |  | Owner or chain unclear |  |
@@ -1343,6 +1349,7 @@ Repo: `servis-platform`
 | qualityScorer.js | backend/src/ai/chat/qualityScorer.js | backend |  | review | NEEDS_REVIEW |  | QUALITY-SCORER |  | Owner or chain unclear |  |
 | replyShapes.js | backend/src/ai/chat/replyShapes.js | backend |  | review | NEEDS_REVIEW |  | REPLY-SHAPES |  | Owner or chain unclear |  |
 | screenStateAnalyzer.js | backend/src/ai/chat/screenStateAnalyzer.js | backend |  | review | NEEDS_REVIEW |  | SCREEN-STATE-ANALYZER |  | Owner or chain unclear |  |
+| seferAbiCostAnalysisAssistant.js | backend/src/ai/chat/seferAbiCostAnalysisAssistant.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT |  | Owner or chain unclear |  |
 | seferAbiReasoningAssistant.js | backend/src/ai/chat/seferAbiReasoningAssistant.js | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT |  | Owner or chain unclear |  |
 | supplierMatching.js | backend/src/ai/chat/supplierMatching.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-MATCHING |  | Owner or chain unclear |  |
 | supplierOfferCollect.js | backend/src/ai/chat/supplierOfferCollect.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-OFFER-COLLECT |  | Owner or chain unclear |  |
@@ -1623,7 +1630,7 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web | root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
