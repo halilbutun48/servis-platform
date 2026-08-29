@@ -3,6 +3,8 @@ import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { httpError } from "../errors/http.js";
 import { acquireExternalReference } from "../externalCost/providerRegistry.js";
+import { createConfiguredExternalReferenceRegistry, providerKeyForFamily } from "./providerFactory.js";
+import { buildPlatformObservedReference, buildPricingGuidance, resolveRegionScope, resolveThreeReferenceLayers } from "./referenceLayers.js";
 import {
   COMPLETENESS,
   FALLBACK_STATE,
@@ -48,6 +50,8 @@ const REFERENCE_SELECT = {
   retrievedAt: true,
   freshUntil: true,
   staleUntil: true,
+  sourceMetadata: true,
+  rawPayloadHash: true,
 };
 
 function normalizedFamily(value) {
@@ -206,6 +210,50 @@ export async function createExternalCostReference(input, actor, { providerKey = 
   return publicReference(created);
 }
 
+async function persistProviderReference(input, { actor = null, now = new Date() } = {}) {
+  const normalized = normalizeReferenceInput(input, {
+    providerKey: input.providerKey,
+    now,
+    requireProvenance: true,
+  });
+  const data = {
+    ...normalized,
+    sourceMetadata: safeMetadata(normalized.sourceMetadata),
+    createdByUserId: null,
+  };
+  const existing = await prisma.externalCostReference.findUnique({
+    where: { referenceKey: normalized.referenceKey },
+    select: { id: true },
+  });
+  const stored = existing
+    ? await prisma.externalCostReference.update({ where: { id: existing.id }, data, select: REFERENCE_SELECT })
+    : await prisma.externalCostReference.create({ data, select: REFERENCE_SELECT });
+
+  await prisma.auditLog.create({
+    data: {
+      actorUserId: actor?.id || null,
+      actorRole: actor?.role || "SYSTEM",
+      action: "EXTERNAL_REFERENCE_REFRESHED",
+      entity: "ExternalCostReference",
+      entityId: stored.id,
+      meta: {
+        family: stored.family,
+        unit: stored.unit,
+        providerKey: stored.providerKey,
+        sourceName: stored.sourceName,
+        asOf: stored.asOf?.toISOString?.() || null,
+        regionCode: stored.regionCode,
+        scopeType: stored.scopeType,
+        scopeKey: stored.scopeKey,
+        dataClass: stored.dataClass,
+        rawPayloadHash: stored.rawPayloadHash || null,
+      },
+    },
+  });
+  clearResponseCache(CACHE_PREFIX);
+  return publicReference(stored, { now });
+}
+
 export async function getExternalCostReference(query = {}) {
   const providerKey = String(query.providerKey || MANUAL_PROVIDER_KEY).trim().toUpperCase();
   const family = normalizedFamily(query.family);
@@ -229,6 +277,124 @@ export async function getExternalCostReference(query = {}) {
   );
 }
 
+export async function refreshExternalCostReference(query = {}, actor = null) {
+  const family = normalizedFamily(query.family);
+  const unit = normalizedUnit(query.unit);
+  const currencyCode = query.currencyCode ? String(query.currencyCode).trim().toUpperCase() : "TRY";
+  const regionCode = query.regionCode ? String(query.regionCode).trim().toUpperCase() : null;
+  const scopeType = normalizedScope(query.scopeType || (regionCode ? "CITY" : "GLOBAL"));
+  const scopeKey = String(query.scopeKey || regionCode || (scopeType === "GLOBAL" ? "GLOBAL" : "")).trim().toUpperCase() || "GLOBAL";
+  const requestedProvider = String(query.providerKey || providerKeyForFamily(family) || "").trim().toUpperCase();
+  if (!requestedProvider) return { ...unavailableReference({ family, reason: "SOURCE_UNAVAILABLE" }), ok: true };
+  const registry = createConfiguredExternalReferenceRegistry({ providerKey: requestedProvider });
+  const result = await acquireExternalReference({
+    request: { family, unit, currencyCode, regionCode, scopeType, scopeKey },
+    registry,
+    primaryProviderKey: requestedProvider,
+    now: new Date(),
+    maxAttempts: ENV.EXTERNAL_REFERENCE_RETRY_MAX_ATTEMPTS,
+  });
+  if (!result?.marketReference) return { ...result, ok: true };
+  const stored = await persistProviderReference({
+    ...result.marketReference,
+    providerKey: result.marketReference.providerKey,
+    fallbackState: result.fallbackState,
+  }, { actor });
+  return { ...result, ok: true, marketReference: stored };
+}
+
+function parseNonNegativeMinor(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+async function loadPlatformQuoteObservations({ regionCode, windowDays, scope = "ROOM" } = {}) {
+  if (String(scope).toUpperCase() !== "ROOM" || !regionCode) return [];
+  const since = new Date(Date.now() - Math.max(1, Number(windowDays) || 90) * 24 * 60 * 60 * 1000);
+  const rows = await prisma.shiftOffer.findMany({
+    where: { status: "ACCEPTED", createdAt: { gte: since } },
+    orderBy: { createdAt: "desc" },
+    take: 500,
+    select: {
+      amountRoom: true,
+      createdAt: true,
+      shift: { select: { company: { select: { region: { select: { name: true } } } } } },
+    },
+  });
+  return rows
+    .map((row) => ({
+      valueMinor: row.amountRoom,
+      observedAt: row.createdAt,
+      regionCode: row.shift?.company?.region?.name || null,
+      eligible: Boolean(row.amountRoom),
+    }))
+    .filter((row) => {
+      const name = row.regionCode ? resolveRegionScope({ provinceName: row.regionCode }).regionCode : null;
+      return name === regionCode;
+    });
+}
+
+export async function getReferenceLayers(query = {}, actor = null) {
+  const family = normalizedFamily(query.family || "FUEL_DIESEL");
+  const unit = normalizedUnit(query.unit || "CURRENCY_PER_L");
+  const region = resolveRegionScope({ provinceCode: query.regionCode, provinceName: query.regionName, requestedScope: query.scopeType || "CITY" });
+  const providerKey = String(query.providerKey || providerKeyForFamily(family) || "EPDK_PETROL").trim().toUpperCase();
+  let external = await getExternalCostReference({
+    family,
+    unit,
+    currencyCode: query.currencyCode || "TRY",
+    providerKey,
+    regionCode: region.regionCode,
+    scopeType: region.scopeType,
+    scopeKey: region.scopeKey,
+  });
+  if (String(query.refresh || "").toLowerCase() === "true" && region.regionCode) {
+    external = await refreshExternalCostReference({
+      family,
+      unit,
+      currencyCode: query.currencyCode || "TRY",
+      providerKey,
+      regionCode: region.regionCode,
+      scopeType: region.scopeType,
+      scopeKey: region.scopeKey,
+    }, actor);
+  }
+  const windowDays = Math.max(1, Math.min(365, Number(query.windowDays || ENV.PLATFORM_REFERENCE_WINDOW_DAYS || 90)));
+  const observations = await loadPlatformQuoteObservations({ regionCode: region.regionCode, windowDays, scope: query.scope || actor?.role });
+  const platform = buildPlatformObservedReference({
+    observations,
+    region,
+    minSampleCount: ENV.PLATFORM_REFERENCE_MIN_SAMPLE_COUNT,
+    windowDays,
+    family: "REGIONAL_COST_REFERENCE",
+    unit: "CURRENCY_PER_TRIP",
+  });
+  const actual = {
+    valueMinor: parseNonNegativeMinor(query.actualValueMinor),
+    unit: query.actualUnit || "CURRENCY_PER_TRIP",
+    currencyCode: query.currencyCode || "TRY",
+    asOf: query.actualAsOf || null,
+    window: query.actualWindow || null,
+    geography: query.actualGeography || region.regionName || null,
+  };
+  const layers = resolveThreeReferenceLayers({ external, platform, actual, region, family });
+  return {
+    ok: true,
+    scope: String(query.scope || actor?.role || "UNKNOWN").toUpperCase(),
+    ...layers,
+    pricingGuidance: buildPricingGuidance({
+      operationalCostMinor: parseNonNegativeMinor(query.operationalCostMinor),
+      quoteFloorMinor: parseNonNegativeMinor(query.quoteFloorMinor),
+      observedQuoteBand: String(query.scope || actor?.role).toUpperCase() === "ROOM" && platform.available ? platform.range : null,
+      currencyCode: query.currencyCode || "TRY",
+    }),
+    readOnly: true,
+    previewOnly: true,
+    writeAction: false,
+  };
+}
+
 export async function listExternalReferenceFamilies() {
   return REFERENCE_FAMILIES.map((family) => ({
     family,
@@ -248,7 +414,7 @@ export async function acquireAndPersistExternalReference({ request, registry, pr
     onEvent,
   });
   if (!result?.marketReference) return result;
-  const stored = await createExternalCostReference({
+  const stored = await persistProviderReference({
     ...result.marketReference,
     dataClass: "EXTERNAL_REFERENCE",
     sourceName: result.marketReference.sourceName,
@@ -257,7 +423,7 @@ export async function acquireAndPersistExternalReference({ request, registry, pr
     scopeType: result.marketReference.scopeType,
     scopeKey: result.marketReference.scopeKey,
     fallbackState: result.fallbackState,
-  }, actor, { providerKey: result.marketReference.providerKey });
+  }, { actor, now });
   return { ...result, marketReference: stored };
 }
 

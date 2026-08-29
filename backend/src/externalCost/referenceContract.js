@@ -7,6 +7,7 @@ export const REFERENCE_DATA_CLASS = Object.freeze({
 export const REFERENCE_FAMILIES = Object.freeze([
   "FUEL_DIESEL",
   "FUEL_GASOLINE",
+  "FUEL_GASOLINE_95",
   "FUEL_LPG",
   "FX",
   "INFLATION_INDEX",
@@ -90,6 +91,7 @@ const CURRENCY_UNITS = new Set([
 const FAMILY_UNIT_RULES = Object.freeze({
   FUEL_DIESEL: ["CURRENCY_PER_L"],
   FUEL_GASOLINE: ["CURRENCY_PER_L"],
+  FUEL_GASOLINE_95: ["CURRENCY_PER_L"],
   FUEL_LPG: ["CURRENCY_PER_L"],
   FX: ["RATE"],
   INFLATION_INDEX: ["INDEX_POINT"],
@@ -107,6 +109,7 @@ const FAMILY_UNIT_RULES = Object.freeze({
 const FAMILY_TTL = Object.freeze({
   FUEL_DIESEL: { freshMs: 24 * 60 * 60 * 1000, staleMs: 3 * 24 * 60 * 60 * 1000 },
   FUEL_GASOLINE: { freshMs: 24 * 60 * 60 * 1000, staleMs: 3 * 24 * 60 * 60 * 1000 },
+  FUEL_GASOLINE_95: { freshMs: 24 * 60 * 60 * 1000, staleMs: 3 * 24 * 60 * 60 * 1000 },
   FUEL_LPG: { freshMs: 24 * 60 * 60 * 1000, staleMs: 3 * 24 * 60 * 60 * 1000 },
   FX: { freshMs: 6 * 60 * 60 * 1000, staleMs: 24 * 60 * 60 * 1000 },
   INFLATION_INDEX: { freshMs: 30 * 24 * 60 * 60 * 1000, staleMs: 90 * 24 * 60 * 60 * 1000 },
@@ -352,6 +355,7 @@ export function publicReference(reference, { now = new Date(), fallbackState = n
   });
   return {
     id: reference?.id ?? null,
+    referenceKey: reference?.referenceKey ?? null,
     dataClass: REFERENCE_DATA_CLASS.EXTERNAL_REFERENCE,
     family: reference?.family ?? null,
     valueDecimal: reference?.valueDecimal ?? null,
@@ -373,6 +377,8 @@ export function publicReference(reference, { now = new Date(), fallbackState = n
     providerStatus: reference?.providerStatus ?? PROVIDER_STATUS.NOT_CONFIGURED,
     fallbackState: resolvedFallbackState,
     retrievedAt: reference?.retrievedAt ?? null,
+    sourceMetadata: reference?.sourceMetadata ?? null,
+    rawPayloadHash: reference?.rawPayloadHash ?? null,
   };
 }
 
@@ -394,7 +400,7 @@ export function unavailableReference({ family = null, reason = "SOURCE_UNAVAILAB
 
 export function classifyReferenceError(error) {
   const code = String(error?.code || "").toUpperCase();
-  if (["INVALID_REFERENCE_INPUT", "INVALID_DECIMAL", "INVALID_CURRENCY", "INVALID_SCOPE", "MISSING_PROVENANCE", "MISSING_SCOPE", "UNIT_FAMILY_MISMATCH", "UNSUPPORTED_FAMILY", "UNSUPPORTED_UNIT", "INVALID_CONFIG", "UNAUTHORIZED"].includes(code)) return "NON_RETRYABLE";
+  if (["INVALID_REFERENCE_INPUT", "INVALID_DECIMAL", "INVALID_CURRENCY", "INVALID_SCOPE", "MISSING_PROVENANCE", "MISSING_SCOPE", "UNIT_FAMILY_MISMATCH", "UNSUPPORTED_FAMILY", "UNSUPPORTED_UNIT", "INVALID_CONFIG", "UNAUTHORIZED", "NO_DATA", "INVALID_PROVIDER_RESPONSE"].includes(code)) return "NON_RETRYABLE";
   if (["SOURCE_UNAVAILABLE", "TIMEOUT", "RATE_LIMITED", "TRANSIENT_PROVIDER_ERROR"].includes(code)) return "TRANSIENT";
   return "UNKNOWN";
 }

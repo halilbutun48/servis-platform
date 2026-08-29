@@ -193,6 +193,7 @@ enum ExternalReferenceDataClass {
 enum ExternalReferenceFamily {
   FUEL_DIESEL
   FUEL_GASOLINE
+  FUEL_GASOLINE_95
   FUEL_LPG
   FX
   INFLATION_INDEX

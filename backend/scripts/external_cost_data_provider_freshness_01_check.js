@@ -25,6 +25,8 @@ import {
   createProviderRegistry,
 } from "../src/externalCost/providerRegistry.js";
 import { rememberResponse, clearResponseCache } from "../src/utils/responseCache.js";
+import { createEpdkPetrolProvider, parseEpdkFuelResponse } from "../src/externalCost/epdkProvider.js";
+import { buildPlatformObservedReference, buildPricingGuidance, resolveRegionScope, resolveThreeReferenceLayers } from "../src/externalCost/referenceLayers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(__filename), "../..");
@@ -77,6 +79,8 @@ async function main() {
   const serviceText = read("backend/src/externalCost/externalCostReferenceService.js");
   const envText = read("backend/src/env.js");
   const docText = read("docs/EXTERNAL_COST_DATA_PROVIDER_AND_FRESHNESS_01.md");
+  const epdkText = read("backend/src/externalCost/epdkProvider.js");
+  const layersText = read("backend/src/externalCost/referenceLayers.js");
 
   must(packageText.includes('"check:externalcostdataproviderfreshness01": "node backend/scripts/external_cost_data_provider_freshness_01_check.js"'), "canonical #2 check is exposed");
   must(schemaText.includes("model ExternalCostReference"), "Prisma external reference owner exists");
@@ -92,10 +96,12 @@ async function main() {
   must(!envText.includes("42.37") && !serviceText.includes("42.37"), "runtime has no fabricated market value");
   must(docText.includes("#2 EXTERNAL-COST-DATA-PROVIDER-AND-FRESHNESS-01"), "#2 architecture document exists");
   must(docText.includes("DEMO_FIXTURE") && docText.includes("INTERNAL_ACTUAL") && docText.includes("EXTERNAL_REFERENCE"), "document keeps three data classes distinct");
+  must(epdkText.includes("EPDK_PETROL") && epdkText.includes("SOAPAction") && epdkText.includes("rawPayloadHash"), "EPDK provider keeps protocol, provenance and payload identity");
+  must(layersText.includes("EXTERNAL_MARKET_REFERENCE") && layersText.includes("SEFERPAKT_PLATFORM_REFERENCE") && layersText.includes("USER_COMPANY_ROOM_ACTUAL"), "three value layers have separate owners");
 
   must(REFERENCE_DATA_CLASS.INTERNAL_ACTUAL !== REFERENCE_DATA_CLASS.EXTERNAL_REFERENCE, "actual and external classifications differ");
   must(REFERENCE_DATA_CLASS.EXTERNAL_REFERENCE !== REFERENCE_DATA_CLASS.DEMO_FIXTURE, "external and demo classifications differ");
-  must(REFERENCE_FAMILIES.includes("FUEL_DIESEL") && REFERENCE_FAMILIES.includes("FX"), "initial family contract includes fuel and FX");
+  must(REFERENCE_FAMILIES.includes("FUEL_DIESEL") && REFERENCE_FAMILIES.includes("FUEL_GASOLINE_95") && REFERENCE_FAMILIES.includes("FX"), "initial family contract includes diesel, gasoline 95 and FX");
 
   must(normalizeDecimal("42.3700") === "42.37", "decimal normalization is exact string based");
   expectFailure(() => normalizeDecimal(42.37), "INVALID_DECIMAL", "floating-point decimal input is rejected");
@@ -239,6 +245,35 @@ async function main() {
   ]);
   must(cacheProducerCalls === 3 && cacheA.dataClass === cacheB.dataClass, "different user scopes do not collide");
   clearResponseCache("external-reference-check");
+
+  const epdkFixture = "<S:Envelope><S:Body><genelSorguResponse><return>&lt;Result&gt;&lt;PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;Tarih&gt;2026-08-27 00:00:00.0&lt;/Tarih&gt;&lt;YakitTipi&gt;Motorin&lt;/YakitTipi&gt;&lt;Il&gt;BURSA&lt;/Il&gt;&lt;FirmaMarkasi&gt;Fixture A&lt;/FirmaMarkasi&gt;&lt;Fiyat&gt;55.1234&lt;/Fiyat&gt;&lt;/PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;Tarih&gt;2026-08-27 00:00:00.0&lt;/Tarih&gt;&lt;YakitTipi&gt;Motorin&lt;/YakitTipi&gt;&lt;Il&gt;BURSA&lt;/Il&gt;&lt;FirmaMarkasi&gt;Fixture B&lt;/FirmaMarkasi&gt;&lt;Fiyat&gt;55.5678&lt;/Fiyat&gt;&lt;/PetrolPiyasasiIllereGoreAkaryakitFiyatlari&gt;&lt;/Result&gt;</return></genelSorguResponse></S:Body></S:Envelope>";
+  const epdkProvider = createEpdkPetrolProvider({
+    endpoint: "https://epdk.test/petrol",
+    fetchImpl: async () => ({ ok: true, text: async () => epdkFixture }),
+  });
+  const epdkReference = await epdkProvider.fetch({ family: "FUEL_DIESEL", regionCode: "16", now: fixedNow });
+  must(epdkProvider.key === "EPDK_PETROL" && epdkReference.family === "FUEL_DIESEL", "EPDK fixture provider family contract");
+  must(epdkReference.valueMinor === 5535 && epdkReference.sourceMetadata.recordCount === 2, "EPDK fixture parser uses rounded median without fabricated value");
+  must(epdkReference.sourceMetadata.provinceCode === "16" && epdkReference.rawPayloadHash.length === 64, "EPDK fixture preserves province and payload identity");
+  expectFailure(() => parseEpdkFuelResponse(epdkFixture, { family: "FUEL_LPG", regionCode: "16", now: fixedNow }), "NO_DATA", "fuel type mismatch returns no data");
+  expectFailure(() => parseEpdkFuelResponse(epdkFixture.replaceAll("BURSA", "ANKARA"), { family: "FUEL_DIESEL", regionCode: "16", now: fixedNow }), "REGION_MISMATCH", "provider province mismatch is rejected");
+
+  const bursa = resolveRegionScope({ provinceName: "Bursa" });
+  const unknownRegion = resolveRegionScope({ provinceName: "Unknown province" });
+  must(bursa.regionCode === "16" && bursa.selection === "EXACT_PROVINCE", "region resolver chooses exact known province");
+  must(unknownRegion.regionCode === null && unknownRegion.selection === "NO_GEOGRAPHY", "unknown region does not silently fall back to Istanbul");
+  const insufficient = buildPlatformObservedReference({ region: bursa, observations: [{ valueMinor: 1000, observedAt: fixedNow }], minSampleCount: 2 });
+  must(insufficient.available === false && insufficient.state === "INSUFFICIENT_SAMPLE", "platform reference hides below-threshold sample");
+  const sufficient = buildPlatformObservedReference({ region: bursa, observations: [1000, 1100, 1200, 1300, 1400, 9000].map((valueMinor) => ({ valueMinor, observedAt: fixedNow })), minSampleCount: 5 });
+  must(sufficient.available === true && sufficient.valueMinor === 1250 && sufficient.range.minMinor === 1100 && sufficient.range.maxMinor === 1400, "platform reference uses robust median and quantile range");
+  const externalLayer = { marketReference: { valueMinor: 646, valueDecimal: "6.46", unit: "CURRENCY_PER_L", currencyCode: "TRY", freshness: "FRESH", confidence: "HIGH", regionCode: "16" } };
+  const actualFirst = resolveThreeReferenceLayers({ external: externalLayer, platform: sufficient, actual: { valueMinor: 2000, unit: "CURRENCY_PER_TRIP" }, region: bursa, family: "FUEL_DIESEL" });
+  must(actualFirst.selected.authority === "USER_ACTUAL" && actualFirst.layers.length === 3 && actualFirst.separation.unlabeledMergedValue === false, "user actual wins without merging the other two layers");
+  const guidanceConflict = buildPricingGuidance({ operationalCostMinor: 4000, quoteFloorMinor: 5000, observedQuoteBand: { minMinor: 8000, maxMinor: 9000 } });
+  must(guidanceConflict.conflict === true && guidanceConflict.automaticOfferAction === false && guidanceConflict.costBased.minMinor === 5000, "quote guidance preserves canonical floor and exposes conflict");
+
+  must(!layersText.includes("Istanbul") || layersText.includes("ISTANBUL"), "region resolver does not encode a silent Istanbul fallback");
+  must(!layersText.includes("sendOffer") && !layersText.includes("acceptOffer"), "reference layers cannot send or accept offers");
 
   must(!serviceText.includes("prisma.companyBudgetPlan.update") && !serviceText.includes("prisma.roomQuoteFloorDraft.update"), "#1 actual financial owners are not rewritten");
   must(!routerText.includes("/api/payments") && !routerText.includes("offer/accept"), "reference route does not open payment or offer execution");

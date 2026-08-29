@@ -33,14 +33,25 @@ Bu üç sınıf birbirine dönüştürülmez. `ExternalCostReference` tablosu ya
 
 ## Provider stratejisi
 
-Üretim varsayılanı provider yok (`EXTERNAL_REFERENCE_PROVIDER=none`). Bu
-çalışma gerçek provider'a bağlanmaz, veri çekmez ve örnek piyasa değeri
-üretmez. İlk kontrollü yol, açık kaynak/as-of/bölge/kapsam bilgisi ile yalnızca
-SUPER_ADMIN tarafından girilen `MANUAL_CONTROLLED_REFERENCE` kaydıdır.
+İlk gerçek provider `EPDK_PETROL` olarak `genelSorgu` SOAP sözleşmesine
+bağlanır. `sorguNo=72` ve il trafik kodu ile alınan bayi raporları Motorin ve
+Kurşunsuz Benzin 95 Oktan ailelerine normalize edilir. Kayıtlar bayi değerleri
+üzerinde deterministik medyan olarak özetlenir; min/max ve örnek sayısı
+`sourceMetadata` içinde korunur. Fiyat kaynağının bildirdiği litre başı TRY
+ondalık değeri en yakın kuruşa normalize edilir; ham XML saklanmaz, yalnızca
+SHA-256 payload kimliği tutulur.
 
-İleride ücretsiz veya düşük maliyetli provider adapter'ları registry'ye
-eklenebilir. Test provider'ları yalnızca checker içinde kullanılır ve üretim
-market truth'u olamaz.
+EPDK LPG servisi (`EPDK_LPG`) ayrı adapter olarak hazırdır ancak resmi sorgu
+numarası açıkça yapılandırılmadan etkin sayılmaz. Böylece doğrulanmamış LPG
+parametresiyle veri uydurulmaz. `EXTERNAL_REFERENCE_PROVIDER=EPDK` veya
+`EPDK_PETROL` seçimi provider registry üzerinden yapılır; manual import yolu
+ayrı ve yalnızca `SUPER_ADMIN` step-up yazma kapısından geçer.
+
+EPDK web sayfasında erişilebilen teknik sözleşme, kılavuz, endpoint ve canlı
+SOAP cevap şekli doğrulanmıştır. Sitenin genel iletişim/atıf bilgileri dışında
+ayrı bir yeniden kullanım lisansı tespit edilmemiştir; bu teknik kabul, hukuki
+lisans görüşü yerine geçmez. Provider erişilemezse retry/circuit/freshness
+durumu açıkça no-data/unavailable olarak kalır.
 
 ## Canonical value contract
 
@@ -52,12 +63,34 @@ para hesabı yapılmaz. Unit family ile eşleşmezse kayıt reddedilir.
 
 Supported architecture families:
 
-`FUEL_DIESEL`, `FUEL_GASOLINE`, `FUEL_LPG`, `FX`, `INFLATION_INDEX`,
+`FUEL_DIESEL`, `FUEL_GASOLINE`, `FUEL_GASOLINE_95`, `FUEL_LPG`, `FX`, `INFLATION_INDEX`,
 `COST_INDEX`, `TOLL`, `BRIDGE`, `TUNNEL`, `FERRY`, `MAINTENANCE_REFERENCE`,
 `TYRE_REFERENCE`, `VEHICLE_CLASS_REFERENCE`, `REGIONAL_COST_REFERENCE`.
 
 Actual configured provider families: none by default; manual import is
-explicitly controlled and provider-neutral.
+explicitly controlled and provider-neutral. Provider refresh uses the same
+external-only boundary and cannot write tenant actuals.
+
+## Üç katman ve bölge çözümü
+
+`backend/src/externalCost/referenceLayers.js` üç değeri ayrı taşır:
+
+- `Dış Piyasa Referansı`: resmi dış provider snapshotı.
+- `SeferPakt Bölgesel Referansı`: yeterli, anonimleştirilmiş ve aykırı
+  değerlere dayanıklı gözlem agregası.
+- `Senin Gerçek Verilerin`: aynı tenant/operasyonun açık actual girdisi.
+
+Resolver sonucu seçilen değerin nedenini, as-of/pencereyi, coğrafyayı, güveni,
+tamlığı ve örnek bilgisini taşır; üç katman tek etiketsiz sayıya birleştirilmez.
+Bölge çözümü önce exact il, sonra açıkça sağlanan bölgesel/Türkiye kapsamlarını
+izler. İl bilgisi yoksa `NO_GEOGRAPHY` döner; İstanbul sessiz fallback değildir.
+Platform referansı configurable sample threshold altında hiç açılmaz.
+
+`/api/external-cost-references/layers` operation-level, salt okunur görünüm
+sağlar. Default ekran kısa toplam/teklif rehberi özetidir; bileşen ayrıntıları
+`Detaylar` altında kapalıdır. ROOM gözlenen teklif bandını yalnızca threshold
+geçerse görür. COMPANY katmanı ROOM iç maliyetini veya ham teklif verisini
+görmez.
 
 ## Freshness and fallback
 
@@ -87,6 +120,16 @@ budget/cost/offer/payment API'lerinden ayrıdır. COMPANY, SCHOOL, ORGANIZATION
 ve ROOM için dış referans gerçek tenant maliyetinin yerine geçmez; #1'in
 approved budget ve ROOM cost hesaplarını değiştirmez.
 
+## Destekleyici provider durumu
+
+KGM, TÜİK ve TCMB için bu corrective run içinde canlı absolute maliyet provider
+aktivasyonu yapılmadı: KGM’de kırılgan scrape yerine kontrollü import seam’i,
+TÜİK’te SDMX endeks desteği, TCMB’de FX/makro desteği ayrı provider olarak
+bekletilir. Endeks, kaynaklı bir baseline olmadan TL/km veya TL/sefer üretmez.
+Driver labor, maintenance ve vehicle consumption için onaylı versioned source
+yoksa no-data/actual yolu korunur; rastgele maaş sitesi veya magic constant
+kullanılmaz.
+
 ## Sefer Abi / downstream seam
 
 Contract, ileride Sefer Abi'nin şu kanıtları açıklayabilmesini sağlar:
@@ -94,5 +137,6 @@ Contract, ileride Sefer Abi'nin şu kanıtları açıklayabilmesini sağlar:
 `Piyasa referansı`, `Kaynak`, `Veri tarihi`, `Güncellik`, `Güven seviyesi` ve
 `Bu piyasa referansıdır; gerçek maliyetiniz farklı olabilir.`
 
-Bu milestone #4 forecast veya #5 tam maliyet asistanını uygulamaz. Belirsiz,
+Bu milestone #4 forecast veya #5 tam maliyet asistanını uygulamaz. #1 quote
+floor/profitability owner olarak kalır; #4 scenario engine tekrarlanmaz. Belirsiz,
 stale, conflict veya eksik provenance durumunda kesin piyasa hükmü verilmez.

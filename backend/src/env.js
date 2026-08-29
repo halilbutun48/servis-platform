@@ -158,10 +158,17 @@ export const ENV = {
   // When running with docker-compose, default is http://solver:8000
   PLAN_SOLVER_URL: process.env.PLAN_SOLVER_URL ?? "",
 
-  // #2: external reference remains optional and has no default network provider.
+  // #2: provider selection is explicit; EPDK can be enabled without changing the actual-cost owners.
   EXTERNAL_REFERENCE_MANUAL_IMPORT_ENABLED:
     (process.env.EXTERNAL_REFERENCE_MANUAL_IMPORT_ENABLED ?? (IS_PRODUCTION ? "0" : "1")) === "1",
   EXTERNAL_REFERENCE_PROVIDER: process.env.EXTERNAL_REFERENCE_PROVIDER ?? "none",
   EXTERNAL_REFERENCE_CACHE_TTL_MS: Number(process.env.EXTERNAL_REFERENCE_CACHE_TTL_MS ?? 30 * 1000),
   EXTERNAL_REFERENCE_RETRY_MAX_ATTEMPTS: Number(process.env.EXTERNAL_REFERENCE_RETRY_MAX_ATTEMPTS ?? 2),
+  EXTERNAL_REFERENCE_PROVIDER_TIMEOUT_MS: Number(process.env.EXTERNAL_REFERENCE_PROVIDER_TIMEOUT_MS ?? 8000),
+  EPDK_PETROL_ENDPOINT: process.env.EPDK_PETROL_ENDPOINT ?? "https://lisansws.epdk.gov.tr/services/bildirimPetrolAkaryakitFiyatlari",
+  EPDK_PETROL_QUERY_NO: Number(process.env.EPDK_PETROL_QUERY_NO ?? 72),
+  EPDK_LPG_ENDPOINT: process.env.EPDK_LPG_ENDPOINT ?? "https://lisansws.epdk.gov.tr/services/bildirimLPGTarife",
+  EPDK_LPG_QUERY_NO: process.env.EPDK_LPG_QUERY_NO ?? "",
+  PLATFORM_REFERENCE_MIN_SAMPLE_COUNT: Number(process.env.PLATFORM_REFERENCE_MIN_SAMPLE_COUNT ?? 5),
+  PLATFORM_REFERENCE_WINDOW_DAYS: Number(process.env.PLATFORM_REFERENCE_WINDOW_DAYS ?? 90),
 };

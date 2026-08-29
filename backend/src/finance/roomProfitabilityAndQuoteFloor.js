@@ -108,6 +108,7 @@ function buildSnapshot({
     companyId: Number(company?.id || shift?.companyId || agreement?.companyId || 0) || null,
     roomKind: pickText(room?.kind, agreement?.room?.kind, shift?.room?.kind).toUpperCase() || null,
     companyKind: pickText(company?.kind, agreement?.company?.kind, shift?.company?.kind).toUpperCase() || null,
+    regionName: pickText(room?.region?.name, company?.region?.name, agreement?.room?.region?.name) || null,
     roomName: roomName || null,
     companyName: companyName || null,
     shiftId: Number(shift?.id || 0) || null,

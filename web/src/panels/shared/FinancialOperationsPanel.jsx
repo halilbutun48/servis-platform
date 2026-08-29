@@ -587,6 +587,8 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
           <ExternalReferenceCard
             token={token}
             canView={canView}
+            scope="COMPANY"
+            preview={preview}
             refreshTick={refreshTick}
           />
         )}
@@ -709,6 +711,8 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
       <ExternalReferenceCard
         token={token}
         canView={canView}
+        scope="ROOM"
+        preview={preview}
         refreshTick={refreshTick}
       />
 
