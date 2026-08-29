@@ -49,7 +49,6 @@ async function resolveCompany(req) {
       id: true,
       kind: true,
       name: true,
-      region: { select: { id: true, name: true } },
     },
   });
 }
@@ -75,7 +74,6 @@ async function resolveTargetCompany(req) {
       id: true,
       kind: true,
       name: true,
-      region: { select: { id: true, name: true } },
     },
   });
 }
