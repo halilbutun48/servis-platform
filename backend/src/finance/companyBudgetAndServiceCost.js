@@ -1,6 +1,7 @@
 import { safeHashId, buildIssues, compactText, normalizeCurrencyCode, roundMinor, addUnique, hasValue, safeNumber } from "./operationalCostMath.js";
 import { describeFinancialSurface, getFinancialOperationsAccessForRole } from "./financialOperationsScope.js";
 import { ymdTR } from "../time/tr.js";
+import { resolveOperationRegion } from "../region/operationRegion.js";
 export const COMPANY_BUDGET_AND_SERVICE_COST_MODEL_VERSION = "COMPANY-BUDGET-AND-SERVICE-COST-01";
 const BLOCKED_COMPANY_KINDS = new Set(["SCHOOL", "ORGANIZATION"]);
 function normalizeToken(value) {
@@ -129,6 +130,7 @@ function buildCompanySnapshot({ company, shift, agreement, companySummary, previ
   const companyName = textOrNull(company?.name, shift?.company?.name, agreement?.company?.name) || "";
   const roomName = textOrNull(shift?.room?.name, agreement?.room?.name) || "";
   const shiftStatus = textOrNull(shift?.status, agreement?.status, "DRAFT").toUpperCase();
+  const region = resolveOperationRegion({ shift, room: shift?.room || agreement?.room || null, company, agreement, explicitRegionName: previewInputs?.regionName });
   const sourceLabel = textOrNull(
     shiftId ? `shift #${shiftId}` : "",
     agreementId ? `agreement #${agreementId}` : "",
@@ -154,7 +156,10 @@ function buildCompanySnapshot({ company, shift, agreement, companySummary, previ
     shiftId,
     agreementId,
     companyKind: companyKind || "",
-    regionName: textOrNull(previewInputs?.regionName, company?.region?.name) || "",
+    regionId: region.regionId,
+    regionCode: region.provinceCode,
+    regionName: region.regionName || "",
+    regionResolution: region,
     companyName: companyName || "",
     roomName: roomName || "",
     shiftStatus,
@@ -909,7 +914,6 @@ export function buildCompanyBudgetAndServiceCostPreview({
     previewId,
     role: roleKey,
     companyKind: companyKindKey || null,
-    regionName: snapshot.regionName || null,
     scope: "COMPANY",
     surfaceId: "company_budget",
     surface,
@@ -918,6 +922,7 @@ export function buildCompanyBudgetAndServiceCostPreview({
     summaryText,
     nextAction: "Bütçe ve servis maliyeti önizlemesini açık parametrelerle tamamla.",
     nextSafeStep,
+    regionId: snapshot.regionId, regionCode: snapshot.regionCode, regionName: snapshot.regionName || null, regionResolution: snapshot.regionResolution,
     readOnly: true,
     previewOnly: true,
     writeAction: false,

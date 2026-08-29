@@ -19,6 +19,8 @@ import {
   VEHICLE_PLAN_REFERENCE_UNIT,
   VEHICLE_PLAN_REFERENCE_VERSION,
 } from "../src/finance/vehiclePlanReferences.js";
+import { resolveOperationRegion } from "../src/region/operationRegion.js";
+import { resolveRegionScope, resolveThreeReferenceLayers } from "../src/externalCost/referenceLayers.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 let passCount = 0;
@@ -96,6 +98,20 @@ function freshExternal(valueMinor = 5000, freshness = "FRESH") {
     },
     actualInternalData: null,
   };
+}
+
+function freshRegionalExternal(valueMinor = 7848) {
+  const external = freshExternal(valueMinor, "FRESH");
+  external.marketReference = {
+    ...external.marketReference,
+    providerKey: "EPDK_PETROL",
+    sourceName: "EPDK motorin il referansı",
+    regionCode: "16",
+    regionName: "Bursa",
+    scopeType: "CITY",
+    scopeKey: "16",
+  };
+  return external;
 }
 
 function countOccurrences(text, pattern) {
@@ -348,7 +364,7 @@ function latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, a
   };
 }
 
-function lowInputCounts({ uiText, browserText, forecastText, referenceText }) {
+function lowInputCounts({ uiText, browserText, forecastText, referenceText, referenceLayersText, regionText, externalText }) {
   const autoBaselineInput = baseInput({
     fuelType: "DIESEL",
     fuelConsumptionLitersPer100Km: undefined,
@@ -366,6 +382,28 @@ function lowInputCounts({ uiText, browserText, forecastText, referenceText }) {
     baselineInput: autoBaselineInput,
     scenarioOverrides: { passengerCount: 11 },
     externalReference: freshExternal(5000),
+    context: context({ role: "ROOM", scope: "ROOM" }),
+  });
+  const canonicalRoomRegion = resolveOperationRegion({
+    room: { id: 1, regionId: 16, region: { id: 16, name: "Bursa" } },
+  });
+  const regionalLayers = resolveThreeReferenceLayers({
+    external: freshRegionalExternal(),
+    platform: null,
+    actual: null,
+    region: canonicalRoomRegion,
+    family: "FUEL_DIESEL",
+  });
+  const regionalPreview = buildCostScenarioPreview({
+    baselineInput: baseInput({
+      fuelType: "DIESEL",
+      fuelConsumptionLitersPer100Km: undefined,
+      fuelUnitPriceMinor: undefined,
+      driverBasePerShiftMinor: undefined,
+      maintenancePerKmMinor: undefined,
+    }),
+    scenarioOverrides: { useExternalFuelPrice: true },
+    externalReference: freshRegionalExternal(),
     context: context({ role: "ROOM", scope: "ROOM" }),
   });
   const actual = resolveVehicleConsumptionReference({ vehicleType: "MIDIBUS", fuelType: "DIESEL", actualValue: 21.7 });
@@ -442,6 +480,15 @@ function lowInputCounts({ uiText, browserText, forecastText, referenceText }) {
     MISSING_OPTIONAL_COST_BLOCKED_ALL_COMPARISON_COUNT: autoVehicleItems.length > 0 && autoVehicleItems.every((item) => item.costMinor === null) ? 1 : 0,
     ONE_VARIABLE_PASSENGER_SCENARIO_PASS_COUNT: simplePreview.changedDimensions.length === 1 && simplePreview.changedDimensions[0] === "passengerCount" ? 1 : 0,
     VEHICLE_PLAN_REFERENCE_VERSION_PRESENT_COUNT: read("backend/src/finance/vehiclePlanReferences.js").includes(VEHICLE_PLAN_REFERENCE_VERSION) && read("backend/src/finance/vehiclePlanReferences.js").includes(VEHICLE_PLAN_REFERENCE_UNIT) ? 1 : 0,
+    ROOM_CANONICAL_REGION_AUTOFILL_PASS_COUNT: canonicalRoomRegion.status === "RESOLVED" && canonicalRoomRegion.regionName === "Bursa" && canonicalRoomRegion.provinceCode === "16" ? 1 : 0,
+    ROOM_PROVINCE_TO_2_REFERENCE_PASS_COUNT: regionalLayers.selected?.authority === "EXTERNAL_DYNAMIC_FUEL" && regionalLayers.selected?.regionCode === "16" && regionalLayers.selected?.providerKey === "EPDK_PETROL" ? 1 : 0,
+    PARTIAL_EXTERNAL_REFERENCE_VISIBLE_COUNT: externalText.includes("Piyasa referansı kısmen hazır") && externalText.includes("Reference completeness") && referenceLayersText.includes("EXTERNAL_DYNAMIC_FUEL") && browserText.includes("external-reference-completeness") ? 1 : 0,
+    KNOWN_OPERATION_REGION_REENTRY_REQUIRED_COUNT: uiText.includes('label="İl"') || uiText.includes("provinceNameInput") || browserText.includes("manually entering province") ? 1 : 0,
+    KNOWN_ROUTE_REGION_RESOLVED_AS_GENERIC_TURKEY_COUNT: canonicalRoomRegion.regionName && regionText.includes("CURRENT_ROUTE_SERVICE_AREA") && regionText.includes("CANONICAL_OPERATING_REGION") && !regionText.includes("Türkiye / kapsam belirtilmedi") ? 0 : 1,
+    VALID_2_REGIONAL_REFERENCE_UNUSED_COUNT: regionalPreview.referenceResolution?.fuelPrice?.baseline?.sourceKind === "EXTERNAL_CURRENT_REFERENCE" && regionalPreview.baseline?.costMinor !== null && regionalPreview.costCoverage?.baseline?.status === "PARTIAL" ? 0 : 1,
+    EXTERNAL_REFERENCE_HIDDEN_BY_PLATFORM_SAMPLE_MISSING_COUNT: regionalLayers.layers.find((layer) => layer.layer === "EXTERNAL_MARKET_REFERENCE")?.available === true && referenceLayersText.includes("platformLayer.available") && externalText.includes("Fuel: {isAvailable ? \"AVAILABLE\" : \"MISSING\"}") ? 0 : 1,
+    SILENT_ISTANBUL_FALLBACK_COUNT: canonicalRoomRegion.usedSilentIstanbulFallback === false && regionText.includes("usedSilentIstanbulFallback: false") ? 0 : 1,
+    FABRICATED_REGION_COUNT: resolveRegionScope({ provinceCode: "999" }).selection === "NO_GEOGRAPHY" && canonicalRoomRegion.fabricated === false ? 0 : 1,
   };
 }
 
@@ -460,12 +507,15 @@ function main() {
   const forecastText = read("backend/src/finance/costScenarioForecast.js");
   const browserText = read("backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs");
   const referenceText = read("backend/src/finance/vehicleConsumptionReferences.js");
+  const referenceLayersText = read("backend/src/externalCost/referenceLayers.js");
+  const regionText = read("backend/src/region/operationRegion.js");
+  const externalText = read("web/src/panels/shared/ExternalReferenceCard.jsx");
   const base = baseInput();
   const same = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const sameAgain = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const masterCounts = masterPrimerEvidenceCounts({ forecastText, routeText, uiText, appText, financialText, navText });
   const latestCounts = latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, appText, same });
-  const lowInput = lowInputCounts({ uiText, browserText, forecastText, referenceText });
+  const lowInput = lowInputCounts({ uiText, browserText, forecastText, referenceText, referenceLayersText, regionText, externalText });
 
   must(packageText.includes('"check:costscenarioforecastandsavings01": "node backend/scripts/cost_scenario_forecast_and_savings_01_check.js"'), "canonical #4 check is exposed");
   must(routeText.includes("/baseline") && routeText.includes("/preview") && routeText.includes("getExternalCostReference"), "scenario API has baseline and preview owners");
@@ -582,9 +632,10 @@ function main() {
     "ZERO_INPUT_BASELINE_PASS_COUNT", "ROOM_NOVICE_USER_FLOW_PASS_COUNT", "COMPANY_NOVICE_USER_FLOW_PASS_COUNT", "SCHOOL_NOVICE_USER_FLOW_PASS_COUNT", "ORGANIZATION_NOVICE_USER_FLOW_PASS_COUNT",
     "SIMPLE_SCENARIO_MANUAL_CHANGE_COUNT", "AUTO_RESOLVED_OPERATIONAL_FIELD_COUNT", "AUTO_RESOLVED_REFERENCE_FIELD_COUNT", "DETAILS_DEFAULT_COLLAPSED_COUNT", "ADVANCED_DEFAULT_COLLAPSED_COUNT", "SEFER_ABI_CANONICAL_ASSUMPTION_CONTRACT_PASS_COUNT", "VEHICLE_CONSUMPTION_REFERENCE_VERSION_PRESENT_COUNT",
     "AUTO_VEHICLE_COUNT_RESOLUTION_PASS_COUNT", "AUTO_VEHICLE_ALTERNATIVE_GENERATION_PASS_COUNT", "CAPACITY_BASED_VEHICLE_COUNT_PASS_COUNT", "MINIBUS_ALTERNATIVE_COST_PASS_COUNT", "MIDIBUS_ALTERNATIVE_COST_PASS_COUNT", "OTOBUS_ALTERNATIVE_COST_PASS_COUNT", "AUTO_RECOMMENDED_VEHICLE_PLAN_PASS_COUNT", "RECOMMENDATION_REASON_VISIBLE_COUNT", "PARTIAL_COST_ALTERNATIVE_COMPARISON_PASS_COUNT", "ONE_VARIABLE_PASSENGER_SCENARIO_PASS_COUNT", "VEHICLE_PLAN_REFERENCE_VERSION_PRESENT_COUNT",
+    "ROOM_CANONICAL_REGION_AUTOFILL_PASS_COUNT", "ROOM_PROVINCE_TO_2_REFERENCE_PASS_COUNT", "PARTIAL_EXTERNAL_REFERENCE_VISIBLE_COUNT",
   ]) must(lowInput[key] >= 1, `low-input ${key} is proven`);
   for (const key of [
-    "NORMAL_BASELINE_REQUIRED_MANUAL_INPUT_COUNT", "KNOWN_VALUE_REENTRY_REQUIRED_COUNT", "MANUAL_FUEL_PRICE_REQUIRED_COUNT", "MANUAL_CONSUMPTION_REQUIRED_WITH_REFERENCE_COUNT", "MANDATORY_DRIVER_COST_COUNT", "MANDATORY_MAINTENANCE_COST_COUNT", "NOVICE_USER_LONG_FORM_BLOCKER_COUNT", "FIRST_VIEWPORT_TECHNICAL_ASSUMPTION_WALL_COUNT", "USER_REQUIRED_TO_CALCULATE_VEHICLE_COUNT_COUNT", "USER_REQUIRED_TO_ENTER_KNOWN_CAPACITY_COUNT", "MISSING_OPTIONAL_COST_BLOCKED_ALL_COMPARISON_COUNT",
+    "NORMAL_BASELINE_REQUIRED_MANUAL_INPUT_COUNT", "KNOWN_VALUE_REENTRY_REQUIRED_COUNT", "MANUAL_FUEL_PRICE_REQUIRED_COUNT", "MANUAL_CONSUMPTION_REQUIRED_WITH_REFERENCE_COUNT", "MANDATORY_DRIVER_COST_COUNT", "MANDATORY_MAINTENANCE_COST_COUNT", "NOVICE_USER_LONG_FORM_BLOCKER_COUNT", "FIRST_VIEWPORT_TECHNICAL_ASSUMPTION_WALL_COUNT", "USER_REQUIRED_TO_CALCULATE_VEHICLE_COUNT_COUNT", "USER_REQUIRED_TO_ENTER_KNOWN_CAPACITY_COUNT", "MISSING_OPTIONAL_COST_BLOCKED_ALL_COMPARISON_COUNT", "KNOWN_OPERATION_REGION_REENTRY_REQUIRED_COUNT", "KNOWN_ROUTE_REGION_RESOLVED_AS_GENERIC_TURKEY_COUNT", "VALID_2_REGIONAL_REFERENCE_UNUSED_COUNT", "EXTERNAL_REFERENCE_HIDDEN_BY_PLATFORM_SAMPLE_MISSING_COUNT", "SILENT_ISTANBUL_FALLBACK_COUNT", "FABRICATED_REGION_COUNT",
   ]) must(lowInput[key] === 0, `low-input ${key}=0`);
 
   console.log("=== #4 LOCKED MASTER-PRIMER EVIDENCE COUNTS ===");

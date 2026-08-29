@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `444`
-- Toplam executable tracked file: `1322`
-- Combined registry row: `1766`
-- Root/backend/web/mobile package dağılımı: root `279`, backend `886`, web `97`, mobile `201`
+- Toplam executable tracked file: `1323`
+- Combined registry row: `1767`
+- Root/backend/web/mobile package dağılımı: root `279`, backend `887`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `756`
+- NEEDS_REVIEW: `757`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `377`
+- Eski sistem term eşleşmesi: `379`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 756 |
+| NEEDS_REVIEW | 757 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1475,6 +1475,7 @@ Repo: `servis-platform`
 | index.js | backend/src/redis/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | miniRedis.js | backend/src/redis/miniRedis.js | backend |  | review | NEEDS_REVIEW |  | MINI-REDIS |  | Owner or chain unclear |  |
 | index.js | backend/src/region/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
+| operationRegion.js | backend/src/region/operationRegion.js | backend |  | review | NEEDS_REVIEW |  | OPERATION-REGION |  | Owner or chain unclear |  |
 | ownership.js | backend/src/region/ownership.js | backend | backend:check:checkownershipregistryv1 | review | NEEDS_REVIEW |  | OWNERSHIP |  | Owner or chain unclear |  |
 | admin.js | backend/src/routes/admin.js | backend | backend:m82_10check, backend:m94dcheck, root:check:cop04bfix01, root:check:uxsuperadminauditpanel01, root:check:uxsuperadmincommercialflow01, root:check:uxsuperadminfieldacceptancecenter01, root:check:uxsuperadminfielddispatchdiscovery01, root:check:uxsuperadminlabelpolish01, root:check:uxsuperadminlivemonitoring01, root:check:uxsuperadminoverviewcleanup01, root:check:uxsuperadminpanelclarity01, root:check:uxsuperadminqualitypanel01, root:check:web01b | review | NEEDS_REVIEW |  | ADMIN |  | Owner or chain unclear |  |
 | admin_logs.js | backend/src/routes/admin_logs.js | backend |  | review | NEEDS_REVIEW |  | ADMIN-LOGS |  | Owner or chain unclear |  |
@@ -2476,7 +2477,7 @@ Repo: `servis-platform`
 | backend/scripts/copilot_route_review_human_approval_01_check.js | Hub, Yer | NEEDS_REVIEW |
 | backend/scripts/copilot_stop_route_draft_01_check.js | Hub | NEEDS_REVIEW |
 | backend/scripts/cost_scenario_forecast_and_savings_01_acceptance.mjs | Yer | NEEDS_REVIEW |
-| backend/scripts/cost_scenario_forecast_and_savings_01_check.js | Yer | NEEDS_REVIEW |
+| backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | Yer | NEEDS_REVIEW |
 
 ## 11) Cleanup Raporu
 

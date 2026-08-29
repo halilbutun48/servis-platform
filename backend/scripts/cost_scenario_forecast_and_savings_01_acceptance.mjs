@@ -97,6 +97,22 @@ async function main() {
   const baselineMapCases = [companyBaseline.data, roomBaseline.data, schoolBaseline.data, organizationBaseline.data];
   if (baselineMapCases.every((item) => item?.baselineSourceMap && item?.baselineConfidence?.level && Array.isArray(item?.missingFields))) pass("role baseline source maps and confidence are API visible");
   else fail("role baseline source maps and confidence are API visible");
+  const contextsWithCanonicalRegion = baselineMapCases.filter((item) => item?.regionName || item?.regionResolution?.status === "RESOLVED");
+  if (contextsWithCanonicalRegion.length > 0 && contextsWithCanonicalRegion.every((item) => item.regionResolution?.status === "RESOLVED" && item.regionResolution?.regionName === item.regionName && item.regionResolution?.usedSilentIstanbulFallback === false)) pass("canonical COMPANY/SCHOOL/ORGANIZATION/ROOM regions are propagated without silent fallback", contextsWithCanonicalRegion.map((item) => `${item.scope}:${item.regionName}`).join(", "));
+  else if (contextsWithCanonicalRegion.length === 0) pass("canonical role contexts have no stored region evidence to propagate");
+  else fail("canonical COMPANY/SCHOOL/ORGANIZATION/ROOM regions are propagated without silent fallback");
+  const roomFinancialOperations = await request("/api/commercial-core/room/financial-operations/preview", { token: roomToken });
+  const companyFinancialOperations = await request("/api/company/overview/financial-operations/preview", { token: companyToken });
+  const roomFinancialSnapshot = roomFinancialOperations.data?.snapshot || {};
+  // ROOM returns a nested financial snapshot; COMPANY's canonical budget owner
+  // returns the same evidence at the surface root. Normalize only the harness
+  // view so this acceptance proves the real response contracts without making
+  // the product emit a duplicate wrapper.
+  const companyFinancialSnapshot = companyFinancialOperations.data?.snapshot || companyFinancialOperations.data || {};
+  if (roomFinancialOperations.status === 200 && roomFinancialSnapshot.regionName && roomFinancialSnapshot.regionResolution?.status === "RESOLVED" && roomFinancialSnapshot.regionCode && roomFinancialOperations.data?.quoteFloorDraft) pass("real ROOM financial owner propagates canonical operation region", `${roomFinancialSnapshot.regionName}/${roomFinancialSnapshot.regionCode}`);
+  else fail("real ROOM financial owner propagates canonical operation region", `${roomFinancialOperations.status}/${roomFinancialSnapshot.regionName}/${roomFinancialSnapshot.regionResolution?.status}`);
+  if (companyFinancialOperations.status === 200 && companyFinancialSnapshot.regionName && companyFinancialSnapshot.regionResolution?.status === "RESOLVED" && companyFinancialSnapshot.regionCode) pass("real COMPANY financial owner propagates canonical operation region", `${companyFinancialSnapshot.regionName}/${companyFinancialSnapshot.regionCode}`);
+  else fail("real COMPANY financial owner propagates canonical operation region", `${companyFinancialOperations.status}/${companyFinancialSnapshot.regionName}/${companyFinancialSnapshot.regionResolution?.status}`);
   const companyRouteRecovered = companyBaseline.data?.input?.passengerCount != null && companyBaseline.data?.input?.serviceDistanceKm != null && companyBaseline.data?.input?.routeDurationMinutes != null;
   if (companyRouteRecovered && companyBaseline.data?.source?.label === "Son doğrulanmış vardiya" && companyBaseline.data?.baselineSourceMap?.serviceDistanceKm?.classification === "DIRECT_EXISTING_DATA") pass("COMPANY baseline selects validated route and auto-fills recoverable fields");
   else fail("COMPANY baseline selects validated route and auto-fills recoverable fields", JSON.stringify({ source: companyBaseline.data?.source, input: companyBaseline.data?.input, route: companyBaseline.data?.baselineSourceMap?.serviceDistanceKm }));
@@ -197,6 +213,46 @@ async function main() {
       && lowInputAlternatives.every((item) => item.previewSafety?.noLiveMutation === true);
   if (partialVehicleComparisonPass) pass("partial vehicle alternative comparison remains available and discloses optional costs", lowInputHasAutomaticFuelPrice ? "driver/maintenance missing" : "fuel price no-data disclosed");
   else fail("partial vehicle alternative comparison remains available and discloses optional costs");
+
+  const regionalReference = await request("/api/external-cost-references?family=FUEL_DIESEL&unit=CURRENCY_PER_L&currencyCode=TRY&providerKey=EPDK_PETROL&regionCode=16&scopeType=CITY&scopeKey=16", { token: roomToken });
+  const regionalMarketReference = regionalReference.data?.marketReference || regionalReference.body?.marketReference || null;
+  const regionalReferenceRequest = regionalMarketReference ? {
+    providerKey: regionalMarketReference.providerKey,
+    family: regionalMarketReference.family,
+    unit: regionalMarketReference.unit,
+    currencyCode: regionalMarketReference.currencyCode,
+    regionCode: regionalMarketReference.regionCode,
+    scopeType: regionalMarketReference.scopeType,
+    scopeKey: regionalMarketReference.scopeKey,
+  } : null;
+  const roomRegionalPreview = regionalReferenceRequest ? await request("/api/cost-scenarios/preview", {
+    token: roomToken,
+    method: "POST",
+    body: {
+      scope: "ROOM",
+      baselineReferenceId: roomBaseline.data?.baselineReferenceId,
+      baselineInput: {
+        currencyCode: "TRY",
+        vehicleType: "MINIBUS",
+        vehicleCount: 1,
+        vehicleCapacity: 16,
+        passengerCount: 10,
+        stopCount: 2,
+        serviceDistanceKm: 100,
+        totalDistanceKm: 100,
+        routeDurationMinutes: 60,
+        serviceDayCount: 10,
+        shiftCount: 10,
+        tripCount: 10,
+        fuelType: "DIESEL",
+      },
+      scenarioOverrides: { useExternalFuelPrice: true },
+      externalReference: regionalReferenceRequest,
+    },
+  }) : null;
+  if (regionalReferenceRequest && roomRegionalPreview?.status === 200 && roomRegionalPreview.data?.referenceResolution?.fuelPrice?.baseline?.sourceKind === "EXTERNAL_CURRENT_REFERENCE" && roomRegionalPreview.data?.baseline?.costMinor !== null && roomRegionalPreview.data?.costCoverage?.baseline?.status === "PARTIAL") pass("ROOM consumes the canonical #2 provincial fuel reference with partial monetary output", `${regionalMarketReference.regionCode}/${regionalMarketReference.freshness}`);
+  else if (!regionalReferenceRequest) fail("ROOM consumes the canonical #2 provincial fuel reference with partial monetary output", "No stored province-16 reference available for this read-only acceptance fixture");
+  else fail("ROOM consumes the canonical #2 provincial fuel reference with partial monetary output", `${roomRegionalPreview.status}/${roomRegionalPreview.data?.referenceResolution?.fuelPrice?.baseline?.sourceKind}/${roomRegionalPreview.data?.baseline?.costMinor}`);
 
   const companyIdentity = await prisma.user.findUnique({ where: { email: "company@demo.com" }, select: { companyId: true } });
   const companyShift = companyIdentity?.companyId

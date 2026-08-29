@@ -64,6 +64,14 @@ function LayerSummary({ layer }) {
         Kapsam: {layer.regionName || layer.regionCode || "Türkiye / kapsam belirtilmedi"}
         {layer.sampleCount != null ? ` · Örnek: ${layer.sampleCount}/${layer.minimumRequiredSampleCount}` : ""}
       </div>
+      {layer.layer === "EXTERNAL_MARKET_REFERENCE" ? (
+        <div className="panelMeta" style={{ marginTop: 6, display: "grid", gap: 4 }}>
+          <span>Provider: {layer.providerKey || "Belirtilmedi"}</span>
+          <span>Kaynak: {layer.sourceName || "Kaynak belirtilmemiş"}</span>
+          <span>As of: {formatDate(layer.asOf)}</span>
+          <span>Güncellik: {externalReferenceFreshnessLabel(layer.freshness || "UNKNOWN")}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -133,6 +141,9 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
   const freshness = String(external?.freshness || payload?.freshness || "UNKNOWN").toUpperCase();
   const confidence = String(external?.confidence || payload?.confidence || "UNKNOWN").toUpperCase();
   const isAvailable = Boolean(external?.available && (external.valueMinor != null || external.valueDecimal));
+  const hasReferenceEvidence = Boolean(isAvailable || platform?.available || actual?.available);
+  const referenceReadiness = hasReferenceEvidence ? "PARTIAL" : "UNAVAILABLE";
+  const resolvedRegionName = external?.regionName || platform?.regionName || actual?.regionName || regionName || null;
   const freshnessTone = externalReferenceFreshnessTone(freshness);
   const confidenceTone = externalReferenceConfidenceTone(confidence);
   const visualTone = freshnessTone === "danger" || confidenceTone === "danger"
@@ -163,10 +174,10 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
     : external?.valueDecimal ? externalReferenceValueLabel(external.valueDecimal, external.unit, external.currencyCode) : "-";
 
   return (
-    <div className="card" data-testid="external-reference-card" data-testid-layers="reference-layers" data-reference-state={isAvailable ? "available" : "no-data"} style={{ marginTop: 12, ...toneStyle(visualTone) }}>
+    <div className="card" data-testid="external-reference-card" data-testid-layers="reference-layers" data-reference-state={isAvailable ? "available" : "no-data"} data-reference-completeness={referenceReadiness} style={{ marginTop: 12, ...toneStyle(visualTone) }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div className="panelSectionTitle">Piyasa referansı</div>
+          <div className="panelSectionTitle">{hasReferenceEvidence ? "Piyasa referansı kısmen hazır" : "Piyasa referansı"}</div>
           <div data-testid="external-reference-value" className="panelStatValue" style={{ marginTop: 8 }}>
           {isAvailable ? referenceValue : <span data-testid="external-reference-no-data">Piyasa referansı henüz mevcut değil.</span>}
           </div>
@@ -179,13 +190,23 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
       </div>
       {isAvailable ? (
         <div className="muted" style={{ marginTop: 10, lineHeight: 1.45 }}>
-          Kaynak: {external.sourceName || "Kaynak belirtilmemiş"} · Kapsam: {external.regionCode || "Türkiye"}
+           Kaynak: {external.sourceName || "Kaynak belirtilmemiş"} · Kapsam: {resolvedRegionName || external.regionCode || "Türkiye / kapsam belirtilmedi"}
         </div>
       ) : (
         <div className="muted" style={{ marginTop: 10, lineHeight: 1.45 }}>
-          Bölgeye uygun resmi veri bulunduğunda burada gösterilir; İstanbul’a sessiz fallback yapılmaz.
+          Operasyon bölgesi: {resolvedRegionName || "Türkiye / kapsam belirtilmedi"}. Bölgeye uygun resmi veri bulunduğunda burada gösterilir; İstanbul’a sessiz fallback yapılmaz.
         </div>
       )}
+      <div data-testid="external-reference-completeness" className="card" style={{ marginTop: 10, padding: 10, background: "rgba(255,255,255,0.02)" }}>
+        <div className="panelMeta" style={{ display: "grid", gap: 4 }}>
+          <span>Reference completeness: {hasReferenceEvidence ? "PARTIAL" : "UNAVAILABLE"}</span>
+          <span>Fuel: {isAvailable ? "AVAILABLE" : "MISSING"}</span>
+          <span>Driver: MISSING</span>
+          <span>Maintenance: MISSING</span>
+          <span>Platform observed: {platform?.available ? "AVAILABLE" : "INSUFFICIENT SAMPLE"}</span>
+          <span>Actual: {actual?.available ? "AVAILABLE" : "NOT AVAILABLE"}</span>
+        </div>
+      </div>
       {guidance?.observedRegional?.available ? (
         <div className="panelMeta" style={{ marginTop: 8 }}>Bölgesel gözlenen teklif bandı: {formatBand(guidance.observedRegional, guidance.observedRegional.currencyCode || "TRY")}</div>
       ) : scopeKey === "ROOM" ? (

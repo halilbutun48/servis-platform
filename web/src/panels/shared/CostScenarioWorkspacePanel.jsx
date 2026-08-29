@@ -426,7 +426,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
             unit: "CURRENCY_PER_L",
             currencyCode: inputs.currencyCode || "TRY",
             scope,
-            regionName: regionName || undefined,
+            regionName: regionName || next?.regionName || undefined,
           }, { signal: controller.signal, force: true });
         } catch (referenceError) {
           if (referenceError?.name === "AbortError" || controller.signal.aborted) return;
@@ -592,6 +592,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
         <span className="pill">Önizleme</span>
         <span className="pill">{planningOnly ? "Planlama bağlamı" : roleConfig.audience}</span>
+        {baseline?.regionName ? <span className="pill" data-testid="scenario-operation-region">Operasyon bölgesi: {baseline.regionName}</span> : null}
         {baseline ? <span className="pill" data-testid="scenario-baseline-confidence">Baseline güveni: {confidenceLabel(visibleBaselineConfidence.level)}</span> : null}
         {resultStatus ? <span className="pill" data-status={statusTone(resultStatus).toUpperCase()}>{statusLabel(resultStatus)}</span> : null}
       </div>

@@ -11,6 +11,7 @@ import {
 import { getExternalCostReference } from "../externalCost/externalCostReferenceService.js";
 import { osrmRoute } from "../services/osrmRoute.js";
 import { sumDistanceKm } from "../services/routeLearning.js";
+import { resolveOperationRegion } from "../region/operationRegion.js";
 
 const ALLOWED_SCOPES = new Set(["COMPANY", "ROOM"]);
 const PUBLIC_SHIFT_STATUSES = { not: "DRAFT" };
@@ -390,7 +391,7 @@ async function findPreferredShift(where) {
 
 async function loadCompanyBaseline(companyId) {
   const [company, preferredShift, plan, budgetPlan, agreement, hakedisRecords] = await Promise.all([
-    prisma.company.findUnique({ where: { id: companyId }, select: { id: true, name: true, kind: true, regionId: true, district: true } }),
+    prisma.company.findUnique({ where: { id: companyId }, select: { id: true, name: true, kind: true, regionId: true, district: true, region: { select: { id: true, name: true } } } }),
     findPreferredShift({ companyId }),
     prisma.organizationPlan.findFirst({
       where: { companyId }, orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
@@ -432,12 +433,17 @@ async function loadCompanyBaseline(companyId) {
   const plannedInput = plan && !useShift ? planInputs(plan, routeEvidence) : {};
   const classifications = useShift ? shiftClassifications(shift) : planClassifications(plan, routeEvidence);
   const baselineSourceMap = buildBaselineSourceMap({ input: { ...input, ...(budgetPlan?.currencyCode ? { currencyCode: budgetPlan.currencyCode } : {}) }, classifications, source, routeEvidence, companyKind: company.kind, scope: "COMPANY" });
+  const region = resolveOperationRegion({ shift, company, agreement });
   return {
     scope: "COMPANY",
     companyId,
     roomId: source.roomId || shift?.roomId || plan?.roomId || null,
     companyKind: company.kind,
     companyName: company.name,
+    regionId: region.regionId,
+    regionCode: region.provinceCode,
+    regionName: region.regionName,
+    regionResolution: region,
     source,
     input: { ...input, ...(budgetPlan?.currencyCode ? { currencyCode: budgetPlan.currencyCode } : {}) },
     plannedInput,
@@ -477,13 +483,24 @@ async function loadCompanyBaseline(companyId) {
 
 async function loadRoomBaseline(roomId) {
   const [room, preferredShift, agreement] = await Promise.all([
-    prisma.room.findUnique({ where: { id: roomId }, select: { id: true, name: true, status: true } }),
+    prisma.room.findUnique({ where: { id: roomId }, select: { id: true, name: true, status: true, regionId: true, region: { select: { id: true, name: true } } } }),
     findPreferredShift({ roomId }).then(async (preferred) => {
       if (!preferred.shift) return preferred;
-      const company = await prisma.company.findUnique({ where: { id: preferred.shift.companyId }, select: { id: true, name: true, kind: true } });
+      const company = await prisma.company.findUnique({ where: { id: preferred.shift.companyId }, select: { id: true, name: true, kind: true, regionId: true, region: { select: { id: true, name: true } } } });
       return { ...preferred, shift: { ...preferred.shift, company } };
     }),
-    prisma.agreement.findFirst({ where: { roomId }, orderBy: [{ updatedAt: "desc" }, { id: "desc" }], select: { id: true, companyId: true, roomId: true, status: true } }),
+    prisma.agreement.findFirst({
+      where: { roomId },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      select: {
+        id: true,
+        companyId: true,
+        roomId: true,
+        status: true,
+        room: { select: { id: true, regionId: true, region: { select: { id: true, name: true } } } },
+        company: { select: { id: true, regionId: true, region: { select: { id: true, name: true } } } },
+      },
+    }),
   ]);
   if (!room) throw httpError(404, "SCENARIO_ROOM_NOT_FOUND", "Senaryo kapsamı bulunamadı.");
   const shift = preferredShift.shift;
@@ -496,6 +513,7 @@ async function loadRoomBaseline(roomId) {
   const input = shiftInputs(shift);
   const classifications = shift ? shiftClassifications(shift) : {};
   const baselineSourceMap = buildBaselineSourceMap({ input, classifications, source, routeEvidence, companyKind: shift?.company?.kind || "COMPANY", scope: "ROOM" });
+  const region = resolveOperationRegion({ shift, room, company: shift?.company, agreement });
   return {
     scope: "ROOM",
     roomId,
@@ -503,6 +521,10 @@ async function loadRoomBaseline(roomId) {
     companyKind: shift?.company?.kind || "COMPANY",
     companyName: shift?.company?.name || null,
     roomName: room.name,
+    regionId: region.regionId,
+    regionCode: region.provinceCode,
+    regionName: region.regionName,
+    regionResolution: region,
     source,
     input,
     plannedInput: {},
@@ -607,6 +629,10 @@ function publicBaseline(baseline) {
     companyKind: baseline.companyKind,
     companyName: baseline.companyName,
     roomName: baseline.roomName || null,
+    regionId: baseline.regionId || null,
+    regionCode: baseline.regionCode || null,
+    regionName: baseline.regionName || null,
+    regionResolution: baseline.regionResolution || null,
     planningOnly: baseline.companyKind !== "COMPANY",
     normalBudgetLifecycle: baseline.companyKind === "COMPANY",
     baselineReferenceId: baseline.baselineReference,

@@ -319,14 +319,19 @@ async function loadPlatformQuoteObservations({ regionCode, windowDays, scope = "
     select: {
       amountRoom: true,
       createdAt: true,
-      shift: { select: { company: { select: { region: { select: { name: true } } } } } },
+      shift: {
+        select: {
+          company: { select: { region: { select: { name: true } } } },
+          room: { select: { region: { select: { name: true } } } },
+        },
+      },
     },
   });
   return rows
     .map((row) => ({
       valueMinor: row.amountRoom,
       observedAt: row.createdAt,
-      regionCode: row.shift?.company?.region?.name || null,
+      regionCode: row.shift?.company?.region?.name || row.shift?.room?.region?.name || null,
       eligible: Boolean(row.amountRoom),
     }))
     .filter((row) => {
@@ -350,7 +355,7 @@ export async function getReferenceLayers(query = {}, actor = null) {
     scopeKey: region.scopeKey,
   });
   if (String(query.refresh || "").toLowerCase() === "true" && region.regionCode) {
-    external = await refreshExternalCostReference({
+    const refreshed = await refreshExternalCostReference({
       family,
       unit,
       currencyCode: query.currencyCode || "TRY",
@@ -359,6 +364,10 @@ export async function getReferenceLayers(query = {}, actor = null) {
       scopeType: region.scopeType,
       scopeKey: region.scopeKey,
     }, actor);
+    // A provider outage must not erase a still-valid stored reference for the
+    // already-resolved province. Keep the canonical stored value unless the
+    // refresh actually returns a new market reference.
+    if (refreshed?.marketReference) external = refreshed;
   }
   const windowDays = Math.max(1, Math.min(365, Number(query.windowDays || ENV.PLATFORM_REFERENCE_WINDOW_DAYS || 90)));
   const observations = await loadPlatformQuoteObservations({ regionCode: region.regionCode, windowDays, scope: query.scope || actor?.role });

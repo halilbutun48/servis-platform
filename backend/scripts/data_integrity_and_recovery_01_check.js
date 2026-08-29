@@ -40,7 +40,7 @@ const dataIntegrityScript = "check:dataintegrityandrecovery01";
 
 const approvedDataIntegrityRouteDiffs = [
   { path: "backend/src/routes/companyOverview.js", sha256: "EB2E7956FD7C02891687815D389AB9E9C5374CAB2FD684E2ADE7CE42C83F8528" },
-  { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "AF4576A429E1B7026974DFC18DB5F9EB034580818A7D32159644878A4E7C94C7" },
+  { path: "backend/src/routes/commercialCoreRoomRoutes.js", sha256: "CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF" },
   { path: "backend/src/routes/commercialCore.js", sha256: "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F" },
   { path: "backend/src/routes/operationProof.js", sha256: "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0" },
   { path: "backend/src/routes/trustQuality.js", sha256: "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD" },

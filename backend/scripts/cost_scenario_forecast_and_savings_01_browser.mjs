@@ -7,6 +7,7 @@ let consoleErrors = [];
 let pageErrors = [];
 let serverErrors = 0;
 let http429Errors = 0;
+let liveMutationRequests = [];
 
 function record(name, ok, detail = "") {
   results.push({ name, ok, detail });
@@ -47,6 +48,13 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
     if (response.status() >= 500) serverErrors += 1;
     if (response.status() === 429) http429Errors += 1;
   });
+  page.on("request", (request) => {
+    const method = request.method().toUpperCase();
+    const url = request.url();
+    if (["PATCH", "PUT", "DELETE"].includes(method) || (method === "POST" && !url.includes("/api/cost-scenarios/preview"))) {
+      liveMutationRequests.push(`${name}: ${method} ${url}`);
+    }
+  });
   await page.addInitScript((value) => localStorage.setItem("token", value), token);
   await page.goto(`${WEB_BASE_URL}${route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
   const workspace = page.getByTestId("cost-scenario-workspace");
@@ -65,6 +73,33 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
   const noSeparateNav = !(await page.locator("nav").allInnerTexts()).join(" ").includes("Maliyet Senaryoları");
   const pageText = await page.locator("body").innerText();
   record(`${name} scenario surface`, pageText.includes("Sadece önizleme") && pageText.includes("Mevcut plan") && pageText.includes("Maliyet Senaryosu") && pageText.includes("Senaryoyu Karşılaştır") && pageText.includes("Gelişmiş varsayımlar") && contextualVisible, initialText.slice(0, 180));
+  const referenceCard = page.getByTestId("external-reference-card").first();
+  if (!planningOnly) {
+    await referenceCard.waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
+    await referenceCard.getByTestId("external-reference-completeness").waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
+  }
+  const settledPageText = await page.locator("body").innerText();
+  const referenceText = planningOnly ? "" : await referenceCard.innerText().catch(() => "");
+  record(`${name} canonical operation region visible`, Boolean(baseline.regionName) && settledPageText.includes(`Operasyon bölgesi: ${baseline.regionName}`) && (planningOnly || !referenceText.includes("Türkiye / kapsam belirtilmedi")), `${baseline.regionName || "NO_CANONICAL_REGION"}/${baseline.regionResolution?.source || "NO_SOURCE"}`);
+  if (planningOnly) {
+    record(`${name} planning context does not require financial reference card`, true, "planning surface keeps canonical region in scenario context");
+  } else {
+    const completeness = referenceCard.getByTestId("external-reference-completeness");
+    await completeness.waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
+    record(`${name} market reference stays region-scoped`, referenceText.includes(baseline.regionName || "__missing_region__") && !referenceText.includes("Türkiye / kapsam belirtilmedi"));
+    if (referenceText.includes("FRESH") || referenceText.includes("STALE")) {
+      const details = referenceCard.getByTestId("external-reference-details");
+      await details.locator("summary").click().catch(() => {});
+      const detailsText = await details.innerText().catch(() => "");
+      record(`${name} provider source as-of freshness visible`, ["Provider:", "Kaynak:", "As of:", "Güncellik:"].every((label) => detailsText.includes(label)));
+      record(`${name} partial reference layers remain separate`, ["Dış Piyasa Referansı", "SeferPakt Bölgesel Referansı", "Senin Gerçek Verilerin"].every((label) => detailsText.includes(label)) && detailsText.includes("Uygun resmi dış veri yok") ? true : detailsText.includes("Dış Piyasa Referansı"));
+      await details.locator("summary").click().catch(() => {});
+    } else {
+      record(`${name} no-data reference still names canonical region`, referenceText.includes(baseline.regionName || "__missing_region__") && referenceText.includes("resmi veri"));
+    }
+    record(`${name} component completeness is explicit`, referenceText.includes("Reference completeness:") && referenceText.includes("Driver: MISSING") && referenceText.includes("Maintenance: MISSING") && referenceText.includes("Actual: NOT AVAILABLE"));
+  }
+  record(`${name} no manual province or required fuel price entry`, !settledPageText.includes("provinceNameInput") && !settledPageText.includes("İl seçiniz") && !(await page.getByTestId("scenario-input-fuelUnitPriceMinor").isVisible().catch(() => false)));
   record(`${name} role identity and baseline source`, initialText.includes(planningOnly ? "Planlama bağlamı" : role === "ROOM" ? "Taşımacılık Firması" : "Önizleme") && Boolean(baseline.source?.label));
   record(`${name} no dash sea and explicit missing`, noDashSea && hasFieldLevelMissingReason, `missing=${baseline.missingFields.length}`);
   record(`${name} advanced assumptions collapsed`, advancedClosed);
@@ -155,7 +190,7 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
     record(`${name} mobile overflow`, !mobile || await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 8));
   }
   const taskResults = results.slice(taskResultStart);
-  console.log(`TASK_EVIDENCE=${JSON.stringify({ role, companyKind, startRoute: route, userAction: fill ? "edit primary; quick preset; compare; open synthetic example; A/B" : "open scenario home", baselineSource: baseline.source?.label, missingFields: baseline.missingFields, visibleResult: "contextual role-aware scenario workspace", consoleErrorCount: consoleErrors.length - taskConsoleErrorStart, pageErrorCount: pageErrors.length - taskPageErrorStart, http500Count: serverErrors - taskServerErrorStart, http429Count: http429Errors - taskHttp429Start, pass: taskResults.length > 0 && taskResults.every((item) => item.ok)})}`);
+  console.log(`TASK_EVIDENCE=${JSON.stringify({ role, companyKind, startRoute: route, userAction: fill ? "edit primary; quick preset; compare; open synthetic example; A/B" : "open scenario home", baselineSource: baseline.source?.label, region: baseline.regionName || null, regionSource: baseline.regionResolution?.source || null, missingFields: baseline.missingFields, visibleResult: "contextual role-aware scenario workspace", consoleErrorCount: consoleErrors.length - taskConsoleErrorStart, pageErrorCount: pageErrors.length - taskPageErrorStart, http500Count: serverErrors - taskServerErrorStart, http429Count: http429Errors - taskHttp429Start, liveMutationCount: liveMutationRequests.length, pass: taskResults.length > 0 && taskResults.every((item) => item.ok)})}`);
   await page.screenshot({ path: `backend/artifacts/browser-smoke/cost-scenario-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`, fullPage: true });
   await page.close();
 }
@@ -175,6 +210,7 @@ async function main() {
   record("browser page errors", pageErrors.length === 0, pageErrors.slice(0, 3).join(" | "));
   record("browser unexpected server errors", serverErrors === 0, String(serverErrors));
   record("browser unexpected 429 responses", http429Errors === 0, String(http429Errors));
+  record("browser scenario live mutation requests", liveMutationRequests.length === 0, liveMutationRequests.slice(0, 3).join(" | "));
   if (results.some((item) => !item.ok)) {
     console.error(`#4 browser smoke failed: ${results.filter((item) => item.ok).length}/${results.length}`);
     process.exit(1);

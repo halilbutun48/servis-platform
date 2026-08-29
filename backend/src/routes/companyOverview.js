@@ -49,6 +49,8 @@ async function resolveCompany(req) {
       id: true,
       kind: true,
       name: true,
+      regionId: true,
+      region: { select: { id: true, name: true } },
     },
   });
 }
@@ -726,6 +728,8 @@ export function companyOverviewRouter() {
               select: {
                 id: true,
                 name: true,
+                regionId: true,
+                region: { select: { id: true, name: true } },
               },
             },
 
@@ -734,6 +738,8 @@ export function companyOverviewRouter() {
                 id: true,
                 name: true,
                 kind: true,
+                regionId: true,
+                region: { select: { id: true, name: true } },
               },
             },
 
@@ -784,6 +790,8 @@ export function companyOverviewRouter() {
               select: {
                 id: true,
                 name: true,
+                regionId: true,
+                region: { select: { id: true, name: true } },
               },
             },
 
@@ -792,6 +800,8 @@ export function companyOverviewRouter() {
                 id: true,
                 name: true,
                 kind: true,
+                regionId: true,
+                region: { select: { id: true, name: true } },
               },
             },
           },

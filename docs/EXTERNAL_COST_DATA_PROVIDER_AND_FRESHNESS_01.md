@@ -97,6 +97,26 @@ sağlar. Default ekran kısa toplam/teklif rehberi özetidir; bileşen ayrıntı
 geçerse görür. COMPANY katmanı ROOM iç maliyetini veya ham teklif verisini
 görmez.
 
+### #4 operasyon ili aktarımı
+
+`backend/src/region/operationRegion.js` tekil resolver olarak #4 baseline ve
+finansal operasyon preview'larında kullanılır. Seçim sırası şöyledir:
+
+1. mevcut operasyon ili,
+2. mevcut rota/servis alanı ili,
+3. aktif vardiya veya sözleşme coğrafyası,
+4. canonical COMPANY/ROOM işletim bölgesi,
+5. açık senaryo override'ı.
+
+Route stop koordinatları tek başına il kanıtı sayılmaz; reverse geocoding,
+IP/device konumu ve sessiz İstanbul varsayımı kullanılmaz. Birden çok ili
+kapsayan rota için stored canonical service area/origin policy yoksa resolver
+`NO_GEOGRAPHY` döndürür; rastgele il seçmez. Çözülen il ve trafik kodu aynı
+request ile #2 EPDK provider'a taşınır. Provider refresh başarısız olduğunda
+halen geçerli stored il referansı silinmez. Yakıt referansı mevcutken sürücü,
+bakım, platform örneği veya kullanıcı actual verisinin eksikliği yakıt
+katmanını gizlemez; UI katmanları ve partial cost sonucu ayrı gösterir.
+
 ## Freshness and fallback
 
 Fresh TTL family'e göre değişir. Stale pencere içinde değer açıkça `STALE`

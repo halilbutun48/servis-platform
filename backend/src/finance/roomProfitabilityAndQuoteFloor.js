@@ -3,6 +3,7 @@ import {
   describeFinancialSurface,
   getFinancialOperationsAccessForRole,
 } from "./financialOperationsScope.js";
+import { resolveOperationRegion } from "../region/operationRegion.js";
 
 function normalizeToken(value) {
   return String(value || "")
@@ -77,8 +78,16 @@ function buildSnapshot({
   agreement,
   roomSummary = null,
   companySummary = null,
+  explicitRegionName = null,
 }) {
   const scopeKey = normalizeScope(scope);
+  const region = resolveOperationRegion({
+    shift,
+    room,
+    company,
+    agreement,
+    explicitRegionName,
+  });
   const routeDistanceM = pickMinor(shift?.routeSnapshotDistanceM);
   const routeDurationSec = pickMinor(shift?.routeSnapshotDurationSec);
   const routeDistanceKm = routeDistanceM != null ? Number((routeDistanceM / 1000).toFixed(2)) : null;
@@ -108,7 +117,10 @@ function buildSnapshot({
     companyId: Number(company?.id || shift?.companyId || agreement?.companyId || 0) || null,
     roomKind: pickText(room?.kind, agreement?.room?.kind, shift?.room?.kind).toUpperCase() || null,
     companyKind: pickText(company?.kind, agreement?.company?.kind, shift?.company?.kind).toUpperCase() || null,
-    regionName: pickText(room?.region?.name, company?.region?.name, agreement?.room?.region?.name) || null,
+    regionId: region.regionId,
+    regionCode: region.provinceCode,
+    regionName: region.regionName,
+    regionResolution: region,
     roomName: roomName || null,
     companyName: companyName || null,
     shiftId: Number(shift?.id || 0) || null,
@@ -336,7 +348,16 @@ function buildBasePreview({
   };
   }
 
-  const snapshot = buildSnapshot({ scope: scopeKey, room, company, shift, agreement, roomSummary, companySummary });
+  const snapshot = buildSnapshot({
+    scope: scopeKey,
+    room,
+    company,
+    shift,
+    agreement,
+    roomSummary,
+    companySummary,
+    explicitRegionName: costInputs?.regionName || quoteFloorInputs?.regionName || null,
+  });
   const modelInput = buildCostModelInput(snapshot, costInputs);
   const model = buildOperationalCostModel(modelInput);
 

@@ -9,6 +9,7 @@ export const REFERENCE_LAYER = Object.freeze({
 const PROVINCE_CODES = Object.freeze({
   ADANA: "01", ADIYAMAN: "02", AFYONKARAHISAR: "03", AGRI: "04", AMASYA: "05", ANKARA: "06", ANTALYA: "07", ARTVIN: "08", AYDIN: "09", BALIKESIR: "10", BILECIK: "11", BINGOL: "12", BITLIS: "13", BOLU: "14", BURDUR: "15", BURSA: "16", CANAKKALE: "17", CANKIRI: "18", CORUM: "19", DENIZLI: "20", DIYARBAKIR: "21", EDIRNE: "22", ELAZIG: "23", ERZINCAN: "24", ERZURUM: "25", ESKISEHIR: "26", GAZIANTEP: "27", GIRESUN: "28", GUMUSHANE: "29", HAKKARI: "30", HATAY: "31", ISPARTA: "32", MERSIN: "33", ISTANBUL: "34", IZMIR: "35", KARS: "36", KASTAMONU: "37", KAYSERI: "38", KIRKLARELI: "39", KIRSEHIR: "40", KOCAELI: "41", KONYA: "42", KUTAHYA: "43", MALATYA: "44", MANISA: "45", KAHRAMANMARAS: "46", MARDIN: "47", MUGLA: "48", MUS: "49", NEVSEHIR: "50", NIGDE: "51", ORDU: "52", RIZE: "53", SAKARYA: "54", SAMSUN: "55", SIIRT: "56", SINOP: "57", SIVAS: "58", TEKIRDAG: "59", TOKAT: "60", TRABZON: "61", TUNCELI: "62", SANLIURFA: "63", USAK: "64", VAN: "65", YOZGAT: "66", ZONGULDAK: "67", AKSARAY: "68", BAYBURT: "69", KARAMAN: "70", KIRIKKALE: "71", BATMAN: "72", SIRNAK: "73", BARTIN: "74", ARDAHAN: "75", IGDIR: "76", YALOVA: "77", KARABUK: "78", KILIS: "79", OSMANIYE: "80", DUZCE: "81",
 });
+const VALID_PROVINCE_CODES = new Set(Object.values(PROVINCE_CODES));
 
 function compact(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -25,8 +26,9 @@ export function provinceCodeFromName(name) {
 
 export function resolveRegionScope({ provinceCode = null, provinceName = null, requestedScope = "CITY" } = {}) {
   const explicitCode = compact(provinceCode);
-  if (/^\d{1,3}$/.test(explicitCode)) {
-    return { scopeType: requestedScope, scopeKey: explicitCode, regionCode: explicitCode, regionName: compact(provinceName) || null, selection: "EXACT_PROVINCE" };
+  const normalizedCode = /^\d{1,2}$/.test(explicitCode) ? explicitCode.padStart(2, "0") : null;
+  if (normalizedCode && VALID_PROVINCE_CODES.has(normalizedCode)) {
+    return { scopeType: requestedScope, scopeKey: normalizedCode, regionCode: normalizedCode, regionName: compact(provinceName) || null, selection: "EXACT_PROVINCE" };
   }
   const derivedCode = provinceCodeFromName(provinceName);
   if (derivedCode) {
@@ -118,6 +120,7 @@ function layerFromExternal(external, region) {
     sourceUrl: reference?.sourceUrl || null,
     asOf: reference?.asOf || null,
     regionCode: reference?.regionCode || region?.regionCode || null,
+    regionName: reference?.regionName || region?.regionName || null,
     freshness: reference?.freshness || FRESHNESS.UNKNOWN,
     confidence: reference?.confidence || CONFIDENCE.UNKNOWN,
     completeness: reference?.completeness || COMPLETENESS.INCOMPLETE,

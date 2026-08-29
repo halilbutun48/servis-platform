@@ -37,6 +37,8 @@ async function resolveTargetRoom(req) {
       id: true,
       name: true,
       status: true,
+      regionId: true,
+      region: { select: { id: true, name: true } },
     },
   });
 }
@@ -103,6 +105,8 @@ async function loadRoomFinancialContext(roomId, previewUser) {
           select: {
             id: true,
             name: true,
+            regionId: true,
+            region: { select: { id: true, name: true } },
           },
         },
 
@@ -111,6 +115,8 @@ async function loadRoomFinancialContext(roomId, previewUser) {
             id: true,
             name: true,
             kind: true,
+            regionId: true,
+            region: { select: { id: true, name: true } },
           },
         },
 
@@ -232,6 +238,8 @@ export function attachCommercialCoreRoomRoutes(r) {
           select: {
             id: true,
             name: true,
+            regionId: true,
+            region: { select: { id: true, name: true } },
           },
         }),
 
@@ -282,6 +290,8 @@ export function attachCommercialCoreRoomRoutes(r) {
               select: {
                 id: true,
                 name: true,
+                regionId: true,
+                region: { select: { id: true, name: true } },
               },
             },
 
@@ -290,6 +300,8 @@ export function attachCommercialCoreRoomRoutes(r) {
                 id: true,
                 name: true,
                 kind: true,
+                regionId: true,
+                region: { select: { id: true, name: true } },
               },
             },
 
@@ -335,6 +347,8 @@ export function attachCommercialCoreRoomRoutes(r) {
               select: {
                 id: true,
                 name: true,
+                regionId: true,
+                region: { select: { id: true, name: true } },
               },
             },
 
@@ -343,6 +357,8 @@ export function attachCommercialCoreRoomRoutes(r) {
                 id: true,
                 name: true,
                 kind: true,
+                regionId: true,
+                region: { select: { id: true, name: true } },
               },
             },
           },

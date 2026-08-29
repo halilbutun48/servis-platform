@@ -454,7 +454,7 @@ async function main() {
   );
   mustExactGitPaths(["backend/prisma", "prisma"], [], "backend prisma diff empty");
   mustFileSha256("backend/src/routes/commercialCore.js", "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F", "approved commercialCore.js SHA matches");
-  mustFileSha256("backend/src/routes/commercialCoreRoomRoutes.js", "AF4576A429E1B7026974DFC18DB5F9EB034580818A7D32159644878A4E7C94C7", "approved commercialCoreRoomRoutes.js SHA matches");
+  mustFileSha256("backend/src/routes/commercialCoreRoomRoutes.js", "CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF", "approved commercialCoreRoomRoutes.js SHA matches");
   mustFileSha256("backend/src/routes/operationProof.js", "E5F3539A3660E70AF31DAA93203C1F4018ED4FDDF469BB74CDC3D8B73DBCA6E0", "approved operationProof.js SHA matches");
   mustFileSha256("backend/src/routes/trustQuality.js", "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD", "approved trustQuality.js SHA matches");
   mustFileSha256("backend/src/services/dashboardBulk.js", "E3BF830BD2DF41A158FB60ED766C9A0C25A789C85F722443A37CEA61618A1A0E", "approved dashboardBulk.js SHA matches");
