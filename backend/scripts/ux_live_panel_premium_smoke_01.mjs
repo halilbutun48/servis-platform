@@ -765,7 +765,7 @@ async function runExternalReferenceDataAvailableAssertion(context, viewportName,
   });
 
   try {
-    await page.route("**/api/external-cost-references*", async (routeHandler) => {
+    await page.route("**/api/external-cost-references/*", async (routeHandler) => {
       if (routeHandler.request().method() !== "GET") return routeHandler.continue();
       result.referenceRequests += 1;
       return routeHandler.fulfill({
