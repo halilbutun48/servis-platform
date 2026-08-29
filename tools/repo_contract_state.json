@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  20,
-    "currentWarningHotFileCount":  13,
+    "currentWarningHotFileCount":  14,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -147,6 +147,10 @@
                                                          "backend/src/ai/chat/screenStateAnalyzer.js":  {
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "operation-health hot path; kontrollu cleanup adayi"
+                                                                                                 },
+                                                         "backend/src/finance/costScenarioForecast.js":  {
+                                                                                                     "class":  "acceptance-sensitive / later",
+                                                                                                     "note":  "#4 senaryo forecast/calculation owner; post-#4 kabulü öncesi split edilmez"
                                                                                                  },
                                                          "backend/src/ai/chat/supplierMatching.js":  {
                                                                                                      "class":  "safe-candidate-review",
