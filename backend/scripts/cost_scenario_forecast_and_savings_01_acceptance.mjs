@@ -94,12 +94,23 @@ async function main() {
   else fail("SCHOOL planning boundary is explicit", `${schoolBaseline.status}/${schoolBaseline.data?.planningOnly}`);
   if (organizationBaseline.status === 200 && organizationBaseline.data?.planningOnly === true && organizationBaseline.data?.normalBudgetLifecycle === false) pass("ORGANIZATION planning boundary is explicit");
   else fail("ORGANIZATION planning boundary is explicit", `${organizationBaseline.status}/${organizationBaseline.data?.planningOnly}`);
+  const baselineMapCases = [companyBaseline.data, roomBaseline.data, schoolBaseline.data, organizationBaseline.data];
+  if (baselineMapCases.every((item) => item?.baselineSourceMap && item?.baselineConfidence?.level && Array.isArray(item?.missingFields))) pass("role baseline source maps and confidence are API visible");
+  else fail("role baseline source maps and confidence are API visible");
+  const companyRouteRecovered = companyBaseline.data?.input?.passengerCount != null && companyBaseline.data?.input?.serviceDistanceKm != null && companyBaseline.data?.input?.routeDurationMinutes != null;
+  if (companyRouteRecovered && companyBaseline.data?.source?.label === "Son doğrulanmış vardiya" && companyBaseline.data?.baselineSourceMap?.serviceDistanceKm?.classification === "DIRECT_EXISTING_DATA") pass("COMPANY baseline selects validated route and auto-fills recoverable fields");
+  else fail("COMPANY baseline selects validated route and auto-fills recoverable fields", JSON.stringify({ source: companyBaseline.data?.source, input: companyBaseline.data?.input, route: companyBaseline.data?.baselineSourceMap?.serviceDistanceKm }));
+  const organizationDoesNotInventVehicle = organizationBaseline.data?.input?.vehicleCount === undefined
+    && organizationBaseline.data?.baselineSourceMap?.vehicleCount?.classification === "NOT_APPLICABLE_FOR_ROLE"
+    && organizationBaseline.data?.input?.serviceDistanceKm != null;
+  if (organizationDoesNotInventVehicle) pass("ORGANIZATION plan does not invent vehicle baseline and derives route evidence");
+  else fail("ORGANIZATION plan does not invent vehicle baseline and derives route evidence");
 
   const completeBody = {
     scope: "COMPANY",
     baselineReferenceId: companyBaseline.data?.baselineReferenceId,
     baselineInput: completeInput,
-    scenarioOverrides: { vehicleCount: 1, serviceDistanceKm: 50, totalDistanceKm: 50 },
+    scenarioOverrides: { vehicleCount: 1, serviceDistanceKm: 20, totalDistanceKm: 20 },
   };
   const preview = await request("/api/cost-scenarios/preview", { token: companyToken, method: "POST", body: completeBody });
   if (preview.status === 200 && preview.data?.status === "READY" && preview.data?.savingsMinor > 0 && preview.data?.baseline?.costMinor != null) pass("COMPANY real preview produces explainable savings", `${preview.data.savingsMinor}`);
@@ -110,11 +121,13 @@ async function main() {
   else fail("preview response exposes no-write safety contract");
   if (preview.data?.provenance?.scenarioDataClass === "USER_SCENARIO_OVERRIDE" && preview.data?.provenance?.baselineDataClass) pass("preview keeps baseline and scenario provenance distinct");
   else fail("preview keeps baseline and scenario provenance distinct");
+  if (preview.data?.baselineConfidence?.level && preview.data?.baselineSourceMap?.serviceDistanceKm && preview.data?.safety?.previewOnly === true) pass("preview propagates baseline confidence and source map");
+  else fail("preview propagates baseline confidence and source map");
 
   const companyIdentity = await prisma.user.findUnique({ where: { email: "company@demo.com" }, select: { companyId: true } });
   const companyShift = companyIdentity?.companyId
     ? await prisma.shift.findFirst({
-      where: { companyId: companyIdentity.companyId, status: { not: "DRAFT" } },
+      where: { companyId: companyIdentity.companyId, status: { not: "DRAFT" }, routeSnapshotValidatedAt: { not: null } },
       orderBy: [{ routeSnapshotValidatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       select: { _count: { select: { stops: true } }, stops: { orderBy: { order: "asc" }, take: 1, select: { lat: true, lng: true } } },
     })
@@ -166,6 +179,10 @@ async function main() {
   });
   if (roomPreview.status === 200 && roomPreview.data?.status === "READY" && roomPreview.data?.dimensions?.vehicleCount?.scenario === 2) pass("ROOM real preview isolates vehicle scenario");
   else fail("ROOM real preview isolates vehicle scenario", `${roomPreview.status}/${roomPreview.data?.status}`);
+  const aPreview = await request("/api/cost-scenarios/preview", { token: companyToken, method: "POST", body: { ...completeBody, scenarioOverrides: { passengerCount: 11 } } });
+  const bPreview = await request("/api/cost-scenarios/preview", { token: companyToken, method: "POST", body: { ...completeBody, scenarioOverrides: { passengerCount: 12 } } });
+  if (aPreview.status === 200 && bPreview.status === 200 && aPreview.data?.scenarioId !== bPreview.data?.scenarioId && aPreview.data?.safety?.notPersisted && bPreview.data?.safety?.notPersisted) pass("A/B previews stay isolated and transient");
+  else fail("A/B previews stay isolated and transient");
 
   const schoolPreview = await request("/api/cost-scenarios/preview", {
     token: schoolToken,

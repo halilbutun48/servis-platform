@@ -35,11 +35,62 @@ const FIELD_CONFIG = [
   { key: "maintenancePerKmMinor", label: "Bakım km maliyeti (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
 ];
 
-const PRIMARY_FIELD_CONFIG = FIELD_CONFIG.filter((field) => field.classification === "PRIMARY_WHAT_IF_INPUT");
-const ADVANCED_FIELD_CONFIG = FIELD_CONFIG.filter((field) => ["ADVANCED_ASSUMPTION", "DERIVED_INPUT"].includes(field.classification));
-
 function compact(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function roleScenarioConfig(scope, companyKind) {
+  if (scope === "ROOM") return {
+    role: "ROOM",
+    audience: "Taşımacılık Firması",
+    passengerLabel: "Yolcu sayısı (kişi)",
+    distanceLabel: "Rota mesafesi (km)",
+    subtitle: "Taşımacılık operasyonunda mevcut planı alternatif araç, rota ve kapasite varsayımlarıyla karşılaştırın.",
+    quickPassenger: "+10 yolcu",
+    quickVehicle: "+1 araç",
+    quickDays: "+5 hizmet günü",
+    example: "Örnek: mevcut taşıma planında araç veya rota varsayımı değiştirilir; sonuç yalnızca preview farkı olarak gösterilir.",
+  };
+  if (String(companyKind).toUpperCase() === "SCHOOL") return {
+    role: "SCHOOL",
+    audience: "Okul planlama",
+    passengerLabel: "Öğrenci sayısı (kişi)",
+    distanceLabel: "Servis rotası mesafesi (km)",
+    subtitle: "Okul servis planında öğrenci, araç ve rota varsayımlarını güvenli maliyet önizlemesiyle karşılaştırın.",
+    quickPassenger: "+10 öğrenci",
+    quickVehicle: "+1 araç",
+    quickDays: "+5 hizmet günü",
+    example: "Örnek: öğrenci sayısı değişikliği, okul planlaması için tahmini etkiyi gösterir; bütçe yaşam döngüsü açılmaz.",
+  };
+  if (String(companyKind).toUpperCase() === "ORGANIZATION") return {
+    role: "ORGANIZATION",
+    audience: "Organizasyon planlama",
+    passengerLabel: "Katılımcı / personel sayısı (kişi)",
+    distanceLabel: "Etkinlik rotası mesafesi (km)",
+    subtitle: "Etkinlik veya gezi planında katılımcı, rota ve gün varsayımlarını güvenli maliyet önizlemesiyle karşılaştırın.",
+    quickPassenger: "+10 katılımcı",
+    quickVehicle: "+1 araç planı",
+    quickDays: "+5 hizmet günü",
+    example: "Örnek: katılımcı sayısı değişikliği, etkinlik/trip planı için tahmini etkiyi gösterir; şirket bütçesi açılmaz.",
+  };
+  return {
+    role: "COMPANY",
+    audience: "Hizmet Alan Firma",
+    passengerLabel: "Yolcu / personel sayısı (kişi)",
+    distanceLabel: "Servis rotası mesafesi (km)",
+    subtitle: "Hizmet alım planında araç, kapasite, rota ve gün varsayımlarını mevcut planla karşılaştırın.",
+    quickPassenger: "+10 kişi",
+    quickVehicle: "+1 araç",
+    quickDays: "+5 hizmet günü",
+    example: "Örnek: hizmet günü veya araç sayısı değiştirilir; sonuç mevcut bütçeyi ya da canlı operasyonu değiştirmeyen preview sinyalidir.",
+  };
+}
+
+function roleFields(config) {
+  return FIELD_CONFIG.map((field) => ({
+    ...field,
+    label: field.key === "passengerCount" ? config.passengerLabel : field.key === "serviceDistanceKm" || field.key === "totalDistanceKm" ? config.distanceLabel.replace("Mesafesi", "mesafesi") : field.label,
+  }));
 }
 
 function displayValue(value) {
@@ -47,17 +98,17 @@ function displayValue(value) {
 }
 
 function formatMoney(value, currencyCode = "TRY") {
-  if (value === null || value === undefined || value === "") return "-";
+  if (value === null || value === undefined || value === "") return "Hesaplanamadı";
   const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return "-";
+  if (!Number.isFinite(numeric)) return "Hesaplanamadı";
   const suffix = currencyCode === "TRY" ? " ₺" : currencyCode ? ` ${currencyCode}` : "";
   return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(numeric)}${suffix}`;
 }
 
 function formatNumber(value, suffix = "") {
-  if (value === null || value === undefined || value === "") return "-";
+  if (value === null || value === undefined || value === "") return "Belirtilmedi";
   const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return "-";
+  if (!Number.isFinite(numeric)) return "Belirtilmedi";
   return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 }).format(numeric)}${suffix}`;
 }
 
@@ -172,18 +223,28 @@ function InputGrid({ values, setValues, prefix = "scenario", fields = FIELD_CONF
   );
 }
 
-function InputSummary({ input }) {
+function InputSummary({ input, sourceMap = {}, config }) {
   const items = [
-    ["Araç (adet)", input.vehicleCount ? formatNumber(input.vehicleCount) : null],
-    ["Kapasite (kişi)", input.vehicleCapacity ? formatNumber(input.vehicleCapacity) : null],
-    ["Yolcu (kişi)", input.passengerCount ? formatNumber(input.passengerCount) : null],
-    ["Mesafe (km)", input.serviceDistanceKm != null ? formatNumber(input.serviceDistanceKm) : null],
-    ["Rota süresi (dk)", input.routeDurationMinutes != null ? formatNumber(input.routeDurationMinutes) : null],
-    ["Hizmet günü (gün)", input.serviceDayCount != null ? formatNumber(input.serviceDayCount) : null],
+    ["Araç (adet)", "vehicleCount"],
+    ["Kapasite (kişi)", "vehicleCapacity"],
+    [config.passengerLabel, "passengerCount"],
+    [config.distanceLabel, "serviceDistanceKm"],
+    ["Rota süresi (dk)", "routeDurationMinutes"],
+    ["Hizmet günü (gün)", "serviceDayCount"],
   ];
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
-      {items.map(([label, value]) => <Metric key={label} title={label} value={value ?? "-"} note="Mevcut plan girdisi" />)}
+      {items.map(([label, field]) => {
+        const evidence = sourceMap[field];
+        const value = evidence?.value ?? input[field];
+        const missing = evidence?.classification === "TRULY_MISSING" || value === null || value === undefined || value === "";
+        const note = missing
+          ? `Eksik veri: ${evidence?.missingReason || "Kanonik mevcut plan alanında bulunamadı."}`
+          : evidence?.classification === "DERIVABLE_FROM_CANONICAL_DATA"
+            ? "Kanonik rota verisinden türetildi"
+            : "Kanonik mevcut plan girdisi";
+        return <Metric key={label} title={label} value={missing ? `Eksik veri: ${evidence?.label || label}` : formatNumber(value)} note={note} tone={missing ? "warm" : "default"} />;
+      })}
     </div>
   );
 }
@@ -193,6 +254,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
   const [baseline, setBaseline] = useState(null);
   const [baselineValues, setBaselineValues] = useState({});
   const [scenarioValues, setScenarioValues] = useState({});
+  const [scenarioBValues, setScenarioBValues] = useState({});
   const [baselineCost, setBaselineCost] = useState("");
   const [useExternalFuelPrice, setUseExternalFuelPrice] = useState(false);
   const [riskValues, setRiskValues] = useState({ riskFuelUnitPriceMinor: "", riskDistanceKm: "", riskDurationMinutes: "" });
@@ -201,18 +263,20 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
   const [routeAlternativeType, setRouteAlternativeType] = useState("");
   const [dispatchDraft, setDispatchDraft] = useState({ vehicleId: "", driverId: "", routeReference: "" });
   const [result, setResult] = useState(null);
+  const [abResult, setAbResult] = useState(null);
+  const [abCalculating, setAbCalculating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [error, setError] = useState("");
 
   const companyKind = String(me?.companyKind || "COMPANY").toUpperCase();
   const planningOnly = companyKind === "SCHOOL" || companyKind === "ORGANIZATION";
+  const roleConfig = roleScenarioConfig(scope, companyKind);
+  const configuredFields = roleFields(roleConfig);
+  const primaryFields = configuredFields.filter((field) => field.classification === "PRIMARY_WHAT_IF_INPUT");
+  const advancedFields = configuredFields.filter((field) => ["ADVANCED_ASSUMPTION", "DERIVED_INPUT"].includes(field.classification));
   const title = "Maliyet Senaryosu";
-  const subtitle = scope === "ROOM"
-    ? "Taşımacılık Firması için mevcut planı alternatif operasyon varsayımlarıyla karşılaştırın."
-    : planningOnly
-      ? `${companyKind === "SCHOOL" ? "Okul" : "Organizasyon"} planlama bağlamında güvenli maliyet what-if önizlemesi.`
-      : "Hizmet Alan Firma için mevcut planı alternatif operasyon varsayımlarıyla karşılaştırın.";
+  const subtitle = roleConfig.subtitle;
 
   useEffect(() => {
     if (!token) return undefined;
@@ -232,7 +296,9 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         setBaseline(next);
         setBaselineValues(Object.fromEntries(Object.entries(inputs).map(([key, value]) => [key, displayValue(value)])));
         setScenarioValues(Object.fromEntries(Object.entries(inputs).map(([key, value]) => [key, displayValue(value)])));
+        setScenarioBValues(Object.fromEntries(Object.entries(inputs).map(([key, value]) => [key, displayValue(value)])));
         setResult(null);
+        setAbResult(null);
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -250,22 +316,27 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
     ...(compact(baselineCost) ? { baselineCostMinor: compact(baselineCost) } : {}),
   }), [baselineCost, baselineValues]);
 
-  async function calculate() {
-    if (!baseline?.baselineReferenceId) return;
-    setCalculating(true);
-    setError("");
-    try {
-      const payload = await postCostScenarioPreview({
+  function scenarioOverridesFor(values, includeExtras = true) {
+    const overrides = Object.fromEntries(Object.entries(values || {}).filter(([key, value]) => {
+      if (value === "" || value === null || value === undefined) return false;
+      return displayValue(baselineValues[key]) !== displayValue(value);
+    }));
+    if (!includeExtras) return overrides;
+    return {
+      ...overrides,
+      ...(stopOperations.length ? { scenarioStopOperations: stopOperations } : {}),
+      ...(routeAlternativeType ? { routeAlternative: { type: routeAlternativeType } } : {}),
+      ...((dispatchDraft.vehicleId || dispatchDraft.driverId || dispatchDraft.routeReference) ? { dispatchAlternative: dispatchDraft } : {}),
+      riskAssumptions: Object.fromEntries(Object.entries(riskValues).filter(([, value]) => compact(value))),
+    };
+  }
+
+  async function requestPreview(values, includeExtras = true) {
+    return postCostScenarioPreview({
         scope,
         baselineReferenceId: baseline.baselineReferenceId,
         baselineInput,
-        scenarioOverrides: {
-          ...scenarioValues,
-          ...(stopOperations.length ? { scenarioStopOperations: stopOperations } : {}),
-          ...(routeAlternativeType ? { routeAlternative: { type: routeAlternativeType } } : {}),
-          ...((dispatchDraft.vehicleId || dispatchDraft.driverId || dispatchDraft.routeReference) ? { dispatchAlternative: dispatchDraft } : {}),
-          riskAssumptions: Object.fromEntries(Object.entries(riskValues).filter(([, value]) => compact(value))),
-        },
+        scenarioOverrides: scenarioOverridesFor(values, includeExtras),
         ...(useExternalFuelPrice ? {
           externalReference: {
             family: "FUEL_DIESEL",
@@ -277,6 +348,14 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
           },
         } : {}),
       }, { token });
+  }
+
+  async function calculate() {
+    if (!baseline?.baselineReferenceId) return;
+    setCalculating(true);
+    setError("");
+    try {
+      const payload = await requestPreview(scenarioValues);
       setResult(payload?.data || payload || null);
     } catch (err) {
       const info = getApiErrorInfo(err, "Senaryo hesaplanamadı.");
@@ -284,6 +363,28 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
       setResult(null);
     } finally {
       setCalculating(false);
+    }
+  }
+
+  async function compareAB() {
+    if (!baseline?.baselineReferenceId) return;
+    setAbCalculating(true);
+    setError("");
+    try {
+      const [aPayload, bPayload] = await Promise.all([
+        requestPreview(scenarioValues, false),
+        requestPreview(scenarioBValues, false),
+      ]);
+      setAbResult({
+        a: aPayload?.data || aPayload || null,
+        b: bPayload?.data || bPayload || null,
+      });
+    } catch (err) {
+      const info = getApiErrorInfo(err, "A/B senaryoları karşılaştırılamadı.");
+      setError(info.message || "A/B senaryoları karşılaştırılamadı.");
+      setAbResult(null);
+    } finally {
+      setAbCalculating(false);
     }
   }
 
@@ -318,12 +419,17 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
   const confidence = result?.confidence || {};
   const deltaTone = result?.savingsMinor != null ? "good" : result?.additionalCostMinor != null ? "danger" : "warm";
   const contextName = baseline?.companyName || baseline?.roomName || "Bağlı tenant";
+  const visibleBaselineConfidence = baseline?.baselineConfidence || {
+    level: baseline?.missingFields?.length ? "MEDIUM" : "HIGH",
+    reason: baseline?.missingFields?.length ? "Eksik kanonik alanlar nedeniyle güven sınırlı." : "Kanonik baseline girdileri kullanılıyor.",
+  };
   const content = (
     <div data-testid="cost-scenario-workspace">
       <div className="muted" style={{ lineHeight: 1.5 }}>{subtitle}</div>
       <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
         <span className="pill">Önizleme</span>
-        <span className="pill">{planningOnly ? "Planlama bağlamı" : scope === "ROOM" ? "Taşımacılık Firması" : "Hizmet Alan Firma"}</span>
+        <span className="pill">{planningOnly ? "Planlama bağlamı" : roleConfig.audience}</span>
+        {baseline ? <span className="pill" data-testid="scenario-baseline-confidence">Baseline güveni: {confidenceLabel(visibleBaselineConfidence.level)}</span> : null}
         {resultStatus ? <span className="pill" data-status={statusTone(resultStatus).toUpperCase()}>{statusLabel(resultStatus)}</span> : null}
       </div>
 
@@ -343,29 +449,46 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
       <div className="card" style={{ marginTop: 12, border: "1px solid rgba(58,102,255,0.25)", background: "rgba(58,102,255,0.05)" }}>
         <div className="panelSectionTitle">Mevcut plan</div>
         <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>{contextName} · {baseline?.source?.label || "Plan girdisi bekleniyor"}</div>
-        {baseline ? <InputSummary input={baselineValues} /> : <div className="muted" style={{ marginTop: 12 }}>{loading ? "Plan verisi okunuyor..." : "Plan verisi bulunamadı."}</div>}
+        {baseline ? <div data-testid="scenario-baseline-summary"><InputSummary input={baselineValues} sourceMap={baseline.baselineSourceMap} config={roleConfig} /></div> : <div className="muted" style={{ marginTop: 12 }}>{loading ? "Plan verisi okunuyor..." : "Plan verisi bulunamadı."}</div>}
+        {baseline?.missingFields?.length ? (
+          <div data-testid="scenario-missing-fields" className="card" style={{ marginTop: 12, padding: 12, border: "1px solid rgba(247,144,9,0.3)", background: "rgba(247,144,9,0.05)" }}>
+            <div className="panelSectionTitle">Eksik veri alanları</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>Bu alanlar için kanonik veri bulunmadı; değer uydurulmadı ve senaryo sonucu güveni buna göre gösterilir.</div>
+            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {baseline.missingFields.map((field) => <span className="pill" key={field}>Eksik veri: {baseline.baselineSourceMap?.[field]?.label || field}</span>)}
+            </div>
+          </div>
+        ) : null}
         <details style={{ marginTop: 12 }}>
-          <summary className="muted" style={{ cursor: "pointer" }}>Mevcut plan varsayımlarını düzenle</summary>
+          <summary className="muted" style={{ cursor: "pointer" }}>Kanonik plan girdilerini incele</summary>
           <div style={{ marginTop: 10 }}><InputGrid values={baselineValues} setValues={setBaselineValues} prefix="baseline" /></div>
         </details>
+      </div>
+
+      <div className="card" data-testid="scenario-primary-inputs" style={{ marginTop: 12, border: "1px solid rgba(58,102,255,0.25)" }}>
+        <div className="panelSectionTitle">Senaryo varsayımları</div>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Değiştirmek istemediğiniz alanlar mevcut plan değerlerinden otomatik alınır. Bir alan kanonik veride yoksa değer uydurulmaz; eksikliği açıkça gösterilir.</div>
+        <div style={{ marginTop: 12 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={primaryFields} /></div>
+        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button data-testid="scenario-vehicle-add" type="button" className="btn" onClick={() => adjustVehicleCount(1)}>+ Araç ekle</button>
+          <button data-testid="scenario-vehicle-remove" type="button" className="btn" onClick={() => adjustVehicleCount(-1)}>− Araç çıkar</button>
+          <button data-testid="scenario-quick-passenger" type="button" className="btn" onClick={() => setScenarioValues((previous) => ({ ...previous, passengerCount: String(Math.max(0, Number(previous.passengerCount || baselineValues.passengerCount || 0) + 10)) }))}>{roleConfig.quickPassenger}</button>
+          <button data-testid="scenario-quick-vehicle" type="button" className="btn" onClick={() => adjustVehicleCount(1)}>{roleConfig.quickVehicle}</button>
+          <button data-testid="scenario-quick-days" type="button" className="btn" onClick={() => setScenarioValues((previous) => ({ ...previous, serviceDayCount: String(Math.max(0, Number(previous.serviceDayCount || baselineValues.serviceDayCount || 0) + 5)) }))}>{roleConfig.quickDays}</button>
+          <span className="panelMeta" style={{ alignSelf: "center" }}>Hızlı seçimler yalnızca geçici preview girdisi hazırlar; canlı kayıt değişmez.</span>
+        </div>
+      </div>
+
+      <details className="card" data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }}>
+        <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Gelişmiş varsayımlar</summary>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Maliyet bileşenleri, risk, alternatif rota ve typed dispatch seam ayrıntıları varsayılan olarak kapalıdır.</div>
         <div style={{ marginTop: 12, maxWidth: 360 }}>
           <Field label="Senaryo için maliyet varsayımı (₺)" value={baselineCost} placeholder="İsteğe bağlı plan varsayımı" onChange={setBaselineCost} />
           <div className="panelMeta" style={{ marginTop: 8 }}>Bu yalnızca senaryo için kullanılan bir varsayımdır; mevcut planın gerçek veya kanonik planlanan maliyetini değiştirmez. Boş bırakılırsa sistem yalnızca tamamlanmış maliyet bileşenlerini kullanır.</div>
         </div>
-      </div>
-
-      <details className="card" data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }} open>
-        <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Alternatif senaryo girdileri</summary>
-        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Değiştirmek istemediğiniz alanlar mevcut plan değerleriyle karşılaştırılır. Boş kalan kritik veriler sonuçta Eksik Veri olarak gösterilir.</div>
-        <div style={{ marginTop: 12 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={PRIMARY_FIELD_CONFIG} /></div>
-        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button data-testid="scenario-vehicle-add" type="button" className="btn" onClick={() => adjustVehicleCount(1)}>+ Araç ekle</button>
-          <button data-testid="scenario-vehicle-remove" type="button" className="btn" onClick={() => adjustVehicleCount(-1)}>− Araç çıkar</button>
-          <span className="panelMeta" style={{ alignSelf: "center" }}>Sadece preview girdisi; araç veya atama kaydı değişmez.</span>
-        </div>
         <details data-testid="scenario-advanced-fields" style={{ marginTop: 12 }}>
-          <summary className="muted" style={{ cursor: "pointer" }}>Gelişmiş varsayımlar</summary>
-          <div style={{ marginTop: 10 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={ADVANCED_FIELD_CONFIG} /></div>
+          <summary className="muted" style={{ cursor: "pointer" }}>Maliyet ve operasyon ayrıntıları</summary>
+          <div style={{ marginTop: 10 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={advancedFields} /></div>
           <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
             <Field testId="scenario-risk-fuel" label="Riskli yakıt varsayımı (kuruş/L)" value={riskValues.riskFuelUnitPriceMinor} onChange={(value) => setRiskValues((previous) => ({ ...previous, riskFuelUnitPriceMinor: value }))} />
             <Field testId="scenario-risk-distance" label="Riskli mesafe (km)" value={riskValues.riskDistanceKm} onChange={(value) => setRiskValues((previous) => ({ ...previous, riskDistanceKm: value }))} />
@@ -408,6 +531,38 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         </label>
       </details>
 
+      <div className="card" data-testid="scenario-current-scenario-delta" style={{ marginTop: 12 }}>
+        <div className="panelSectionTitle">Mevcut → Senaryo → Delta</div>
+        <div className="panelMeta" style={{ marginTop: 6 }}>Kanonik mevcut plan ile geçici senaryo girdisi yan yana tutulur; delta yalnız kullanıcı değişikliği varsa görünür.</div>
+        <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+          {primaryFields.map((field) => {
+            const current = baselineValues[field.key];
+            const next = scenarioValues[field.key];
+            const changed = displayValue(current) !== displayValue(next);
+            const render = (value) => field.type === "select" ? (field.options.find(([key]) => key === value)?.[1] || "Belirtilmedi") : formatNumber(value, field.unit === "DISTANCE_KM" ? " km" : field.unit === "DURATION_MIN" ? " dk" : "");
+            return <div key={field.key} className="muted" style={{ display: "grid", gridTemplateColumns: "minmax(120px,1fr) minmax(110px,1fr) minmax(110px,1fr)", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "8px 0" }}><span>{field.label}</span><span><b>Mevcut:</b> {render(current)}</span><span><b>Senaryo:</b> {render(next)} {changed ? <em style={{ color: "#f7b267" }}>· değişti</em> : <span className="panelMeta">· delta yok</span>}</span></div>;
+          })}
+        </div>
+      </div>
+
+      <details className="card" data-testid="scenario-readonly-example" style={{ marginTop: 12 }}>
+        <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Nasıl çalışır? Örnek senaryo</summary>
+        <div className="panelMeta" style={{ marginTop: 10, lineHeight: 1.55 }}><b>ÖRNEK · Gerçek operasyon veriniz değildir.</b> {roleConfig.example} Örnek anlatım kanonik planınıza yazılmaz, kalıcılaştırılmaz ve gerçek piyasa/actual değeri gibi sunulmaz.</div>
+      </details>
+
+      <details className="card" data-testid="scenario-ab-comparison" style={{ marginTop: 12 }}>
+        <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Mevcut / Senaryo A / Senaryo B</summary>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>A/B taslakları yalnız bu ekranda geçicidir. Aynı #4 preview endpoint’i iki kez çağrılır; hiçbir senaryo kaydedilmez.</div>
+        <div style={{ marginTop: 12 }}><InputGrid values={scenarioBValues} setValues={setScenarioBValues} prefix="scenario-b" fields={primaryFields} /></div>
+        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button data-testid="scenario-copy-to-b" type="button" className="btn" onClick={() => setScenarioBValues({ ...scenarioValues })}>Senaryo A’yı B’ye kopyala</button>
+          <button data-testid="scenario-ab-compare" type="button" className="btn primary" onClick={compareAB} disabled={abCalculating || calculating || !baseline}>{abCalculating ? "A/B karşılaştırılıyor..." : "Senaryoları karşılaştır"}</button>
+        </div>
+        {abResult ? <div data-testid="scenario-ab-result" style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+          {[['Mevcut', abResult.a?.baseline], ['Senaryo A', abResult.a?.scenario], ['Senaryo B', abResult.b?.scenario]].map(([label, item]) => <Metric key={label} title={label} value={formatMoney(item?.costMinor, currencyCode)} note={item?.costBasis === "INTERNAL_PLANNED_COST_ANCHOR" ? "Planlanan maliyet tabanı" : "Aynı #4 preview motoru"} />)}
+        </div> : null}
+      </details>
+
       {result ? (
         <>
           {result.scenarioVariants ? (
@@ -432,6 +587,16 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
               <Metric title="Tahmini ek maliyet" value={formatMoney(result.additionalCostMinor, result.currencyCode || currencyCode)} note="Karar desteği sinyali" tone={result.additionalCostMinor != null ? "danger" : "default"} />
               <Metric title="Maliyet farkı" value={formatMoney(result.costDeltaMinor, result.currencyCode || currencyCode)} note={result.costDeltaPercentBps != null ? `Değişim: %${(Number(result.costDeltaPercentBps) / 100).toLocaleString("tr-TR")}` : "Karşılaştırma yapılamadı"} tone={deltaTone} />
               <Metric title="Veri güveni" value={confidenceLabel(confidence.level)} note={confidence.reason || "Güven açıklaması bekleniyor"} tone={confidenceTone(confidence.level)} />
+            </div>
+          </div>
+
+          <div className="card" data-testid="scenario-effect-summary" style={{ marginTop: 12 }}>
+            <div className="panelSectionTitle">Etkiler: Finansal · Operasyonel · Risk</div>
+            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>Sonuçlar karar desteği içindir; preview dışında canlı bütçe, vardiya, rota, atama veya teklif değişikliği yapmaz.</div>
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+              <Metric title="Finansal Etki" value={formatMoney(result.costDeltaMinor, result.currencyCode || currencyCode)} note={result.costDeltaMinor === null ? "Karşılaştırılabilir maliyet kanıtı eksik" : "Mevcut plan → senaryo maliyet farkı"} tone={deltaTone} />
+              <Metric title="Operasyonel Etki" value={result.changedDimensions?.length ? `${result.changedDimensions.length} boyut` : "Değişiklik yok"} note={(result.changedDimensions || []).map((key) => ({ passengerCount: roleConfig.passengerLabel, vehicleCount: "Araç sayısı", serviceDistanceKm: "Rota mesafesi", serviceDayCount: "Hizmet günü" }[key] || key)).join(", ") || "Mevcut plan korunuyor"} />
+              <Metric title="Risk" value={result.operationalRisk?.riskState || "Açıklanmadı"} note={result.operationalRisk?.reasons?.join("; ") || "Açık risk kanıtı yok"} tone={result.operationalRisk?.riskState === "HIGH" ? "danger" : "default"} />
             </div>
           </div>
 

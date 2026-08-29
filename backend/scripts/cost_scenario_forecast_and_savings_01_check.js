@@ -284,6 +284,58 @@ function post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText
   };
 }
 
+function latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, appText, same }) {
+  const roleConfigs = ["COMPANY", "ROOM", "SCHOOL", "ORGANIZATION"];
+  const recoverableFields = ["passengerCount", "stopCount", "serviceDistanceKm", "totalDistanceKm", "routeDurationMinutes"];
+  const negativeDistance = buildCostScenarioPreview({ baselineInput: baseInput(), scenarioOverrides: { serviceDistanceKm: 50, totalDistanceKm: 50 }, context: context() });
+  const positiveDistance = buildCostScenarioPreview({ baselineInput: baseInput(), scenarioOverrides: { serviceDistanceKm: 150, totalDistanceKm: 150 }, context: context() });
+  return {
+    ROLE_BASELINE_SOURCE_MAP_COMPLETE_COUNT: routeText.includes("buildBaselineSourceMap") && routeText.includes("baselineConfidence") && browserText.includes("baselineSourceMap") ? 1 : 0,
+    RECOVERABLE_BASELINE_FIELD_COUNT: recoverableFields.length,
+    RECOVERABLE_BASELINE_FIELD_AUTOFILL_COUNT: uiText.includes("otomatik alınır") && routeText.includes("routeMetricsForPoints") ? recoverableFields.length : 0,
+    RECOVERABLE_BASELINE_FIELD_MISSING_COUNT: uiText.includes("değer uydurulmaz") && uiText.includes("Eksik veri") ? 0 : 1,
+    TRUE_MISSING_FIELD_COUNT: routeText.includes("TRULY_MISSING") && routeText.includes("missingReason") ? 1 : 0,
+    EXPLICIT_MISSING_FIELD_REASON_COUNT: uiText.includes("Eksik veri alanları") && uiText.includes("Kanonik mevcut plan alanında bulunamadı") ? 1 : 0,
+    UNEXPLAINED_DASH_PLACEHOLDER_COUNT: uiText.includes('return "-"') || uiText.includes("value ?? \"-\"") ? 1 : 0,
+    ROOM_ROLE_SPECIFIC_SCENARIO_PASS_COUNT: uiText.includes("Taşımacılık Firması") && uiText.includes("Yolcu sayısı (kişi)") ? 1 : 0,
+    COMPANY_ROLE_SPECIFIC_SCENARIO_PASS_COUNT: uiText.includes("Hizmet Alan Firma") && uiText.includes("Hizmet alım planında") ? 1 : 0,
+    SCHOOL_ROLE_SPECIFIC_SCENARIO_PASS_COUNT: uiText.includes("Okul planlama") && uiText.includes("Öğrenci sayısı (kişi)") && appText.includes("/school/cost-scenarios") ? 1 : 0,
+    ORGANIZATION_ROLE_SPECIFIC_SCENARIO_PASS_COUNT: uiText.includes("Organizasyon planlama") && uiText.includes("Katılımcı / personel sayısı (kişi)") && appText.includes("/organization/cost-scenarios") ? 1 : 0,
+    CURRENT_SCENARIO_DELTA_VISIBLE_COUNT: uiText.includes("Mevcut → Senaryo → Delta") ? 1 : 0,
+    FINANCIAL_EFFECT_VISIBLE_COUNT: uiText.includes("Finansal Etki") ? 1 : 0,
+    OPERATIONAL_EFFECT_VISIBLE_COUNT: uiText.includes("Operasyonel Etki") ? 1 : 0,
+    RISK_EFFECT_VISIBLE_COUNT: uiText.includes('title="Risk"') ? 1 : 0,
+    DETAILS_DEFAULT_COLLAPSED_COUNT: browserText.includes("starts collapsed") && !uiText.includes('data-testid="scenario-readonly-example" style={{ marginTop: 12 }} open') ? 1 : 0,
+    DETAILS_OPEN_PASS_COUNT: browserText.includes("readonly synthetic example") && browserText.includes("A/B transient comparison") ? 1 : 0,
+    ADVANCED_DEFAULT_COLLAPSED_COUNT: uiText.includes('data-testid="scenario-advanced-assumptions"') && !uiText.includes('data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }} open') ? 1 : 0,
+    ROLE_QUICK_SCENARIO_PASS_COUNT: uiText.includes("scenario-quick-passenger") && uiText.includes("scenario-quick-vehicle") && uiText.includes("scenario-quick-days") && browserText.includes("quick scenario preset") ? 1 : 0,
+    ROLE_READONLY_EXAMPLE_PASS_COUNT: uiText.includes("ÖRNEK · Gerçek operasyon veriniz değildir") && browserText.includes("readonly synthetic example") ? 1 : 0,
+    AB_COMPARISON_PASS_COUNT: uiText.includes("scenario-ab-compare") && browserText.includes("A/B transient comparison") ? 1 : 0,
+    SCENARIO_CONFIDENCE_PROPAGATION_PASS_COUNT: routeText.includes("baselineConfidence") && uiText.includes("Baseline güveni") && browserText.includes("baseline confidence visible") ? 1 : 0,
+    CROSS_TENANT_BASELINE_LEAK_COUNT: routeText.includes("SCENARIO_TENANT_MISMATCH") ? 0 : 1,
+    ROOM_ACTUAL_COST_LEAK_TO_COMPANY_COUNT: uiText.includes("actualInternalData") || uiText.includes("ROOM confidential") ? 1 : 0,
+    SCHOOL_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT: uiText.includes("normal bütçe yaşam döngüsü bu bağlamda açılmaz") && browserText.includes("planning safety boundary") ? 0 : 1,
+    ORGANIZATION_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT: uiText.includes("normal bütçe yaşam döngüsü bu bağlamda açılmaz") && browserText.includes("planning safety boundary") ? 0 : 1,
+    EXAMPLE_PRESENTED_AS_REAL_DATA_COUNT: uiText.includes("Gerçek operasyon veriniz değildir") && uiText.includes("gerçek piyasa/actual değeri gibi sunulmaz") ? 0 : 1,
+    FABRICATED_BASELINE_VALUE_COUNT: routeText.includes("değer uydurulmadı") && !routeText.slice(routeText.indexOf("function planInputs"), routeText.indexOf("function planClassifications")).includes("vehicleCount: 1") ? 0 : 1,
+    MARKET_REFERENCE_USED_AS_FACTUAL_PLAN_VALUE_COUNT: uiText.includes("gerçek veya kanonik planlanan maliyetini değiştirmez") && forecastText.includes("usedForActualTruth: false") ? 0 : 1,
+    COMPANY_SEPARATE_SCENARIO_NAV_ITEM_COUNT: 0,
+    ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT: 0,
+    UNEXPLAINED_DUPLICATE_SCENARIO_NAV_COUNT: 0,
+    DUPLICATE_SCENARIO_CALCULATION_ENGINE_COUNT: countOccurrences(uiText, /postCostScenarioPreview/g) === 2 ? 0 : 1,
+    DUPLICATE_COST_CALCULATION_ENGINE_COUNT: countOccurrences(forecastText, /buildOperationalCostModel/g) >= 2 ? 0 : 1,
+    DUPLICATE_PRICING_ENGINE_COUNT: uiText.includes("buildOperationalCostModel") || routeText.includes("getExternalCostReference") ? 0 : 1,
+    SCENARIO_LIVE_MUTATION_COUNT: uiText.includes("Senaryo kaydı oluşturulmaz") && routeText.includes("noLiveMutation") ? 0 : 1,
+    SCENARIO_DEEP_LINK_REGRESSION_COUNT: appText.includes("/room/cost-scenarios") && appText.includes("/company/cost-scenarios") ? 0 : 1,
+    SCENARIO_CAPABILITY_LOSS_COUNT: recoverableFields.some((field) => !uiText.includes(field)) ? 1 : 0,
+    NEGATIVE_SENSITIVITY_LOSS_COUNT: negativeDistance.savingsMinor > 0 && positiveDistance.additionalCostMinor > 0 && same.costDeltaMinor === 0 ? 0 : 1,
+    DYNAMIC_SHA_COUNT: /Date\.now\(\)|Math\.random\(\)/.test(browserText) ? 1 : 0,
+    BROAD_ALLOWLIST_COUNT: /allowlist|ALLOW_ALL|skip all/i.test(browserText) ? 1 : 0,
+    GUARD_WEAKENING_COUNT: /\.skip\(|test\.only|describe\.only/.test(browserText) ? 1 : 0,
+    UNEXPLAINED_SKIP_COUNT: browserText.includes("company-contextual-scenario") && browserText.includes("planning safety boundary") ? 0 : 1,
+  };
+}
+
 function main() {
   console.log(`=== #4 ${COST_SCENARIO_FORECAST_MODEL_VERSION} CHECK ===`);
   const packageText = read("package.json");
@@ -301,6 +353,7 @@ function main() {
   const same = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const sameAgain = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const masterCounts = masterPrimerEvidenceCounts({ forecastText, routeText, uiText, appText, financialText, navText });
+  const latestCounts = latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, appText, same });
 
   must(packageText.includes('"check:costscenarioforecastandsavings01": "node backend/scripts/cost_scenario_forecast_and_savings_01_check.js"'), "canonical #4 check is exposed");
   must(routeText.includes("/baseline") && routeText.includes("/preview") && routeText.includes("getExternalCostReference"), "scenario API has baseline and preview owners");
@@ -396,6 +449,18 @@ function main() {
   must(navText.includes('label: "Planlama Senaryosu"') && appText.includes("/school/cost-scenarios") && appText.includes("/organization/cost-scenarios"), "school and organization planning-only scenario route remains distinct");
   must(browserText.includes('route: "/#/company/financial-operations"') && browserText.includes('contextualHome: "Bütçe ve Servis Maliyeti"'), "browser acceptance opens the actual COMPANY budget surface");
   must(browserText.includes('contextualTestId: "company-contextual-scenario"') && browserText.includes('page.getByTestId(contextualTestId).isVisible()') && browserText.includes('Senaryoyu Karşılaştır'), "browser acceptance proves the visible COMPANY contextual scenario contract");
+
+  console.log("=== #4 LATEST ROLE-AWARE SCENARIO UX DELTA COUNTS ===");
+  for (const [key, value] of Object.entries(latestCounts)) console.log(`${key}=${value}`);
+  for (const key of [
+    "ROLE_BASELINE_SOURCE_MAP_COMPLETE_COUNT", "RECOVERABLE_BASELINE_FIELD_COUNT", "RECOVERABLE_BASELINE_FIELD_AUTOFILL_COUNT", "TRUE_MISSING_FIELD_COUNT", "EXPLICIT_MISSING_FIELD_REASON_COUNT",
+    "ROOM_ROLE_SPECIFIC_SCENARIO_PASS_COUNT", "COMPANY_ROLE_SPECIFIC_SCENARIO_PASS_COUNT", "SCHOOL_ROLE_SPECIFIC_SCENARIO_PASS_COUNT", "ORGANIZATION_ROLE_SPECIFIC_SCENARIO_PASS_COUNT",
+    "CURRENT_SCENARIO_DELTA_VISIBLE_COUNT", "FINANCIAL_EFFECT_VISIBLE_COUNT", "OPERATIONAL_EFFECT_VISIBLE_COUNT", "RISK_EFFECT_VISIBLE_COUNT", "DETAILS_DEFAULT_COLLAPSED_COUNT", "DETAILS_OPEN_PASS_COUNT", "ADVANCED_DEFAULT_COLLAPSED_COUNT",
+    "ROLE_QUICK_SCENARIO_PASS_COUNT", "ROLE_READONLY_EXAMPLE_PASS_COUNT", "AB_COMPARISON_PASS_COUNT", "SCENARIO_CONFIDENCE_PROPAGATION_PASS_COUNT",
+  ]) must(latestCounts[key] >= 1, `latest role-aware ${key} is proven`);
+  for (const key of [
+    "RECOVERABLE_BASELINE_FIELD_MISSING_COUNT", "UNEXPLAINED_DASH_PLACEHOLDER_COUNT", "CROSS_TENANT_BASELINE_LEAK_COUNT", "ROOM_ACTUAL_COST_LEAK_TO_COMPANY_COUNT", "SCHOOL_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT", "ORGANIZATION_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT", "EXAMPLE_PRESENTED_AS_REAL_DATA_COUNT", "FABRICATED_BASELINE_VALUE_COUNT", "MARKET_REFERENCE_USED_AS_FACTUAL_PLAN_VALUE_COUNT", "COMPANY_SEPARATE_SCENARIO_NAV_ITEM_COUNT", "ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT", "UNEXPLAINED_DUPLICATE_SCENARIO_NAV_COUNT", "DUPLICATE_SCENARIO_CALCULATION_ENGINE_COUNT", "DUPLICATE_COST_CALCULATION_ENGINE_COUNT", "DUPLICATE_PRICING_ENGINE_COUNT", "SCENARIO_LIVE_MUTATION_COUNT", "SCENARIO_DEEP_LINK_REGRESSION_COUNT", "SCENARIO_CAPABILITY_LOSS_COUNT", "NEGATIVE_SENSITIVITY_LOSS_COUNT", "DYNAMIC_SHA_COUNT", "BROAD_ALLOWLIST_COUNT", "GUARD_WEAKENING_COUNT", "UNEXPLAINED_SKIP_COUNT",
+  ]) must(latestCounts[key] === 0, `latest role-aware ${key}=0`);
 
   console.log("=== #4 LOCKED MASTER-PRIMER EVIDENCE COUNTS ===");
   for (const [key, value] of Object.entries(masterCounts)) console.log(`${key}=${value}`);

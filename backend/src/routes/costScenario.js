@@ -14,6 +14,29 @@ import { sumDistanceKm } from "../services/routeLearning.js";
 
 const ALLOWED_SCOPES = new Set(["COMPANY", "ROOM"]);
 const PUBLIC_SHIFT_STATUSES = { not: "DRAFT" };
+const BASELINE_FIELD_LABELS = {
+  vehicleType: "Araç tipi",
+  vehicleCount: "Araç sayısı",
+  vehicleCapacity: "Araç kapasitesi",
+  passengerCount: "Kişi / öğrenci / yolcu sayısı",
+  stopCount: "Durak sayısı",
+  serviceDistanceKm: "Rota mesafesi",
+  totalDistanceKm: "Toplam mesafe",
+  routeDurationMinutes: "Rota süresi",
+  serviceDayCount: "Hizmet günü",
+  shiftCount: "Sefer sayısı",
+  tripCount: "Yolculuk sayısı",
+  shiftStartMinutes: "Başlangıç zamanı",
+};
+
+const SHIFT_SELECT = {
+  id: true, companyId: true, roomId: true, status: true, requiredPaxOverride: true,
+  routeSnapshotDistanceM: true, routeSnapshotDurationSec: true, routeSnapshotValidatedAt: true,
+  startAt: true, endAt: true, hubLat: true, hubLng: true, direction: true, pattern: true,
+  stops: { select: { lat: true, lng: true, order: true } },
+  vehicle: { select: { id: true, capacity: true, type: true } },
+  _count: { select: { people: true, stops: true } },
+};
 
 function upper(value) {
   return String(value || "").trim().toUpperCase();
@@ -54,6 +77,60 @@ function routeFields(shift) {
   return {
     ...(Number(shift?.routeSnapshotDistanceM) > 0 ? { serviceDistanceKm: Number(shift.routeSnapshotDistanceM) / 1000, totalDistanceKm: Number(shift.routeSnapshotDistanceM) / 1000 } : {}),
     ...(Number(shift?.routeSnapshotDurationSec) > 0 ? { routeDurationMinutes: Number(shift.routeSnapshotDurationSec) / 60 } : {}),
+  };
+}
+
+function fieldClassification({ value, source, direct = false, derived = false, applicable = true }) {
+  if (!applicable) return "NOT_APPLICABLE_FOR_ROLE";
+  if (value === null || value === undefined || value === "") return "TRULY_MISSING";
+  if (source === "DERIVABLE_FROM_CANONICAL_DATA") return "DERIVABLE_FROM_CANONICAL_DATA";
+  if (source === "REFERENCE_INPUT") return "REFERENCE_INPUT";
+  if (direct) return "DIRECT_EXISTING_DATA";
+  if (derived) return "DERIVABLE_FROM_CANONICAL_DATA";
+  return "DIRECT_EXISTING_DATA";
+}
+
+function buildBaselineSourceMap({ input = {}, classifications = {}, source = {}, routeEvidence = null, companyKind = "COMPANY" }) {
+  const routeBaseline = routeEvidence?.baseline || {};
+  const map = {};
+  const isPlanningOnly = ["SCHOOL", "ORGANIZATION"].includes(upper(companyKind));
+  const routeFieldsSet = new Set(["serviceDistanceKm", "totalDistanceKm", "routeDurationMinutes"]);
+  for (const field of Object.keys(BASELINE_FIELD_LABELS)) {
+    const value = input[field] ?? null;
+    const routeValue = field === "serviceDistanceKm" || field === "totalDistanceKm"
+      ? routeBaseline.distanceKm
+      : field === "routeDurationMinutes" ? routeBaseline.durationMinutes : null;
+    const effectiveValue = routeValue !== null && routeValue !== undefined ? routeValue : value;
+    const isRouteDerived = routeFieldsSet.has(field) && routeBaseline.source && routeBaseline.source !== "DB_ROUTE_SNAPSHOT";
+    const isRouteDirect = routeFieldsSet.has(field) && routeBaseline.source === "DB_ROUTE_SNAPSHOT";
+    const notApplicable = isPlanningOnly && ["vehicleType", "vehicleCount", "vehicleCapacity"].includes(field) && source.type === "ORGANIZATION_PLAN";
+    map[field] = {
+      value: effectiveValue,
+      label: BASELINE_FIELD_LABELS[field],
+      classification: fieldClassification({ value: effectiveValue, source: classifications[field], direct: isRouteDirect || Boolean(classifications[field] && classifications[field] !== "DERIVABLE_FROM_CANONICAL_DATA"), derived: isRouteDerived, applicable: !notApplicable }),
+      source: isRouteDirect ? "DB_ROUTE_SNAPSHOT" : isRouteDerived ? routeBaseline.source : source.type || "NONE",
+      missingReason: effectiveValue === null || effectiveValue === undefined || effectiveValue === ""
+        ? (notApplicable ? "Bu rol için uygulanabilir bir plan alanı değildir." : "Kanonik mevcut plan veya kanonik rota verisinde bulunamadı; varsayılan değer uydurulmadı.")
+        : null,
+    };
+  }
+  return map;
+}
+
+function baselineConfidence(sourceMap) {
+  const entries = Object.values(sourceMap || {});
+  const missing = entries.filter((item) => item.classification === "TRULY_MISSING");
+  const notApplicable = entries.filter((item) => item.classification === "NOT_APPLICABLE_FOR_ROLE");
+  const level = missing.length === 0 ? "HIGH" : missing.length <= 2 ? "MEDIUM" : "LOW";
+  return {
+    level,
+    score: level === "HIGH" ? 95 : level === "MEDIUM" ? 75 : 50,
+    missingFields: missing.map((item) => item.label),
+    reason: missing.length
+      ? `${missing.length} alan için kanonik veri eksik; eksik değerler doldurulmadı.`
+      : notApplicable.length
+        ? "Rol için uygulanabilir alanlar kanonik veriden dolduruldu; rol dışı alanlar gösterilmedi."
+        : "Kanonik mevcut plan girdileri ve rota kanıtı kullanılabilir.",
   };
 }
 
@@ -159,16 +236,17 @@ async function buildRouteEvidence(shift, { stopOperations = [], routeAlternative
   const alternativePoints = routePointsForShift(shift, alternativeStops);
   const snapshotDistanceKm = Number(shift?.routeSnapshotDistanceM) > 0 ? Number((Number(shift.routeSnapshotDistanceM) / 1000).toFixed(2)) : null;
   const snapshotDurationMinutes = Number(shift?.routeSnapshotDurationSec) > 0 ? Number((Number(shift.routeSnapshotDurationSec) / 60).toFixed(2)) : null;
-  const measuredScenario = stopOperations.length || alternativeType ? await routeMetricsForPoints(alternativePoints) : {
+  const snapshotMetric = {
     distanceKm: snapshotDistanceKm,
     durationMinutes: snapshotDurationMinutes,
     source: snapshotDistanceKm !== null || snapshotDurationMinutes !== null ? "DB_ROUTE_SNAPSHOT" : null,
   };
-  const measuredBaseline = {
-    distanceKm: snapshotDistanceKm,
-    durationMinutes: snapshotDurationMinutes,
-    source: snapshotDistanceKm !== null || snapshotDurationMinutes !== null ? "DB_ROUTE_SNAPSHOT" : null,
-  };
+  const measuredBaseline = snapshotMetric.distanceKm !== null && snapshotMetric.durationMinutes !== null
+    ? snapshotMetric
+    : await routeMetricsForPoints(routePointsForShift(shift, originalStops));
+  const measuredScenario = stopOperations.length || alternativeType
+    ? await routeMetricsForPoints(alternativePoints)
+    : measuredBaseline;
   const requestedAlternative = Boolean(routeAlternative || stopOperations.length);
   return {
     baseline: { ...measuredBaseline, stopCount: originalStops.length },
@@ -185,6 +263,20 @@ async function buildRouteEvidence(shift, { stopOperations = [], routeAlternative
         reason: operationResult.errors.length ? operationResult.errors.join("; ") : "Senaryo rotası mevcut route metric owner ile yalnızca karşılaştırıldı; canlı rotaya uygulanmadı.",
       }
       : { status: "NOT_REQUESTED", type: null, source: measuredBaseline.source, compared: false, applied: false, stopOperations: [], errors: [], reason: "Rota alternatifi istenmedi." },
+  };
+}
+
+async function buildPlanRouteEvidence(plan) {
+  const points = (plan?.stops || [])
+    .slice()
+    .sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0))
+    .map((stop) => ({ lat: Number(stop.lat), lng: Number(stop.lng) }))
+    .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+  const metric = await routeMetricsForPoints(points);
+  return {
+    baseline: { ...metric, stopCount: points.length },
+    scenario: { ...metric, stopCount: points.length },
+    alternative: { status: "NOT_REQUESTED", type: null, source: metric.source, compared: false, applied: false, stopOperations: [], errors: [], reason: "Rota alternatifi istenmedi." },
   };
 }
 
@@ -243,13 +335,15 @@ function shiftClassifications(shift) {
   return classifications;
 }
 
-function planInputs(plan) {
+function planInputs(plan, routeEvidence = null) {
   if (!plan) return {};
   const passengerCount = (plan.stops || []).reduce((sum, stop) => sum + Number(stop.passengerCount || 0), 0);
+  const route = routeEvidence?.baseline || {};
   return {
     passengerCount,
     stopCount: plan.stops?.length || 0,
-    vehicleCount: 1,
+    ...(route.distanceKm !== null && route.distanceKm !== undefined ? { serviceDistanceKm: route.distanceKm, totalDistanceKm: route.distanceKm } : {}),
+    ...(route.durationMinutes !== null && route.durationMinutes !== undefined ? { routeDurationMinutes: route.durationMinutes } : {}),
     serviceDayCount: 1,
     shiftCount: 1,
     tripCount: 1,
@@ -262,15 +356,16 @@ function planInputs(plan) {
   };
 }
 
-function planClassifications(plan) {
+function planClassifications(plan, routeEvidence = null) {
   if (!plan) return {};
   return {
     passengerCount: "INTERNAL_PLANNED",
     stopCount: "INTERNAL_PLANNED",
-    vehicleCount: "INTERNAL_PLANNED",
     serviceDayCount: "INTERNAL_PLANNED",
     shiftCount: "INTERNAL_PLANNED",
     tripCount: "INTERNAL_PLANNED",
+    ...(routeEvidence?.baseline?.distanceKm !== null && routeEvidence?.baseline?.distanceKm !== undefined ? { serviceDistanceKm: "DERIVABLE_FROM_CANONICAL_DATA", totalDistanceKm: "DERIVABLE_FROM_CANONICAL_DATA" } : {}),
+    ...(routeEvidence?.baseline?.durationMinutes !== null && routeEvidence?.baseline?.durationMinutes !== undefined ? { routeDurationMinutes: "DERIVABLE_FROM_CANONICAL_DATA" } : {}),
   };
 }
 
@@ -278,24 +373,28 @@ function referenceId(scope, entity) {
   return `base_${safeHashId({ scope, companyId: entity?.companyId || null, roomId: entity?.roomId || null, shiftId: entity?.shiftId || null, planId: entity?.planId || null, agreementId: entity?.agreementId || null }).slice(4)}`;
 }
 
+async function findPreferredShift(where) {
+  const validated = await prisma.shift.findFirst({
+    where: { ...where, status: PUBLIC_SHIFT_STATUSES, routeSnapshotValidatedAt: { not: null } },
+    orderBy: [{ routeSnapshotValidatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+    select: SHIFT_SELECT,
+  });
+  if (validated) return { shift: validated, selection: "VALIDATED_ROUTE_SNAPSHOT" };
+  const published = await prisma.shift.findFirst({
+    where: { ...where, status: PUBLIC_SHIFT_STATUSES },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: SHIFT_SELECT,
+  });
+  return published ? { shift: published, selection: "PUBLISHED_SHIFT_FALLBACK" } : { shift: null, selection: "NO_SHIFT" };
+}
+
 async function loadCompanyBaseline(companyId) {
-  const [company, shift, plan, budgetPlan, agreement, hakedisRecords] = await Promise.all([
+  const [company, preferredShift, plan, budgetPlan, agreement, hakedisRecords] = await Promise.all([
     prisma.company.findUnique({ where: { id: companyId }, select: { id: true, name: true, kind: true, regionId: true, district: true } }),
-    prisma.shift.findFirst({
-      where: { companyId, status: PUBLIC_SHIFT_STATUSES },
-      orderBy: [{ routeSnapshotValidatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-      select: {
-        id: true, companyId: true, roomId: true, status: true, requiredPaxOverride: true,
-        routeSnapshotDistanceM: true, routeSnapshotDurationSec: true, routeSnapshotValidatedAt: true,
-        startAt: true, endAt: true, hubLat: true, hubLng: true, direction: true, pattern: true,
-        stops: { select: { lat: true, lng: true, order: true } },
-        vehicle: { select: { id: true, capacity: true, type: true } },
-        _count: { select: { people: true, stops: true } },
-      },
-    }),
+    findPreferredShift({ companyId }),
     prisma.organizationPlan.findFirst({
       where: { companyId }, orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-      select: { id: true, companyId: true, planDate: true, status: true, roomId: true, startMin: true, endMin: true, stops: { select: { passengerCount: true } } },
+      select: { id: true, companyId: true, planDate: true, status: true, roomId: true, startMin: true, endMin: true, stops: { select: { passengerCount: true, lat: true, lng: true, order: true } } },
     }),
     prisma.companyBudgetPlan.findFirst({ where: { companyId }, orderBy: [{ updatedAt: "desc" }, { id: "desc" }], select: { id: true, currencyCode: true, status: true, budgetAmountMinor: true, periodStart: true, periodEnd: true, budgetApprovalState: true, budgetSource: true, version: true } }),
     prisma.agreement.findFirst({ where: { companyId }, orderBy: [{ updatedAt: "desc" }, { id: "desc" }], select: { id: true, roomId: true, status: true, startDate: true, endDate: true } }),
@@ -303,15 +402,16 @@ async function loadCompanyBaseline(companyId) {
   ]);
   if (!company) throw httpError(404, "SCENARIO_COMPANY_NOT_FOUND", "Senaryo kapsamı bulunamadı.");
 
+  const shift = preferredShift.shift;
   const useShift = Boolean(shift);
-  const input = useShift ? shiftInputs(shift) : planInputs(plan);
+  const routeEvidence = useShift ? await buildRouteEvidence(shift) : plan ? await buildPlanRouteEvidence(plan) : null;
+  const input = useShift ? shiftInputs(shift) : planInputs(plan, routeEvidence);
   const source = useShift
-    ? { type: "SHIFT", label: "Son yayımlanmış vardiya", shiftId: shift.id, roomId: shift.roomId, companyId }
+    ? { type: "SHIFT", label: preferredShift.selection === "VALIDATED_ROUTE_SNAPSHOT" ? "Son doğrulanmış vardiya" : "Son yayımlanmış vardiya", shiftId: shift.id, roomId: shift.roomId, companyId }
     : plan
       ? { type: "ORGANIZATION_PLAN", label: "Son organizasyon planı", planId: plan.id, roomId: plan.roomId, companyId }
       : { type: "NONE", label: "Kayıtlı plan girdisi yok", companyId };
   const baselineReference = referenceId("COMPANY", source);
-  const routeEvidence = shift ? await buildRouteEvidence(shift) : null;
   const isCompanyBudgetOwner = upper(company.kind) === "COMPANY";
   const budgetPeriodStart = dateLabel(budgetPlan?.periodStart);
   const budgetPeriodEnd = dateLabel(budgetPlan?.periodEnd);
@@ -329,7 +429,9 @@ async function loadCompanyBaseline(companyId) {
       return Number.isSafeInteger(next) ? next : null;
     }, 0)
     : null;
-  const plannedInput = plan ? planInputs(plan) : {};
+  const plannedInput = plan && !useShift ? planInputs(plan, routeEvidence) : {};
+  const classifications = useShift ? shiftClassifications(shift) : planClassifications(plan, routeEvidence);
+  const baselineSourceMap = buildBaselineSourceMap({ input: { ...input, ...(budgetPlan?.currencyCode ? { currencyCode: budgetPlan.currencyCode } : {}) }, classifications, source, routeEvidence, companyKind: company.kind, scope: "COMPANY" });
   return {
     scope: "COMPANY",
     companyId,
@@ -357,7 +459,10 @@ async function loadCompanyBaseline(companyId) {
       recordCount: actualRecordsForPeriod.length,
       provenance: actualCostMinor !== null ? "#3_HAKEDIS_INTERNAL_ACTUAL" : "#3_NO_COMPARABLE_INTERNAL_ACTUAL",
     },
-    classifications: useShift ? shiftClassifications(shift) : planClassifications(plan),
+    classifications,
+    baselineSourceMap,
+    missingFields: Object.entries(baselineSourceMap).filter(([, item]) => item.classification === "TRULY_MISSING").map(([field]) => field),
+    baselineConfidence: baselineConfidence(baselineSourceMap),
     baselineReference,
     tenantScope: `company_${safeHashId({ companyId }).slice(4)}`,
     baselineDataClass: useShift ? "INTERNAL_ACTUAL" : plan ? "INTERNAL_PLANNED" : "MISSING",
@@ -371,30 +476,26 @@ async function loadCompanyBaseline(companyId) {
 }
 
 async function loadRoomBaseline(roomId) {
-  const [room, shift, agreement] = await Promise.all([
+  const [room, preferredShift, agreement] = await Promise.all([
     prisma.room.findUnique({ where: { id: roomId }, select: { id: true, name: true, status: true } }),
-    prisma.shift.findFirst({
-      where: { roomId, status: PUBLIC_SHIFT_STATUSES },
-      orderBy: [{ routeSnapshotValidatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-      select: {
-        id: true, companyId: true, roomId: true, status: true, requiredPaxOverride: true,
-        routeSnapshotDistanceM: true, routeSnapshotDurationSec: true, routeSnapshotValidatedAt: true,
-        startAt: true, endAt: true, hubLat: true, hubLng: true, direction: true, pattern: true,
-        stops: { select: { lat: true, lng: true, order: true } },
-        vehicle: { select: { id: true, capacity: true, type: true } },
-        _count: { select: { people: true, stops: true } },
-        company: { select: { id: true, name: true, kind: true } },
-      },
+    findPreferredShift({ roomId }).then(async (preferred) => {
+      if (!preferred.shift) return preferred;
+      const company = await prisma.company.findUnique({ where: { id: preferred.shift.companyId }, select: { id: true, name: true, kind: true } });
+      return { ...preferred, shift: { ...preferred.shift, company } };
     }),
     prisma.agreement.findFirst({ where: { roomId }, orderBy: [{ updatedAt: "desc" }, { id: "desc" }], select: { id: true, companyId: true, roomId: true, status: true } }),
   ]);
   if (!room) throw httpError(404, "SCENARIO_ROOM_NOT_FOUND", "Senaryo kapsamı bulunamadı.");
+  const shift = preferredShift.shift;
   const source = shift
-    ? { type: "SHIFT", label: "Son yayımlanmış vardiya", shiftId: shift.id, roomId, companyId: shift.companyId }
+    ? { type: "SHIFT", label: preferredShift.selection === "VALIDATED_ROUTE_SNAPSHOT" ? "Son doğrulanmış vardiya" : "Son yayımlanmış vardiya", shiftId: shift.id, roomId, companyId: shift.companyId }
     : agreement
       ? { type: "AGREEMENT", label: "Son sözleşme bağlamı", agreementId: agreement.id, roomId, companyId: agreement.companyId }
       : { type: "NONE", label: "Kayıtlı plan girdisi yok", roomId };
   const routeEvidence = shift ? await buildRouteEvidence(shift) : null;
+  const input = shiftInputs(shift);
+  const classifications = shift ? shiftClassifications(shift) : {};
+  const baselineSourceMap = buildBaselineSourceMap({ input, classifications, source, routeEvidence, companyKind: shift?.company?.kind || "COMPANY", scope: "ROOM" });
   return {
     scope: "ROOM",
     roomId,
@@ -403,13 +504,16 @@ async function loadRoomBaseline(roomId) {
     companyName: shift?.company?.name || null,
     roomName: room.name,
     source,
-    input: shiftInputs(shift),
+    input,
     plannedInput: {},
     routeEvidence,
     routeShift: shift,
     budgetEvidence: {},
     actualEvidence: { actualCostMinor: null, provenance: "#3_ROOM_SCOPE_NOT_BUDGET_AUTHORITY" },
-    classifications: shift ? shiftClassifications(shift) : {},
+    classifications,
+    baselineSourceMap,
+    missingFields: Object.entries(baselineSourceMap).filter(([, item]) => item.classification === "TRULY_MISSING").map(([field]) => field),
+    baselineConfidence: baselineConfidence(baselineSourceMap),
     baselineReference: referenceId("ROOM", source),
     tenantScope: `room_${safeHashId({ roomId }).slice(4)}`,
     baselineDataClass: shift ? "INTERNAL_ACTUAL" : agreement ? "INTERNAL_PLANNED" : "MISSING",
@@ -440,6 +544,10 @@ function publicBaseline(baseline) {
     source,
     input,
     classifications: baseline.classifications,
+    baselineSourceMap: baseline.baselineSourceMap,
+    missingFields: baseline.missingFields || [],
+    baselineConfidence: baseline.baselineConfidence || { level: "LOW", score: 50, missingFields: [], reason: "Baseline güveni hesaplanamadı." },
+    routeEvidence: baseline.routeEvidence || null,
     related: baseline.related,
     capabilities: {
       vehicleCount: true,
@@ -517,6 +625,8 @@ export function costScenarioRouter() {
         requestedBy: `user_${safeHashId({ userId: req.user?.id }).slice(4)}`,
         baselineReference: baseline.baselineReference,
         baselineDataClass: baseline.baselineDataClass,
+        baselineConfidence: baseline.baselineConfidence,
+        baselineSourceMap: baseline.baselineSourceMap,
         shiftReference: baseline.source.shiftId ? `shift_${safeHashId({ id: baseline.source.shiftId }).slice(4)}` : "",
         routeReference: baseline.source.shiftId ? `route_${safeHashId({ id: baseline.source.shiftId }).slice(4)}` : "",
         vehicleReference: baseline.input.vehicleCount ? "selected-vehicle" : "",

@@ -892,7 +892,9 @@ export function buildCostScenarioPreview({
   let baseValues = { ...baseSanitized.values };
   let scenarioValues = { ...baseValues, ...overrideSanitized.values };
   baseValues = applyRouteEvidence(baseValues, context?.routeEvidence, "baseline");
-  scenarioValues = applyRouteEvidence(scenarioValues, context?.routeEvidence, "scenario");
+  const explicitScenarioRoute = ["serviceDistanceKm", "totalDistanceKm", "routeDurationMinutes"].some((field) => overrideSanitized.values[field] !== undefined && overrideSanitized.values[field] !== null);
+  const hasRouteOperation = scenarioMeta.stopOperations.length > 0 || Boolean(scenarioMeta.routeAlternative);
+  if (!explicitScenarioRoute || hasRouteOperation) scenarioValues = applyRouteEvidence(scenarioValues, context?.routeEvidence, "scenario");
 
   const baselineCurrency = compact(baseValues.currencyCode, "TRY").toUpperCase();
   const scenarioCurrency = compact(scenarioValues.currencyCode, baselineCurrency).toUpperCase();
@@ -934,7 +936,10 @@ export function buildCostScenarioPreview({
     : comparable
       ? "READY"
       : "INCOMPLETE";
-  const confidence = confidenceFor({ baseline: { ...baseline, costMinor: baselineCost }, scenario: { ...scenario, costMinor: scenarioCost }, blockers: globalIssues.blockers, externalStatus: withExternal.status, externalUsed: withExternal.used });
+  const confidence = {
+    ...confidenceFor({ baseline: { ...baseline, costMinor: baselineCost }, scenario: { ...scenario, costMinor: scenarioCost }, blockers: globalIssues.blockers, externalStatus: withExternal.status, externalUsed: withExternal.used }),
+    baseline: context?.baselineConfidence || null,
+  };
   const scenarioId = `scn_${safeHashId({
     version: COST_SCENARIO_FORECAST_MODEL_VERSION,
     tenantScope: compact(context?.tenantScope, "tenant"),
@@ -988,6 +993,8 @@ export function buildCostScenarioPreview({
     savingsMinor,
     additionalCostMinor,
     confidence,
+    baselineConfidence: context?.baselineConfidence || null,
+    baselineSourceMap: context?.baselineSourceMap || null,
     timingComparison,
   };
   const operationalRisk = buildOperationalRisk({ preview: previewShape, timing: timingComparison, context });
@@ -1057,6 +1064,8 @@ export function buildCostScenarioPreview({
     invalidFields: [...new Set(globalIssues.invalidFields)],
     blockers: [...new Set(globalIssues.blockers)],
     confidence,
+    baselineConfidence: context?.baselineConfidence || null,
+    baselineSourceMap: context?.baselineSourceMap || null,
     scenarioVariants,
     timingComparison,
     forecast,
