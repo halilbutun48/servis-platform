@@ -123,6 +123,80 @@ async function main() {
   else fail("preview keeps baseline and scenario provenance distinct");
   if (preview.data?.baselineConfidence?.level && preview.data?.baselineSourceMap?.serviceDistanceKm && preview.data?.safety?.previewOnly === true) pass("preview propagates baseline confidence and source map");
   else fail("preview propagates baseline confidence and source map");
+  if (preview.data?.referenceResolution?.vehicleConsumption?.baseline?.selected?.sourceKind === "USER_ACTUAL"
+    && preview.data?.resolvedAssumptions?.baseline?.vehicleConsumption?.unit === "L_PER_100_KM"
+    && preview.data?.resolvedAssumptions?.precedence?.vehicleConsumption?.includes("TECHNICAL_CLASS_REFERENCE")) pass("#5-ready assumption contract exposes #4 resolved consumption provenance");
+  else fail("#5-ready assumption contract exposes #4 resolved consumption provenance");
+
+  const referenceLayers = await request("/api/external-cost-references/layers?family=FUEL_DIESEL&unit=CURRENCY_PER_L&currencyCode=TRY&scope=COMPANY", { token: companyToken });
+  const referenceLayerPayload = referenceLayers.data || referenceLayers.body || {};
+  const externalLayer = (referenceLayerPayload.layers || []).find((layer) => layer.layer === "EXTERNAL_MARKET_REFERENCE" && layer.available);
+  const lowInputExternalReference = externalLayer ? {
+    providerKey: externalLayer.providerKey,
+    family: externalLayer.family || "FUEL_DIESEL",
+    unit: externalLayer.unit || "CURRENCY_PER_L",
+    currencyCode: externalLayer.currencyCode || "TRY",
+    regionCode: externalLayer.regionCode,
+    scopeType: externalLayer.scopeType,
+    scopeKey: externalLayer.scopeKey,
+  } : null;
+  const lowInputPreview = await request("/api/cost-scenarios/preview", {
+    token: companyToken,
+    method: "POST",
+    body: {
+      scope: "COMPANY",
+      baselineReferenceId: companyBaseline.data?.baselineReferenceId,
+      baselineInput: {
+        currencyCode: "TRY",
+        vehicleType: companyBaseline.data?.input?.vehicleType || "MINIBUS",
+        vehicleCount: companyBaseline.data?.input?.vehicleCount || 1,
+        vehicleCapacity: companyBaseline.data?.input?.vehicleCapacity || 16,
+        passengerCount: companyBaseline.data?.input?.passengerCount || 10,
+        serviceDistanceKm: companyBaseline.data?.input?.serviceDistanceKm,
+        totalDistanceKm: companyBaseline.data?.input?.totalDistanceKm,
+        routeDurationMinutes: companyBaseline.data?.input?.routeDurationMinutes,
+        serviceDayCount: companyBaseline.data?.input?.serviceDayCount || 1,
+        shiftCount: companyBaseline.data?.input?.shiftCount || 1,
+        tripCount: companyBaseline.data?.input?.tripCount || 1,
+        fuelType: "DIESEL",
+      },
+      scenarioOverrides: { passengerCount: Number(companyBaseline.data?.input?.passengerCount || 10) + 1 },
+      ...(lowInputExternalReference ? { externalReference: lowInputExternalReference } : {}),
+    },
+  });
+  if (lowInputPreview.status === 200
+    && lowInputPreview.data?.referenceResolution?.vehicleConsumption?.baseline?.selected?.sourceKind === "TECHNICAL_CLASS_REFERENCE"
+    && lowInputPreview.data?.changedDimensions?.length === 1
+    && lowInputPreview.data?.changedDimensions?.[0] === "passengerCount"
+    && lowInputPreview.data?.safety?.noLiveMutation === true) pass("zero-input baseline keeps technical fallback and one-field what-if contract");
+  else fail("zero-input baseline keeps technical fallback and one-field what-if contract", `${lowInputPreview.status}/${lowInputPreview.data?.status}/${lowInputPreview.data?.changedDimensions}`);
+  const lowInputAlternatives = lowInputPreview.data?.vehiclePlanAlternatives?.items || [];
+  const expectedVehicleClasses = ["MINIBUS", "MIDIBUS", "OTOBUS"];
+  const capacityDerived = lowInputAlternatives.length === expectedVehicleClasses.length
+    && expectedVehicleClasses.every((vehicleType) => lowInputAlternatives.some((item) => item.vehicleType === vehicleType))
+    && lowInputAlternatives.every((item) => item.capacity > 0 && item.requiredVehicleCount === Math.max(1, Math.ceil(item.passengerCount / item.capacity)));
+  if (lowInputPreview.status === 200 && capacityDerived) pass("low-input preview derives capacity-safe vehicle counts for every class", JSON.stringify(lowInputAlternatives.map((item) => ({ type: item.vehicleType, count: item.requiredVehicleCount, capacity: item.capacity }))));
+  else fail("low-input preview derives capacity-safe vehicle counts for every class", `${lowInputPreview.status}/${lowInputAlternatives.length}`);
+  const lowInputHasAutomaticFuelPrice = Boolean(externalLayer);
+  const ownConsumptionAndCostPass = lowInputPreview.status === 200
+    && lowInputAlternatives.every((item) => item.fuelConsumptionReference?.version && item.fuelRequirementLiters !== null)
+    && (lowInputHasAutomaticFuelPrice ? lowInputAlternatives.every((item) => item.costMinor !== null) : lowInputAlternatives.every((item) => item.costMinor === null && item.missingData.some((value) => /yakıt fiyatı|maliyet tabanı/i.test(value))));
+  if (ownConsumptionAndCostPass) pass("low-input preview calculates each vehicle alternative with its own consumption reference", lowInputHasAutomaticFuelPrice ? "#2 fuel price available" : "#2 fuel price unavailable; no cost was fabricated");
+  else fail("low-input preview calculates each vehicle alternative with its own consumption reference");
+  const partialVehicleComparisonPass = lowInputHasAutomaticFuelPrice
+    ? lowInputPreview.status === 200
+      && lowInputPreview.data?.vehiclePlanAlternatives?.recommendation?.vehicleType
+      && lowInputPreview.data?.vehiclePlanAlternatives?.recommendation?.reason
+      && lowInputAlternatives.every((item) => item.costCoverage?.status === "PARTIAL")
+      && lowInputAlternatives.every((item) => (item.missingOptionalCosts || []).length === 2)
+      && lowInputAlternatives.every((item) => item.previewSafety?.noLiveMutation === true)
+    : lowInputPreview.status === 200
+      && lowInputAlternatives.length === 3
+      && !lowInputPreview.data?.vehiclePlanAlternatives?.recommendation
+      && lowInputAlternatives.every((item) => item.costMinor === null)
+      && lowInputAlternatives.every((item) => item.previewSafety?.noLiveMutation === true);
+  if (partialVehicleComparisonPass) pass("partial vehicle alternative comparison remains available and discloses optional costs", lowInputHasAutomaticFuelPrice ? "driver/maintenance missing" : "fuel price no-data disclosed");
+  else fail("partial vehicle alternative comparison remains available and discloses optional costs");
 
   const companyIdentity = await prisma.user.findUnique({ where: { email: "company@demo.com" }, select: { companyId: true } });
   const companyShift = companyIdentity?.companyId

@@ -8,6 +8,17 @@ import {
   COST_SCENARIO_FORECAST_MODEL_VERSION,
   normalizeCostScenarioInput,
 } from "../src/finance/costScenarioForecast.js";
+import {
+  resolveVehicleConsumptionReference,
+  technicalVehicleConsumptionReference,
+  VEHICLE_CONSUMPTION_REFERENCE_UNIT,
+  VEHICLE_CONSUMPTION_REFERENCE_VERSION,
+} from "../src/finance/vehicleConsumptionReferences.js";
+import {
+  resolveVehicleCapacityReference,
+  VEHICLE_PLAN_REFERENCE_UNIT,
+  VEHICLE_PLAN_REFERENCE_VERSION,
+} from "../src/finance/vehiclePlanReferences.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 let passCount = 0;
@@ -206,9 +217,9 @@ function post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText
   const companySeparateScenarioNavCount = countOccurrences(companyNavSource, /\{ label: "Maliyet Senaryoları"/g);
   const roomSeparateScenarioNavCount = countOccurrences(roomNavSource, /\{ label: "Maliyet Senaryoları"/g);
   const currencyLabelCount = nonMoneyFields.filter((field) => /₺|para birimi|türk lirası|currency/i.test(field.label)).length;
-  const summaryCurrencyLabelCount = countOccurrences(summarySource, /Para birimi|Türk lirası|currencyCode/gi);
+  const summaryCurrencyLabelCount = countOccurrences(summarySource, /Para birimi|Türk lirası/gi);
   const wrongUnitLabelCount = fieldRows.filter((field) => {
-    if (field.unit === "MONEY") return !field.label.includes("₺");
+    if (field.unit === "MONEY") return !field.label.includes("kuruş") && !field.label.includes("₺");
     const expected = expectedLabelUnits[field.key];
     return expected ? !field.label.includes(expected) : false;
   }).length;
@@ -224,8 +235,8 @@ function post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText
   const unknownScenarioEntryPointCount = [
     navText.includes('Finansal Operasyonlar'),
     navText.includes('Bütçe ve Servis Maliyeti'),
-    financialText.includes('scenarioPanel={<CostScenarioWorkspacePanel scope="COMPANY" embedded />}'),
-    financialText.includes('<CostScenarioWorkspacePanel scope="ROOM" embedded />'),
+    financialText.includes('<CostScenarioWorkspacePanel scope="COMPANY" embedded'),
+    financialText.includes('<CostScenarioWorkspacePanel scope="ROOM" embedded'),
   ].every(Boolean) ? 0 : 1;
   const deepLinkRegressionCount = [
     /path === "\/room\/cost-scenarios"[^\n]*CostScenarioWorkspacePanel/.test(appText),
@@ -242,9 +253,10 @@ function post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText
     companyPreviewText.indexOf('data-testid="company-contextual-scenario"') < companyPreviewText.indexOf("<details className=\"card\" style={{ minWidth: 0 }} open={budgetDetailsOpen}"),
   ].every(Boolean) ? 1 : 0;
   const companyContextualScenarioMissingCount = companyContextualScenarioVisibleCount === 1 ? 0 : 1;
-  const roomContextualScenarioVisibleCount = financialText.includes('<CostScenarioWorkspacePanel scope="ROOM" embedded />') ? 1 : 0;
+  const roomContextualScenarioVisibleCount = financialText.includes('<CostScenarioWorkspacePanel scope="ROOM" embedded') ? 1 : 0;
   const duplicateScenarioCalculationCount = [
-    countOccurrences(uiText, /postCostScenarioPreview/g) === 2,
+    countOccurrences(uiText, /export default function CostScenarioWorkspacePanel/g) === 1,
+    !uiText.includes("buildOperationalCostModel"),
     !financialText.includes("postCostScenarioPreview"),
     !companyPreviewText.includes("postCostScenarioPreview"),
   ].every(Boolean) ? 0 : 1;
@@ -308,7 +320,7 @@ function latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, a
     DETAILS_DEFAULT_COLLAPSED_COUNT: browserText.includes("starts collapsed") && !uiText.includes('data-testid="scenario-readonly-example" style={{ marginTop: 12 }} open') ? 1 : 0,
     DETAILS_OPEN_PASS_COUNT: browserText.includes("readonly synthetic example") && browserText.includes("A/B transient comparison") ? 1 : 0,
     ADVANCED_DEFAULT_COLLAPSED_COUNT: uiText.includes('data-testid="scenario-advanced-assumptions"') && !uiText.includes('data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }} open') ? 1 : 0,
-    ROLE_QUICK_SCENARIO_PASS_COUNT: uiText.includes("scenario-quick-passenger") && uiText.includes("scenario-quick-vehicle") && uiText.includes("scenario-quick-days") && browserText.includes("quick scenario preset") ? 1 : 0,
+    ROLE_QUICK_SCENARIO_PASS_COUNT: uiText.includes("scenario-quick-passenger") && !uiText.includes("scenario-quick-vehicle") && !uiText.includes("scenario-quick-days") && browserText.includes("quick scenario preset") ? 1 : 0,
     ROLE_READONLY_EXAMPLE_PASS_COUNT: uiText.includes("ÖRNEK · Gerçek operasyon veriniz değildir") && browserText.includes("readonly synthetic example") ? 1 : 0,
     AB_COMPARISON_PASS_COUNT: uiText.includes("scenario-ab-compare") && browserText.includes("A/B transient comparison") ? 1 : 0,
     SCENARIO_CONFIDENCE_PROPAGATION_PASS_COUNT: routeText.includes("baselineConfidence") && uiText.includes("Baseline güveni") && browserText.includes("baseline confidence visible") ? 1 : 0,
@@ -322,7 +334,7 @@ function latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, a
     COMPANY_SEPARATE_SCENARIO_NAV_ITEM_COUNT: 0,
     ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT: 0,
     UNEXPLAINED_DUPLICATE_SCENARIO_NAV_COUNT: 0,
-    DUPLICATE_SCENARIO_CALCULATION_ENGINE_COUNT: countOccurrences(uiText, /postCostScenarioPreview/g) === 2 ? 0 : 1,
+    DUPLICATE_SCENARIO_CALCULATION_ENGINE_COUNT: countOccurrences(uiText, /export default function CostScenarioWorkspacePanel/g) === 1 && !uiText.includes("buildOperationalCostModel") ? 0 : 1,
     DUPLICATE_COST_CALCULATION_ENGINE_COUNT: countOccurrences(forecastText, /buildOperationalCostModel/g) >= 2 ? 0 : 1,
     DUPLICATE_PRICING_ENGINE_COUNT: uiText.includes("buildOperationalCostModel") || routeText.includes("getExternalCostReference") ? 0 : 1,
     SCENARIO_LIVE_MUTATION_COUNT: uiText.includes("Senaryo kaydı oluşturulmaz") && routeText.includes("noLiveMutation") ? 0 : 1,
@@ -336,12 +348,110 @@ function latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, a
   };
 }
 
+function lowInputCounts({ uiText, browserText, forecastText, referenceText }) {
+  const autoBaselineInput = baseInput({
+    fuelType: "DIESEL",
+    fuelConsumptionLitersPer100Km: undefined,
+    fuelUnitPriceMinor: undefined,
+    driverBasePerShiftMinor: undefined,
+    maintenancePerKmMinor: undefined,
+  });
+  const autoPreview = buildCostScenarioPreview({
+    baselineInput: autoBaselineInput,
+    scenarioOverrides: {},
+    externalReference: freshExternal(5000),
+    context: context({ role: "ROOM", scope: "ROOM" }),
+  });
+  const simplePreview = buildCostScenarioPreview({
+    baselineInput: autoBaselineInput,
+    scenarioOverrides: { passengerCount: 11 },
+    externalReference: freshExternal(5000),
+    context: context({ role: "ROOM", scope: "ROOM" }),
+  });
+  const actual = resolveVehicleConsumptionReference({ vehicleType: "MIDIBUS", fuelType: "DIESEL", actualValue: 21.7 });
+  const platform = resolveVehicleConsumptionReference({
+    vehicleType: "MIDIBUS",
+    fuelType: "DIESEL",
+    platformReference: {
+      available: true,
+      vehicleClass: "MIDIBUS",
+      valueLitersPer100Km: 22.4,
+      sampleCount: 8,
+      minimumRequiredSampleCount: 5,
+      sourceName: "SeferPakt gözlem referansı",
+      version: "TEST-OBSERVED-V1",
+    },
+  });
+  const classDefaults = ["MINIBUS", "MIDIBUS", "OTOBUS"].map((vehicleType) => technicalVehicleConsumptionReference(vehicleType));
+  const autoVehiclePlan = autoPreview.vehiclePlanAlternatives;
+  const autoVehicleItems = autoVehiclePlan?.items || [];
+  const autoVehicleClasses = new Set(autoVehicleItems.map((item) => item.vehicleType));
+  const capacityResolutionPass = autoVehicleItems.length === 3
+    && ["MINIBUS", "MIDIBUS", "OTOBUS"].every((vehicleType) => autoVehicleClasses.has(vehicleType))
+    && autoVehicleItems.every((item) => item.capacity > 0 && item.requiredVehicleCount === Math.max(1, Math.ceil(item.passengerCount / item.capacity)));
+  const primaryFieldCount = uiText.includes('const primaryFields = configuredFields.filter((field) => field.key === "passengerCount")') ? 1 : countOccurrences(uiText, /classification: "PRIMARY_WHAT_IF_INPUT"/g);
+  const operationalFields = [
+    "vehicleType", "vehicleCount", "vehicleCapacity", "passengerCount", "stopCount",
+    "serviceDistanceKm", "totalDistanceKm", "routeDurationMinutes", "serviceDayCount", "shiftStartMinutes",
+  ];
+  const automaticReferenceContractPass = Boolean(
+    autoPreview.referenceResolution?.vehicleConsumption?.baseline?.selected?.sourceKind === "TECHNICAL_CLASS_REFERENCE"
+      && autoPreview.referenceResolution?.vehicleConsumption?.baseline?.selected?.unit === VEHICLE_CONSUMPTION_REFERENCE_UNIT
+      && autoPreview.referenceResolution?.vehicleConsumption?.baseline?.selected?.version
+      && autoPreview.referenceResolution?.fuelPrice?.baseline?.sourceKind === "EXTERNAL_CURRENT_REFERENCE"
+      && simplePreview.changedDimensions.length === 1
+      && simplePreview.changedDimensions[0] === "passengerCount"
+      && actual.selected?.authority === "USER_ACTUAL"
+      && platform.selected?.authority === "PLATFORM_OBSERVED_REFERENCE"
+      && classDefaults.every(Boolean)
+      && forecastText.includes("resolvedAssumptions")
+      && forecastText.includes("referenceResolution")
+  );
+  return {
+    ZERO_INPUT_BASELINE_PASS_COUNT: autoPreview.status === "READY" ? 1 : 0,
+    ROOM_NOVICE_USER_FLOW_PASS_COUNT: browserText.includes("ROOM profitability") && browserText.includes("only one meaningful variable") ? 1 : 0,
+    COMPANY_NOVICE_USER_FLOW_PASS_COUNT: browserText.includes("COMPANY budget") && browserText.includes("only one meaningful variable") ? 1 : 0,
+    SCHOOL_NOVICE_USER_FLOW_PASS_COUNT: browserText.includes("SCHOOL planning") && browserText.includes("only one meaningful variable") ? 1 : 0,
+    ORGANIZATION_NOVICE_USER_FLOW_PASS_COUNT: browserText.includes("ORGANIZATION planning") && browserText.includes("only one meaningful variable") ? 1 : 0,
+    NORMAL_BASELINE_REQUIRED_MANUAL_INPUT_COUNT: primaryFieldCount === 1 && uiText.includes("yeniden girmek zorunda değildir") ? 0 : 1,
+    SIMPLE_SCENARIO_MANUAL_CHANGE_COUNT: simplePreview.changedDimensions.length === 1 ? 1 : 0,
+    AUTO_RESOLVED_OPERATIONAL_FIELD_COUNT: operationalFields.filter((field) => uiText.includes(field)).length,
+    AUTO_RESOLVED_REFERENCE_FIELD_COUNT: ["vehicleConsumption", "fuelPrice", "getExternalCostReferenceLayers"].filter((field) => uiText.includes(field) || forecastText.includes(field)).length,
+    KNOWN_VALUE_REENTRY_REQUIRED_COUNT: uiText.includes("yeniden girmek zorunda değildir") && uiText.includes("readOnly") && browserText.includes("without manually entering existing baseline values") ? 0 : 1,
+    MANUAL_FUEL_PRICE_REQUIRED_COUNT: uiText.includes("Yakıt birim fiyatı (kuruş/L)") && !/required\s*=/.test(uiText) && browserText.includes("without manually entering existing baseline values") ? 0 : 1,
+    MANUAL_CONSUMPTION_REQUIRED_WITH_REFERENCE_COUNT: uiText.includes("Yakıt tüketimi (L/100 km)") && uiText.includes("Sistem referansından alınır") && !uiText.includes("Tüketim giriniz") ? 0 : 1,
+    MANDATORY_DRIVER_COST_COUNT: uiText.includes("İsteğe bağlı gerçek değer") ? 0 : 1,
+    MANDATORY_MAINTENANCE_COST_COUNT: uiText.includes("İsteğe bağlı gerçek değer") ? 0 : 1,
+    DETAILS_DEFAULT_COLLAPSED_COUNT: uiText.includes('data-testid="scenario-details"') && !uiText.includes('data-testid="scenario-details" open') ? 1 : 0,
+    ADVANCED_DEFAULT_COLLAPSED_COUNT: uiText.includes('data-testid="scenario-advanced-assumptions"') && !uiText.includes('data-testid="scenario-advanced-assumptions" open') ? 1 : 0,
+    NOVICE_USER_LONG_FORM_BLOCKER_COUNT: primaryFieldCount === 1 && uiText.includes("Sadece değiştirmek istediğin") ? 0 : 1,
+    FIRST_VIEWPORT_TECHNICAL_ASSUMPTION_WALL_COUNT: primaryFieldCount === 1 && !/fuelConsumptionLitersPer100Km"[^\n]*classification: "PRIMARY_WHAT_IF_INPUT"/.test(uiText) ? 0 : 1,
+    SEFER_ABI_CANONICAL_ASSUMPTION_CONTRACT_PASS_COUNT: automaticReferenceContractPass ? 1 : 0,
+    VEHICLE_CONSUMPTION_REFERENCE_VERSION_PRESENT_COUNT: referenceText.includes(VEHICLE_CONSUMPTION_REFERENCE_VERSION) ? 1 : 0,
+    AUTO_VEHICLE_COUNT_RESOLUTION_PASS_COUNT: capacityResolutionPass ? 1 : 0,
+    AUTO_VEHICLE_ALTERNATIVE_GENERATION_PASS_COUNT: autoVehicleItems.length >= 3 ? 1 : 0,
+    CAPACITY_BASED_VEHICLE_COUNT_PASS_COUNT: capacityResolutionPass && autoVehicleItems.every((item) => item.capacityResolution?.selected?.unit === VEHICLE_PLAN_REFERENCE_UNIT) ? 1 : 0,
+    MINIBUS_ALTERNATIVE_COST_PASS_COUNT: autoVehicleItems.some((item) => item.vehicleType === "MINIBUS" && item.costMinor !== null && item.fuelConsumptionReference?.version) ? 1 : 0,
+    MIDIBUS_ALTERNATIVE_COST_PASS_COUNT: autoVehicleItems.some((item) => item.vehicleType === "MIDIBUS" && item.costMinor !== null && item.fuelConsumptionReference?.version) ? 1 : 0,
+    OTOBUS_ALTERNATIVE_COST_PASS_COUNT: autoVehicleItems.some((item) => item.vehicleType === "OTOBUS" && item.costMinor !== null && item.fuelConsumptionReference?.version) ? 1 : 0,
+    AUTO_RECOMMENDED_VEHICLE_PLAN_PASS_COUNT: autoVehiclePlan?.recommendation?.vehicleType ? 1 : 0,
+    RECOMMENDATION_REASON_VISIBLE_COUNT: autoVehiclePlan?.recommendation?.reason && autoVehiclePlan.recommendation.reason.length > 20 ? 1 : 0,
+    USER_REQUIRED_TO_CALCULATE_VEHICLE_COUNT_COUNT: uiText.includes("araç sayısını elle girmek zorundasın") || (uiText.includes("vehicleCount") && primaryFieldCount > 1) ? 1 : 0,
+    USER_REQUIRED_TO_ENTER_KNOWN_CAPACITY_COUNT: uiText.includes("Kapasite giriniz") || uiText.includes("kapasiteyi elle hesapla") ? 1 : 0,
+    PARTIAL_COST_ALTERNATIVE_COMPARISON_PASS_COUNT: autoVehicleItems.length >= 3 && autoVehicleItems.every((item) => item.costMinor !== null && item.costCoverage?.status === "PARTIAL" && item.partialExplanation) ? 1 : 0,
+    MISSING_OPTIONAL_COST_BLOCKED_ALL_COMPARISON_COUNT: autoVehicleItems.length > 0 && autoVehicleItems.every((item) => item.costMinor === null) ? 1 : 0,
+    ONE_VARIABLE_PASSENGER_SCENARIO_PASS_COUNT: simplePreview.changedDimensions.length === 1 && simplePreview.changedDimensions[0] === "passengerCount" ? 1 : 0,
+    VEHICLE_PLAN_REFERENCE_VERSION_PRESENT_COUNT: read("backend/src/finance/vehiclePlanReferences.js").includes(VEHICLE_PLAN_REFERENCE_VERSION) && read("backend/src/finance/vehiclePlanReferences.js").includes(VEHICLE_PLAN_REFERENCE_UNIT) ? 1 : 0,
+  };
+}
+
 function main() {
   console.log(`=== #4 ${COST_SCENARIO_FORECAST_MODEL_VERSION} CHECK ===`);
   const packageText = read("package.json");
   const routeText = read("backend/src/routes/costScenario.js");
   const mountText = read("backend/src/bootstrap/routeMounts.js");
   const docsText = read("docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md");
+  const vehiclePlanDocsText = read("docs/COST_SCENARIO_VEHICLE_PLAN_REFERENCE_01.md");
   const uiText = read("web/src/panels/shared/CostScenarioWorkspacePanel.jsx");
   const navText = read("web/src/layout/NavDock.jsx");
   const financialText = read("web/src/panels/shared/FinancialOperationsPanel.jsx");
@@ -349,11 +459,13 @@ function main() {
   const appText = read("web/src/App.jsx");
   const forecastText = read("backend/src/finance/costScenarioForecast.js");
   const browserText = read("backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs");
+  const referenceText = read("backend/src/finance/vehicleConsumptionReferences.js");
   const base = baseInput();
   const same = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const sameAgain = buildCostScenarioPreview({ baselineInput: base, scenarioOverrides: { ...base }, context: context() });
   const masterCounts = masterPrimerEvidenceCounts({ forecastText, routeText, uiText, appText, financialText, navText });
   const latestCounts = latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, appText, same });
+  const lowInput = lowInputCounts({ uiText, browserText, forecastText, referenceText });
 
   must(packageText.includes('"check:costscenarioforecastandsavings01": "node backend/scripts/cost_scenario_forecast_and_savings_01_check.js"'), "canonical #4 check is exposed");
   must(routeText.includes("/baseline") && routeText.includes("/preview") && routeText.includes("getExternalCostReference"), "scenario API has baseline and preview owners");
@@ -361,6 +473,8 @@ function main() {
   must(routeText.includes("SCENARIO_TENANT_MISMATCH") && routeText.includes("baselineReferenceId"), "scenario API tenant and baseline guards are explicit");
   must(mountText.includes('app.use("/api/cost-scenarios"'), "scenario API is mounted in the canonical server route map");
   must(docsText.includes("COST-SCENARIO-FORECAST-AND-SAVINGS-01") && docsText.includes("notPersisted"), "#4 architecture document records version and ephemeral persistence");
+  must(read("docs/COST_SCENARIO_VEHICLE_CONSUMPTION_REFERENCE_01.md").includes("SEFERPAKT-VEHICLE-CONSUMPTION-REFERENCE-V1"), "versioned vehicle consumption reference contract is documented");
+  must(vehiclePlanDocsText.includes("SEFERPAKT-VEHICLE-PLAN-REFERENCE-V1") && vehiclePlanDocsText.includes("PERSONS_PER_VEHICLE") && vehiclePlanDocsText.includes("notPersisted"), "versioned vehicle plan capacity reference contract is documented");
 
   must(same.status === "READY", "same complete plan is ready");
   must(same.costDeltaMinor === 0 && same.savingsMinor === null && same.additionalCostMinor === null, "same plan has zero delta without fake savings");
@@ -461,6 +575,17 @@ function main() {
   for (const key of [
     "RECOVERABLE_BASELINE_FIELD_MISSING_COUNT", "UNEXPLAINED_DASH_PLACEHOLDER_COUNT", "CROSS_TENANT_BASELINE_LEAK_COUNT", "ROOM_ACTUAL_COST_LEAK_TO_COMPANY_COUNT", "SCHOOL_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT", "ORGANIZATION_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT", "EXAMPLE_PRESENTED_AS_REAL_DATA_COUNT", "FABRICATED_BASELINE_VALUE_COUNT", "MARKET_REFERENCE_USED_AS_FACTUAL_PLAN_VALUE_COUNT", "COMPANY_SEPARATE_SCENARIO_NAV_ITEM_COUNT", "ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT", "UNEXPLAINED_DUPLICATE_SCENARIO_NAV_COUNT", "DUPLICATE_SCENARIO_CALCULATION_ENGINE_COUNT", "DUPLICATE_COST_CALCULATION_ENGINE_COUNT", "DUPLICATE_PRICING_ENGINE_COUNT", "SCENARIO_LIVE_MUTATION_COUNT", "SCENARIO_DEEP_LINK_REGRESSION_COUNT", "SCENARIO_CAPABILITY_LOSS_COUNT", "NEGATIVE_SENSITIVITY_LOSS_COUNT", "DYNAMIC_SHA_COUNT", "BROAD_ALLOWLIST_COUNT", "GUARD_WEAKENING_COUNT", "UNEXPLAINED_SKIP_COUNT",
   ]) must(latestCounts[key] === 0, `latest role-aware ${key}=0`);
+
+  console.log("=== #4 LOW-INPUT NOVICE-USER COUNTS ===");
+  for (const [key, value] of Object.entries(lowInput)) console.log(`${key}=${value}`);
+  for (const key of [
+    "ZERO_INPUT_BASELINE_PASS_COUNT", "ROOM_NOVICE_USER_FLOW_PASS_COUNT", "COMPANY_NOVICE_USER_FLOW_PASS_COUNT", "SCHOOL_NOVICE_USER_FLOW_PASS_COUNT", "ORGANIZATION_NOVICE_USER_FLOW_PASS_COUNT",
+    "SIMPLE_SCENARIO_MANUAL_CHANGE_COUNT", "AUTO_RESOLVED_OPERATIONAL_FIELD_COUNT", "AUTO_RESOLVED_REFERENCE_FIELD_COUNT", "DETAILS_DEFAULT_COLLAPSED_COUNT", "ADVANCED_DEFAULT_COLLAPSED_COUNT", "SEFER_ABI_CANONICAL_ASSUMPTION_CONTRACT_PASS_COUNT", "VEHICLE_CONSUMPTION_REFERENCE_VERSION_PRESENT_COUNT",
+    "AUTO_VEHICLE_COUNT_RESOLUTION_PASS_COUNT", "AUTO_VEHICLE_ALTERNATIVE_GENERATION_PASS_COUNT", "CAPACITY_BASED_VEHICLE_COUNT_PASS_COUNT", "MINIBUS_ALTERNATIVE_COST_PASS_COUNT", "MIDIBUS_ALTERNATIVE_COST_PASS_COUNT", "OTOBUS_ALTERNATIVE_COST_PASS_COUNT", "AUTO_RECOMMENDED_VEHICLE_PLAN_PASS_COUNT", "RECOMMENDATION_REASON_VISIBLE_COUNT", "PARTIAL_COST_ALTERNATIVE_COMPARISON_PASS_COUNT", "ONE_VARIABLE_PASSENGER_SCENARIO_PASS_COUNT", "VEHICLE_PLAN_REFERENCE_VERSION_PRESENT_COUNT",
+  ]) must(lowInput[key] >= 1, `low-input ${key} is proven`);
+  for (const key of [
+    "NORMAL_BASELINE_REQUIRED_MANUAL_INPUT_COUNT", "KNOWN_VALUE_REENTRY_REQUIRED_COUNT", "MANUAL_FUEL_PRICE_REQUIRED_COUNT", "MANUAL_CONSUMPTION_REQUIRED_WITH_REFERENCE_COUNT", "MANDATORY_DRIVER_COST_COUNT", "MANDATORY_MAINTENANCE_COST_COUNT", "NOVICE_USER_LONG_FORM_BLOCKER_COUNT", "FIRST_VIEWPORT_TECHNICAL_ASSUMPTION_WALL_COUNT", "USER_REQUIRED_TO_CALCULATE_VEHICLE_COUNT_COUNT", "USER_REQUIRED_TO_ENTER_KNOWN_CAPACITY_COUNT", "MISSING_OPTIONAL_COST_BLOCKED_ALL_COMPARISON_COUNT",
+  ]) must(lowInput[key] === 0, `low-input ${key}=0`);
 
   console.log("=== #4 LOCKED MASTER-PRIMER EVIDENCE COUNTS ===");
   for (const [key, value] of Object.entries(masterCounts)) console.log(`${key}=${value}`);

@@ -255,6 +255,7 @@ function main() {
       "web/src/panels/superadmin/TrustQualityPanel.jsx",
       "backend/src/routes/companyOverview.js",
       "web/src/panels/shared/FinancialOperationsPanel.jsx",
+      "web/src/panels/shared/CostScenarioWorkspacePanel.jsx",
       { path: "web/src/panels/public/PassengerLivePanel.jsx", sha256: "79E4AEAF56B106F966E923701CD07B85A97C8959A47F477872426B60F91944DF" },
       { path: "web/src/components/PanelFeedbackEntryCard.jsx", sha256: "9A12E8D2AF97F597C5E20A1D0D5C4451D23B94BDE6C5D8F5059FCA9554C185AA" },
       { path: "web/src/components/PaymentPreviewReadonlyCard.jsx", sha256: "DF1B97A17E3AD95AA9C4211979D5ED599A53F9B9B22F8F313C3AAEB4120D4EB7" },

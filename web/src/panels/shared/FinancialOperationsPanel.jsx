@@ -592,7 +592,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
             refreshTick={refreshTick}
           />
         )}
-        scenarioPanel={<CostScenarioWorkspacePanel scope="COMPANY" embedded />}
+        scenarioPanel={<CostScenarioWorkspacePanel scope="COMPANY" embedded regionName={preview?.regionName || preview?.snapshot?.regionName || null} />}
         normalizeText={normalizeText}
         MetricCard={MetricCard}
         ChipRow={ChipRow}
@@ -716,7 +716,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
         refreshTick={refreshTick}
       />
 
-      <CostScenarioWorkspacePanel scope="ROOM" embedded />
+      <CostScenarioWorkspacePanel scope="ROOM" embedded regionName={preview?.regionName || preview?.snapshot?.regionName || null} />
 
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={roomDetailsOpen} onToggle={(event) => setRoomDetailsOpen(event.currentTarget.open)}>

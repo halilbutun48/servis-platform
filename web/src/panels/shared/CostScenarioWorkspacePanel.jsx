@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import PanelChrome from "../../components/PanelChrome";
-import { getCostScenarioBaseline, postCostScenarioPreview } from "../../api";
+import { getCostScenarioBaseline, getExternalCostReferenceLayers, postCostScenarioPreview } from "../../api";
 import { getApiErrorInfo } from "../../utils/apiContract";
 import { useSession } from "../../state/session";
 
@@ -20,8 +20,8 @@ const FIELD_CONFIG = [
   { key: "vehicleType", label: "Araç tipi", type: "select", unit: "VEHICLE_TYPE", classification: "PRIMARY_WHAT_IF_INPUT", options: [["", "Belirtilmedi"], ["MINIBUS", "Minibüs"], ["MIDIBUS", "Midibüs"], ["OTOBUS", "Otobüs"]] },
   { key: "vehicleCount", label: "Araç sayısı (adet)", type: "number", placeholder: "1", unit: "COUNT", classification: "PRIMARY_WHAT_IF_INPUT" },
   { key: "passengerCount", label: "Yolcu / öğrenci / personel sayısı (kişi)", type: "number", placeholder: "", unit: "PERSON_COUNT", classification: "PRIMARY_WHAT_IF_INPUT" },
-  { key: "serviceDistanceKm", label: "Mesafe / rota varsayımı (km)", type: "number", placeholder: "", unit: "DISTANCE_KM", classification: "PRIMARY_WHAT_IF_INPUT" },
-  { key: "serviceDayCount", label: "Hizmet günü (gün)", type: "number", placeholder: "1", unit: "DATE/DAY_COUNT", classification: "PRIMARY_WHAT_IF_INPUT" },
+  { key: "serviceDistanceKm", label: "Mesafe / rota varsayımı (km)", type: "number", placeholder: "", unit: "DISTANCE_KM", classification: "ADVANCED_ASSUMPTION" },
+  { key: "serviceDayCount", label: "Hizmet günü (gün)", type: "number", placeholder: "1", unit: "DATE/DAY_COUNT", classification: "ADVANCED_ASSUMPTION" },
   { key: "vehicleCapacity", label: "Araç kapasitesi (kişi)", type: "number", placeholder: "", unit: "PERSON_COUNT", classification: "ADVANCED_ASSUMPTION" },
   { key: "stopCount", label: "Durak sayısı (durak)", type: "number", placeholder: "", unit: "COUNT", classification: "ADVANCED_ASSUMPTION" },
   { key: "totalDistanceKm", label: "Toplam mesafe (km)", type: "number", placeholder: "", unit: "DISTANCE_KM", classification: "DERIVED_INPUT" },
@@ -30,9 +30,9 @@ const FIELD_CONFIG = [
   { key: "tripCount", label: "Toplam yolculuk (yolculuk)", type: "number", placeholder: "", unit: "COUNT", classification: "ADVANCED_ASSUMPTION" },
   { key: "shiftStartMinutes", label: "Vardiya başlangıcı (dk)", type: "number", placeholder: "", unit: "DURATION_MIN", classification: "ADVANCED_ASSUMPTION" },
   { key: "fuelConsumptionLitersPer100Km", label: "Yakıt tüketimi (L/100 km)", type: "number", placeholder: "", unit: "FUEL_CONSUMPTION", classification: "ADVANCED_ASSUMPTION" },
-  { key: "fuelUnitPriceMinor", label: "Yakıt birim fiyatı (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
-  { key: "driverBasePerShiftMinor", label: "Sürücü sefer maliyeti (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
-  { key: "maintenancePerKmMinor", label: "Bakım km maliyeti (₺)", type: "number", placeholder: "", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
+  { key: "fuelUnitPriceMinor", label: "Yakıt birim fiyatı (kuruş/L)", type: "number", placeholder: "Sistem referansından alınır", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
+  { key: "driverBasePerShiftMinor", label: "Sürücü sefer maliyeti (kuruş/sefer)", type: "number", placeholder: "İsteğe bağlı gerçek değer", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
+  { key: "maintenancePerKmMinor", label: "Bakım km maliyeti (kuruş/km)", type: "number", placeholder: "İsteğe bağlı gerçek değer", unit: "MONEY", classification: "ADVANCED_ASSUMPTION" },
 ];
 
 function compact(value) {
@@ -102,7 +102,7 @@ function formatMoney(value, currencyCode = "TRY") {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return "Hesaplanamadı";
   const suffix = currencyCode === "TRY" ? " ₺" : currencyCode ? ` ${currencyCode}` : "";
-  return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(numeric)}${suffix}`;
+  return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 }).format(numeric / 100)}${suffix}`;
 }
 
 function formatNumber(value, suffix = "") {
@@ -184,13 +184,76 @@ function VariantCard({ variant, currencyCode }) {
   );
 }
 
+function vehiclePlanStatusLabel(status) {
+  return {
+    READY: "Karşılaştırılabilir",
+    PARTIAL: "Kısmi maliyet",
+    INCOMPLETE: "Eksik veri",
+    BLOCKED: "Güvenli hesap durdu",
+    NO_DATA: "Veri yok",
+  }[String(status || "").toUpperCase()] || "Durum belirtilmedi";
+}
+
+function VehiclePlanAlternativeCard({ item, recommended, currencyCode, onSelect }) {
+  const selectedConsumption = item.fuelConsumptionReference;
+  const missingOptional = (item.missingOptionalCosts || []).map((cost) => cost.label).join(", ");
+  return (
+    <div
+      className="card"
+      data-testid={`scenario-vehicle-alternative-${String(item.vehicleType || "").toLowerCase()}`}
+      data-vehicle-type={item.vehicleType}
+      style={{ border: recommended ? "1px solid rgba(18,183,106,0.45)" : "1px solid rgba(255,255,255,0.08)", background: recommended ? "rgba(18,183,106,0.05)" : "transparent" }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
+        <div className="panelSectionTitle">{item.vehicleLabel || item.vehicleType}</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {recommended ? <span className="pill">{recommended.label}</span> : null}
+          <span className="pill">{vehiclePlanStatusLabel(item.status)}</span>
+        </div>
+      </div>
+      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+        <Metric title="Araç planı" value={formatNumber(item.requiredVehicleCount, " araç")} note="Kapasiteye göre otomatik" />
+        <Metric title="Kapasite" value={formatNumber(item.capacity, " kişi/araç")} note={item.capacityResolution?.selected?.sourceName || "Kaynak belirtilmedi"} />
+        <Metric title="Sürücü ihtiyacı" value={formatNumber(item.driverCount, " sürücü")} note="Eşzamanlı araç başına 1 sürücü" />
+        <Metric title="Tüketim" value={selectedConsumption?.valueLitersPer100Km != null ? formatNumber(selectedConsumption.valueLitersPer100Km, " L/100 km") : "Veri yok"} note={selectedConsumption?.sourceName || "Onaylı sınıf referansı yok"} />
+        <Metric title="Toplam yakıt" value={item.fuelRequirementLiters != null ? formatNumber(item.fuelRequirementLiters, " L") : "Hesaplanamadı"} note="Rota × tüketim × araç planı" />
+        <Metric title="Tahmini maliyet" value={formatMoney(item.costMinor, currencyCode)} note={item.costBasis === "OPERATIONAL_COST_MODEL" ? "Aynı #4 maliyet motoru" : item.costBasis || "Maliyet kanıtı bekleniyor"} tone={item.status === "READY" ? "good" : "warm"} />
+      </div>
+      <div className="panelMeta" style={{ marginTop: 10, lineHeight: 1.45 }}>
+        Kapasite kaynağı: {item.capacityResolution?.selected?.sourceName || "Onaylı referans yok"} · Güven: {confidenceLabel(item.confidence?.level)}
+      </div>
+      {missingOptional ? <div className="panelMeta" style={{ marginTop: 6 }}>Eksik isteğe bağlı maliyet: {missingOptional}</div> : null}
+      {item.partialExplanation ? <div className="panelMeta" style={{ marginTop: 6 }}>{item.partialExplanation}</div> : null}
+      <button data-testid={`scenario-select-vehicle-plan-${String(item.vehicleType || "").toLowerCase()}`} type="button" className="btn" style={{ marginTop: 12 }} onClick={() => onSelect(item)} disabled={item.status === "NO_DATA" || item.status === "BLOCKED"}>
+        Bu planı karşılaştır
+      </button>
+    </div>
+  );
+}
+
+function VehiclePlanAlternatives({ result, currencyCode, onSelect }) {
+  const plan = result?.vehiclePlanAlternatives;
+  if (!plan?.items?.length) return null;
+  const recommendation = plan.recommendation;
+  return (
+    <div className="card" data-testid="scenario-vehicle-plan-alternatives" style={{ marginTop: 12, border: "1px solid rgba(18,183,106,0.28)", background: "rgba(18,183,106,0.035)" }}>
+      <div className="panelSectionTitle">Önerilen araç planı</div>
+      <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>Kişi sayısı, rota, kapasite ve referanslı tüketim birlikte çözülür; araç sayısını elle hesaplaman gerekmez.</div>
+      {recommendation ? <div data-testid="scenario-vehicle-plan-recommendation" className="panelMeta" style={{ marginTop: 10, lineHeight: 1.5 }}><b>{recommendation.label}:</b> {recommendation.reason}</div> : <div className="panelMeta" style={{ marginTop: 10 }}>Karşılaştırılabilir kanıt yok; öneri uydurulmadı.</div>}
+      <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+        {plan.items.map((item) => <VehiclePlanAlternativeCard key={item.vehicleType} item={item} recommended={recommendation?.vehicleType === item.vehicleType} currencyCode={currencyCode} onSelect={onSelect} />)}
+      </div>
+    </div>
+  );
+}
+
 function ComparisonStatus({ title, item, money = false, currencyCode = "TRY" }) {
   if (!item) return null;
   const value = money ? formatMoney(item.varianceAmountMinor, currencyCode) : item.status || "INSUFFICIENT_DATA";
   return <div className="muted" style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "8px 0" }}><span>{title}</span><b>{value}</b></div>;
 }
 
-function Field({ label, value, onChange, type = "number", placeholder = "", testId = "" }) {
+function Field({ label, value, onChange, type = "number", placeholder = "", testId = "", readOnly = false }) {
   return (
     <label className="muted" style={{ minWidth: 0 }}>
       {label}
@@ -202,23 +265,25 @@ function Field({ label, value, onChange, type = "number", placeholder = "", test
         value={displayValue(value)}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
+        readOnly={readOnly}
+        disabled={readOnly}
         style={INPUT_STYLE}
       />
     </label>
   );
 }
 
-function InputGrid({ values, setValues, prefix = "scenario", fields = FIELD_CONFIG }) {
+function InputGrid({ values, setValues, prefix = "scenario", fields = FIELD_CONFIG, readOnly = false }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
       {fields.map((field) => field.type === "select" ? (
         <label key={field.key} className="muted" style={{ minWidth: 0 }}>
           {field.label}
-          <select data-testid={`${prefix}-input-${field.key}`} value={values[field.key] || ""} onChange={(event) => setValues((prev) => ({ ...prev, [field.key]: event.target.value }))} style={INPUT_STYLE}>
+          <select data-testid={`${prefix}-input-${field.key}`} value={values[field.key] || ""} onChange={(event) => setValues((prev) => ({ ...prev, [field.key]: event.target.value }))} style={INPUT_STYLE} disabled={readOnly}>
             {field.options.map(([value, label]) => <option key={value || "none"} value={value}>{label}</option>)}
           </select>
         </label>
-      ) : <Field key={field.key} testId={`${prefix}-input-${field.key}`} label={field.label} value={values[field.key]} placeholder={field.placeholder} onChange={(value) => setValues((prev) => ({ ...prev, [field.key]: value }))} type={field.type} />)}
+      ) : <Field key={field.key} testId={`${prefix}-input-${field.key}`} label={field.label} value={values[field.key]} placeholder={field.placeholder} onChange={(value) => setValues((prev) => ({ ...prev, [field.key]: value }))} type={field.type} readOnly={readOnly} />)}
     </div>
   );
 }
@@ -249,14 +314,69 @@ function InputSummary({ input, sourceMap = {}, config }) {
   );
 }
 
-export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded = false }) {
+function unwrapPayload(payload) {
+  return payload?.data || payload || null;
+}
+
+function externalReferenceRequestFromPayload(payload) {
+  const data = unwrapPayload(payload);
+  const external = data?.layers?.find((layer) => layer.layer === "EXTERNAL_MARKET_REFERENCE" && layer.available);
+  if (!external || (external.valueMinor === null || external.valueMinor === undefined) && !external.valueDecimal) return null;
+  return {
+    providerKey: external.providerKey || undefined,
+    family: "FUEL_DIESEL",
+    unit: external.unit || "CURRENCY_PER_L",
+    currencyCode: external.currencyCode || "TRY",
+    regionCode: external.regionCode || data?.region?.regionCode || undefined,
+    scopeType: data?.region?.scopeType || undefined,
+    scopeKey: data?.region?.scopeKey || undefined,
+  };
+}
+
+function referenceDate(value) {
+  if (!value) return "Tarih belirtilmedi";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Tarih belirtilmedi" : new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium" }).format(date);
+}
+
+function consumptionReferenceLabel(reference) {
+  if (!reference || !reference.available) return "Onaylı referans yok";
+  if (reference.range?.minLitersPer100Km != null && reference.range?.maxLitersPer100Km != null) {
+    return `${formatNumber(reference.range.minLitersPer100Km)}–${formatNumber(reference.range.maxLitersPer100Km)} L/100 km`;
+  }
+  return formatNumber(reference.valueLitersPer100Km, " L/100 km");
+}
+
+function ResolvedAssumptions({ result, fuelReference, currencyCode }) {
+  const resolution = result?.referenceResolution;
+  const consumption = resolution?.vehicleConsumption?.baseline;
+  const fuelPrice = resolution?.fuelPrice?.baseline;
+  const selectedConsumption = consumption?.selected;
+  const external = unwrapPayload(fuelReference)?.layers?.find((layer) => layer.layer === "EXTERNAL_MARKET_REFERENCE");
+  return (
+    <div data-testid="scenario-resolved-assumptions" className="card" style={{ marginTop: 10, padding: 12, background: "rgba(255,255,255,0.025)" }}>
+      <div className="panelSectionTitle">Otomatik çözülen varsayımlar</div>
+      <div className="panelMeta" style={{ marginTop: 6, lineHeight: 1.5 }}>SeferPakt bildiği operasyon alanlarını ve onaylı referansları kullanır; bu değerler kanonik planı değiştirmez.</div>
+      <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+        <div className="muted"><b>Araç tüketimi:</b> {consumptionReferenceLabel(selectedConsumption)} · Kaynak: {selectedConsumption?.sourceName || "Belirtilmedi"} · Güven: {confidenceLabel(selectedConsumption?.confidence)}</div>
+        <div className="panelMeta">Kaynak tarihi: {referenceDate(selectedConsumption?.sourceDate)} · Uygulanabilirlik: {selectedConsumption?.applicabilityLimits || "Sınıf/alt tip kapsamı belirtilmedi."}</div>
+        <div className="muted"><b>Yakıt fiyatı:</b> {fuelPrice?.valueMinor != null ? formatMoney(fuelPrice.valueMinor, fuelPrice.currencyCode || currencyCode) + "/L" : "Veri yok; kullanıcıdan zorunlu giriş istenmiyor"}</div>
+        <div className="panelMeta">{fuelPrice?.sourceName ? `Kaynak: ${fuelPrice.sourceName} · Bölge: ${fuelPrice.regionCode || "Kapsam belirtilmedi"} · As of: ${referenceDate(fuelPrice.asOf)}` : external?.selectionReason || "#2 bölgesel referansı bu kapsamda kullanılabilir değil."}</div>
+        {consumption?.missingData?.length ? <div className="panelMeta">Eksik / doğrulanması gereken: {consumption.missingData.join(", ")}</div> : null}
+        <div className="panelMeta">Öncelik: {resolution?.vehicleConsumption?.precedence?.join(" → ") || "USER_ACTUAL → PLATFORM_OBSERVED_REFERENCE → TECHNICAL_CLASS_REFERENCE → NO_DATA"}</div>
+      </div>
+    </div>
+  );
+}
+
+export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded = false, regionName = null }) {
   const { token, me } = useSession();
   const [baseline, setBaseline] = useState(null);
   const [baselineValues, setBaselineValues] = useState({});
   const [scenarioValues, setScenarioValues] = useState({});
   const [scenarioBValues, setScenarioBValues] = useState({});
   const [baselineCost, setBaselineCost] = useState("");
-  const [useExternalFuelPrice, setUseExternalFuelPrice] = useState(false);
+  const [fuelReference, setFuelReference] = useState(null);
   const [riskValues, setRiskValues] = useState({ riskFuelUnitPriceMinor: "", riskDistanceKm: "", riskDurationMinutes: "" });
   const [stopOperations, setStopOperations] = useState([]);
   const [stopDraft, setStopDraft] = useState({ lat: "", lng: "", index: "" });
@@ -273,8 +393,8 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
   const planningOnly = companyKind === "SCHOOL" || companyKind === "ORGANIZATION";
   const roleConfig = roleScenarioConfig(scope, companyKind);
   const configuredFields = roleFields(roleConfig);
-  const primaryFields = configuredFields.filter((field) => field.classification === "PRIMARY_WHAT_IF_INPUT");
-  const advancedFields = configuredFields.filter((field) => ["ADVANCED_ASSUMPTION", "DERIVED_INPUT"].includes(field.classification));
+  const primaryFields = configuredFields.filter((field) => field.key === "passengerCount");
+  const advancedFields = configuredFields.filter((field) => ["ADVANCED_ASSUMPTION", "DERIVED_INPUT"].includes(field.classification) || ["vehicleType", "vehicleCount"].includes(field.key));
   const title = "Maliyet Senaryosu";
   const subtitle = roleConfig.subtitle;
 
@@ -289,9 +409,9 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
     setRiskValues({ riskFuelUnitPriceMinor: "", riskDistanceKm: "", riskDurationMinutes: "" });
     setDispatchDraft({ vehicleId: "", driverId: "", routeReference: "" });
     getCostScenarioBaseline(token, scope, {}, { signal: controller.signal, force: true })
-      .then((payload) => {
+      .then(async (payload) => {
         if (controller.signal.aborted) return;
-        const next = payload?.data || payload || null;
+        const next = unwrapPayload(payload);
         const inputs = next?.input || {};
         setBaseline(next);
         setBaselineValues(Object.fromEntries(Object.entries(inputs).map(([key, value]) => [key, displayValue(value)])));
@@ -299,6 +419,38 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         setScenarioBValues(Object.fromEntries(Object.entries(inputs).map(([key, value]) => [key, displayValue(value)])));
         setResult(null);
         setAbResult(null);
+        let referencePayload = null;
+        try {
+          referencePayload = await getExternalCostReferenceLayers(token, {
+            family: "FUEL_DIESEL",
+            unit: "CURRENCY_PER_L",
+            currencyCode: inputs.currencyCode || "TRY",
+            scope,
+            regionName: regionName || undefined,
+          }, { signal: controller.signal, force: true });
+        } catch (referenceError) {
+          if (referenceError?.name === "AbortError" || controller.signal.aborted) return;
+        }
+        if (controller.signal.aborted) return;
+        setFuelReference(referencePayload);
+        if (!next?.baselineReferenceId) return;
+        try {
+          const externalReference = externalReferenceRequestFromPayload(referencePayload);
+          const initialPreview = await postCostScenarioPreview({
+            scope,
+            baselineReferenceId: next.baselineReferenceId,
+            baselineInput: inputs,
+            scenarioOverrides: {
+              ...(externalReference && inputs.fuelUnitPriceMinor == null ? { useExternalFuelPrice: true } : {}),
+            },
+            ...(externalReference ? { externalReference } : {}),
+          }, { token });
+          if (!controller.signal.aborted) setResult(unwrapPayload(initialPreview));
+        } catch (previewError) {
+          if (previewError?.name === "AbortError" || controller.signal.aborted) return;
+          const info = getApiErrorInfo(previewError, "Senaryo başlangıç karşılaştırması hazırlanamadı.");
+          setError(info.message || "Senaryo başlangıç karşılaştırması hazırlanamadı.");
+        }
       })
       .catch((err) => {
         if (controller.signal.aborted) return;
@@ -309,7 +461,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [scope, token]);
+  }, [regionName, scope, token]);
 
   const baselineInput = useMemo(() => ({
     ...baselineValues,
@@ -332,21 +484,17 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
   }
 
   async function requestPreview(values, includeExtras = true) {
+    const externalReference = externalReferenceRequestFromPayload(fuelReference);
+    const overrides = scenarioOverridesFor(values, includeExtras);
     return postCostScenarioPreview({
         scope,
         baselineReferenceId: baseline.baselineReferenceId,
         baselineInput,
-        scenarioOverrides: scenarioOverridesFor(values, includeExtras),
-        ...(useExternalFuelPrice ? {
-          externalReference: {
-            family: "FUEL_DIESEL",
-            unit: "CURRENCY_PER_L",
-            currencyCode: baselineInput.currencyCode || "TRY",
-            scopeType: "GLOBAL",
-            scopeKey: "GLOBAL",
-            regionCode: "TR",
-          },
-        } : {}),
+        scenarioOverrides: {
+          ...overrides,
+          ...(externalReference && baselineInput.fuelUnitPriceMinor == null ? { useExternalFuelPrice: true } : {}),
+        },
+        ...(externalReference ? { externalReference } : {}),
       }, { token });
   }
 
@@ -361,6 +509,28 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
       const info = getApiErrorInfo(err, "Senaryo hesaplanamadı.");
       setError(info.message || "Senaryo hesaplanamadı.");
       setResult(null);
+    } finally {
+      setCalculating(false);
+    }
+  }
+
+  async function selectVehiclePlan(item) {
+    if (!item?.requiredVehicleCount || !item?.capacity) return;
+    const nextValues = {
+      ...scenarioValues,
+      vehicleType: item.vehicleType,
+      vehicleCount: String(item.requiredVehicleCount),
+      vehicleCapacity: String(item.capacity),
+    };
+    setScenarioValues(nextValues);
+    setError("");
+    setCalculating(true);
+    try {
+      const payload = await requestPreview(nextValues);
+      setResult(payload?.data || payload || null);
+    } catch (err) {
+      const info = getApiErrorInfo(err, "Araç planı karşılaştırılamadı.");
+      setError(info.message || "Araç planı karşılaştırılamadı.");
     } finally {
       setCalculating(false);
     }
@@ -386,13 +556,6 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
     } finally {
       setAbCalculating(false);
     }
-  }
-
-  function adjustVehicleCount(delta) {
-    setScenarioValues((previous) => {
-      const current = Number(previous.vehicleCount || baselineValues.vehicleCount || 0);
-      return { ...previous, vehicleCount: String(Math.max(0, Math.round(current) + delta)) };
-    });
   }
 
   function addScenarioStop() {
@@ -459,31 +622,31 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
             </div>
           </div>
         ) : null}
-        <details style={{ marginTop: 12 }}>
-          <summary className="muted" style={{ cursor: "pointer" }}>Kanonik plan girdilerini incele</summary>
-          <div style={{ marginTop: 10 }}><InputGrid values={baselineValues} setValues={setBaselineValues} prefix="baseline" /></div>
+        <details data-testid="scenario-details" style={{ marginTop: 12 }}>
+          <summary className="muted" style={{ cursor: "pointer" }}>Detaylar · otomatik çözülen değerler ve kaynaklar</summary>
+          <ResolvedAssumptions result={result} fuelReference={fuelReference} currencyCode={currencyCode} />
+          <div className="panelMeta" style={{ marginTop: 10 }}>Kanonik mevcut plan alanları salt okunurdur; kullanıcı bunları yeniden girmek zorunda değildir.</div>
+          <div style={{ marginTop: 10 }}><InputGrid values={baselineValues} setValues={setBaselineValues} prefix="baseline" readOnly /></div>
         </details>
       </div>
 
       <div className="card" data-testid="scenario-primary-inputs" style={{ marginTop: 12, border: "1px solid rgba(58,102,255,0.25)" }}>
-        <div className="panelSectionTitle">Senaryo varsayımları</div>
-        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Değiştirmek istemediğiniz alanlar mevcut plan değerlerinden otomatik alınır. Bir alan kanonik veride yoksa değer uydurulmaz; eksikliği açıkça gösterilir.</div>
+        <div className="panelSectionTitle">Sadece değiştirmek istediğin</div>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Mevcut plan, rota, gün, araç sayısı ve maliyet referansları otomatik alınır ve korunur. Basit bir senaryo için yalnızca kişi sayısını değiştirmen yeterlidir; veri yoksa değer uydurulmaz.</div>
         <div style={{ marginTop: 12 }}><InputGrid values={scenarioValues} setValues={setScenarioValues} prefix="scenario" fields={primaryFields} /></div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button data-testid="scenario-vehicle-add" type="button" className="btn" onClick={() => adjustVehicleCount(1)}>+ Araç ekle</button>
-          <button data-testid="scenario-vehicle-remove" type="button" className="btn" onClick={() => adjustVehicleCount(-1)}>− Araç çıkar</button>
           <button data-testid="scenario-quick-passenger" type="button" className="btn" onClick={() => setScenarioValues((previous) => ({ ...previous, passengerCount: String(Math.max(0, Number(previous.passengerCount || baselineValues.passengerCount || 0) + 10)) }))}>{roleConfig.quickPassenger}</button>
-          <button data-testid="scenario-quick-vehicle" type="button" className="btn" onClick={() => adjustVehicleCount(1)}>{roleConfig.quickVehicle}</button>
-          <button data-testid="scenario-quick-days" type="button" className="btn" onClick={() => setScenarioValues((previous) => ({ ...previous, serviceDayCount: String(Math.max(0, Number(previous.serviceDayCount || baselineValues.serviceDayCount || 0) + 5)) }))}>{roleConfig.quickDays}</button>
-          <span className="panelMeta" style={{ alignSelf: "center" }}>Hızlı seçimler yalnızca geçici preview girdisi hazırlar; canlı kayıt değişmez.</span>
+          <span className="panelMeta" style={{ alignSelf: "center" }}>Araç sayısı ve kapasite önerilen planlardan otomatik gelir; canlı kayıt değişmez.</span>
         </div>
       </div>
 
+      <VehiclePlanAlternatives result={result} currencyCode={result?.currencyCode || currencyCode} onSelect={selectVehiclePlan} />
+
       <details className="card" data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }}>
-        <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Gelişmiş varsayımlar</summary>
+        <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Gelişmiş varsayımlar · Kendi gerçek değerlerimi kullan (isteğe bağlı)</summary>
         <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Maliyet bileşenleri, risk, alternatif rota ve typed dispatch seam ayrıntıları varsayılan olarak kapalıdır.</div>
         <div style={{ marginTop: 12, maxWidth: 360 }}>
-          <Field label="Senaryo için maliyet varsayımı (₺)" value={baselineCost} placeholder="İsteğe bağlı plan varsayımı" onChange={setBaselineCost} />
+          <Field label="Senaryo için maliyet varsayımı (kuruş)" value={baselineCost} placeholder="İsteğe bağlı plan varsayımı" onChange={setBaselineCost} />
           <div className="panelMeta" style={{ marginTop: 8 }}>Bu yalnızca senaryo için kullanılan bir varsayımdır; mevcut planın gerçek veya kanonik planlanan maliyetini değiştirmez. Boş bırakılırsa sistem yalnızca tamamlanmış maliyet bileşenlerini kullanır.</div>
         </div>
         <details data-testid="scenario-advanced-fields" style={{ marginTop: 12 }}>
@@ -525,10 +688,6 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
             </div>
           </div>
         </details>
-        <label className="muted" style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 14 }}>
-          <input type="checkbox" checked={useExternalFuelPrice} onChange={(event) => setUseExternalFuelPrice(event.target.checked)} style={{ marginTop: 3 }} />
-          <span>Piyasa referansını dene <span className="panelMeta">(varsa; güncellik ve kaynak bilgisi korunur)</span></span>
-        </label>
       </details>
 
       <div className="card" data-testid="scenario-current-scenario-delta" style={{ marginTop: 12 }}>

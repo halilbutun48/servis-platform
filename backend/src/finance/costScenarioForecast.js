@@ -5,6 +5,8 @@ import {
   RECOGNIZED_CURRENCY_CODES,
   safeHashId,
 } from "./operationalCostMath.js";
+import { resolveVehicleConsumptionReference } from "./vehicleConsumptionReferences.js";
+import { resolveVehicleCapacityReference, VEHICLE_PLAN_REFERENCE_UNIT, VEHICLE_PLAN_REFERENCE_VERSION } from "./vehiclePlanReferences.js";
 
 export const COST_SCENARIO_FORECAST_MODEL_VERSION = "COST-SCENARIO-FORECAST-AND-SAVINGS-01";
 
@@ -128,6 +130,26 @@ const VARIANT_LABELS = Object.freeze({
   BEST: "En uygun",
   RISK: "Riskli durum",
 });
+
+const VEHICLE_PLAN_CLASSES = Object.freeze(["MINIBUS", "MIDIBUS", "OTOBUS"]);
+const VEHICLE_PLAN_LABELS = Object.freeze({ MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" });
+const DRIVER_COST_FIELDS = Object.freeze([
+  "driverBasePerShiftMinor",
+  "driverHourlyCostMinor",
+  "driverOvertimeHourlyCostMinor",
+  "driverWaitingHourlyCostMinor",
+  "socialCostAllocationMinor",
+  "mealAllowancePerShiftMinor",
+  "otherDriverCostMinor",
+]);
+const MAINTENANCE_COST_FIELDS = Object.freeze([
+  "maintenancePerKmMinor",
+  "tirePerKmMinor",
+  "depreciationPerKmMinor",
+  "cleaningPerShiftMinor",
+  "vehicleWearPerKmMinor",
+  "otherVehicleVariableCostMinor",
+]);
 
 const COMPARISON_DIMENSION_LABELS = Object.freeze({
   vehicleCount: "Araç ihtiyacı",
@@ -465,10 +487,19 @@ function applyExternalReference(baseValues, scenarioValues, externalReference, g
     status: freshness,
     reference,
   };
-  if (!externalReference) return result;
+  if (!externalReference) return { ...result, status: "NOT_REQUESTED" };
   if (!reference || valueMinor === null || !["FRESH", "STALE"].includes(freshness)) {
     pushUnique(globalIssues.warnings, freshness === "EXPIRED" ? "Piyasa referansının süresi doldu; maliyet hesabına alınmadı" : "Piyasa referansı kullanılabilir bir değer sağlamadı");
     return result;
+  }
+  const baseFuelType = compact(baseValues.fuelType).toUpperCase();
+  const scenarioFuelType = compact(scenarioValues.fuelType || baseFuelType).toUpperCase();
+  if ([baseFuelType, scenarioFuelType].some((fuelType) => fuelType && fuelType !== "DIESEL") && String(reference.family || "").toUpperCase() === "FUEL_DIESEL") {
+    pushUnique(globalIssues.warnings, "Dizel piyasa referansı seçili araç yakıt türüyle uyumlu değil; maliyet hesabına alınmadı");
+    return result;
+  }
+  if (!baseFuelType && !scenarioFuelType && String(reference.family || "").toUpperCase() === "FUEL_DIESEL") {
+    pushUnique(globalIssues.warnings, "Araç yakıt türü doğrulanmadı; dizel piyasa referansı sınıf varsayımı olarak gösterildi");
   }
   const referenceCurrency = compact(reference.currencyCode).toUpperCase();
   const baseCurrency = compact(baseValues.currencyCode, "TRY").toUpperCase();
@@ -494,6 +525,98 @@ function applyExternalReference(baseValues, scenarioValues, externalReference, g
   return result;
 }
 
+function applyVehicleConsumptionReference(baseValues, scenarioValues, context, { baselineExplicit = false, scenarioExplicit = false } = {}, globalIssues) {
+  const baselineVehicleType = baseValues.vehicleType || null;
+  const scenarioVehicleType = scenarioValues.vehicleType || baselineVehicleType;
+  const baselineActualValue = context?.actualVehicleConsumptionLitersPer100Km
+    ?? (baselineExplicit ? baseValues.fuelConsumptionLitersPer100Km : null);
+  const baselineActualReference = context?.actualVehicleConsumptionReference
+    || (baselineExplicit ? { sourceName: "Açık mevcut plan tüketim girdisi", version: "USER_INPUT" } : null);
+  const baseline = resolveVehicleConsumptionReference({
+    vehicleType: baselineVehicleType,
+    fuelType: baseValues.fuelType,
+    actualReference: baselineActualReference,
+    actualValue: baselineActualValue,
+    platformReference: context?.platformVehicleConsumptionReference,
+  });
+  const vehicleTypeChanged = String(scenarioVehicleType || "") !== String(baselineVehicleType || "");
+  const scenarioActualValue = context?.scenarioVehicleConsumptionLitersPer100Km
+    ?? (scenarioExplicit
+      ? scenarioValues.fuelConsumptionLitersPer100Km
+      : !vehicleTypeChanged && baseline.selected?.sourceKind === "USER_ACTUAL"
+        ? baseline.selected.valueLitersPer100Km
+        : null);
+  const scenarioActualReference = context?.scenarioVehicleConsumptionReference
+    || (scenarioExplicit ? { sourceName: "Açık senaryo actual tüketim girdisi", version: "USER_INPUT" } : null);
+  const scenario = resolveVehicleConsumptionReference({
+    vehicleType: scenarioVehicleType,
+    fuelType: scenarioValues.fuelType || baseValues.fuelType,
+    actualReference: scenarioActualReference,
+    actualValue: scenarioActualValue,
+    platformReference: context?.platformVehicleConsumptionReference,
+  });
+  const nextBaseline = { ...baseValues };
+  const nextScenario = { ...scenarioValues };
+  if (baseline.selected?.available && baseline.selected.valueLitersPer100Km !== null && baseline.selected.valueLitersPer100Km !== undefined) {
+    nextBaseline.fuelConsumptionLitersPer100Km = baseline.selected.valueLitersPer100Km;
+  } else {
+    delete nextBaseline.fuelConsumptionLitersPer100Km;
+  }
+  if (scenario.selected?.available && scenario.selected.valueLitersPer100Km !== null && scenario.selected.valueLitersPer100Km !== undefined) {
+    nextScenario.fuelConsumptionLitersPer100Km = scenario.selected.valueLitersPer100Km;
+  } else {
+    delete nextScenario.fuelConsumptionLitersPer100Km;
+  }
+  for (const [side, resolution] of [["Mevcut plan", baseline], ["Alternatif senaryo", scenario]]) {
+    for (const missing of resolution.missingData || []) pushUnique(globalIssues.warnings, `${side} tüketim verisi: ${missing}`);
+    if (resolution.fuelTypeStatus === "UNRESOLVED" && resolution.selected?.sourceKind === "TECHNICAL_CLASS_REFERENCE") {
+      pushUnique(globalIssues.warnings, `${side} için yakıt türü doğrulanmadı; dizel sınıf referansı açıkça işaretlendi`);
+    }
+  }
+  return {
+    baselineValues: nextBaseline,
+    scenarioValues: nextScenario,
+    baseline,
+    scenario,
+    precedence: baseline.precedence || scenario.precedence || ["USER_ACTUAL", "PLATFORM_OBSERVED_REFERENCE", "TECHNICAL_CLASS_REFERENCE", "NO_DATA"],
+  };
+}
+
+function fuelPriceResolution({ baseValues, scenarioValues, external }) {
+  const externalReference = external?.reference || null;
+  const baselineHasPrice = baseValues.fuelUnitPriceMinor !== null && baseValues.fuelUnitPriceMinor !== undefined;
+  const scenarioHasPrice = scenarioValues.fuelUnitPriceMinor !== null && scenarioValues.fuelUnitPriceMinor !== undefined;
+  const externalLayer = externalReference
+    ? {
+      sourceKind: "EXTERNAL_CURRENT_REFERENCE",
+      authority: "EXTERNAL_DYNAMIC_FUEL",
+      family: externalReference.family || null,
+      sourceName: externalReference.sourceName || null,
+      sourceUrl: externalReference.sourceUrl || null,
+      providerKey: externalReference.providerKey || null,
+      regionCode: externalReference.regionCode || null,
+      asOf: externalReference.asOf || null,
+      currencyCode: externalReference.currencyCode || null,
+      freshness: external.status,
+      confidence: externalReference.confidence || "UNKNOWN",
+      valueMinor: externalValueMinor(externalReference),
+    }
+    : null;
+  const baseline = baselineHasPrice
+    ? { sourceKind: "BASELINE_INPUT", authority: "BASELINE_INPUT", valueMinor: baseValues.fuelUnitPriceMinor, currencyCode: baseValues.fuelCurrencyCode || baseValues.currencyCode || "TRY" }
+    : external?.used ? externalLayer : { sourceKind: "NO_DATA", authority: "NO_DATA", valueMinor: null };
+  const scenario = scenarioHasPrice
+    ? (external?.used && scenarioValues.useExternalFuelPrice ? externalLayer : { sourceKind: "BASELINE_INPUT", authority: "BASELINE_INPUT", valueMinor: scenarioValues.fuelUnitPriceMinor, currencyCode: scenarioValues.fuelCurrencyCode || scenarioValues.currencyCode || "TRY" })
+    : external?.used ? externalLayer : { sourceKind: "NO_DATA", authority: "NO_DATA", valueMinor: null };
+  return {
+    baseline,
+    scenario,
+    precedence: ["USER_ACTUAL", "PLATFORM_OBSERVED_REFERENCE", "EXTERNAL_CURRENT_REFERENCE", "NO_DATA"],
+    status: baseline.valueMinor !== null && scenario.valueMinor !== null ? "RESOLVED" : "NO_DATA",
+    selectedExternal: externalLayer,
+  };
+}
+
 function compareComponents(baseline, scenario) {
   const byKey = new Map((scenario?.components || []).map((component) => [component.componentKey, component]));
   return (baseline?.components || [])
@@ -510,10 +633,16 @@ function compareComponents(baseline, scenario) {
     });
 }
 
-function confidenceFor({ baseline, scenario, blockers, externalStatus, externalUsed }) {
+function confidenceFor({ baseline, scenario, blockers, externalStatus, externalUsed, consumption }) {
   if (blockers.length || baseline.costMinor === null || scenario.costMinor === null) return { level: "INSUFFICIENT", score: 0, reason: "Maliyet hesabı için güvenli ve karşılaştırılabilir veri yok" };
   if (externalStatus === "EXPIRED" || externalStatus === "UNKNOWN" || externalStatus === "SOURCE_UNAVAILABLE") return { level: "LOW", score: 45, reason: "Piyasa referansı güncel veya kullanılabilir değil" };
   if (externalUsed && externalStatus === "STALE") return { level: "MEDIUM", score: 65, reason: "Karşılaştırma eski bir piyasa referansı içeriyor" };
+  if (consumption?.baseline?.selected?.confidence === "LOW" || consumption?.scenario?.selected?.confidence === "LOW") {
+    return { level: "LOW", score: 50, reason: "Tüketim referansı araç alt tipi veya görev çevrimi açısından sınırlı" };
+  }
+  if (consumption?.baseline?.fuelTypeStatus === "UNRESOLVED" || consumption?.scenario?.fuelTypeStatus === "UNRESOLVED") {
+    return { level: "MEDIUM", score: 60, reason: "Yakıt türü doğrulanmadı; dizel sınıf referansı açıkça işaretlendi" };
+  }
   if (!baseline.complete || !scenario.complete) return { level: "MEDIUM", score: 70, reason: "Bazı maliyet bileşenleri planlanan maliyet tabanından geliyor" };
   return { level: "HIGH", score: 95, reason: "İç maliyet modeli aynı kapsamda deterministic olarak çalıştı" };
 }
@@ -585,6 +714,204 @@ function normalizeScenarioMeta(input = {}) {
     if (input?.[field] !== undefined) riskAssumptions[field] = input[field];
   }
   return { cleanOverrides, scenarioType, routeAlternative, dispatchAlternative, stopOperations, bestCandidate, riskAssumptions };
+}
+
+function hasAnyCostValue(values, fields) {
+  return fields.some((field) => values?.[field] !== null && values?.[field] !== undefined && values?.[field] !== "");
+}
+
+function buildOptionalCostCoverage(values) {
+  const missingOptionalCosts = [];
+  if (!hasAnyCostValue(values, DRIVER_COST_FIELDS)) missingOptionalCosts.push({ key: "driver", label: "Sürücü maliyeti" });
+  if (!hasAnyCostValue(values, MAINTENANCE_COST_FIELDS)) missingOptionalCosts.push({ key: "maintenance", label: "Bakım maliyeti" });
+  const hasDriverCost = !missingOptionalCosts.some((item) => item.key === "driver");
+  const hasMaintenanceCost = !missingOptionalCosts.some((item) => item.key === "maintenance");
+  const status = missingOptionalCosts.length ? "PARTIAL" : "COMPLETE";
+  const partialExplanation = missingOptionalCosts.length === 2
+    ? "Bu karşılaştırma sürücü ve bakım maliyetleri dahil edilmeden hesaplandı."
+    : missingOptionalCosts.length === 1
+      ? `Bu karşılaştırma ${missingOptionalCosts[0].label.toLocaleLowerCase("tr-TR")} dahil edilmeden hesaplandı.`
+      : "Sürücü ve bakım maliyetleri mevcut referanslarla hesaplamaya dahil edildi.";
+  return {
+    status,
+    hasDriverCost,
+    hasMaintenanceCost,
+    missingOptionalCosts,
+    partialExplanation,
+  };
+}
+
+function confidenceWithOptionalCoverage(confidence, coverage) {
+  if (coverage?.status !== "PARTIAL" || !confidence || confidence.level === "INSUFFICIENT") return confidence;
+  return {
+    ...confidence,
+    level: confidence.level === "HIGH" ? "MEDIUM" : confidence.level,
+    score: Math.min(Number(confidence.score || 0), 70),
+    reason: "Yakıt ve mevcut maliyet kanıtı okunabilir; sürücü veya bakım maliyeti eksik olduğu için kapsam kısmi",
+  };
+}
+
+function vehicleFuelRequirementLiters({ distanceKm, consumptionLitersPer100Km, vehicleCount }) {
+  const distance = numberOrNull(distanceKm);
+  const consumption = numberOrNull(consumptionLitersPer100Km);
+  const count = integerOrNull(vehicleCount);
+  if (distance === null || consumption === null || count === null || count < 1) return null;
+  const liters = (distance * consumption * count) / 100;
+  return Number.isFinite(liters) ? Number(liters.toFixed(2)) : null;
+}
+
+function buildVehiclePlanAlternatives({ baselineInput, scenarioOverrides, context, externalReference, now }) {
+  const baselineValues = { ...(isObject(baselineInput) ? baselineInput : {}) };
+  const scenarioValues = { ...baselineValues, ...(isObject(scenarioOverrides) ? scenarioOverrides : {}) };
+  const passengerCount = numberOrNull(scenarioValues.passengerCount);
+  const baselineVehicleType = compact(baselineValues.vehicleType).toUpperCase() || null;
+  const actualCapacity = numberOrNull(scenarioValues.vehicleCapacity);
+  if (passengerCount === null || passengerCount < 0) {
+    return {
+      referenceVersion: VEHICLE_PLAN_REFERENCE_VERSION,
+      unit: VEHICLE_PLAN_REFERENCE_UNIT,
+      status: "NO_DATA",
+      passengerCount: null,
+      alternatives: [],
+      items: [],
+      recommendation: null,
+      factors: [],
+      reason: "Araç planı için kişi sayısı bulunamadı; değer uydurulmadı.",
+    };
+  }
+
+  const items = VEHICLE_PLAN_CLASSES.map((vehicleType) => {
+    const canonicalCapacity = context?.vehicleCapacitiesByClass?.[vehicleType];
+    const capacityResolution = resolveVehicleCapacityReference({
+      vehicleType,
+      actualCapacity: vehicleType === baselineVehicleType ? actualCapacity : null,
+      canonicalCapacity,
+    });
+    const selectedCapacity = capacityResolution.selected?.capacity ?? null;
+    if (selectedCapacity === null) {
+      return {
+        vehicleType,
+        vehicleLabel: VEHICLE_PLAN_LABELS[vehicleType],
+        passengerCount,
+        status: "NO_DATA",
+        capacity: null,
+        requiredVehicleCount: null,
+        driverCount: null,
+        capacityResolution,
+        missingData: ["Onaylı araç kapasitesi"],
+        missingOptionalCosts: [],
+        recommendationEligible: false,
+      };
+    }
+
+    const requiredVehicleCount = Math.max(1, Math.ceil(passengerCount / selectedCapacity));
+    const candidateOverrides = {
+      ...(isObject(scenarioOverrides) ? scenarioOverrides : {}),
+      vehicleType,
+      vehicleCount: requiredVehicleCount,
+      vehicleCapacity: selectedCapacity,
+      passengerCount,
+    };
+    const candidatePreview = buildCostScenarioPreview({
+      baselineInput,
+      scenarioOverrides: candidateOverrides,
+      context,
+      externalReference,
+      now,
+      includeVariants: false,
+      includeVehicleAlternatives: false,
+    });
+    const candidateValues = { ...baselineValues, ...candidateOverrides };
+    const costCoverage = buildOptionalCostCoverage(candidateValues);
+    const selectedConsumption = candidatePreview.referenceResolution?.vehicleConsumption?.scenario?.selected || null;
+    const distanceKm = candidatePreview.dimensions?.totalDistanceKm?.scenario ?? candidateValues.totalDistanceKm ?? candidateValues.serviceDistanceKm ?? null;
+    const fuelRequirementLiters = vehicleFuelRequirementLiters({
+      distanceKm,
+      consumptionLitersPer100Km: selectedConsumption?.valueLitersPer100Km,
+      vehicleCount: requiredVehicleCount,
+    });
+    const hasCost = candidatePreview.scenario?.costMinor !== null && candidatePreview.scenario?.costMinor !== undefined && candidatePreview.status !== "BLOCKED";
+    const missingData = [...new Set([
+      ...(candidatePreview.missingData || []),
+      ...(selectedConsumption?.available ? [] : ["Onaylı tüketim referansı"]),
+      ...(fuelRequirementLiters === null ? ["Yakıt ihtiyacı için rota/tüketim"] : []),
+    ])];
+    return {
+      vehicleType,
+      vehicleLabel: VEHICLE_PLAN_LABELS[vehicleType],
+      passengerCount,
+      status: hasCost ? (costCoverage.status === "PARTIAL" ? "PARTIAL" : "READY") : candidatePreview.status,
+      capacity: selectedCapacity,
+      capacityRange: capacityResolution.selected?.range || null,
+      capacityUnit: VEHICLE_PLAN_REFERENCE_UNIT,
+      capacityResolution,
+      requiredVehicleCount,
+      driverCount: requiredVehicleCount,
+      driverCountBasis: "ONE_DRIVER_PER_SIMULTANEOUS_VEHICLE",
+      fuelConsumptionLitersPer100Km: selectedConsumption?.valueLitersPer100Km ?? null,
+      fuelConsumptionReference: selectedConsumption,
+      fuelRequirementLiters,
+      routeDistanceKm: distanceKm,
+      routeDurationMinutes: candidatePreview.dimensions?.routeDurationMinutes?.scenario ?? candidateValues.routeDurationMinutes ?? null,
+      costMinor: candidatePreview.scenario?.costMinor ?? null,
+      costBasis: candidatePreview.scenario?.costBasis || null,
+      currencyCode: candidatePreview.currencyCode || compact(candidateValues.currencyCode, "TRY").toUpperCase(),
+      confidence: candidatePreview.confidence || { level: "INSUFFICIENT", score: 0 },
+      risk: candidatePreview.operationalRisk || null,
+      costCoverage,
+      missingOptionalCosts: costCoverage.missingOptionalCosts,
+      partialExplanation: costCoverage.partialExplanation,
+      missingData,
+      recommendationEligible: hasCost && !missingData.includes("Onaylı araç kapasitesi"),
+      previewSafety: candidatePreview.safety,
+    };
+  });
+
+  const eligible = items
+    .filter((item) => item.recommendationEligible)
+    .sort((left, right) => {
+      const costDifference = Number(left.costMinor) - Number(right.costMinor);
+      if (costDifference !== 0) return costDifference;
+      return Number(left.requiredVehicleCount) - Number(right.requiredVehicleCount);
+    });
+  const recommended = eligible[0] || null;
+  const recommendation = recommended
+    ? {
+      vehicleType: recommended.vehicleType,
+      vehicleLabel: recommended.vehicleLabel,
+      label: recommended.costCoverage.status === "PARTIAL" ? "Operasyonel olarak önerilen" : "Önerilen",
+      reason: recommended.costCoverage.status === "PARTIAL"
+        ? `${recommended.vehicleLabel} planı kapasiteyi güvenli biçimde karşılıyor ve mevcut rota/yakıt kanıtıyla hesaplanabilir maliyetler içinde en düşük sinyali veriyor. Sürücü ve bakım maliyeti eksik olduğu için bu tam maliyet açısından en iyi seçenek olarak sunulmaz.`
+        : `${recommended.vehicleLabel} planı kapasiteyi güvenli biçimde karşılıyor ve mevcut rota/yakıt/maliyet kanıtıyla karşılaştırılan adaylar içinde en düşük hesaplanabilir maliyet sinyalini veriyor.`,
+      basis: [
+        "capacity_suitability",
+        "vehicle_count",
+        ...(recommended.fuelConsumptionLitersPer100Km !== null ? ["fuel_consumption"] : []),
+        ...(recommended.fuelRequirementLiters !== null ? ["total_fuel_requirement"] : []),
+        ...(recommended.costMinor !== null ? ["available_cost_evidence"] : []),
+      ],
+      evidenceCompleteness: recommended.costCoverage.status === "PARTIAL" ? "PARTIAL" : "COMPLETE",
+    }
+    : null;
+  const status = items.some((item) => item.status === "READY" || item.status === "PARTIAL")
+    ? items.some((item) => item.status === "PARTIAL") ? "PARTIAL" : "RESOLVED"
+    : "NO_DATA";
+  const factors = ["capacity_suitability", "vehicle_count", "driver_count"];
+  if (items.some((item) => item.fuelConsumptionLitersPer100Km !== null)) factors.push("fuel_consumption");
+  if (items.some((item) => item.fuelRequirementLiters !== null)) factors.push("total_fuel_requirement");
+  if (items.some((item) => item.costMinor !== null)) factors.push("available_cost_evidence");
+  return {
+    referenceVersion: VEHICLE_PLAN_REFERENCE_VERSION,
+    unit: VEHICLE_PLAN_REFERENCE_UNIT,
+    status,
+    passengerCount,
+    alternatives: items,
+    items,
+    recommendation,
+    factors,
+    precedence: ["USER_OR_VEHICLE_ACTUAL", "CANONICAL_VEHICLE_MODEL", "TECHNICAL_CLASS_REFERENCE", "NO_DATA"],
+    reason: recommendation ? recommendation.reason : "Kapasite ve karşılaştırılabilir maliyet kanıtı bulunamadı; öneri uydurulmadı.",
+  };
 }
 
 function applyRouteEvidence(values, routeEvidence, side) {
@@ -884,6 +1211,7 @@ export function buildCostScenarioPreview({
   externalReference = null,
   now = new Date(),
   includeVariants = true,
+  includeVehicleAlternatives = true,
 } = {}) {
   const scenarioMeta = normalizeScenarioMeta(scenarioOverrides);
   const baseSanitized = sanitizeInput(baselineInput, "Mevcut plan");
@@ -900,6 +1228,18 @@ export function buildCostScenarioPreview({
   const scenarioCurrency = compact(scenarioValues.currencyCode, baselineCurrency).toUpperCase();
   if (baselineCurrency !== scenarioCurrency) pushUnique(globalIssues.blockers, "Mevcut plan ile alternatif senaryo farklı para biriminde olamaz");
 
+  const consumptionResolution = applyVehicleConsumptionReference(
+    baseValues,
+    scenarioValues,
+    context,
+    {
+      baselineExplicit: Object.prototype.hasOwnProperty.call(baseSanitized.values, "fuelConsumptionLitersPer100Km"),
+      scenarioExplicit: Object.prototype.hasOwnProperty.call(overrideSanitized.values, "fuelConsumptionLitersPer100Km"),
+    },
+    globalIssues,
+  );
+  baseValues = consumptionResolution.baselineValues;
+  scenarioValues = consumptionResolution.scenarioValues;
   const withExternal = applyExternalReference(baseValues, scenarioValues, externalReference, globalIssues);
   const baseline = buildSide(withExternal.baseline, baseValues, context, "baseline", globalIssues);
   const scenario = buildSide(withExternal.scenario, baseValues, context, "scenario", globalIssues);
@@ -936,10 +1276,21 @@ export function buildCostScenarioPreview({
     : comparable
       ? "READY"
       : "INCOMPLETE";
-  const confidence = {
-    ...confidenceFor({ baseline: { ...baseline, costMinor: baselineCost }, scenario: { ...scenario, costMinor: scenarioCost }, blockers: globalIssues.blockers, externalStatus: withExternal.status, externalUsed: withExternal.used }),
-    baseline: context?.baselineConfidence || null,
+  const referenceResolution = {
+    vehicleConsumption: consumptionResolution,
+    fuelPrice: fuelPriceResolution({ baseValues, scenarioValues, external: withExternal }),
   };
+  const baselineCostCoverage = buildOptionalCostCoverage(withExternal.baseline);
+  const scenarioCostCoverage = buildOptionalCostCoverage(withExternal.scenario);
+  const costCoverage = {
+    baseline: baselineCostCoverage,
+    scenario: scenarioCostCoverage,
+    partialExplanation: scenarioCostCoverage.partialExplanation,
+  };
+  const confidence = confidenceWithOptionalCoverage({
+    ...confidenceFor({ baseline: { ...baseline, costMinor: baselineCost }, scenario: { ...scenario, costMinor: scenarioCost }, blockers: globalIssues.blockers, externalStatus: withExternal.status, externalUsed: withExternal.used, consumption: consumptionResolution }),
+    baseline: context?.baselineConfidence || null,
+  }, costCoverage.scenario);
   const scenarioId = `scn_${safeHashId({
     version: COST_SCENARIO_FORECAST_MODEL_VERSION,
     tenantScope: compact(context?.tenantScope, "tenant"),
@@ -968,6 +1319,7 @@ export function buildCostScenarioPreview({
     ...(scenario.costMinor === null ? ["Alternatif senaryo maliyet tabanı"] : []),
     ...(baselineCapacity?.requiredVehicleCount === null ? ["Mevcut plan araç kapasitesi"] : []),
     ...(scenarioCapacity?.requiredVehicleCount === null ? ["Alternatif senaryo araç kapasitesi"] : []),
+    ...costCoverage.scenario.missingOptionalCosts.map((item) => `${item.label} eksik`),
   ])];
 
   const timingComparison = buildTimingComparison({ baselineValues: baseValues, scenarioValues, context, routeEvidence: context?.routeEvidence });
@@ -1021,6 +1373,15 @@ export function buildCostScenarioPreview({
       applied: false,
       reason: "Dispatch alternatifi çalıştırılmadı; #4 yalnız güvenli preview seam sağlar.",
     });
+  const vehiclePlanAlternatives = includeVehicleAlternatives
+    ? buildVehiclePlanAlternatives({
+      baselineInput,
+      scenarioOverrides: scenarioMeta.cleanOverrides,
+      context,
+      externalReference,
+      now,
+    })
+    : null;
   const scenarioVariants = includeVariants
     ? buildScenarioVariants({ preview: { ...previewShape, timingComparison, operationalRisk }, baselineInput, scenarioOverrides: scenarioMeta.cleanOverrides, context, externalReference, now, scenarioMeta })
     : null;
@@ -1074,6 +1435,23 @@ export function buildCostScenarioPreview({
     operationalRisk,
     routeAlternative,
     dispatchAlternative,
+    costCoverage,
+    vehiclePlanAlternatives,
+    referenceResolution,
+    resolvedAssumptions: {
+      baseline: {
+        vehicleConsumption: consumptionResolution.baseline.selected,
+        fuelPrice: referenceResolution.fuelPrice.baseline,
+      },
+      scenario: {
+        vehicleConsumption: consumptionResolution.scenario.selected,
+        fuelPrice: referenceResolution.fuelPrice.scenario,
+      },
+      precedence: {
+        vehicleConsumption: consumptionResolution.precedence,
+        fuelPrice: referenceResolution.fuelPrice.precedence,
+      },
+    },
     comparisonDimensions: {
       labels: COMPARISON_DIMENSION_LABELS,
       vehicleRequirement: { baseline: baselineCapacity?.requiredVehicleCount ?? null, scenario: scenarioCapacity?.requiredVehicleCount ?? null, unit: "araç" },

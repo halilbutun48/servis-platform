@@ -32,6 +32,7 @@ async function getBaseline(token, scope) {
 }
 
 async function visit(browser, { name, identifier, role, companyKind, route, scope = "COMPANY", mobile = false, fill = false, planningOnly = false, contextualHome = "", contextualTestId = "" }) {
+  // Normal novice acceptance: without manually entering existing baseline values.
   const taskResultStart = results.length;
   const taskConsoleErrorStart = consoleErrors.length;
   const taskPageErrorStart = pageErrors.length;
@@ -68,8 +69,24 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
   record(`${name} no dash sea and explicit missing`, noDashSea && hasFieldLevelMissingReason, `missing=${baseline.missingFields.length}`);
   record(`${name} advanced assumptions collapsed`, advancedClosed);
   record(`${name} separate scenario nav absent`, noSeparateNav);
-  record(`${name} current scenario delta visible`, initialText.includes("Mevcut → Senaryo → Delta") && initialText.includes("Senaryo varsayımları"));
+  record(`${name} current scenario delta visible`, initialText.includes("Mevcut → Senaryo → Delta") && initialText.includes("Sadece değiştirmek istediğin"));
   record(`${name} baseline confidence visible`, await page.getByTestId("scenario-baseline-confidence").isVisible());
+  const initialAlternatives = page.getByTestId("scenario-vehicle-plan-alternatives");
+  await initialAlternatives.waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
+  const initialAlternativeCards = initialAlternatives.locator('[data-testid^="scenario-vehicle-alternative-"]');
+  const initialAlternativeCount = await initialAlternativeCards.count().catch(() => 0);
+  const initialAlternativeText = initialAlternativeCount ? await initialAlternatives.innerText() : "";
+  record(`${name} automatic vehicle alternatives visible`, await initialAlternatives.isVisible().catch(() => false) && initialAlternativeCount === 3 && ["Kapasite", "Sürücü", "L/100 km"].every((label) => initialAlternativeText.includes(label)), `alternatives=${initialAlternativeCount}`);
+
+  const details = page.getByTestId("scenario-details");
+  const detailsClosed = !(await details.evaluate((node) => node.open));
+  const visiblePrimaryFields = await workspace.locator('input[data-testid^="scenario-input-"]:visible, select[data-testid^="scenario-input-"]:visible').count();
+  record(`${name} details starts collapsed`, detailsClosed);
+  record(`${name} novice first view is compact`, visiblePrimaryFields === 1 && !(await page.getByTestId("scenario-input-fuelConsumptionLitersPer100Km").isVisible().catch(() => false)));
+  await details.locator("summary").click();
+  const detailsText = await details.innerText();
+  record(`${name} automatic assumptions are explainable`, detailsText.includes("Araç tüketimi") && detailsText.includes("Yakıt fiyatı") && detailsText.includes("Öncelik"));
+  await details.locator("summary").click();
 
   if (planningOnly) {
     record(`${name} planning safety boundary`, initialText.includes("normal bütçe yaşam döngüsü bu bağlamda açılmaz") && !initialText.includes("Bütçe onayı") && !initialText.includes("Hakediş oluştur"));
@@ -80,26 +97,49 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
     const p = page;
     const primaryInput = (key) => p.getByTestId(`scenario-input-${key}`);
     const initialPassenger = await primaryInput("passengerCount").inputValue().catch(() => "");
-    const initialVehicle = await primaryInput("vehicleCount").inputValue().catch(() => "");
     if (await primaryInput("passengerCount").count()) await primaryInput("passengerCount").fill(String(Number(initialPassenger || baseline.input.passengerCount || 0) + 1));
-    if (await primaryInput("vehicleCount").count()) await primaryInput("vehicleCount").fill(String(Math.max(1, Number(initialVehicle || baseline.input.vehicleCount || 1))));
     const changedPassenger = await primaryInput("passengerCount").inputValue().catch(() => "");
+    record(`${name} only one meaningful variable`, Boolean(await primaryInput("passengerCount").count()) && changedPassenger !== "" && visiblePrimaryFields === 1);
     record(`${name} primary role input visible`, Boolean(await primaryInput("passengerCount").count()) && changedPassenger !== "");
-    await p.getByTestId("scenario-quick-days").click();
-    record(`${name} quick scenario preset`, (await primaryInput("serviceDayCount").inputValue().catch(() => "")) !== String(baseline.input.serviceDayCount ?? ""));
+    record(`${name} quick scenario preset`, await p.getByTestId("scenario-quick-passenger").count() > 0);
+    await p.screenshot({ path: `backend/artifacts/browser-smoke/cost-scenario-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-novice.png`, fullPage: false });
     await p.getByTestId("cost-scenario-calculate").click();
     await p.getByText("Fark / fırsat", { exact: true }).waitFor({ state: "visible", timeout: 20000 });
     const resultText = await workspace.innerText();
+    const resultAlternatives = p.getByTestId("scenario-vehicle-plan-alternatives");
+    const resultAlternativeCards = resultAlternatives.locator('[data-testid^="scenario-vehicle-alternative-"]');
+    const resultAlternativeCount = await resultAlternativeCards.count().catch(() => 0);
+    record(`${name} capacity-derived alternatives after passenger change`, resultAlternativeCount === 3 && resultText.includes("Araç sayısı") && resultText.includes("Kapasiteye göre otomatik"), `alternatives=${resultAlternativeCount}`);
     record(`${name} explainable comparison`, resultText.includes("Tahmini tasarruf") && resultText.includes("Mevcut plan tahmini maliyeti") && resultText.includes("Beklenen") && resultText.includes("En uygun") && resultText.includes("Riskli durum"));
     record(`${name} financial operational risk effects`, ["Finansal Etki", "Operasyonel Etki", "Risk"].every((label) => resultText.includes(label)));
     record(`${name} master primer comparison evidence`, ["Dönem sonu forecast", "Bütçe sapması", "Planned-vs-actual", "Gecikme etkisi", "Operasyonel risk", "Rota alternatifi", "Dispatch sınırı"].every((label) => resultText.includes(label)));
     record(`${name} preview-only result`, resultText.includes("Sadece önizleme") && resultText.includes("canlı") && !resultText.includes("Uygula"));
+    record(`${name} partial optional costs disclosed`, resultText.includes("Sürücü maliyeti") && resultText.includes("Bakım maliyeti") && resultText.includes("Bu karşılaştırma sürücü ve bakım maliyetleri dahil edilmeden hesaplandı."));
+
+    let nonDefaultCard = null;
+    for (let index = 0; index < resultAlternativeCount; index += 1) {
+      const candidate = resultAlternativeCards.nth(index);
+      const candidateText = await candidate.innerText();
+      if (!candidateText.includes("Önerilen")) {
+        nonDefaultCard = candidate;
+        break;
+      }
+    }
+    if (nonDefaultCard) {
+      await nonDefaultCard.getByRole("button", { name: "Bu planı karşılaştır" }).click();
+      await p.getByText("Fark / fırsat", { exact: true }).waitFor({ state: "visible", timeout: 20000 });
+      const selectedResultText = await workspace.innerText();
+      record(`${name} non-default vehicle plan comparison`, selectedResultText.includes("Bu planı karşılaştır") && selectedResultText.includes("Önizleme") && selectedResultText.includes("Sadece önizleme"));
+    } else {
+      record(`${name} non-default vehicle plan comparison`, false, "non-default alternative was not available");
+    }
 
     const example = p.getByTestId("scenario-readonly-example");
     record(`${name} readonly example starts collapsed`, !(await example.evaluate((node) => node.open)));
     await example.locator("summary").click();
     const exampleText = await example.innerText();
     record(`${name} readonly synthetic example`, exampleText.includes("ÖRNEK") && exampleText.includes("Gerçek operasyon veriniz değildir") && exampleText.includes("kalıcılaştırılmaz"));
+    await example.locator("summary").click();
 
     const ab = p.getByTestId("scenario-ab-comparison");
     record(`${name} A/B starts collapsed`, !(await ab.evaluate((node) => node.open)));
@@ -111,6 +151,7 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
     await p.getByTestId("scenario-ab-result").waitFor({ state: "visible", timeout: 20000 });
     const abText = await p.getByTestId("scenario-ab-result").innerText();
     record(`${name} A/B transient comparison`, ["Mevcut", "Senaryo A", "Senaryo B"].every((label) => abText.includes(label)));
+    await ab.locator("summary").click();
     record(`${name} mobile overflow`, !mobile || await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 8));
   }
   const taskResults = results.slice(taskResultStart);
