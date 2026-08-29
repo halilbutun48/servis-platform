@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  20,
-    "currentWarningHotFileCount":  14,
+    "currentWarningHotFileCount":  13,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -221,10 +221,6 @@
                                                                                                  "class":  "safe-candidate-review",
                                                                                                  "note":  "repo harness inventory doc; controlled cleanup adayi"
                                                                                              },
-                                                       "backend/scripts/copilot_reasoning_answer_composer_01_check.js":  {
-                                                                                                             "class":  "safe-candidate-review",
-                                                                                                             "note":  "copilot reasoning answer composer check; controlled cleanup adayi"
-                                                                                                         },
                                                        "backend/scripts/verify_chain_01_product_extensions_check.js":  {
                                                                                   "class":  "safe-candidate-review",
                                                                                  "note":  "verify-chain product extensions runner; controlled cleanup adayi"
