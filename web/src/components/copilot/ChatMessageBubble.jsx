@@ -77,6 +77,7 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
   const messageId = useMemo(() => feedbackId(message), [message]);
   const [feedback, setFeedback] = useState(() => safeReadFeedback()[messageId] || "");
   const uncertaintyTone = String(message?.uncertaintyMeta?.cautionLevel || "");
+  const isCostReasoning = Boolean(message?.costReasoning?.version);
 
   const handleFeedback = (value) => {
     if (role === "user") return;
@@ -158,7 +159,7 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
               {message?.followUpPrompt ? <div style={{ fontSize: 12, color: "#475467" }}>{message.followUpPrompt}</div> : null}
               {Array.isArray(message?.responseSections) && message.responseSections.length ? (
                 <div style={{ display: "grid", gap: 8 }}>
-                  {message.responseSections.slice(0, isSimpleMode ? 1 : 2).map((section, i) => (
+                  {(isCostReasoning ? message.responseSections : message.responseSections.slice(0, isSimpleMode ? 1 : 2)).map((section, i) => (
                     <SectionCard key={`${section?.kind || "section"}:${i}`} section={section} />
                   ))}
                 </div>

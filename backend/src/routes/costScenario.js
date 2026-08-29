@@ -526,6 +526,75 @@ async function loadBaseline(req, scope) {
   return scope === "ROOM" ? loadRoomBaseline(id) : loadCompanyBaseline(id);
 }
 
+// #5 Sefer Abi consumes the same tenant-scoped baseline and route evidence as
+// the public #4 endpoints. This is an adapter, not a second scenario owner.
+export async function loadCostScenarioBaselineForUser({ user, scope, companyId = null, roomId = null } = {}) {
+  const scopeKey = upper(scope);
+  if (!ALLOWED_SCOPES.has(scopeKey)) {
+    throw httpError(400, "INVALID_SCENARIO_SCOPE", "Senaryo kapsamı COMPANY veya ROOM olmalıdır.");
+  }
+  const ownId = scopeKey === "ROOM" ? user?.roomId : user?.companyId;
+  const requestedId = scopeKey === "ROOM" ? roomId : companyId;
+  const parsedRequested = requestedId ? parsePositiveId(requestedId) : 0;
+  const role = upper(user?.role);
+  if (requestedId && !parsedRequested) {
+    throw httpError(400, "INVALID_SCENARIO_TENANT", "Senaryo kapsamı kimliği geçersiz.");
+  }
+  if (role !== "SUPER_ADMIN" && parsedRequested && parsedRequested !== Number(ownId || 0)) {
+    throw httpError(403, "SCENARIO_TENANT_MISMATCH", "Bu senaryo başka bir tenant için açılamaz.");
+  }
+  const id = role === "SUPER_ADMIN" ? parsedRequested : parsePositiveId(ownId);
+  if (!id) {
+    throw httpError(400, scopeKey === "ROOM" ? "ROOM_ID_REQUIRED" : "COMPANY_ID_REQUIRED", "Senaryo kapsamı için bağlı kayıt bulunamadı.");
+  }
+  return scopeKey === "ROOM" ? loadRoomBaseline(id) : loadCompanyBaseline(id);
+}
+
+// The assistant uses this exact #4 calculator with a baseline loaded above.
+// It deliberately exposes no persistence or mutation path.
+export async function buildCostScenarioPreviewFromBaseline({ user, baseline, scenarioOverrides = {}, externalReference = null } = {}) {
+  if (!baseline || !ALLOWED_SCOPES.has(upper(baseline.scope))) {
+    throw httpError(400, "SCENARIO_BASELINE_REQUIRED", "Senaryo için kanonik mevcut plan gerekli.");
+  }
+  const routeEvidence = baseline.routeShift
+    ? await buildRouteEvidence(baseline.routeShift, {
+      stopOperations: scenarioOverrides.scenarioStopOperations || scenarioOverrides.stopOperations || [],
+      routeAlternative: scenarioOverrides.routeAlternative || null,
+    })
+    : baseline.routeEvidence;
+  return buildCostScenarioPreview({
+    baselineInput: baseline.input,
+    scenarioOverrides,
+    externalReference,
+    context: {
+      scope: baseline.scope,
+      role: user?.role,
+      companyKind: baseline.companyKind,
+      tenantScope: baseline.tenantScope,
+      requestedBy: "authenticated-user",
+      baselineReference: baseline.baselineReference,
+      baselineDataClass: baseline.baselineDataClass,
+      baselineConfidence: baseline.baselineConfidence,
+      baselineSourceMap: baseline.baselineSourceMap,
+      shiftReference: baseline.source?.shiftId ? `shift_${safeHashId({ id: baseline.source.shiftId }).slice(4)}` : "",
+      routeReference: baseline.source?.shiftId ? `route_${safeHashId({ id: baseline.source.shiftId }).slice(4)}` : "",
+      vehicleReference: baseline.input?.vehicleCount ? "selected-vehicle" : "",
+      actualInput: baseline.input,
+      plannedInput: baseline.plannedInput,
+      budgetEvidence: baseline.budgetEvidence,
+      forecastEvidence: {
+        ...baseline.budgetEvidence,
+        ...(baseline.actualEvidence || {}),
+        actualToDateMinor: baseline.actualEvidence?.actualCostMinor ?? null,
+      },
+      actualEvidence: baseline.actualEvidence,
+      routeEvidence,
+      schedule: { baselineStartMinutes: baseline.input?.shiftStartMinutes ?? null },
+      dispatchAlternative: dispatchSeam(null),
+    },
+  });
+}
+
 function publicBaseline(baseline) {
   const input = { ...baseline.input };
   const source = {

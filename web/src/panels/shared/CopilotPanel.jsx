@@ -381,6 +381,7 @@ export default function CopilotPanel() {
         qualityHints: payload?.qualityHints || null,
         uncertaintyMeta: payload?.uncertaintyMeta || null,
         responseSections: payload?.responseSections || [],
+        costReasoning: payload?.costReasoning || null,
         continuity: payload?.continuity || null,
         routePlan: payload?.routePlan || null,
         actionPlanLabel: payload?.actionPlanLabel || '',

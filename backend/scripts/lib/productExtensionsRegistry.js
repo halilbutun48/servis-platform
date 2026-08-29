@@ -116,6 +116,7 @@ export const productExtensionsCheckScripts = Object.freeze([
   "check:ai03bsemanticvisiblelivematrix01",
   "check:seferabireasoningassistant01",
   "check:seferabiallrolesreasoningassistant01",
+  "check:seferabicostanalysisassistant01",
   "check:seferabiturkishterminology01",
   "check:seferabiturkishuserfacinglanguage01",
   "check:copilotcontextmemorytaskstate01",

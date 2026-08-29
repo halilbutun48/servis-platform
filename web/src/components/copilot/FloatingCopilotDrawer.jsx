@@ -264,6 +264,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       const requestSelection = liveSelection || selection || null;
       const uiSurface = captureCopilotUiSurface();
       const recentMessages = messages.slice(-8).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) }));
+      const previousCostAnalysisState = [...messages].reverse().find((m) => m?.costAnalysisState)?.costAnalysisState || null;
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
         entityType: "screen",
@@ -281,6 +282,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           selectedSummary: requestSelection?.summary || "",
           selectedRecordSummary: requestSelection?.selectedRecordSummary || requestSelection?.summary || "",
           selectedRecordStatus: requestSelection?.selectedRecordStatus || "",
+          costAnalysisState: previousCostAnalysisState,
           uiSurface,
         },
         screenContext: {
@@ -315,6 +317,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         text: payload?.reply || payload?.summary || "Yardım metni oluşmadı.",
         quickActions: Array.isArray(payload?.quickActions) ? payload.quickActions : [],
         followUpPrompt: payload?.followUpPrompt || "",
+        responseSections: Array.isArray(payload?.responseSections) ? payload.responseSections : [],
+        costReasoning: payload?.costReasoning || null,
+        costAnalysisState: payload?.costAnalysisState || null,
       }]);
     } catch (e) {
       setErr(String(e?.message || e));
@@ -514,6 +519,21 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         {messages.map((m, idx) => <div key={`${m.role}-${idx}`} className={m.role === "user" ? "copilotMsg user" : "copilotMsg assistant"}>
           <div className="copilotMsgHead">{m.role === "user" ? "Sen" : COPILOT_PERSONA.assistantDisplayName}</div>
           <div className="copilotMsgText">{m.text}</div>
+          {m.role === "assistant" && m.costReasoning?.version && Array.isArray(m.responseSections) && m.responseSections.length ? (
+            <details className="copilotReasoningDetails">
+              <summary className="copilotToolBtn">Neden böyle söyledim</summary>
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {m.responseSections.map((section, sectionIndex) => (
+                  <div key={`${section?.kind || "section"}:${sectionIndex}`} style={{ border: "1px solid #d0d5dd", borderRadius: 10, padding: 10, background: "#fff" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#344054", marginBottom: 5 }}>{section?.title || "-"}</div>
+                    {section?.text ? <div style={{ fontSize: 12, lineHeight: 1.45 }}>{section.text}</div> : null}
+                    {section?.hint ? <div style={{ fontSize: 11, color: "#475467", marginTop: 5 }}>{section.hint}</div> : null}
+                    {Array.isArray(section?.items) && section.items.length ? <div style={{ fontSize: 11, color: "#475467", marginTop: 6 }}>{section.items.join(" • ")}</div> : null}
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
           {m.role === "assistant" && !m.system ? <div className="copilotMsgActions">
             <button type="button" className="btn sm copilotToolBtn" onClick={() => speak(m.text, idx)}>{readingIndex === idx ? "Okuyor..." : "Sesli oku"}</button>
             {m.followUpPrompt ? <button type="button" className="btn sm copilotToolBtn" onClick={() => ask(m.followUpPrompt)}>Devamını anlat</button> : null}

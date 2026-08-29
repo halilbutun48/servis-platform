@@ -5,6 +5,7 @@ import { normalizeGuideLevel } from "./jobGuide/levels.js";
 import { getScreenDefinitionForUser } from "./jobGuide/screenCatalog.js";
 import { resolveChatContext } from "./chat/contextResolver.js";
 import { buildChatHelpResponse } from "./chat/helpComposer.js";
+import { buildSeferAbiCostAnalysisResponse } from "./chat/seferAbiCostAnalysisAssistant.js";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from "./chat/etaSanity.js";
 
 function intentLabel(intent) {
@@ -757,7 +758,7 @@ function enrichDecisionLayer(intent, context, base) {
 export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel, screenContext, message, conversationState }) {
   if (intent === "CHAT_HELP") {
     const resolved = await resolveChatContext({ entityType, entityId, user, screenContext, conversationState });
-    return buildChatHelpResponse({
+    const baseResponse = buildChatHelpResponse({
       entityType,
       entityId,
       user,
@@ -765,6 +766,16 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user,
       conversationState,
       screenContext,
       ...resolved,
+    });
+    return buildSeferAbiCostAnalysisResponse({
+      baseResponse,
+      user,
+      message,
+      screenContext,
+      conversationState,
+      resolvedEntityType: resolved.resolvedEntityType,
+      resolvedEntityId: resolved.resolvedEntityId,
+      scope: resolved.scope,
     });
   }
 
