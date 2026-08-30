@@ -36,7 +36,12 @@ const outcomes = [];
 function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: REPO_ROOT,
-    env: { ...process.env, PRISMA_GENERATE_SKIP_AUTOINSTALL: "1", NPM_CONFIG_UPDATE_NOTIFIER: "false" },
+    env: {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL || "postgresql://prisma_schema_validation@127.0.0.1:5432/prisma_schema_validation?schema=public",
+      PRISMA_GENERATE_SKIP_AUTOINSTALL: "1",
+      NPM_CONFIG_UPDATE_NOTIFIER: "false",
+    },
     encoding: "utf8",
     windowsHide: true,
     maxBuffer: 16 * 1024 * 1024,

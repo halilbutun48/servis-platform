@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
-import prisma from "../src/prisma.js";
 
 import {
   BACKEND_ROOT,
@@ -390,7 +389,8 @@ async function checkSchemaFileOrderIndependence() {
   };
 }
 
-async function runRepresentativeDomainQueries() {
+async function runRepresentativeDomainQueries(client) {
+  const prisma = client || (await import("../src/prisma.js")).default;
   const probes = [
     ["AUTH / USER", () => prisma.user.findFirst({ select: { id: true } })],
     ["COMPANY", () => prisma.company.findFirst({ select: { id: true } })],
@@ -435,6 +435,7 @@ function negativeSensitivity(beforeSource, afterSource) {
 export async function runAcceptance() {
   const startedAt = new Date().toISOString();
   const pre = createPre11Workspace();
+  let prisma;
   const result = {
     evidenceVersion: "PRISMA-SCHEMA-MODULARIZATION-01-ACCEPTANCE",
     startedAt,
@@ -485,7 +486,8 @@ export async function runAcceptance() {
     const orphanModules = afterCensus.modules.filter((module) => module.blocks.length === 0);
     const oneModelPerFile = afterCensus.modules.filter((module) => module.blocks.filter((block) => block.startsWith("model:")).length === 1).length;
     const miscModules = afterCensus.modules.filter((module) => /misc|other|common/i.test(module.file));
-    const representativeQueries = await runRepresentativeDomainQueries();
+    prisma = (await import("../src/prisma.js")).default;
+    const representativeQueries = await runRepresentativeDomainQueries(prisma);
     const migrationStatus = run("git", ["status", "--short", "--", "backend/prisma/migrations"]);
     const noNewMigration = migrationStatus.status === 0 && !migrationStatus.stdout.trim();
     const currentFiles = canonicalPrismaSchemaRelativeFiles(REPO_ROOT);
@@ -604,7 +606,7 @@ export async function runAcceptance() {
     console.log(JSON.stringify(result, null, 2));
     return result;
   } finally {
-    await prisma.$disconnect().catch(() => {});
+    if (prisma) await prisma.$disconnect().catch(() => {});
     fs.rmSync(pre.workspace, { recursive: true, force: true });
   }
 }
