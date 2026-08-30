@@ -4,9 +4,9 @@ WORKDIR /app/backend
 COPY package.json package-lock.json* ./
 # Prisma Client generate için schema install aşamasında da mevcut olsun
 COPY prisma ./prisma
-RUN npm install
+RUN npm ci
 COPY . .
 # Schema değişikliklerinde cache yüzünden eski prisma client kalmasın
-RUN npx prisma generate
+RUN npm run prisma:generate
 EXPOSE 3000
 CMD ["node", "src/server.js"]

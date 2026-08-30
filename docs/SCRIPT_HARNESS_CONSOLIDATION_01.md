@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `447`
+- Toplam package script entry: `449`
 - Toplam executable tracked file: `1331`
-- Combined registry row: `1778`
-- Root/backend/web/mobile package dağılımı: root `282`, backend `895`, web `97`, mobile `201`
+- Combined registry row: `1780`
+- Root/backend/web/mobile package dağılımı: root `282`, backend `897`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `768`
+- NEEDS_REVIEW: `770`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 768 |
+| NEEDS_REVIEW | 770 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -723,7 +723,9 @@ Repo: `servis-platform`
 | backend:dev | backend/package.json | backend | nodemon --watch src --ext js,json --signal SIGTERM --exec "node src/server.js" | review | NEEDS_REVIEW |  | BACKEND-DEV |  | Owner or chain unclear |  |
 | backend:start | backend/package.json | backend | node src/server.js | review | NEEDS_REVIEW |  | BACKEND-START |  | Owner or chain unclear |  |
 | backend:seed | backend/package.json | backend | node prisma/seed.js | review | NEEDS_REVIEW |  | BACKEND-SEED |  | Owner or chain unclear |  |
-| backend:bootstrap | backend/package.json | backend | npx prisma generate && npx prisma migrate deploy && npm run seed | review | NEEDS_REVIEW |  | BACKEND-BOOTSTRAP |  | Owner or chain unclear |  |
+| backend:prisma:generate | backend/package.json | backend | node scripts/prisma_cross_platform_client_hardening_01.mjs generate | review | NEEDS_REVIEW |  | BACKEND-PRISMA-GENERATE |  | Owner or chain unclear |  |
+| backend:prisma:verify | backend/package.json | backend | node scripts/prisma_cross_platform_client_hardening_01.mjs verify | review | NEEDS_REVIEW |  | BACKEND-PRISMA-VERIFY |  | Owner or chain unclear |  |
+| backend:bootstrap | backend/package.json | backend | npm run prisma:generate && npx prisma migrate deploy && npm run seed | review | NEEDS_REVIEW |  | BACKEND-BOOTSTRAP |  | Owner or chain unclear |  |
 | backend:lint | backend/package.json | backend | node scripts/run_backend_lint.js | backend-lint | ACTIVE_BACKEND_LINT |  | BACKEND-LINT |  | Breaks backend lint gate | backend lint wrapper |
 | backend:smoke | backend/package.json | backend | node scripts/smoke.js | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | BACKEND-SMOKE |  | Loses manual smoke entrypoint |  |
 | backend:fullcheck | backend/package.json | backend | node scripts/fullcheck.js | verify-core | ACTIVE_CORE |  | BACKEND-FULLCHECK |  | Breaks canonical verification chain |  |
@@ -1481,7 +1483,7 @@ Repo: `servis-platform`
 | settlementReconciliationDesk.js | backend/src/ops/settlementReconciliationDesk.js | backend |  | review | NEEDS_REVIEW |  | SETTLEMENT-RECONCILIATION-DESK |  | Owner or chain unclear |  |
 | ssotAlignmentManifest.js | backend/src/ops/ssotAlignmentManifest.js | backend |  | review | NEEDS_REVIEW |  | SSOT-ALIGNMENT-MANIFEST |  | Owner or chain unclear |  |
 | trustQualityManifest.js | backend/src/ops/trustQualityManifest.js | backend |  | review | NEEDS_REVIEW |  | TRUST-QUALITY-MANIFEST |  | Owner or chain unclear |  |
-| prisma.js | backend/src/prisma.js | backend | backend:bootstrap, backend:seed | review | NEEDS_REVIEW |  | PRISMA |  | Owner or chain unclear |  |
+| prisma.js | backend/src/prisma.js | backend | backend:bootstrap, backend:prisma:generate, backend:prisma:verify, backend:seed | review | NEEDS_REVIEW |  | PRISMA |  | Owner or chain unclear |  |
 | index.js | backend/src/redis/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | miniRedis.js | backend/src/redis/miniRedis.js | backend |  | review | NEEDS_REVIEW |  | MINI-REDIS |  | Owner or chain unclear |  |
 | index.js | backend/src/region/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |

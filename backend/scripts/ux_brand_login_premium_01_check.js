@@ -730,12 +730,14 @@ function main() {
     return !new Set([
       "backend/README.md",
       "backend/package.json",
+      "backend/.dockerignore",
       "backend/src/bootstrap/rateLimits.js",
       "backend/src/ops/trustQualityManifest.js",
       "backend/src/lib/requestUrl.js",
       "backend/src/middleware/apiRequestLog.js",
       "backend/src/middleware/asyncHandler.js",
       "infra/docker-compose.yml",
+      ".github/workflows/vardis_verification_visibility.yml",
       ...BATCH10_DOC_WORKTREE_CLOSURE_PATHS,
       ...BATCH11_INDEX_WORKTREE_SCOPE_PATHS,
     ]).has(normalized);
