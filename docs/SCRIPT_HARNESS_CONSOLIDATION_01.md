@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `449`
-- Toplam executable tracked file: `1331`
-- Combined registry row: `1780`
-- Root/backend/web/mobile package dağılımı: root `282`, backend `897`, web `97`, mobile `201`
+- Toplam executable tracked file: `1334`
+- Combined registry row: `1783`
+- Root/backend/web/mobile package dağılımı: root `282`, backend `900`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `770`
+- NEEDS_REVIEW: `773`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `380`
+- Eski sistem term eşleşmesi: `382`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 770 |
+| NEEDS_REVIEW | 773 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1172,6 +1172,9 @@ Repo: `servis-platform`
 | pay_safe_01_payment_write_gate_check.js | backend/scripts/pay_safe_01_payment_write_gate_check.js | backend | root:check:paysafe01 | product | ACTIVE |  | PAY-SAFE-01-PAYMENT-WRITE-GATE-CHECK |  | Owner or chain unclear | product check/helper |
 | plan_center_guided_flow_persistence_01_check.js | backend/scripts/plan_center_guided_flow_persistence_01_check.js | backend | root:check:plancenterguidedflowpersistence01 | review | NEEDS_REVIEW |  | PLAN-CENTER-GUIDED-FLOW-PERSISTENCE-01-CHECK |  | Owner or chain unclear |  |
 | post_3_identity_and_evidence_lifecycle_hardening_01_check.js | backend/scripts/post_3_identity_and_evidence_lifecycle_hardening_01_check.js | backend |  | review | NEEDS_REVIEW |  | POST-3-IDENTITY-AND-EVIDENCE-LIFECYCLE-HARDENING-01-CHECK |  | Owner or chain unclear |  |
+| prisma_cross_platform_client_hardening_01.mjs | backend/scripts/prisma_cross_platform_client_hardening_01.mjs | backend | backend:prisma:generate, backend:prisma:verify | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01 |  | Owner or chain unclear |  |
+| prisma_cross_platform_client_hardening_01_acceptance.mjs | backend/scripts/prisma_cross_platform_client_hardening_01_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-ACCEPTANCE |  | Owner or chain unclear |  |
+| prisma_cross_platform_client_hardening_01_check.js | backend/scripts/prisma_cross_platform_client_hardening_01_check.js | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-CHECK |  | Owner or chain unclear |  |
 | product_flow_button_audit_01.mjs | backend/scripts/product_flow_button_audit_01.mjs | backend | root:check:productflowbuttonaudit01, root:smoke:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Owner or chain unclear |  |
 | product_flow_button_audit_01_check.js | backend/scripts/product_flow_button_audit_01_check.js | backend | root:check:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | production_rate_limit_policy_01_check.js | backend/scripts/production_rate_limit_policy_01_check.js | backend | root:check:productionratelimitpolicy01 | product-extensions | NEEDS_REVIEW |  | PRODUCTION-RATE-LIMIT-POLICY-01-CHECK |  | Owner or chain unclear |  |
