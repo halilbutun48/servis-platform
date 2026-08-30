@@ -148,6 +148,10 @@
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "operation-health hot path; kontrollu cleanup adayi"
                                                                                                  },
+                                                         "backend/scripts/copilot_reasoning_answer_composer_01_check.js":  {
+                                                                                                                     "class":  "safe-candidate-review",
+                                                                                                                     "note":  "copilot answer-composer guard; controlled review candidate"
+                                                                                                                 },
                                                          "backend/src/finance/costScenarioForecast.js":  {
                                                                                                      "class":  "acceptance-sensitive / later",
                                                                                                      "note":  "#4 senaryo forecast/calculation owner; post-#4 kabulü öncesi split edilmez"
@@ -164,10 +168,6 @@
                                                                                           "class":  "safe-candidate-review",
                                                                                           "note":  "boarding request and context hot path; controlled cleanup adayi"
                                                                                       },
-                                                         "backend/prisma/schema.prisma":  {
-                                                                                              "class":  "justified-exception",
-                                                                                              "note":  "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
-                                                                                          },
                                                        "web/src/panels/superadmin/CommercialCorePanel.jsx":  {
                                                                                                         "class":  "safe-candidate-review",
                                                                                                         "note":  "payment preview bridge; kontrollu iyilestirme adayi"
