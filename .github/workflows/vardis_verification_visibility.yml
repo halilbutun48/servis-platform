@@ -89,6 +89,20 @@ jobs:
   prisma-cross-platform:
     name: Prisma cross-platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: prisma_ci
+          POSTGRES_PASSWORD: prisma_ci
+          POSTGRES_DB: prisma_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prisma_ci -d prisma_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
@@ -215,7 +229,7 @@ jobs:
           }
           trap cleanup EXIT
           docker run --detach --name "$container_name" --network host \
-            --env NODE_ENV=production \
+            --env NODE_ENV=ci \
             --env PORT=3000 \
             --env JWT_SECRET=prisma-ci-runtime-secret \
             --env DATABASE_URL="$DATABASE_URL" \
@@ -234,6 +248,7 @@ jobs:
             if [ "$attempt" -eq 45 ]; then
               echo "Container health did not become ready with dbOk=true"
               docker inspect "$container_name" --format '{{.State.Status}} {{.State.ExitCode}}'
+              docker logs --tail 80 "$container_name" || true
               exit 1
             fi
             sleep 1
