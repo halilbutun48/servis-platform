@@ -73,6 +73,8 @@ async function main() {
   const dockerfile = read(dockerfilePath);
   const dockerignore = read(dockerignorePath);
   const workflow = read(workflowPath);
+  const runtimeScript = read(path.join(BACKEND_ROOT, "scripts", "prisma_cross_platform_client_hardening_01_runtime.mjs"));
+  const ciNegativeScript = read(path.join(BACKEND_ROOT, "scripts", "prisma_cross_platform_client_hardening_01_ci_negative.mjs"));
   const owner = countGenerationOwners();
   const identity = await collectPrismaIdentity();
   const validation = validateGeneratedClientIdentity(identity);
@@ -90,6 +92,10 @@ async function main() {
   check("CI includes Windows and Linux generation", /ubuntu-latest/.test(workflow) && /windows-latest/.test(workflow) && /npm --prefix backend run prisma:generate/.test(workflow) && /npm --prefix backend run prisma:verify/.test(workflow));
   check("CI cache key carries schema lock and owner identity", /hashFiles\('backend\/prisma\/schema\.prisma', 'backend\/package-lock\.json', 'backend\/scripts\/prisma_cross_platform_client_hardening_01\.mjs'\)/.test(workflow));
   check("CI container parity path exists", /docker build/.test(workflow) && /docker run/.test(workflow));
+  check("CI Linux runtime uses an isolated PostgreSQL service", /services:\s*\n\s+postgres:/s.test(workflow) && /npx prisma db push --schema prisma\/schema\.prisma --skip-generate --accept-data-loss/.test(workflow) && /prisma_cross_platform_client_hardening_01_runtime\.mjs/.test(workflow) && runtimeScript.includes("prisma.user.findFirst"));
+  check("CI container runtime proves query, health and survival", /docker run --detach/.test(workflow) && /docker exec/.test(workflow) && /PRISMA_HEALTH_URL=http:\/\/127\.0\.0\.1:3000\/health/.test(workflow) && /CONTAINER_DB_OK=PASS/.test(workflow));
+  check("CI container cached and clean builds are both explicit", /:cache-seed/.test(workflow) && /:cached/.test(workflow) && /--no-cache/.test(workflow) && /:clean/.test(workflow));
+  check("CI stale-cache negative contract is executable", /prisma_cross_platform_client_hardening_01_ci_negative\.mjs/.test(workflow) && ciNegativeScript.includes("staleSchemaRejected") && ciNegativeScript.includes("ownerChangeChangesKey"));
   check("bounded replacement and actionable diagnostics exist", /safeReplaceDirectoryWithRetry/.test(read(path.join(BACKEND_ROOT, "scripts", "prisma_cross_platform_client_hardening_01.mjs"))) && /bounded attempts/.test(read(path.join(BACKEND_ROOT, "scripts", "prisma_cross_platform_client_hardening_01.mjs"))));
   check("no broad process termination", !/taskkill\s+\/IM|kill\s+-9\s+-1|process\.kill\(\s*-1/.test(read(path.join(BACKEND_ROOT, "scripts", "prisma_cross_platform_client_hardening_01.mjs"))));
   check("current generated client is valid", validation.ok, JSON.stringify(validation));

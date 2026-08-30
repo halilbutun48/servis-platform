@@ -17,7 +17,9 @@ for a real platform run.
 - Docker entry point: npm run prisma:generate after npm ci
 - Backend Docker context excludes host `node_modules`, Prisma output and cache
   paths through `backend/.dockerignore`; the image must generate its own client.
-- CI entry points: the same package scripts on Ubuntu and Windows.
+- CI entry points: the same package scripts on Ubuntu and Windows; the Ubuntu
+  matrix leg also runs the canonical runtime probe against an isolated
+  PostgreSQL service and the cache-negative identity probe.
 
 The repository does not commit platform-specific Prisma engines or generated
 cache directories. CI cache keys include the operating system, architecture,
@@ -43,12 +45,24 @@ temporary isolated directories only.
 | Platform | Environment | Required proof | Current local status |
 | --- | --- | --- | --- |
 | Windows native | Current host | generate, identity, import/DMMF, read-only query, backend health | Run by the acceptance harness |
-| Linux / WSL | Actual WSL distribution | independent install, Linux generation, import/DMMF, query | Must remain NOT RUN when WSL returns access denied |
-| Container Linux | backend/Dockerfile | cached build, clean build, generated-client verify and runtime topology | Must remain NOT RUN when Docker daemon is unavailable |
-| Canonical CI | .github/workflows/vardis_verification_visibility.yml | real Ubuntu/Windows run and cache invalidation proof | Must remain NOT RUN without connected CI evidence |
+| Linux / WSL | Actual WSL distribution | independent install, Linux generation, import/DMMF, query | Local WSL may remain NOT RUN when the service returns access denied; GitHub Ubuntu is the canonical Linux proof |
+| Container Linux | backend/Dockerfile | cached build, clean build, generated-client verify, isolated PostgreSQL, runtime health/query | Local Docker may remain NOT RUN when the daemon/named pipe is unavailable; CI runs the canonical image |
+| Canonical CI | .github/workflows/vardis_verification_visibility.yml | real Ubuntu/Windows run, isolated Linux query, container health/query, cache invalidation proof | Must be bound to the exact pushed HEAD |
 
-The harness exits blocked when any required platform row is not a real PASS.
-NOT RUN is never converted to PASS.
+The local harness exits blocked when a required local platform is not available;
+NOT RUN is never converted to PASS. The repository-level platform proof may use
+the real GitHub Ubuntu runner for Linux and the real CI-built container when
+the developer host cannot start WSL or Docker Desktop. Those host conditions
+remain separately reported as environment blockers.
+
+The CI runtime probe is
+`backend/scripts/prisma_cross_platform_client_hardening_01_runtime.mjs`. It
+checks the generated client, DMMF/model identity, a read-only `SELECT 1` and
+canonical `User` read, process survival, and (for the container) `/health` with
+`dbOk=true`. The cache-negative probe is
+`backend/scripts/prisma_cross_platform_client_hardening_01_ci_negative.mjs`;
+it rejects stale schema/version/incomplete clients and proves that each
+schema, lockfile, and generation-owner identity changes the CI cache identity.
 
 ## Safety boundaries
 

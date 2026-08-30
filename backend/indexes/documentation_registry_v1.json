@@ -2,13 +2,13 @@
   "schemaVersion": "docs-registry-v1",
   "generatedAt": "2026-08-20T14:53:21.500Z",
   "repo": {
-    "head": "976189d64195657e3b126aad5950ae721bb9cb3b",
+    "head": "bddc358a6c8c132dd4bc2a6dcc5dc07576aa7158",
     "branch": "m90d1_web_lint_inventory"
   },
   "census": {
-    "total": 1344,
-    "tracked": 642,
-    "untracked": 702
+    "total": 1349,
+    "tracked": 643,
+    "untracked": 706
   },
   "discovery": {
     "description": "Repository documentation-like artifact census, path-exact and deterministic.",
@@ -36,7 +36,7 @@
       "ACTIVE_DOMAIN_DOC": 152,
       "REFERENCE_POINTER": 27,
       "HISTORICAL_EVIDENCE": 464,
-      "DERIVED_GENERATED": 696,
+      "DERIVED_GENERATED": 701,
       "STALE_CONTRADICTORY": 0,
       "UNKNOWN_NEEDS_REVIEW": 0,
       "CHECKER_DEPENDENT": 0,
@@ -46,11 +46,11 @@
     },
     "archiveBlocked": 394,
     "checkerDependent": 279,
-    "generated": 696,
+    "generated": 701,
     "activeCanonical": 157,
     "archiveDispositionCounts": {
       "KEEP_ACTIVE": 157,
-      "KEEP_GENERATED_EVIDENCE": 696,
+      "KEEP_GENERATED_EVIDENCE": 701,
       "KEEP_POINTER": 27,
       "KEEP_IN_ARCHIVE": 464
     }
@@ -8481,6 +8481,71 @@
       "notesStatusReason": "generated evidence artifact; consumerCount=0"
     },
     {
+      "path": "artifacts/backups/servisdb_backup_20260830-180650_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260830-180953_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260830-181032_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260830-182137_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260830-191853_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
       "path": "artifacts/encoding_code_tail.txt",
       "tracked": false,
       "classification": "DERIVED_GENERATED",
@@ -11732,7 +11797,7 @@
     },
     {
       "path": "docs/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01.md",

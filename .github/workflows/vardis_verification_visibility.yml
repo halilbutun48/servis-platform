@@ -119,15 +119,142 @@ jobs:
       - name: Canonical Prisma identity and integrity
         run: npm --prefix backend run prisma:verify
 
+      - name: Prepare isolated Linux PostgreSQL schema
+        if: runner.os == 'Linux'
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+        run: npx prisma db push --schema prisma/schema.prisma --skip-generate --accept-data-loss
+
+      - name: Linux runtime import, query and process survival
+        if: runner.os == 'Linux'
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+          PRISMA_HARDENING_PLATFORM: GitHub Ubuntu
+          PRISMA_SOURCE_HEAD: ${{ github.sha }}
+          PRISMA_HARDENING_EVIDENCE_PATH: ${{ github.workspace }}/backend/artifacts/browser-smoke/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01/github-ubuntu-runtime.json
+        run: node backend/scripts/prisma_cross_platform_client_hardening_01_runtime.mjs
+
+      - name: CI stale-cache negative proof
+        if: runner.os == 'Linux'
+        env:
+          PRISMA_SOURCE_HEAD: ${{ github.sha }}
+          PRISMA_HARDENING_EVIDENCE_PATH: ${{ github.workspace }}/backend/artifacts/browser-smoke/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01/ci-cache-negative.json
+        run: node backend/scripts/prisma_cross_platform_client_hardening_01_ci_negative.mjs
+
+      - name: Upload Prisma platform evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-platform-evidence-${{ matrix.os }}
+          path: backend/artifacts/browser-smoke/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01/*
+          if-no-files-found: warn
+
   prisma-container-parity:
     name: Prisma container parity
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: prisma_ci
+          POSTGRES_PASSWORD: prisma_ci
+          POSTGRES_DB: prisma_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prisma_ci -d prisma_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build canonical backend container
-        run: docker build --pull=false --tag servis-platform-prisma-hardening:ci --file backend/Dockerfile backend
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
 
-      - name: Verify generated client inside container
-        run: docker run --rm servis-platform-prisma-hardening:ci node scripts/prisma_cross_platform_client_hardening_01.mjs verify
+      - name: Install backend dependencies for isolated schema setup
+        run: npm --prefix backend ci
+
+      - name: Prepare isolated container PostgreSQL schema
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+        run: npx prisma db push --schema prisma/schema.prisma --skip-generate --accept-data-loss
+
+      - name: Build canonical backend container (cached)
+        run: |
+          docker build --pull=false --tag servis-platform-prisma-hardening:cache-seed --file backend/Dockerfile backend
+          docker build --pull=false --tag servis-platform-prisma-hardening:cached --file backend/Dockerfile backend
+
+      - name: Build canonical backend container (clean)
+        run: docker build --pull=false --no-cache --tag servis-platform-prisma-hardening:clean --file backend/Dockerfile backend
+
+      - name: Verify generated client in cached and clean images
+        run: |
+          docker run --rm servis-platform-prisma-hardening:cached node scripts/prisma_cross_platform_client_hardening_01.mjs verify
+          docker run --rm servis-platform-prisma-hardening:clean node scripts/prisma_cross_platform_client_hardening_01.mjs verify
+
+      - name: Run clean container against isolated PostgreSQL
+        shell: bash
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+          PRISMA_SOURCE_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          evidence_dir="$GITHUB_WORKSPACE/backend/artifacts/browser-smoke/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01"
+          mkdir -p "$evidence_dir"
+          container_name="prisma-hardening-runtime-${GITHUB_RUN_ID}"
+          cleanup() {
+            docker rm -f "$container_name" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker run --detach --name "$container_name" --network host \
+            --env NODE_ENV=production \
+            --env PORT=3000 \
+            --env JWT_SECRET=prisma-ci-runtime-secret \
+            --env DATABASE_URL="$DATABASE_URL" \
+            --env PRISMA_SOURCE_HEAD="$PRISMA_SOURCE_HEAD" \
+            --env PRISMA_HARDENING_PLATFORM=Container-CI \
+            --env PRISMA_HEALTH_URL=http://127.0.0.1:3000/health \
+            --env PRISMA_HARDENING_EVIDENCE_PATH=/evidence/container-runtime.json \
+            --volume "$evidence_dir:/evidence" \
+            servis-platform-prisma-hardening:clean
+          health_status=""
+          for attempt in $(seq 1 45); do
+            health_status="$(curl --silent --show-error --fail http://127.0.0.1:3000/health || true)"
+            if [ -n "$health_status" ] && printf '%s' "$health_status" | node -e 'let input=""; process.stdin.on("data", chunk => input += chunk).on("end", () => { const body = JSON.parse(input); process.exit(body.dbOk === true ? 0 : 1); });'; then
+              break
+            fi
+            if [ "$attempt" -eq 45 ]; then
+              echo "Container health did not become ready with dbOk=true"
+              docker inspect "$container_name" --format '{{.State.Status}} {{.State.ExitCode}}'
+              exit 1
+            fi
+            sleep 1
+          done
+          docker exec \
+            --env PRISMA_HARDENING_EVIDENCE_PATH=/evidence/container-runtime.json \
+            --env PRISMA_SOURCE_HEAD="$PRISMA_SOURCE_HEAD" \
+            --env PRISMA_HARDENING_PLATFORM=Container-CI \
+            --env PRISMA_HEALTH_URL=http://127.0.0.1:3000/health \
+            "$container_name" node scripts/prisma_cross_platform_client_hardening_01_runtime.mjs
+          docker inspect "$container_name" --format '{{.State.Running}}' | grep -q true
+          curl --silent --show-error --fail http://127.0.0.1:3000/health >/dev/null
+          echo "CONTAINER_RUNTIME=PASS"
+          echo "CONTAINER_HEALTH=PASS"
+          echo "CONTAINER_DB_OK=PASS"
+          echo "CONTAINER_PROCESS_SURVIVAL=PASS"
+
+      - name: Upload container platform evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-container-platform-evidence
+          path: backend/artifacts/browser-smoke/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01/*
+          if-no-files-found: warn
