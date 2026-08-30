@@ -72,6 +72,14 @@ function normalizedScope(value) {
   return scopeType;
 }
 
+function fallbackProviderKeyForFamily(family, primaryProviderKey) {
+  const primary = String(primaryProviderKey || "").trim().toUpperCase();
+  if (primary === "EPDK_PETROL" && ["FUEL_DIESEL", "FUEL_GASOLINE_95"].includes(String(family || "").toUpperCase())) {
+    return "EPDK_PETROL_BULLETIN";
+  }
+  return null;
+}
+
 function cacheKey({ providerKey, family, unit, currencyCode, regionCode, scopeType, scopeKey }) {
   return [
     CACHE_PREFIX,
@@ -144,7 +152,7 @@ async function findLatestStoredReference({ providerKey, family, unit, currencyCo
       ...(currencyCode ? { currencyCode } : {}),
       OR: [{ regionCode }, { regionCode: null }],
       AND: [
-        { OR: [{ scopeType, scopeKey }, { scopeType: "GLOBAL", scopeKey: "GLOBAL" }] },
+        { OR: [{ scopeType, scopeKey }, { scopeType: "GLOBAL" }] },
         { dataClass: "EXTERNAL_REFERENCE" },
       ],
     },
@@ -285,12 +293,14 @@ export async function refreshExternalCostReference(query = {}, actor = null) {
   const scopeType = normalizedScope(query.scopeType || (regionCode ? "CITY" : "GLOBAL"));
   const scopeKey = String(query.scopeKey || regionCode || (scopeType === "GLOBAL" ? "GLOBAL" : "")).trim().toUpperCase() || "GLOBAL";
   const requestedProvider = String(query.providerKey || providerKeyForFamily(family) || "").trim().toUpperCase();
+  const fallbackProvider = String(query.fallbackProviderKey || fallbackProviderKeyForFamily(family, requestedProvider) || "").trim().toUpperCase() || null;
   if (!requestedProvider) return { ...unavailableReference({ family, reason: "SOURCE_UNAVAILABLE" }), ok: true };
   const registry = createConfiguredExternalReferenceRegistry({ providerKey: requestedProvider });
   const result = await acquireExternalReference({
     request: { family, unit, currencyCode, regionCode, scopeType, scopeKey },
     registry,
     primaryProviderKey: requestedProvider,
+    fallbackProviderKey: fallbackProvider,
     now: new Date(),
     maxAttempts: ENV.EXTERNAL_REFERENCE_RETRY_MAX_ATTEMPTS,
   });
@@ -345,6 +355,7 @@ export async function getReferenceLayers(query = {}, actor = null) {
   const unit = normalizedUnit(query.unit || "CURRENCY_PER_L");
   const region = resolveRegionScope({ provinceCode: query.regionCode, provinceName: query.regionName, requestedScope: query.scopeType || "CITY" });
   const providerKey = String(query.providerKey || providerKeyForFamily(family) || "EPDK_PETROL").trim().toUpperCase();
+  const fallbackProvider = fallbackProviderKeyForFamily(family, providerKey);
   let external = await getExternalCostReference({
     family,
     unit,
@@ -354,7 +365,22 @@ export async function getReferenceLayers(query = {}, actor = null) {
     scopeType: region.scopeType,
     scopeKey: region.scopeKey,
   });
-  if (String(query.refresh || "").toLowerCase() === "true" && region.regionCode) {
+  if (!external?.marketReference && fallbackProvider) {
+    const storedFallback = await getExternalCostReference({
+      family,
+      unit,
+      currencyCode: query.currencyCode || "TRY",
+      providerKey: fallbackProvider,
+      regionCode: region.regionCode,
+      scopeType: region.scopeType,
+      scopeKey: region.scopeKey,
+    });
+    if (storedFallback?.marketReference) external = storedFallback;
+  }
+  const hasFreshStoredReference = Boolean(
+    external?.marketReference && String(external.freshness || external.marketReference.freshness || "").toUpperCase() === FRESHNESS.FRESH,
+  );
+  if (String(query.refresh || "").toLowerCase() === "true" && region.regionCode && !hasFreshStoredReference) {
     const refreshed = await refreshExternalCostReference({
       family,
       unit,
@@ -363,6 +389,7 @@ export async function getReferenceLayers(query = {}, actor = null) {
       regionCode: region.regionCode,
       scopeType: region.scopeType,
       scopeKey: region.scopeKey,
+      fallbackProviderKey: fallbackProvider,
     }, actor);
     // A provider outage must not erase a still-valid stored reference for the
     // already-resolved province. Keep the canonical stored value unless the

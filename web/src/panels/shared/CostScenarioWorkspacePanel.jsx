@@ -327,10 +327,20 @@ function externalReferenceRequestFromPayload(payload) {
     family: "FUEL_DIESEL",
     unit: external.unit || "CURRENCY_PER_L",
     currencyCode: external.currencyCode || "TRY",
-    regionCode: external.regionCode || data?.region?.regionCode || undefined,
-    scopeType: data?.region?.scopeType || undefined,
-    scopeKey: data?.region?.scopeKey || undefined,
+    regionCode: external.regionCode || undefined,
+    scopeType: external.scopeType || data?.region?.scopeType || undefined,
+    scopeKey: external.scopeKey || data?.region?.scopeKey || undefined,
   };
+}
+
+function referenceScopeLabel(reference, requestedRegionName = null) {
+  if (!reference) return "Kapsam belirtilmedi";
+  if (String(reference.scopeType || "").toUpperCase() === "GLOBAL" && String(reference.scopeKey || "").toUpperCase() === "TURKEY") return "Türkiye geneli";
+  return reference.regionName || requestedRegionName || reference.regionCode || "Kapsam belirtilmedi";
+}
+
+function referenceFallbackLabel(reference) {
+  return String(reference?.fallbackState || "NONE").toUpperCase() !== "NONE" ? "Fallback" : "Aynı il referansı";
 }
 
 function referenceDate(value) {
@@ -361,7 +371,8 @@ function ResolvedAssumptions({ result, fuelReference, currencyCode }) {
         <div className="muted"><b>Araç tüketimi:</b> {consumptionReferenceLabel(selectedConsumption)} · Kaynak: {selectedConsumption?.sourceName || "Belirtilmedi"} · Güven: {confidenceLabel(selectedConsumption?.confidence)}</div>
         <div className="panelMeta">Kaynak tarihi: {referenceDate(selectedConsumption?.sourceDate)} · Uygulanabilirlik: {selectedConsumption?.applicabilityLimits || "Sınıf/alt tip kapsamı belirtilmedi."}</div>
         <div className="muted"><b>Yakıt fiyatı:</b> {fuelPrice?.valueMinor != null ? formatMoney(fuelPrice.valueMinor, fuelPrice.currencyCode || currencyCode) + "/L" : "Veri yok; kullanıcıdan zorunlu giriş istenmiyor"}</div>
-        <div className="panelMeta">{fuelPrice?.sourceName ? `Kaynak: ${fuelPrice.sourceName} · Bölge: ${fuelPrice.regionCode || "Kapsam belirtilmedi"} · As of: ${referenceDate(fuelPrice.asOf)}` : external?.selectionReason || "#2 bölgesel referansı bu kapsamda kullanılabilir değil."}</div>
+        <div className="panelMeta">{fuelPrice?.sourceName ? `Kaynak: ${fuelPrice.sourceName} · Kapsam: ${referenceScopeLabel(fuelPrice)} · Durum: ${referenceFallbackLabel(fuelPrice)} · As of: ${referenceDate(fuelPrice.asOf)} · Tazelik: ${fuelPrice.freshness || "Bilinmiyor"} · Güven: ${confidenceLabel(fuelPrice.confidence)}` : external?.selectionReason || "#2 bölgesel referansı bu kapsamda kullanılabilir değil."}</div>
+        {fuelPrice?.sourceMetadata?.fallbackPolicy ? <div className="panelMeta">Fallback politikası: aynı il güncel resmi referansı yoksa Türkiye-geneli EPDK günlük bülteni; İstanbul fiyatı olarak gösterilmez.</div> : null}
         {consumption?.missingData?.length ? <div className="panelMeta">Eksik / doğrulanması gereken: {consumption.missingData.join(", ")}</div> : null}
         <div className="panelMeta">Öncelik: {resolution?.vehicleConsumption?.precedence?.join(" → ") || "USER_ACTUAL → PLATFORM_OBSERVED_REFERENCE → TECHNICAL_CLASS_REFERENCE → NO_DATA"}</div>
       </div>
@@ -427,6 +438,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
             currencyCode: inputs.currencyCode || "TRY",
             scope,
             regionName: regionName || next?.regionName || undefined,
+            refresh: "true",
           }, { signal: controller.signal, force: true });
         } catch (referenceError) {
           if (referenceError?.name === "AbortError" || controller.signal.aborted) return;
@@ -581,6 +593,9 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
   const resultStatus = result?.status || "";
   const confidence = result?.confidence || {};
   const deltaTone = result?.savingsMinor != null ? "good" : result?.additionalCostMinor != null ? "danger" : "warm";
+  const partialCost = result?.partialCost?.status === "PARTIAL" && result?.partialCost?.estimatedCostMinor != null ? result.partialCost : null;
+  const criticalMissing = (result?.missingData || []).filter((item) => !/sürücü|bakım/i.test(item));
+  const optionalMissing = result?.costCoverage?.scenario?.missingOptionalCosts || [];
   const contextName = baseline?.companyName || baseline?.roomName || "Bağlı tenant";
   const visibleBaselineConfidence = baseline?.baselineConfidence || {
     level: baseline?.missingFields?.length ? "MEDIUM" : "HIGH",
@@ -594,7 +609,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         <span className="pill">{planningOnly ? "Planlama bağlamı" : roleConfig.audience}</span>
         {baseline?.regionName ? <span className="pill" data-testid="scenario-operation-region">Operasyon bölgesi: {baseline.regionName}</span> : null}
         {baseline ? <span className="pill" data-testid="scenario-baseline-confidence">Baseline güveni: {confidenceLabel(visibleBaselineConfidence.level)}</span> : null}
-        {resultStatus ? <span className="pill" data-status={statusTone(resultStatus).toUpperCase()}>{statusLabel(resultStatus)}</span> : null}
+        {resultStatus ? <span className="pill" data-status={statusTone(resultStatus).toUpperCase()}>{partialCost ? "Kısmi maliyet hesaplandı" : statusLabel(resultStatus)}</span> : null}
       </div>
 
       <div className="card" style={{ marginTop: 12, border: "1px solid rgba(247,144,9,0.35)", background: "rgba(247,144,9,0.06)" }}>
@@ -725,6 +740,14 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
 
       {result ? (
         <>
+          {partialCost ? (
+            <div className="card" data-testid="scenario-partial-cost" style={{ marginTop: 12, border: "1px solid rgba(18,183,106,0.42)", background: "rgba(18,183,106,0.06)" }}>
+              <div className="panelSectionTitle">Kısmi maliyet hesaplandı</div>
+              <div style={{ marginTop: 8, fontSize: 20, fontWeight: 850 }}>Kısmi tahmini maliyet: {formatMoney(partialCost.estimatedCostMinor, result.currencyCode || currencyCode)}</div>
+              <div className="panelMeta" style={{ marginTop: 8, lineHeight: 1.5 }}>Dahil: {partialCost.included}. Dahil değil: {(partialCost.excluded || []).join(", ") || "Belirtilmemiş maliyet bileşeni yok"}.</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Gerçek toplam maliyet daha yüksek olabilir. Bu sonuç yalnızca önizlemedir.</div>
+            </div>
+          ) : null}
           {result.scenarioVariants ? (
             <div className="card" data-testid="scenario-variant-comparison" style={{ marginTop: 12 }}>
               <div className="panelSectionTitle">Beklenen / En uygun / Riskli durum</div>
@@ -798,7 +821,9 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
           <details className="card" style={{ marginTop: 12 }}>
             <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Eksik Veri / Uyarılar</summary>
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              {result.missingData?.length ? <div><div className="panelMeta">Eksik Veri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{result.missingData.map((item) => <span className="pill" key={item}>{item}</span>)}</div></div> : null}
+              {criticalMissing.length ? <div data-testid="scenario-critical-missing"><div className="panelMeta">Kritik eksik veri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{criticalMissing.map((item) => <span className="pill" key={item}>{item}</span>)}</div></div> : null}
+              {optionalMissing.length ? <div data-testid="scenario-optional-missing"><div className="panelMeta">Opsiyonel / eksik maliyet bileşenleri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{optionalMissing.map((item) => <span className="pill" key={item.key}>{item.label} eksik</span>)}</div></div> : null}
+              {!criticalMissing.length && !optionalMissing.length && result.missingData?.length ? <div><div className="panelMeta">Eksik Veri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{result.missingData.map((item) => <span className="pill" key={item}>{item}</span>)}</div></div> : null}
               {result.warnings?.length ? <div><div className="panelMeta">Uyarılar</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{result.warnings.map((item) => <span className="pill" key={item}>{item}</span>)}</div></div> : null}
               {!result.missingData?.length && !result.warnings?.length ? <div className="muted">Ek uyarı yok.</div> : null}
             </div>

@@ -1,6 +1,7 @@
 import { ENV } from "../env.js";
 import { createProviderRegistry } from "./providerRegistry.js";
 import { createEpdkLpgProvider, createEpdkPetrolProvider } from "./epdkProvider.js";
+import { createEpdkPetrolBulletinProvider } from "./epdkBulletinProvider.js";
 
 function normalizedProvider(value) {
   return String(value || "NONE").trim().toUpperCase();
@@ -12,6 +13,9 @@ export function createConfiguredExternalReferenceRegistry({ providerKey = ENV.EX
   if (["EPDK", "EPDK_PETROL", "EPDK_LPG"].includes(selected)) {
     providers.push(createEpdkPetrolProvider({ fetchImpl }));
     providers.push(createEpdkLpgProvider({ fetchImpl }));
+  }
+  if (["EPDK", "EPDK_PETROL"].includes(selected)) {
+    providers.push(createEpdkPetrolBulletinProvider());
   }
   return createProviderRegistry(providers);
 }

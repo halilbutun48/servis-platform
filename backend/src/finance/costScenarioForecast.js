@@ -594,7 +594,12 @@ function fuelPriceResolution({ baseValues, scenarioValues, external }) {
       sourceName: externalReference.sourceName || null,
       sourceUrl: externalReference.sourceUrl || null,
       providerKey: externalReference.providerKey || null,
-      regionCode: externalReference.regionCode || null,
+      regionCode: externalReference.regionCode ?? null,
+      regionName: externalReference.regionName || externalReference.sourceMetadata?.geographicScopeLabel || null,
+      scopeType: externalReference.scopeType || null,
+      scopeKey: externalReference.scopeKey || null,
+      fallbackState: externalReference.fallbackState || "NONE",
+      sourceMetadata: externalReference.sourceMetadata || null,
       asOf: externalReference.asOf || null,
       currencyCode: externalReference.currencyCode || null,
       freshness: external.status,
@@ -1287,6 +1292,10 @@ export function buildCostScenarioPreview({
     scenario: scenarioCostCoverage,
     partialExplanation: scenarioCostCoverage.partialExplanation,
   };
+  const hasPartialCost = status !== "BLOCKED"
+    && baselineCost !== null
+    && scenarioCost !== null
+    && scenarioCostCoverage.status === "PARTIAL";
   const confidence = confidenceWithOptionalCoverage({
     ...confidenceFor({ baseline: { ...baseline, costMinor: baselineCost }, scenario: { ...scenario, costMinor: scenarioCost }, blockers: globalIssues.blockers, externalStatus: withExternal.status, externalUsed: withExternal.used, consumption: consumptionResolution }),
     baseline: context?.baselineConfidence || null,
@@ -1305,6 +1314,8 @@ export function buildCostScenarioPreview({
   }).slice(4)}`;
   const summaryText = status === "BLOCKED"
     ? "Senaryo güvenli biçimde karşılaştırılamadı; kapasite, para birimi veya giriş verisi engeli var."
+    : hasPartialCost
+      ? "Kısmi maliyet hesaplandı; hesaplanabilen yakıt ve bilinen maliyetler dahil edildi. Sürücü ve bakım maliyeti dahil değildir. Gerçek toplam maliyet daha yüksek olabilir."
     : status === "INCOMPLETE"
       ? "Senaryo önizlemesi kısmen hazır; maliyet etkisini göstermek için eksik veriler tamamlanmalı."
       : savingsMinor !== null
@@ -1315,6 +1326,7 @@ export function buildCostScenarioPreview({
 
   const missingData = [...new Set([
     ...globalIssues.warnings.filter((item) => /eksik|açıklayamaz|kullanılabilir/i.test(item)),
+    ...(referenceResolution.fuelPrice.baseline.valueMinor === null ? ["Yakıt litre fiyatı için kullanılabilir güncel referans bulunamadı."] : []),
     ...(baseline.costMinor === null ? ["Mevcut plan maliyet tabanı"] : []),
     ...(scenario.costMinor === null ? ["Alternatif senaryo maliyet tabanı"] : []),
     ...(baselineCapacity?.requiredVehicleCount === null ? ["Mevcut plan araç kapasitesi"] : []),
@@ -1391,7 +1403,7 @@ export function buildCostScenarioPreview({
     modelVersion: COST_SCENARIO_FORECAST_MODEL_VERSION,
     scenarioId,
     status,
-    statusLabel: status === "READY" ? "Karşılaştırma hazır" : status === "BLOCKED" ? "Güvenli hesap durdu" : "Eksik veri",
+    statusLabel: status === "READY" && hasPartialCost ? "Kısmi maliyet hesaplandı" : status === "READY" ? "Karşılaştırma hazır" : status === "BLOCKED" ? "Güvenli hesap durdu" : "Eksik veri",
     summaryText,
     currencyCode: baselineCurrency,
     baseline: {
@@ -1436,6 +1448,13 @@ export function buildCostScenarioPreview({
     routeAlternative,
     dispatchAlternative,
     costCoverage,
+    partialCost: hasPartialCost ? {
+      status: "PARTIAL",
+      estimatedCostMinor: scenarioCost,
+      included: "Hesaplanabilen yakıt ve mevcut maliyet kanıtları",
+      excluded: costCoverage.scenario.missingOptionalCosts.map((item) => item.label),
+      warning: "Gerçek toplam maliyet daha yüksek olabilir.",
+    } : null,
     vehiclePlanAlternatives,
     referenceResolution,
     resolvedAssumptions: {
@@ -1493,9 +1512,11 @@ export function buildCostScenarioPreview({
         sourceName: withExternal.reference.sourceName || null,
         providerKey: withExternal.reference.providerKey || null,
         asOf: withExternal.reference.asOf || null,
-        regionCode: withExternal.reference.regionCode || null,
+        regionCode: withExternal.reference.regionCode ?? null,
+        regionName: withExternal.reference.regionName || withExternal.reference.sourceMetadata?.geographicScopeLabel || null,
         scopeType: withExternal.reference.scopeType || null,
         scopeKey: withExternal.reference.scopeKey || null,
+        fallbackState: withExternal.reference.fallbackState || "NONE",
         freshness: withExternal.status,
         confidence: withExternal.reference.confidence || externalReference?.confidence || "UNKNOWN",
         usedForForecast: withExternal.used,

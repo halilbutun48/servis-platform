@@ -106,6 +106,8 @@ export function buildPlatformObservedReference({ observations = [], region, minS
 function layerFromExternal(external, region) {
   const reference = external?.marketReference || external || null;
   const available = Boolean(reference?.valueMinor != null || reference?.valueDecimal) && ![FRESHNESS.EXPIRED, FRESHNESS.SOURCE_UNAVAILABLE].includes(String(reference?.freshness || "").toUpperCase());
+  const fallbackState = reference?.fallbackState || external?.fallbackState || "NONE";
+  const isTurkeyFallback = reference?.scopeType === "GLOBAL" && reference?.scopeKey === "TURKEY";
   return {
     layer: REFERENCE_LAYER.EXTERNAL,
     label: "Dış Piyasa Referansı",
@@ -119,12 +121,21 @@ function layerFromExternal(external, region) {
     sourceName: reference?.sourceName || null,
     sourceUrl: reference?.sourceUrl || null,
     asOf: reference?.asOf || null,
-    regionCode: reference?.regionCode || region?.regionCode || null,
-    regionName: reference?.regionName || region?.regionName || null,
+    regionCode: reference?.regionCode ?? null,
+    regionName: reference?.regionName
+      || reference?.sourceMetadata?.geographicScopeLabel
+      || (isTurkeyFallback ? "Türkiye geneli" : region?.regionName || null),
+    scopeType: reference?.scopeType || null,
+    scopeKey: reference?.scopeKey || null,
     freshness: reference?.freshness || FRESHNESS.UNKNOWN,
     confidence: reference?.confidence || CONFIDENCE.UNKNOWN,
     completeness: reference?.completeness || COMPLETENESS.INCOMPLETE,
-    selectionReason: available ? "Resmi provider verisi, istenen kapsamda seçildi." : "Uygun resmi dış veri yok.",
+    fallbackState,
+    selectionReason: available
+      ? isTurkeyFallback || fallbackState === "FALLBACK_PROVIDER"
+        ? "İstenen il için uygun il bazlı değer yoktu; güncel Türkiye-geneli EPDK bülteni açıkça fallback olarak seçildi."
+        : "Resmi provider verisi, istenen kapsamda seçildi."
+      : "Uygun resmi dış veri yok.",
     origin: "official_external_provider",
   };
 }

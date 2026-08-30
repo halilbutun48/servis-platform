@@ -158,6 +158,12 @@ export async function acquireExternalReference({
       continue;
     }
 
+    const fallbackDelayMs = Math.max(0, Math.min(30_000, Number(provider.fallbackDelayMs) || 0));
+    if (index > 0 && fallbackDelayMs > 0) {
+      onEvent({ type: "provider_fallback_delay", providerKey: key, family, delayMs: fallbackDelayMs });
+      await sleep(fallbackDelayMs);
+    }
+
     let breaker = circuitBreakers.get(key);
     if (!breaker) {
       breaker = createCircuitBreaker();
@@ -183,8 +189,8 @@ export async function acquireExternalReference({
         throw new ExternalReferenceProviderError("REGION_MISMATCH", "Provider response scope does not match request.");
       }
       breaker.success();
-      const marketReference = publicReference({ ...normalized, id: null }, { now });
       const fallbackState = index > 0 ? FALLBACK_STATE.FALLBACK_PROVIDER : FALLBACK_STATE.NONE;
+      const marketReference = publicReference({ ...normalized, id: null, fallbackState }, { now, fallbackState });
       const result = {
         ...marketReference,
         state: marketReference.freshness,

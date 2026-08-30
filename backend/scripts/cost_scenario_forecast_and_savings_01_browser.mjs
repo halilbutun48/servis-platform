@@ -59,7 +59,7 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
   await page.goto(`${WEB_BASE_URL}${route}`, { waitUntil: "domcontentloaded", timeout: 25000 });
   const workspace = page.getByTestId("cost-scenario-workspace");
   await workspace.waitFor({ state: "visible", timeout: 20000 });
-  const initialText = await workspace.innerText();
+  await page.getByTestId("scenario-operation-region").waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
   const contextualVisible = contextualHome
     ? (!contextualTestId || await page.getByTestId(contextualTestId).isVisible()) && (await page.locator("body").innerText()).includes(contextualHome)
     : true;
@@ -67,6 +67,7 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
   const advancedClosed = !(await advanced.evaluate((node) => node.open));
   const baselineSummary = page.getByTestId("scenario-baseline-summary");
   const baselineText = await baselineSummary.innerText();
+  const initialText = await workspace.innerText();
   const missingText = baseline.missingFields.length ? await page.getByTestId("scenario-missing-fields").innerText() : "";
   const hasFieldLevelMissingReason = baseline.missingFields.length === 0 || baseline.missingFields.every((field) => `${baselineText}\n${missingText}`.includes(`Eksik veri: ${baseline.baselineSourceMap?.[field]?.label || field}`));
   const noDashSea = !baselineText.includes(" - ") && !baselineText.includes("→ -");
@@ -77,6 +78,7 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
   if (!planningOnly) {
     await referenceCard.waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
     await referenceCard.getByTestId("external-reference-completeness").waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
+    await referenceCard.getByTestId("external-reference-value").waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
   }
   const settledPageText = await page.locator("body").innerText();
   const referenceText = planningOnly ? "" : await referenceCard.innerText().catch(() => "");
@@ -86,8 +88,10 @@ async function visit(browser, { name, identifier, role, companyKind, route, scop
   } else {
     const completeness = referenceCard.getByTestId("external-reference-completeness");
     await completeness.waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
-    record(`${name} market reference stays region-scoped`, referenceText.includes(baseline.regionName || "__missing_region__") && !referenceText.includes("Türkiye / kapsam belirtilmedi"));
-    if (referenceText.includes("FRESH") || referenceText.includes("STALE")) {
+    const exactProvinceScope = referenceText.includes(baseline.regionName || "__missing_region__");
+    const explicitApprovedFallbackScope = referenceText.includes("Türkiye geneli") && referenceText.includes("Alternatif kaynak kullanılıyor");
+    record(`${name} market reference has exact province or explicit approved fallback scope`, (exactProvinceScope || explicitApprovedFallbackScope) && !referenceText.includes("Türkiye / kapsam belirtilmedi"));
+    if (referenceText.includes("Fuel: AVAILABLE") || referenceText.includes("FRESH") || referenceText.includes("STALE")) {
       const details = referenceCard.getByTestId("external-reference-details");
       await details.locator("summary").click().catch(() => {});
       const detailsText = await details.innerText().catch(() => "");
