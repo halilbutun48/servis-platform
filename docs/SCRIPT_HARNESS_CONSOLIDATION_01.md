@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `449`
-- Toplam executable tracked file: `1334`
-- Combined registry row: `1783`
-- Root/backend/web/mobile package dağılımı: root `282`, backend `900`, web `97`, mobile `201`
+- Toplam executable tracked file: `1336`
+- Combined registry row: `1785`
+- Root/backend/web/mobile package dağılımı: root `282`, backend `902`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `773`
+- NEEDS_REVIEW: `775`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `382`
+- Eski sistem term eşleşmesi: `384`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 773 |
+| NEEDS_REVIEW | 775 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1175,6 +1175,8 @@ Repo: `servis-platform`
 | prisma_cross_platform_client_hardening_01.mjs | backend/scripts/prisma_cross_platform_client_hardening_01.mjs | backend | backend:prisma:generate, backend:prisma:verify | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01 |  | Owner or chain unclear |  |
 | prisma_cross_platform_client_hardening_01_acceptance.mjs | backend/scripts/prisma_cross_platform_client_hardening_01_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-ACCEPTANCE |  | Owner or chain unclear |  |
 | prisma_cross_platform_client_hardening_01_check.js | backend/scripts/prisma_cross_platform_client_hardening_01_check.js | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-CHECK |  | Owner or chain unclear |  |
+| prisma_cross_platform_client_hardening_01_ci_negative.mjs | backend/scripts/prisma_cross_platform_client_hardening_01_ci_negative.mjs | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-CI-NEGATIVE |  | Owner or chain unclear |  |
+| prisma_cross_platform_client_hardening_01_runtime.mjs | backend/scripts/prisma_cross_platform_client_hardening_01_runtime.mjs | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-RUNTIME |  | Owner or chain unclear |  |
 | product_flow_button_audit_01.mjs | backend/scripts/product_flow_button_audit_01.mjs | backend | root:check:productflowbuttonaudit01, root:smoke:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Owner or chain unclear |  |
 | product_flow_button_audit_01_check.js | backend/scripts/product_flow_button_audit_01_check.js | backend | root:check:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | production_rate_limit_policy_01_check.js | backend/scripts/production_rate_limit_policy_01_check.js | backend | root:check:productionratelimitpolicy01 | product-extensions | NEEDS_REVIEW |  | PRODUCTION-RATE-LIMIT-POLICY-01-CHECK |  | Owner or chain unclear |  |
