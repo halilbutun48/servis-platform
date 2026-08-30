@@ -12,6 +12,20 @@ concurrency:
 jobs:
   repo-verification:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: prisma_ci
+          POSTGRES_PASSWORD: prisma_ci
+          POSTGRES_DB: prisma_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prisma_ci -d prisma_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,6 +44,17 @@ jobs:
 
       - name: Install web dependencies
         run: npm --prefix web ci
+
+      - name: Prepare isolated PostgreSQL schema for repository verification
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+        run: npx prisma db push --schema prisma --skip-generate --accept-data-loss
+
+      - name: Run current-head #11 modularization acceptance
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+        run: npm --prefix backend run prisma:modularization:acceptance
 
       - name: Canonical Prisma generation for repository verification
         run: npm --prefix backend run prisma:generate
