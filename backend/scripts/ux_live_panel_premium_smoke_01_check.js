@@ -134,7 +134,7 @@ for (const assertion of report.financeAssertions) {
   must(assertion.minorTokenVisibleCount === 0, `${assertion.scope} finance advanced minor token count is zero for ${assertion.viewport}`);
   must(assertion.bpsTokenVisibleCount === 0, `${assertion.scope} finance advanced bps token count is zero for ${assertion.viewport}`);
   must(assertion.externalReferenceVisible === true, `${assertion.scope} external reference card is visible for ${assertion.viewport}`);
-  must(assertion.externalReferenceNoDataVisible === true, `${assertion.scope} honest external reference no-data state is visible for ${assertion.viewport}`);
+  must(assertion.externalReferenceNoDataVisible === true || assertion.externalReferenceValueVisible === true, `${assertion.scope} external reference is honestly available or explicitly no-data for ${assertion.viewport}`);
   must(assertion.externalReferenceRawTokensVisible?.length === 0, `${assertion.scope} external reference raw tokens are hidden for ${assertion.viewport}`);
   must(assertion.consoleErrors?.length === 0, `${assertion.scope} finance advanced console errors are zero for ${assertion.viewport}`);
   must(assertion.pageErrors?.length === 0, `${assertion.scope} finance advanced page errors are zero for ${assertion.viewport}`);

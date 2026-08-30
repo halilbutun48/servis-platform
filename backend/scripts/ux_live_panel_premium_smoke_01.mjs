@@ -481,6 +481,7 @@ async function runRoomFinancialOperationsAdvancedAssertion(context, viewportName
     bpsTokenVisibleCount: 0,
     externalReferenceVisible: false,
     externalReferenceNoDataVisible: false,
+    externalReferenceValueVisible: false,
     externalReferenceRawTokensVisible: [],
     humanLabelsVisible: [],
     manualOverrideHintVisible: false,
@@ -543,10 +544,12 @@ async function runRoomFinancialOperationsAdvancedAssertion(context, viewportName
 
     const visibleText = await getVisibleSurfaceText(page);
     const externalReferenceCard = page.getByTestId("external-reference-card");
-    await page.getByTestId("external-reference-no-data").waitFor({ state: "visible", timeout: 8000 });
+    await externalReferenceCard.locator("[data-testid=external-reference-no-data], [data-testid=external-reference-value]").first().waitFor({ state: "visible", timeout: 15000 });
     const externalReferenceText = await externalReferenceCard.innerText();
     result.externalReferenceVisible = await externalReferenceCard.isVisible();
     result.externalReferenceNoDataVisible = await page.getByTestId("external-reference-no-data").isVisible();
+    result.externalReferenceValueVisible = (await externalReferenceCard.getAttribute("data-reference-state")) === "available"
+      && await page.getByTestId("external-reference-value").isVisible();
     result.externalReferenceRawTokensVisible = ["EXTERNAL_REFERENCE", "FUEL_DIESEL", "CURRENCY_PER_L", "NO_DATA", "providerKey", "valueMinor"].filter((token) => externalReferenceText.includes(token));
     result.rawFieldKeysVisible = rawFieldKeys.filter((key) => visibleText.includes(key));
     result.rawFieldKeyVisibleCount = result.rawFieldKeysVisible.length;
@@ -565,7 +568,7 @@ async function runRoomFinancialOperationsAdvancedAssertion(context, viewportName
     result.passed = result.detailsOpened
       && result.inputDetailsOpened
       && result.externalReferenceVisible
-      && result.externalReferenceNoDataVisible
+      && (result.externalReferenceNoDataVisible || result.externalReferenceValueVisible)
       && result.externalReferenceRawTokensVisible.length === 0
       && result.rawFieldKeyVisibleCount === 0
       && result.rawInternalCodeVisibleCount === 0
@@ -600,6 +603,7 @@ async function runCompanyFinancialOperationsAdvancedAssertion(context, viewportN
     bpsTokenVisibleCount: 0,
     externalReferenceVisible: false,
     externalReferenceNoDataVisible: false,
+    externalReferenceValueVisible: false,
     externalReferenceRawTokensVisible: [],
     humanLabelsVisible: [],
     systemFieldInputLabels: [],
@@ -657,10 +661,12 @@ async function runCompanyFinancialOperationsAdvancedAssertion(context, viewportN
 
     const visibleText = await getVisibleSurfaceText(page);
     const externalReferenceCard = page.getByTestId("external-reference-card");
-    await page.getByTestId("external-reference-no-data").waitFor({ state: "visible", timeout: 8000 });
+    await externalReferenceCard.locator("[data-testid=external-reference-no-data], [data-testid=external-reference-value]").first().waitFor({ state: "visible", timeout: 15000 });
     const externalReferenceText = await externalReferenceCard.innerText();
     result.externalReferenceVisible = await externalReferenceCard.isVisible();
     result.externalReferenceNoDataVisible = await page.getByTestId("external-reference-no-data").isVisible();
+    result.externalReferenceValueVisible = (await externalReferenceCard.getAttribute("data-reference-state")) === "available"
+      && await page.getByTestId("external-reference-value").isVisible();
     result.externalReferenceRawTokensVisible = ["EXTERNAL_REFERENCE", "FUEL_DIESEL", "CURRENCY_PER_L", "NO_DATA", "providerKey", "valueMinor"].filter((token) => externalReferenceText.includes(token));
     result.rawFieldKeysVisible = rawFieldKeys.filter((key) => visibleText.includes(key));
     result.rawFieldKeyVisibleCount = result.rawFieldKeysVisible.length;
@@ -685,7 +691,7 @@ async function runCompanyFinancialOperationsAdvancedAssertion(context, viewportN
     result.passed = result.detailsOpened
       && result.advancedDetailsOpened
       && result.externalReferenceVisible
-      && result.externalReferenceNoDataVisible
+      && (result.externalReferenceNoDataVisible || result.externalReferenceValueVisible)
       && result.externalReferenceRawTokensVisible.length === 0
       && result.rawFieldKeyVisibleCount === 0
       && result.rawInternalCodeVisibleCount === 0

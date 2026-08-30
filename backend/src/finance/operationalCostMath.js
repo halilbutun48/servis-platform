@@ -515,7 +515,7 @@ function buildFuelComponent(normalized) {
     const liters = (normalized.totalDistanceKm * normalized.fuelConsumptionLitersPer100Km) / 100 + (normalized.idleFuelLiters || 0);
     amountMinor = roundMinor(liters * normalized.fuelUnitPriceMinor);
     includedInBaseline = true;
-    evidence.push(`yakıt formülü: (${normalized.totalDistanceKm} km × ${normalized.fuelConsumptionLitersPer100Km} L/100km / 100) × ${normalized.fuelUnitPriceMinor} minor`);
+    evidence.push(`yakıt formülü: (${normalized.totalDistanceKm} km × ${normalized.fuelConsumptionLitersPer100Km} L/100km / 100) × ${normalized.fuelUnitPriceMinor} kuruş/L`);
     if (normalized.emptyDistanceKm && normalized.emptyDistanceKm > 0) {
       evidence.push("emptyDistanceKm toplam rotaya dahil edildi");
     }
