@@ -306,7 +306,7 @@ function main() {
   must(exists("web/public/seferpakt-favicon.png"), "favicon asset exists");
   mustFileSha256(
     "backend/scripts/lib/currentHeadScopePolicy.js",
-    "A1EFDEADF2EB8DEB972DFCD2175844EF4B8290B8988C591AD38B00FB57BAC313",
+    "037FEA5D1EAA8EE1F5E6E286C98D7EFA386C87C30B83C8C52FE17CA430BEFBA0",
     "current-head policy snapshot remains pinned"
   );
 
@@ -709,6 +709,12 @@ function main() {
     "web/src/panels/shared/ExternalReferenceCard.jsx",
     "web/src/panels/shared/financialOperationsPresentation.js",
     { path: "web/src/panels/shared/financialOperationsPresentation.js", sha256: "A6DBDE150443AE56D5C4B009F9E6BBE8A8CFF72FC5FCC9EDD293F45B8EA7612A" },
+    "backend/src/externalCost/externalCostReferenceService.js",
+    "backend/src/externalCost/providerFactory.js",
+    "backend/src/externalCost/providerRegistry.js",
+    "backend/src/externalCost/referenceLayers.js",
+    "backend/src/externalCost/epdkBulletinProvider.js",
+    "web/src/panels/shared/CostScenarioWorkspacePanel.jsx",
   ]);
 
   mustAcceptedPrismaManifest();

@@ -729,6 +729,12 @@ function main() {
     "web/src/panels/shared/FinancialOperationsCompanyPreview.jsx",
     "web/src/panels/shared/ExternalReferenceCard.jsx",
     "web/src/panels/shared/financialOperationsPresentation.js",
+    "backend/src/externalCost/externalCostReferenceService.js",
+    "backend/src/externalCost/providerFactory.js",
+    "backend/src/externalCost/providerRegistry.js",
+    "backend/src/externalCost/referenceLayers.js",
+    "backend/src/externalCost/epdkBulletinProvider.js",
+    "web/src/panels/shared/CostScenarioWorkspacePanel.jsx",
     "tools/repo_contract_state.json",
   ]);
   mustTrue(staged.length === 0, "stage remains empty");

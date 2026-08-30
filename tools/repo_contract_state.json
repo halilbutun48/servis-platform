@@ -152,6 +152,10 @@
                                                                                                      "class":  "acceptance-sensitive / later",
                                                                                                      "note":  "#4 senaryo forecast/calculation owner; post-#4 kabulü öncesi split edilmez"
                                                                                                  },
+                                                         "backend/src/ai/chat/seferAbiCostAnalysisAssistant.js":  {
+                                                                                                     "class":  "acceptance-sensitive / later",
+                                                                                                     "note":  "#5 Sefer Abi cost-analysis assistant; #5 closure paused; split only after explicit #5 scope"
+                                                                                                 },
                                                          "backend/src/ai/chat/supplierMatching.js":  {
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "supplier matching hot path; controlled cleanup adayi"
@@ -256,10 +260,6 @@
                                                        "backend/scripts/ai03b_semantic_visible_audit_01_check.js":  {
                                                                                                      "class":  "safe-candidate-review",
                                                                                                      "note":  "semantic visible audit runner; controlled cleanup adayi"
-                                                                                                 },
-                                                       "backend/scripts/audit_log_and_approval_trace_01_check.js":  {
-                                                                                                     "class":  "safe-candidate-review",
-                                                                                                     "note":  "audit trace check harness; controlled cleanup adayi"
                                                                                                  },
                                                        "backend/scripts/security_kvkk_final_01_check.js":  {
                                                                                                      "class":  "acceptance-sensitive / later",

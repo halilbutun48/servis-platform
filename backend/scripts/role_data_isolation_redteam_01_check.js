@@ -117,6 +117,7 @@ const approvedCurrentHeadProductHashes = new Map([
   ['backend/src/services/financialOperationsLifecycle.js', '0767FB5A163CCB19B06F111FE8B00B2340913E29C613A9DEDA93B2CCAA711FF2'],
   ['backend/src/services/companyShiftMutationTail.js', 'FE0F1F30AD2F5BC893FF631F26D19EDDDE2060246ED129087104BFDD69D88C78'],
   ['backend/src/services/qualityPaymentBridgeService.js', '935EDD3E857D89CB76C39DB7C253F7D8D2B69E8ABD9B4167BC9B543B0AE77A83'],
+  ['backend/src/ai/service.js', '30BC3DAF78FA5B114F6F3653E7039AB7DB777EA8D0B22B494034DC2A3F1AF4F5'],
 ]);
 
 const approvedCanonicalProvenanceHashes = new Map([

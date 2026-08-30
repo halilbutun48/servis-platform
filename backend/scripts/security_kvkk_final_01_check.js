@@ -295,7 +295,7 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/currentHeadScopePolicy.js",
-    sha256: "A1EFDEADF2EB8DEB972DFCD2175844EF4B8290B8988C591AD38B00FB57BAC313",
+    sha256: "037FEA5D1EAA8EE1F5E6E286C98D7EFA386C87C30B83C8C52FE17CA430BEFBA0",
   },
   {
     path: "backend/scripts/lib/prismaSchemaIdentity.js",
@@ -342,6 +342,24 @@ function isCoreGuardInfraPath(file) {
   must(actualSha === expectedSha, `core guard identity mismatch: ${normalized}`);
   return true;
 }
+
+const currentClosureCorrectiveEntries = [
+  { path: "backend/scripts/sefer_abi_room_fuel_province_coverage_01_acceptance.mjs", sha256: "09B9A61CC245A24C51B53E10E6EF9A56E2B52A148CB55F90303B6A1ECDE03310" },
+  { path: "backend/src/externalCost/externalCostReferenceService.js", sha256: "EADD157A8C93448EDD3C9E9A4F3D93BFCD3235CBBCEE0AB3282370ABFAADE436" },
+  { path: "backend/src/externalCost/providerFactory.js", sha256: "1CC8266F1B519443C440AB4A7F7AE53BCCFC8A9C6A016E9670D62BD430392EA2" },
+  { path: "backend/src/externalCost/providerRegistry.js", sha256: "E28C27183C8FF124BB452F8D1ADD0077B2FF292463534A2FFB6A866E59E5B225" },
+  { path: "backend/src/externalCost/referenceLayers.js", sha256: "3687A4C373798BF6138F93476EBFCD59B22F4993973ADCBD37F3CA048D0801F8" },
+  { path: "backend/src/externalCost/epdkBulletinProvider.js", sha256: "6883D0C607AFE0FEDFD0D9B1F1B50DC32139F9A0C50388A2AFB753780F93CFD1" },
+  { path: "backend/src/finance/costScenarioForecast.js", sha256: "C1401ACE7AA006874F5FCB28ECCC969E0949BAF30AD43654316364AF9E79491F" },
+  { path: "web/src/panels/shared/CostScenarioWorkspacePanel.jsx", sha256: "470F9F8227C631E84E760A60A2A1C75645C16CD489291E858936BA9183851031" },
+];
+const currentClosureCorrectiveShas = buildExpectedShaMap(currentClosureCorrectiveEntries);
+
+const pausedMilestoneWorktreeEntries = [
+  { path: "backend/scripts/sefer_abi_cost_analysis_assistant_01_acceptance.mjs", sha256: "D02E2152766A74B53F8C9E90FC46655B0986CEC46DFB5154629A6AB50A864033" },
+  { path: "backend/src/ai/chat/seferAbiCostAnalysisAssistant.js", sha256: "867B28C7E2E69137C3DE2E25EEEDF985A1892FAF9A1A0CAEF492C04FCC9CCEC2" },
+];
+const pausedMilestoneWorktreeShas = buildExpectedShaMap(pausedMilestoneWorktreeEntries);
 
 const approvedCurrentHeadRouteEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF.filter((entry) =>
   normalizePath(entry.path).startsWith("backend/src/routes/"),
@@ -591,6 +609,20 @@ function classifySecurityKvkkStatusPath(file) {
   if (isBatch13FoundationOwnerPath(normalized)) return "BATCH13_FOUNDATION_OWNER";
   if (isApprovedCurrentHeadBackendPath(normalized) || isApprovedCurrentHeadSchemaPath(normalized)) return "APPROVED_CURRENT_HEAD_PRODUCT";
   if (isCoreGuardInfraPath(normalized)) return "CORE_GUARD_INFRA";
+  if (currentClosureCorrectiveShas.has(normalized)) {
+    const expected = currentClosureCorrectiveShas.get(normalized);
+    const actual = normalizedTextSha256(normalized);
+    return actual === expected
+      ? "CURRENT_CLOSURE_CORRECTIVE"
+      : `UNKNOWN: ${normalized} expected ${expected} got ${actual}`;
+  }
+  if (pausedMilestoneWorktreeShas.has(normalized)) {
+    const expected = pausedMilestoneWorktreeShas.get(normalized);
+    const actual = normalizedTextSha256(normalized);
+    return actual === expected
+      ? "PAUSED_MILESTONE_WORKTREE"
+      : `UNKNOWN: ${normalized} expected ${expected} got ${actual}`;
+  }
   if (batch09ApprovedConcurrentWorktreeShas.has(normalized)) {
     const expected = batch09ApprovedConcurrentWorktreeShas.get(normalized);
     const actual = normalizedTextSha256(normalized);
@@ -1410,6 +1442,8 @@ function main() {
       "APPROVED_CURRENT_HEAD_PRODUCT",
       "APPROVED_CONCURRENT_CANONICAL_WORKTREE",
       "APPROVED_CONCURRENT_CANONICAL_ROUTE",
+      "CURRENT_CLOSURE_CORRECTIVE",
+      "PAUSED_MILESTONE_WORKTREE",
       "LEGITIMATE_CANONICAL_NEW_FILE",
       "PROVEN_BATCH09_CHANGE",
       "M80_M89_CONTRACT_SWEEP_REPO_CONTRACT",
