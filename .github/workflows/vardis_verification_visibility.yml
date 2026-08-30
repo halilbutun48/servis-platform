@@ -89,20 +89,6 @@ jobs:
   prisma-cross-platform:
     name: Prisma cross-platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: prisma_ci
-          POSTGRES_PASSWORD: prisma_ci
-          POSTGRES_DB: prisma_ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U prisma_ci -d prisma_ci"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
@@ -133,15 +119,58 @@ jobs:
       - name: Canonical Prisma identity and integrity
         run: npm --prefix backend run prisma:verify
 
+      - name: Upload Prisma platform evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-platform-evidence-${{ matrix.os }}
+          path: backend/artifacts/browser-smoke/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01/*
+          if-no-files-found: warn
+
+  prisma-linux-runtime:
+    name: Prisma Linux runtime (GitHub Ubuntu)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: prisma_ci
+          POSTGRES_PASSWORD: prisma_ci
+          POSTGRES_DB: prisma_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prisma_ci -d prisma_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm --prefix backend ci
+
+      - name: Canonical Prisma generation
+        run: npm --prefix backend run prisma:generate
+
+      - name: Canonical Prisma identity and integrity
+        run: npm --prefix backend run prisma:verify
+
       - name: Prepare isolated Linux PostgreSQL schema
-        if: runner.os == 'Linux'
         working-directory: backend
         env:
           DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
         run: npx prisma db push --schema prisma/schema.prisma --skip-generate --accept-data-loss
 
       - name: Linux runtime import, query and process survival
-        if: runner.os == 'Linux'
         env:
           DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
           PRISMA_HARDENING_PLATFORM: GitHub Ubuntu
@@ -150,17 +179,16 @@ jobs:
         run: node backend/scripts/prisma_cross_platform_client_hardening_01_runtime.mjs
 
       - name: CI stale-cache negative proof
-        if: runner.os == 'Linux'
         env:
           PRISMA_SOURCE_HEAD: ${{ github.sha }}
           PRISMA_HARDENING_EVIDENCE_PATH: ${{ github.workspace }}/backend/artifacts/browser-smoke/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01/ci-cache-negative.json
         run: node backend/scripts/prisma_cross_platform_client_hardening_01_ci_negative.mjs
 
-      - name: Upload Prisma platform evidence
+      - name: Upload Linux runtime evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: prisma-platform-evidence-${{ matrix.os }}
+          name: prisma-linux-runtime-evidence
           path: backend/artifacts/browser-smoke/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01/*
           if-no-files-found: warn
 
