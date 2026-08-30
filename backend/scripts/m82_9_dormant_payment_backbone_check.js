@@ -1,6 +1,7 @@
 ﻿import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,7 +50,7 @@ function mustInclude(text, needle, label) {
   if (includesText(text, needle)) ok(label); else fail(label);
 }
 
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 const migration = read("backend/prisma/migrations/20260407103000_m82_9_dormant_payment_backbone/migration.sql");
 const service = read("backend/src/services/paymentBackbone.js");
 const companyShiftTail = read("backend/src/services/companyShiftMutationTail.js");

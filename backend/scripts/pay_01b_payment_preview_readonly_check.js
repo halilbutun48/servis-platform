@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,7 +60,7 @@ const previewCard = read("web/src/components/PaymentPreviewReadonlyCard.jsx");
 const readinessCard = read("web/src/components/PaymentReadinessReadonlyCard.jsx");
 const api = read("web/src/api.js");
 const route = read("backend/src/routes/commercialCorePaymentReportsRoutes.js");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 const paymentBackbone = read("backend/src/services/paymentBackbone.js");
 const paymentBackboneAccounts = read("backend/src/services/paymentBackboneAccounts.js");
 const reconciliation = read("backend/src/ops/settlementReconciliationDesk.js");

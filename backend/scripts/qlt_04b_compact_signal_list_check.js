@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,7 +64,7 @@ const reviewHistoryCard = read("web/src/components/QualityReviewHistoryCard.jsx"
 const reviewDecisionCard = read("web/src/components/QualityReviewDecisionCard.jsx");
 const css = read("web/src/index.css");
 const route = read("backend/src/routes/trustQuality.js");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 
 must(rootPkg, '"check:qlt04b": "node backend/scripts/qlt_04b_compact_signal_list_check.js"', "root package exposes check:qlt04b");
 must(rootPkg, '"check:qlt04a": "node backend/scripts/qlt_04a_quality_layout_polish_check.js"', "root package keeps check:qlt04a");

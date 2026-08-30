@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import {
   BACKEND_ROOT,
-  CANONICAL_SCHEMA_PATH,
   collectPrismaIdentity,
   validateGeneratedClientIdentity,
 } from "./prisma_cross_platform_client_hardening_01.mjs";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const REPO_ROOT = path.resolve(BACKEND_ROOT, "..");
 const workflowPath = path.join(REPO_ROOT, ".github", "workflows", "vardis_verification_visibility.yml");
@@ -38,7 +38,7 @@ async function main() {
   const identity = await collectPrismaIdentity();
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "prisma-ci-negative-"));
   const changedSchemaPath = path.join(tempRoot, "schema.prisma");
-  fs.writeFileSync(changedSchemaPath, `${fs.readFileSync(CANONICAL_SCHEMA_PATH, "utf8")}\n// controlled stale schema fixture\n`, "utf8");
+  fs.writeFileSync(changedSchemaPath, `${readCanonicalPrismaSchemaSource(REPO_ROOT)}\n\nmodel StaleCiSchemaProbe {\n  id Int @id\n}\n`, "utf8");
 
   const staleSchemaRejected = !validateGeneratedClientIdentity(identity, { expectedSchemaPath: changedSchemaPath }).ok;
   const versionDriftRejected = !validateGeneratedClientIdentity(identity, { expectedPrismaVersion: "0.0.0" }).ok;
@@ -47,7 +47,7 @@ async function main() {
   const incompleteRejected = !validateGeneratedClientIdentity(incomplete).ok;
 
   const cacheInputs = [
-    { name: "backend/prisma/schema.prisma", content: fs.readFileSync(CANONICAL_SCHEMA_PATH, "utf8") },
+    { name: "backend/prisma/schema.prisma", content: readCanonicalPrismaSchemaSource(REPO_ROOT) },
     { name: "backend/package-lock.json", content: fs.readFileSync(lockfilePath, "utf8") },
     { name: "backend/scripts/prisma_cross_platform_client_hardening_01.mjs", content: fs.readFileSync(ownerPath, "utf8") },
   ];
@@ -56,7 +56,7 @@ async function main() {
   const lockfileChangeChangesKey = cacheIdentityBase !== changedIdentity(cacheInputs, "\n// package lock identity change");
   const ownerChangeChangesKey = cacheIdentityBase !== changedIdentity(cacheInputs, "\n// generation owner identity change");
   const workflow = fs.readFileSync(workflowPath, "utf8");
-  const workflowKeyContract = /hashFiles\('backend\/prisma\/schema\.prisma', 'backend\/package-lock\.json', 'backend\/scripts\/prisma_cross_platform_client_hardening_01\.mjs'\)/.test(workflow);
+  const workflowKeyContract = /hashFiles\('backend\/prisma\/\*\*\/\*\.prisma', 'backend\/package-lock\.json', 'backend\/scripts\/prisma_cross_platform_client_hardening_01\.mjs'\)/.test(workflow);
 
   const evidence = {
     evidenceVersion: "PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-CI-NEGATIVE",

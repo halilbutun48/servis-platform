@@ -1,0 +1,221 @@
+// #11 domain owner: identity
+enum Role {
+  SUPER_ADMIN
+  ROOM
+  COMPANY
+  DRIVER
+  PERSONEL
+  PARENT
+}
+
+enum IdentityProvider {
+  GOOGLE
+}
+
+enum InviteType {
+  PERSONEL_INVITE
+  DRIVER_INVITE
+  ROOM_USER_INVITE
+  COMPANY_USER_INVITE
+  PARENT_INVITE
+}
+
+model User {
+  notifications Notification[]
+  consents      Consent[]
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  passwordHash  String
+  role          Role
+  fullName      String
+  phone         String?
+
+  // ✅ M41: device binding (primarily for DRIVER)
+  deviceId         String?
+  deviceBoundAt    DateTime?
+  deviceLastSeenAt DateTime?
+
+  // ✅ M41: refresh sessions (rotating)
+  refreshSessions RefreshSession[]
+
+  // ✅ M46.9: session invalidation (access token sv claim)
+  sessionVersion Int            @default(1)
+  identities     UserIdentity[]
+
+  // Step 1.5: TOTP step-up (ROOM + SUPER_ADMIN)
+  totpSecretBase32        String?
+  totpPendingSecretBase32 String?
+  totpEnabledAt           DateTime?
+  totpLastVerifiedAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  // Scope bindings
+  companyId Int?
+  roomId    Int?
+  company   Company? @relation(fields: [companyId], references: [id])
+  room      Room?    @relation(fields: [roomId], references: [id])
+
+  // Optional profile links
+  driver                        Driver?
+  personel                      Personel?
+  // ✅ M16.1: import trail (createdBy)
+  shiftImportsCreated           ShiftImport[]           @relation("ShiftImportCreatedBy")
+  createdDriverPenalties        DriverPenalty[]         @relation("DriverPenaltyCreatedBy")
+  parentChildren                ParentChild[]           @relation("ParentUserChildren")
+  parentInvitesCreated          ParentInvite[]          @relation("ParentInviteCreatedBy")
+  parentInvitesConsumed         ParentInvite[]          @relation("ParentInviteConsumedBy")
+  invitesCreated                Invite[]                @relation("InviteCreatedBy")
+  invitesConsumed               Invite[]                @relation("InviteConsumedBy")
+  companyBudgetPlansCreated     CompanyBudgetPlan[]     @relation("CompanyBudgetPlanCreatedBy")
+  companyBudgetPlansUpdated     CompanyBudgetPlan[]     @relation("CompanyBudgetPlanUpdatedBy")
+  companyBudgetPlansActivated   CompanyBudgetPlan[]     @relation("CompanyBudgetPlanActivatedBy")
+  roomQuoteFloorDraftsCreated   RoomQuoteFloorDraft[]   @relation("RoomQuoteFloorDraftCreatedBy")
+  roomQuoteFloorDraftsUpdated   RoomQuoteFloorDraft[]   @relation("RoomQuoteFloorDraftUpdatedBy")
+  roomQuoteFloorDraftsApplied   RoomQuoteFloorDraft[]   @relation("RoomQuoteFloorDraftAppliedBy")
+  externalCostReferencesCreated ExternalCostReference[] @relation("ExternalReferenceCreatedBy")
+  hakedisRecordsCreated         HakedisRecord[]         @relation("HakedisRecordCreatedBy")
+  invoiceRecordsCreated         InvoiceRecord[]         @relation("InvoiceRecordCreatedBy")
+
+  @@index([companyId])
+  @@index([roomId])
+}
+
+model UserIdentity {
+  id              Int              @id @default(autoincrement())
+  userId          Int
+  provider        IdentityProvider
+  providerSub     String
+  email           String?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSub])
+  @@index([userId])
+  @@index([email])
+}
+
+model Invite {
+  id               Int        @id @default(autoincrement())
+  type             InviteType
+  role             Role
+  email            String?
+  phone            String?
+  fullName         String?
+  companyId        Int?
+  roomId           Int?
+  personelId       Int?
+  childPersonelId  Int?
+  driverId         Int?
+  tokenHash        String     @unique
+  expiresAt        DateTime?
+  consumedAt       DateTime?
+  revokedAt        DateTime?
+  createdByUserId  Int?
+  consumedByUserId Int?
+  createdAt        DateTime   @default(now())
+
+  company       Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room          Room?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  personel      Personel? @relation("InvitePersonel", fields: [personelId], references: [id], onDelete: SetNull)
+  childPersonel Personel? @relation("InviteChildPersonel", fields: [childPersonelId], references: [id], onDelete: SetNull)
+  driver        Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  createdBy     User?     @relation("InviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  consumedBy    User?     @relation("InviteConsumedBy", fields: [consumedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([email, createdAt])
+  @@index([companyId, createdAt])
+  @@index([roomId, createdAt])
+  @@index([personelId, createdAt])
+  @@index([childPersonelId, createdAt])
+  @@index([driverId, createdAt])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model ParentChild {
+  id           Int      @id @default(autoincrement())
+  parentUserId Int
+  personelId   Int
+  createdAt    DateTime @default(now())
+
+  parent User     @relation("ParentUserChildren", fields: [parentUserId], references: [id])
+  child  Personel @relation("ParentChildPersonel", fields: [personelId], references: [id])
+
+  @@unique([parentUserId, personelId])
+  @@index([personelId])
+}
+
+model Consent {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  role       Role?
+  docKey     String
+  docVersion String
+  acceptedAt DateTime  @default(now())
+  revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, docKey, docVersion])
+  @@index([docKey, docVersion])
+  @@index([acceptedAt])
+}
+
+model RefreshSession {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // sha256(refreshTokenRaw)
+  tokenHash String @unique
+
+  deviceId  String?
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  replacedById Int?
+  replacedBy   RefreshSession?  @relation("RefreshSessionRotation", fields: [replacedById], references: [id])
+  replacedFrom RefreshSession[] @relation("RefreshSessionRotation")
+
+  ip        String?
+  userAgent String?
+
+  @@index([userId, createdAt])
+  @@index([deviceId])
+  @@index([expiresAt])
+}
+
+model ParentInvite {
+  id               Int       @id @default(autoincrement())
+  companyId        Int
+  childPersonelId  Int
+  parentFullName   String?
+  email            String?
+  phone            String?
+  tokenHash        String    @unique
+  expiresAt        DateTime?
+  consumedAt       DateTime?
+  revokedAt        DateTime?
+  createdByUserId  Int?
+  consumedByUserId Int?
+  createdAt        DateTime  @default(now())
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  child      Personel @relation("ParentInviteChild", fields: [childPersonelId], references: [id], onDelete: Cascade)
+  createdBy  User?    @relation("ParentInviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  consumedBy User?    @relation("ParentInviteConsumedBy", fields: [consumedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([childPersonelId, createdAt])
+  @@index([email])
+}

@@ -1,0 +1,177 @@
+// #11 domain owner: tenant
+enum CompanyKind {
+  COMPANY
+  SCHOOL
+  ORGANIZATION
+}
+
+model Company {
+  kind         CompanyKind @default(COMPANY)
+  id           Int         @id @default(autoincrement())
+  name         String
+  status       String      @default("ACTIVE")
+  regionId     Int?
+  region       Region?     @relation(fields: [regionId], references: [id])
+  district     String? // ilçe (opsiyonel)
+  // ✅ M36.4: profil alanları
+  legalName    String? // resmi ünvan (opsiyonel)
+  taxNo        String?
+  taxOffice    String?
+  addressLine  String? // adres (detay)
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  notes        String?
+
+  hubLat    Float? // company worksite hub (optional)
+  hubLng    Float? // company worksite hub (optional)
+  createdAt DateTime @default(now())
+
+  users             User[]
+  shifts            Shift[]
+  personels         Personel[]
+  notifications     Notification[]
+  agreements        Agreement[]
+  parentInvites     ParentInvite[]
+  invites           Invite[]
+  organizationPlans OrganizationPlan[]
+  budgetPlans       CompanyBudgetPlan[]
+  paymentAccounts   PaymentAccount[]
+  commercialSources CommercialSource[]
+  hakedisRecords    HakedisRecord[]
+  invoiceRecords    InvoiceRecord[]
+
+  @@index([regionId, kind])
+  @@index([kind])
+  @@index([regionId])
+  @@index([district])
+}
+
+enum OrganizationPlanStatus {
+  DRAFT
+  SHIFT_PUBLISHED
+  AGREEMENT_REQUESTED
+  CANCELLED
+}
+
+model OrganizationPlan {
+  id                Int                    @id @default(autoincrement())
+  companyId         Int
+  title             String                 @default("Organization Plan")
+  planDate          DateTime               @default(now()) @db.Date
+  startMin          Int                    @default(480)
+  endMin            Int                    @default(1080)
+  roomId            Int?
+  notes             String?
+  status            OrganizationPlanStatus @default(DRAFT)
+  publishedShiftId  Int?
+  linkedAgreementId Int?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  company Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  stops   OrganizationStop[]
+  shifts  Shift[]
+
+  @@index([companyId, status])
+  @@index([companyId, planDate])
+  @@index([roomId])
+}
+
+model OrganizationStop {
+  id             Int      @id @default(autoincrement())
+  planId         Int
+  name           String
+  address        String?
+  lat            Float
+  lng            Float
+  order          Int      @default(0)
+  passengerCount Int      @default(1)
+  windowStartMin Int?
+  windowEndMin   Int?
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  plan OrganizationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId, order])
+}
+
+enum CompanyBudgetPlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model Room {
+  id           Int     @id @default(autoincrement())
+  name         String
+  status       String  @default("ACTIVE")
+  regionId     Int?
+  region       Region? @relation(fields: [regionId], references: [id])
+  district     String? // ilçe (opsiyonel)
+  // ✅ M36.4: profil alanları
+  addressLine  String? // adres (detay)
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  notes        String?
+
+  // ✅ M19: worksite hub (company/site)
+  hubLat    Float?
+  hubLng    Float?
+  createdAt DateTime @default(now())
+
+  users          User[]
+  vehicles       Vehicle[]
+  drivers        Driver[]
+  shifts         Shift[]
+  notifications  Notification[]
+  routeTemplates RouteTemplate[]
+  agreements     Agreement[]
+  invites        Invite[]
+
+  // ✅ M24: offers inbox (Room ↔ ShiftOffer)
+  shiftOffers       ShiftOffer[]          @relation("RoomShiftOffers")
+  quoteFloorDrafts  RoomQuoteFloorDraft[]
+  commissionRules   CommissionRule[]
+  paymentAccounts   PaymentAccount[]
+  commercialSources CommercialSource[]
+  hakedisRecords    HakedisRecord[]
+  invoiceRecords    InvoiceRecord[]
+
+  @@index([regionId])
+  @@index([district])
+}
+
+model CompanyBudgetPlan {
+  id                  Int                     @id @default(autoincrement())
+  companyId           Int
+  status              CompanyBudgetPlanStatus @default(DRAFT)
+  currencyCode        String                  @default("TRY")
+  budgetAmountMinor   Int?
+  periodStart         DateTime?               @db.Date
+  periodEnd           DateTime?               @db.Date
+  budgetSource        String?
+  budgetApprovalState String?
+  description         String?
+  warningThresholdBps Int?
+  inputSnapshot       Json?
+  version             Int                     @default(1)
+  createdByUserId     Int?
+  updatedByUserId     Int?
+  activatedByUserId   Int?
+  activatedAt         DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy   User?   @relation("CompanyBudgetPlanCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy   User?   @relation("CompanyBudgetPlanUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  activatedBy User?   @relation("CompanyBudgetPlanActivatedBy", fields: [activatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, status])
+  @@index([companyId, updatedAt])
+  @@index([companyId, activatedAt])
+}

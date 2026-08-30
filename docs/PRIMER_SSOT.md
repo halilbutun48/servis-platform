@@ -244,19 +244,18 @@ Compatibility aliases for legacy checks:
 - M91 local acceptance overlay: shift/agreement route preview ve kaynak vardiya bağlantısı `docs/RUNBOOK_M91_SHIFT_AGREEMENT_ROUTE_PREVIEW.md` ile takip edilir.
 - M92 repo verification spine: package scriptleri, tools wrapper, manifest, state ve runbook bağlantısı `npm run verify:repo` altında toplanır.
 
-## schema.prisma decision
-- `backend/prisma/schema.prisma` bu M90 hattında **justified exception** olarak korunur.
-- Bu dosyada sırf line-count düşsün diye path/split refactor yapılmayacaktır.
-- Gerekçe: schema tek dosyada migration + seed + Prisma client + repo-contract check hattının ortak referansıdır.
-- M90 kapanış hattında schema split yapmak acceptance değeri üretmez; yüksek araçlama / migration / contract riski üretir.
-- İzin verilen değişiklikler: migration-safe alan/model/enumeration ekleri, relation/index/constraint düzeltmeleri, acceptance-safe lokal şema tamiri.
-- Bu karar, schema üzerinde çalışma yasağı değildir; yalnız line-count odaklı yapısal bölmeyi M90 dışında bırakır.
-- Yeniden değerlendirme tetikleyicisi: M90 sonrası planlı tooling hazırlığı + explicit split ihtiyacı + contract/check hattının buna göre tasarlanması.
+## PRISMA_SCHEMA_MODULARIZATION_01
+- `backend/prisma/schema.prisma` tek canonical Prisma entrypoint'tir; yalnız bir generator ve bir datasource taşır.
+- Domain declarations, Prisma 5.22.0'un native `prismaSchemaFolder` desteğiyle `backend/prisma/schema/` altında modüllere ayrılmıştır.
+- Bu #11 kararı, eski M90 hot-file notundaki tek dosyalı schema istisnasının yerini alır; competing schema SSOT, custom concatenation ve migration yoktur.
+- Her model/enum tek owner modülündedir; cross-domain relation semantiği DMMF ve DB diff parity ile korunur.
+- Kanonik kontroller: `npm --prefix backend run prisma:modularization:acceptance`, `npm --prefix backend run prisma:modularization:check` ve `npm --prefix backend run prisma:verify`.
+- `backend/prisma/schema/` altında yeni declaration eklemek #11 parity, #10 generation ve migration-impact kontrollerini gerektirir.
 
 ## hot-file queue policy
 - Hot/large file kuyruğu yalnız sayısal repo-audit çıktısı değildir; resmi sınıflı queue olarak yönetilir.
 - Kör line-count düşürme yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
-- `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` queue içinde **justified exception** olarak kalır; `backend/src/ai/chat/helpComposerSafeReplies.js` helpComposer için acceptance-safe companion split yüzeyidir.
+- `backend/src/ai/chat/helpComposer.js` queue içinde **justified exception** olarak kalır; `backend/prisma/schema.prisma` ise #11 canonical entrypoint'tir ve domain modülleri `backend/prisma/schema/` altında ownership checker ile izlenir. `backend/src/ai/chat/helpComposerSafeReplies.js` helpComposer için acceptance-safe companion split yüzeyidir.
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js` ve `web/src/panels/shared/CopilotPanel.jsx` **acceptance-sensitive / later** sınıfındadır; `mobile/App.js` shell kalır, yeni mobile iş helper/state/screen dosyalarına taşınır.
 - `backend/src/ai/chat/copilotGuidedTaskEngine.js` **safe candidate review** kuyruğundadır.
 - `web/src/panels/company/ShiftPeopleTab.jsx` **safe candidate review** kuyruğundadır.

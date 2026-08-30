@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readCanonicalPrismaSchemaSource } from './lib/prismaSchemaSource.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,7 +36,7 @@ function must(text, needle, msg) {
 
 console.log('=== M95-E20 BACKEND DRIVER PHONE GPS FALLBACK CHECK ===');
 const pkg = read('package.json');
-const schema = read('prisma/schema.prisma');
+const schema = readCanonicalPrismaSchemaSource(path.resolve(root, '..'));
 const migration = read('prisma/migrations/20260501143000_add_vehicle_gps_state_source/migration.sql');
 const gate = read('src/gps/gpsStateGate.js');
 const gpsRoute = read('src/routes/gps.js');

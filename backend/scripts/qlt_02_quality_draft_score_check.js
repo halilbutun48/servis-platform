@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,7 +65,7 @@ const doc = read("docs/QLT_02_KONTROLLU_KALITE_SKORU_TASLAK_MODELI.md");
 const primer = read("docs/PRIMER_SSOT.md");
 const registry = read("docs/MILESTONE_REGISTRY_V1.md");
 const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 
 must(rootPkg, '"check:qlt02": "node backend/scripts/qlt_02_quality_draft_score_check.js"', "root package exposes check:qlt02");
 must(rootPkg, '"check:qlt01": "node backend/scripts/qlt_01_quality_provider_readiness_check.js"', "root package keeps check:qlt01");

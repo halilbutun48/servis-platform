@@ -1,0 +1,131 @@
+// #11 domain owner: reference
+enum ExternalReferenceDataClass {
+  INTERNAL_ACTUAL
+  EXTERNAL_REFERENCE
+  DEMO_FIXTURE
+}
+
+enum ExternalReferenceFamily {
+  FUEL_DIESEL
+  FUEL_GASOLINE
+  FUEL_GASOLINE_95
+  FUEL_LPG
+  FX
+  INFLATION_INDEX
+  COST_INDEX
+  TOLL
+  BRIDGE
+  TUNNEL
+  FERRY
+  MAINTENANCE_REFERENCE
+  TYRE_REFERENCE
+  VEHICLE_CLASS_REFERENCE
+  REGIONAL_COST_REFERENCE
+}
+
+enum ExternalReferenceUnit {
+  CURRENCY
+  CURRENCY_PER_L
+  CURRENCY_PER_KM
+  CURRENCY_PER_MONTH
+  CURRENCY_PER_TRIP
+  CURRENCY_PER_UNIT
+  RATE
+  INDEX_POINT
+}
+
+enum ExternalReferenceFreshness {
+  FRESH
+  STALE
+  EXPIRED
+  SOURCE_UNAVAILABLE
+  FALLBACK
+  UNKNOWN
+}
+
+enum ExternalReferenceConfidence {
+  HIGH
+  MEDIUM
+  LOW
+  UNKNOWN
+}
+
+enum ExternalReferenceCompleteness {
+  COMPLETE
+  INCOMPLETE
+}
+
+enum ExternalReferenceConflictState {
+  NO_CONFLICT
+  CONFLICT
+  UNKNOWN
+}
+
+enum ExternalReferenceProviderStatus {
+  CONFIGURED
+  NOT_CONFIGURED
+  INVALID_CONFIG
+  UNAVAILABLE
+}
+
+enum ExternalReferenceFallbackState {
+  NONE
+  FALLBACK_PROVIDER
+  STALE_CACHE
+  NO_SAFE_FALLBACK
+}
+
+enum ExternalReferenceScopeType {
+  GLOBAL
+  REGION
+  CITY
+  CUSTOM
+}
+
+model Region {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  companies Company[]
+  rooms     Room[]
+}
+
+model ExternalCostReference {
+  id              Int                             @id @default(autoincrement())
+  referenceKey    String                          @unique
+  dataClass       ExternalReferenceDataClass      @default(EXTERNAL_REFERENCE)
+  family          ExternalReferenceFamily
+  valueDecimal    String
+  valueMinor      Int?
+  unit            ExternalReferenceUnit
+  currencyCode    String?
+  sourceName      String
+  sourceUrl       String?
+  providerKey     String
+  providerVersion String?
+  asOf            DateTime?
+  regionCode      String?
+  scopeType       ExternalReferenceScopeType      @default(GLOBAL)
+  scopeKey        String                          @default("GLOBAL")
+  freshness       ExternalReferenceFreshness      @default(UNKNOWN)
+  confidence      ExternalReferenceConfidence     @default(UNKNOWN)
+  completeness    ExternalReferenceCompleteness   @default(INCOMPLETE)
+  conflictState   ExternalReferenceConflictState  @default(UNKNOWN)
+  providerStatus  ExternalReferenceProviderStatus @default(CONFIGURED)
+  fallbackState   ExternalReferenceFallbackState  @default(NONE)
+  retrievedAt     DateTime                        @default(now())
+  freshUntil      DateTime?
+  staleUntil      DateTime?
+  sourceMetadata  Json?
+  rawPayloadHash  String?
+  createdByUserId Int?
+  createdAt       DateTime                        @default(now())
+  updatedAt       DateTime                        @updatedAt
+
+  createdBy User? @relation("ExternalReferenceCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([family, regionCode, scopeType, scopeKey])
+  @@index([providerKey, family, asOf])
+  @@index([freshness, staleUntil])
+}

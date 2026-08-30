@@ -4,13 +4,17 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  canonicalPrismaSchemaFiles,
+} from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 export const REPO_ROOT = path.resolve(__dirname, "../..");
 export const BACKEND_ROOT = path.join(REPO_ROOT, "backend");
-export const CANONICAL_SCHEMA_PATH = path.join(BACKEND_ROOT, "prisma", "schema.prisma");
-export const CANONICAL_SCHEMA_RELATIVE_PATH = "backend/prisma/schema.prisma";
+export const CANONICAL_SCHEMA_PATH = path.join(BACKEND_ROOT, "prisma");
+export const CANONICAL_SCHEMA_ENTRY_PATH = path.join(CANONICAL_SCHEMA_PATH, "schema.prisma");
+export const CANONICAL_SCHEMA_RELATIVE_PATH = "backend/prisma";
 export const CANONICAL_GENERATED_CLIENT_PATH = path.join(BACKEND_ROOT, "node_modules", ".prisma", "client");
 export const GENERATION_COMMAND = "npm --prefix backend run prisma:generate";
 export const PRISMA_HARDENING_EVIDENCE_DIR = path.join(REPO_ROOT, "backend", "artifacts", "browser-smoke", "PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01");
@@ -23,6 +27,39 @@ function sha256(value) {
 
 function readText(filePath) {
   return fs.readFileSync(filePath, "utf8");
+}
+
+function schemaFiles(schemaPath) {
+  if (path.resolve(schemaPath) === path.resolve(CANONICAL_SCHEMA_PATH)) {
+    return canonicalPrismaSchemaFiles(REPO_ROOT);
+  }
+  const stats = fs.statSync(schemaPath);
+  if (stats.isFile()) return [schemaPath];
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory() && entry.name !== "migrations") visit(absolute);
+      else if (entry.isFile() && entry.name.endsWith(".prisma")) files.push(absolute);
+    }
+  };
+  visit(schemaPath);
+  return files.sort((left, right) => relativePath(left).localeCompare(relativePath(right)));
+}
+
+function schemaSourceText(schemaPath) {
+  return schemaFiles(schemaPath).map((filePath) => readText(filePath)).join("\n\n");
+}
+
+function semanticSchemaText(text, { includeInfrastructure = true } = {}) {
+  const blocks = [...String(text || "").matchAll(/^(generator|datasource|enum|model)\s+\w+\s*\{.*?^\}/gms)]
+    .filter((match) => includeInfrastructure || ["enum", "model"].includes(match[1]))
+    .map((match) => match[0]
+      .replace(/\/\/.*$/gm, "")
+      .replace(/\s+/g, " ")
+      .trim())
+    .sort((left, right) => left.localeCompare(right));
+  return blocks.join("\n");
 }
 
 function readJson(filePath) {
@@ -145,18 +182,31 @@ async function dmmfFromGeneratedDir(generatedDir) {
 }
 
 export function collectSchemaIdentity(schemaPath = CANONICAL_SCHEMA_PATH) {
-  const raw = fs.readFileSync(schemaPath);
+  const files = schemaFiles(schemaPath);
+  const entryPath = files.find((filePath) => path.basename(filePath) === "schema.prisma") || files[0];
+  const raw = fs.readFileSync(entryPath);
+  const sourceText = schemaSourceText(schemaPath);
+  const sourceIdentity = files.map((filePath) => ({
+    path: relativePath(filePath),
+    sha256: sha256(fs.readFileSync(filePath)),
+  }));
   const text = raw.toString("utf8");
   return {
     path: relativePath(schemaPath),
     rawSha256: sha256(raw),
     normalizedSha256: sha256(normalizeSchemaText(text)),
+    sourceSetSha256: sha256(JSON.stringify(sourceIdentity)),
+    semanticSha256: sha256(semanticSchemaText(sourceText)),
+    modelEnumSemanticSha256: sha256(semanticSchemaText(sourceText, { includeInfrastructure: false })),
+    files: sourceIdentity,
     byteLength: raw.length,
   };
 }
 
 export function collectGeneratorIdentity(schemaPath = CANONICAL_SCHEMA_PATH) {
-  return parseGeneratorConfig(readText(schemaPath));
+  const entryPath = schemaFiles(schemaPath).find((filePath) => path.basename(filePath) === "schema.prisma");
+  if (!entryPath) throw new Error(`Prisma schema entry file missing: ${relativePath(schemaPath)}`);
+  return parseGeneratorConfig(readText(entryPath));
 }
 
 export function collectGeneratedClientMetadata(generatedDir = CANONICAL_GENERATED_CLIENT_PATH) {
@@ -172,7 +222,10 @@ export function collectGeneratedClientMetadata(generatedDir = CANONICAL_GENERATE
       name,
       exists: fs.existsSync(path.join(generatedDir, name)),
     })),
-    generatedSchemaSha256: fs.existsSync(generatedSchemaPath) ? collectSchemaIdentity(generatedSchemaPath).rawSha256 : null,
+    generatedSchemaSha256: fs.existsSync(generatedSchemaPath) ? sha256(fs.readFileSync(generatedSchemaPath)) : null,
+    generatedSchemaSemanticSha256: fs.existsSync(generatedSchemaPath)
+      ? sha256(semanticSchemaText(readText(generatedSchemaPath), { includeInfrastructure: false }))
+      : null,
     packageName: packageMetadata?.name || null,
     packageVersion: packageMetadata?.version || null,
     engineFiles: engines,
@@ -205,7 +258,7 @@ export async function collectPrismaIdentity({ generatedDir = CANONICAL_GENERATED
     runtimeError = error?.message || String(error);
   }
   const clientApiIdentity = sha256(JSON.stringify({
-    schema: schema.normalizedSha256,
+    schema: schema.semanticSha256,
     prismaVersion: versions.clientVersion,
     generator: { provider: generator.provider, output: generator.output, binaryTargets: generator.binaryTargets },
     runtimeModel: runtime.dmmfSha256,
@@ -306,22 +359,29 @@ export function runPrismaGenerate({ schemaPath = CANONICAL_SCHEMA_PATH, cwd = BA
 function createIsolatedGenerationWorkspace() {
   const workspaceRoot = fs.mkdtempSync(path.join(BACKEND_ROOT, ".prisma-hardening-"));
   const prismaDir = path.join(workspaceRoot, "prisma");
-  const schemaPath = path.join(prismaDir, "schema.prisma");
   const outputDir = path.join(workspaceRoot, "generated-client");
   fs.mkdirSync(prismaDir, { recursive: true });
-  const source = readText(CANONICAL_SCHEMA_PATH);
+  const sourceRoot = path.join(BACKEND_ROOT, "prisma");
+  for (const sourceFile of schemaFiles(CANONICAL_SCHEMA_PATH)) {
+    const relative = path.relative(sourceRoot, sourceFile);
+    const destination = path.join(prismaDir, relative);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.copyFileSync(sourceFile, destination);
+  }
+  const schemaPath = path.join(prismaDir, "schema.prisma");
+  const source = readText(schemaPath);
   const schema = source.replace(
     /generator\s+client\s*\{([\s\S]*?)\n\}/,
     (match) => match.slice(0, -1) + "  output = \"../generated-client\"\n}",
   );
   fs.writeFileSync(schemaPath, schema, "utf8");
-  return { workspaceRoot, schemaPath, outputDir };
+  return { workspaceRoot, prismaDir, schemaPath, outputDir };
 }
 
 export function validateGeneratedClientIdentity(identity, { expectedSchemaPath = CANONICAL_SCHEMA_PATH, expectedPrismaVersion = null } = {}) {
   const expectedSchema = collectSchemaIdentity(expectedSchemaPath);
   const requiredFiles = identity.generatedClient.requiredFiles.every((item) => item.exists);
-  const schemaMatch = identity.generatedClient.generatedSchemaSha256 === expectedSchema.rawSha256;
+  const schemaMatch = identity.generatedClient.generatedSchemaSemanticSha256 === expectedSchema.modelEnumSemanticSha256;
   const versionMatch = identity.prismaVersion.clientVersion === identity.prismaVersion.cliVersion
     && (!expectedPrismaVersion || identity.prismaVersion.clientVersion === expectedPrismaVersion);
   const models = identity.runtimeModel.requiredModelsPresent;
@@ -345,8 +405,7 @@ export async function generateCanonicalClient() {
     let lastError = null;
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
-        runPrismaGenerate({ schemaPath: workspace.schemaPath });
-        fs.copyFileSync(CANONICAL_SCHEMA_PATH, path.join(workspace.outputDir, "schema.prisma"));
+        runPrismaGenerate({ schemaPath: workspace.prismaDir });
         identity = await collectPrismaIdentity({ generatedDir: workspace.outputDir, schemaPath: CANONICAL_SCHEMA_PATH });
         const validation = validateGeneratedClientIdentity(identity);
         if (!validation.ok) throw new Error("isolated generated client rejected: " + JSON.stringify(validation));
@@ -393,7 +452,7 @@ async function main() {
     const identity = await collectPrismaIdentity();
     const requiredFiles = identity.generatedClient.requiredFiles.every((item) => item.exists);
     const models = identity.runtimeModel.requiredModelsPresent;
-    const schemaMatch = identity.generatedClient.generatedSchemaSha256 === identity.schema.rawSha256;
+    const schemaMatch = identity.generatedClient.generatedSchemaSemanticSha256 === identity.schema.modelEnumSemanticSha256;
     const versionMatch = identity.prismaVersion.clientVersion === identity.prismaVersion.cliVersion;
     if (command === "verify" && (!requiredFiles || !models || !schemaMatch || !versionMatch || identity.runtimeError)) {
       throw new Error(`Prisma generated-client integrity failed: ${JSON.stringify({ requiredFiles, models, schemaMatch, versionMatch, runtimeError: identity.runtimeError })}`);

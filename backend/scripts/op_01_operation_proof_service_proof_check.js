@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,7 +60,7 @@ const docs = read("docs/OP_01_OPERATION_PROOF_SERVICE_PROOF_OMURGA.md");
 const primer = read("docs/PRIMER_SSOT.md");
 const registry = read("docs/MILESTONE_REGISTRY_V1.md");
 const scriptGuide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 
 must(rootPkg, "check:op01", "root package exposes check:op01");
 must(rootPkg, "check:m99kvkk01", "root package keeps check:m99kvkk01");

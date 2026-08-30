@@ -1,0 +1,72 @@
+// #11 domain owner: telemetry
+enum GpsLastStatus {
+  OK
+  STALE
+}
+
+enum GpsDeviceStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum UiGpsStatus {
+  LIVE
+  STALE
+  OFFLINE
+}
+
+model GpsDevice {
+  id            Int             @id @default(autoincrement())
+  vehicleId     Int
+  vendor        String
+  serial        String
+  label         String?
+  status        GpsDeviceStatus @default(ACTIVE)
+  authTokenHash String          @unique
+  lastSeenAt    DateTime?
+  lastIngestAt  DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([vendor, serial])
+  @@index([vehicleId, status])
+  @@index([serial])
+}
+
+model GpsLast {
+  vehicleId Int           @id
+  lat       Float
+  lng       Float
+  speed     Float?
+  at        DateTime
+  status    GpsLastStatus @default(OK)
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+}
+
+model VehicleGpsState {
+  vehicleId     Int         @id
+  lastUiStatus  UiGpsStatus
+  lastSource    String?
+  lastChangedAt DateTime    @default(now())
+  seenLiveAt    DateTime?
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model GpsPoint {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int
+  lat       Float
+  lng       Float
+  speed     Float?
+  at        DateTime
+  createdAt DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, at])
+  @@index([at])
+}

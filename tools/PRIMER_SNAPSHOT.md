@@ -80,11 +80,11 @@
 - Sadece acceptance-safe lokal düzeltme yapılabilir.
 - M90C.1, M90C.2 ve M90C.3 kapanmıştır; helpComposer policy canonical docs içine işlenmiştir.
 
-## schema.prisma decision
-- `backend/prisma/schema.prisma` M90 hattında justified exception olarak korunur.
-- Bu dosya sırf satır sayısı için bölünmeyecektir.
-- Migration + seed + Prisma client + repo-contract yüzeyleri tek path üzerinden bağlı kaldığı için split refactor bu hatta alınmaz.
-- İzin verilen değişiklikler: migration-safe alan/model/enum ekleri ve acceptance-safe lokal tamirler.
+## PRISMA_SCHEMA_MODULARIZATION_01
+- `backend/prisma/schema.prisma` tek canonical Prisma entrypoint'tir; domain declarations `backend/prisma/schema/` altında native Prisma schema-folder modüllerindedir.
+- Bu #11 kararı, eski M90 tek-dosya hot-file kararını supersede eder; custom compiler, competing SSOT, schema semantik değişikliği ve migration yoktur.
+- Kanonik kontroller: `npm --prefix backend run prisma:modularization:acceptance`, `npm --prefix backend run prisma:modularization:check` ve `npm --prefix backend run prisma:verify`.
+- Ayrıntılı sözleşme: `docs/PRISMA_SCHEMA_MODULARIZATION_01.md`.
 - Hot/large file queue resmi sınıflıdır; doğrulama komutu: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`.
 - Satır azaltma en sona bırakılır; önce export/package hijyeni kapanır.
 - Yeni resmi hijyen komutu: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
@@ -101,7 +101,7 @@
 - Final verify çıktıları: `artifacts/lint/web_lint_latest.txt` ve `artifacts/repo-audit/physical_snapshot_hygiene_latest.json`.
 
 ## hot-file queue policy
-- `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` justified exception olarak korunur.
+- `backend/src/ai/chat/helpComposer.js` justified exception olarak korunur; `backend/prisma/schema.prisma` #11 canonical entrypoint'tir ve domain modules ownership checker ile izlenir.
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` acceptance-sensitive / later sınıfındadır.
 - `backend/src/ai/chat/copilotGuidedTaskEngine.js` safe candidate review kuyruğundadır.
 - `web/src/panels/company/ShiftPeopleTab.jsx` safe candidate review kuyruğundadır.

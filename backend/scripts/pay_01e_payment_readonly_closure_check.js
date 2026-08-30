@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,7 +60,7 @@ const safetyBadge = read("web/src/components/PaymentReadonlySafetyBadge.jsx");
 const readinessCard = read("web/src/components/PaymentReadinessReadonlyCard.jsx");
 const previewCard = read("web/src/components/PaymentPreviewReadonlyCard.jsx");
 const route = read("backend/src/routes/commercialCorePaymentReportsRoutes.js");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 
 must(rootPkg, '"check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js"', "root package exposes check:pay01e");
 must(rootPkg, '"check:pay01d": "node backend/scripts/pay_01d_payment_preview_csv_export_check.js"', "root package keeps check:pay01d");

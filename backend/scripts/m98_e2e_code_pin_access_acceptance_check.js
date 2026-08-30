@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,7 +67,7 @@ const backendDrivers = read("backend/src/routes/drivers.js");
 const backendAuth = read("backend/src/routes/auth.js");
 const backendPassengerLinks = read("backend/src/routes/passengerLinks.js");
 const backendParentInvites = read("backend/src/routes/schoolParentInvites.js");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 const webApi = read("web/src/api.js");
 const webWorkflow = read("web/src/panels/company/WorkflowPanel.jsx");
 const webPersonelPanel = read("web/src/panels/company/PersonelAccessPanel.jsx");

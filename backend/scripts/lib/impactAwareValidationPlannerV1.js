@@ -119,6 +119,21 @@ const FULL_CHAIN_FOUNDATION_COMMANDS = Object.freeze(
   ),
 );
 
+const PRISMA_SCHEMA_FOUNDATION_COMMAND_RULES = Object.freeze([
+  {
+    id: "prisma-schema-modularization",
+    command: "npm --prefix backend run prisma:modularization:check",
+    reason: "canonical modular Prisma schema change",
+    matches: (impact) => Boolean(impact) && impact.identityModel === "prisma-schema-folder-modularization-01",
+  },
+  {
+    id: "prisma-generation-contract",
+    command: "npm --prefix backend run prisma:verify",
+    reason: "canonical Prisma generation and identity contract",
+    matches: (impact) => Boolean(impact) && impact.identityModel === "prisma-schema-folder-modularization-01",
+  },
+]);
+
 const SMOKE_SUITE_RUNNER_COMMANDS = Object.freeze({
   ALL_PANELS: "backend/scripts/ux_all_panels_reality_audit_01.mjs",
   MOBILE_ALL_ROLES: "backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs",
@@ -164,11 +179,22 @@ function isFoundationOwnershipRecord(record) {
 
 function deriveFoundationSentinels(impact, { fullChainRequired = false } = {}) {
   if (!impact || fullChainRequired) {
+    if (impact?.identityModel === "prisma-schema-folder-modularization-01") {
+      return Object.freeze([
+        ...FULL_CHAIN_FOUNDATION_COMMANDS,
+        ...PRISMA_SCHEMA_FOUNDATION_COMMAND_RULES.map(({ id, command, reason }) =>
+          Object.freeze({ id, command, reason }),
+        ),
+      ]);
+    }
     return FULL_CHAIN_FOUNDATION_COMMANDS;
   }
 
   const results = [];
-  for (const rule of TARGETED_FOUNDATION_COMMAND_RULES) {
+  const rules = impact?.identityModel === "prisma-schema-folder-modularization-01"
+    ? [...TARGETED_FOUNDATION_COMMAND_RULES, ...PRISMA_SCHEMA_FOUNDATION_COMMAND_RULES]
+    : TARGETED_FOUNDATION_COMMAND_RULES;
+  for (const rule of rules) {
     if (rule.matches(impact)) {
       results.push(
         Object.freeze({

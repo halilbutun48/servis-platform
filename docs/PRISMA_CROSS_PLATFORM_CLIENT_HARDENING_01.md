@@ -6,7 +6,8 @@ for a real platform run.
 
 ## Canonical generation contract
 
-- Schema: backend/prisma/schema.prisma
+- Schema root: backend/prisma/ (entrypoint: backend/prisma/schema.prisma)
+- Domain modules: backend/prisma/schema/*.prisma, loaded natively by Prisma 5.22.0
 - Generator: prisma-client-js
 - Output: Prisma's normal backend/node_modules/.prisma/client
 - Binary policy: implicit native; each runtime installs its own dependencies

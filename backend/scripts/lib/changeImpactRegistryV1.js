@@ -30,6 +30,7 @@ export const CHANGE_IMPACT_VALID_OWNER_CATEGORIES = Object.freeze([
   "ROLE_TENANT_SECURITY_OWNED",
   "CURRENT_HEAD_APPROVED_DIFF",
   "CANONICAL_PROVENANCE_OWNED",
+  "CANONICAL_PRISMA_SCHEMA_OWNED",
   "IDENTITY_OWNER_MISSING",
 ]);
 
@@ -57,6 +58,7 @@ export const CHANGE_IMPACT_CANONICAL_OWNER_REFERENCES = Object.freeze({
   ROLE_TENANT_SECURITY_OWNED: "backend/scripts/lib/guardGitScope.js#isAppJsxRoleTenantScopePath",
   CURRENT_HEAD_APPROVED_DIFF: "backend/scripts/lib/currentHeadScopePolicy.js#CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF",
   CANONICAL_PROVENANCE_OWNED: "backend/scripts/lib/canonicalProvenanceRegistry.js#getCanonicalProvenanceRecord",
+  CANONICAL_PRISMA_SCHEMA_OWNED: "backend/scripts/prisma_schema_modularization_01_check.js",
   IDENTITY_OWNER_MISSING: "IDENTITY_OWNER_MISSING",
 });
 
@@ -425,7 +427,35 @@ export function buildChangeImpactRegistryV1(
 }
 
 export function getChangeImpactForPath(relPath) {
-  return CHANGE_IMPACT_REGISTRY_V1_BY_PATH[normalizePath(relPath)] ?? null;
+  const normalized = normalizePath(relPath);
+  const registered = CHANGE_IMPACT_REGISTRY_V1_BY_PATH[normalized];
+  if (registered) return registered;
+
+  // #11 owns the modular schema folder as one exact architectural boundary.
+  // Resolve individual .prisma files without inflating the historical M90
+  // registry counts or introducing a broad repository wildcard.
+  if (
+    normalized === "backend/prisma/schema.prisma"
+    || (normalized.startsWith("backend/prisma/schema/") && normalized.endsWith(".prisma"))
+  ) {
+    return Object.freeze({
+      sourcePath: normalized,
+      primaryDomain: "TOOLING",
+      secondaryDomains: Object.freeze(["AUTH", "COMPANY", "ROOM", "FINANCE_PAYMENT"]),
+      identityOwnerCategory: "CANONICAL_PRISMA_SCHEMA_OWNED",
+      identityOwnerRef: "backend/scripts/prisma_schema_modularization_01_check.js",
+      identityModel: "prisma-schema-folder-modularization-01",
+      currentHeadPolicyState: "ABSENT",
+      protectionClasses: Object.freeze(["DOMAIN_SEMANTIC"]),
+      semanticOwnerGroups: Object.freeze(["PRISMA_SCHEMA", "PRISMA_GENERATION", "PRISMA_DB_IMPACT"]),
+      smokeSuites: Object.freeze([]),
+      impactLevel: 4,
+      requiresFullRelease: true,
+      notes: "Exact #11 modular schema boundary; validate, parity-check, then run the #10 generation contract.",
+    });
+  }
+
+  return null;
 }
 
 export function getImpactDomain(relPath) {

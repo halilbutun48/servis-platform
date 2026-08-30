@@ -66,6 +66,7 @@ const phaseDefinitions = {
     nodeStep("m95e20-gps-fallback", "backend/scripts/m95_e20_driver_phone_gps_fallback_check.js"),
     nodeStep("m95e23b-gps-source-visibility", "backend/scripts/m95_e23b_gps_source_visibility_check.js"),
     nodeStep("m95e20-web-gps-badge", "web/scripts/m95_e20_web_gps_source_badge_check.js"),
+    nodeStep("prisma-schema-modularization", "backend/scripts/prisma_schema_modularization_01_check.js"),
   ],
   milestones: [
     nodeStep("m0-latest-static-milestones", "backend/scripts/run_m0_latest.js", [

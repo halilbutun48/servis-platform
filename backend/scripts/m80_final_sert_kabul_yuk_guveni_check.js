@@ -2,6 +2,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { readRepoContractState } from "./_repoContractState.js";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -125,7 +126,7 @@ const companyStopsRoutes = read("backend/src/routes/shifts/shiftsCompanyStopsRou
 const peopleRoutes = read("backend/src/routes/shifts/people.js");
 const osrmRouteText = read("backend/src/services/osrmRoute.js");
 const shiftRouteStateText = read("backend/src/services/shiftRouteState.js");
-const schemaText = read("backend/prisma/schema.prisma");
+const schemaText = readCanonicalPrismaSchemaSource(repoRoot);
 
 textIncludes(guidedText, "const offerOsrmGate = useMemo(", "offerOsrmGate memo present");
 if (!includesText(guidedText, "Sadece hub’lı")) ok("hub-only filter removed"); else fail("hub-only filter removed");

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,7 +61,7 @@ const auth = read("backend/src/routes/auth.js");
 const drivers = read("backend/src/routes/drivers.js");
 const passengerLinks = read("backend/src/routes/passengerLinks.js");
 const schoolParentInvites = read("backend/src/routes/schoolParentInvites.js");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 const migrationsDir = path.join(repoRoot, "backend", "prisma", "migrations");
 const migrationNames = fs.existsSync(migrationsDir) ? fs.readdirSync(migrationsDir) : [];
 

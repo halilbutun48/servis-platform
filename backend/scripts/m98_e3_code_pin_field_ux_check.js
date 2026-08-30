@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,7 +55,7 @@ const docsPrimer = read("docs/PRIMER_SSOT.md");
 const registry = read("docs/MILESTONE_REGISTRY_V1.md");
 const scriptGuide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
 const runbook = read("docs/RUNBOOK_M98E3_CODE_PIN_FIELD_UX.md");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 const e2eCheck = read("backend/scripts/m98_e2e_code_pin_access_acceptance_check.js");
 const backendRoute = read("backend/src/routes/personelAccess.js");
 const webPanel = read("web/src/panels/company/PersonelAccessPanel.jsx");

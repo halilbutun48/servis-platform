@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { runStructuredScriptChain } from "./lib/guardRunnerContracts.js";
-import { buildChangeImpactRegistryV1Summary, CHANGE_IMPACT_REGISTRY_V1_PATHS } from "./lib/changeImpactRegistryV1.js";
+import { buildChangeImpactRegistryV1Summary, CHANGE_IMPACT_REGISTRY_V1_PATHS, getChangeImpactForPath } from "./lib/changeImpactRegistryV1.js";
 import {
   buildCheckOwnershipRegistryV1,
   buildCheckOwnershipRegistryV1Summary,
@@ -63,8 +63,8 @@ async function main() {
   must(changeImpactSummary.resolvedOwnerCount === 7, "change impact registry resolved owner count is 7");
   must(changeImpactSummary.missingOwnerCount === 1, "change impact registry missing owner count is 1");
 
-  must(ownershipSummary.count === 198, "check ownership registry count is 198");
-  must(ownershipSummary.checkerPathCount === 196, "check ownership registry unique checker path count is 196");
+  must(ownershipSummary.count === 201, "check ownership registry count is 201");
+  must(ownershipSummary.checkerPathCount === 199, "check ownership registry unique checker path count is 199");
   must(ownershipSummary.multiStepCheckerCount === 2, "check ownership registry multi-step checker count is 2");
   must(ownershipSummary.missingPathResolutionCount === 0, "check ownership registry missing path resolution count is 0");
   must(ownershipSummary.manualOverrideCount === 0, "check ownership registry manual override count is 0");
@@ -115,10 +115,10 @@ async function main() {
   must(pilotPlan.validationMode === "FULL_CHAIN", "pilot plan validation mode is full chain");
   must(pilotPlan.focusable === false, "pilot plan is not focusable");
   must(pilotPlan.unresolvedPaths.length === 0, "pilot plan has no unresolved paths");
-  must(pilotPlan.candidateCheckIds.length === 198, "pilot plan candidate check count is 198");
+  must(pilotPlan.candidateCheckIds.length === 201, "pilot plan candidate check count is 201");
   must(pilotPlan.globalCheckIds.length === 23, "pilot plan global check count is 23");
-  must(pilotPlan.domainCheckIds.length === 106, "pilot plan domain check count is 106");
-  must(pilotPlan.mixedCheckIds.length === 69, "pilot plan mixed check count is 69");
+  must(pilotPlan.domainCheckIds.length === 108, "pilot plan domain check count is 108");
+  must(pilotPlan.mixedCheckIds.length === 70, "pilot plan mixed check count is 70");
   must(pilotPlan.foundationCheckIds.length === 41, "pilot plan foundation check count is 41");
   must(pilotPlan.foundationSentinelIds.length === 11, "pilot plan foundation sentinel count is 11");
   must(pilotPlan.invalidatedSmokeSuites.length === 3, "pilot plan smoke suite count is 3");
@@ -134,6 +134,17 @@ async function main() {
     "pilot plan release chains",
   );
 
+  const modularSchemaPath = "backend/prisma/schema/tenant.prisma";
+  const modularSchemaImpact = getChangeImpactForPath(modularSchemaPath);
+  must(modularSchemaImpact?.identityModel === "prisma-schema-folder-modularization-01", "modular schema path resolves to #11 owner");
+  const modularSchemaPlan = buildImpactAwareValidationPlannerV1([modularSchemaPath], {
+    registryRecords: ownershipRegistry.records,
+  });
+  must(modularSchemaPlan.unresolvedPaths.length === 0, "modular schema path is resolved");
+  must(modularSchemaPlan.fullChainRequired === true, "modular schema path requires full chain");
+  must(modularSchemaPlan.foundationSentinelIds.includes("prisma-schema-modularization"), "modular schema path runs #11 checker");
+  must(modularSchemaPlan.foundationSentinelIds.includes("prisma-generation-contract"), "modular schema path runs #10 generation contract");
+
   const planByPath = new Map(pilotPlan.plans.map((plan) => [plan.sourcePath, plan]));
 
   expectPlan(planByPath.get("web/src/App.jsx"), {
@@ -142,7 +153,7 @@ async function main() {
     confidence: "DETERMINISTIC_FULL_CHAIN",
     fullChainRequired: true,
     validationMode: "FULL_CHAIN",
-    candidateCount: 188,
+    candidateCount: 191,
     foundationSentinelCount: 11,
     releaseChainCount: 1,
     smokeSuites: ["MOBILE_ALL_ROLES", "ALL_PANELS"],
@@ -168,7 +179,7 @@ async function main() {
     confidence: "DETERMINISTIC_FULL_CHAIN",
     fullChainRequired: true,
     validationMode: "FULL_CHAIN",
-    candidateCount: 184,
+    candidateCount: 187,
     foundationSentinelCount: 11,
     releaseChainCount: 1,
     smokeSuites: ["PREMIUM"],
@@ -194,7 +205,7 @@ async function main() {
     confidence: "DETERMINISTIC_FULL_CHAIN",
     fullChainRequired: true,
     validationMode: "FULL_CHAIN",
-    candidateCount: 183,
+    candidateCount: 186,
     foundationSentinelCount: 11,
     releaseChainCount: 1,
     smokeSuites: ["PREMIUM"],
@@ -220,7 +231,7 @@ async function main() {
     confidence: "DETERMINISTIC_FOCUSED",
     fullChainRequired: false,
     validationMode: "FOCUSED_DRY_RUN",
-    candidateCount: 180,
+    candidateCount: 183,
     foundationSentinelCount: 7,
     releaseChainCount: 0,
     foundationSentinels: [
@@ -240,7 +251,7 @@ async function main() {
     confidence: "DETERMINISTIC_FOCUSED",
     fullChainRequired: false,
     validationMode: "FOCUSED_DRY_RUN",
-    candidateCount: 180,
+    candidateCount: 183,
     foundationSentinelCount: 7,
     releaseChainCount: 0,
     foundationSentinels: [
@@ -260,7 +271,7 @@ async function main() {
     confidence: "DETERMINISTIC_FOCUSED",
     fullChainRequired: false,
     validationMode: "FOCUSED_DRY_RUN",
-    candidateCount: 186,
+    candidateCount: 189,
     foundationSentinelCount: 7,
     releaseChainCount: 0,
     foundationSentinels: [
@@ -280,7 +291,7 @@ async function main() {
     confidence: "DETERMINISTIC_FULL_CHAIN",
     fullChainRequired: true,
     validationMode: "FULL_CHAIN",
-    candidateCount: 181,
+    candidateCount: 184,
     foundationSentinelCount: 11,
     releaseChainCount: 1,
     reasons: ["identity-owner-missing"],
@@ -305,7 +316,7 @@ async function main() {
     confidence: "DETERMINISTIC_FOCUSED",
     fullChainRequired: false,
     validationMode: "FOCUSED_DRY_RUN",
-    candidateCount: 188,
+    candidateCount: 191,
     foundationSentinelCount: 4,
     releaseChainCount: 0,
     foundationSentinels: ["provenance", "quality-gate", "test-quality", "backend-lint"],
@@ -356,10 +367,10 @@ async function main() {
   );
 
   must(
-    pilotPlan.candidateCheckIds.length === 198 &&
+    pilotPlan.candidateCheckIds.length === 201 &&
       pilotPlan.globalCheckIds.length === 23 &&
-      pilotPlan.domainCheckIds.length === 106 &&
-      pilotPlan.mixedCheckIds.length === 69 &&
+      pilotPlan.domainCheckIds.length === 108 &&
+      pilotPlan.mixedCheckIds.length === 70 &&
       pilotPlan.foundationCheckIds.length === 41,
     "pilot plan aggregated checker counts stay stable",
   );

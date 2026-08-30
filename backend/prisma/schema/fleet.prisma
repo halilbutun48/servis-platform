@@ -1,0 +1,167 @@
+// #11 domain owner: fleet
+enum VehicleStatus {
+  ACTIVE
+  PASSIVE
+  STALE
+}
+
+enum VehicleType {
+  MINIBUS
+  MIDIBUS
+  OTOBUS
+}
+
+enum OdometerSource {
+  MANUAL
+  GPS
+}
+
+enum GeoStatus {
+  OK
+  NEEDS_REVIEW
+  FAILED
+}
+
+enum PersonelKind {
+  PERSONEL
+  STUDENT
+}
+
+model Vehicle {
+  id            Int           @id @default(autoincrement())
+  roomId        Int
+  plate         String        @unique
+  capacity      Int
+  status        VehicleStatus @default(ACTIVE)
+  speedLimitKmh Int           @default(80)
+  agreements    Agreement[]
+
+  // Opsiyonel: bu araca bağlı varsayılan driver
+  driverId Int?
+
+  // V1 meta (araç tanımı)
+  type      VehicleType?
+  brand     String?
+  model     String?
+  modelYear Int?
+  color     String?
+  vin       String?      @unique
+  note      String?
+
+  // Resmi tarihler
+  inspectionDueAt DateTime?
+  insuranceDueAt  DateTime?
+  cascoDueAt      DateTime?
+
+  // Bakım (tarih + km)
+  lastServiceAt       DateTime?
+  lastServiceKm       Int?
+  serviceIntervalKm   Int       @default(15000)
+  serviceIntervalDays Int?
+
+  // Odometer
+  odometerKm        Int?
+  odometerUpdatedAt DateTime?
+  odometerSource    OdometerSource @default(MANUAL)
+
+  // Geriye dönük uyum: eski bakım alanı (UI'da opsiyonel gösterilebilir)
+  nextMaintenanceAt DateTime?
+
+  // ✅ Archive (shift bağlıyken "sil" => archive)
+  archivedAt     DateTime?
+  archivedReason String?
+
+  createdAt DateTime @default(now())
+
+  room              Room               @relation(fields: [roomId], references: [id])
+  driver            Driver?            @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  gpsLast           GpsLast?
+  gpsState          VehicleGpsState? // ✅ UI status gate state
+  gpsDevices        GpsDevice[]
+  gpsPoints         GpsPoint[]
+  // ✅ M19: learned route samples
+  routeLearnSamples RouteLearnSample[]
+  shifts            Shift[]
+  notifications     Notification[]
+
+  @@index([roomId])
+  @@index([roomId, archivedAt])
+}
+
+model Driver {
+  id             Int         @id @default(autoincrement())
+  roomId         Int
+  fullName       String
+  phone          String
+  deviceInfo     String
+  driverCode     String?     @unique
+  pinTemporary   Boolean     @default(true)
+  pinUpdatedAt   DateTime?
+  backupDriverId Int?
+  createdAt      DateTime    @default(now())
+  agreements     Agreement[]
+
+  room Room @relation(fields: [roomId], references: [id])
+
+  vehicles Vehicle[]
+
+  // Optional login user link (role=DRIVER)
+  userId Int?  @unique
+  user   User? @relation(fields: [userId], references: [id])
+
+  // self-reference
+  backupDriver Driver?  @relation("BackupDriver", fields: [backupDriverId], references: [id])
+  backupsFor   Driver[] @relation("BackupDriver")
+
+  shifts        Shift[]
+  notifications Notification[]
+  invites       Invite[]
+  penalties     DriverPenalty[]
+
+  @@index([roomId])
+}
+
+model Personel {
+  id        Int          @id @default(autoincrement())
+  companyId Int
+  kind      PersonelKind @default(PERSONEL)
+  userId    Int?         @unique
+
+  // Master profile
+  fullName    String
+  phone       String?
+  homeAddress String?
+  homeLat     Float?
+  homeLng     Float?
+
+  // Geocode cache / review state
+  geoStatus         GeoStatus @default(NEEDS_REVIEW)
+  geoManualOverride Boolean   @default(false)
+  geoNote           String?
+  geoUpdatedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  pickupRequests PickupRequest[]
+
+  // ✅ M16.1
+  shiftImportRows ShiftImportRow[]
+  shiftLinks      ShiftPersonel[]
+  assignments     StopAssignment[]
+  parentLinks     ParentChild[]    @relation("ParentChildPersonel")
+  parentInvites   ParentInvite[]   @relation("ParentInviteChild")
+
+  credentials        PersonelCredential[]
+  checkinEvents      CheckinEvent[]
+  passengerLiveLinks PassengerLiveLink[]
+  invites            Invite[]             @relation("InvitePersonel")
+  childInvites       Invite[]             @relation("InviteChildPersonel")
+
+  @@unique([companyId, phone])
+  @@index([companyId, kind])
+  @@index([companyId])
+}

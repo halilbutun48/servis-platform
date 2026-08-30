@@ -50,12 +50,16 @@ Bu dosyalara dokunmadan önce ekstra dikkat gerekir:
 - `web/src/panels/company/GuidedPlanModal.jsx`
 - `web/src/panels/shared/CopilotPanel.jsx`
 - `backend/src/ai/chat/helpComposer.js`
-- `backend/prisma/schema.prisma`
+- `backend/prisma/schema.prisma` and `backend/prisma/schema/*.prisma`
 
 ## Justified exception / hot file politikası
 - `backend/src/ai/chat/helpComposer.js` justified exception dosyasıdır.
-- `backend/prisma/schema.prisma` justified exception dosyasıdır.
-- Bu dosyalarda line-count reduction hedeflenmez.
+- `backend/prisma/schema.prisma` artık yalnız canonical Prisma entrypoint'tir;
+  domain modülleri `backend/prisma/schema/` altında yaşar.
+- `backend/prisma/schema/` değişiklikleri #11 parity/generation kontrolleriyle
+  birlikte değerlendirilir; line-count için yeni parçalama yapılmaz.
+- `helpComposer.js` dışında hot-file line-count exception'ı otomatik olarak
+  genişletilmez.
 - Hot file küçültme işi ancak açıkça istenirse ve güvenli aday dosyalarda yapılır.
 
 ## Güvenli aday yaklaşımı

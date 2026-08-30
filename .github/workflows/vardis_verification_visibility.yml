@@ -108,7 +108,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: backend/node_modules/.prisma
-          key: prisma-client-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('backend/prisma/schema.prisma', 'backend/package-lock.json', 'backend/scripts/prisma_cross_platform_client_hardening_01.mjs') }}
+          key: prisma-client-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('backend/prisma/**/*.prisma', 'backend/package-lock.json', 'backend/scripts/prisma_cross_platform_client_hardening_01.mjs') }}
 
       - name: Install backend dependencies
         run: npm --prefix backend ci
@@ -168,7 +168,7 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
-        run: npx prisma db push --schema prisma/schema.prisma --skip-generate --accept-data-loss
+        run: npx prisma db push --schema prisma --skip-generate --accept-data-loss
 
       - name: Linux runtime import, query and process survival
         env:
@@ -227,7 +227,7 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
-        run: npx prisma db push --schema prisma/schema.prisma --skip-generate --accept-data-loss
+        run: npx prisma db push --schema prisma --skip-generate --accept-data-loss
 
       - name: Build canonical backend container (cached)
         run: |

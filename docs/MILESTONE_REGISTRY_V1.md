@@ -66,6 +66,11 @@
   - sahipler: `backend/src/finance/costScenarioForecast.js`, `backend/src/routes/costScenario.js`, `web/src/panels/shared/CostScenarioWorkspacePanel.jsx`
   - komutlar: `npm run check:costscenarioforecastandsavings01`, `npm run accept:costscenarioforecastandsavings01`, `npm run smoke:costscenarioforecastandsavings01`
   - kural: operational cost model tek hesap sahibidir; scenario ephemeral'dır, canlı veri ve finansal lifecycle yazmaz; #5 başlatılmaz
+- `#11 PRISMA-SCHEMA-MODULARIZATION-01 - next / architectural refactor`
+  - amaç: Prisma 5.22.0 native schema-folder desteğiyle canonical domain modüllerini okunur ve ownership-explicit hale getirmek; model/DMMF/DB semantiğini değiştirmemek
+  - sahipler: `backend/prisma/schema.prisma`, `backend/prisma/schema/*.prisma`, `backend/scripts/prisma_schema_modularization_01.mjs`, `backend/scripts/prisma_schema_modularization_01_check.js`
+  - komutlar: `npm --prefix backend run prisma:modularization:acceptance`, `npm --prefix backend run prisma:modularization:check`, `npm --prefix backend run prisma:verify`
+  - kural: custom schema compiler, competing SSOT, yeni migration, DB mutation ve ürün/UI davranışı yoktur; #10 generation owner korunur
 
 ## 3.1) Son kapanan ürün hatları [green / closed]
 - `WEB-01A - green/closed`

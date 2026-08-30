@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,7 +66,7 @@ const fieldAcceptanceCenter = read("web/src/panels/superadmin/FieldAcceptanceCen
 const observabilityPanel = read("web/src/panels/superadmin/ObservabilityPanel.jsx");
 const auditLogsPanel = read("web/src/panels/superadmin/AuditLogsPanel.jsx");
 const operationVerificationPanel = read("web/src/panels/superadmin/OperationVerificationPanel.jsx");
-const schema = read("backend/prisma/schema.prisma");
+const schema = readCanonicalPrismaSchemaSource(repoRoot);
 
 must(rootPkg, '"check:uxkvkk01": "node backend/scripts/ux_kvkk_01_compact_boundary_check.js"', "root package exposes check:uxkvkk01");
 must(rootPkg, '"check:m99kvkk01": "node backend/scripts/m99_kvkk_01_mobile_web_plain_text_check.js"', "root package keeps check:m99kvkk01");

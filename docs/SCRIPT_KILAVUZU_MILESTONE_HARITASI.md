@@ -1190,6 +1190,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Root alias: `npm run verify:repo`
 - Ana konu: tum repo kontrollerini tek catiya toplamak; package scriptleri, tools wrapper, manifest, state, runbook ve M0->latest runner baglantisini ayni guard altinda tutmak.
 
+### #11 — Prisma schema modularization [CANONICAL ARCHITECTURAL CHECK]
+- Milestone: `docs/PRISMA_SCHEMA_MODULARIZATION_01.md`
+- Canonical root: `backend/prisma/` (entrypoint `backend/prisma/schema.prisma`, modules `backend/prisma/schema/*.prisma`)
+- Acceptance: `npm --prefix backend run prisma:modularization:acceptance`
+- Behavioral checker: `npm --prefix backend run prisma:modularization:check`
+- Generation/identity owner: `backend/scripts/prisma_cross_platform_client_hardening_01.mjs`
+- Ana konu: native Prisma schema-folder modüllerinde domain ownership, DMMF/DB parity, zero migration ve #10 generation contract sürekliliği; UI/business behavior açılmaz.
+
 
 ### M93 — queue durability proof [PACK]
 - Milestone: `docs/MILESTONE_M93_QUEUE_DURABILITY_PROOF.md`

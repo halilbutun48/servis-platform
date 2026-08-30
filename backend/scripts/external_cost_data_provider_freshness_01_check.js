@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 import {
   COMPLETENESS,
   CONFIDENCE,
@@ -73,7 +74,7 @@ async function main() {
   console.log("=== #2 EXTERNAL COST DATA PROVIDER / FRESHNESS CHECK ===");
 
   const packageText = read("package.json");
-  const schemaText = read("backend/prisma/schema.prisma");
+  const schemaText = readCanonicalPrismaSchemaSource(repoRoot);
   const migrationText = read("backend/prisma/migrations/20260827120000_external_cost_reference_foundation_01/migration.sql");
   const routerText = read("backend/src/externalCost/router.js");
   const serviceText = read("backend/src/externalCost/externalCostReferenceService.js");

@@ -1,0 +1,57 @@
+// #11 domain owner: routing
+model RouteTemplate {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+
+  room  Room                @relation(fields: [roomId], references: [id])
+  stops RouteTemplateStop[]
+
+  @@index([roomId])
+}
+
+model RouteTemplateStop {
+  id              Int      @id @default(autoincrement())
+  routeTemplateId Int
+  name            String
+  lat             Float
+  lng             Float
+  order           Int
+  type            StopType @default(COMMON)
+
+  template RouteTemplate @relation(fields: [routeTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([routeTemplateId, order])
+  @@index([routeTemplateId, order])
+}
+
+model RouteLearnSample {
+  id              Int      @id @default(autoincrement())
+  routeKey        String
+  shiftId         Int
+  vehicleId       Int
+  startAt         DateTime
+  polylineMatched String // JSON string: [{lat,lng}...]
+  distanceKm      Float
+  durationMin     Int
+  qualityScore    Float
+  createdAt       DateTime @default(now())
+
+  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId])
+  @@index([routeKey, createdAt])
+  @@index([vehicleId, startAt])
+}
+
+model RouteLearned {
+  routeKey           String   @id
+  polylineCanonical  String // JSON string: [{lat,lng}...]
+  distanceKmLearned  Float
+  durationMinLearned Int
+  sampleCount        Int
+  updatedAt          DateTime @updatedAt
+}

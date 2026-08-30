@@ -4,18 +4,17 @@ import { spawnSync } from "node:child_process";
 import {
   BACKEND_ROOT,
   CANONICAL_GENERATED_CLIENT_PATH,
-  CANONICAL_SCHEMA_PATH,
   collectGeneratorIdentity,
   collectPrismaIdentity,
   validateGeneratedClientIdentity,
 } from "./prisma_cross_platform_client_hardening_01.mjs";
+import { readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const REPO_ROOT = path.resolve(BACKEND_ROOT, "..");
 const workflowPath = path.join(REPO_ROOT, ".github", "workflows", "vardis_verification_visibility.yml");
 const packagePath = path.join(BACKEND_ROOT, "package.json");
 const dockerfilePath = path.join(BACKEND_ROOT, "Dockerfile");
 const dockerignorePath = path.join(BACKEND_ROOT, ".dockerignore");
-const schemaPath = CANONICAL_SCHEMA_PATH;
 const protectedRuntimePaths = [
   "backend/artifacts/runtime-data/password-change-requirements.json",
   "backend/artifacts/runtime-data/username-directory.json",
@@ -69,7 +68,7 @@ function countGenerationOwners() {
 
 async function main() {
   const packageJson = JSON.parse(read(packagePath));
-  const schema = read(schemaPath);
+  const schema = readCanonicalPrismaSchemaSource(REPO_ROOT);
   const dockerfile = read(dockerfilePath);
   const dockerignore = read(dockerignorePath);
   const workflow = read(workflowPath);
@@ -90,18 +89,20 @@ async function main() {
   check("Docker uses clean install and canonical generation", /RUN npm ci/.test(dockerfile) && /RUN npm run prisma:generate/.test(dockerfile) && !/COPY node_modules/.test(dockerfile));
   check("Docker build context excludes host generated client", /(^|\r?\n)node_modules(\r?\n|$)/.test(dockerignore) && /(^|\r?\n)\.prisma(\r?\n|$)/.test(dockerignore) && /(^|\r?\n)\.prisma-\*(\r?\n|$)/.test(dockerignore));
   check("CI includes Windows and Linux generation", /ubuntu-latest/.test(workflow) && /windows-latest/.test(workflow) && /npm --prefix backend run prisma:generate/.test(workflow) && /npm --prefix backend run prisma:verify/.test(workflow));
-  check("CI cache key carries schema lock and owner identity", /hashFiles\('backend\/prisma\/schema\.prisma', 'backend\/package-lock\.json', 'backend\/scripts\/prisma_cross_platform_client_hardening_01\.mjs'\)/.test(workflow));
+  check("CI cache key carries modular schema root, lock and owner identity", /hashFiles\('backend\/prisma\/\*\*\/\*\.prisma', 'backend\/package-lock\.json', 'backend\/scripts\/prisma_cross_platform_client_hardening_01\.mjs'\)/.test(workflow));
   check("CI container parity path exists", /docker build/.test(workflow) && /docker run/.test(workflow));
-  check("CI Linux runtime uses an isolated PostgreSQL service", /services:\s*\n\s+postgres:/s.test(workflow) && /npx prisma db push --schema prisma\/schema\.prisma --skip-generate --accept-data-loss/.test(workflow) && /prisma_cross_platform_client_hardening_01_runtime\.mjs/.test(workflow) && runtimeScript.includes("prisma.user.findFirst"));
+  check("CI Linux runtime uses an isolated PostgreSQL service", /services:\s*\n\s+postgres:/s.test(workflow) && /npx prisma db push --schema prisma --skip-generate --accept-data-loss/.test(workflow) && /prisma_cross_platform_client_hardening_01_runtime\.mjs/.test(workflow) && runtimeScript.includes("prisma.user.findFirst"));
   check("CI container runtime proves query, health and survival", /docker run --detach/.test(workflow) && /docker exec/.test(workflow) && /PRISMA_HEALTH_URL=http:\/\/127\.0\.0\.1:3000\/health/.test(workflow) && /CONTAINER_DB_OK=PASS/.test(workflow));
   check("CI container cached and clean builds are both explicit", /:cache-seed/.test(workflow) && /:cached/.test(workflow) && /--no-cache/.test(workflow) && /:clean/.test(workflow));
   check("CI stale-cache negative contract is executable", /prisma_cross_platform_client_hardening_01_ci_negative\.mjs/.test(workflow) && ciNegativeScript.includes("staleSchemaRejected") && ciNegativeScript.includes("ownerChangeChangesKey"));
   check("bounded replacement and actionable diagnostics exist", /safeReplaceDirectoryWithRetry/.test(read(path.join(BACKEND_ROOT, "scripts", "prisma_cross_platform_client_hardening_01.mjs"))) && /bounded attempts/.test(read(path.join(BACKEND_ROOT, "scripts", "prisma_cross_platform_client_hardening_01.mjs"))));
   check("no broad process termination", !/taskkill\s+\/IM|kill\s+-9\s+-1|process\.kill\(\s*-1/.test(read(path.join(BACKEND_ROOT, "scripts", "prisma_cross_platform_client_hardening_01.mjs"))));
   check("current generated client is valid", validation.ok, JSON.stringify(validation));
-  check("client schema identity matches current canonical schema", identity.generatedClient.generatedSchemaSha256 === identity.schema.rawSha256);
+  check("client schema identity matches current canonical schema", identity.generatedClient.generatedSchemaSemanticSha256 === identity.schema.modelEnumSemanticSha256);
   check("runtime DMMF contains required canonical models", identity.runtimeModel.requiredModelsPresent);
-  check("schema has no semantic hardening change", schema.includes("generator client") && !statusLines.some((line) => line.endsWith("backend/prisma/schema.prisma") || line.endsWith("backend/prisma/schema.prisma")));
+  check("schema changes remain under the #11 semantic parity owner", schema.includes("generator client")
+    && identity.schema.modelEnumSemanticSha256
+    && !statusLines.some((line) => /backend\/prisma\/migrations\//.test(line)));
   check("no new migration path in working tree", !statusLines.some((line) => /backend\/prisma\/migrations\//.test(line)));
   check("protected runtime data is not staged by this work", !statusLines.some((line) => /^[MADRCU]/.test(line[0]) && protectedRuntimePaths.some((protectedPath) => line.slice(3).trim() === protectedPath)));
   check("generation owner inventory is singular", owner.ownerMarkers >= 2 && owner.invocations >= 3);

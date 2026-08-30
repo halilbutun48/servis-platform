@@ -6,7 +6,6 @@ import { pathToFileURL } from "node:url";
 import {
   BACKEND_ROOT,
   CANONICAL_GENERATED_CLIENT_PATH,
-  CANONICAL_SCHEMA_PATH,
   PRISMA_HARDENING_EVIDENCE_DIR,
   RETRYABLE_GENERATION_CODES,
   collectPrismaIdentity,
@@ -15,6 +14,7 @@ import {
   validateGeneratedClientIdentity,
   writeEvidence,
 } from "./prisma_cross_platform_client_hardening_01.mjs";
+import { canonicalPrismaSchemaFiles, readCanonicalPrismaSchemaSource } from "./lib/prismaSchemaSource.js";
 
 const REPO_ROOT = path.resolve(BACKEND_ROOT, "..");
 const startedAt = new Date().toISOString();
@@ -51,6 +51,16 @@ function safeRemove(target) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function copyCanonicalSchemaTo(prismaDir) {
+  const canonicalRoot = path.join(BACKEND_ROOT, "prisma");
+  for (const sourceFile of canonicalPrismaSchemaFiles(REPO_ROOT)) {
+    const relative = path.relative(canonicalRoot, sourceFile);
+    const destination = path.join(prismaDir, relative);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.copyFileSync(sourceFile, destination);
+  }
 }
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
@@ -170,7 +180,7 @@ async function testIdentityNegativeSensitivity() {
   const stale = validateGeneratedClientIdentity(incomplete);
   pass("incomplete client detection", !stale.ok, stale);
 
-  fs.writeFileSync(changedSchema, fs.readFileSync(CANONICAL_SCHEMA_PATH, "utf8") + "\n// stale-client identity probe\n", "utf8");
+  fs.writeFileSync(changedSchema, `${readCanonicalPrismaSchemaSource(REPO_ROOT)}\n\nmodel StaleClientProbe {\n  id Int @id\n}\n`, "utf8");
   const wrongSchema = validateGeneratedClientIdentity(identity, { expectedSchemaPath: changedSchema });
   pass("wrong schema client detection", !wrongSchema.ok, wrongSchema);
 
@@ -179,6 +189,7 @@ async function testIdentityNegativeSensitivity() {
 
   const staleCache = JSON.parse(JSON.stringify(identity));
   staleCache.generatedClient.generatedSchemaSha256 = "STALE-CACHE";
+  staleCache.generatedClient.generatedSchemaSemanticSha256 = "STALE-CACHE";
   const staleCacheResult = validateGeneratedClientIdentity(staleCache);
   pass("stale generated-client cache detection", !staleCacheResult.ok, staleCacheResult);
   safeRemove(changedDir);
@@ -193,18 +204,18 @@ async function testIdentityNegativeSensitivity() {
 async function testColdCacheGeneration() {
   const workspaceRoot = fs.mkdtempSync(path.join(BACKEND_ROOT, ".prisma-hardening-accept-"));
   const prismaDir = path.join(workspaceRoot, "prisma");
-  const schemaPath = path.join(prismaDir, "schema.prisma");
   const outputDir = path.join(workspaceRoot, "generated-client");
   fs.mkdirSync(prismaDir, { recursive: true });
-  const source = fs.readFileSync(CANONICAL_SCHEMA_PATH, "utf8");
+  copyCanonicalSchemaTo(prismaDir);
+  const schemaPath = path.join(prismaDir, "schema.prisma");
+  const source = fs.readFileSync(schemaPath, "utf8");
   const stagedSchema = source.replace(
     /generator\s+client\s*\{([\s\S]*?)\n\}/,
     (match) => match.slice(0, -1) + "  output = \"../generated-client\"\n}",
   );
   fs.writeFileSync(schemaPath, stagedSchema, "utf8");
-  const generated = runPrismaGenerate({ schemaPath, cwd: BACKEND_ROOT });
+  const generated = runPrismaGenerate({ schemaPath: prismaDir, cwd: BACKEND_ROOT });
   const generatedSchema = path.join(outputDir, "schema.prisma");
-  if (fs.existsSync(generatedSchema)) fs.copyFileSync(CANONICAL_SCHEMA_PATH, generatedSchema);
   let validation = { ok: false };
   if (fs.existsSync(outputDir)) {
     validation = validateGeneratedClientIdentity(await collectPrismaIdentity({ generatedDir: outputDir }));
@@ -325,7 +336,7 @@ function inspectCiParity() {
     /windows-latest/.test(workflow),
     /npm --prefix backend run prisma:generate/.test(workflow),
     /npm --prefix backend run prisma:verify/.test(workflow),
-    /hashFiles\('backend\/prisma\/schema\.prisma', 'backend\/package-lock\.json', 'backend\/scripts\/prisma_cross_platform_client_hardening_01\.mjs'\)/.test(workflow),
+    /hashFiles\('backend\/prisma\/\*\*\/\*\.prisma', 'backend\/package-lock\.json', 'backend\/scripts\/prisma_cross_platform_client_hardening_01\.mjs'\)/.test(workflow),
     /docker build/.test(workflow),
   ].every(Boolean);
   pass("CI workflow parity contract", parity, { workflow: path.relative(REPO_ROOT, workflowPath) });

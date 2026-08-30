@@ -1,0 +1,349 @@
+// #11 domain owner: commercial
+enum AgreementStatus {
+  REQUESTED
+  COUNTERED
+  APPROVED
+  ACTIVE
+  DONE
+  CANCELLED
+  REJECTED
+}
+
+enum AgreementExtendStatus {
+  NONE
+  PENDING
+  COUNTERED
+  ACCEPTED
+  REJECTED
+}
+
+enum RoomQuoteFloorDraftStatus {
+  DRAFT
+  APPLIED
+  ARCHIVED
+}
+
+enum HakedisRecordStatus {
+  DRAFT
+  READY
+  FINALIZED
+  CANCELLED
+}
+
+enum InvoiceRecordStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+  PAID
+}
+
+model RoomQuoteFloorDraft {
+  id                                 Int                       @id @default(autoincrement())
+  roomId                             Int
+  status                             RoomQuoteFloorDraftStatus @default(DRAFT)
+  currencyCode                       String                    @default("TRY")
+  manualBaselineOperationalCostMinor Int?
+  targetContributionBps              Int?
+  riskReserveBps                     Int?
+  quoteFloorMinor                    Int?
+  quoteFloorPerPassengerMinor        Int?
+  baselineSource                     String?
+  inputSnapshot                      Json?
+  calculationVersion                 String                    @default("ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01")
+  version                            Int                       @default(1)
+  createdByUserId                    Int?
+  updatedByUserId                    Int?
+  appliedByUserId                    Int?
+  appliedShiftOfferId                Int?
+  appliedAt                          DateTime?
+  createdAt                          DateTime                  @default(now())
+  updatedAt                          DateTime                  @updatedAt
+
+  room              Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy         User?       @relation("RoomQuoteFloorDraftCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy         User?       @relation("RoomQuoteFloorDraftUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  appliedBy         User?       @relation("RoomQuoteFloorDraftAppliedBy", fields: [appliedByUserId], references: [id], onDelete: SetNull)
+  appliedShiftOffer ShiftOffer? @relation("RoomQuoteFloorDraftAppliedOffer", fields: [appliedShiftOfferId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, status])
+  @@index([roomId, updatedAt])
+  @@index([appliedShiftOfferId])
+}
+
+model Agreement {
+  id        Int @id @default(autoincrement())
+  companyId Int
+  roomId    Int
+
+  vehicleId Int?
+  driverId  Int?
+
+  // ✅ M19: routing meta (worksite hub + direction/pattern)
+  hubLat    Float?
+  hubLng    Float?
+  direction ShiftDirection @default(INBOUND)
+  pattern   RoutePattern   @default(ONE_WAY)
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  weekMask Int
+  startMin Int
+  endMin   Int
+
+  status AgreementStatus @default(REQUESTED)
+
+  companyOfferAmount Int?
+  companyOfferNote   String?
+
+  roomOfferAmount Int?
+  roomOfferNote   String?
+
+  // ✅ M57: agreement süre uzatma pazarlığı
+  extendStatus           AgreementExtendStatus @default(NONE)
+  extendRequestedEndDate DateTime?             @db.Date
+  extendRequestedAt      DateTime?
+  extendOfferAmount      Int?
+  extendOfferNote        String?
+  extendCounterAmount    Int?
+  extendCounterNote      String?
+  extendDecisionAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company  @relation(fields: [companyId], references: [id])
+  room    Room     @relation(fields: [roomId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  driver  Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  // ✅ M18: agreement -> generated shifts
+  shifts            Shift[]
+  commercialSources CommercialSource[]
+  hakedisRecords    HakedisRecord[]
+  invoiceRecords    InvoiceRecord[]
+
+  @@index([companyId])
+  @@index([roomId])
+  @@index([vehicleId])
+  @@index([driverId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+enum PaymentMode {
+  OFF
+  OPTIONAL
+  REQUIRED
+}
+
+model HakedisRecord {
+  id                 Int                 @id @default(autoincrement())
+  reference          String              @unique
+  agreementId        Int
+  companyId          Int
+  roomId             Int
+  periodStart        DateTime            @db.Date
+  periodEnd          DateTime            @db.Date
+  amountMinor        Int
+  currencyCode       String              @default("TRY")
+  status             HakedisRecordStatus @default(READY)
+  calculationVersion String              @default("HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01")
+  source             String?
+  notes              String?
+  createdByUserId    Int?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation("HakedisRecordCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([agreementId, periodStart, periodEnd, status])
+  @@index([companyId, periodStart, periodEnd])
+  @@index([roomId, periodStart, periodEnd])
+}
+
+model InvoiceRecord {
+  id              Int                 @id @default(autoincrement())
+  reference       String              @unique
+  agreementId     Int?
+  companyId       Int
+  roomId          Int?
+  periodStart     DateTime            @db.Date
+  periodEnd       DateTime            @db.Date
+  amountMinor     Int
+  currencyCode    String              @default("TRY")
+  status          InvoiceRecordStatus @default(ISSUED)
+  source          String?
+  notes           String?
+  issuedAt        DateTime?
+  createdByUserId Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  agreement Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room      Room?      @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  createdBy User?      @relation("InvoiceRecordCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([agreementId, periodStart, periodEnd, status])
+  @@index([companyId, periodStart, periodEnd])
+  @@index([roomId, periodStart, periodEnd])
+}
+
+enum CommercialSourceType {
+  AGREEMENT
+  SHIFT_SERIES
+}
+
+enum CommissionScopeType {
+  GLOBAL
+  ROOM
+}
+
+enum SettlementPlanStatus {
+  DORMANT
+  READY
+  ACTIVE
+  DISABLED
+}
+
+enum SettlementEntryKind {
+  COMPANY_CHARGE
+  PLATFORM_COMMISSION
+  PROVIDER_PAYOUT
+}
+
+enum SettlementEntryStatus {
+  DORMANT
+  PLANNED
+  READY
+  EXECUTED
+  CANCELLED
+}
+
+enum PaymentAccountOwnerType {
+  PLATFORM
+  COMPANY
+  ROOM
+}
+
+enum PaymentAccountStatus {
+  INACTIVE
+  ACTIVE
+  VERIFIED
+  ERROR
+}
+
+model CommissionRule {
+  id            Int                 @id @default(autoincrement())
+  scopeType     CommissionScopeType @default(GLOBAL)
+  roomId        Int?
+  paymentMode   PaymentMode         @default(OFF)
+  commissionBps Int                 @default(0)
+  isActive      Boolean             @default(true)
+  note          String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  room Room? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([scopeType, isActive])
+  @@index([roomId, isActive])
+}
+
+model PaymentAccount {
+  id          Int                     @id @default(autoincrement())
+  ownerType   PaymentAccountOwnerType
+  companyId   Int?
+  roomId      Int?
+  providerKey String                  @default("DORMANT")
+  status      PaymentAccountStatus    @default(INACTIVE)
+  label       String?
+  maskedIban  String?
+  accountRef  String?
+  metaJson    Json?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  room    Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([ownerType, status])
+  @@index([companyId])
+  @@index([roomId])
+}
+
+model CommercialSource {
+  id                     Int                  @id @default(autoincrement())
+  sourceType             CommercialSourceType
+  sourceKey              String               @unique
+  agreementId            Int?
+  shiftRootId            Int?
+  shiftGroupKey          String?
+  companyId              Int
+  roomId                 Int?
+  paymentModeSnapshot    PaymentMode          @default(OFF)
+  commissionBpsSnapshot  Int                  @default(0)
+  amountCompanySnapshot  Int?
+  amountProviderSnapshot Int?
+  currencyCode           String               @default("TRY")
+  providerAdapterKey     String               @default("DORMANT")
+  settlementStatus       SettlementPlanStatus @default(DORMANT)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  agreement       Agreement?       @relation(fields: [agreementId], references: [id], onDelete: SetNull)
+  shiftRoot       Shift?           @relation("CommercialSourceShiftRoot", fields: [shiftRootId], references: [id], onDelete: SetNull)
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room            Room?            @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  settlementPlans SettlementPlan[]
+
+  @@index([sourceType, createdAt])
+  @@index([agreementId])
+  @@index([shiftRootId])
+  @@index([companyId, createdAt])
+  @@index([roomId, createdAt])
+}
+
+model SettlementPlan {
+  id                    Int                  @id @default(autoincrement())
+  commercialSourceId    Int
+  status                SettlementPlanStatus @default(DORMANT)
+  paymentModeSnapshot   PaymentMode          @default(OFF)
+  commissionBpsSnapshot Int                  @default(0)
+  providerAdapterKey    String               @default("DORMANT")
+  grossAmount           Int                  @default(0)
+  commissionAmount      Int                  @default(0)
+  providerNetAmount     Int                  @default(0)
+  currencyCode          String               @default("TRY")
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  commercialSource CommercialSource  @relation(fields: [commercialSourceId], references: [id], onDelete: Cascade)
+  entries          SettlementEntry[]
+
+  @@index([commercialSourceId])
+  @@index([status, createdAt])
+}
+
+model SettlementEntry {
+  id               Int                   @id @default(autoincrement())
+  settlementPlanId Int
+  kind             SettlementEntryKind
+  status           SettlementEntryStatus @default(DORMANT)
+  amount           Int                   @default(0)
+  currencyCode     String                @default("TRY")
+  providerRef      String?
+  note             String?
+  dueAt            DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  settlementPlan SettlementPlan @relation(fields: [settlementPlanId], references: [id], onDelete: Cascade)
+
+  @@index([settlementPlanId, kind])
+  @@index([status, dueAt])
+}
