@@ -306,7 +306,7 @@ function main() {
   must(exists("web/public/seferpakt-favicon.png"), "favicon asset exists");
   mustFileSha256(
     "backend/scripts/lib/currentHeadScopePolicy.js",
-    "037FEA5D1EAA8EE1F5E6E286C98D7EFA386C87C30B83C8C52FE17CA430BEFBA0",
+    "5FE36BFCA5414F667EEF02F1E459F526066F336C904B0E21A9626D73B907F447",
     "current-head policy snapshot remains pinned"
   );
 

@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `449`
-- Toplam executable tracked file: `1336`
-- Combined registry row: `1785`
-- Root/backend/web/mobile package dağılımı: root `282`, backend `902`, web `97`, mobile `201`
+- Toplam package script entry: `451`
+- Toplam executable tracked file: `1339`
+- Combined registry row: `1790`
+- Root/backend/web/mobile package dağılımı: root `282`, backend `907`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `775`
+- NEEDS_REVIEW: `780`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 775 |
+| NEEDS_REVIEW | 780 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -725,7 +725,9 @@ Repo: `servis-platform`
 | backend:seed | backend/package.json | backend | node prisma/seed.js | review | NEEDS_REVIEW |  | BACKEND-SEED |  | Owner or chain unclear |  |
 | backend:prisma:generate | backend/package.json | backend | node scripts/prisma_cross_platform_client_hardening_01.mjs generate | review | NEEDS_REVIEW |  | BACKEND-PRISMA-GENERATE |  | Owner or chain unclear |  |
 | backend:prisma:verify | backend/package.json | backend | node scripts/prisma_cross_platform_client_hardening_01.mjs verify | review | NEEDS_REVIEW |  | BACKEND-PRISMA-VERIFY |  | Owner or chain unclear |  |
-| backend:bootstrap | backend/package.json | backend | npm run prisma:generate && npx prisma migrate deploy && npm run seed | review | NEEDS_REVIEW |  | BACKEND-BOOTSTRAP |  | Owner or chain unclear |  |
+| backend:prisma:modularization:check | backend/package.json | backend | node scripts/prisma_schema_modularization_01_check.js | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MODULARIZATION-CHECK |  | Owner or chain unclear |  |
+| backend:prisma:modularization:acceptance | backend/package.json | backend | node scripts/prisma_schema_modularization_01.mjs | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MODULARIZATION-ACCEPTANCE |  | Owner or chain unclear |  |
+| backend:bootstrap | backend/package.json | backend | npm run prisma:generate && npx prisma migrate deploy --schema prisma && npm run seed | review | NEEDS_REVIEW |  | BACKEND-BOOTSTRAP |  | Owner or chain unclear |  |
 | backend:lint | backend/package.json | backend | node scripts/run_backend_lint.js | backend-lint | ACTIVE_BACKEND_LINT |  | BACKEND-LINT |  | Breaks backend lint gate | backend lint wrapper |
 | backend:smoke | backend/package.json | backend | node scripts/smoke.js | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | BACKEND-SMOKE |  | Loses manual smoke entrypoint |  |
 | backend:fullcheck | backend/package.json | backend | node scripts/fullcheck.js | verify-core | ACTIVE_CORE |  | BACKEND-FULLCHECK |  | Breaks canonical verification chain |  |
@@ -949,6 +951,7 @@ Repo: `servis-platform`
 | impactAwareValidationExecutorV1.js | backend/scripts/lib/impactAwareValidationExecutorV1.js | backend |  | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-EXECUTOR-V-1 |  | Owner or chain unclear |  |
 | impactAwareValidationPlannerV1.js | backend/scripts/lib/impactAwareValidationPlannerV1.js | backend |  | review | NEEDS_REVIEW |  | IMPACT-AWARE-VALIDATION-PLANNER-V-1 |  | Owner or chain unclear |  |
 | prismaSchemaIdentity.js | backend/scripts/lib/prismaSchemaIdentity.js | backend |  | review | NEEDS_REVIEW |  | PRISMA-SCHEMA-IDENTITY |  | Owner or chain unclear |  |
+| prismaSchemaSource.js | backend/scripts/lib/prismaSchemaSource.js | backend |  | review | NEEDS_REVIEW |  | PRISMA-SCHEMA-SOURCE |  | Owner or chain unclear |  |
 | productExtensionsRegistry.js | backend/scripts/lib/productExtensionsRegistry.js | backend |  | review | NEEDS_REVIEW |  | PRODUCT-EXTENSIONS |  | Owner or chain unclear |  |
 | productFlowShiftSmoke.js | backend/scripts/lib/productFlowShiftSmoke.js | backend |  | review | NEEDS_REVIEW |  | PRODUCT-FLOW-SHIFT-SMOKE |  | Owner or chain unclear |  |
 | live_gate_readiness_hotfix_check.mjs | backend/scripts/live_gate_readiness_hotfix_check.mjs | backend |  | review | NEEDS_REVIEW |  | LIVE-GATE-READINESS-HOTFIX-CHECK |  | Owner or chain unclear |  |
@@ -1177,6 +1180,8 @@ Repo: `servis-platform`
 | prisma_cross_platform_client_hardening_01_check.js | backend/scripts/prisma_cross_platform_client_hardening_01_check.js | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-CHECK |  | Owner or chain unclear |  |
 | prisma_cross_platform_client_hardening_01_ci_negative.mjs | backend/scripts/prisma_cross_platform_client_hardening_01_ci_negative.mjs | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-CI-NEGATIVE |  | Owner or chain unclear |  |
 | prisma_cross_platform_client_hardening_01_runtime.mjs | backend/scripts/prisma_cross_platform_client_hardening_01_runtime.mjs | backend |  | review | NEEDS_REVIEW |  | PRISMA-CROSS-PLATFORM-CLIENT-HARDENING-01-RUNTIME |  | Owner or chain unclear |  |
+| prisma_schema_modularization_01.mjs | backend/scripts/prisma_schema_modularization_01.mjs | backend | backend:prisma:modularization:acceptance, backend:prisma:modularization:check | review | NEEDS_REVIEW |  | PRISMA-SCHEMA-MODULARIZATION-01 |  | Owner or chain unclear |  |
+| prisma_schema_modularization_01_check.js | backend/scripts/prisma_schema_modularization_01_check.js | backend | backend:prisma:modularization:check | review | NEEDS_REVIEW |  | PRISMA-SCHEMA-MODULARIZATION-01-CHECK |  | Owner or chain unclear |  |
 | product_flow_button_audit_01.mjs | backend/scripts/product_flow_button_audit_01.mjs | backend | root:check:productflowbuttonaudit01, root:smoke:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Owner or chain unclear |  |
 | product_flow_button_audit_01_check.js | backend/scripts/product_flow_button_audit_01_check.js | backend | root:check:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | production_rate_limit_policy_01_check.js | backend/scripts/production_rate_limit_policy_01_check.js | backend | root:check:productionratelimitpolicy01 | product-extensions | NEEDS_REVIEW |  | PRODUCTION-RATE-LIMIT-POLICY-01-CHECK |  | Owner or chain unclear |  |
@@ -1488,7 +1493,7 @@ Repo: `servis-platform`
 | settlementReconciliationDesk.js | backend/src/ops/settlementReconciliationDesk.js | backend |  | review | NEEDS_REVIEW |  | SETTLEMENT-RECONCILIATION-DESK |  | Owner or chain unclear |  |
 | ssotAlignmentManifest.js | backend/src/ops/ssotAlignmentManifest.js | backend |  | review | NEEDS_REVIEW |  | SSOT-ALIGNMENT-MANIFEST |  | Owner or chain unclear |  |
 | trustQualityManifest.js | backend/src/ops/trustQualityManifest.js | backend |  | review | NEEDS_REVIEW |  | TRUST-QUALITY-MANIFEST |  | Owner or chain unclear |  |
-| prisma.js | backend/src/prisma.js | backend | backend:bootstrap, backend:prisma:generate, backend:prisma:verify, backend:seed | review | NEEDS_REVIEW |  | PRISMA |  | Owner or chain unclear |  |
+| prisma.js | backend/src/prisma.js | backend | backend:bootstrap, backend:prisma:generate, backend:prisma:modularization:acceptance, backend:prisma:modularization:check, backend:prisma:verify, backend:seed | review | NEEDS_REVIEW |  | PRISMA |  | Owner or chain unclear |  |
 | index.js | backend/src/redis/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | miniRedis.js | backend/src/redis/miniRedis.js | backend |  | review | NEEDS_REVIEW |  | MINI-REDIS |  | Owner or chain unclear |  |
 | index.js | backend/src/region/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
@@ -1621,7 +1626,7 @@ Repo: `servis-platform`
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
 | socketRelay.js | backend/src/ws/socketRelay.js | backend |  | review | NEEDS_REVIEW |  | SOCKET-RELAY |  | Owner or chain unclear |  |
-| z.js | backend/src/z.js | backend | root:check:guardv2standardization01, root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
+| z.js | backend/src/z.js | backend | backend:prisma:modularization:acceptance, backend:prisma:modularization:check, root:check:guardv2standardization01, root:check:roomvehicledriveruppercase01, root:check:seferabiterminalhumanize01, root:check:uxschoolorganizationpanels01, root:check:uxsmokepassminuszero01 | review | NEEDS_REVIEW |  | Z |  | Owner or chain unclear |  |
 
 ### Web
 | script | path | domain | package command | chain | status | skip reason | owner milestone | replacement | risk if removed | notes |

@@ -267,7 +267,7 @@ const batch09ApprovedConcurrentWorktreeEntries = [
   { path: "backend/README.md", sha256: "0E5C4A471BB7CD0B361C7EC6FB33899CABD810D8CB3892913F66FE26BE8F8AE7" },
   { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "367A0ECC128DEE9B5B8BD9B969518CFF390DF0F16D1FFC30B3C1A5216F01644C" },
   { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "081C69CF9F47AAD274BD23A3D60AD9A5ABD1E4556F214398AAFD7CDC571FC831" },
-  { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "F4F9BE905D1908ED9FB632225404968F36080F7B30785A20534D5D7C65380567" },
+  { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "BEEAF0DC2D090B374F6E67AF157FCC9E461A575586CC955CF377182C194A0E6D" },
   { path: "backend/src/bootstrap/rateLimits.js", sha256: "92C93F276B04E5B4A3179E5F93D6396A37FA968000AA2FCEAE1E1F51752E0135" },
   { path: "backend/src/middleware/apiRequestLog.js", sha256: "5F27CA48608B10C6DDCD35F9D1C1E146D6AD432EAD63C90CF117F0EA3A051EE3" },
   { path: "backend/src/middleware/asyncHandler.js", sha256: "F206378CE995B6B15A3C340F81E8F8B16EDA65638558EF46F1F373ABBF166F0C" },
@@ -295,7 +295,7 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/currentHeadScopePolicy.js",
-    sha256: "037FEA5D1EAA8EE1F5E6E286C98D7EFA386C87C30B83C8C52FE17CA430BEFBA0",
+    sha256: "5FE36BFCA5414F667EEF02F1E459F526066F336C904B0E21A9626D73B907F447",
   },
   {
     path: "backend/scripts/lib/prismaSchemaIdentity.js",
@@ -315,7 +315,7 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/guardSmokeEvidence.js",
-    sha256: "478DBADB47EA83E21654E9B771C9B21FBE897BACF629438AA499DB55EAA7AE57",
+    sha256: "D8233D3711D5C4CFE7F41F0B06DE717C6CC67F86F9D21991E19933A4DB5AE28F",
   },
   {
     path: "backend/scripts/lib/guardValidationEnvironment.js",
@@ -871,8 +871,8 @@ function mustAcceptedPrismaManifest(evidence = collectAcceptedPrismaEvidence()) 
 function main() {
   console.log("=== SECURITY-KVKK-FINAL-01 CHECK ===");
   must(
-    batch09CommercialSplitRouteEntries.length === 5,
-    "commercial split route identity remains the exact five-entry current-head family",
+    batch09CommercialSplitRouteEntries.length === 6,
+    "commercial split route identity remains the exact six-entry current-head family",
   );
 
   const cases = [];
