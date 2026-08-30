@@ -64,6 +64,24 @@ function gitHead() {
   }
 }
 
+function pre11SchemaRevision() {
+  const revisions = execFileSync(
+    "git",
+    ["rev-list", "--first-parent", "HEAD", "--", "backend/prisma/schema.prisma"],
+    { cwd: REPO_ROOT, encoding: "utf8" },
+  ).split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+  for (const revision of revisions) {
+    try {
+      const source = execFileSync("git", ["show", `${revision}:backend/prisma/schema.prisma`], { cwd: REPO_ROOT, encoding: "utf8" });
+      if (blockMatches(source).some((block) => block.kind === "model" || block.kind === "enum")) return revision;
+    } catch {
+      // Continue to the next ancestor; the first model-bearing schema is the
+      // canonical pre-#11 comparison source.
+    }
+  }
+  throw new Error("Unable to locate a committed pre-#11 monolithic Prisma schema");
+}
+
 function blockMatches(text) {
   return [...String(text || "").matchAll(/^(generator|datasource|enum|model)\s+(\w+)\s*\{.*?^\}/gms)].map((match) => ({
     kind: match[1],
@@ -328,7 +346,7 @@ function createPre11Workspace() {
   const prismaDir = path.join(workspace, "prisma");
   const outputDir = path.join(workspace, "generated-client");
   fs.mkdirSync(prismaDir, { recursive: true });
-  const source = execFileSync("git", ["show", "HEAD:backend/prisma/schema.prisma"], { cwd: REPO_ROOT, encoding: "utf8" });
+  const source = execFileSync("git", ["show", `${pre11SchemaRevision()}:backend/prisma/schema.prisma`], { cwd: REPO_ROOT, encoding: "utf8" });
   const schema = source.replace(
     /generator\s+client\s*\{([\s\S]*?)\n\}/,
     (match) => match.slice(0, -1) + "  output = \"../generated-client\"\n}",
@@ -461,7 +479,7 @@ export async function runAcceptance() {
     const migrationDiffText = fs.readFileSync(migrationDiffRoot, "utf8");
     const noDatabaseChange = diff.status === 0
       && (!migrationDiffText.trim() || /--\s+This is an empty migration\./i.test(migrationDiffText));
-    const negative = negativeSensitivity(execFileSync("git", ["show", "HEAD:backend/prisma/schema.prisma"], { cwd: REPO_ROOT, encoding: "utf8" }), readCanonicalPrismaSchemaSource(REPO_ROOT));
+    const negative = negativeSensitivity(execFileSync("git", ["show", `${pre11SchemaRevision()}:backend/prisma/schema.prisma`], { cwd: REPO_ROOT, encoding: "utf8" }), readCanonicalPrismaSchemaSource(REPO_ROOT));
     const modelOwners = Object.values(afterCensus.modelOwners);
     const enumOwners = Object.values(afterCensus.enumOwners);
     const orphanModules = afterCensus.modules.filter((module) => module.blocks.length === 0);
