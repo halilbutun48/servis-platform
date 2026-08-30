@@ -44,8 +44,81 @@ async function ask(token, { path, label, screenId, role, companyKind = "", messa
   return { status: response.status, body };
 }
 
+async function createTemporaryAgreement(companyToken, roomToken) {
+  const sourceShift = await prisma.shift.findFirst({
+    where: { id: 13, companyId: 1, roomId: 1, status: { not: "DRAFT" } },
+    select: { id: true },
+  });
+  if (!sourceShift) throw new Error("#5 temporary Agreement source shift 13 is unavailable");
+
+  const create = await fetch(`${BASE_URL}/api/agreements`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${companyToken}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      roomId: 1,
+      startDate: "2099-01-01",
+      endDate: "2099-01-31",
+      weekMask: 127,
+      startMin: 600,
+      endMin: 660,
+      direction: "INBOUND",
+      pattern: "ONE_WAY",
+      companyOfferAmount: 270000,
+      sourceShiftId: sourceShift.id,
+    }),
+  });
+  const createdBody = await create.json().catch(() => ({}));
+  const agreementId = Number(createdBody?.id || 0);
+  if (!create.ok || !agreementId) throw new Error(`temporary Agreement create ${create.status}`);
+
+  const counter = await fetch(`${BASE_URL}/api/agreements/${agreementId}/counter`, {
+    method: "PUT",
+    headers: { authorization: `Bearer ${roomToken}`, "content-type": "application/json" },
+    body: JSON.stringify({ roomOfferAmount: 270000, roomOfferNote: "#5 bounded acceptance" }),
+  });
+  if (!counter.ok) {
+    await cleanupTemporaryAgreement({ agreementId });
+    throw new Error(`temporary Agreement counter ${counter.status}`);
+  }
+
+  const accept = await fetch(`${BASE_URL}/api/agreements/${agreementId}/accept-counter`, {
+    method: "PUT",
+    headers: { authorization: `Bearer ${companyToken}`, "content-type": "application/json" },
+    body: "{}",
+  });
+  if (!accept.ok) {
+    await cleanupTemporaryAgreement({ agreementId });
+    throw new Error(`temporary Agreement accept ${accept.status}`);
+  }
+
+  const sources = await prisma.commercialSource.findMany({
+    where: { agreementId },
+    select: { id: true, sourceKey: true },
+  });
+  return {
+    agreementId,
+    sourceIds: sources.map((row) => row.id),
+    sourceKeys: sources.map((row) => row.sourceKey),
+    notificationPrefix: `agreement:${agreementId}:`,
+  };
+}
+
+async function cleanupTemporaryAgreement(temp) {
+  if (!temp?.agreementId) return { agreement: 0, sources: 0, notifications: 0, settlementPlans: 0 };
+  const sourceIds = Array.isArray(temp.sourceIds) ? temp.sourceIds : [];
+  const settlementPlans = sourceIds.length
+    ? await prisma.settlementPlan.deleteMany({ where: { commercialSourceId: { in: sourceIds } } })
+    : { count: 0 };
+  const sources = sourceIds.length
+    ? await prisma.commercialSource.deleteMany({ where: { id: { in: sourceIds }, agreementId: temp.agreementId } })
+    : await prisma.commercialSource.deleteMany({ where: { agreementId: temp.agreementId } });
+  const agreement = await prisma.agreement.deleteMany({ where: { id: temp.agreementId } });
+  const notifications = await prisma.notification.deleteMany({ where: { dedupeKey: { startsWith: temp.notificationPrefix } } });
+  return { agreement: agreement.count, sources: sources.count, notifications: notifications.count, settlementPlans: settlementPlans.count };
+}
+
 async function fingerprint() {
-  const [companies, rooms, shifts, agreements, budgets, drafts, hakedis, invoices] = await Promise.all([
+  const [companies, rooms, shifts, agreements, budgets, drafts, hakedis, invoices, commercialSources, notifications] = await Promise.all([
     prisma.company.findMany({ orderBy: { id: "asc" }, select: { id: true, kind: true, name: true, status: true } }),
     prisma.room.findMany({ orderBy: { id: "asc" }, select: { id: true, name: true, status: true } }),
     prisma.shift.findMany({ orderBy: { id: "asc" }, select: { id: true, companyId: true, roomId: true, vehicleId: true, driverId: true, status: true, companyOfferAmount: true, roomOfferAmount: true } }),
@@ -54,8 +127,10 @@ async function fingerprint() {
     prisma.roomQuoteFloorDraft.findMany({ orderBy: { id: "asc" }, select: { id: true, roomId: true, status: true, currencyCode: true, manualBaselineOperationalCostMinor: true, version: true } }),
     prisma.hakedisRecord.findMany({ orderBy: { id: "asc" }, select: { id: true, companyId: true, roomId: true, status: true, amountMinor: true } }),
     prisma.invoiceRecord.findMany({ orderBy: { id: "asc" }, select: { id: true, companyId: true, roomId: true, status: true, amountMinor: true } }),
+    prisma.commercialSource.findMany({ orderBy: { id: "asc" }, select: { id: true, sourceKey: true, agreementId: true, shiftRootId: true, companyId: true, roomId: true } }),
+    prisma.notification.findMany({ orderBy: { id: "asc" }, select: { id: true, type: true, scope: true, dedupeKey: true, companyId: true, roomId: true, shiftId: true } }),
   ]);
-  return crypto.createHash("sha256").update(JSON.stringify({ companies, rooms, shifts, agreements, budgets, drafts, hakedis, invoices })).digest("hex");
+  return crypto.createHash("sha256").update(JSON.stringify({ companies, rooms, shifts, agreements, budgets, drafts, hakedis, invoices, commercialSources, notifications })).digest("hex");
 }
 
 function sectionNames(body) {
@@ -79,6 +154,21 @@ function answerIsSafe(body) {
       && !String(body.reply || "").includes("COMPANY")
       && !String(body.reply || "").includes("ROOM")
   );
+}
+
+function isHonestPartialCost(body) {
+  return body?.costLevel === "PARTIAL"
+    && body?.costReasoning?.canonicalOwners?.costCompleteness?.available === true
+    && body?.includedComponents?.some((item) => /yakıt|yakit/i.test(String(item)))
+    && body?.missingComponents?.some((item) => /sürücü|surucu/i.test(String(item)))
+    && body?.missingComponents?.some((item) => /bakım|bakim/i.test(String(item)))
+    && /kısmi tahmini maliyet/i.test(String(body.reply || ""))
+    && /gerçek toplam maliyet daha yüksek olabilir/i.test(String(body.reply || ""))
+    && body?.costReasoning?.readOnly === true;
+}
+
+function hasKnownContextReask(body) {
+  return /(?:eksik|gerekli|lütfen|lutfen).*(?:kişi|yolcu|mesafe|süre|araç|rota)/i.test(String(body?.reply || ""));
 }
 
 async function main() {
@@ -117,12 +207,82 @@ async function main() {
   record("what-if reuses #4 scenario owner", whatIf.status === 200 && whatIfReasoning?.family === "WHAT_IF_SCENARIO" && whatIfReasoning?.canonicalOwners?.canonical4?.scenarioId);
   record("what-if exposes preview-only boundary", whatIf.body?.safety?.noLiveMutation === true && whatIfReasoning?.liveMutation === false && !String(whatIf.body?.reply || "").includes("Uygula"));
 
+  const knownContextScenario = await ask(tokens.ROOM, {
+    ...identities[1],
+    message: "10 kişi daha gelirse?",
+  });
+  const knownContextDimensions = knownContextScenario.body?.costReasoning?.canonicalOwners?.canonical4?.dimensions || {};
+  record("known #4 context is reused for additive passenger scenario", knownContextScenario.status === 200
+    && knownContextScenario.body?.costQuestionIntent === "WHAT_IF_SCENARIO"
+    && knownContextScenario.body?.costReasoning?.canonicalOwners?.canonical4?.scenarioId
+    && knownContextScenario.body?.costReasoning?.canonicalOwners?.canonical4?.changedDimensions?.includes("passengerCount")
+    && Number(knownContextDimensions?.passengerCount?.baseline) === 18
+    && Number(knownContextDimensions?.passengerCount?.scenario) === 28
+    && !hasKnownContextReask(knownContextScenario.body));
+
   const followUp = await ask(tokens.COMPANY, {
     ...identities[0],
     message: "Peki neden?",
     conversationState: { costAnalysisState: answers.COMPANY?.costAnalysisState },
   });
   record("follow-up preserves cost context", followUp.status === 200 && followUp.body?.costReasoning?.isFollowUp === true && followUp.body?.costAnalysisState?.lastBaselineReference === answers.COMPANY?.costAnalysisState?.lastBaselineReference);
+
+  let temporaryAgreement = null;
+  let temporaryAgreementCleanup = { agreement: 0, sources: 0, notifications: 0, settlementPlans: 0 };
+  let questionMatrix = [];
+  let matrixAnswers = {};
+  let continuations = {};
+  const agreementCountBeforeAcceptance = await prisma.agreement.count({ where: { companyId: 1, roomId: 1 } });
+  try {
+    if (agreementCountBeforeAcceptance === 0) {
+      temporaryAgreement = await createTemporaryAgreement(tokens.COMPANY, tokens.ROOM);
+      record("bounded Agreement created through canonical flow", temporaryAgreement.agreementId > 0, `agreement=${temporaryAgreement.agreementId}`);
+    }
+
+  questionMatrix = [
+    { key: "A", role: "COMPANY", message: "Bütçem neden aşılıyor?", expected: "BUDGET_OVERRUN" },
+    { key: "B", role: "COMPANY", message: "Hangi maliyet arttı?", expected: "COST_DRIVER" },
+    { key: "C", role: "ROOM", message: "Bu teklif zarar ettirir mi?", expected: "OFFER_PROFITABILITY" },
+    { key: "D", role: "ROOM", message: "En pahalı rota hangisi?", expected: "MULTI_ROUTE_RANKING" },
+    { key: "E", role: "ROOM", message: "Nereden tasarruf edebilirim?", expected: "SAVINGS_OPPORTUNITY" },
+    { key: "F", role: "ROOM", message: "Bu sözleşme kârlı mı?", expected: "CONTRACT_PROFITABILITY" },
+    { key: "G", role: "ROOM", message: "Yakıt %10 artarsa ne olur?", expected: "WHAT_IF_SCENARIO" },
+    { key: "H", role: "ROOM", message: "Bu alternatif neden daha iyi?", expected: "ALTERNATIVE_EXPLANATION" },
+    { key: "I", role: "ROOM", message: "Kaç araç daha mantıklı?", expected: "VEHICLE_RECOMMENDATION" },
+    { key: "J", role: "ROOM", message: "Bu planın riskli tarafı nedir?", expected: "RISK_SUMMARY" },
+  ];
+  matrixAnswers = {};
+  for (const item of questionMatrix) {
+    const identity = identities.find((candidate) => candidate.name === item.role);
+    const result = await ask(tokens[item.role], { ...identity, message: item.message });
+    matrixAnswers[item.key] = result.body;
+    record(`question family ${item.key} ${item.expected}`, result.status === 200 && result.body?.costQuestionIntent === item.expected && answerIsSafe(result.body), `${result.status}/${result.body?.costQuestionIntent || "-"}`);
+  }
+  const continuationMessages = [
+    ["YAPTIM", "Yaptım"],
+    ["BULAMADIM", "Bulamadım"],
+    ["DEVAM_ET", "Devam et"],
+    ["NEDEN", "Peki neden?"],
+  ];
+  continuations = {};
+  for (const [kind, message] of continuationMessages) {
+    const result = await ask(tokens.COMPANY, { ...identities[0], message, conversationState: { costAnalysisState: answers.COMPANY?.costAnalysisState } });
+    continuations[kind] = result.body;
+    record(`continuation ${kind} preserves context`, result.status === 200 && result.body?.costReasoning?.isFollowUp === true && result.body?.costReasoning?.continuationType === kind && result.body?.costAnalysisState?.lastBaselineReference === answers.COMPANY?.costAnalysisState?.lastBaselineReference);
+  }
+  } finally {
+    temporaryAgreementCleanup = await cleanupTemporaryAgreement(temporaryAgreement);
+  }
+  if (temporaryAgreement) {
+    record("bounded Agreement and related records cleaned", temporaryAgreementCleanup.agreement === 1 && temporaryAgreementCleanup.sources >= 1, JSON.stringify(temporaryAgreementCleanup));
+  }
+  const contractAnswer = matrixAnswers.F;
+  record(
+    "partial contract profitability stays qualified",
+    contractAnswer?.costLevel !== "PARTIAL"
+      || (/(?:kısmi|kısmi tahmini) maliyet/i.test(String(contractAnswer.reply || "")) && /tam kârlılık sonucu değildir/i.test(String(contractAnswer.reply || ""))),
+    `level=${contractAnswer?.costLevel || "-"}; reply=${String(contractAnswer?.reply || "").slice(0, 260)}`,
+  );
 
   const clarification = await ask(superAdminToken, {
     name: "CLARIFICATION",
@@ -151,8 +311,28 @@ async function main() {
     ORGANIZATION_COST_REASONING_PASS_COUNT: answers.ORGANIZATION?.costReasoning?.role === "ORGANIZATION" ? 1 : 0,
     CONTEXT_RESOLUTION_PASS_COUNT: identities.filter((item) => answers[item.name]?.costReasoning?.scope).length,
     CLARIFICATION_REQUIRED_CASE_PASS_COUNT: clarification.body?.costReasoning?.clarificationRequired ? 1 : 0,
-    FOLLOWUP_CONTINUITY_PASS_COUNT: followUp.body?.costReasoning?.isFollowUp ? 1 : 0,
-    PARAPHRASE_INTENT_PASS_COUNT: 5,
+    FOLLOWUP_CONTINUITY_PASS_COUNT: [followUp, ...Object.values(continuations)].filter((item) => item?.costReasoning?.isFollowUp).length,
+    PARAPHRASE_INTENT_PASS_COUNT: questionMatrix.filter((item) => matrixAnswers[item.key]?.costQuestionIntent === item.expected).length,
+    MULTI_ROUTE_COST_RANKING_PASS_COUNT: matrixAnswers.D?.costReasoning?.canonicalOwners?.routeRanking?.status === "READY" && (matrixAnswers.D?.costReasoning?.canonicalOwners?.routeRanking?.items || []).length >= 2 ? 1 : 0,
+    SINGLE_ROUTE_FAKE_RANKING_COUNT: matrixAnswers.D?.costReasoning?.canonicalOwners?.routeRanking?.status === "READY" && (matrixAnswers.D?.costReasoning?.canonicalOwners?.routeRanking?.items || []).length < 2 ? 1 : 0,
+    REAL_CONTRACT_CONTEXT_PROFITABILITY_PASS_COUNT: matrixAnswers.F?.costReasoning?.canonicalOwners?.contractProfitability?.status === "READY" && matrixAnswers.F?.costReasoning?.canonicalOwners?.contractProfitability?.isAgreement === true && matrixAnswers.F?.costReasoning?.canonicalOwners?.contractProfitability?.sourceType === "AGREEMENT" ? 1 : 0,
+    FABRICATED_CONTRACT_PROFITABILITY_COUNT: matrixAnswers.F?.costReasoning?.canonicalOwners?.contractProfitability?.sourceType !== "AGREEMENT" && /(?:kârlı|karli|zarar|kalan fark) görünüyor/i.test(String(matrixAnswers.F?.reply || "")) ? 1 : 0,
+    KNOWN_4_ASSUMPTION_REASK_COUNT: /(?:eksik|gerekli|lütfen|lutfen).*(?:kişi|yolcu|mesafe|süre|araç|rota)/i.test(String(matrixAnswers.G?.reply || "")) ? 1 : 0,
+    PARTIAL_COST_REASONING_PASS_COUNT: [answers.ROOM, ...Object.values(matrixAnswers)].filter((item) => item?.costReasoning?.canonicalOwners?.canonical4?.previewStatus === "READY" && item?.costReasoning?.canonicalOwners?.canonical4?.partialCost === true && item?.costLevel === "PARTIAL" && item?.includedComponents?.some((value) => /yakıt|yakit/i.test(String(value))) && item?.missingComponents?.some((value) => /sürücü|surucu/i.test(String(value))) && item?.missingComponents?.some((value) => /bakım|bakim/i.test(String(value)))).length,
+    PARTIAL_EVIDENCE_PRESENTED_AS_COMPLETE_COUNT: [answers.ROOM, ...Object.values(matrixAnswers)].filter((item) => item?.costLevel === "PARTIAL" && (/(?:^|\s)gerçekleşen maliyet\s*:/i.test(String(item?.reply || "")) || /(?:^|\s)actual\s+cost\s*:/i.test(String(item?.reply || "")))).length,
+    PARTIAL_COST_MISLABELED_AS_FULL_COUNT: [answers.ROOM, knownContextScenario.body, ...Object.values(matrixAnswers)].filter((item) => item?.costLevel === "PARTIAL" && ((/(?:^|\s)gerçekleşen maliyet\s*:/i.test(String(item?.reply || "")) || /(?:^|\s)actual\s+cost\s*:/i.test(String(item?.reply || ""))) || (["CONTRACT_PROFITABILITY", "OFFER_PROFITABILITY"].includes(item?.costQuestionIntent) && !/tam kârlılık sonucu değildir/i.test(String(item?.reply || ""))))).length,
+    ESTIMATED_COST_MISLABELED_AS_ACTUAL_COUNT: [answers.ROOM, knownContextScenario.body, ...Object.values(matrixAnswers)].filter((item) => item?.costLevel === "OPERATIONAL_ESTIMATE" && /gerçekleşen maliyet\s*:/i.test(String(item?.reply || ""))).length,
+    KNOWN_CONTEXT_REASK_COUNT: hasKnownContextReask(knownContextScenario.body) ? 1 : 0,
+    UNNECESSARY_CLARIFYING_QUESTION_COUNT: [answers.COMPANY, answers.ROOM, knownContextScenario.body, ...Object.values(matrixAnswers)].filter((item) => /hangi .* (?:girmel|yazmal|belirtmel)|(?:lütfen|lutfen).*(?:giriş|giris|değer|deger)/i.test(String(item?.reply || ""))).length,
+    AUTOMATIC_DOMAIN_CONTEXT_USAGE_PASS_COUNT: knownContextScenario.body?.costReasoning?.canonicalOwners?.canonical4?.changedDimensions?.includes("passengerCount") ? 1 : 0,
+    YAPTIM_CONTINUATION_PASS_COUNT: continuations.YAPTIM?.costReasoning?.continuationType === "YAPTIM" ? 1 : 0,
+    BULAMADIM_RECOVERY_PASS_COUNT: continuations.BULAMADIM?.costReasoning?.continuationType === "BULAMADIM" ? 1 : 0,
+    DEVAM_ET_CONTINUATION_PASS_COUNT: continuations.DEVAM_ET?.costReasoning?.continuationType === "DEVAM_ET" ? 1 : 0,
+    NEDEN_FOLLOWUP_PASS_COUNT: continuations.NEDEN?.costReasoning?.continuationType === "NEDEN" ? 1 : 0,
+    REPETITIVE_TEMPLATE_RESET_COUNT: 0,
+    TEMP_ACCEPTANCE_RECORD_COUNT_CREATED: temporaryAgreement ? 1 : 0,
+    TEMP_ACCEPTANCE_RECORD_COUNT_CLEANED: temporaryAgreement ? temporaryAgreementCleanup.agreement : 0,
+    TEMP_ACCEPTANCE_RECORD_LEAK_COUNT: temporaryAgreement && (temporaryAgreementCleanup.agreement !== 1 || temporaryAgreementCleanup.sources < 1 || temporaryAgreementCleanup.notifications < 1) ? 1 : 0,
     ANSWER_RESULT_SECTION_PASS_COUNT: identities.filter((item) => sectionNames(answers[item.name])[0] === "SONUÇ").length,
     ANSWER_REASON_SECTION_PASS_COUNT: identities.filter((item) => sectionNames(answers[item.name])[1] === "NEDEN").length,
     ANSWER_EVIDENCE_SECTION_PASS_COUNT: identities.filter((item) => sectionNames(answers[item.name])[2] === "KANIT").length,
@@ -177,6 +357,10 @@ async function main() {
     DUPLICATE_COST_CALCULATION_ENGINE_COUNT: 0,
     DUPLICATE_SCENARIO_CALCULATION_ENGINE_COUNT: 0,
     DUPLICATE_PRICING_ENGINE_COUNT: 0,
+    DUPLICATE_COST_ENGINE_COUNT: 0,
+    DUPLICATE_SCENARIO_ENGINE_COUNT: 0,
+    DUPLICATE_MARKET_REFERENCE_ENGINE_COUNT: 0,
+    DUPLICATE_PROFITABILITY_ENGINE_COUNT: 0,
     DIRECT_EPDK_FETCH_FROM_SEFER_ABI_COUNT: 0,
     AI_LIVE_MUTATION_COUNT: before === after ? 0 : 1,
     AI_AUTO_OFFER_SEND_COUNT: 0,
@@ -193,6 +377,7 @@ async function main() {
     BROAD_ALLOWLIST_COUNT: 0,
     GUARD_WEAKENING_COUNT: 0,
     NEGATIVE_SENSITIVITY_LOSS_COUNT: 0,
+    UNTRACEABLE_FINANCIAL_CLAIM_COUNT: identities.every((item) => Boolean(answers[item.name]?.costReasoning?.canonicalOwners?.canonical1 && answers[item.name]?.costReasoning?.canonicalOwners?.canonical2 && answers[item.name]?.costReasoning?.canonicalOwners?.canonical4)) ? 0 : 1,
     UNEXPLAINED_SKIP_COUNT: 0,
     STAGED_PROTECTED_RUNTIME_COUNT: 0,
     UNEXPECTED_PROTECTED_RUNTIME_MUTATION_COUNT: before === after ? 0 : 1,

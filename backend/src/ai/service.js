@@ -5,7 +5,7 @@ import { normalizeGuideLevel } from "./jobGuide/levels.js";
 import { getScreenDefinitionForUser } from "./jobGuide/screenCatalog.js";
 import { resolveChatContext } from "./chat/contextResolver.js";
 import { buildChatHelpResponse } from "./chat/helpComposer.js";
-import { buildSeferAbiCostAnalysisResponse } from "./chat/seferAbiCostAnalysisAssistant.js";
+import { buildSeferAbiCostAnalysisResponse, detectCostAnalysisIntent } from "./chat/seferAbiCostAnalysisAssistant.js";
 import { getEtaDisplay, getGpsAgeText, getGpsReliabilityLabel, normalizeGpsFreshness } from "./chat/etaSanity.js";
 
 function intentLabel(intent) {
@@ -74,6 +74,11 @@ function normalizeVisibleKey(value) {
 
 function selectedRows(screenContext, key) {
   return Array.isArray(screenContext?.[key]) ? screenContext[key] : [];
+}
+
+function buildLegacyChatHelpResponse(input) {
+  const baseResponse = buildChatHelpResponse(input);
+  return baseResponse;
 }
 
 function rowValueByLabels(rows, labels) {
@@ -758,15 +763,37 @@ function enrichDecisionLayer(intent, context, base) {
 export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel, screenContext, message, conversationState }) {
   if (intent === "CHAT_HELP") {
     const resolved = await resolveChatContext({ entityType, entityId, user, screenContext, conversationState });
-    const baseResponse = buildChatHelpResponse({
-      entityType,
-      entityId,
-      user,
-      message,
-      conversationState,
-      screenContext,
-      ...resolved,
-    });
+    let baseResponse;
+    try {
+      baseResponse = buildLegacyChatHelpResponse({
+        entityType,
+        entityId,
+        user,
+        message,
+        conversationState,
+        screenContext,
+        ...resolved,
+      });
+    } catch (error) {
+      const costRequest = detectCostAnalysisIntent({ message, screenContext, conversationState });
+      const legacyGuideMismatch = ["JOB_TYPE_ENTITY_MISMATCH", "UNSUPPORTED_JOB_TYPE"].includes(String(error?.code || ""));
+      if (!costRequest.isCostAnalysis || !legacyGuideMismatch) throw error;
+      baseResponse = {
+        ok: true,
+        generatedAt: new Date().toISOString(),
+        intent,
+        intentLabel: intentLabel(intent),
+        entityType,
+        entityId: Number(entityId),
+        entityLabel: resolved.entityLabel,
+        provider: "local-foundation",
+        providerSummary: "cost-analysis-base-fallback",
+        mode: "RULE_BASED",
+        scope: resolved.scope,
+        screenPath: screenContext?.path || null,
+        screenLabel: screenContext?.label || null,
+      };
+    }
     return buildSeferAbiCostAnalysisResponse({
       baseResponse,
       user,

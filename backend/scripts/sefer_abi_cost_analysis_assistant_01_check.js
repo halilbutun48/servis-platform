@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   COST_REASONING_ANSWER_SECTIONS,
   COST_REASONING_INTENT_FAMILIES,
+  COST_REASONING_QUESTION_INTENTS,
   SEFER_ABI_COST_ANALYSIS_ASSISTANT_VERSION,
   detectCostAnalysisIntent,
 } from "../src/ai/chat/seferAbiCostAnalysisAssistant.js";
@@ -28,6 +29,7 @@ console.log("=== #5 SEFER-ABI-COST-ANALYSIS-ASSISTANT-01 CHECK ===");
 assert(SEFER_ABI_COST_ANALYSIS_ASSISTANT_VERSION === "SEFER-ABI-COST-ANALYSIS-ASSISTANT-01", "immutable #5 assistant version is exact");
 assert(COST_REASONING_INTENT_FAMILIES.length === 5, "five cost reasoning intent families are defined");
 assert(COST_REASONING_ANSWER_SECTIONS.length === 9, "canonical answer has nine sections");
+assert(COST_REASONING_QUESTION_INTENTS.length === 10, "ten cost question intents are defined");
 assert(service.includes("buildSeferAbiCostAnalysisResponse"), "existing CHAT_HELP path invokes the #5 assistant");
 assert(service.includes("const baseResponse = buildChatHelpResponse"), "#5 wraps the existing Sefer Abi answer path");
 assert(assistant.includes("loadCostScenarioBaselineForUser"), "#5 uses the tenant-scoped #4 baseline owner");
@@ -63,6 +65,21 @@ const paraphraseCases = [
   "Kaynak güvenilir mi?",
 ];
 assert(paraphraseCases.every((message) => detectCostAnalysisIntent({ message, screenContext: { path: "/company/financial-operations" } }).isCostAnalysis), "paraphrase intent is semantic, not exact phrase only");
+const questionCases = [
+  ["Bütçem neden aşılıyor?", "BUDGET_OVERRUN"],
+  ["Hangi maliyet arttı?", "COST_DRIVER"],
+  ["Bu teklif zarar ettirir mi?", "OFFER_PROFITABILITY"],
+  ["En pahalı rota hangisi?", "MULTI_ROUTE_RANKING"],
+  ["Nereden tasarruf edebilirim?", "SAVINGS_OPPORTUNITY"],
+  ["Bu sözleşme kârlı mı?", "CONTRACT_PROFITABILITY"],
+  ["Yakıt yüzde 10 artarsa ne olur?", "WHAT_IF_SCENARIO"],
+  ["Bu alternatif neden daha iyi?", "ALTERNATIVE_EXPLANATION"],
+  ["Kaç araç daha mantıklı?", "VEHICLE_RECOMMENDATION"],
+  ["Bu planın riskli tarafı nedir?", "RISK_SUMMARY"],
+];
+for (const [message, intent] of questionCases) {
+  assert(detectCostAnalysisIntent({ message, screenContext: { path: "/room/financial-operations" } }).questionIntent === intent, `question intent maps to ${intent}`);
+}
 assert(detectCostAnalysisIntent({ message: "Peki neden?", screenContext: { path: "/company/financial-operations" }, conversationState: { costAnalysisState: { lastIntentFamily: "BUDGET_COST" } } }).isFollowUp, "follow-up continuity recognizes the previous cost context");
 assert(detectCostAnalysisIntent({ message: "Bütçe verisi", screenContext: { path: "/company/financial-operations" } }).matchedSignals.includes("FINANCIAL_SCREEN_CONTEXT"), "current financial screen context is part of semantic evidence");
 
