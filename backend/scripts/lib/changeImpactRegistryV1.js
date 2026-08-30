@@ -300,7 +300,7 @@ export const CHANGE_IMPACT_REGISTRY_V1_RECORDS = Object.freeze([
     identityOwnerCategory: "IDENTITY_OWNER_MISSING",
     identityOwnerRef: null,
     identityModel: "unresolved-canonical-owner",
-    currentHeadPolicyState: "ABSENT",
+    currentHeadPolicyState: "APPROVED",
     protectionClasses: ["DOMAIN_SEMANTIC", "AI_AUTHORITY"],
     semanticOwnerGroups: ["AI_FOUNDATION", "COPILOT_BOUNDARY", "LIVE_SELECTION_HELPER"],
     smokeSuites: [],

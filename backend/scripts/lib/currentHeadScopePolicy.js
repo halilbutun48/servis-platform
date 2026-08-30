@@ -2,6 +2,10 @@ import { CANONICAL_PRISMA_SCHEMA_NORMALIZED_SHA256 } from "./prismaSchemaIdentit
 
 export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = [
   {
+    path: "backend/src/routes/commercialCore.js",
+    sha256: "14D111ADCF9C3005DACF0D7CE246EEA22109B1D2C4EDC4DA9380F2DA0461265F",
+  },
+  {
     path: "backend/src/routes/commercialCoreRoutes.js",
     sha256: "11A5136CDA54B1467757BF9422EB6B63B0B00F9633CD1A8AF3303A5BA2A06E41",
   },
@@ -16,6 +20,18 @@ export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = [
   {
     path: "backend/src/routes/commercialCoreRoomRoutes.js",
     sha256: "CA2B42085F02A2DFEB03ED3992FE47583152EE424FF39DDF73C9699B99D6D2FF",
+  },
+  {
+    path: "backend/src/routes/trustQuality.js",
+    sha256: "FD532B5FA09F1EBC7359B9777039172D1089EB03C7D99FEB6C15A78D85D4E4CD",
+  },
+  {
+    path: "backend/src/routes/shifts/company.js",
+    sha256: "19A7C7C96A86438CDE36345274D8EC8E363C889CABF4C440FE8529DBAA1534A0",
+  },
+  {
+    path: "backend/src/routes/auth.js",
+    sha256: "A137B997660215DBD2C5E8AA24593BD96F319CF784322C65D3628B8C9F4AACF3",
   },
   {
     path: "backend/src/routes/commercialCoreRouteData.js",

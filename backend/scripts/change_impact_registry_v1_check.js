@@ -395,8 +395,8 @@ function assertSummary(summary) {
   must(summary.identityOwnerCategoryCounts.CURRENT_HEAD_APPROVED_DIFF === 5, "current-head owner count is 5");
   must(summary.identityOwnerCategoryCounts.CANONICAL_PROVENANCE_OWNED === 1, "canonical provenance owner count is 1");
   must(summary.identityOwnerCategoryCounts.IDENTITY_OWNER_MISSING === 1, "missing owner count by category is 1");
-  must(summary.currentHeadPolicyCounts.APPROVED === 5, "current-head APPROVED count is 5");
-  must(summary.currentHeadPolicyCounts.ABSENT === 3, "current-head ABSENT count is 3");
+  must(summary.currentHeadPolicyCounts.APPROVED === 6, "current-head APPROVED count is 6");
+  must(summary.currentHeadPolicyCounts.ABSENT === 2, "current-head ABSENT count is 2");
   must(summary.impactLevelCounts["2"] === 5, "impact level 2 count is 5");
   must(summary.impactLevelCounts["3"] === 3, "impact level 3 count is 3");
   must(summary.smokeSuiteCounts.MOBILE_ALL_ROLES === 1, "MOBILE_ALL_ROLES smoke count is 1");
