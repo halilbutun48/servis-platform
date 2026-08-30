@@ -35,6 +35,7 @@ import {
 } from "./financialOperationsPresentation";
 import ExternalReferenceCard from "./ExternalReferenceCard";
 import CostScenarioWorkspacePanel from "./CostScenarioWorkspacePanel";
+import AccountingExportPanel from "./AccountingExportPanel";
 
 const INPUT_STYLE = {
   width: "100%",
@@ -593,6 +594,7 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
           />
         )}
         scenarioPanel={<CostScenarioWorkspacePanel scope="COMPANY" embedded regionName={preview?.regionName || preview?.snapshot?.regionName || null} />}
+        accountingExportPanel={<AccountingExportPanel scope="COMPANY" me={me} preview={preview} token={token} />}
         normalizeText={normalizeText}
         MetricCard={MetricCard}
         ChipRow={ChipRow}
@@ -717,6 +719,8 @@ export default function FinancialOperationsPanel({ scope = "ROOM" }) {
       />
 
       <CostScenarioWorkspacePanel scope="ROOM" embedded regionName={preview?.regionName || preview?.snapshot?.regionName || null} />
+
+      <AccountingExportPanel scope="ROOM" me={me} preview={preview} token={token} />
 
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={roomDetailsOpen} onToggle={(event) => setRoomDetailsOpen(event.currentTarget.open)}>

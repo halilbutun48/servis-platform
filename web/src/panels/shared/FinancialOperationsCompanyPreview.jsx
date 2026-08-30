@@ -199,6 +199,7 @@ export default function FinancialOperationsCompanyPreview({
   budgetActionOk,
   externalReferenceCard,
   scenarioPanel,
+  accountingExportPanel,
   formatBps,
   INPUT_STYLE,
 }) {
@@ -350,6 +351,8 @@ export default function FinancialOperationsCompanyPreview({
           {scenarioPanel}
         </div>
       ) : null}
+
+      {accountingExportPanel}
 
       <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
         <details className="card" style={{ minWidth: 0 }} open={budgetDetailsOpen} onToggle={(event) => setBudgetDetailsOpen(event.currentTarget.open)}>
@@ -614,7 +617,7 @@ export default function FinancialOperationsCompanyPreview({
             <div className="card" style={{ minWidth: 0 }}>
               <div className="panelSectionTitle">Dışa aktarım</div>
               <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>
-                Bu bölüm finansal operasyon bloğunun sonraki aşamasında tamamlanacak. Henüz elektronik tablo / CSV dışa aktarım yapılmıyor.
+                Muhasebe dışa aktarımı yukarıdaki bağlamsal panelden önizleme ve kullanıcı onayı ile hazırlanır; burada ikinci bir dışa aktarım akışı yoktur.
               </div>
             </div>
           </div>

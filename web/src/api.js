@@ -428,6 +428,52 @@ export async function archiveCompanyBudgetPlan(planId, payload = {}, { token } =
   });
 }
 
+export async function validateAccountingExport(payload = {}, { token } = {}) {
+  return api("/api/accounting-exports/validate", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function previewAccountingExport(payload = {}, { token } = {}) {
+  return api("/api/accounting-exports/preview", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export async function generateAccountingExport(payload = {}, { token } = {}) {
+  const headers = { "Content-Type": "application/json" };
+  const resolvedToken = ((token ?? getToken()) || "").trim();
+  if (resolvedToken) headers.Authorization = `Bearer ${resolvedToken}`;
+  const response = await fetch("/api/accounting-exports/generate", {
+    cache: "no-store",
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+      ? await response.json().catch(() => null)
+      : await response.text().catch(() => "");
+    throw makeHttpError(response.status, body || { message: response.statusText });
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get("content-disposition") || "";
+  const filenameMatch = disposition.match(/filename="?([^";]+)"?/i);
+  return {
+    blob,
+    filename: filenameMatch?.[1] || "seferpakt_muhasebe_aktarim.json",
+    exportId: response.headers.get("x-accounting-export-id") || "",
+    contractVersion: response.headers.get("x-accounting-contract-version") || "",
+    idempotencyKey: response.headers.get("x-accounting-idempotency-key") || "",
+    checksum: response.headers.get("x-accounting-checksum") || "",
+  };
+}
+
 export async function getAgreementQualityPaymentBridgePreview(agreementId, { token, signal } = {}) {
   return cachedGet(`/api/agreements/${Number(agreementId)}/quality-payment-bridge`, { token, signal, ttlMs: DEFAULT_READ_TTL_MS, delayMs: DEFAULT_READ_DELAY_MS });
 }

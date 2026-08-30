@@ -45,6 +45,7 @@ export function mountCoreRoutes(app, routes, io) {
     externalCostReferenceRouter,
     reconciliationRouter,
     costScenarioRouter,
+    accountingExportsRouter,
   } = routes;
 
   function resolveRouterMount(routeExport) {
@@ -106,6 +107,7 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/external-cost-references", resolveRouterMount(externalCostReferenceRouter));
   app.use("/api/reconciliation", resolveRouterMount(reconciliationRouter));
   app.use("/api/cost-scenarios", resolveRouterMount(costScenarioRouter));
+  app.use("/api/accounting-exports", resolveRouterMount(accountingExportsRouter));
 }
 
 export function mountIoRoutes(app, io, routes) {

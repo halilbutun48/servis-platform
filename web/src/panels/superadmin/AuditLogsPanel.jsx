@@ -31,7 +31,8 @@ function summarizeAuditMeta(meta) {
   for (const [key, value] of entries) {
     if (value == null || value === "") continue;
     const rendered = typeof value === "object" ? (Array.isArray(value) ? `${value.length} öğe` : "detay") : String(value);
-    parts.push(`${key}: ${rendered.length > 40 ? `${rendered.slice(0, 37)}…` : rendered}`);
+    const auditEntry = key === "format" ? "dosya türü: dışa aktarım dosyası" : key === "dryRun" ? `önizleme: ${value ? "evet" : "hayır"}` : `${key}: ${rendered}`;
+    parts.push(auditEntry.length > 60 ? `${auditEntry.slice(0, 57)}…` : auditEntry);
     if (parts.length >= 3) break;
   }
   return parts.length ? parts.join(" • ") : "Sistem kanıtı hazır";

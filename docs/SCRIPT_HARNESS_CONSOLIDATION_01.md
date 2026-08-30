@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `444`
-- Toplam executable tracked file: `1325`
-- Combined registry row: `1769`
-- Root/backend/web/mobile package dağılımı: root `279`, backend `889`, web `97`, mobile `201`
+- Toplam package script entry: `447`
+- Toplam executable tracked file: `1331`
+- Combined registry row: `1778`
+- Root/backend/web/mobile package dağılımı: root `282`, backend `895`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `759`
+- NEEDS_REVIEW: `768`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 759 |
+| NEEDS_REVIEW | 768 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -488,6 +488,9 @@ Repo: `servis-platform`
 | root:smoke:costscenarioforecastandsavings01 | package.json | root | node backend/scripts/cost_scenario_forecast_and_savings_01_browser.mjs | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST-AND-SAVINGS-01 |  | Owner or chain unclear |  |
 | root:accept:seferabicostanalysisassistant01 | package.json | root | node backend/scripts/sefer_abi_cost_analysis_assistant_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-SEFERABICOSTANALYSISASSISTANT-01 |  | Owner or chain unclear |  |
 | root:smoke:seferabicostanalysisassistant01 | package.json | root | node backend/scripts/sefer_abi_cost_analysis_assistant_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-SEFERABICOSTANALYSISASSISTANT-01 |  | Owner or chain unclear |  |
+| root:check:accountingexportcontract01 | package.json | root | node backend/scripts/accounting_export_and_integration_contract_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ACCOUNTINGEXPORTCONTRACT-01 |  | Owner or chain unclear |  |
+| root:accept:accountingexportcontract01 | package.json | root | node backend/scripts/accounting_export_and_integration_contract_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-ACCOUNTINGEXPORTCONTRACT-01 |  | Owner or chain unclear |  |
+| root:smoke:accountingexportcontract01 | package.json | root | node backend/scripts/accounting_export_and_integration_contract_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-ACCOUNTINGEXPORTCONTRACT-01 |  | Owner or chain unclear |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
 | root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Breaks canonical verification chain |  |
 | root:check:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
@@ -802,6 +805,9 @@ Repo: `servis-platform`
 | _repoContractState.js | backend/scripts/_repoContractState.js | backend |  | helper | ACTIVE |  | REPO-CONTRACT-STATE |  | Owner or chain unclear | internal helper |
 | _static_milestone_check.js | backend/scripts/_static_milestone_check.js | backend |  | helper | ACTIVE |  | STATIC-MILESTONE-CHECK |  | Owner or chain unclear | internal helper |
 | _totp_harness.js | backend/scripts/_totp_harness.js | backend |  | helper | ACTIVE |  | TOTP-HARNESS |  | Owner or chain unclear | internal helper |
+| accounting_export_and_integration_contract_01_acceptance.mjs | backend/scripts/accounting_export_and_integration_contract_01_acceptance.mjs | backend | root:accept:accountingexportcontract01 | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01-ACCEPTANCE |  | Owner or chain unclear |  |
+| accounting_export_and_integration_contract_01_browser.mjs | backend/scripts/accounting_export_and_integration_contract_01_browser.mjs | backend | root:smoke:accountingexportcontract01 | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01-BROWSER |  | Owner or chain unclear |  |
+| accounting_export_and_integration_contract_01_check.js | backend/scripts/accounting_export_and_integration_contract_01_check.js | backend | root:check:accountingexportcontract01 | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORT-AND-INTEGRATION-CONTRACT-01-CHECK |  | Owner or chain unclear |  |
 | address_geocoding_confidence_01_check.js | backend/scripts/address_geocoding_confidence_01_check.js | backend | root:check:addressgeocodingconfidence01 | review | NEEDS_REVIEW |  | ADDRESS-GEOCODING-CONFIDENCE-01-CHECK |  | Owner or chain unclear |  |
 | agreement_source_shift_lineage_01_check.js | backend/scripts/agreement_source_shift_lineage_01_check.js | backend | root:check:agreementsourceshiftlineage01 | review | NEEDS_REVIEW |  | AGREEMENT-SOURCE-SHIFT-LINEAGE-01-CHECK |  | Owner or chain unclear |  |
 | ai03b_paraphrase_intent_audit_01_check.js | backend/scripts/ai03b_paraphrase_intent_audit_01_check.js | backend | root:check:ai03bparaphraseintentaudit01 | review | NEEDS_REVIEW |  | AI-03-B-PARAPHRASE-INTENT-AUDIT-01-CHECK |  | Owner or chain unclear |  |
@@ -1401,6 +1407,8 @@ Repo: `servis-platform`
 | referenceContract.js | backend/src/externalCost/referenceContract.js | backend |  | review | NEEDS_REVIEW |  | REFERENCE-CONTRACT |  | Owner or chain unclear |  |
 | referenceLayers.js | backend/src/externalCost/referenceLayers.js | backend |  | review | NEEDS_REVIEW |  | REFERENCE-LAYERS |  | Owner or chain unclear |  |
 | router.js | backend/src/externalCost/router.js | backend | root:check:m98e4b | review | NEEDS_REVIEW |  | ROUTER |  | Owner or chain unclear |  |
+| accountingExportContract.js | backend/src/finance/accountingExportContract.js | backend |  | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORT-CONTRACT |  | Owner or chain unclear |  |
+| accountingExportFormats.js | backend/src/finance/accountingExportFormats.js | backend |  | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORT-FORMATS |  | Owner or chain unclear |  |
 | companyBudgetAndServiceCost.js | backend/src/finance/companyBudgetAndServiceCost.js | backend |  | review | NEEDS_REVIEW |  | COMPANY-BUDGET-AND-SERVICE-COST |  | Owner or chain unclear |  |
 | costScenarioForecast.js | backend/src/finance/costScenarioForecast.js | backend |  | review | NEEDS_REVIEW |  | COST-SCENARIO-FORECAST |  | Owner or chain unclear |  |
 | financialOperationsScope.js | backend/src/finance/financialOperationsScope.js | backend |  | review | NEEDS_REVIEW |  | FINANCIAL-OPERATIONS-SCOPE |  | Owner or chain unclear |  |
@@ -1479,6 +1487,7 @@ Repo: `servis-platform`
 | index.js | backend/src/region/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | operationRegion.js | backend/src/region/operationRegion.js | backend |  | review | NEEDS_REVIEW |  | OPERATION-REGION |  | Owner or chain unclear |  |
 | ownership.js | backend/src/region/ownership.js | backend | backend:check:checkownershipregistryv1 | review | NEEDS_REVIEW |  | OWNERSHIP |  | Owner or chain unclear |  |
+| accountingExports.js | backend/src/routes/accountingExports.js | backend |  | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORTS |  | Owner or chain unclear |  |
 | admin.js | backend/src/routes/admin.js | backend | backend:m82_10check, backend:m94dcheck, root:check:cop04bfix01, root:check:uxsuperadminauditpanel01, root:check:uxsuperadmincommercialflow01, root:check:uxsuperadminfieldacceptancecenter01, root:check:uxsuperadminfielddispatchdiscovery01, root:check:uxsuperadminlabelpolish01, root:check:uxsuperadminlivemonitoring01, root:check:uxsuperadminoverviewcleanup01, root:check:uxsuperadminpanelclarity01, root:check:uxsuperadminqualitypanel01, root:check:web01b | review | NEEDS_REVIEW |  | ADMIN |  | Owner or chain unclear |  |
 | admin_logs.js | backend/src/routes/admin_logs.js | backend |  | review | NEEDS_REVIEW |  | ADMIN-LOGS |  | Owner or chain unclear |  |
 | agreementExtendNegotiationRouter.js | backend/src/routes/agreementExtendNegotiationRouter.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-EXTEND-NEGOTIATION-ROUTER |  | Owner or chain unclear |  |
@@ -1600,7 +1609,7 @@ Repo: `servis-platform`
 | hash.js | backend/src/telematics/hash.js | backend |  | review | NEEDS_REVIEW |  | HASH |  | Owner or chain unclear |  |
 | providers.js | backend/src/telematics/providers.js | backend |  | review | NEEDS_REVIEW |  | PROVIDERS |  | Owner or chain unclear |  |
 | service.js | backend/src/telematics/service.js | backend | backend:m63check, root:check:companybudgetandservicecost01, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
-| tr.js | backend/src/time/tr.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:check:ai03bsemanticvisiblelivematrix01, root:check:auditlogandapprovaltrace01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
+| tr.js | backend/src/time/tr.js | backend | backend:check:changeimpactregistryv1, backend:check:checkownershipregistryv1, backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m63check, backend:m82_1accept, backend:m82_2check, backend:spec16check, root:accept:accountingexportcontract01, root:check:accountingexportcontract01, root:check:ai03bsemanticvisiblelivematrix01, root:check:auditlogandapprovaltrace01, root:check:boardingchangerequestentry01, root:check:cop04afix02, root:check:cop04afix04, root:check:copilotroletaskmatrix01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxcontractconversionopsbridgeclarity01, root:check:uxpanelstructure02, root:check:uxpanelstructure02b, root:smoke:accountingexportcontract01, root:verify:web-contract | review | NEEDS_REVIEW |  | TR |  | Owner or chain unclear |  |
 | responseCache.js | backend/src/utils/responseCache.js | backend |  | review | NEEDS_REVIEW |  | RESPONSE-CACHE |  | Owner or chain unclear |  |
 | validators.js | backend/src/validators.js | backend |  | review | NEEDS_REVIEW |  | VALIDATORS |  | Owner or chain unclear |  |
 | scope.js | backend/src/ws/scope.js | backend |  | review | NEEDS_REVIEW |  | SCOPE |  | Owner or chain unclear |  |
@@ -1635,7 +1644,7 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web | root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | root:smoke:accountingexportcontract01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |

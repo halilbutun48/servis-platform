@@ -73,6 +73,7 @@ import * as dashboardBulkMod from "./routes/dashboardBulk.js";
 import { externalCostReferenceRouter } from "./externalCost/router.js";
 import { reconciliationRouter } from "./routes/reconciliation.js";
 import { costScenarioRouter } from "./routes/costScenario.js";
+import { accountingExportsRouter } from "./routes/accountingExports.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -300,6 +301,7 @@ mountCoreRoutes(app, {
   externalCostReferenceRouter,
   reconciliationRouter,
   costScenarioRouter,
+  accountingExportsRouter,
 }, io);
 
 // Socket auth: token -> decode -> DB user -> join scopes

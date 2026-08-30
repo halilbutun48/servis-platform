@@ -30,8 +30,8 @@ Repo: `servis-platform`
 
 ## 2) Audit Summary
 
-- Panel yüzey sayısı: `66`
-- PASS: `22`
+- Panel yüzey sayısı: `67`
+- PASS: `23`
 - PASS-: `21`
 - UX-FIX: `23`
 - DEFER: `0`
@@ -46,7 +46,7 @@ Repo: `servis-platform`
 - Parent/Veli: total `1`, PASS `1`, PASS- `0`, UX-FIX `0`, DEFER `0`
 - Organization: total `2`, PASS `1`, PASS- `0`, UX-FIX `1`, DEFER `0`
 - Public: total `3`, PASS `2`, PASS- `0`, UX-FIX `1`, DEFER `0`
-- Shared: total `9`, PASS `4`, PASS- `2`, UX-FIX `3`, DEFER `0`
+- Shared: total `10`, PASS `5`, PASS- `2`, UX-FIX `3`, DEFER `0`
 - School: total `2`, PASS `0`, PASS- `0`, UX-FIX `2`, DEFER `0`
 
 ## 3) Audit Matrix
@@ -92,6 +92,7 @@ Repo: `servis-platform`
 | `web/src/panels/room/VehiclesPanel.jsx` | Room | Var | Var | Var | Kısmi/Belirsiz | Var | Var | Var | Temiz | PASS |
 | `web/src/panels/school/OperationsPanel.jsx` | School | Var | Var | Var | Net | Var | Var | Var | Risk | UX-FIX |
 | `web/src/panels/school/ParentInvitePanel.jsx` | School | Var | Yok | Var | Net | Var | Var | Var | Risk | UX-FIX |
+| `web/src/panels/shared/AccountingExportPanel.jsx` | Shared | Var | Var | Var | Net | Yok | Var | Yok | Temiz | PASS |
 | `web/src/panels/shared/CopilotPanel.jsx` | Shared | Var | Var | Var | Net | Var | Var | Yok | Risk | UX-FIX |
 | `web/src/panels/shared/CostScenarioWorkspacePanel.jsx` | Shared | Var | Var | Var | Net | Var | Var | Var | Temiz | PASS |
 | `web/src/panels/shared/FeedbackLoopPanel.jsx` | Shared | Var | Yok | Var | Kısmi/Belirsiz | Yok | Yok | Yok | Temiz | PASS- |
