@@ -153,7 +153,7 @@ model HakedisRecord {
   notes              String?
   createdByUserId    Int?
   createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  updatedAt          DateTime            @default(now()) @updatedAt
 
   agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
   company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -181,7 +181,7 @@ model InvoiceRecord {
   issuedAt        DateTime?
   createdByUserId Int?
   createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  updatedAt       DateTime            @default(now()) @updatedAt
 
   agreement Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
   company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)

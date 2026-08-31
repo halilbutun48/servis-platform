@@ -253,6 +253,8 @@
     "check:dataintegrityandrecovery01": "node backend/scripts/data_integrity_and_recovery_01_check.js",
     "check:databasebackupretentionandintegrity01": "node backend/scripts/database_backup_retention_and_integrity_01_check.js",
     "accept:databasebackupretentionandintegrity01": "node backend/scripts/database_backup_retention_and_integrity_01_acceptance.mjs",
+    "check:databasemigrationbaselineandliveadoption01": "node backend/scripts/database_migration_baseline_and_live_adoption_01_check.js",
+    "accept:databasemigrationbaselineandliveadoption01": "node backend/scripts/database_migration_baseline_and_live_adoption_01.mjs",
     "check:roledataisolationredteam01": "node backend/scripts/role_data_isolation_redteam_01_check.js",
     "check:securitykvkkfinal01": "node backend/scripts/security_kvkk_final_01_check.js",
     "check:auditlogandapprovaltrace01": "node backend/scripts/audit_log_and_approval_trace_01_check.js",

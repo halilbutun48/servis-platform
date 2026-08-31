@@ -83,6 +83,74 @@ jobs:
           path: artifacts/lint/web_lint_latest.txt
           if-no-files-found: error
 
+  prisma-migration-baseline:
+    name: Prisma migration baseline and live-adoption validation
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: prisma_ci
+          POSTGRES_PASSWORD: prisma_ci
+          POSTGRES_DB: prisma_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prisma_ci -d prisma_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm --prefix backend ci
+
+      - name: Generate the canonical Prisma client
+        run: npm --prefix backend run prisma:generate
+
+      - name: Deploy only through the canonical owner to isolated PostgreSQL
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+          MIGRATION_APPROVAL: APPROVED
+          MIGRATION_BACKUP_ID: ci-isolated-postgres
+          MIGRATION_CHANGE_CONTROL_ID: github-${{ github.run_id }}
+        run: npm run prisma:migrate:deploy
+
+      - name: Prove explicit migration status and generation integrity
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+        run: |
+          npm run prisma:migrate:status
+          npm run prisma:verify
+
+      - name: Record current-head CI migration validation
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://prisma_ci:prisma_ci@127.0.0.1:5432/prisma_ci?schema=public
+          PRISMA_SOURCE_HEAD: ${{ github.sha }}
+        run: npm run prisma:migration:ci
+
+      - name: Upload migration validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma-migration-baseline-evidence
+          path: backend/artifacts/data-integrity/DATABASE_MIGRATION_BASELINE_AND_LIVE_ADOPTION_01/ci.json
+          if-no-files-found: error
+
   shareable-export:
     needs: repo-verification
     runs-on: windows-latest
