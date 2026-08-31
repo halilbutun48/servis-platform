@@ -153,8 +153,26 @@ function gitFileAtRevision(revision, relativePath) {
 function schemaRegressionBaselineRevision() {
   const dirty = run("git", ["status", "--short", "--", "backend/prisma/schema/commercial.prisma"]);
   if (dirty.status === 0 && dirty.stdout.trim()) return { revision: currentHead(), basis: "pre-commit working-tree baseline" };
-  const parent = gitText(["rev-parse", "HEAD^"]).trim();
-  return { revision: parent, basis: "candidate commit parent baseline" };
+  const revisions = gitText(["rev-list", "--first-parent", "HEAD"])
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const pre13Revision = revisions.find((revision) => {
+    let source;
+    try {
+      source = gitFileAtRevision(revision, "backend/prisma/schema/commercial.prisma");
+    } catch {
+      return false;
+    }
+    return ["HakedisRecord", "InvoiceRecord"].every((modelName) => {
+      const model = source.match(new RegExp(`(model\\s+${modelName}\\s+\\{[\\s\\S]*?^\\})`, "m"))?.[1];
+      return model
+        && (model.match(/updatedAt\s+DateTime\s+@updatedAt/g) || []).length === 1
+        && (model.match(/updatedAt\s+DateTime\s+@default\(now\(\)\)\s+@updatedAt/g) || []).length === 0;
+    });
+  });
+  if (!pre13Revision) throw new Error("unable to locate the pre-#13 schema baseline in first-parent history");
+  return { revision: pre13Revision, basis: "nearest first-parent pre-#13 schema baseline" };
 }
 
 function proveSchemaRegressionAgainstPre13() {
