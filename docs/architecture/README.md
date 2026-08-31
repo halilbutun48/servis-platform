@@ -1,5 +1,7 @@
 # Architecture docs
 
+The canonical engineering entrypoint is [../INDEX.md](../INDEX.md). This folder contains the architecture and codebase maps owned by #16.
+
 Bu klasor, PERSONEL SERVIS V1 icin mimari ve is akisi dokumanlarini toplar.
 
 ## Giris noktasi

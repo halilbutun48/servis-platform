@@ -1,5 +1,9 @@
 # NEXT BACKLOG V1
 
+## Current frontier (2026-08-31)
+
+The current engineering entrypoint is [docs/INDEX.md](INDEX.md). #1–#14 are closed/proven, #16 is the documentation architecture/index milestone, #17 and #15 are not started. The planning notes below are retained as historical compatibility material and do not replace the current frontier.
+
 Tarih: 2026-04-19
 Timezone: Europe/Istanbul
 

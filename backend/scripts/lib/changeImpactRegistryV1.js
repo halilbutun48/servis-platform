@@ -31,6 +31,7 @@ export const CHANGE_IMPACT_VALID_OWNER_CATEGORIES = Object.freeze([
   "CURRENT_HEAD_APPROVED_DIFF",
   "CANONICAL_PROVENANCE_OWNED",
   "CANONICAL_PRISMA_SCHEMA_OWNED",
+  "CANONICAL_DOCUMENTATION_OWNED",
   "IDENTITY_OWNER_MISSING",
 ]);
 
@@ -59,8 +60,22 @@ export const CHANGE_IMPACT_CANONICAL_OWNER_REFERENCES = Object.freeze({
   CURRENT_HEAD_APPROVED_DIFF: "backend/scripts/lib/currentHeadScopePolicy.js#CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF",
   CANONICAL_PROVENANCE_OWNED: "backend/scripts/lib/canonicalProvenanceRegistry.js#getCanonicalProvenanceRecord",
   CANONICAL_PRISMA_SCHEMA_OWNED: "backend/scripts/prisma_schema_modularization_01_check.js",
+  CANONICAL_DOCUMENTATION_OWNED: "docs/INDEX.md#documentation-change-impact",
   IDENTITY_OWNER_MISSING: "IDENTITY_OWNER_MISSING",
 });
+
+const PROJECT_DOCUMENTATION_ARCHITECTURE_V1_PATHS = new Set([
+  "docs/INDEX.md",
+  "docs/PROJECT_DOCUMENTATION_ARCHITECTURE_AND_CODEBASE_INDEX_01.json",
+  "docs/architecture/ENGINEERING_ARCHITECTURE.md",
+  "docs/architecture/CODEBASE_INDEX.md",
+  "docs/roles/ROLE_CONTEXT_AND_TENANT_MODEL.md",
+  "docs/domains/CAPABILITY_OWNERSHIP_MAP.md",
+  "docs/operations/OPERATIONS_RECOVERY_AND_INCIDENT_INDEX.md",
+  "docs/testing/TEST_CHECK_AND_CI_OWNERSHIP_MAP.md",
+  "docs/integrations/INTEGRATION_OWNERSHIP_MAP.md",
+  "docs/adr/INDEX.md",
+]);
 
 function normalizePath(value) {
   return String(value || "")
@@ -452,6 +467,24 @@ export function getChangeImpactForPath(relPath) {
       impactLevel: 4,
       requiresFullRelease: true,
       notes: "Exact #11 modular schema boundary; validate, parity-check, then run the #10 generation contract.",
+    });
+  }
+
+  if (PROJECT_DOCUMENTATION_ARCHITECTURE_V1_PATHS.has(normalized)) {
+    return Object.freeze({
+      sourcePath: normalized,
+      primaryDomain: "DOCS_REGISTRY",
+      secondaryDomains: Object.freeze(["TOOLING"]),
+      identityOwnerCategory: "CANONICAL_DOCUMENTATION_OWNED",
+      identityOwnerRef: CHANGE_IMPACT_CANONICAL_OWNER_REFERENCES.CANONICAL_DOCUMENTATION_OWNED,
+      identityModel: "project-documentation-architecture-and-codebase-index-01",
+      currentHeadPolicyState: "ABSENT",
+      protectionClasses: Object.freeze(["PROVENANCE"]),
+      semanticOwnerGroups: Object.freeze(["DOCUMENTATION_INDEX", "OWNER_PATH_INTEGRITY", "CURRENT_FUTURE_SEPARATION"]),
+      smokeSuites: Object.freeze([]),
+      impactLevel: 3,
+      requiresFullRelease: true,
+      notes: "Exact #16 canonical documentation boundary; validate owner/path/link integrity and current-versus-future status.",
     });
   }
 

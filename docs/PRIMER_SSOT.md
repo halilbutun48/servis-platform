@@ -2,6 +2,11 @@
 
 Bu primer yaşayan hattın resmi özetidir.
 
+## Current frontier (2026-08-31)
+
+- #1–#14 closed/proven; #16 is the current documentation architecture and codebase-index milestone.
+- #17 and #15 are not started. The canonical engineering navigation is [docs/INDEX.md](INDEX.md).
+
 ## Güncel baz
 - Repo: `servis-platform`
 - Branch: `m90d1_web_lint_inventory`
@@ -95,7 +100,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `SEFER-ABI-TURKISH-USER-FACING-TERMINOLOGY-AUDIT-01` Sefer Abi'nin kullanıcıya görünen cevaplarında İngilizce/teknik/sistem içi terminolojiyi sade Türkçe kullanıcı diliyle değiştirir; `check:seferabiturkishterminology01`, `docs/SEFER_ABI_TURKISH_USER_FACING_TERMINOLOGY_01.md`, `backend/src/ai/chat/helpComposer.js` ve `backend/src/ai/chat/seferAbiReasoningAssistant.js` ile yaşar; `ETA`, `GPS`, `offline`, `stale`, `fallback`, `selected record`, `root cause`, `diagnostic`, `risk scoring`, `task-state`, `intent`, `chip`, `workflow`, `screen purpose`, `next best action`, `safe alternative`, `active segment`, `completed segment`, `live decision`, `route binding`, `status`, `warning`, `error` ve `blocker` gibi görünür sızıntıları engeller; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - `SEFER-ABI-TURKISH-USER-FACING-LANGUAGE-AUDIT-01` Sefer Abi'nin tüm rol ve yüzeylerinde kullanıcıya görünen metinleri sade Türkçe tutan audit katmanıdır; `check:seferabiturkishuserfacinglanguage01`, `docs/SEFER_ABI_TURKISH_USER_FACING_LANGUAGE_01.md` ve `backend/src/ai/chat/helpComposer.js` ile yaşar; `Free-to-operate`, `root cause`, `diagnostic`, `risk scoring`, `workflow`, `screen purpose`, `next best action`, `current step`, `fallback`, `offline`, `stale`, `ETA`, `warning`, `error` ve `blocker` gibi görünür sızıntıları engeller; runtime AI action, tool execution, write-action dispatcher, DB write, route apply ve fake success açmaz.
 - Tarihsel temiz anchor: `M0->M79`
-- Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
+- Sonraki kontrollü iş: `#16 PROJECT-DOCUMENTATION-ARCHITECTURE-AND-CODEBASE-INDEX-01`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
 - M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 / M90C.9 kapanmıştır; `M91`, `M92` ve `M93` ile birlikte green / compatibility çizgisinde korunur.
 - M94-D2 / M94-D3 — admin audit + payment export polish ve settlement ledger CSV temizliği görünürlük kaydıdır.

@@ -3,6 +3,7 @@
 <!-- TOOLS_HYGIENE_CHECK_MARKER_V1 -->
 
 ## Kanonik komutlar
+- Engineering knowledge center: `docs/INDEX.md`
 - Tek repo kontrol zinciri: `npm run verify:repo`
 - PowerShell wrapper: `tools\check-repo.ps1 -Phase all`
 - Faz listeleme: `node backend\scripts\run_repo_check_chain.js --list`

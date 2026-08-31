@@ -63,8 +63,8 @@ async function main() {
   must(changeImpactSummary.resolvedOwnerCount === 7, "change impact registry resolved owner count is 7");
   must(changeImpactSummary.missingOwnerCount === 1, "change impact registry missing owner count is 1");
 
-  must(ownershipSummary.count === 201, "check ownership registry count is 201");
-  must(ownershipSummary.checkerPathCount === 199, "check ownership registry unique checker path count is 199");
+  must(ownershipSummary.count === 202, "check ownership registry count is 202");
+  must(ownershipSummary.checkerPathCount === 200, "check ownership registry unique checker path count is 200");
   must(ownershipSummary.multiStepCheckerCount === 2, "check ownership registry multi-step checker count is 2");
   must(ownershipSummary.missingPathResolutionCount === 0, "check ownership registry missing path resolution count is 0");
   must(ownershipSummary.manualOverrideCount === 0, "check ownership registry manual override count is 0");
@@ -115,11 +115,11 @@ async function main() {
   must(pilotPlan.validationMode === "FULL_CHAIN", "pilot plan validation mode is full chain");
   must(pilotPlan.focusable === false, "pilot plan is not focusable");
   must(pilotPlan.unresolvedPaths.length === 0, "pilot plan has no unresolved paths");
-  must(pilotPlan.candidateCheckIds.length === 201, "pilot plan candidate check count is 201");
-  must(pilotPlan.globalCheckIds.length === 23, "pilot plan global check count is 23");
+  must(pilotPlan.candidateCheckIds.length === 202, "pilot plan candidate check count is 202");
+  must(pilotPlan.globalCheckIds.length === 24, "pilot plan global check count is 24");
   must(pilotPlan.domainCheckIds.length === 108, "pilot plan domain check count is 108");
   must(pilotPlan.mixedCheckIds.length === 70, "pilot plan mixed check count is 70");
-  must(pilotPlan.foundationCheckIds.length === 41, "pilot plan foundation check count is 41");
+  must(pilotPlan.foundationCheckIds.length === 42, "pilot plan foundation check count is 42");
   must(pilotPlan.foundationSentinelIds.length === 11, "pilot plan foundation sentinel count is 11");
   must(pilotPlan.invalidatedSmokeSuites.length === 3, "pilot plan smoke suite count is 3");
   must(pilotPlan.releaseChains.length === 1, "pilot plan release chain count is 1");
@@ -153,7 +153,7 @@ async function main() {
     confidence: "DETERMINISTIC_FULL_CHAIN",
     fullChainRequired: true,
     validationMode: "FULL_CHAIN",
-    candidateCount: 191,
+    candidateCount: 192,
     foundationSentinelCount: 11,
     releaseChainCount: 1,
     smokeSuites: ["MOBILE_ALL_ROLES", "ALL_PANELS"],
@@ -179,7 +179,7 @@ async function main() {
     confidence: "DETERMINISTIC_FULL_CHAIN",
     fullChainRequired: true,
     validationMode: "FULL_CHAIN",
-    candidateCount: 187,
+    candidateCount: 188,
     foundationSentinelCount: 11,
     releaseChainCount: 1,
     smokeSuites: ["PREMIUM"],
@@ -205,7 +205,7 @@ async function main() {
     confidence: "DETERMINISTIC_FULL_CHAIN",
     fullChainRequired: true,
     validationMode: "FULL_CHAIN",
-    candidateCount: 186,
+    candidateCount: 187,
     foundationSentinelCount: 11,
     releaseChainCount: 1,
     smokeSuites: ["PREMIUM"],
@@ -231,7 +231,7 @@ async function main() {
     confidence: "DETERMINISTIC_FOCUSED",
     fullChainRequired: false,
     validationMode: "FOCUSED_DRY_RUN",
-    candidateCount: 183,
+    candidateCount: 184,
     foundationSentinelCount: 7,
     releaseChainCount: 0,
     foundationSentinels: [
@@ -251,7 +251,7 @@ async function main() {
     confidence: "DETERMINISTIC_FOCUSED",
     fullChainRequired: false,
     validationMode: "FOCUSED_DRY_RUN",
-    candidateCount: 183,
+    candidateCount: 184,
     foundationSentinelCount: 7,
     releaseChainCount: 0,
     foundationSentinels: [
@@ -271,7 +271,7 @@ async function main() {
     confidence: "DETERMINISTIC_FOCUSED",
     fullChainRequired: false,
     validationMode: "FOCUSED_DRY_RUN",
-    candidateCount: 189,
+    candidateCount: 190,
     foundationSentinelCount: 7,
     releaseChainCount: 0,
     foundationSentinels: [
@@ -291,7 +291,7 @@ async function main() {
     confidence: "DETERMINISTIC_FULL_CHAIN",
     fullChainRequired: true,
     validationMode: "FULL_CHAIN",
-    candidateCount: 184,
+    candidateCount: 185,
     foundationSentinelCount: 11,
     releaseChainCount: 1,
     reasons: ["identity-owner-missing"],
@@ -316,7 +316,7 @@ async function main() {
     confidence: "DETERMINISTIC_FOCUSED",
     fullChainRequired: false,
     validationMode: "FOCUSED_DRY_RUN",
-    candidateCount: 191,
+    candidateCount: 192,
     foundationSentinelCount: 4,
     releaseChainCount: 0,
     foundationSentinels: ["provenance", "quality-gate", "test-quality", "backend-lint"],
@@ -367,11 +367,11 @@ async function main() {
   );
 
   must(
-    pilotPlan.candidateCheckIds.length === 201 &&
-      pilotPlan.globalCheckIds.length === 23 &&
+    pilotPlan.candidateCheckIds.length === 202 &&
+      pilotPlan.globalCheckIds.length === 24 &&
       pilotPlan.domainCheckIds.length === 108 &&
       pilotPlan.mixedCheckIds.length === 70 &&
-      pilotPlan.foundationCheckIds.length === 41,
+      pilotPlan.foundationCheckIds.length === 42,
     "pilot plan aggregated checker counts stay stable",
   );
 

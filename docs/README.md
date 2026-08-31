@@ -1,5 +1,9 @@
 # Docs index
 
+## Engineering entrypoint
+
+- **[INDEX.md](INDEX.md)** — #16 canonical engineering knowledge center, architecture, role, capability, operations, checks and integration navigation
+
 ## Ana SSOT
 - **PRIMER_SSOT.md** — repo gerçeği, ürün tanımı, kapanan işler ve aktif milestone anlamı
 - **STARTPACK_V1.md** — hızlı başlangıç ve değişmez kurallar

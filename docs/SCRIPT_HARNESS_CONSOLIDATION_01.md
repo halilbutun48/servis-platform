@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `470`
+- Toplam package script entry: `471`
 - Toplam executable tracked file: `1350`
-- Combined registry row: `1820`
-- Root/backend/web/mobile package dağılımı: root `289`, backend `930`, web `97`, mobile `201`
+- Combined registry row: `1821`
+- Root/backend/web/mobile package dağılımı: root `290`, backend `930`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `810`
+- NEEDS_REVIEW: `811`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 810 |
+| NEEDS_REVIEW | 811 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -492,6 +492,7 @@ Repo: `servis-platform`
 | root:accept:accountingexportcontract01 | package.json | root | node backend/scripts/accounting_export_and_integration_contract_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-ACCOUNTINGEXPORTCONTRACT-01 |  | Owner or chain unclear |  |
 | root:smoke:accountingexportcontract01 | package.json | root | node backend/scripts/accounting_export_and_integration_contract_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-ACCOUNTINGEXPORTCONTRACT-01 |  | Owner or chain unclear |  |
 | root:check:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
+| root:check:projectdocumentationarchitectureandcodebaseindex01 | package.json | root | node backend/scripts/project_documentation_architecture_and_codebase_index_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PROJECTDOCUMENTATIONARCHITECTUREANDCODEBASEINDEX-01 |  | Owner or chain unclear |  |
 | root:accept:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
 | root:smoke:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
@@ -1403,7 +1404,7 @@ Repo: `servis-platform`
 | supplierOfferCollect.js | backend/src/ai/chat/supplierOfferCollect.js | backend |  | review | NEEDS_REVIEW |  | SUPPLIER-OFFER-COLLECT |  | Owner or chain unclear |  |
 | copyOutputs.js | backend/src/ai/jobGuide/copyOutputs.js | backend |  | review | NEEDS_REVIEW |  | COPY-OUTPUTS |  | Owner or chain unclear |  |
 | glossary.js | backend/src/ai/jobGuide/glossary.js | backend |  | review | NEEDS_REVIEW |  | GLOSSARY |  | Owner or chain unclear |  |
-| index.js | backend/src/ai/jobGuide/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
+| index.js | backend/src/ai/jobGuide/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | assignmentReadinessGuide.js | backend/src/ai/jobGuide/jobs/assignmentReadinessGuide.js | backend |  | review | NEEDS_REVIEW |  | ASSIGNMENT-READINESS-GUIDE |  | Owner or chain unclear |  |
 | buttonActionGuide.js | backend/src/ai/jobGuide/jobs/buttonActionGuide.js | backend |  | review | NEEDS_REVIEW |  | BUTTON-ACTION-GUIDE |  | Owner or chain unclear |  |
 | gpsSignalDiagnosisGuide.js | backend/src/ai/jobGuide/jobs/gpsSignalDiagnosisGuide.js | backend |  | review | NEEDS_REVIEW |  | GPS-SIGNAL-DIAGNOSIS-GUIDE |  | Owner or chain unclear |  |
@@ -1471,7 +1472,7 @@ Repo: `servis-platform`
 | autoReachedQueueNotification.js | backend/src/jobs/autoReachedQueueNotification.js | backend |  | review | NEEDS_REVIEW |  | AUTO-REACHED-QUEUE-NOTIFICATION |  | Owner or chain unclear |  |
 | autoReachedQueueProof.js | backend/src/jobs/autoReachedQueueProof.js | backend |  | review | NEEDS_REVIEW |  | AUTO-REACHED-QUEUE-PROOF |  | Owner or chain unclear |  |
 | gpsStaleMonitor.js | backend/src/jobs/gpsStaleMonitor.js | backend |  | review | NEEDS_REVIEW |  | GPS-STALE-MONITOR |  | Owner or chain unclear |  |
-| index.js | backend/src/jobs/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
+| index.js | backend/src/jobs/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | maintenanceMonitor.js | backend/src/jobs/maintenanceMonitor.js | backend |  | review | NEEDS_REVIEW |  | MAINTENANCE-MONITOR |  | Owner or chain unclear |  |
 | retentionCleanup.js | backend/src/jobs/retentionCleanup.js | backend |  | review | NEEDS_REVIEW |  | RETENTION-CLEANUP |  | Owner or chain unclear |  |
 | routeLearnMonitor.js | backend/src/jobs/routeLearnMonitor.js | backend |  | review | NEEDS_REVIEW |  | ROUTE-LEARN-MONITOR |  | Owner or chain unclear |  |
@@ -1524,9 +1525,9 @@ Repo: `servis-platform`
 | ssotAlignmentManifest.js | backend/src/ops/ssotAlignmentManifest.js | backend |  | review | NEEDS_REVIEW |  | SSOT-ALIGNMENT-MANIFEST |  | Owner or chain unclear |  |
 | trustQualityManifest.js | backend/src/ops/trustQualityManifest.js | backend |  | review | NEEDS_REVIEW |  | TRUST-QUALITY-MANIFEST |  | Owner or chain unclear |  |
 | prisma.js | backend/src/prisma.js | backend | backend:bootstrap, backend:prisma:generate, backend:prisma:modularization:acceptance, backend:prisma:modularization:check, backend:prisma:verify, backend:seed | review | NEEDS_REVIEW |  | PRISMA |  | Owner or chain unclear |  |
-| index.js | backend/src/redis/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
+| index.js | backend/src/redis/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | miniRedis.js | backend/src/redis/miniRedis.js | backend |  | review | NEEDS_REVIEW |  | MINI-REDIS |  | Owner or chain unclear |  |
-| index.js | backend/src/region/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
+| index.js | backend/src/region/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | operationRegion.js | backend/src/region/operationRegion.js | backend |  | review | NEEDS_REVIEW |  | OPERATION-REGION |  | Owner or chain unclear |  |
 | ownership.js | backend/src/region/ownership.js | backend | backend:check:checkownershipregistryv1 | review | NEEDS_REVIEW |  | OWNERSHIP |  | Owner or chain unclear |  |
 | accountingExports.js | backend/src/routes/accountingExports.js | backend |  | review | NEEDS_REVIEW |  | ACCOUNTING-EXPORTS |  | Owner or chain unclear |  |
@@ -1564,7 +1565,7 @@ Repo: `servis-platform`
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:securitykvkkfinal01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | backend:prisma:migrate:deploy, backend:prisma:migrate:status, backend:prisma:migration:acceptance, backend:prisma:migration:ci, mobile:check:m82.5, mobile:check:m95d, root:accept:databasemigrationbaselineandliveadoption01, root:accept:externalcostdataproviderfreshness01, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:databasemigrationbaselineandliveadoption01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:projectdocumentationarchitectureandcodebaseindex01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend | root:check:observabilitymonitoringalerting01 | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
@@ -1591,7 +1592,7 @@ Repo: `servis-platform`
 | company.js | backend/src/routes/shifts/company.js | backend | root:check:companybudgetandservicecost01, root:check:cop04afix03, root:check:cop04bfix02, root:check:uxcompanyagreementsmobileparity01, root:check:uxcompanymobileactionclarity01, root:check:uxcompanyopspaneltabs01, root:check:uxcompanypanelsfinalpolish01, root:check:uxcompanypanelssmoke01, root:check:uxcompanypersonelaccessmobileparity01, root:check:uxcompanyqualitytabs01, root:check:uxcompanyshiftstabs01, root:check:uxroomcompanyshiftsmobilecardfix01 | review | NEEDS_REVIEW |  | COMPANY |  | Owner or chain unclear |  |
 | driver.js | backend/src/routes/shifts/driver.js | backend | backend:m95e20check, mobile:check:m48, mobile:check:m49.1, mobile:check:m95b, mobile:check:m95c, mobile:check:m95e12, mobile:check:m95e16, mobile:check:m95e19, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e22a, mobile:check:m95e22b, mobile:check:m95e22c, mobile:check:m95e23a, mobile:check:m96a, mobile:check:m96d, root:check:boardingops01c, root:check:cop04bfix03, root:check:driverflowfinal01, root:check:roomvehicledriveruppercase01, root:check:uxroomdrivervehiclelinkdedup01 | review | NEEDS_REVIEW |  | DRIVER |  | Owner or chain unclear |  |
 | helpers.js | backend/src/routes/shifts/helpers.js | backend |  | review | NEEDS_REVIEW |  | HELPERS |  | Owner or chain unclear |  |
-| index.js | backend/src/routes/shifts/index.js | backend |  | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
+| index.js | backend/src/routes/shifts/index.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | INDEX |  | Owner or chain unclear |  |
 | people.js | backend/src/routes/shifts/people.js | backend |  | review | NEEDS_REVIEW |  | PEOPLE |  | Owner or chain unclear |  |
 | room.js | backend/src/routes/shifts/room.js | backend | backend:m97acheck, root:check:cop04bfix01, root:check:cop04bfix05, root:check:roomprofitabilityandquotefloor01, root:check:roomvehicledriveruppercase01, root:check:uxpremiumcriticalfixroom01, root:check:uxroomcompanyshiftsmobilecardfix01, root:check:uxroomdrivervehiclelinkdedup01, root:check:uxroomopspaneltabs01, root:check:uxroomopsrelationshippolish01, root:check:uxroompanelclarity01, root:check:uxroomshiftsdensitydedup01, root:check:uxroomshiftstabs01, root:check:uxroomvehiclestelematicsfix | review | NEEDS_REVIEW |  | ROOM |  | Owner or chain unclear |  |
 | roomReassignNotifications.js | backend/src/routes/shifts/roomReassignNotifications.js | backend |  | review | NEEDS_REVIEW |  | ROOM-REASSIGN-NOTIFICATIONS |  | Owner or chain unclear |  |

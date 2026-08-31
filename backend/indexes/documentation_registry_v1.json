@@ -2,13 +2,13 @@
   "schemaVersion": "docs-registry-v1",
   "generatedAt": "2026-08-20T14:53:21.500Z",
   "repo": {
-    "head": "83a5c9b2ef80bca990938a5208c0c21f4b056572",
+    "head": "14c217978e6a5d59eafcd1bd8259f343b979a70f",
     "branch": "m90d1_web_lint_inventory"
   },
   "census": {
-    "total": 1354,
-    "tracked": 645,
-    "untracked": 709
+    "total": 1365,
+    "tracked": 647,
+    "untracked": 718
   },
   "discovery": {
     "description": "Repository documentation-like artifact census, path-exact and deterministic.",
@@ -33,7 +33,7 @@
   "summaryCounts": {
     "classificationCounts": {
       "CANONICAL_SSOT": 5,
-      "ACTIVE_DOMAIN_DOC": 154,
+      "ACTIVE_DOMAIN_DOC": 165,
       "REFERENCE_POINTER": 27,
       "HISTORICAL_EVIDENCE": 464,
       "DERIVED_GENERATED": 704,
@@ -44,12 +44,12 @@
       "DUPLICATE": 0,
       "ORPHAN": 0
     },
-    "archiveBlocked": 396,
-    "checkerDependent": 279,
+    "archiveBlocked": 406,
+    "checkerDependent": 289,
     "generated": 704,
-    "activeCanonical": 159,
+    "activeCanonical": 170,
     "archiveDispositionCounts": {
-      "KEEP_ACTIVE": 159,
+      "KEEP_ACTIVE": 170,
       "KEEP_GENERATED_EVIDENCE": 704,
       "KEEP_POINTER": 27,
       "KEEP_IN_ARCHIVE": 464
@@ -62,12 +62,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "ROOT",
       "canonicalOwner": "README.md",
-      "consumerCount": 64,
+      "consumerCount": 66,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=64"
+      "notesStatusReason": "canonical anchor; consumerCount=66"
     },
     {
       "path": "artifacts/backups/servisdb_backup_20260425-155523_stderr.txt",
@@ -9045,12 +9045,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "BACKEND",
       "canonicalOwner": "backend/README.md",
-      "consumerCount": 5,
+      "consumerCount": 6,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=5"
+      "notesStatusReason": "active domain doc; consumerCount=6"
     },
     {
       "path": "backend/artifacts/browser-smoke/HAKEDIS_INVOICE_RECONCILIATION_PREVIEW_01/report.json",
@@ -9487,12 +9487,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/CHECKLIST_SSOT.md",
-      "consumerCount": 27,
+      "consumerCount": 28,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=27"
+      "notesStatusReason": "canonical anchor; consumerCount=28"
     },
     {
       "path": "docs/COMPANY_BUDGET_AND_SERVICE_COST_01.md",
@@ -10080,6 +10080,19 @@
       "notesStatusReason": "active domain doc; consumerCount=3"
     },
     {
+      "path": "docs/DATABASE_MIGRATION_BASELINE_AND_LIVE_ADOPTION_01.md",
+      "tracked": true,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/DATABASE_MIGRATION_BASELINE_AND_LIVE_ADOPTION_01.md",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=0"
+    },
+    {
       "path": "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
       "tracked": true,
       "classification": "HISTORICAL_EVIDENCE",
@@ -10351,6 +10364,19 @@
       "archiveBlocked": true,
       "replacement": null,
       "notesStatusReason": "active domain doc; consumerCount=7"
+    },
+    {
+      "path": "docs/INDEX.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/INDEX.md",
+      "consumerCount": 10,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=10"
     },
     {
       "path": "docs/INVITE_BASED_MEMBERSHIP_01.md",
@@ -11450,12 +11476,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/MILESTONE_REGISTRY_V1.md",
-      "consumerCount": 67,
+      "consumerCount": 68,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=67"
+      "notesStatusReason": "canonical anchor; consumerCount=68"
     },
     {
       "path": "docs/MILESTONE_VE_TICARI_OMURGA_HIZA_REHBERI_V2.md",
@@ -11515,12 +11541,12 @@
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/NEXT_BACKLOG_V1.md",
-      "consumerCount": 39,
+      "consumerCount": 41,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "active domain doc; consumerCount=39"
+      "notesStatusReason": "active domain doc; consumerCount=41"
     },
     {
       "path": "docs/NOTIFICATION_PAYLOAD_STANDARD.md",
@@ -11840,12 +11866,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 182,
+      "consumerCount": 184,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=182"
+      "notesStatusReason": "canonical anchor; consumerCount=184"
     },
     {
       "path": "docs/PRISMA_CROSS_PLATFORM_CLIENT_HARDENING_01.md",
@@ -11924,6 +11950,19 @@
       "archiveBlocked": true,
       "replacement": null,
       "notesStatusReason": "active domain doc; consumerCount=18"
+    },
+    {
+      "path": "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01.md",
+      "tracked": true,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01.md",
+      "consumerCount": 3,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=3"
     },
     {
       "path": "docs/PUBLIC_LANDING_01.md",
@@ -12048,12 +12087,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCS",
       "canonicalOwner": "docs/README.md",
-      "consumerCount": 3,
+      "consumerCount": 4,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=3"
+      "notesStatusReason": "reference pointer; consumerCount=4"
     },
     {
       "path": "docs/REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md",
@@ -13829,12 +13868,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
-      "consumerCount": 90,
+      "consumerCount": 93,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=90"
+      "notesStatusReason": "reference pointer; consumerCount=93"
     },
     {
       "path": "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
@@ -13842,12 +13881,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
-      "consumerCount": 217,
+      "consumerCount": 219,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=217"
+      "notesStatusReason": "reference pointer; consumerCount=219"
     },
     {
       "path": "docs/SECURITY_KVKK_FINAL_01.md",
@@ -15059,17 +15098,56 @@
       "notesStatusReason": "historical evidence artifact; consumerCount=0"
     },
     {
+      "path": "docs/adr/INDEX.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/adr/INDEX.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
+      "path": "docs/architecture/CODEBASE_INDEX.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/architecture/CODEBASE_INDEX.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
+      "path": "docs/architecture/ENGINEERING_ARCHITECTURE.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/architecture/ENGINEERING_ARCHITECTURE.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
       "path": "docs/architecture/README.md",
       "tracked": true,
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/architecture/README.md",
-      "consumerCount": 2,
+      "consumerCount": 3,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=2"
+      "notesStatusReason": "reference pointer; consumerCount=3"
     },
     {
       "path": "docs/architecture/workflows/WORKFLOW_OVERVIEW_V1.md",
@@ -15148,6 +15226,45 @@
       "archiveBlocked": false,
       "replacement": null,
       "notesStatusReason": "active domain doc; consumerCount=0"
+    },
+    {
+      "path": "docs/domains/CAPABILITY_OWNERSHIP_MAP.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/domains/CAPABILITY_OWNERSHIP_MAP.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
+      "path": "docs/integrations/INTEGRATION_OWNERSHIP_MAP.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/integrations/INTEGRATION_OWNERSHIP_MAP.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
+      "path": "docs/operations/OPERATIONS_RECOVERY_AND_INCIDENT_INDEX.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/operations/OPERATIONS_RECOVERY_AND_INCIDENT_INDEX.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
     },
     {
       "path": "docs/overlays/INDEX.md",
@@ -17321,6 +17438,32 @@
       "notesStatusReason": "historical evidence artifact; consumerCount=0"
     },
     {
+      "path": "docs/roles/ROLE_CONTEXT_AND_TENANT_MODEL.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/roles/ROLE_CONTEXT_AND_TENANT_MODEL.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
+      "path": "docs/testing/TEST_CHECK_AND_CI_OWNERSHIP_MAP.md",
+      "tracked": false,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/testing/TEST_CHECK_AND_CI_OWNERSHIP_MAP.md",
+      "consumerCount": 2,
+      "checkerDependent": true,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
       "path": "mobile/M81_RELEASE_ENV_RUNBOOK.md",
       "tracked": true,
       "classification": "HISTORICAL_EVIDENCE",
@@ -17365,12 +17508,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "TOOLS",
       "canonicalOwner": "tools/README.md",
-      "consumerCount": 35,
+      "consumerCount": 36,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=35"
+      "notesStatusReason": "reference pointer; consumerCount=36"
     },
     {
       "path": "tools/STABLE_TO.txt",
@@ -17638,12 +17781,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "WEB",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 1,
+      "consumerCount": 3,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=1"
+      "notesStatusReason": "reference pointer; consumerCount=3"
     },
     {
       "path": "web/scripts/ui-smoke.md",

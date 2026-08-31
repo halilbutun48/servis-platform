@@ -40,11 +40,13 @@ const redteamTrackedCleanPaths = [
       path !== 'docs/SCRIPT_HARNESS_CONSOLIDATION_01.md' &&
       path !== 'docs/PRIMER_SSOT.md' &&
       path !== 'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md' &&
-      path !== 'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md'
+      path !== 'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md' &&
+      path !== 'web/README.md'
   ),
   'backend/scripts/current_head_scope_policy_01_check.js',
 ];
 const redteamAuthorizedFollowupPaths = [
+  'package.json',
   'backend/scripts/excel_to_route_readiness_redteam_01_check.js',
   'backend/scripts/ux_live_panel_premium_smoke_01_check.js',
   'backend/scripts/lib/currentHeadScopePolicy.js',
@@ -53,6 +55,7 @@ const redteamAuthorizedFollowupPaths = [
   'docs/PRIMER_SSOT.md',
   'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md',
   'docs/REPO_CAPABILITY_AUDIT_AND_CANONICAL_ROADMAP_01.md',
+  'web/README.md',
 ];
 const exactApprovedConcurrentCanonicalEntries = CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF;
 

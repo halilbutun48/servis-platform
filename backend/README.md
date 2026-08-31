@@ -1,5 +1,7 @@
 # backend
 
+For the current engineering map and ownership boundaries, start at [../docs/INDEX.md](../docs/INDEX.md).
+
 - Express REST + Socket.IO
 - Prisma (PostgreSQL)
 

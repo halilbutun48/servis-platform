@@ -1,5 +1,14 @@
 # MILESTONE REGISTRY V1
 
+## Current frontier (2026-08-31)
+
+- `#1–#14` — closed/proven according to their current immutable closure or operational evidence.
+- `#16 PROJECT-DOCUMENTATION-ARCHITECTURE-AND-CODEBASE-INDEX-01` — next / not started at entry; its canonical entrypoint is `docs/INDEX.md`.
+- `#17` — not started / next locked owner after #16.
+- `#15` — not started / locked terminology owner.
+
+The older ordering below is retained as historical compatibility context. It is not the current frontier and must not override `docs/INDEX.md`, `docs/PRIMER_SSOT.md`, or current-head evidence.
+
 ## 1) Tarihsel kapatılan resmi hatlar
 - `M59 - gozlemleme + saha teshis - open historical gate`
 - `M60 - saha acceptance merkezi - green`
@@ -34,7 +43,7 @@
 - `M88 - settlement operasyon masasi - green`
 - `M89 - settlement mutabakat masasi - green`
 
-## 3) Sonraki resmi sira
+## 3) Historical compatibility ordering (not current frontier)
 - `#3 HAKEDIS-INVOICE-RECONCILIATION-PREVIEW-01 - green / immutable closure`
   - amac: sözleşme, operasyon kanıtı, hakediş ve fatura verisini dönem bazında salt-okunur mutabakat önizlemesi ve açıklaması olarak karşılaştırmak
   - komut: `npm run check:hakedisinvoicereconciliationpreview01` ve gerçek kabul için `npm run accept:hakedisinvoicereconciliationpreview01`

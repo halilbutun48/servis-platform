@@ -5,6 +5,7 @@
 SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik operasyon kuran, canlı GPS ve kanıtla servisi denetleyen, kaliteye göre hakedişi güvenli önizleyen ve yapay zekâ ile maliyet/saha risklerini önceden yakalayan kurumsal servis operasyon platformudur.
 
 ## Hızlı referans
+- Engineering knowledge center: [docs/INDEX.md](docs/INDEX.md)
 - Primer snapshot: `tools/PRIMER_SNAPSHOT.md`
 - Primer SSOT: `docs/PRIMER_SSOT.md`
 - Checklist SSOT: `docs/CHECKLIST_SSOT.md`
@@ -24,7 +25,7 @@ SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik opera
 - `autoReachedQueue` minimal safe queue'dur; Redis down / worker crash / handoff sınırları ayrıca runbook ile belgelenir.
 - Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`
 
-## Güncel dürüst durum (2026-04-19 gece)
+## Historical baseline snapshot (2026-04-19 gece)
 - Repo: `servis-platform`
 - Branch: `m90d1_web_lint_inventory`
 - Güncel çalışma notu: `verify:repo`, `verify:ci`, `verify:final` ve `pack_living` yeşildir.
@@ -41,6 +42,10 @@ SeferPakt, servis tedarikini buluşturan, sözleşmeden vardiyaya otomatik opera
 - State-first kuralı geçerlidir: önce `tools/repo_contract_state.json`, sonra markdown anlatımı okunur.
 - Parent Access / Veli Erişimi akışı artık legacy auth invite değildir; öğrenci + süre + erişim linki + erişim kodu + PIN mantığıyla çalışır.
 - Ürün kodu geri alınmaz; pack/check/runbook/docs yeni canonical gerçeğe uydurulur.
+
+## Current engineering frontier (2026-08-31)
+- #1–#14 closed/proven according to current milestone evidence; #16 documentation architecture and codebase index is the current next work.
+- #17 and #15 are not started. See [docs/INDEX.md](docs/INDEX.md) for current ownership and future boundaries.
 
 ## Kanonik komutlar
 - Tek repo kontrol zinciri: `npm run verify:repo`
