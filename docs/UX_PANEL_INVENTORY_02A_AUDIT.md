@@ -19,7 +19,7 @@ Tarama kapsamı:
 Özet envanter:
   - `128` panel-related JSX dosyası: `web/src/panels/**/*.jsx` (commercial shift card presentation owner ve muhasebe dışa aktarım paneli dahil)
 - `64` route-backed unique screen component: `web/src/App.jsx` lazy import yüzeyi
-- `107` gerçek route surface + `/` root redirect ile `108` unique route literal
+- `108` gerçek route surface + `/` root redirect ile `109` unique route literal
 
 ### Super Admin (20)
 - `/superadmin`
@@ -41,7 +41,8 @@ Tarama kapsamı:
 - `/superadmin/operation-verification`
 - `/superadmin/copilot`
 
-### Room / Oda (15)
+### Room / Oda (16)
+- `/room`
 - `/room/reports`
 - `/room/operation-health`
 - `/room/map`
