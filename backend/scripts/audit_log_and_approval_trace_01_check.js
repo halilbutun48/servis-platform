@@ -265,7 +265,7 @@ const terminologyPresentationEntries = [
   { path: "web/src/components/public/PublicLeadCaptureModal.jsx", sha256: "CDEA6F178FADE481C7493D7120D09A8473941277F7A5A416789D94A9C52C008E" },
   { path: "web/src/copilot/screenRegistry.js", sha256: "8DBD885C95760A7AF22547222E33FDE559662EB70D8A981DBC92161711B93463" },
   { path: "web/src/layout/AppShell.jsx", sha256: "0F5FACA46B7B87B1EE02B977C17CE1B215B261CB2AE46A7DB93C9467EBDE7642" },
-  { path: "web/src/layout/NavDock.jsx", sha256: "AE535CA9FAEE94296FA4321FCCB37ECD69436BA6A4C0D4F238FE01C0B9B5A2A8" },
+  { path: "web/src/layout/NavDock.jsx", sha256: "13B8D58A5A7DE358EDC7E7D9C0D6B9C54F05A51394E2F5DF72DF6307D7D13D75" },
   { path: "web/src/panels/company/AgreementWizard.jsx", sha256: "C4A8E949F5E6D08BBBD4377E4DAC675E157F93AB5E3F14DADC11996C212B5D69" },
   { path: "web/src/panels/company/AgreementsPanel.jsx", sha256: "E2CDE19CAAC5DA1F66A34DF9366CBFD1775A3D93135421E2A232C6B344C01385" },
   { path: "web/src/panels/company/CommercialFlowPanel.jsx", sha256: "4A6203A2E00491F212244661AE1D3C6927D016C696CD58E2E4A6E515D59B47C7" },
@@ -394,11 +394,31 @@ const auditDocWorktreeEntries = [
 ];
 const auditDocWorktreeShas = buildExpectedShaMap(auditDocWorktreeEntries);
 
+// #14 audit/closure files are an exact, bounded scope. They are allowed here
+// because the audit adds the School → Parent Access closure and its evidence;
+// this must not become a broad working-tree exception.
+const projectGapReadinessExactPaths = new Set(
+  [
+    "backend/scripts/project_wide_gap_and_release_readiness_audit_01_check.js",
+    "backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs",
+    "backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs",
+    "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01.md",
+    "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_CAPABILITY_MATRIX.json",
+    "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json",
+    "package.json",
+    "tools/check_step06_repo_contract.ps1",
+  ].map((value) => normalizePath(value)),
+);
+
 function classifyDirtyPath(file, context) {
   const normalized = normalizePath(file);
 
   if (normalized === context.selfPath) {
     return { category: "SELF_AUDIT_APPROVAL_GUARD" };
+  }
+
+  if (projectGapReadinessExactPaths.has(normalized)) {
+    return { category: "PROJECT_GAP_READINESS_14" };
   }
 
   if (isBatch13FoundationOwnerPath(normalized)) {
@@ -1126,6 +1146,7 @@ function main() {
         case "AUDIT_APPROVAL_OWNED_PRODUCT":
         case "APPROVED_TERMINOLOGY_PRESENTATION":
         case "ROLE_TENANT_AUTH_OWNED_PRODUCT":
+        case "PROJECT_GAP_READINESS_14":
           break;
         case "ROUTE":
         case "SERVICE":

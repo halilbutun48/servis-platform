@@ -418,6 +418,20 @@ const securityOwnedExactPaths = new Set(
   ].map((value) => normalizePath(value)),
 );
 
+// #14 audit/closure files are exact, bounded governance and acceptance scope.
+// Keep this list path-specific so new unrelated files cannot enter the security
+// guard's approved working-tree categories implicitly.
+const projectGapReadinessExactPaths = new Set(
+  [
+    "backend/scripts/project_wide_gap_and_release_readiness_audit_01_check.js",
+    "backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs",
+    "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01.md",
+    "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_CAPABILITY_MATRIX.json",
+    "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json",
+    "tools/check_step06_repo_contract.ps1",
+  ].map((value) => normalizePath(value)),
+);
+
 const securityDocWorktreeEntries = [
   { path: "docs/UX_PANEL_INVENTORY_02A_AUDIT.md", sha256: "039246CFBD967E9AA63CBCED301A9AE4FB58F0DB4946A8CFE3C4C7BEB15E7B19" },
   { path: "docs/MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md", sha256: "A7EF3D0DB003D206845EBDBF3DFF52B82839A993966BE10618C32EC7A418889E" },
@@ -460,7 +474,7 @@ const terminologyPresentationEntries = [
   { path: "web/src/components/public/PublicLeadCaptureModal.jsx", sha256: "CDEA6F178FADE481C7493D7120D09A8473941277F7A5A416789D94A9C52C008E" },
   { path: "web/src/copilot/screenRegistry.js", sha256: "8DBD885C95760A7AF22547222E33FDE559662EB70D8A981DBC92161711B93463" },
   { path: "web/src/layout/AppShell.jsx", sha256: "1855A096B971C355004AF9193DB585DEA08985246B3A778233F5688D792C0F78" },
-  { path: "web/src/layout/NavDock.jsx", sha256: "AE535CA9FAEE94296FA4321FCCB37ECD69436BA6A4C0D4F238FE01C0B9B5A2A8" },
+  { path: "web/src/layout/NavDock.jsx", sha256: "13B8D58A5A7DE358EDC7E7D9C0D6B9C54F05A51394E2F5DF72DF6307D7D13D75" },
   { path: "web/src/panels/company/AgreementWizard.jsx", sha256: "C4A8E949F5E6D08BBBD4377E4DAC675E157F93AB5E3F14DADC11996C212B5D69" },
   { path: "web/src/panels/company/AgreementsPanel.jsx", sha256: "E2CDE19CAAC5DA1F66A34DF9366CBFD1775A3D93135421E2A232C6B344C01385" },
   { path: "web/src/panels/company/CommercialFlowPanel.jsx", sha256: "4A6203A2E00491F212244661AE1D3C6927D016C696CD58E2E4A6E515D59B47C7" },
@@ -605,6 +619,7 @@ function isApprovedCurrentHeadSchemaPath(file) {
 function classifySecurityKvkkStatusPath(file) {
   const normalized = normalizePath(file);
   if (normalized === selfSecurityGuardPath) return "SELF_SECURITY_GUARD";
+  if (projectGapReadinessExactPaths.has(normalized)) return "PROJECT_GAP_READINESS_14";
   if (isTerminologyPresentationPath(normalized)) return "APPROVED_TERMINOLOGY_PRESENTATION";
   if (isBatch13FoundationOwnerPath(normalized)) return "BATCH13_FOUNDATION_OWNER";
   if (isApprovedCurrentHeadBackendPath(normalized) || isApprovedCurrentHeadSchemaPath(normalized)) return "APPROVED_CURRENT_HEAD_PRODUCT";
@@ -1452,6 +1467,7 @@ function main() {
       "OUT_OF_SCOPE_CHECKER_INFRA",
       "OUT_OF_SCOPE_TEST_INFRA",
       "OUT_OF_SCOPE_CURRENT_HEAD_HELPER",
+      "PROJECT_GAP_READINESS_14",
       "ROLE_TENANT_SECURITY_OWNED",
       "APPROVED_TERMINOLOGY_PRESENTATION",
       "RUNTIME_DATA",

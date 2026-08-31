@@ -96,6 +96,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
         : "Personel";
     const companyPeopleLinkLabel = isSchool ? "Öğrenci Link" : "Personel Link";
     const companyPeopleAccessLabel = isSchool ? "Veli Erişimi" : "Personel Erişimi";
+    const companyPeopleAccessPath = isSchool ? "/school/parents" : base + "/personel-access";
     const companyPeopleGeoLabel = isSchool
       ? "Öğrenci Konum Seçici"
       : isOrganization
@@ -173,7 +174,7 @@ export default function NavDock({ role, path, me, mobileOpen = false, onMobileCl
         title: companyPeopleTitle,
         items: [
           { label: companyPeopleLinkLabel, path: base + "/access-links" },
-          { label: companyPeopleAccessLabel, path: base + "/personel-access" },
+          { label: companyPeopleAccessLabel, path: companyPeopleAccessPath },
           { label: companyPeopleGeoLabel, path: base + "/georeview" },
           { label: "Check-in", path: base + "/checkin" },
         ],

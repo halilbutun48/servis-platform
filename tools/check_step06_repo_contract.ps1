@@ -39,7 +39,7 @@ Must-Contain $schoolAccess "/api/school/parent-invites" "school parent access en
 Must-Contain $schoolAccess "#/accept-parent-invite?token=" "school parent access public link builder"
 Must-Contain $schoolAccess "mail, telefon veya ad soyad gerekmez" "school parent access explains no contact fields"
 Must-Contain $acceptAccess "/api/auth/parent-invite/accept" "public accept parent access endpoint"
-Must-Contain $acceptAccess "Kod + PIN ile giriş" "public panel uses code + pin"
+Must-Contain $acceptAccess "Veli kodu + PIN ile giriş" "public panel uses veli code + pin"
 Must-Contain $app '"/accept-parent-invite"' "public accept route registered"
 Must-NotContain $app '"/accept-invite"' "legacy invite accept route removed"
 

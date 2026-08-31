@@ -1,0 +1,90 @@
+{
+  "auditId": "PROJECT-WIDE-GAP-AND-RELEASE-READINESS-AUDIT-01",
+  "sourceHead": "2ae92211c21a5ae009b37ac7bbaeee8bb149b00a",
+  "gaps": [
+    {
+      "gapId": "GAP-14-001",
+      "title": "School Veli Erişimi menu used a dead personel-access route",
+      "category": ["NAVIGATION_GAP", "TASK_COMPLETION_GAP"],
+      "severity": "HIGH",
+      "roleContext": "SCHOOL CompanyKind",
+      "evidence": "web/src/layout/NavDock.jsx pointed the School-labeled Veli Erişimi item at /school/personel-access while App.jsx owns /school/parents.",
+      "actualBehavior": "The visible School menu item could not reach the existing ParentInvitePanel.",
+      "expectedBehavior": "School user reaches /school/parents and can create a real parent access link/code/PIN.",
+      "ownerMilestone": "#14 PROJECT-WIDE-GAP-AND-RELEASE-READINESS-AUDIT-01",
+      "resolution": "NavDock now resolves School Veli Erişimi to /school/parents; existing API/auth/model owners are reused.",
+      "status": "FIXED_IN_14",
+      "testEvidenceReference": "project_wide_gap_and_release_readiness_audit_01_check.js; project_wide_gap_and_release_readiness_audit_01_acceptance.mjs; project_wide_gap_and_release_readiness_audit_01_browser.mjs"
+    },
+    {
+      "gapId": "GAP-14-002",
+      "title": "Final physical-device mobile proof is outside this audit",
+      "category": ["MOBILE_GAP"],
+      "severity": "MEDIUM",
+      "roleContext": "DRIVER / PERSONEL / PARENT and supported mobile contexts",
+      "evidence": "#14 can prove responsive browser behavior; no physical iOS/Android device is claimed here.",
+      "actualBehavior": "Browser-responsive surfaces are available; device-specific proof remains separate.",
+      "expectedBehavior": "Final real-device acceptance is completed by the locked mobile milestone.",
+      "ownerMilestone": "#36",
+      "resolution": "Deferred by locked owner; not a current #14 task-completion blocker.",
+      "status": "DEFERRED_TO_LOCKED_OWNER",
+      "testEvidenceReference": "#14 browser acceptance; #36 mobile owner"
+    },
+    {
+      "gapId": "GAP-14-003",
+      "title": "Global navigation and hierarchy simplification",
+      "category": ["UX_COMPLEXITY"],
+      "severity": "MEDIUM",
+      "roleContext": "all user contexts",
+      "evidence": "Current surfaces work but the requested global ÖZET → SORUN/FIRSAT → TEK ANA AKSİYON hierarchy is a separate locked program.",
+      "actualBehavior": "Existing navigation remains in place and task blockers are audited locally.",
+      "expectedBehavior": "Global simplification is delivered under its own owner.",
+      "ownerMilestone": "#17",
+      "resolution": "Deferred by locked owner; no broad UX rewrite in #14.",
+      "status": "DEFERRED_TO_LOCKED_OWNER",
+      "testEvidenceReference": "#14 boundary audit"
+    },
+    {
+      "gapId": "GAP-14-004",
+      "title": "Final terminology cleanup",
+      "category": ["TERMINOLOGY_LEAKAGE"],
+      "severity": "LOW",
+      "roleContext": "all user contexts",
+      "evidence": "Any remaining technical/raw language is tracked separately from task completion.",
+      "actualBehavior": "Current canonical labels and role semantics are retained.",
+      "expectedBehavior": "A global language sweep is handled by its locked owner.",
+      "ownerMilestone": "#15",
+      "resolution": "Deferred by locked owner; not widened into #14.",
+      "status": "DEFERRED_TO_LOCKED_OWNER",
+      "testEvidenceReference": "#14 terminology boundary"
+    },
+    {
+      "gapId": "GAP-14-005",
+      "title": "Full optimizer/recovery intelligence",
+      "category": ["PERFORMANCE_RISK", "FUNCTIONAL_GAP"],
+      "severity": "MEDIUM",
+      "roleContext": "ROOM / COMPANY operations",
+      "evidence": "Basic assignment and route flows are present; global optimization/recovery intelligence is not claimed.",
+      "actualBehavior": "Current dispatch behavior is audited and existing task flows remain usable.",
+      "expectedBehavior": "Optimization/recovery intelligence is implemented under its locked owner.",
+      "ownerMilestone": "#20",
+      "resolution": "Deferred by locked owner; no duplicate optimizer added.",
+      "status": "DEFERRED_TO_LOCKED_OWNER",
+      "testEvidenceReference": "#14 dispatch audit"
+    },
+    {
+      "gapId": "GAP-14-006",
+      "title": "Production hardening program",
+      "category": ["PRODUCTION_GAP", "OBSERVABILITY_GAP"],
+      "severity": "HIGH",
+      "roleContext": "deployment/runtime",
+      "evidence": "#14 records startup, environment, dependency, Redis, OSRM, DB, logging and readiness prerequisites.",
+      "actualBehavior": "Current local/runtime gates are re-proven; broader production hardening is not absorbed.",
+      "expectedBehavior": "Production hardening is closed under the locked production owner.",
+      "ownerMilestone": "#38",
+      "resolution": "Deferred by locked owner; no claim of full production readiness is made by this audit.",
+      "status": "DEFERRED_TO_LOCKED_OWNER",
+      "testEvidenceReference": "#14 production-gap census"
+    }
+  ]
+}
