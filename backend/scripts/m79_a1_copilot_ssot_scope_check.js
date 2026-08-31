@@ -59,6 +59,7 @@ exists('web/src/panels/company/ServiceEvaluationPanel.jsx');
 
 const registry = read('web/src/copilot/screenRegistry.js');
 const navDock = read('web/src/layout/NavDock.jsx');
+const roleNavigation = read('web/src/utils/roleNavigation.js');
 const drawer = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
 const commercial = read('web/src/panels/company/CommercialFlowPanel.jsx');
 const geo = read('web/src/panels/company/GeoReviewPanel.jsx');
@@ -72,9 +73,10 @@ includes(registry, 'SUPER_ADMIN', 'screen registry includes super admin role');
 includes(registry, '/room/commercial-flow', 'screen registry includes room commercial flow');
 includes(registry, '/superadmin/operation-verification', 'screen registry includes operation verification');
 
-includes(navDock, 'getCopilotMenuEntry', 'nav dock consumes shared copilot menu entry');
+includes(navDock, 'getRoleNavigation', 'nav dock consumes canonical role navigation');
+includes(roleNavigation, 'path: "/shared/feedback"', 'role navigation keeps shared assistant-safe destinations');
 notIncludes(navDock, 'Copilot Test', 'nav dock no longer shows Copilot Test');
-includes(navDock, 'copilotEntry.label', 'nav dock uses shared copilot label');
+includes(drawer, 'copilotFab--mascot', 'floating drawer owns the compact Sefer Abi entrypoint');
 
 includes(drawer, 'resolveCopilotScreenContext', 'floating drawer consumes shared screen context resolver');
 notIncludes(drawer, 'Copilot Test', 'floating drawer no longer shows Copilot Test');

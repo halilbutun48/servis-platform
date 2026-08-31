@@ -45,6 +45,7 @@ console.log("=== M97-B/C/D PANEL OPERATIONS CHECK ===");
 
 const app = read("../web/src/App.jsx");
 const navDock = read("../web/src/layout/NavDock.jsx");
+const roleNavigation = read("../web/src/utils/roleNavigation.js");
 const quickBar = read("../web/src/components/TabletOpsQuickBar.jsx");
 const superAdminPanel = read("../web/src/panels/superadmin/SuperAdminPanel.jsx");
 const companyPanel = read("../web/src/panels/company/OperationsPanel.jsx");
@@ -66,9 +67,11 @@ must(has(app, 'path === "/school/operations"'), "app keeps school operations rou
 must(has(app, 'path === "/superadmin/operations"'), "app keeps super admin operations route");
 
 must(has(navDock, 'Operasyon Paneli'), "nav dock exposes operations panel entry");
-must(has(navDock, 'Denetim Paneli'), "nav dock exposes denetim panel entry");
-must(has(navDock, 'path: base + "/operations"'), "nav dock links company operations route");
-must(has(navDock, 'path: "/superadmin/operations"'), "nav dock links super admin operations route");
+must(has(navDock, 'getRoleNavigation'), "nav dock consumes canonical role navigation");
+must(has(roleNavigation, 'Operasyon Paneli'), "role navigation exposes operations panel entry");
+must(has(roleNavigation, 'Denetim Paneli'), "role navigation exposes denetim panel entry");
+must(has(roleNavigation, 'path: `${base}/operations`'), "role navigation links company operations route");
+must(has(roleNavigation, 'path: "/superadmin/operations"'), "role navigation links super admin operations route");
 
 must(has(quickBar, 'path: base + "/operations"'), "tablet quick bar keeps operations shortcut");
 

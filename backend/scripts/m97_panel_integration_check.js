@@ -45,6 +45,7 @@ console.log("=== M97 CHECK-IN PANEL INTEGRATION CHECK ===");
 
 const app = read("../web/src/App.jsx");
 const navDock = read("../web/src/layout/NavDock.jsx");
+const roleNavigation = read("../web/src/utils/roleNavigation.js");
 const quickBar = read("../web/src/components/TabletOpsQuickBar.jsx");
 const superAdmin = read("../web/src/panels/superadmin/SuperAdminPanel.jsx");
 const screenRegistry = read("../web/src/copilot/screenRegistry.js");
@@ -56,8 +57,9 @@ must(has(app, 'path === "/school/checkin"'), "app keeps school check-in route");
 must(has(app, 'path === "/organization/checkin"'), "app keeps organization check-in route");
 must(has(app, 'path === "/driver/checkin"'), "app keeps driver check-in route");
 
-must(has(navDock, 'advanced.push({ label: "Check-in", path: "/room/checkin" });'), "nav dock keeps room check-in under advanced");
-must(has(navDock, '{ label: "Check-in", path: base + "/checkin" }'), "nav dock keeps company/school/organization check-in visible");
+must(has(navDock, 'getRoleNavigation'), "nav dock consumes canonical role navigation");
+must(has(roleNavigation, '{ label: "Check-in", path: "/room/checkin" }'), "role navigation keeps room check-in under advanced");
+must(has(roleNavigation, '{ label: "Check-in", path: `${base}/checkin` }'), "role navigation keeps company/school/organization check-in visible");
 
 must(has(quickBar, '{ label: "Check-in", path: "/room/checkin" }'), "tablet quick bar keeps room check-in shortcut");
 
