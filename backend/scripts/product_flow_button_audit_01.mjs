@@ -950,6 +950,15 @@ async function runScenario(page, scenario, viewportName, output) {
 
   await page.waitForTimeout(850);
 
+  const taskWorkspaceDetails = page.locator('details[data-details="task-workspace"]');
+  if (await taskWorkspaceDetails.count() && await taskWorkspaceDetails.isVisible().catch(() => false)) {
+    const summary = taskWorkspaceDetails.locator("summary").first();
+    if (await summary.isVisible().catch(() => false)) {
+      await summary.click({ timeout: 5000 });
+      await page.waitForTimeout(250);
+    }
+  }
+
   result.url = page.url();
   result.title = await page.title().catch(() => "");
   const bodyText = await getText(page);
@@ -1174,6 +1183,11 @@ async function main() {
         await context.addInitScript((token) => {
           localStorage.setItem("token", token);
         }, authState.token);
+      }
+      if (authState.loginInfo?.deviceId) {
+        await context.addInitScript((deviceId) => {
+          localStorage.setItem("personel_servis_browser_device_id", String(deviceId));
+        }, String(authState.loginInfo.deviceId));
       }
 
       for (const scenario of group.routes) {
