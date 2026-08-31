@@ -196,8 +196,8 @@ function masterPrimerEvidenceCounts({ forecastText, routeText, uiText, appText, 
     FABRICATED_DELAY_PREDICTION_COUNT: preview.timingComparison?.trafficPredictionModeled === false ? 0 : 1,
     UNEXPLAINED_SCENARIO_RISK_SCORE_COUNT: preview.operationalRisk?.explained === true && preview.operationalRisk?.score === null ? 0 : 1,
     SCENARIO_LIVE_OPERATION_MUTATION_COUNT: preview.dispatchAlternative?.applied === false ? 0 : 1,
-    SCHOOL_SCENARIO_VISIBLE_COUNT: appText.includes("/school/cost-scenarios") && navText.includes('label: "Planlama Senaryosu"') ? 1 : 0,
-    ORGANIZATION_SCENARIO_VISIBLE_COUNT: appText.includes("/organization/cost-scenarios") && navText.includes('label: "Planlama Senaryosu"') ? 1 : 0,
+    SCHOOL_SCENARIO_VISIBLE_COUNT: appText.includes("/school/cost-scenarios") && navText.includes("isSchool") ? 1 : 0,
+    ORGANIZATION_SCENARIO_VISIBLE_COUNT: appText.includes("/organization/cost-scenarios") && navText.includes("isOrganization") ? 1 : 0,
     SCHOOL_COMPANY_BUDGET_LIFECYCLE_COPY_COUNT: uiText.includes("Bütçe yaşam döngüsü") ? 1 : 0,
     ORGANIZATION_COMPANY_BUDGET_LIFECYCLE_COPY_COUNT: uiText.includes("Bütçe yaşam döngüsü") ? 1 : 0,
     SCHOOL_FINANCE_PRIVILEGE_LEAK_COUNT: uiText.includes("Planlama bağlamı") && uiText.includes("normal bütçe yaşam döngüsü") ? 0 : 1,
@@ -500,7 +500,7 @@ function main() {
   const docsText = read("docs/COST_SCENARIO_FORECAST_AND_SAVINGS_01.md");
   const vehiclePlanDocsText = read("docs/COST_SCENARIO_VEHICLE_PLAN_REFERENCE_01.md");
   const uiText = read("web/src/panels/shared/CostScenarioWorkspacePanel.jsx");
-  const navText = read("web/src/layout/NavDock.jsx");
+  const navText = read("web/src/utils/roleNavigation.js");
   const financialText = read("web/src/panels/shared/FinancialOperationsPanel.jsx");
   const companyPreviewText = read("web/src/panels/shared/FinancialOperationsCompanyPreview.jsx");
   const appText = read("web/src/App.jsx");
@@ -610,7 +610,7 @@ function main() {
   must(post4Counts.ROOM_CONTEXTUAL_SCENARIO_VISIBLE_COUNT === 1, "post-#4 ROOM_CONTEXTUAL_SCENARIO_VISIBLE_COUNT is one");
   must(post4Counts.moneyFieldCount > 0 && post4Counts.fieldCount >= 15, "unit taxonomy covers all scenario fields and money fields remain explicit");
   must(uiText.includes("Gelişmiş varsayımlar") && uiText.includes('data-testid="scenario-advanced-fields"'), "advanced scenario inputs have a named collapsed owner");
-  must(navText.includes('label: "Planlama Senaryosu"') && appText.includes("/school/cost-scenarios") && appText.includes("/organization/cost-scenarios"), "school and organization planning-only scenario route remains distinct");
+  must(navText.includes("isSchool") && navText.includes("isOrganization") && appText.includes("/school/cost-scenarios") && appText.includes("/organization/cost-scenarios"), "school and organization planning-only scenario route remains distinct");
   must(browserText.includes('route: "/#/company/financial-operations"') && browserText.includes('contextualHome: "Bütçe ve Servis Maliyeti"'), "browser acceptance opens the actual COMPANY budget surface");
   must(browserText.includes('contextualTestId: "company-contextual-scenario"') && browserText.includes('page.getByTestId(contextualTestId).isVisible()') && browserText.includes('Senaryoyu Karşılaştır'), "browser acceptance proves the visible COMPANY contextual scenario contract");
 
