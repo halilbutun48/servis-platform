@@ -28,6 +28,7 @@ const ownedPaths = new Set([
   "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json",
   "package.json",
   "tools/check_step06_repo_contract.ps1",
+  "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
   "backend/scripts/security_kvkk_final_01_check.js",
   "backend/scripts/audit_log_and_approval_trace_01_check.js",
 ]);

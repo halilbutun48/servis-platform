@@ -405,6 +405,7 @@ const projectGapReadinessExactPaths = new Set(
     "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01.md",
     "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_CAPABILITY_MATRIX.json",
     "docs/PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json",
+    "docs/SCRIPT_HARNESS_CONSOLIDATION_01.md",
     "package.json",
     "tools/check_step06_repo_contract.ps1",
   ].map((value) => normalizePath(value)),

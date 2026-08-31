@@ -1,6 +1,6 @@
 {
   "auditId": "PROJECT-WIDE-GAP-AND-RELEASE-READINESS-AUDIT-01",
-  "sourceHead": "2ae92211c21a5ae009b37ac7bbaeee8bb149b00a",
+  "sourceHead": "87493b3d00853732fc627aa86069710e821f78c9",
   "generatedBy": "backend/scripts/project_wide_gap_and_release_readiness_audit_01_check.js",
   "statusVocabulary": ["PROVEN_WORKING", "PARTIAL", "MISSING", "BROKEN", "DEFERRED_BY_LOCKED_OWNER", "NOT_APPLICABLE", "UNKNOWN"],
   "capabilities": [

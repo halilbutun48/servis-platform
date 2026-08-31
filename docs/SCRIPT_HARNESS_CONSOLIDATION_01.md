@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `467`
-- Toplam executable tracked file: `1347`
-- Combined registry row: `1814`
-- Root/backend/web/mobile package dağılımı: root `286`, backend `927`, web `97`, mobile `201`
+- Toplam package script entry: `470`
+- Toplam executable tracked file: `1350`
+- Combined registry row: `1820`
+- Root/backend/web/mobile package dağılımı: root `289`, backend `930`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `804`
+- NEEDS_REVIEW: `810`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `385`
+- Eski sistem term eşleşmesi: `387`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 804 |
+| NEEDS_REVIEW | 810 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -491,6 +491,9 @@ Repo: `servis-platform`
 | root:check:accountingexportcontract01 | package.json | root | node backend/scripts/accounting_export_and_integration_contract_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ACCOUNTINGEXPORTCONTRACT-01 |  | Owner or chain unclear |  |
 | root:accept:accountingexportcontract01 | package.json | root | node backend/scripts/accounting_export_and_integration_contract_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-ACCOUNTINGEXPORTCONTRACT-01 |  | Owner or chain unclear |  |
 | root:smoke:accountingexportcontract01 | package.json | root | node backend/scripts/accounting_export_and_integration_contract_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-ACCOUNTINGEXPORTCONTRACT-01 |  | Owner or chain unclear |  |
+| root:check:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
+| root:accept:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
+| root:smoke:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
 | root:check:roomprofitabilityandquotefloor01 | package.json | root | node backend/scripts/room_profitability_and_quote_floor_01_check.js | verify-core | ACTIVE_CORE |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Breaks canonical verification chain |  |
 | root:check:companybudgetandservicecost01 | package.json | root | node backend/scripts/company_budget_and_service_cost_01_check.js | verify-core | ACTIVE_CORE |  | ROOT-CHECK-COMPANYBUDGETANDSERVICECOST-01 |  | Breaks canonical verification chain |  |
 | root:check:hakedisinvoicereconciliationpreview01 | package.json | root | node backend/scripts/hakedis_invoice_reconciliation_preview_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-HAKEDISINVOICERECONCILIATIONPREVIEW-01 |  | Owner or chain unclear |  |
@@ -1209,6 +1212,9 @@ Repo: `servis-platform`
 | product_flow_button_audit_01_check.js | backend/scripts/product_flow_button_audit_01_check.js | backend | root:check:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | production_rate_limit_policy_01_check.js | backend/scripts/production_rate_limit_policy_01_check.js | backend | root:check:productionratelimitpolicy01 | product-extensions | NEEDS_REVIEW |  | PRODUCTION-RATE-LIMIT-POLICY-01-CHECK |  | Owner or chain unclear |  |
 | project_spec_v1_future_strengthening_coverage_check.js | backend/scripts/project_spec_v1_future_strengthening_coverage_check.js | backend | backend:spec16check | review | NEEDS_REVIEW |  | PROJECT-SPEC-V-1-FUTURE-STRENGTHENING-COVERAGE-CHECK |  | Owner or chain unclear |  |
+| project_wide_gap_and_release_readiness_audit_01_acceptance.mjs | backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs | backend | root:accept:projectgapreadiness01 | review | NEEDS_REVIEW |  | PROJECT-WIDE-GAP-AND-RELEASE-READINESS-AUDIT-01-ACCEPTANCE |  | Owner or chain unclear |  |
+| project_wide_gap_and_release_readiness_audit_01_browser.mjs | backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs | backend | root:smoke:projectgapreadiness01 | review | NEEDS_REVIEW |  | PROJECT-WIDE-GAP-AND-RELEASE-READINESS-AUDIT-01-BROWSER |  | Owner or chain unclear |  |
+| project_wide_gap_and_release_readiness_audit_01_check.js | backend/scripts/project_wide_gap_and_release_readiness_audit_01_check.js | backend | root:check:projectgapreadiness01 | review | NEEDS_REVIEW |  | PROJECT-WIDE-GAP-AND-RELEASE-READINESS-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | public_landing_01_check.js | backend/scripts/public_landing_01_check.js | backend | root:check:publiclanding01 | review | NEEDS_REVIEW |  | PUBLIC-LANDING-01-CHECK |  | Owner or chain unclear |  |
 | public_landing_final_promise_01_check.js | backend/scripts/public_landing_final_promise_01_check.js | backend | root:check:publiclandingfinalpromise01 | review | NEEDS_REVIEW |  | FINAL |  | Owner or chain unclear |  |
 | public_landing_platform_first_01_check.js | backend/scripts/public_landing_platform_first_01_check.js | backend | root:check:publiclandingplatformfirst01 | review | NEEDS_REVIEW |  | PUBLIC-LANDING-PLATFORM-FIRST-01-CHECK |  | Owner or chain unclear |  |
@@ -1418,7 +1424,7 @@ Repo: `servis-platform`
 | schemas.js | backend/src/ai/schemas.js | backend |  | review | NEEDS_REVIEW |  | SCHEMAS |  | Owner or chain unclear |  |
 | service.js | backend/src/ai/service.js | backend | backend:m63check, root:check:companybudgetandservicecost01, root:check:etaosrm01, root:check:op01 | review | NEEDS_REVIEW |  | SERVICE |  | Owner or chain unclear |  |
 | tools.js | backend/src/ai/tools.js | backend | root:check:brand, root:dev:reset | review | NEEDS_REVIEW |  | TOOLS |  | Owner or chain unclear |  |
-| audit.js | backend/src/audit.js | backend | root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:auditlogandapprovaltrace01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:testqualityandflakeaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
+| audit.js | backend/src/audit.js | backend | root:accept:projectgapreadiness01, root:audit:repo, root:check:ai03bparaphraseintentaudit01, root:check:ai03bsemanticvisibleaudit01, root:check:auditlogandapprovaltrace01, root:check:cop04b, root:check:onboardingreviewfinal01, root:check:onboardingreviewfinalaudit01, root:check:productflowbuttonaudit01, root:check:projectgapreadiness01, root:check:testqualityandflakeaudit01, root:check:uiactionwiringaudit01, root:check:uxallpanelsrealityaudit01, root:check:uxlivepanelsmokeaudit01, root:check:uxmobileallrolespanelaudit01, root:check:uxpanelreality02c, root:check:uxsuperadminauditpanel01, root:smoke:productflowbuttonaudit01, root:smoke:projectgapreadiness01, root:smoke:uxallpanelsrealityaudit01, root:smoke:uxmobileallrolespanelaudit01 | product-extensions | NEEDS_REVIEW |  | AUDIT |  | Owner or chain unclear |  |
 | driverAccessGuard.js | backend/src/auth/driverAccessGuard.js | backend |  | review | NEEDS_REVIEW |  | DRIVER-ACCESS-GUARD |  | Owner or chain unclear |  |
 | google.js | backend/src/auth/google.js | backend |  | review | NEEDS_REVIEW |  | GOOGLE |  | Owner or chain unclear |  |
 | jwt.js | backend/src/auth/jwt.js | backend |  | review | NEEDS_REVIEW |  | JWT |  | Owner or chain unclear |  |
@@ -1680,7 +1686,7 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web | root:smoke:accountingexportcontract01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | root:smoke:accountingexportcontract01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:projectgapreadiness01, root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
@@ -1931,7 +1937,7 @@ Repo: `servis-platform`
 | logger.js | mobile/src/lib/logger.js | mobile |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
 | navigation.js | mobile/src/lib/navigation.js | mobile | mobile:check:m95e22b | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
 | realtime.js | mobile/src/lib/realtime.js | mobile |  | review | NEEDS_REVIEW |  | REALTIME |  | Owner or chain unclear |  |
-| release.js | mobile/src/lib/release.js | mobile | mobile:check:m50, mobile:check:m81.4, mobile:check:m82.6, root:check:release-regression | review | NEEDS_REVIEW |  | RELEASE |  | Owner or chain unclear |  |
+| release.js | mobile/src/lib/release.js | mobile | mobile:check:m50, mobile:check:m81.4, mobile:check:m82.6, root:accept:projectgapreadiness01, root:check:projectgapreadiness01, root:check:release-regression, root:smoke:projectgapreadiness01 | review | NEEDS_REVIEW |  | RELEASE |  | Owner or chain unclear |  |
 | roleSurface.js | mobile/src/lib/roleSurface.js | mobile |  | review | NEEDS_REVIEW |  | ROLE-SURFACE |  | Owner or chain unclear |  |
 | storage.js | mobile/src/lib/storage.js | mobile | mobile:check:m3 | review | NEEDS_REVIEW |  | STORAGE |  | Owner or chain unclear |  |
 | voice.js | mobile/src/lib/voice.js | mobile | mobile:check:m49.1, root:accept:hakedisinvoicereconciliationpreview01, root:check:hakedisinvoicereconciliationpreview01, root:smoke:hakedisinvoicereconciliationpreview01 | review | NEEDS_REVIEW |  | VOICE |  | Owner or chain unclear |  |
