@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `461`
-- Toplam executable tracked file: `1343`
-- Combined registry row: `1804`
-- Root/backend/web/mobile package dağılımı: root `284`, backend `919`, web `97`, mobile `201`
+- Toplam package script entry: `467`
+- Toplam executable tracked file: `1347`
+- Combined registry row: `1814`
+- Root/backend/web/mobile package dağılımı: root `286`, backend `927`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `794`
+- NEEDS_REVIEW: `804`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `384`
+- Eski sistem term eşleşmesi: `385`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 794 |
+| NEEDS_REVIEW | 804 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -684,6 +684,8 @@ Repo: `servis-platform`
 | root:check:dataintegrityandrecovery01 | package.json | root | node backend/scripts/data_integrity_and_recovery_01_check.js | core | ACTIVE_CORE |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Breaks canonical verification chain |  |
 | root:check:databasebackupretentionandintegrity01 | package.json | root | node backend/scripts/database_backup_retention_and_integrity_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-DATABASEBACKUPRETENTIONANDINTEGRITY-01 |  | Owner or chain unclear |  |
 | root:accept:databasebackupretentionandintegrity01 | package.json | root | node backend/scripts/database_backup_retention_and_integrity_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-DATABASEBACKUPRETENTIONANDINTEGRITY-01 |  | Owner or chain unclear |  |
+| root:check:databasemigrationbaselineandliveadoption01 | package.json | root | node backend/scripts/database_migration_baseline_and_live_adoption_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-DATABASEMIGRATIONBASELINEANDLIVEADOPTION-01 |  | Owner or chain unclear |  |
+| root:accept:databasemigrationbaselineandliveadoption01 | package.json | root | node backend/scripts/database_migration_baseline_and_live_adoption_01.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-DATABASEMIGRATIONBASELINEANDLIVEADOPTION-01 |  | Owner or chain unclear |  |
 | root:check:roledataisolationredteam01 | package.json | root | node backend/scripts/role_data_isolation_redteam_01_check.js | verify-core | ACTIVE_CORE |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Breaks canonical verification chain |  |
 | root:check:securitykvkkfinal01 | package.json | root | node backend/scripts/security_kvkk_final_01_check.js | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
 | root:check:auditlogandapprovaltrace01 | package.json | root | node backend/scripts/audit_log_and_approval_trace_01_check.js | verify-core | ACTIVE_CORE |  | AUDIT-LOG-AND-APPROVAL-TRACE-01 |  | Breaks canonical verification chain |  |
@@ -729,7 +731,11 @@ Repo: `servis-platform`
 | backend:prisma:verify | backend/package.json | backend | node scripts/prisma_cross_platform_client_hardening_01.mjs verify | review | NEEDS_REVIEW |  | BACKEND-PRISMA-VERIFY |  | Owner or chain unclear |  |
 | backend:prisma:modularization:check | backend/package.json | backend | node scripts/prisma_schema_modularization_01_check.js | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MODULARIZATION-CHECK |  | Owner or chain unclear |  |
 | backend:prisma:modularization:acceptance | backend/package.json | backend | node scripts/prisma_schema_modularization_01.mjs | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MODULARIZATION-ACCEPTANCE |  | Owner or chain unclear |  |
-| backend:bootstrap | backend/package.json | backend | npm run prisma:generate && npx prisma migrate deploy --schema prisma && npm run seed | review | NEEDS_REVIEW |  | BACKEND-BOOTSTRAP |  | Owner or chain unclear |  |
+| backend:prisma:migrate:status | backend/package.json | backend | node scripts/database_migration_baseline_and_live_adoption_01_owner.mjs status | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MIGRATE-STATUS |  | Owner or chain unclear |  |
+| backend:prisma:migrate:deploy | backend/package.json | backend | node scripts/database_migration_baseline_and_live_adoption_01_owner.mjs deploy | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MIGRATE-DEPLOY |  | Owner or chain unclear |  |
+| backend:prisma:migration:acceptance | backend/package.json | backend | node scripts/database_migration_baseline_and_live_adoption_01.mjs | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MIGRATION-ACCEPTANCE |  | Owner or chain unclear |  |
+| backend:prisma:migration:ci | backend/package.json | backend | node scripts/database_migration_baseline_and_live_adoption_01_ci.mjs | review | NEEDS_REVIEW |  | BACKEND-PRISMA-MIGRATION-CI |  | Owner or chain unclear |  |
+| backend:bootstrap | backend/package.json | backend | npm run prisma:generate && npm run prisma:migrate:deploy && npm run seed | review | NEEDS_REVIEW |  | BACKEND-BOOTSTRAP |  | Owner or chain unclear |  |
 | backend:lint | backend/package.json | backend | node scripts/run_backend_lint.js | backend-lint | ACTIVE_BACKEND_LINT |  | BACKEND-LINT |  | Breaks backend lint gate | backend lint wrapper |
 | backend:smoke | backend/package.json | backend | node scripts/smoke.js | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | BACKEND-SMOKE |  | Loses manual smoke entrypoint |  |
 | backend:fullcheck | backend/package.json | backend | node scripts/fullcheck.js | verify-core | ACTIVE_CORE |  | BACKEND-FULLCHECK |  | Breaks canonical verification chain |  |
@@ -917,6 +923,10 @@ Repo: `servis-platform`
 | database_backup_retention_and_integrity_01.mjs | backend/scripts/database_backup_retention_and_integrity_01.mjs | backend | backend:backup:acceptance, backend:backup:check, backend:backup:create, backend:backup:inventory, backend:backup:policy, backend:backup:prune, backend:backup:restore, backend:backup:verify, root:accept:databasebackupretentionandintegrity01, root:check:databasebackupretentionandintegrity01 | review | NEEDS_REVIEW |  | DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01 |  | Owner or chain unclear |  |
 | database_backup_retention_and_integrity_01_acceptance.mjs | backend/scripts/database_backup_retention_and_integrity_01_acceptance.mjs | backend | backend:backup:acceptance, root:accept:databasebackupretentionandintegrity01 | review | NEEDS_REVIEW |  | DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01-ACCEPTANCE |  | Owner or chain unclear |  |
 | database_backup_retention_and_integrity_01_check.js | backend/scripts/database_backup_retention_and_integrity_01_check.js | backend | backend:backup:check, root:check:databasebackupretentionandintegrity01 | review | NEEDS_REVIEW |  | DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01-CHECK |  | Owner or chain unclear |  |
+| database_migration_baseline_and_live_adoption_01.mjs | backend/scripts/database_migration_baseline_and_live_adoption_01.mjs | backend | backend:prisma:migrate:deploy, backend:prisma:migrate:status, backend:prisma:migration:acceptance, backend:prisma:migration:ci, root:accept:databasemigrationbaselineandliveadoption01, root:check:databasemigrationbaselineandliveadoption01 | review | NEEDS_REVIEW |  | DATABASE-MIGRATION-BASELINE-AND-LIVE-ADOPTION-01 |  | Owner or chain unclear |  |
+| database_migration_baseline_and_live_adoption_01_check.js | backend/scripts/database_migration_baseline_and_live_adoption_01_check.js | backend | root:check:databasemigrationbaselineandliveadoption01 | review | NEEDS_REVIEW |  | DATABASE-MIGRATION-BASELINE-AND-LIVE-ADOPTION-01-CHECK |  | Owner or chain unclear |  |
+| database_migration_baseline_and_live_adoption_01_ci.mjs | backend/scripts/database_migration_baseline_and_live_adoption_01_ci.mjs | backend | backend:prisma:migration:ci | review | NEEDS_REVIEW |  | DATABASE-MIGRATION-BASELINE-AND-LIVE-ADOPTION-01-CI |  | Owner or chain unclear |  |
+| database_migration_baseline_and_live_adoption_01_owner.mjs | backend/scripts/database_migration_baseline_and_live_adoption_01_owner.mjs | backend | backend:prisma:migrate:deploy, backend:prisma:migrate:status | review | NEEDS_REVIEW |  | DATABASE-MIGRATION-BASELINE-AND-LIVE-ADOPTION-01-OWNER |  | Owner or chain unclear |  |
 | db_pool_and_api_scaling_01_check.js | backend/scripts/db_pool_and_api_scaling_01_check.js | backend | root:check:dbpoolandapiscaling01 | review | NEEDS_REVIEW |  | DB-POOL-AND-API-SCALING-01 |  | Owner or chain unclear |  |
 | db_pool_and_api_scaling_01_probe.js | backend/scripts/db_pool_and_api_scaling_01_probe.js | backend |  | review | NEEDS_REVIEW |  | DB-POOL-AND-API-SCALING-01 |  | Owner or chain unclear |  |
 | docs_ssot_brand_artifact_cleanup_01_check.js | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | backend | root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01-CHECK |  | Owner or chain unclear |  |
@@ -1447,7 +1457,7 @@ Repo: `servis-platform`
 | gpsStateGate.js | backend/src/gps/gpsStateGate.js | backend |  | review | NEEDS_REVIEW |  | GPS-STATE-GATE |  | Owner or chain unclear |  |
 | sourceLabel.js | backend/src/gps/sourceLabel.js | backend |  | review | NEEDS_REVIEW |  | SOURCE-LABEL |  | Owner or chain unclear |  |
 | sourceVisibility.js | backend/src/gps/sourceVisibility.js | backend |  | review | NEEDS_REVIEW |  | SOURCE-VISIBILITY |  | Owner or chain unclear |  |
-| status.js | backend/src/gps/status.js | backend |  | review | NEEDS_REVIEW |  | STATUS |  | Owner or chain unclear |  |
+| status.js | backend/src/gps/status.js | backend | backend:prisma:migrate:status | review | NEEDS_REVIEW |  | STATUS |  | Owner or chain unclear |  |
 | agreementMonitor.js | backend/src/jobs/agreementMonitor.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-MONITOR |  | Owner or chain unclear |  |
 | agreementShiftGenerator.js | backend/src/jobs/agreementShiftGenerator.js | backend |  | review | NEEDS_REVIEW |  | AGREEMENT-SHIFT-GENERATOR |  | Owner or chain unclear |  |
 | autoReachedQueue.js | backend/src/jobs/autoReachedQueue.js | backend |  | review | NEEDS_REVIEW |  | AUTO-REACHED-QUEUE |  | Owner or chain unclear |  |
@@ -1546,7 +1556,7 @@ Repo: `servis-platform`
 | geocode.js | backend/src/routes/geocode.js | backend |  | review | NEEDS_REVIEW |  | GEOCODE |  | Owner or chain unclear |  |
 | gps.js | backend/src/routes/gps.js | backend | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:securitykvkkfinal01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
-| live.js | backend/src/routes/live.js | backend | mobile:check:m82.5, mobile:check:m95d, root:accept:externalcostdataproviderfreshness01, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
+| live.js | backend/src/routes/live.js | backend | backend:prisma:migrate:deploy, backend:prisma:migrate:status, backend:prisma:migration:acceptance, backend:prisma:migration:ci, mobile:check:m82.5, mobile:check:m95d, root:accept:databasemigrationbaselineandliveadoption01, root:accept:externalcostdataproviderfreshness01, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:databasemigrationbaselineandliveadoption01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
 | me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
