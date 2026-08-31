@@ -436,7 +436,7 @@ export function isBatch13AppJsxMigrationConsumerPath(file) {
 const APP_JSX_ROLE_TENANT_SCOPE_ENTRIES = Object.freeze([
   Object.freeze({
     path: "web/src/App.jsx",
-    sha256: "5EE75309DC65518BC2110D77FF2E5D4AEB772713445446573FD3C1CB13D16E07",
+    sha256: "BF30CCF19A23976E033863FB929575D29D2FDDC7F720209F2E2BF5A069788A43",
   }),
 ]);
 

@@ -278,6 +278,8 @@ function main() {
   const cssSource = read('web/src/index.css');
   const helperSource = read('web/src/utils/copilotFacts.js');
   const navDockSource = read('web/src/layout/NavDock.jsx');
+  const navRegistrySource = read('web/src/utils/roleNavigation.js');
+  const navOwnershipSource = `${navDockSource}\n${navRegistrySource}`;
   const panelChromeSource = read('web/src/components/PanelChrome.jsx');
   const suggestedChipsSource = read('web/src/components/copilot/SuggestedChips.jsx');
   const chatQuickActionsSource = read('web/src/components/copilot/ChatQuickActions.jsx');
@@ -321,19 +323,19 @@ function main() {
   must(copilotPanelSource, 'wrap wrap--fluid', 'CopilotPanel root remains fluid');
   must(copilotPanelSource, 'gap: 10', 'CopilotPanel uses denser spacing');
 
-  must(navDockSource, 'const kind = String(me?.companyKind || "").toUpperCase();', 'NavDock keeps companyKind discriminator');
-  must(navDockSource, 'const isSchool = kind === "SCHOOL";', 'NavDock keeps school discriminator');
-  must(navDockSource, 'const isOrganization = kind === "ORGANIZATION";', 'NavDock keeps organization discriminator');
-  must(navDockSource, 'const isCompany = !isSchool && !isOrganization;', 'NavDock keeps company discriminator');
-  must(navDockSource, 'GÜNLÜK AKIŞ', 'NavDock keeps daily flow group');
-  must(navDockSource, 'PLANLAMA VE SÖZLEŞME', 'NavDock keeps planning and contract group');
-  must(navDockSource, 'TİCARİ VE KALİTE', 'NavDock keeps commercial and quality group');
-  must(navDockSource, 'ÖĞRENCİ VE VELİ', 'NavDock keeps school people group');
-  must(navDockSource, 'KATILIMCI VE KONUM', 'NavDock keeps organization people group');
-  must(navDockSource, 'PERSONEL', 'NavDock keeps company people group');
-  must(navDockSource, 'SEFER ABİ', 'NavDock keeps Sefer Abi group');
-  must(navDockSource, 'Sefer Abi Terminali', 'NavDock keeps terminal label');
-  must(navDockSource, 'Geri Bildirim', 'NavDock keeps feedback entry visibility');
+  must(navOwnershipSource, 'const kind = String(me?.companyKind || "").toUpperCase();', 'navigation keeps companyKind discriminator');
+  must(navOwnershipSource, 'const isSchool = kind === "SCHOOL";', 'navigation keeps school discriminator');
+  must(navOwnershipSource, 'const isOrganization = kind === "ORGANIZATION";', 'navigation keeps organization discriminator');
+  must(navOwnershipSource, 'const isCompany = !isSchool && !isOrganization;', 'navigation keeps company discriminator');
+  must(navOwnershipSource, 'GÜNLÜK AKIŞ', 'navigation keeps daily flow group');
+  must(navOwnershipSource, 'PLANLAMA VE SÖZLEŞME', 'navigation keeps planning and contract group');
+  must(navOwnershipSource, 'TİCARİ VE KALİTE', 'navigation keeps commercial and quality group');
+  must(navOwnershipSource, 'ÖĞRENCİ VE VELİ', 'navigation keeps school people group');
+  must(navOwnershipSource, 'KATILIMCI VE KONUM', 'navigation keeps organization people group');
+  must(navOwnershipSource, 'PERSONEL', 'navigation keeps company people group');
+  must(navOwnershipSource, 'SEFER ABİ', 'navigation keeps Sefer Abi group');
+  must(navOwnershipSource, 'Sefer Abi Terminali', 'legacy terminal boundary remains non-rendered');
+  must(navOwnershipSource, 'Geri Bildirim', 'navigation keeps feedback entry visibility');
 
   must(helperSource, "drawerTitle: 'Sefer Abi’ye Sor'", 'drawer quick-help label remains intact');
   must(drawerSource, 'buildCopilotStarterChips', 'drawer keeps starter chips helper');
@@ -355,7 +357,7 @@ function main() {
 
   const visibleText = [
     cssSource,
-    ...extractQuotedStrings(navDockSource),
+    ...extractQuotedStrings(navOwnershipSource),
     ...extractQuotedStrings(panelChromeSource),
     ...extractQuotedStrings(suggestedChipsSource),
     ...extractQuotedStrings(chatQuickActionsSource),
