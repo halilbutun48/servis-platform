@@ -28,7 +28,7 @@ function main() {
   const superAdmin = read("web/src/panels/superadmin/SuperAdminPanel.jsx");
   const css = read("web/src/index.css");
   const app = read("web/src/App.jsx");
-  const nav = read("web/src/layout/NavDock.jsx");
+  const nav = read("web/src/utils/roleNavigation.js");
 
   include(pkg, "\"check:web01b\": \"node backend/scripts/web_01b_superadmin_system_mode_summary_check.js\"", "package check:web01b missing");
   include(pkg, "\"check:web01a\":", "package check:web01a missing");
@@ -66,8 +66,8 @@ function main() {
   include(css, ".system-mode-summary-note", "CSS system-mode-summary-note missing");
 
   include(app, "SuperAdminPanel", "App must still route to superadmin panel");
-  include(nav, "/superadmin/commercial-core", "NavDock commercial core route should remain");
-  include(nav, "/superadmin/trust-quality", "NavDock trust-quality route should remain");
+  include(nav, "/superadmin/commercial-core", "canonical navigation commercial core route should remain");
+  include(nav, "/superadmin/trust-quality", "canonical navigation trust-quality route should remain");
 
   notInclude(superAdmin, "new route", "SuperAdminPanel must not add new route wording");
   notInclude(systemBand, "execute", "SystemModeSummaryBand must not expose execute wording");
