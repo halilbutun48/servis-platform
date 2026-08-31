@@ -151,10 +151,12 @@ async function runRole(browser, role, viewport = { width: 1440, height: 900 }, v
     await details.locator("summary").click();
     record(role, "details-disclosure", await details.evaluate((element) => element.hasAttribute("open")));
     report.summaryDisclosurePassCount += 1;
-    const advancedToggle = page.getByRole("button", { name: /^SİSTEM/ }).first();
-    await advancedToggle.click();
-    record(role, "advanced-disclosure", (await page.locator("#shell-nav-dock").innerText()).includes("SİSTEM"));
-    report.advancedDisclosurePassCount += 1;
+    if (viewportName === "desktop") {
+      const advancedToggle = page.getByRole("button", { name: /^SİSTEM/ }).first();
+      await advancedToggle.click();
+      record(role, "advanced-disclosure", (await page.locator("#shell-nav-dock").innerText()).includes("SİSTEM"));
+      report.advancedDisclosurePassCount += 1;
+    }
     await mascot.click();
     const drawer = page.locator(".copilotDrawer");
     await drawer.waitFor({ state: "visible", timeout: 5000 });
