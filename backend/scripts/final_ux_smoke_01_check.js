@@ -96,7 +96,7 @@ function inferLabels(pathname) {
   if (pathname === "/superadmin/natural-copilot") return { menu: "Doğal Copilot", registry: "Doğal Copilot", catalog: "Doğal Copilot", title: "Doğal Copilot Yol Haritası" };
   if (pathname === "/superadmin/pilot-launch-gate") return { menu: "Sahaya Çıkış Kontrolü", registry: "Sahaya Çıkış Kontrolü", catalog: "Sahaya Çıkış Kontrolü", title: "Sahaya Çıkış Kontrolü" };
   if (pathname === "/superadmin/operation-verification") return { menu: "Operasyon Doğrulama", registry: "Operasyon Doğrulama", catalog: "Operasyon Doğrulama", title: "Operasyon Doğrulama" };
-  if (pathname === "/superadmin/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi Terminali", catalog: "Sefer Abi Terminali", title: "Sefer Abi Terminali" };
+  if (pathname === "/superadmin/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
 
   if (pathname === "/room/map" || pathname === "/room/live") return { menu: "Canlı Takip", registry: "Canlı Takip", catalog: "Canlı Takip", title: "ROOM • Canlı Takip" };
   if (pathname === "/room/vehicles") return { menu: "Araçlar", registry: "Araçlar", catalog: "Araçlar", title: "Vehicles" };
@@ -108,7 +108,7 @@ function inferLabels(pathname) {
   if (pathname === "/room/hub") return { menu: "Taşımacılık Firması Konumu", registry: "Taşımacılık Firması Konumu", catalog: "Taşımacılık Firması Konumu", title: "Taşımacılık Firması Konumu" };
   if (pathname === "/room/checkin") return { menu: "Check-in", registry: "Check-in", catalog: "Check-in", title: "Check-in" };
   if (pathname === "/room/operation-health") return { menu: "Operasyon Sağlığı", registry: "Operasyon Sağlığı", catalog: "Operasyon Sağlığı", title: "Oda Operasyon Paneli" };
-  if (pathname === "/room/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi Terminali", catalog: "Sefer Abi Terminali", title: "Sefer Abi Terminali" };
+  if (pathname === "/room/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
   if (pathname === "/room/reports") return { menu: "Raporlar", registry: "Raporlar", catalog: "Raporlar", title: "Raporlar" };
 
   if (pathname === "/company") return { menu: "Planlama Merkezi", registry: "Planlama Merkezi", catalog: "Planlama Merkezi", title: "Company — Planlama Merkezi" };
@@ -152,7 +152,7 @@ function inferLabels(pathname) {
     if (pathname.startsWith("/room/")) return { menu: "Ticari Akışım", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akışım" };
     return { menu: "Ticari Akış", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akış" };
   }
-  if (pathname.endsWith("/copilot")) return { menu: "Sefer Abi Terminali", registry: "Sefer Abi Terminali", catalog: "Sefer Abi Terminali", title: "Sefer Abi Terminali" };
+  if (pathname.endsWith("/copilot")) return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
   if (pathname.endsWith("/reports")) return { menu: "Raporlar", registry: "Raporlar", catalog: "Raporlar", title: "Raporlar" };
 
   if (pathname === "/driver") return { menu: "Bugün", registry: "Bugün", catalog: "Bugün", title: "Bugün" };
@@ -161,14 +161,14 @@ function inferLabels(pathname) {
   if (pathname === "/driver/route") return { menu: "Rota", registry: "Rota", catalog: "Rota", title: "Rota" };
   if (pathname === "/driver/checkin") return { menu: "Check-in", registry: "Check-in", catalog: "Check-in", title: "Check-in" };
   if (pathname === "/driver/change-pin") return { menu: "PIN Değiştir", registry: "PIN Değiştir", catalog: "PIN Değiştir", title: "PIN Değiştir" };
-  if (pathname === "/driver/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi Terminali", catalog: "Sefer Abi Terminali", title: "Sefer Abi Terminali" };
+  if (pathname === "/driver/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
 
   if (pathname === "/personel/live") return { menu: "Canlı", registry: "Canlı", catalog: "Canlı", title: "Personel • Canlı Harita" };
   if (pathname === "/personel/my") return { menu: "Servisim", registry: "Servisim", catalog: "Servisim", title: "Benim Servisim" };
-  if (pathname === "/personel/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi Terminali", catalog: "Sefer Abi Terminali", title: "Sefer Abi Terminali" };
+  if (pathname === "/personel/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
 
   if (pathname === "/parent" || pathname === "/parent/live") return { menu: "Canlı", registry: "Canlı", catalog: "Canlı", title: "Veli • Canlı Takip" };
-  if (pathname === "/parent/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi Terminali", catalog: "Sefer Abi Terminali", title: "Sefer Abi Terminali" };
+  if (pathname === "/parent/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
 
   if (pathname === "/public/passenger-live" || pathname === "/public/personel-live") return { menu: "Canlı Servis Linki", registry: "Canlı Servis Linki", catalog: "Canlı Servis Linki", title: "Canlı Servis Linki" };
   if (pathname === "/accept-parent-invite") return { menu: "Veli kodu + PIN ile giriş", registry: "Veli kodu + PIN ile giriş", catalog: "Veli kodu + PIN ile giriş", title: "Veli kodu + PIN ile giriş" };
@@ -327,10 +327,13 @@ function main() {
 
   const app = read(APP_JSX_ROLE_TENANT_SCOPE_PATHS[0]);
   const navDock = read("web/src/layout/NavDock.jsx");
+  const navRegistry = read("web/src/utils/roleNavigation.js");
+  const navSource = `${navDock}\n${navRegistry}`;
   const screenRegistry = read("web/src/copilot/screenRegistry.js");
   const screenCatalog = read("backend/src/ai/jobGuide/screenCatalog.js");
   const labels = read("web/src/utils/labels.js");
   const copilotFacts = read("web/src/utils/copilotFacts.js");
+  const copilotDrawer = read("web/src/components/copilot/FloatingCopilotDrawer.jsx");
   const panelSegmentTabs = read("web/src/components/PanelSegmentTabs.jsx");
   const checklistPath = "docs/FINAL_UX_SMOKE_01_CHECKLIST.md";
   const guidePath = "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md";
@@ -357,16 +360,19 @@ function main() {
     must(exists(row.component), `component file exists: ${row.component}`);
     if (shouldCheckNavDock(row.path)) {
       if (row.path === "/room/hub") {
-        mustContains(navDock, row.menuLabel, `NavDock keeps ${row.menuLabel}`);
+        mustContains(navSource, row.menuLabel, `canonical navigation keeps ${row.menuLabel}`);
       } else if (isComputedHubPath(row.path)) {
-        mustContains(navDock, "hubLabelForKind(me?.companyKind)", "NavDock keeps computed hub label helper");
+        mustContains(navSource, "hubLabelForKind(me?.companyKind)", "canonical navigation keeps computed hub label helper");
       } else {
-        mustContains(navDock, row.menuLabel, `NavDock keeps ${row.menuLabel}`);
+        mustContains(navSource, row.menuLabel, `canonical navigation keeps ${row.menuLabel}`);
       }
     }
     if (shouldCheckScreenRegistry(row.path)) {
       if (row.path === "/room/hub") {
         mustContains(screenRegistry, row.registryLabel, `screenRegistry keeps ${row.registryLabel}`);
+      } else if (row.path.endsWith("/copilot")) {
+        mustContains(screenRegistry, "COPILOT_MENU_LABEL", "screenRegistry keeps the shared Sefer Abi label owner");
+        mustContains(screenRegistry, "COPILOT_PERSONA.drawerTitle", "screenRegistry derives the shared Sefer Abi label");
       } else if (row.path.endsWith("/personel-access")) {
         if (normalize(screenRegistry).includes(normalize(row.registryLabel))) {
           ok(`screenRegistry keeps ${row.registryLabel}`);
@@ -411,8 +417,8 @@ function main() {
   must(roles.has("Parent / Veli"), "Parent routes covered");
   must(roles.has("Public"), "Public routes covered");
 
-  mustContains(navDock, "Sefer Abi Terminali", "NavDock keeps Sefer Abi Terminali");
-  mustContains(navDock, "getCopilotMenuEntry", "NavDock keeps Sefer Abi launcher helper");
+  mustContains(navSource, "Sefer Abi Terminali", "legacy Sefer Abi terminal boundary remains represented only in compatibility metadata");
+  mustContains(copilotDrawer, "copilotFab--mascot", "Sefer Abi launcher uses the compact mascot entrypoint");
   mustContains(copilotFacts, "Sefer Abi Terminali", "copilot facts keep terminal title");
   mustContains(copilotFacts, "Sefer Abi’ye Sor", "copilot facts keep launcher title");
 
@@ -428,10 +434,10 @@ function main() {
   mustNotContains(navDock, "Güven + Kalite", "NavDock uses Güven ve Kalite instead of plus variant");
   mustNotContains(screenRegistry, "Güven + Kalite", "screenRegistry uses Güven ve Kalite instead of plus variant");
   mustNotContains(screenCatalog, "Güven + Kalite", "screenCatalog uses Güven ve Kalite instead of plus variant");
-  mustContains(navDock, "Güven ve Kalite", "NavDock keeps Güven ve Kalite");
+  mustContains(navSource, "Güven ve Kalite", "canonical navigation keeps Güven ve Kalite");
   mustContains(screenRegistry, "Güven ve Kalite", "screenRegistry keeps Güven ve Kalite");
   mustContains(screenCatalog, "Güven ve Kalite", "screenCatalog keeps Güven ve Kalite");
-  mustContains(navDock, "İller ve Bölgeler", "NavDock keeps İller ve Bölgeler");
+  mustContains(navSource, "İller ve Bölgeler", "canonical navigation keeps İller ve Bölgeler");
   mustContains(screenRegistry, "İller ve Bölgeler", "screenRegistry keeps İller ve Bölgeler");
   mustContains(screenCatalog, "İller ve Bölgeler", "screenCatalog keeps İller ve Bölgeler");
   mustContains(labels, "Hizmet Alan Firma Konumu", "labels.js keeps Hizmet Alan Firma Konumu");
