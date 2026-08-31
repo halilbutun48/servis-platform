@@ -132,10 +132,10 @@ async function main() {
 
   must(drawer, 'Sefer Abi’ye Sor', 'drawer title is Turkish');
   must(drawer, 'Operasyon yardımcısı', 'drawer subtitle is Turkish');
-  must(panel, 'Sefer Abi Terminali', 'panel terminal title is Turkish');
+  must(panel, 'Sefer Abi', 'panel assistant title is Turkish');
   must(panel, 'Sadece önizleme analizi için kısa bir başlangıç seçebilirsin.', 'panel starter copy is Turkish');
   must(panel, 'Sistem salt okunur ve öneri odaklı kalır; denetim günlüğüne copilot sorgusu yazar.', 'panel advanced note is Turkish');
-  must(copilotFactsSource, "subtitle: 'Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan sade analiz alanı.'", 'copilot facts source includes humanized subtitle');
+  must(copilotFactsSource, "subtitle: 'Operasyon, kalite ve ticari sinyalleri aynı konuşmada yorumlayan sade analiz alanı.'", 'copilot facts source includes humanized subtitle');
   must(quickActions, 'Sonraki adımlar', 'quick actions summary is Turkish');
   mustNot(quickActions, 'Hedef yol', 'quick actions no longer expose routeKey label');
   mustNot(quickActions, 'Yol:', 'quick actions no longer expose routeKey field');
