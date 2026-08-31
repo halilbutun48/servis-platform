@@ -64,6 +64,9 @@ jobs:
       - name: Canonical Prisma identity and integrity for repository verification
         run: npm --prefix backend run prisma:verify
 
+      - name: Refresh current-head #12 backup regression evidence
+        run: npm run accept:databasebackupretentionandintegrity01
+
       - name: Canonical verification chain
         run: npm run verify:ci
 
