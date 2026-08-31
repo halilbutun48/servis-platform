@@ -318,7 +318,6 @@ export default function DriverMapPanel() {
           <div className="muted" style={{ marginBottom: 6 }}>Adım adım takip</div>
           <StopTimeline stops={stops} nextStopId={nextStop?.id ?? null} compact={false} onSelect={(s) => focusStop(s)} />
         </div>
-        <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} style={{ marginTop: 10 }} />
       </div>
 
       <MapView
@@ -329,6 +328,8 @@ export default function DriverMapPanel() {
         fitKey={`driver:${vehicles.length}:${stops.length}`}
         height="calc(100vh - 260px)"
       />
+
+      <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} compact style={{ marginTop: 10 }} />
     </div>
   );
 }

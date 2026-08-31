@@ -16,6 +16,7 @@ import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 import PanelChrome from "../../components/PanelChrome";
+import MapOperationsDisclosure from "../../components/map/MapOperationsDisclosure";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 
 function asNum(v) {
@@ -510,7 +511,8 @@ export default function CompanyMapPanel() {
         title={`${scopeKey === "/school/map" ? "Okul" : scopeKey === "/organization/map" ? "Organizasyon" : "Hizmet Alan Firma"} • Canlı Harita`}
         subtitle="Tek panel: canlı liste + seçili araç + duraklar + harita"
         actions={
-          <div className="toolbar" style={{ justifyContent: "flex-end" }}>
+          <MapOperationsDisclosure summary="Filtreler ve yenileme">
+            <div className="toolbar" style={{ justifyContent: "flex-end" }}>
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(Boolean(e.target.checked))} />
               Yalnızca aktif
@@ -536,13 +538,15 @@ export default function CompanyMapPanel() {
             <button className="btn sm" onClick={loadAll} disabled={busy}>
               {busy ? "..." : "Yenile"}
             </button>
-          </div>
+            </div>
+          </MapOperationsDisclosure>
         }
       />
 
       {err ? <div className="card err">{err}</div> : null}
 
       <div className="grid mapGrid" style={{ ["--mapH"]: isCompactViewport ? "min(360px, calc(100vh - 440px))" : "min(700px, calc(100vh - 300px))" }}>
+        <MapOperationsDisclosure summary="Canlı araçlar ve vardiyalar" count={cards.length} className="mapListDisclosure">
         <div className="card mapAsideCard" style={{ height: isCompactViewport ? "calc(var(--mapH) + 170px)" : "calc(var(--mapH) + 285px)" }}>
           <div className="title" style={{ fontSize: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
             <span>Canlı Liste</span>
@@ -653,9 +657,10 @@ export default function CompanyMapPanel() {
             })}
           </div>
         </div>
+        </MapOperationsDisclosure>
 
-        <div>
-          <div className="card" style={{ marginBottom: 10, paddingTop: 12, paddingBottom: 12 }}>
+        <div data-map-surface="primary">
+          <div className="card" data-map-current-state="true" style={{ marginBottom: 10, paddingTop: 12, paddingBottom: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div>
                 <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Seçili Araç</div>
@@ -704,6 +709,7 @@ export default function CompanyMapPanel() {
 
                       <button
                         className="btn sm"
+                        data-primary-cta={selectedNext ? "true" : undefined}
                         onClick={() => openNextStopNavigation(selectedNext, selected)}
                       >
                         Sonraki Durağa Navigasyon
@@ -759,7 +765,7 @@ export default function CompanyMapPanel() {
                     </div>
                   </div>
 
-                  <button className="btn sm" onClick={fitAll}>Tümünü Göster</button>
+                  <button className={!selectedNext ? "btn primary sm" : "btn sm"} data-primary-cta={!selectedNext ? "true" : undefined} onClick={fitAll}>Tümünü Göster</button>
                 </div>
               </div>
             </div>
@@ -772,8 +778,6 @@ export default function CompanyMapPanel() {
             </div>
           </div>
 
-          <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} style={{ marginBottom: 10 }} />
-
           <MapView
             vehicles={vehicles}
             stops={showStops ? selectedStops : []}
@@ -784,6 +788,8 @@ export default function CompanyMapPanel() {
             fitKey={`company:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}`}
             height="var(--mapH)"
           />
+
+          <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} compact style={{ marginBottom: 10 }} />
         </div>
       </div>
     </div>

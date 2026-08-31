@@ -7,11 +7,16 @@ Bu belge #17’nin güncel sahiplik özetidir. Makine-okunur [UX kabul manifesti
 - Tek rol menüsü: `web/src/utils/roleNavigation.js` → `web/src/layout/NavDock.jsx`
 - Ortak görev özeti: `web/src/components/RoleTaskHome.jsx`
 - Operasyon Komuta Merkezi sunumu: `web/src/components/OperationsCommandCenter.jsx`
+- Harita/canlı operasyon disclosure sahibi: `web/src/components/map/MapOperationsDisclosure.jsx`; ROOM `web/src/panels/room/MapPanel.jsx` ve COMPANY bağlamları `web/src/panels/company/MapPanel.jsx` bu ortak sunum katmanını kullanır.
 - Sefer Abi hızlı giriş: `web/src/components/copilot/FloatingCopilotDrawer.jsx`
 - Hızlı/tam ekran ortak bağlam: `web/src/utils/copilotSharedState.js`
 - Tam ekran aynı yardımcı deneyimi: `web/src/panels/shared/CopilotPanel.jsx`
 
 Görev ana sayfası şu sırayı kullanır: özet → sorun/fırsat → tek ana aksiyon → ayrıntılar → gelişmiş. Komuta Merkezi yalnızca mevcut canonical bundle/observability sinyallerini sunar; finans, GPS, risk, rota veya optimizer hesabı yapmaz. Sinyal yoksa veri uydurmaz ve güvenli bir sonraki çalışma alanını gösterir.
+
+## Harita ve canlı operasyon disclosure
+
+Harita/canlı operasyon ekranlarında varsayılan katman; haritayı, seçili aktif operasyon/araç durumunu, kritik sinyali ve tek ana operasyon aksiyonunu açık tutar. Canlı araç/vardiya listesi ile filtre ve yenileme gibi ikincil kontroller `MapOperationsDisclosure` altında kapalı başlar. Kullanıcı açtığı ayrıntı, masum yenileme/harita etkileşimlerinde istemeden kapanmaz; kritik durum varsayılan katmandan gizlenmez. ROOM ve COMPANY gerçek tarayıcı kanıtı aynı #17 raporunda `mapProgressiveDisclosureBrowserPassCount` ve ilgili map sayaçlarıyla tutulur.
 
 ## Roller ve bağlamlar
 

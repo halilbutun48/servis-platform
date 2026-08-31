@@ -43,6 +43,14 @@ const report = {
   summaryDisclosurePassCount: 0,
   advancedDisclosurePassCount: 0,
   commandCenterPassCount: 0,
+  mapProgressiveDisclosureBrowserPassCount: 0,
+  mapFiveSecondHierarchyPassCount: 0,
+  mapDisclosureUnexpectedResetCount: 0,
+  mapMobilePrimaryActionOverlapCount: 0,
+  mapMobileBlockingPanelCount: 0,
+  workingMapCapabilityLostCount: 0,
+  criticalMapOperationSignalHiddenCount: 0,
+  mapDefaultVisibleTechnicalOverloadCount: 0,
   userFacingTerminalLabelCount: 0,
   duplicatePrimaryEntryCount: 0,
   criticalUiOverlapCount: 0,
@@ -93,6 +101,76 @@ async function assertCriticalUiDoesNotOverlap(page, role, mascot, drawer = null)
   const outOfViewport = viewport && fixedBoxes.some((box) => box.x < 0 || box.y < 0 || box.x + box.width > viewport.width || box.y + box.height > viewport.height);
   if (overlap || outOfViewport) report.criticalUiOverlapCount += 1;
   record(role, "critical-ui-no-overlap", !overlap && !outOfViewport, `overlap=${overlap} outOfViewport=${outOfViewport} mascot=${JSON.stringify(mascotBox)} drawer=${JSON.stringify(drawerBox)} primary=${JSON.stringify(primaryBox)} nav=${JSON.stringify(navBox)}`);
+}
+
+async function runMapProgressiveDisclosureAcceptance(page, role, viewportName) {
+  const route = role === "ROOM" ? "/room/map" : "/company/map";
+  await page.goto(`${webBase}/#${route}`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForTimeout(1100);
+
+  const surface = page.locator('[data-map-surface="primary"]');
+  const map = surface.locator(".mapViewShell");
+  const currentState = surface.locator('[data-map-current-state="true"]');
+  const primary = surface.locator('[data-primary-cta="true"]').first();
+  const disclosures = page.locator('details[data-map-disclosure="secondary"]');
+  const visibleStateText = await currentState.innerText().catch(() => "");
+  const hasOperationalState = /GPS|Vardiya|Araç|durak|rota/i.test(visibleStateText);
+  const primaryVisible = await primary.count() === 1 && await primary.isVisible().catch(() => false);
+  const mapVisible = await map.count() === 1 && await map.isVisible().catch(() => false);
+
+  record(role, `map-default-${viewportName}`, mapVisible && hasOperationalState && primaryVisible, `map=${mapVisible} state=${hasOperationalState} primary=${primaryVisible}`);
+  if (!mapVisible) report.workingMapCapabilityLostCount += 1;
+  record(role, `map-five-second-${viewportName}`, mapVisible && hasOperationalState && primaryVisible, `state=${visibleStateText.slice(0, 220).replace(/\s+/g, " ")}`);
+  report.mapFiveSecondHierarchyPassCount += 1;
+  if (!mapVisible || !hasOperationalState) report.criticalMapOperationSignalHiddenCount += 1;
+
+  const defaultOpenCount = await disclosures.evaluateAll((items) => items.filter((item) => item.open).length);
+  const technicalBodyVisible = await disclosures.locator(".mapOperationsDisclosureBody").evaluateAll((items) => items.some((item) => item.closest("details")?.open));
+  const defaultSimple = defaultOpenCount === 0 && !technicalBodyVisible;
+  record(role, `map-default-disclosure-${viewportName}`, defaultSimple, `open=${defaultOpenCount} bodyVisible=${technicalBodyVisible}`);
+  if (!defaultSimple) report.mapDefaultVisibleTechnicalOverloadCount += 1;
+
+  const disclosure = disclosures.filter({ has: page.locator("summary") }).first();
+  const disclosureAvailable = await disclosure.count() === 1;
+  record(role, `map-secondary-disclosure-available-${viewportName}`, disclosureAvailable);
+  if (disclosureAvailable) {
+    await disclosure.locator("summary").click();
+    const opened = await disclosure.evaluate((element) => element.open);
+    record(role, `map-secondary-disclosure-open-${viewportName}`, opened);
+    await page.waitForTimeout(250);
+    const fitButton = page.locator('button').filter({ hasText: "Tümünü Göster" }).first();
+    if (await fitButton.count()) await fitButton.click().catch(() => {});
+    await page.waitForTimeout(250);
+    const stayedOpen = await disclosure.evaluate((element) => element.open);
+    if (!stayedOpen) report.mapDisclosureUnexpectedResetCount += 1;
+    record(role, `map-secondary-disclosure-stable-${viewportName}`, stayedOpen);
+    await disclosure.locator("summary").click();
+    const closed = !(await disclosure.evaluate((element) => element.open));
+    record(role, `map-secondary-disclosure-close-${viewportName}`, closed && await map.isVisible());
+    report.mapProgressiveDisclosureBrowserPassCount += 1;
+  }
+
+  const mascot = page.getByRole("button", { name: "Sefer Abi’ye Sor, operasyon yardımcısını aç" });
+  await assertCriticalUiDoesNotOverlap(page, role, mascot);
+  if (viewportName === "mobile") {
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    const viewport = page.viewportSize();
+    await primary.scrollIntoViewIfNeeded();
+    const primaryBox = await primary.boundingBox();
+    const primaryReachable = Boolean(primaryBox && primaryBox.y >= 0 && primaryBox.y + primaryBox.height <= (viewport?.height || 0) + 1);
+    await map.scrollIntoViewIfNeeded();
+    const mapBox = await map.boundingBox();
+    const mapReachable = Boolean(mapBox && mapBox.y >= 0 && mapBox.y < (viewport?.height || 0) && Math.min(mapBox.y + mapBox.height, viewport?.height || 0) - mapBox.y >= 120);
+    const blocked = overflow || !primaryReachable || !mapReachable;
+    if (blocked) report.mapMobileBlockingPanelCount += 1;
+    record(role, "map-mobile-layout", !blocked, `overflow=${overflow} primary=${JSON.stringify(primaryBox)} map=${JSON.stringify(mapBox)}`);
+    await primary.scrollIntoViewIfNeeded();
+    const primaryReachableBox = await primary.boundingBox();
+    const mascotBox = await mascot.boundingBox();
+    if (mascotBox && primaryReachableBox && intersects(mascotBox, primaryReachableBox)) report.mapMobilePrimaryActionOverlapCount += 1;
+    record(role, "map-mobile-primary-action-reachable", !(mascotBox && primaryReachableBox && intersects(mascotBox, primaryReachableBox)));
+  }
+  await capture(page, role, viewportName, `map-${disclosureAvailable ? "disclosure-closed" : "default"}`);
 }
 
 async function login(page, role) {
@@ -148,7 +226,7 @@ async function runRole(browser, role, viewport = { width: 1440, height: 900 }, v
     record(role, "command-center", (await commandCenter.count()) === 1);
     report.commandCenterPassCount += 1;
     const details = home.locator('details[data-details="task-workspace"]');
-    await details.locator("summary").click();
+    await details.locator("summary").first().click();
     record(role, "details-disclosure", await details.evaluate((element) => element.hasAttribute("open")));
     report.summaryDisclosurePassCount += 1;
     if (viewportName === "desktop") {
@@ -185,6 +263,9 @@ async function runRole(browser, role, viewport = { width: 1440, height: 900 }, v
     await page.waitForTimeout(750);
     record(role, "real-task-completion", page.url().includes(primaryRoutes[role]));
     report.roleTaskCompletionPassCount += 1;
+    if (role === "ROOM" || role === "COMPANY") {
+      await runMapProgressiveDisclosureAcceptance(page, role, viewportName);
+    }
     report.rolePassCount += 1;
     return { role, viewport: viewportName, screenshot: true };
   } finally {
@@ -209,13 +290,19 @@ async function main() {
   report.pageErrors = pageErrors.slice(0, 20);
   report.screenshotEvidence = report.rows.filter((row) => row.state === "task-home").map((row) => row.role);
   await fs.writeFile(path.join(artifactRoot, "report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  await fs.writeFile(path.join(artifactRoot, "report.md"), `# #17 real browser evidence\n\n- HEAD: \`${report.sourceHead}\`\n- Role passes: ${report.rolePassCount}\n- Screenshots: ${report.screenshotEvidenceCount}\n- Mascot primary entry: ${report.mascotPrimaryEntryPassCount}\n- Open/close: ${report.mascotOpenClosePassCount}\n- Quick/full continuity: ${report.quickFullContinuityPassCount}\n- Console errors: ${report.consoleErrorCount}\n- Page errors: ${report.pageErrorCount}\n- Unexpected 5xx: ${report.unexpected500Count}\n\nBrowser output is commit-external evidence.\n`, "utf8");
+  await fs.writeFile(path.join(artifactRoot, "report.md"), `# #17 real browser evidence\n\n- HEAD: \`${report.sourceHead}\`\n- Role passes: ${report.rolePassCount}\n- Screenshots: ${report.screenshotEvidenceCount}\n- Mascot primary entry: ${report.mascotPrimaryEntryPassCount}\n- Open/close: ${report.mascotOpenClosePassCount}\n- Quick/full continuity: ${report.quickFullContinuityPassCount}\n- Map progressive disclosure: ${report.mapProgressiveDisclosureBrowserPassCount}\n- Map five-second hierarchy: ${report.mapFiveSecondHierarchyPassCount}\n- Map disclosure resets: ${report.mapDisclosureUnexpectedResetCount}\n- Map mobile overlap/blocking: ${report.mapMobilePrimaryActionOverlapCount}/${report.mapMobileBlockingPanelCount}\n- Working map capability loss: ${report.workingMapCapabilityLostCount}\n- Console errors: ${report.consoleErrorCount}\n- Page errors: ${report.pageErrorCount}\n- Unexpected 5xx: ${report.unexpected500Count}\n\nBrowser output is commit-external evidence.\n`, "utf8");
   if (report.consoleErrorCount || report.pageErrorCount || report.unexpected500Count) process.exitCode = 1;
   console.log(`ROLE_PASS_COUNT = ${report.rolePassCount}`);
   console.log(`SCREENSHOT_EVIDENCE_COUNT = ${report.screenshotEvidenceCount}`);
   console.log(`MASCOT_PRIMARY_ENTRY_PASS_COUNT = ${report.mascotPrimaryEntryPassCount}`);
   console.log(`MASCOT_OPEN_CLOSE_PASS_COUNT = ${report.mascotOpenClosePassCount}`);
   console.log(`QUICK_FULL_CONTEXT_CONTINUITY_PASS_COUNT = ${report.quickFullContinuityPassCount}`);
+  console.log(`MAP_PROGRESSIVE_DISCLOSURE_BROWSER_PASS_COUNT = ${report.mapProgressiveDisclosureBrowserPassCount}`);
+  console.log(`MAP_FIVE_SECOND_HIERARCHY_PASS_COUNT = ${report.mapFiveSecondHierarchyPassCount}`);
+  console.log(`MAP_DISCLOSURE_UNEXPECTED_RESET_COUNT = ${report.mapDisclosureUnexpectedResetCount}`);
+  console.log(`MAP_MOBILE_PRIMARY_ACTION_OVERLAP_COUNT = ${report.mapMobilePrimaryActionOverlapCount}`);
+  console.log(`MAP_MOBILE_BLOCKING_PANEL_COUNT = ${report.mapMobileBlockingPanelCount}`);
+  console.log(`WORKING_MAP_CAPABILITY_LOST_COUNT = ${report.workingMapCapabilityLostCount}`);
   console.log(`CONSOLE_ERROR_COUNT = ${report.consoleErrorCount}`);
   console.log(`PAGE_ERROR_COUNT = ${report.pageErrorCount}`);
   console.log(`UNEXPECTED_500_COUNT = ${report.unexpected500Count}`);

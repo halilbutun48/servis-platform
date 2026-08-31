@@ -1325,10 +1325,37 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 .mapGrid { grid-template-columns: clamp(320px, 26vw, 400px) minmax(0, 1fr); align-items: stretch; }
 .mapAsideCard { height: var(--mapH); display:flex; flex-direction:column; }
 .mapAsideList { overflow:auto; padding-right: 4px; }
+.mapOperationsDisclosure {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, .34);
+  padding: 10px 12px;
+}
+.mapOperationsDisclosure > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 28px;
+  color: #e7eefc;
+  font-weight: 800;
+  list-style-position: inside;
+}
+.mapOperationsDisclosure > summary::marker { color: #93c5fd; }
+.mapOperationsDisclosureBody { margin-top: 10px; }
+.mapOperationsDisclosureCount { white-space: nowrap; }
+.mapListDisclosure { align-self: start; }
+.mapListDisclosure[open] { align-self: stretch; }
+.mapListDisclosure[open] .mapAsideCard { height: auto !important; min-height: 260px; }
+.mapGrid > [data-map-surface="primary"] { min-width: 0; }
 
 @media (max-width: 900px){
   .mapGrid { grid-template-columns: 1fr; }
   .mapAsideCard { height: auto; }
+  .mapOperationsDisclosure { width: 100%; }
+  .mapListDisclosure[open] .mapAsideCard { min-height: 0; }
 }
 .muted { color:#98a2b3; font-size: 13px; }
 .err { color:#ffb4b4; border-color:#6b1d1d; }

@@ -13,6 +13,7 @@ import { displayStatusLabel } from "../../utils/displayStatus";
 import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import MapOperationsDisclosure from "../../components/map/MapOperationsDisclosure";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
 import { cachedGet } from "../../utils/uiDataCache";
 
@@ -643,7 +644,8 @@ export default function RoomMapPanel() {
         title="Taşımacılık Firması • Canlı Takip"
         subtitle="Tek panel: canlı liste + seçili araç + duraklar + harita"
         actions={
-          <div className="toolbar" style={{ justifyContent: "flex-end" }}>
+          <MapOperationsDisclosure summary="Filtreler ve yenileme">
+            <div className="toolbar" style={{ justifyContent: "flex-end" }}>
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(Boolean(e.target.checked))} />
               Yalnızca aktif
@@ -669,7 +671,8 @@ export default function RoomMapPanel() {
             <button className="btn sm" onClick={load} disabled={busy}>
               {busy ? "..." : "Yenile"}
             </button>
-          </div>
+            </div>
+          </MapOperationsDisclosure>
         }
       />
 
@@ -696,14 +699,16 @@ export default function RoomMapPanel() {
           badge={`${cards.length}`}
         >
           <div className="grid mapGrid" style={mapGridStyle}>
-            {renderVehicleListCard({
-              title: "Canlı Liste",
-              subtitle: "Satıra tıkla → sağda timeline + harita.",
-              cardHeight: listCardHeight,
-            })}
+            <MapOperationsDisclosure summary="Canlı araçlar ve vardiyalar" count={cards.length} className="mapListDisclosure">
+              {renderVehicleListCard({
+                title: "Canlı Liste",
+                subtitle: "Satıra tıkla → sağda timeline + harita.",
+                cardHeight: listCardHeight,
+              })}
+            </MapOperationsDisclosure>
 
-            <div className="col" style={{ gap: 10 }}>
-              <div className="card" style={{ marginBottom: 0, paddingTop: 12, paddingBottom: 12 }}>
+            <div className="col" data-map-surface="primary" style={{ gap: 10 }}>
+              <div className="card" data-map-current-state="true" style={{ marginBottom: 0, paddingTop: 12, paddingBottom: 12 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div className="muted" style={{ fontSize: 12, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                     Harita Önizleme
@@ -801,7 +806,7 @@ export default function RoomMapPanel() {
                   </div>
 
                   <div className="toolbar" style={{ flexWrap: "wrap" }}>
-                    <button className="btn sm" onClick={() => openNextStopNavigation(selectedNext, selected)} disabled={!selectedNext}>
+                    <button className={selectedNext ? "btn primary sm" : "btn sm"} data-primary-cta={selectedNext ? "true" : undefined} onClick={() => openNextStopNavigation(selectedNext, selected)} disabled={!selectedNext}>
                       Sonraki Durağa Navigasyon
                     </button>
                     <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)} disabled={!selectedStops.length}>
@@ -826,8 +831,6 @@ export default function RoomMapPanel() {
                 </div>
               </div>
 
-              <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} style={{ marginBottom: 10 }} />
-
               <MapView
                 vehicles={vehicles}
                 stops={showStops ? selectedStops : []}
@@ -838,6 +841,8 @@ export default function RoomMapPanel() {
                 fitKey={`room:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}`}
                 height="var(--mapH)"
               />
+
+              <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} compact style={{ marginBottom: 10 }} />
             </div>
           </div>
         </MapTabCard>
@@ -879,7 +884,7 @@ export default function RoomMapPanel() {
                   <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)} disabled={!selectedStops.length}>
                     Tam Rotayı Aç
                   </button>
-                  <button className="btn sm" onClick={fitAll}>Tümünü Göster</button>
+                  <button className={!selectedNext ? "btn primary sm" : "btn sm"} data-primary-cta={!selectedNext ? "true" : undefined} onClick={fitAll}>Tümünü Göster</button>
                 </div>
               </div>
             </div>

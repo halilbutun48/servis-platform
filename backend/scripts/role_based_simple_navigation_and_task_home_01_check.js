@@ -38,6 +38,10 @@ async function main() {
   const appSource = read("web/src/App.jsx");
   const homeSource = read("web/src/components/RoleTaskHome.jsx");
   const commandSource = read("web/src/components/OperationsCommandCenter.jsx");
+  const mapDisclosureSource = read("web/src/components/map/MapOperationsDisclosure.jsx");
+  const roomMapSource = read("web/src/panels/room/MapPanel.jsx");
+  const companyMapSource = read("web/src/panels/company/MapPanel.jsx");
+  const mapCssSource = read("web/src/index.css");
   const drawerSource = read("web/src/components/copilot/FloatingCopilotDrawer.jsx");
   const fullSource = read("web/src/panels/shared/CopilotPanel.jsx");
   const sharedSource = read("web/src/utils/copilotSharedState.js");
@@ -78,6 +82,15 @@ async function main() {
   must(!commandSource.includes("#20 optimizer") || commandSource.includes("future"), "command center does not implement the future optimizer");
   must((homeSource.match(/className=\"btn primary rolePrimaryCta\"/g) || []).length === 1, "task home has one dominant primary CTA implementation");
 
+  must(manifest.sourceOwners.mapDisclosure === "web/src/components/map/MapOperationsDisclosure.jsx", "map disclosure has one shared presentation owner");
+  must(manifest.mapOperations && manifest.mapOperations.defaultVisible.includes("map") && manifest.mapOperations.defaultVisible.includes("current operational state") && manifest.mapOperations.secondaryBehindDisclosure.includes("vehicle/driver/shift list"), "map manifest records summary-first disclosure contract");
+  must(mapDisclosureSource.includes("data-map-disclosure=\"secondary\"") && mapDisclosureSource.includes("<details"), "map disclosure uses native persistent details");
+  must(roomMapSource.includes("MapOperationsDisclosure") && companyMapSource.includes("MapOperationsDisclosure"), "ROOM and COMPANY map owners use shared disclosure");
+  must(roomMapSource.includes('data-map-surface="primary"') && companyMapSource.includes('data-map-surface="primary"'), "map owners expose primary surface identity");
+  must(roomMapSource.includes('data-map-current-state="true"') && companyMapSource.includes('data-map-current-state="true"'), "map owners keep current operational state visible");
+  must(roomMapSource.includes('data-primary-cta={selectedNext ? "true" : undefined}') && roomMapSource.includes('data-primary-cta={!selectedNext ? "true" : undefined}') && companyMapSource.includes('data-primary-cta={selectedNext ? "true" : undefined}') && companyMapSource.includes('data-primary-cta={!selectedNext ? "true" : undefined}'), "map owners expose one data-aware dominant primary action");
+  must(mapCssSource.includes(".mapOperationsDisclosure") && mapCssSource.includes(".mapListDisclosure[open]"), "map disclosure responsive styles keep secondary lists collapsible");
+
   must((sharedSource.match(/SHARED_COPILOT_STATE_KEY/g) || []).length >= 1, "one shared Sefer Abi state owner exists");
   must(sharedSource.includes("writeCopilotSharedState") && sharedSource.includes("copilotSharedStateEventName"), "shared Sefer Abi state has persistence and event bridge");
   must(drawerSource.includes("copilotFab--mascot") && drawerSource.includes("Tam ekranda aç"), "quick assistant exposes mascot and same-workspace continuation");
@@ -101,6 +114,8 @@ async function main() {
   must(report.sourceHead === currentHead(), "browser evidence is current-head bound");
   must(report.rolePassCount >= 8 && report.screenshotEvidenceCount >= 8, "real browser matrix and screenshots cover eight roles");
   must(report.mascotPrimaryEntryPassCount >= 1 && report.mascotOpenClosePassCount >= 1 && report.quickFullContinuityPassCount >= 1, "mascot open/close and quick-full browser acceptance passed");
+  must(report.mapProgressiveDisclosureBrowserPassCount >= 1 && report.mapFiveSecondHierarchyPassCount >= 1, "real browser proves map progressive disclosure and five-second hierarchy");
+  must(report.mapDisclosureUnexpectedResetCount === 0 && report.mapMobilePrimaryActionOverlapCount === 0 && report.mapMobileBlockingPanelCount === 0 && report.workingMapCapabilityLostCount === 0 && report.criticalMapOperationSignalHiddenCount === 0 && report.mapDefaultVisibleTechnicalOverloadCount === 0, "map keeps critical state, task action, mobile reachability, and stable disclosure");
   must(report.userFacingTerminalLabelCount === 0 && report.duplicatePrimaryEntryCount === 0 && report.criticalUiOverlapCount === 0, "browser proves single non-overlapping assistant entry");
   must(report.consoleErrorCount === 0 && report.pageErrorCount === 0 && report.unexpected500Count === 0, "#17 browser run has no console/page/server errors");
 

@@ -7,7 +7,10 @@
     "commandCenter": "web/src/components/OperationsCommandCenter.jsx",
     "assistantSharedState": "web/src/utils/copilotSharedState.js",
     "assistantQuickEntry": "web/src/components/copilot/FloatingCopilotDrawer.jsx",
-    "assistantFullWorkspace": "web/src/panels/shared/CopilotPanel.jsx"
+    "assistantFullWorkspace": "web/src/panels/shared/CopilotPanel.jsx",
+    "mapDisclosure": "web/src/components/map/MapOperationsDisclosure.jsx",
+    "roomMap": "web/src/panels/room/MapPanel.jsx",
+    "companyMap": "web/src/panels/company/MapPanel.jsx"
   },
   "screens": [
     { "role": "SUPER_ADMIN", "route": "/superadmin", "task": "Sistem ve operasyon durumunu kontrol et", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Denetim durumunu aç", "detailsOwner": "web/src/panels/superadmin/SuperAdminPanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/super-admin.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/super-admin.png", "futureTerminologyHandoff": true },
@@ -24,6 +27,12 @@
     "presentationOnly": true,
     "signalOwners": ["backend/src/services/dashboardBulk.js", "backend/src/ops/observabilityManifest.js"],
     "futureSignalsExcluded": ["#20 optimizer", "#30+ proactive assistant"]
+  },
+  "mapOperations": {
+    "defaultVisible": ["map", "current operational state", "critical issue/opportunity", "one primary action", "minimal status summary"],
+    "secondaryBehindDisclosure": ["vehicle/driver/shift list", "route details", "advanced filters", "history", "GPS diagnostics", "provider metadata"],
+    "disclosureOwner": "web/src/components/map/MapOperationsDisclosure.jsx",
+    "acceptance": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/report.json"
   },
   "seferAbi": {
     "primaryEntry": "Sefer Abi’ye Sor",

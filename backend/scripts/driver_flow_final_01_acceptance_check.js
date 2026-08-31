@@ -58,6 +58,7 @@ async function main() {
   const audit = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
   const app = read('web/src/App.jsx');
   const navDock = read('web/src/layout/NavDock.jsx');
+  const roleNavigation = read('web/src/utils/roleNavigation.js');
   const driverToday = read('web/src/panels/driver/TodayPanel.jsx');
   const driverRoute = read('web/src/panels/driver/RoutePanel.jsx');
   const driverMap = read('web/src/panels/driver/MapPanel.jsx');
@@ -81,11 +82,12 @@ async function main() {
   must(app, '/driver/map', 'app exposes driver map route');
   must(app, '/driver/checkin', 'app exposes driver check-in route');
 
-  must(navDock, 'Bugün', 'NavDock keeps driver Bugün label');
-  must(navDock, 'Rota', 'NavDock keeps driver Rota label');
-  must(navDock, 'Harita', 'NavDock keeps driver Harita label');
-  must(navDock, 'Check-in', 'NavDock keeps driver Check-in label');
-  must(navDock, 'Sefer Abi Terminali', 'NavDock keeps Sefer Abi Terminali label');
+  const driverNavigationOwner = `${navDock}\n${roleNavigation}`;
+  must(driverNavigationOwner, 'Bugün', 'canonical navigation keeps driver Bugün label');
+  must(driverNavigationOwner, 'Rota', 'canonical navigation keeps driver Rota label');
+  must(driverNavigationOwner, 'Harita', 'canonical navigation keeps driver Harita label');
+  must(driverNavigationOwner, 'Check-in', 'canonical navigation keeps driver Check-in label');
+  must(navDock, 'Sefer Abi Terminali', 'NavDock compatibility guard keeps historical terminal reference');
 
   must(driverToday, 'Henüz başlatılmış aktif görev yok', 'driver today distinguishes accepted-but-not-started state');
   must(driverToday, 'approvedTodayCount', 'driver today counts accepted-but-not-started shifts');

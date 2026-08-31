@@ -36,6 +36,7 @@ function SectionChips({ title, items = [], emptyText = "" }) {
 export default function SafeDriveSummaryCard({
   summaryParams = null,
   className = "",
+  compact = false,
   style = {},
 }) {
   const safeDrive = getSafeDriveSummary(summaryParams || {});
@@ -80,19 +81,36 @@ export default function SafeDriveSummaryCard({
         ))}
       </div>
 
-      <div className="muted">Kanıt / check-in durumu</div>
-
-      <SectionChips title="Risk nedenleri" items={riskReasons.map((item) => ({ text: item, tone: "CRITICAL" }))} emptyText="Risk sinyali görünmüyor." />
-      <SectionChips title="Kontrol edilmeli notları" items={controlNotes.map((item) => ({ text: item, tone: "WARN" }))} emptyText="Kontrol notu yok." />
-
-      <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-        <div className="muted">Kullanıcı onayı gerekir / operasyon kontrol önerisi</div>
-        <div style={{ fontWeight: 800, marginTop: 4 }}>{safeDrive?.nextBestAction || "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma."}</div>
-      </div>
-
-      <div className="muted" style={{ lineHeight: 1.45 }}>
-        {safeDrive?.boundaryNote || "Salt okunur sınır: sadece okur ve özetler."}
-      </div>
+      {compact ? (
+        <details className="mapOperationsDisclosure safeDriveDetails" data-map-disclosure="secondary">
+          <summary>Risk ve kontrol ayrıntıları</summary>
+          <div className="mapOperationsDisclosureBody">
+            <div className="muted">Kanıt / check-in durumu</div>
+            <SectionChips title="Risk nedenleri" items={riskReasons.map((item) => ({ text: item, tone: "CRITICAL" }))} emptyText="Risk sinyali görünmüyor." />
+            <SectionChips title="Kontrol edilmeli notları" items={controlNotes.map((item) => ({ text: item, tone: "WARN" }))} emptyText="Kontrol notu yok." />
+            <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted">Kullanıcı onayı gerekir / operasyon kontrol önerisi</div>
+              <div style={{ fontWeight: 800, marginTop: 4 }}>{safeDrive?.nextBestAction || "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma."}</div>
+            </div>
+            <div className="muted" style={{ lineHeight: 1.45 }}>
+              {safeDrive?.boundaryNote || "Salt okunur sınır: sadece okur ve özetler."}
+            </div>
+          </div>
+        </details>
+      ) : (
+        <>
+          <div className="muted">Kanıt / check-in durumu</div>
+          <SectionChips title="Risk nedenleri" items={riskReasons.map((item) => ({ text: item, tone: "CRITICAL" }))} emptyText="Risk sinyali görünmüyor." />
+          <SectionChips title="Kontrol edilmeli notları" items={controlNotes.map((item) => ({ text: item, tone: "WARN" }))} emptyText="Kontrol notu yok." />
+          <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+            <div className="muted">Kullanıcı onayı gerekir / operasyon kontrol önerisi</div>
+            <div style={{ fontWeight: 800, marginTop: 4 }}>{safeDrive?.nextBestAction || "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma."}</div>
+          </div>
+          <div className="muted" style={{ lineHeight: 1.45 }}>
+            {safeDrive?.boundaryNote || "Salt okunur sınır: sadece okur ve özetler."}
+          </div>
+        </>
+      )}
     </div>
   );
 }
