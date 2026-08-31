@@ -39,6 +39,10 @@ const report = {
   mascotPrimaryEntryPassCount: 0,
   mascotOpenClosePassCount: 0,
   quickFullContinuityPassCount: 0,
+  roleTaskCompletionPassCount: 0,
+  summaryDisclosurePassCount: 0,
+  advancedDisclosurePassCount: 0,
+  commandCenterPassCount: 0,
   userFacingTerminalLabelCount: 0,
   duplicatePrimaryEntryCount: 0,
   criticalUiOverlapCount: 0,
@@ -140,6 +144,17 @@ async function runRole(browser, role, viewport = { width: 1440, height: 900 }, v
     await capture(page, role, viewportName, "closed");
     const mascot = await checkVisibleShell(page, role);
     await assertCriticalUiDoesNotOverlap(page, role, mascot);
+    const commandCenter = page.getByRole("region", { name: "Sorunlar ve fırsatlar" });
+    record(role, "command-center", (await commandCenter.count()) === 1);
+    report.commandCenterPassCount += 1;
+    const details = home.locator('details[data-details="task-workspace"]');
+    await details.locator("summary").click();
+    record(role, "details-disclosure", await details.evaluate((element) => element.hasAttribute("open")));
+    report.summaryDisclosurePassCount += 1;
+    const advancedToggle = page.getByRole("button", { name: /^SİSTEM/ }).first();
+    await advancedToggle.click();
+    record(role, "advanced-disclosure", (await page.locator("#shell-nav-dock").innerText()).includes("SİSTEM"));
+    report.advancedDisclosurePassCount += 1;
     await mascot.click();
     const drawer = page.locator(".copilotDrawer");
     await drawer.waitFor({ state: "visible", timeout: 5000 });
@@ -163,9 +178,11 @@ async function runRole(browser, role, viewport = { width: 1440, height: 900 }, v
       await page.waitForTimeout(800);
       record(role, "single-entry-after-full", (await page.getByRole("button", { name: "Sefer Abi’ye Sor, operasyon yardımcısını aç" }).count()) === 1);
     }
-    await page.goto(`${webBase}/#${primaryRoutes[role]}`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    const primaryCta = page.locator('[data-primary-cta="true"]').first();
+    await primaryCta.click();
     await page.waitForTimeout(750);
-    record(role, "primary-task-route", page.url().includes(primaryRoutes[role]));
+    record(role, "real-task-completion", page.url().includes(primaryRoutes[role]));
+    report.roleTaskCompletionPassCount += 1;
     report.rolePassCount += 1;
     return { role, viewport: viewportName, screenshot: true };
   } finally {
