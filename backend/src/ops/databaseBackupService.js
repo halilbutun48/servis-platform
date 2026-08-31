@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -164,7 +163,7 @@ function acquireInventoryLock(outputDir) {
     } catch (error) {
       if (error.code !== "EEXIST") throw error;
       const waitUntil = Date.now() + Math.min(250, 25 * (attempt + 1));
-      while (Date.now() < waitUntil) {}
+      while (Date.now() < waitUntil) { /* bounded inventory backoff */ }
     }
   }
   throw new Error("BACKUP_INVENTORY_LOCK_TIMEOUT: another backup operation is active");
