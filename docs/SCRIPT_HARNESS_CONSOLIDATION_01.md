@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-08-30
+Tarih: 2026-08-31
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `451`
-- Toplam executable tracked file: `1339`
-- Combined registry row: `1790`
-- Root/backend/web/mobile package dağılımı: root `282`, backend `907`, web `97`, mobile `201`
+- Toplam package script entry: `461`
+- Toplam executable tracked file: `1343`
+- Combined registry row: `1804`
+- Root/backend/web/mobile package dağılımı: root `284`, backend `919`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `780`
+- NEEDS_REVIEW: `794`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 780 |
+| NEEDS_REVIEW | 794 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -682,6 +682,8 @@ Repo: `servis-platform`
 | root:check:observabilitymonitoringalerting01 | package.json | root | node backend/scripts/observability_monitoring_alerting_01_check.js | review | NEEDS_REVIEW |  | OBSERVABILITY-MONITORING-ALERTING-01 |  | Owner or chain unclear |  |
 | root:check:backendlintwarningburndown01 | package.json | root | node backend/scripts/backend_lint_warning_burndown_01_check.js | review | NEEDS_REVIEW |  | BACKEND-LINT-WARNING-BURNDOWN-01 |  | Owner or chain unclear |  |
 | root:check:dataintegrityandrecovery01 | package.json | root | node backend/scripts/data_integrity_and_recovery_01_check.js | core | ACTIVE_CORE |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Breaks canonical verification chain |  |
+| root:check:databasebackupretentionandintegrity01 | package.json | root | node backend/scripts/database_backup_retention_and_integrity_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-DATABASEBACKUPRETENTIONANDINTEGRITY-01 |  | Owner or chain unclear |  |
+| root:accept:databasebackupretentionandintegrity01 | package.json | root | node backend/scripts/database_backup_retention_and_integrity_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-DATABASEBACKUPRETENTIONANDINTEGRITY-01 |  | Owner or chain unclear |  |
 | root:check:roledataisolationredteam01 | package.json | root | node backend/scripts/role_data_isolation_redteam_01_check.js | verify-core | ACTIVE_CORE |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Breaks canonical verification chain |  |
 | root:check:securitykvkkfinal01 | package.json | root | node backend/scripts/security_kvkk_final_01_check.js | review | NEEDS_REVIEW |  | SECURITY-KVKK-FINAL-01 |  | Owner or chain unclear |  |
 | root:check:auditlogandapprovaltrace01 | package.json | root | node backend/scripts/audit_log_and_approval_trace_01_check.js | verify-core | ACTIVE_CORE |  | AUDIT-LOG-AND-APPROVAL-TRACE-01 |  | Breaks canonical verification chain |  |
@@ -786,6 +788,14 @@ Repo: `servis-platform`
 | backend:m97opscheck | backend/package.json | backend | node scripts/m97_panel_operations_check.js | review | ACTIVE |  | BACKEND-M-97-OPSCHECK |  | Owner or chain unclear |  |
 | backend:m45:backup:create | backend/package.json | backend | node scripts/m45_backup_create.js | release | ACTIVE_RELEASE_ONLY | RELEASE_ONLY | BACKEND-M-45-BACKUP-CREATE |  | Breaks release / evidence / closure gate |  |
 | backend:m45:backup:restore | backend/package.json | backend | node scripts/m45_backup_restore.js | release | ACTIVE_RELEASE_ONLY | RELEASE_ONLY | BACKEND-M-45-BACKUP-RESTORE |  | Breaks release / evidence / closure gate |  |
+| backend:backup:policy | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01.mjs policy --json | review | NEEDS_REVIEW |  | BACKEND-BACKUP-POLICY |  | Owner or chain unclear |  |
+| backend:backup:inventory | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01.mjs inventory --json | review | NEEDS_REVIEW |  | BACKEND-BACKUP-INVENTORY |  | Owner or chain unclear |  |
+| backend:backup:create | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01.mjs create | review | NEEDS_REVIEW |  | BACKEND-BACKUP-CREATE |  | Owner or chain unclear |  |
+| backend:backup:verify | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01.mjs verify | review | NEEDS_REVIEW |  | BACKEND-BACKUP-VERIFY |  | Owner or chain unclear |  |
+| backend:backup:prune | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01.mjs prune --dry-run --json | review | NEEDS_REVIEW |  | BACKEND-BACKUP-PRUNE |  | Owner or chain unclear |  |
+| backend:backup:restore | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01.mjs restore | review | NEEDS_REVIEW |  | BACKEND-BACKUP-RESTORE |  | Owner or chain unclear |  |
+| backend:backup:acceptance | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01_acceptance.mjs | review | NEEDS_REVIEW |  | BACKEND-BACKUP-ACCEPTANCE |  | Owner or chain unclear |  |
+| backend:backup:check | backend/package.json | backend | node scripts/database_backup_retention_and_integrity_01_check.js | review | NEEDS_REVIEW |  | BACKEND-BACKUP-CHECK |  | Owner or chain unclear |  |
 | backend:milestones:static | backend/package.json | backend | node scripts/run_m0_latest.js --static-only --to latest --continue | release | ACTIVE_RELEASE_ONLY | RELEASE_ONLY | BACKEND-MILESTONES-STATIC |  | Breaks release / evidence / closure gate |  |
 | backend:m91check | backend/package.json | backend | node scripts/run_m91_route_preview_checks.js | review | ACTIVE |  | BACKEND-M-91-CHECK |  | Owner or chain unclear |  |
 | backend:m91:smoke:agreement | backend/package.json | backend | node scripts/m91_shift_to_agreement_smoke.js | review | NEEDS_REVIEW |  | BACKEND-M-91-SMOKE-AGREEMENT |  | Owner or chain unclear |  |
@@ -904,6 +914,9 @@ Repo: `servis-platform`
 | current_head_scope_policy_01_check.js | backend/scripts/current_head_scope_policy_01_check.js | backend |  | review | NEEDS_REVIEW |  | CURRENT-HEAD-SCOPE-POLICY-01-CHECK |  | Owner or chain unclear |  |
 | dashboard_bulk_endpoint_01_check.js | backend/scripts/dashboard_bulk_endpoint_01_check.js | backend | root:check:dashboardbulkendpoint01 | review | NEEDS_REVIEW |  | DASHBOARD-BULK-ENDPOINT-01-CHECK |  | Owner or chain unclear |  |
 | data_integrity_and_recovery_01_check.js | backend/scripts/data_integrity_and_recovery_01_check.js | backend | root:check:dataintegrityandrecovery01 | review | NEEDS_REVIEW |  | DATA-INTEGRITY-AND-RECOVERY-01 |  | Owner or chain unclear |  |
+| database_backup_retention_and_integrity_01.mjs | backend/scripts/database_backup_retention_and_integrity_01.mjs | backend | backend:backup:acceptance, backend:backup:check, backend:backup:create, backend:backup:inventory, backend:backup:policy, backend:backup:prune, backend:backup:restore, backend:backup:verify, root:accept:databasebackupretentionandintegrity01, root:check:databasebackupretentionandintegrity01 | review | NEEDS_REVIEW |  | DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01 |  | Owner or chain unclear |  |
+| database_backup_retention_and_integrity_01_acceptance.mjs | backend/scripts/database_backup_retention_and_integrity_01_acceptance.mjs | backend | backend:backup:acceptance, root:accept:databasebackupretentionandintegrity01 | review | NEEDS_REVIEW |  | DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01-ACCEPTANCE |  | Owner or chain unclear |  |
+| database_backup_retention_and_integrity_01_check.js | backend/scripts/database_backup_retention_and_integrity_01_check.js | backend | backend:backup:check, root:check:databasebackupretentionandintegrity01 | review | NEEDS_REVIEW |  | DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01-CHECK |  | Owner or chain unclear |  |
 | db_pool_and_api_scaling_01_check.js | backend/scripts/db_pool_and_api_scaling_01_check.js | backend | root:check:dbpoolandapiscaling01 | review | NEEDS_REVIEW |  | DB-POOL-AND-API-SCALING-01 |  | Owner or chain unclear |  |
 | db_pool_and_api_scaling_01_probe.js | backend/scripts/db_pool_and_api_scaling_01_probe.js | backend |  | review | NEEDS_REVIEW |  | DB-POOL-AND-API-SCALING-01 |  | Owner or chain unclear |  |
 | docs_ssot_brand_artifact_cleanup_01_check.js | backend/scripts/docs_ssot_brand_artifact_cleanup_01_check.js | backend | root:check:docsbrandcleanup01 | review | NEEDS_REVIEW |  | DOCS-SSOT-BRAND-ARTIFACT-CLEANUP-01-CHECK |  | Owner or chain unclear |  |
@@ -1450,7 +1463,7 @@ Repo: `servis-platform`
 | documents.js | backend/src/kvkk/documents.js | backend |  | review | NEEDS_REVIEW |  | DOCUMENTS |  | Owner or chain unclear |  |
 | enforcement.js | backend/src/kvkk/enforcement.js | backend |  | review | NEEDS_REVIEW |  | ENFORCEMENT |  | Owner or chain unclear |  |
 | matrix.js | backend/src/kvkk/matrix.js | backend | root:check:ai03bsemanticvisiblelivematrix01, root:check:copilotroletaskmatrix01 | review | NEEDS_REVIEW |  | MATRIX |  | Owner or chain unclear |  |
-| retention.js | backend/src/kvkk/retention.js | backend |  | review | NEEDS_REVIEW |  | RETENTION |  | Owner or chain unclear |  |
+| retention.js | backend/src/kvkk/retention.js | backend | backend:backup:acceptance, backend:backup:check, backend:backup:create, backend:backup:inventory, backend:backup:policy, backend:backup:prune, backend:backup:restore, backend:backup:verify, root:accept:databasebackupretentionandintegrity01, root:check:databasebackupretentionandintegrity01 | review | NEEDS_REVIEW |  | RETENTION |  | Owner or chain unclear |  |
 | jsonFileStore.js | backend/src/lib/jsonFileStore.js | backend |  | review | NEEDS_REVIEW |  | JSON-FILE-STORE |  | Owner or chain unclear |  |
 | logger.js | backend/src/lib/logger.js | backend |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
 | penalties.js | backend/src/lib/penalties.js | backend |  | review | NEEDS_REVIEW |  | PENALTIES |  | Owner or chain unclear |  |
@@ -1467,6 +1480,7 @@ Repo: `servis-platform`
 | backupArchiveOps.js | backend/src/ops/backupArchiveOps.js | backend |  | review | NEEDS_REVIEW |  | BACKUP-ARCHIVE-OPS |  | Owner or chain unclear |  |
 | capacityLoadBaseline.js | backend/src/ops/capacityLoadBaseline.js | backend |  | review | NEEDS_REVIEW |  | CAPACITY-LOAD-BASELINE |  | Owner or chain unclear |  |
 | commercialCoreManifest.js | backend/src/ops/commercialCoreManifest.js | backend |  | review | NEEDS_REVIEW |  | COMMERCIAL-CORE-MANIFEST |  | Owner or chain unclear |  |
+| databaseBackupService.js | backend/src/ops/databaseBackupService.js | backend |  | review | NEEDS_REVIEW |  | DATABASE-BACKUP-SERVICE |  | Owner or chain unclear |  |
 | edgeSecurityBaseline.js | backend/src/ops/edgeSecurityBaseline.js | backend |  | review | NEEDS_REVIEW |  | EDGE-SECURITY-BASELINE |  | Owner or chain unclear |  |
 | fieldAcceptanceManifest.js | backend/src/ops/fieldAcceptanceManifest.js | backend |  | review | NEEDS_REVIEW |  | FIELD-ACCEPTANCE-MANIFEST |  | Owner or chain unclear |  |
 | fieldAcceptanceState.js | backend/src/ops/fieldAcceptanceState.js | backend |  | review | NEEDS_REVIEW |  | FIELD-ACCEPTANCE-STATE |  | Owner or chain unclear |  |

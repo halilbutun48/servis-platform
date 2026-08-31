@@ -20,6 +20,8 @@ Amaç feature davranışı eklemek değil, mevcut güvenli yüzeyi okumak ve rel
 - Host-side wrapper `backend/src/ops/backupArchiveOps.js` içinde toplanır.
 - Operasyon komutları `backend/scripts/m45_backup_create.js` ve `backend/scripts/m45_backup_restore.js` ile görünür kalır.
 - Runbook referansları `docs/RUNBOOK_M45_RETENTION_BACKUP.md` ve `docs/REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md` içindedir.
+- Yeni canonical owner `backend/src/ops/databaseBackupService.js` ve `DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01` sözleşmesidir; M45 adları yalnızca bu owner'a delegasyon uyumluluğudur.
+- Gerçek custom-format archive, SHA-256 checksum, inventory, retention ve isolated restore kanıtı `docs/DATABASE_BACKUP_RETENTION_AND_INTEGRITY_01.md` ile yaşar.
 
 ## 5) Restore policy
 - Restore yalnızca explicit `backupFile` ile açılır.

@@ -78,7 +78,14 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - Kanonik owner/check zinciri: `npm --prefix backend run prisma:modularization:acceptance`, `npm --prefix backend run prisma:modularization:check` ve `npm --prefix backend run prisma:verify`.
 - Yeni model/enum/relation değişiklikleri #11 parity, #10 generation ve migration-impact doğrulamasından geçmeden kabul edilmez.
 
-## 2.3) M90C.6 — Hot-File Queue Policy
+## 2.3) DATABASE_BACKUP_RETENTION_AND_INTEGRITY_01
+- #12, PostgreSQL custom-format backup, checksum, retention inventory ve izole gerçek restore rehearsal için tek canonical owner'dır.
+- Owner: `backend/src/ops/databaseBackupService.js`; CLI: `backend/scripts/database_backup_retention_and_integrity_01.mjs`; acceptance: `backend/scripts/database_backup_retention_and_integrity_01_acceptance.mjs`; checker: `backend/scripts/database_backup_retention_and_integrity_01_check.js`.
+- `ACCOUNTING_BACKUP_INTEGRITY_V1` metadata, source/schema identity, idempotency, retention, restore compatibility ve audit reference taşır; parola ve payload loglanmaz.
+- Restore yalnız `isolated=true` ve ayrı hedef ile çalışır; canonical DB overwrite, reset/reseed, migration ve accounting/payment write yoktur.
+- M45 script/tool adları compatibility delegate olarak korunur; yeni backup engine veya ikinci scheduler açılmaz.
+
+## 2.4) M90C.6 — Hot-File Queue Policy
 - Hot/large file listesi artık sadece rapor değildir; resmi sınıflı queue olarak takip edilir.
 - Kör refactor yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
 - `helpComposer.js` **justified exception** olarak korunur; `schema.prisma` #11 canonical entrypoint'tir, domain hot-file borcu modüllerle ve ownership checker ile yönetilir.
@@ -90,14 +97,14 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - `web/src/panels/room/ShiftsPanel.jsx` kontrollü extraction ile 1000 satır altına indi; artık hot-file kuyruğunda değildir.
 - Kanonik komut: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`.
 
-## 2.4) M90C.7 — Export / Package Hygiene Closure
+## 2.5) M90C.7 — Export / Package Hygiene Closure
 - Shareable repo paketi çalışma alanı artığı taşımayacaktır.
 - `.env`, `web/dist`, `mobile/dist`, `backend/data/*.json`, overlay readme/log kalıntıları ve mevcut zip arşivleri export dışında kalır.
 - Satır azaltma en sona bırakılır; bu adım davranış refactor'u değildir.
 - Kanonik komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Shareable zip komutu: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`.
 
-## 2.5) M90C.8 — CI / Verification Visibility
+## 2.6) M90C.8 — CI / Verification Visibility
 - Yerelde çalışan verify hattı repo-native görünür hale getirilmiştir.
 - Kök komut: `npm run verify:ci`.
 - Fresh runner kurulum kapısı: `npm --prefix backend ci` ve `npm --prefix web ci`.
@@ -107,7 +114,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json`, `artifacts/lint/web_lint_latest.txt` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
 - Satır azaltma en sona bırakılır; bu adım görünür doğrulama içindir.
 
-## 2.6) M90C.9 — Güvenli Kapanış / Final Hygiene Checklist
+## 2.7) M90C.9 — Güvenli Kapanış / Final Hygiene Checklist
 - Kanonik final giriş komutu: `npm run verify:final`.
 - `verify:final`, önce `verify:repo` zincirini çalıştırır; sonra `verify:snapshot` soft gate raporunu yeniler.
 - Final giriş bu yüzden hem `artifacts/lint/web_lint_latest.txt` hem `artifacts/repo-audit/physical_snapshot_hygiene_latest.json` üretir/günceller.

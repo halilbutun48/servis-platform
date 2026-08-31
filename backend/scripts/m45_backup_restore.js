@@ -15,6 +15,8 @@ function hasFlag(name) {
 async function main() {
   const backupFile = readArg("backup-file");
   const manifestFile = readArg("manifest-file");
+  const targetDatabaseUrl = readArg("target-database-url");
+  const targetContainer = readArg("target-container");
   const force = hasFlag("force");
 
   if (!backupFile) {
@@ -22,10 +24,12 @@ async function main() {
     return;
   }
 
-  const result = restoreBackupArchive({
+  const result = await restoreBackupArchive({
     backupFile,
     manifestFile,
-    force,
+    targetDatabaseUrl,
+    targetContainer,
+    isolated: force,
   });
 
   if (result.ok) {

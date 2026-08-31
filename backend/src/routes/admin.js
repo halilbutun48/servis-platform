@@ -197,15 +197,16 @@ r.get("/backup/manifest", authRequired(), requireRole("SUPER_ADMIN"), async (_re
 // ? M45: backup create (host-side wrapper around archive snapshot)
 r.post("/backup/create", ...superAdminWrite, async (req, res) => {
   try {
-    const outputDir = String(req.body?.outputDir || "").trim() || null;
+    const requestedOutputDir = String(req.body?.outputDir || "").trim() || null;
     const keepDaysRaw = req.body?.keepDays;
     const keepDays = keepDaysRaw == null || keepDaysRaw === "" ? null : Number(keepDaysRaw);
-    const result = createBackupArchive({
-      outputDir,
+    const result = await createBackupArchive({
+      outputDir: null,
       keepDays: Number.isFinite(keepDays) ? keepDays : null,
     });
     await auditAdminWrite(req, "ADMIN_BACKUP_CREATE", "BackupArchive", null, {
-      outputDir,
+      outputDir: ENV.BACKUP_LOCAL_DIR,
+      requestedOutputDir,
       keepDays: Number.isFinite(keepDays) ? keepDays : null,
       backupFile: result?.backupFile || result?.file || null,
       status: result?.ok ? "OK" : "FAILED",
@@ -222,15 +223,21 @@ r.post("/backup/restore", ...superAdminWrite, async (req, res) => {
   try {
     const backupFile = String(req.body?.backupFile || "").trim();
     const manifestFile = String(req.body?.manifestFile || "").trim() || null;
+    const targetDatabaseUrl = String(req.body?.targetDatabaseUrl || "").trim() || null;
+    const targetContainer = String(req.body?.targetContainer || "").trim() || null;
     const force = req.body?.force === true || String(req.body?.force || "").toLowerCase() === "true";
-    const result = restoreBackupArchive({
+    const result = await restoreBackupArchive({
       backupFile,
       manifestFile,
-      force,
+      outputDir: ENV.BACKUP_LOCAL_DIR,
+      targetDatabaseUrl,
+      targetContainer,
+      isolated: force,
     });
     await auditAdminWrite(req, "ADMIN_BACKUP_RESTORE", "BackupArchive", null, {
       backupFile,
       manifestFile,
+      targetContainer,
       force,
       restoreSource: backupFile,
       status: result?.ok ? "OK" : "FAILED",

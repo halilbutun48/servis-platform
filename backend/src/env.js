@@ -146,7 +146,7 @@ export const ENV = {
   // ✅ M45: backup policy / local snapshot output (archive layer)
   BACKUP_LOCAL_DIR: process.env.BACKUP_LOCAL_DIR ?? "/app/artifacts/backups",
   BACKUP_LOCAL_RETENTION_DAYS: Number(process.env.BACKUP_LOCAL_RETENTION_DAYS ?? 730),
-  BACKUP_DUMP_FORMAT: process.env.BACKUP_DUMP_FORMAT ?? "plain",
+  BACKUP_DUMP_FORMAT: process.env.BACKUP_DUMP_FORMAT ?? "custom",
 
   // ✅ M19: route learning (optional)
   OSRM_URL: process.env.OSRM_URL ?? "",

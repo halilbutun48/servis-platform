@@ -11,7 +11,7 @@ function readArg(name, fallback = null) {
 async function main() {
   const outputDir = readArg("output-dir");
   const keepDays = readArg("keep-days");
-  const result = createBackupArchive({
+  const result = await createBackupArchive({
     outputDir,
     keepDays: keepDays == null ? null : Number(keepDays),
   });

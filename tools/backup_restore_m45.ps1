@@ -2,56 +2,21 @@ param(
   [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
   [Parameter(Mandatory=$true)][string]$BackupFile,
   [string]$ManifestFile = "",
+  [string]$TargetDatabaseUrl = "",
+  [string]$TargetContainer = "",
   [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
-. (Join-Path $PSScriptRoot "_console_status.ps1")
-
-if (-not $Force) {
-  throw "Restore destructive operation. Re-run with -Force."
+if (-not $Force) { throw "Restore requires an explicitly isolated target and -Force." }
+if (-not $TargetDatabaseUrl) { throw "TargetDatabaseUrl is required; canonical DB overwrite is blocked." }
+$args = @("backend/scripts/database_backup_retention_and_integrity_01.mjs", "restore", "--backup-file=$BackupFile", "--target-database-url=$TargetDatabaseUrl", "--isolated")
+if ($ManifestFile) { $args += "--manifest-file=$ManifestFile" }
+if ($TargetContainer) { $args += "--target-container=$TargetContainer" }
+Push-Location $RepoRoot
+try {
+  & node @args
+  if ($LASTEXITCODE -ne 0) { throw "Canonical #12 restore owner failed with exitCode=$LASTEXITCODE" }
+} finally {
+  Pop-Location
 }
-
-if (!(Test-Path -LiteralPath $BackupFile)) {
-  throw "Backup file not found: $BackupFile"
-}
-
-if ([string]::IsNullOrWhiteSpace($ManifestFile)) {
-  $candidate = [IO.Path]::Combine([IO.Path]::GetDirectoryName($BackupFile), ([IO.Path]::GetFileNameWithoutExtension($BackupFile) + "_manifest.json"))
-  if (Test-Path -LiteralPath $candidate) {
-    $ManifestFile = $candidate
-  }
-}
-
-if (-not [string]::IsNullOrWhiteSpace($ManifestFile) -and !(Test-Path -LiteralPath $ManifestFile)) {
-  throw "Manifest file not found: $ManifestFile"
-}
-
-if (-not [string]::IsNullOrWhiteSpace($ManifestFile)) {
-  $manifestRaw = Get-Content -LiteralPath $ManifestFile -Raw -Encoding UTF8
-  $manifest = $manifestRaw | ConvertFrom-Json
-  $expectedHash = [string]$manifest.backupSha256
-  if ($expectedHash) {
-    $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $BackupFile).Hash.ToLowerInvariant()
-    if ($actualHash -ne $expectedHash.ToLowerInvariant()) {
-      throw "Backup hash mismatch. expected=$expectedHash actual=$actualHash"
-    }
-  }
-}
-
-$dc = "docker"
-$compose = Join-Path $RepoRoot "infra/docker-compose.yml"
-$dcArgs = @(
-  "compose", "-f", $compose, "exec", "-T", "db",
-  "sh", "-lc", 'PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-)
-
-Write-Host ""
-Write-StatusLine "=== M45 BACKUP RESTORE ==="
-$sql = Get-Content -LiteralPath $BackupFile -Raw -Encoding UTF8
-$sql | & $dc @dcArgs
-if ($LASTEXITCODE -ne 0) {
-  throw "psql restore failed"
-}
-
-Write-Host "OK Restore completed from: $BackupFile"

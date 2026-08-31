@@ -345,6 +345,7 @@ function main() {
   must(pkg, '"check:observabilitymonitoringalerting01": "node backend/scripts/observability_monitoring_alerting_01_check.js"', 'package.json exposes check:observabilitymonitoringalerting01');
   must(pkg, '"check:backendlintwarningburndown01": "node backend/scripts/backend_lint_warning_burndown_01_check.js"', 'package.json exposes check:backendlintwarningburndown01');
   must(pkg, '"check:dataintegrityandrecovery01": "node backend/scripts/data_integrity_and_recovery_01_check.js"', 'package.json exposes check:dataintegrityandrecovery01');
+  must(pkg, '"check:databasebackupretentionandintegrity01": "node backend/scripts/database_backup_retention_and_integrity_01_check.js"', 'package.json exposes check:databasebackupretentionandintegrity01');
   must(pkg, '"check:securitykvkkfinal01": "node backend/scripts/security_kvkk_final_01_check.js"', 'package.json exposes check:securitykvkkfinal01');
   must(companyAgreementsPanel, 'CompanyAgreementsMobileCards', 'company agreements panel wires mobile cards');
   must(companyAgreementsPanel, 'desktopShiftTable companyAgreementsDesktopList', 'company agreements panel keeps desktop table wrapper');

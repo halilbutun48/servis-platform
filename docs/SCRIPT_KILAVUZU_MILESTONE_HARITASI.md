@@ -910,6 +910,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Pack: `tools/pack_m45_retention_backup.ps1`
 - Amaç: retention/backup altyapısı.
 
+### #12 — Database Backup Retention and Integrity [CHECK + ACCEPTANCE]
+- Canonical owner: `backend/src/ops/databaseBackupService.js`
+- Check: `npm run check:databasebackupretentionandintegrity01`
+- Gerçek izole kabul: `npm --prefix backend run backup:acceptance`
+- Contract: `ACCOUNTING_BACKUP_INTEGRITY_V1`; custom-format PostgreSQL archive, SHA-256 checksum, inventory, retention ve isolated restore rehearsal.
+- M45 script/tool adları compatibility delegate olarak korunur; canonical DB overwrite, reset/reseed, migration ve protected runtime-data değişikliği yoktur.
+- Doküman: `docs/DATABASE_BACKUP_RETENTION_AND_INTEGRITY_01.md`
+
 ### M46 — AI Copilot Foundation [PACK]
 - Ana pack: `tools/pack_m46_ai_copilot.ps1`
 - Alt packler: `m46.1`...`m46.9`, `m46.6_*`, `m46.7`, `m46.8`, `m46.9`

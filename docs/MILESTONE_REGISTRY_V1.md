@@ -71,6 +71,11 @@
   - sahipler: `backend/prisma/schema.prisma`, `backend/prisma/schema/*.prisma`, `backend/scripts/prisma_schema_modularization_01.mjs`, `backend/scripts/prisma_schema_modularization_01_check.js`
   - komutlar: `npm --prefix backend run prisma:modularization:acceptance`, `npm --prefix backend run prisma:modularization:check`, `npm --prefix backend run prisma:verify`
   - kural: custom schema compiler, competing SSOT, yeni migration, DB mutation ve ürün/UI davranışı yoktur; #10 generation owner korunur
+- `#12 DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01 - next / recovery integrity`
+  - amaç: provider-independent PostgreSQL custom backup, checksum, retention inventory, isolated restore rehearsal ve current-head evidence sözleşmesini tek owner altında kapatmak
+  - sahipler: `backend/src/ops/databaseBackupService.js`, `backend/scripts/database_backup_retention_and_integrity_01.mjs`, `backend/scripts/database_backup_retention_and_integrity_01_acceptance.mjs`, `backend/scripts/database_backup_retention_and_integrity_01_check.js`
+  - komutlar: `npm --prefix backend run backup:acceptance`, `npm run check:databasebackupretentionandintegrity01`
+  - kural: canonical DB overwrite, reset/reseed, migration, accounting/payment write, provider lock-in ve protected runtime-data değişikliği yoktur; M45 yüzeyleri yalnız compatibility delegate'tir
 
 ## 3.1) Son kapanan ürün hatları [green / closed]
 - `WEB-01A - green/closed`

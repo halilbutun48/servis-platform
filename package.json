@@ -251,6 +251,8 @@
     "check:observabilitymonitoringalerting01": "node backend/scripts/observability_monitoring_alerting_01_check.js",
     "check:backendlintwarningburndown01": "node backend/scripts/backend_lint_warning_burndown_01_check.js",
     "check:dataintegrityandrecovery01": "node backend/scripts/data_integrity_and_recovery_01_check.js",
+    "check:databasebackupretentionandintegrity01": "node backend/scripts/database_backup_retention_and_integrity_01_check.js",
+    "accept:databasebackupretentionandintegrity01": "node backend/scripts/database_backup_retention_and_integrity_01_acceptance.mjs",
     "check:roledataisolationredteam01": "node backend/scripts/role_data_isolation_redteam_01_check.js",
     "check:securitykvkkfinal01": "node backend/scripts/security_kvkk_final_01_check.js",
     "check:auditlogandapprovaltrace01": "node backend/scripts/audit_log_and_approval_trace_01_check.js",

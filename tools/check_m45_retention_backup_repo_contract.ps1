@@ -20,6 +20,15 @@ Info 'Checking backend retention/backup files'
   'docs\RUNBOOK_M45_RETENTION_BACKUP.md'
 ) | ForEach-Object { MustExist $_ }
 
+Info 'Checking #12 canonical backup owner'
+MustExist 'backend\\src\\ops\\databaseBackupService.js'
+MustExist 'backend\\scripts\\database_backup_retention_and_integrity_01.mjs'
+MustExist 'backend\\scripts\\database_backup_retention_and_integrity_01_acceptance.mjs'
+MustContain 'backend\\src\\ops\\databaseBackupService.js' 'ACCOUNTING_BACKUP_INTEGRITY_V1' '#12 contract version is visible'
+MustContain 'backend\\src\\ops\\databaseBackupService.js' 'postgresql-custom' '#12 custom archive format is visible'
+MustContain 'backend\\src\\ops\\databaseBackupService.js' 'BACKUP_PATH_TRAVERSAL_REJECTED' '#12 inventory path safety is visible'
+MustContain 'docs\\DATABASE_BACKUP_RETENTION_AND_INTEGRITY_01.md' 'DATABASE-BACKUP-RETENTION-AND-INTEGRITY-01' '#12 canonical doc is visible'
+
 Info 'Checking admin/env wiring'
 MustContain 'backend\src\routes\admin.js' '/retention/policy' 'admin has retention policy route'
 MustContain 'backend\src\routes\admin.js' '/backup/policy' 'admin has backup policy route'

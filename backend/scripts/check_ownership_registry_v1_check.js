@@ -87,8 +87,8 @@ function main() {
   const summary = buildCheckOwnershipRegistryV1Summary(registry.records);
   const changeImpactSummary = buildChangeImpactRegistryV1Summary();
 
-  if (summary.count !== 198) {
-    fail("baseline count", `expected 198, got ${summary.count}`);
+  if (summary.count !== 202) {
+    fail("baseline count", `expected 202, got ${summary.count}`);
   }
   if (summary.missingPathResolutionCount !== 0) {
     fail("baseline resolution", `expected 0 missing paths, got ${summary.missingPathResolutionCount}`);
@@ -140,7 +140,7 @@ function main() {
     ),
   );
 
-  pass("baseline", `198 rows, ${summary.checkerPathCount} unique checker paths, ${summary.multiStepCheckerCount} multi-step checkers`);
+  pass("baseline", `202 rows, ${summary.checkerPathCount} unique checker paths, ${summary.multiStepCheckerCount} multi-step checkers`);
   pass("step-1a baseline", "8 pilot rows, 7 resolved owners, 1 explicit missing owner");
 
   if (getCheckOwnershipForId("__unknown__") !== null) {

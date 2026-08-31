@@ -206,6 +206,7 @@ export const productExtensionsCheckScripts = Object.freeze([
   "check:observabilitymonitoringalerting01",
   "check:backendlintwarningburndown01",
   "check:dataintegrityandrecovery01",
+  "check:databasebackupretentionandintegrity01",
   "check:roledataisolationredteam01",
   "check:securitykvkkfinal01",
   "check:auditlogandapprovaltrace01",

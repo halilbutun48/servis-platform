@@ -2,13 +2,13 @@
   "schemaVersion": "docs-registry-v1",
   "generatedAt": "2026-08-20T14:53:21.500Z",
   "repo": {
-    "head": "bddc358a6c8c132dd4bc2a6dcc5dc07576aa7158",
+    "head": "83a5c9b2ef80bca990938a5208c0c21f4b056572",
     "branch": "m90d1_web_lint_inventory"
   },
   "census": {
-    "total": 1349,
-    "tracked": 643,
-    "untracked": 706
+    "total": 1354,
+    "tracked": 645,
+    "untracked": 709
   },
   "discovery": {
     "description": "Repository documentation-like artifact census, path-exact and deterministic.",
@@ -33,10 +33,10 @@
   "summaryCounts": {
     "classificationCounts": {
       "CANONICAL_SSOT": 5,
-      "ACTIVE_DOMAIN_DOC": 152,
+      "ACTIVE_DOMAIN_DOC": 154,
       "REFERENCE_POINTER": 27,
       "HISTORICAL_EVIDENCE": 464,
-      "DERIVED_GENERATED": 701,
+      "DERIVED_GENERATED": 704,
       "STALE_CONTRADICTORY": 0,
       "UNKNOWN_NEEDS_REVIEW": 0,
       "CHECKER_DEPENDENT": 0,
@@ -44,13 +44,13 @@
       "DUPLICATE": 0,
       "ORPHAN": 0
     },
-    "archiveBlocked": 394,
+    "archiveBlocked": 396,
     "checkerDependent": 279,
-    "generated": 701,
-    "activeCanonical": 157,
+    "generated": 704,
+    "activeCanonical": 159,
     "archiveDispositionCounts": {
-      "KEEP_ACTIVE": 157,
-      "KEEP_GENERATED_EVIDENCE": 701,
+      "KEEP_ACTIVE": 159,
+      "KEEP_GENERATED_EVIDENCE": 704,
       "KEEP_POINTER": 27,
       "KEEP_IN_ARCHIVE": 464
     }
@@ -62,12 +62,12 @@
       "classification": "CANONICAL_SSOT",
       "ownerDomain": "ROOT",
       "canonicalOwner": "README.md",
-      "consumerCount": 63,
+      "consumerCount": 64,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_ACTIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "canonical anchor; consumerCount=63"
+      "notesStatusReason": "canonical anchor; consumerCount=64"
     },
     {
       "path": "artifacts/backups/servisdb_backup_20260425-155523_stderr.txt",
@@ -8546,6 +8546,45 @@
       "notesStatusReason": "generated evidence artifact; consumerCount=0"
     },
     {
+      "path": "artifacts/backups/servisdb_backup_20260830-211003_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260830-221303_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
+      "path": "artifacts/backups/servisdb_backup_20260831-002154_stderr.txt",
+      "tracked": false,
+      "classification": "DERIVED_GENERATED",
+      "ownerDomain": "ARTIFACTS",
+      "canonicalOwner": "backend/src/ops/backupArchiveOps.js",
+      "consumerCount": 0,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_GENERATED_EVIDENCE",
+      "archiveBlocked": false,
+      "replacement": null,
+      "notesStatusReason": "generated evidence artifact; consumerCount=0"
+    },
+    {
       "path": "artifacts/encoding_code_tail.txt",
       "tracked": false,
       "classification": "DERIVED_GENERATED",
@@ -10028,17 +10067,30 @@
       "notesStatusReason": "active domain doc; consumerCount=8"
     },
     {
+      "path": "docs/DATABASE_BACKUP_RETENTION_AND_INTEGRITY_01.md",
+      "tracked": true,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/DATABASE_BACKUP_RETENTION_AND_INTEGRITY_01.md",
+      "consumerCount": 3,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=3"
+    },
+    {
       "path": "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
       "tracked": true,
       "classification": "HISTORICAL_EVIDENCE",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/DATA_INTEGRITY_AND_RECOVERY_01.md",
-      "consumerCount": 9,
+      "consumerCount": 10,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_IN_ARCHIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "historical evidence artifact; consumerCount=9"
+      "notesStatusReason": "historical evidence artifact; consumerCount=10"
     },
     {
       "path": "docs/DB_POOL_AND_API_SCALING_01.md",
@@ -11809,6 +11861,19 @@
       "notesStatusReason": "active domain doc; consumerCount=0"
     },
     {
+      "path": "docs/PRISMA_SCHEMA_MODULARIZATION_01.md",
+      "tracked": true,
+      "classification": "ACTIVE_DOMAIN_DOC",
+      "ownerDomain": "DOCUMENTATION",
+      "canonicalOwner": "docs/PRISMA_SCHEMA_MODULARIZATION_01.md",
+      "consumerCount": 2,
+      "checkerDependent": false,
+      "archiveDisposition": "KEEP_ACTIVE",
+      "archiveBlocked": true,
+      "replacement": null,
+      "notesStatusReason": "active domain doc; consumerCount=2"
+    },
+    {
       "path": "docs/PROACTIVE_COPILOT_NEXT_BEST_ACTION_01.md",
       "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
@@ -11996,12 +12061,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/PRIMER_SSOT.md",
-      "consumerCount": 1,
+      "consumerCount": 2,
       "checkerDependent": false,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=1"
+      "notesStatusReason": "reference pointer; consumerCount=2"
     },
     {
       "path": "docs/REGION_FAILOVER_REBALANCING_DRILL_V1.md",
@@ -12347,12 +12412,12 @@
       "classification": "HISTORICAL_EVIDENCE",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/RUNBOOK_M45_RETENTION_BACKUP.md",
-      "consumerCount": 6,
+      "consumerCount": 7,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_IN_ARCHIVE",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "historical evidence artifact; consumerCount=6"
+      "notesStatusReason": "historical evidence artifact; consumerCount=7"
     },
     {
       "path": "docs/RUNBOOK_M46_1_AI_COPILOT_ENRICHMENT.md",
@@ -17521,12 +17586,12 @@
       "classification": "REFERENCE_POINTER",
       "ownerDomain": "TOOLS",
       "canonicalOwner": "tools/_backup/README.md",
-      "consumerCount": 1,
+      "consumerCount": 2,
       "checkerDependent": true,
       "archiveDisposition": "KEEP_POINTER",
       "archiveBlocked": true,
       "replacement": null,
-      "notesStatusReason": "reference pointer; consumerCount=1"
+      "notesStatusReason": "reference pointer; consumerCount=2"
     },
     {
       "path": "tools/_packs/README.md",
