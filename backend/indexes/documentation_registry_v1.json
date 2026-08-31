@@ -2,13 +2,13 @@
   "schemaVersion": "docs-registry-v1",
   "generatedAt": "2026-08-20T14:53:21.500Z",
   "repo": {
-    "head": "14c217978e6a5d59eafcd1bd8259f343b979a70f",
+    "head": "b003b28c70839039070a2d82e481f8ad882d69b2",
     "branch": "m90d1_web_lint_inventory"
   },
   "census": {
     "total": 1365,
-    "tracked": 647,
-    "untracked": 718
+    "tracked": 656,
+    "untracked": 709
   },
   "discovery": {
     "description": "Repository documentation-like artifact census, path-exact and deterministic.",
@@ -10367,7 +10367,7 @@
     },
     {
       "path": "docs/INDEX.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/INDEX.md",
@@ -15099,7 +15099,7 @@
     },
     {
       "path": "docs/adr/INDEX.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/adr/INDEX.md",
@@ -15112,7 +15112,7 @@
     },
     {
       "path": "docs/architecture/CODEBASE_INDEX.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/architecture/CODEBASE_INDEX.md",
@@ -15125,7 +15125,7 @@
     },
     {
       "path": "docs/architecture/ENGINEERING_ARCHITECTURE.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/architecture/ENGINEERING_ARCHITECTURE.md",
@@ -15229,7 +15229,7 @@
     },
     {
       "path": "docs/domains/CAPABILITY_OWNERSHIP_MAP.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/domains/CAPABILITY_OWNERSHIP_MAP.md",
@@ -15242,7 +15242,7 @@
     },
     {
       "path": "docs/integrations/INTEGRATION_OWNERSHIP_MAP.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/integrations/INTEGRATION_OWNERSHIP_MAP.md",
@@ -15255,7 +15255,7 @@
     },
     {
       "path": "docs/operations/OPERATIONS_RECOVERY_AND_INCIDENT_INDEX.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/operations/OPERATIONS_RECOVERY_AND_INCIDENT_INDEX.md",
@@ -17439,7 +17439,7 @@
     },
     {
       "path": "docs/roles/ROLE_CONTEXT_AND_TENANT_MODEL.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/roles/ROLE_CONTEXT_AND_TENANT_MODEL.md",
@@ -17452,7 +17452,7 @@
     },
     {
       "path": "docs/testing/TEST_CHECK_AND_CI_OWNERSHIP_MAP.md",
-      "tracked": false,
+      "tracked": true,
       "classification": "ACTIVE_DOMAIN_DOC",
       "ownerDomain": "DOCUMENTATION",
       "canonicalOwner": "docs/testing/TEST_CHECK_AND_CI_OWNERSHIP_MAP.md",
