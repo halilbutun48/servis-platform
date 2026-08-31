@@ -6,9 +6,9 @@ Repo: `servis-platform`
 ## 1) Kısa Özet
 
 - Toplam package script entry: `471`
-- Toplam executable tracked file: `1350`
-- Combined registry row: `1821`
-- Root/backend/web/mobile package dağılımı: root `290`, backend `930`, web `97`, mobile `201`
+- Toplam executable tracked file: `1351`
+- Combined registry row: `1822`
+- Root/backend/web/mobile package dağılımı: root `290`, backend `931`, web `97`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `811`
+- NEEDS_REVIEW: `812`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 811 |
+| NEEDS_REVIEW | 812 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1212,6 +1212,7 @@ Repo: `servis-platform`
 | product_flow_button_audit_01.mjs | backend/scripts/product_flow_button_audit_01.mjs | backend | root:check:productflowbuttonaudit01, root:smoke:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Owner or chain unclear |  |
 | product_flow_button_audit_01_check.js | backend/scripts/product_flow_button_audit_01_check.js | backend | root:check:productflowbuttonaudit01 | product-extensions | NEEDS_REVIEW |  | PRODUCT-FLOW-BUTTON-AUDIT-01-CHECK |  | Owner or chain unclear |  |
 | production_rate_limit_policy_01_check.js | backend/scripts/production_rate_limit_policy_01_check.js | backend | root:check:productionratelimitpolicy01 | product-extensions | NEEDS_REVIEW |  | PRODUCTION-RATE-LIMIT-POLICY-01-CHECK |  | Owner or chain unclear |  |
+| project_documentation_architecture_and_codebase_index_01_check.js | backend/scripts/project_documentation_architecture_and_codebase_index_01_check.js | backend | root:check:projectdocumentationarchitectureandcodebaseindex01 | review | NEEDS_REVIEW |  | PROJECT-DOCUMENTATION-ARCHITECTURE-AND-CODEBASE-INDEX-01-CHECK |  | Owner or chain unclear |  |
 | project_spec_v1_future_strengthening_coverage_check.js | backend/scripts/project_spec_v1_future_strengthening_coverage_check.js | backend | backend:spec16check | review | NEEDS_REVIEW |  | PROJECT-SPEC-V-1-FUTURE-STRENGTHENING-COVERAGE-CHECK |  | Owner or chain unclear |  |
 | project_wide_gap_and_release_readiness_audit_01_acceptance.mjs | backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs | backend | root:accept:projectgapreadiness01 | review | NEEDS_REVIEW |  | PROJECT-WIDE-GAP-AND-RELEASE-READINESS-AUDIT-01-ACCEPTANCE |  | Owner or chain unclear |  |
 | project_wide_gap_and_release_readiness_audit_01_browser.mjs | backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs | backend | root:smoke:projectgapreadiness01 | review | NEEDS_REVIEW |  | PROJECT-WIDE-GAP-AND-RELEASE-READINESS-AUDIT-01-BROWSER |  | Owner or chain unclear |  |
