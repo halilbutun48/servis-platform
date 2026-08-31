@@ -96,7 +96,7 @@ async function main() {
   console.log("SCHOOL_PARENT_FALSE_GREEN_COUNT=0");
   console.log("SCHOOL_PARENT_SECRET_LEAK_COUNT=0");
   console.log("SCHOOL_PARENT_PII_OVEREXPOSURE_COUNT=0");
-} 
+}
 
 try {
   await main();
