@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `471`
-- Toplam executable tracked file: `1351`
-- Combined registry row: `1822`
-- Root/backend/web/mobile package dağılımı: root `290`, backend `931`, web `97`, mobile `201`
+- Toplam package script entry: `473`
+- Toplam executable tracked file: `1355`
+- Combined registry row: `1828`
+- Root/backend/web/mobile package dağılımı: root `292`, backend `933`, web `99`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,11 +395,11 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `812`
+- NEEDS_REVIEW: `818`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
-- Eski sistem term eşleşmesi: `387`
+- Eski sistem term eşleşmesi: `388`
 - Browser automation harness bulundu mu: `Hayır`
 - Remove candidate bulundu mu: `Hayır`
 
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 812 |
+| NEEDS_REVIEW | 818 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -649,6 +649,7 @@ Repo: `servis-platform`
 | root:check:uxpanellayoutwidth02cfix02 | package.json | root | node backend/scripts/ux_panel_layout_width_02c_fix_02_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXPANELLAYOUTWIDTH-02-CFIX-02 |  | Breaks canonical verification chain |  |
 | root:check:uxpanellayoutwidth02cfix03 | package.json | root | node backend/scripts/ux_panel_layout_width_02c_fix_03_check.js | core | ACTIVE_CORE |  | ROOT-CHECK-UXPANELLAYOUTWIDTH-02-CFIX-03 |  | Breaks canonical verification chain |  |
 | root:check:uxnav01 | package.json | root | node backend/scripts/ux_nav_01_premium_navdock_check.js | core | ACTIVE_CORE |  | UX-NAV-01 |  | Breaks canonical verification chain |  |
+| root:check:rolebasedsimplenavigationandtaskhome01 | package.json | root | node backend/scripts/role_based_simple_navigation_and_task_home_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-ROLEBASEDSIMPLENAVIGATIONANDTASKHOME-01 |  | Owner or chain unclear |  |
 | root:check:uxbrandloginpremium01 | package.json | root | node backend/scripts/ux_brand_login_premium_01_check.js | core | ACTIVE_CORE |  | UX-BRAND-LOGIN-PREMIUM-01 |  | Breaks canonical verification chain |  |
 | root:check:uxdensity01 | package.json | root | node backend/scripts/ux_density_01_panel_card_density_check.js | core | ACTIVE_CORE |  | UX-DENSITY-01 |  | Breaks canonical verification chain |  |
 | root:check:uxpanelstandardarchitecture01 | package.json | root | node backend/scripts/ux_panel_standard_architecture_01_check.js | core | ACTIVE_CORE |  | UX-PANEL-STANDARD-ARCHITECTURE-01 |  | Breaks canonical verification chain |  |
@@ -664,6 +665,7 @@ Repo: `servis-platform`
 | root:check:uxsmokepassminusevidence01 | package.json | root | node backend/scripts/ux_smoke_pass_minus_evidence_01_check.js | core | ACTIVE_CORE |  | UX-SMOKE-PASS-MINUS-EVIDENCE-01 |  | Breaks canonical verification chain |  |
 | root:check:uxsmokepassminuszero01 | package.json | root | node backend/scripts/ux_smoke_pass_minus_zero_01_check.js | core | ACTIVE_CORE |  | UX-SMOKE-PASS-MINUS-ZERO-01 |  | Breaks canonical verification chain |  |
 | root:smoke:uxlivepanelpremium01 | package.json | root | node backend/scripts/ux_live_panel_premium_smoke_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | UX-LIVE-PANEL-PREMIUM-SMOKE-01 |  | Loses manual smoke entrypoint |  |
+| root:smoke:rolebasedsimplenavigationandtaskhome01 | package.json | root | node backend/scripts/role_based_simple_navigation_and_task_home_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-ROLEBASEDSIMPLENAVIGATIONANDTASKHOME-01 |  | Owner or chain unclear |  |
 | root:smoke:uxmobileallrolespanelaudit01 | package.json | root | node backend/scripts/ux_mobile_all_roles_panel_audit_01.mjs | review | NEEDS_REVIEW |  | UX-MOBILE-ALL-ROLES-PANEL-AUDIT-01 |  | Owner or chain unclear |  |
 | root:smoke:uxallpanelsrealityaudit01 | package.json | root | node backend/scripts/ux_all_panels_reality_audit_01.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-UXALLPANELSREALITYAUDIT-01 |  | Owner or chain unclear |  |
 | root:smoke:productflowbuttonaudit01 | package.json | root | node backend/scripts/product_flow_button_audit_01.mjs | manual-smoke | MANUAL_SMOKE | MANUAL_ACCEPTANCE_ONLY | PRODUCT-FLOW-BUTTON-AUDIT-01 |  | Loses manual smoke entrypoint |  |
@@ -1234,6 +1236,8 @@ Repo: `servis-platform`
 | repo_js_syntax_scan.js | backend/scripts/repo_js_syntax_scan.js | backend |  | review | NEEDS_REVIEW |  | REPO-JS-SYNTAX-SCAN |  | Owner or chain unclear |  |
 | request_storm_resilience_01_check.js | backend/scripts/request_storm_resilience_01_check.js | backend | root:check:requeststormresilience01 | product-extensions | NEEDS_REVIEW |  | REQUEST-STORM-RESILIENCE-01-CHECK |  | Owner or chain unclear |  |
 | roadmap_lock_ai_marketplace_01_check.js | backend/scripts/roadmap_lock_ai_marketplace_01_check.js | backend | root:check:roadmaplockaimarketplace01 | review | NEEDS_REVIEW |  | ROADMAP-LOCK-AI-MARKETPLACE-01-CHECK |  | Owner or chain unclear |  |
+| role_based_simple_navigation_and_task_home_01_browser.mjs | backend/scripts/role_based_simple_navigation_and_task_home_01_browser.mjs | backend | root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01-BROWSER |  | Owner or chain unclear |  |
+| role_based_simple_navigation_and_task_home_01_check.js | backend/scripts/role_based_simple_navigation_and_task_home_01_check.js | backend | root:check:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01-CHECK |  | Owner or chain unclear |  |
 | role_data_isolation_redteam_01_check.js | backend/scripts/role_data_isolation_redteam_01_check.js | backend | root:check:roledataisolationredteam01 | review | NEEDS_REVIEW |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Owner or chain unclear |  |
 | room_profitability_and_quote_floor_01_check.js | backend/scripts/room_profitability_and_quote_floor_01_check.js | backend | root:check:roomprofitabilityandquotefloor01 | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |
 | room_profitability_and_quote_floor_01_expansion.js | backend/scripts/room_profitability_and_quote_floor_01_expansion.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |
@@ -1566,7 +1570,7 @@ Repo: `servis-platform`
 | kvkk.js | backend/src/routes/kvkk.js | backend | mobile:check:m57.3, mobile:check:m98bcd, root:check:m99kvkk01, root:check:securitykvkkfinal01, root:check:uxkvkk01 | review | NEEDS_REVIEW |  | KVKK |  | Owner or chain unclear |  |
 | live.js | backend/src/routes/live.js | backend | backend:prisma:migrate:deploy, backend:prisma:migrate:status, backend:prisma:migration:acceptance, backend:prisma:migration:ci, mobile:check:m82.5, mobile:check:m95d, root:accept:databasemigrationbaselineandliveadoption01, root:accept:externalcostdataproviderfreshness01, root:check:ai03bsemanticvisiblelivematrix01, root:check:cop03c, root:check:cop03cfix01, root:check:cop03cfix02, root:check:cop03cfix03, root:check:cop04afix01, root:check:cop04afix03, root:check:cop04bfix01, root:check:cop04bfix05, root:check:cop04bfix07, root:check:cop04bfix08, root:check:copliveaccept01, root:check:databasemigrationbaselineandliveadoption01, root:check:etasanity01, root:check:livetrackingfinal01, root:check:uxlivemaptabsfix01, root:check:uxlivemaptabssimplify01, root:check:uxlivepanelpremiumsmoke01, root:check:uxlivepanelsmokeaudit01, root:check:uxparentpersonelliveerrorclarity01, root:check:uxsuperadminlivemonitoring01, root:smoke:uxlivepanelpremium01 | review | NEEDS_REVIEW |  | LIVE |  | Owner or chain unclear |  |
 | logs.js | backend/src/routes/logs.js | backend |  | review | NEEDS_REVIEW |  | LOGS |  | Owner or chain unclear |  |
-| me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:projectdocumentationarchitectureandcodebaseindex01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
+| me.js | backend/src/routes/me.js | backend | backend:check:documentationregistryv1, backend:generate:documentationregistryv1, backend:m82_10check, backend:m82_11check, backend:m82_9check, backend:m85check, backend:m86check, backend:m87check, backend:m88check, backend:m89check, backend:m91:smoke, backend:m91:smoke:agreement, backend:m94dcheck, mobile:check:m81.2, mobile:check:m95e14, mobile:check:m95e17, mobile:check:m95e18, mobile:check:m95e24c, root:check:agreementsourceshiftlineage01, root:check:cop04afix03, root:check:cop04bfix02, root:check:copilotcontextmemorytaskstate01, root:check:copilotdemandagreement01, root:check:copiloteblockruntimeanswerintegration01, root:check:copilotofferrecommendation01, root:check:copilotshifttoagreementprep01, root:check:invitebasedmembership01, root:check:m95export01, root:check:op04, root:check:pay01a, root:check:pay01b, root:check:pay01c, root:check:pay01d, root:check:pay01e, root:check:paysafe01, root:check:projectdocumentationarchitectureandcodebaseindex01, root:check:rolebasedsimplenavigationandtaskhome01, root:check:uxcompanyagreementsmobileparity01, root:check:uxpremiumcriticalfixagreementsdetail01, root:check:uxsuperadmincommercialflow01, root:smoke:m98e4, root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ME |  | Owner or chain unclear |  |
 | naturalCopilot.js | backend/src/routes/naturalCopilot.js | backend |  | review | NEEDS_REVIEW |  | NATURAL-COPILOT |  | Owner or chain unclear |  |
 | notifications.js | backend/src/routes/notifications.js | backend | mobile:check:m96b, mobile:check:m96bnotifications | review | NEEDS_REVIEW |  | NOTIFICATIONS |  | Owner or chain unclear |  |
 | observability.js | backend/src/routes/observability.js | backend | root:check:observabilitymonitoringalerting01 | review | NEEDS_REVIEW |  | OBSERVABILITY |  | Owner or chain unclear |  |
@@ -1688,7 +1692,7 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web | root:smoke:accountingexportcontract01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:projectgapreadiness01, root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | root:smoke:accountingexportcontract01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:projectgapreadiness01, root:smoke:rolebasedsimplenavigationandtaskhome01, root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
@@ -1732,6 +1736,7 @@ Repo: `servis-platform`
 | copilotFacts.js | web/src/utils/copilotFacts.js | web |  | review | NEEDS_REVIEW |  | COPILOT-FACTS |  | Owner or chain unclear |  |
 | copilotPanelHelpers.js | web/src/utils/copilotPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COPILOT-PANEL-HELPERS |  | Owner or chain unclear |  |
 | copilotSelection.js | web/src/utils/copilotSelection.js | web |  | review | NEEDS_REVIEW |  | COPILOT-SELECTION |  | Owner or chain unclear |  |
+| copilotSharedState.js | web/src/utils/copilotSharedState.js | web |  | review | NEEDS_REVIEW |  | COPILOT-SHARED-STATE |  | Owner or chain unclear |  |
 | dashboardBulk.js | web/src/utils/dashboardBulk.js | web |  | review | NEEDS_REVIEW |  | DASHBOARD-BULK |  | Owner or chain unclear |  |
 | displayStatus.js | web/src/utils/displayStatus.js | web |  | review | NEEDS_REVIEW |  | DISPLAY-STATUS |  | Owner or chain unclear |  |
 | etaSanity.js | web/src/utils/etaSanity.js | web |  | review | NEEDS_REVIEW |  | ETA-SANITY |  | Owner or chain unclear |  |
@@ -1740,7 +1745,7 @@ Repo: `servis-platform`
 | labels.js | web/src/utils/labels.js | web |  | review | NEEDS_REVIEW |  | LABELS |  | Owner or chain unclear |  |
 | listUi.js | web/src/utils/listUi.js | web |  | review | NEEDS_REVIEW |  | LIST-UI |  | Owner or chain unclear |  |
 | liveTrackingCopy.js | web/src/utils/liveTrackingCopy.js | web |  | review | NEEDS_REVIEW |  | LIVE-TRACKING-COPY |  | Owner or chain unclear |  |
-| navigation.js | web/src/utils/navigation.js | web | mobile:check:m95e22b | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
+| navigation.js | web/src/utils/navigation.js | web | mobile:check:m95e22b, root:check:rolebasedsimplenavigationandtaskhome01, root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
 | notificationV1.js | web/src/utils/notificationV1.js | web |  | review | NEEDS_REVIEW |  | NOTIFICATION-V-1 |  | Owner or chain unclear |  |
 | offerQualityRanking.js | web/src/utils/offerQualityRanking.js | web |  | review | NEEDS_REVIEW |  | OFFER-QUALITY-RANKING |  | Owner or chain unclear |  |
 | offlineQueue.js | web/src/utils/offlineQueue.js | web |  | review | NEEDS_REVIEW |  | OFFLINE-QUEUE |  | Owner or chain unclear |  |
@@ -1749,6 +1754,7 @@ Repo: `servis-platform`
 | providerScores.js | web/src/utils/providerScores.js | web |  | review | NEEDS_REVIEW |  | PROVIDER-SCORES |  | Owner or chain unclear |  |
 | publicBaseUrl.js | web/src/utils/publicBaseUrl.js | web |  | review | NEEDS_REVIEW |  | PUBLIC-BASE-URL |  | Owner or chain unclear |  |
 | regionOwnership.js | web/src/utils/regionOwnership.js | web |  | review | NEEDS_REVIEW |  | REGION-OWNERSHIP |  | Owner or chain unclear |  |
+| roleNavigation.js | web/src/utils/roleNavigation.js | web |  | review | NEEDS_REVIEW |  | ROLE-NAVIGATION |  | Owner or chain unclear |  |
 | routePreviewSummary.js | web/src/utils/routePreviewSummary.js | web |  | review | NEEDS_REVIEW |  | ROUTE-PREVIEW-SUMMARY |  | Owner or chain unclear |  |
 | safeDriveSummary.js | web/src/utils/safeDriveSummary.js | web |  | review | NEEDS_REVIEW |  | SAFE-DRIVE-SUMMARY |  | Owner or chain unclear |  |
 | safeParseJson.js | web/src/utils/safeParseJson.js | web |  | review | NEEDS_REVIEW |  | SAFE-PARSE-JSON |  | Owner or chain unclear |  |
@@ -1937,7 +1943,7 @@ Repo: `servis-platform`
 | brand.js | mobile/src/lib/brand.js | mobile | root:check:brand, root:check:docsbrandcleanup01, root:check:uxbrandloginpremium01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
 | gps.js | mobile/src/lib/gps.js | mobile | backend:bench:gps:100, backend:bench:gps:100:auto, backend:bench:gps:300:auto:panels, backend:m95e20check, mobile:check:m57.1, mobile:check:m95c, mobile:check:m95e20, mobile:check:m95e21, mobile:check:m95e23a, root:check:m95e23b, web:check:m95e20, web:check:m95e23c | web-lint | NEEDS_REVIEW |  | GPS |  | Owner or chain unclear |  |
 | logger.js | mobile/src/lib/logger.js | mobile |  | review | NEEDS_REVIEW |  | LOGGER |  | Owner or chain unclear |  |
-| navigation.js | mobile/src/lib/navigation.js | mobile | mobile:check:m95e22b | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
+| navigation.js | mobile/src/lib/navigation.js | mobile | mobile:check:m95e22b, root:check:rolebasedsimplenavigationandtaskhome01, root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | NAVIGATION |  | Owner or chain unclear |  |
 | realtime.js | mobile/src/lib/realtime.js | mobile |  | review | NEEDS_REVIEW |  | REALTIME |  | Owner or chain unclear |  |
 | release.js | mobile/src/lib/release.js | mobile | mobile:check:m50, mobile:check:m81.4, mobile:check:m82.6, root:accept:projectgapreadiness01, root:check:projectgapreadiness01, root:check:release-regression, root:smoke:projectgapreadiness01 | review | NEEDS_REVIEW |  | RELEASE |  | Owner or chain unclear |  |
 | roleSurface.js | mobile/src/lib/roleSurface.js | mobile |  | review | NEEDS_REVIEW |  | ROLE-SURFACE |  | Owner or chain unclear |  |
