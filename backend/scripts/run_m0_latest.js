@@ -116,6 +116,10 @@ function discoverScripts() {
 
 function classifyScript(file) {
   const text = fs.readFileSync(file, "utf8");
+  const filename = path.basename(file).toLowerCase();
+  if (filename === "m45_backup_create.js" || filename === "m45_backup_restore.js") {
+    return "integration";
+  }
   const integration =
     includesText(text, "process.env.API_URL") ||
     includesText(text, "BASE_URL") ||

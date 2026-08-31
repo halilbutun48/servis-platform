@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
     "currentLargeFileCount":  20,
-    "currentWarningHotFileCount":  13,
+    "currentWarningHotFileCount":  14,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -168,6 +168,10 @@
                                                                                           "class":  "safe-candidate-review",
                                                                                           "note":  "boarding request and context hot path; controlled cleanup adayi"
                                                                                       },
+                                                        "backend/src/routes/admin.js":  {
+                                                                                     "class":  "safe-candidate-review",
+                                                                                     "note":  "admin audit and protected operations route; controlled cleanup adayi"
+                                                                                 },
                                                        "web/src/panels/superadmin/CommercialCorePanel.jsx":  {
                                                                                                         "class":  "safe-candidate-review",
                                                                                                         "note":  "payment preview bridge; kontrollu iyilestirme adayi"
