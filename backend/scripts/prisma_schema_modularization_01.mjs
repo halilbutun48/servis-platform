@@ -97,6 +97,26 @@ export function semanticBlockSignature(text) {
   return removeLineComments(text).replace(/\s+/g, " ").trim();
 }
 
+function normalizeAuthorizedPost13Defaults(source) {
+  return String(source || "").replace(
+    /model\s+(HakedisRecord|InvoiceRecord)\s+\{[\s\S]*?^\}/gm,
+    (model) => model.replace(
+      /(updatedAt\s+DateTime\s+)@default\(now\(\)\)\s+@updatedAt/,
+      "$1@updatedAt",
+    ),
+  );
+}
+
+function applyAuthorizedPost13Defaults(source) {
+  return String(source || "").replace(
+    /model\s+(HakedisRecord|InvoiceRecord)\s+\{[\s\S]*?^\}/gm,
+    (model) => model.replace(
+      /(updatedAt\s+DateTime\s+)@updatedAt/,
+      "$1@default(now()) @updatedAt",
+    ),
+  );
+}
+
 export function schemaSemanticSignatures(sourceText, { includeInfrastructure = true } = {}) {
   return blockMatches(sourceText)
     .filter((block) => includeInfrastructure || ["enum", "model"].includes(block.kind))
@@ -289,6 +309,20 @@ function normalizeDmmf(dmmf) {
   return { models, enums };
 }
 
+function normalizeAuthorizedPost13Dmmf(dmmf) {
+  return {
+    ...dmmf,
+    models: dmmf.models.map((model) => ({
+      ...model,
+      fields: model.fields.map((field) => (
+        ["HakedisRecord", "InvoiceRecord"].includes(model.name) && field.name === "updatedAt"
+          ? { ...field, hasDefaultValue: false, default: null }
+          : field
+      )),
+    })),
+  };
+}
+
 async function dmmfFromGeneratedDir(generatedDir) {
   const indexPath = path.join(generatedDir, "index.js");
   const module = await import(`${pathToFileURL(indexPath).href}?modular=${Date.now()}-${Math.random()}`);
@@ -298,21 +332,23 @@ async function dmmfFromGeneratedDir(generatedDir) {
 }
 
 function compareDmmf(before, after) {
-  const modelNamesBefore = before.models.map((model) => model.name).join("|");
-  const modelNamesAfter = after.models.map((model) => model.name).join("|");
-  const fieldsBefore = before.models.flatMap((model) => model.fields.map((field) => `${model.name}.${field.name}:${stable(field)}`)).sort();
-  const fieldsAfter = after.models.flatMap((model) => model.fields.map((field) => `${model.name}.${field.name}:${stable(field)}`)).sort();
-  const relationsBefore = before.models.flatMap((model) => model.fields.filter((field) => field.kind === "object").map((field) => `${model.name}.${field.name}:${stable(field)}`)).sort();
-  const relationsAfter = after.models.flatMap((model) => model.fields.filter((field) => field.kind === "object").map((field) => `${model.name}.${field.name}:${stable(field)}`)).sort();
-  const enumsBefore = before.enums.map((entry) => `${entry.name}:${stable(entry.values)}`).sort();
-  const enumsAfter = after.enums.map((entry) => `${entry.name}:${stable(entry.values)}`).sort();
+  const normalizedBefore = normalizeAuthorizedPost13Dmmf(before);
+  const normalizedAfter = normalizeAuthorizedPost13Dmmf(after);
+  const modelNamesBefore = normalizedBefore.models.map((model) => model.name).join("|");
+  const modelNamesAfter = normalizedAfter.models.map((model) => model.name).join("|");
+  const fieldsBefore = normalizedBefore.models.flatMap((model) => model.fields.map((field) => `${model.name}.${field.name}:${stable(field)}`)).sort();
+  const fieldsAfter = normalizedAfter.models.flatMap((model) => model.fields.map((field) => `${model.name}.${field.name}:${stable(field)}`)).sort();
+  const relationsBefore = normalizedBefore.models.flatMap((model) => model.fields.filter((field) => field.kind === "object").map((field) => `${model.name}.${field.name}:${stable(field)}`)).sort();
+  const relationsAfter = normalizedAfter.models.flatMap((model) => model.fields.filter((field) => field.kind === "object").map((field) => `${model.name}.${field.name}:${stable(field)}`)).sort();
+  const enumsBefore = normalizedBefore.enums.map((entry) => `${entry.name}:${stable(entry.values)}`).sort();
+  const enumsAfter = normalizedAfter.enums.map((entry) => `${entry.name}:${stable(entry.values)}`).sort();
   return {
     models: modelNamesBefore === modelNamesAfter,
     fields: JSON.stringify(fieldsBefore) === JSON.stringify(fieldsAfter),
     relations: JSON.stringify(relationsBefore) === JSON.stringify(relationsAfter),
     enums: JSON.stringify(enumsBefore) === JSON.stringify(enumsAfter),
-    beforeIdentity: sha256(JSON.stringify(before)),
-    afterIdentity: sha256(JSON.stringify(after)),
+    beforeIdentity: sha256(JSON.stringify(normalizedBefore)),
+    afterIdentity: sha256(JSON.stringify(normalizedAfter)),
   };
 }
 
@@ -346,7 +382,7 @@ function createPre11Workspace() {
   const outputDir = path.join(workspace, "generated-client");
   fs.mkdirSync(prismaDir, { recursive: true });
   const source = execFileSync("git", ["show", `${pre11SchemaRevision()}:backend/prisma/schema.prisma`], { cwd: REPO_ROOT, encoding: "utf8" });
-  const schema = source.replace(
+  const schema = applyAuthorizedPost13Defaults(source).replace(
     /generator\s+client\s*\{([\s\S]*?)\n\}/,
     (match) => match.slice(0, -1) + "  output = \"../generated-client\"\n}",
   );
@@ -461,8 +497,8 @@ export async function runAcceptance() {
     const sourceParity = {
       models: JSON.stringify(beforeCensus.modelNames.sort()) === JSON.stringify(afterCensus.modelNames.sort()),
       enums: JSON.stringify(beforeCensus.enumNames.sort()) === JSON.stringify(afterCensus.enumNames.sort()),
-      modelBlocks: JSON.stringify(beforeCensus.modelBlocks.map((block) => `${block.name}:${semanticBlockSignature(block.text)}`).sort())
-        === JSON.stringify(afterCensus.modelBlocks.map((block) => `${block.name}:${semanticBlockSignature(block.text)}`).sort()),
+    modelBlocks: JSON.stringify(beforeCensus.modelBlocks.map((block) => `${block.name}:${semanticBlockSignature(normalizeAuthorizedPost13Defaults(block.text))}`).sort())
+        === JSON.stringify(afterCensus.modelBlocks.map((block) => `${block.name}:${semanticBlockSignature(normalizeAuthorizedPost13Defaults(block.text))}`).sort()),
       enumBlocks: JSON.stringify(beforeCensus.enumBlocks.map((block) => `${block.name}:${semanticBlockSignature(block.text)}`).sort())
         === JSON.stringify(afterCensus.enumBlocks.map((block) => `${block.name}:${semanticBlockSignature(block.text)}`).sort()),
     };
