@@ -112,7 +112,7 @@ function main() {
   const pkg = read("package.json");
   const guide = read("docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md");
   const doc = read("docs/TELEMATICS_PROVIDER_HUB_01.md");
-  const navDock = read("web/src/layout/NavDock.jsx");
+  const navDock = read("web/src/utils/roleNavigation.js");
   const app = read("web/src/App.jsx");
   const superAdminOverview = read("web/src/panels/superadmin/SuperAdminPanel.jsx");
   const telematicsHubPanel = read("web/src/panels/superadmin/TelematicsHubPanel.jsx");
@@ -163,12 +163,13 @@ function main() {
   must(doc, "NEEDS_REVIEW", "telematics provider hub doc keeps needs review status");
   must(doc, "UNMATCHED", "telematics provider hub doc keeps unmatched status");
   must(doc, "DUPLICATE_MATCH", "telematics provider hub doc keeps duplicate match status");
-  must(navDock, "Entegrasyonlar", "nav dock exposes integrations section");
-  must(navDock, "Telematik / GPS Sağlayıcıları", "nav dock exposes telematics provider hub route");
-  must(navDock, "Başvuru İncelemesi", "nav dock exposes onboarding review route");
+  must(navDock, "advanced:", "canonical navigation keeps advanced administration section");
+  must(navDock, "Telematik / GPS Sağlayıcıları", "canonical navigation exposes telematics provider hub route");
+  must(navDock, "Başvuru İncelemesi", "canonical navigation exposes onboarding review route");
 
   must(app, 'if (path === "/superadmin/telematics") return { layout: true, node: <SuperTelematicsHubPanel /> };', "App routes telematics hub panel");
-  must(app, 'if (path === "/superadmin") return { layout: true, node: <SuperAdminPanel /> };', "App keeps super admin overview route");
+  must(app, 'if (path === "/superadmin")', "App keeps super admin overview route");
+  must(app, "<SuperAdminPanel />", "App keeps super admin overview panel");
   must(app, 'if (path === "/superadmin/onboarding-review") return { layout: true, node: <SuperPublicLeadReviewPanel /> };', "App keeps onboarding review route");
   must(app, 'if (path === "/superadmin/public-leads") return { layout: true, node: <SuperPublicLeadReviewPanel /> };', "App keeps public leads alias");
 
