@@ -22,6 +22,7 @@ import CopilotAdvancedResultCard from "../../components/copilot/CopilotAdvancedR
 import SuggestedChips from "../../components/copilot/SuggestedChips";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
+import { readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { COPILOT_PERSONA, COPILOT_TERMINAL } from "../../utils/copilotFacts";
 import { nowIsoTR } from "../../utils/time";
 import { getCopilotScreenOptions } from "../../copilot/screenRegistry";
@@ -38,7 +39,7 @@ import {
   selectionApplies,
 } from "../../utils/copilotPanelHelpers";
 
-const COPILOT_TERMINAL_TITLE = COPILOT_TERMINAL.title || "Sefer Abi Terminali";
+const COPILOT_TERMINAL_TITLE = COPILOT_TERMINAL.title || "Sefer Abi";
 
 const PANEL_MODES = [
   { value: "CHAT", label: "Sohbet" },
@@ -131,15 +132,17 @@ export default function CopilotPanel() {
   const [chatScreenId, setChatScreenId] = useState("");
   const [chatEntityType, setChatEntityType] = useState(defaultChatEntityType(me?.role));
   const [chatEntityId, setChatEntityId] = useState("");
-  const [chatMessages, setChatMessages] = useState([]);
+  const [sharedContext] = useState(() => readCopilotSharedState());
+  const [chatMessages, setChatMessages] = useState(() => Array.isArray(sharedContext?.messages) ? sharedContext.messages.slice(-20) : []);
   const [chatBusy, setChatBusy] = useState(false);
   const [chatErr, setChatErr] = useState("");
-  const [chatConversationState, setChatConversationState] = useState(null);
+  const [chatConversationState, setChatConversationState] = useState(() => sharedContext?.conversationState || null);
   const [chatSuggestedChips, setChatSuggestedChips] = useState([]);
   const [entryHint, setEntryHint] = useState(null);
   const [autoChatBusy, setAutoChatBusy] = useState(false);
   const chatRequestInFlightRef = useRef(false);
   const lastAutoRunKeyRef = useRef("");
+  const userChangedChatContextRef = useRef(false);
 
   const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
   const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
@@ -168,18 +171,22 @@ export default function CopilotPanel() {
   useEffect(() => {
     setScreenOptions(screenOptionsFromMe);
     const current = String(getPath() || "").split("?")[0];
-    if (screenOptionsFromMe.some((x) => x.path === current) && activeEntityType === "screen") {
-      const match = screenOptionsFromMe.find((x) => x.path === current);
+    const preferredPath = sharedContext?.screenPath || current;
+    if (screenOptionsFromMe.some((x) => x.path === preferredPath) && activeEntityType === "screen") {
+      const match = screenOptionsFromMe.find((x) => x.path === preferredPath);
       if (match) setEntityId(String(match.id));
     }
-  }, [screenOptionsFromMe, activeEntityType]);
+  }, [screenOptionsFromMe, activeEntityType, sharedContext?.screenPath]);
   useEffect(() => {
     const current = String(hashPath || getPath() || "").split("?")[0];
-    const match = screenOptionsFromMe.find((x) => x.path === current) || screenOptionsFromMe[0] || null;
+    const carriedPath = sharedContext?.screenPath === "/room" ? "/room/map" : sharedContext?.screenPath;
+    const match = screenOptionsFromMe.find((x) => x.path === carriedPath) || screenOptionsFromMe.find((x) => x.path === current) || screenOptionsFromMe[0] || null;
     if (match) setChatScreenId(String(match.id));
-  }, [hashPath, screenOptionsFromMe]);
+  }, [hashPath, screenOptionsFromMe, sharedContext?.screenPath]);
 
   useEffect(() => {
+    if (!userChangedChatContextRef.current) return;
+    userChangedChatContextRef.current = false;
     setChatMessages([]);
     setChatConversationState(null);
     setChatSuggestedChips([]);
@@ -289,6 +296,19 @@ export default function CopilotPanel() {
     window.addEventListener(evt, sync);
     return () => window.removeEventListener(evt, sync);
   }, [selectedChatScreen?.path, me?.role]);
+
+  useEffect(() => {
+    if (!chatMessages.length && !sharedContext?.screenPath) return;
+    writeCopilotSharedState({
+      messages: chatMessages,
+      screenPath: selectedChatScreen?.path || sharedContext?.screenPath || hashPath,
+      screenLabel: selectedChatScreen?.label || sharedContext?.screenLabel || "",
+      role: me?.role || "",
+      companyKind: me?.companyKind || "",
+      selection: chatSelection || sharedContext?.selection || null,
+      conversationState: chatConversationState,
+    });
+  }, [chatMessages, selectedChatScreen?.path, selectedChatScreen?.label, chatSelection, chatConversationState, hashPath, me?.role, me?.companyKind, sharedContext]);
   const effectiveChatEntityId = chatEntityType === "screen" ? chatScreenId : chatEntityId;
   const autoRunKey = useMemo(() => {
     if (panelMode !== "CHAT" || !selectedChatScreen || !effectiveChatEntityId) return "";
@@ -627,7 +647,7 @@ export default function CopilotPanel() {
 
             {!chatMessages.length ? (
               <div className="card" style={{ display: "grid", gap: 8 }}>
-                <div style={{ fontWeight: 800 }}>Terminal başlangıç soruları</div>
+                <div style={{ fontWeight: 800 }}>Başlangıç soruları</div>
                 <div className="muted">Sadece önizleme analizi için kısa bir başlangıç seçebilirsin.</div>
                 <SuggestedChips items={COPILOT_TERMINAL.starterChips} busy={chatBusy || autoChatBusy} onPick={runChat} />
               </div>
@@ -676,7 +696,7 @@ export default function CopilotPanel() {
               <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
                 <label className="muted">
                   Ekran
-                  <select value={chatScreenId} onChange={(e) => setChatScreenId(e.target.value)}>
+                  <select value={chatScreenId} onChange={(e) => { userChangedChatContextRef.current = true; setChatScreenId(e.target.value); }}>
                     {screenOptions.map((x) => (
                       <option key={x.id} value={x.id}>{screenOptionLabel(x)}</option>
                     ))}
@@ -686,7 +706,7 @@ export default function CopilotPanel() {
                 {canUseEntityChat(me?.role) ? (
                   <label className="muted">
                     Kayıt türü
-                    <select value={chatEntityType} onChange={(e) => { setChatEntityType(e.target.value); setChatEntityId(""); }}>
+                    <select value={chatEntityType} onChange={(e) => { userChangedChatContextRef.current = true; setChatEntityType(e.target.value); setChatEntityId(""); }}>
                       <option value="shift">Vardiya</option>
                       <option value="vehicle">Araç</option>
                       <option value="screen">Sadece ekran</option>
@@ -697,7 +717,7 @@ export default function CopilotPanel() {
                 {chatEntityType !== "screen" ? (
                   <label className="muted">
                     Kayıt
-                    <select value={chatEntityId} onChange={(e) => setChatEntityId(e.target.value)}>
+                    <select value={chatEntityId} onChange={(e) => { userChangedChatContextRef.current = true; setChatEntityId(e.target.value); }}>
                       <option value="">Seç...</option>
                       {chatTargetOptions.map((x) => (
                         <option key={x.id} value={x.id}>{optionLabel(chatEntityType, x)}</option>

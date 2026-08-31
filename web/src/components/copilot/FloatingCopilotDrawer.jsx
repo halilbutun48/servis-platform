@@ -7,6 +7,7 @@ import { companyPath, normalizeCompanyPath } from "../../utils/paths";
 import { buildCopilotStarterChips, COPILOT_PERSONA } from "../../utils/copilotFacts";
 import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
+import { copilotSharedStateEventName, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { captureCopilotUiSurface } from "./uiSurface";
 
 const STORAGE_KEY = "psv1:copilot:drawer:v4";
@@ -140,6 +141,16 @@ function resolveGuideRoute(me, routeKey) {
   return "";
 }
 
+function fullWorkspacePath(me) {
+  const role = String(me?.role || "").toUpperCase();
+  if (role === "ROOM") return "/room/copilot";
+  if (role === "COMPANY") return `${companyPath(me, "")}/copilot`;
+  if (role === "DRIVER") return "/driver/copilot";
+  if (role === "PERSONEL") return "/personel/copilot";
+  if (role === "PARENT") return "/parent/copilot";
+  return "/superadmin/copilot";
+}
+
 function samePrompt(a, b) {
   return String(a || "").trim().toLocaleLowerCase("tr-TR") === String(b || "").trim().toLocaleLowerCase("tr-TR");
 }
@@ -218,7 +229,35 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const [activeOverlayLayer, setActiveOverlayLayer] = useState(() => readPlanCenterOverlayLayer() || "guide");
 
   useEffect(() => { saveDrawerState({ open, mode, size }); }, [open, mode, size]);
-  useEffect(() => { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-20))); } catch { /* no-op: history persistence is best effort */ } if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    document.body.classList.toggle("copilot-is-open", open);
+    return () => document.body.classList.remove("copilot-is-open");
+  }, [open]);
+  useEffect(() => {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-20))); } catch { /* no-op: history persistence is best effort */ }
+    writeCopilotSharedState({
+      messages,
+      screenPath: currentPath,
+      screenLabel: screenContext.label,
+      role: me?.role || "",
+      companyKind: me?.companyKind || "",
+      selection,
+    });
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages, currentPath, screenContext.label, me?.role, me?.companyKind, selection]);
+  useEffect(() => {
+    function syncSharedState(event) {
+      const incoming = event?.detail || readCopilotSharedState();
+      if (!incoming || !Array.isArray(incoming.messages)) return;
+      const next = incoming.messages.slice(-20);
+      if (JSON.stringify(next) === JSON.stringify(messages.slice(-20))) return;
+      setMessages(next);
+    }
+    const eventName = copilotSharedStateEventName();
+    window.addEventListener(eventName, syncSharedState);
+    return () => window.removeEventListener(eventName, syncSharedState);
+  }, [messages]);
   useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch { /* no-op: speech synthesis may be unavailable */ } }, []);
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -338,6 +377,18 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
 
   function openPath(path) { if (!path) return; navigate(path); setOpen(false); }
 
+  function openFullWorkspace() {
+    writeCopilotSharedState({
+      messages,
+      screenPath: currentPath,
+      screenLabel: screenContext.label,
+      role: me?.role || "",
+      companyKind: me?.companyKind || "",
+      selection,
+    });
+    openPath(fullWorkspacePath(me));
+  }
+
   async function copyText(value) {
     const textToCopy = String(value || "").trim();
     if (!textToCopy) return;
@@ -436,7 +487,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   return !open ? (
     <button
       type="button"
-      className="copilotFab"
+      className="copilotFab copilotFab--mascot"
       style={{ zIndex: 9135 }}
       onPointerDownCapture={activateCopilotLayer}
       onMouseDownCapture={activateCopilotLayer}
@@ -448,12 +499,8 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       title="Sefer Abi’ye Sor — Operasyon yardımcısı"
       aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"
     >
-      <span className="copilotFabBadge" aria-hidden="true">SA</span>
-      <span className="copilotFabBody">
-        <span className="copilotFabTitle">Sefer Abi’ye Sor</span>
-        <span className="copilotFabSubtitle">Operasyon yardımcısı</span>
-      </span>
-      <span className="copilotFabStatus"><span className="copilotFabDot" />hazır</span>
+      <span className="copilotMascotAvatar" aria-hidden="true"><span className="copilotMascotCap">SP</span><span className="copilotMascotFace"><i /><i /></span></span>
+      <span className="copilotMascotLabel">Sefer Abi’ye Sor</span>
     </button>
   ) : (
     <aside
@@ -501,6 +548,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           </button>
           <button type="button" className="btn sm copilotToolBtn copilotToolBtn--close" onClick={() => setOpen(false)} title="Kapat">
             Kapat
+          </button>
+          <button type="button" className="btn sm primary copilotToolBtn" onClick={openFullWorkspace} title="Aynı konuşmayı tam ekranda sürdür">
+            Tam ekranda aç
           </button>
         </div>
       </div>

@@ -217,6 +217,10 @@ function mustNot(text, needle, label) {
   else fail(label);
 }
 
+function visibleSource(text) {
+  return String(text || '').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
 function mustAny(text, needles, label) {
   const haystack = normalize(text);
   const values = Array.isArray(needles) ? needles : [];
@@ -291,9 +295,10 @@ async function main() {
 
   const copilotFacts = read('web/src/utils/copilotFacts.js');
   const drawer = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
-  const copilotPanel = read('web/src/panels/shared/CopilotPanel.jsx');
-  const navDock = read('web/src/layout/NavDock.jsx');
-  const screenRegistry = read('web/src/copilot/screenRegistry.js');
+const copilotPanel = read('web/src/panels/shared/CopilotPanel.jsx');
+const navDock = read('web/src/layout/NavDock.jsx');
+const roleNavigation = read('web/src/utils/roleNavigation.js');
+const screenRegistry = read('web/src/copilot/screenRegistry.js');
   const service = read('backend/src/ai/service.js');
   const helpComposer = read('backend/src/ai/chat/helpComposer.js');
   const intentRouter = read('backend/src/ai/chat/intentRouter.js');
@@ -345,9 +350,9 @@ async function main() {
   must(copilotPanel, 'role: me?.role || ""', 'copilot panel keeps screen role payload field');
   must(copilotPanel, 'path: selectedChatScreen.path', 'copilot panel keeps screen path payload field');
 
-  must(navDock, 'Sefer Abi Terminali', 'nav dock keeps Sefer Abi Terminali label');
-  must(navDock, 'getCopilotMenuEntry', 'nav dock keeps shared copilot menu entry');
-  must(navDock, 'copilotEntry.label || "Sefer Abi Terminali"', 'nav dock keeps Sefer Abi Terminali fallback');
+  must(navDock, 'getRoleNavigation', 'nav dock uses the canonical role navigation registry');
+  must(roleNavigation, 'export function getRoleNavigation', 'role navigation owns visible destinations');
+  mustNot(visibleSource(navDock), 'sefer abi terminali', 'nav dock has no rendered terminal label');
 
   must(screenRegistry, 'COPILOT_MENU_LABEL', 'screen registry keeps copilot menu label constant');
   must(screenRegistry, '/room/map', 'screen registry keeps room map route');

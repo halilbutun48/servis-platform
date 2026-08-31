@@ -7,6 +7,7 @@ import { useHashRoute, navigate } from "./router";
 import { companyBase } from "./utils/paths";
 import BrandMark from "./components/BrandMark";
 import ErrorBoundary from "./components/ErrorBoundary";
+import RoleTaskHome from "./components/RoleTaskHome";
 import { startLiveWs, stopLiveWs } from "./live/ws";
 
 const LOGIN_HIGHLIGHTS = [
@@ -109,7 +110,7 @@ const SuperTelematicsHubPanel = lazy(() => import("./panels/superadmin/Telematic
 function roleDefaultPath(me) {
   if (me?.requirePasswordChange) return "/auth/change-password";
   const role = me?.role;
-  if (role === "ROOM") return "/room/map";
+  if (role === "ROOM") return "/room";
   if (role === "COMPANY") return companyBase(me); // COMPANY or SCHOOL variant
   if (role === "DRIVER") return me?.requirePinChange ? "/driver/change-pin" : "/driver/today";
   if (role === "PERSONEL") return "/personel/live";
@@ -288,6 +289,13 @@ function LoginCard() {
   );
 }
 
+function RouteRedirect({ to, message = "Yönlendiriliyor..." }) {
+  useEffect(() => {
+    if (to) navigate(to);
+  }, [to]);
+  return <div style={{ padding: 16 }} role="status">{message}</div>;
+}
+
 export default function App() {
   const { token, me } = useSession();
   const { path } = useHashRoute();
@@ -318,8 +326,7 @@ export default function App() {
     if (!me) return { layout: false, node: <SessionLoadingCard path={cleanPath} /> };
 
     if (me.requirePasswordChange && cleanPath !== "/auth/change-password") {
-      navigate("/auth/change-password");
-      return { layout: false, node: <div style={{ padding: 16 }}>Şifre değiştirme ekranına yönlendiriliyor...</div> };
+      return { layout: false, node: <RouteRedirect to="/auth/change-password" message="Şifre değiştirme ekranına yönlendiriliyor..." /> };
     }
 
     if (cleanPath === "/auth/change-password") {
@@ -327,13 +334,11 @@ export default function App() {
     }
 
     if (me.role === "DRIVER" && me.requirePinChange && path !== "/driver/change-pin") {
-      navigate("/driver/change-pin");
-      return { layout: true, node: <div style={{ padding: 16 }}>PIN ekranına yönlendiriliyor...</div> };
+      return { layout: true, node: <RouteRedirect to="/driver/change-pin" message="PIN ekranına yönlendiriliyor..." /> };
     }
 
     if (cleanPath.startsWith("/superadmin") && me.role !== "SUPER_ADMIN") {
-      navigate(roleDefaultPath(me));
-      return { layout: true, node: <div style={{ padding: 16 }}>Yönlendiriliyor...</div> };
+      return { layout: true, node: <RouteRedirect to={roleDefaultPath(me)} /> };
     }
 
     // Shared
@@ -348,6 +353,7 @@ export default function App() {
     if (path === "/organization/reports") return { layout: true, node: <ReportsPanel /> };
 
     // ROOM
+    if (path === "/room") return { layout: true, node: <RoleTaskHome><RoomMapPanel /></RoleTaskHome> };
     if (path === "/room/map") return { layout: true, node: <RoomMapPanel /> };
     if (path === "/room/live") return { layout: true, node: <RoomMapPanel /> };
     if (path === "/room/vehicles") return { layout: true, node: <VehiclesPanel /> };
@@ -363,7 +369,7 @@ export default function App() {
     if (path === "/room/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // COMPANY
-    if (path === "/company") return { layout: true, node: <CompanyWorkflowPanel /> };
+    if (path === "/company") return { layout: true, node: <RoleTaskHome><CompanyWorkflowPanel /></RoleTaskHome> };
     if (path === "/company/operations") return { layout: true, node: <CompanyOperationsPanel /> };
     if (path === "/company/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/company/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
@@ -380,7 +386,7 @@ export default function App() {
     if (path === "/company/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // SCHOOL (Company.kind=SCHOOL)
-    if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
+    if (path === "/school") return { layout: true, node: <RoleTaskHome><CompanyWorkflowPanel /></RoleTaskHome> };
     if (path === "/school/operations") return { layout: true, node: <SchoolOperationsPanel /> };
     if (path === "/school/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/school/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
@@ -398,7 +404,7 @@ export default function App() {
 
 
     // ORGANIZATION (Company.kind=ORGANIZATION)
-    if (path === "/organization") return { layout: true, node: <CompanyWorkflowPanel /> };
+    if (path === "/organization") return { layout: true, node: <RoleTaskHome><CompanyWorkflowPanel /></RoleTaskHome> };
     if (path === "/organization/operations") return { layout: true, node: <CompanyOperationsPanel /> };
     if (path === "/organization/plans") return { layout: true, node: <OrganizationPlansPanel /> };
     if (path === "/organization/map") return { layout: true, node: <CompanyMapPanel /> };
@@ -416,7 +422,7 @@ export default function App() {
     if (path === "/organization/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // DRIVER
-    if (path === "/driver" || path === "/driver/today") return { layout: true, node: <DriverTodayPanel /> };
+    if (path === "/driver" || path === "/driver/today") return { layout: true, node: <RoleTaskHome><DriverTodayPanel /></RoleTaskHome> };
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
     if (path === "/driver/route") return { layout: true, node: <RoutePanel /> };
     if (path === "/driver/checkin") return { layout: true, node: <DriverCheckinPanel /> };
@@ -424,16 +430,16 @@ export default function App() {
     if (path === "/driver/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // PERSONEL
-    if (path === "/personel/live") return { layout: true, node: <PersonelLivePanel /> };
+    if (path === "/personel/live") return { layout: true, node: <RoleTaskHome><PersonelLivePanel /></RoleTaskHome> };
     if (path === "/personel/my") return { layout: true, node: <MyRidePanel /> };
     if (path === "/personel/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // PARENT
-    if (path === "/parent" || path === "/parent/live") return { layout: true, node: <ParentLivePanel /> };
+    if (path === "/parent" || path === "/parent/live") return { layout: true, node: <RoleTaskHome><ParentLivePanel /></RoleTaskHome> };
     if (path === "/parent/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // SUPER_ADMIN
-    if (path === "/superadmin") return { layout: true, node: <SuperAdminPanel /> };
+    if (path === "/superadmin") return { layout: true, node: <RoleTaskHome><SuperAdminPanel /></RoleTaskHome> };
     if (path === "/superadmin/telematics") return { layout: true, node: <SuperTelematicsHubPanel /> };
     if (path === "/superadmin/companies") return { layout: true, node: <SuperCompaniesPanel /> };
     if (path === "/superadmin/rooms") return { layout: true, node: <SuperRoomsPanel /> };
@@ -456,8 +462,7 @@ export default function App() {
 
     // Unknown: go default
     const def = roleDefaultPath(me);
-    navigate(def);
-    return { layout: true, node: <div style={{ padding: 16 }}>Redirecting...</div> };
+    return { layout: true, node: <RouteRedirect to={def} /> };
   }, [token, me, path, cleanPath]);
 
   if (!view.layout) return view.node;

@@ -1,0 +1,11 @@
+{
+  "milestone": "ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01",
+  "owner": "#15",
+  "status": "HANDOFF_ONLY",
+  "entries": [
+    { "role": "ROOM", "route": "/room", "visibleString": "GPS canlılık sinyali", "category": "internal-status", "why": "#15 should confirm the final user-safe wording on the simplified summary.", "evidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/room.png" },
+    { "role": "ROOM", "route": "/room", "visibleString": "Sinyal grupları", "category": "technical-metadata", "why": "#15 should review whether this operational label is appropriate for the final audience.", "evidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/room.png" },
+    { "role": "COMPANY", "route": "/company", "visibleString": "Komuta Merkezi", "category": "product-term", "why": "#15 should complete the global terminology decision without changing #17 hierarchy.", "evidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/company.png" },
+    { "role": "DRIVER", "route": "/driver/today", "visibleString": "GPS", "category": "technical-term", "why": "Existing route evidence may expose GPS terminology; global wording belongs to #15.", "evidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/driver.png" }
+  ]
+}

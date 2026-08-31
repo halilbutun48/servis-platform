@@ -44,7 +44,7 @@ Writes that can change money, contracts, dispatch, accounting, or other importan
 
 ## Current versus future
 
-Current implementation includes basic dispatch/assignment, routing, GPS/evidence, finance/reconciliation previews, provider-independent accounting export preparation, and Sefer Abi decision support. #20’s cost-aware optimizer and disruption recovery, #21 safe action execution, #17 navigation redesign, #18 anchors, #19 natural-language forms, voice (#22–#29), proactive/autopilot (#30–#33), and production hardening (#38) remain future locked owners.
+Current implementation includes basic dispatch/assignment, routing, GPS/evidence, finance/reconciliation previews, provider-independent accounting export preparation, Sefer Abi decision support, and #17’s role-based task-home/navigation presentation. #20’s cost-aware optimizer and disruption recovery, #21 safe action execution, #18 anchors, #19 natural-language forms, voice (#22–#29), proactive/autopilot (#30–#33), and production hardening (#38) remain future locked owners.
 
 ## Runtime boundaries
 

@@ -25,6 +25,9 @@ This map points to actual implementation/check owners. Status is one of `IMPLEME
 | Prisma cross-platform client | platform | `backend/src/prisma.js` | #11 schema root | runtime infrastructure | #10 checker | IMPLEMENTED |
 | School planning | operations | `backend/src/routes/organization.js` | tenant/operations modules | `school/OperationsPanel.jsx` | school/org check | IMPLEMENTED |
 | Organization planning | operations | `backend/src/routes/organization.js` | tenant/operations modules | `organization/PlansPanel.jsx` | school/org check | IMPLEMENTED |
+| Role-based task home and navigation | platform/ux | existing role routes and bundles | role/context owners | `web/src/utils/roleNavigation.js`, `web/src/components/RoleTaskHome.jsx` | #17 browser/check owner | IMPLEMENTED |
+| Operations Command Center presentation | platform/ux | existing dashboard/observability bundle owners | existing canonical signal owners | `web/src/components/OperationsCommandCenter.jsx` | #17 browser/check owner | IMPLEMENTED |
+| Single Sefer Abi contextual entry | ai/ux | `backend/src/routes/ai.js` | #5 context/state owners | `FloatingCopilotDrawer.jsx`, `CopilotPanel.jsx` | #17 browser + #5 checks | IMPLEMENTED |
 
 ## Finance semantics
 
@@ -40,7 +43,6 @@ Each arrow is owned by the route/service/schema family named above. Current boun
 
 | Capability | Status | Owner |
 |---|---|---|
-| Global navigation simplification | PLANNED_LOCKED_OWNER | #17 |
 | Terminology sweep | PLANNED_LOCKED_OWNER | #15 |
 | UI anchors/highlights | PLANNED_LOCKED_OWNER | #18 |
 | Natural-language form preparation | PLANNED_LOCKED_OWNER | #19 |

@@ -131,17 +131,17 @@ must(personaDoc, 'Bu milestone yeni terminal component yazmaz', 'persona doc kee
 must(factsSource, "terminalLabel: 'Sefer Abi Terminali'", 'persona constant exposes terminal label');
 must(factsSource, "drawerTitle: 'Sefer Abi’ye Sor'", 'persona constant keeps drawer title');
 must(factsSource, "export const COPILOT_TERMINAL = Object.freeze({", 'copilot facts exports terminal shell constant');
-must(factsSource, "title: 'Sefer Abi Terminali'", 'terminal shell exposes visible title');
-must(factsSource, "subtitle: 'Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan sade analiz alanı.'", 'terminal shell exposes subtitle');
+must(factsSource, "title: 'Sefer Abi'", 'assistant workspace exposes visible title');
+must(factsSource, "subtitle: 'Operasyon, kalite ve ticari sinyalleri aynı konuşmada yorumlayan sade analiz alanı.'", 'assistant workspace exposes subtitle');
 must(factsSource, "readonlyBoundary: 'Bu ekran işlem başlatmaz; yalnızca görünür sinyalleri yorumlar.'", 'terminal shell exposes readonly boundary');
-must(factsSource, "drawerSeparationNote: 'Sağ alttaki Sefer Abi’ye Sor hızlı destek içindir; terminal daha derin analiz yüzeyidir.'", 'terminal shell exposes drawer separation note');
+must(factsSource, "drawerSeparationNote: 'Bu sayfa, sağ alttaki Sefer Abi’ye Sor konuşmasının tam ekran devamıdır.'", 'assistant workspace keeps shared-context note');
 
 const { COPILOT_PERSONA, COPILOT_TERMINAL } = await import(pathToFileURL(path.join(root, 'web/src/utils/copilotFacts.js')).href);
 
 must(COPILOT_PERSONA.terminalLabel, 'Sefer Abi Terminali', 'persona constant terminal label value');
 must(COPILOT_PERSONA.drawerTitle, 'Sefer Abi’ye Sor', 'persona constant drawer title value');
 must(COPILOT_PERSONA.menuLabel, 'Sefer Abi', 'persona constant legacy menu label stays branded');
-must(COPILOT_TERMINAL.title, 'Sefer Abi Terminali', 'terminal constant title value');
+must(COPILOT_TERMINAL.title, 'Sefer Abi', 'assistant workspace title value');
 must(COPILOT_TERMINAL.subtitle, 'sade analiz alanı', 'terminal constant subtitle value');
 must(COPILOT_TERMINAL.readonlyBoundary, 'işlem başlatmaz', 'terminal constant readonly boundary value');
 
@@ -164,7 +164,7 @@ must(panelSource, 'COPILOT_TERMINAL.title', 'copilot panel renders terminal titl
 must(panelSource, 'COPILOT_TERMINAL.subtitle', 'copilot panel renders terminal subtitle');
 must(panelSource, 'COPILOT_TERMINAL.readonlyBoundary', 'copilot panel renders terminal readonly boundary');
 must(panelSource, 'COPILOT_TERMINAL.starterChips', 'copilot panel renders terminal starter chips');
-must(panelSource, 'Terminal başlangıç soruları', 'copilot panel shows terminal starter chips heading');
+must(panelSource, 'Başlangıç soruları', 'copilot panel shows starter chips heading');
 mustNot(panelSource, 'Operasyon Copilot', 'copilot panel no longer exposes old shell title');
 
 must(drawerSource, 'COPILOT_PERSONA.drawerTitle', 'drawer keeps quick-help title source');

@@ -133,10 +133,10 @@ export const COPILOT_PERSONA = Object.freeze({
 });
 
 export const COPILOT_TERMINAL = Object.freeze({
-  title: 'Sefer Abi Terminali',
-  subtitle: 'Operasyon, kalite ve ticari sinyalleri tek ekranda yorumlayan sade analiz alanı.',
+  title: 'Sefer Abi',
+  subtitle: 'Operasyon, kalite ve ticari sinyalleri aynı konuşmada yorumlayan sade analiz alanı.',
   readonlyBoundary: 'Bu ekran işlem başlatmaz; yalnızca görünür sinyalleri yorumlar.',
-  drawerSeparationNote: 'Sağ alttaki Sefer Abi’ye Sor hızlı destek içindir; terminal daha derin analiz yüzeyidir.',
+  drawerSeparationNote: 'Bu sayfa, sağ alttaki Sefer Abi’ye Sor konuşmasının tam ekran devamıdır.',
   starterChips: Object.freeze([
     'Bugünkü operasyon risklerini özetle',
     'Ticari akışta eksik var mı?',

@@ -1,0 +1,46 @@
+{
+  "milestone": "ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01",
+  "status": "IMPLEMENTED",
+  "sourceOwners": {
+    "navigation": "web/src/utils/roleNavigation.js",
+    "taskHome": "web/src/components/RoleTaskHome.jsx",
+    "commandCenter": "web/src/components/OperationsCommandCenter.jsx",
+    "assistantSharedState": "web/src/utils/copilotSharedState.js",
+    "assistantQuickEntry": "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+    "assistantFullWorkspace": "web/src/panels/shared/CopilotPanel.jsx"
+  },
+  "screens": [
+    { "role": "SUPER_ADMIN", "route": "/superadmin", "task": "Sistem ve operasyon durumunu kontrol et", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Denetim durumunu aç", "detailsOwner": "web/src/panels/superadmin/SuperAdminPanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/super-admin.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/super-admin.png", "futureTerminologyHandoff": true },
+    { "role": "COMPANY", "route": "/company", "task": "Hizmet operasyonunu takip et", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Operasyonu aç", "detailsOwner": "web/src/panels/company/WorkflowPanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/company.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/company.png", "futureTerminologyHandoff": true },
+    { "role": "ROOM", "route": "/room", "task": "Teklif ve saha operasyonunu yönet", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Teklifleri aç", "detailsOwner": "web/src/panels/room/MapPanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/room.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/room.png", "futureTerminologyHandoff": true },
+    { "role": "SCHOOL", "route": "/school", "task": "Okul servisini ve veli erişimini yönet", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Veli erişimini aç", "detailsOwner": "web/src/panels/company/WorkflowPanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/school.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/school.png", "futureTerminologyHandoff": true },
+    { "role": "ORGANIZATION", "route": "/organization", "task": "Gezi ve ulaşım planını hazırla", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Planları aç", "detailsOwner": "web/src/panels/company/WorkflowPanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/organization.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/organization.png", "futureTerminologyHandoff": true },
+    { "role": "DRIVER", "route": "/driver/today", "task": "Bugünkü görev ve rotayı kontrol et", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Rotayı aç", "detailsOwner": "web/src/panels/driver/TodayPanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/driver.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/driver.png", "futureTerminologyHandoff": true },
+    { "role": "PERSONEL", "route": "/personel/live", "task": "Servis ve canlı ulaşım durumunu gör", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Servisimi aç", "detailsOwner": "web/src/panels/personel/LivePanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/personel.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/personel.png", "futureTerminologyHandoff": true },
+    { "role": "PARENT", "route": "/parent/live", "task": "Çocuk ve servis durumunu kontrol et", "summaryOwner": "web/src/components/RoleTaskHome.jsx", "issueOwner": "web/src/components/OperationsCommandCenter.jsx", "primaryCta": "Canlı durumu aç", "detailsOwner": "web/src/panels/parent/LivePanel.jsx", "advancedOwner": "web/src/utils/roleNavigation.js", "mobileEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/mobile/parent.png", "browserEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/desktop/parent.png", "futureTerminologyHandoff": true }
+  ],
+  "commandCenter": {
+    "groups": ["KRİTİK", "BUGÜN ÇÖZÜLMELİ", "TAKİP EDİLMELİ", "FIRSAT"],
+    "presentationOnly": true,
+    "signalOwners": ["backend/src/services/dashboardBulk.js", "backend/src/ops/observabilityManifest.js"],
+    "futureSignalsExcluded": ["#20 optimizer", "#30+ proactive assistant"]
+  },
+  "seferAbi": {
+    "primaryEntry": "Sefer Abi’ye Sor",
+    "primaryOwner": "web/src/components/copilot/FloatingCopilotDrawer.jsx",
+    "fullWorkspaceRoute": "role-scoped /copilot deep link",
+    "sharedStateOwner": "web/src/utils/copilotSharedState.js",
+    "terminalPrimaryNavigation": false,
+    "continuityEvidence": "backend/artifacts/browser-smoke/role-based-simple-navigation-and-task-home-01/report.json"
+  },
+  "futureOwners": {
+    "terminologySweep": "#15",
+    "guidedHighlight": "#18",
+    "naturalLanguageForm": "#19",
+    "optimizerAndDisruptionRecovery": "#20",
+    "safeActions": "#21",
+    "physicalDevice": "#36",
+    "productionHardening": "#38",
+    "proactiveAssistant": "#30–#33"
+  }
+}

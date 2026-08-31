@@ -1828,3 +1828,11 @@ Bu bant güncel doğrulanmış üst hattır.
 - `check:uxsuperadminfieldacceptancecenter01` Saha Kabul Merkezi ekranını summary-first acceptance komuta paneline taşır; canlı oturum, manifest, karar kaydı, oturum bilgisi, checklist güncelleme ve geçmiş/log ayrıntıları gerçek tablarda yaşar.
 - Üstte canlı oturum mini bandı ve checklist mini durum özeti kalır; uzun acceptance formu tek sayfa olarak akmaz.
 - Bu check, `UX-SUPERADMIN-OVERVIEW-CLEANUP-01`, `UX-SUPERADMIN-LIVE-MONITORING-01`, `UX-SUPERADMIN-AUDIT-PANEL-01`, `UX-SUPERADMIN-QUALITY-PANEL-01`, `UX-SUPERADMIN-FIELD-DISPATCH-DISCOVERY-01` ve `UX-PANEL-REALITY-CLEANUP-02D` zincirini bozmaz; ürün davranışını değiştirmez.
+
+## ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01
+
+- Odaklı kontrol: `check:rolebasedsimplenavigationandtaskhome01`
+- Gerçek tarayıcı kabulü: `smoke:rolebasedsimplenavigationandtaskhome01`
+- Sekiz kullanıcı bağlamında görev merkezi, özet-ilk hiyerarşi, tek ana aksiyon, Komuta Merkezi ve rol uyumlu menü sahipliğini doğrular.
+- Sefer Abi’nin tek birincil girişi sağ alttaki kompakt mascot/avatar’dır; hızlı panel ve tam çalışma alanı ortak konuşma/bağlam durumunu kullanır. `Sefer Abi Terminali` ayrı birincil menü öğesi değildir.
+- #15 terminoloji taraması, #18 yönlendirmeli vurgu ve #20 optimizasyonu bu kontrolün kapsamı dışındadır.

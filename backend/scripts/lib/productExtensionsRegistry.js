@@ -174,6 +174,7 @@ export const productExtensionsCheckScripts = Object.freeze([
   "check:uxpanellayoutwidth02cfix02",
   "check:uxpanellayoutwidth02cfix03",
   "check:uxnav01",
+  "check:rolebasedsimplenavigationandtaskhome01",
   "check:uxbrandloginpremium01",
   "check:uxmobilewebshellclarity01",
   "check:uxmobileallrolespanelfix01",

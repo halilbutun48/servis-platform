@@ -2833,10 +2833,14 @@ button, input, select, textarea, .btn, .secondary {
   .copilotDrawer {
     left: 10px;
     right: 10px;
+    top: 12px;
+    bottom: auto;
     width: auto !important;
     max-width: none;
     min-width: 0;
-    height: min(78vh, 760px) !important;
+    min-height: 0;
+    height: min(42vh, 360px) !important;
+    max-height: min(42vh, 360px);
   }
   .copilotFab {
     right: 12px;
@@ -2861,3 +2865,98 @@ button, input, select, textarea, .btn, .secondary {
 .listSelectionBanner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1px solid rgba(83,177,253,0.24); background: rgba(83,177,253,0.08); border-radius: 14px; margin-top: 10px; }
 .listSelectionBannerTitle { font-size: 14px; color: #f8fafc; }
 .listSelectionBannerMeta { font-size: 12px; color: #c8d6f6; margin-top: 4px; }
+
+/* #17 mascot entrypoint: compact, calm and non-blocking. */
+.copilotFab--mascot {
+  width: 68px;
+  height: 68px;
+  min-width: 68px;
+  min-height: 68px;
+  padding: 6px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  background: #102a56;
+  border: 3px solid rgba(255, 255, 255, .92);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .3), 0 0 0 4px rgba(83, 177, 253, .16);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.copilotFab--mascot:hover, .copilotFab--mascot:focus-visible { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(15, 23, 42, .34), 0 0 0 5px rgba(83, 177, 253, .22); }
+.copilotMascotAvatar { width: 50px; height: 50px; display: grid; place-items: end center; position: relative; border-radius: 50%; background: linear-gradient(180deg, #c8e7ff 0 42%, #f5b78c 43% 74%, #183a6b 75%); overflow: hidden; }
+.copilotMascotCap { position: absolute; top: 4px; left: 8px; right: 8px; z-index: 2; padding: 3px 0; border-radius: 8px 8px 3px 3px; background: #173a70; color: #e5f3ff; font-size: 9px; line-height: 1; font-weight: 900; letter-spacing: .08em; text-align: center; }
+.copilotMascotFace { position: absolute; top: 21px; width: 24px; height: 22px; border-radius: 45% 45% 50% 50%; background: #f3b388; }
+.copilotMascotFace::before { content: ""; position: absolute; top: 0; left: 1px; right: 1px; height: 7px; border-radius: 50% 50% 25% 25%; background: #463327; }
+.copilotMascotFace i { position: absolute; top: 10px; width: 3px; height: 3px; border-radius: 50%; background: #182230; }
+.copilotMascotFace i:first-child { left: 7px; }
+.copilotMascotFace i:last-child { right: 7px; }
+.copilotMascotLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.copilotDrawer { bottom: max(96px, calc(env(safe-area-inset-bottom) + 78px)); max-width: calc(100vw - 24px); }
+@media (max-width: 720px) {
+  .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(90px, calc(env(safe-area-inset-bottom) + 74px)); width: 58px; height: 58px; min-width: 58px; min-height: 58px; }
+  .copilotMascotAvatar { width: 42px; height: 42px; }
+  .copilotMascotFace { top: 18px; transform: scale(.88); }
+  .copilotMascotCap { top: 3px; font-size: 8px; }
+  .copilotDrawer { right: 12px; left: 12px; bottom: max(156px, calc(env(safe-area-inset-bottom) + 140px)); width: auto !important; max-width: none; }
+}
+
+/* #17 role task-home: shared hierarchy, role-specific content. */
+.roleTaskHome { gap: 14px; }
+.roleTaskHero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(24, 45, 78, .94));
+  color: #f8fafc;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, .14);
+}
+.roleTaskHeroCopy { min-width: 0; }
+.roleTaskHero h1 { margin: 5px 0 8px; font-size: clamp(24px, 3vw, 36px); letter-spacing: -.03em; }
+.roleTaskHero p { margin: 0; color: #cbd5e1; line-height: 1.55; }
+.roleSectionKicker, .roleTaskActionHint { font-size: 11px; letter-spacing: .1em; font-weight: 800; color: #93c5fd; }
+.roleTaskHeroAction { display: grid; gap: 8px; justify-items: end; min-width: 190px; }
+.rolePrimaryCta { min-height: 44px; white-space: nowrap; }
+.roleTaskSummaryGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.roleTaskSummaryCard { display: grid; gap: 7px; min-width: 0; padding: 16px; border: 1px solid rgba(148, 163, 184, .24); border-radius: 14px; background: var(--surface, #fff); }
+.roleTaskSummaryCard > span { font-size: 12px; font-weight: 800; color: #667085; text-transform: uppercase; letter-spacing: .06em; }
+.roleTaskSummaryCard strong { font-size: 16px; line-height: 1.35; color: #101828; }
+.roleTaskSummaryCard small { color: #667085; line-height: 1.4; }
+.roleTaskSummaryCard--next { border-color: rgba(23, 92, 211, .35); }
+.roleCommandCenter { display: grid; gap: 14px; padding: 18px; border-radius: 16px; background: #f8fafc; border: 1px solid #dbe4f0; }
+.roleCommandCenterHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.roleSectionTitle { margin: 4px 0 4px; font-size: 20px; color: #101828; }
+.roleSectionLead { margin: 0; color: #475467; line-height: 1.5; }
+.roleCommandCenterCounts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.roleSignalCount { padding: 6px 8px; border-radius: 999px; background: #eaf2ff; color: #175cd3; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.roleCommandCenterEmpty { display: grid; gap: 4px; padding: 15px; border: 1px dashed #b7c4d6; border-radius: 12px; background: #fff; color: #475467; }
+.roleCommandCenterEmpty strong { color: #101828; }
+.roleSignalGroup { display: grid; gap: 9px; }
+.roleSignalGroupTitle { font-size: 12px; font-weight: 900; letter-spacing: .08em; color: #475467; }
+.roleSignalCard { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px; background: #fff; border: 1px solid #dbe4f0; border-radius: 12px; }
+.roleSignalCardBody { display: grid; gap: 4px; min-width: 0; color: #475467; line-height: 1.4; }
+.roleSignalCard h3 { margin: 0; color: #101828; font-size: 15px; }
+.roleSignalEvidence { font-size: 11px; color: #667085; overflow-wrap: anywhere; }
+.roleSignalAction { flex: 0 0 auto; white-space: nowrap; text-decoration: none; }
+.roleTaskDetails { border: 1px solid rgba(148, 163, 184, .3); border-radius: 14px; background: #fff; }
+.roleTaskDetails > summary { cursor: pointer; padding: 15px 17px; font-weight: 800; color: #175cd3; }
+.roleTaskDetailsBody { padding: 0 14px 14px; }
+@media (min-width: 901px) {
+  /* Keep the contextual assistant beside the task CTA when expanded. */
+  body.copilot-is-open .roleTaskHeroAction { margin-right: min(460px, 32vw); }
+}
+@media (max-width: 900px) {
+  .roleTaskHero { align-items: stretch; flex-direction: column; padding: 18px; }
+  .roleTaskHeroAction { justify-items: stretch; min-width: 0; }
+  .rolePrimaryCta { width: 100%; }
+  .roleTaskSummaryGrid { grid-template-columns: 1fr; }
+  .roleCommandCenterHead { flex-direction: column; }
+  .roleCommandCenterCounts { justify-content: flex-start; }
+  .roleSignalCard { align-items: stretch; flex-direction: column; }
+  .roleSignalAction { width: 100%; text-align: center; }
+}

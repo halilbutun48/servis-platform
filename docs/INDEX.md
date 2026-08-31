@@ -24,9 +24,9 @@ The engineering principle is **İÇERİDE GÜÇLÜ / DIŞARIDA BASİT**: canonic
 
 ## Current frontier
 
-At the current repository frontier, #1–#14 are closed according to the current milestone evidence; #16 is the active documentation/index milestone; #17 and #15 are not started. The canonical gap disposition is in [the #14 gap register](PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json): six discovered gaps, one fixed in #14, five deferred to their locked owners, and no unresolved blocker or critical.
+At the current repository frontier, #1–#14 and #16 are closed according to the current milestone evidence; #17 is the active role-based navigation/task-home milestone and #15 remains next/not started. The canonical gap disposition is in [the #14 gap register](PROJECT_WIDE_GAP_AND_RELEASE_READINESS_AUDIT_01_GAP_REGISTER.json): six discovered gaps, one fixed in #14, five deferred to their locked owners, and no unresolved blocker or critical.
 
-Future ownership is explicit: #17 navigation simplification, #15 terminology sweep, #18 UI anchors, #19 natural-language form preparation, #20 optimizer/disruption recovery, #21 safe actions, #22–#29 voice, #30–#33 proactive/autopilot, #35/#38 production security, #36 physical-device proof, and #38 production hardening are not current implementation claims.
+Future ownership is explicit: #15 terminology sweep, #18 UI anchors, #19 natural-language form preparation, #20 optimizer/disruption recovery, #21 safe actions, #22–#29 voice, #30–#33 proactive/autopilot, #35/#38 production security, #36 physical-device proof, and #38 production hardening are not current implementation claims. #17’s current navigation/task-home and single Sefer Abi entry are documented in [the #17 owner map](ROLE_BASED_SIMPLE_NAVIGATION_AND_TASK_HOME_01.md); its future boundaries remain explicitly excluded.
 
 ## Canonical authority map
 
@@ -53,6 +53,7 @@ Protected runtime-data is never documentation evidence and remains untouched:
 - [Repository/codebase](architecture/CODEBASE_INDEX.md)
 - [Roles and tenant boundaries](roles/ROLE_CONTEXT_AND_TENANT_MODEL.md)
 - [Capabilities and owners](domains/CAPABILITY_OWNERSHIP_MAP.md)
+- [#17 role navigation and task home](ROLE_BASED_SIMPLE_NAVIGATION_AND_TASK_HOME_01.md)
 - [Operations and incidents](operations/OPERATIONS_RECOVERY_AND_INCIDENT_INDEX.md)
 - [Checks and CI](testing/TEST_CHECK_AND_CI_OWNERSHIP_MAP.md)
 - [Integrations](integrations/INTEGRATION_OWNERSHIP_MAP.md)

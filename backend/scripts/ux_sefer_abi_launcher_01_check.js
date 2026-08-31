@@ -81,6 +81,7 @@ const contextDoc = read('docs/COPILOT_PANEL_CONTEXT_AUDIT_V1.md');
 const drawerSource = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
 const helperSource = read('web/src/utils/copilotFacts.js');
 const navDockSource = read('web/src/layout/NavDock.jsx');
+const roleNavigationSource = read('web/src/utils/roleNavigation.js');
 const appShellSource = read('web/src/layout/AppShell.jsx');
 
 must(pkg, '"check:uxseferabilauncher01": "node backend/scripts/ux_sefer_abi_launcher_01_check.js"', 'package.json exposes check:uxseferabilauncher01');
@@ -92,10 +93,9 @@ must(contextDoc, 'UX-SEFER-ABI-LAUNCHER-01 note', 'copilot context doc keeps lau
 
 must(drawerSource, 'Sefer Abi’ye Sor', 'launcher uses Sefer Abi’ye Sor title');
 must(drawerSource, 'Operasyon yardımcısı', 'launcher keeps Operasyon yardımcısı persona text');
-must(drawerSource, 'copilotFabBadge', 'launcher includes compact branded badge');
-must(drawerSource, 'copilotFabTitle', 'launcher includes compact title');
-must(drawerSource, 'copilotFabSubtitle', 'launcher includes compact subtitle');
-must(drawerSource, 'copilotFabStatus', 'launcher includes compact status pill');
+must(drawerSource, 'copilotFab--mascot', 'launcher includes compact mascot entry');
+must(drawerSource, 'copilotMascotAvatar', 'launcher includes branded mascot avatar');
+must(drawerSource, 'copilotMascotLabel', 'launcher includes accessible mascot label');
 must(drawerSource, 'aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"', 'launcher exposes clear aria label');
 must(drawerSource, 'setOpen(false)', 'drawer still closes back to launcher');
 must(drawerSource, 'normalizeDrawerSize(initial.size)', 'drawer normalizes persisted size before init');
@@ -103,8 +103,8 @@ assertDrawerDefaultSize(drawerSource);
 mustNot(drawerSource, 'Yardım ve copilot', 'launcher no longer says Yardım');
 mustNot(drawerSource, '>Yardım<', 'launcher no longer uses bare Yardım label');
 
-must(navDockSource, 'Sefer Abi Terminali', 'nav dock keeps Sefer Abi Terminali label');
-must(navDockSource, 'getCopilotMenuEntry', 'nav dock still uses shared copilot menu entry');
+must(navDockSource, 'getRoleNavigation', 'nav dock uses the canonical role navigation registry');
+must(roleNavigationSource, 'export function getRoleNavigation', 'role navigation registry owns visible destinations');
 must(appShellSource, 'FloatingCopilotDrawer', 'app shell still mounts floating drawer');
 
 must(helperSource, "drawerTitle: 'Sefer Abi’ye Sor'", 'persona constant keeps drawer title');

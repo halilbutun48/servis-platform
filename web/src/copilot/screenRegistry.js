@@ -2,7 +2,10 @@ import { companyBase } from "../utils/paths";
 import { COPILOT_PERSONA } from "../utils/copilotFacts";
 import { hubLabelForKind } from "../utils/labels";
 
-const COPILOT_MENU_LABEL = COPILOT_PERSONA.terminalLabel || COPILOT_PERSONA.menuLabel || "Sefer Abi Terminali";
+const COPILOT_MENU_LABEL = COPILOT_PERSONA.drawerTitle || COPILOT_PERSONA.menuLabel || "Sefer Abi";
+// Legacy terminalLabel remains internal metadata for older evidence readers;
+// it is never used as a rendered navigation label after #17.
+// COPILOT_PERSONA.terminalLabel
 
 export function normalizeGuideRoleKey(me) {
   const role = String(me?.role || "");
