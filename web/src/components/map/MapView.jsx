@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from "reac
 import "leaflet/dist/leaflet.css";
 
 import { uiStatusFromVehicle } from "../../utils/uiStatus";
+import { gpsFreshnessLabelFromUiStatus, gpsSourceLabelFromKey } from "../../utils/gpsSource";
 import "./mapShell.css";
 import "./markers.css";
 import { makeVehicleMarkerC } from "../../lib/markers/vehicleMarkerC";
@@ -251,6 +252,9 @@ export default function MapView({
   }, [selectedVehicle]);
 
   const selectedUi = useMemo(() => (selectedVehicle ? uiStatusFromVehicle(selectedVehicle) : null), [selectedVehicle]);
+  const selectedGpsSource = gpsSourceLabelFromKey(
+    selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsLast?.source
+  );
   const followZoom = useMemo(() => {
     if (selectedUi === "OFFLINE") return 12;
     if (selectedUi === "STALE") return 14;
@@ -414,6 +418,15 @@ export default function MapView({
           <span className="pill" data-map-provider-label="true">{tileState === "settled" ? "Harita hazır" : tileState === "fallback" ? "Harita yedeği" : "Harita yükleniyor"}</span>
         </div>
       </div>
+
+      <details className="mapViewDiagnostics">
+        <summary>Tanılama ayrıntıları</summary>
+        <div className="mapViewDiagnostics__grid">
+          <span>GPS kaynağı: {selectedGpsSource}</span>
+          <span>GPS durumu: {gpsFreshnessLabelFromUiStatus(selectedUi)}</span>
+          <span>Rota kaynağı: {routeSource}</span>
+        </div>
+      </details>
     </div>
   );
 }
