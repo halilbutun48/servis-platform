@@ -221,6 +221,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const [readingIndex, setReadingIndex] = useState(-1);
   const [selection, setSelection] = useState(() => selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
   const scrollRef = useRef(null);
+  const mascotRef = useRef(null);
+  const isMapSurface = /\/map$/.test(currentPath);
+  const [mapSafePosition, setMapSafePosition] = useState(null);
   const lastPathRef = useRef(currentPath);
   const screenContext = useMemo(() => resolveCopilotScreenContext(currentPath, me), [currentPath, me]);
   const suggestions = useMemo(() => buildSuggestions(currentPath, mode, selection, screenContext, me), [currentPath, mode, selection, screenContext, me]);
@@ -280,6 +283,56 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     setSelection(selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
     return () => window.removeEventListener(evt, onSelection);
   }, [currentPath]);
+
+  useEffect(() => {
+    if (!isMapSurface || open || typeof window === "undefined") {
+      setMapSafePosition(null);
+      return undefined;
+    }
+
+    let disposed = false;
+    const placeMascot = () => {
+      const map = document.querySelector('[data-map-surface="primary"] .mapViewShell');
+      const button = mascotRef.current;
+      if (!map || !button) return;
+
+      const mapBox = map.getBoundingClientRect();
+      const buttonBox = button.getBoundingClientRect();
+      const viewport = { width: window.innerWidth, height: window.innerHeight };
+      const gap = 18;
+      const candidates = [
+        { name: "top-right", left: mapBox.right - buttonBox.width - gap, top: mapBox.top + gap },
+        { name: "bottom-right", left: mapBox.right - buttonBox.width - gap, top: mapBox.bottom - buttonBox.height - gap },
+        { name: "bottom-left", left: mapBox.left + gap, top: mapBox.bottom - buttonBox.height - gap },
+      ];
+      const obstacles = [...document.querySelectorAll(".leaflet-marker-icon, .leaflet-control, [data-primary-cta=\"true\"], [role=alert], [role=dialog], #shell-nav-dock")]
+        .map((element) => element.getBoundingClientRect())
+        .filter((box) => box.width > 0 && box.height > 0);
+      const intersects = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      const chosen = candidates.find((candidate) => {
+        const box = { left: candidate.left, top: candidate.top, right: candidate.left + buttonBox.width, bottom: candidate.top + buttonBox.height };
+        return box.left >= 0 && box.top >= 0 && box.right <= viewport.width && box.bottom <= viewport.height && !obstacles.some((obstacle) => intersects(box, obstacle));
+      });
+
+      if (!disposed) setMapSafePosition(chosen ? { left: Math.round(chosen.left), top: Math.round(chosen.top), anchor: chosen.name } : null);
+    };
+
+    const map = document.querySelector('[data-map-surface="primary"] .mapViewShell');
+    const observer = typeof ResizeObserver === "function" && map ? new ResizeObserver(placeMascot) : null;
+    observer?.observe(map);
+    window.addEventListener("resize", placeMascot);
+    window.addEventListener("scroll", placeMascot, true);
+    const timer = window.setInterval(placeMascot, 500);
+    const frame = window.requestAnimationFrame(placeMascot);
+    return () => {
+      disposed = true;
+      observer?.disconnect();
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(timer);
+      window.removeEventListener("resize", placeMascot);
+      window.removeEventListener("scroll", placeMascot, true);
+    };
+  }, [isMapSurface, open]);
 
   useEffect(() => {
     if (!open || !token || isCopilotPage) return;
@@ -487,8 +540,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   return !open ? (
     <button
       type="button"
-      className="copilotFab copilotFab--mascot"
-      style={{ zIndex: 9135 }}
+      ref={mascotRef}
+      className={`copilotFab copilotFab--mascot${isMapSurface ? " copilotFab--map-safe" : ""}`}
+      data-map-safe-placement={isMapSurface ? (mapSafePosition?.anchor || "pending") : undefined}
+      style={{ zIndex: 9135, ...(mapSafePosition ? { left: mapSafePosition.left, top: mapSafePosition.top, right: "auto", bottom: "auto" } : {}) }}
       onPointerDownCapture={activateCopilotLayer}
       onMouseDownCapture={activateCopilotLayer}
       onFocusCapture={activateCopilotLayer}
@@ -499,7 +554,12 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       title="Sefer Abi’ye Sor — Operasyon yardımcısı"
       aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"
     >
-      <span className="copilotMascotAvatar" aria-hidden="true"><span className="copilotMascotCap">SP</span><span className="copilotMascotFace"><i /><i /></span></span>
+      <span className="copilotMascotAvatar" data-mascot-persona="mature-human" aria-hidden="true">
+        <span className="copilotMascotShoulders" />
+        <span className="copilotMascotHair" />
+        <span className="copilotMascotFace"><i className="copilotMascotEye" /><i className="copilotMascotEye" /><span className="copilotMascotMoustache" /></span>
+        <span className="copilotMascotCollar" />
+      </span>
       <span className="copilotMascotLabel">Sefer Abi’ye Sor</span>
     </button>
   ) : (

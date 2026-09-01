@@ -467,6 +467,42 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   }
 }
 
+/* #17 visual corrective: the map screen keeps the mobile shell compact so the
+   primary canvas is reachable before the user sees secondary navigation chrome. */
+@media (max-width: 640px) {
+  .shell--map-primary .shellTop {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: calc(8px + env(safe-area-inset-top)) 10px 8px;
+  }
+  .shell--map-primary .shellTopMenu {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 0 8px;
+  }
+  .shell--map-primary .shellTopBrand {
+    flex: 0 0 auto;
+    width: auto;
+  }
+  .shell--map-primary .shellTopBrand .seferpaktLogoAsset {
+    width: 74px !important;
+    max-width: 74px !important;
+  }
+  .shell--map-primary .shellTopBrand .seferpaktLogoSubtitle,
+  .shell--map-primary .shellTopBrand .muted {
+    display: none;
+  }
+  .shell--map-primary .shellTopMeta {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+  }
+  .shell--map-primary .shellTopMeta .title { font-size: 14px; line-height: 1.1; }
+  .shell--map-primary .shellTopMeta .muted { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shell--map-primary .shellTopLogout { align-self: center; flex: 0 0 auto; min-height: 34px; padding: 0 8px; }
+}
+
 .panelWorkspaceWide {
   width: min(100%, clamp(1280px, 94vw, 1600px));
   margin: 0 auto;
@@ -1321,8 +1357,9 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 }
 
 /* --- Map layouts --- */
-/* Left list smaller, map gets the remaining space */
+/* The live map is the primary canvas. Lists and diagnostics stay secondary. */
 .mapGrid { grid-template-columns: clamp(320px, 26vw, 400px) minmax(0, 1fr); align-items: stretch; }
+.mapGrid--primary-canvas { grid-template-columns: minmax(0, 1fr); }
 .mapAsideCard { height: var(--mapH); display:flex; flex-direction:column; }
 .mapAsideList { overflow:auto; padding-right: 4px; }
 .mapOperationsDisclosure {
@@ -1346,16 +1383,75 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 .mapOperationsDisclosure > summary::marker { color: #93c5fd; }
 .mapOperationsDisclosureBody { margin-top: 10px; }
 .mapOperationsDisclosureCount { white-space: nowrap; }
-.mapListDisclosure { align-self: start; }
-.mapListDisclosure[open] { align-self: stretch; }
-.mapListDisclosure[open] .mapAsideCard { height: auto !important; min-height: 260px; }
-.mapGrid > [data-map-surface="primary"] { min-width: 0; }
+.mapGrid--primary-canvas > [data-map-surface="primary"] { order: 1; min-width: 0; }
+.mapGrid--primary-canvas .mapListDisclosure { align-self: start; order: 2; }
+.mapGrid--primary-canvas .mapListDisclosure[open] { align-self: stretch; }
+.mapGrid--primary-canvas .mapListDisclosure[open] .mapAsideCard { height: auto !important; min-height: 260px; }
+.mapLegacyCurrentState { display: none; }
+.mapLegacyPreview { display: none; }
+.mapCurrentSummary { padding: 14px 16px; }
+.mapCurrentSummaryHeader { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.mapSummaryEyebrow { color:#98a2b3; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.mapCurrentSummaryTitle { margin-top:3px; font-size:20px; line-height:1.1; }
+.mapCurrentSummaryShift { margin-top:4px; }
+.mapModeToggle, .mapSummaryActions, .mapDetailPills { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.mapModeToggle { justify-content:flex-end; }
+.mapSummaryMetrics { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap:10px; align-items:center; margin-top:14px; }
+.mapSummaryMetric { min-width:0; display:flex; align-items:center; gap:8px; }
+.mapSummaryMetricLabel { color:#98a2b3; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.mapSummaryMetric .pill { max-width: min(220px, 100%); }
+.mapSummaryMetric--risk .pill { border-color:#f59e0b; }
+.mapSummaryActions { justify-content:flex-end; min-width:max-content; }
+.mapDetailsDisclosure { margin-top:12px; background:rgba(15,23,42,.22); }
+.mapDetailsGrid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+.mapDetailBlock { display:grid; gap:6px; min-width:0; }
+.mapDetailActions { grid-column:1 / -1; }
 
 @media (max-width: 900px){
-  .mapGrid { grid-template-columns: 1fr; }
+  .mapGrid, .mapGrid--primary-canvas { grid-template-columns: 1fr; }
   .mapAsideCard { height: auto; }
   .mapOperationsDisclosure { width: 100%; }
   .mapListDisclosure[open] .mapAsideCard { min-height: 0; }
+  .mapCurrentSummaryHeader { align-items:flex-start; flex-direction:column; }
+  .mapModeToggle { justify-content:flex-start; width:100%; }
+  .mapCurrentSummary { padding: 0 10px; }
+  .mapSummaryEyebrow { display:none; }
+  .mapCurrentSummaryTitle { margin-top:0; font-size:16px; line-height:1.05; }
+  .mapCurrentSummaryShift { margin-top:1px; font-size:11px; }
+  .mapSummaryMetrics { grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start; gap:6px; margin-top:10px; }
+  .mapCurrentSummaryHeader { gap:8px; }
+  .mapCurrentSummaryTitle { font-size:18px; }
+  .mapModeToggle { gap:4px; }
+  .mapModeToggle .btn { min-height:30px; padding:4px 8px; font-size:11px; }
+  .mapSummaryMetric { display:flex; align-items:center; gap:6px; min-height:30px; }
+  .mapSummaryMetricLabel { font-size:10px; }
+  .mapSummaryMetric--risk { grid-column:1 / -1; }
+  .mapSummaryMetric .pill { min-height:26px; padding:3px 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mapSummaryActions { grid-column:1 / -1; justify-content:flex-start; min-width:0; }
+  .mapDetailsGrid { grid-template-columns:1fr; }
+  .mapDetailActions { grid-column:auto; }
+  .mapDetailsDisclosure { margin-top:4px; padding:0 8px; }
+  .mapDetailsDisclosure > summary { min-height:18px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+}
+
+@media (min-width: 901px) {
+  .mapCurrentSummary { padding: 10px 12px; }
+}
+
+/* ROOM retains the map/vehicle tabs, but the selected map tab does not need a
+   second title block before its live canvas. */
+.mapTabCard--primary-canvas > .title,
+.mapTabCard--primary-canvas > .muted,
+.mapTabCard--primary-canvas > div:last-child {
+  margin-top: 0 !important;
+}
+.mapTabCard--primary-canvas > .title,
+.mapTabCard--primary-canvas > .muted { display: none; }
+
+@media (min-width: 901px) {
+  /* Keep the map tab's inner surface flush with the card on desktop too. */
+  .mapTabCard--primary-canvas > .title,
+  .mapTabCard--primary-canvas > .muted { display: none; }
 }
 .muted { color:#98a2b3; font-size: 13px; }
 .err { color:#ffb4b4; border-color:#6b1d1d; }
@@ -2893,7 +2989,7 @@ button, input, select, textarea, .btn, .secondary {
 .listSelectionBannerTitle { font-size: 14px; color: #f8fafc; }
 .listSelectionBannerMeta { font-size: 12px; color: #c8d6f6; margin-top: 4px; }
 
-/* #17 mascot entrypoint: compact, calm and non-blocking. */
+/* #17 visual corrective: mature human Sefer Abi, compact and calm. */
 .copilotFab--mascot {
   width: 68px;
   height: 68px;
@@ -2906,26 +3002,35 @@ button, input, select, textarea, .btn, .secondary {
   position: fixed;
   right: max(18px, env(safe-area-inset-right));
   bottom: max(18px, env(safe-area-inset-bottom));
-  background: #102a56;
-  border: 3px solid rgba(255, 255, 255, .92);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, .3), 0 0 0 4px rgba(83, 177, 253, .16);
+  background: linear-gradient(145deg, #152f58, #0d1d38);
+  border: 2px solid rgba(227, 183, 91, .82);
+  box-shadow: 0 12px 28px rgba(2, 6, 23, .34), 0 0 0 4px rgba(227, 183, 91, .12);
   transition: transform .16s ease, box-shadow .16s ease;
 }
-.copilotFab--mascot:hover, .copilotFab--mascot:focus-visible { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(15, 23, 42, .34), 0 0 0 5px rgba(83, 177, 253, .22); }
-.copilotMascotAvatar { width: 50px; height: 50px; display: grid; place-items: end center; position: relative; border-radius: 50%; background: linear-gradient(180deg, #c8e7ff 0 42%, #f5b78c 43% 74%, #183a6b 75%); overflow: hidden; }
-.copilotMascotCap { position: absolute; top: 4px; left: 8px; right: 8px; z-index: 2; padding: 3px 0; border-radius: 8px 8px 3px 3px; background: #173a70; color: #e5f3ff; font-size: 9px; line-height: 1; font-weight: 900; letter-spacing: .08em; text-align: center; }
-.copilotMascotFace { position: absolute; top: 21px; width: 24px; height: 22px; border-radius: 45% 45% 50% 50%; background: #f3b388; }
-.copilotMascotFace::before { content: ""; position: absolute; top: 0; left: 1px; right: 1px; height: 7px; border-radius: 50% 50% 25% 25%; background: #463327; }
-.copilotMascotFace i { position: absolute; top: 10px; width: 3px; height: 3px; border-radius: 50%; background: #182230; }
-.copilotMascotFace i:first-child { left: 7px; }
-.copilotMascotFace i:last-child { right: 7px; }
+.copilotFab--mascot:hover, .copilotFab--mascot:focus-visible { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(2, 6, 23, .38), 0 0 0 5px rgba(227, 183, 91, .2); }
+.copilotMascotAvatar { width: 50px; height: 50px; display: block; position: relative; border-radius: 50%; background: linear-gradient(160deg, #23446f, #0b1930); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); }
+.copilotMascotShoulders { position:absolute; left:8px; right:8px; bottom:-8px; height:22px; border-radius:50% 50% 0 0; background:#162f55; border-top:2px solid #d6a94f; }
+.copilotMascotHair { position:absolute; z-index:2; top:7px; left:12px; width:27px; height:17px; border-radius:55% 55% 38% 38%; background:#3f4b59; box-shadow:inset 4px 2px 0 rgba(255,255,255,.08); }
+.copilotMascotFace { position:absolute; z-index:3; top:18px; left:12px; width:27px; height:26px; border-radius:46% 46% 48% 48%; background:#d79a72; box-shadow:inset -2px -2px 0 rgba(126,67,44,.15); }
+.copilotMascotFace::before { content:""; position:absolute; left:-3px; top:8px; width:33px; height:14px; border-bottom:2px solid rgba(92,48,36,.36); border-radius:0 0 48% 48%; }
+.copilotMascotEye { position:absolute; top:10px; width:3px; height:3px; border-radius:50%; background:#172236; }
+.copilotMascotEye:first-child { left:7px; }
+.copilotMascotEye:nth-child(2) { right:7px; }
+.copilotMascotMoustache { position:absolute; left:8px; top:15px; width:12px; height:5px; border-bottom:2px solid #4c352d; border-radius:0 0 50% 50%; }
+.copilotMascotCollar { position:absolute; z-index:4; left:18px; bottom:3px; width:15px; height:9px; background:#f0f2f5; clip-path:polygon(0 0, 50% 45%, 100% 0, 83% 100%, 17% 100%); }
 .copilotMascotLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.copilotFab--map-safe { position:fixed; }
 .copilotDrawer { bottom: max(96px, calc(env(safe-area-inset-bottom) + 78px)); max-width: calc(100vw - 24px); }
 @media (max-width: 720px) {
   .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(90px, calc(env(safe-area-inset-bottom) + 74px)); width: 58px; height: 58px; min-width: 58px; min-height: 58px; }
   .copilotMascotAvatar { width: 42px; height: 42px; }
-  .copilotMascotFace { top: 18px; transform: scale(.88); }
-  .copilotMascotCap { top: 3px; font-size: 8px; }
+  .copilotMascotHair { top:6px; left:10px; width:23px; height:14px; }
+  .copilotMascotFace { top:15px; left:10px; width:23px; height:22px; }
+  .copilotMascotEye { top:8px; }
+  .copilotMascotEye:first-child { left:6px; }
+  .copilotMascotEye:nth-child(2) { right:6px; }
+  .copilotMascotMoustache { left:7px; top:13px; width:10px; }
+  .copilotMascotCollar { left:15px; bottom:3px; width:13px; height:8px; }
   .copilotDrawer { right: 12px; left: 12px; bottom: max(156px, calc(env(safe-area-inset-bottom) + 140px)); width: auto !important; max-width: none; }
 }
 

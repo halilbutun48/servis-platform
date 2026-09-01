@@ -26,7 +26,7 @@ function cacheSet(key, val) {
   }
 }
 
-export function makeVehicleMarkerC({ plate, status = "online", heading = 0 }) {
+export function makeVehicleMarkerC({ plate, status = "online", heading = 0, selected = false, muted = false }) {
   const st = String(status || "online").toLowerCase(); // online|stale|offline
   const safePlate = escHtml(plate && String(plate).trim() ? plate : "ARAC");
 
@@ -37,14 +37,14 @@ export function makeVehicleMarkerC({ plate, status = "online", heading = 0 }) {
   const rotBucket = Math.round(rot / 10) * 10;
 
   // ✅ Cache key: plate + status + heading bucket
-  const cacheKey = `${safePlate}|${st}|${rotBucket}`;
+  const cacheKey = `${safePlate}|${st}|${rotBucket}|${selected ? "selected" : "default"}|${muted ? "muted" : "default"}`;
   const cached = cacheGet(cacheKey);
   if (cached) return cached;
 
   const labelText = st === "online" ? "Canlı" : st === "stale" ? "Güncel değil" : st === "offline" ? "Çevrim dışı" : "Bekleniyor";
 
   const html = `
-    <div class="vmc vmc--${st}">
+    <div class="vmc vmc--${st}${selected ? " vmc--selected" : ""}${muted ? " vmc--muted" : ""}">
       <div class="vmc-label">
         <span class="vmc-dot" aria-hidden="true"></span>
         <span class="vmc-plate">${safePlate}</span>

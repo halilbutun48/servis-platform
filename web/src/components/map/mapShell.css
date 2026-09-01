@@ -231,6 +231,24 @@
 .ms-map .leaflet-container{height:100%;width:100%;}
 .ms-map .leaflet-tile{ filter:saturate(1.05) contrast(1.03); }
 
+.mapProviderStatus{
+  position:absolute;
+  left:50%;
+  top:50%;
+  z-index:1200;
+  width:min(420px, calc(100% - 32px));
+  transform:translate(-50%, -50%);
+  padding:12px 14px;
+  border:1px solid rgba(245,158,11,.42);
+  border-radius:12px;
+  background:rgba(15,23,42,.9);
+  color:#fef3c7;
+  font-size:12px;
+  line-height:1.45;
+  text-align:center;
+  box-shadow:0 16px 32px rgba(15,23,42,.25);
+}
+
 /* =========================
    CARDS + RIGHT COLUMN
    ========================= */

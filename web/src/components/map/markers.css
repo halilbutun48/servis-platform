@@ -215,7 +215,13 @@
   position: relative;
   transform: translate3d(0,0,0);
   pointer-events: none;
+  transition: opacity .16s ease, filter .16s ease;
 }
+
+.vmc--selected { z-index: 6; filter: drop-shadow(0 8px 14px rgba(15,23,42,.22)); }
+.vmc--selected .vmc-pin { box-shadow: 0 12px 30px rgba(15,23,42,.22), 0 0 0 4px rgba(245,183,67,.42); }
+.vmc--muted { opacity: .52; filter: saturate(.65); }
+.vmc--muted .vmc-label { opacity: 0; pointer-events: none; transform: translateY(4px); }
 
 /* status colors (standard: LIVE / STALE / OFFLINE) */
 .vmc--live,

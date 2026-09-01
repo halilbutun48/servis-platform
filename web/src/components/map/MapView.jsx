@@ -5,8 +5,6 @@ import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from "reac
 import "leaflet/dist/leaflet.css";
 
 import { uiStatusFromVehicle } from "../../utils/uiStatus";
-import { gpsFreshnessLabelFromUiStatus, gpsSourceLabelFromKey } from "../../utils/gpsSource";
-import { gpsSourceVisibilityTextFromVehicle } from "../../utils/gpsSourceVisibility";
 import "./mapShell.css";
 import "./markers.css";
 import { makeVehicleMarkerC } from "../../lib/markers/vehicleMarkerC";
@@ -174,17 +172,53 @@ function FocusController() {
   return null;
 }
 
+function MapSizeController() {
+  const map = useMap();
+
+  useEffect(() => {
+    let disposed = false;
+    const refresh = () => {
+      if (disposed) return;
+      try { map.invalidateSize({ pan: false }); } catch { /* map may be unmounted */ }
+    };
+    const timers = [0, 80, 260, 700].map((delay) => window.setTimeout(refresh, delay));
+    const container = map.getContainer();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(refresh) : null;
+    observer?.observe(container);
+    window.addEventListener("resize", refresh);
+    return () => {
+      disposed = true;
+      timers.forEach((timer) => window.clearTimeout(timer));
+      observer?.disconnect();
+      window.removeEventListener("resize", refresh);
+    };
+  }, [map]);
+
+  return null;
+}
+
 export default function MapView({
   vehicles = [],
   stops = [],
   selectedVehicleId = null,
   onSelectVehicle,
+  mode = "overview",
   fitKey = "default",
   height = "70vh",
   routePath = [],
   routeSource = "ESTIMATED",
 }) {
   const center = useMemo(() => [41.0082, 28.9784], []);
+  const [tileState, setTileState] = useState("loading");
+  const tileLoadedRef = useRef(false);
+
+  useEffect(() => {
+    tileLoadedRef.current = false;
+    const fallbackTimer = window.setTimeout(() => {
+      if (!tileLoadedRef.current) setTileState("fallback");
+    }, 8000);
+    return () => window.clearTimeout(fallbackTimer);
+  }, []);
 
   const stopPoints = useMemo(() => {
     return (stops || [])
@@ -278,25 +312,8 @@ export default function MapView({
     ];
   }, [vehiclePoints, stopPoints, routeLine]);
 
-  const routeSourceLabel = routeSource === "LEARNED"
-    ? "Öğrenilmiş rota"
-    : routeSource === "OSRM"
-      ? "Yol ağına yakın rota"
-      : "Tahmini rota";
-  const gpsSourceFallbackLabel = gpsSourceLabelFromKey(selectedVehicle?.gpsState?.lastSource || selectedVehicle?.liveLocation?.backendVehicleGps?.source || selectedVehicle?.gpsLast?.source || '');
-  const gpsSourceVisibility = gpsSourceVisibilityTextFromVehicle(selectedVehicle);
-  const sourceVisibility = gpsSourceVisibility.sourceVisibility;
-  const gpsSourceLabel = gpsSourceVisibility.text || gpsSourceFallbackLabel;
-  const gpsFreshnessLabel = gpsFreshnessLabelFromUiStatus(selectedUi);
-
-  const selectedVehicleLabel = selectedVehicle?.plate
-    ? `Araç: ${selectedVehicle.plate}`
-    : (selectedVehicleId ? `Seçili araç: #${selectedVehicleId}` : "Araç seç: marker'a tıkla");
-
-  const nextStopLabel = nextStop?.name ? `Sıradaki: ${nextStop.name}` : "Sıradaki durak yok";
-
   return (
-    <div className="card mapViewShell" style={{ padding: 0 }}>
+    <div className="card mapViewShell" data-map-route-source={routeSource} style={{ padding: 0 }}>
       <div style={{ height, width: "100%", position: "relative" }}>
         <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
           <FitController
@@ -307,11 +324,21 @@ export default function MapView({
             fitKey={fitKey}
           />
           <FocusController />
+          <MapSizeController />
 
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+            <TileLayer
+              attribution="&copy; OpenStreetMap contributors"
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              eventHandlers={{
+                load: () => {
+                  tileLoadedRef.current = true;
+                  setTileState("settled");
+                },
+                tileerror: () => {
+                  if (!tileLoadedRef.current) setTileState("fallback");
+                },
+              }}
+            />
 
           {routeLine?.length >= 2 ? (
             <Polyline positions={routeLine} pathOptions={{ color: "#64748b", weight: 5, opacity: 0.5 }} />
@@ -356,6 +383,8 @@ export default function MapView({
               plate: v.plate,
               status: markerStatus(ui),
               heading: typeof v?.heading === "number" ? v.heading : 0,
+              selected: String(v.id) === String(selectedVehicleId),
+              muted: mode === "focus" && String(v.id) !== String(selectedVehicleId),
             });
 
             return (
@@ -368,21 +397,21 @@ export default function MapView({
             );
           })}
         </MapContainer>
+        {tileState === "fallback" ? (
+          <div className="mapProviderStatus" data-map-fallback="true" role="status">
+            Harita sağlayıcısı yanıt vermiyor. Konum listesi ve rota ayrıntıları aşağıdaki panelde korunuyor.
+          </div>
+        ) : null}
       </div>
 
-      <div className="mapViewFooter">
+      <div className="mapViewFooter" data-map-settled-state={tileState === "settled" ? "true" : "false"} data-map-provider-state={tileState}>
         <div className="muted" style={{ fontSize: 12 }}>
-          {selectedVehicleLabel}
+          {vehiclePoints.length ? `${vehiclePoints.length} araç haritada` : "Konum verisi bekleniyor"}
         </div>
 
         <div className="mapViewPills">
-          <span className="pill">Rota kaynağı: {routeSourceLabel}</span>
-          <span className="pill" title={sourceVisibility?.label || gpsSourceVisibility.label}>GPS kaynağı: {gpsSourceLabel}</span>
-          <span className="pill">GPS durumu: {gpsFreshnessLabel}</span>
-          <span className="pill" data-status="NEXT">{nextStopLabel}</span>
-          {selectedVehicle?.plate ? (
-            <span className="pill">{selectedVehicleLabel}</span>
-          ) : null}
+          <span className="pill">{mode === "focus" ? "Odak görünümü" : "Genel görünüm"}</span>
+          <span className="pill" data-map-provider-label="true">{tileState === "settled" ? "Harita hazır" : tileState === "fallback" ? "Harita yedeği" : "Harita yükleniyor"}</span>
         </div>
       </div>
     </div>

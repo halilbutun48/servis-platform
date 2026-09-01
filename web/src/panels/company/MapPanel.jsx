@@ -94,6 +94,14 @@ function firstPendingStop(stops) {
   return sorted.find((s) => s && !isReached(s)) || null;
 }
 
+function compactRiskLabel(line) {
+  const value = String(line || "");
+  if (value === "GPS çevrim dışı") return "Konum sinyali kontrol edilmeli";
+  if (value === "GPS bekleniyor") return "Konum sinyali bekleniyor";
+  if (value === "GPS güncel değil") return "Konum gecikmeli";
+  return value;
+}
+
 function etaMinGuess(vehicle, nextStop) {
   const eta = asNum(nextStop?.etaMin);
   if (eta != null) return Math.max(0, Math.round(eta));
@@ -152,6 +160,7 @@ export default function CompanyMapPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [routePreview, setRoutePreview] = useState({ points: [], source: "ESTIMATED" });
+  const [mapMode, setMapMode] = useState("overview");
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
@@ -198,24 +207,28 @@ export default function CompanyMapPanel() {
     try {
       await Promise.all([loadVehicles(signal), loadShifts(signal)]);
     } catch (e) {
+      if (e?.name === "AbortError" || /aborted/i.test(String(e?.message || e))) return;
       setErr(String(e?.message || e));
     } finally {
       setBusy(false);
     }
   }, [loadVehicles, loadShifts]);
 
+  const loadAllRef = useRef(loadAll);
+  loadAllRef.current = loadAll;
+
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      if (!cancelled) loadAll(controller.signal);
+      if (!cancelled) loadAllRef.current(controller.signal);
     }, 320);
     return () => {
       cancelled = true;
       controller.abort();
       clearTimeout(timer);
     };
-  }, [loadAll]);
+  }, [token]);
 
   const refreshTimersRef = useRef({ vehicles: null, shifts: null });
 
@@ -390,6 +403,17 @@ export default function CompanyMapPanel() {
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
+  const selectedRiskLines = useMemo(() => {
+    const lines = [];
+    if (!selected) return ["Araç seçilmedi"];
+    const gpsStatus = String(uiStatusFromVehicle(selected) || "").toUpperCase();
+    if (!hasGpsFix(selected)) lines.push("GPS bekleniyor");
+    else if (gpsStatus === "OFFLINE") lines.push("GPS çevrim dışı");
+    else if (gpsStatus === "STALE") lines.push("GPS güncel değil");
+    if (!selectedShift) lines.push("Vardiya yok");
+    if (!selectedNext?.name) lines.push("Sıradaki durak bekleniyor");
+    return lines.length ? lines : ["Belirgin risk yok"];
+  }, [selected, selectedShift, selectedNext?.name]);
   const safeDriveSummaryParams = useMemo(
     () => {
       const rawGpsSource = selected?.gpsState?.lastSource || selected?.gpsState?.sourceLabel || selected?.gpsLast?.sourceLabel;
@@ -545,7 +569,7 @@ export default function CompanyMapPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      <div className="grid mapGrid" style={{ ["--mapH"]: isCompactViewport ? "min(360px, calc(100vh - 440px))" : "min(700px, calc(100vh - 300px))" }}>
+      <div className="grid mapGrid mapGrid--primary-canvas" style={{ ["--mapH"]: isCompactViewport ? "min(420px, 48dvh)" : "clamp(380px, calc(100vh - 420px), 640px)" }}>
         <MapOperationsDisclosure summary="Canlı araçlar ve vardiyalar" count={cards.length} className="mapListDisclosure">
         <div className="card mapAsideCard" style={{ height: isCompactViewport ? "calc(var(--mapH) + 170px)" : "calc(var(--mapH) + 285px)" }}>
           <div className="title" style={{ fontSize: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
@@ -660,7 +684,71 @@ export default function CompanyMapPanel() {
         </MapOperationsDisclosure>
 
         <div data-map-surface="primary">
-          <div className="card" data-map-current-state="true" style={{ marginBottom: 10, paddingTop: 12, paddingBottom: 12 }}>
+          <div className="card mapCurrentSummary" data-map-current-state="true">
+            <div className="mapCurrentSummaryHeader">
+              <div style={{ minWidth: 0 }}>
+                <div className="mapSummaryEyebrow">Harita Önizleme • canlı durum</div>
+                <div className="title mapCurrentSummaryTitle">{selected?.plate || "Araç seçilmedi"}</div>
+                <div className="muted mapCurrentSummaryShift">{selectedShift ? shiftTitle(selectedShift) : "Vardiya yok"}</div>
+              </div>
+              <div className="mapModeToggle" role="group" aria-label="Harita görünümü">
+                <button type="button" className={mapMode === "overview" ? "btn sm primary" : "btn sm"} aria-pressed={mapMode === "overview"} onClick={() => setMapMode("overview")}>Genel görünüm</button>
+                <button type="button" className={mapMode === "focus" ? "btn sm primary" : "btn sm"} aria-pressed={mapMode === "focus"} onClick={() => setMapMode("focus")} disabled={!selected}>Seçili araca odaklan</button>
+              </div>
+            </div>
+            <div className="mapSummaryMetrics">
+              <div className="mapSummaryMetric">
+                <span className="mapSummaryMetricLabel">GPS</span>
+                <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>{displayStatusLabel(uiStatusFromVehicle(selected))}</span>
+              </div>
+              <div className="mapSummaryMetric">
+                <span className="mapSummaryMetricLabel">Sıradaki durak</span>
+                <span className="pill" data-status={selectedNext ? "NEXT" : "REQUESTED"}>{selectedNext?.name || "Bekleniyor"}</span>
+              </div>
+              {selectedRiskLines?.[0] && selectedRiskLines[0] !== "Belirgin risk yok" ? (
+                <div className="mapSummaryMetric mapSummaryMetric--risk" data-map-critical-state="true">
+                  <span className="mapSummaryMetricLabel">Dikkat</span>
+                  <span className="pill" data-status="REQUESTED">{compactRiskLabel(selectedRiskLines[0])}</span>
+                </div>
+              ) : null}
+              <div className="mapSummaryActions">
+                <button className={selectedNext ? "btn primary sm" : "btn sm"} data-primary-cta={selectedNext ? "true" : undefined} onClick={() => openNextStopNavigation(selectedNext, selected)} disabled={!selectedNext}>Sonraki durağa git</button>
+                <button className={!selectedNext ? "btn primary sm" : "btn sm"} data-primary-cta={!selectedNext ? "true" : undefined} onClick={fitAll}>Tümünü göster</button>
+              </div>
+            </div>
+            <MapOperationsDisclosure summary="Rota, zaman çizelgesi ve teknik ayrıntılar" className="mapDetailsDisclosure">
+              <div className="mapDetailsGrid">
+                <div className="mapDetailBlock">
+                  <span className="mapSummaryMetricLabel">Seçili kayıt özeti</span>
+                  <div className="panelMeta">{copilotSummary || "Canlı araç seçimi bekleniyor."}</div>
+                </div>
+                <div className="mapDetailBlock">
+                  <span className="mapSummaryMetricLabel">Rota ilerlemesi</span>
+                  <div className="mapDetailPills">
+                    <span className="pill">Toplam durak: {selectedStats.total}</span>
+                    <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
+                    <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
+                  </div>
+                </div>
+                <div className="mapDetailBlock">
+                  <span className="mapSummaryMetricLabel">Kısa zaman çizelgesi</span>
+                  <StopTimeline stops={selectedStops} nextStopId={selectedNext?.id ?? null} compact onSelect={(s) => focusStop(s)} />
+                </div>
+                <div className="mapDetailBlock">
+                  <span className="mapSummaryMetricLabel">Teknik GPS ve kaynak</span>
+                  <div className="panelMeta">Son GPS: {gpsAgeLabel(selected)} • Rota kaynağı: {routePreview?.source || "Tahmini"}</div>
+                  <div className="mapDetailPills">
+                    {selectedRiskLines?.slice(0, 2).map((line) => <span key={line} className="pill" data-status={line === "Belirgin risk yok" ? "OK" : "REQUESTED"}>{line}</span>)}
+                  </div>
+                </div>
+                <div className="toolbar mapDetailActions">
+                  <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)} disabled={!selectedStops.length}>Tam rotayı dış navigasyonda aç</button>
+                </div>
+              </div>
+            </MapOperationsDisclosure>
+          </div>
+
+          <div className="card mapLegacyCurrentState" data-map-legacy-state="true" style={{ marginBottom: 10, paddingTop: 12, paddingBottom: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div>
                 <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Seçili Araç</div>
@@ -771,7 +859,7 @@ export default function CompanyMapPanel() {
             </div>
           </div>
 
-          <div className="card" style={{ marginBottom: 10 }}>
+          <div className="card mapLegacyPreview" style={{ marginBottom: 10 }}>
             <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
             <div className="muted" style={{ fontSize: 12 }}>
               Seçili araç + tüm rota. Yol ağına yakın önizleme varsa otomatik kullanılır.
@@ -783,10 +871,11 @@ export default function CompanyMapPanel() {
             stops={showStops ? selectedStops : []}
             routePath={routePreview.points}
             routeSource={routePreview.source}
-            selectedVehicleId={selectedVehicleId}
-            onSelectVehicle={setSelectedVehicleId}
-            fitKey={`company:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}`}
-            height="var(--mapH)"
+             selectedVehicleId={selectedVehicleId}
+             onSelectVehicle={setSelectedVehicleId}
+             mode={mapMode}
+             fitKey={`company:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}:${mapMode}`}
+             height="var(--mapH)"
           />
 
           <SafeDriveSummaryCard summaryParams={safeDriveSummaryParams} compact style={{ marginBottom: 10 }} />

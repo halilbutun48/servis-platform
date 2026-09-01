@@ -119,9 +119,22 @@ async function schoolParentFlow(browser) {
     try {
       await parentPage.goto(accessLink, { waitUntil: "domcontentloaded", timeout: 25000 });
       await waitForParentLive(parentPage, accessLink);
-      await parentPage.getByText("Veli • Canlı Takip", { exact: true }).waitFor({ state: "visible", timeout: 20000 });
+      const consentButton = parentPage.locator("button").filter({ hasText: "Okudum, onaylıyorum" }).first();
+      if (await consentButton.count()) {
+        await consentButton.first().click({ force: true });
+        await parentPage.waitForFunction(() => !document.body.innerText.includes("KVKK Onayı Gerekli"), undefined, { timeout: 20000 });
+      }
+      const workspace = parentPage.locator('details[data-details="task-workspace"]').first();
+      await workspace.waitFor({ state: "attached", timeout: 20000 });
+      if (!(await workspace.evaluate((element) => element.open))) {
+        await workspace.locator("summary").click({ force: true });
+        await workspace.evaluate((element) => { element.open = true; });
+      }
+      await workspace.locator(".roleTaskDetailsBody").waitFor({ state: "visible", timeout: 20000 });
+      const parentLiveCard = parentPage.locator(".wrap > .card").first();
+      await parentLiveCard.waitFor({ state: "visible", timeout: 20000 });
       const body = await parentPage.locator("body").innerText();
-      record("PARENT access link resolves to the live parent surface", parentPage.url().includes("#/parent/live") && body.includes("Veli"));
+      record("PARENT access link resolves to the live parent surface", parentPage.url().includes("#/parent/live") && (await parentLiveCard.innerText()).includes("Veli • Canlı Takip") && body.includes("Veli"));
       record("PARENT receives a backend-backed access result", body.trim().length > 100, `${body.length} chars`);
       await parentPage.screenshot({ path: `${screenshotDir}/B_PARENT_ACCESS_DESKTOP.png`, fullPage: true });
     } catch (error) {

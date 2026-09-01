@@ -27,6 +27,7 @@ export default function AppShell({ path, children }) {
   // Map and Copilot pages should be fluid (full width). Everything else is centered for readability.
   const fluidPath = String(path || "");
   const isFluid = fluidPath.includes("/map") || /\/(copilot|natural-copilot)$/.test(fluidPath);
+  const isMapPrimary = fluidPath.includes("/map");
   const hasCopilotDrawer = Boolean(me) && !/\/(copilot|natural-copilot)$/.test(fluidPath);
   const shellHeadline = /\/room\/shifts(?:\?|$)/.test(fluidPath) ? "Vardiyalar" : BRAND_NAME;
 
@@ -42,6 +43,7 @@ export default function AppShell({ path, children }) {
   const shellClasses = [
     isTabletOpsRole ? "shell shell--tablet-ops" : "shell",
     isAgreementsDetailRoute ? "shell--agreements-detail" : null,
+    isMapPrimary ? "shell--map-primary" : null,
     hasCopilotDrawer ? "shell--has-copilot-fab" : null,
     mobileNavOpen ? "shell--nav-open" : null,
   ].filter(Boolean).join(" ");
