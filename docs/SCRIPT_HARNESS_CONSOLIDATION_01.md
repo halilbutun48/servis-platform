@@ -1,14 +1,14 @@
 # SCRIPT HARNESS CONSOLIDATION 01
 
-Tarih: 2026-08-31
+Tarih: 2026-09-01
 Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
 - Toplam package script entry: `473`
-- Toplam executable tracked file: `1355`
-- Combined registry row: `1828`
-- Root/backend/web/mobile package dağılımı: root `292`, backend `933`, web `99`, mobile `201`
+- Toplam executable tracked file: `1356`
+- Combined registry row: `1829`
+- Root/backend/web/mobile package dağılımı: root `292`, backend `934`, web `99`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `818`
+- NEEDS_REVIEW: `819`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 818 |
+| NEEDS_REVIEW | 819 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -1238,6 +1238,7 @@ Repo: `servis-platform`
 | roadmap_lock_ai_marketplace_01_check.js | backend/scripts/roadmap_lock_ai_marketplace_01_check.js | backend | root:check:roadmaplockaimarketplace01 | review | NEEDS_REVIEW |  | ROADMAP-LOCK-AI-MARKETPLACE-01-CHECK |  | Owner or chain unclear |  |
 | role_based_simple_navigation_and_task_home_01_browser.mjs | backend/scripts/role_based_simple_navigation_and_task_home_01_browser.mjs | backend | root:smoke:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01-BROWSER |  | Owner or chain unclear |  |
 | role_based_simple_navigation_and_task_home_01_check.js | backend/scripts/role_based_simple_navigation_and_task_home_01_check.js | backend | root:check:rolebasedsimplenavigationandtaskhome01 | review | NEEDS_REVIEW |  | ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01-CHECK |  | Owner or chain unclear |  |
+| role_based_simple_navigation_and_task_home_01_visual_corrective_01_browser.mjs | backend/scripts/role_based_simple_navigation_and_task_home_01_visual_corrective_01_browser.mjs | backend |  | review | NEEDS_REVIEW |  | ROLE-BASED-SIMPLE-NAVIGATION-AND-TASK-HOME-01-VISUAL-CORRECTIVE-01-BROWSER |  | Owner or chain unclear |  |
 | role_data_isolation_redteam_01_check.js | backend/scripts/role_data_isolation_redteam_01_check.js | backend | root:check:roledataisolationredteam01 | review | NEEDS_REVIEW |  | ROLE-DATA-ISOLATION-REDTEAM-01 |  | Owner or chain unclear |  |
 | room_profitability_and_quote_floor_01_check.js | backend/scripts/room_profitability_and_quote_floor_01_check.js | backend | root:check:roomprofitabilityandquotefloor01 | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |
 | room_profitability_and_quote_floor_01_expansion.js | backend/scripts/room_profitability_and_quote_floor_01_expansion.js | backend |  | review | NEEDS_REVIEW |  | ROOM-PROFITABILITY-AND-QUOTE-FLOOR-01 |  | Owner or chain unclear |  |

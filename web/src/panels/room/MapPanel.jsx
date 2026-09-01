@@ -754,7 +754,7 @@ export default function RoomMapPanel() {
                 <MapOperationsDisclosure summary="Rota, zaman çizelgesi ve teknik ayrıntılar" className="mapDetailsDisclosure">
                   <div className="mapDetailsGrid">
                     <div className="mapDetailBlock">
-                      <span className="mapSummaryMetricLabel">Seçili kayıt özeti</span>
+                      <span className="mapSummaryMetricLabel">Seçili durum</span>
                       <div className="panelMeta">{selectedSummaryText || "Canlı araç seçimi bekleniyor."}</div>
                     </div>
                     <div className="mapDetailBlock">
