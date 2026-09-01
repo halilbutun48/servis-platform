@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 
 import { uiStatusFromVehicle } from "../../utils/uiStatus";
 import { gpsFreshnessLabelFromUiStatus, gpsSourceLabelFromKey } from "../../utils/gpsSource";
+import { gpsSourceVisibilityTextFromVehicle } from "../../utils/gpsSourceVisibility";
 import "./mapShell.css";
 import "./markers.css";
 import { makeVehicleMarkerC } from "../../lib/markers/vehicleMarkerC";
@@ -252,7 +253,7 @@ export default function MapView({
   }, [selectedVehicle]);
 
   const selectedUi = useMemo(() => (selectedVehicle ? uiStatusFromVehicle(selectedVehicle) : null), [selectedVehicle]);
-  const selectedGpsSource = gpsSourceLabelFromKey(
+  const selectedGpsSource = gpsSourceVisibilityTextFromVehicle(selectedVehicle).label || gpsSourceLabelFromKey(
     selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsLast?.source
   );
   const followZoom = useMemo(() => {
