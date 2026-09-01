@@ -253,9 +253,13 @@ export default function MapView({
   }, [selectedVehicle]);
 
   const selectedUi = useMemo(() => (selectedVehicle ? uiStatusFromVehicle(selectedVehicle) : null), [selectedVehicle]);
-  const selectedGpsSource = gpsSourceVisibilityTextFromVehicle(selectedVehicle).label || gpsSourceLabelFromKey(
+  const gpsSourceVisibility = gpsSourceVisibilityTextFromVehicle(selectedVehicle);
+  const { sourceVisibility } = gpsSourceVisibility;
+  const gpsSourceFallbackLabel = gpsSourceLabelFromKey(
     selectedVehicle?.gpsState?.lastSource || selectedVehicle?.gpsLast?.source
   );
+  const selectedGpsSource = gpsSourceVisibility.text || gpsSourceFallbackLabel;
+  const selectedGpsSourceLabel = sourceVisibility?.label || selectedGpsSource;
   const followZoom = useMemo(() => {
     if (selectedUi === "OFFLINE") return 12;
     if (selectedUi === "STALE") return 14;
@@ -423,7 +427,7 @@ export default function MapView({
       <details className="mapViewDiagnostics">
         <summary>Tanılama ayrıntıları</summary>
         <div className="mapViewDiagnostics__grid">
-          <span>GPS kaynağı: {selectedGpsSource}</span>
+          <span>GPS kaynağı: {selectedGpsSourceLabel}</span>
           <span>GPS durumu: {gpsFreshnessLabelFromUiStatus(selectedUi)}</span>
           <span>Rota kaynağı: {routeSource}</span>
         </div>
