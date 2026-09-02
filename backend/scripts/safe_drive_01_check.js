@@ -381,7 +381,7 @@ async function main() {
   must(helper, "Güvenli sürüş özeti", "safe drive helper keeps summary wording");
   must(helper, "Risk sinyali", "safe drive helper keeps risk wording");
   must(helper, "Kontrol edilmeli", "safe drive helper keeps control wording");
-  must(helper, "GPS güvenilirliği", "safe drive helper keeps GPS wording");
+  must(helper, "Konum sinyali güvenilirliği", "safe drive helper keeps GPS wording");
   must(helper, "Hız riski", "safe drive helper keeps speed wording");
   must(helper, "Rota ilerleme sinyali", "safe drive helper keeps route wording");
   must(helper, "Kanıt / check-in durumu", "safe drive helper keeps proof wording");
