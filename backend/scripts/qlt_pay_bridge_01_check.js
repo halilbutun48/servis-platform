@@ -125,7 +125,7 @@ must(bridgeCard, "Eksik kanıt varsa önce tamamlanmalı", "bridge card keeps mi
 must(bridgeCard, "Kalite durumu", "bridge card shows quality status");
 must(bridgeCard, "Kanıt tamlığı", "bridge card shows proof completeness");
 must(bridgeCard, "Hakediş önizleme etkisi", "bridge card shows preview impact");
-must(bridgeCard, "Ödeme / settlement hazırlığı", "bridge card shows settlement readiness");
+must(bridgeCard, "Ödeme / mutabakat hazırlığı", "bridge card shows settlement readiness");
 must(bridgeCard, "Sıradaki doğru işlem", "bridge card shows next best action");
 
 must(companyPanel, "CompanyAgreementsBridgeSection", "company panel imports split bridge section");
