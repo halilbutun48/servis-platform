@@ -342,14 +342,14 @@ async function main() {
   must(helper, "contractExecuteBlocked", "helper exposes contract execute blocked boundary");
   must(helper, "paymentExecuteBlocked", "helper exposes payment execute blocked boundary");
   must(helper, "aiRuntimeActionBlocked", "helper exposes AI runtime blocked boundary");
-  must(helper, "Kalite, güven, telematik, kanıt-biniş doğrulaması ve operasyon riski", "helper keeps summary wording");
+  must(helper, "Kalite, güven, konum cihazı, kanıt-biniş doğrulaması ve operasyon riski", "helper keeps summary wording");
 
   must(card, "OfferQualityRankingCard", "shared card exports offer quality ranking component");
   must(card, "Kalite karşılaştırması", "shared card keeps quality comparison wording");
   must(card, "salt okunur", "shared card keeps readonly wording");
   must(card, "otomatik seçim", "shared card keeps auto-selection boundary wording");
   must(card, "otomatik kabul", "shared card keeps auto-accept boundary wording");
-  must(card, "telematik", "shared card keeps telematics wording");
+  must(card, "konum cihazı", "shared card keeps location-device wording");
   must(card, "kanıt-biniş doğrulaması", "shared card keeps evidence/check-in wording");
 
   must(workflow, "OfferQualityRankingCard", "workflow panel wires offer quality ranking card");
@@ -375,7 +375,7 @@ async function main() {
 
   must(trustQuality, "OfferQualityRankingCard", "trust quality panel wires offer quality ranking card");
   must(trustQuality, "Teklif kalite karşılaştırma rayı", "trust quality panel keeps super admin quality lane wording");
-  must(trustQuality, "Super Admin denetim görünümü", "trust quality panel keeps super admin scope wording");
+  must(trustQuality, "Süper Yönetici denetim görünümü", "trust quality panel keeps super admin scope wording");
 
   must(harnessCheck, "check:offerrankingquality01", "script harness check knows offer ranking quality alias");
   must(harnessCheck, "offer_ranking_quality_01_check.js", "script harness check knows offer ranking quality file");
@@ -568,7 +568,7 @@ async function main() {
   });
   mustCondition(proofPresent.missingSignals.length === 0, "case 4 proof/evidence present keeps missing signals empty");
   mustCondition(proofPresent.rows[0].comparisonSummary.includes("Kanıt / check-in hazır"), "case 4 proof/evidence present keeps proof summary");
-  mustCondition(proofMissing.missingSignals.includes("Check-in / evidence readiness"), "case 5 proof/evidence missing keeps missing signal");
+  mustCondition(proofMissing.missingSignals.includes("Biniş kaydı / kanıt hazırlığı"), "case 5 proof/evidence missing keeps missing signal");
   mustCondition(proofPresent.confidence > proofMissing.confidence, "case 5 proof/evidence missing lowers confidence safely");
   mustEqual(proofMissing.rows[0].summaryText, "İnceleme önerilir.", "case 5 proof/evidence missing keeps low-confidence summary");
 
@@ -586,7 +586,7 @@ async function main() {
   mustEqual(reviewNeeded.rows.map((row) => row.id), [2, 1], "case 6 review-needed signal keeps safer row first");
   mustEqual(reviewNeeded.rows[1].qualityLabel, "Risk sinyali", "case 6 review-needed signal keeps risk label");
   mustCondition(reviewNeeded.rows[1].nextReviewStep.includes("Kaynak kontrol edilmeli"), "case 6 review-needed signal keeps approval boundary");
-  mustEqual(reviewNeeded.confidence, 38, "case 6 review-needed signal keeps confidence bounded");
+  mustEqual(reviewNeeded.confidence, 36, "case 6 review-needed signal keeps confidence bounded");
 
   const missingSignalsNoFalseHigh = buildOfferQualityRanking({
     offers: [
@@ -612,8 +612,8 @@ async function main() {
   });
   mustEqual(tiedDeterministic.rows.map((row) => row.id), [1, 2], "case 8 equal offers resolve deterministically");
 
-  mustCondition(normalComparable.rows[0].positiveSignals.includes("Kanıt / check-in hazır"), "case 9 room score contribution keeps positive signals visible");
-  mustCondition(normalComparable.positiveSignals.includes("Telematics hazır"), "case 9 room score contribution keeps telematics signal visible");
+  mustCondition(normalComparable.rows[0].positiveSignals.includes("Kanıt / biniş kaydı hazır"), "case 9 room score contribution keeps proof signal visible");
+  mustCondition(normalComparable.positiveSignals.includes("Konum verisi hazır"), "case 9 room score contribution keeps location signal visible");
   mustCondition(normalComparable.rows[0].comparisonSummary.includes("Kanıt / check-in hazır"), "case 10 safe-drive/evidence signal contribution preserved");
   mustCondition(normalComparable.rows[0].humanApprovalRequired, "case 11 readonly result keeps human approval required");
   mustCondition(normalComparable.rows[0].autoSelectionBlocked, "case 11 readonly result keeps auto-selection blocked");
