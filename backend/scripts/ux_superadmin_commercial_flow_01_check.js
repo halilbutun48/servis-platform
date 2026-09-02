@@ -92,9 +92,9 @@ mustInclude(panel, "PaymentReadinessReadonlyCard", "billing readiness card prese
 mustInclude(panel, "PaymentPreviewReadonlyCard", "proof preview card preserved");
 mustInclude(panel, "OperationProofReadonlyBadge", "proof badge preserved");
 mustInclude(panel, "Ödeme listesi ve dışa aktarım", "billing export section preserved");
-mustInclude(panel, "Payment backbone durumu", "prep payment backbone section preserved");
+mustInclude(panel, "Ödeme hazırlık omurgası durumu", "prep payment backbone section preserved");
 mustInclude(panel, "Aktivasyon checklist", "prep activation checklist preserved");
-mustInclude(panel, "Settlement hazırlığı", "prep settlement readiness preserved");
+mustInclude(panel, "Mutabakat hazırlığı", "prep settlement readiness preserved");
 mustInclude(panel, "Aktif komisyon kuralı", "commission section preserved");
 mustInclude(panel, "Kaynak sayaçları", "commission source counters preserved");
 mustInclude(panel, "Gelecek faz", "history future phase kept collapsed");
