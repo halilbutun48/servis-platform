@@ -11,6 +11,7 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { getEtaDisplay, getGpsAgeText } from "../../utils/etaSanity";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
+import { userFacingRouteSourceLabel } from "../../utils/terminology";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import MapOperationsDisclosure from "../../components/map/MapOperationsDisclosure";
@@ -34,14 +35,6 @@ function gpsAtIso(v) {
 
 function gpsAgeLabel(v) {
   return getGpsAgeText(v);
-}
-
-function routeSourceLabel(value) {
-  const key = String(value || "").toUpperCase();
-  if (key === "ESTIMATED") return "Tahmini rota";
-  if (key === "OSRM") return "Yol ağı rotası";
-  if (key === "OFFLINE") return "Çevrim dışı";
-  return key || "Belirtilmemiş";
 }
 
 function gpsCoord(v) {
@@ -371,13 +364,13 @@ export default function RoomMapPanel() {
 
     const gpsStatus = String(uiStatusFromVehicle(selected) || "").toUpperCase();
     if (!hasGpsFix(selected)) {
-      lines.push("GPS bekleniyor");
+      lines.push("Konum sinyali bekleniyor");
     } else if (gpsStatus === "OFFLINE") {
-      lines.push("GPS çevrim dışı");
+      lines.push("Konum sinyali çevrim dışı");
     } else if (gpsStatus === "STALE") {
-      lines.push("GPS güncel değil");
+      lines.push("Konum sinyali güncel değil");
     } else if (gpsStatus === "LOW_SIGNAL") {
-      lines.push("GPS düşük sinyal");
+      lines.push("Konum sinyali zayıf");
     }
 
     if (!selectedShift) lines.push("Vardiya yok");
@@ -390,8 +383,8 @@ export default function RoomMapPanel() {
     if (!selected) return "";
     const parts = [
       `Son güncelleme: ${fmtTR(selectedShift?.updatedAt || selectedShift?.lastUpdatedAt || selectedShift?.startAt)}`,
-      `Son GPS: ${gpsAgeLabel(selected)}`,
-      `Rota kaynağı: ${routeSourceLabel(routePreview?.source)}`,
+      `Son konum sinyali: ${gpsAgeLabel(selected)}`,
+      `Rota kaynağı: ${userFacingRouteSourceLabel(routePreview?.source)}`,
     ];
     return parts.join(" • ");
   }, [selected, selectedShift?.updatedAt, selectedShift?.lastUpdatedAt, selectedShift?.startAt, routePreview?.source]);
@@ -402,7 +395,7 @@ export default function RoomMapPanel() {
     if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
     if (selected?.plate) parts.push(`Araç ${selected.plate}`);
     const ui = uiStatusFromVehicle(selected);
-    if (ui) parts.push(`GPS ${gpsSourcePresentationLabel(ui)}`);
+    if (ui) parts.push(`Konum sinyali ${gpsSourcePresentationLabel(ui)}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     return parts.join(" - ");
   }, [selected, selectedShift?.id, selectedNext]);
@@ -413,7 +406,7 @@ export default function RoomMapPanel() {
     const ui = uiStatusFromVehicle(selected);
     if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
     if (selected?.plate) parts.push(`Araç ${selected.plate}`);
-    if (ui) parts.push(`GPS ${gpsSourcePresentationLabel(ui)}`);
+    if (ui) parts.push(`Konum sinyali ${gpsSourcePresentationLabel(ui)}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     if (selectedEta != null) {
       const etaText = etaDisplayText(selected, selectedEta, selectedNext);
@@ -448,14 +441,14 @@ export default function RoomMapPanel() {
           : selected?.plate
             ? `Araç ${selected.plate}`
             : `Araç #${selected?.id || "-"}`,
-      summary: facts?.helpContextSummary || facts?.contextSummary || facts?.copilotSummary || copilotSummary || "",
-      helpContextSummary: facts?.helpContextSummary || facts?.copilotSummary || copilotSummary || "",
-      contextSummary: facts?.contextSummary || facts?.copilotSummary || copilotSummary || "",
-      selectedRecordSummary: facts?.selectedRecordSummary || facts?.selectedRecordStatus || copilotSummary || "",
+      summary: selectedSummaryText || copilotSummary || "",
+      helpContextSummary: selectedSummaryText || copilotSummary || "",
+      contextSummary: selectedSummaryText || copilotSummary || "",
+      selectedRecordSummary: selectedSummaryText || copilotSummary || "",
       selectedRecordStatus: facts?.selectedRecordStatus || "",
       fields: [
         { label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Seçili aracın plakasını veya kayıt numarasını gösterir.' },
-        { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
+        { label: 'Son konum sinyali', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
         { label: 'Sıradaki Durak', value: selectedNext?.name || '-', help: 'Araç şu anda hangi durağa doğru gidiyor bilgisini gösterir.' },
       { label: 'Tahmini süre', value: etaDisplayText(selected, selectedEta, selectedNext), help: 'Sıradaki durağa tahmini kalan süreyi güvenli biçimde gösterir.' },
         { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'Seçili vardiyadaki toplam durak sayısını gösterir.' },
@@ -463,12 +456,11 @@ export default function RoomMapPanel() {
       ],
       facts,
       badges: [
-        { label: 'GPS', value: displayStatusLabel(uiStatusFromVehicle(selected) || '-'), help: 'Araç GPS sinyalinin canlı mı eski mi yok mu olduğunu gösterir.' },
+        { label: 'Konum sinyali', value: displayStatusLabel(uiStatusFromVehicle(selected) || '-'), help: 'Aracın konum bilgisinin güncel olup olmadığını gösterir.' },
         { label: 'Vardiya Durumu', value: displayStatusLabel(String(selectedShift?.status || '-').toUpperCase()), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
       ],
     });
 
-    return () => clearCopilotSelection("/room/map");
   }, [selected, selected?.id, selectedShift, selectedShift?.id, selectedNext, selectedEta, selectedStats, vehicles.length, copilotSummary]);
 
   useEffect(() => {
@@ -578,13 +570,13 @@ export default function RoomMapPanel() {
                 >
                   <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
                     <b>{v?.plate || "-"}</b>
-                    <span className="pill" data-status={c.pillKey} title={`GPS: ${displayStatusLabel(c.ui)}`}>{displayStatusLabel(c.ui)}</span>
+                    <span className="pill" data-status={c.pillKey} title={`Konum sinyali: ${displayStatusLabel(c.ui)}`}>{displayStatusLabel(c.ui)}</span>
                     <span className="pill" data-status={String(s?.status || "").toUpperCase()}>
                       {displayStatusLabel(String(s?.status || "").toUpperCase())}
                     </span>
                     {!gpsOk ? (
                       <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>
-                        GPS yok
+                        Konum sinyali yok
                       </span>
                     ) : null}
                   </span>
@@ -630,7 +622,7 @@ export default function RoomMapPanel() {
                   }}
                 >
                   <span className="muted" style={{ fontSize: 12 }}>
-                    Son GPS: {gpsAgeLabel(v)}
+                    Son konum sinyali: {gpsAgeLabel(v)}
                   </span>
                   <span className="muted" style={{ fontSize: 12 }}>
                     Başlangıç: {fmtTR(s?.startAt)}
@@ -663,7 +655,7 @@ export default function RoomMapPanel() {
 
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={showNoGps} onChange={(e) => setShowNoGps(Boolean(e.target.checked))} />
-              GPS olmayanları göster
+              Konum sinyali olmayanları göster
             </label>
 
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -733,7 +725,7 @@ export default function RoomMapPanel() {
                 </div>
                 <div className="mapSummaryMetrics">
                   <div className="mapSummaryMetric">
-                    <span className="mapSummaryMetricLabel">GPS</span>
+                    <span className="mapSummaryMetricLabel">Konum sinyali</span>
                     <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>{displayStatusLabel(uiStatusFromVehicle(selected))}</span>
                   </div>
                   <div className="mapSummaryMetric">
@@ -820,12 +812,12 @@ export default function RoomMapPanel() {
                         </span>
                       ) : null}
 
-                      <span className="muted" style={{ fontSize: 12 }}>GPS:</span>
+                      <span className="muted" style={{ fontSize: 12 }}>Konum:</span>
                       <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
                         {displayStatusLabel(uiStatusFromVehicle(selected))}
                       </span>
 
-                      <span className="muted" style={{ fontSize: 12 }}>Son GPS:</span>
+                      <span className="muted" style={{ fontSize: 12 }}>Son konum sinyali:</span>
                       <span className="pill">{gpsAgeLabel(selected)}</span>
 
                       {selectedNext?.name ? (
@@ -945,7 +937,7 @@ export default function RoomMapPanel() {
                 </div>
                 <div className="col" style={{ gap: 8, marginTop: 10 }}>
                   <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>{displayStatusLabel(uiStatusFromVehicle(selected))}</span>
-                  <span className="pill">Son GPS: {gpsAgeLabel(selected)}</span>
+                  <span className="pill">Son konum sinyali: {gpsAgeLabel(selected)}</span>
                   <span className="pill">Sonraki: {selectedNext?.name || "Bekleniyor"}</span>
                   <span className="pill">Tahmini süre: {etaDisplayText(selected, selectedEta, selectedNext)}</span>
                 </div>

@@ -78,9 +78,9 @@ mustInclude(route, "/payment-backbone/pilot/status", "commercial core payment ro
 mustInclude(route, "/payment-backbone/pilot/candidates", "commercial core payment route exposes pilot candidate endpoint");
 mustInclude(route, "/payment-backbone/pilot/activate", "commercial core payment route exposes pilot activate endpoint");
 mustInclude(route, "/payment-backbone/pilot/deactivate", "commercial core payment route exposes pilot deactivate endpoint");
-mustInclude(panel, "M85 opsiyonel ödeme pilotu", "commercial core panel renders M85 section");
+mustInclude(panel, "İsteğe bağlı ödeme pilotu", "commercial core panel renders M85 section");
 mustInclude(panel, "Opsiyonel ödeme pilot listesi", "commercial core panel renders pilot list");
-mustInclude(panel, "Pilot READY yap", "commercial core panel renders pilot activate action");
+mustInclude(panel, "Pilotı hazırla", "commercial core panel renders pilot activate action");
 mustInclude(readonlySummary, "Opsiyonel ödeme pilotu", "readonly summary renders optional pilot hint");
 mustInclude(backendPkg, '"m85check": "node scripts/m85_optional_payment_pilot_check.js"', "backend package exposes m85check script");
 mustInclude(toolsReadme, "pack_m85_optional_payment_pilot.ps1", "tools readme lists M85 pack");

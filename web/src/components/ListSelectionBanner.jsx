@@ -7,7 +7,7 @@ export default function ListSelectionBanner({
   totalCount = 0,
   filterValue = "",
   onClearFilter = null,
-  helper = "Copilot seçili kaydı kullanır.",
+  helper = "Sefer Abi seçili kaydı kullanır.",
 }) {
   const hasSelection = String(selectedLabel || "").trim();
   const hasSummary = String(selectedSummary || "").trim() && String(selectedSummary || "").trim() !== String(selectedLabel || "").trim();

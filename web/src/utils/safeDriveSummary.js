@@ -65,15 +65,15 @@ function classifyGps(input) {
   const label = getGpsReliabilityLabel(input);
   const value = label === "Bekleniyor" ? "Bekleniyor" : label;
   if (freshness.isOffline) {
-    return { status: "RISKY", label: "GPS güvenilirliği", value, ageText: getGpsAgeText(input), note: "GPS çevrim dışı" };
+    return { status: "RISKY", label: "Konum sinyali güvenilirliği", value, ageText: getGpsAgeText(input), note: "Konum sinyali çevrim dışı" };
   }
   if (freshness.isStale) {
-    return { status: "REVIEW_NEEDED", label: "GPS güvenilirliği", value, ageText: getGpsAgeText(input), note: "GPS güncel değil" };
+    return { status: "REVIEW_NEEDED", label: "Konum sinyali güvenilirliği", value, ageText: getGpsAgeText(input), note: "Konum sinyali güncel değil" };
   }
   if (freshness.isFresh) {
-    return { status: "READY", label: "GPS güvenilirliği", value, ageText: getGpsAgeText(input), note: "Canlı GPS" };
+    return { status: "READY", label: "Konum sinyali güvenilirliği", value, ageText: getGpsAgeText(input), note: "Canlı konum sinyali" };
   }
-  return { status: "INSUFFICIENT_DATA", label: "GPS güvenilirliği", value, ageText: getGpsAgeText(input), note: "GPS durumu bekleniyor" };
+  return { status: "INSUFFICIENT_DATA", label: "Konum sinyali güvenilirliği", value, ageText: getGpsAgeText(input), note: "Konum durumu bekleniyor" };
 }
 
 function classifySpeed(input) {
@@ -207,7 +207,7 @@ function classifyProof(input) {
   if (!raw) {
     return {
       status: "REVIEW_NEEDED",
-      label: "Kanıt / check-in durumu",
+      label: "Kanıt / biniş kaydı durumu",
       value: "Bekleniyor",
       note: "Kanıt durumu görünmüyor",
     };
@@ -216,7 +216,7 @@ function classifyProof(input) {
   if (/(ready|hazir|hazır|verified|matched|ok|done|completed|approved|active)/.test(raw)) {
     return {
       status: "READY",
-      label: "Kanıt / check-in durumu",
+      label: "Kanıt / biniş kaydı durumu",
       value: "Hazır",
       note: "Kanıt hazır",
     };
@@ -225,7 +225,7 @@ function classifyProof(input) {
   if (/(missing|eksik|pending|bekleniyor|review|kontrol|belirgin degil|unknown|n\/a)/.test(raw)) {
     return {
       status: "REVIEW_NEEDED",
-      label: "Kanıt / check-in durumu",
+      label: "Kanıt / biniş kaydı durumu",
       value: "Kontrol edilmeli",
       note: "Kanıt kontrol edilmeli",
     };
@@ -234,7 +234,7 @@ function classifyProof(input) {
   if (/(error|failed|fail|blocked|critical|reject|rejected|disabled)/.test(raw)) {
     return {
       status: "RISKY",
-      label: "Kanıt / check-in durumu",
+      label: "Kanıt / biniş kaydı durumu",
       value: "Risk sinyali",
       note: "Kanıt tarafında sorun görünüyor",
     };
@@ -242,7 +242,7 @@ function classifyProof(input) {
 
   return {
     status: "REVIEW_NEEDED",
-    label: "Kanıt / check-in durumu",
+    label: "Kanıt / biniş kaydı durumu",
     value: compactText(firstText(input?.proofStatus, input?.operationProofStatus, input?.checkinStatus), "Bekleniyor"),
     note: "Kanıt durumu kontrol edilmeli",
   };
@@ -343,7 +343,7 @@ export function getSafeDriveSummary(input = {}) {
   const requiresHumanApproval = status !== "READY";
   const nextBestAction =
     status === "RISKY"
-      ? `Onayınız gerekli: ${primaryReason || "önce GPS, hız ve rota sinyallerini birlikte kontrol et"}.`
+      ? `Onayınız gerekli: ${primaryReason || "önce konum, hız ve rota sinyallerini birlikte kontrol edin"}.`
       : status === "REVIEW_NEEDED"
         ? `Onayınız gerekli: ${primaryReason || "sinyallerin tamamını doğrula"}.`
         : "Operasyon kontrol önerisi: canlı izlemeyi sürdür, uygulama yapma.";

@@ -152,7 +152,7 @@ textIncludes(peopleRoutes, "snapshotHash === routeKey", "route preview checks sn
 textIncludes(peopleRoutes, "DB_SNAPSHOT", "route preview policy includes DB_SNAPSHOT");
 textIncludes(osrmRouteText, "distanceM", "osrmRoute returns distance");
 textIncludes(osrmRouteText, "durationSec", "osrmRoute returns duration");
-textIncludes(routeModal, "Kaydedilmiş rota snapshot kullanıldı", "route preview modal explains snapshot source");
+textIncludes(routeModal, "Kaydedilmiş rota kullanıldı", "route preview modal explains snapshot source");
 if ((routeModal.match(/if \(!open\) return null;/g) || []).length === 1) ok("single open guard present"); else fail("single open guard present");
 const useSessionIdx = routeModal.indexOf("const { token } = useSession();");
 const firstStateIdx = routeModal.indexOf("const [remote, setRemote] = useState(");

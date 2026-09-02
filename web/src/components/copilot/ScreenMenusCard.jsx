@@ -1,3 +1,5 @@
+import { humanizeUserFacingText } from '../../utils/terminology';
+
 export default function ScreenMenusCard({ items, onOpen }) {
   if (!Array.isArray(items) || !items.length) return null;
   return (
@@ -7,9 +9,9 @@ export default function ScreenMenusCard({ items, onOpen }) {
         {items.map((x, i) => (
           <div key={`${x.label || 'menu'}:${i}`} style={{ border: '1px solid #d0d5dd', borderRadius: 10, padding: 10, display: 'grid', gap: 6 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button type="button" onClick={() => onOpen?.({ routeKey: x.path, label: `${x.label} ekranını aç` })}>{x.label || 'Menü'}</button>
+              <button type="button" onClick={() => onOpen?.({ routeKey: x.path, label: `${x.label} ekranını aç` })}>{humanizeUserFacingText(x.label, 'Menü')}</button>
             </div>
-            <div className="muted">{x.purpose || '-'}</div>
+            <div className="muted">{humanizeUserFacingText(x.purpose)}</div>
           </div>
         ))}
       </div>

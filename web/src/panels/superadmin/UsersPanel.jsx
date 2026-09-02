@@ -115,7 +115,7 @@ export default function UsersPanel() {
     return (u) => {
       if (u.role === "COMPANY") {
         const company = companyById.get(Number(u.companyId));
-        const base = `Firma #${u.companyId} ${cMap.get(Number(u.companyId)) || ""}`.trim();
+        const base = `Hizmet Alan Firma kayıt no #${u.companyId} ${cMap.get(Number(u.companyId)) || ""}`.trim();
         return company ? `${base} • ${formatRegionContext(company)}` : base;
       }
       if (u.role === "ROOM") {
@@ -130,7 +130,7 @@ export default function UsersPanel() {
       }
       if (u.role === "PERSONEL") {
         const company = companyById.get(Number(u.companyId));
-        const base = u.companyId ? `Firma #${u.companyId}` : "-";
+        const base = u.companyId ? `Hizmet Alan Firma kayıt no #${u.companyId}` : "-";
         return company ? `${base} • ${formatRegionContext(company)}` : base;
       }
       if (u.role === "PARENT") return "Veli";
@@ -447,11 +447,11 @@ export default function UsersPanel() {
               padding: "10px 12px",
             }}
           >
-            <div>ID</div>
+            <div>Kayıt no</div>
             <div>Kullanıcı Girişi</div>
             <div>Rol</div>
             <div>Ad Soyad</div>
-            <div>Scope</div>
+            <div>Kapsam</div>
             <div>Durum</div>
             <div>Aksiyon</div>
           </div>

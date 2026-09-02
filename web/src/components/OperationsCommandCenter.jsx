@@ -16,8 +16,8 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function event({ id, group, title, importance, impact, actionLabel, actionPath, sourceOwner, evidence }) {
-  return { id, group, title, importance, impact, actionLabel, actionPath, sourceOwner, evidence };
+function event({ id, group, title, importance, impact, actionLabel, actionPath, evidence, sourceOwner = "Operasyon özeti" }) {
+  return { id, group, title, importance, impact, actionLabel, actionPath, evidence, sourceOwner };
 }
 
 function deriveEvents(role, payload) {
@@ -32,31 +32,30 @@ function deriveEvents(role, payload) {
       impact: "Bu bölümün ayrıntısını kontrol etmek gerekebilir.",
       actionLabel: "Operasyon merkezini yenile",
       actionPath: role === "ROOM" ? "/room" : role === "SUPER_ADMIN" ? "/superadmin" : role === "SCHOOL" ? "/school" : role === "ORGANIZATION" ? "/organization" : "/company",
-      sourceOwner: "backend/src/services/dashboardBulk.js",
-      evidence: "canonical dashboard bundle error",
+      evidence: "Özet verisi okunamadı",
     }));
   }
 
   if (role === "ROOM") {
     const cards = payload.summary?.cards || {};
-    if (Number(cards.openIssues || 0) > 0) rows.push(event({ id: "room:open-issues", group: "KRİTİK", title: "Açık operasyon sorunu var", importance: `${cards.openIssues} açık sorun takip bekliyor.`, impact: "Saha akışında gecikme veya görünürlük riski olabilir.", actionLabel: "Operasyon sağlığını incele", actionPath: "/room/operation-health", sourceOwner: "backend/src/ops/observabilityManifest.js", evidence: `openIssues=${cards.openIssues}` }));
-    if (Number(cards.riskyDevices || 0) > 0 || Number(cards.staleOrOffline || 0) > 0) rows.push(event({ id: "room:gps-signal", group: "TAKİP EDİLMELİ", title: "GPS canlılık sinyali kontrol bekliyor", importance: `${cards.riskyDevices || 0} riskli cihaz, ${cards.staleOrOffline || 0} eski/çevrim dışı sinyal var.`, impact: "Araç ve görev görünürlüğü etkilenebilir.", actionLabel: "Canlı durumu aç", actionPath: "/room/map", sourceOwner: "backend/src/ops/observabilityManifest.js", evidence: `riskyDevices=${cards.riskyDevices || 0}; staleOrOffline=${cards.staleOrOffline || 0}` }));
+    if (Number(cards.openIssues || 0) > 0) rows.push(event({ id: "room:open-issues", group: "KRİTİK", title: "Açık operasyon sorunu var", importance: `${cards.openIssues} açık sorun takip bekliyor.`, impact: "Saha akışında gecikme veya görünürlük riski olabilir.", actionLabel: "Operasyon sağlığını incele", actionPath: "/room/operation-health", evidence: `Açık sorun sayısı: ${cards.openIssues}` }));
+    if (Number(cards.riskyDevices || 0) > 0 || Number(cards.staleOrOffline || 0) > 0) rows.push(event({ id: "room:gps-signal", group: "TAKİP EDİLMELİ", title: "Konum sinyali kontrol bekliyor", importance: `${cards.riskyDevices || 0} riskli araç, ${cards.staleOrOffline || 0} gecikmiş veya çevrim dışı konum sinyali var.`, impact: "Araç ve görev görünürlüğü etkilenebilir.", actionLabel: "Canlı durumu aç", actionPath: "/room/map", evidence: `Konum sinyali: ${cards.riskyDevices || 0} riskli, ${cards.staleOrOffline || 0} gecikmiş veya çevrim dışı` }));
   }
 
   if (role === "COMPANY" || role === "ORGANIZATION") {
     const request = asArray(payload.requests)[0];
-    if (request) rows.push(event({ id: `company:request:${request.id || 0}`, group: "TAKİP EDİLMELİ", title: "İncelenecek operasyon talebi var", importance: "Talep akışında yanıt bekleyen bir kayıt bulunuyor.", impact: "Planlama veya hizmet akışı bekleyebilir.", actionLabel: "Operasyon panelini aç", actionPath: role === "ORGANIZATION" ? "/organization/operations" : "/company/operations", sourceOwner: "backend/src/services/dashboardBulk.js", evidence: `requestId=${request.id || "-"}` }));
-    if (asArray(payload.notifications).length > 0) rows.push(event({ id: "company:notifications", group: "BUGÜN ÇÖZÜLMELİ", title: "Yeni bildirimleri kontrol et", importance: `${payload.notifications.length} bildirim mevcut.`, impact: "Güncel değişiklikler planı etkileyebilir.", actionLabel: "Bildirimleri aç", actionPath: "/shared/notifications", sourceOwner: "backend/src/services/dashboardBulk.js", evidence: `notifications=${payload.notifications.length}` }));
+    if (request) rows.push(event({ id: `company:request:${request.id || 0}`, group: "TAKİP EDİLMELİ", title: "İncelenecek operasyon talebi var", importance: "Talep akışında yanıt bekleyen bir kayıt bulunuyor.", impact: "Planlama veya hizmet akışı bekleyebilir.", actionLabel: "Operasyon panelini aç", actionPath: role === "ORGANIZATION" ? "/organization/operations" : "/company/operations", evidence: "Yanıt bekleyen operasyon talebi" }));
+    if (asArray(payload.notifications).length > 0) rows.push(event({ id: "company:notifications", group: "BUGÜN ÇÖZÜLMELİ", title: "Yeni bildirimleri kontrol et", importance: `${payload.notifications.length} bildirim mevcut.`, impact: "Güncel değişiklikler planı etkileyebilir.", actionLabel: "Bildirimleri aç", actionPath: "/shared/notifications", evidence: `Yeni bildirim sayısı: ${payload.notifications.length}` }));
   }
 
   if (role === "SCHOOL") {
     const pendingInvite = asArray(payload.invites).find((item) => !["ACCEPTED", "USED", "CANCELLED"].includes(String(item?.status || "").toUpperCase()));
-    if (pendingInvite) rows.push(event({ id: `school:invite:${pendingInvite.id || 0}`, group: "TAKİP EDİLMELİ", title: "Veli erişimi takip bekliyor", importance: "Erişim davetlerinden en az biri tamamlanmamış.", impact: "Veli, servis bilgilerine henüz erişemeyebilir.", actionLabel: "Veli erişimini aç", actionPath: "/school/parents", sourceOwner: "backend/src/services/dashboardBulk.js", evidence: `inviteId=${pendingInvite.id || "-"}` }));
+    if (pendingInvite) rows.push(event({ id: `school:invite:${pendingInvite.id || 0}`, group: "TAKİP EDİLMELİ", title: "Veli erişimi takip bekliyor", importance: "Erişim davetlerinden en az biri tamamlanmamış.", impact: "Veli, servis bilgilerine henüz erişemeyebilir.", actionLabel: "Veli erişimini aç", actionPath: "/school/parents", evidence: "Tamamlanmamış veli erişimi" }));
   }
 
   if (role === "SUPER_ADMIN") {
     const active = Number(payload.feedbackSummary?.active || 0);
-    if (active > 0) rows.push(event({ id: "superadmin:feedback", group: "BUGÜN ÇÖZÜLMELİ", title: "Açık geri bildirimler var", importance: `${active} kayıt çözüm takibi bekliyor.`, impact: "Sistem kalitesi ve kullanıcı akışı etkilenebilir.", actionLabel: "Denetim panelini aç", actionPath: "/superadmin/operations", sourceOwner: "backend/src/services/dashboardBulk.js", evidence: `activeFeedback=${active}` }));
+    if (active > 0) rows.push(event({ id: "superadmin:feedback", group: "BUGÜN ÇÖZÜLMELİ", title: "Açık geri bildirimler var", importance: `${active} kayıt çözüm takibi bekliyor.`, impact: "Sistem kalitesi ve kullanıcı akışı etkilenebilir.", actionLabel: "Denetim panelini aç", actionPath: "/superadmin/operations", evidence: `Açık geri bildirim sayısı: ${active}` }));
   }
 
   return rows;
@@ -125,7 +124,7 @@ export default function OperationsCommandCenter({ me, token }) {
                     <h3>{item.title}</h3>
                     <div><b>Ne oldu?</b> {item.importance}</div>
                     <div><b>Neden önemli?</b> {item.impact}</div>
-                    <div className="roleSignalEvidence"><b>Kanıt:</b> {item.evidence} · <b>Sahip:</b> {item.sourceOwner}</div>
+                    <div className="roleSignalEvidence"><b>Dayanak:</b> {item.evidence}</div>
                   </div>
                   <a className="btn roleSignalAction" href={`#${item.actionPath}`}>{item.actionLabel}</a>
                 </article>

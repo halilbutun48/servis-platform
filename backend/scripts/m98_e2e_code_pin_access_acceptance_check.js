@@ -184,7 +184,7 @@ must(webParentPanel, "7 gün geçerli veli kodu ve geçici PIN üretilir", "pare
 must(webAcceptPanel, "Veli kodu + PIN ile giriş", "accept parent panel uses simplified product language");
 must(webAcceptPanel, "Okulun verdiği veli kodu ve PIN ile giriş yapabilirsin.", "accept parent panel explains simplified login");
 must(webPassengerLinksPanel, "Bu akış hesap aktivasyonu değildir.", "passenger links panel is not activation");
-must(webPassengerLinksPanel, "tek kişiye özel süreli canlı takip linki", "passenger links panel keeps live-link wording");
+must(webPassengerLinksPanel, "tek kişiye özel süreli canlı takip bağlantısı", "passenger links panel keeps live-link wording");
 
 must(mobileLogin, "Kullanıcı kodu", "login screen uses user code label");
 must(mobileLogin, "Size verilen sürücü, personel veya veli kodunu girin.", "login screen uses new helper subtitle");

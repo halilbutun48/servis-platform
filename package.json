@@ -61,6 +61,8 @@
     "accept:accountingexportcontract01": "node backend/scripts/accounting_export_and_integration_contract_01_acceptance.mjs",
     "smoke:accountingexportcontract01": "node backend/scripts/accounting_export_and_integration_contract_01_browser.mjs",
     "check:projectgapreadiness01": "node backend/scripts/project_wide_gap_and_release_readiness_audit_01_check.js",
+    "smoke:projectwideturkishterminology01": "node backend/scripts/project_wide_turkish_language_terminology_audit_01_browser.mjs",
+    "check:projectwideturkishterminology01": "node backend/scripts/project_wide_turkish_language_terminology_audit_01_check.js",
     "check:projectdocumentationarchitectureandcodebaseindex01": "node backend/scripts/project_documentation_architecture_and_codebase_index_01_check.js",
     "accept:projectgapreadiness01": "node backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs",
     "smoke:projectgapreadiness01": "node backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs",

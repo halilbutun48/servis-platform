@@ -64,7 +64,7 @@ function formatPriceSignal(amountCompany, amountRoom) {
         label: "Fiyat sinyali",
         value: `+${formatTRY(diff)} ₺`,
         tone: "warn",
-        reason: "Room tutarı daha yüksek",
+        reason: "Taşımacılık Firması tutarı daha yüksek",
       };
     }
     return {
@@ -72,7 +72,7 @@ function formatPriceSignal(amountCompany, amountRoom) {
       label: "Fiyat sinyali",
       value: `-${formatTRY(Math.abs(diff))} ₺`,
       tone: "good",
-      reason: "Company tutarı daha yüksek",
+      reason: "Hizmet Alan Firma tutarı daha yüksek",
     };
   }
 
@@ -82,7 +82,7 @@ function formatPriceSignal(amountCompany, amountRoom) {
       label: "Fiyat sinyali",
       value: `${formatTRY(room)} ₺`,
       tone: "warn",
-      reason: "Sadece room teklifi var",
+        reason: "Yalnızca taşımacılık firması teklifi var",
     };
   }
 
@@ -92,7 +92,7 @@ function formatPriceSignal(amountCompany, amountRoom) {
       label: "Fiyat sinyali",
       value: `${formatTRY(company)} ₺`,
       tone: "neutral",
-      reason: "Room cevabı bekleniyor",
+      reason: "Taşımacılık Firması yanıtı bekleniyor",
     };
   }
 
@@ -132,7 +132,7 @@ function buildProofMeta(summary = null) {
       .map((item) => item?.label || item?.note || item?.id || ""),
     4
   );
-  const summaryText = compactText(summary?.summaryText, ready ? "Kanıt / check-in hazır" : partial ? "Kanıt kısmi" : needsReview ? "Kanıt tekrar kontrol gerekli" : "Kanıt bekleniyor");
+  const summaryText = compactText(summary?.summaryText, ready ? "Kanıt / biniş kaydı hazır" : partial ? "Kanıt kısmi" : needsReview ? "Kanıt tekrar kontrol gerekli" : "Kanıt bekleniyor");
 
   return {
     status,
@@ -143,7 +143,7 @@ function buildProofMeta(summary = null) {
     nextAction: compactText(summary?.nextAction, ready ? "Kanıtı incele ve sonraki adıma geç" : "Kanıtı tamamla"),
     positiveSignals,
     missingSignals,
-    reason: ready ? "Kanıt / check-in hazır" : partial ? "Kanıt kısmi" : needsReview ? "Kanıt tekrar kontrol gerekli" : "Kanıt bekleniyor",
+    reason: ready ? "Kanıt / biniş kaydı hazır" : partial ? "Kanıt kısmi" : needsReview ? "Kanıt tekrar kontrol gerekli" : "Kanıt bekleniyor",
   };
 }
 
@@ -233,16 +233,16 @@ function buildSafeDriveMeta(summary = null, fallbackInput = null) {
   );
   const missingSignals = compactList(
     [
-      !gpsReady ? "GPS reliability" : "",
+      !gpsReady ? "Konum sinyali güvenilirliği" : "",
       !speedReady ? "Hız/overspeed risk" : "",
       !routeReady ? "Rota ilerleme" : "",
-      !evidenceReady ? "Check-in / evidence readiness" : "",
+      !evidenceReady ? "Biniş kaydı / kanıt hazırlığı" : "",
     ],
     4
   );
   const riskReasons = compactList(Array.isArray(safeDrive?.riskReasons) ? safeDrive.riskReasons : [], 4);
   const controlNotes = compactList(Array.isArray(safeDrive?.controlNotes) ? safeDrive.controlNotes : [], 4);
-  const nextBestAction = compactText(safeDrive?.nextBestAction, reviewNeeded ? "Önce telematik ve güvenli sürüş sinyallerini kontrol et." : "Telematik sinyallerini izle");
+  const nextBestAction = compactText(safeDrive?.nextBestAction, reviewNeeded ? "Önce konum ve güvenli sürüş sinyallerini kontrol et." : "Konum ve güvenli sürüş sinyallerini izle");
 
   return {
     status,
@@ -254,13 +254,13 @@ function buildSafeDriveMeta(summary = null, fallbackInput = null) {
     speedReady,
     routeReady,
     evidenceReady,
-    summaryText: compactText(safeDrive?.summaryText, ready ? "Güvenli sürüş sinyali hazır" : risky ? "Risk sinyali" : reviewNeeded ? "Kontrol edilmeli" : "Telematics verisi eksik"),
+    summaryText: compactText(safeDrive?.summaryText, ready ? "Güvenli sürüş sinyali hazır" : risky ? "Risk sinyali" : reviewNeeded ? "Kontrol edilmeli" : "Konum cihazı verisi eksik"),
     nextBestAction,
     positiveSignals,
     missingSignals,
     riskReasons,
     controlNotes,
-    reason: risky ? riskReasons[0] || "Risk sinyali" : reviewNeeded ? controlNotes[0] || "Kontrol edilmeli" : ready ? "Telematics sinyali hazır" : "Telematics verisi eksik",
+    reason: risky ? riskReasons[0] || "Risk sinyali" : reviewNeeded ? controlNotes[0] || "Kontrol edilmeli" : ready ? "Konum cihazı sinyali hazır" : "Konum cihazı verisi eksik",
   };
 }
 
@@ -272,11 +272,11 @@ function deriveScope(me = null, summaryParams = {}) {
   const scopeLabel =
     compactText(summaryParams?.scopeLabel, "") ||
     (role === "ROOM"
-      ? "Room teklifleri"
+      ? "Taşımacılık Firması teklifleri"
       : role === "COMPANY"
-        ? "Company teklifleri"
+        ? "Hizmet Alan Firma teklifleri"
         : role === "SUPER_ADMIN"
-          ? "Super Admin denetim görünümü"
+          ? "Süper Yönetici denetim görünümü"
           : "Teklif karşılaştırması");
 
   return { companyId, roomId, shiftId, role, scopeLabel };
@@ -305,7 +305,7 @@ function roomScoreSummary(score = null) {
     recommendRate,
     summaryLabel,
     ready: average != null && evaluationCount > 0,
-    reason: average != null && evaluationCount > 0 ? `Room puanı ${average.toFixed(1)} / 5` : "Room puanı yok",
+    reason: average != null && evaluationCount > 0 ? `Taşımacılık Firması puanı ${average.toFixed(1)} / 5` : "Taşımacılık Firması puanı yok",
   };
 }
 
@@ -348,24 +348,24 @@ function buildOfferRow(offer, context) {
   const priceMissing = !priceSignal.ready;
   const positiveSignals = compactList(
     [
-      roomScore.ready ? "Room / supplier readiness" : "",
-      proof.ready ? "Kanıt / check-in hazır" : "",
+      roomScore.ready ? "Taşımacılık Firması / tedarikçi hazırlığı" : "",
+      proof.ready ? "Kanıt / biniş kaydı hazır" : "",
       draft.reviewed ? "Taslak kalite incelendi" : draft.ready ? "Taslak kalite hazır" : "",
       review.reviewed ? "İnceleme kararı kaydedildi" : "",
-      safeDrive.ready ? "Telematics hazır" : safeDrive.hasAnyData ? "Telematics sinyali var" : "",
+      safeDrive.ready ? "Konum verisi hazır" : safeDrive.hasAnyData ? "Konum verisi sinyali var" : "",
       priceSignal.ready ? "Fiyat verisi görünür" : "",
     ],
     6
   );
   const missingSignals = compactList(
     [
-      roomScore.ready ? "" : "Verified supplier readiness",
-      proof.ready ? "" : "Check-in / evidence readiness",
-      safeDrive.hasAnyData ? "" : "Telematics readiness",
-      safeDrive.gpsReady ? "" : "GPS reliability",
+      roomScore.ready ? "" : "Doğrulanmış sağlayıcı hazırlığı",
+      proof.ready ? "" : "Biniş kaydı / kanıt hazırlığı",
+      safeDrive.hasAnyData ? "" : "Konum verisi hazırlığı",
+      safeDrive.gpsReady ? "" : "Konum sinyali güvenilirliği",
       safeDrive.speedReady ? "" : "Hız/overspeed risk",
       safeDrive.routeReady ? "" : "Rota ilerleme",
-      safeDrive.evidenceReady ? "" : "Evidence readiness",
+      safeDrive.evidenceReady ? "" : "Kanıt hazırlığı",
       priceMissing ? "Fiyat sinyali" : "",
     ],
     6
@@ -573,8 +573,8 @@ export function buildOfferQualityRanking(input = {}) {
     humanApprovalRequired: true,
     autoSelectionBlocked: true,
     summaryText: rows.length
-      ? "Fiyat tek başına karar değildir. Kalite, güven, telematik, kanıt-biniş doğrulaması ve operasyon riski birlikte okunur."
-      : "Karşılaştırılacak teklif yok. Kalite / güven / telematik sinyalleri hazır olduğunda teklifler incelenebilir.",
+      ? "Fiyat tek başına karar değildir. Kalite, güven, konum cihazı, kanıt-biniş doğrulaması ve operasyon riski birlikte okunur."
+      : "Karşılaştırılacak teklif yok. Kalite / güven / konum cihazı sinyalleri hazır olduğunda teklifler incelenebilir.",
     summaryNote: rows.length
       ? "Önerilen kontrol sırası, karar sırası değildir; otomatik seçim ve otomatik kabul kapalıdır."
       : "Eksik veri varsa önce bağlantı ve teklif kaynağını doğrula.",

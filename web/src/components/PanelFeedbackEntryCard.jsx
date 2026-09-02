@@ -56,7 +56,7 @@ export default function PanelFeedbackEntryCard({ roleId, panelLabel, relatedPath
     setErr("");
     setNotice("");
     try {
-      const response = await api.post("/api/pilot-launch-gate/field-feedback-loop/records", {
+      await api.post("/api/pilot-launch-gate/field-feedback-loop/records", {
         title: safeTitle,
         detail: safeDetail,
         severity,
@@ -64,8 +64,7 @@ export default function PanelFeedbackEntryCard({ roleId, panelLabel, relatedPath
         relatedPath: currentPath,
         tags: [currentCategory.id, "PANEL_FEEDBACK"],
       });
-      const itemId = response?.item?.id ? ` (#${response.item.id})` : "";
-      setNotice(`${currentCategory.label} kaydedildi${itemId}. Super Admin inceleme kuyruğuna düştü.`);
+      setNotice(`${currentCategory.label} kaydedildi. Süper Yönetici inceleme kuyruğuna düştü.`);
       setTitle("");
       setDetail("");
       setSeverity("MEDIUM");
@@ -84,7 +83,7 @@ export default function PanelFeedbackEntryCard({ roleId, panelLabel, relatedPath
         <div>
           <div className="panelSectionTitle">Görüş / Öneri / Şikayet</div>
           <div className="panelMeta" style={{ marginTop: 4 }}>
-            {roleLabel(roleId)} panelinden kısa not bırakın; kayıt Super Admin tarafında tek kuyruğa düşer.
+            {roleLabel(roleId)} panelinden kısa not bırakın; kayıt Süper Yönetici tarafında tek kuyruğa düşer.
           </div>
         </div>
         <button type="button" className={open ? "btn" : "btn primary"} disabled={busy} onClick={() => {
@@ -169,7 +168,7 @@ export default function PanelFeedbackEntryCard({ roleId, panelLabel, relatedPath
 
           {currentPath ? (
             <div className="panelMeta">
-              Yüzey: <b>{panelLabel}</b> • Yol: <b>{currentPath}</b>
+              Ekran: <b>{panelLabel}</b>
             </div>
           ) : null}
         </div>

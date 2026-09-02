@@ -38,5 +38,5 @@ export const STATUS_LABELS = {
 
 export function displayStatusLabel(status) {
   const key = String(status || '').trim().toUpperCase();
-  return STATUS_LABELS[key] || (key || '-');
+  return STATUS_LABELS[key] || (key ? 'Durum bilgisi' : '-');
 }

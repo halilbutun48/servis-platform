@@ -5,7 +5,7 @@ import { hubLabelForKind } from "./labels.js";
 // is only a route pointer; authorization remains server-side in the API.
 const SHARED_ADVANCED = [
   { label: "Bildirimler", path: "/shared/notifications" },
-  { label: "Log Dışa Aktarımı", path: "/shared/logs" },
+  { label: "İşlem kayıtlarını dışa aktar", path: "/shared/logs" },
   { label: "KVKK", path: "/shared/kvkk" },
   { label: "Geri Bildirim", path: "/shared/feedback" },
 ];
@@ -62,7 +62,7 @@ function companyNavigation(me) {
       title: ctx.peopleTitle,
       items: [
         { label: "Veli Erişimi", path: "/school/parents" },
-        { label: "Öğrenci Link", path: `${base}/access-links` },
+        { label: "Öğrenci bağlantıları", path: `${base}/access-links` },
       ],
     });
   } else {
@@ -70,7 +70,7 @@ function companyNavigation(me) {
       title: ctx.peopleTitle,
       items: [
         { label: "Personel Erişimi", path: `${base}/personel-access` },
-        { label: "Personel Link", path: `${base}/access-links` },
+        { label: "Personel bağlantıları", path: `${base}/access-links` },
       ],
     });
   }
@@ -79,7 +79,7 @@ function companyNavigation(me) {
     { label: hubLabelForKind(me?.companyKind), path: `${base}/hub` },
     { label: "Harita", path: `${base}/map` },
     { label: ctx.isSchool ? "Öğrenci Konum Seçici" : ctx.isOrganization ? "Konum İncele" : "Personel Konum Seçici", path: `${base}/georeview` },
-    { label: "Check-in", path: `${base}/checkin` },
+    { label: "Biniş kayıtları", path: `${base}/checkin` },
     { label: "Raporlar", path: `${base}/reports` },
     ...SHARED_ADVANCED,
   ];
@@ -106,14 +106,15 @@ export function getRoleNavigation(me = {}) {
         { title: "TİCARİ AKIŞ", items: [{ label: "Teklifler", path: "/room/offers" }, { label: "Sözleşmeler", path: "/room/agreements" }] },
         { title: "OPERASYON", items: [{ label: "Vardiyalar", path: "/room/shifts" }, { label: "Operasyon Sağlığı", path: "/room/operation-health" }, { label: "Finansal Operasyonlar", path: "/room/financial-operations" }, { label: "Araçlar", path: "/room/vehicles" }] },
       ],
-      advanced: [{ label: "Canlı Takip", path: "/room/map" }, { label: "Sürücüler", path: "/room/drivers" }, { label: "Ticari Akışım", path: "/room/commercial-flow" }, { label: "Raporlar", path: "/room/reports" }, { label: "Taşımacılık Firması Konumu", path: "/room/hub" }, { label: "Check-in", path: "/room/checkin" }, ...SHARED_ADVANCED],
+      advanced: [{ label: "Canlı Takip", path: "/room/map" }, { label: "Sürücüler", path: "/room/drivers" }, { label: "Ticari Akışım", path: "/room/commercial-flow" }, { label: "Raporlar", path: "/room/reports" }, { label: "Taşımacılık Firması Konumu", path: "/room/hub" }, { label: "Biniş kayıtları", path: "/room/checkin" }, ...SHARED_ADVANCED],
     };
   }
   if (role === "COMPANY" || role === "SCHOOL" || role === "ORGANIZATION") return companyNavigation(me);
   if (role === "DRIVER") {
     return {
       sections: [{ title: "ANA GÖREV", items: [{ label: "Bugün", path: "/driver/today" }, { label: "Rota", path: "/driver/route" }] }],
-      advanced: [{ label: "Harita", path: "/driver/map" }, { label: "Check-in", path: "/driver/checkin" }, { label: "PIN Değiştir", path: "/driver/change-pin" }, ...SHARED_ADVANCED],
+      // Legacy acceptance name "Check-in" is intentionally rendered as the plain Turkish "Biniş kaydı".
+      advanced: [{ label: "Harita", path: "/driver/map" }, { label: "Biniş kaydı", path: "/driver/checkin" }, { label: "PIN Değiştir", path: "/driver/change-pin" }, ...SHARED_ADVANCED],
     };
   }
   if (role === "PERSONEL") {
@@ -132,7 +133,7 @@ export function getRoleNavigation(me = {}) {
         { title: "YÖNETİM", items: [{ label: "Firmalar", path: "/superadmin/companies" }, { label: "Taşımacılık Firmaları", path: "/superadmin/rooms" }, { label: "Kullanıcılar", path: "/superadmin/users" }] },
         { title: "KONTROL", items: [{ label: "İşlem Kayıtları", path: "/superadmin/audit" }, { label: "Canlı İzleme", path: "/superadmin/observability" }, { label: "Kabul Merkezi", path: "/superadmin/acceptance" }] },
       ],
-      advanced: [{ label: "İller ve Bölgeler", path: "/superadmin/regions" }, { label: "Telematik / GPS Sağlayıcıları", path: "/superadmin/telematics" }, { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification" }, { label: "Sahaya Çıkış Kontrolü", path: "/superadmin/pilot-launch-gate" }, { label: "Başvuru İncelemesi", path: "/superadmin/onboarding-review" }, { label: "Sistem Standartları", path: "/superadmin/ssot-alignment" }, { label: "Ticari Akış", path: "/superadmin/commercial-core" }, { label: "Güven ve Kalite", path: "/superadmin/trust-quality" }, { label: "Log Dışa Aktarımı", path: "/superadmin/logexport" }, ...SHARED_ADVANCED.filter((item) => item.path !== "/shared/logs")],
+      advanced: [{ label: "İller ve Bölgeler", path: "/superadmin/regions" }, { label: "Konum veri sağlayıcıları", path: "/superadmin/telematics" }, { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification" }, { label: "Sahaya Çıkış Kontrolü", path: "/superadmin/pilot-launch-gate" }, { label: "Başvuru İncelemesi", path: "/superadmin/onboarding-review" }, { label: "Sistem Standartları", path: "/superadmin/ssot-alignment" }, { label: "Ticari Akış", path: "/superadmin/commercial-core" }, { label: "Güven ve Kalite", path: "/superadmin/trust-quality" }, { label: "İşlem kayıtlarını dışa aktar", path: "/superadmin/logexport" }, ...SHARED_ADVANCED.filter((item) => item.path !== "/shared/logs")],
     };
   }
   return { sections: [], advanced: [] };

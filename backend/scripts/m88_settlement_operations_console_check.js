@@ -84,8 +84,8 @@ mustInclude(route, "/payment-backbone/settlement/queue", "commercial core route 
 mustInclude(route, "/payment-backbone/settlement/entries/plan", "commercial core route exposes settlement plan endpoint");
 mustInclude(route, "/payment-backbone/settlement/entries/execute", "commercial core route exposes settlement execute endpoint");
 mustInclude(route, "/payment-backbone/settlement/entries/cancel", "commercial core route exposes settlement cancel endpoint");
-mustInclude(panel, "M88 settlement operasyon masası", "commercial core panel renders M88 section");
-mustInclude(panel, "Settlement operasyon kuyruğu", "commercial core panel renders settlement queue");
+mustInclude(panel, "Mutabakat operasyon masası", "commercial core panel renders M88 section");
+mustInclude(panel, "Mutabakat operasyon kuyruğu", "commercial core panel renders settlement queue");
 mustNotInclude(panel, "EXECUTED yap", "commercial core panel does not expose settlement execute action");
 mustInclude(backendPkg, '"m88check": "node scripts/m88_settlement_operations_console_check.js"', "backend package exposes m88check script");
 mustInclude(toolsReadme, "pack_m88_settlement_operations_console.ps1", "tools readme lists M88 pack");

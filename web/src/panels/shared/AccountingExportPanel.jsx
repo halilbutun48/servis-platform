@@ -131,7 +131,7 @@ export default function AccountingExportPanel({ scope = "COMPANY", me = null, pr
     <section className="card" data-testid="accounting-export-panel" style={{ marginTop: 12, border: "1px solid rgba(58,102,255,0.28)", background: "rgba(58,102,255,0.04)" }}>
       <div className="panelSectionTitle">Muhasebe Dışa Aktarımı</div>
       <div className="muted" style={{ marginTop: 6, lineHeight: 1.5 }}>
-        Yetkili {scopeLabel.toLowerCase()} verilerini kontrol edilebilir bir export paketi olarak hazırlar. Bu işlem muhasebe kaydı, ödeme veya ERP gönderimi yapmaz.
+        Yetkili {scopeLabel.toLowerCase()} verilerini kontrol edilebilir bir dışa aktarım paketi olarak hazırlar. Bu işlem muhasebe kaydı, ödeme veya ERP gönderimi yapmaz.
       </div>
 
       <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10 }}>

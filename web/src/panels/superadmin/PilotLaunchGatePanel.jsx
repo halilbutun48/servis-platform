@@ -3,6 +3,7 @@ import { api } from "../../api";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
 import { statusBadgeInlineStyle } from "../../utils/statusBadge";
+import { humanizeUserFacingText, userFacingRoleLabel } from "../../utils/terminology";
 
 function SummaryCard({ title, value, note }) {
   return (
@@ -34,13 +35,36 @@ function TabPanel({ active, label, children }) {
 
 function Pill({ code }) {
   const safe = String(code || "CHECK").toUpperCase();
-  return <span className="pill" style={statusBadgeInlineStyle(safe)}>{safe}</span>;
+  const label = {
+    GO: "Uygun",
+    LIMITED_GO: "Sınırlı uygun",
+    NO_GO: "Uygun değil",
+    PASS: "Tamamlandı",
+    PENDING: "Bekliyor",
+    BLOCKED: "Bloklu",
+    DONE: "Tamamlandı",
+    CHECK: "Kontrol",
+  }[safe] || humanizeUserFacingText(safe, "Kontrol");
+  return <span className="pill" style={statusBadgeInlineStyle(safe)}>{label}</span>;
 }
 
 function SeverityPill({ value }) {
   const safe = String(value || "MEDIUM").toUpperCase();
   const mapped = safe === "CRITICAL" ? "CRITICAL" : safe === "HIGH" ? "WARNING" : safe === "LOW" ? "SUCCESS" : "INFO";
-  return <span className="pill" style={statusBadgeInlineStyle(mapped)}>{safe}</span>;
+  const label = { LOW: "Düşük", MEDIUM: "Orta", HIGH: "Yüksek", CRITICAL: "Kritik" }[safe] || "Orta";
+  return <span className="pill" style={statusBadgeInlineStyle(mapped)}>{label}</span>;
+}
+
+function decisionTextLabel(value) {
+  return {
+    GO: "Uygun",
+    LIMITED_GO: "Sınırlı uygun",
+    NO_GO: "Uygun değil",
+  }[String(value || "").trim().toUpperCase()] || "Karar bekliyor";
+}
+
+function stageTextLabel(value) {
+  return humanizeUserFacingText(String(value || "").replace(/_/g, " "), "Bekliyor");
 }
 
 function PrepList({ title, items, renderDetail }) {
@@ -54,12 +78,12 @@ function PrepList({ title, items, renderDetail }) {
       {safeItems.length ? safeItems.map((item, idx) => (
         <div key={item?.id || item?.roleId || item?.surfaceId || idx} style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, display: "grid", gap: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <div className="panelSectionTitle">{item?.title || item?.label || item?.roleId || `Kayıt ${idx + 1}`}</div>
+            <div className="panelSectionTitle">{humanizeUserFacingText(item?.title || item?.label || (item?.roleId ? userFacingRoleLabel(item.roleId) : "") || `Kayıt ${idx + 1}`)}</div>
             {item?.status?.code ? <Pill code={item.status.code} /> : null}
           </div>
-          {item?.owner ? <div className="panelMeta">Sorumlu: {item.owner}</div> : null}
-          {item?.surface ? <div className="panelMeta">Yüzey: {item.surface}</div> : null}
-          <div className="panelMeta">{renderDetail ? renderDetail(item) : (item?.detail || item?.success || "-")}</div>
+          {item?.owner ? <div className="panelMeta">Sorumlu: {humanizeUserFacingText(item.owner)}</div> : null}
+          {item?.surface ? <div className="panelMeta">Yüzey: {humanizeUserFacingText(item.surface)}</div> : null}
+          <div className="panelMeta">{renderDetail ? humanizeUserFacingText(renderDetail(item)) : humanizeUserFacingText(item?.detail || item?.success, "-")}</div>
         </div>
       )) : <div className="muted">Henüz kayıt yok.</div>}
     </div>
@@ -79,21 +103,21 @@ function joinLines(items) {
 
 const FEEDBACK_ROLE_OPTIONS = ["SUPER_ADMIN", "ROOM", "COMPANY", "DRIVER", "PERSONEL", "PARENT"];
 const DECISION_STATUS_OPTIONS = [
-  { id: "GO", label: "GO" },
-  { id: "LIMITED_GO", label: "LIMITED_GO" },
-  { id: "NO_GO", label: "NO_GO" },
+  { id: "GO", label: "Uygun" },
+  { id: "LIMITED_GO", label: "Sınırlı uygun" },
+  { id: "NO_GO", label: "Uygun değil" },
 ];
 const RISK_SEVERITY_OPTIONS = [
-  { id: "LOW", label: "LOW" },
-  { id: "MEDIUM", label: "MEDIUM" },
-  { id: "HIGH", label: "HIGH" },
-  { id: "CRITICAL", label: "CRITICAL" },
+  { id: "LOW", label: "Düşük" },
+  { id: "MEDIUM", label: "Orta" },
+  { id: "HIGH", label: "Yüksek" },
+  { id: "CRITICAL", label: "Kritik" },
 ];
 const RISK_STATUS_OPTIONS = [
-  { id: "OPEN", label: "OPEN" },
-  { id: "TRACKING", label: "TRACKING" },
-  { id: "MITIGATED", label: "MITIGATED" },
-  { id: "CLOSED", label: "CLOSED" },
+  { id: "OPEN", label: "Açık" },
+  { id: "TRACKING", label: "Takipte" },
+  { id: "MITIGATED", label: "Azaltıldı" },
+  { id: "CLOSED", label: "Kapandı" },
 ];
 
 // FIELD DISPATCH DISCOVERY / INVENTORY
@@ -223,18 +247,18 @@ export default function PilotLaunchGatePanel() {
     : "Henüz kritik risk yok.";
 
   const acceptanceSummary = totalChecklist
-    ? `${passChecklist}/${totalChecklist} madde tamam. Karar: ${acceptanceSession?.decision || "-"}.`
-    : "Henüz kabul checklist verisi yok.";
+    ? `${passChecklist}/${totalChecklist} madde tamamlandı. Karar: ${decisionTextLabel(acceptanceSession?.decision)}.`
+    : "Henüz kabul kontrol listesi verisi yok.";
 
   const healthSummaryText = healthSummary?.deviceHealth
-    ? `Risk: ${healthSummary.deviceHealth.risk && healthSummary.deviceHealth.risk !== "unknown" ? healthSummary.deviceHealth.risk : "Henüz risk yok"} • Son sync: ${healthSummary.deviceHealth.lastSyncAt || "Henüz veri yok"}`
+    ? `Risk: ${healthSummary.deviceHealth.risk && healthSummary.deviceHealth.risk !== "unknown" ? stageTextLabel(healthSummary.deviceHealth.risk) : "Henüz risk yok"} • Son senkronizasyon: ${healthSummary.deviceHealth.lastSyncAt || "Henüz veri yok"}`
     : "Henüz canlı sağlık özeti yok.";
 
   const buildText = acceptanceSession
-    ? `${acceptanceSession.deviceModel || "Cihaz bilgisi yok"} • Build: ${acceptanceSession.buildProfile || "-"}`
-    : "Henüz build / cihaz bilgisi yok.";
+    ? `${acceptanceSession.deviceModel || "Cihaz bilgisi yok"} • Sürüm: ${acceptanceSession.buildProfile || "-"}`
+    : "Henüz sürüm / cihaz bilgisi yok.";
 
-  const decisionText = `${decisionLabel} • ${decision?.reason || "Karar nedeni henüz girilmedi."}`;
+  const decisionText = `${decisionTextLabel(decisionLabel)} • ${humanizeUserFacingText(decision?.reason, "Karar nedeni henüz girilmedi.")}`;
 
   const updateDecisionField = (key, value) => {
     setDecisionForm((prev) => ({ ...prev, [key]: value }));
@@ -415,10 +439,10 @@ export default function PilotLaunchGatePanel() {
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <SummaryCard title="Son karar" value={decisionLabel} note={decision?.reason || "Checklist tamamlanmadı"} />
+        <SummaryCard title="Son karar" value={decisionTextLabel(decisionLabel)} note={humanizeUserFacingText(decision?.reason, "Kontrol listesi tamamlanmadı")} />
         <SummaryCard title="Risk sayısı" value={String(riskCount)} note={riskCount ? "Açık riskler izlenmeli" : "Kritik risk görünmüyor"} />
-        <SummaryCard title="Saha hazırlık" value={prepStage} note={fieldPrepErr || `${prepSummary.blockerCount || 0} blok • ${prepSummary.warningCount || 0} uyarı`} />
-        <SummaryCard title="M84 saha döngüsü" value={feedbackStage} note={feedbackErr || `${feedbackSummary.openCount || 0} açık • ${feedbackSummary.repeatedCount || 0} tekrar`} />
+        <SummaryCard title="Saha hazırlık" value={stageTextLabel(prepStage)} note={humanizeUserFacingText(fieldPrepErr, `${prepSummary.blockerCount || 0} engel • ${prepSummary.warningCount || 0} uyarı`)} />
+        <SummaryCard title="Saha geri bildirim döngüsü" value={stageTextLabel(feedbackStage)} note={humanizeUserFacingText(feedbackErr, `${feedbackSummary.openCount || 0} açık • ${feedbackSummary.repeatedCount || 0} tekrar`)} />
       </div>
 
       <PanelSegmentTabs
@@ -430,10 +454,10 @@ export default function PilotLaunchGatePanel() {
 
       <TabPanel active={activeTab === "overview"} label="Özet">
         <Row title="Kritik risk listesi" text={riskSummary} />
-        <Row title="Acceptance özetleri" text={acceptanceSummary} />
+        <Row title="Kabul özetleri" text={acceptanceSummary} />
         <Row title="Gözlemleme sağlık özeti" text={healthSummaryText} />
-        <Row title="Build / cihaz uygunluk özeti" text={buildText} />
-        <Row title="GO / LIMITED GO / NO-GO" text={decisionText} />
+        <Row title="Sürüm / cihaz uygunluk özeti" text={buildText} />
+        <Row title="Kabul kararı" text={decisionText} />
       </TabPanel>
 
       <TabPanel active={activeTab === "prep"} label="Hazırlık Kontrolü">
@@ -448,9 +472,9 @@ export default function PilotLaunchGatePanel() {
         </div>
         {fieldPrepErr ? <div style={{ color: "#ffb17b", whiteSpace: "pre-wrap" }}>{fieldPrepErr}</div> : null}
         <PrepList
-          title="Launch checklist"
+          title="Sahaya çıkış kontrol listesi"
           items={acceptanceChecklist}
-          renderDetail={(item) => `${item?.area || "-"} • ${item?.status || "-"}`}
+          renderDetail={(item) => `${humanizeUserFacingText(item?.area, "Genel")} • ${humanizeUserFacingText(item?.status, "Kontrol gerekli")}`}
         />
         <PrepList
           title="Canlı ortam ve release kontrolleri"
@@ -658,9 +682,9 @@ export default function PilotLaunchGatePanel() {
       </TabPanel>
 
       <TabPanel active={activeTab === "history"} label="Geçmiş / Log">
-        <Row title="Acceptance özetleri" text={acceptanceSummary} />
+        <Row title="Kabul özetleri" text={acceptanceSummary} />
         <Row title="Gözlemleme sağlık özeti" text={healthSummaryText} />
-        <Row title="Build / cihaz uygunluk özeti" text={buildText} />
+        <Row title="Sürüm / cihaz uygunluk özeti" text={buildText} />
         <Row title="M84 bloklar" text={(feedbackPacket?.blockers || []).join(" • ") || "Aktif kritik saha bloğu görünmüyor."} />
         <Row title="M84 uyarılar" text={(feedbackPacket?.warnings || []).join(" • ") || "Tekrarlayan uyarı görünmüyor."} />
         <Row title="M84 notları" text={(feedbackPacket?.notes || []).join(" • ") || "Henüz M84 notu yok."} />

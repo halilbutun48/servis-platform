@@ -49,6 +49,13 @@ export const CURRENT_HEAD_APPROVED_CONCURRENT_BACKEND_DIFF = [
     path: "backend/src/services/financialOperationsLifecycle.js",
     sha256: "0767FB5A163CCB19B06F111FE8B00B2340913E29C613A9DEDA93B2CCAA711FF2",
   },
+  // #15 bounded corrective: this service change is user-facing terminology
+  // only. Keep the exact content identity so the scope guard still rejects
+  // any unrelated or subsequent service mutation.
+  {
+    path: "backend/src/services/paymentBackbone.js",
+    sha256: "8F8D3B8E2C43C156CF8BD2864CD3ACFB0E17B0B3BD5C14F6AE83AE33251B6A9B",
+  },
   {
     path: "backend/Dockerfile",
     sha256: "BC81A199698A5758B51B0EA35A4C9B1C6640E22684E09FC4CD19BC977D21113D",

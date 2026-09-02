@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "../../state/session";
+import { humanizeUserFacingText } from "../../utils/terminology";
 import { getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildTrustQualityCopilotFacts } from "../../utils/copilotFacts";
@@ -144,7 +145,7 @@ export default function TrustQualityPanel() {
         ? 'En risksiz adım, özet bandından sonra Servis Kanıtı ve İnceleme Kararı sekmelerini sırayla okumaktır.'
         : 'En risksiz adım, değerlendirme alanları ile sağlayıcı sinyal setini aynı anda okumaktır.',
       compareHint: summaryReady
-        ? 'Canlı özet operasyonel snapshot, sekmeler ise karar ve denetim referansıdır.'
+        ? 'Canlı özet operasyonel görünümü, sekmeler ise karar ve denetim dayanağını gösterir.'
         : 'Hizmet puanı ile sağlayıcı sinyali aynı şey değildir; karar desteği için ikisi birlikte okunur.',
     };
     setCopilotSelection({
@@ -308,9 +309,9 @@ export default function TrustQualityPanel() {
       <div style={{ marginTop: 14 }}>
         <OfferQualityRankingCard
           title="Teklif kalite karşılaştırma rayı"
-          subtitle="Süper Yönetici denetim görünümünde teklif satırı yerine kalite, güven, telematik ve kanıt/check-in sinyalleri salt okunur gösterilir."
+          subtitle="Süper Yönetici denetim görünümünde teklif satırı yerine kalite, güven, konum cihazı ve kanıt/biniş kaydı sinyalleri salt okunur gösterilir."
           offers={[]}
-          summaryParams={{ role: "SUPER_ADMIN", scopeLabel: "Super Admin denetim görünümü" }}
+          summaryParams={{ role: "SUPER_ADMIN", scopeLabel: "Süper Yönetici denetim görünümü" }}
           maxRows={2}
           style={{ padding: 14 }}
         />
@@ -436,7 +437,7 @@ export default function TrustQualityPanel() {
                 {(evaluation?.fields || []).join(" • ") || "Henüz değerlendirme alanı yok"}
               </div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
-                Aktif milestone: {manifest?.activeMilestone || "M63"}
+                Ürün aşaması: {humanizeUserFacingText(manifest?.activeMilestone, "Mevcut aşama")}
               </div>
             </Card>
 

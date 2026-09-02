@@ -43,16 +43,16 @@ const PROVIDER_CATALOG = [
   "Arvento",
   "Mobiliz",
   "Filobil",
-  "Generic API",
-  "Webhook",
-  "Excel/CSV import",
+  "Genel veri bağlantısı",
+  "Veri bildirimi",
+  "Excel/CSV içe aktarımı",
   "Özel entegrasyon talebi",
 ];
 
 const CONNECTION_TYPES = [
-  "API polling",
-  "Webhook push",
-  "Excel/CSV import",
+  "Zamanlanmış veri sorgusu",
+  "Anlık veri bildirimi",
+  "Excel/CSV içe aktarımı",
   "Özel entegrasyon talebi",
   "TCP/device bridge",
 ];
@@ -65,20 +65,19 @@ const TEMPLATE_STATUSES = [
 ];
 
 const SECURITY_REQUIREMENTS = [
-  "secret/token policy",
-  "webhook signature requirement",
-  "rate limit",
-  "IP allowlist",
+  "Gizli anahtar politikası",
+  "Veri bildirimi doğrulaması",
+  "İstek sınırı",
+  "İzinli ağ listesi",
   "KVKK / veri minimizasyonu",
-  "raw payload masking",
+  "Ham veriyi maskeleme",
 ];
 
 const ROOM_MATCH_FIELDS = [
-  "plate",
-  "IMEI",
-  "deviceId",
-  "externalDeviceId",
-  "serial",
+  "Plaka",
+  "Cihaz numarası",
+  "Harici cihaz numarası",
+  "Seri numarası",
 ];
 
 export default function TelematicsHubPanel() {
@@ -87,7 +86,7 @@ export default function TelematicsHubPanel() {
   return (
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
-        title="Telematik / GPS Sağlayıcıları"
+        title="Konum veri sağlayıcıları"
         subtitle={`${me?.email || "-"} • ${trRole(me?.role)}`}
         actions={(
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -107,25 +106,25 @@ export default function TelematicsHubPanel() {
         <div>
           <div className="panelSectionTitle">Bu yüzey ne yönetir?</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Super Admin platform provider kataloğunu, adapter şablonlarını ve güvenlik / KVKK kurallarını yönetir.
+            Süper Yönetici platform veri sağlayıcıları kataloğunu, bağlantı şablonlarını ve güvenlik / KVKK kurallarını yönetir.
           </div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Taşımacılık Firması kendi GPS hesabını yalnızca onaylı provider kataloğu üzerinden bağlar; gerçek provider entegrasyonu, webhook ingest, polling job, TCP bridge ve secret saklama bu sürümde açılmaz.
+            Taşımacılık Firması kendi konum hesabını yalnızca onaylı sağlayıcı kataloğu üzerinden bağlar; gerçek sağlayıcı entegrasyonu, veri alma, zamanlanmış sorgu, cihaz köprüsü ve gizli anahtar saklama bu sürümde açılmaz.
           </div>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <Pill status="OK">Provider kataloğu hazır</Pill>
-          <Pill status="INFO">Adapter şablonları okunur</Pill>
+          <Pill status="OK">Sağlayıcı kataloğu hazır</Pill>
+          <Pill status="INFO">Bağlantı şablonları okunur</Pill>
           <Pill status="WARN">Özel entegrasyonlar insan incelemesi ister</Pill>
-          <Pill status="PASS">Taşımacılık Firması kendi işlemleri izinli provider üzerinden</Pill>
+          <Pill status="PASS">Taşımacılık Firması işlemleri izinli sağlayıcı üzerinden</Pill>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
         <HubCard
-          title="Provider kataloğu"
-          desc="Platform-level provider kataloğu ve adapter görünürlüğü."
+          title="Sağlayıcı kataloğu"
+          desc="Platform veri sağlayıcıları ve bağlantı görünürlüğü."
           items={PROVIDER_CATALOG}
           tone="ROLE"
         />
@@ -136,8 +135,8 @@ export default function TelematicsHubPanel() {
           tone="INFO"
         />
         <HubCard
-          title="Template readiness"
-          desc="Provider şablon ve inceleme durumları."
+          title="Şablon durumu"
+          desc="Sağlayıcı şablonlarının inceleme durumu."
           items={TEMPLATE_STATUSES}
           tone="INFO"
         />
@@ -148,33 +147,33 @@ export default function TelematicsHubPanel() {
           <div>
             <div className="panelSectionTitle">Güvenlik / KVKK</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              Secret / token, webhook güvenliği ve veri minimizasyonu kuralları bu yüzeyde görünür.
+              Gizli anahtar, veri alma güvenliği ve veri minimizasyonu kuralları bu yüzeyde görünür.
             </div>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {SECURITY_REQUIREMENTS.map((item) => (
-              <Pill key={item} status={item.includes("secret") ? "WARN" : "ROLE"}>
+              <Pill key={item} status={item.includes("Gizli") || item.includes("Ham") ? "WARN" : "ROLE"}>
                 {item}
               </Pill>
             ))}
           </div>
           <div className="panelMeta">
-            Not: `secret/token policy`, `webhook signature requirement`, `rate limit` ve `IP allowlist` kararları platform tarafından yönetilir; Taşımacılık Firması bu detayları görmez.
+            Not: gizli anahtar politikası, veri bildirimi doğrulaması, istek sınırı ve izinli ağ kararları platform tarafından yönetilir; Taşımacılık Firması bu ayrıntıları görmez.
           </div>
         </div>
 
       <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
         <div>
-          <div className="panelSectionTitle">Custom provider review</div>
+          <div className="panelSectionTitle">Özel sağlayıcı incelemesi</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Yeni provider veya özel entegrasyon talebi burada inceleme kuyruğuna gider.
+            Yeni sağlayıcı veya özel entegrasyon talebi burada inceleme kuyruğuna gider.
           </div>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <Pill status="WARN">NEEDS_REVIEW</Pill>
-          <Pill status="ROLE">AVAILABLE</Pill>
-          <Pill status="INFO">CONFIG_TEMPLATE_READY</Pill>
-          <Pill status="PASS">DISABLED</Pill>
+          <Pill status="WARN">İnceleme gerekli</Pill>
+          <Pill status="ROLE">Kullanılabilir</Pill>
+          <Pill status="INFO">Bağlantı şablonu hazır</Pill>
+          <Pill status="PASS">Devre dışı</Pill>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {ROOM_MATCH_FIELDS.map((item) => (
@@ -184,7 +183,7 @@ export default function TelematicsHubPanel() {
           ))}
         </div>
         <div className="panelMeta">
-          Taşımacılık Firması kendi araçlarını plate / IMEI / deviceId / externalDeviceId / serial üzerinden eşleştirir; platform yönetimi burada kalır.
+          Taşımacılık Firması kendi araçlarını plaka, cihaz numarası veya seri numarasıyla eşleştirir; platform yönetimi burada kalır.
         </div>
       </div>
       </div>
@@ -192,10 +191,10 @@ export default function TelematicsHubPanel() {
       <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
         <div className="panelSectionTitle">Taşımacılık Firması işlemleri notu</div>
         <div className="panelMeta">
-            Taşımacılık Firması kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar, bağlantı readiness durumunu okur ve eşleşmeyen cihazları inceleyerek araçlarını eşler.
+            Taşımacılık Firması kendi konum hesabını onaylı sağlayıcı kataloğu üzerinden bağlar, bağlantı hazırlık durumunu okur ve eşleşmeyen cihazları inceleyerek araçlarını eşler.
         </div>
         <div className="panelMeta">
-          Bu yüzeyde platform genelindeki adapter güvenlik kuralları, secret saklama veya raw payload gösterimi yapılmaz.
+          Bu yüzeyde platform genelindeki bağlantı güvenlik kuralları, gizli anahtar saklama veya ham veri gösterimi yapılmaz.
         </div>
       </div>
     </div>

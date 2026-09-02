@@ -26,14 +26,14 @@ function buildRouteQuality(summary, source, stops, people) {
   const reviewCount = peopleList.filter((p) => String(p?.geoStatus || "") === "NEEDS_REVIEW").length;
   const qualityNotes = [];
   if (summary?.warning === "hubMissing") qualityNotes.push("Toplanma Konumu eksik; rota tahmini durak sırasına göre gösteriliyor.");
-  if (reviewCount > 0) qualityNotes.push(`${reviewCount} review kaydı rota kalitesini sınırlayabilir.`);
+    if (reviewCount > 0) qualityNotes.push(`${reviewCount} kontrol kaydı rota kalitesini sınırlayabilir.`);
   if (!qualityNotes.length) {
     qualityNotes.push(
         String(source || "").toUpperCase() === "LEARNED"
         ? "Öğrenilmiş rota verisi kullanıldı."
         : String(source || "").toUpperCase() === "SNAPSHOT"
-          ? "Kaydedilmiş rota snapshot kullanıldı; preview yeniden OSRM hesaplamadı."
-          : "Önizleme DB stop sırası ve tahmini hat üzerinden gösteriliyor; OSRM Step-4 ve dispatch için ayrıldı."
+          ? "Kaydedilmiş rota kullanıldı; önizleme yeniden hesaplanmadı."
+          : "Önizleme kayıtlı durak sırası ve tahmini hat üzerinden gösteriliyor; ayrıntılı rota hesaplama ve atama sonraki adıma bırakıldı."
     );
   }
   return {
@@ -324,7 +324,7 @@ function scrollToStopRow(stopId) {
               </div>
               <div className="routePreviewStats">
                 <div>Tekil durak: <b>{routeQuality.singletonCount}</b></div>
-                <div>Review etkisi: <b>{routeQuality.reviewCount}</b></div>
+                <div>Kontrol etkisi: <b>{routeQuality.reviewCount}</b></div>
                 <div>Başlangıç: <b>{effSummary?.startLabel || "-"}</b></div>
                 <div>Bitiş: <b>{effSummary?.endLabel || "-"}</b></div>
               </div>

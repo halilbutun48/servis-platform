@@ -218,7 +218,7 @@ export function RoomDispatchPoolSummary({
                 {dState?.status === "loading" ? "Önizleme hazırlanıyor..." : suggestions.length ? "Bölme önizlemesini yenile" : "Bölme önizlemesi oluştur"}
               </button>
               <div className="muted" style={{ fontSize: 12 }}>
-                Yakın kişileri aynı araca toplamayı dener, sonra araç bazlı durak sırasını OSRM + solver ile iyileştirir.
+                Yakın kişileri aynı araca toplamayı dener, sonra araç bazlı durak sırasını rota hesaplama ve uygunluk hizmetiyle iyileştirir.
               </div>
             </div>
           ) : null}
@@ -299,7 +299,7 @@ export function RoomFinalListSection({
             type="button"
             className="btn roomActionCTA"
             disabled
-            title={`Bu önizleme ayrı onay akışından uygulanır. Split vardiya #${splitEligibleShift.id} hazır`}
+            title="Bu önizleme ayrı onay akışından uygulanır. Bölünmüş vardiya hazır."
           >
             Önizlemeyi Uygula: Böl &amp; Onayla
           </button>
@@ -318,7 +318,7 @@ export function RoomFinalListSection({
         totalCount={items.length}
         filterValue={String(listQ || "").trim()}
         onClearFilter={() => { setListQ(""); }}
-        helper="Copilot seçili vardiyayı kullanır."
+        helper="Sefer Abi seçili vardiyayı kullanır."
       />
       {listFiltered.length ? (
         <>

@@ -28,7 +28,7 @@ export const TABS = [
   { key: "manage", label: "Yönetim" },
   { key: "assign", label: "Atamalar" },
   { key: "avail", label: "Müsaitlik" },
-  { key: "telematics", label: "Telematics" },
+  { key: "telematics", label: "Konum cihazı" },
   { key: "link", label: "Bağlantı" },
 ];
 
@@ -164,7 +164,7 @@ export function buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, f
       screenType: "VEHICLES",
       stage: pillKeyFromUi(ui),
       nextBestAction: focusHasDriver
-        ? "Önce GPS ve durum satırını oku. Sonra gerekiyorsa telematics veya atama sekmesine geç."
+        ? "Önce GPS ve durum satırını oku. Sonra gerekiyorsa konum cihazı veya atama sekmesine geç."
         : "Önce sürücü bağı var mı kontrol et. Sonra durum alanını oku.",
     },
   };

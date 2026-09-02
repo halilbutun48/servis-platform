@@ -134,14 +134,14 @@ async function main() {
   must(drawer, 'Operasyon yardımcısı', 'drawer subtitle is Turkish');
   must(panel, 'Sefer Abi', 'panel assistant title is Turkish');
   must(panel, 'Sadece önizleme analizi için kısa bir başlangıç seçebilirsin.', 'panel starter copy is Turkish');
-  must(panel, 'Sistem salt okunur ve öneri odaklı kalır; denetim günlüğüne copilot sorgusu yazar.', 'panel advanced note is Turkish');
+  must(panel, 'Rehber modu, Sefer Abi’nin sade Türkçe iş rehberidir. Sistem salt okunur ve öneri odaklı kalır; yapılan yardım sorgusu işlem kaydına eklenir.', 'panel advanced note is Turkish');
   must(copilotFactsSource, "subtitle: 'Operasyon, kalite ve ticari sinyalleri aynı konuşmada yorumlayan sade analiz alanı.'", 'copilot facts source includes humanized subtitle');
   must(quickActions, 'Sonraki adımlar', 'quick actions summary is Turkish');
   mustNot(quickActions, 'Hedef yol', 'quick actions no longer expose routeKey label');
   mustNot(quickActions, 'Yol:', 'quick actions no longer expose routeKey field');
   must(card, 'Teknik ayrıntılar', 'advanced card groups technical details behind details section');
-  must(card, 'Sağlayıcı', 'advanced card uses Turkish provider label');
-  must(card, 'Çalışma modu', 'advanced card uses Turkish mode label');
+  must(card, 'Yanıt kaynağı', 'advanced card uses user-facing response source label');
+  must(card, 'Yardım modu', 'advanced card uses Turkish mode label');
   must(card, 'Kapsam', 'advanced card uses Turkish scope label');
   must(diagSignals, 'Tahsilat kapalı', 'diagnostic signals use Turkish settlement wording');
   must(agreementFactsSource, 'Başarı payı / lisans', 'agreement facts source humanizes marketplace summary label');

@@ -455,7 +455,7 @@ export default function CommercialFlowPanel() {
               totalCount={items.length}
               filterValue={viewMode}
               onClearFilter={() => setPreferredId("")}
-              helper="Copilot seçili sözleşme / vardiya kaydını kullanır."
+              helper="Sefer Abi seçili sözleşme / vardiya kaydını kullanır."
             />
             <CommercialFlowTable
               items={contractShiftItems.slice(0, 8)}
@@ -500,7 +500,7 @@ export default function CommercialFlowPanel() {
               totalCount={items.length}
               filterValue={viewMode}
               onClearFilter={() => setPreferredId("")}
-              helper="Copilot seçili teklifi kullanır."
+              helper="Sefer Abi seçili teklifi kullanır."
             />
             <CommercialFlowTable
               items={offerItems.slice(0, 8)}
@@ -667,7 +667,7 @@ export default function CommercialFlowPanel() {
             totalCount={items.length}
             filterValue={filterQ}
             onClearFilter={() => setFilterQ("")}
-            helper="Copilot seçili ticari kaydı kullanır."
+            helper="Sefer Abi seçili ticari kaydı kullanır."
           />
           <CommercialFlowTable
             items={historyItems}

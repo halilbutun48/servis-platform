@@ -117,7 +117,7 @@ export function RoomShiftsMainSections({
             ? "Hizmet Alan Firma talebi, Taşımacılık Firması onayı ve karar bekleyen vardiyalar."
             : activeLabel === "Sözleşmeden Üretilen"
               ? "Sözleşme kaynaklı vardiyalar; sözleşme kartları burada toplanır."
-              : "Sözleşmeye bağlı olmayan normal, guided ve manuel vardiyalar."}
+              : "Sözleşmeye bağlı olmayan normal, rehberli ve elle oluşturulan vardiyalar."}
         </div>
       </div>
 
@@ -171,14 +171,14 @@ export function RoomShiftsMainSections({
         <RoomFinalListSection
           showTitle={false}
           title="Sözleşmeden Üretilen"
-          description="Agreement / contract bağlantılı vardiyalar burada görünür."
+          description="Sözleşmeye bağlı vardiyalar burada görünür."
           listQ={contractQ}
           setListQ={setContractQ}
           copilotShift={copilotShift}
           listFiltered={contractFiltered}
           items={items}
           emptyText="Sözleşmeden üretilen vardiya yok."
-          searchPlaceholder="Ara (id / firma / plaka / sürücü / not)"
+          searchPlaceholder="Ara (kayıt no / firma / plaka / sürücü / not)"
           offersByShiftId={offersByShiftId}
           vehiclesById={vehiclesById}
           roomsById={roomsById}
@@ -197,14 +197,14 @@ export function RoomShiftsMainSections({
         <RoomFinalListSection
           showTitle={false}
           title="Diğer Vardiyalar"
-          description="Sözleşmeye bağlı olmayan normal / guided / manuel vardiyalar burada görünür."
+          description="Sözleşmeye bağlı olmayan normal / rehberli / elle oluşturulan vardiyalar burada görünür."
           listQ={otherQ}
           setListQ={setOtherQ}
           copilotShift={copilotShift}
           listFiltered={otherFiltered}
           items={items}
           emptyText="Diğer vardiya yok."
-          searchPlaceholder="Ara (id / firma / plaka / sürücü / not)"
+          searchPlaceholder="Ara (kayıt no / firma / plaka / sürücü / not)"
           offersByShiftId={offersByShiftId}
           vehiclesById={vehiclesById}
           roomsById={roomsById}

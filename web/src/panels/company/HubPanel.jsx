@@ -102,7 +102,7 @@ export default function HubPanel() {
       setLng(String(r.lng));
       setMsg(`Konum bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}. Kaydet'e bas.`);
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      const m = e?.payload?.error === "notfound" ? "Adres bulunamadı." : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false);
@@ -135,8 +135,8 @@ export default function HubPanel() {
 
       <div className="toolbar" style={{ gap: 8, flexWrap: "wrap" }}>
         <span className="pill" data-status="ROLE">{scopeLabel}</span>
-        <span className="pill" data-status="COUNT">Lat: {lat || "-"}</span>
-        <span className="pill" data-status="COUNT">Lng: {lng || "-"}</span>
+        <span className="pill" data-status="COUNT">Enlem: {lat || "-"}</span>
+        <span className="pill" data-status="COUNT">Boylam: {lng || "-"}</span>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -160,11 +160,11 @@ export default function HubPanel() {
 
             <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", minWidth: 0 }}>
               <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                <div className="panelMeta">{scopeLabel} Lat</div>
+                <div className="panelMeta">{scopeLabel} enlemi</div>
                 <input type="number" step="0.000001" value={lat} onChange={(e) => setLat(e.target.value)} disabled={busy} />
               </div>
               <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                <div className="panelMeta">{scopeLabel} Lng</div>
+                <div className="panelMeta">{scopeLabel} boylamı</div>
                 <input type="number" step="0.000001" value={lng} onChange={(e) => setLng(e.target.value)} disabled={busy} />
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function HubPanel() {
           />
 
           <div className="panelMeta" style={{ marginTop: 10 }}>
-            Not: Konum izni için tarayıcı bazen <b>HTTPS</b> ister (localhost çoğu zaman OK).
+            Not: Konum izni için tarayıcı bazen <b>HTTPS</b> ister (localhost çoğu zaman çalışır).
           </div>
         </PanelChrome>
       </div>

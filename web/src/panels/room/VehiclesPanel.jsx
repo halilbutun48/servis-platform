@@ -594,7 +594,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
           <div className="panelMeta" style={{ marginTop: 6 }}>GPS hazır: {vehicleSummary.gpsReady} • Arşiv: {vehicleSummary.archived}</div>
         </div>
         <div className="card">
-          <div className="muted">Telematics</div>
+          <div className="muted">Konum cihazı</div>
           <div style={{ fontWeight: 800, marginTop: 4 }}>{vehicleSummary.telematicsTotal} cihaz</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>Seçili araç cihaz sayısı: {telematicsCounts[Number(focusVehicleId)] || 0}</div>
         </div>
@@ -739,7 +739,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
       {tab === "telematics" ? (
         <CollapsibleSection
           title="GPS eşleştirme detayları"
-          subtitle="Onaylı provider, matching alanları ve son veri görünümü."
+          subtitle="Onaylı veri sağlayıcısı, eşleştirme alanları ve son veri görünümü."
           badge={telematicsCounts[Number(focusVehicleId)] || 0}
           defaultOpen
           compact

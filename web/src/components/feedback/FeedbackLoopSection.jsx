@@ -173,7 +173,7 @@ export default function FeedbackLoopSection({
         token,
         body: {
           status,
-          note: `Super Admin değerlendirdi: ${statusLabel(status)}`,
+          note: `Süper Yönetici değerlendirdi: ${statusLabel(status)}`,
         },
       });
       await load();
@@ -190,7 +190,7 @@ export default function FeedbackLoopSection({
         <div>
           <div className="panelSectionTitle">{title}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            {subtitle || (reviewMode ? "Gelen kayıtları oku, durumunu güncelle ve kapat." : "Kısa not, öneri veya değerlendirme bırak; kayıtlar Super Admin tarafından okunur.")}
+            {subtitle || (reviewMode ? "Gelen kayıtları oku, durumunu güncelle ve kapat." : "Kısa not, öneri veya değerlendirme bırak; kayıtlar Süper Yönetici tarafından okunur.")}
           </div>
         </div>
         <div className="panelMeta" style={{ textAlign: "right" }}>
@@ -244,7 +244,7 @@ export default function FeedbackLoopSection({
 
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <div className="panelMeta">
-              Kayıtlar Super Admin tarafından okunur ve durumlandırılır.
+              Kayıtlar Süper Yönetici tarafından okunur ve durumlandırılır.
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button type="button" className="btn" disabled={saving} onClick={() => setForm((prev) => ({ ...prev, title: "", detail: "" }))}>

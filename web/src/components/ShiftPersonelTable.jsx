@@ -1,4 +1,5 @@
 // web/src/components/ShiftPersonelTable.jsx
+import { displayStatusLabel } from "../utils/displayStatus";
 function normalizeCoord(v, kind) {
   if (v === null || v === undefined) return null;
   let n = null;
@@ -37,9 +38,9 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
         <tr>
           <th>Ad Soyad</th>
           <th>Adres</th>
-          <th>Lat</th>
-          <th>Lng</th>
-          <th>Geo</th>
+          <th>Enlem</th>
+          <th>Boylam</th>
+          <th>Konum durumu</th>
           <th>Aksiyon</th>
         </tr>
       </thead>
@@ -72,7 +73,7 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
                     const lat = raw === "" ? null : normalizeCoord(raw, "lat");
                     onUpdate?.(p.id, { lat });
                   }}
-                  placeholder="lat"
+                  placeholder="Enlem"
                 />
               </td>
               <td style={{ width: 120 }}>
@@ -83,11 +84,11 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
                     const lng = raw === "" ? null : normalizeCoord(raw, "lng");
                     onUpdate?.(p.id, { lng });
                   }}
-                  placeholder="lng"
+                  placeholder="Boylam"
                 />
               </td>
               <td className="muted" style={{ minWidth: 170 }}>
-                <div>{p.geoStatus || "-"}</div>
+                <div>{displayStatusLabel(p.geoStatus)}</div>
                 {p.geoReasonText || p.geoReason ? (
                   <div style={{ fontSize: 12 }}>{p.geoReasonText || p.geoReason}</div>
                 ) : null}

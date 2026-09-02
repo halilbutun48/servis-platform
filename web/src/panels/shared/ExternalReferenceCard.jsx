@@ -9,6 +9,7 @@ import {
   externalReferenceFreshnessTone,
   externalReferenceValueLabel,
 } from "./financialOperationsPresentation";
+import { humanizeUserFacingText } from "../../utils/terminology";
 
 const TONE_STYLES = Object.freeze({
   good: { border: "1px solid rgba(18,183,106,0.35)", background: "rgba(18,183,106,0.04)" },
@@ -38,11 +39,24 @@ function toneStyle(tone) {
   return TONE_STYLES[tone] || TONE_STYLES.warm;
 }
 
+function referenceStateLabel(value, fallback = "Belirtilmedi") {
+  const key = String(value ?? "").trim().toUpperCase();
+  const labels = {
+    PARTIAL: "Kısmi kanıt",
+    UNAVAILABLE: "Mevcut değil",
+    AVAILABLE: "Mevcut",
+    MISSING: "Eksik bilgi",
+    INSUFFICIENT_SAMPLE: "Yeterli örnek yok",
+    NOT_AVAILABLE: "Mevcut değil",
+  };
+  return labels[key] || humanizeUserFacingText(value, fallback);
+}
+
 function layerLabel(layer) {
   if (layer?.label) return layer.label;
-  if (layer?.layer === "EXTERNAL_MARKET_REFERENCE") return "Dış Piyasa Referansı";
+  if (layer?.layer === "EXTERNAL_MARKET_REFERENCE") return "Dış piyasa referansı";
   if (layer?.layer === "SEFERPAKT_PLATFORM_REFERENCE") return "SeferPakt Bölgesel Referansı";
-  return "Senin Gerçek Verilerin";
+  return "Mevcut gerçek verileriniz";
 }
 
 function LayerSummary({ layer }) {
@@ -58,7 +72,7 @@ function LayerSummary({ layer }) {
           {layer.range ? ` · Aralık: ${formatBand(layer.range, layer.currencyCode || "TRY")}` : ""}
         </div>
       ) : (
-        <div className="panelMeta" style={{ marginTop: 6 }}>{layer.selectionReason || "Bu katman için kullanılabilir veri yok."}</div>
+        <div className="panelMeta" style={{ marginTop: 6 }}>{humanizeUserFacingText(layer.selectionReason, "Bu katman için kullanılabilir veri yok.")}</div>
       )}
       <div className="panelMeta" style={{ marginTop: 6 }}>
         Kapsam: {layer.regionName || layer.regionCode || "Türkiye / kapsam belirtilmedi"}
@@ -66,9 +80,9 @@ function LayerSummary({ layer }) {
       </div>
       {layer.layer === "EXTERNAL_MARKET_REFERENCE" ? (
         <div className="panelMeta" style={{ marginTop: 6, display: "grid", gap: 4 }}>
-          <span>Provider: {layer.providerKey || "Belirtilmedi"}</span>
-          <span>Kaynak: {layer.sourceName || "Kaynak belirtilmemiş"}</span>
-          <span>As of: {formatDate(layer.asOf)}</span>
+          <span>Kaynak türü: Resmî veri sağlayıcısı</span>
+          <span>Kaynak: {humanizeUserFacingText(layer.sourceName, "Kaynak belirtilmemiş")}</span>
+          <span>Tarih: {formatDate(layer.asOf)}</span>
           <span>Güncellik: {externalReferenceFreshnessLabel(layer.freshness || "UNKNOWN")}</span>
         </div>
       ) : null}
@@ -190,7 +204,7 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
       </div>
       {isAvailable ? (
         <div className="muted" style={{ marginTop: 10, lineHeight: 1.45 }}>
-           Kaynak: {external.sourceName || "Kaynak belirtilmemiş"} · Kapsam: {resolvedRegionName || external.regionCode || "Türkiye / kapsam belirtilmedi"}
+           Kaynak: {humanizeUserFacingText(external.sourceName, "Kaynak belirtilmemiş")} · Kapsam: {resolvedRegionName || external.regionCode || "Türkiye / kapsam belirtilmedi"}
         </div>
       ) : (
         <div className="muted" style={{ marginTop: 10, lineHeight: 1.45 }}>
@@ -199,12 +213,12 @@ export default function ExternalReferenceCard({ token, canView, refreshTick = 0,
       )}
       <div data-testid="external-reference-completeness" className="card" style={{ marginTop: 10, padding: 10, background: "rgba(255,255,255,0.02)" }}>
         <div className="panelMeta" style={{ display: "grid", gap: 4 }}>
-          <span>Reference completeness: {hasReferenceEvidence ? "PARTIAL" : "UNAVAILABLE"}</span>
-          <span>Fuel: {isAvailable ? "AVAILABLE" : "MISSING"}</span>
-          <span>Driver: MISSING</span>
-          <span>Maintenance: MISSING</span>
-          <span>Platform observed: {platform?.available ? "AVAILABLE" : "INSUFFICIENT SAMPLE"}</span>
-          <span>Actual: {actual?.available ? "AVAILABLE" : "NOT AVAILABLE"}</span>
+          <span>Kanıt kapsamı: {referenceStateLabel(referenceReadiness)}</span>
+          <span>Yakıt verisi: {referenceStateLabel(isAvailable ? "AVAILABLE" : "MISSING")}</span>
+          <span>Sürücü maliyeti: Mevcut değil</span>
+          <span>Bakım maliyeti: Mevcut değil</span>
+          <span>Platform gözlemi: {referenceStateLabel(platform?.available ? "AVAILABLE" : "INSUFFICIENT_SAMPLE")}</span>
+          <span>Gerçek maliyet: {referenceStateLabel(actual?.available ? "AVAILABLE" : "NOT_AVAILABLE")}</span>
         </div>
       </div>
       {guidance?.observedRegional?.available ? (

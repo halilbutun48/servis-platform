@@ -25,7 +25,7 @@ const EMPTY_FILTERS = {
 
 const NON_SHIFT_LABELS = {
   drivers: {
-    driverId: "Sürücü ID",
+    driverId: "Sürücü kayıt no",
     driverName: "Sürücü",
     totalAssigned: "Toplam Atama",
     totalCompleted: "Tamamlanan",
@@ -34,7 +34,7 @@ const NON_SHIFT_LABELS = {
     activePenalty: "Aktif Ceza",
   },
   vehicles: {
-    vehicleId: "Araç ID",
+    vehicleId: "Araç kayıt no",
     plate: "Plaka",
     shiftCount: "Vardiya Sayısı",
     personelCount: "Toplam Personel",
@@ -42,12 +42,28 @@ const NON_SHIFT_LABELS = {
     maxRequiredPax: "Maks. Gerekli Kapasite",
   },
   stops: {
-    stopId: "Durak ID",
+    stopId: "Durak kayıt no",
     stopName: "Durak",
     shiftCount: "Vardiya Sayısı",
     passengerCount: "Toplam Yolcu",
   },
 };
+
+const REPORT_FIELD_LABELS = Object.freeze({
+  id: "Kayıt no",
+  createdAt: "Oluşturma",
+  updatedAt: "Son güncelleme",
+  status: "Durum",
+  name: "Ad",
+  fullName: "Ad soyad",
+  companyId: "Hizmet Alan Firma kayıt no",
+  roomId: "Taşımacılık Firması kayıt no",
+  vehicleId: "Araç kayıt no",
+  driverId: "Sürücü kayıt no",
+  personelId: "Personel kayıt no",
+  stopId: "Durak kayıt no",
+  shiftId: "Vardiya kayıt no",
+});
 
 const SHIFT_COLUMNS = [
   ["id", "ID"],
@@ -163,7 +179,7 @@ export default function ReportsPanel() {
     if (tab === "shifts") return SHIFT_COLUMNS.map(([key, label]) => ({ key, label }));
     const tabLabels = NON_SHIFT_LABELS[tab] || {};
     return rows.length
-      ? Object.keys(rows[0]).map((key) => ({ key, label: tabLabels[key] || key }))
+      ? Object.keys(rows[0]).map((key) => ({ key, label: tabLabels[key] || REPORT_FIELD_LABELS[key] || "Ayrıntı" }))
       : [];
   }, [tab, rows]);
 
@@ -303,7 +319,7 @@ export default function ReportsPanel() {
       </PanelChrome>
       {err ? <div className="card err" style={{ minWidth: 0 }}>{err}</div> : null}
       <div className="card" style={{ minWidth: 0 }}>
-        <div className="panelMeta">Rol: {roleLabelForUser(me)} • Ekran: {base}/reports</div>
+        <div className="panelMeta">Rol: {roleLabelForUser(me)} • Yüzey: Raporlar</div>
         <ListSelectionBanner
           selectedLabel={selectedRow ? `${TABS.find(([k]) => k === tab)?.[1] || "Rapor"} satırı` : ""}
           selectedSummary={selectedRow ? buildSelectedSummary(headers, selectedRow) : ""}
@@ -311,7 +327,7 @@ export default function ReportsPanel() {
           totalCount={Number(data?.[tab]?.total || rows.length || 0)}
           filterValue={filterQ}
           onClearFilter={() => setFilterQ("")}
-          helper={hasColumnFilter ? "Genel filtreye ek olarak sütun filtreleri de aktif." : "Copilot seçili rapor satırını kullanır."}
+          helper={hasColumnFilter ? "Genel filtreye ek olarak sütun filtreleri de aktif." : "Sefer Abi seçili rapor satırını kullanır."}
         />
       </div>
       <div className="card reportsCard" style={{ minWidth: 0 }}>

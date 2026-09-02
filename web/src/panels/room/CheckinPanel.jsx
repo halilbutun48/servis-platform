@@ -92,13 +92,13 @@ export default function RoomCheckinPanel() {
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <h3 style={{ margin: 0 }}>Taşımacılık Firması Check-in İzleme</h3>
+            <h3 style={{ margin: 0 }}>Taşımacılık Firması biniş kayıtları</h3>
             <div className="muted" style={{ marginTop: 6 }}>
-              Taşımacılık Firması tarafı için salt okunur operasyon paneli. Sürücü okuttukça BOARD / ALIGHT sayıları ve son olaylar burada akar.
+              Taşımacılık Firması tarafı için salt okunur operasyon paneli. Sürücü kayıt oluşturdukça biniş / iniş sayıları ve son olaylar burada görünür.
             </div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="pill" data-status="COUNT">Opsiyonel check-in</span>
+            <span className="pill" data-status="COUNT">İsteğe bağlı biniş kaydı</span>
             <button type="button" className="btn" onClick={loadAll} disabled={loading}>{loading ? "..." : "Yenile"}</button>
           </div>
         </div>
@@ -120,8 +120,8 @@ export default function RoomCheckinPanel() {
             </select>
           </label>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="pill" data-status="COUNT">BOARD {counts.BOARD || 0}</span>
-            <span className="pill" data-status="COUNT">ALIGHT {counts.ALIGHT || 0}</span>
+            <span className="pill" data-status="COUNT">Biniş {counts.BOARD || 0}</span>
+            <span className="pill" data-status="COUNT">İniş {counts.ALIGHT || 0}</span>
             {selectedShift ? <span className="pill" data-status={String(selectedShift.status || "").toUpperCase()}>{displayStatusLabel(String(selectedShift.status || "").toUpperCase())}</span> : null}
           </div>
         </div>
@@ -133,13 +133,13 @@ export default function RoomCheckinPanel() {
       </div>
 
       <div className="card" style={{ overflowX: "auto" }}>
-        <h3 style={{ marginTop: 0 }}>Son eventler</h3>
+        <h3 style={{ marginTop: 0 }}>Son olaylar</h3>
         <table className="tbl" style={{ whiteSpace: "nowrap" }}>
           <thead>
             <tr>
               <th>Zaman</th>
               <th>Kişi</th>
-              <th>Tip</th>
+              <th>Tür</th>
               <th>Kaynak</th>
               <th>Cihaz</th>
             </tr>
@@ -154,7 +154,7 @@ export default function RoomCheckinPanel() {
                 <td>{it.deviceId || "-"}</td>
               </tr>
             )) : (
-              <tr><td colSpan={5} className="muted">Henüz event yok.</td></tr>
+              <tr><td colSpan={5} className="muted">Henüz olay yok.</td></tr>
             )}
           </tbody>
         </table>

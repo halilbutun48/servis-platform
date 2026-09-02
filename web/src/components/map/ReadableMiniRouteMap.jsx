@@ -101,7 +101,7 @@ function routeSourceLabel(source = "") {
 
 function routeSourceDetail(source = "") {
   const key = String(source || "").trim().toUpperCase();
-  if (key === "SNAPSHOT") return "Snapshot";
+  if (key === "SNAPSHOT") return "Kaydedilmiş rota";
   if (key === "LEARNED") return "Öğrenilmiş";
   if (key === "ESTIMATED") return "Yaklaşık";
   return "";

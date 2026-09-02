@@ -15,6 +15,67 @@ function bpsFromPercentInput(value) {
   const [whole, fraction = ""] = normalized.split(".");
   return Number(whole) * 100 + Number((fraction + "00").slice(0, 2));
 }
+
+function readableCommercialText(value, fallback = "-") {
+  const raw = String(value ?? "").trim();
+  if (!raw) return fallback;
+  const statusLabels = {
+    OFF: "Kapalı",
+    OPTIONAL: "İsteğe bağlı",
+    REQUIRED: "Zorunlu",
+    DORMANT: "Beklemede",
+    READY: "Hazır",
+    PLANNED: "Planlandı",
+    EXECUTED: "Tamamlandı",
+    ACTIVE: "Aktif",
+    DISABLED: "Durduruldu",
+    CANCELLED: "İptal edildi",
+    INACTIVE: "Pasif",
+    VERIFIED: "Doğrulandı",
+    MISSING: "Eksik bilgi",
+    ERROR: "Hata",
+    PENDING: "Bekliyor",
+  };
+  return raw
+    .replace(/Ticari Omurga Guclendirme/gi, "Ticari akış hazırlığı")
+    .replace(/Talep karti/gi, "Talep kartı")
+    .replace(/Teklif yasam dongusu/gi, "Teklif yaşam döngüsü")
+    .replace(/Karsi teklif/gi, "Karşı teklif")
+    .replace(/Pazarlik gecmisi/gi, "Pazarlık geçmişi")
+    .replace(/Uzlasma ozeti/gi, "Uzlaşma özeti")
+    .replace(/Sozlesmeye gecis kapisi/gi, "Sözleşmeye geçiş")
+    .replace(/karsi-teklif/gi, "karşı teklif")
+    .replace(/pazarlik-gecmisi/gi, "pazarlık geçmişi")
+    .replace(/karsi teklif/gi, "karşı teklif")
+    .replace(/pazarlik gecmisi/gi, "pazarlık geçmişi")
+    .replace(/uzlasma/gi, "uzlaşma")
+    .replace(/sozlesme/gi, "sözleşme")
+    .replace(/omurgasi/gi, "omurgası")
+    .replace(/Talep karti acilmadan teklif sureci baslamaz/gi, "Talep kartı açılmadan teklif süreci başlamaz")
+    .replace(/Teklif ve karsi teklif akisinda durum gorunurlugu korunur/gi, "Teklif ve karşı teklif akışında durum görünürlüğü korunur")
+    .replace(/Uzlasma ozeti olusmadan sozlesme baglanmaz/gi, "Uzlaşma özeti oluşmadan sözleşme bağlanmaz")
+    .replace(/M\d+(?:\.\d+)?\s+green\s+olmadan\s+M\d+(?:\.\d+)?\s+acilmaz/gi, "Önceki adım tamamlanmadan sonraki adım açılmaz")
+    .replace(/green/gi, "tamamlandı")
+    .replace(/Payment backbone/gi, "Ödeme hazırlık omurgası")
+    .replace(/feature-flagli/gi, "özellik seçime bağlı")
+    .replace(/Gercek/gi, "Gerçek")
+    .replace(/charge\/payout/gi, "tahsilat/ödeme")
+    .replace(/hosted checkout/gi, "barındırılan ödeme sayfası")
+    .replace(/provider webhook/gi, "veri sağlayıcısı bildirimi")
+    .replace(/settlement/gi, "mutabakat")
+    .replace(/reconciliation/gi, "eşleştirme")
+    .replace(/payment mode/gi, "ödeme modu")
+    .replace(/status/gi, "durum")
+    .replace(/settings/gi, "ayarlar")
+    .replace(/entry/gi, "kayıt")
+    .replace(/source/gi, "kaynak")
+    .replace(/provider/gi, "veri sağlayıcısı")
+    .replace(/step[- ]?up/gi, "ek doğrulama")
+    .replace(/\bM\d+(?:\.\d+)?\b/gi, "bu faz")
+    .replace(/\bREADY\b|\bPLANNED\b|\bEXECUTED\b|\bDORMANT\b|\bACTIVE\b|\bDISABLED\b|\bCANCELLED\b|\bOPTIONAL\b|\bREQUIRED\b|\bINACTIVE\b|\bVERIFIED\b|\bMISSING\b|\bERROR\b|\bPENDING\b|\bOFF\b/gi, (status) => statusLabels[status.toUpperCase()] || status)
+    .replace(/\s+/g, " ")
+    .trim() || fallback;
+}
 import { createCommercialCorePanelActions } from "./commercialCorePanelActions";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialCoreCopilotFacts } from "../../utils/copilotFacts";
@@ -142,7 +203,7 @@ export default function CommercialCorePanel() {
       setSettings(cfg);
       setAccountStatus(accounts);
       setSettlementStatus(settlement);
-      setSettlementQueueMeta(settlementQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (settlementQueueRes?.data || { endpointStatus: "missing", summary: "Settlement operasyon kuyruğu endpointi okunamadı." }));
+      setSettlementQueueMeta(settlementQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (settlementQueueRes?.data || { endpointStatus: "missing", summary: "Mutabakat operasyon kuyruğu okunamadı." }));
       setSettlementQueue(settlementItems);
       setPaymentPreviewSummary(previewRes?.data || previewRes || null);
       setOperationProofSummary(opProofRes?.data || opProofRes || null);
@@ -155,8 +216,8 @@ export default function CommercialCorePanel() {
       if (pbRes?.status && pbRes.status !== 429 && !pbRes?.ok) reasons.push(pbRes.status === 403 ? "payment backbone özeti step-up bekliyor" : "payment backbone özeti endpointi bulunamadı");
       if (cfgRes?.status && cfgRes.status !== 429 && !cfgRes?.ok) reasons.push(cfgRes.status === 403 ? "ticari ayarlar step-up bekliyor" : "ticari ayarlar endpointi bulunamadı");
       if (accountStatusRes?.status && accountStatusRes.status !== 429 && !accountStatusRes?.ok) reasons.push(accountStatusRes.status === 403 ? "Ödeme hesabı hazırlık özeti step-up bekliyor" : "Ödeme hesabı hazırlık özeti endpointi bulunamadı");
-      if (settlementStatusRes?.status && settlementStatusRes.status !== 429 && !settlementStatusRes?.ok) reasons.push(settlementStatusRes.status === 403 ? "Settlement operasyon özeti step-up bekliyor" : "Settlement operasyon özeti endpointi bulunamadı");
-      if (settlementQueueRes?.status && settlementQueueRes.status !== 429 && !settlementQueueRes?.ok) reasons.push(settlementQueueRes.status === 403 ? "Settlement operasyon kuyruğu step-up bekliyor" : "Settlement operasyon kuyruğu endpointi bulunamadı");
+      if (settlementStatusRes?.status && settlementStatusRes.status !== 429 && !settlementStatusRes?.ok) reasons.push(settlementStatusRes.status === 403 ? "Mutabakat operasyon özeti için ek doğrulama bekleniyor" : "Mutabakat operasyon özeti bulunamadı");
+      if (settlementQueueRes?.status && settlementQueueRes.status !== 429 && !settlementQueueRes?.ok) reasons.push(settlementQueueRes.status === 403 ? "Mutabakat operasyon kuyruğu için ek doğrulama bekleniyor" : "Mutabakat operasyon kuyruğu bulunamadı");
 
       if (viewTab === "billing" || viewTab === "commission") {
         const paymentSourcesRes = await readOptional(`/api/commercial-core/payment-backbone/sources?${buildPaymentSourceQuery(paymentSourceFilters, 20).toString()}`, "paymentSources");
@@ -209,11 +270,11 @@ export default function CommercialCorePanel() {
         const reconciliationItems = reconciliationQueueRes?.ok ? (reconciliationQueueRes?.data?.items || []) : [];
 
         setReconciliationStatus(reconciliation);
-        setReconciliationQueueMeta(reconciliationQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (reconciliationQueueRes?.data || { endpointStatus: "missing", summary: "Settlement mutabakat kuyruğu endpointi okunamadı." }));
+        setReconciliationQueueMeta(reconciliationQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (reconciliationQueueRes?.data || { endpointStatus: "missing", summary: "Mutabakat eşleştirme kuyruğu okunamadı." }));
         setReconciliationQueue(reconciliationItems);
 
-        if (reconciliationStatusRes?.status && reconciliationStatusRes.status !== 429 && !reconciliationStatusRes?.ok) reasons.push(reconciliationStatusRes.status === 403 ? "Settlement mutabakat özeti step-up bekliyor" : "Settlement mutabakat özeti endpointi bulunamadı");
-        if (reconciliationQueueRes?.status && reconciliationQueueRes.status !== 429 && !reconciliationQueueRes?.ok) reasons.push(reconciliationQueueRes.status === 403 ? "Settlement mutabakat kuyruğu step-up bekliyor" : "Settlement mutabakat kuyruğu endpointi bulunamadı");
+        if (reconciliationStatusRes?.status && reconciliationStatusRes.status !== 429 && !reconciliationStatusRes?.ok) reasons.push(reconciliationStatusRes.status === 403 ? "Mutabakat özeti için ek doğrulama bekleniyor" : "Mutabakat özeti bulunamadı");
+        if (reconciliationQueueRes?.status && reconciliationQueueRes.status !== 429 && !reconciliationQueueRes?.ok) reasons.push(reconciliationQueueRes.status === 403 ? "Mutabakat eşleştirme kuyruğu için ek doğrulama bekleniyor" : "Mutabakat eşleştirme kuyruğu bulunamadı");
       }
 
       if (reasons.length) setErr(reasons.join(" • "));
@@ -265,14 +326,14 @@ export default function CommercialCorePanel() {
     (paymentPreviewSummary?.missingCount ?? 0) > 0 ? `${paymentPreviewSummary?.missingCount ?? 0} eksik bilgi` : null,
     (paymentPreviewSummary?.reviewCount ?? 0) > 0 ? `${paymentPreviewSummary?.reviewCount ?? 0} kontrol gerekli` : null,
     ((accountStatus?.companyMissingCount || 0) + (accountStatus?.roomMissingCount || 0)) > 0 ? "Ödeme hesabı eksik" : null,
-    (settlementStatus?.blockedCount || 0) > 0 ? `${settlementStatus?.blockedCount || 0} bloklu settlement` : null,
+    (settlementStatus?.blockedCount || 0) > 0 ? `${settlementStatus?.blockedCount || 0} bloklu mutabakat` : null,
     (reconciliationStatus?.mismatchCount || 0) > 0 ? `${reconciliationStatus?.mismatchCount || 0} uyuşmazlık` : null,
   ].filter(Boolean);
   const hasCriticalSignals = criticalSignals.length > 0;
   const topMetrics = [
     {
       title: "Hazırlık",
-      value: paymentBackbone?.activeMilestone || paymentBackbone?.summary || "Hazırlık bekliyor",
+      value: readableCommercialText(paymentBackbone?.activeMilestone || paymentBackbone?.summary, "Hazırlık bekliyor"),
       help: paymentBackboneSafeMode ? "Ödeme kapalı" : "Hazırlık açık",
       tone: paymentBackboneSafeMode ? "warn" : "normal",
     },
@@ -465,16 +526,16 @@ export default function CommercialCorePanel() {
         <div ref={(node) => { tabSectionRefs.current.summary = node; }} tabIndex={-1} role="tabpanel" aria-label="Özet" style={{ marginTop: 14, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Card title="Aktif durum" wide>
-              <div>{manifest?.title || "Henüz ticari özet yok"}</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>{manifest?.activeMilestone || "Aktif durum bilgisi gelmedi"}</div>
+              <div>{readableCommercialText(manifest?.title, "Henüz ticari özet yok")}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{readableCommercialText(manifest?.activeMilestone, "Aktif durum bilgisi gelmedi")}</div>
             </Card>
             <Card title="Aktif adımlar" wide>
               <div>{activeSteps.length} adım</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>{activeSteps.map((item) => item.label).join(" • ") || "Henüz aktif adım yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{activeSteps.map((item) => readableCommercialText(item.label)).join(" • ") || "Henüz aktif adım yok"}</div>
             </Card>
             <Card title="Sözleşmeye geçiş" wide>
-              <div>{route.join(" → ") || "Henüz geçiş yolu yok"}</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>{lifecycle?.summary || "Bu ekran ticari sürecin hangi kapılardan geçtiğini anlatır"}</div>
+              <div>{readableCommercialText(route.join(" → "), "Henüz geçiş yolu yok")}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{readableCommercialText(lifecycle?.summary, "Bu ekran ticari sürecin hangi kapılardan geçtiğini anlatır")}</div>
             </Card>
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -507,12 +568,12 @@ export default function CommercialCorePanel() {
           >
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
               <div className="panelMeta">
-                Hazırlık omurgasındaki kaynakları filtreleyip CSV olarak indirebilirsin. Export için Super Admin step-up gerekir.
+                Hazırlık omurgasındaki kaynakları filtreleyip CSV olarak indirebilirsin. Dışa aktarım için Süper Yönetici ek doğrulaması gerekir.
               </div>
               {paymentSourcesEndpointStatus !== "ok" ? (
                 <div className="panelMeta" style={{ color: "#ffb17b" }}>
                   {paymentSourcesEndpointStatus === "forbidden"
-                    ? "Ödeme listesi için önce TOTP step-up doğrulamasını tamamla."
+                    ? "Ödeme listesi için önce ek doğrulamayı tamamla."
                     : "Ödeme listesi endpointi bu çalışmakta olan sunucuda yok görünüyor."}
                 </div>
               ) : null}
@@ -522,26 +583,26 @@ export default function CommercialCorePanel() {
                     <InputRow label="Kaynak türü">
                       <select value={paymentSourceFilters.sourceType} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, sourceType: e.target.value }))}>
                         <option value="ALL">Tümü</option>
-                        <option value="AGREEMENT">Agreement</option>
-                        <option value="SHIFT_SERIES">Shift series</option>
+                        <option value="AGREEMENT">Sözleşme</option>
+                        <option value="SHIFT_SERIES">Vardiya serisi</option>
                       </select>
                     </InputRow>
-                    <InputRow label="Payment mode">
+                    <InputRow label="Ödeme modu">
                       <select value={paymentSourceFilters.paymentMode} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, paymentMode: e.target.value }))}>
                         <option value="ALL">Tümü</option>
-                        <option value="OFF">OFF</option>
-                        <option value="OPTIONAL">OPTIONAL</option>
-                        <option value="REQUIRED">REQUIRED</option>
+                        <option value="OFF">Kapalı</option>
+                        <option value="OPTIONAL">İsteğe bağlı</option>
+                        <option value="REQUIRED">Zorunlu</option>
                       </select>
                     </InputRow>
                     <InputRow label="Mutabakat durumu">
                       <select value={paymentSourceFilters.settlementStatus} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, settlementStatus: e.target.value }))}>
                         <option value="ALL">Tümü</option>
-                        <option value="DORMANT">DORMANT</option>
-                        <option value="READY">READY</option>
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="DISABLED">DISABLED</option>
-                        <option value="CANCELLED">CANCELLED</option>
+                        <option value="DORMANT">Beklemede</option>
+                        <option value="READY">Hazır</option>
+                        <option value="ACTIVE">Aktif</option>
+                        <option value="DISABLED">Durduruldu</option>
+                        <option value="CANCELLED">İptal edildi</option>
                       </select>
                     </InputRow>
                     <InputRow label="Hizmet Alan Firma ID">
@@ -592,10 +653,10 @@ export default function CommercialCorePanel() {
                         <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                             <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
-                            <div>{item.settlementStatus || item?.settlementPlan?.status || "DORMANT"}</div>
+                            <div>{readableCommercialText(item.settlementStatus || item?.settlementPlan?.status || "DORMANT")}</div>
                           </div>
-                          <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
-                          <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div>{readableCommercialText(item.sourceType)} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
+                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                           <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                         </div>
                       ))}
@@ -613,10 +674,10 @@ export default function CommercialCorePanel() {
       {viewTab === "prep" ? (
         <div ref={(node) => { tabSectionRefs.current.prep = node; }} tabIndex={-1} role="tabpanel" aria-label="Ödeme Hazırlık" style={{ marginTop: 14, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Card title="Payment backbone durumu">
-              <div>{paymentBackbone?.summary || "Henüz payment backbone özeti yok"}</div>
+            <Card title="Ödeme hazırlık omurgası durumu">
+              <div>{readableCommercialText(paymentBackbone?.summary, "Henüz ödeme hazırlık özeti yok")}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
-                {paymentBackbone?.activeMilestone || "-"} • {paymentBackbone?.dormant ? "Dormant" : "Açık"}
+                {readableCommercialText(paymentBackbone?.activeMilestone)} • {paymentBackbone?.dormant ? "Beklemede" : "Açık"}
               </div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
                 Aktivasyon anahtarı: {activationGate?.state ?? "0"} • {activationGate?.enabled ? "Hazırlıktan canlı kapıya uygun" : "Hazırlık modu"}
@@ -628,14 +689,14 @@ export default function CommercialCorePanel() {
                   <div key={item.key} style={{ display: "grid", gap: 4, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                       <strong>{item.label}</strong>
-                      <span className="panelMeta">{item.status}</span>
+                      <span className="panelMeta">{readableCommercialText(item.status)}</span>
                     </div>
-                    <div className="panelMeta">{item.detail}</div>
+                    <div className="panelMeta">{readableCommercialText(item.detail)}</div>
                   </div>
                 ))}
               </div>
             </Card>
-            <Card title="Settlement hazırlığı">
+            <Card title="Mutabakat hazırlığı">
               <div>Plan: {cards.settlementPlans || 0}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
                 Hesap: {cards.paymentAccounts || 0} • Kural: {cards.commissionRules || 0}
@@ -650,7 +711,7 @@ export default function CommercialCorePanel() {
                   <InputRow label="Ödeme modu" help="Tüm sistem için varsayılan mod.">
                     <select value={globalForm.paymentMode} onChange={(e) => setGlobalForm((prev) => ({ ...prev, paymentMode: e.target.value }))}>
                       {(settings?.paymentModes || ["OFF", "OPTIONAL", "REQUIRED"]).map((mode) => (
-                        <option key={mode} value={mode}>{mode}</option>
+                        <option key={mode} value={mode}>{readableCommercialText(mode)}</option>
                       ))}
                     </select>
                   </InputRow>
@@ -685,7 +746,7 @@ export default function CommercialCorePanel() {
                   <InputRow label="Ödeme modu">
                     <select value={roomForm.paymentMode} onChange={(e) => setRoomForm((prev) => ({ ...prev, paymentMode: e.target.value }))}>
                       {(settings?.paymentModes || ["OFF", "OPTIONAL", "REQUIRED"]).map((mode) => (
-                        <option key={mode} value={mode}>{mode}</option>
+                        <option key={mode} value={mode}>{readableCommercialText(mode)}</option>
                       ))}
                     </select>
                   </InputRow>
@@ -713,8 +774,8 @@ export default function CommercialCorePanel() {
                             {busyKey === `disable:${item.roomId}` ? "Kapatılıyor..." : "Override kapat"}
                           </button>
                         </div>
-                        <div>{item.paymentMode} • {fmtBps(item.commissionBps)}</div>
-                        <div className="panelMeta">Taşımacılık Firması #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                        <div>{readableCommercialText(item.paymentMode)} • {fmtBps(item.commissionBps)}</div>
+                        <div className="panelMeta">Taşımacılık Firması kayıt no #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                         {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                       </div>
                     ))}
@@ -726,27 +787,27 @@ export default function CommercialCorePanel() {
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="M85 opsiyonel ödeme pilotu" subtitle="OPTIONAL moddaki ticari kaynaklar pilot listesine alınabilir." defaultOpen={false}>
+          <CollapsibleSection title="İsteğe bağlı ödeme pilotu" subtitle="İsteğe bağlı ödeme modundaki ticari kaynaklar pilot listesine alınabilir." defaultOpen={false}>
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
               <div className="panelMeta">
-                {pilotStatus?.summary || "OPTIONAL moddaki ticari kaynaklar pilot listesine alınabilir. READY olanlar yalnız pilot hazırlık görünürlüğü taşır; gerçek charge/payout hala dormant kalır."}
+                {readableCommercialText(pilotStatus?.summary, "İsteğe bağlı ödeme modundaki ticari kaynaklar pilot listesine alınabilir. Hazır görünenler yalnız pilot hazırlık görünürlüğü taşır; gerçek tahsilat ve ödeme hâlâ beklemede kalır.")}
               </div>
               {pilotEndpointStatus !== "ok" || pilotCandidatesEndpointStatus !== "ok" ? (
                 <div className="panelMeta" style={{ color: "#ffb17b" }}>
                   {pilotEndpointStatus === "forbidden"
-                    ? "Opsiyonel ödeme pilot yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+                    ? "İsteğe bağlı ödeme pilot yüzeyi için önce ek doğrulamayı tamamla."
                     : pilotEndpointStatus === "missing"
-                    ? "Opsiyonel ödeme pilot endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
-                    : "Opsiyonel ödeme pilot yüzeyi şu an sınırlı erişimde."}
+                     ? "İsteğe bağlı ödeme pilot hizmeti şu an kullanılamıyor. Sunucunun güncel olduğu doğrulanmalı."
+                     : "İsteğe bağlı ödeme pilot yüzeyi şu an sınırlı erişimde."}
                 </div>
               ) : null}
             </div>
             <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Card title="Pilot özeti">
-                <div>{pilotStatus?.activeMilestone || "M85"}</div>
+                <div>{readableCommercialText(pilotStatus?.activeMilestone, "Pilot hazırlığı")}</div>
                 <div className="panelMeta" style={{ marginTop: 6 }}>Hazır: {pilotStatus?.readyCount || 0} • Bekleyen: {pilotStatus?.dormantCount || 0}</div>
               </Card>
-              <Card title="OPTIONAL adaylar">
+              <Card title="İsteğe bağlı adaylar">
                 <div>{pilotStatus?.candidateCount || 0} kaynak</div>
                 <div className="panelMeta" style={{ marginTop: 6 }}>Global veya taşımacılık firması düzenlemesi isteğe bağlıysa yeni ticari kaynak burada görünür.</div>
               </Card>
@@ -764,17 +825,17 @@ export default function CommercialCorePanel() {
                         <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                             <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
-                            <div>{isReady ? "READY" : settlementStatus}</div>
+                            <div>{isReady ? "Hazır" : readableCommercialText(settlementStatus)}</div>
                           </div>
-                          <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
-                          <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div>{readableCommercialText(item.sourceType)} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
+                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                           <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <button className="btn sm" disabled={!pilotWritable || isReady || busyOn} onClick={() => activatePilot(item.id)}>
-                              {busyOn ? "Hazırlanıyor..." : "Pilot READY yap"}
+                              {busyOn ? "Hazırlanıyor..." : "Pilotı hazırla"}
                             </button>
                             <button className="btn sm" disabled={!pilotWritable || !isReady || busyOff} onClick={() => deactivatePilot(item.id)}>
-                              {busyOff ? "Kapatılıyor..." : "Pilot DORMANT yap"}
+                              {busyOff ? "Beklemeye alınıyor..." : "Pilotı beklemeye al"}
                             </button>
                           </div>
                         </div>
@@ -782,30 +843,30 @@ export default function CommercialCorePanel() {
                     })}
                   </div>
                 ) : (
-                  <div className="panelMeta">OPTIONAL modda pilot adayı kaynak yok. Önce payment mode OPTIONAL olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
+                   <div className="panelMeta">İsteğe bağlı ödeme modunda pilot adayı kaynak yok. Önce ödeme modu isteğe bağlı olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
                 )}
               </Card>
             </div>
 
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-              <div className="panelSectionTitle">M86 zorunlu ödeme rollout'u</div>
-              <div className="panelMeta">{requiredStatus?.summary || "REQUIRED moddaki ticari kaynaklar ACTIVE/DISABLED akışıyla yönetilir. ACTIVE durumda settlement planı aktif, entry satırları READY görünür; gerçek provider entegrasyonu hala dormant adapter üstünden temsil edilir."}</div>
+               <div className="panelSectionTitle">Zorunlu ödeme geçişi</div>
+              <div className="panelMeta">{readableCommercialText(requiredStatus?.summary, "Zorunlu ödeme kaynakları etkinleştirme ve durdurma adımlarıyla yönetilir. Canlı tahsilat bağlantısı bu hazırlık yüzeyinde açılmaz.")}</div>
               {requiredEndpointStatus !== "ok" || requiredCandidatesEndpointStatus !== "ok" ? (
                 <div className="panelMeta" style={{ color: "#ffb17b" }}>
                   {requiredEndpointStatus === "forbidden"
-                    ? "Zorunlu ödeme rollout yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+                    ? "Zorunlu ödeme yayını için önce TOTP ek doğrulamasını tamamla."
                     : requiredEndpointStatus === "missing"
-                    ? "Zorunlu ödeme rollout endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
+                     ? "Zorunlu ödeme geçiş hizmeti şu an kullanılamıyor. Sunucunun güncel olduğu doğrulanmalı."
                     : "Zorunlu ödeme rollout yüzeyi şu an sınırlı erişimde."}
                 </div>
               ) : null}
             </div>
             <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Card title="Rollout özeti">
-                <div>{requiredStatus?.activeMilestone || "M86"}</div>
+                 <div>{readableCommercialText(requiredStatus?.activeMilestone, "Zorunlu ödeme geçişi")}</div>
                 <div className="panelMeta" style={{ marginTop: 6 }}>Aktif: {requiredStatus?.activeCount || 0} • Bekleyen: {requiredStatus?.waitingCount || 0} • Durdurulan: {requiredStatus?.disabledCount || 0}</div>
               </Card>
-              <Card title="REQUIRED adaylar">
+              <Card title="Zorunlu adaylar">
                 <div>{requiredStatus?.candidateCount || 0} kaynak</div>
                 <div className="panelMeta" style={{ marginTop: 6 }}>Global veya taşımacılık firması düzenlemesi zorunluysa yeni ticari kaynak burada zorunlu geçiş adayı olarak görünür.</div>
               </Card>
@@ -824,17 +885,17 @@ export default function CommercialCorePanel() {
                         <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                             <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
-                            <div>{settlementStatus}</div>
+                            <div>{readableCommercialText(settlementStatus)}</div>
                           </div>
-                          <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
-                          <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                          <div>{readableCommercialText(item.sourceType)} • {item.roomName || `Taşımacılık Firması kayıt no #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma kayıt no #${item.companyId || "-"}`}</div>
+                          <div className="panelMeta">Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                           <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <button className="btn sm" disabled={!requiredWritable || isActive || busyOn} onClick={() => activateRequired(item.id)}>
-                              {busyOn ? "Aktifleştiriliyor..." : "Rollout ACTIVE yap"}
+                              {busyOn ? "Etkinleştiriliyor..." : "Etkinleştir"}
                             </button>
                             <button className="btn sm" disabled={!requiredWritable || (!isActive && isDisabled) || busyOff} onClick={() => deactivateRequired(item.id)}>
-                              {busyOff ? "Durduruluyor..." : "Rollout DISABLED yap"}
+                              {busyOff ? "Durduruluyor..." : "Durdur"}
                             </button>
                           </div>
                         </div>
@@ -842,26 +903,26 @@ export default function CommercialCorePanel() {
                     })}
                   </div>
                 ) : (
-                  <div className="panelMeta">REQUIRED modda rollout adayı kaynak yok. Önce payment mode REQUIRED olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
+                   <div className="panelMeta">Zorunlu modda geçiş adayı kaynak yok. Önce ödeme modu zorunlu olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
                 )}
               </Card>
             </div>
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-              <div className="panelSectionTitle">M87 ödeme hesabı hazırlığı</div>
-              <div className="panelMeta">{accountStatus?.summary || "Hizmet alan firma ve taşımacılık firması tarafındaki ödeme hesabı hazırlık durumu bu yüzeyde görünür. Bu faz gerçek tahsilat veya ödeme başlatmaz."}</div>
+              <div className="panelSectionTitle">Ödeme hesabı hazırlığı</div>
+              <div className="panelMeta">{readableCommercialText(accountStatus?.summary, "Hizmet Alan Firma ve Taşımacılık Firması tarafındaki ödeme hesabı hazırlık durumu bu yüzeyde görünür. Bu ekran gerçek tahsilat veya ödeme başlatmaz.")}</div>
               {accountEndpointStatus !== "ok" || accountCandidatesEndpointStatus !== "ok" ? (
                 <div className="panelMeta" style={{ color: "#ffb17b" }}>
                   {accountEndpointStatus === "forbidden"
-                    ? "Ödeme hesabı hazırlık yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+                    ? "Ödeme hesabı hazırlık yüzeyi için önce TOTP ek doğrulamasını tamamla."
                     : accountEndpointStatus === "missing"
-                    ? "Ödeme hesabı hazırlık endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
+                     ? "Ödeme hesabı hazırlık hizmeti şu an kullanılamıyor. Sunucunun güncel olduğu doğrulanmalı."
                     : "Ödeme hesabı hazırlık yüzeyi şu an sınırlı erişimde."}
                 </div>
               ) : null}
             </div>
             <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Card title="Hesap hazırlık özeti">
-                <div>{accountStatus?.activeMilestone || "M87"}</div>
+                <div>{readableCommercialText(accountStatus?.activeMilestone, "Hesap hazırlığı")}</div>
                 <div className="panelMeta" style={{ marginTop: 6 }}>Hizmet Alan Firma hazır: {accountStatus?.companyReadyCount || 0}/{accountStatus?.companyCandidateCount || 0} • Taşımacılık Firması hazır: {accountStatus?.roomReadyCount || 0}/{accountStatus?.roomCandidateCount || 0}</div>
               </Card>
               <Card title="Eksik / hata">
@@ -877,15 +938,15 @@ export default function CommercialCorePanel() {
                       {["COMPANY", "ROOM", "PLATFORM"].map((mode) => <option key={mode} value={mode}>{mode === "COMPANY" ? "Hizmet Alan Firma" : mode === "ROOM" ? "Taşımacılık Firması" : "Platform"}</option>)}
                     </select>
                   </InputRow>
-                  <InputRow label="Owner id" help="PLATFORM için boş bırakabilirsin.">
+                  <InputRow label="Sahip kayıt no" help="Platform hesabı için boş bırakabilirsin.">
                     <input value={accountForm.ownerId} onChange={(e) => setAccountForm((prev) => ({ ...prev, ownerId: e.target.value }))} placeholder="ör: 12" />
                   </InputRow>
-                  <InputRow label="Provider key" help="Şimdilik DORMANT kalabilir.">
+                  <InputRow label="Sağlayıcı anahtarı" help="Şimdilik beklemede kalabilir.">
                     <input value={accountForm.providerKey} onChange={(e) => setAccountForm((prev) => ({ ...prev, providerKey: e.target.value }))} />
                   </InputRow>
                   <InputRow label="Durum">
                     <select value={accountForm.status} onChange={(e) => setAccountForm((prev) => ({ ...prev, status: e.target.value }))}>
-                      {["INACTIVE", "ACTIVE", "VERIFIED", "ERROR"].map((mode) => <option key={mode} value={mode}>{mode}</option>)}
+                      {["INACTIVE", "ACTIVE", "VERIFIED", "ERROR"].map((mode) => <option key={mode} value={mode}>{readableCommercialText(mode)}</option>)}
                     </select>
                   </InputRow>
                   <InputRow label="Etiket">
@@ -894,8 +955,8 @@ export default function CommercialCorePanel() {
                   <InputRow label="Maskeli IBAN">
                     <input value={accountForm.maskedIban} onChange={(e) => setAccountForm((prev) => ({ ...prev, maskedIban: e.target.value }))} placeholder="TR** **** **** 1234" />
                   </InputRow>
-                  <InputRow label="Account ref">
-                    <input value={accountForm.accountRef} onChange={(e) => setAccountForm((prev) => ({ ...prev, accountRef: e.target.value }))} placeholder="provider ref" />
+                  <InputRow label="Hesap referansı">
+                    <input value={accountForm.accountRef} onChange={(e) => setAccountForm((prev) => ({ ...prev, accountRef: e.target.value }))} placeholder="sağlayıcı referansı" />
                   </InputRow>
                   <InputRow label="Not">
                     <textarea rows="3" value={accountForm.note} onChange={(e) => setAccountForm((prev) => ({ ...prev, note: e.target.value }))} />
@@ -912,11 +973,11 @@ export default function CommercialCorePanel() {
                       <div key={item.key} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                           <div style={{ fontWeight: 700 }}>{item.ownerName}</div>
-                          <div>{item.accountStatus || "MISSING"}</div>
+                           <div>{readableCommercialText(item.accountStatus, "Eksik bilgi")}</div>
                         </div>
-                        <div>{item.ownerType} • Mode: {item.paymentModeHint} • Settlement: {item.settlementStatusHint}</div>
-                        <div className="panelMeta">Kaynak: {item.sourceType} • {item.sourceKey} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                        <div className="panelMeta">Hesap: {item?.account?.label || "-"} • Provider: {item?.account?.providerKey || "-"} • IBAN: {item?.account?.maskedIban || "-"}</div>
+                         <div>{readableCommercialText(item.ownerType)} • Ödeme modu: {readableCommercialText(item.paymentModeHint)} • Mutabakat: {readableCommercialText(item.settlementStatusHint)}</div>
+                         <div className="panelMeta">Kaynak: {readableCommercialText(item.sourceType)} • {item.sourceKey} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                         <div className="panelMeta">Hesap: {item?.account?.label || "-"} • Sağlayıcı: {item?.account?.providerKey || "-"} • IBAN: {item?.account?.maskedIban || "-"}</div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <button className="btn sm" disabled={!accountWritable} onClick={() => applyAccountCandidate(item)}>Forma al</button>
                         </div>
@@ -924,38 +985,38 @@ export default function CommercialCorePanel() {
                     ))}
                   </div>
                 ) : (
-                  <div className="panelMeta">OPTIONAL/REQUIRED modda hesap hazırlık adayı kaynak yok.</div>
+                   <div className="panelMeta">İsteğe bağlı veya zorunlu modda hesap hazırlık adayı kaynak yok.</div>
                 )}
               </Card>
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="M88 settlement operasyon masası" subtitle="READY/PLANNED/EXECUTED satırlar için görünür operasyon kuyruğu." defaultOpen={false}>
+          <CollapsibleSection title="Mutabakat operasyon masası" subtitle="Planlanan, hazır ve tamamlanan kayıtlar için görünür işlem kuyruğu." defaultOpen={false}>
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
               <div className="panelMeta">
-                {settlementStatus?.summary || "READY/PLANNED/EXECUTED settlement entry satırları Super Admin yüzeyinde görünür ve manuel operasyon akışıyla yönetilir."}
+                {readableCommercialText(settlementStatus?.summary, "Planlanan, hazır ve tamamlanan mutabakat kayıtları Süper Yönetici yüzeyinde görünür ve manuel işlem akışıyla yönetilir.")}
               </div>
               {settlementEndpointStatus !== "ok" || settlementQueueEndpointStatus !== "ok" ? (
                 <div className="panelMeta" style={{ color: "#ffb17b" }}>
                   {settlementEndpointStatus === "forbidden"
-                    ? "Settlement operasyon yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+                     ? "Mutabakat işlem yüzeyi için önce ek doğrulamayı tamamla."
                     : settlementEndpointStatus === "missing"
-                    ? "Settlement operasyon endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
-                    : "Settlement operasyon yüzeyi şu an sınırlı erişimde."}
+                     ? "Mutabakat işlem hizmeti şu an kullanılamıyor. Sunucunun güncel olduğu doğrulanmalı."
+                     : "Mutabakat işlem yüzeyi şu an sınırlı erişimde."}
                 </div>
               ) : null}
             </div>
             <div style={{ marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <Card title="Settlement queue özeti">
-                <div>{settlementStatus?.activeMilestone || "M88"}</div>
-                <div className="panelMeta" style={{ marginTop: 6 }}>Planned: {settlementStatus?.plannedCount || 0} • Ready: {settlementStatus?.readyCount || 0} • Cancelled: {settlementStatus?.cancelledCount || 0}</div>
+              <Card title="Mutabakat kuyruğu özeti">
+                <div>{readableCommercialText(settlementStatus?.activeMilestone, "Mutabakat hazırlığı")}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Planlanan: {settlementStatus?.plannedCount || 0} • Hazır: {settlementStatus?.readyCount || 0} • İptal edilen: {settlementStatus?.cancelledCount || 0}</div>
               </Card>
               <Card title="Risk sinyali">
                 <div>Finans hazırlık: {settlementStatus?.financeReadyCount || 0}</div>
                 <div className="panelMeta" style={{ marginTop: 6 }}>Vadesi geçen: {settlementStatus?.overdueCount || 0} • Kuyruk: {settlementStatus?.candidateCount || 0}</div>
               </Card>
             </div>
-            <Card title="Settlement mutabakat kuyruğu" wide>
+            <Card title="Mutabakat işlem kuyruğu" wide>
               {Array.isArray(settlementQueue) && settlementQueue.length ? (
                 <div style={{ display: "grid", gap: 8 }}>
                   {settlementQueue.map((item) => {
@@ -970,38 +1031,38 @@ export default function CommercialCorePanel() {
                       <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                           <div style={{ fontWeight: 700 }}>{item.entryKind} • {item.sourceKey}</div>
-                          <div>{status}</div>
+                          <div>{readableCommercialText(status)}</div>
                         </div>
-                        <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
-                        <div className="panelMeta">Tutar: {item.amount || 0} {item.currencyCode || "TRY"} • Mode: {item.paymentModeSnapshot} • Plan: {item.settlementPlanStatus}</div>
-                        <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Hizmet Alan Firma hesabı: {item?.companyAccount?.status || "MISSING"} • Taşımacılık Firması hesabı: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "Yok"}</div>
-                        <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                        <div>{readableCommercialText(item.sourceType)} • {item.roomName || `Taşımacılık Firması kayıt no #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma kayıt no #${item.companyId || "-"}`}</div>
+                        <div className="panelMeta">Tutar: {item.amount || 0} {item.currencyCode || "TRY"} • Ödeme modu: {readableCommercialText(item.paymentModeSnapshot)} • Plan: {readableCommercialText(item.settlementPlanStatus)}</div>
+                        <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Hizmet Alan Firma hesabı: {readableCommercialText(item?.companyAccount?.status, "Eksik bilgi")} • Taşımacılık Firması hesabı: {item.roomId ? readableCommercialText(item?.roomAccount?.status, "Eksik bilgi") : "Yok"}</div>
+                        <div className="panelMeta">Sağlayıcı referansı: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                         {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button className="btn sm" disabled={!canPlan || busyPlan} onClick={() => markSettlementPlanned(item)}>{busyPlan ? "Planlanıyor..." : "PLANNED yap"}</button>
-                          <button className="btn sm" disabled={!canReady || busyReady} onClick={() => markSettlementReady(item)}>{busyReady ? "Hazırlanıyor..." : "READY yap"}</button>
-                          <button className="btn sm" disabled={!canCancel || busyCancel} onClick={() => markSettlementCancelled(item)}>{busyCancel ? "İptal ediliyor..." : "CANCELLED yap"}</button>
+                          <button className="btn sm" disabled={!canPlan || busyPlan} onClick={() => markSettlementPlanned(item)}>{busyPlan ? "Planlanıyor..." : "Planlandı olarak işaretle"}</button>
+                          <button className="btn sm" disabled={!canReady || busyReady} onClick={() => markSettlementReady(item)}>{busyReady ? "Hazırlanıyor..." : "Hazır olarak işaretle"}</button>
+                          <button className="btn sm" disabled={!canCancel || busyCancel} onClick={() => markSettlementCancelled(item)}>{busyCancel ? "İptal ediliyor..." : "İptal edildi olarak işaretle"}</button>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="panelMeta">Settlement operasyon kuyruğunda görünür satır yok.</div>
+                <div className="panelMeta">Mutabakat işlem kuyruğunda görünür satır yok.</div>
               )}
             </Card>
-            <Card title="Settlement mutabakat masası" wide>
+            <Card title="Mutabakat masası" wide>
               <div className="panelMeta">
-                {reconciliationStatus?.summary || "PLANNED/READY satırlar için bekliyor-eşleşti-inceleme-uyuşmazlık-kapandı döngüsü görünür olur."}
+                  {readableCommercialText(reconciliationStatus?.summary, "Planlanan ve hazır satırlar için bekliyor, eşleşti, inceleme, uyuşmazlık ve kapandı döngüsü görünür olur.")}
               </div>
               <div style={{ marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <Card title="Mutabakat özet">
-                  <div>{reconciliationStatus?.activeMilestone || "M89"}</div>
+                  <div>{readableCommercialText(reconciliationStatus?.activeMilestone, "Mutabakat hazırlığı")}</div>
                   <div className="panelMeta" style={{ marginTop: 6 }}>Bekliyor: {reconciliationStatus?.pendingCount || 0} • Eşleşti: {reconciliationStatus?.matchedCount || 0}</div>
                   <div className="panelMeta" style={{ marginTop: 6 }}>İnceleme: {reconciliationStatus?.reviewCount || 0} • Uyuşmazlık: {reconciliationStatus?.mismatchCount || 0} • Kapandı: {reconciliationStatus?.closedCount || 0}</div>
                 </Card>
                 <Card title="Risk sinyali">
-                  <div>Eksik provider ref: {reconciliationStatus?.missingProviderRefCount || 0}</div>
+                  <div>Eksik sağlayıcı referansı: {reconciliationStatus?.missingProviderRefCount || 0}</div>
                   <div className="panelMeta" style={{ marginTop: 6 }}>Vadesi geçen planlı: {reconciliationStatus?.overduePlannedCount || 0} • Kuyruk: {reconciliationStatus?.candidateCount || 0}</div>
                 </Card>
               </div>
@@ -1016,15 +1077,15 @@ export default function CommercialCorePanel() {
             <Card title="Aktif komisyon kuralı">
               <div>{activeRule ? `${activeRule.paymentMode} • ${fmtBps(activeRule.commissionBps)}` : "Henüz aktif kural yok"}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
-                {activeRule ? `Kaynak: ${activeRule.scopeType}${activeRule.roomId ? ` #${activeRule.roomId}` : ""}${activeRule.ruleId ? ` • Kural #${activeRule.ruleId}` : ""}` : "M82.10 ile yönetim yüzeyi açılacak"}
+                {activeRule ? `Kapsam: ${readableCommercialText(activeRule.scopeType)}${activeRule.roomId ? ` · Taşımacılık Firması kayıt no #${activeRule.roomId}` : ""}${activeRule.ruleId ? ` · Kural kayıt no #${activeRule.ruleId}` : ""}` : "Komisyon yönetim yüzeyi hazırlanıyor."}
               </div>
             </Card>
             <Card title="Kaynak sayaçları">
               <div>Toplam kaynak: {cards.commercialSources || 0}</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>Agreement: {cards.agreementSources || 0} • Shift series: {cards.shiftSeriesSources || 0}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Sözleşme: {cards.agreementSources || 0} • Vardiya serisi: {cards.shiftSeriesSources || 0}</div>
             </Card>
             <Card title="Komisyon sinyali">
-              <div>{paymentBackbone?.summary || "Komisyon omurgası hazır değil"}</div>
+              <div>{readableCommercialText(paymentBackbone?.summary, "Komisyon omurgası hazır değil")}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>{paymentBackboneSafeMode ? "Ödeme kapalı" : "Hazırlık açık"} • {cards.commissionRules || 0} kural</div>
             </Card>
           </div>
@@ -1056,7 +1117,7 @@ export default function CommercialCorePanel() {
             <Card title="Kanıt özeti">
               <div>{operationProofSummary?.title || operationProofSummary?.statusText || operationProofSummary?.summaryText || "Kanıt bekliyor"}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>
-                {operationProofSummary?.summaryText || "operation proof ve destination sinyalleri okunur"}
+                {readableCommercialText(operationProofSummary?.summaryText, "İşlem kanıtı ve hedef bilgileri okunur.")}
               </div>
             </Card>
           </div>
@@ -1075,7 +1136,7 @@ export default function CommercialCorePanel() {
               <div className="panelMeta" style={{ marginTop: 6 }}>Tekrar bakılması gereken kayıtlar</div>
             </Card>
             <Card title="Ödeme hesabı riski">
-              <div>{accountStatus?.summary || "MISSING"}</div>
+              <div>{readableCommercialText(accountStatus?.summary, "Eksik bilgi")}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>Hesap hazırlığı tarafındaki eksik sinyaller</div>
             </Card>
             <Card title="Güvenli mod">
@@ -1086,7 +1147,7 @@ export default function CommercialCorePanel() {
           <Card title="Kritik sinyaller">
             <div style={{ display: "grid", gap: 6 }}>
               {criticalSignals.length ? criticalSignals.map((item) => (
-                <div key={item} className="panelMeta">{item}</div>
+                <div key={item} className="panelMeta">{readableCommercialText(item)}</div>
               )) : <div className="panelMeta">Kritik risk sinyali yok.</div>}
             </div>
           </Card>
@@ -1097,16 +1158,16 @@ export default function CommercialCorePanel() {
         <div ref={(node) => { tabSectionRefs.current.history = node; }} tabIndex={-1} role="tabpanel" aria-label="Geçmiş" style={{ marginTop: 14, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Card title="Planlı ticari adımlar">
-              <div>{plannedSteps.length ? plannedSteps.map((item) => item.label).join(" • ") : "Planlı adım yok"}</div>
+              <div>{plannedSteps.length ? plannedSteps.map((item) => readableCommercialText(item.label)).join(" • ") : "Planlı adım yok"}</div>
               <div className="panelMeta" style={{ marginTop: 6 }}>Aktif: {activeSteps.length} • Planlı: {plannedSteps.length}</div>
             </Card>
             <Card title="Plan notları">
-              <div>{manifest?.activeMilestone || "M62"}</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>{manifest?.rules?.join(" • ") || "Henüz plan notu yok"}</div>
+                <div>{readableCommercialText(manifest?.activeMilestone, "Plan özeti")}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>{manifest?.rules?.map((item) => readableCommercialText(item)).join(" • ") || "Henüz plan notu yok"}</div>
             </Card>
             <Card title="Ticari kayıt geçmişi">
               <div>{route.length ? `${route.length} adım` : "Henüz geçmiş yok"}</div>
-              <div className="panelMeta" style={{ marginTop: 6 }}>{lifecycle?.summary || "Gelecek faz notları burada toplanır."}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>{readableCommercialText(lifecycle?.summary, "Gelecek faz notları burada toplanır.")}</div>
             </Card>
           </div>
           <CollapsibleSection title="Gelecek faz" subtitle="Plan notları ve sonraki fazlar." defaultOpen={false}>
@@ -1119,21 +1180,21 @@ export default function CommercialCorePanel() {
       <div ref={(node) => { tabSectionRefs.current.prep = node; }} tabIndex={-1}>
       <CollapsibleSection
         title="Ödeme hazırlık, komisyon ve risk detayları"
-        subtitle="M85-M89 blokları ve canlı ödeme hazırlık ayrıntıları."
+        subtitle="Ödeme hazırlık blokları ve canlı durum ayrıntıları."
         badge={paymentBackboneWriteEnabled ? "Açık" : "Kapalı"}
         defaultOpen={false}
       >
         {paymentBackboneWriteEnabled ? (
           <>
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div className="panelSectionTitle">Super Admin ticari ayarlar</div>
+        <div className="panelSectionTitle">Süper Yönetici ticari ayarları</div>
         <div className="panelMeta">
           {settings?.summary || "Global ödeme modu ve taşımacılık firması bazlı komisyon düzenlemeleri hazırlık omurgasına yazılır."}
         </div>
         {paymentBackboneEndpointStatus !== "ok" || settingsEndpointStatus !== "ok" ? (
           <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {settingsEndpointStatus === "forbidden"
-              ? "Bu yüzeyin tam okunması için önce TOTP step-up doğrulamasını tamamla."
+              ? "Bu yüzeyin tam okunması için önce TOTP ek doğrulamasını tamamla."
               : settingsEndpointStatus === "missing"
               ? "Backend ticari ayar endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
               : paymentBackboneEndpointStatus === "missing"
@@ -1247,14 +1308,14 @@ export default function CommercialCorePanel() {
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div ref={(node) => { tabSectionRefs.current.commission = node; }} tabIndex={-1} className="panelSectionTitle">M85 opsiyonel ödeme pilotu</div>
+        <div ref={(node) => { tabSectionRefs.current.commission = node; }} tabIndex={-1} className="panelSectionTitle">İsteğe bağlı ödeme pilotu</div>
         <div className="panelMeta">
-          {pilotStatus?.summary || "OPTIONAL moddaki ticari kaynaklar pilot listesine alınabilir. READY olanlar yalnız pilot hazırlık görünürlüğü taşır; gerçek charge/payout hala dormant kalır."}
+          {pilotStatus?.summary || "İsteğe bağlı ticari kaynaklar pilot listesine alınabilir. Hazır olanlar yalnız pilot hazırlık görünürlüğü taşır; gerçek tahsilat/ödeme hâlâ beklemede kalır."}
         </div>
         {pilotEndpointStatus !== "ok" || pilotCandidatesEndpointStatus !== "ok" ? (
           <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {pilotEndpointStatus === "forbidden"
-              ? "Opsiyonel ödeme pilot yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+              ? "İsteğe bağlı ödeme pilot yüzeyi için önce TOTP ek doğrulamasını tamamla."
               : pilotEndpointStatus === "missing"
               ? "Opsiyonel ödeme pilot endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
               : "Opsiyonel ödeme pilot yüzeyi şu an sınırlı erişimde."}
@@ -1264,7 +1325,7 @@ export default function CommercialCorePanel() {
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Pilot özeti">
-          <div>{pilotStatus?.activeMilestone || "M85"}</div>
+          <div>{readableCommercialText(pilotStatus?.activeMilestone, "Pilot hazırlığı")}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Hazır: {pilotStatus?.readyCount || 0} • Bekleyen: {pilotStatus?.dormantCount || 0}
           </div>
@@ -1314,14 +1375,14 @@ export default function CommercialCorePanel() {
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div className="panelSectionTitle">M86 zorunlu ödeme rollout'u</div>
+        <div className="panelSectionTitle">Zorunlu ödeme yayını</div>
         <div className="panelMeta">
-          {requiredStatus?.summary || "REQUIRED moddaki ticari kaynaklar ACTIVE/DISABLED akışıyla yönetilir. ACTIVE durumda settlement planı aktif, entry satırları READY görünür; gerçek provider entegrasyonu hala dormant adapter üstünden temsil edilir."}
+          {requiredStatus?.summary || "Zorunlu ticari kaynaklar aktif/devre dışı akışıyla yönetilir. Aktif durumda mutabakat planı açılır ve kayıtlar hazır görünür; gerçek veri sağlayıcısı bağlantısı henüz kullanılmıyorsa beklemede gösterilir."}
         </div>
         {requiredEndpointStatus !== "ok" || requiredCandidatesEndpointStatus !== "ok" ? (
           <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {requiredEndpointStatus === "forbidden"
-              ? "Zorunlu ödeme rollout yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+              ? "Zorunlu ödeme yayını için önce TOTP ek doğrulamasını tamamla."
               : requiredEndpointStatus === "missing"
               ? "Zorunlu ödeme rollout endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
               : "Zorunlu ödeme rollout yüzeyi şu an sınırlı erişimde."}
@@ -1331,7 +1392,7 @@ export default function CommercialCorePanel() {
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Rollout özeti">
-          <div>{requiredStatus?.activeMilestone || "M86"}</div>
+          <div>{readableCommercialText(requiredStatus?.activeMilestone, "Zorunlu ödeme geçişi")}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Aktif: {requiredStatus?.activeCount || 0} • Bekleyen: {requiredStatus?.waitingCount || 0} • Durdurulan: {requiredStatus?.disabledCount || 0}
           </div>
@@ -1381,14 +1442,14 @@ export default function CommercialCorePanel() {
         </Card>
       </div>
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div className="panelSectionTitle">M87 ödeme hesabı hazırlığı</div>
+        <div className="panelSectionTitle">Ödeme hesabı hazırlığı</div>
         <div className="panelMeta">
           {accountStatus?.summary || "Hizmet alan firma ve taşımacılık firması tarafındaki ödeme hesabı hazırlık durumu bu yüzeyde görünür. Bu faz gerçek tahsilat veya ödeme başlatmaz."}
         </div>
         {accountEndpointStatus !== "ok" || accountCandidatesEndpointStatus !== "ok" ? (
           <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {accountEndpointStatus === "forbidden"
-              ? "Ödeme hesabı hazırlık yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+              ? "Ödeme hesabı hazırlık yüzeyi için önce TOTP ek doğrulamasını tamamla."
               : accountEndpointStatus === "missing"
               ? "Ödeme hesabı hazırlık endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
               : "Ödeme hesabı hazırlık yüzeyi şu an sınırlı erişimde."}
@@ -1398,7 +1459,7 @@ export default function CommercialCorePanel() {
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Hesap hazırlık özeti">
-          <div>{accountStatus?.activeMilestone || "M87"}</div>
+          <div>{readableCommercialText(accountStatus?.activeMilestone, "Hesap hazırlığı")}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Hizmet Alan Firma hazır: {accountStatus?.companyReadyCount || 0}/{accountStatus?.companyCandidateCount || 0} • Taşımacılık Firması hazır: {accountStatus?.roomReadyCount || 0}/{accountStatus?.roomCandidateCount || 0}
           </div>
@@ -1422,7 +1483,7 @@ export default function CommercialCorePanel() {
             <InputRow label="Owner id" help="PLATFORM için boş bırakabilirsin.">
               <input value={accountForm.ownerId} onChange={(e) => setAccountForm((prev) => ({ ...prev, ownerId: e.target.value }))} placeholder="ör: 12" />
             </InputRow>
-            <InputRow label="Provider key" help="Şimdilik DORMANT kalabilir.">
+            <InputRow label="Veri sağlayıcısı anahtarı" help="Şimdilik beklemede kalabilir.">
               <input value={accountForm.providerKey} onChange={(e) => setAccountForm((prev) => ({ ...prev, providerKey: e.target.value }))} />
             </InputRow>
             <InputRow label="Durum">
@@ -1436,8 +1497,8 @@ export default function CommercialCorePanel() {
             <InputRow label="Maskeli IBAN">
               <input value={accountForm.maskedIban} onChange={(e) => setAccountForm((prev) => ({ ...prev, maskedIban: e.target.value }))} placeholder="TR** **** **** 1234" />
             </InputRow>
-            <InputRow label="Account ref">
-              <input value={accountForm.accountRef} onChange={(e) => setAccountForm((prev) => ({ ...prev, accountRef: e.target.value }))} placeholder="provider ref" />
+            <InputRow label="Hesap referansı">
+              <input value={accountForm.accountRef} onChange={(e) => setAccountForm((prev) => ({ ...prev, accountRef: e.target.value }))} placeholder="sağlayıcı referansı" />
             </InputRow>
             <InputRow label="Not">
               <textarea rows="3" value={accountForm.note} onChange={(e) => setAccountForm((prev) => ({ ...prev, note: e.target.value }))} />
@@ -1457,9 +1518,9 @@ export default function CommercialCorePanel() {
                     <div style={{ fontWeight: 700 }}>{item.ownerName}</div>
                     <div>{item.accountStatus || "MISSING"}</div>
                   </div>
-                  <div>{item.ownerType} • Mode: {item.paymentModeHint} • Settlement: {item.settlementStatusHint}</div>
+                  <div>{readableCommercialText(item.ownerType)} • Ödeme modu: {readableCommercialText(item.paymentModeHint)} • Mutabakat: {readableCommercialText(item.settlementStatusHint)}</div>
                   <div className="panelMeta">Kaynak: {item.sourceType} • {item.sourceKey} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                  <div className="panelMeta">Hesap: {item?.account?.label || "-"} • Provider: {item?.account?.providerKey || "-"} • IBAN: {item?.account?.maskedIban || "-"}</div>
+                  <div className="panelMeta">Hesap: {item?.account?.label || "-"} • Veri sağlayıcısı: {item?.account?.providerKey || "-"} • IBAN: {item?.account?.maskedIban || "-"}</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button className="btn sm" disabled={!accountWritable} onClick={() => applyAccountCandidate(item)}>Forma al</button>
                   </div>
@@ -1467,32 +1528,32 @@ export default function CommercialCorePanel() {
               ))}
             </div>
           ) : (
-            <div className="panelMeta">OPTIONAL/REQUIRED modda hesap hazırlık adayı kaynak yok.</div>
+            <div className="panelMeta">İsteğe bağlı/zorunlu modda hesap hazırlık adayı kaynak yok.</div>
           )}
         </Card>
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div ref={(node) => { tabSectionRefs.current.risk = node; }} tabIndex={-1} className="panelSectionTitle">M88 settlement operasyon masası</div>
+        <div ref={(node) => { tabSectionRefs.current.risk = node; }} tabIndex={-1} className="panelSectionTitle">Mutabakat operasyon masası</div>
         <div className="panelMeta">
-          {settlementStatus?.summary || "READY/PLANNED/EXECUTED settlement entry satırları Super Admin yüzeyinde görünür ve manuel operasyon akışıyla yönetilir."}
+          {settlementStatus?.summary || "Hazır, planlanan ve tamamlanan mutabakat kayıtları Süper Yönetici yüzeyinde görünür ve manuel operasyon akışıyla yönetilir."}
         </div>
         {settlementEndpointStatus !== "ok" || settlementQueueEndpointStatus !== "ok" ? (
           <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {settlementEndpointStatus === "forbidden"
-              ? "Settlement operasyon yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+              ? "Mutabakat operasyon yüzeyi için önce TOTP ek doğrulamasını tamamla."
               : settlementEndpointStatus === "missing"
-              ? "Settlement operasyon endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
-              : "Settlement operasyon yüzeyi şu an sınırlı erişimde."}
+              ? "Mutabakat operasyon hizmeti bu sunucuda bulunamadı. Sunucuyu yeniden başlat veya güncel backend sürümünü çalıştır."
+              : "Mutabakat operasyon yüzeyi şu an sınırlı erişimde."}
           </div>
         ) : null}
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Settlement özet">
-          <div>{settlementStatus?.activeMilestone || "M88"}</div>
+          <Card title="Mutabakat özeti">
+            <div>{readableCommercialText(settlementStatus?.activeMilestone, "Mutabakat hazırlığı")}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            READY: {settlementStatus?.readyCount || 0} • PLANNED: {settlementStatus?.plannedCount || 0} • EXECUTED: {settlementStatus?.executedCount || 0}
+              Hazır: {settlementStatus?.readyCount || 0} • Planlanan: {settlementStatus?.plannedCount || 0} • Tamamlanan: {settlementStatus?.executedCount || 0}
           </div>
         </Card>
         <Card title="Hazırlık / blok">
@@ -1504,7 +1565,7 @@ export default function CommercialCorePanel() {
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <Card title="Settlement operasyon kuyruğu">
+        <Card title="Mutabakat operasyon kuyruğu">
           {Array.isArray(settlementQueue) && settlementQueue.length ? (
             <div style={{ display: "grid", gap: 8 }}>
               {settlementQueue.map((item) => {
@@ -1524,7 +1585,7 @@ export default function CommercialCorePanel() {
                     <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                     <div className="panelMeta">Tutar: {item.amount || 0} {item.currencyCode || "TRY"} • Mode: {item.paymentModeSnapshot} • Plan: {item.settlementPlanStatus}</div>
                     <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Hizmet Alan Firma hesabı: {item?.companyAccount?.status || "MISSING"} • Taşımacılık Firması hesabı: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "Yok"}</div>
-                    <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                    <div className="panelMeta">Sağlayıcı referansı: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
                     {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button className="btn sm" disabled={!canPlan || busyPlan} onClick={() => markSettlementPlanned(item)}>
@@ -1545,28 +1606,28 @@ export default function CommercialCorePanel() {
               })}
             </div>
           ) : (
-            <div className="panelMeta">Settlement operasyon kuyruğunda görünür satır yok.</div>
+            <div className="panelMeta">Mutabakat operasyon kuyruğunda görünür satır yok.</div>
           )}
         </Card>
       </div>
 
       <div style={{ marginTop: 18, padding: 14, borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", display: "grid", gap: 12 }}>
-        <div className="panelSectionTitle">M89 settlement mutabakat masası</div>
+        <div className="panelSectionTitle">Mutabakat eşleştirme masası</div>
         <div className="panelMeta">
-          {reconciliationStatus?.summary || "PLANNED/EXECUTED satırlar için bekliyor-eşleşti-inceleme-uyuşmazlık-kapandı döngüsü görünür olur. Bu faz gerçek provider webhook yerine manuel mutabakat izi tutar."}
+          {reconciliationStatus?.summary || "Planlanan ve tamamlanan kayıtlar için bekliyor, eşleşti, inceleme, uyuşmazlık ve kapandı döngüsü görünür olur. Bu akış gerçek veri sağlayıcısı bildirimi yerine manuel mutabakat izi tutar."}
         </div>
         {reconciliationEndpointStatus !== "ok" || reconciliationQueueEndpointStatus !== "ok" ? (
           <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {reconciliationEndpointStatus === "forbidden"
-              ? "Settlement mutabakat yüzeyi için önce TOTP step-up doğrulamasını tamamla."
+              ? "Mutabakat eşleştirme yüzeyi için önce TOTP ek doğrulamasını tamamla."
               : reconciliationEndpointStatus === "missing"
-              ? "Settlement mutabakat endpointi bu çalışmakta olan sunucuda yok görünüyor. Sunucuyu yeniden başlat veya son backend kodunu ayağa kaldır."
-              : "Settlement mutabakat yüzeyi şu an sınırlı erişimde."}
+              ? "Mutabakat eşleştirme hizmeti bu sunucuda bulunamadı. Sunucuyu yeniden başlat veya güncel backend sürümünü çalıştır."
+              : "Mutabakat eşleştirme yüzeyi şu an sınırlı erişimde."}
           </div>
         ) : null}
         <div style={{ marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Card title="Mutabakat özet">
-            <div>{reconciliationStatus?.activeMilestone || "M89"}</div>
+            <div>{readableCommercialText(reconciliationStatus?.activeMilestone, "Mutabakat hazırlığı")}</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
               Bekliyor: {reconciliationStatus?.pendingCount || 0} • Eşleşti: {reconciliationStatus?.matchedCount || 0}
             </div>
@@ -1575,13 +1636,13 @@ export default function CommercialCorePanel() {
             </div>
           </Card>
           <Card title="Risk sinyali">
-            <div>Eksik provider ref: {reconciliationStatus?.missingProviderRefCount || 0}</div>
+            <div>Eksik sağlayıcı referansı: {reconciliationStatus?.missingProviderRefCount || 0}</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
               Vadesi geçen planlı: {reconciliationStatus?.overduePlannedCount || 0} • Kuyruk: {reconciliationStatus?.candidateCount || 0}
             </div>
           </Card>
         </div>
-          <Card title="Settlement mutabakat kuyruğu">
+          <Card title="Mutabakat eşleştirme kuyruğu">
             {Array.isArray(reconciliationQueue) && reconciliationQueue.length ? (
               <div style={{ display: "grid", gap: 8 }}>
                 {reconciliationQueue.map((item) => {
@@ -1598,8 +1659,8 @@ export default function CommercialCorePanel() {
                     </div>
                     <div>{item.sourceType} • {item.roomName || `Taşımacılık Firması #${item.roomId || "-"}`} • {item.companyName || `Hizmet Alan Firma #${item.companyId || "-"}`}</div>
                     <div className="panelMeta">Beklenen: {item.reconciliationExpectedAmount ?? item.amount ?? 0} • Gelen: {item.reconciliationReceivedAmount ?? item.amount ?? 0} • Delta: {item.reconciliationDeltaAmount ?? 0}</div>
-                    <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Harici ref: {item.reconciliationExternalRef || "-"} • Son güncelleme: {fmtDateTime(item.reconciliationLastUpdatedAt)}</div>
-                    <div className="panelMeta">{item.missingProviderRef ? "Eksik provider ref var. " : ""}{item.overduePlanned ? "Plan vadesi geçti. " : ""}{item.reconciliationNote ? `Not: ${item.reconciliationNote}` : "Mutabakat notu yok."}</div>
+                    <div className="panelMeta">Sağlayıcı referansı: {item.providerRef || "-"} • Harici referans: {item.reconciliationExternalRef || "-"} • Son güncelleme: {fmtDateTime(item.reconciliationLastUpdatedAt)}</div>
+                    <div className="panelMeta">{item.missingProviderRef ? "Eksik sağlayıcı referansı var. " : ""}{item.overduePlanned ? "Plan vadesi geçti. " : ""}{item.reconciliationNote ? `Not: ${item.reconciliationNote}` : "Mutabakat notu yok."}</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button className="btn sm" disabled={!reconciliationWritable || busyMatched} onClick={() => saveReconciliation(item, "ESLESTI")}>{busyMatched ? "Kaydediliyor..." : "Eşleşti"}</button>
                       <button className="btn sm" disabled={!reconciliationWritable || busyReview} onClick={() => saveReconciliation(item, "INCELEME_GEREKLI")}>{busyReview ? "Kaydediliyor..." : "İnceleme"}</button>
@@ -1611,7 +1672,7 @@ export default function CommercialCorePanel() {
               })}
             </div>
             ) : (
-              <div className="panelMeta">Settlement mutabakat kuyruğunda görünür satır yok.</div>
+              <div className="panelMeta">Mutabakat eşleştirme kuyruğunda görünür satır yok.</div>
             )}
           </Card>
         </div>
@@ -1636,9 +1697,9 @@ export default function CommercialCorePanel() {
           </div>
         </Card>
         <Card title="Plan notları">
-          <div>{manifest?.activeMilestone || "M62"}</div>
+          <div>{readableCommercialText(manifest?.activeMilestone, "Ticari akış hazırlığı")}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            {manifest?.rules?.join(" • ") || "Henüz plan notu yok"}
+            {manifest?.rules?.map((item) => readableCommercialText(item)).join(" • ") || "Henüz plan notu yok"}
           </div>
         </Card>
       </div>

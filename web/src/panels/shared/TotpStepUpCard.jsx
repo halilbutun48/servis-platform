@@ -40,11 +40,11 @@ export default function TotpStepUpCard() {
   if (provider !== "none" && !statusProviderReady) {
     return (
       <div className="card" style={{ marginBottom: 12, borderColor: "#8a6d1f" }}>
-        <div className="title">Güvenlik — {isSmsProvider ? "SMS" : "TOTP"} Step-up</div>
+        <div className="title">Güvenlik — {isSmsProvider ? "SMS" : "TOTP"} ek doğrulaması</div>
         <div className="muted" style={{ marginTop: 6 }}>
           {providerMessage || (isSmsProvider
             ? "SMS doğrulama henüz bağlı değil. Bu ortamda step-up açık ama SMS provider hazır değil."
-            : "TOTP step-up henüz bağlı değil.")}
+            : "TOTP ek doğrulaması henüz bağlı değil.")}
         </div>
       </div>
     );
@@ -103,13 +103,13 @@ export default function TotpStepUpCard() {
 
   return (
     <div className="card" style={{ marginBottom: 12, borderColor: steppedUp ? "#1f7a1f" : "#8a6d1f" }}>
-      <div className="title">Güvenlik — {providerLabel} Step-up</div>
+      <div className="title">Güvenlik — {providerLabel} ek doğrulaması</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {needsSetup
           ? `Bu rol için ${providerLabel} kurulumu zorunlu. Kritik taşımacılık firması / hizmet alan firma / süper yönetici işlemleri kurulum tamamlanmadan açılmaz.`
           : steppedUp
-          ? "Step-up aktif. Kritik işlemler bu oturumda açık."
-          : `${providerLabel} kurulu ama step-up doğrulaması yapılmamış. Kritik işlemler için kod doğrulayın.`}
+          ? "Ek doğrulama aktif. Kritik işlemler bu oturumda açık."
+          : `${providerLabel} kurulu ama ek doğrulama yapılmamış. Kritik işlemler için kod doğrulayın.`}
       </div>
 
       {!enabled ? (
@@ -118,9 +118,9 @@ export default function TotpStepUpCard() {
             <button className="btn sm" disabled={busy} onClick={onSetup}>{busy ? "..." : "Kurulum Başlat"}</button>
           ) : (
             <>
-              <div className="muted">Manual Key</div>
+              <div className="muted">Kurulum anahtarı (teknik bilgi)</div>
               <code style={{ whiteSpace: "pre-wrap" }}>{setupData.manualEntryKey || setupData.secretBase32}</code>
-              <div className="muted">otpauth URL</div>
+              <div className="muted">Kurulum bağlantısı (teknik bilgi)</div>
               <code style={{ whiteSpace: "pre-wrap" }}>{setupData.otpauthUrl}</code>
               <label className="muted">
                 Uygulamadaki 6 haneli kod
@@ -139,7 +139,7 @@ export default function TotpStepUpCard() {
             6 haneli kod
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" />
           </label>
-          <button className="btn sm" disabled={busy} onClick={onVerify}>{busy ? "..." : "Step-up Doğrula"}</button>
+          <button className="btn sm" disabled={busy} onClick={onVerify}>{busy ? "..." : "Ek doğrulamayı onayla"}</button>
         </div>
       ) : null}
 

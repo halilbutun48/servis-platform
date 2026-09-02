@@ -25,6 +25,28 @@ function inputStyle() {
   };
 }
 
+function readableVerificationText(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "-";
+  return text
+    .replace(/Log\s*\/\s*export\s*izi/gi, "İşlem kaydı / dışa aktarım kanıtı")
+    .replace(/Cihaz\s*\/\s*build bilgisi/gi, "Cihaz / sürüm bilgisi")
+    .replace(/Link\s*\/\s*export\s*\/\s*build/gi, "Bağlantı / dışa aktarım / sürüm kanıtı")
+    .replace(/\bstep[- ]?up\b/gi, "ek doğrulama")
+    .replace(/\bM\d+(?:\.\d+)?\b/gi, "bu sürüm")
+    .replace(/\bSTABLE_TO\b/gi, "sabit geçiş kuralı")
+    .replace(/\bsource\b/gi, "kaynak")
+    .replace(/\bprovider\b/gi, "sağlayıcı")
+    .replace(/Oda\s*\/\s*sağlayıcı/gi, "Taşımacılık Firması")
+    .replace(/Taşımacılık Firması\s*\/\s*sağlayıcı/gi, "Taşımacılık Firması")
+    .replace(/Süper admin/gi, "Süper Yönetici")
+    .replace(/Pack\s*\/\s*runbook\s*\/\s*milestone bağı görünür/gi, "Sürümle ilişkili kayıt izi görünür")
+    .replace(/M79'da kayıt izi derinleştir/gi, "Bu sürümde kayıt izini derinleştir")
+    .replace(/bu sürüm'da/gi, "Bu sürümde")
+    .replace(/Şirket\s*\/\s*okul\s*\/\s*organizasyon/gi, "Hizmet Alan Firma / okul / organizasyon")
+    .trim();
+}
+
 export default function OperationVerificationPanel() {
   const { token } = useSession();
   const [manifest, setManifest] = useState(null);
@@ -124,10 +146,10 @@ export default function OperationVerificationPanel() {
         defaults: String(surface?.defaultStatus || '-'),
       },
       evidence: [
-        `Rol: ${surface?.role?.label || selectedRole}`,
+        `Rol: ${readableVerificationText(surface?.role?.label || selectedRole)}`,
         `Kayıtlı kontrol: ${Number(surface?.savedCount || 0)}`,
         `Toplam kontrol: ${Number(surface?.checks?.length || 0)}`,
-        copilotCheck?.title ? `İlk kontrol: ${copilotCheck.title}` : '',
+        copilotCheck?.title ? `İlk kontrol: ${readableVerificationText(copilotCheck.title)}` : '',
       ].filter(Boolean),
       reasoningLead: 'Bu ekranda amaç rol bazlı operasyon kontrolünü kanıt tipi ve kısa notla kayıt altına almaktır.',
       nextBestAction: copilotCheck?.title
@@ -140,18 +162,18 @@ export default function OperationVerificationPanel() {
       scopeKey: '/superadmin/operation-verification',
       entityType: 'screen',
       entityId: 6109,
-      label: surface?.role?.label || selectedRole || 'Operasyon doğrulama',
-      summary: [statusMap[surface?.defaultStatus] || surface?.defaultStatus || null, `${Number(surface?.savedCount || 0)}/${Number(surface?.checks?.length || 0)} kayıt`, copilotCheck?.title || null].filter(Boolean).join(' • '),
+      label: readableVerificationText(surface?.role?.label || selectedRole || 'Operasyon doğrulama'),
+      summary: [readableVerificationText(statusMap[surface?.defaultStatus] || surface?.defaultStatus), `${Number(surface?.savedCount || 0)}/${Number(surface?.checks?.length || 0)} kayıt`, readableVerificationText(copilotCheck?.title)].filter(Boolean).join(' • '),
       fields: [
-        { label: 'Rol', value: surface?.role?.label || selectedRole || '-', help: 'Şu an kontrol edilen rol yüzeyini gösterir.' },
-        { label: 'Yüzey', value: surface?.role?.surface || '-', help: 'Seçili rolün operasyon yüzeyi tanımını gösterir.' },
-        { label: 'Varsayılan Karar', value: statusMap[surface?.defaultStatus] || surface?.defaultStatus || '-', help: 'Kayıt yoksa baz alınan varsayılan karar bilgisini gösterir.' },
+        { label: 'Rol', value: readableVerificationText(surface?.role?.label || selectedRole), help: 'Şu an kontrol edilen rol yüzeyini gösterir.' },
+        { label: 'Ekran', value: 'Operasyon doğrulama', help: 'Seçili rolün operasyon ekranını gösterir.' },
+        { label: 'Varsayılan karar', value: readableVerificationText(statusMap[surface?.defaultStatus] || surface?.defaultStatus), help: 'Kayıt yoksa baz alınan varsayılan karar bilgisini gösterir.' },
         { label: 'Kayıtlı Kontrol', value: String(surface?.savedCount || 0), help: 'Şu an kaydedilmiş kontrol sayısını gösterir.' },
         { label: 'Toplam Kontrol', value: String(surface?.checks?.length || 0), help: 'Seçili rol yüzeyindeki toplam kontrol sayısını gösterir.' },
-        { label: 'İlk Kontrol', value: copilotCheck?.title || '-', help: 'Tablodaki ilk kontrol maddesini örnek odak olarak gösterir.' },
+        { label: 'İlk kontrol', value: readableVerificationText(copilotCheck?.title), help: 'Tablodaki ilk kontrol maddesini örnek odak olarak gösterir.' },
       ],
       badges: [
-        { label: 'Önerilen Kanıt', value: (surface?.recommendedProofs || []).slice(0, 2).map((id) => proofMap[id] || id).join(', ') || '-', help: 'Bu rol için öne çıkan kanıt tiplerini gösterir.' },
+        { label: 'Önerilen kanıt', value: (surface?.recommendedProofs || []).slice(0, 2).map((id) => readableVerificationText(proofMap[id] || id)).join(', ') || '-', help: 'Bu rol için öne çıkan kanıt tiplerini gösterir.' },
       ],
       facts,
     });
@@ -202,7 +224,7 @@ export default function OperationVerificationPanel() {
         <div>
           <div className="panelTitle">Operasyon Doğrulama</div>
           <div className="panelSubtitle" style={{ marginTop: 6 }}>
-            M78.1 Operasyon Doğrulama Yüzeyi. Rol bazlı operasyon kontrolünü, kanıt türlerini ve kısa not kaydını tek ekranda toplar. STABLE_TO yine 78.
+            Rol bazlı operasyon kontrolünü, kanıt türlerini ve kısa not kaydını tek ekranda toplar.
           </div>
         </div>
         <div className="panelMeta" style={{ alignSelf: "center" }}>
@@ -216,7 +238,7 @@ export default function OperationVerificationPanel() {
       <PanelKvkkHint panelKey="operationVerification" effectiveRole={selectedRole} />
 
       <div className="panelMeta" style={{ marginTop: 12 }}>
-        Bu ekranda kanıt türleri, kısa not ve referans metni kaydedilir. Yazma işlemi için step-up gerekebilir.
+        Bu ekranda kanıt türleri, kısa not ve referans metni kaydedilir. Yazma işlemi için ek doğrulama gerekebilir.
       </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
@@ -226,7 +248,7 @@ export default function OperationVerificationPanel() {
           compact
           tabs={(manifest?.roles || []).map((role) => ({
             key: role.id,
-            label: role.label,
+            label: readableVerificationText(role.label),
           }))}
           value={selectedRole}
           onChange={setSelectedRole}
@@ -235,15 +257,15 @@ export default function OperationVerificationPanel() {
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Seçili rol">
-          <div className="panelStatValue">{surface?.role?.label || "-"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>{surface?.goal || "-"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>Yüzey: {surface?.role?.surface || "-"}</div>
+          <div className="panelStatValue">{readableVerificationText(surface?.role?.label)}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>{readableVerificationText(surface?.goal)}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Ekran: Operasyon doğrulama</div>
         </Card>
         <Card title="Durum özeti">
-          <div className="panelMeta">Varsayılan karar: {statusMap[surface?.defaultStatus] || surface?.defaultStatus || "-"}</div>
+          <div className="panelMeta">Varsayılan karar: {readableVerificationText(statusMap[surface?.defaultStatus] || surface?.defaultStatus)}</div>
           <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
             {(statusOptions || []).map((item) => (
-              <div key={item.id}>{item.label}: {surface?.statusCounts?.[item.id] || 0}</div>
+              <div key={item.id}>{readableVerificationText(item.label)}: {surface?.statusCounts?.[item.id] || 0}</div>
             ))}
           </div>
         </Card>
@@ -251,7 +273,7 @@ export default function OperationVerificationPanel() {
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {(surface?.recommendedProofs || []).map((id) => (
               <span key={id} className="pill">
-                {proofMap[id] || id}
+                {readableVerificationText(proofMap[id] || id)}
               </span>
             ))}
           </div>
@@ -262,13 +284,13 @@ export default function OperationVerificationPanel() {
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Genişleyen saha yüzeyleri">
-          <div className="panelBody">{extendedRoles.length ? extendedRoles.map((item) => item.label).join(" • ") : "Ek yüzey yok"}</div>
+          <div className="panelBody">{extendedRoles.length ? extendedRoles.map((item) => readableVerificationText(item.label)).join(" • ") : "Ek yüzey yok"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            {extendedRoles.map((item) => item.summary).join(" • ") || "Personel ve veli doğrulama hattı genişledikçe burada detaylanır."}
+            {extendedRoles.map((item) => readableVerificationText(item.summary)).join(" • ") || "Personel ve veli doğrulama hattı genişledikçe burada detaylanır."}
           </div>
         </Card>
         <Card title="Çekirdek doğrulama">
-          <div className="panelBody">{coreRoles.length ? coreRoles.map((item) => item.label).join(" • ") : "Çekirdek rol yok"}</div>
+          <div className="panelBody">{coreRoles.length ? coreRoles.map((item) => readableVerificationText(item.label)).join(" • ") : "Çekirdek rol yok"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Operasyon doğrulama ana akışı bu rollerle sürer.
           </div>
@@ -283,7 +305,7 @@ export default function OperationVerificationPanel() {
               <th style={{ textAlign: "left", padding: "10px 8px" }}>Durum</th>
               <th style={{ textAlign: "left", padding: "10px 8px" }}>Kanıt</th>
               <th style={{ textAlign: "left", padding: "10px 8px" }}>Not</th>
-              <th style={{ textAlign: "left", padding: "10px 8px" }}>Referans</th>
+              <th style={{ textAlign: "left", padding: "10px 8px" }}>Kanıt bağlantısı</th>
               <th style={{ textAlign: "left", padding: "10px 8px" }}>Kaydet</th>
             </tr>
           </thead>
@@ -293,8 +315,8 @@ export default function OperationVerificationPanel() {
               return (
                 <tr key={item.id} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                   <td style={{ padding: "10px 8px", minWidth: 240 }}>
-                    <div className="panelSectionTitle">{item.title}</div>
-                    <div className="panelMeta" style={{ marginTop: 6 }}>{item.nextStep || "-"}</div>
+                    <div className="panelSectionTitle">{readableVerificationText(item.title)}</div>
+                    <div className="panelMeta" style={{ marginTop: 6 }}>{readableVerificationText(item.nextStep)}</div>
                     <div className="panelMeta" style={{ marginTop: 6 }}>
                       Kaynak: {item.statusOrigin === "MANUAL" ? "manuel kayıt" : "varsayılan"}
                       {item.updatedAt ? ` • ${new Date(item.updatedAt).toLocaleString("tr-TR")}` : ""}
@@ -302,20 +324,20 @@ export default function OperationVerificationPanel() {
                   </td>
                   <td style={{ padding: "10px 8px", minWidth: 150 }}>
                     <select value={draft.status || item.status || "TEKRAR_KONTROL"} onChange={(e) => setDraft(item.id, { status: e.target.value })} style={inputStyle()}>
-                      {(statusOptions || []).map((opt) => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
+                      {(statusOptions || []).map((opt) => <option key={opt.id} value={opt.id}>{readableVerificationText(opt.label)}</option>)}
                     </select>
                   </td>
                   <td style={{ padding: "10px 8px", minWidth: 180 }}>
                     <select value={draft.proofType || ""} onChange={(e) => setDraft(item.id, { proofType: e.target.value })} style={inputStyle()}>
                       <option value="">Seç</option>
-                      {(proofOptions || []).map((opt) => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
+                      {(proofOptions || []).map((opt) => <option key={opt.id} value={opt.id}>{readableVerificationText(opt.label)}</option>)}
                     </select>
                   </td>
                   <td style={{ padding: "10px 8px", minWidth: 220 }}>
                     <input value={draft.note || ""} onChange={(e) => setDraft(item.id, { note: e.target.value })} style={inputStyle()} placeholder="Kısa operasyon notu" />
                   </td>
                   <td style={{ padding: "10px 8px", minWidth: 180 }}>
-                    <input value={draft.evidenceRef || ""} onChange={(e) => setDraft(item.id, { evidenceRef: e.target.value })} style={inputStyle()} placeholder="Link / export / build" />
+                  <input value={draft.evidenceRef || ""} onChange={(e) => setDraft(item.id, { evidenceRef: e.target.value })} style={inputStyle()} placeholder="Bağlantı / dışa aktarım / sürüm kanıtı" />
                   </td>
                   <td style={{ padding: "10px 8px", minWidth: 110 }}>
                     <button type="button" className="btn sm" disabled={savingId === item.id} onClick={() => saveCheck(item)}>

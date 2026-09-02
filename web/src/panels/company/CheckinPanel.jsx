@@ -176,13 +176,13 @@ export default function CompanyCheckinPanel() {
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <h3 style={{ margin: 0 }}>{me?.companyKind === "SCHOOL" ? "Öğrenci / Personel Check-in" : "Personel Check-in"}</h3>
+            <h3 style={{ margin: 0 }}>{me?.companyKind === "SCHOOL" ? "Öğrenci / Personel biniş kayıtları" : "Personel biniş kayıtları"}</h3>
             <div className="muted" style={{ marginTop: 6 }}>
-              M42 opsiyonel paneli: vardiya içi kişi listesi üzerinden QR/NFC credential üret, revoke et ve canlı biniş/iniş eventlerini izle.
+              M42 isteğe bağlı paneli: vardiya içi kişi listesi üzerinden QR/NFC erişim kodu üret, iptal et ve canlı biniş/iniş olaylarını izle.
             </div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="pill" data-status="COUNT">Opsiyonel check-in</span>
+            <span className="pill" data-status="COUNT">İsteğe bağlı biniş kaydı</span>
             <button type="button" className="btn" onClick={loadAll} disabled={loading}>{loading ? "..." : "Yenile"}</button>
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function CompanyCheckinPanel() {
 
       {lastIssued?.token ? (
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Son üretilen credential</h3>
+          <h3 style={{ marginTop: 0 }}>Son üretilen erişim kodu</h3>
           <div className="muted" style={{ marginBottom: 8 }}>
             Personel #{lastIssued.personelId} • {lastIssued.type} • {fmt(lastIssued.at)}
           </div>
@@ -200,7 +200,7 @@ export default function CompanyCheckinPanel() {
             <div>
               <textarea readOnly value={lastIssued.token} rows={3} style={{ width: "100%", resize: "vertical", background: "#0c1322", color: "#e7eefc", border: "1px solid #2b3d64", borderRadius: 10, padding: 10 }} />
               <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-                <button type="button" className="btn" onClick={copyToken}>Token kopyala</button>
+                <button type="button" className="btn" onClick={copyToken}>Kodu kopyala</button>
                 <button type="button" className="secondary" onClick={() => setLastIssued(null)}>Temizle</button>
               </div>
             </div>
@@ -225,8 +225,8 @@ export default function CompanyCheckinPanel() {
             </select>
           </label>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="pill" data-status="COUNT">BOARD {counts.BOARD || 0}</span>
-            <span className="pill" data-status="COUNT">ALIGHT {counts.ALIGHT || 0}</span>
+            <span className="pill" data-status="COUNT">Biniş {counts.BOARD || 0}</span>
+            <span className="pill" data-status="COUNT">İniş {counts.ALIGHT || 0}</span>
             {selectedShift ? statusPill(selectedShift.status) : null}
           </div>
         </div>
@@ -247,8 +247,8 @@ export default function CompanyCheckinPanel() {
             <thead>
               <tr>
                 <th>Kişi</th>
-                <th>ID</th>
-                <th>Credential</th>
+                <th>Kayıt no</th>
+                <th>Erişim kodu</th>
                 <th>Aksiyon</th>
               </tr>
             </thead>
@@ -268,7 +268,7 @@ export default function CompanyCheckinPanel() {
                       <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
                         <button type="button" className="btn sm" disabled={busyMap[`${pid}:QR`]} onClick={() => issueCredential(pid, "QR")}>{busyMap[`${pid}:QR`] ? "..." : "QR Üret"}</button>
                         <button type="button" className="btn sm" disabled={busyMap[`${pid}:NFC`]} onClick={() => issueCredential(pid, "NFC")}>{busyMap[`${pid}:NFC`] ? "..." : "NFC Üret"}</button>
-                        <button type="button" className="secondary" disabled={busyMap[`${pid}:REVOKE`]} onClick={() => revokeAll(pid)}>{busyMap[`${pid}:REVOKE`] ? "..." : "Tümünü Revoke"}</button>
+                        <button type="button" className="secondary" disabled={busyMap[`${pid}:REVOKE`]} onClick={() => revokeAll(pid)}>{busyMap[`${pid}:REVOKE`] ? "..." : "Tümünü iptal et"}</button>
                       </div>
                     </td>
                   </tr>
@@ -281,7 +281,7 @@ export default function CompanyCheckinPanel() {
         </div>
 
         <div className="card" style={{ overflowX: "auto" }}>
-          <h3 style={{ marginTop: 0 }}>Check-in eventleri</h3>
+          <h3 style={{ marginTop: 0 }}>Biniş olayları</h3>
           <div className="muted" style={{ marginBottom: 10 }}>
             Taşımacılık Firması ve Sürücü tarafında aynı olay akışı okunur. Bu panel canlı güncellemeyle kendi kendine tazelenir.
           </div>
@@ -303,7 +303,7 @@ export default function CompanyCheckinPanel() {
                   <td>{it.source || "-"}</td>
                 </tr>
               )) : (
-                <tr><td colSpan={4} className="muted">Henüz event yok.</td></tr>
+                <tr><td colSpan={4} className="muted">Henüz olay yok.</td></tr>
               )}
             </tbody>
           </table>

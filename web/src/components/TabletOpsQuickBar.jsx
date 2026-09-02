@@ -24,14 +24,14 @@ export default function TabletOpsQuickBar({ role, me, path }) {
           { label: "Teklifler", path: "/room/offers" },
           { label: "Vardiyalar", path: "/room/shifts" },
           { label: "Sürücüler", path: "/room/drivers" },
-          { label: "Check-in", path: "/room/checkin" },
+          { label: "Biniş kayıtları", path: "/room/checkin" },
         ]
       : [
           { label: "Harita", path: base + "/map" },
           { label: "Operasyon", path: base + "/operations" },
           { label: "Merkez", path: base },
           { label: "Vardiyalar", path: base + "/shifts" },
-          { label: "Check-in", path: base + "/checkin" },
+          { label: "Biniş kayıtları", path: base + "/checkin" },
         ];
 
   return (

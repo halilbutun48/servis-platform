@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import ChatQuickActions from "./ChatQuickActions";
 import ChatDiagnosticSignals from "./ChatDiagnosticSignals";
 import { COPILOT_PERSONA } from "../../utils/copilotFacts";
+import { humanizeUserFacingText } from "../../utils/terminology";
 
 const FEEDBACK_KEY = "vardis:copilot:chat-feedback";
 const FEEDBACK_LOG_KEY = "vardis:copilot:chat-feedback-log";
@@ -58,12 +59,12 @@ function SectionCard({ section }) {
   if (!section) return null;
   return (
     <div style={{ borderRadius: 12, border: "1px solid #d0d5dd", padding: 10, background: "#fff" }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#344054", marginBottom: 6 }}>{section.title || "-"}</div>
-      {section.text ? <div style={{ fontSize: 13, lineHeight: 1.45 }}>{section.text}</div> : null}
-      {section.hint ? <div style={{ fontSize: 12, color: "#475467", marginTop: 6 }}>{section.hint}</div> : null}
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#344054", marginBottom: 6 }}>{humanizeUserFacingText(section.title)}</div>
+      {section.text ? <div style={{ fontSize: 13, lineHeight: 1.45 }}>{humanizeUserFacingText(section.text)}</div> : null}
+      {section.hint ? <div style={{ fontSize: 12, color: "#475467", marginTop: 6 }}>{humanizeUserFacingText(section.hint)}</div> : null}
       {Array.isArray(section.items) && section.items.length ? (
         <div style={{ fontSize: 12, color: "#475467", marginTop: 8 }}>
-          {section.items.join(" • ")}
+          {section.items.map((item) => humanizeUserFacingText(item)).join(" • ")}
         </div>
       ) : null}
     </div>
@@ -100,7 +101,8 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
     setFeedback(value);
   };
 
-  const summaryBits = [message?.screenLabel, message?.activeEntityLabel].filter(Boolean);
+  const summaryBits = [message?.screenLabel, message?.activeEntityLabel].filter(Boolean).map((value) => humanizeUserFacingText(value));
+  const visibleMessageText = role === "user" ? String(message?.text || "-") : humanizeUserFacingText(message?.text, "-");
 
   return (
     <div style={{ display: "grid", gap: 6 }}>
@@ -113,17 +115,17 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
             {message?.questionLabel ? (
               <span style={{ borderRadius: 999, padding: "2px 8px", background: "#eef4ff", color: "#3538cd", border: "1px solid #c7d7fe", fontSize: 12, fontWeight: 700 }}>
-                {message.questionLabel}
+                {humanizeUserFacingText(message.questionLabel)}
               </span>
             ) : null}
             {message?.uncertaintyMeta?.label ? (
               <span style={{ borderRadius: 999, padding: "2px 8px", background: uncertaintyTone === "HIGH" ? "#fef3f2" : "#fffaeb", color: uncertaintyTone === "HIGH" ? "#b42318" : "#b54708", border: uncertaintyTone === "HIGH" ? "1px solid #fecdca" : "1px solid #fcd34d", fontSize: 12, fontWeight: 700 }}>
-                {message?.uncertaintyMeta?.label}
+                {humanizeUserFacingText(message?.uncertaintyMeta?.label)}
               </span>
             ) : null}
             {message?.routePlan?.primaryRouteLabel ? (
               <span style={{ borderRadius: 999, padding: "2px 8px", background: "#f2f4f7", color: "#344054", border: "1px solid #d0d5dd", fontSize: 12, fontWeight: 700 }}>
-                Hedef ekran: {message.routePlan.primaryRouteLabel}
+                Hedef ekran: {humanizeUserFacingText(message.routePlan.primaryRouteLabel)}
               </span>
             ) : null}
             {message?.continuity?.sameEntity ? (
@@ -139,7 +141,7 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
           </div>
         ) : null}
 
-        <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.55 }}>{message?.text || "-"}</div>
+        <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.55 }}>{visibleMessageText}</div>
 
         {role !== "user" && (message?.diagnosticSignalsVisible || (Array.isArray(message?.diagnosticSignals) && message.diagnosticSignals.length)) ? (
           <ChatDiagnosticSignals
@@ -154,9 +156,9 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
           <details style={{ marginTop: 10 }}>
             <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 700 }}>Neden böyle söyledim</summary>
             <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-              {message?.contextSummary ? <div style={{ fontSize: 12, color: "#475467" }}>{message.contextSummary}</div> : null}
+              {message?.contextSummary ? <div style={{ fontSize: 12, color: "#475467" }}>{humanizeUserFacingText(message.contextSummary)}</div> : null}
               {summaryBits.length ? <div style={{ fontSize: 12, color: "#475467" }}>{summaryBits.join(" • ")}</div> : null}
-              {message?.followUpPrompt ? <div style={{ fontSize: 12, color: "#475467" }}>{message.followUpPrompt}</div> : null}
+              {message?.followUpPrompt ? <div style={{ fontSize: 12, color: "#475467" }}>{humanizeUserFacingText(message.followUpPrompt)}</div> : null}
               {Array.isArray(message?.responseSections) && message.responseSections.length ? (
                 <div style={{ display: "grid", gap: 8 }}>
                   {(isCostReasoning ? message.responseSections : message.responseSections.slice(0, isSimpleMode ? 1 : 2)).map((section, i) => (

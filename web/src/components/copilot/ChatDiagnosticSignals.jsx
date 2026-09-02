@@ -18,8 +18,8 @@ function chipTexts(signal) {
 
   if (/operationproof|operasyon kaniti|servis kaniti/.test(hay)) chips.push('Operasyon kanıtı var');
   if (/gpssourcevisibility|gps gorunurlugu|konum kaynagi/.test(hay)) {
-    chips.push('GPS görünürlüğü kontrol edildi');
-    chips.push('Sürücünün telefon GPS’i devrede');
+    chips.push('Konum görünürlüğü kontrol edildi');
+    chips.push('Sürücünün telefonundan konum alınıyor');
   }
   if (/qualitysignal|kalite sinyali|taslak skor|inceleme karari|denetim izi|saglayici karsilastirma/.test(hay)) chips.push('Kalite sinyali var');
   if (/reviewdecision/.test(hay)) chips.push('İnceleme kararı var');

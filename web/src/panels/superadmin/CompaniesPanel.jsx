@@ -346,10 +346,10 @@ export default function CompaniesPanel() {
                   {editing ? (
                     <select value={editForm.status} onChange={(e) => setEditForm((s) => ({ ...s, status: e.target.value }))}>
                       <option value="ACTIVE">Aktif</option>
-                      <option value="DELETED">DELETED</option>
+                      <option value="DELETED">Silindi</option>
                     </select>
                   ) : (
-                    <span className="pill">{String(c.status || "ACTIVE") === "ACTIVE" ? "Aktif" : String(c.status || "ACTIVE") === "PASSIVE" ? "Pasif" : (c.status || "-")}</span>
+                    <span className="pill">{String(c.status || "ACTIVE") === "ACTIVE" ? "Aktif" : String(c.status || "ACTIVE") === "PASSIVE" ? "Pasif" : String(c.status || "").toUpperCase() === "DELETED" ? "Silindi" : "Durum bilgisi"}</span>
                   )}
                 </div>
 

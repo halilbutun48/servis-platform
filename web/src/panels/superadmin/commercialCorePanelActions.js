@@ -77,7 +77,7 @@ export function createCommercialCorePanelActions({
     setOkMsg("");
     try {
       await api.post("/api/commercial-core/payment-backbone/pilot/activate", { sourceIds: [Number(sourceId)] });
-      setOkMsg("Opsiyonel ödeme pilotu READY durumuna alındı.");
+      setOkMsg("İsteğe bağlı ödeme pilotu hazır duruma alındı.");
       await load();
     } catch (e) {
       setErr(stripHtmlNoise(e?.message || String(e)));
@@ -93,7 +93,7 @@ export function createCommercialCorePanelActions({
     setOkMsg("");
     try {
       await api.post("/api/commercial-core/payment-backbone/pilot/deactivate", { sourceIds: [Number(sourceId)] });
-      setOkMsg("Opsiyonel ödeme pilotu DORMANT durumuna alındı.");
+      setOkMsg("İsteğe bağlı ödeme pilotu bekleme durumuna alındı.");
       await load();
     } catch (e) {
       setErr(stripHtmlNoise(e?.message || String(e)));
@@ -109,7 +109,7 @@ export function createCommercialCorePanelActions({
     setOkMsg("");
     try {
       await api.post("/api/commercial-core/payment-backbone/required/activate", { sourceIds: [Number(sourceId)] });
-      setOkMsg("Zorunlu ödeme rollout'u ACTIVE durumuna alındı.");
+      setOkMsg("Zorunlu ödeme geçişi aktif duruma alındı.");
       await load();
     } catch (e) {
       setErr(stripHtmlNoise(e?.message || String(e)));
@@ -125,7 +125,7 @@ export function createCommercialCorePanelActions({
     setOkMsg("");
     try {
       await api.post("/api/commercial-core/payment-backbone/required/deactivate", { sourceIds: [Number(sourceId)] });
-      setOkMsg("Zorunlu ödeme rollout'u DISABLED durumuna alındı.");
+      setOkMsg("Zorunlu ödeme geçişi durduruldu.");
       await load();
     } catch (e) {
       setErr(stripHtmlNoise(e?.message || String(e)));
@@ -195,30 +195,30 @@ export function createCommercialCorePanelActions({
     return settlementAction(
       "/api/commercial-core/payment-backbone/settlement/entries/plan",
       item?.entryId,
-      "Settlement satırı PLANNED durumuna alındı.",
+      "Mutabakat kaydı planlandı.",
       `settlement:plan:${item?.entryId}`,
       { dueAt: dueAt || null, note: note || null },
     );
   }
 
   async function markSettlementReady(item) {
-    const note = promptMaybe("İsteğe bağlı READY notu", item?.note || "");
+    const note = promptMaybe("İsteğe bağlı hazır kayıt notu", item?.note || "");
     return settlementAction(
       "/api/commercial-core/payment-backbone/settlement/entries/ready",
       item?.entryId,
-      "Settlement satırı READY durumuna alındı.",
+      "Mutabakat kaydı hazır duruma alındı.",
       `settlement:ready:${item?.entryId}`,
       { note: note || null },
     );
   }
 
   async function markSettlementExecuted(item) {
-    const providerRef = promptMaybe("Provider ref / manuel referans", item?.providerRef || `MANUAL:${item?.entryId}`);
-    const note = promptMaybe("İsteğe bağlı execute notu", item?.note || "");
+    const providerRef = promptMaybe("Veri sağlayıcısı referansı / manuel referans", item?.providerRef || `MANUAL:${item?.entryId}`);
+    const note = promptMaybe("İsteğe bağlı tamamlama notu", item?.note || "");
     return settlementAction(
       "/api/commercial-core/payment-backbone/settlement/entries/execute",
       item?.entryId,
-      "Settlement satırı EXECUTED durumuna alındı.",
+      "Mutabakat kaydı tamamlandı.",
       `settlement:execute:${item?.entryId}`,
       { providerRef: providerRef || `MANUAL:${item?.entryId}`, note: note || null },
     );
@@ -229,7 +229,7 @@ export function createCommercialCorePanelActions({
     return settlementAction(
       "/api/commercial-core/payment-backbone/settlement/entries/cancel",
       item?.entryId,
-      "Settlement satırı CANCELLED durumuna alındı.",
+      "Mutabakat kaydı iptal edildi.",
       `settlement:cancel:${item?.entryId}`,
       { note: note || null },
     );
@@ -241,7 +241,7 @@ export function createCommercialCorePanelActions({
     setErr("");
     setOkMsg("");
     try {
-      const providerRef = promptMaybe("Provider ref / banka referansı", item?.providerRef || item?.reconciliationExternalRef || "");
+      const providerRef = promptMaybe("Veri sağlayıcısı / banka referansı", item?.providerRef || item?.reconciliationExternalRef || "");
       const externalRef = promptMaybe("Harici mutabakat referansı", item?.reconciliationExternalRef || providerRef || "");
       const note = promptMaybe("Mutabakat notu", item?.reconciliationNote || "");
       const expectedAmount = item?.reconciliationExpectedAmount ?? item?.amount ?? 0;
@@ -257,7 +257,7 @@ export function createCommercialCorePanelActions({
         expectedAmount: Number(expectedAmount || 0),
         receivedAmount: Number.isFinite(receivedAmount) ? receivedAmount : Number(expectedAmount || 0),
       });
-      setOkMsg("Settlement mutabakat kaydı güncellendi.");
+      setOkMsg("Mutabakat kaydı güncellendi.");
       await load();
     } catch (e) {
       setErr(stripHtmlNoise(e?.message || String(e)));

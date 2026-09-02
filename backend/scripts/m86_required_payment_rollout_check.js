@@ -78,10 +78,10 @@ mustInclude(route, "/payment-backbone/required/status", "commercial core route e
 mustInclude(route, "/payment-backbone/required/candidates", "commercial core route exposes required rollout candidate endpoint");
 mustInclude(route, "/payment-backbone/required/activate", "commercial core route exposes required rollout activate endpoint");
 mustInclude(route, "/payment-backbone/required/deactivate", "commercial core route exposes required rollout deactivate endpoint");
-mustInclude(panel, "M86 zorunlu ödeme rollout", "commercial core panel renders M86 section");
+mustInclude(panel, "Zorunlu ödeme geçişi", "commercial core panel renders M86 section");
 mustInclude(panel, "Zorunlu ödeme rollout listesi", "commercial core panel renders required rollout list");
-mustInclude(panel, "Rollout ACTIVE yap", "commercial core panel renders required rollout activate action");
-mustInclude(readonlySummary, "Zorunlu ödeme rollout'u", "readonly summary renders required rollout hint");
+mustInclude(panel, "Etkinleştir", "commercial core panel renders required rollout activate action");
+mustInclude(readonlySummary, "Zorunlu ödeme geçişi", "readonly summary renders required rollout hint");
 mustInclude(backendPkg, '"m86check": "node scripts/m86_required_payment_rollout_check.js"', "backend package exposes m86check script");
 mustInclude(toolsReadme, "pack_m86_required_payment_rollout.ps1", "tools readme lists M86 pack");
 mustMentionMilestone(toolsPrimer, "M86", ["zorunlu odeme rollout", "required payment rollout", "m86check"], "tools primer lists M86");

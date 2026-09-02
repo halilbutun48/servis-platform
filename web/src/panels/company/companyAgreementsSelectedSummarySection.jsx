@@ -51,7 +51,7 @@ export default function CompanyAgreementsSelectedSummarySection({
       totalCount={totalCount}
       filterValue={filterValue}
       onClearFilter={onClearFilter}
-      helper="Copilot seçili sözleşmeyi kullanır."
+      helper="Sefer Abi seçili sözleşmeyi kullanır."
     />
   );
 }

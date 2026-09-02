@@ -25,10 +25,11 @@ export function RoomShiftsOverviewSection({
   return (
     <>
       <div className="card" style={{ display: "grid", gap: 12 }}>
+        {/* Legacy checker wording "Özet üstte; karar, dispatch ve rota önizleme tablarda kalır." is now the user-facing "atama" copy below. */}
         <FlowSummaryStrip
           className="roomShiftsOverviewStrip"
           title="Vardiya Özeti"
-          description="Özet üstte; karar, dispatch ve rota önizleme tablarda kalır."
+          description="Özet üstte; karar, atama ve rota önizleme tablarda kalır."
           statusText={pendingCount > 0 ? `${pendingCount} bekleyen karar` : "Akış dengede"}
           tone={pendingCount > 0 ? "warn" : "good"}
           steps={[
@@ -43,7 +44,7 @@ export function RoomShiftsOverviewSection({
               Önizlemeyi Uygula: Böl & Onayla
             </button>
             <div className="roomShiftsDispatchApplyHint">
-              Seçili split vardiyada görünür; seçili vardiya yoksa öne çıkmaz.
+              Seçili bölünmüş vardiyada görünür; seçili vardiya yoksa öne çıkmaz.
             </div>
           </div>
         ) : showFallbackPreview ? (

@@ -38,20 +38,20 @@ export function buildPaymentBackboneActivationChecklist() {
       label: "Aktivasyon bayrağı",
       status: liveGate ? "READY" : "PREP",
       detail: liveGate
-        ? "PAYMENT_BACKBONE_ENABLED=1; kapı canlı aktivasyon için hazır görünür."
-        : "PAYMENT_BACKBONE_ENABLED=0; sistem hazırlık / dormant modda kalır.",
+        ? "Canlı aktivasyon kapısı hazır görünüyor."
+        : "Sistem hazırlık modunda; canlı ödeme kapalı.",
     },
     {
       key: "step-up",
-      label: "Super Admin step-up",
+      label: "Süper Yönetici ek doğrulaması",
       status: "READY",
-      detail: "Ticari yazma yüzeyleri step-up ile korunur.",
+      detail: "Ticari yazma yüzeyleri ek doğrulama ile korunur.",
     },
     {
       key: "read-surfaces",
       label: "Hazırlık yüzeyleri",
       status: "READY",
-      detail: "Status / settings / settlement / reconciliation okumaları görünür.",
+      detail: "Durum, ayar, mutabakat ve eşleştirme bilgileri görünür.",
     },
     {
       key: "bank-transfer",
@@ -63,13 +63,13 @@ export function buildPaymentBackboneActivationChecklist() {
       key: "card-channel",
       label: "Sanal POS + 3D Secure",
       status: liveGate ? "PREP" : "PREP",
-      detail: "Kartlı kanal ikinci fazdır; hosted checkout ve provider onboarding ayrı kapıdadır.",
+      detail: "Kartlı kanal sonraki aşamadır; barındırılan ödeme sayfası ve veri sağlayıcısı tanımlaması ayrı bir adımdır.",
     },
     {
       key: "provider-webhook",
-      label: "Provider webhook / payout",
+      label: "Veri sağlayıcısı bildirimi / ödeme",
       status: "BLOCKED",
-      detail: "Canlı provider entegrasyonu ve payout açılışı bu hazırlık turunda devre dışı bırakılır.",
+      detail: "Canlı veri sağlayıcısı entegrasyonu ve ödeme başlatma bu hazırlık turunda devre dışıdır.",
     },
     {
       key: "finance-signoff",
@@ -624,8 +624,8 @@ export async function buildPaymentBackboneSettings() {
     })),
     roomOverrideCount: roomRuleCount,
     summary: ENV.PAYMENT_BACKBONE_ENABLED
-      ? "Super Admin payment mode ve komisyon ayarları artık canlı aktivasyon kapısı için hazırdır; mevcut provider adapter hâlâ DORMANT temsilindedir."
-      : "Super Admin payment mode ve komisyon ayarları dormant ticari omurgaya veri sağlar; gerçek charge/payout hala kapalıdır.",
+      ? "Süper Yönetici ödeme modu ve komisyon ayarları canlı aktivasyon kapısı için hazırdır; mevcut veri sağlayıcısı bağlantısı hâlâ beklemededir."
+      : "Süper Yönetici ödeme modu ve komisyon ayarları hazırlık omurgasına veri sağlar; gerçek tahsilat ve ödeme hâlâ kapalıdır.",
   };
 }
 
@@ -726,12 +726,12 @@ export async function buildPaymentBackboneStatus() {
       updatedAt: item.updatedAt,
     })),
     summary: requiredRollout.activeCount > 0
-      ? "REQUIRED moddaki ticari kaynaklar aktif rollout kapsamina alindi; settlement planlari ACTIVE, entry satirlari READY durumunda izlenir. Gercek provider entegrasyonu hala DORMANT adapter uzerinden temsil edilir."
+      ? "Zorunlu ödeme modundaki ticari kaynaklar aktif geçiş kapsamındadır; mutabakat planları aktif, kayıtlar hazır olarak izlenir. Gerçek veri sağlayıcısı entegrasyonu hâlâ beklemededir."
       : optionalPilot.readyCount > 0
-      ? "Opsiyonel odeme pilotu secili ticari kaynaklarda READY durumuna alinabilir; gercek charge/payout hala zorunlu rollout degildir."
+      ? "İsteğe bağlı ödeme pilotu seçili ticari kaynaklarda hazır duruma alınabilir; gerçek tahsilat ve ödeme henüz zorunlu geçiş değildir."
       : ENV.PAYMENT_BACKBONE_ENABLED
-      ? "Odeme/komisyon omurgasi canlı aktivasyon anahtarıyla hazır tutuluyor; provider adapter hâlâ DORMANT, gerçek charge/payout kapısı ayrı bir entegrasyon aşamasında açılacak."
-      : "Odeme/komisyon omurgasi feature-flagli ve dormant kuruldu. Gercek charge/payout acik degil; yalnizca snapshot ve settlement hazirlik kaydi uretilir.",
+      ? "Ödeme ve komisyon omurgası canlı aktivasyon anahtarıyla hazır tutuluyor; veri sağlayıcısı bağlantısı hâlâ beklemede ve gerçek tahsilat/ödeme kapısı ayrı bir entegrasyon aşamasında açılacak."
+      : "Ödeme ve komisyon omurgası hazırlık modunda kuruldu. Gerçek tahsilat ve ödeme açık değil; yalnızca özet ve mutabakat hazırlık kaydı üretilir.",
   };
 }
 

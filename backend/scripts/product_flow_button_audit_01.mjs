@@ -452,7 +452,7 @@ async function handleReviewQueue(page, result) {
   result.checks.reviewOnlyPillVisible = await textVisible(page, "Sadece inceleme");
   result.checks.reviewBoundaryVisible = await textVisible(page, "Bu ekran sadece başvuruları listeler ve durum/not günceller.");
   result.checks.humanApprovalVisible = await textVisible(page, "Kullanıcı onayı gerekli");
-  result.checks.readOnlyBoundariesVisible = await textVisible(page, "Read-only sınırları açık");
+  result.checks.readOnlyBoundariesVisible = await textVisible(page, "Sadece görüntüleme sınırları açık");
 
   const actionLabels = ["İncelemeye al", "Ek bilgi gerekli", "Invite için uygun", "Reddet", "Notları kaydet"];
   let visibleCount = 0;

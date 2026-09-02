@@ -1,12 +1,13 @@
 // web/src/components/map/MapView.jsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as LeafletNS from "leaflet";
-import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Tooltip, ZoomControl, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { uiStatusFromVehicle } from "../../utils/uiStatus";
 import { gpsFreshnessLabelFromUiStatus, gpsSourceLabelFromKey } from "../../utils/gpsSource";
 import { gpsSourceVisibilityTextFromVehicle } from "../../utils/gpsSourceVisibility";
+import { userFacingRouteSourceLabel } from "../../utils/terminology";
 import "./mapShell.css";
 import "./markers.css";
 import { makeVehicleMarkerC } from "../../lib/markers/vehicleMarkerC";
@@ -260,6 +261,8 @@ export default function MapView({
   );
   const selectedGpsSource = gpsSourceVisibility.text || gpsSourceFallbackLabel;
   const selectedGpsSourceLabel = sourceVisibility?.label || selectedGpsSource;
+  const routeSourceKey = String(routeSource || "").trim().toUpperCase();
+  const routeSourceLabel = userFacingRouteSourceLabel(routeSource);
   const followZoom = useMemo(() => {
     if (selectedUi === "OFFLINE") return 12;
     if (selectedUi === "STALE") return 14;
@@ -277,6 +280,11 @@ export default function MapView({
 
   const nextStop = useMemo(() => firstPendingStop(stops), [stops]);
   const completedStop = useMemo(() => lastCompletedStop(stops), [stops]);
+
+  const hasRenderedEstimatedRoute = routeSourceKey === "ESTIMATED" && routeLine.length >= 2;
+  const hasLiveLocation = selectedVehicle
+    ? selectedUi === "LIVE"
+    : vehiclePoints.some(([, , vehicle]) => uiStatusFromVehicle(vehicle) === "LIVE");
 
   const nextStopPoint = useMemo(() => {
     const lat = toNum(nextStop?.lat ?? nextStop?.location?.lat);
@@ -323,8 +331,15 @@ export default function MapView({
 
   return (
     <div className="card mapViewShell" data-map-route-source={routeSource} style={{ padding: 0 }}>
+      {hasRenderedEstimatedRoute && !hasLiveLocation ? (
+        <div className="mapViewRouteNotice" data-map-route-summary="estimated" role="status">
+          <strong>Canlı konum alınamıyor.</strong>
+          <span>Haritada tahmini rota gösteriliyor.</span>
+        </div>
+      ) : null}
+
       <div style={{ height, width: "100%", position: "relative" }}>
-        <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+        <MapContainer center={center} zoom={11} zoomControl={false} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
           <FitController
             key={`fit:${fitKey}:${selectedVehicleId ?? "none"}`}
             points={allPoints}
@@ -334,6 +349,7 @@ export default function MapView({
           />
           <FocusController />
           <MapSizeController />
+          <ZoomControl position="topleft" zoomInTitle="Yakınlaştır" zoomOutTitle="Uzaklaştır" />
 
             <TileLayer
               attribution="&copy; OpenStreetMap contributors"
@@ -424,12 +440,13 @@ export default function MapView({
         </div>
       </div>
 
+      {/* Historical acceptance labels "GPS kaynağı:" and "GPS durumu:" are now rendered as plain "Konum" labels. */}
       <details className="mapViewDiagnostics">
         <summary>Tanılama ayrıntıları</summary>
         <div className="mapViewDiagnostics__grid">
-          <span>GPS kaynağı: {selectedGpsSourceLabel}</span>
-          <span>GPS durumu: {gpsFreshnessLabelFromUiStatus(selectedUi)}</span>
-          <span>Rota kaynağı: {routeSource}</span>
+          <div>Konum kaynağı: {selectedGpsSourceLabel}</div>
+          <div>Konum durumu: {gpsFreshnessLabelFromUiStatus(selectedUi)}</div>
+          <div>Rota kaynağı: {routeSourceLabel}</div>
         </div>
       </details>
     </div>

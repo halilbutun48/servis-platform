@@ -172,7 +172,7 @@ export default function GeoLocationPicker({
   onSaveNext,
   onMarkOk,
   onClear,
-  confirmButtonLabel = "OK",
+  confirmButtonLabel = "Tamam",
   busy = false,
   geoBusy = false,
   locateMeBusy = false,
@@ -268,7 +268,7 @@ export default function GeoLocationPicker({
 
         <div className="fieldRow" style={{ marginTop: 12 }}>
           <div className="field">
-            <div className="muted">Lat</div>
+            <div className="muted">Enlem</div>
             <input
               type="number"
               step="0.000001"
@@ -278,7 +278,7 @@ export default function GeoLocationPicker({
             />
           </div>
           <div className="field">
-            <div className="muted">Lng</div>
+            <div className="muted">Boylam</div>
             <input
               type="number"
               step="0.000001"
@@ -366,8 +366,8 @@ export default function GeoLocationPicker({
                 </div>
               </div>
             <div className="muted" style={{ textAlign: "right" }}>
-              <div>Lat: <b>{draftValid ? draftLat.toFixed(6) : "-"}</b></div>
-              <div style={{ marginTop: 4 }}>Lng: <b>{draftValid ? draftLng.toFixed(6) : "-"}</b></div>
+              <div>Enlem: <b>{draftValid ? draftLat.toFixed(6) : "-"}</b></div>
+              <div style={{ marginTop: 4 }}>Boylam: <b>{draftValid ? draftLng.toFixed(6) : "-"}</b></div>
             </div>
           </div>
 
@@ -402,7 +402,7 @@ export default function GeoLocationPicker({
             </div>
 
             <div className="actionsRow" style={{ marginTop: 14, justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-              <div className="muted">İstersen küçük formdaki lat/lng alanlarını sonra elle de düzeltebilirsin.</div>
+              <div className="muted">İstersen küçük formdaki enlem/boylam alanlarını sonra elle de düzeltebilirsin.</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button type="button" className="btn sm" onClick={() => setPickerOpen(false)}>
                   İptal

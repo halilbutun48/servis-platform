@@ -31,7 +31,15 @@ function summarizeAuditMeta(meta) {
   for (const [key, value] of entries) {
     if (value == null || value === "") continue;
     const rendered = typeof value === "object" ? (Array.isArray(value) ? `${value.length} öğe` : "detay") : String(value);
-    const auditEntry = key === "format" ? "dosya türü: dışa aktarım dosyası" : key === "dryRun" ? `önizleme: ${value ? "evet" : "hayır"}` : `${key}: ${rendered}`;
+    const metaLabel = {
+      ip: "Ağ adresi",
+      ua: "Tarayıcı bilgisi",
+      email: "E-posta",
+      mode: "Yardımcı modu",
+      intent: "İstek türü",
+      provider: "Cevap kaynağı",
+    }[key] || "Ayrıntı";
+    const auditEntry = key === "format" ? "Dosya türü: dışa aktarım dosyası" : key === "dryRun" ? `Önizleme: ${value ? "evet" : "hayır"}` : `${metaLabel}: ${key === "provider" ? "Yerel yardım akışı" : rendered}`;
     parts.push(auditEntry.length > 60 ? `${auditEntry.slice(0, 57)}…` : auditEntry);
     if (parts.length >= 3) break;
   }
@@ -44,7 +52,20 @@ function summarizeAuditAction(action) {
   if (/(token|hash|payload|raw|debug|stack|internal|undefined|null|\[object object\])/i.test(text)) {
     return "Güvenlik olayı";
   }
-  return text.length > 120 ? `${text.slice(0, 117)}…` : text;
+  const labels = {
+    AUTH_LOGIN_OK: "Giriş başarılı",
+    AUTH_LOGIN_FAIL: "Giriş başarısız",
+    AUTH_LOGIN_DEVICE_MISMATCH: "Girişte cihaz uyuşmazlığı",
+    AUTH_LOGIN_DEVICE_REQUIRED: "Girişte cihaz doğrulaması gerekli",
+    AUTH_LOGIN_DISABLED: "Devre dışı hesapla giriş denemesi",
+    AUTH_DRIVER_PIN_LOCKED: "Sürücü PIN'i kilitlendi",
+    AI_COPILOT_QUERY: "Sefer Abi sorusu",
+    ADMIN_USER_CREATE: "Kullanıcı oluşturuldu",
+    ADMIN_USER_DISABLE: "Kullanıcı pasifleştirildi",
+    ADMIN_USER_ENABLE: "Kullanıcı aktifleştirildi",
+    ADMIN_USER_RESET_PASSWORD: "Kullanıcı şifresi sıfırlandı",
+  };
+  return labels[text] || "Sistem işlemi";
 }
 
 function auditEntityLabel(entity) {
@@ -53,7 +74,7 @@ function auditEntityLabel(entity) {
   if (key === "ROOM") return "Taşımacılık Firması";
   if (key === "USER") return "Kullanıcı";
   if (key === "REGION") return "Bölge";
-  return entity || "-";
+  return entity ? "İlgili kayıt" : "-";
 }
 
 export default function AuditLogsPanel() {
@@ -109,26 +130,26 @@ export default function AuditLogsPanel() {
       <div className="card" style={{ marginTop: 12, marginBottom: 12 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
           <label className="muted">
-            Arama (action/entity)
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ör: DISABLE, Region, User" />
+            Arama (işlem / varlık)
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ör: pasifleştirme, bölge, kullanıcı" />
           </label>
           <label className="muted">
-            Entity
+            Varlık
             <select value={entity} onChange={(e) => setEntity(e.target.value)}>
               <option value="">(hepsi)</option>
-              <option value="User">User</option>
+              <option value="User">Kullanıcı</option>
               <option value="Company">Hizmet Alan Firma</option>
               <option value="Room">Taşımacılık Firması</option>
-              <option value="Region">Region</option>
+              <option value="Region">Bölge</option>
             </select>
           </label>
           <label className="muted">
-            Action contains
-            <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="ör: ADMIN_USER_" />
+            İşlem içeren
+            <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="ör: kullanıcı" />
           </label>
           <label className="muted">
-            Actor email contains
-            <input value={actorEmail} onChange={(e) => setActorEmail(e.target.value)} placeholder="ör: superadmin@" />
+            İşlemi yapan e-postası
+            <input value={actorEmail} onChange={(e) => setActorEmail(e.target.value)} placeholder="ör: yönetici@" />
           </label>
         </div>
 
@@ -162,10 +183,10 @@ export default function AuditLogsPanel() {
           style={{ display: "grid", gridTemplateColumns: "170px 1fr 240px 120px 120px 1fr 110px", padding: "10px 12px" }}
         >
           <div>Zaman</div>
-          <div>Actor</div>
-          <div>Action</div>
-          <div>Entity</div>
-          <div>EntityId</div>
+          <div>İşlemi yapan</div>
+          <div>İşlem</div>
+          <div>Varlık</div>
+          <div>Varlık kayıt no</div>
           <div>Sistem kanıtı</div>
           <div></div>
         </div>
@@ -181,7 +202,7 @@ export default function AuditLogsPanel() {
               <div>{x.actorEmail || "-"}</div>
               <div className="muted" style={{ fontSize: 12 }}>
                 {x.actorRole ? roleLabelForUser(x.actorRole) : "-"}
-                {x.actorUserId ? ` #${x.actorUserId}` : ""}
+                {x.actorUserId ? ` · Kayıt no #${x.actorUserId}` : ""}
               </div>
             </div>
             <div style={{ wordBreak: "break-word" }}>{summarizeAuditAction(x.action)}</div>

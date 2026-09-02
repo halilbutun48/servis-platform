@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { humanizeUserFacingText } from "../../utils/terminology";
 
 export function useRoomVehicleTelematics({
   tab,
@@ -17,7 +18,7 @@ export function useRoomVehicleTelematics({
   const [deviceDrafts, setDeviceDrafts] = useState({});
   const [deviceForm, setDeviceForm] = useState({
     vendor: "ARVENTO",
-    connectionType: "API polling",
+    connectionType: "Düzenli veri sorgulama",
     plate: "",
     imei: "",
     deviceId: "",
@@ -47,8 +48,8 @@ export function useRoomVehicleTelematics({
       setDeviceLoaded(true);
     } catch (e) {
       const { msg } = pickErr(e);
-      setErr(String(msg || "Telematics cihaz listesi alınamadı"));
-      showToast("Telematics cihaz listesi alınamadı", "err");
+      setErr(humanizeUserFacingText(msg, "Konum cihazı listesi alınamadı"));
+      showToast("Konum cihazı listesi alınamadı", "err");
     } finally {
       if (!silent) setDeviceBusy(false);
     }
@@ -66,7 +67,7 @@ export function useRoomVehicleTelematics({
   async function createDevice(e) {
     e.preventDefault();
     if (!focusVehicleId) {
-      setErr("Telematics için önce araç seçmelisin.");
+      setErr("Konum cihazı için önce araç seçmelisin.");
       return;
     }
     setDeviceSaving(true);
@@ -95,7 +96,7 @@ export function useRoomVehicleTelematics({
       await loadDevices({ silent: true });
     } catch (e) {
       const { msg } = pickErr(e);
-      setErr(String(msg || "Eşleştirme hazırlığı kaydedilemedi"));
+      setErr(humanizeUserFacingText(msg, "Eşleştirme hazırlığı kaydedilemedi"));
       showToast("Eşleştirme hazırlığı kaydedilemedi", "err");
     } finally {
       setDeviceSaving(false);
@@ -119,7 +120,7 @@ export function useRoomVehicleTelematics({
       await loadDevices({ silent: true });
     } catch (e) {
       const { msg } = pickErr(e);
-      setErr(String(msg || "Eşleştirme bilgisi güncellenemedi"));
+      setErr(humanizeUserFacingText(msg, "Eşleştirme bilgisi güncellenemedi"));
       showToast("Eşleştirme bilgisi güncellenemedi", "err");
     } finally {
       setDeviceSaving(false);
@@ -139,7 +140,7 @@ export function useRoomVehicleTelematics({
       await loadDevices({ silent: true });
     } catch (e) {
       const { msg } = pickErr(e);
-      setErr(String(msg || "İnceleme için hazırlama başarısız"));
+      setErr(humanizeUserFacingText(msg, "İnceleme için hazırlama başarısız"));
       showToast("İnceleme için hazırlama başarısız", "err");
     } finally {
       setDeviceSaving(false);

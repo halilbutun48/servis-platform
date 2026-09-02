@@ -45,7 +45,7 @@ export function CompanyOffersDecisionModal({
       <div style={{ marginTop: 10 }}>
         <OfferQualityRankingCard
           title="Kalite karşılaştırması"
-          subtitle="Kalite, güven, telematik, kanıt/check-in ve operasyon riski salt okunur gösterilir; otomatik kazanan seçilmez."
+          subtitle="Kalite, güven, konum cihazı, kanıt/biniş kaydı ve operasyon riski salt okunur gösterilir; otomatik kazanan seçilmez."
           offers={items}
           roomScores={roomScores}
           summaryParams={{ role: "COMPANY", shiftId: offersModal.shiftId, scopeLabel: "Hizmet Alan Firma teklif karşılaştırması" }}
@@ -698,7 +698,7 @@ export function CompanyOtherSection({
       onSetOpen={onSetOpen}
       onToggle={onToggle}
       title="Diğer Vardiyalar"
-      description="Sözleşmeye bağlı olmayan manuel / guided / normal vardiyalar."
+      description="Sözleşmeye bağlı olmayan elle oluşturulan / rehberli / normal vardiyalar."
       items={otherItems}
       status={otherStatus}
       onChangeStatus={onChangeOtherStatus}

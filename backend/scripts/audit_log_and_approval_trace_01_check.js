@@ -623,7 +623,7 @@ function main() {
   const activeRegistryCheckerPaths = buildRegistryOwnedCheckerPaths(packageScripts, productExtensionsCheckScripts);
   const coreGuardEntries = [
     { path: "backend/scripts/current_head_scope_policy_01_check.js", sha256: "0F56180FD86135B5742E8D473E61975A1BEB1F57CDA61F2DC4C362575086951F" },
-   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "5FE36BFCA5414F667EEF02F1E459F526066F336C904B0E21A9626D73B907F447" },
+   { path: "backend/scripts/lib/currentHeadScopePolicy.js", sha256: "56F431E518A1D44D34143320A4B8811E018C079051E25EAFD03C788840147277" },
    { path: "backend/scripts/lib/prismaSchemaIdentity.js", sha256: "014012B45C27F7C17FAD497A0053D95183E5D4BCB50E76CAE2B17C5D4E272689" },
   { path: "backend/scripts/lib/productExtensionsRegistry.js", sha256: "6C0FA82E0B7024D4DADF5AA588E33509A5D91866CF39D8D875A0BFEF94064D8F" },
   { path: "backend/scripts/lib/guardGitScope.js", sha256: "2293510B16AABB37453931C32ADC754F5947BE7BED50AFA395E505022C8FB2E1" },

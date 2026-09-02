@@ -223,9 +223,9 @@ export function getLiveTrackingSummary(input = {}) {
   );
   const etaText = getEtaDisplay(input);
   const nextLabel = freshness.isFresh ? "Sıradaki durak" : "Son bilinen sıradaki durak";
-  const parts = [`GPS ${gpsLabel}`];
-  if (ageText && ageText !== "bilinmiyor") parts.push(`Son GPS ${ageText}`);
-  else parts.push("Son GPS bilinmiyor");
+  const parts = [`Konum sinyali: ${gpsLabel}`];
+  if (ageText && ageText !== "bilinmiyor") parts.push(`Son konum sinyali ${ageText}`);
+  else parts.push("Son konum sinyali bilinmiyor");
   if (nextStopName) parts.push(`${nextLabel}: ${nextStopName}`);
   parts.push(`Tahmini varış süresi ${etaText}`);
   return parts.join(" · ");

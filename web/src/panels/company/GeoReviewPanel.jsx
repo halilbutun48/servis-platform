@@ -398,7 +398,7 @@ export default function GeoReviewPanel() {
         clearUiDataCache("/api/company/personels");
         patchItem(saveId, resp.item);
         if (advanceNext) moveToNextItem(saveId);
-        setMsg(markOk ? "Kayıt OK yapıldı." : advanceNext ? "Konum kaydedildi. Sıradaki kayıt açıldı." : "Konum kaydedildi.");
+        setMsg(markOk ? "Kayıt hazır olarak işaretlendi." : advanceNext ? "Konum kaydedildi. Sıradaki kayıt açıldı." : "Konum kaydedildi.");
       }
     } catch (e) {
       setErr(e?.message || String(e));
@@ -566,7 +566,7 @@ export default function GeoReviewPanel() {
                   });
                 }}
               >
-                {scopeMode === "SESSION" ? "Tüm şirket kayıtlarını göster" : "Sadece bu planlamadakileri göster"}
+                {scopeMode === "SESSION" ? "Tüm firma kayıtlarını göster" : "Sadece bu planlamadakileri göster"}
               </button>
             ) : null}
             <button type="button" className="btn primary" onClick={() => navigate(basePath)}>
@@ -635,10 +635,10 @@ export default function GeoReviewPanel() {
           <div className="topbar">
             <div>
               <div className="title">{school ? "Öğrenci listesi" : `${who} listesi`}</div>
-              <div className="muted">Bir kayıt seç, sağ tarafta haritadan pin ayarla. Guided akıştan gelirsen varsayılan görünüm sadece o planlamadaki kayıtlar olur; istersen tek tuşla tüm şirket kayıtlarına geçebilirsin.</div>
+              <div className="muted">Bir kayıt seç, sağ tarafta haritadan konumu ayarla. Rehberli akıştan gelirsen varsayılan görünüm sadece o planlamadaki kayıtlar olur; istersen tek tuşla tüm firma kayıtlarına geçebilirsin.</div>
             </div>
             <div className="muted">
-              {scopeMode === "SESSION" ? "Planlama oturumu" : "Tüm şirket kayıtları"} • <b>{filtered.length}</b>
+              {scopeMode === "SESSION" ? "Planlama oturumu" : "Tüm firma kayıtları"} • <b>{filtered.length}</b>
             </div>
           </div>
 
@@ -713,7 +713,7 @@ export default function GeoReviewPanel() {
 
         <GeoLocationPicker
           title={school ? "Öğrenci konum seçici" : `${who} konum seçici`}
-          subtitle="Adresi düzelt, adresten bul veya haritada tıklayarak pimi seç. İstersen lat/lng alanlarını elle değiştir. İş bitince rehberli adıma geri dönüp kaldığın yerden devam edebilirsin."
+          subtitle="Adresi düzelt, adresten bul veya haritada tıklayarak konumu seç. İstersen enlem/boylam alanlarını elle değiştir. İş bitince rehberli adıma geri dönüp kaldığın yerden devam edebilirsin."
           selectedName={selected?.fullName || "-"}
           address={form.homeAddress}
           onAddressChange={(value) => setForm((prev) => ({ ...prev, homeAddress: value }))}
@@ -736,5 +736,4 @@ export default function GeoReviewPanel() {
     </div>
   );
 }
-
 

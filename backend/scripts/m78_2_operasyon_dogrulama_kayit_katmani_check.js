@@ -92,7 +92,7 @@ mustContain(store, 'operation-verification-records.json', 'store persists operat
 ok('panel title visible');
 mustContain(panel, 'Kaydet', 'panel shows save action');
 mustContain(panel, 'Kısa operasyon notu', 'panel shows note input');
-mustContain(panel, 'Link / export / build', 'panel shows evidence ref input');
+mustContain(panel, 'Bağlantı / dışa aktarım / sürüm kanıtı', 'panel shows evidence ref input');
 mustContainAny(readme, ['pack_m78_2_operasyon_dogrulama_kayit_katmani.ps1', 'M78.2', 'operation verification', 'M79'], 'README mentions compatible M78.2 pack');
 mustContainAny(backlog, ['M78.2', 'M78.3', 'M78', 'M79', 'M80', 'kayıt katmanı', 'operation verification'], 'backlog mentions compatible M78.2');
 mustContainAny(toolsReadme, ['M78.2 pack', 'M78.2', 'M78.3', 'M78', 'M79', 'operation verification'], 'tools readme mentions compatible M78.2 pack');
@@ -144,5 +144,4 @@ const reportPath = path.join(artifactDir, 'm78_2_operasyon_dogrulama_kayit_katma
 fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 console.log(`INFO report => ${path.relative(repoRoot, reportPath).replace(/\\/g, '/')}`);
 console.log('=== M78.2 OPERASYON DOGRULAMA KAYIT KATMANI CHECK PASS ===');
-
 

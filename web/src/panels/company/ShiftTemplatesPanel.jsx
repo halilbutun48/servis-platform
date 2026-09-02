@@ -358,7 +358,7 @@ export default function ShiftTemplatesPanel({
       <div className="card">
         <h3>Vardiya Şablonları</h3>
         <div className="muted">
-          Guided Mode’daki <b>plan paketi</b> (slot/saat/direction) mantığını burada şablon olarak kaydedebilirsin. Bu şablonları hem{" "}
+          Rehberli Mod’daki <b>plan paketi</b> (saat/yön) mantığını burada şablon olarak kaydedebilirsin. Bu şablonları hem{" "}
           <b>Yeni Talep</b> ekranında saat doldurmak için, hem de ileride planlama için kullanacağız. Özel şablonlar firma bazlı tarayıcıda saklanır.
         </div>
 
@@ -581,5 +581,4 @@ export default function ShiftTemplatesPanel({
     </>
   );
 }
-
 

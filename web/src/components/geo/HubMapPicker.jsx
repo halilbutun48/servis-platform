@@ -203,7 +203,7 @@ export default function HubMapPicker({
       </div>
 
       <div className="panelMeta" style={{ marginTop: 10 }}>
-        Küçük harita önizleme içindir. Noktayı rahat seçmek için "{title}" butonunu kullan. OK dedikten sonra konum lat/lng alanına aktarılır; sonra normal Kaydet ile veritabanına yazılır.
+        Küçük harita önizleme içindir. Noktayı rahat seçmek için "{title}" butonunu kullan. Tamam dedikten sonra konum enlem/boylam alanına aktarılır; sonra normal Kaydet ile veritabanına yazılır.
       </div>
 
       {pickerOpen ? (
@@ -212,11 +212,11 @@ export default function HubMapPicker({
             <div className="topbar" style={{ alignItems: "flex-start", gap: 12 }}>
               <div>
                 <div className="panelTitle">{subjectLabel} için büyük haritada konum işaretle</div>
-                <div className="panelSubtitle">Haritada tıkla, pimi yerleştir. Sonra OK ile seçimi ana forma uygula.</div>
+                <div className="panelSubtitle">Haritada tıkla, pimi yerleştir. Sonra Tamam ile seçimi ana forma uygula.</div>
               </div>
               <div className="muted" style={{ textAlign: "right" }}>
-                <div className="panelMeta">Lat: <b>{draftValid ? draftLat.toFixed(6) : "-"}</b></div>
-                <div className="panelMeta" style={{ marginTop: 4 }}>Lng: <b>{draftValid ? draftLng.toFixed(6) : "-"}</b></div>
+                <div className="panelMeta">Enlem: <b>{draftValid ? draftLat.toFixed(6) : "-"}</b></div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>Boylam: <b>{draftValid ? draftLng.toFixed(6) : "-"}</b></div>
               </div>
             </div>
 
@@ -238,17 +238,17 @@ export default function HubMapPicker({
             </div>
 
             <div className="panelMeta" style={{ marginTop: 10 }}>
-              İpucu: Haritayı kaydır-zoom yap, doğru noktaya tıkla. OK dediğinde koordinat ana forma aktarılır. Ardından Kaydet ile işlemi tamamla.
+              İpucu: Haritayı kaydırıp yakınlaştır, doğru noktaya tıkla. Tamam dediğinde koordinat ana forma aktarılır. Ardından Kaydet ile işlemi tamamla.
             </div>
 
             <div className="actionsRow" style={{ marginTop: 14, justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-              <div className="muted">İstersen ana ekranda lat/lng alanını elle de düzeltebilirsin.</div>
+              <div className="muted">İstersen ana ekranda enlem/boylam alanını elle de düzeltebilirsin.</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button type="button" className="btn sm" onClick={() => setPickerOpen(false)}>
                   İptal
                 </button>
                 <button type="button" className="btn sm primary" onClick={applyDraftAndClose} disabled={!draftValid}>
-                  OK
+                  Tamam
                 </button>
               </div>
             </div>

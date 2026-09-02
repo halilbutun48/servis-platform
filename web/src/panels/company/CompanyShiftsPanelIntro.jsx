@@ -52,7 +52,7 @@ export default function CompanyShiftsPanelIntro({ err, applyToast, focusMarketBy
         <CountCard label="Market" value={String(counts.market || 0)} note="taşımacılık firması seçilmemiş / pazara düşmüş" />
         <CountCard label="Bekleyen" value={String(counts.pending || 0)} note="pazarlık / karar bekleyen" />
         <CountCard label="Sözleşmeden Üretilen" value={String(counts.contract || 0)} note="sözleşmeye bağlı" />
-        <CountCard label="Diğer Vardiyalar" value={String(counts.other || 0)} note="sözleşmesiz normal / guided" />
+        <CountCard label="Diğer Vardiyalar" value={String(counts.other || 0)} note="sözleşmesiz normal / rehberli" />
       </div>
     </>
   );

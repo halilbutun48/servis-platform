@@ -1,33 +1,33 @@
 import { toHHMM, weekMaskToText } from "../utils/agreementUi";
+import { displayStatusLabel } from "../utils/displayStatus";
 
 export default function AgreementConflictBox({ errObj }) {
   if (!errObj) return null;
-  const code = errObj?.code;
-  const msg = errObj?.message || errObj?.error || "Conflict";
+  const msg = errObj?.message || errObj?.error || "Sözleşme çakışması oluştu.";
   const c = errObj?.conflictingAgreement;
 
   return (
     <div className="card" style={{ borderColor: "rgba(239,68,68,.45)", background: "rgba(85,16,20,.25)" }}>
-      <div style={{ fontWeight: 900 }}>{code || "CONFLICT"}</div>
+      <div style={{ fontWeight: 900 }}>Sözleşme çakışması</div>
       <div className="muted" style={{ marginTop: 6 }}>{msg}</div>
 
       {c ? (
         <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
           <div>
-            conflict agreementId: <b>{c.id}</b>
+            Çakışan sözleşme kayıt no: <b>{c.id}</b>
           </div>
-          <div>status: {c.status}</div>
+          <div>Durum: {displayStatusLabel(c.status)}</div>
           <div>
-            date: {String(c.startDate).slice(0, 10)} → {String(c.endDate).slice(0, 10)}
-          </div>
-          <div>
-            time: {toHHMM(c.startMin)} → {toHHMM(c.endMin)}
+            Tarih: {String(c.startDate).slice(0, 10)} → {String(c.endDate).slice(0, 10)}
           </div>
           <div>
-            days: {weekMaskToText(c.weekMask)} (mask={c.weekMask})
+            Saat: {toHHMM(c.startMin)} → {toHHMM(c.endMin)}
           </div>
           <div>
-            v:{c.vehicleId ?? "-"} / d:{c.driverId ?? "-"}
+            Günler: {weekMaskToText(c.weekMask)}
+          </div>
+          <div>
+            Araç kayıt no: {c.vehicleId ?? "-"} • Sürücü kayıt no: {c.driverId ?? "-"}
           </div>
         </div>
       ) : null}

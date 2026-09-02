@@ -15,6 +15,7 @@ import { getCompanyMapShifts, getCompanyVehicles } from "../../utils/companyData
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { gpsSourcePresentationLabel } from "../../utils/gpsSource";
+import { userFacingRouteSourceLabel } from "../../utils/terminology";
 import PanelChrome from "../../components/PanelChrome";
 import MapOperationsDisclosure from "../../components/map/MapOperationsDisclosure";
 import SafeDriveSummaryCard from "../shared/SafeDriveSummaryCard";
@@ -407,9 +408,9 @@ export default function CompanyMapPanel() {
     const lines = [];
     if (!selected) return ["Araç seçilmedi"];
     const gpsStatus = String(uiStatusFromVehicle(selected) || "").toUpperCase();
-    if (!hasGpsFix(selected)) lines.push("GPS bekleniyor");
-    else if (gpsStatus === "OFFLINE") lines.push("GPS çevrim dışı");
-    else if (gpsStatus === "STALE") lines.push("GPS güncel değil");
+    if (!hasGpsFix(selected)) lines.push("Konum sinyali bekleniyor");
+    else if (gpsStatus === "OFFLINE") lines.push("Konum sinyali çevrim dışı");
+    else if (gpsStatus === "STALE") lines.push("Konum sinyali güncel değil");
     if (!selectedShift) lines.push("Vardiya yok");
     if (!selectedNext?.name) lines.push("Sıradaki durak bekleniyor");
     return lines.length ? lines : ["Belirgin risk yok"];
@@ -444,7 +445,7 @@ export default function CompanyMapPanel() {
     if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
     if (selected?.plate) parts.push(`Araç ${selected.plate}`);
     const ui = uiStatusFromVehicle(selected);
-    if (ui) parts.push(`GPS ${gpsSourcePresentationLabel(ui)}`);
+    if (ui) parts.push(`Konum sinyali ${gpsSourcePresentationLabel(ui)}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     return parts.join(" • ");
   }, [selected, selectedShift?.id, selectedNext?.name]);
@@ -475,9 +476,12 @@ export default function CompanyMapPanel() {
           ? `Araç ${selected.plate}`
           : `Araç #${selected?.id || "-"}`,
       summary: copilotSummary || "",
+      helpContextSummary: copilotSummary || "",
+      contextSummary: copilotSummary || "",
+      selectedRecordSummary: copilotSummary || "",
       fields: [
         { label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Seçili aracın plakasını veya kayıt numarasını gösterir.' },
-        { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
+        { label: 'Son konum sinyali', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
         { label: 'Sıradaki Durak', value: selectedNext?.name || '-', help: 'Araç şu anda hangi durağa doğru gidiyor bilgisini gösterir.' },
         { label: 'Tahmini süre', value: etaDisplayText(selected, selectedEta, selectedNext), help: 'Sıradaki durağa tahmini kalan süreyi güvenli biçimde gösterir.' },
         { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'Seçili vardiyadaki toplam durak sayısını gösterir.' },
@@ -485,7 +489,7 @@ export default function CompanyMapPanel() {
       ],
       facts,
       badges: [
-        { label: 'GPS', value: displayStatusLabel(uiStatusFromVehicle(selected) || '-'), help: 'Araç GPS sinyalinin canlı mı eski mi yok mu olduğunu gösterir.' },
+        { label: 'Konum sinyali', value: displayStatusLabel(uiStatusFromVehicle(selected) || '-'), help: 'Aracın konum bilgisinin güncel olup olmadığını gösterir.' },
         { label: 'Vardiya Durumu', value: displayStatusLabel(String(selectedShift?.status || '-').toUpperCase()), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
       ],
     });
@@ -622,13 +626,13 @@ export default function CompanyMapPanel() {
                   >
                     <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
                       <b>{v?.plate || "-"}</b>
-                      <span className="pill" data-status={c.pillKey} title={`GPS: ${displayStatusLabel(c.ui)}`}>{displayStatusLabel(c.ui)}</span>
+                      <span className="pill" data-status={c.pillKey} title={`Konum sinyali: ${displayStatusLabel(c.ui)}`}>{displayStatusLabel(c.ui)}</span>
                       <span className="pill" data-status={normShiftStatus(s?.status)}>
                         {displayStatusLabel(normShiftStatus(s?.status))}
                       </span>
                       {!gpsOk ? (
                         <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>
-                          GPS yok
+                          Konum sinyali yok
                         </span>
                       ) : null}
                     </span>
@@ -673,7 +677,7 @@ export default function CompanyMapPanel() {
                       maxWidth: 118,
                     }}
                   >
-                    <span className="muted" style={{ fontSize: 12 }}>Son GPS: {gpsAgeLabel(v)}</span>
+                    <span className="muted" style={{ fontSize: 12 }}>Son konum sinyali: {gpsAgeLabel(v)}</span>
                     <span className="muted" style={{ fontSize: 12 }}>Başlangıç: {fmtTR(s?.startAt)}</span>
                   </span>
                 </button>
@@ -698,7 +702,7 @@ export default function CompanyMapPanel() {
             </div>
             <div className="mapSummaryMetrics">
               <div className="mapSummaryMetric">
-                <span className="mapSummaryMetricLabel">GPS</span>
+                <span className="mapSummaryMetricLabel">Konum sinyali</span>
                 <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>{displayStatusLabel(uiStatusFromVehicle(selected))}</span>
               </div>
               <div className="mapSummaryMetric">
@@ -735,8 +739,8 @@ export default function CompanyMapPanel() {
                   <StopTimeline stops={selectedStops} nextStopId={selectedNext?.id ?? null} compact onSelect={(s) => focusStop(s)} />
                 </div>
                 <div className="mapDetailBlock">
-                  <span className="mapSummaryMetricLabel">Teknik GPS ve kaynak</span>
-                  <div className="panelMeta">Son GPS: {gpsAgeLabel(selected)} • Rota kaynağı: {routePreview?.source || "Tahmini"}</div>
+                  <span className="mapSummaryMetricLabel">Teknik konum ve kaynak</span>
+                  <div className="panelMeta">Son konum sinyali: {gpsAgeLabel(selected)} • Rota kaynağı: {userFacingRouteSourceLabel(routePreview?.source)}</div>
                   <div className="mapDetailPills">
                     {selectedRiskLines?.slice(0, 2).map((line) => <span key={line} className="pill" data-status={line === "Belirgin risk yok" ? "OK" : "REQUESTED"}>{line}</span>)}
                   </div>
@@ -782,12 +786,12 @@ export default function CompanyMapPanel() {
                     </span>
                   ) : null}
 
-                  <span className="muted" style={{ fontSize: 12 }}>GPS:</span>
+                  <span className="muted" style={{ fontSize: 12 }}>Konum:</span>
                   <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
                     {displayStatusLabel(uiStatusFromVehicle(selected))}
                   </span>
 
-                  <span className="muted" style={{ fontSize: 12 }}>Son GPS:</span>
+                  <span className="muted" style={{ fontSize: 12 }}>Son konum sinyali:</span>
                   <span className="pill">{gpsAgeLabel(selected)}</span>
 
                   {selectedNext?.name ? (

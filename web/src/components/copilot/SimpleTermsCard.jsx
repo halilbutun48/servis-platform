@@ -1,3 +1,5 @@
+import { humanizeUserFacingText } from '../../utils/terminology';
+
 export default function SimpleTermsCard({ items }) {
   return (
     <div>
@@ -6,8 +8,8 @@ export default function SimpleTermsCard({ items }) {
         <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
           {items.map((x, i) => (
             <div key={i} style={{ border: "1px solid #d0d5dd", borderRadius: 10, padding: 10 }}>
-              <div style={{ fontWeight: 700 }}>{x.term || "-"}</div>
-              <div className="muted" style={{ marginTop: 4 }}>{x.meaning || "-"}</div>
+              <div style={{ fontWeight: 700 }}>{humanizeUserFacingText(x.term)}</div>
+              <div className="muted" style={{ marginTop: 4 }}>{humanizeUserFacingText(x.meaning)}</div>
             </div>
           ))}
         </div>

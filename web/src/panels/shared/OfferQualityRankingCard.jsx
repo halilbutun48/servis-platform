@@ -180,7 +180,7 @@ function RowCard({ row }) {
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <Pill label="Puan" value={row?.roomScore?.ready ? row.roomScore.summaryLabel : "Bekleniyor"} tone={roomScoreTone} />
-            <Pill label="Telematics" value={row?.safeDrive?.statusText || "Bekleniyor"} tone={safeDriveTone} />
+            <Pill label="Konum cihazı" value={row?.safeDrive?.statusText || "Bekleniyor"} tone={safeDriveTone} />
           </div>
         </div>
       </div>
@@ -202,7 +202,7 @@ function RowCard({ row }) {
 
 export default function OfferQualityRankingCard({
   title = "Teklif kalite karşılaştırması",
-  subtitle = "Kalite, güven, telematik, kanıt/check-in ve operasyon riski salt okunur gösterilir.",
+  subtitle = "Kalite, güven, konum cihazı, kanıt/biniş kaydı ve operasyon riski salt okunur gösterilir.",
   offers = [],
   roomScores = {},
   me = null,
@@ -302,7 +302,7 @@ export default function OfferQualityRankingCard({
           </div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <Pill label="Scope" value={ranking.scopeLabel || "Teklif karşılaştırması"} tone="neutral" />
+          <Pill label="Kapsam" value={ranking.scopeLabel || "Teklif karşılaştırması"} tone="neutral" />
           <Pill label="Kayıt" value={rowCountLabel} tone={ranking.offerCount > 0 ? "good" : "neutral"} />
           <Pill label="Kalite" value={ranking.qualityLabel || "-"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.confidence >= 70 ? "good" : "warn"} />
           <Pill label="Risk" value={ranking.riskLevel || "-"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.riskLevel === "Orta" ? "warn" : "neutral"} />
@@ -314,13 +314,13 @@ export default function OfferQualityRankingCard({
         <Pill label="Kanıt" value={ranking.proofSummary || "Bekleniyor"} tone={toneForStatus(loadedProofSummary?.status || loadedProofSummary?.reviewStatus || "INFO")} />
         <Pill label="Taslak" value={ranking.draftScoreSummary || "Bekleniyor"} tone={toneForStatus(loadedDraftScoreSummary?.status || "INFO")} />
         <Pill label="İnceleme" value={ranking.reviewDecisionSummary || "Bekleniyor"} tone={toneForStatus(loadedReviewDecisionSummary?.reviewStatus || loadedReviewDecisionSummary?.status || "INFO")} />
-        <Pill label="Telematics" value={ranking.safeDriveSummary || "Bekleniyor"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.riskLevel === "Orta" ? "warn" : "good"} />
-        <Pill label="Auto-select" value={ranking.autoSelectionBlocked ? "Kapalı" : "Açık"} tone={ranking.autoSelectionBlocked ? "good" : "warn"} />
-        <Pill label="Auto-accept" value={ranking.autoAcceptBlocked ? "Kapalı" : "Açık"} tone={ranking.autoAcceptBlocked ? "good" : "warn"} />
+        <Pill label="Konum cihazı" value={ranking.safeDriveSummary || "Bekleniyor"} tone={ranking.riskLevel === "Yüksek" ? "danger" : ranking.riskLevel === "Orta" ? "warn" : "good"} />
+        <Pill label="Otomatik seçim" value={ranking.autoSelectionBlocked ? "Kapalı" : "Açık"} tone={ranking.autoSelectionBlocked ? "good" : "warn"} />
+        <Pill label="Otomatik kabul" value={ranking.autoAcceptBlocked ? "Kapalı" : "Açık"} tone={ranking.autoAcceptBlocked ? "good" : "warn"} />
       </div>
 
       <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)", lineHeight: 1.5 }}>
-        <div className="muted">Kalite / güven / telematik / kanıt-biniş doğrulaması / operasyon riski</div>
+        <div className="muted">Kalite / güven / konum cihazı / kanıt-biniş doğrulaması / operasyon riski</div>
         <div style={{ fontWeight: 800, marginTop: 4 }}>{ranking.summaryText || "Teklif karşılaştırması hazır."}</div>
         <div className="muted" style={{ marginTop: 4 }}>
           {ranking.summaryNote || "Salt okunur karşılaştırma satırı; otomatik seçim ve otomatik kabul kapalıdır."}
@@ -344,7 +344,7 @@ export default function OfferQualityRankingCard({
         {ranking.humanApprovalRequired ? "Kullanıcı onayı gerekir. " : ""}
         {ranking.autoSelectionBlocked ? "Otomatik tedarikçi sıralama kapalı. " : ""}
         {ranking.autoAcceptBlocked ? "Otomatik teklif kabulü kapalı. " : ""}
-        Contract execute, payment/hakediş execute ve AI runtime action açılmaz.
+        Sözleşmeyi tamamlama, ödeme/hakediş işlemi ve otomatik sistem işlemi açılmaz.
       </div>
     </div>
   );

@@ -613,7 +613,7 @@ export default function ParentLivePanel() {
                 {selectedVehicle?.childStopReached ? <div className="muted">Durum: <b>Çocuğun durağına ulaşıldı</b></div> : null}
                 {!hasVehiclePoint(selectedVehicle) ? <div className="muted">Araç konumu henüz görünmüyor. Bu, sürücünün telefon GPS'i henüz gelmediği ya da canlı görünürlük anlık boş olduğu anlamına gelebilir.</div> : null}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" className="btn" onClick={() => navigate(`/shared/logs?kind=bundle_vehicle&targetType=vehicle&targetId=${selectedVehicle.id}&childId=${childId}&format=txt`)} title="Araç için TXT log export (GPS + hız + bildirim)">Log TXT</button>
+                  <button type="button" className="btn" onClick={() => navigate(`/shared/logs?kind=bundle_vehicle&targetType=vehicle&targetId=${selectedVehicle.id}&childId=${childId}&format=txt`)} title="Araç konum, hız ve bildirim kaydı">İşlem kaydı (TXT)</button>
                   {childNavUrl ? <button type="button" className="btn" onClick={() => window.open(childNavUrl, "_blank", "noopener,noreferrer")}>Çocuğun durağına git</button> : null}
                   {nearestNavUrl ? <button type="button" className="btn" onClick={() => window.open(nearestNavUrl, "_blank", "noopener,noreferrer")}>En yakın durağa git</button> : null}
                   <button type="button" className="btn" disabled={!childId || noShowBusy} onClick={handleNoShow}>{noShowBusy ? "..." : "Bugün gelmiyor"}</button>

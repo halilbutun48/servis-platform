@@ -515,7 +515,7 @@ export default function RoomOffersPanel() {
 
       <OfferQualityRankingCard
         title="Kalite karşılaştırması"
-        subtitle="Taşımacılık Firması tarafında teklifler kalite, güven, telematik, kanıt/check-in ve operasyon riskiyle salt okunur okunur."
+        subtitle="Taşımacılık Firması tarafında teklifler kalite, güven, konum, kanıt ve operasyon riskiyle salt okunur değerlendirilir."
         offers={filtered}
         roomScores={roomScores}
         summaryParams={{ role: "ROOM", scopeLabel: "Taşımacılık Firması teklif karşılaştırması" }}
@@ -579,7 +579,7 @@ export default function RoomOffersPanel() {
           totalCount={items.length}
           filterValue={`${statusFilter} ${q}`.trim()}
           onClearFilter={() => { setQ(""); setStatusFilter("OPEN,COUNTERED"); }}
-          helper="Copilot seçili teklif kartını kullanır. Paket işlemlerinde önce paketi seç."
+          helper="Sefer Abi seçili teklif kartını kullanır. Paket işlemlerinde önce paketi seç."
         />
       </div>
 

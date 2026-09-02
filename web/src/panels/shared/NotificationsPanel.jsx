@@ -9,6 +9,7 @@ import { normalizeNotifV1, notificationKindLabel, notificationTitleLabel } from 
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { pillKeyFromAny } from "../../utils/uiStatus";
 import { formatDateTimeTR } from "../../utils/time";
+import { userFacingScopeLabel, userFacingStatusLabel } from "../../utils/terminology";
 
 function fmt(v) {
   if (v == null) return "";
@@ -30,11 +31,11 @@ function fmtAtCompact(v) {
 function fmtAge(ageSec) {
   if (typeof ageSec !== "number" || Number.isNaN(ageSec)) return "";
   const s = Math.max(0, Math.floor(ageSec));
-  if (s < 60) return `${s}s`;
+  if (s < 60) return `${s} sn`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
+  if (m < 60) return `${m} dk`;
   const h = Math.floor(m / 60);
-  return `${h}h`;
+  return `${h} sa`;
 }
 
 function uniq(arr) {
@@ -97,7 +98,7 @@ export default function NotificationsPanel() {
       const type = notificationKindLabel(n?.type) || "-";
       const typeLabel = notificationKindLabel(p.kind ?? n?.type) || "-";
       const kind = notificationKindLabel(p.kind ?? "");
-      const status = fmt(p.status ?? "");
+      const status = p.status ? userFacingStatusLabel(p.status) : "";
       const regionLabel = formatRegionOwnership(n?.regionOwnership);
 
       const payloadPretty = JSON.stringify(p, null, 2);
@@ -105,7 +106,7 @@ export default function NotificationsPanel() {
       return {
         key: n?.id ?? idx,
         id: n?.id ?? "-",
-        scope: fmt(n?.scope ?? "-"),
+        scope: userFacingScopeLabel(n?.scope),
         type,
         typeLabel,
         title,
@@ -256,8 +257,8 @@ export default function NotificationsPanel() {
             statusText={busy ? "Yükleniyor" : err ? "Bağlantı okunamadı" : visibleStatusText}
             tone={visibleTone}
             steps={[
-              `Scope ${scopes.length}`,
-              `Tip ${types.length}`,
+              `Kapsam ${scopes.length}`,
+              `Tür ${types.length}`,
               `Durum ${statuses.length}`,
             ]}
           />
@@ -272,7 +273,7 @@ export default function NotificationsPanel() {
               <div style={{ fontSize: 28, fontWeight: 800 }}>{rows.length}</div>
             </div>
             <div className="card" style={{ margin: 0, padding: 12 }}>
-              <div className="muted">Scope sayısı</div>
+              <div className="muted">Kapsam sayısı</div>
               <div style={{ fontSize: 28, fontWeight: 800 }}>{scopes.length}</div>
             </div>
             <div className="card" style={{ margin: 0, padding: 12 }}>
@@ -291,7 +292,7 @@ export default function NotificationsPanel() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Ara: id / tür / başlık / mesaj / araç ..."
+                placeholder="Ara: kayıt no / tür / başlık / mesaj / araç ..."
                 style={{ minWidth: 240 }}
               />
 
@@ -354,7 +355,7 @@ export default function NotificationsPanel() {
 
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Kayıt no</th>
                     <th>Tür</th>
                     <th>Kapsam</th>
                     <th>Bölge</th>
@@ -466,7 +467,7 @@ export default function NotificationsPanel() {
           >
             <div className="topbar" style={{ marginBottom: 12 }}>
               <div>
-                <h3 style={{ margin: 0 }}>Notification #{selected.id}</h3>
+                <h3 style={{ margin: 0 }}>Bildirim #{selected.id}</h3>
                 <div className="muted mono" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
                   <span className="pill" data-status={pillKeyFromAny(selected.typeLabel)}>{selected.typeLabel}</span>
                   <span className="pill" data-status={pillKeyFromAny(selected.status || "")}>{selected.status || "-"}</span>
@@ -479,10 +480,10 @@ export default function NotificationsPanel() {
             </div>
 
             <div className="muted" style={{ marginBottom: 8 }}>
-              <b>Title:</b> {selected.title || "-"}
+              <b>Başlık:</b> {selected.title || "-"}
             </div>
             <div className="muted" style={{ marginBottom: 12 }}>
-              <b>Message:</b> {selected.message || "-"}
+              <b>Mesaj:</b> {selected.message || "-"}
             </div>
             <div className="muted" style={{ marginBottom: 12 }}>
               <b>Bölge:</b> {selected.regionLabel || "-"}

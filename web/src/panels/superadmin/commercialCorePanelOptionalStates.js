@@ -6,8 +6,8 @@ function buildOptionalEndpointState(kind, status) {
     if (status === 403) {
       return {
         endpointStatus: "forbidden",
-        summary: "TOTP step-up tamamlanmadan payment backbone özeti okunamıyor.",
-        activeMilestone: "Step-up gerekli",
+        summary: "Ek doğrulama tamamlanmadan ödeme hazırlık özeti okunamıyor.",
+        activeMilestone: "Ek doğrulama gerekli",
         dormant: true,
         cards: baseCards,
         activeRule: null,
@@ -15,8 +15,8 @@ function buildOptionalEndpointState(kind, status) {
     }
     return {
       endpointStatus: "missing",
-      summary: "Bu backend sürümünde payment backbone status endpointi henüz yok veya sunucu yeniden başlatılmadı.",
-      activeMilestone: "Endpoint bulunamadı",
+      summary: "Bu sunucuda ödeme hazırlık özeti henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
+      activeMilestone: "Özet bulunamadı",
       dormant: true,
       cards: baseCards,
       activeRule: null,
@@ -26,22 +26,22 @@ function buildOptionalEndpointState(kind, status) {
     if (status === 403) {
       return {
         endpointStatus: "forbidden",
-        activeMilestone: "Step-up gerekli",
+        activeMilestone: "Ek doğrulama gerekli",
         candidateCount: 0,
         readyCount: 0,
         dormantCount: 0,
         activeSourceIds: [],
-        summary: "TOTP step-up tamamlanmadan opsiyonel ödeme pilot özeti okunamıyor.",
+        summary: "Ek doğrulama tamamlanmadan isteğe bağlı ödeme pilot özeti okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
-      activeMilestone: "Endpoint bulunamadı",
+      activeMilestone: "Özet bulunamadı",
       candidateCount: 0,
       readyCount: 0,
       dormantCount: 0,
       activeSourceIds: [],
-      summary: "Bu backend sürümünde opsiyonel ödeme pilot endpointi henüz yok veya sunucu yeniden başlatılmadı.",
+      summary: "Bu sunucuda isteğe bağlı ödeme pilot özeti henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "pilotCandidates") {
@@ -49,35 +49,35 @@ function buildOptionalEndpointState(kind, status) {
       return {
         endpointStatus: "forbidden",
         items: [],
-        summary: "TOTP step-up tamamlanmadan opsiyonel pilot aday listesi okunamıyor.",
+        summary: "Ek doğrulama tamamlanmadan isteğe bağlı pilot aday listesi okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
       items: [],
-      summary: "Bu backend sürümünde opsiyonel pilot aday endpointi henüz yok veya sunucu yeniden başlatılmadı.",
+      summary: "Bu sunucuda isteğe bağlı pilot aday listesi henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "requiredStatus") {
     if (status === 403) {
       return {
         endpointStatus: "forbidden",
-        activeMilestone: "Step-up gerekli",
+        activeMilestone: "Ek doğrulama gerekli",
         candidateCount: 0,
         activeCount: 0,
         disabledCount: 0,
         waitingCount: 0,
-        summary: "TOTP step-up tamamlanmadan zorunlu odeme rollout ozeti okunamiyor.",
+        summary: "Ek doğrulama tamamlanmadan zorunlu ödeme geçiş özeti okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
-      activeMilestone: "Endpoint bulunamadi",
+      activeMilestone: "Özet bulunamadı",
       candidateCount: 0,
       activeCount: 0,
       disabledCount: 0,
       waitingCount: 0,
-      summary: "Bu backend surumunde zorunlu odeme rollout endpointi henuz yok veya sunucu yeniden baslatilmadi.",
+      summary: "Bu sunucuda zorunlu ödeme geçiş özeti henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "requiredCandidates") {
@@ -85,20 +85,20 @@ function buildOptionalEndpointState(kind, status) {
       return {
         endpointStatus: "forbidden",
         items: [],
-        summary: "TOTP step-up tamamlanmadan zorunlu rollout aday listesi okunamiyor.",
+        summary: "Ek doğrulama tamamlanmadan zorunlu geçiş aday listesi okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
       items: [],
-      summary: "Bu backend surumunde zorunlu rollout aday endpointi henuz yok veya sunucu yeniden baslatilmadi.",
+      summary: "Bu sunucuda zorunlu geçiş aday listesi henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "accountStatus") {
     if (status === 403) {
       return {
         endpointStatus: "forbidden",
-        activeMilestone: "Step-up gerekli",
+        activeMilestone: "Ek doğrulama gerekli",
         companyCandidateCount: 0,
         roomCandidateCount: 0,
         companyReadyCount: 0,
@@ -107,12 +107,12 @@ function buildOptionalEndpointState(kind, status) {
         roomMissingCount: 0,
         companyErrorCount: 0,
         roomErrorCount: 0,
-        summary: "TOTP step-up tamamlanmadan odeme hesabi hazirlik ozeti okunamiyor.",
+        summary: "Ek doğrulama tamamlanmadan ödeme hesabı hazırlık özeti okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
-      activeMilestone: "Endpoint bulunamadi",
+      activeMilestone: "Özet bulunamadı",
       companyCandidateCount: 0,
       roomCandidateCount: 0,
       companyReadyCount: 0,
@@ -121,7 +121,7 @@ function buildOptionalEndpointState(kind, status) {
       roomMissingCount: 0,
       companyErrorCount: 0,
       roomErrorCount: 0,
-      summary: "Bu backend surumunde odeme hesabi hazirlik endpointi henuz yok veya sunucu yeniden baslatilmadi.",
+      summary: "Bu sunucuda ödeme hesabı hazırlık özeti henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "accountCandidates") {
@@ -129,39 +129,39 @@ function buildOptionalEndpointState(kind, status) {
       return {
         endpointStatus: "forbidden",
         items: [],
-        summary: "TOTP step-up tamamlanmadan odeme hesabi aday listesi okunamiyor.",
+        summary: "Ek doğrulama tamamlanmadan ödeme hesabı aday listesi okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
       items: [],
-      summary: "Bu backend surumunde odeme hesabi aday endpointi henuz yok veya sunucu yeniden baslatilmadi.",
+      summary: "Bu sunucuda ödeme hesabı aday listesi henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "settlementStatus") {
     if (status === 403) {
       return {
         endpointStatus: "forbidden",
-        activeMilestone: "Step-up gerekli",
+        activeMilestone: "Ek doğrulama gerekli",
         candidateCount: 0,
         readyCount: 0,
         plannedCount: 0,
         executedCount: 0,
         blockedCount: 0,
         financeReadyCount: 0,
-        summary: "TOTP step-up tamamlanmadan settlement operasyon ozeti okunamiyor.",
+        summary: "Ek doğrulama tamamlanmadan mutabakat operasyon özeti okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
-      activeMilestone: "Endpoint bulunamadi",
+      activeMilestone: "Özet bulunamadı",
       candidateCount: 0,
       readyCount: 0,
       plannedCount: 0,
       executedCount: 0,
       blockedCount: 0,
       financeReadyCount: 0,
-      summary: "Bu backend surumunde settlement operasyon endpointi henuz yok veya sunucu yeniden baslatilmadi.",
+      summary: "Bu sunucuda mutabakat operasyon özeti henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "settlementQueue") {
@@ -169,20 +169,20 @@ function buildOptionalEndpointState(kind, status) {
       return {
         endpointStatus: "forbidden",
         items: [],
-        summary: "TOTP step-up tamamlanmadan settlement operasyon kuyrugu okunamiyor.",
+        summary: "Ek doğrulama tamamlanmadan mutabakat operasyon kuyruğu okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
       items: [],
-      summary: "Bu backend surumunde settlement operasyon kuyruk endpointi henuz yok veya sunucu yeniden baslatilmadi.",
+      summary: "Bu sunucuda mutabakat operasyon kuyruğu henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "reconciliationStatus") {
     if (status === 403) {
       return {
         endpointStatus: "forbidden",
-        activeMilestone: "Step-up gerekli",
+        activeMilestone: "Ek doğrulama gerekli",
         candidateCount: 0,
         pendingCount: 0,
         matchedCount: 0,
@@ -191,12 +191,12 @@ function buildOptionalEndpointState(kind, status) {
         closedCount: 0,
         overduePlannedCount: 0,
         missingProviderRefCount: 0,
-        summary: "TOTP step-up tamamlanmadan settlement mutabakat ozeti okunamiyor.",
+        summary: "Ek doğrulama tamamlanmadan mutabakat eşleştirme özeti okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
-      activeMilestone: "Endpoint bulunamadi",
+      activeMilestone: "Özet bulunamadı",
       candidateCount: 0,
       pendingCount: 0,
       matchedCount: 0,
@@ -205,7 +205,7 @@ function buildOptionalEndpointState(kind, status) {
       closedCount: 0,
       overduePlannedCount: 0,
       missingProviderRefCount: 0,
-      summary: "Bu backend surumunde settlement mutabakat endpointi henuz yok veya sunucu yeniden baslatilmadi.",
+      summary: "Bu sunucuda mutabakat eşleştirme özeti henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (kind === "reconciliationQueue") {
@@ -213,19 +213,19 @@ function buildOptionalEndpointState(kind, status) {
       return {
         endpointStatus: "forbidden",
         items: [],
-        summary: "TOTP step-up tamamlanmadan settlement mutabakat kuyrugu okunamiyor.",
+        summary: "Ek doğrulama tamamlanmadan mutabakat eşleştirme kuyruğu okunamıyor.",
       };
     }
     return {
       endpointStatus: "missing",
       items: [],
-      summary: "Bu backend surumunde settlement mutabakat kuyruk endpointi henuz yok veya sunucu yeniden baslatilmadi.",
+      summary: "Bu sunucuda mutabakat eşleştirme kuyruğu henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     };
   }
   if (status === 403) {
     return {
       endpointStatus: "forbidden",
-      summary: "TOTP step-up tamamlanmadan ticari ayarlar okunamıyor.",
+      summary: "Ek doğrulama tamamlanmadan ticari ayarlar okunamıyor.",
       paymentModes: ["OFF", "OPTIONAL", "REQUIRED"],
       globalRule: { paymentMode: "OFF", commissionBps: 0, note: "", updatedAt: null },
       roomOverrides: [],
@@ -234,7 +234,7 @@ function buildOptionalEndpointState(kind, status) {
   }
   return {
     endpointStatus: "missing",
-    summary: "Bu backend sürümünde payment backbone settings endpointi henüz yok veya sunucu yeniden başlatılmadı.",
+    summary: "Bu sunucuda ödeme hazırlık ayarları henüz kullanılamıyor veya sunucu yeniden başlatılmadı.",
     paymentModes: ["OFF", "OPTIONAL", "REQUIRED"],
     globalRule: { paymentMode: "OFF", commissionBps: 0, note: "", updatedAt: null },
     roomOverrides: [],
@@ -253,10 +253,10 @@ function buildRateLimitedOptionalState(kind) {
     requiredCandidates: "İstek sınırı aşıldı; zorunlu rollout aday listesi geçici olarak ertelendi.",
     accountStatus: "İstek sınırı aşıldı; ödeme hesabı hazırlığı geçici olarak ertelendi.",
     accountCandidates: "İstek sınırı aşıldı; ödeme hesabı aday listesi geçici olarak ertelendi.",
-    settlementStatus: "İstek sınırı aşıldı; settlement operasyon özeti geçici olarak ertelendi.",
-    settlementQueue: "İstek sınırı aşıldı; settlement operasyon kuyruğu geçici olarak ertelendi.",
-    reconciliationStatus: "İstek sınırı aşıldı; settlement mutabakat özeti geçici olarak ertelendi.",
-    reconciliationQueue: "İstek sınırı aşıldı; settlement mutabakat kuyruğu geçici olarak ertelendi.",
+    settlementStatus: "İstek sınırı aşıldı; mutabakat operasyon özeti geçici olarak ertelendi.",
+    settlementQueue: "İstek sınırı aşıldı; mutabakat operasyon kuyruğu geçici olarak ertelendi.",
+    reconciliationStatus: "İstek sınırı aşıldı; mutabakat özeti geçici olarak ertelendi.",
+    reconciliationQueue: "İstek sınırı aşıldı; mutabakat kuyruğu geçici olarak ertelendi.",
   };
   return {
     ...base,

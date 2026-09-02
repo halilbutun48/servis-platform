@@ -5,9 +5,9 @@ const LIVE_TRACKING_COPY = Object.freeze({
     liveTag: "Canlı takip",
     liveStatusWhenData: "Aktif servis var",
     liveStatusWhenMissing: "Aktif servis görünmüyor",
-    liveRiskWhenData: "GPS güncel değilse ETA kesin gösterilmez.",
+    liveRiskWhenData: "Konum sinyali güncel değilse tahmini varış kesin gösterilmez.",
     liveRiskWhenMissing: "Servis saati, araç ataması veya konum izni kontrol edilmeli.",
-    liveNextCheckWhenData: "Son GPS ve sıradaki durak",
+    liveNextCheckWhenData: "Son konum sinyali ve sıradaki durak",
     liveNextCheckWhenMissing: "Okul / operasyonla teyit",
     liveNoteWhenData: "Bu ekran bilgilendirme amaçlıdır; yeni servis veya rota oluşturmaz.",
     liveNoteWhenMissing: "Bu ekran bilgilendirme amaçlıdır; yeni servis veya rota oluşturmaz.",
@@ -24,7 +24,7 @@ const LIVE_TRACKING_COPY = Object.freeze({
     routeQualityMissing: "ETA henüz alınamadı",
     routeQualityNoRoute: "Aktif rota yok",
     routeNextActionNoRoute: "Aktif rota görünmüyor. Servis saati, araç ataması veya konum güncellenince tekrar kontrol edin.",
-    routeNextActionWaitingGps: "GPS güncellenene kadar kısa süre bekleyin.",
+    routeNextActionWaitingGps: "Konum sinyali güncellenene kadar kısa süre bekleyin.",
     noVehicleReason: "Bugün için aktif servis görünmüyor.",
     noVehicleDetail: "Servis saati, araç ataması veya konum izni kontrol edilmeli.",
   }),
@@ -32,9 +32,9 @@ const LIVE_TRACKING_COPY = Object.freeze({
     liveTag: "Canlı takip",
     liveStatusWhenData: "Aktif vardiya var",
     liveStatusWhenMissing: "Aktif vardiya görünmüyor",
-    liveRiskWhenData: "GPS güncel değilse ETA kesin gösterilmez.",
+    liveRiskWhenData: "Konum sinyali güncel değilse tahmini varış kesin gösterilmez.",
     liveRiskWhenMissing: "Servis saati veya vardiya ataması kontrol edilmeli.",
-    liveNextCheckWhenData: "Son GPS ve sıradaki durak",
+    liveNextCheckWhenData: "Son konum sinyali ve sıradaki durak",
     liveNextCheckWhenMissing: "Servis saati / vardiya ataması",
     liveNoteWhenData: "Bu ekran bilgilendirme amaçlıdır; yeni servis veya rota oluşturmaz.",
     liveNoteWhenMissing: "Bu ekran bilgilendirme amaçlıdır; yeni servis veya rota oluşturmaz.",
@@ -51,7 +51,7 @@ const LIVE_TRACKING_COPY = Object.freeze({
     routeQualityMissing: "ETA henüz alınamadı",
     routeQualityNoRoute: "Aktif rota yok",
     routeNextActionNoRoute: "Aktif rota görünmüyor. Servis saati veya vardiya ataması kontrol edilmeli.",
-    routeNextActionWaitingGps: "GPS güncellenene kadar kısa süre bekleyin.",
+    routeNextActionWaitingGps: "Konum sinyali güncellenene kadar kısa süre bekleyin.",
     noVehicleReason: "Bugün için aktif vardiya görünmüyor.",
     noVehicleDetail: "Servis saati veya vardiya ataması kontrol edilmeli.",
   }),
@@ -125,8 +125,8 @@ export function getLiveTrackingNoVehicleDetail(role = "parent") {
 export function getLiveTrackingRouteQualityText(eta, role = "personel") {
   const copy = copyFor(role);
   const q = String(eta?.routeQuality || "").toUpperCase();
-  if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
-  if (q === "STALE_GPS") return "GPS gecikmeli";
+  if (q === "OFFLINE_GPS") return "Konum sinyali kapalı veya çok eski";
+  if (q === "STALE_GPS") return "Konum sinyali gecikmeli";
   if (q === "SKIP_PRESENT") return "Atlanan durak var";
   if (q === "DONE_WITH_SKIPS") return "Rota bitti, atlanan durak var";
   if (q === "DONE") return "Rota tamamlandı";

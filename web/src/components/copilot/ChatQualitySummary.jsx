@@ -53,7 +53,7 @@ export default function ChatQualitySummary({ messages = [], currentScreenLabel =
     <div style={{ display: 'grid', gap: 8, borderRadius: 14, padding: 12, background: '#f8fafc', border: '1px solid #d0d5dd' }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: '#101828' }}>Copilot kalite özeti</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#101828' }}>Sefer Abi kalite özeti</div>
           <div style={{ fontSize: 12, color: '#475467' }}>Son geri bildirimler ve son cevap kalitesi tek yerde görünür.</div>
         </div>
         <span style={{ borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 800, ...tone(summary.ratio) }}>

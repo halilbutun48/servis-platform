@@ -42,23 +42,23 @@ function fmtCount(value) {
 const MENU_GUIDE = [
   { title: "Genel Bakış", desc: "İlk açılış ekranı. Genel durumu görüp doğru yere buradan geçersin." },
   { title: "Hizmet Alan Firmalar", desc: "Hizmet alan firma kayıtları, kapsam ve bağlı yapıların yönetimi." },
-  { title: "Operasyon Odaları", desc: "Operasyon odaları, araç ve sürücü omurgasının merkezi." },
+  { title: "Taşımacılık Firmaları", desc: "Taşımacılık firmaları, araç ve sürücü operasyonunun merkezi." },
   { title: "Kullanıcılar", desc: "Kullanıcı hesapları, roller ve erişim görünümü." },
   { title: "İller ve Bölgeler", desc: "İl ve bölge tanımlarının yönetimi." },
   { title: "İşlem Kayıtları", desc: "Kim, ne zaman, hangi işlemi yaptı sorusunun kaydı." },
   { title: "Canlı İzleme", desc: "Sistemin ve sahadaki akışın canlı görünümü." },
   { title: "Kabul Merkezi", desc: "Saha kabul ve doğrulama işlerinin ana ekranı." },
-  { title: "Check-in", desc: "Hizmet alan firma, taşımacılık firması, okul ve organizasyon için check-in izleme ve hızlı geçiş alanı." },
-  { title: "Operasyon Doğrulama", desc: "Checklist, kanıt ve sonuç kaydı için kullanılan ekran." },
+  { title: "Biniş kayıtları", desc: "Hizmet alan firma, taşımacılık firması, okul ve organizasyon için biniş kayıtlarını izleme ve hızlı geçiş alanı." },
+  { title: "Operasyon Doğrulama", desc: "Kontrol listesi, kanıt ve sonuç kaydı için kullanılan ekran." },
   { title: "Sistem Standartları", desc: "Resmi doküman, paket ve çalışma hattının aynı kurala göre ilerlediğini gösterir." },
   { title: "Ticari Akış", desc: "Talep, teklif, pazarlık ve sözleşme adımlarını tek akışta özetler." },
   { title: "Güven ve Kalite", desc: "Kalite, hizmet değerlendirme ve güven görünümü." },
-  { title: "Telematik / GPS Sağlayıcıları", desc: "Platform provider kataloğu, adapter şablonları ve güvenlik kuralları." },
-  { title: "Başvuru İncelemesi", desc: "Public lead inceleme kuyruğu ve invite readiness." },
+  { title: "Konum veri sağlayıcıları", desc: "Platform veri sağlayıcıları, bağlantı şablonları ve güvenlik kuralları." },
+  { title: "Başvuru İncelemesi", desc: "Herkese açık başvuruların inceleme kuyruğu ve davet hazırlığı." },
   { title: "Yardımcı", desc: "Yardımcı cevabın yapısını ve geri bildirim akışını gösterir." },
   { title: "Sahaya Çıkış Kontrolü", desc: "Canlıya çıkmadan önce son kontrol kapısı." },
   { title: "KVKK", desc: "Veri koruma ve uyum yüzeyi." },
-  { title: "Log Dışa Aktarımı", desc: "Sistem kayıtlarını dışa alma ekranı." },
+  { title: "İşlem kayıtlarını dışa aktar", desc: "Sistem işlem kayıtlarını dışa alma ekranı." },
 ];
 
 const DETAIL_TABS = [
@@ -203,7 +203,7 @@ function SystemDetailsBody({ me, stats, feedbackCount }) {
 const TELEMATICS_OVERVIEW_BULLETS = [
   "GPS sağlayıcı kataloğu hazır",
   "Taşımacılık Firması eşleştirme self-service",
-  "Provider yönetimi nav menüde",
+  "Veri sağlayıcısı yönetimi menüde",
 ];
 
 function TelematicsOverviewSummaryCard() {
@@ -223,7 +223,7 @@ function TelematicsOverviewSummaryCard() {
         ))}
       </div>
       <button className="btn sm primary" onClick={() => navigate("/superadmin/telematics")}>
-        Telematik / GPS Sağlayıcıları
+        Konum veri sağlayıcıları
       </button>
     </div>
   );
@@ -439,15 +439,15 @@ export default function SuperAdminPanel() {
         <div className="card" style={{ padding: 14 }}>
           <div className="panelSectionTitle" style={{ marginBottom: 8 }}>Hızlı erişim</div>
           <div className="saActions">
-            <button className="btn sm" onClick={() => navigate("/superadmin/companies")}>Şirketler</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/rooms")}>Operasyon Odaları</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/companies")}>Firmalar</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/rooms")}>Taşımacılık Firmaları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/users")}>Kullanıcılar</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/regions")}>İller ve Bölgeler</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/audit")}>İşlem Kayıtları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/operations")}>Denetim Paneli</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/observability")}>Canlı İzleme</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/acceptance")}>Kabul Merkezi</button>
-            <button className="btn sm" onClick={() => navigate("/room/checkin")}>Check-in</button>
+            <button className="btn sm" onClick={() => navigate("/room/checkin")}>Biniş kayıtları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/ssot-alignment")}>Sistem Standartları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/commercial-core")}>Ticari Akış</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/trust-quality")}>Güven ve Kalite</button>
@@ -455,8 +455,8 @@ export default function SuperAdminPanel() {
             <button className="btn sm" onClick={() => navigate("/superadmin/copilot")}>Yardımcı</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/pilot-launch-gate")}>Sahaya Çıkış Kontrolü</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/operation-verification")}>Operasyon Doğrulama</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Dışa Aktarımı</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/telematics")}>Telematik / GPS Sağlayıcıları</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>İşlem kayıtlarını dışa aktar</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/telematics")}>Konum veri sağlayıcıları</button>
           </div>
           {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
         </div>
@@ -467,7 +467,7 @@ export default function SuperAdminPanel() {
           <div className="panelSectionTitle" style={{ marginBottom: 8 }}>Özet</div>
 
           <div className="panelBody">Hizmet Alan Firma (aktif/toplam): {fmtActiveTotal(stats.companies, stats.companiesTotal)}</div>
-          <div className="panelBody" style={{ marginTop: 6 }}>Operasyon odası (aktif/toplam): {fmtActiveTotal(stats.rooms, stats.roomsTotal)}</div>
+          <div className="panelBody" style={{ marginTop: 6 }}>Taşımacılık firması (aktif/toplam): {fmtActiveTotal(stats.rooms, stats.roomsTotal)}</div>
           <div className="panelBody" style={{ marginTop: 6 }}>Araç sayısı: {stats.vehiclesTotal ?? stats.vehicles ?? "-"}</div>
           <div className="panelBody" style={{ marginTop: 6 }}>Şoför sayısı: {stats.driversTotal ?? stats.drivers ?? "-"}</div>
 

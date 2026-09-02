@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
+import { humanizeUserFacingText } from "../../utils/terminology";
 
 function Card({ title, badge, subtitle, children }) {
   return (
@@ -43,9 +44,9 @@ function CapabilityList({ items, emptyText, planned = false }) {
             borderTop: "1px solid rgba(255,255,255,0.08)",
           }}
         >
-          <div>{item.label}</div>
+          <div>{humanizeUserFacingText(item.label, "Yardımcı özelliği")}</div>
           <span className="pill" data-status={planned ? "WARN" : "OK"}>
-            {item.status}
+            {humanizeUserFacingText(item.status, planned ? "Planlanan" : "Aktif")}
           </span>
         </div>
       ))}
@@ -90,17 +91,17 @@ export default function NaturalCopilotPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div className="panelTitle">Doğal Copilot Yol Haritası</div>
+          <div className="panelTitle">Sefer Abi yol haritası</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Read-only / suggestion-first yüzey. Canlı operasyon yüzeyi değildir; M64 yol haritası ve template özetini gösterir.
+            Salt okunur / öneri odaklı yüzey. Canlı operasyon yüzeyi değildir; yardımcı yol haritası ve şablon özetini gösterir.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <span className="pill" data-status="INFO">
-            Roadmap
+            Yol haritası
           </span>
           <span className="pill" data-status="WARN">
-            Planned surface
+            Planlanan yüzey
           </span>
           <button className="btn" onClick={load}>
             Yenile
@@ -113,38 +114,38 @@ export default function NaturalCopilotPanel() {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card
           title="Durum özeti"
-          badge={{ label: manifest?.activeMilestone || "M64", status: "INFO" }}
+          badge={{ label: humanizeUserFacingText(manifest?.activeMilestone, "Bu ürün aşaması"), status: "INFO" }}
           subtitle="Bu yüzey planlanan yardımcı katmanını, açıklayıcı cevap iskeletini ve geri bildirim zeminini özetler."
         >
-          <div>{manifest?.title || "Henüz yardımcı özeti yok"}</div>
+          <div>{humanizeUserFacingText(manifest?.title, "Henüz yardımcı özeti yok")}</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {manifest?.rules?.[0] || "Read-only ve suggestion-first çizgisi korunur."}
+            {humanizeUserFacingText(manifest?.rules?.[0], "Salt okunur ve öneri odaklı çizgi korunur.")}
           </div>
         </Card>
         <Card
-          title="Aktif capability'ler"
-          badge={{ label: `${activeCapabilities.length} active`, status: "OK" }}
+          title="Aktif özellikler"
+          badge={{ label: `${activeCapabilities.length} aktif`, status: "OK" }}
           subtitle="Bugün çalışan ve değişiklik yapmayan yardımcı yüzeyler."
         >
           <CapabilityList items={activeCapabilities} emptyText="Henüz canlı capability yok" />
         </Card>
         <Card
-          title="Planlanan capability'ler"
-          badge={{ label: `${plannedCapabilities.length} planned`, status: "WARN" }}
-          subtitle="Roadmap üzerinde olan, ama canlı yönetim yüzeyi olmayan parçalar."
+          title="Planlanan özellikler"
+          badge={{ label: `${plannedCapabilities.length} planlanan`, status: "WARN" }}
+          subtitle="Yol haritasında olan, ancak canlı yönetim yüzeyi olmayan parçalar."
         >
           <CapabilityList items={plannedCapabilities} emptyText="Henüz planlanan capability yok" planned />
         </Card>
-        <Card title="Cevap iskeleti" badge={{ label: "READ-ONLY", status: "INFO" }} subtitle="Açıklayıcı cevap iskeleti ve akış bölümleri.">
+        <Card title="Cevap iskeleti" badge={{ label: "SADECE GÖRÜNTÜLEME", status: "INFO" }} subtitle="Açıklayıcı cevap iskeleti ve akış bölümleri.">
           <div>{(replyTemplate?.sections || []).length} bölüm</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {(replyTemplate?.sections || []).join(" • ") || "Henüz cevap yapısı yok"}
+            {(replyTemplate?.sections || []).map((item) => humanizeUserFacingText(item.replace(/[-_]/g, " "), "Bölüm")).join(" • ") || "Henüz cevap yapısı yok"}
           </div>
         </Card>
-        <Card title="Geri bildirim iskeleti" badge={{ label: "SUGGESTION-FIRST", status: "INFO" }} subtitle="Kullanıcı geri bildirimi için yol haritası seçenekleri.">
-          <div>{(feedbackTemplate?.options || []).join(" • ") || "Henüz geri bildirim seçeneği yok"}</div>
+        <Card title="Geri bildirim iskeleti" badge={{ label: "ÖNERİ ODAKLI", status: "INFO" }} subtitle="Kullanıcı geri bildirimi için yol haritası seçenekleri.">
+            <div>{(feedbackTemplate?.options || []).map((item) => humanizeUserFacingText(item.replace(/[-_]/g, " "), "Seçenek")).join(" • ") || "Henüz geri bildirim seçeneği yok"}</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {feedbackTemplate?.summary || "Yardımcı için kullanılan geri bildirim mantığı burada özetlenir"}
+            {humanizeUserFacingText(feedbackTemplate?.summary, "Yardımcı için kullanılan geri bildirim mantığı burada özetlenir")}
           </div>
         </Card>
       </div>

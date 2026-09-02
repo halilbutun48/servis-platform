@@ -27,36 +27,36 @@ const TELEMATICS_PROVIDER_OPTIONS = [
   { value: "ARVENTO", label: "Arvento" },
   { value: "MOBILIZ", label: "Mobiliz" },
   { value: "FILOBIL", label: "Filobil" },
-  { value: "GENERIC_API", label: "Generic API" },
-  { value: "WEBHOOK", label: "Webhook" },
-  { value: "CSV_IMPORT", label: "Excel/CSV import" },
+  { value: "GENERIC_API", label: "Genel veri bağlantısı" },
+  { value: "WEBHOOK", label: "Otomatik veri bildirimi" },
+  { value: "CSV_IMPORT", label: "Excel/CSV aktarımı" },
   { value: "CUSTOM_REQUEST", label: "Özel entegrasyon talebi" },
 ];
 
 const TELEMATICS_PROVIDER_STATES = [
-  "NOT_CONNECTED",
-  "CONFIG_REQUIRED",
-  "TESTING",
-  "READY",
-  "ACTIVE",
-  "ERROR",
-  "DISABLED",
+  "Bağlı değil",
+  "Kurulum gerekli",
+  "Test ediliyor",
+  "Hazır",
+  "Aktif",
+  "Hata",
+  "Devre dışı",
 ];
 
 const TELEMATICS_MATCH_STATES = [
-  "MATCHED",
-  "NEEDS_REVIEW",
-  "UNMATCHED",
-  "DUPLICATE_MATCH",
-  "DISABLED",
+  "Eşleşti",
+  "Kontrol gerekli",
+  "Eşleşmedi",
+  "Birden fazla eşleşme",
+  "Devre dışı",
 ];
 
 const TELEMATICS_CONNECTION_TYPES = [
-  "API polling",
-  "Webhook push",
-  "Excel/CSV import",
+  "Düzenli veri sorgulama",
+  "Otomatik veri bildirimi",
+  "Excel/CSV aktarımı",
   "Özel entegrasyon talebi",
-  "TCP/device bridge",
+  "Cihaz bağlantısı",
 ];
 
 
@@ -242,7 +242,7 @@ export function RoomVehicleManageSection({
             selectedSummary={[focusVehicle?.brand, focusVehicle?.model, focusDriverLabel].filter(Boolean).join(" • ")}
             visibleCount={items.length}
             totalCount={items.length}
-            helper="Copilot seçili araç kartını kullanır."
+          helper="Sefer Abi seçili araç kartını kullanır."
           />
 
           <table className="tbl" style={{ whiteSpace: "nowrap", fontSize: 12, marginTop: 10 }}>
@@ -380,7 +380,7 @@ export function RoomVehicleStatusSection({
           setPlateQuery("");
           setStatusFilter("ALL");
         }}
-        helper="Copilot seçili aracı kullanır."
+        helper="Sefer Abi seçili aracı kullanır."
       />
 
       <table className="tbl" style={{ marginTop: 10 }}>
@@ -651,7 +651,7 @@ export function RoomVehicleAvailabilitySection({
       </div>
 
       <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-        İpucu: Agreement → Daily Shift (M18) aynı pencereye shift ürettiyse bile <code>/api/availability/bulk</code> önce agreement conflict döner (deterministik).
+        İpucu: Sözleşme aynı zaman aralığına vardiya ürettiyse önce sözleşme çakışması kontrol edilir.
       </div>
     </div>
   );
@@ -684,15 +684,15 @@ export function RoomVehicleTelematicsSection({
     <div style={{ display: "grid", gap: 12 }}>
       <div className="card" style={{ padding: 14, display: "grid", gap: 12 }}>
         <div>
-          <h3 style={{ marginBottom: 6 }}>GPS Eşleştirme / Telematik Bağlantısı</h3>
+          <h3 style={{ marginBottom: 6 }}>GPS eşleştirme / cihaz bağlantısı</h3>
           <div className="muted">
-            Provider kataloğu ve güvenlik kuralları Süper Yönetici tarafından yönetilir. Taşımacılık Firması kendi GPS hesabını onaylı sağlayıcı kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
+            Veri sağlayıcısı kataloğu ve güvenlik kuralları Süper Yönetici tarafından yönetilir. Taşımacılık Firması kendi GPS hesabını onaylı sağlayıcı kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
           </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
           <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
-            <div className="panelSectionTitle">Onaylı provider kataloğu</div>
+            <div className="panelSectionTitle">Onaylı veri sağlayıcısı kataloğu</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
               Taşımacılık Firması yalnızca platformun izin verdiği sağlayıcı listesini görür.
             </div>
@@ -716,7 +716,7 @@ export function RoomVehicleTelematicsSection({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           {TELEMATICS_PROVIDER_STATES.map((label) => (
             <div key={label} style={{ padding: 10, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
-              <div className="panelMeta" style={{ fontSize: 12 }}>Provider status</div>
+              <div className="panelMeta" style={{ fontSize: 12 }}>Veri sağlayıcısı durumu</div>
               <div style={{ marginTop: 6 }}>
                 <span className="pill" data-status="INFO">{label}</span>
               </div>
@@ -727,7 +727,7 @@ export function RoomVehicleTelematicsSection({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
           {TELEMATICS_MATCH_STATES.map((label) => (
             <div key={label} style={{ padding: 10, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
-              <div className="panelMeta" style={{ fontSize: 12 }}>Vehicle match</div>
+              <div className="panelMeta" style={{ fontSize: 12 }}>Araç eşleşmesi</div>
               <div style={{ marginTop: 6 }}>
                 <span className="pill" data-status={label === "DISABLED" ? "WARN" : "ROLE"}>{label}</span>
               </div>
@@ -736,7 +736,7 @@ export function RoomVehicleTelematicsSection({
         </div>
 
         <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
-          LIVE / STALE / OFFLINE durumu ve son veri zamanı liste satırlarında okunur. Secret/token/API key görünmez. Raw payload bu ekranda yer almaz.
+          Konum sinyalinin güncelliği ve son veri zamanı liste satırlarında okunur. Gizli erişim anahtarı görünmez. Ham veri bu ekranda yer almaz.
         </div>
       </div>
 
@@ -745,7 +745,7 @@ export function RoomVehicleTelematicsSection({
           <div>
             <div className="panelSectionTitle">Eşleştirme hazırlığı</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              Araç, provider ve matching alanlarını doldurup ready duruma al.
+              Araç, veri sağlayıcısı ve eşleştirme alanlarını doldurup hazır duruma al.
             </div>
           </div>
           <form onSubmit={createDevice} style={{ display: "grid", gap: 10 }}>
@@ -774,7 +774,7 @@ export function RoomVehicleTelematicsSection({
             </div>
 
             <div>
-              <label className="muted">Provider</label>
+              <label className="muted">Veri sağlayıcısı</label>
               <select
                 value={deviceForm.vendor}
                 onChange={(e) => setDeviceForm((p) => ({ ...p, vendor: e.target.value }))}
@@ -787,7 +787,7 @@ export function RoomVehicleTelematicsSection({
             </div>
 
             <div>
-              <label className="muted">Connection tipi</label>
+              <label className="muted">Bağlantı türü</label>
               <select
                 value={deviceForm.connectionType}
                 onChange={(e) => setDeviceForm((p) => ({ ...p, connectionType: e.target.value }))}
@@ -810,7 +810,7 @@ export function RoomVehicleTelematicsSection({
             </div>
 
             <div>
-              <label className="muted">deviceId</label>
+              <label className="muted">Cihaz kimliği</label>
               <input
                 value={deviceForm.deviceId}
                 onChange={(e) => setDeviceForm((p) => ({ ...p, deviceId: e.target.value }))}
@@ -820,7 +820,7 @@ export function RoomVehicleTelematicsSection({
             </div>
 
             <div>
-              <label className="muted">externalDeviceId</label>
+              <label className="muted">Harici cihaz kimliği</label>
               <input
                 value={deviceForm.externalDeviceId}
                 onChange={(e) => setDeviceForm((p) => ({ ...p, externalDeviceId: e.target.value }))}
@@ -830,7 +830,7 @@ export function RoomVehicleTelematicsSection({
             </div>
 
             <div>
-              <label className="muted">Serial</label>
+              <label className="muted">Seri numarası</label>
               <input
                 value={deviceForm.serial}
                 onChange={(e) => setDeviceForm((p) => ({ ...p, serial: e.target.value }))}
@@ -867,7 +867,7 @@ export function RoomVehicleTelematicsSection({
             </div>
           </form>
           <div className="muted" style={{ fontSize: 12, lineHeight: 1.45 }}>
-            Not: Gizli token, API key ve platform endpoint metni bu ekranda gösterilmez. Erişim kodu yalnızca create/rotate anında bir kez gösterilir.
+            Not: Gizli erişim anahtarı ve platform bağlantı adresi bu ekranda gösterilmez. Erişim kodu yalnızca oluşturma/yenileme anında bir kez gösterilir.
           </div>
         </div>
 
@@ -889,19 +889,19 @@ export function RoomVehicleTelematicsSection({
             Test eşleştirme
           </button>
         </div>
-        {focusArchived ? <div className="card" style={{ marginTop: 12 }}>Arşivli araçta telematics yönetimi kapalıdır.</div> : null}
-        {!focusArchived && !telematicsRows.length ? <div className="muted" style={{ marginTop: 12 }}>Bu araç için telematics cihazı yok.</div> : null}
+        {focusArchived ? <div className="card" style={{ marginTop: 12 }}>Arşivli araçta konum cihazı yönetimi kapalıdır.</div> : null}
+        {!focusArchived && !telematicsRows.length ? <div className="muted" style={{ marginTop: 12 }}>Bu araç için konum cihazı yok.</div> : null}
         {!focusArchived && telematicsRows.length ? (
           <table className="tbl" style={{ marginTop: 12 }}>
             <thead>
               <tr>
                 <th>Plaka</th>
-                <th>Provider</th>
-                <th>Serial</th>
-                <th>Label</th>
+                <th>Veri sağlayıcısı</th>
+                <th>Seri numarası</th>
+                <th>Etiket</th>
                 <th>Durum</th>
-                <th>Son Seen</th>
-                <th>Son Ingest</th>
+                <th>Son görülme</th>
+                <th>Son veri</th>
                 <th>İşlem</th>
               </tr>
             </thead>

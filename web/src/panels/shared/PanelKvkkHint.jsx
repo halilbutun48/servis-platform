@@ -53,7 +53,12 @@ function sanitizeEvidenceText(value) {
   if (suspiciousMarkers.some((marker) => hay.includes(marker))) {
     return "Sistem kanıtı hazır";
   }
-  return text;
+  return text
+    .replace(/TOTP\s+secret/gi, "TOTP doğrulama sırrı")
+    .replace(/export['’]u/gi, "dışa aktarımı")
+    .replace(/step[- ]?up/gi, "ek doğrulama")
+    .replace(/Matrix/gi, "Matris")
+    .replace(/provider/gi, "veri sağlayıcısı");
 }
 
 function visibleScopeLabel(scope) {
@@ -103,7 +108,7 @@ export default function PanelKvkkHint({ panelKey, effectiveRole }) {
   const rowMeta = [
     Array.isArray(row?.dataScopes) && row.dataScopes.length ? `Kapsam: ${row.dataScopes.map(visibleScopeLabel).join(" • ")}` : null,
     row?.notes ? `Rol notu: ${sanitizeEvidenceText(row.notes)}` : null,
-    matrix?.version ? `Matrix v${matrix.version}` : null,
+    matrix?.version ? `Matris v${matrix.version}` : null,
   ].filter(Boolean);
 
   return (

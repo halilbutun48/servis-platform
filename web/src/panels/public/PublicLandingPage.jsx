@@ -58,7 +58,7 @@ const AUDIENCE_CARDS = [
     ],
   },
   {
-    title: "Sefer Abi / Operasyon Copilot'u",
+    title: "Sefer Abi / operasyon yardımcısı",
     bullets: [
       "Ekrandaki sinyalleri özetler.",
       "Riskleri görünür yapar.",
@@ -93,7 +93,7 @@ const FAQ = [
   },
   {
     q: "Sefer Abi otomatik işlem yapar mı?",
-    a: "Hayır. Sefer Abi opsiyonel operasyon copilot'udur; sinyalleri özetler, riskleri açıklar ve sonraki adımı önerir. Teklif, sözleşme, araç atama, rota uygulama, SMS/push, ödeme ve ceza gibi kritik işlemler kullanıcı onayı olmadan yapılmaz.",
+    a: "Hayır. Sefer Abi, isteğe bağlı operasyon yardımcınızdır; sinyalleri özetler, riskleri açıklar ve sonraki adımı önerir. Teklif, sözleşme, araç atama, rota uygulama, SMS/push, ödeme ve ceza gibi kritik işlemler kullanıcı onayı olmadan yapılmaz.",
   },
   {
     q: "Tedarikçiler nasıl ilerler?",
@@ -233,7 +233,7 @@ export default function PublicLandingPage() {
               </p>
 
               <p className="panelBody" style={{ marginTop: 14, maxWidth: 900, color: "#d8e4ff" }}>
-                Sefer Abi ise operasyonu anlamanıza ve riskleri erken görmenize yardımcı olan opsiyonel operasyon copilot'udur.
+                Sefer Abi ise operasyonu anlamanıza ve riskleri erken görmenize yardımcı olan isteğe bağlı operasyon yardımcınızdır.
               </p>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 }}>
@@ -296,8 +296,8 @@ export default function PublicLandingPage() {
               ))}
             </div>
             <div className="panelBody" style={{ marginTop: 12 }}>
-              Görünürlük, proof ve kalite sinyalleri public vitrinde anlatılır; gerçek write / payment / invoice süreçleri bu
-              milestone'da açılmaz.
+              Görünürlük, kanıt ve kalite göstergeleri herkese açık tanıtım alanında anlatılır; gerçek veri yazma, ödeme ve fatura
+              süreçleri bu ürün aşamasında açılmaz.
             </div>
           </div>
         </section>
@@ -320,7 +320,7 @@ export default function PublicLandingPage() {
               <li className="panelBody">Kontrollü lead kaydı ve review kuyruğu</li>
               <li className="panelBody">KVKK onayı olmadan submit yok</li>
               <li className="panelBody">Self-service üyelik ve otomatik hesap açma yok</li>
-              <li className="panelBody">Ödeme, fatura, tahsilat ve settlement yok</li>
+              <li className="panelBody">Ödeme, fatura, tahsilat ve mutabakat yok</li>
               <li className="panelBody">Davetli üyelik yalnızca doğrulama sonrası</li>
             </ul>
             <button type="button" className="btn primary" style={{ marginTop: 14 }} onClick={() => openLeadForm(activePreset)}>
@@ -398,7 +398,7 @@ export default function PublicLandingPage() {
           </div>
           <div className="panelBody" style={{ marginTop: 8 }}>
             Sefer Abi ise ekran sinyallerini özetleyen, riskleri görünür yapan ve sonraki adımı öneren opsiyonel operasyon
-            copilot'udur.
+            operasyon yardımcınızdır.
           </div>
           <div className="panelMeta" style={{ marginTop: 10 }}>
             Mevcut SeferPakt web projesinin public route'u: <code>/landing</code> • Authenticated app akışı ve operasyon

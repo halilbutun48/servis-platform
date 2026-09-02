@@ -114,7 +114,7 @@ must(webPanel, "Personel erişimi oluştur", "web personel access create action 
 must(parentPanel, "Veli kodu + PIN", "parent invite panel uses simplified veli code language");
 must(acceptPanel, "Veli kodu + PIN ile giriş", "accept parent panel uses simplified veli code language");
 must(passengerPanel, "Bu akış hesap aktivasyonu değildir.", "passenger link panel is not activation");
-must(passengerPanel, "tek kişiye özel süreli canlı takip linki", "passenger link panel keeps live-link wording");
+must(passengerPanel, "tek kişiye özel süreli canlı takip bağlantısı", "passenger link panel keeps live-link wording");
 must(mobileLogin, "Kullanıcı kodu", "mobile login keeps user code label");
 must(mobileLogin, "Size verilen sürücü, personel veya veli kodunu girin.", "mobile login keeps helper copy");
 must(mobileLogin, "PIN veya şifre", "mobile login keeps pin or password label");

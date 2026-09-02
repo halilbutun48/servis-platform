@@ -95,7 +95,7 @@ async function main() {
   must("panel shows M65 cards", includesAny(panel, ["M65 Pilot Launch Gate", "Launch checklist", "GO / LIMITED GO / NO-GO", "Karar kaydı", "Risk kaydı"]));
   mustNot("panel drops template endpoints", includesAny(panel, ["/api/pilot-launch-gate/decision-template", "/api/pilot-launch-gate/risk-template"]));
   must("panel uses real field acceptance session api", includesAny(panel, ["/api/field-acceptance/session"]));
-  must("panel keeps acceptance summary", includesAny(panel, ["Acceptance özetleri", "Kabul checklisti"]));
+  must("panel keeps acceptance summary", includesAny(panel, ["Kabul özetleri", "Kabul checklisti"]));
   mustNot("panel drops field acceptance session-template api", includesAny(panel, ["/api/field-acceptance/session-template"]));
   must("runbook explains M65 scope", includesAny(runbook, ["Pilot Launch Gate", "kritik risk listesi", "M65 green olmadan sahaya çıkılmaz", "karar kaydı", "risk kaydı"]));
 

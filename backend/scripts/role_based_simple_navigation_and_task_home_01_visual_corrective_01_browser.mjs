@@ -106,6 +106,7 @@ const routePoints = [
 const results = [];
 const screenshots = [];
 const consoleErrors = [];
+const httpErrors = [];
 const pageErrors = [];
 let consoleErrorCount = 0;
 let pageErrorCount = 0;
@@ -168,6 +169,11 @@ function observe(page, role, viewport) {
     pageErrors.push({ role, viewport, text: error.message });
   });
   page.on("response", (response) => {
+    if (response.status() >= 400) {
+      response.text().then((body) => httpErrors.push({ role, viewport, status: response.status(), url: response.url(), body: body.slice(0, 500) })).catch(() => {
+        httpErrors.push({ role, viewport, status: response.status(), url: response.url() });
+      });
+    }
     if (response.status() >= 500) unexpected500Count += 1;
   });
 }
@@ -184,6 +190,21 @@ async function installApiFixtures(page, role) {
     const match = url.pathname.match(/^\/api\/shifts\/(\d+)\/route-preview$/);
     if (match) return route.fulfill(fixtureResponse({ path: { points: routePoints, source: "OSRM" } }));
     return route.continue();
+  });
+  await page.route("**/api/ai/copilot", async (route) => {
+    await route.fulfill(fixtureResponse({
+      ok: true,
+      provider: "visual-acceptance-fixture",
+      mode: "CHAT_HELP",
+      reply: "Sefer Abi aynı seçili araç bağlamıyla yardımcı olmaya hazır.",
+      summary: "Seçili araç bağlamı korundu.",
+      screenLabel: role === "ROOM" ? "Canlı Takip" : "Harita",
+      contextualSuggestedChips: ["Seçili aracı anlat", "Sıradaki doğru işlem ne?"],
+      suggestedChips: ["Seçili aracı anlat", "Sıradaki doğru işlem ne?"],
+      quickActions: [],
+      responseSections: [],
+      conversationState: { source: "visual-acceptance-fixture", contextPreserved: true },
+    }));
   });
 }
 
@@ -589,6 +610,7 @@ const report = {
   pageErrorCount,
   unexpected500Count,
   consoleErrors,
+  httpErrors,
   pageErrors,
   results,
   manualVisualQuestions: {

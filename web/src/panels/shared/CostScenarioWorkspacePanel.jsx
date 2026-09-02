@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PanelChrome from "../../components/PanelChrome";
 import { getCostScenarioBaseline, getExternalCostReferenceLayers, postCostScenarioPreview } from "../../api";
+import { humanizeUserFacingText } from "../../utils/terminology";
 import { getApiErrorInfo } from "../../utils/apiContract";
 import { useSession } from "../../state/session";
 
@@ -49,7 +50,7 @@ function roleScenarioConfig(scope, companyKind) {
     quickPassenger: "+10 yolcu",
     quickVehicle: "+1 araç",
     quickDays: "+5 hizmet günü",
-    example: "Örnek: mevcut taşıma planında araç veya rota varsayımı değiştirilir; sonuç yalnızca preview farkı olarak gösterilir.",
+    example: "Örnek: mevcut taşıma planında araç veya rota varsayımı değiştirilir; sonuç yalnızca önizleme farkı olarak gösterilir.",
   };
   if (String(companyKind).toUpperCase() === "SCHOOL") return {
     role: "SCHOOL",
@@ -71,7 +72,7 @@ function roleScenarioConfig(scope, companyKind) {
     quickPassenger: "+10 katılımcı",
     quickVehicle: "+1 araç planı",
     quickDays: "+5 hizmet günü",
-    example: "Örnek: katılımcı sayısı değişikliği, etkinlik/trip planı için tahmini etkiyi gösterir; şirket bütçesi açılmaz.",
+    example: "Örnek: katılımcı sayısı değişikliği, etkinlik/gezi planı için tahmini etkiyi gösterir; şirket bütçesi açılmaz.",
   };
   return {
     role: "COMPANY",
@@ -82,7 +83,7 @@ function roleScenarioConfig(scope, companyKind) {
     quickPassenger: "+10 kişi",
     quickVehicle: "+1 araç",
     quickDays: "+5 hizmet günü",
-    example: "Örnek: hizmet günü veya araç sayısı değiştirilir; sonuç mevcut bütçeyi ya da canlı operasyonu değiştirmeyen preview sinyalidir.",
+    example: "Örnek: hizmet günü veya araç sayısı değiştirilir; sonuç mevcut bütçeyi ya da canlı operasyonu değiştirmeyen önizleme bilgisidir.",
   };
 }
 
@@ -139,12 +140,38 @@ function statusTone(status) {
   return key === "READY" ? "good" : key === "BLOCKED" ? "danger" : "warm";
 }
 
+function readableCostText(value, fallback = "Belirtilmedi") {
+  const raw = String(value ?? "").trim();
+  if (!raw) return fallback;
+  const labels = {
+    HIGH: "Yüksek",
+    MEDIUM: "Orta",
+    LOW: "Düşük",
+    INSUFFICIENT: "Yetersiz kanıt",
+    UNKNOWN: "Belirsiz",
+    INSUFFICIENT_DATA: "Yetersiz veri",
+    NOT_AVAILABLE: "Mevcut değil",
+    MISSING: "Eksik bilgi",
+    MISSING_INFO: "Eksik bilgi",
+    USER_ACTUAL: "Kullanıcının gerçek değeri",
+    PLATFORM_OBSERVED_REFERENCE: "Platform gözlem referansı",
+    TECHNICAL_CLASS_REFERENCE: "Araç sınıfı referansı",
+    NO_DATA: "Veri yok",
+    INTERNAL_PLANNED_COST_ANCHOR: "Planlanan maliyet dayanağı",
+    OPERATIONAL_COST_MODEL: "Operasyon maliyet hesabı",
+    COMPARED: "Karşılaştırıldı",
+    NOT_COMPARED: "Karşılaştırılamadı",
+    NONE: "Yok",
+  };
+  return labels[raw.toUpperCase()] || humanizeUserFacingText(raw, fallback);
+}
+
 function forecastProvenanceLabel(value) {
   const labels = {
     "#3_NO_COMPARABLE_INTERNAL_ACTUAL": "Karşılaştırılabilir gerçek maliyet kanıtı yok",
-    "#3_HAKEDIS_INTERNAL_ACTUAL": "Kanonik gerçek maliyet kanıtı",
+    "#3_HAKEDIS_INTERNAL_ACTUAL": "Mevcut gerçek maliyet kanıtı",
   };
-  return labels[String(value || "")] || String(value || "Kanıt kaynağı belirtilmedi").replaceAll("INTERNAL_ACTUAL", "kanonik gerçek maliyet");
+  return labels[String(value || "")] || readableCostText(String(value || "Kanıt kaynağı belirtilmedi").replaceAll("INTERNAL_ACTUAL", "mevcut gerçek maliyet"));
 }
 
 function Metric({ title, value, note, tone = "default" }) {
@@ -173,13 +200,13 @@ function VariantCard({ variant, currencyCode }) {
         <span className="pill">{statusLabel(variant.status)}</span>
       </div>
       <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
-        <Metric title="Tahmini maliyet" value={formatMoney(variant.estimatedCost, currencyCode)} note="Preview sonucu" tone={tone} />
+        <Metric title="Tahmini maliyet" value={formatMoney(variant.estimatedCost, currencyCode)} note="Önizleme sonucu" tone={tone} />
         <Metric title="Araç ihtiyacı" value={formatNumber(variant.vehicleRequirement, " araç")} note={variant.capacity?.status === "INVALID" ? "Kapasite engeli" : "Kapasite kontrolü"} tone={variant.capacity?.status === "INVALID" ? "danger" : "default"} />
-        <Metric title="Mesafe" value={formatNumber(variant.distance, " km")} note="Kanonik rota metriği" />
+        <Metric title="Mesafe" value={formatNumber(variant.distance, " km")} note="Mevcut rota ölçümü" />
         <Metric title="Süre" value={formatNumber(variant.duration, " dk")} note="Trafik tahmini değildir" />
-        <Metric title="Operasyon riski" value={variant.operationalRisk?.riskState || "Bilinmiyor"} note={variant.operationalRisk?.reasons?.join("; ") || "Açıklanmış risk kanıtı bekleniyor"} tone={variant.operationalRisk?.riskState === "HIGH" ? "danger" : "default"} />
+        <Metric title="Operasyon riski" value={readableCostText(variant.operationalRisk?.riskState, "Bilinmiyor")} note={humanizeUserFacingText(variant.operationalRisk?.reasons?.join("; "), "Açıklanmış risk kanıtı bekleniyor")} tone={variant.operationalRisk?.riskState === "HIGH" ? "danger" : "default"} />
       </div>
-      <div className="panelMeta" style={{ marginTop: 10, lineHeight: 1.45 }}>{variant.rationale}</div>
+        <div className="panelMeta" style={{ marginTop: 10, lineHeight: 1.45 }}>{humanizeUserFacingText(variant.rationale)}</div>
     </div>
   );
 }
@@ -196,7 +223,7 @@ function vehiclePlanStatusLabel(status) {
 
 function VehiclePlanAlternativeCard({ item, recommended, currencyCode, onSelect }) {
   const selectedConsumption = item.fuelConsumptionReference;
-  const missingOptional = (item.missingOptionalCosts || []).map((cost) => cost.label).join(", ");
+  const missingOptional = (item.missingOptionalCosts || []).map((cost) => humanizeUserFacingText(cost.label)).join(", ");
   return (
     <div
       className="card"
@@ -213,17 +240,17 @@ function VehiclePlanAlternativeCard({ item, recommended, currencyCode, onSelect 
       </div>
       <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
         <Metric title="Araç planı" value={formatNumber(item.requiredVehicleCount, " araç")} note="Kapasiteye göre otomatik" />
-        <Metric title="Kapasite" value={formatNumber(item.capacity, " kişi/araç")} note={item.capacityResolution?.selected?.sourceName || "Kaynak belirtilmedi"} />
+        <Metric title="Kapasite" value={formatNumber(item.capacity, " kişi/araç")} note={humanizeUserFacingText(item.capacityResolution?.selected?.sourceName, "Kaynak belirtilmedi")} />
         <Metric title="Sürücü ihtiyacı" value={formatNumber(item.driverCount, " sürücü")} note="Eşzamanlı araç başına 1 sürücü" />
-        <Metric title="Tüketim" value={selectedConsumption?.valueLitersPer100Km != null ? formatNumber(selectedConsumption.valueLitersPer100Km, " L/100 km") : "Veri yok"} note={selectedConsumption?.sourceName || "Onaylı sınıf referansı yok"} />
+        <Metric title="Tüketim" value={selectedConsumption?.valueLitersPer100Km != null ? formatNumber(selectedConsumption.valueLitersPer100Km, " L/100 km") : "Veri yok"} note={humanizeUserFacingText(selectedConsumption?.sourceName, "Onaylı sınıf referansı yok")} />
         <Metric title="Toplam yakıt" value={item.fuelRequirementLiters != null ? formatNumber(item.fuelRequirementLiters, " L") : "Hesaplanamadı"} note="Rota × tüketim × araç planı" />
-        <Metric title="Tahmini maliyet" value={formatMoney(item.costMinor, currencyCode)} note={item.costBasis === "OPERATIONAL_COST_MODEL" ? "Aynı #4 maliyet motoru" : item.costBasis || "Maliyet kanıtı bekleniyor"} tone={item.status === "READY" ? "good" : "warm"} />
+        <Metric title="Tahmini maliyet" value={formatMoney(item.costMinor, currencyCode)} note={readableCostText(item.costBasis, "Maliyet kanıtı bekleniyor")} tone={item.status === "READY" ? "good" : "warm"} />
       </div>
       <div className="panelMeta" style={{ marginTop: 10, lineHeight: 1.45 }}>
-        Kapasite kaynağı: {item.capacityResolution?.selected?.sourceName || "Onaylı referans yok"} · Güven: {confidenceLabel(item.confidence?.level)}
+        Kapasite kaynağı: {humanizeUserFacingText(item.capacityResolution?.selected?.sourceName, "Onaylı referans yok")} · Güven: {confidenceLabel(item.confidence?.level)}
       </div>
       {missingOptional ? <div className="panelMeta" style={{ marginTop: 6 }}>Eksik isteğe bağlı maliyet: {missingOptional}</div> : null}
-      {item.partialExplanation ? <div className="panelMeta" style={{ marginTop: 6 }}>{item.partialExplanation}</div> : null}
+      {item.partialExplanation ? <div className="panelMeta" style={{ marginTop: 6 }}>{humanizeUserFacingText(item.partialExplanation)}</div> : null}
       <button data-testid={`scenario-select-vehicle-plan-${String(item.vehicleType || "").toLowerCase()}`} type="button" className="btn" style={{ marginTop: 12 }} onClick={() => onSelect(item)} disabled={item.status === "NO_DATA" || item.status === "BLOCKED"}>
         Bu planı karşılaştır
       </button>
@@ -239,7 +266,7 @@ function VehiclePlanAlternatives({ result, currencyCode, onSelect }) {
     <div className="card" data-testid="scenario-vehicle-plan-alternatives" style={{ marginTop: 12, border: "1px solid rgba(18,183,106,0.28)", background: "rgba(18,183,106,0.035)" }}>
       <div className="panelSectionTitle">Önerilen araç planı</div>
       <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>Kişi sayısı, rota, kapasite ve referanslı tüketim birlikte çözülür; araç sayısını elle hesaplaman gerekmez.</div>
-      {recommendation ? <div data-testid="scenario-vehicle-plan-recommendation" className="panelMeta" style={{ marginTop: 10, lineHeight: 1.5 }}><b>{recommendation.label}:</b> {recommendation.reason}</div> : <div className="panelMeta" style={{ marginTop: 10 }}>Karşılaştırılabilir kanıt yok; öneri uydurulmadı.</div>}
+      {recommendation ? <div data-testid="scenario-vehicle-plan-recommendation" className="panelMeta" style={{ marginTop: 10, lineHeight: 1.5 }}><b>{humanizeUserFacingText(recommendation.label)}:</b> {humanizeUserFacingText(recommendation.reason)}</div> : <div className="panelMeta" style={{ marginTop: 10 }}>Karşılaştırılabilir kanıt yok; öneri uydurulmadı.</div>}
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
         {plan.items.map((item) => <VehiclePlanAlternativeCard key={item.vehicleType} item={item} recommended={recommendation?.vehicleType === item.vehicleType} currencyCode={currencyCode} onSelect={onSelect} />)}
       </div>
@@ -249,7 +276,7 @@ function VehiclePlanAlternatives({ result, currencyCode, onSelect }) {
 
 function ComparisonStatus({ title, item, money = false, currencyCode = "TRY" }) {
   if (!item) return null;
-  const value = money ? formatMoney(item.varianceAmountMinor, currencyCode) : item.status || "INSUFFICIENT_DATA";
+  const value = money ? formatMoney(item.varianceAmountMinor, currencyCode) : readableCostText(item.status, "Yetersiz veri");
   return <div className="muted" style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "8px 0" }}><span>{title}</span><b>{value}</b></div>;
 }
 
@@ -304,11 +331,11 @@ function InputSummary({ input, sourceMap = {}, config }) {
         const value = evidence?.value ?? input[field];
         const missing = evidence?.classification === "TRULY_MISSING" || value === null || value === undefined || value === "";
         const note = missing
-          ? `Eksik veri: ${evidence?.missingReason || "Kanonik mevcut plan alanında bulunamadı."}`
+          ? `Eksik veri: ${humanizeUserFacingText(evidence?.missingReason, "Mevcut plan alanında bulunamadı.")}`
           : evidence?.classification === "DERIVABLE_FROM_CANONICAL_DATA"
-            ? "Kanonik rota verisinden türetildi"
-            : "Kanonik mevcut plan girdisi";
-        return <Metric key={label} title={label} value={missing ? `Eksik veri: ${evidence?.label || label}` : formatNumber(value)} note={note} tone={missing ? "warm" : "default"} />;
+            ? "Mevcut rota verisinden türetildi"
+            : "Mevcut plan girdisi";
+        return <Metric key={label} title={label} value={missing ? `Eksik veri: ${humanizeUserFacingText(evidence?.label, label)}` : formatNumber(value)} note={note} tone={missing ? "warm" : "default"} />;
       })}
     </div>
   );
@@ -340,7 +367,7 @@ function referenceScopeLabel(reference, requestedRegionName = null) {
 }
 
 function referenceFallbackLabel(reference) {
-  return String(reference?.fallbackState || "NONE").toUpperCase() !== "NONE" ? "Fallback" : "Aynı il referansı";
+  return String(reference?.fallbackState || "NONE").toUpperCase() !== "NONE" ? "Yedek referans" : "Aynı il referansı";
 }
 
 function referenceDate(value) {
@@ -366,15 +393,15 @@ function ResolvedAssumptions({ result, fuelReference, currencyCode }) {
   return (
     <div data-testid="scenario-resolved-assumptions" className="card" style={{ marginTop: 10, padding: 12, background: "rgba(255,255,255,0.025)" }}>
       <div className="panelSectionTitle">Otomatik çözülen varsayımlar</div>
-      <div className="panelMeta" style={{ marginTop: 6, lineHeight: 1.5 }}>SeferPakt bildiği operasyon alanlarını ve onaylı referansları kullanır; bu değerler kanonik planı değiştirmez.</div>
+        <div className="panelMeta" style={{ marginTop: 6, lineHeight: 1.5 }}>SeferPakt bildiği operasyon alanlarını ve onaylı referansları kullanır; bu değerler mevcut planı değiştirmez.</div>
       <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-        <div className="muted"><b>Araç tüketimi:</b> {consumptionReferenceLabel(selectedConsumption)} · Kaynak: {selectedConsumption?.sourceName || "Belirtilmedi"} · Güven: {confidenceLabel(selectedConsumption?.confidence)}</div>
-        <div className="panelMeta">Kaynak tarihi: {referenceDate(selectedConsumption?.sourceDate)} · Uygulanabilirlik: {selectedConsumption?.applicabilityLimits || "Sınıf/alt tip kapsamı belirtilmedi."}</div>
+        <div className="muted"><b>Araç tüketimi:</b> {consumptionReferenceLabel(selectedConsumption)} · Kaynak: {humanizeUserFacingText(selectedConsumption?.sourceName, "Belirtilmedi")} · Güven: {confidenceLabel(selectedConsumption?.confidence)}</div>
+        <div className="panelMeta">Kaynak tarihi: {referenceDate(selectedConsumption?.sourceDate)} · Uygulanabilirlik: {humanizeUserFacingText(selectedConsumption?.applicabilityLimits, "Sınıf/alt tip kapsamı belirtilmedi.")}</div>
         <div className="muted"><b>Yakıt fiyatı:</b> {fuelPrice?.valueMinor != null ? formatMoney(fuelPrice.valueMinor, fuelPrice.currencyCode || currencyCode) + "/L" : "Veri yok; kullanıcıdan zorunlu giriş istenmiyor"}</div>
-        <div className="panelMeta">{fuelPrice?.sourceName ? `Kaynak: ${fuelPrice.sourceName} · Kapsam: ${referenceScopeLabel(fuelPrice)} · Durum: ${referenceFallbackLabel(fuelPrice)} · As of: ${referenceDate(fuelPrice.asOf)} · Tazelik: ${fuelPrice.freshness || "Bilinmiyor"} · Güven: ${confidenceLabel(fuelPrice.confidence)}` : external?.selectionReason || "#2 bölgesel referansı bu kapsamda kullanılabilir değil."}</div>
-        {fuelPrice?.sourceMetadata?.fallbackPolicy ? <div className="panelMeta">Fallback politikası: aynı il güncel resmi referansı yoksa Türkiye-geneli EPDK günlük bülteni; İstanbul fiyatı olarak gösterilmez.</div> : null}
-        {consumption?.missingData?.length ? <div className="panelMeta">Eksik / doğrulanması gereken: {consumption.missingData.join(", ")}</div> : null}
-        <div className="panelMeta">Öncelik: {resolution?.vehicleConsumption?.precedence?.join(" → ") || "USER_ACTUAL → PLATFORM_OBSERVED_REFERENCE → TECHNICAL_CLASS_REFERENCE → NO_DATA"}</div>
+        <div className="panelMeta">{fuelPrice?.sourceName ? `Kaynak: ${humanizeUserFacingText(fuelPrice.sourceName)} · Kapsam: ${referenceScopeLabel(fuelPrice)} · Durum: ${referenceFallbackLabel(fuelPrice)} · Tarih: ${referenceDate(fuelPrice.asOf)} · Tazelik: ${readableCostText(fuelPrice.freshness, "Belirtilmedi")} · Güven: ${confidenceLabel(fuelPrice.confidence)}` : humanizeUserFacingText(external?.selectionReason, "Bölgesel referans bu kapsamda kullanılabilir değil.")}</div>
+        {fuelPrice?.sourceMetadata?.fallbackPolicy ? <div className="panelMeta">Yedek referans politikası: aynı il güncel resmi referansı yoksa Türkiye geneli EPDK günlük bülteni kullanılır; İstanbul fiyatı olarak gösterilmez.</div> : null}
+        {consumption?.missingData?.length ? <div className="panelMeta">Eksik / doğrulanması gereken: {consumption.missingData.map((item) => humanizeUserFacingText(item)).join(", ")}</div> : null}
+        <div className="panelMeta">Öncelik: {(resolution?.vehicleConsumption?.precedence || ["USER_ACTUAL", "PLATFORM_OBSERVED_REFERENCE", "TECHNICAL_CLASS_REFERENCE", "NO_DATA"]).map((item) => readableCostText(item)).join(" → ")}</div>
       </div>
     </div>
   );
@@ -599,7 +626,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
   const contextName = baseline?.companyName || baseline?.roomName || "Bağlı tenant";
   const visibleBaselineConfidence = baseline?.baselineConfidence || {
     level: baseline?.missingFields?.length ? "MEDIUM" : "HIGH",
-    reason: baseline?.missingFields?.length ? "Eksik kanonik alanlar nedeniyle güven sınırlı." : "Kanonik baseline girdileri kullanılıyor.",
+    reason: baseline?.missingFields?.length ? "Eksik mevcut plan alanları nedeniyle güven sınırlı." : "Mevcut plan girdileri kullanılıyor.",
   };
   const content = (
     <div data-testid="cost-scenario-workspace">
@@ -608,7 +635,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         <span className="pill">Önizleme</span>
         <span className="pill">{planningOnly ? "Planlama bağlamı" : roleConfig.audience}</span>
         {baseline?.regionName ? <span className="pill" data-testid="scenario-operation-region">Operasyon bölgesi: {baseline.regionName}</span> : null}
-        {baseline ? <span className="pill" data-testid="scenario-baseline-confidence">Baseline güveni: {confidenceLabel(visibleBaselineConfidence.level)}</span> : null}
+        {baseline ? <span className="pill" data-testid="scenario-baseline-confidence">Mevcut plan güveni: {confidenceLabel(visibleBaselineConfidence.level)}</span> : null}
         {resultStatus ? <span className="pill" data-status={statusTone(resultStatus).toUpperCase()}>{partialCost ? "Kısmi maliyet hesaplandı" : statusLabel(resultStatus)}</span> : null}
       </div>
 
@@ -632,7 +659,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         {baseline?.missingFields?.length ? (
           <div data-testid="scenario-missing-fields" className="card" style={{ marginTop: 12, padding: 12, border: "1px solid rgba(247,144,9,0.3)", background: "rgba(247,144,9,0.05)" }}>
             <div className="panelSectionTitle">Eksik veri alanları</div>
-            <div className="panelMeta" style={{ marginTop: 6 }}>Bu alanlar için kanonik veri bulunmadı; değer uydurulmadı ve senaryo sonucu güveni buna göre gösterilir.</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>Bu alanlar için mevcut plan verisi bulunmadı; değer uydurulmadı ve senaryo sonucu güveni buna göre gösterilir.</div>
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
               {baseline.missingFields.map((field) => <span className="pill" key={field}>Eksik veri: {baseline.baselineSourceMap?.[field]?.label || field}</span>)}
             </div>
@@ -641,7 +668,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
         <details data-testid="scenario-details" style={{ marginTop: 12 }}>
           <summary className="muted" style={{ cursor: "pointer" }}>Detaylar · otomatik çözülen değerler ve kaynaklar</summary>
           <ResolvedAssumptions result={result} fuelReference={fuelReference} currencyCode={currencyCode} />
-          <div className="panelMeta" style={{ marginTop: 10 }}>Kanonik mevcut plan alanları salt okunurdur; kullanıcı bunları yeniden girmek zorunda değildir.</div>
+          <div className="panelMeta" style={{ marginTop: 10 }}>Mevcut plan alanları yalnızca okunur; kullanıcı bunları yeniden girmek zorunda değildir.</div>
           <div style={{ marginTop: 10 }}><InputGrid values={baselineValues} setValues={setBaselineValues} prefix="baseline" readOnly /></div>
         </details>
       </div>
@@ -660,10 +687,10 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
 
       <details className="card" data-testid="scenario-advanced-assumptions" style={{ marginTop: 12 }}>
         <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Gelişmiş varsayımlar · Kendi gerçek değerlerimi kullan (isteğe bağlı)</summary>
-        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Maliyet bileşenleri, risk, alternatif rota ve typed dispatch seam ayrıntıları varsayılan olarak kapalıdır.</div>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Maliyet bileşenleri, risk, alternatif rota ve atama önizlemesi ayrıntıları varsayılan olarak kapalıdır.</div>
         <div style={{ marginTop: 12, maxWidth: 360 }}>
           <Field label="Senaryo için maliyet varsayımı (kuruş)" value={baselineCost} placeholder="İsteğe bağlı plan varsayımı" onChange={setBaselineCost} />
-          <div className="panelMeta" style={{ marginTop: 8 }}>Bu yalnızca senaryo için kullanılan bir varsayımdır; mevcut planın gerçek veya kanonik planlanan maliyetini değiştirmez. Boş bırakılırsa sistem yalnızca tamamlanmış maliyet bileşenlerini kullanır.</div>
+          <div className="panelMeta" style={{ marginTop: 8 }}>Bu yalnızca senaryo için kullanılan bir varsayımdır; mevcut planın gerçek veya planlanan maliyetini değiştirmez. Boş bırakılırsa sistem yalnızca tamamlanmış maliyet bileşenlerini kullanır.</div>
         </div>
         <details data-testid="scenario-advanced-fields" style={{ marginTop: 12 }}>
           <summary className="muted" style={{ cursor: "pointer" }}>Maliyet ve operasyon ayrıntıları</summary>
@@ -676,7 +703,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
               Rota alternatifi
               <select data-testid="scenario-route-alternative" value={routeAlternativeType} onChange={(event) => setRouteAlternativeType(event.target.value)} style={INPUT_STYLE}>
                 <option value="">Yok</option>
-                <option value="REVERSE_STOP_ORDER">Durak sırasını ters çevir (preview)</option>
+                <option value="REVERSE_STOP_ORDER">Durak sırasını ters çevir (önizleme)</option>
               </select>
             </label>
           </div>
@@ -691,12 +718,12 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
             <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button data-testid="scenario-stop-add" type="button" className="btn" onClick={addScenarioStop}>Senaryoya durak ekle</button>
               <button data-testid="scenario-stop-remove" type="button" className="btn" onClick={removeScenarioStop}>Senaryodan durak çıkar</button>
-              <span className="panelMeta" style={{ alignSelf: "center" }}>{stopOperations.length ? `${stopOperations.length} preview durak işlemi hazır` : "Durak işlemi yok"}</span>
+              <span className="panelMeta" style={{ alignSelf: "center" }}>{stopOperations.length ? `${stopOperations.length} önizleme durak işlemi hazır` : "Durak işlemi yok"}</span>
             </div>
           </div>
           <div className="card" data-testid="scenario-dispatch-seam" style={{ marginTop: 12, padding: 12 }}>
             <div className="panelSectionTitle">Atama alternatifi (sınır)</div>
-            <div className="panelMeta" style={{ marginTop: 6 }}>Araç/sürücü önerisi oluşturulmaz ve canlı atama yapılmaz; yalnızca #20 için typed preview seam.</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>Araç/sürücü önerisi oluşturulmaz ve canlı atama yapılmaz; yalnızca ilerideki atama akışına aktarılabilecek sınırlı bir önizleme hazırlanır.</div>
             <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
               <Field testId="scenario-dispatch-vehicle" label="Araç referansı" type="text" value={dispatchDraft.vehicleId} onChange={(value) => setDispatchDraft((previous) => ({ ...previous, vehicleId: value }))} />
               <Field testId="scenario-dispatch-driver" label="Sürücü referansı" type="text" value={dispatchDraft.driverId} onChange={(value) => setDispatchDraft((previous) => ({ ...previous, driverId: value }))} />
@@ -708,7 +735,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
 
       <div className="card" data-testid="scenario-current-scenario-delta" style={{ marginTop: 12 }}>
         <div className="panelSectionTitle">Mevcut → Senaryo → Delta</div>
-        <div className="panelMeta" style={{ marginTop: 6 }}>Kanonik mevcut plan ile geçici senaryo girdisi yan yana tutulur; delta yalnız kullanıcı değişikliği varsa görünür.</div>
+        <div className="panelMeta" style={{ marginTop: 6 }}>Mevcut plan ile geçici senaryo girdisi yan yana tutulur; fark yalnız kullanıcı değişikliği varsa görünür.</div>
         <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
           {primaryFields.map((field) => {
             const current = baselineValues[field.key];
@@ -722,19 +749,19 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
 
       <details className="card" data-testid="scenario-readonly-example" style={{ marginTop: 12 }}>
         <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Nasıl çalışır? Örnek senaryo</summary>
-        <div className="panelMeta" style={{ marginTop: 10, lineHeight: 1.55 }}><b>ÖRNEK · Gerçek operasyon veriniz değildir.</b> {roleConfig.example} Örnek anlatım kanonik planınıza yazılmaz, kalıcılaştırılmaz ve gerçek piyasa/actual değeri gibi sunulmaz.</div>
+        <div className="panelMeta" style={{ marginTop: 10, lineHeight: 1.55 }}><b>ÖRNEK · Gerçek operasyon veriniz değildir.</b> {roleConfig.example} Örnek anlatım mevcut planınıza yazılmaz, kalıcılaştırılmaz ve gerçek piyasa değeri gibi sunulmaz.</div>
       </details>
 
       <details className="card" data-testid="scenario-ab-comparison" style={{ marginTop: 12 }}>
         <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Mevcut / Senaryo A / Senaryo B</summary>
-        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>A/B taslakları yalnız bu ekranda geçicidir. Aynı #4 preview endpoint’i iki kez çağrılır; hiçbir senaryo kaydedilmez.</div>
+        <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>A/B taslakları yalnız bu ekranda geçicidir. Aynı karşılaştırma hizmeti iki kez çağrılır; hiçbir senaryo kaydedilmez.</div>
         <div style={{ marginTop: 12 }}><InputGrid values={scenarioBValues} setValues={setScenarioBValues} prefix="scenario-b" fields={primaryFields} /></div>
         <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button data-testid="scenario-copy-to-b" type="button" className="btn" onClick={() => setScenarioBValues({ ...scenarioValues })}>Senaryo A’yı B’ye kopyala</button>
           <button data-testid="scenario-ab-compare" type="button" className="btn primary" onClick={compareAB} disabled={abCalculating || calculating || !baseline}>{abCalculating ? "A/B karşılaştırılıyor..." : "Senaryoları karşılaştır"}</button>
         </div>
         {abResult ? <div data-testid="scenario-ab-result" style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
-          {[['Mevcut', abResult.a?.baseline], ['Senaryo A', abResult.a?.scenario], ['Senaryo B', abResult.b?.scenario]].map(([label, item]) => <Metric key={label} title={label} value={formatMoney(item?.costMinor, currencyCode)} note={item?.costBasis === "INTERNAL_PLANNED_COST_ANCHOR" ? "Planlanan maliyet tabanı" : "Aynı #4 preview motoru"} />)}
+          {[['Mevcut', abResult.a?.baseline], ['Senaryo A', abResult.a?.scenario], ['Senaryo B', abResult.b?.scenario]].map(([label, item]) => <Metric key={label} title={label} value={formatMoney(item?.costMinor, currencyCode)} note={readableCostText(item?.costBasis, "Aynı karşılaştırma hizmeti")} />)}
         </div> : null}
       </details>
 
@@ -751,7 +778,7 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
           {result.scenarioVariants ? (
             <div className="card" data-testid="scenario-variant-comparison" style={{ marginTop: 12 }}>
               <div className="panelSectionTitle">Beklenen / En uygun / Riskli durum</div>
-              <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Üç görünüm de aynı #4 hesaplama ve rota kanıtını kullanır; açıkça verilmeyen risk olasılığı veya tasarruf uydurulmaz.</div>
+              <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Üç görünüm de aynı hesaplama ve rota kanıtını kullanır; açıkça verilmeyen risk olasılığı veya tasarruf uydurulmaz.</div>
               <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
                 <VariantCard variant={result.scenarioVariants.EXPECTED} currencyCode={result.currencyCode || currencyCode} />
                 <VariantCard variant={result.scenarioVariants.BEST} currencyCode={result.currencyCode || currencyCode} />
@@ -762,40 +789,40 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
 
           <div className="card" style={{ marginTop: 12, border: "1px solid rgba(18,183,106,0.28)", background: "rgba(18,183,106,0.04)" }}>
             <div className="panelSectionTitle">Fark / fırsat</div>
-            <div style={{ marginTop: 8, fontSize: 18, fontWeight: 850 }}>{result.summaryText || statusLabel(resultStatus)}</div>
+            <div style={{ marginTop: 8, fontSize: 18, fontWeight: 850 }}>{humanizeUserFacingText(result.summaryText, statusLabel(resultStatus))}</div>
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-              <Metric title="Mevcut plan tahmini maliyeti" value={formatMoney(result.baseline?.costMinor, result.currencyCode || currencyCode)} note={result.baseline?.costBasis === "INTERNAL_PLANNED_COST_ANCHOR" ? "Planlanan maliyet tabanı" : "İç maliyet modeli"} />
-              <Metric title="Alternatif tahmini maliyet" value={formatMoney(result.scenario?.costMinor, result.currencyCode || currencyCode)} note={result.scenario?.costBasis === "INTERNAL_PLANNED_COST_ANCHOR" ? "Planlanan maliyet tabanı" : "İç maliyet modeli"} />
+              <Metric title="Mevcut plan tahmini maliyeti" value={formatMoney(result.baseline?.costMinor, result.currencyCode || currencyCode)} note={readableCostText(result.baseline?.costBasis, "İç maliyet modeli")} />
+              <Metric title="Alternatif tahmini maliyet" value={formatMoney(result.scenario?.costMinor, result.currencyCode || currencyCode)} note={readableCostText(result.scenario?.costBasis, "İç maliyet modeli")} />
               <Metric title="Tahmini tasarruf" value={formatMoney(result.savingsMinor, result.currencyCode || currencyCode)} note="Karar desteği sinyali" tone={result.savingsMinor != null ? "good" : "default"} />
               <Metric title="Tahmini ek maliyet" value={formatMoney(result.additionalCostMinor, result.currencyCode || currencyCode)} note="Karar desteği sinyali" tone={result.additionalCostMinor != null ? "danger" : "default"} />
               <Metric title="Maliyet farkı" value={formatMoney(result.costDeltaMinor, result.currencyCode || currencyCode)} note={result.costDeltaPercentBps != null ? `Değişim: %${(Number(result.costDeltaPercentBps) / 100).toLocaleString("tr-TR")}` : "Karşılaştırma yapılamadı"} tone={deltaTone} />
-              <Metric title="Veri güveni" value={confidenceLabel(confidence.level)} note={confidence.reason || "Güven açıklaması bekleniyor"} tone={confidenceTone(confidence.level)} />
+              <Metric title="Veri güveni" value={confidenceLabel(confidence.level)} note={humanizeUserFacingText(confidence.reason, "Güven açıklaması bekleniyor")} tone={confidenceTone(confidence.level)} />
             </div>
           </div>
 
           <div className="card" data-testid="scenario-effect-summary" style={{ marginTop: 12 }}>
             <div className="panelSectionTitle">Etkiler: Finansal · Operasyonel · Risk</div>
-            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>Sonuçlar karar desteği içindir; preview dışında canlı bütçe, vardiya, rota, atama veya teklif değişikliği yapmaz.</div>
+            <div className="muted" style={{ marginTop: 6, lineHeight: 1.45 }}>Sonuçlar karar desteği içindir; önizleme dışında canlı bütçe, vardiya, rota, atama veya teklif değişikliği yapmaz.</div>
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
               <Metric title="Finansal Etki" value={formatMoney(result.costDeltaMinor, result.currencyCode || currencyCode)} note={result.costDeltaMinor === null ? "Karşılaştırılabilir maliyet kanıtı eksik" : "Mevcut plan → senaryo maliyet farkı"} tone={deltaTone} />
-              <Metric title="Operasyonel Etki" value={result.changedDimensions?.length ? `${result.changedDimensions.length} boyut` : "Değişiklik yok"} note={(result.changedDimensions || []).map((key) => ({ passengerCount: roleConfig.passengerLabel, vehicleCount: "Araç sayısı", serviceDistanceKm: "Rota mesafesi", serviceDayCount: "Hizmet günü" }[key] || key)).join(", ") || "Mevcut plan korunuyor"} />
-              <Metric title="Risk" value={result.operationalRisk?.riskState || "Açıklanmadı"} note={result.operationalRisk?.reasons?.join("; ") || "Açık risk kanıtı yok"} tone={result.operationalRisk?.riskState === "HIGH" ? "danger" : "default"} />
+              <Metric title="Operasyonel Etki" value={result.changedDimensions?.length ? `${result.changedDimensions.length} boyut` : "Değişiklik yok"} note={(result.changedDimensions || []).map((key) => ({ passengerCount: roleConfig.passengerLabel, vehicleCount: "Araç sayısı", serviceDistanceKm: "Rota mesafesi", serviceDayCount: "Hizmet günü" }[key] || readableCostText(key))).join(", ") || "Mevcut plan korunuyor"} />
+              <Metric title="Risk" value={readableCostText(result.operationalRisk?.riskState, "Açıklanmadı")} note={humanizeUserFacingText(result.operationalRisk?.reasons?.join("; "), "Açık risk kanıtı yok")} tone={result.operationalRisk?.riskState === "HIGH" ? "danger" : "default"} />
             </div>
           </div>
 
           <div className="card" data-testid="scenario-forecast-evidence" style={{ marginTop: 12 }}>
             <div className="panelSectionTitle">Dönem ve operasyon kanıtı</div>
-            <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Forecast, bütçe sapması ve planned-vs-actual yalnız kanonik dönem/actual/plan kanıtı varsa hesaplanır.</div>
+            <div className="muted" style={{ marginTop: 8, lineHeight: 1.45 }}>Dönem sonu öngörüsü, bütçe sapması ve planlanan-gerçekleşen karşılaştırması yalnız dönem, gerçekleşen ve plan kanıtı varsa hesaplanır.</div>
             <div style={{ marginTop: 10 }}>
-              <ComparisonStatus title="Dönem sonu forecast" item={result.forecast} />
+              <ComparisonStatus title="Dönem sonu öngörüsü" item={result.forecast} />
               <ComparisonStatus title="Bütçe sapması" item={result.budgetVariance} money currencyCode={result.currencyCode || currencyCode} />
-              <ComparisonStatus title="Planned-vs-actual" item={result.plannedVsActual} />
+              <ComparisonStatus title="Planlanan / gerçekleşen" item={result.plannedVsActual} />
               <ComparisonStatus title="Gecikme etkisi" item={{ status: result.timingComparison?.status === "COMPARED" ? `${formatNumber(result.timingComparison?.delayImpactMinutes, " dk")}` : "INSUFFICIENT_DATA" }} />
               <ComparisonStatus title="Operasyonel risk" item={{ status: result.operationalRisk?.riskState || "UNKNOWN" }} />
               <ComparisonStatus title="Rota alternatifi" item={result.routeAlternative} />
-              <ComparisonStatus title="Dispatch sınırı" item={result.dispatchAlternative} />
+              <ComparisonStatus title="Atama sınırı" item={result.dispatchAlternative} />
             </div>
-            {result.forecast?.equation ? <div className="panelMeta" style={{ marginTop: 10 }}>Formül: {result.forecast.equation} · {forecastProvenanceLabel(result.forecast.provenance)}</div> : null}
+            {result.forecast?.equation ? <div className="panelMeta" style={{ marginTop: 10 }}>Hesaplama açıklaması: Dönem sonu öngörüsü, gerçekleşen tutar ile kalan öngörünün toplamından hesaplanır. · {forecastProvenanceLabel(result.forecast.provenance)}</div> : null}
           </div>
 
           <div className="card" style={{ marginTop: 12 }}>
@@ -821,10 +848,10 @@ export default function CostScenarioWorkspacePanel({ scope = "COMPANY", embedded
           <details className="card" style={{ marginTop: 12 }}>
             <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Eksik Veri / Uyarılar</summary>
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              {criticalMissing.length ? <div data-testid="scenario-critical-missing"><div className="panelMeta">Kritik eksik veri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{criticalMissing.map((item) => <span className="pill" key={item}>{item}</span>)}</div></div> : null}
-              {optionalMissing.length ? <div data-testid="scenario-optional-missing"><div className="panelMeta">Opsiyonel / eksik maliyet bileşenleri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{optionalMissing.map((item) => <span className="pill" key={item.key}>{item.label} eksik</span>)}</div></div> : null}
-              {!criticalMissing.length && !optionalMissing.length && result.missingData?.length ? <div><div className="panelMeta">Eksik Veri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{result.missingData.map((item) => <span className="pill" key={item}>{item}</span>)}</div></div> : null}
-              {result.warnings?.length ? <div><div className="panelMeta">Uyarılar</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{result.warnings.map((item) => <span className="pill" key={item}>{item}</span>)}</div></div> : null}
+              {criticalMissing.length ? <div data-testid="scenario-critical-missing"><div className="panelMeta">Kritik eksik veri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{criticalMissing.map((item) => <span className="pill" key={item}>{humanizeUserFacingText(item)}</span>)}</div></div> : null}
+              {optionalMissing.length ? <div data-testid="scenario-optional-missing"><div className="panelMeta">Opsiyonel / eksik maliyet bileşenleri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{optionalMissing.map((item) => <span className="pill" key={item.key}>{humanizeUserFacingText(item.label)} eksik</span>)}</div></div> : null}
+              {!criticalMissing.length && !optionalMissing.length && result.missingData?.length ? <div><div className="panelMeta">Eksik veri</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{result.missingData.map((item) => <span className="pill" key={item}>{humanizeUserFacingText(item)}</span>)}</div></div> : null}
+              {result.warnings?.length ? <div><div className="panelMeta">Uyarılar</div><div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>{result.warnings.map((item) => <span className="pill" key={item}>{humanizeUserFacingText(item)}</span>)}</div></div> : null}
               {!result.missingData?.length && !result.warnings?.length ? <div className="muted">Ek uyarı yok.</div> : null}
             </div>
           </details>

@@ -264,90 +264,90 @@ export default function LogsPanel() {
   return (
     <div className="panel">
       <div className="card">
-        <div className="card-title">Log Dışa Aktarımı</div>
+        <div className="card-title">İşlem kayıtlarını dışa aktar</div>
         <div className="muted">
-          Varsayılan format: <b>TXT</b>. Excel için CSV. Preview: son N kayıt (özet + filtre + kopyala).
+          Varsayılan biçim: <b>TXT</b>. Excel için CSV. Önizleme: son N kayıt (özet + filtre + kopyala).
         </div>
 
         <div className="row" style={{ marginTop: 10, gap: 10, flexWrap: "wrap" }}>
           <div style={{ minWidth: 220 }}>
-            <div className="label">Log Türü</div>
+            <div className="label">Kayıt türü</div>
             <select className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="requests">Requests (API)</option>
-              <option value="audit">Audit (actions)</option>
-              <option value="login">Login logs</option>
-              <option value="gps">GPS (points)</option>
-              <option value="speed">Speed violations</option>
-              <option value="notifications">Notifications</option>
-              <option value="bundle_vehicle">Araç Bundle (GPS + hız + bildirim)</option>
-              <option value="bundle_driver">Sürücü Bundle</option>
-              <option value="bundle_room">Room Bundle</option>
-              <option value="bundle_company">Company Bundle</option>
-              <option value="bundle_personel">Personel Bundle</option>
-              <option value="bundle_student">Student Bundle</option>
-              <option value="bundle_user">User Bundle</option>
+              <option value="requests">İstek kayıtları</option>
+              <option value="audit">Denetim kayıtları</option>
+              <option value="login">Giriş kayıtları</option>
+              <option value="gps">Konum kayıtları</option>
+              <option value="speed">Hız ihlalleri</option>
+              <option value="notifications">Bildirimler</option>
+              <option value="bundle_vehicle">Araç paketi (konum + hız + bildirim)</option>
+              <option value="bundle_driver">Sürücü paketi</option>
+              <option value="bundle_room">Taşımacılık Firması paketi</option>
+              <option value="bundle_company">Hizmet Alan Firma paketi</option>
+              <option value="bundle_personel">Personel paketi</option>
+              <option value="bundle_student">Öğrenci paketi</option>
+              <option value="bundle_user">Kullanıcı paketi</option>
             </select>
           </div>
 
           <div style={{ minWidth: 200, opacity: showTarget ? 1 : 0.55 }}>
-            <div className="label">Hedef Tip</div>
+            <div className="label">Hedef türü</div>
             <select
               className="input"
               value={effTargetType}
               disabled={!showTarget || !!lockType}
               onChange={(e) => setTargetType(e.target.value)}
-              title={!showTarget ? "Requests/Audit/Login için hedef opsiyonel" : lockType ? "Bu tür hedef tipi sabit" : ""}
+              title={!showTarget ? "İstek, denetim ve giriş kayıtları için hedef seçmek gerekmez" : lockType ? "Bu tür için hedef tipi sabittir" : ""}
             >
-              <option value="vehicle">Araç (vehicle)</option>
-              <option value="driver">Sürücü (driver)</option>
-              <option value="room">Room</option>
-              <option value="company">Company</option>
-              <option value="user">User</option>
+              <option value="vehicle">Araç</option>
+              <option value="driver">Sürücü</option>
+              <option value="room">Taşımacılık Firması</option>
+              <option value="company">Hizmet Alan Firma</option>
+              <option value="user">Kullanıcı</option>
               <option value="personel">Personel</option>
-              <option value="student">Student</option>
-              <option value="shift">Shift</option>
+              <option value="student">Öğrenci</option>
+              <option value="shift">Vardiya</option>
             </select>
           </div>
 
           <div style={{ minWidth: 160, opacity: showTarget ? 1 : 0.55 }}>
-            <div className="label">Hedef ID {showTarget ? "" : "(opsiyonel)"}</div>
+            <div className="label">Hedef kayıt no {showTarget ? "" : "(isteğe bağlı)"}</div>
             <input
               className="input"
               value={targetId}
               onChange={(e) => setTargetId(e.target.value)}
-              placeholder={showTarget ? "örn: 1" : "boş bırakabilirsin"}
+              placeholder={showTarget ? "örn: 1" : "boş bırakabilirsiniz"}
               disabled={!showTarget}
             />
-            {missingTarget ? <div className="muted" style={{ color: "#f59e0b" }}>Hedef ID gerekli (bu log türü için)</div> : null}
+            {missingTarget ? <div className="muted" style={{ color: "#f59e0b" }}>Hedef kayıt no gerekli (bu tür için)</div> : null}
           </div>
 
           <div style={{ minWidth: 160 }}>
-            <div className="label">Child ID (opsiyonel)</div>
-            <input className="input" value={childId} onChange={(e) => setChildId(e.target.value)} placeholder="opsiyonel" />
+            <div className="label">Öğrenci kayıt no (isteğe bağlı)</div>
+            <input className="input" value={childId} onChange={(e) => setChildId(e.target.value)} placeholder="isteğe bağlı" />
           </div>
 
           <div style={{ minWidth: 160 }}>
-            <div className="label">Format</div>
+            <div className="label">Biçim</div>
             <select className="input" value={format} onChange={(e) => setFormat(e.target.value)}>
-              <option value="txt">TXT (default)</option>
+              <option value="txt">TXT (varsayılan)</option>
               <option value="csv">CSV (Excel)</option>
             </select>
           </div>
 
           <div style={{ minWidth: 120 }}>
-            <div className="label">Preview (take)</div>
+            <div className="label">Önizleme kaydı</div>
             <input className="input" type="number" value={take} onChange={(e) => setTake(Number(e.target.value || 0))} />
           </div>
         </div>
 
         <div className="row" style={{ marginTop: 10, gap: 10, flexWrap: "wrap", alignItems: "end" }}>
           <div>
-            <div className="label">From</div>
+            <div className="label">Başlangıç</div>
             <input className="input" type="datetime-local" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
 
           <div>
-            <div className="label">To</div>
+            <div className="label">Bitiş</div>
             <input className="input" type="datetime-local" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
 
@@ -356,39 +356,39 @@ export default function LogsPanel() {
           <button className="btn" onClick={() => setQuickDays(7)}>Son 7g</button>
 
           <button className="btn primary" disabled={busy || (showTarget && missingTarget)} onClick={() => onPreview()}>
-            {busy ? "..." : "Preview"}
+            {busy ? "..." : "Önizleme"}
           </button>
           <button className="btn" disabled={busy || (showTarget && missingTarget)} onClick={() => onExport()}>
-            Export (Download)
+            Dışa aktar
           </button>
 
           <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <label className="row" style={{ gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={onlyBad} onChange={(e) => setOnlyBad(e.target.checked)} />
-              <span className="muted">Sadece hata/uyarı (ERROR/WARN/SPEED)</span>
+              <span className="muted">Sadece hata/uyarı</span>
             </label>
 
             <label className="row" style={{ gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
-              <span className="muted">Auto refresh (5 sn)</span>
+              <span className="muted">Otomatik yenileme (5 sn)</span>
             </label>
 
             <div style={{ minWidth: 140 }}>
               <div className="label">Kategori</div>
               <select className="input" value={cat} onChange={(e) => setCat(e.target.value)}>
-                <option value="ALL">ALL</option>
-                <option value="GPS">GPS</option>
-                <option value="SPEED">SPEED</option>
-                <option value="NOTIF">NOTIF</option>
-                <option value="REQ">REQ</option>
-                <option value="AUDIT">AUDIT</option>
-                <option value="LOGIN">LOGIN</option>
+                <option value="ALL">Tümü</option>
+                <option value="GPS">Konum</option>
+                <option value="SPEED">Hız</option>
+                <option value="NOTIF">Bildirim</option>
+                <option value="REQ">İstek</option>
+                <option value="AUDIT">Denetim</option>
+                <option value="LOGIN">Giriş</option>
               </select>
             </div>
 
             <div style={{ minWidth: 220 }}>
-              <div className="label">Ara (cat/level/text)</div>
-              <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="örn: /api/  FAIL  m37_" />
+              <div className="label">Ara</div>
+              <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="örn: araç / hata / bildirim" />
             </div>
 
             <button
@@ -412,7 +412,7 @@ export default function LogsPanel() {
 
         {summary ? (
           <div className="row" style={{ marginTop: 10, gap: 10, flexWrap: "wrap" }}>
-            <span className="pill">Aralık(TR): {summary.rangeTR || "-"}</span>
+            <span className="pill">Aralık: {summary.rangeTR || "-"}</span>
             <span className="pill">Toplam: {summary.total ?? items.length}</span>
             <span className="pill">Son yenileme: {summary.refreshedAtTR || fmtTR(new Date())}</span>
           </div>
@@ -420,11 +420,11 @@ export default function LogsPanel() {
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
-        <div className="card-title">Preview</div>
-        <div className="muted">Gruplu görünüm (gün bazında). İçerik satırları artık görünür.</div>
+        <div className="card-title">Önizleme</div>
+        <div className="muted">Gruplu görünüm (gün bazında). İçerik satırları burada görünür.</div>
 
         {(!items || items.length === 0) ? (
-          <div className="muted" style={{ marginTop: 10 }}>kayıt yok</div>
+          <div className="muted" style={{ marginTop: 10 }}>Kayıt yok.</div>
         ) : (
           <div style={{ marginTop: 10 }}>
             {grouped.map(([g, arr]) => (

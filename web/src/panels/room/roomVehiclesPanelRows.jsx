@@ -39,8 +39,8 @@ export function ShiftCompact({ s, open, onToggle }) {
           <div>{shiftWindowLabel(s)}</div>
           <div>Hizmet Alan Firma: <b>{companyName || "-"}</b></div>
           <div>Taşımacılık Firması: <b>{s.room?.name || (s.roomId ? `taşımacılık firması #${s.roomId}` : "-")}</b></div>
-          <div>Route: <b>{s.route?.name || (s.routeId ? `route#${s.routeId}` : "-")}</b></div>
-          <div>Direction: <b>{s.direction || "-"}</b></div>
+          <div>Rota: <b>{s.route?.name || (s.routeId ? `Rota ${s.routeId}` : "-")}</b></div>
+          <div>Yön: <b>{{ INBOUND: "Gidiş", OUTBOUND: "Dönüş" }[String(s.direction || "").toUpperCase()] || s.direction || "-"}</b></div>
           {s.note ? <div>Not: <b>{s.note}</b></div> : null}
         </div>
       ) : null}
@@ -136,17 +136,17 @@ export function RoomVehicleAvailabilityRow({
         {v.driver ? fmtDriverHuman(v.driver) : <span className="muted">Bağlı sürücü yok</span>}
       </td>
       <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
-        {vOk == null ? <span className="muted">Kontrol edilmedi</span> : vOk ? <span className="pill" data-status="OK">OK</span> : (
+        {vOk == null ? <span className="muted">Kontrol edilmedi</span> : vOk ? <span className="pill" data-status="OK">Uygun</span> : (
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <span className="pill" data-status="CONFLICT">CONFLICT: {vCode}</span>
+            <span className="pill" data-status="CONFLICT">Çakışma: {vCode}</span>
             {vHint ? <span className="muted" style={{ fontSize: 12 }}>{vHint}</span> : null}
           </div>
         )}
       </td>
       <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
-        {hasDriver ? (dOk == null ? <span className="muted">Kontrol edilmedi</span> : dOk ? <span className="pill" data-status="OK">OK</span> : (
+        {hasDriver ? (dOk == null ? <span className="muted">Kontrol edilmedi</span> : dOk ? <span className="pill" data-status="OK">Uygun</span> : (
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <span className="pill" data-status="CONFLICT">CONFLICT: {dCode}</span>
+            <span className="pill" data-status="CONFLICT">Çakışma: {dCode}</span>
             {dHint ? <span className="muted" style={{ fontSize: 12 }}>{dHint}</span> : null}
           </div>
         )) : <span className="muted">—</span>}
@@ -174,7 +174,7 @@ export function RoomTelematicsDeviceRow({
         <input
           value={draft.label}
           onChange={(e) => setDeviceDrafts((prev) => ({ ...prev, [d.id]: { ...draft, label: e.target.value } }))}
-          placeholder="label"
+          placeholder="Etiket"
           disabled={deviceSaving}
         />
       </td>

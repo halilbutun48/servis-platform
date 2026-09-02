@@ -58,19 +58,19 @@ must(has(app, 'path === "/organization/checkin"'), "app keeps organization check
 must(has(app, 'path === "/driver/checkin"'), "app keeps driver check-in route");
 
 must(has(navDock, 'getRoleNavigation'), "nav dock consumes canonical role navigation");
-must(has(roleNavigation, '{ label: "Check-in", path: "/room/checkin" }'), "role navigation keeps room check-in under advanced");
-must(has(roleNavigation, '{ label: "Check-in", path: `${base}/checkin` }'), "role navigation keeps company/school/organization check-in visible");
+must(has(roleNavigation, '{ label: "Biniş kayıtları", path: "/room/checkin" }'), "role navigation keeps room boarding records under advanced");
+must(has(roleNavigation, '{ label: "Biniş kayıtları", path: `${base}/checkin` }'), "role navigation keeps company/school/organization boarding records visible");
 
-must(has(quickBar, '{ label: "Check-in", path: "/room/checkin" }'), "tablet quick bar keeps room check-in shortcut");
+must(has(quickBar, '{ label: "Biniş kayıtları", path: "/room/checkin" }'), "tablet quick bar keeps room boarding shortcut");
 
 must(has(superAdmin, 'navigate("/room/checkin")'), "super admin quick access opens room check-in monitor");
-must(has(superAdmin, 'Check-in'), "super admin quick access keeps check-in label");
+must(has(superAdmin, 'Biniş kayıtları'), "super admin quick access keeps boarding label");
 
-must(has(screenRegistry, '{ id: 1109, path: "/room/checkin", label: "Check-in" }'), "copilot registry keeps room check-in");
-must(has(screenRegistry, '{ id: 2107, path: "/company/checkin", label: "Check-in" }'), "copilot registry keeps company check-in");
-must(has(screenRegistry, '{ id: 2207, path: "/school/checkin", label: "Check-in" }'), "copilot registry keeps school check-in");
-must(has(screenRegistry, '{ id: 2308, path: "/organization/checkin", label: "Check-in" }'), "copilot registry keeps organization check-in");
-must(has(screenRegistry, '{ id: 3104, path: "/driver/checkin", label: "Check-in" }'), "copilot registry keeps driver check-in");
+must(has(screenRegistry, '{ id: 1109, path: "/room/checkin", label: "Biniş kayıtları" }'), "copilot registry keeps room boarding records");
+must(has(screenRegistry, '{ id: 2107, path: "/company/checkin", label: "Biniş kayıtları" }'), "copilot registry keeps company boarding records");
+must(has(screenRegistry, '{ id: 2207, path: "/school/checkin", label: "Biniş kayıtları" }'), "copilot registry keeps school boarding records");
+must(has(screenRegistry, '{ id: 2308, path: "/organization/checkin", label: "Biniş kayıtları" }'), "copilot registry keeps organization boarding records");
+must(has(screenRegistry, '{ id: 3104, path: "/driver/checkin", label: "Biniş kaydı" }'), "copilot registry keeps driver boarding record");
 
 must(has(overlay, "M97 Check-in nav restore"), "m97 overlay note exists");
 

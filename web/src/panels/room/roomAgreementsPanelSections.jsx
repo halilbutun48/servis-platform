@@ -106,7 +106,7 @@ function RoomAgreementsRouteRefreshPendingCard({
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <span className="pill">{Number(item?.shiftCount || 0)} taslak vardiya</span>
-          <span className="pill">{String(item?.direction || agreement?.direction || "INBOUND").toUpperCase()} / {String(item?.pattern || agreement?.pattern || "ONE_WAY").toUpperCase()}</span>
+          <span className="pill">{String(item?.direction || agreement?.direction || "INBOUND").toUpperCase() === "INBOUND" ? "Gidiş" : String(item?.direction || agreement?.direction || "").toUpperCase() === "OUTBOUND" ? "Dönüş" : "Yön bilgisi yok"} / {String(item?.pattern || agreement?.pattern || "ONE_WAY").toUpperCase() === "ONE_WAY" ? "Tek yön" : String(item?.pattern || agreement?.pattern || "").toUpperCase() === "ROUND_TRIP" ? "Gidiş-dönüş" : "Plan bilgisi yok"}</span>
         </div>
       </div>
 
@@ -299,7 +299,7 @@ function RoomAgreementsRouteRefreshAcceptedCard({
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <span className="pill" data-status="ACCEPTED">Uygulandı</span>
           <span className="pill">{Number(item?.shiftCount || 0)} vardiya</span>
-          <span className="pill">{String(item?.direction || agreement?.direction || "INBOUND").toUpperCase()} / {String(item?.pattern || agreement?.pattern || "ONE_WAY").toUpperCase()}</span>
+          <span className="pill">{String(item?.direction || agreement?.direction || "INBOUND").toUpperCase() === "INBOUND" ? "Gidiş" : String(item?.direction || agreement?.direction || "").toUpperCase() === "OUTBOUND" ? "Dönüş" : "Yön bilgisi yok"} / {String(item?.pattern || agreement?.pattern || "ONE_WAY").toUpperCase() === "ONE_WAY" ? "Tek yön" : String(item?.pattern || agreement?.pattern || "").toUpperCase() === "ROUND_TRIP" ? "Gidiş-dönüş" : "Plan bilgisi yok"}</span>
         </div>
       </div>
 

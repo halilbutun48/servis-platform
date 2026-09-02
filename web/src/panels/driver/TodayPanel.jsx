@@ -388,7 +388,7 @@ useEffect(() => {
           <div style={{ marginTop: 10 }}>
             <CollapsibleSection
               title="Kuyruk Detayı"
-              subtitle="Offline kuyruktaki bekleyen istekler. Sadece ikinci katmanı aç."
+              subtitle="Bağlantı kesildiğinde sıraya alınan bekleyen istekler. Yalnızca gerektiğinde açın."
               badge={qLen}
               defaultOpen={false}
               compact
@@ -532,4 +532,3 @@ useEffect(() => {
     </div>
   );
 }
-

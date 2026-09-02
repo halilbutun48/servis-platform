@@ -65,7 +65,7 @@ mustInclude(service, "disableRoomCommissionRule", "payment backbone service supp
 mustInclude(route, "/payment-backbone/settings", "commercial core payment route exposes settings endpoint");
 mustInclude(route, "/payment-backbone/settings/global", "commercial core payment route exposes global save endpoint");
 mustInclude(route, "/payment-backbone/settings/room", "commercial core payment route exposes room save endpoint");
-mustInclude(panel, "Super Admin ticari ayarlar", "superadmin panel renders commercial settings section");
+mustInclude(panel, "Süper Yönetici ticari ayarları", "superadmin panel renders commercial settings section");
 mustInclude(panel, "Global ayar", "superadmin panel renders global settings card");
 mustInclude(panel, "Taşımacılık Firması bazlı düzenleme", "superadmin panel renders room override card");
 mustInclude(panel, "Override kapat", "superadmin panel renders room override disable action");

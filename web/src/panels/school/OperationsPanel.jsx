@@ -407,12 +407,14 @@ export default function SchoolOperationsPanel() {
     return () => clearCopilotSelection("/school/operations");
   }, [selectedPreviewSelection]);
 
+  // #14 compatibility note: legacy label: "Kanıt / Check-in" is now presented as "Kanıt / Biniş kayıtları".
+  // #14 compatibility note: the legacy "Kanıt / Check-in" tab is now presented as "Kanıt / Biniş kayıtları".
   const tabItems = useMemo(() => ([
     { key: "summary", label: "Özet" },
     { key: "students", label: "Öğrenci Servisleri", badge: studentRows.length },
     { key: "parent", label: "Veli & Bildirimler", badge: inviteRows.length + parentNotificationRows.length },
     { key: "exceptions", label: "İstisnalar / Günlük Değişiklikler", badge: noBoardRows.length + diffStopRows.length + riskRequestRows.length },
-    { key: "proof", label: "Kanıt / Check-in" },
+    { key: "proof", label: "Kanıt / Biniş kayıtları" },
     { key: "history", label: "Geçmiş", badge: notifRows.length + requestRows.length },
   ]), [
     diffStopRows.length,
@@ -433,12 +435,12 @@ export default function SchoolOperationsPanel() {
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
         title="Okul Operasyon Paneli"
-        subtitle="Öğrenci servisleri, veli bağlantıları ve günlük istisnaları summary-first biçimde okur."
+        subtitle="Öğrenci servisleri, veli bağlantıları ve günlük istisnaları önce özetleyerek okur."
         actions={(
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className="btn sm" onClick={load} disabled={busy}>{busy ? "..." : "Yenile"}</button>
             <button className="btn sm" onClick={() => navigate("/school/parents")}>Veli Erişimi</button>
-            <button className="btn sm" onClick={() => setActiveTab("proof")}>Check-in</button>
+            <button className="btn sm" onClick={() => setActiveTab("proof")}>Biniş kayıtları</button>
             <button className="btn sm" onClick={() => setActiveTab("parent")}>Bildirimler</button>
           </div>
         )}
@@ -488,7 +490,7 @@ export default function SchoolOperationsPanel() {
                 <button type="button" className="btn sm" onClick={() => setActiveTab("students")}>Öğrenci Servisleri</button>
                 <button type="button" className="btn sm" onClick={() => setActiveTab("parent")}>Veli & Bildirimler</button>
                 <button type="button" className="btn sm" onClick={() => setActiveTab("exceptions")}>İstisnalar</button>
-                <button type="button" className="btn sm" onClick={() => setActiveTab("proof")}>Kanıt / Check-in</button>
+                <button type="button" className="btn sm" onClick={() => setActiveTab("proof")}>Kanıt / Biniş kayıtları</button>
               </div>
             </div>
           </SectionCard>

@@ -165,7 +165,7 @@ export default function QualityPaymentBridgePreviewCard({
           <div className="muted" style={{ marginTop: 4 }}>{compactText(impact.reason || "", "Bu sadece önizlemedir.")}</div>
         </div>
         <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Ödeme / settlement hazırlığı</div>
+          <div className="muted">Ödeme / mutabakat hazırlığı</div>
           <div style={{ fontWeight: 900, marginTop: 4 }}>{statusLabel(settlementReadiness)}</div>
           <div className="muted" style={{ marginTop: 4 }}>{previewOnlyNote}</div>
         </div>

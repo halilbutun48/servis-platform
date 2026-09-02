@@ -45,11 +45,11 @@ export function GuidedHubStep({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
-          <label className="muted">{organization ? "Toplanma Konumu Lat" : "Firma Konumu Lat"}</label>
+          <label className="muted">{organization ? "Toplanma konumu enlemi" : "Firma konumu enlemi"}</label>
           <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
         </div>
         <div>
-          <label className="muted">{organization ? "Toplanma Konumu Lng" : "Firma Konumu Lng"}</label>
+          <label className="muted">{organization ? "Toplanma konumu boylamı" : "Firma konumu boylamı"}</label>
           <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} disabled={busy} />
         </div>
       </div>

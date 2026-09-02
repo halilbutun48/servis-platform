@@ -815,7 +815,7 @@ export default function WorkflowPanel() {
           <div style={{ marginTop: 10 }}>
             <OfferQualityRankingCard
               title="Kalite karşılaştırması"
-              subtitle="Kalite, güven, telematik, kanıt/check-in ve operasyon riski salt okunur gösterilir; otomatik kazanan seçilmez."
+              subtitle="Kalite, güven, konum cihazı, kanıt/biniş kaydı ve operasyon riski salt okunur gösterilir; otomatik kazanan seçilmez."
               offers={offersFiltered}
               roomScores={roomScores}
               me={me}

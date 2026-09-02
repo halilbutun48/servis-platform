@@ -26,6 +26,7 @@ import { readCopilotSharedState, writeCopilotSharedState } from "../../utils/cop
 import { COPILOT_PERSONA, COPILOT_TERMINAL } from "../../utils/copilotFacts";
 import { nowIsoTR } from "../../utils/time";
 import { getCopilotScreenOptions } from "../../copilot/screenRegistry";
+import { humanizeUserFacingText } from "../../utils/terminology";
 import {
   canUseEntityChat,
   defaultChatEntityType,
@@ -40,6 +41,22 @@ import {
 } from "../../utils/copilotPanelHelpers";
 
 const COPILOT_TERMINAL_TITLE = COPILOT_TERMINAL.title || "Sefer Abi";
+
+function entityTypeLabel(value) {
+  return {
+    shift: "Vardiya",
+    vehicle: "Araç",
+    screen: "Ekran",
+  }[String(value || "").trim().toLowerCase()] || "İlgili kayıt";
+}
+
+function intentLabel(value) {
+  return INTENT_OPTIONS.find((x) => x.value === String(value || "").trim())?.label || humanizeUserFacingText(value, "Yardım konusu");
+}
+
+function guideLevelLabel(value) {
+  return GUIDE_LEVEL_OPTIONS.find((x) => x.value === String(value || "").trim())?.label || humanizeUserFacingText(value, "Kısa anlat");
+}
 
 const PANEL_MODES = [
   { value: "CHAT", label: "Sohbet" },
@@ -107,6 +124,14 @@ const GUIDE_BLOCK_MARKERS = {
 
 function buildScreenOptions(me) {
   return getCopilotScreenOptions(me);
+}
+
+function selectionSummaryForDisplay(selection) {
+  const label = String(selection?.label || "").trim();
+  const summary = String(selection?.summary || "").trim();
+  if (!summary || !label || summary === label) return humanizeUserFacingText(summary);
+  const prefix = `${label} • `;
+  return humanizeUserFacingText(summary.startsWith(prefix) ? summary.slice(prefix.length) : summary);
 }
 
 export default function CopilotPanel() {
@@ -263,8 +288,8 @@ export default function CopilotPanel() {
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
   const selectedChatScreen = useMemo(() => screenOptions.find((x) => String(x.id) === String(chatScreenId)) || null, [screenOptions, chatScreenId]);
   const [chatSelection, setChatSelection] = useState(() => {
-    const current = readCopilotSelection();
-    const path = screenOptions.find((x) => String(x.id) === String(chatScreenId))?.path || "";
+    const current = readCopilotSelection() || sharedContext?.selection || null;
+    const path = sharedContext?.screenPath || screenOptions.find((x) => String(x.id) === String(chatScreenId))?.path || "";
     return selectionApplies(current, path) ? current : null;
   });
   const chatTargetOptions = useMemo(() => (chatEntityType === "vehicle" ? vehicles : chatEntityType === "shift" ? recentShifts : screenOptions), [chatEntityType, vehicles, recentShifts, screenOptions]);
@@ -275,7 +300,7 @@ export default function CopilotPanel() {
   useEffect(() => {
     const path = selectedChatScreen?.path || "";
     const sync = () => {
-      const current = readCopilotSelection();
+      const current = readCopilotSelection() || (sharedContext?.screenPath === path ? sharedContext?.selection : null);
       const next = selectionApplies(current, path) ? current : null;
       setChatSelection(next);
       if (next && canUseEntityChat(me?.role)) {
@@ -295,7 +320,7 @@ export default function CopilotPanel() {
     const evt = copilotSelectionEventName();
     window.addEventListener(evt, sync);
     return () => window.removeEventListener(evt, sync);
-  }, [selectedChatScreen?.path, me?.role]);
+  }, [selectedChatScreen?.path, me?.role, sharedContext?.screenPath, sharedContext?.selection]);
 
   useEffect(() => {
     if (!chatMessages.length && !sharedContext?.screenPath) return;
@@ -655,7 +680,7 @@ export default function CopilotPanel() {
 
             <div className="card" style={{ padding: 12, display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
               <div className="muted" style={{ display: "grid", gap: 4 }}>
-                <div><b>Bağlam:</b> {selectedChatScreen ? screenOptionLabel(selectedChatScreen) : "-"}{selectedChatItem && chatEntityType !== "screen" ? ` • ${optionLabel(chatEntityType, selectedChatItem)}` : ""}</div>
+                <div><b>Bağlam:</b> {selectedChatScreen ? humanizeUserFacingText(screenOptionLabel(selectedChatScreen)) : "-"}{chatSelection?.label ? ` • ${humanizeUserFacingText(chatSelection.label)}${selectionSummaryForDisplay(chatSelection) ? ` • ${selectionSummaryForDisplay(chatSelection)}` : ""}` : selectedChatItem && chatEntityType !== "screen" ? ` • ${humanizeUserFacingText(optionLabel(chatEntityType, selectedChatItem))}` : ""}</div>
                 <div>Mevcut ekran ve seçili kayıt otomatik okunur. Gerekirse gelişmiş sekmesinden değiştir.</div>
               </div>
               <button type="button" onClick={() => setPanelMode("ADVANCED")}>Bağlamı değiştir</button>
@@ -748,12 +773,12 @@ export default function CopilotPanel() {
 
                 <label className="muted">
                   Kayıt türü
-                  <input value={activeEntityType} readOnly />
+                  <input value={entityTypeLabel(activeEntityType)} readOnly />
                 </label>
 
                 <label className="muted">
-                  Kayıt ID
-                  <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={activeEntityType === "vehicle" ? "Araç no" : "Vardiya no"} />
+                  Kayıt numarası
+                  <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={activeEntityType === "vehicle" ? "Araç numarası" : "Vardiya numarası"} />
                 </label>
               </div>
 
@@ -775,12 +800,12 @@ export default function CopilotPanel() {
 
                 <label className="muted">
                   Kayıt türü
-                  <input value={activeEntityType} readOnly />
+                  <input value={entityTypeLabel(activeEntityType)} readOnly />
                 </label>
 
                 <label className="muted">
-                  Kayıt ID
-                  <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={activeEntityType === "vehicle" ? "vehicleId" : "shiftId"} />
+                  Kayıt numarası
+                  <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={activeEntityType === "vehicle" ? "Araç numarası" : "Vardiya numarası"} />
                 </label>
               </div>
 
@@ -838,10 +863,9 @@ export default function CopilotPanel() {
           <div>
             <div className="title">Rehber Sonucu</div>
             <div className="muted" style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span>Sağlayıcı: <b>{result.provider || "-"}</b></span>
-              <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
-              <span>Seviye: <b>{result.guideLevel || "-"}</b></span>
-              <span>Kayıt: <b>{result.entityLabel || `${result.entityType || "entity"} #${result.entityId || "-"}`}</b></span>
+              <span>Yanıt kaynağı: <b>Sefer Abi</b></span>
+              <span>Anlatım düzeyi: <b>{guideLevelLabel(result.guideLevel)}</b></span>
+              <span>Kayıt: <b>{humanizeUserFacingText(result.entityLabel, `${entityTypeLabel(result.entityType)} ${result.entityId ? `#${result.entityId}` : ""}`)}</b></span>
             </div>
           </div>
 
@@ -850,7 +874,7 @@ export default function CopilotPanel() {
           {result.screenExplanation ? (
             <div>
               <div className="title" style={{ fontSize: 16 }}>Bu ekran ne için var?</div>
-              <div className="muted" style={{ marginTop: 8 }}>{result.screenExplanation}</div>
+              <div className="muted" style={{ marginTop: 8 }}>{humanizeUserFacingText(result.screenExplanation)}</div>
             </div>
           ) : null}
 
@@ -892,7 +916,7 @@ export default function CopilotPanel() {
               {history.map((x, i) => (
                 <li key={`${x.panelMode}:${x.intent}:${x.jobType}:${x.entityType}:${x.entityId}:${i}`}>
                   <button type="button" onClick={() => restoreHistory(x)}>
-                    {x.panelMode === "GUIDE" ? (GUIDE_JOB_OPTIONS.find((g) => g.value === x.jobType)?.label || x.jobType) : x.intent} • {x.entityType} #{x.entityId}
+                    {x.panelMode === "GUIDE" ? (GUIDE_JOB_OPTIONS.find((g) => g.value === x.jobType)?.label || humanizeUserFacingText(x.jobType)) : intentLabel(x.intent)} • {entityTypeLabel(x.entityType)} {x.entityId ? `#${x.entityId}` : ""}
                   </button>
                   <span className="muted"> {x.severity ? `(${x.severity})` : ""} {x.summary ? `- ${x.summary}` : ""}</span>
                 </li>
@@ -909,7 +933,7 @@ export default function CopilotPanel() {
           <details>
             <summary className="title" style={{ fontSize: 16, cursor: "pointer" }}>Kısa Not</summary>
             <div className="muted" style={{ marginTop: 8 }}>
-              Rehber modu M46.6-A ile eklendi. Copilot çekirdeği yerinde durur; üstüne sade Türkçe iş rehberi gelir. Sistem salt okunur ve öneri odaklı kalır; denetim günlüğüne copilot sorgusu yazar.
+              Rehber modu, Sefer Abi’nin sade Türkçe iş rehberidir. Sistem salt okunur ve öneri odaklı kalır; yapılan yardım sorgusu işlem kaydına eklenir.
             </div>
           </details>
         </div>

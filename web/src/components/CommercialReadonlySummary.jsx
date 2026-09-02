@@ -19,7 +19,7 @@ function sourceTypeLabel(value) {
   const v = String(value || "").toUpperCase()
   if (v === "AGREEMENT") return "Sözleşme"
   if (v === "SHIFT_SERIES") return "Vardiya serisi"
-  return v || "Ticari kaynak"
+  return v === "" ? "Ticari kaynak" : "Diğer ticari kaynak"
 }
 
 function paymentModeLabel(value) {
@@ -28,7 +28,7 @@ function paymentModeLabel(value) {
   if (v === "OPTIONAL") return "İsteğe bağlı"
   if (v === "REQUIRED") return "Zorunlu"
   if (v === "PREVIEW") return "Sadece önizleme"
-  return v.replace(/_/g, " ") || "Kapalı"
+  return "Ödeme modu"
 }
 
 function settlementStatusLabel(value) {
@@ -39,7 +39,7 @@ function settlementStatusLabel(value) {
   if (v === "DISABLED") return "Kapalı"
   if (v === "PENDING") return "Beklemede"
   if (v === "PLANNED") return "Planlandı"
-  return v.replace(/_/g, " ") || "Beklemede"
+  return "Durum bilgisi"
 }
 
 function adapterLabel(value) {
@@ -48,7 +48,7 @@ function adapterLabel(value) {
   if (v === "READY") return "Hazır"
   if (v === "ACTIVE") return "Etkin"
   if (v === "DISABLED") return "Kapalı"
-  return v.replace(/_/g, " ") || "Beklemede"
+  return "Bağlantı durumu"
 }
 
 export default function CommercialReadonlySummary({ item, compact = false }) {
@@ -61,7 +61,7 @@ export default function CommercialReadonlySummary({ item, compact = false }) {
   const providerNetAmount = plan?.providerNetAmount ?? item.amountProviderSnapshot ?? null
 
   return (
-    <div className="card" style={{ marginTop: compact ? 6 : 8, padding: compact ? 8 : 10 }} title="Ödeme altyapısı yalnızca önizleme özeti">
+    <div className="card" style={{ marginTop: compact ? 6 : 8, padding: compact ? 8 : 10 }} title="Ödeme bilgisi yalnızca önizleme özetidir">
       <div className="row" style={{ justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ fontWeight: 800 }}>{sourceTypeLabel(item.sourceType)}</div>
         <span className="pill" data-status={paymentMode} title="Ödeme modu durumu">
@@ -69,13 +69,13 @@ export default function CommercialReadonlySummary({ item, compact = false }) {
         </span>
       </div>
       <div className="muted" style={{ marginTop: 6 }}>
-        Komisyon snapshot: <b>{fmtBps(item.commissionBpsSnapshot)}</b>
+        Komisyon özeti: <b>{fmtBps(item.commissionBpsSnapshot)}</b>
       </div>
       <div className="muted" style={{ marginTop: 4 }}>
         Tahsilat: <b>{fmtTry(grossAmount)}</b> • Platform: <b>{fmtTry(commissionAmount)}</b> • Sağlayıcı: <b>{fmtTry(providerNetAmount)}</b>
       </div>
       <div className="muted" style={{ marginTop: 4 }}>
-        Ödeme / settlement hazırlığı: <b>{settlementStatusLabel(settlementStatus)}</b> • Bağlayıcı: <b>{adapterLabel(item.providerAdapterKey || plan?.providerAdapterKey || "DORMANT")}</b>
+        Ödeme / mutabakat hazırlığı: <b>{settlementStatusLabel(settlementStatus)}</b> • Bağlantı: <b>{adapterLabel(item.providerAdapterKey || plan?.providerAdapterKey || "DORMANT")}</b>
       </div>
       {paymentMode === "OPTIONAL" ? (
         <div className="muted" style={{ marginTop: 4 }}>
@@ -84,7 +84,7 @@ export default function CommercialReadonlySummary({ item, compact = false }) {
       ) : null}
       {paymentMode === "REQUIRED" ? (
         <div className="muted" style={{ marginTop: 4 }}>
-          Zorunlu ödeme rollout'u: <b>{settlementStatus === "ACTIVE" ? "Aktif" : settlementStatus === "DISABLED" ? "Durduruldu" : "Beklemede"}</b>
+          Zorunlu ödeme geçişi: <b>{settlementStatus === "ACTIVE" ? "Aktif" : settlementStatus === "DISABLED" ? "Durduruldu" : "Beklemede"}</b>
         </div>
       ) : null}
       {!compact && item.sourceKey ? (

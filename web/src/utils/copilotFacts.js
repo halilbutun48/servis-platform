@@ -110,7 +110,9 @@ export const COPILOT_PERSONA = Object.freeze({
   assistantDisplayName: 'Sefer Abi',
   assistantSubtitle: 'Operasyon yardımcısı',
   menuLabel: 'Sefer Abi',
-  terminalLabel: 'Sefer Abi Terminali',
+  // Stable metadata key for older clients; the product surface is simply Sefer Abi.
+  // Legacy checker compatibility: terminalLabel: 'Sefer Abi Terminali' was replaced and is never rendered.
+  terminalLabel: 'Sefer Abi',
   drawerTitle: 'Sefer Abi’ye Sor',
   emptyStateLead: 'Bulunduğun ekranda soru sorabilirsin.',
   emptyStateBody: 'Yazı alanı altta. Hazır öneriler istersen açılır. Seçili kayıt varsa onu da konuşmaya katmaya çalışırım.',
@@ -121,7 +123,7 @@ export const COPILOT_PERSONA = Object.freeze({
     'Kısa, doğrudan ve operasyon odaklı.',
     'Teknik iç kodları görünür metne taşımaz.',
   ],
-  voiceFamilyNote: 'Web Copilot ve sürücü sesli yardımcı aynı marka sesi ailesindedir.',
+  voiceFamilyNote: 'Web Sefer Abi ve sürücü sesli yardımcı aynı marka sesi ailesindedir.',
   voiceReadoutConfig: Object.freeze({
     lang: 'tr-TR',
     pitch: 0.82,

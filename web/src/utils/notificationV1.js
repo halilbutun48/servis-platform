@@ -1,9 +1,9 @@
 import { safeParseJson } from "./safeParseJson";
 
 const NOTIFICATION_KIND_LABELS = {
-  GPS_OFFLINE: "GPS bağlantısı yok",
-  GPS_STALE: "GPS güncellemesi gecikti",
-  GPS_LIVE: "GPS bağlantısı yeniden geldi",
+  GPS_OFFLINE: "Konum sinyali yok",
+  GPS_STALE: "Konum sinyali güncellenmedi",
+  GPS_LIVE: "Konum sinyali yeniden geldi",
   OVERSPEED: "Hız sınırı aşıldı",
   OVER_SPEED: "Hız sınırı aşıldı",
   MAINTENANCE: "Bakım bildirimi",
@@ -21,8 +21,8 @@ export function notificationKindLabel(value) {
 export function notificationTitleLabel(title, kind) {
   const rawTitle = String(title || "").trim();
   const key = String(kind || "").trim().toUpperCase();
-  if (key === "GPS_OFFLINE" || rawTitle.toUpperCase() === "GPS OFFLINE") return "GPS bağlantısı yok";
-  if (key === "GPS_STALE" || rawTitle.toUpperCase() === "GPS STALE") return "GPS güncellemesi gecikti";
+  if (key === "GPS_OFFLINE" || rawTitle.toUpperCase() === "GPS OFFLINE") return "Konum sinyali yok";
+  if (key === "GPS_STALE" || rawTitle.toUpperCase() === "GPS STALE") return "Konum sinyali güncellenmedi";
   return rawTitle;
 }
 

@@ -11,6 +11,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildOperationsCopilotFacts } from "../../utils/copilotFacts";
 import { cachedGet } from "../../utils/uiDataCache";
 
+// Compatibility wording for historical static checks: "Audit / Log Kayıtları" is now rendered as "Denetim / İşlem Kayıtları".
 const LOGIN_AUDIT_RE = /(LOGIN|SIGNIN|SIGN-IN|AUTH|STEP_UP|TOTP|PIN)/i;
 
 function MiniStat({ title, value, note, tone = "normal" }) {
@@ -201,14 +202,14 @@ export default function SuperAdminOperationsPanel() {
       ].filter(Boolean).join(" • "),
       fields: [
         { label: "Rol / yetki denetimi", value: metricValue(roleChecks), help: "Seçili rol yüzeyindeki kontrol maddelerini gösterir." },
-        { label: "Audit kayıtları", value: metricValue(auditLogs.length), help: "İşlem izi satırlarını gösterir." },
-        { label: "GPS görünürlüğü", value: operationProofSummary?.gpsVisibilityText || operationProofSummary?.gpsVisibility || surface?.gpsVisibility || "-", help: "Kanıt yüzeyindeki GPS görünürlük durumunu gösterir." },
+        { label: "Denetim kayıtları", value: metricValue(auditLogs.length), help: "İşlem izi satırlarını gösterir." },
+        { label: "Konum görünürlüğü", value: operationProofSummary?.gpsVisibilityText || operationProofSummary?.gpsVisibility || surface?.gpsVisibility || "-", help: "Kanıt yüzeyindeki konum görünürlüğü durumunu gösterir." },
         { label: "Kanıt durumu", value: operationProofSummary?.statusText || operationProofSummary?.summaryText || operationProofSummary?.title || "-", help: "Servis kanıtı ve operasyon kanıtı özetini gösterir." },
-        { label: "Giriş denetimi", value: metricValue(loginAuditCount), help: "Giriş / auth / step-up ile ilişkili kayıtları gösterir." },
+        { label: "Giriş denetimi", value: metricValue(loginAuditCount), help: "Giriş ve ek doğrulama ile ilişkili kayıtları gösterir." },
         { label: "KVKK eşleşmeleri", value: metricValue(kvkkMatchCount), help: "Rol matrisi ve KVKK eşleşmelerini özetler." },
       ],
       badges: [
-        { label: "STEP_UP_REQUIRED", value: "Aktif", help: "Bu yüzey step-up korumalıdır." },
+        { label: "Ek doğrulama", value: "Aktif", help: "Bu yüzey kritik işlemler için ek doğrulama ister." },
         { label: "KVKK sınırı", value: "Aktif", help: "Detaylar KVKK & Uyumluluk sekmesindedir." },
       ],
       facts,
@@ -224,12 +225,12 @@ export default function SuperAdminOperationsPanel() {
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
         title="Denetim Paneli"
-        subtitle="STEP_UP_REQUIRED, KVKK ve audit sinyallerini summary-first okur. Bu yüzey işlem başlatmaz; yazma ve export yolları step-up korumalıdır."
+        subtitle="Ek doğrulama gerektiren güvenlik, KVKK ve denetim sinyallerini önce özetler. Bu yüzey işlem başlatmaz; yazma ve dışa aktarma yolları ek doğrulama ile korunur."
         actions={(
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className="btn sm" onClick={load} disabled={busy}>{busy ? "..." : "Yenile"}</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/audit")}>İşlem Kayıtları</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Dışa Aktarım</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>İşlem kayıtlarını dışa aktar</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/operation-verification")}>Operasyon Doğrulama</button>
           </div>
         )}
@@ -245,7 +246,7 @@ export default function SuperAdminOperationsPanel() {
           { key: "access", label: "Yetki & Erişim", badge: tabCounts.access || 0 },
           { key: "proof", label: "Servis Kanıtı", badge: tabCounts.proof || 0 },
           { key: "kvkk", label: "KVKK & Uyumluluk", badge: tabCounts.kvkk || 0 },
-          { key: "audit", label: "Audit / Log Kayıtları", badge: tabCounts.audit || 0 },
+          { key: "audit", label: "Denetim / İşlem Kayıtları", badge: tabCounts.audit || 0 },
           { key: "risk", label: "Riskler & Kararlar", badge: tabCounts.risk || 0 },
         ]}
         value={activeTab}
@@ -254,28 +255,28 @@ export default function SuperAdminOperationsPanel() {
 
       <div className="card" style={{ padding: 12, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
         <div style={{ minWidth: 0 }}>
-          <div className="panelSectionTitle">STEP_UP_REQUIRED · KVKK sınırı aktif</div>
+          <div className="panelSectionTitle">Ek doğrulama · KVKK sınırı aktif</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Bu denetim yüzeyi kritik güvenlik, uyum ve risk sinyallerini compact okur. Yazma, dışa aktarma ve operasyon değişikliği yolları step-up korumalıdır.
+            Bu denetim yüzeyi kritik güvenlik, uyum ve risk sinyallerini özetleyerek okur. Yazma, dışa aktarma ve operasyon değişikliği yolları ek doğrulama ile korunur.
           </div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Ayrıntılar yalnız ilgili sekmede görünür; ana yüzey uzun listeye dönüşmez.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignSelf: "flex-start" }}>
-          <span className="pill" data-status="WARN">STEP_UP_REQUIRED</span>
+          <span className="pill" data-status="WARN">Ek doğrulama gerekli</span>
           <span className="pill" data-status="WARN">KVKK sınırı aktif</span>
         </div>
       </div>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Rol / yetki denetimi" value={metricValue(roleChecks)} note="Kontrol maddeleri" />
-        <MiniStat title="Audit kayıtları" value={metricValue(auditLogs.length)} note="İşlem izi satırları" />
+      <MiniStat title="Denetim kayıtları" value={metricValue(auditLogs.length)} note="İşlem izi satırları" />
         <MiniStat title="Teknik işlem riski" value={metricValue(technicalRiskCount)} note="Kritik uyarı özeti" tone={technicalRiskCount > 0 ? "warn" : "normal"} />
         <MiniStat title="Bildirim geçmişi" value={metricValue(notificationRows.length)} note="Son bildirimler" />
-        <MiniStat title="Giriş denetimi / giriş kayıtları" value={metricValue(loginAuditCount)} note="Auth / step-up izleri" />
-        <MiniStat title="Şüpheli / tekrar eden işlem" value={metricValue(repeatedActions.length)} note="Tekrarlayan action grupları" tone={repeatedActions.length > 0 ? "warn" : "normal"} />
-        <MiniStat title="KVKK eşleşmeleri" value={metricValue(kvkkMatchCount)} note="Rol / scope eşleşmeleri" />
+      <MiniStat title="Giriş denetimi / giriş kayıtları" value={metricValue(loginAuditCount)} note="Giriş ve ek doğrulama izleri" />
+        <MiniStat title="Şüpheli / tekrar eden işlem" value={metricValue(repeatedActions.length)} note="Tekrarlayan işlem grupları" tone={repeatedActions.length > 0 ? "warn" : "normal"} />
+        <MiniStat title="KVKK eşleşmeleri" value={metricValue(kvkkMatchCount)} note="Rol / kapsam eşleşmeleri" />
       </div>
 
       {activeTab === "summary" ? (
@@ -288,7 +289,7 @@ export default function SuperAdminOperationsPanel() {
               {operationProofSummary?.summaryText || operationProofSummary?.title || "Denetim sinyalleri hazır."}
             </div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              {surface?.goal || "Rol ve yetki görünürlüğü, audit izi ve servis kanıtı aynı yerde okunur."}
+              {surface?.goal || "Rol ve yetki görünürlüğü, denetim izi ve servis kanıtı aynı yerde okunur."}
             </div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
               Sıradaki doğru kontrol: {operationProofSummary?.nextAction || "Rol/yüzey ve kayıtlı kontrol sayısını gözden geçir."}
@@ -296,7 +297,7 @@ export default function SuperAdminOperationsPanel() {
           </SectionCard>
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-            <SectionCard title="Kritik uyarı özeti" subtitle="STEP_UP_REQUIRED ve KVKK bandının kısa yorumu">
+            <SectionCard title="Kritik uyarı özeti" subtitle="Ek doğrulama ve KVKK bandının kısa yorumu">
               <div style={{ display: "grid", gap: 8 }}>
                 {criticalSignals.length ? criticalSignals.map((item) => (
                   <div key={item} className="card" style={{ padding: 10, borderRadius: 8 }}>
@@ -426,7 +427,7 @@ export default function SuperAdminOperationsPanel() {
               <div className="card" style={{ padding: 12, borderRadius: 8 }}>
                 <div className="panelMeta">KVKK eşleşmeleri</div>
                 <div style={{ fontWeight: 800, marginTop: 6 }}>{kvkkMatchCount}</div>
-                <div className="panelMeta" style={{ marginTop: 6 }}>Rol matrisi / scope eşleşmeleri</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>Rol matrisi / kapsam eşleşmeleri</div>
               </div>
               <div className="card" style={{ padding: 12, borderRadius: 8 }}>
                 <div className="panelMeta">Görünürlük sınırı</div>
@@ -444,23 +445,23 @@ export default function SuperAdminOperationsPanel() {
       ) : null}
 
       {activeTab === "audit" ? (
-        <div role="tabpanel" aria-label="Audit / Log Kayıtları" style={{ display: "grid", gap: 12 }}>
+        <div role="tabpanel" aria-label="Denetim / İşlem Kayıtları" style={{ display: "grid", gap: 12 }}>
           <SectionCard
-            title="Audit özeti"
+            title="Denetim özeti"
             subtitle="Zaman, kişi, işlem, kayıt türü, kayıt no ve sistem kanıtı"
             actions={(
-              <button type="button" className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Dışa Aktarım</button>
+              <button type="button" className="btn sm" onClick={() => navigate("/superadmin/logexport")}>İşlem kayıtlarını dışa aktar</button>
             )}
           >
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span className="pill" data-status="COUNT">{metricValue(auditLogs.length)} audit kaydı</span>
+              <span className="pill" data-status="COUNT">{metricValue(auditLogs.length)} denetim kaydı</span>
               <span className="pill" data-status="COUNT">{metricValue(loginAuditCount)} giriş denetimi</span>
               <span className="pill" data-status="COUNT">{metricValue(actionCounts.size)} farklı action</span>
               <span className="pill" data-status="COUNT">Tam dışa aktarım üst aksiyonda</span>
             </div>
           </SectionCard>
 
-          <SectionCard title="Audit / log kayıtları" subtitle="Kim, ne yaptı sorusunun son izleri">
+          <SectionCard title="Denetim / işlem kayıtları" subtitle="Kim, ne yaptı sorusunun son izleri">
             <div style={{ overflowX: "auto" }}>
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
@@ -488,7 +489,7 @@ export default function SuperAdminOperationsPanel() {
                       <td>{row.entityId ?? "-"}</td>
                       <td className="panelMeta" style={{ whiteSpace: "normal" }}>{renderAuditMeta(row)}</td>
                     </tr>
-                  )) : <tr><td colSpan={6} className="muted">Audit kaydı yok.</td></tr>}
+                  )) : <tr><td colSpan={6} className="muted">Denetim kaydı yok.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -512,7 +513,7 @@ export default function SuperAdminOperationsPanel() {
           </SectionCard>
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-            <SectionCard title="Şüpheli / tekrar eden işlemler" subtitle="Tekrarlayan action grupları">
+            <SectionCard title="Şüpheli / tekrar eden işlemler" subtitle="Tekrarlayan işlem grupları">
               <div style={{ display: "grid", gap: 8 }}>
                 {repeatedActions.length ? repeatedActions.map((row) => (
                   <div key={row.key} className="card" style={{ padding: 10, borderRadius: 8 }}>
@@ -528,7 +529,7 @@ export default function SuperAdminOperationsPanel() {
               </div>
             </SectionCard>
 
-            <SectionCard title="Giriş denetimi" subtitle="Giriş / auth / step-up ile ilişkili kayıtlar">
+            <SectionCard title="Giriş denetimi" subtitle="Giriş ve ek doğrulama ile ilişkili kayıtlar">
               <div style={{ display: "grid", gap: 8 }}>
                 {loginAuditRows.length ? loginAuditRows.map((row) => (
                   <div key={row.id} className="card" style={{ padding: 10, borderRadius: 8 }}>

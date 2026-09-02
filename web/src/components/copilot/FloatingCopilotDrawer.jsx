@@ -9,6 +9,7 @@ import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
 import { copilotSharedStateEventName, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { captureCopilotUiSurface } from "./uiSurface";
+import { humanizeUserFacingText } from "../../utils/terminology";
 
 const STORAGE_KEY = "psv1:copilot:drawer:v4";
 const HISTORY_KEY = "psv1:copilot:drawer:history:v4";
@@ -80,12 +81,20 @@ function buildPrompt({ mode, rawText, screenContext, selection }) {
   return base.join(" ");
 }
 
+function selectionSummaryForDisplay(selection) {
+  const label = String(selection?.label || '').trim();
+  const summary = String(selection?.summary || '').trim();
+  if (!summary || !label || summary === label) return summary;
+  const prefix = `${label} • `;
+  return summary.startsWith(prefix) ? summary.slice(prefix.length) : summary;
+}
+
 function actionText(action) {
   const kind = String(action?.actionKind || "OPEN_ROUTE");
-  if (kind === "OPEN_GUIDE") return action?.label || "Rehberi aç";
-  if (kind === "ASK") return action?.label || "Sor";
-  if (kind === "COPY_TEXT") return action?.label || "Kopyala";
-  return action?.label || "İlgili yere git";
+  if (kind === "OPEN_GUIDE") return humanizeUserFacingText(action?.label, "Rehberi aç");
+  if (kind === "ASK") return humanizeUserFacingText(action?.label, "Sor");
+  if (kind === "COPY_TEXT") return humanizeUserFacingText(action?.label, "Kopyala");
+  return humanizeUserFacingText(action?.label, "İlgili yere git");
 }
 
 function withRouteParams(path, params) {
@@ -576,7 +585,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           <div className="copilotDrawerContext">{`${COPILOT_PERSONA.assistantDisplayName} · ${COPILOT_PERSONA.assistantSubtitle}`}</div>
           <div className="copilotDrawerContext">Bulunduğun ekranda kısa destek verir.</div>
           <div className="copilotDrawerContext">Şu an: {screenContext.label}</div>
-          {selection?.label ? <div className="copilotDrawerContext">Seçili kayıt: <b>{selection.label}</b>{selection?.summary && selection.summary !== selection.label ? ` • ${selection.summary}` : ""}</div> : null}
+          {selection?.label ? <div className="copilotDrawerContext">Seçili kayıt: <b>{selection.label}</b>{selectionSummaryForDisplay(selection) ? ` • ${selectionSummaryForDisplay(selection)}` : ""}</div> : null}
         </div>
         <div className="copilotDrawerTools">
           <button
@@ -628,17 +637,17 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         {messages.length === 0 ? <div className="copilotEmptyState"><div className="copilotEmptyTitle">{COPILOT_PERSONA.emptyStateLead}</div><div className="copilotEmptyText">{COPILOT_PERSONA.emptyStateBody}</div><div className="copilotSuggestionWrap">{suggestions.map((chip) => <button key={chip} type="button" className="copilotChip" onClick={() => ask(chip)}>{chip}</button>)}</div></div> : null}
         {messages.map((m, idx) => <div key={`${m.role}-${idx}`} className={m.role === "user" ? "copilotMsg user" : "copilotMsg assistant"}>
           <div className="copilotMsgHead">{m.role === "user" ? "Sen" : COPILOT_PERSONA.assistantDisplayName}</div>
-          <div className="copilotMsgText">{m.text}</div>
+          <div className="copilotMsgText">{m.role === "assistant" ? humanizeUserFacingText(m.text, "Yardım metni oluşmadı.") : m.text}</div>
           {m.role === "assistant" && m.costReasoning?.version && Array.isArray(m.responseSections) && m.responseSections.length ? (
             <details className="copilotReasoningDetails">
               <summary className="copilotToolBtn">Neden böyle söyledim</summary>
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {m.responseSections.map((section, sectionIndex) => (
                   <div key={`${section?.kind || "section"}:${sectionIndex}`} style={{ border: "1px solid #d0d5dd", borderRadius: 10, padding: 10, background: "#fff" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#344054", marginBottom: 5 }}>{section?.title || "-"}</div>
-                    {section?.text ? <div style={{ fontSize: 12, lineHeight: 1.45 }}>{section.text}</div> : null}
-                    {section?.hint ? <div style={{ fontSize: 11, color: "#475467", marginTop: 5 }}>{section.hint}</div> : null}
-                    {Array.isArray(section?.items) && section.items.length ? <div style={{ fontSize: 11, color: "#475467", marginTop: 6 }}>{section.items.join(" • ")}</div> : null}
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#344054", marginBottom: 5 }}>{humanizeUserFacingText(section?.title)}</div>
+                    {section?.text ? <div style={{ fontSize: 12, lineHeight: 1.45 }}>{humanizeUserFacingText(section.text)}</div> : null}
+                    {section?.hint ? <div style={{ fontSize: 11, color: "#475467", marginTop: 5 }}>{humanizeUserFacingText(section.hint)}</div> : null}
+                    {Array.isArray(section?.items) && section.items.length ? <div style={{ fontSize: 11, color: "#475467", marginTop: 6 }}>{section.items.map(humanizeUserFacingText).join(" • ")}</div> : null}
                   </div>
                 ))}
               </div>
@@ -652,7 +661,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
             ))}
           </div> : null}
         </div>)}
-        {busy ? <div className="copilotBusy">Copilot düşünüyor...</div> : null}
+        {busy ? <div className="copilotBusy">Sefer Abi düşünüyor...</div> : null}
         {err ? <div className="copilotError">{err}</div> : null}
       </div>
 

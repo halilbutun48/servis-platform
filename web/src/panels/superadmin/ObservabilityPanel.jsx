@@ -94,11 +94,59 @@ function gpsScoreText(summary) {
   return "Henüz skor yok";
 }
 
+function technicalStateLabel(value) {
+  const key = String(value || "").trim().toUpperCase();
+  const labels = {
+    OK: "Uygun",
+    LIVE: "Canlı",
+    HEALTHY: "Sağlıklı",
+    WARN: "Uyarı",
+    WARNING: "Uyarı",
+    CRITICAL: "Kritik",
+    ERROR: "Hata",
+    SCAFFOLD: "Hazırlık",
+    UNKNOWN: "Belirsiz",
+    READY: "Hazır",
+  };
+  return labels[key] || (key ? "Kontrol gerekli" : "-");
+}
+
+function readableAdminText(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  if (/M\d+|internal|debug|raw|payload/i.test(text)) return "Sistem kanıtı hazır";
+  return text
+    .replace(/summary[- ]first/gi, "öncelikli özet")
+    .replace(/telemetry/gi, "konum verisi")
+    .replace(/dead[- ]letter/gi, "işlenemeyen kuyruk kaydı")
+    .replace(/queue/gi, "kuyruk")
+    .replace(/event type/gi, "olay türü")
+    .replace(/\bGPS\b/gi, "konum sinyali")
+    .replace(/\bSync\b/gi, "Senkron")
+    .replace(/\bIncident\b/gi, "Alarm")
+    .replace(/\bThreshold\b/gi, "Eşik")
+    .replace(/\bLogin\b/gi, "Giriş")
+    .replace(/\bprovider\b/gi, "veri sağlayıcısı");
+}
+
+function eventTypeLabel(value) {
+  const key = String(value || "").trim();
+  const labels = {
+    AUTH_LOGIN_OK: "Giriş başarılı",
+    AUTH_LOGIN_FAIL: "Giriş başarısız",
+    AUTH_LOGIN_DEVICE_MISMATCH: "Girişte cihaz uyuşmazlığı",
+    AUTH_LOGIN_DEVICE_REQUIRED: "Girişte cihaz doğrulaması gerekli",
+    AUTH_LOGIN_DISABLED: "Devre dışı hesapla giriş denemesi",
+    AUTH_DRIVER_PIN_LOCKED: "Sürücü PIN'i kilitlendi",
+  };
+  return labels[key] || (key ? readableAdminText(key.replace(/_/g, " ")) : "Olay");
+}
+
 function liveStatusText(summary) {
   const status = String(summary?.status || "").toUpperCase();
   if (status === "SCAFFOLD") return "Hazırlık";
   if (!status) return "Henüz canlı veri yok";
-  return status;
+  return technicalStateLabel(status);
 }
 
 function formatMaybeNumber(value) {
@@ -114,9 +162,9 @@ function proofStateText(value) {
 function queueStatusText(queueThreshold, queueIncident) {
   const thresholdStatus = String(queueThreshold?.status || "").toUpperCase();
   const incidentSeverity = String(queueIncident?.severity || "").toUpperCase();
-  if (incidentSeverity && incidentSeverity !== "OK") return `Alarm ${incidentSeverity}`;
-  if (thresholdStatus && thresholdStatus !== "OK") return `Eşik ${thresholdStatus}`;
-  return "OK";
+  if (incidentSeverity && incidentSeverity !== "OK") return `Alarm ${technicalStateLabel(incidentSeverity)}`;
+  if (thresholdStatus && thresholdStatus !== "OK") return `Eşik ${technicalStateLabel(thresholdStatus)}`;
+  return "Uygun";
 }
 
 function getCriticalSignals({ summary, queueThreshold, queueIncident, queueStats }) {
@@ -126,10 +174,10 @@ function getCriticalSignals({ summary, queueThreshold, queueIncident, queueStats
   const deadLetterDepth = Number(queueStats?.deadLetterDepth || 0);
 
   return [
-    thresholdStatus && thresholdStatus !== "OK" ? `Queue eşiği ${queueThreshold?.status || thresholdStatus}` : null,
-    incidentSeverity && incidentSeverity !== "OK" ? `Alarm seviyesi ${queueIncident?.severity || incidentSeverity}` : null,
-    deviceRisk && deviceRisk !== "unknown" ? `Cihaz riski ${summary?.deviceHealth?.risk || deviceRisk}` : null,
-    deadLetterDepth > 0 ? `Dead-letter ${deadLetterDepth}` : null,
+    thresholdStatus && thresholdStatus !== "OK" ? `Kuyruk eşiği ${technicalStateLabel(queueThreshold?.status || thresholdStatus)}` : null,
+    incidentSeverity && incidentSeverity !== "OK" ? `Alarm seviyesi ${technicalStateLabel(queueIncident?.severity || incidentSeverity)}` : null,
+    deviceRisk && deviceRisk !== "unknown" ? `Cihaz riski ${readableAdminText(summary?.deviceHealth?.risk || deviceRisk)}` : null,
+    deadLetterDepth > 0 ? `İşlenemeyen kuyruk kaydı: ${deadLetterDepth}` : null,
   ].filter(Boolean);
 }
 
@@ -235,7 +283,7 @@ export default function ObservabilityPanel() {
   const recentEvent = recentEvents[0] || null;
   const gpsNotes = useMemo(() => {
     const raw = Array.isArray(summary?.gpsReliability?.notes) ? summary.gpsReliability.notes : [];
-    return raw.length ? raw : ["Canlı GPS güven notu henüz oluşmadı."];
+    return raw.length ? raw.map(readableAdminText) : ["Canlı konum sinyali güven notu henüz oluşmadı."];
   }, [summary]);
   const loginAuditCount = useMemo(
     () => recentEvents.filter((item) => LOGIN_EVENT_TYPES.has(String(item?.type || ""))).length,
@@ -266,25 +314,25 @@ export default function ObservabilityPanel() {
           : "REVIEW_NEEDED",
       readinessScore: score != null ? Math.max(24, Math.min(95, Math.round(score))) : 42,
       blockers: [
-        ...(summary?.deviceHealth?.risk && String(summary.deviceHealth.risk) !== "unknown" ? [`Cihaz sağlık riski: ${summary.deviceHealth.risk}`] : []),
-        ...((score != null && score < 60) ? ["GPS güven skoru düşük görünüyor."] : []),
-        ...(queueIncident?.severity && String(queueIncident.severity).toUpperCase() !== "OK" ? [`Kuyruk alarmı: ${queueIncident.severity}`] : []),
+        ...(summary?.deviceHealth?.risk && String(summary.deviceHealth.risk) !== "unknown" ? [`Cihaz sağlık riski: ${readableAdminText(summary.deviceHealth.risk)}`] : []),
+        ...((score != null && score < 60) ? ["Konum sinyali güven skoru düşük görünüyor."] : []),
+        ...(queueIncident?.severity && String(queueIncident.severity).toUpperCase() !== "OK" ? [`Kuyruk alarmı: ${technicalStateLabel(queueIncident.severity)}`] : []),
       ],
       counters: { eventTypes: eventTypes.length, recentEvents: recentEvents.length, gpsScore: score != null ? score : "-", queueDepth, deadLetterDepth },
       roadmapCounters: { activeWidgets: activeWidgets.length, roadmapWidgets: roadmapWidgets.length, queueDepth, deadLetterDepth },
       evidence: [
         `Canlı durum: ${liveStatusText(summary)}`,
-        `GPS skor: ${gpsScoreText(summary)}`,
-        `Queue: ${queueThreshold?.status || "BELİRSİZ"} / ${formatMaybeNumber(queueStats.queueDepth)}`,
-        `Alarm: ${queueIncident?.severity || "BELİRSİZ"} / ${queueIncident?.title || "-"}`,
-        `Son canlı olay: ${firstEvent?.label || firstEvent?.type || "-"}`,
+        `Konum sinyali skoru: ${gpsScoreText(summary)}`,
+        `Kuyruk: ${technicalStateLabel(queueThreshold?.status || "UNKNOWN")} / ${formatMaybeNumber(queueStats.queueDepth)}`,
+        `Alarm: ${technicalStateLabel(queueIncident?.severity || "UNKNOWN")} / ${readableAdminText(queueIncident?.title || "-")}`,
+        `Son canlı olay: ${readableAdminText(firstEvent?.label || eventTypeLabel(firstEvent?.type) || "-")}`,
       ],
-      reasoningLead: "Bu ekranda amaç canlı sağlık, GPS güveni ve son olayları aynı yerde okumaktır.",
+      reasoningLead: "Bu ekranda amaç canlı sağlık, konum sinyali güveni ve son olayları aynı yerde okumaktır.",
       nextBestAction: firstEvent
-        ? "Önce son canlı olayın önemini ve zamanını oku. Sonra cihaz sağlık ve queue notlarıyla birlikte değerlendir."
-        : "Önce canlı durum, GPS güven notu ve queue eşiklerini oku. Sonra event type ve dead-letter satırlarına in.",
-      safestNextStep: "En risksiz adım, canlı durum, GPS skoru ve queue threshold bilgisini aynı anda okuyup sonra ayrıntıya inmektir.",
-      compareHint: "Canlı durum ile GPS güven skoru aynı şey değildir; biri saha akışını, diğeri veri kalitesini özetler. Queue ise operasyon dayanıklılığını gösterir.",
+        ? "Önce son canlı olayın önemini ve zamanını oku. Sonra cihaz sağlığı ve kuyruk notlarıyla birlikte değerlendir."
+        : "Önce canlı durum, konum sinyali güven notu ve kuyruk eşiklerini oku. Sonra olay türü ve işlenemeyen kayıt satırlarına in.",
+      safestNextStep: "En risksiz adım, canlı durum, konum sinyali skoru ve kuyruk eşiği bilgisini aynı anda okuyup sonra ayrıntıya inmektir.",
+      compareHint: "Canlı durum ile konum sinyali güven skoru aynı şey değildir; biri saha akışını, diğeri veri kalitesini özetler. Kuyruk ise operasyon dayanıklılığını gösterir.",
     };
 
     setCopilotSelection({
@@ -292,22 +340,22 @@ export default function ObservabilityPanel() {
       entityType: "screen",
       entityId: 6107,
       label: firstEvent?.label || "Canlı sağlık ve risk özeti",
-      summary: [liveStatusText(summary), gpsScoreText(summary), queueThreshold?.status || null, firstEvent?.severity || null].filter(Boolean).join(" • "),
+      summary: [liveStatusText(summary), gpsScoreText(summary), technicalStateLabel(queueThreshold?.status), technicalStateLabel(firstEvent?.severity)].filter((x) => x && x !== "-").join(" • "),
       fields: [
         { label: "Canlı Durum", value: liveStatusText(summary), help: "Saha akışının genel canlılık durumunu gösterir." },
-        { label: "GPS Skoru", value: gpsScoreText(summary), help: "GPS güven katmanının skorunu gösterir." },
-        { label: "Cihaz Riski", value: summary?.deviceHealth?.risk || "-", help: "Cihaz sağlığı tarafında görünen risk özetini gösterir." },
-        { label: "Son Sync", value: summary?.deviceHealth?.lastSyncAt || "-", help: "Son senkron zamanını gösterir." },
-        { label: "Son GPS", value: summary?.deviceHealth?.lastGpsAt || "-", help: "Son GPS zamanını gösterir." },
-        { label: "Son Olay", value: firstEvent?.label || firstEvent?.type || "-", help: "En son canlı olay başlığını gösterir." },
-        { label: "Queue Durum", value: queueThreshold?.status || "-", help: "Auto-reached queue dayanıklılık kontrolünün son durumunu gösterir." },
-        { label: "Queue Alarm", value: queueIncident?.severity || "-", help: "Queue alarm seviyesini gösterir." },
-        { label: "Dead-letter", value: formatMaybeNumber(queueStats.deadLetterDepth), help: "Kuyrukta bekleyen dead-letter sayısını gösterir." },
+        { label: "Konum sinyali skoru", value: gpsScoreText(summary), help: "Konum sinyali güven katmanının skorunu gösterir." },
+        { label: "Cihaz riski", value: readableAdminText(summary?.deviceHealth?.risk || "-"), help: "Cihaz sağlığı tarafında görünen risk özetini gösterir." },
+        { label: "Son senkron", value: summary?.deviceHealth?.lastSyncAt || "-", help: "Son senkron zamanını gösterir." },
+        { label: "Son konum sinyali", value: summary?.deviceHealth?.lastGpsAt || "-", help: "Son konum sinyali zamanını gösterir." },
+        { label: "Son olay", value: readableAdminText(firstEvent?.label || eventTypeLabel(firstEvent?.type) || "-"), help: "En son canlı olay başlığını gösterir." },
+        { label: "Kuyruk durumu", value: technicalStateLabel(queueThreshold?.status), help: "Kuyruk dayanıklılık kontrolünün son durumunu gösterir." },
+        { label: "Kuyruk alarmı", value: technicalStateLabel(queueIncident?.severity), help: "Kuyruk alarm seviyesini gösterir." },
+        { label: "İşlenemeyen kayıt", value: formatMaybeNumber(queueStats.deadLetterDepth), help: "Kuyrukta işlenemeyen kayıt sayısını gösterir." },
       ],
       badges: [
         { label: "Önem", value: firstEvent?.severity || "-", help: "Son canlı olayın önem seviyesini gösterir." },
-        { label: "Queue", value: queueThreshold?.status || "-", help: "Queue threshold değerlendirme sonucunu gösterir." },
-        { label: "Alarm", value: queueIncident?.severity || "-", help: "Operasyon alarm seviyesini gösterir." },
+        { label: "Kuyruk", value: technicalStateLabel(queueThreshold?.status), help: "Kuyruk eşiği değerlendirme sonucunu gösterir." },
+        { label: "Alarm", value: technicalStateLabel(queueIncident?.severity), help: "Operasyon alarm seviyesini gösterir." },
       ],
       facts,
     });
@@ -315,28 +363,28 @@ export default function ObservabilityPanel() {
     return () => clearCopilotSelection("/superadmin/observability");
   }, [manifest, summary, eventTypes, recentEvents, activeWidgets.length, roadmapWidgets.length, queueThreshold, queueIncident, queueStats.queueDepth, queueStats.deadLetterDepth, recentEvent]);
 
-  const queueIncidentTitle = queueIncident?.title || "Queue alarmı yok";
+  const queueIncidentTitle = readableAdminText(queueIncident?.title || "Kuyruk alarmı yok");
   const criticalTitle = hasCriticalSignals ? "KVKK / alarm aktif" : "KVKK / canlı izleme hazır";
   const criticalDescription = hasCriticalSignals
     ? criticalSignals.join(" • ")
-    : "Canlı durum, GPS güveni ve queue sinyalleri normal görünüyor.";
+    : "Canlı durum, konum sinyali güveni ve kuyruk sinyalleri normal görünüyor.";
   const tabs = [
     { key: "summary", label: "Özet" },
     { key: "live", label: "Canlı Akış", badge: fmtCount(recentEvents.length) },
     { key: "alarms", label: "Alarmlar & Riskler", badge: fmtCount(openIssueCount) },
     { key: "events", label: "İzlenen Olaylar", badge: fmtCount(eventTypes.length) },
     { key: "proof", label: "Sistem Kanıtı" },
-    { key: "history", label: "Geçmiş / Log", badge: fmtCount(queueItems.length + recentEvents.length) },
+    { key: "history", label: "Geçmiş / İşlem kayıtları", badge: fmtCount(queueItems.length + recentEvents.length) },
   ];
 
   const renderSummaryTab = () => {
     const nextStep = hasCriticalSignals
-      ? "Önce Alarmlar & Riskler tabına geç. Sonra Sistem Kanıtı tabında queue proof ve dead-letter durumunu doğrula."
-      : "Kritik sinyal görünmüyor. İstersen Canlı Akış ve Sistem Kanıtı tablarını sırayla aç.";
+      ? "Önce Alarmlar & Riskler sekmesine geç. Sonra Sistem Kanıtı sekmesinde kuyruk kanıtı ve işlenemeyen kayıt durumunu doğrula."
+      : "Kritik sinyal görünmüyor. İstersen Canlı Akış ve Sistem Kanıtı sekmelerini sırayla aç.";
     const overviewBullets = [
       `Canlı durum: ${liveStatusText(summary)}`,
-      `GPS güven skoru: ${gpsScoreText(summary)}`,
-      `QA giriş kaydı: ${fmtCount(qaEntryCount)}`,
+      `Konum sinyali güven skoru: ${gpsScoreText(summary)}`,
+      `Kalite kontrolü giriş kaydı: ${fmtCount(qaEntryCount)}`,
       `Açık alarm / açık sorun: ${fmtCount(openIssueCount)}`,
       `Son canlı akış: ${recentEvent?.label || recentEvent?.type || "-"}`,
     ];
@@ -359,7 +407,7 @@ export default function ObservabilityPanel() {
           <Card title="Kritik risk özeti" wide>
             <div className="panelBody">{criticalDescription}</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              {queueIncident?.title || "Queue alarmı yok"} • {queueAlarm?.alarmLevel || "OK"}
+              {readableAdminText(queueIncident?.title || "Kuyruk alarmı yok")} • {technicalStateLabel(queueAlarm?.alarmLevel || "OK")}
             </div>
             <ul className="panelMeta" style={{ marginTop: 8, paddingLeft: 18 }}>
               {riskBullets.length ? riskBullets.map((item) => <li key={item}>{item}</li>) : <li>Ek risk notu yok.</li>}
@@ -368,7 +416,7 @@ export default function ObservabilityPanel() {
           <Card title="Sıradaki doğru kontrol" wide>
             <div className="panelBody">{nextStep}</div>
             <div className="panelMeta" style={{ marginTop: 8 }}>
-              En risksiz okuma sırası: canlı durum → GPS güven skoru → queue threshold → son olay.
+              En risksiz okuma sırası: canlı durum → konum sinyali güven skoru → kuyruk eşiği → son olay.
             </div>
           </Card>
         </div>
@@ -388,8 +436,8 @@ export default function ObservabilityPanel() {
                   style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}
                 >
                   <div>
-                    <div className="panelSectionTitle">{item.label || item.type}</div>
-                    <div className="panelMeta">Önem: {item.severity || "INFO"}</div>
+                    <div className="panelSectionTitle">{readableAdminText(item.label || eventTypeLabel(item.type))}</div>
+                    <div className="panelMeta">Önem: {technicalStateLabel(item.severity || "INFO")}</div>
                   </div>
                   <div className="panelMeta" style={{ whiteSpace: "nowrap" }}>{fmtTR(item.createdAt)}</div>
                 </div>
@@ -401,9 +449,9 @@ export default function ObservabilityPanel() {
         </Card>
         <Card title="Canlı yorum">
           <div className="panelBody">{liveStatusText(summary)}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>GPS güven skoru: {gpsScoreText(summary)}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Konum sinyali güven skoru: {gpsScoreText(summary)}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>Son giriş kaydı: {fmtCount(loginAuditCount)}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>Son canlı akış: {recentEvent?.label || recentEvent?.type || "-"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Son canlı akış: {readableAdminText(recentEvent?.label || eventTypeLabel(recentEvent?.type) || "-")}</div>
         </Card>
       </div>
     </div>
@@ -428,9 +476,9 @@ export default function ObservabilityPanel() {
           </div>
           {renderChipRow(criticalSignals)}
         </Card>
-        <Card title="GPS / canlılık riski" wide>
-          <div className="panelBody">Cihaz riski: {summary?.deviceHealth?.risk && summary.deviceHealth.risk !== "unknown" ? summary.deviceHealth.risk : "Henüz risk görünmüyor"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>GPS güven skoru: {gpsScoreText(summary)}</div>
+        <Card title="Konum sinyali / canlılık riski" wide>
+          <div className="panelBody">Cihaz riski: {summary?.deviceHealth?.risk && summary.deviceHealth.risk !== "unknown" ? readableAdminText(summary.deviceHealth.risk) : "Henüz risk görünmüyor"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Konum sinyali güven skoru: {gpsScoreText(summary)}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>Canlı durum: {liveStatusText(summary)}</div>
           <ul className="panelMeta" style={{ marginTop: 8, paddingLeft: 18 }}>
             {gpsNotes.map((note, idx) => <li key={`${note}-${idx}`}>{note}</li>)}
@@ -442,8 +490,8 @@ export default function ObservabilityPanel() {
               {recentEvents.slice(0, 5).map((item) => (
                 <div key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                   <div>
-                    <div className="panelSectionTitle">{item.label || item.type}</div>
-                    <div className="panelMeta">Seviye: {item.severity || "INFO"}</div>
+                    <div className="panelSectionTitle">{readableAdminText(item.label || eventTypeLabel(item.type))}</div>
+                    <div className="panelMeta">Seviye: {technicalStateLabel(item.severity || "INFO")}</div>
                   </div>
                   <div className="panelMeta" style={{ whiteSpace: "nowrap" }}>{fmtTR(item.createdAt)}</div>
                 </div>
@@ -458,7 +506,7 @@ export default function ObservabilityPanel() {
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {(queueWarnings.length ? queueWarnings : queueNotes).map((item, idx) => (
             <span key={`${item?.message || item}-${idx}`} className="pill" data-status="WARN">
-              {item?.message || item}
+              {readableAdminText(item?.message || item)}
             </span>
           ))}
         </div>
@@ -474,7 +522,7 @@ export default function ObservabilityPanel() {
             <div className="panelMeta">Henüz olay türü tanımı yok.</div>
           ) : (
             <ul style={{ margin: 0, paddingLeft: 18 }} className="panelMeta">
-              {eventTypes.map((item) => <li key={item}>{item}</li>)}
+              {eventTypes.map((item) => <li key={item}>{eventTypeLabel(item)}</li>)}
             </ul>
           )}
         </Card>
@@ -487,7 +535,7 @@ export default function ObservabilityPanel() {
             {widgets.length
               ? widgets.map((item) => (
                   <span key={item.key} className="pill">
-                    {item.label}
+                    {readableAdminText(item.label || item.key)}
                   </span>
                 ))
               : <span className="pill" data-status="WARN">Widget tanımı yok</span>}
@@ -533,7 +581,7 @@ export default function ObservabilityPanel() {
           </div>
         </Card>
         <Card title="Kanıt hedefleri" wide>
-          <div className="panelBody">Queue / processing / dead-letter hedefleri.</div>
+          <div className="panelBody">Kuyruk, işleme ve işlenemeyen kayıt hedefleri.</div>
           <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
             <div className="panelMeta">Kuyruk: {proofStateText(queueHealth?.queue?.key)}</div>
             <div className="panelMeta">İşlemde: {proofStateText(queueHealth?.queue?.processingKey)}</div>
@@ -543,36 +591,36 @@ export default function ObservabilityPanel() {
           </div>
         </Card>
         <Card title="Kanıt sinyalleri" wide>
-          <div className="panelBody">{queueAlarm?.title || queueIncidentTitle}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>Alarm seviyesi: {queueAlarm?.alarmLevel || queueIncident?.severity || "OK"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>Incident: {queueIncident?.title || "-"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>Threshold: {queueThreshold?.status || "-"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>Queue note: {queueNotes[0] || "Belirgin not yok"}</div>
+          <div className="panelBody">{readableAdminText(queueAlarm?.title || queueIncidentTitle)}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Alarm seviyesi: {technicalStateLabel(queueAlarm?.alarmLevel || queueIncident?.severity || "OK")}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Alarm kaydı: {readableAdminText(queueIncident?.title || "-")}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Eşik: {technicalStateLabel(queueThreshold?.status)}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Kuyruk notu: {readableAdminText(queueNotes[0] || "Belirgin not yok")}</div>
         </Card>
       </div>
     </div>
   );
 
   const renderHistoryTab = () => (
-    <div role="tabpanel" aria-label="Geçmiş / Log" tabIndex={-1} style={{ marginTop: 14, display: "grid", gap: 12 }}>
+    <div role="tabpanel" aria-label="Geçmiş / İşlem kayıtları" tabIndex={-1} style={{ marginTop: 14, display: "grid", gap: 12 }}>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Log özeti" wide>
+        <Card title="İşlem kaydı özeti" wide>
           <div className="panelBody">Geçmiş canlı akışlar, eski alarm kayıtları ve kapasite izleri burada sadeleştirilmiş halde görünür.</div>
           <div style={{ marginTop: 10, display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
             <div>
-              <div className="panelMeta">Son dequeued</div>
+              <div className="panelMeta">Son kuyruktan alınan</div>
               <div className="panelSectionTitle">{fmtTR(queueRuntime?.lastDequeuedAtIso)}</div>
             </div>
             <div>
-              <div className="panelMeta">Son handled</div>
+              <div className="panelMeta">Son işlenen</div>
               <div className="panelSectionTitle">{fmtTR(queueRuntime?.lastHandledAtIso)}</div>
             </div>
             <div>
-              <div className="panelMeta">Son requeue</div>
+              <div className="panelMeta">Son yeniden kuyruğa alınan</div>
               <div className="panelSectionTitle">{fmtTR(queueRuntime?.lastRequeuedAtIso)}</div>
             </div>
             <div>
-              <div className="panelMeta">Son dead-letter</div>
+              <div className="panelMeta">Son işlenemeyen kayıt</div>
               <div className="panelSectionTitle">{fmtTR(queueRuntime?.lastDeadLetteredAtIso)}</div>
             </div>
             <div>
@@ -585,10 +633,10 @@ export default function ObservabilityPanel() {
             </div>
           </div>
           <div className="panelMeta" style={{ marginTop: 10 }}>
-            Son hata mesajı: {queueRuntime?.lastErrorMessage || "Yok"}
+            Son hata mesajı: {readableAdminText(queueRuntime?.lastErrorMessage || "Yok")}
           </div>
         </Card>
-        <Card title={`Dead-letter geçmişi (${fmtCount(queueItems.length)})`} wide>
+        <Card title={`İşlenemeyen kayıt geçmişi (${fmtCount(queueItems.length)})`} wide>
           {queueErr ? <div className="panelMeta" style={{ marginBottom: 8, color: "#ffb17b", whiteSpace: "pre-wrap" }}>{queueErr}</div> : null}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
             <button className="btn sm" disabled={queueSyncBusy} onClick={syncQueueIncident}>
@@ -612,7 +660,7 @@ export default function ObservabilityPanel() {
                       <div>
                         <div className="panelSectionTitle">{taskId ? `Görev ${taskId}` : "İçeriği okunamayan kayıt"}</div>
                         <div className="panelMeta">
-                          Ayrıştırma notu: {parsed?.deadLetterReason || (!item?.ok ? "Kayıt okunamadı" : "Bilinmiyor")}
+                          Ayrıştırma notu: {readableAdminText(parsed?.deadLetterReason || (!item?.ok ? "Kayıt okunamadı" : "Bilinmiyor"))}
                         </div>
                       </div>
                       <div className="panelMeta" style={{ whiteSpace: "nowrap" }}>
@@ -620,7 +668,7 @@ export default function ObservabilityPanel() {
                       </div>
                     </div>
                     <div className="panelMeta" style={{ marginTop: 6 }}>
-                      Deneme sayısı: {formatMaybeNumber(parsed?.attemptCount)} • Yeniden kuyruğa alma nedeni: {parsed?.lastRequeueReason || "-"}
+                      Deneme sayısı: {formatMaybeNumber(parsed?.attemptCount)} • Yeniden kuyruğa alma nedeni: {readableAdminText(parsed?.lastRequeueReason || "-")}
                     </div>
                     {!item?.ok ? (
                       <div className="panelMeta" style={{ marginTop: 6, color: "#ff7b7b" }}>
@@ -688,9 +736,9 @@ export default function ObservabilityPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div className="panelTitle">Canlı Sağlık ve Risk Özeti</div>
+      <div className="panelTitle">Canlı sağlık ve risk özeti</div>
           <div className="panelSubtitle" style={{ marginTop: 6 }}>
-            Sahadaki cihaz, yayın ve canlılık durumunu summary-first dashboard olarak özetler.
+            Sahadaki cihaz, yayın ve canlılık durumunu öncelikli özet panelinde gösterir.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -730,8 +778,8 @@ export default function ObservabilityPanel() {
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MetricTile title="Canlı durum" value={liveStatusText(summary)} help="Saha akışının canlı özetidir." />
-        <MetricTile title="GPS güvenli durum" value={gpsScoreText(summary)} help={summary?.gpsReliability?.label || "GPS güven özeti"} />
-        <MetricTile title="QA giriş kaydı" value={fmtCount(qaEntryCount)} help="Son login / doğrulama kayıtları." />
+        <MetricTile title="Konum sinyali güveni" value={gpsScoreText(summary)} help={summary?.gpsReliability?.label || "Konum sinyali güven özeti"} />
+        <MetricTile title="Kalite kontrolü giriş kaydı" value={fmtCount(qaEntryCount)} help="Son giriş ve doğrulama kayıtları." />
         <MetricTile title="Açık alarm / açık sorun" value={fmtCount(openIssueCount)} help="Alarm ve risk göstergelerinin toplamı." tone={hasCriticalSignals ? "warn" : "normal"} />
         <MetricTile title="Son canlı akış" value={recentEvent?.label || recentEvent?.type || "-"} help={fmtTR(recentEvent?.createdAt)} />
       </div>

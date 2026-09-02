@@ -525,7 +525,7 @@ export default function CompanyOperationsPanel() {
             </button>
             <button className="btn sm" onClick={() => navigate(basePath + "/shifts")}>Vardiyalar</button>
             <button className="btn sm" onClick={() => navigate(basePath + "/agreements")}>Sözleşmeler</button>
-            <button className="btn sm" onClick={() => navigate(basePath + "/checkin")}>Check-in</button>
+            <button className="btn sm" onClick={() => navigate(basePath + "/checkin")}>Biniş kayıtları</button>
             <button className="btn sm" onClick={() => navigate(basePath + "/map")}>Harita</button>
             <button className="btn sm" onClick={() => navigate("/shared/notifications")}>Bildirimler</button>
           </div>
@@ -626,7 +626,7 @@ export default function CompanyOperationsPanel() {
         <div role="tabpanel" aria-label="Servis Kümesi" style={{ display: "grid", gap: 12, minWidth: 0 }}>
           <SectionCard
             title="Servis Kümesi"
-            subtitle="Şartlı küme / servis bağlantısı / GPS görünürlük / araç GPS gibi bağlantılı durumlar"
+            subtitle="Şartlı küme / servis bağlantısı / konum görünürlüğü / araç konumu gibi bağlantılı durumlar"
           >
             <div style={{ display: "grid", gap: 10 }}>
               <div className="panelMeta">

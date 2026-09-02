@@ -87,11 +87,11 @@ export function MapPointPickerModal({
         </div>
         <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 180 }}>
-            <label className="muted">Lat</label>
+            <label className="muted">Enlem</label>
             <input value={fmtCoord(mapPickPoint?.[0])} readOnly />
           </div>
           <div style={{ flex: 1, minWidth: 180 }}>
-            <label className="muted">Lng</label>
+            <label className="muted">Boylam</label>
             <input value={fmtCoord(mapPickPoint?.[1])} readOnly />
           </div>
         </div>

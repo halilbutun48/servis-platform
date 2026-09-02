@@ -1,3 +1,5 @@
+import { humanizeUserFacingText } from '../../utils/terminology';
+
 export default function LockedReasonCard({ items }) {
   if (!Array.isArray(items) || !items.length) return null;
   return (
@@ -15,10 +17,10 @@ export default function LockedReasonCard({ items }) {
   }}
 >
             <div style={{ fontWeight: 700, color: '#101828', fontSize: 15 }}>
-  {x.action || '-'}
+  {humanizeUserFacingText(x.action)}
 </div>
             <div style={{ marginTop: 6, color: '#010101', fontSize: 14, lineHeight: 1.5 }}>
-  {x.reason || '-'}
+  {humanizeUserFacingText(x.reason)}
 </div>
           </div>
         ))}

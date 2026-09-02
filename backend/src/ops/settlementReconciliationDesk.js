@@ -127,8 +127,8 @@ export async function buildSettlementReconciliationStatus() {
   return {
     ...out,
     summary: out.candidateCount
-      ? "Settlement mutabakat masası, PLANNED/EXECUTED satırlarda bekliyor-eşleşti-inceleme-uyuşmazlık-kapandı döngüsünü görünür kılar. Gerçek provider webhook entegrasyonu olmadan manuel mutabakat izi tutar."
-      : "Settlement mutabakat kuyruğunda görünür satır yok. Önce M88 settlement operasyon kuyruğunda PLANNED veya EXECUTED satır üret.",
+      ? "Mutabakat masası, planlanan veya tamamlanan kayıtlarda bekliyor-eşleşti-inceleme-uyuşmazlık-kapandı döngüsünü görünür kılar. Gerçek veri sağlayıcısı bildirimi olmadan manuel mutabakat izi tutar."
+      : "Mutabakat kuyruğunda görünür satır yok. Önce mutabakat operasyon kuyruğunda planlanan veya tamamlanan bir kayıt oluştur.",
     statuses: SETTLEMENT_RECONCILIATION_STATUSES,
   };
 }

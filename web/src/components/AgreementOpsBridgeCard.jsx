@@ -87,7 +87,7 @@ export default function AgreementOpsBridgeCard({
         <div>
           <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
           <div className="muted" style={{ marginTop: 4 }}>
-            {contextText} • {String(agreement?.direction || bridge?.plan?.direction || "-").toUpperCase()} / {String(agreement?.pattern || bridge?.plan?.pattern || "-").toUpperCase()}
+            {contextText} • {String(agreement?.direction || bridge?.plan?.direction || "-").toUpperCase() === "INBOUND" ? "Gidiş" : String(agreement?.direction || bridge?.plan?.direction || "-").toUpperCase() === "OUTBOUND" ? "Dönüş" : "Yön bilgisi yok"} / {String(agreement?.pattern || bridge?.plan?.pattern || "-").toUpperCase() === "ONE_WAY" ? "Tek yön" : String(agreement?.pattern || bridge?.plan?.pattern || "-").toUpperCase() === "ROUND_TRIP" ? "Gidiş-dönüş" : "Plan bilgisi yok"}
           </div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>

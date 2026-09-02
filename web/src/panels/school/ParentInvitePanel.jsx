@@ -3,13 +3,15 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { makeHashLink } from "../../utils/publicBaseUrl";
 import { formatDateTimeTR } from "../../utils/time";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function fmt(dt) {
   try { return formatDateTimeTR(dt); } catch { return String(dt || "-"); }
 }
 
 function statusPill(status) {
-  return <span className="pill" data-status={status || "COUNT"}>{status || "-"}</span>;
+  const key = String(status || "COUNT").toUpperCase();
+  return <span className="pill" data-status={key}>{displayStatusLabel(key)}</span>;
 }
 
 function daysUntil(expiresAt) {
@@ -179,18 +181,18 @@ export default function SchoolParentInvitePanel() {
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Son üretilen veli kodu + PIN</h3>
           <div className="muted" style={{ marginBottom: 10 }}>
-            Link, veli kodu ve PIN yalnızca üretim anında ham haliyle gösterilir. Sonradan yeniden göstermek yerine yeni erişim üret veya mevcut erişimi yenile.
+            Erişim bağlantısı, veli kodu ve PIN yalnızca üretim anında ham haliyle gösterilir. Sonradan yeniden göstermek yerine yeni erişim üret veya mevcut erişimi yenile.
           </div>
           <div style={{ display: "grid", gap: 10 }}>
-            <label className="muted">Erişim Linki
-              <textarea readOnly rows={4} value={lastLink} placeholder="Henüz link üretilmedi." style={{ width: "100%", resize: "vertical", background: "#0c1322", color: "#e7eefc", border: "1px solid #2b3d64", borderRadius: 10, padding: 10 }} />
+            <label className="muted">Erişim bağlantısı
+              <textarea readOnly rows={4} value={lastLink} placeholder="Henüz bağlantı üretilmedi." style={{ width: "100%", resize: "vertical", background: "#0c1322", color: "#e7eefc", border: "1px solid #2b3d64", borderRadius: 10, padding: 10 }} />
             </label>
             <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <label className="muted">Veli kodu<input readOnly value={lastAccessCode} placeholder="-" /></label>
               <label className="muted">PIN<input readOnly value={lastPin} placeholder="-" /></label>
             </div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button type="button" className="btn" onClick={() => copyText(lastLink)} disabled={!lastLink}>Linki kopyala</button>
+              <button type="button" className="btn" onClick={() => copyText(lastLink)} disabled={!lastLink}>Bağlantıyı kopyala</button>
               <button type="button" className="btn" onClick={() => copyText(lastAccessCode)} disabled={!lastAccessCode}>Kodu kopyala</button>
               <button type="button" className="btn" onClick={() => copyText(lastPin)} disabled={!lastPin}>PIN kopyala</button>
               <button type="button" className="btn" onClick={() => window.open(lastLink || "", "_blank")} disabled={!lastLink}>Yeni sekmede aç</button>

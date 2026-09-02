@@ -103,7 +103,7 @@ export default function HubPanel() {
       setLng(String(r.lng));
       setMsg(`Konum bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}. Kaydet'e bas.`);
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      const m = e?.payload?.error === "notfound" ? "Adres bulunamadı." : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false);
@@ -208,7 +208,7 @@ export default function HubPanel() {
           />
 
           <div className="panelMeta" style={{ marginTop: 10 }}>
-            Not: Konum izni için tarayıcı bazen <b>HTTPS</b> ister (localhost çoğu zaman OK).
+            Not: Konum izni için tarayıcı bazen <b>HTTPS</b> ister (localhost çoğu zaman çalışır).
           </div>
         </PanelChrome>
       </div>

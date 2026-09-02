@@ -9,15 +9,15 @@ export function RoomTelematicsReadinessCard({ focusVehicle, loadDevices, deviceB
       <div>
         <div className="panelSectionTitle">Hazırlık notu</div>
         <div className="panelMeta" style={{ marginTop: 6 }}>
-          Provider kataloğu ve güvenlik kuralları Super Admin tarafından yönetilir.
+          Veri sağlayıcısı kataloğu ve güvenlik kuralları Süper Yönetici tarafından yönetilir.
         </div>
       </div>
       <div className="panelMeta">
-        Taşımacılık Firması kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
+        Taşımacılık Firması kendi GPS hesabını onaylı veri sağlayıcısı kataloğu üzerinden bağlar ve kendi araçlarını cihazlarla eşleştirir.
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <span className="pill" data-status={freshness.status === "OFFLINE" ? "WARN" : freshness.status === "STALE" ? "INFO" : "OK"}>
-          {freshness.status}
+          {getGpsReliabilityLabel(focusVehicle)}
         </span>
         <span className="pill" data-status="ROLE">
           {getGpsReliabilityLabel(focusVehicle)}
@@ -27,16 +27,16 @@ export function RoomTelematicsReadinessCard({ focusVehicle, loadDevices, deviceB
         Son veri zamanı: <b>{gpsAtLabel(focusVehicle)}</b>
       </div>
       <div className="panelMeta">
-        Secret/token/API key görünmez. Ham payload ve endpoint metinleri bu ekranda yer almaz.
+        Gizli erişim anahtarı görünmez. Ham veri ve teknik bağlantı metinleri bu ekranda yer almaz.
       </div>
       <button type="button" disabled={deviceBusy || deviceSaving} onClick={() => loadDevices()}>
         Test eşleştirme
       </button>
       <div className="panelMeta" style={{ fontSize: 12 }}>
-        Yalnızca onaylı provider kataloğu üzerinden self-service eşleştirme yapılır.
+        Yalnızca onaylı veri sağlayıcısı kataloğu üzerinden kendi başınıza eşleştirme yapılır.
       </div>
       <div className="panelMeta" style={{ fontSize: 12 }}>
-        Yeni cihaz erişim kodu create/rotate akışında yönetilir.
+        Yeni cihaz erişim kodu oluşturma/yenileme akışında yönetilir.
       </div>
     </div>
   );
@@ -48,11 +48,11 @@ export function RoomDeviceTokenRevealCard() {
       <div>
         <div className="panelSectionTitle">Yeni cihaz erişim kodu</div>
         <div className="panelMeta" style={{ marginTop: 6 }}>
-          Erişim kodu yalnızca create/rotate anında bir kez gösterilir.
+          Erişim kodu yalnızca oluşturma/yenileme anında bir kez gösterilir.
         </div>
       </div>
       <div className="panelMeta">
-        Secret/token/API key görünmez. Ham payload ve endpoint metinleri bu ekranda yer almaz.
+        Gizli erişim anahtarı görünmez. Ham veri ve teknik bağlantı metinleri bu ekranda yer almaz.
       </div>
     </div>
   );

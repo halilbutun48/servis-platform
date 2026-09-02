@@ -267,7 +267,7 @@ export default function PublicLeadReviewPanel() {
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
         title="Başvuru İnceleme Kuyruğu"
-        subtitle="Public lead başvurularını kullanıcı onayıyla okur. Bu yüzey davet, kullanıcı, ödeme, sözleşme veya tedarikçi doğrulama başlatmaz."
+        subtitle="Herkese açık başvuruları kullanıcı onayıyla okur. Bu yüzey davet, kullanıcı, ödeme, sözleşme veya tedarikçi doğrulama başlatmaz."
         actions={(
           <>
             <button className="btn sm" disabled={busy} onClick={() => loadQueue(selectedLead?.id || "")}>{busy ? "Yenileniyor..." : "Yenile"}</button>
@@ -290,14 +290,14 @@ export default function PublicLeadReviewPanel() {
             <span className="pill" data-status="INFO">Sadece inceleme</span>
             <span className="pill" data-status="INFO">KVKK kontrollü</span>
             <span className="pill" data-status="WARN">Kullanıcı onayı gerekli</span>
-            <span className="pill" data-status="INFO">Read-only sınırları açık</span>
+            <span className="pill" data-status="INFO">Sadece görüntüleme sınırları açık</span>
           </div>
         </div>
 
         <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
           {renderKeyValue("Toplam başvuru", String(counts.total || items.length || 0), "Tüm kayıtlar") }
-          {renderKeyValue("Bekleyen", String(counts.pendingCount ?? filteredSummary.pending), "Received / review / bilgi bekleyen") }
-          {renderKeyValue("Davet için uygun", String(counts.inviteReadyCount ?? filteredSummary.ready), "Ama burada invite açılmaz") }
+          {renderKeyValue("Bekleyen", String(counts.pendingCount ?? filteredSummary.pending), "Alınan / incelenen / bilgi bekleyen") }
+          {renderKeyValue("Davet için uygun", String(counts.inviteReadyCount ?? filteredSummary.ready), "Ancak burada davet açılmaz") }
           {renderKeyValue("Filtreli görünüm", String(filteredSummary.total), statusFilter === "ALL" ? "Tüm kayıtlar" : displayStatusLabel(statusFilter)) }
         </div>
       </div>

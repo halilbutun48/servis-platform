@@ -7,15 +7,15 @@ export const OPERATION_VERIFICATION_STATUSES = [
 
 export const OPERATION_VERIFICATION_PROOF_TYPES = [
   { id: "SCREENSHOT", label: "Ekran görüntüsü" },
-  { id: "LOG_EXPORT", label: "Log / export izi" },
-  { id: "DEVICE_BUILD", label: "Cihaz / build bilgisi" },
+  { id: "LOG_EXPORT", label: "İşlem kaydı / dışa aktarım kanıtı" },
+  { id: "DEVICE_BUILD", label: "Cihaz / sürüm bilgisi" },
   { id: "OPERATOR_NOTE", label: "Operatör notu" },
 ];
 
 export const OPERATION_VERIFICATION_ROLES = [
-  { id: "SUPER_ADMIN", label: "Süper admin", surface: "/superadmin/operation-verification", summary: "Genel kabul resmi ve kapanış kararı." },
-  { id: "ROOM", label: "Oda / sağlayıcı", surface: "/room/shifts", summary: "Araç, sürücü ve operasyon hazırlığı." },
-  { id: "COMPANY", label: "Şirket / okul / organizasyon", surface: "/company/shifts", summary: "Talep, atama ve hizmet teyidi." },
+  { id: "SUPER_ADMIN", label: "Süper Yönetici", surface: "/superadmin/operation-verification", summary: "Genel kabul resmi ve kapanış kararı." },
+  { id: "ROOM", label: "Taşımacılık Firması", surface: "/room/shifts", summary: "Araç, sürücü ve operasyon hazırlığı." },
+  { id: "COMPANY", label: "Hizmet Alan Firma / okul / organizasyon", surface: "/company/shifts", summary: "Talep, atama ve hizmet teyidi." },
   { id: "DRIVER", label: "Sürücü", surface: "/driver/today", summary: "Sürücünün telefon GPS'i, rota ve cihaz akışı." },
   { id: "PERSONEL", label: "Personel", surface: "/personel/live", summary: "Canlı link, biniş ve talep görünürlüğü." },
   { id: "PARENT", label: "Veli", surface: "/parent/live", summary: "Canlı takip ve bağlantı netliği." },
@@ -34,7 +34,7 @@ const ROLE_SURFACES = {
     checks: [
       { id: "sa_overview", title: "Rol özeti tek yerde görünür", status: "KABUL", proofTypes: ["SCREENSHOT"], nextStep: "Panel üstünden rol seçip durumu oku" },
       { id: "sa_status_flow", title: "Kabul / red / eksik / tekrar kontrol dili nettir", status: "KABUL", proofTypes: ["SCREENSHOT", "OPERATOR_NOTE"], nextStep: "Karar dili ile saha notunu eşleştir" },
-      { id: "sa_pack_trace", title: "Pack / runbook / milestone bağı görünür", status: "EKSIK", proofTypes: ["LOG_EXPORT"], nextStep: "M79'da kayıt izi derinleştir" },
+      { id: "sa_pack_trace", title: "Sürümle ilişkili kayıt izi görünür", status: "EKSIK", proofTypes: ["LOG_EXPORT"], nextStep: "Bu sürümde kayıt izini derinleştir" },
     ],
   },
   ROOM: {
@@ -48,8 +48,8 @@ const ROLE_SURFACES = {
     ],
     checks: [
       { id: "room_assign", title: "Araç + sürücü ataması okunur", status: "KABUL", proofTypes: ["SCREENSHOT"], nextStep: "Vardiya kartından atamayı doğrula" },
-      { id: "room_conflict", title: "Çakışma / uygunluk uyarısı görünür", status: "TEKRAR_KONTROL", proofTypes: ["SCREENSHOT", "OPERATOR_NOTE"], nextStep: "M79'da karar bağını sertleştir" },
-      { id: "room_note", title: "Kısa operasyon notu bırakılabilir", status: "EKSIK", proofTypes: ["OPERATOR_NOTE"], nextStep: "Kalıcı kayıt akışı M79'da açılacak" },
+      { id: "room_conflict", title: "Çakışma / uygunluk uyarısı görünür", status: "TEKRAR_KONTROL", proofTypes: ["SCREENSHOT", "OPERATOR_NOTE"], nextStep: "Bu sürümde karar bağını sağlamlaştır" },
+      { id: "room_note", title: "Kısa operasyon notu bırakılabilir", status: "EKSIK", proofTypes: ["OPERATOR_NOTE"], nextStep: "Kalıcı kayıt akışı bu sürümde açılacak" },
     ],
   },
   COMPANY: {
@@ -64,7 +64,7 @@ const ROLE_SURFACES = {
     checks: [
       { id: "company_shift", title: "Vardiya ve durum özeti görünür", status: "KABUL", proofTypes: ["SCREENSHOT"], nextStep: "Şirket ekranında durum kartını aç" },
       { id: "company_acceptance", title: "Hizmet kabul akışı sade dille okunur", status: "KABUL", proofTypes: ["SCREENSHOT", "OPERATOR_NOTE"], nextStep: "Operatör notuyla teyit et" },
-      { id: "company_proof", title: "Kalıcı kanıt kaydı yok", status: "EKSIK", proofTypes: ["LOG_EXPORT"], nextStep: "M79'da kayıt omurgasına bağlanacak" },
+      { id: "company_proof", title: "Kalıcı kanıt kaydı yok", status: "EKSIK", proofTypes: ["LOG_EXPORT"], nextStep: "Bu sürümde kayıt omurgasına bağlanacak" },
     ],
   },
   DRIVER: {
@@ -94,7 +94,7 @@ const ROLE_SURFACES = {
     checks: [
       { id: "personel_live", title: "Canlı görünüm sade", status: "KABUL", proofTypes: ["SCREENSHOT"], nextStep: "Canlı ekranı doğrula" },
       { id: "personel_request", title: "Talep akışı okunur", status: "KABUL", proofTypes: ["SCREENSHOT", "OPERATOR_NOTE"], nextStep: "Talep örneğiyle teyit et" },
-      { id: "personel_proof", title: "Kalıcı sonuç kaydı beklemede", status: "EKSIK", proofTypes: ["LOG_EXPORT"], nextStep: "M79 kalıcı kayıt turu" },
+      { id: "personel_proof", title: "Kalıcı sonuç kaydı beklemede", status: "EKSIK", proofTypes: ["LOG_EXPORT"], nextStep: "Bu sürümün kalıcı kayıt turu" },
     ],
   },
   PARENT: {

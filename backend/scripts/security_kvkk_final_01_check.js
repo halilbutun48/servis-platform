@@ -295,7 +295,7 @@ const coreGuardInfraIdentityEntries = [
   },
   {
     path: "backend/scripts/lib/currentHeadScopePolicy.js",
-    sha256: "5FE36BFCA5414F667EEF02F1E459F526066F336C904B0E21A9626D73B907F447",
+    sha256: "56F431E518A1D44D34143320A4B8811E018C079051E25EAFD03C788840147277",
   },
   {
     path: "backend/scripts/lib/prismaSchemaIdentity.js",

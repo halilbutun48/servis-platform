@@ -67,8 +67,8 @@ mustInclude(service, "buildAgreementCommercialBackboneMap", "payment backbone se
 mustInclude(service, "buildShiftCommercialBackboneMap", "payment backbone service exposes shift readonly map builder")
 mustInclude(agreementsRoute, "commercialBackbone", "agreements route attaches commercial backbone summary")
 mustInclude(shiftsRoute, "commercialBackbone", "shifts route attaches commercial backbone summary")
-mustInclude(summaryComponent, "Settlement hazırlığı", "readonly commercial summary renders settlement prep text")
-mustInclude(summaryComponent, "Komisyon snapshot", "readonly commercial summary renders commission snapshot")
+mustInclude(summaryComponent, "Ödeme / mutabakat hazırlığı", "readonly commercial summary renders settlement prep text")
+mustInclude(summaryComponent, "Komisyon özeti", "readonly commercial summary renders commission snapshot")
 mustInclude(companyAgreements, "CommercialReadonlySummary", "company agreements surface renders readonly commercial summary")
 mustInclude(roomAgreements, "CommercialReadonlySummary", "room agreements surface renders readonly commercial summary")
 mustInclude(companyShiftRows, "CommercialReadonlySummary", "company shift rows render readonly commercial summary")
@@ -82,4 +82,3 @@ mustInclude(registry, "M82.11", "registry lists M82.11")
 
 if (process.exitCode) process.exit(process.exitCode)
 console.log("OK M82.11 payment readonly surface check passed")
-

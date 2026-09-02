@@ -182,54 +182,54 @@ export default function LogExportPanel() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
-        <div className="panelTitle">Log Dışa Aktarımı</div>
+        <div className="panelTitle">İşlem kayıtlarını dışa aktar</div>
         <span className="pill" data-status="COUNT">{items.length} kayıt</span>
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
           <label className="muted">
-            Tür (kind)
+            Tür
             <select value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="login">Login logs</option>
-              <option value="audit">Audit actions</option>
-              <option value="requests">API requests</option>
-              <option value="bundle_user">Bundle: User</option>
-              <option value="bundle_driver">Bundle: Driver</option>
-              <option value="bundle_vehicle">Bundle: Vehicle</option>
-              <option value="bundle_room">Bundle: Room</option>
-              <option value="bundle_company">Bundle: Company</option>
-              <option value="bundle_personel">Bundle: Personel</option>
-              <option value="bundle_student">Bundle: Student</option>
+              <option value="login">Giriş kayıtları</option>
+              <option value="audit">Denetim işlemleri</option>
+              <option value="requests">İstek kayıtları</option>
+              <option value="bundle_user">Kullanıcı özeti</option>
+              <option value="bundle_driver">Sürücü özeti</option>
+              <option value="bundle_vehicle">Araç özeti</option>
+              <option value="bundle_room">Taşımacılık Firması özeti</option>
+              <option value="bundle_company">Hizmet Alan Firma özeti</option>
+              <option value="bundle_personel">Personel özeti</option>
+              <option value="bundle_student">Öğrenci özeti</option>
             </select>
           </label>
 
           <label className="muted">
-            Format
+            Biçim
             <select value={format} onChange={(e) => setFormat(e.target.value)}>
-              <option value="txt">TXT (default)</option>
+              <option value="txt">TXT (varsayılan)</option>
               <option value="csv">Excel (CSV)</option>
             </select>
           </label>
 
           <label className="muted">
-            From (TR)
+            Başlangıç (TR)
             <input type="datetime-local" value={fromLocal} onChange={(e) => setFromLocal(e.target.value)} />
           </label>
 
           <label className="muted">
-            To (TR)
+            Bitiş (TR)
             <input type="datetime-local" value={toLocal} onChange={(e) => setToLocal(e.target.value)} />
           </label>
 
           {!isBundle ? (
             <>
               <label className="muted">
-                Email contains
+                E-posta içeren
                 <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ör: demo.com" />
               </label>
               <label className="muted">
-                UserId
+                Kullanıcı numarası
                 <input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="ör: 1" />
               </label>
               {kind === "requests" ? (

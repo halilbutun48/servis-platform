@@ -186,7 +186,7 @@ export default function CompanyShiftsPanelTrackView(props) {
 
       <div className="card companyShiftsTrackSummary" style={{ marginTop: 10 }}>
         <div className="muted" style={{ marginTop: 6 }}>
-          Market: taşımacılık firması seçilmemiş talepler • Bekleyen: pazarlık/karar • Sözleşmeden Üretilen: sözleşmeye bağlı vardiyalar • Diğer Vardiyalar: sözleşmesiz vardiyalar
+          Bekleyen: pazarlık/karar • Sözleşmeden Üretilen: sözleşmeye bağlı vardiyalar • Diğer Vardiyalar: sözleşmesiz vardiyalar
         </div>
       </div>
 

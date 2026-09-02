@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -171,10 +172,10 @@ export default function PassengerLinksPanel() {
   return (
     <div className="wrap wrap--fluid">
       <div className="card">
-        <div className="title">{me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Linkleri" : "Personel Canlı Linkleri"}</div>
+        <div className="title">{me?.companyKind === "SCHOOL" ? "Öğrenci canlı bağlantıları" : "Personel canlı bağlantıları"}</div>
         <div className="muted">
-          Bu akış hesap aktivasyonu değildir. Login vermeden, tek kişiye özel süreli canlı takip linki üret.
-          Link sadece kendi durak + tahmini süre + navigasyon bilgisini gösterir. Süre dolana kadar tekrar açılabilir; vardiya bitmişse ekran ENDED/final durum olarak görünür.
+          Bu akış hesap aktivasyonu değildir. Oturum açtırmadan, tek kişiye özel süreli canlı takip bağlantısı üret.
+          Bağlantı sadece kendi durak + tahmini süre + navigasyon bilgisini gösterir. Süre dolana kadar tekrar açılabilir; vardiya bitmişse ekran sona ermiş / tamamlanmış olarak görünür.
         </div>
       </div>
 
@@ -185,13 +186,13 @@ export default function PassengerLinksPanel() {
             <select value={shiftId} onChange={(e) => setShiftId(e.target.value)} style={{ minWidth: 260 }}>
               <option value="">Seç…</option>
               {shifts.map((s) => (
-                <option key={s.id} value={s.id}>#{s.id} • {fmtTR(s.startAt)} → {fmtTR(s.endAt)} • {s.status}</option>
+                <option key={s.id} value={s.id}>#{s.id} • {fmtTR(s.startAt)} → {fmtTR(s.endAt)} • {displayStatusLabel(s.status)}</option>
               ))}
             </select>
           </label>
 
           <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            Link süresi
+            Bağlantı süresi
             <select value={ttlDays} onChange={(e) => setTtlDays(e.target.value)}>
               <option value="7">1 hafta</option>
               <option value="30">1 ay</option>
@@ -212,9 +213,9 @@ export default function PassengerLinksPanel() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>ID</th>
+                  <th>Kayıt no</th>
                   <th>{me?.companyKind === "SCHOOL" ? "Öğrenci" : "Personel"}</th>
-                  <th>Aktif link</th>
+                  <th>Aktif bağlantı</th>
                   <th>İşlem</th>
                 </tr>
               </thead>
@@ -230,7 +231,7 @@ export default function PassengerLinksPanel() {
                       <td>
                         {fresh ? (
                           <div>
-                            <div className="muted">Yeni link hazır</div>
+                            <div className="muted">Yeni bağlantı hazır</div>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
                               <code style={{ maxWidth: 420, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" }}>{fresh}</code>
                               <button type="button" onClick={() => copyText(fresh, p.id)}>{copied === String(p.id) ? "Kopyalandı" : "Kopyala"}</button>
@@ -241,20 +242,20 @@ export default function PassengerLinksPanel() {
                             Oluşturuldu: <b>{fmtTR(active.createdAt)}</b><br />
                             Biter: <b>{fmtTR(active.expiresAt)}</b>
                             {active.lastViewedAt ? <><br />Son görüntüleme: <b>{fmtTR(active.lastViewedAt)}</b></> : null}
-                            <br />Ham token güvenlik gereği tekrar gösterilmez; paylaşmak için <b>Yeniden Üret</b> kullan.
+                            <br />Güvenlik gereği erişim kodu tekrar gösterilmez; paylaşmak için <b>Yeniden üret</b> kullan.
                           </div>
                         ) : (
-                          <span className="muted">Link yok</span>
+                          <span className="muted">Bağlantı yok</span>
                         )}
                       </td>
                       <td>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <button type="button" disabled={busyId === String(p.id)} onClick={() => createLink(p.id)}>
-                            {busyId === String(p.id) ? "..." : active ? "Yeniden Üret" : "Link Üret"}
+                            {busyId === String(p.id) ? "..." : active ? "Yeniden üret" : "Bağlantı üret"}
                           </button>
                           {active ? (
                             <button type="button" disabled={busyId === `revoke:${active.id}`} onClick={() => revokeLink(active.id, p.id)}>
-                              {busyId === `revoke:${active.id}` ? "..." : "Revoke"}
+                              {busyId === `revoke:${active.id}` ? "..." : "İptal et"}
                             </button>
                           ) : null}
                         </div>

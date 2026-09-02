@@ -135,7 +135,7 @@ function CompanyAgreementMobileCard({
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <span className="pill" title="Çalışma günleri">{weekMaskToText(agreement?.weekMask) || "-"}</span>
         <span className="pill" title="Saat aralığı">{toHHMM(agreement?.startMin)} → {toHHMM(agreement?.endMin)}</span>
-        <span className="pill" title="Yön / pattern">{String(agreement?.direction || "-").toUpperCase()} / {String(agreement?.pattern || "-").toUpperCase()}</span>
+        <span className="pill" title="Yön / plan">{String(agreement?.direction || "").toUpperCase() === "INBOUND" ? "Gidiş" : String(agreement?.direction || "").toUpperCase() === "OUTBOUND" ? "Dönüş" : "Yön bilgisi yok"} / {String(agreement?.pattern || "").toUpperCase() === "ONE_WAY" ? "Tek yön" : String(agreement?.pattern || "").toUpperCase() === "ROUND_TRIP" ? "Gidiş-dönüş" : "Plan bilgisi yok"}</span>
         {Number.isFinite(daysLeft) ? <span className="pill" title="Kalan gün">Kalan {daysLeft}g</span> : null}
         <span className="pill" title="Rota güncelleme durumu">{routeRefreshState}</span>
       </div>
@@ -154,7 +154,7 @@ function CompanyAgreementMobileCard({
         />
         <Field label="Günler" value={weekMaskToText(agreement?.weekMask) || "-"} />
         <Field label="Saat" value={`${toHHMM(agreement?.startMin)} → ${toHHMM(agreement?.endMin)}`} />
-        <Field label="Yön / plan" value={`${String(agreement?.direction || "-").toUpperCase()} / ${String(agreement?.pattern || "-").toUpperCase()}`} />
+        <Field label="Yön / plan" value={`${String(agreement?.direction || "").toUpperCase() === "INBOUND" ? "Gidiş" : String(agreement?.direction || "").toUpperCase() === "OUTBOUND" ? "Dönüş" : "Yön bilgisi yok"} / ${String(agreement?.pattern || "").toUpperCase() === "ONE_WAY" ? "Tek yön" : String(agreement?.pattern || "").toUpperCase() === "ROUND_TRIP" ? "Gidiş-dönüş" : "Plan bilgisi yok"}`} />
       </div>
 
       <CardSection title="Teklif özeti">

@@ -284,7 +284,7 @@ export function StopCard({
             }}
           >
             <label style={fieldLabelStyle}>
-              Lat
+              Enlem
               <input
                 style={inputStyle}
                 value={row.lat ?? ""}
@@ -293,7 +293,7 @@ export function StopCard({
             </label>
 
             <label style={fieldLabelStyle}>
-              Lng
+              Boylam
               <input
                 style={inputStyle}
                 value={row.lng ?? ""}

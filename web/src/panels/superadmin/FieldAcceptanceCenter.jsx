@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
-import { displayStatusLabel } from "../../utils/displayStatus";
 import PanelChrome from "../../components/PanelChrome";
 import PanelSegmentTabs from "../../components/PanelSegmentTabs";
+import { humanizeUserFacingText } from "../../utils/terminology";
 
 const CHECKLIST_STATUS_OPTIONS = ["PASS", "PENDING", "BLOCKED", "DONE"];
 
@@ -57,10 +57,71 @@ function normalizeChecklistStatus(value) {
   return String(value || "PENDING").trim().toUpperCase() || "PENDING";
 }
 
+function checklistStatusLabel(value) {
+  const status = normalizeChecklistStatus(value);
+  return {
+    PASS: "Tamamlandı",
+    DONE: "Tamamlandı",
+    PENDING: "Bekliyor",
+    BLOCKED: "Bloklu",
+  }[status] || "Kontrol gerekli";
+}
+
+function checklistItemLabel(value) {
+  return String(value || "")
+    .replace(/Offline toparlama anlasilir/gi, "Çevrim dışı toparlama anlaşılır")
+    .replace(/Today ekrani net/gi, "Bugün ekranı net")
+    .replace(/Giris akisi tamamlandi/gi, "Giriş akışı tamamlandı")
+    .replace(/Ilk PIN degisimi anlasilir/gi, "İlk PIN değişimi anlaşılır")
+    .replace(/GPS izin akisi net/gi, "Konum izni akışı net")
+    .replace(/Surucunun telefon GPS'i yayin verdi/gi, "Sürücünün telefonundan konum paylaşımı çalışıyor")
+    .replace(/KVKK blocking dili net/gi, "KVKK görünürlük dili net")
+    .replace(/ETA ve sesli rehber yeterli/gi, "Tahmini varış ve sesli rehber yeterli")
+    .replace(/\bPASS\b/gi, "tamamlandı")
+    .replace(/\bCHECKLIST\b/gi, "kontrol listesi")
+    .trim() || "Kontrol maddesi";
+}
+
+function checklistAreaLabel(value) {
+  return {
+    auth: "Giriş ve güvenlik",
+    gps: "Konum",
+    ux: "Kullanım kolaylığı",
+    resilience: "Bağlantı kesintisi",
+    kvkk: "KVKK",
+    route: "Rota",
+  }[String(value || "").trim().toLowerCase()] || "Genel";
+}
+
+function evidenceTypeLabel(value) {
+  return {
+    CHECKLIST_NOTE: "Kontrol listesi notu",
+    DEVICE_INFO: "Cihaz bilgisi",
+    BUILD_INFO: "Sürüm bilgisi",
+    GPS_SAMPLE: "Konum örneği",
+    SCREEN_NOTE: "Ekran notu",
+    OPERATOR_NOTE: "Operatör notu",
+  }[String(value || "").trim().toUpperCase()] || "Kanıt türü";
+}
+
+function decisionLabel(value) {
+  return {
+    GO: "Uygun",
+    LIMITED_GO: "Sınırlı uygun",
+    NO_GO: "Uygun değil",
+  }[String(value || "").trim().toUpperCase()] || "Karar bekliyor";
+}
+
 function getChecklist(session, manifest) {
   const fromSession = Array.isArray(session?.checklist) ? session.checklist : [];
   if (fromSession.length) return fromSession;
   return Array.isArray(manifest?.checklist) ? cloneChecklist(manifest.checklist) : [];
+}
+
+function userFacingSessionId(value) {
+  const text = String(value || "").trim();
+  if (!text || text === "-") return "-";
+  return /^M\d+-SKELETON-/i.test(text) ? "Saha kabul oturumu" : humanizeUserFacingText(text, "Saha kabul oturumu");
 }
 
 function getFirstPending(checklist) {
@@ -135,20 +196,20 @@ export default function FieldAcceptanceCenter() {
   const pendingChecklist = checklist.filter((item) => normalizeChecklistStatus(item?.status) !== "PASS");
   const firstPending = getFirstPending(checklist);
   const decisionValue = String(session?.decision || "LIMITED_GO").trim().toUpperCase() || "LIMITED_GO";
-  const riskNote = String(session?.decisionReason || session?.note || "").trim();
-  const currentSessionId = session?.sessionId || "-";
+  const riskNote = humanizeUserFacingText(String(session?.decisionReason || session?.note || "").trim(), "");
+  const currentSessionId = userFacingSessionId(session?.sessionId);
   const currentSessionCreatedBy = session?.createdByEmail || "-";
   const currentSessionUpdatedBy = session?.updatedByEmail || "-";
-  const sessionId = session?.sessionId || "-";
+  const sessionId = userFacingSessionId(session?.sessionId);
   const createdAt = session?.createdAt || "-";
   const updatedAt = session?.updatedAt || "-";
   const manifestDecisionOptions = Array.isArray(manifest?.decisions) ? manifest.decisions : ["GO", "LIMITED_GO", "NO_GO"];
   const manifestChecklistItems = Array.isArray(manifest?.checklist) ? manifest.checklist : [];
   const manifestEvidenceTypes = Array.isArray(manifest?.evidenceTypes) ? manifest.evidenceTypes : [];
-  const checklistProgressText = `${passChecklist}/${totalChecklist} PASS • ${pendingChecklist.length} bekleyen`;
-  const checklistStateText = firstPending?.label || "Hepsi PASS";
+  const checklistProgressText = `${passChecklist}/${totalChecklist} tamamlandı • ${pendingChecklist.length} bekleyen`;
+  const checklistStateText = checklistItemLabel(firstPending?.label || "Tüm maddeler tamamlandı");
   const overviewNextControl = firstPending?.label
-    ? `Önce ${firstPending.label} maddesini PASS yap.`
+    ? `Önce “${checklistItemLabel(firstPending.label)}” maddesini tamamla.`
     : "Karar alanını ve oturum bilgisini son kez doğrula.";
 
   const historyEntries = useMemo(() => {
@@ -176,7 +237,7 @@ export default function FieldAcceptanceCenter() {
       title: "Karar kaydı",
       meta: decisionValue,
       value: riskNote || "Karar notu yok",
-      note: `Checklist sonucu: ${passChecklist}/${totalChecklist} PASS`,
+        note: `Kontrol listesi sonucu: ${passChecklist}/${totalChecklist} tamamlandı`,
     });
 
     const checklistUpdates = checklist
@@ -185,9 +246,9 @@ export default function FieldAcceptanceCenter() {
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
       .map((item) => ({
         id: `check-${item.id}`,
-        title: item.label,
-        meta: `${displayStatusLabel(normalizeChecklistStatus(item.status))} • ${item.area || "genel"}`,
-        value: item.note || "Not yok",
+        title: checklistItemLabel(item.label),
+        meta: `${checklistStatusLabel(item.status)} • ${checklistAreaLabel(item.area)}`,
+        value: humanizeUserFacingText(item.note, "Not yok"),
         note: item.updatedAt ? `${formatTR(item.updatedAt)} • ${item.updatedByEmail || "-"}` : "Zaman bilgisi yok",
       }));
 
@@ -208,11 +269,11 @@ export default function FieldAcceptanceCenter() {
 
   const tabs = useMemo(() => ([
     { key: "overview", label: "Özet", badge: pendingChecklist.length ? String(pendingChecklist.length) : `${passChecklist}/${totalChecklist}` },
-    { key: "manifest", label: "Manifest", badge: `${manifestDecisionOptions.length}/${manifestChecklistItems.length}` },
-    { key: "decision", label: "Karar Kaydı", badge: decisionValue },
+    { key: "manifest", label: "Varsayılanlar", badge: `${manifestDecisionOptions.length}/${manifestChecklistItems.length}` },
+    { key: "decision", label: "Karar kaydı", badge: decisionLabel(decisionValue) },
     { key: "session", label: "Oturum Bilgisi", badge: currentSessionId !== "-" ? "1" : "-" },
-    { key: "checklist", label: "Checklist Güncelleme", badge: `${passChecklist}/${totalChecklist}` },
-    { key: "history", label: "Geçmiş / Log", badge: String(historyEntries.length) },
+    { key: "checklist", label: "Kontrol listesi", badge: `${passChecklist}/${totalChecklist}` },
+    { key: "history", label: "Geçmiş / kayıt", badge: String(historyEntries.length) },
   ]), [
     currentSessionId,
     decisionValue,
@@ -234,48 +295,48 @@ export default function FieldAcceptanceCenter() {
     const facts = {
       screenType: "FIELD_ACCEPTANCE",
       stage: decisionValue,
-      readiness: pendingChecklist.length === 0 && decisionValue === "GO" ? "READY" : "REVIEW_NEEDED",
+      readiness: pendingChecklist.length === 0 && decisionValue === "GO" ? "Hazır" : "İnceleme gerekli",
       readinessScore,
-      blockers: pendingChecklist.length > 0 ? ["Checklist içinde henüz PASS olmayan maddeler var."] : [],
+      blockers: pendingChecklist.length > 0 ? ["Kontrol listesinde henüz tamamlanmamış maddeler var."] : [],
       counters: { checklist: totalChecklist, pending: pendingChecklist.length, decision: decisionValue },
       evidence: [
-        `Karar: ${decisionValue}`,
-        `Checklist: ${totalChecklist}`,
+        `Karar: ${decisionLabel(decisionValue)}`,
+        `Kontrol listesi: ${totalChecklist}`,
         `Bekleyen: ${pendingChecklist.length}`,
-        firstPending?.label ? `İlk açık madde: ${firstPending.label}` : "",
+        firstPending?.label ? `İlk açık madde: ${checklistItemLabel(firstPending.label)}` : "",
       ].filter(Boolean),
-      reasoningLead: "Bu ekranda amaç sahaya çıkmadan önce checklist, karar ve oturum bilgisini aynı yerde görmektir.",
+      reasoningLead: "Bu ekranda amaç sahaya çıkmadan önce kontrol listesi, karar ve oturum bilgisini aynı yerde görmektir.",
       nextBestAction: firstPending?.label
-        ? `Önce ${firstPending.label} maddesini PASS yap.`
+        ? `Önce “${checklistItemLabel(firstPending.label)}” maddesini tamamla.`
         : "Karar alanını ve oturum bilgisini son kez doğrula.",
-      safestNextStep: "En risksiz adım, önce PASS olmayan maddeleri kapatıp kabul kararını en son vermektir.",
-      compareHint: "Checklist PASS olması ile kabul kararının GO olması aynı şey değildir; ikisi birlikte okunmalıdır.",
+      safestNextStep: "En risksiz adım, önce tamamlanmamış maddeleri kapatıp kabul kararını en son vermektir.",
+      compareHint: "Kontrol listesinin tamamlanması ile kabul kararının uygun olması aynı şey değildir; ikisi birlikte okunmalıdır.",
     };
 
     setCopilotSelection({
       scopeKey: "/superadmin/acceptance",
       entityType: "screen",
       entityId: 6108,
-      label: firstPending?.label || "Saha kabul özeti",
+      label: checklistItemLabel(firstPending?.label || "Saha kabul özeti"),
       summary: [
         currentSessionId !== "-" ? currentSessionId : null,
         decisionValue,
         totalChecklist ? `${totalChecklist} madde` : null,
-        pendingChecklist.length ? `${pendingChecklist.length} bekleyen` : "hepsi PASS",
+        pendingChecklist.length ? `${pendingChecklist.length} bekleyen` : "hepsi tamamlandı",
       ].filter(Boolean).join(" • "),
       fields: [
-        { label: "Session", value: currentSessionId, help: "Tek currentSession kaydının kimliğini gösterir." },
-        { label: "Karar", value: decisionValue, help: "Test oturumu için seçilen kabul kararını gösterir." },
-        { label: "Checklist", value: String(totalChecklist), help: "Toplam checklist maddesi sayısını gösterir." },
-        { label: "Bekleyen", value: String(pendingChecklist.length), help: "Henüz PASS olmayan checklist maddesi sayısını gösterir." },
+        { label: "Oturum", value: currentSessionId, help: "Tek saha kabul oturumunun kimliğini gösterir." },
+        { label: "Karar", value: decisionLabel(decisionValue), help: "Test oturumu için seçilen kabul kararını gösterir." },
+        { label: "Kontrol listesi", value: String(totalChecklist), help: "Toplam kontrol maddesi sayısını gösterir." },
+        { label: "Bekleyen", value: String(pendingChecklist.length), help: "Henüz tamamlanmamış kontrol maddesi sayısını gösterir." },
         { label: "Cihaz", value: session?.deviceModel || "-", help: "Test oturumunda kullanılan cihaz modelini gösterir." },
-        { label: "Build", value: session?.buildProfile || "-", help: "Test edilen mobil build profilini gösterir." },
-        { label: "Oluşturan", value: currentSessionCreatedBy, help: "Tek currentSession kaydını oluşturan kullanıcıyı gösterir." },
-        { label: "Güncelleyen", value: currentSessionUpdatedBy, help: "Tek currentSession kaydını son güncelleyen kullanıcıyı gösterir." },
-        { label: "İlk Açık Madde", value: firstPending?.label || "-", help: "Henüz tamamlanmamış ilk checklist maddesini gösterir." },
+        { label: "Sürüm", value: session?.buildProfile || "-", help: "Test edilen mobil sürüm profilini gösterir." },
+        { label: "Oluşturan", value: currentSessionCreatedBy, help: "Tek saha kabul oturumunu oluşturan kullanıcıyı gösterir." },
+        { label: "Güncelleyen", value: currentSessionUpdatedBy, help: "Tek saha kabul oturumunu son güncelleyen kullanıcıyı gösterir." },
+        { label: "İlk açık madde", value: checklistItemLabel(firstPending?.label), help: "Henüz tamamlanmamış ilk kontrol maddesini gösterir." },
       ],
       badges: [
-        { label: "Alan", value: firstPending?.area || "-", help: "Açık checklist maddesinin ait olduğu alanı gösterir." },
+        { label: "Alan", value: checklistAreaLabel(firstPending?.area), help: "Açık kontrol maddesinin ait olduğu alanı gösterir." },
         { label: "Oturum", value: currentSessionId, help: "Aktif saha kabul oturumunun kimliğini gösterir." },
       ],
       facts,
@@ -364,7 +425,7 @@ export default function FieldAcceptanceCenter() {
     <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
       <PanelChrome
         title="Saha Kabul Merkezi"
-        subtitle="Sahaya çıkmadan önce kabul kararı, checklist durumu ve test oturumu özetini toplar."
+        subtitle="Sahaya çıkmadan önce kabul kararı, kontrol listesi durumu ve test oturumu özetini toplar."
         actions={(
           <>
             <button className="btn" onClick={createSession} disabled={sessionBusy || decisionBusy || checklistBusyId}>Yeni oturum oluştur</button>
@@ -379,13 +440,13 @@ export default function FieldAcceptanceCenter() {
       <PanelKvkkHint panelKey="fieldAcceptance" />
 
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-        <Card title="Canlı oturum mini bandı">
+        <Card title="Canlı oturum özeti">
           <div className="panelMeta">
-            Tek currentSession kaydı buradan okunur; create, kaydet, karar ve checklist güncellemeleri aynı kaydı besler.
+            Tek saha kabul oturumu buradan okunur; oluşturma, kaydetme, karar ve kontrol listesi güncellemeleri aynı kaydı besler.
           </div>
           <div style={{ marginTop: 12, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
             <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
-              <div className="panelMeta">Session ID</div>
+              <div className="panelMeta">Oturum kayıt no</div>
               <div className="panelBody" style={{ marginTop: 4 }}>{currentSessionId}</div>
             </div>
             <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
@@ -398,7 +459,7 @@ export default function FieldAcceptanceCenter() {
             </div>
             <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
               <div className="panelMeta">Karar</div>
-              <div className="panelBody" style={{ marginTop: 4 }}>{decisionValue}</div>
+              <div className="panelBody" style={{ marginTop: 4 }}>{decisionLabel(decisionValue)}</div>
             </div>
             <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
               <div className="panelMeta">Oluşturan</div>
@@ -410,12 +471,12 @@ export default function FieldAcceptanceCenter() {
             </div>
           </div>
           <div className="panelMeta" style={{ marginTop: 10 }}>
-            Bu üst bant live currentSession snapshot'ıdır; manifest varsayımları sekmelerde ayrı gösterilir.
+            Bu üst bant güncel saha kabul oturumunun kısa görünümüdür; varsayılanlar ayrı gösterilir.
           </div>
         </Card>
 
-        <Card title="Checklist mini durum">
-          <div className="panelMeta">Canlı checklist özeti ve sıradaki doğru kontrol burada görünür.</div>
+        <Card title="Kontrol listesi özeti">
+          <div className="panelMeta">Güncel kontrol listesi ve sıradaki doğru kontrol burada görünür.</div>
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
             <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
               <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
@@ -424,7 +485,7 @@ export default function FieldAcceptanceCenter() {
               </div>
               <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
                 <div className="panelMeta">Karar</div>
-                <div className="panelBody" style={{ marginTop: 4 }}>{decisionValue}</div>
+                <div className="panelBody" style={{ marginTop: 4 }}>{decisionLabel(decisionValue)}</div>
               </div>
               <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
                 <div className="panelMeta">İlk açık madde</div>
@@ -434,7 +495,7 @@ export default function FieldAcceptanceCenter() {
             <div className="panelMeta">
               Sıradaki doğru kontrol: {overviewNextControl}
             </div>
-            <div className="panelMeta">
+                <div className="panelMeta">
               Durum notu: {riskNote || "Karar notu henüz girilmedi."}
             </div>
           </div>
@@ -444,11 +505,11 @@ export default function FieldAcceptanceCenter() {
       {/* FIELD ACCEPTANCE DISCOVERY / INVENTORY
           Üst: başlık, canlı oturum mini bandı, checklist mini durum ve global aksiyonlar.
           Özet: currentSession kısa özeti, karar durumu, checklist sonucu, sıradaki doğru kontrol.
-          Manifest: varsayılan karar seçenekleri, checklist seed'i, evidence türleri ve currentSession provenance.
-          Karar Kaydı: GO / LIMITED_GO / NO_GO formu ve kaydetme akışı.
-          Oturum Bilgisi: Session ID, sürücü, cihaz, platform ve operatör alanları.
-          Checklist Güncelleme: tüm checklist maddeleri, status, kısa not ve güncelleme akışı.
-          Geçmiş / Log: karar geçmişi, session geçmişi ve provenance/log özeti.
+          Varsayılanlar: karar seçenekleri, kontrol listesi başlangıç maddeleri, kanıt türleri ve oturum kaynağı.
+          Karar Kaydı: kabul kararını ve kaydetme akışını yönetir.
+          Oturum Bilgisi: oturum kayıt no, sürücü, cihaz, platform ve operatör alanları.
+          Kontrol Listesi Güncelleme: tüm maddeler, durum, kısa not ve güncelleme akışı.
+          Geçmiş / Kayıt: karar, oturum ve değişiklik geçmişi.
           Veri kaybı yok; mevcut kayıtlar sadece düzenli sekmelere ayrılıyor. */}
       <PanelSegmentTabs
         tabs={tabs}
@@ -461,18 +522,18 @@ export default function FieldAcceptanceCenter() {
       <TabPanel active={activeTab === "overview"} label="Özet">
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           <Card title="Kısa özet">
-            <div className="muted">CurrentSession kısa özeti ve karar durumu.</div>
+            <div className="muted">Güncel saha kabul oturumunun kısa özeti ve karar durumu.</div>
             <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
               <div>
-                <div className="panelMeta">Session ID</div>
+                <div className="panelMeta">Oturum kayıt no</div>
                 <div className="panelBody" style={{ marginTop: 4 }}>{currentSessionId}</div>
               </div>
               <div>
                 <div className="panelMeta">Karar</div>
-                <div className="panelBody" style={{ marginTop: 4 }}>{decisionValue}</div>
+                <div className="panelBody" style={{ marginTop: 4 }}>{decisionLabel(decisionValue)}</div>
               </div>
               <div>
-                <div className="panelMeta">Checklist</div>
+                <div className="panelMeta">Kontrol listesi</div>
                 <div className="panelBody" style={{ marginTop: 4 }}>{checklistProgressText}</div>
               </div>
               <div>
@@ -480,7 +541,7 @@ export default function FieldAcceptanceCenter() {
                 <div className="panelBody" style={{ marginTop: 4 }}>{checklistStateText}</div>
               </div>
               <div className="panelMeta">
-                Bu özet, kabul kararını ve checklist durumunu aynı ekranda okur; uzun form burada yer almaz.
+                Bu özet, kabul kararını ve kontrol listesi durumunu aynı ekranda okur; uzun form burada yer almaz.
               </div>
             </div>
           </Card>
@@ -490,43 +551,43 @@ export default function FieldAcceptanceCenter() {
             <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
               <div className="panelBody">{overviewNextControl}</div>
               <div className="panelMeta">
-                En güvenli adım: önce PASS olmayan maddeleri kapat, sonra GO / LIMITED_GO / NO_GO kararını gözden geçir.
+                En güvenli adım: önce tamamlanmamış maddeleri kapat, sonra kabul kararını gözden geçir.
               </div>
               <div className="panelMeta">
-                CurrentSession notu: {riskNote || "Karar notu girilmemiş."}
+                Oturum notu: {riskNote || "Karar notu girilmemiş."}
               </div>
             </div>
           </Card>
         </div>
       </TabPanel>
 
-      <TabPanel active={activeTab === "manifest"} label="Manifest">
+      <TabPanel active={activeTab === "manifest"} label="Varsayılanlar">
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-          <Card title="Varsayılanlar / manifest: karar seçenekleri">
-            <div className="panelMeta">{manifestDecisionOptions.join(", ") || "Henüz karar seçeneği yok"}</div>
+          <Card title="Varsayılanlar: karar seçenekleri">
+            <div className="panelMeta">{manifestDecisionOptions.map(decisionLabel).join(", ") || "Henüz karar seçeneği yok"}</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              Bu kart manifest varsayılanlarını gösterir; canlı karar currentSession içindedir.
+              Bu kart varsayılan karar seçeneklerini gösterir; güncel karar oturum içindedir.
             </div>
           </Card>
 
-          <Card title="Varsayılanlar / manifest: checklist özeti">
+          <Card title="Varsayılanlar: kontrol listesi özeti">
             <div>{manifestChecklistItems.length} madde</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              {manifestChecklistItems.slice(0, 3).map((item) => item.label).join(" • ") || "Henüz checklist maddesi yok"}
+              {manifestChecklistItems.slice(0, 3).map((item) => checklistItemLabel(item.label)).join(" • ") || "Henüz kontrol maddesi yok"}
             </div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              Bu kart manifest seed'ini gösterir; canlı durum currentSession checklist'inden okunur.
+              Bu kart başlangıç maddelerini gösterir; güncel durum saha kabul oturumundan okunur.
             </div>
           </Card>
 
-          <Card title="Manifest kanıt türleri">
-            <div className="panelMeta">{manifestEvidenceTypes.join(" • ") || "Henüz kanıt tipi yok"}</div>
+          <Card title="Varsayılan kanıt türleri">
+            <div className="panelMeta">{manifestEvidenceTypes.map(evidenceTypeLabel).join(" • ") || "Henüz kanıt türü yok"}</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
-              Evidence tipi listesi teknik manifest bilgisidir; veri kaybı olmadan okunur.
+              Bu liste, kabul sırasında kullanılabilecek kanıt türlerini gösterir.
             </div>
           </Card>
 
-          <Card title="CurrentSession provenance">
+          <Card title="Oturum kaynağı">
             <div>{currentSessionId}</div>
             <div className="panelMeta" style={{ marginTop: 6 }}>
               Oluşturuldu: {formatTR(createdAt)} • Güncellendi: {formatTR(updatedAt)}
@@ -540,11 +601,11 @@ export default function FieldAcceptanceCenter() {
 
       <TabPanel active={activeTab === "decision"} label="Karar Kaydı">
         <Card title="Karar kaydı">
-          <div className="muted">GO / LIMITED_GO / NO_GO kararını sahici state'e yazar.</div>
+          <div className="muted">Kabul kararını güncel saha kabul oturumuna kaydeder.</div>
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
             <select className="input" value={session?.decision || "LIMITED_GO"} onChange={(e) => setSessionField("decision", e.target.value)}>
               {manifestDecisionOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{decisionLabel(option)}</option>
               ))}
             </select>
             <input
@@ -562,7 +623,7 @@ export default function FieldAcceptanceCenter() {
             />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
-            <div className="muted">Karar: {session?.decision || "-"} • currentSession kaydına yazılır</div>
+            <div className="muted">Karar: {decisionLabel(session?.decision)} • güncel oturuma yazılır</div>
             <button className="btn" onClick={saveDecision} disabled={decisionBusy}>
               {decisionBusy ? "Kaydediliyor..." : "Kararı kaydet"}
             </button>
@@ -572,26 +633,26 @@ export default function FieldAcceptanceCenter() {
 
       <TabPanel active={activeTab === "session"} label="Oturum Bilgisi">
         <Card title="Oturum bilgisi">
-          <div className="muted">Saha kabul currentSession kaydının kimlik ve cihaz alanları.</div>
+          <div className="muted">Saha kabul oturumunun kimlik ve cihaz alanları.</div>
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-            <input className="input" value={sessionId} readOnly />
+            <input className="input" aria-label="Oturum kayıt no" value={sessionId} readOnly />
             <input className="input" placeholder="Sürücü etiketi" value={session?.driverLabel || ""} onChange={(e) => setSessionField("driverLabel", e.target.value)} />
             <input className="input" placeholder="Cihaz modeli" value={session?.deviceModel || ""} onChange={(e) => setSessionField("deviceModel", e.target.value)} />
             <input className="input" placeholder="OS sürümü" value={session?.osVersion || ""} onChange={(e) => setSessionField("osVersion", e.target.value)} />
-            <input className="input" placeholder="Build profili" value={session?.buildProfile || ""} onChange={(e) => setSessionField("buildProfile", e.target.value)} />
+            <input className="input" placeholder="Sürüm profili" value={session?.buildProfile || ""} onChange={(e) => setSessionField("buildProfile", e.target.value)} />
             <input className="input" placeholder="Test eden kişi" value={session?.testerLabel || ""} onChange={(e) => setSessionField("testerLabel", e.target.value)} />
             <input className="input" type="number" min="0" placeholder="Kanıt sayısı" value={session?.evidenceCount ?? 0} onChange={(e) => setSessionField("evidenceCount", Number(e.target.value || 0))} />
           </div>
           <div className="panelMeta" style={{ marginTop: 10 }}>
-            Bu alanlar sahadaki currentSession kaydının tek kayıt üzerinden korunmasına yardımcı olur.
+            Bu alanlar tek saha kabul oturumunun korunmasına yardımcı olur.
           </div>
         </Card>
       </TabPanel>
 
-      <TabPanel active={activeTab === "checklist"} label="Checklist Güncelleme">
+      <TabPanel active={activeTab === "checklist"} label="Kontrol listesi güncelleme">
         <div className="card" style={{ display: "grid", gap: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <div className="panelSectionTitle">Checklist güncelleme</div>
+            <div className="panelSectionTitle">Kontrol listesi güncelleme</div>
             <div className="muted">
               {checklistProgressText}
             </div>
@@ -603,10 +664,10 @@ export default function FieldAcceptanceCenter() {
               <div key={item.id || idx} className="card" style={{ display: "grid", gap: 10, padding: 12, borderRadius: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                   <div>
-                    <div className="panelSectionTitle">{item.label}</div>
-                    <div className="panelMeta" style={{ marginTop: 6 }}>Alan: {item.area || "genel"}</div>
+                    <div className="panelSectionTitle">{checklistItemLabel(item.label)}</div>
+                    <div className="panelMeta" style={{ marginTop: 6 }}>Alan: {checklistAreaLabel(item.area)}</div>
                   </div>
-                  <div className="pill">{displayStatusLabel(status)}</div>
+                  <div className="pill">{checklistStatusLabel(status)}</div>
                 </div>
                 <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
                   <select
@@ -615,7 +676,7 @@ export default function FieldAcceptanceCenter() {
                     onChange={(e) => setChecklistField(item.id, "status", e.target.value)}
                   >
                     {CHECKLIST_STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>{checklistStatusLabel(option)}</option>
                     ))}
                   </select>
                   <input
@@ -626,7 +687,7 @@ export default function FieldAcceptanceCenter() {
                   />
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                  <div className="muted">Güncelleme: {item.updatedAt || "-"} • currentSession checklist alanı</div>
+                <div className="muted">Güncelleme: {item.updatedAt || "-"} • saha kabul oturumu kontrol alanı</div>
                   <button className="btn" onClick={() => saveChecklistItem(item)} disabled={busy}>
                     {busy ? "Kaydediliyor..." : "Maddeyi güncelle"}
                   </button>
@@ -634,15 +695,15 @@ export default function FieldAcceptanceCenter() {
               </div>
             );
           }) : (
-            <div className="muted">Henüz checklist maddesi yok.</div>
+            <div className="muted">Henüz kontrol maddesi yok.</div>
           )}
         </div>
       </TabPanel>
 
-      <TabPanel active={activeTab === "history"} label="Geçmiş / Log">
+      <TabPanel active={activeTab === "history"} label="Geçmiş / İşlem kayıtları">
         <Card title="Karar / oturum geçmişi">
           <div className="panelMeta">
-            Karar geçmişi, session geçmişi ve provenance / log detayları bu alanda okunur.
+            Karar, oturum ve değişiklik geçmişi bu alanda okunur.
           </div>
           <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
             {historyEntries.length > 0 ? historyEntries.map((item, idx) => (
@@ -651,8 +712,8 @@ export default function FieldAcceptanceCenter() {
                   <div className="panelSectionTitle">{item.title}</div>
                   <div className="panelMeta">{item.meta}</div>
                 </div>
-                <div className="panelBody" style={{ marginTop: 6 }}>{item.value}</div>
-                <div className="panelMeta" style={{ marginTop: 6 }}>{item.note}</div>
+                <div className="panelBody" style={{ marginTop: 6 }}>{humanizeUserFacingText(item.value)}</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>{humanizeUserFacingText(item.note)}</div>
               </div>
             )) : (
               <div className="muted">Henüz geçmiş kaydı yok.</div>

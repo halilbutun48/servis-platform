@@ -1016,7 +1016,7 @@ export default function AgreementsPanel() {
       <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
         <div>
           <div className="muted">Filtre</div>
-          <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="ID / durum / teklif / tarih / not" />
+          <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Kayıt no / durum / teklif / tarih / not" />
         </div>
         <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredAcceptedRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
       </div>

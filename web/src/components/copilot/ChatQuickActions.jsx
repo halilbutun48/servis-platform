@@ -1,3 +1,5 @@
+import { humanizeUserFacingText } from "../../utils/terminology";
+
 function tone(accent) {
   if (accent === "primary") return { background: "#175cd3", color: "#fff", border: "1px solid #175cd3" };
   if (accent === "warning") return { background: "#fffaeb", color: "#b54708", border: "1px solid #f79009" };
@@ -6,10 +8,10 @@ function tone(accent) {
 
 function actionText(action, index = 0) {
   const kind = String(action?.actionKind || "OPEN_ROUTE");
-  if (kind === "OPEN_GUIDE") return action?.label || "Rehberi aç";
-  if (kind === "ASK") return action?.label || "Bunu sor";
-  if (kind === "COPY_TEXT") return action?.label || "Metni kopyala";
-  return index === 0 ? (action?.label || "Bu ekrana git") : (action?.label || "Buraya git");
+  if (kind === "OPEN_GUIDE") return humanizeUserFacingText(action?.label, "Rehberi aç");
+  if (kind === "ASK") return humanizeUserFacingText(action?.label, "Bunu sor");
+  if (kind === "COPY_TEXT") return humanizeUserFacingText(action?.label, "Metni kopyala");
+  return humanizeUserFacingText(action?.label, index === 0 ? "Bu ekrana git" : "Buraya git");
 }
 
 export default function ChatQuickActions({ actions = [], linkedGuides = [], onOpen, onGuide, onAsk, onCopy }) {
@@ -37,7 +39,7 @@ export default function ChatQuickActions({ actions = [], linkedGuides = [], onOp
         {visibleActions.length ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {visibleActions.map((action, i) => (
-              <button key={`${actionText(action, i)}:${i}`} type="button" className="btn sm copilotToolBtn" onClick={() => runAction(action)} title={action?.reason || ""} style={tone(action?.accent)}>
+              <button key={`${actionText(action, i)}:${i}`} type="button" className="btn sm copilotToolBtn" onClick={() => runAction(action)} title={humanizeUserFacingText(action?.reason, "")} style={tone(action?.accent)}>
                 {actionText(action, i)}
               </button>
             ))}
@@ -46,13 +48,13 @@ export default function ChatQuickActions({ actions = [], linkedGuides = [], onOp
         {hasGuides ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {linkedGuides.slice(0, 2).map((guide, i) => (
-              <button key={`${guide?.jobType || "guide"}:${i}`} type="button" className="btn sm copilotToolBtn" onClick={() => onGuide?.(guide)} title={guide?.reason || ""}>
-                {guide?.label || guide?.jobType || "Rehbere geç"}
+                <button key={`${guide?.jobType || "guide"}:${i}`} type="button" className="btn sm copilotToolBtn" onClick={() => onGuide?.(guide)} title={humanizeUserFacingText(guide?.reason, "")}>
+                {humanizeUserFacingText(guide?.label || guide?.jobType, "Rehbere geç")}
               </button>
             ))}
           </div>
         ) : null}
-        {visibleActions[0]?.reason ? <div style={{ fontSize: 12, color: "#475467" }}>{visibleActions[0].reason}</div> : null}
+        {visibleActions[0]?.reason ? <div style={{ fontSize: 12, color: "#475467" }}>{humanizeUserFacingText(visibleActions[0].reason)}</div> : null}
       </div>
     </details>
   );

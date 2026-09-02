@@ -75,7 +75,7 @@ mustInclude(service, "upsertPaymentAccountMetadata", "payment backbone service e
 mustInclude(route, "/payment-backbone/accounts/status", "commercial core route exposes payment account readiness status endpoint");
 mustInclude(route, "/payment-backbone/accounts/candidates", "commercial core route exposes payment account readiness candidate endpoint");
 mustInclude(route, "/payment-backbone/accounts/upsert", "commercial core route exposes payment account metadata upsert endpoint");
-mustInclude(panel, "M87 ödeme hesabı hazırlığı", "commercial core panel renders M87 section");
+mustInclude(panel, "Ödeme hesabı hazırlığı", "commercial core panel renders M87 section");
 mustInclude(panel, "Ödeme hesabı aday listesi", "commercial core panel renders payment account candidate list");
 mustInclude(panel, "Hesap metadata kaydet", "commercial core panel renders payment account save action");
 mustInclude(backendPkg, '"m87check": "node scripts/m87_payment_account_readiness_check.js"', "backend package exposes m87check script");
