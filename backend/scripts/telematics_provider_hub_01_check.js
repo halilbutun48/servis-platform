@@ -164,7 +164,7 @@ function main() {
   must(doc, "UNMATCHED", "telematics provider hub doc keeps unmatched status");
   must(doc, "DUPLICATE_MATCH", "telematics provider hub doc keeps duplicate match status");
   must(navDock, "advanced:", "canonical navigation keeps advanced administration section");
-  must(navDock, "Telematik / GPS Sağlayıcıları", "canonical navigation exposes telematics provider hub route");
+  must(navDock, "Konum veri sağlayıcıları", "canonical navigation exposes telematics provider hub route");
   must(navDock, "Başvuru İncelemesi", "canonical navigation exposes onboarding review route");
 
   must(app, 'if (path === "/superadmin/telematics") return { layout: true, node: <SuperTelematicsHubPanel /> };', "App routes telematics hub panel");
