@@ -58,10 +58,10 @@ const CONNECTION_TYPES = [
 ];
 
 const TEMPLATE_STATUSES = [
-  "AVAILABLE",
-  "CONFIG_TEMPLATE_READY",
-  "NEEDS_REVIEW",
-  "DISABLED",
+  "Mevcut",
+  "Bağlantı şablonu hazır",
+  "İnceleme gerekli",
+  "Devre dışı",
 ];
 
 const SECURITY_REQUIREMENTS = [

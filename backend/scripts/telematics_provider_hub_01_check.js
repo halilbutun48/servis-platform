@@ -180,38 +180,38 @@ function main() {
   mustNot(superAdminOverview, "goToTelematicsHub", "super admin overview no longer scrolls to telematics hub");
   mustNot(superAdminOverview, "telematicsHubRef", "super admin overview no longer keeps telematics ref");
 
-  must(telematicsHubPanel, "Telematik / GPS Sağlayıcıları", "telematics hub panel title present");
-  must(telematicsHubPanel, "Provider kataloğu", "telematics hub panel keeps provider catalog wording");
+  must(telematicsHubPanel, "Konum veri sağlayıcıları", "telematics hub panel title present");
+  must(telematicsHubPanel, "Sağlayıcı kataloğu", "telematics hub panel keeps provider catalog wording");
   must(telematicsHubPanel, "Bağlantı tipleri", "telematics hub panel keeps connection type wording");
-  must(telematicsHubPanel, "Template readiness", "telematics hub panel keeps readiness wording");
+  must(telematicsHubPanel, "Şablon durumu", "telematics hub panel keeps readiness wording");
   must(telematicsHubPanel, "Güvenlik / KVKK", "telematics hub panel keeps security wording");
-  must(telematicsHubPanel, "secret/token policy", "telematics hub panel keeps secret policy wording");
-  must(telematicsHubPanel, "webhook signature requirement", "telematics hub panel keeps webhook signature wording");
-  must(telematicsHubPanel, "rate limit", "telematics hub panel keeps rate limit wording");
-  must(telematicsHubPanel, "IP allowlist", "telematics hub panel keeps IP allowlist wording");
+  must(telematicsHubPanel, "Gizli anahtar politikası", "telematics hub panel keeps secret policy wording");
+  must(telematicsHubPanel, "Veri bildirimi doğrulaması", "telematics hub panel keeps webhook signature wording");
+  must(telematicsHubPanel, "İstek sınırı", "telematics hub panel keeps rate limit wording");
+  must(telematicsHubPanel, "İzinli ağ listesi", "telematics hub panel keeps IP allowlist wording");
   must(telematicsHubPanel, "KVKK / veri minimizasyonu", "telematics hub panel keeps KVKK wording");
-  must(telematicsHubPanel, "raw payload masking", "telematics hub panel keeps payload masking wording");
-  must(telematicsHubPanel, "Custom provider review", "telematics hub panel keeps review wording");
+  must(telematicsHubPanel, "Ham veriyi maskeleme", "telematics hub panel keeps payload masking wording");
+  must(telematicsHubPanel, "Özel sağlayıcı incelemesi", "telematics hub panel keeps review wording");
   must(telematicsHubPanel, "Taşımacılık Firması işlemleri notu", "telematics hub panel keeps room self-service note");
   must(telematicsHubPanel, "onboarding-review", "telematics hub panel links review queue");
   must(telematicsHubPanel, "Genel Bakış", "telematics hub panel keeps overview fallback wording");
-  must(telematicsHubPanel, "Taşımacılık Firması kendi GPS hesabını onaylı provider kataloğu üzerinden bağlar", "telematics hub panel keeps room self-service boundary");
+  must(telematicsHubPanel, "Taşımacılık Firması kendi konum hesabını yalnızca onaylı sağlayıcı kataloğu üzerinden bağlar", "telematics hub panel keeps room self-service boundary");
 
-  must(roomTelematics, "GPS Eşleştirme / Telematik Bağlantısı", "room telematics keeps matching title");
-  must(roomTelematics, "Onaylı provider kataloğu", "room telematics keeps approved provider catalog wording");
-  must(roomTelematics, "Provider kataloğu ve güvenlik kuralları Süper Yönetici tarafından yönetilir.", "room telematics keeps super admin boundary note");
+  must(roomTelematics, "GPS eşleştirme / cihaz bağlantısı", "room telematics keeps matching title");
+  must(roomTelematics, "Onaylı veri sağlayıcısı kataloğu", "room telematics keeps approved provider catalog wording");
+  must(roomTelematics, "Veri sağlayıcısı kataloğu ve güvenlik kuralları Süper Yönetici tarafından yönetilir.", "room telematics keeps super admin boundary note");
   must(roomTelematics, "Eşleştirme hazırlığı", "room telematics keeps preparation CTA");
   must(roomTelematics, "Test eşleştirme", "room telematics keeps test CTA");
   must(roomTelematics, "IMEI", "room telematics keeps imei field");
   must(roomTelematics, "deviceId", "room telematics keeps deviceId field");
   must(roomTelematics, "externalDeviceId", "room telematics keeps externalDeviceId field");
   must(roomTelematics, "Serial", "room telematics keeps serial field");
-  must(roomTelematics, "LIVE / STALE / OFFLINE", "room telematics keeps freshness status wording");
-  must(roomTelematics, "Secret/token/API key görünmez.", "room telematics keeps secret boundary wording");
+  must(roomTelematics, "Bağlı değil", "room telematics keeps freshness status wording");
+  must(roomTelematics, "Gizli erişim anahtarı görünmez.", "room telematics keeps secret boundary wording");
   must(roomTelematics, "RoomTelematicsReadinessCard", "room telematics keeps readiness card");
   must(roomTelematics, "Taşımacılık Firması kendi GPS hesabını onaylı sağlayıcı kataloğu üzerinden bağlar", "room telematics keeps room self-service wording");
   must(roomTelematics, "Plaka", "room telematics keeps plate field");
-  must(roomTelematics, "Provider", "room telematics keeps provider field");
+  must(roomTelematics, "Veri sağlayıcısı", "room telematics keeps provider field");
 
   must(roomRows, "İnceleme için hazırla", "room telematics rows keep review action");
   mustNot(roomRows, "Token rotate", "room telematics rows no longer show token rotate wording");
@@ -223,7 +223,7 @@ function main() {
   mustNot(roomHook, "copyToken", "room telematics hook no longer exposes token copy flow");
 
   must(vehiclesPanel, "GPS eşleştirme detayları", "vehicles panel keeps updated telematics tab title");
-  must(vehiclesPanel, "Onaylı provider, matching alanları ve son veri görünümü.", "vehicles panel keeps updated telematics subtitle");
+  must(vehiclesPanel, "Onaylı veri sağlayıcısı, eşleştirme alanları ve son veri görünümü.", "vehicles panel keeps updated telematics subtitle");
   mustNot(vehiclesPanel, "tokenReveal", "vehicles panel no longer wires token reveal");
   mustNot(vehiclesPanel, "copyToken", "vehicles panel no longer wires token copy");
 
@@ -236,7 +236,7 @@ function main() {
   must(harnessDoc, "TELEMATICS-PROVIDER-HUB-01", "script harness doc lists telematics provider hub milestone");
 
   must(screenRegistry, "/superadmin/telematics", "screen registry includes telematics hub route");
-  must(screenRegistry, "Telematik / GPS Sağlayıcıları", "screen registry keeps telematics hub label");
+  must(screenRegistry, "Konum veri sağlayıcıları", "screen registry keeps telematics hub label");
   must(screenCatalog, "/superadmin/telematics", "screen catalog includes telematics hub route");
   must(screenCatalog, "Telematik / GPS Sağlayıcıları", "screen catalog keeps telematics hub label");
 
