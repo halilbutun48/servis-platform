@@ -645,7 +645,7 @@ export default function ObservabilityPanel() {
             <button className="btn sm" onClick={() => setActiveTab("alarms")}>Alarmlar & Riskler</button>
           </div>
           {!queueItems.length ? (
-            <div className="panelMeta">Henüz dead-letter yok.</div>
+            <div className="panelMeta">Henüz işlenemeyen kayıt yok.</div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
               {queueItems.map((item, idx) => {
