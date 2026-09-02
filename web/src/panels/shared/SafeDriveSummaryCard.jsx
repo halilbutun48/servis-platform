@@ -85,7 +85,7 @@ export default function SafeDriveSummaryCard({
         <details className="mapOperationsDisclosure safeDriveDetails" data-map-disclosure="secondary">
           <summary>Risk ve kontrol ayrıntıları</summary>
           <div className="mapOperationsDisclosureBody">
-            <div className="muted">Kanıt / check-in durumu</div>
+            <div className="muted">Kanıt / biniş kaydı durumu</div>
             <SectionChips title="Risk nedenleri" items={riskReasons.map((item) => ({ text: item, tone: "CRITICAL" }))} emptyText="Risk sinyali görünmüyor." />
             <SectionChips title="Kontrol edilmeli notları" items={controlNotes.map((item) => ({ text: item, tone: "WARN" }))} emptyText="Kontrol notu yok." />
             <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
@@ -99,7 +99,7 @@ export default function SafeDriveSummaryCard({
         </details>
       ) : (
         <>
-          <div className="muted">Kanıt / check-in durumu</div>
+          <div className="muted">Kanıt / biniş kaydı durumu</div>
           <SectionChips title="Risk nedenleri" items={riskReasons.map((item) => ({ text: item, tone: "CRITICAL" }))} emptyText="Risk sinyali görünmüyor." />
           <SectionChips title="Kontrol edilmeli notları" items={controlNotes.map((item) => ({ text: item, tone: "WARN" }))} emptyText="Kontrol notu yok." />
           <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>

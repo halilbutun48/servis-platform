@@ -16,7 +16,7 @@ Repo: `servis-platform`
 - `GPS güvenilirliği` canlı, güncel değil, çevrim dışı veya bekleniyor olarak okunur.
 - `Hız riski` hız ve hız limiti birlikte okunarak değerlendirilir.
 - `Rota ilerleme sinyali` sıradaki durak ve canlı rota durumunu birlikte okur.
-- `Kanıt / check-in durumu` operasyon kanıtı ve check-in görünürlüğünü toplar.
+- `Kanıt / biniş kaydı durumu` operasyon kanıtı ve biniş kaydı görünürlüğünü toplar.
 - `Operasyon kontrol önerisi` kullanıcıyı sıradaki en güvenli okumaya yönlendirir.
 - `İnsan onayı gerekir` ifadesi, kontrol kararı insan onayına bırakıldığında görünür.
 

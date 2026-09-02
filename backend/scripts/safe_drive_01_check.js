@@ -367,7 +367,7 @@ async function main() {
   must(doc, "GPS güvenilirliği", "safe drive doc keeps GPS wording");
   must(doc, "Hız riski", "safe drive doc keeps speed wording");
   must(doc, "Rota ilerleme sinyali", "safe drive doc keeps route wording");
-  must(doc, "Kanıt / check-in durumu", "safe drive doc keeps proof wording");
+  must(doc, "Kanıt / biniş kaydı durumu", "safe drive doc keeps proof wording");
   must(doc, "Operasyon kontrol önerisi", "safe drive doc keeps control recommendation wording");
   must(doc, "İnsan onayı gerekir", "safe drive doc keeps human approval wording");
   must(doc, "M44-TELEMATICS-T1-T5", "safe drive doc keeps M44 anchor");
@@ -384,7 +384,7 @@ async function main() {
   must(helper, "Konum sinyali güvenilirliği", "safe drive helper keeps GPS wording");
   must(helper, "Hız riski", "safe drive helper keeps speed wording");
   must(helper, "Rota ilerleme sinyali", "safe drive helper keeps route wording");
-  must(helper, "Kanıt / check-in durumu", "safe drive helper keeps proof wording");
+  must(helper, "Kanıt / biniş kaydı durumu", "safe drive helper keeps proof wording");
   must(helper, "Operasyon kontrol önerisi", "safe drive helper keeps control recommendation wording");
   must(helper, "Kullanıcı onayı gerekir", "safe drive helper keeps human approval wording");
   must(helper, "normalizeGpsFreshness", "safe drive helper reuses GPS freshness helper");
@@ -396,7 +396,7 @@ async function main() {
   must(card, "Risk sinyali", "safe drive card keeps risk wording");
   must(card, "Kontrol edilmeli", "safe drive card keeps control wording");
   must(card, "Kullanıcı onayı gerekir", "safe drive card keeps human approval wording");
-  must(card, "Kanıt / check-in durumu", "safe drive card keeps proof wording");
+  must(card, "Kanıt / biniş kaydı durumu", "safe drive card keeps proof wording");
 
   must(driverRoute, "SafeDriveSummaryCard", "driver route panel wires safe drive card");
   must(driverRoute, "summaryParams", "driver route panel passes safe drive summary params");
@@ -519,11 +519,11 @@ async function main() {
       }),
       check(summary) {
         assertEqual(summary.status, "REVIEW_NEEDED", "stale-gps summary status");
-        assertEqual(summary.summaryText, "Kontrol edilmeli: GPS güncel değil.", "stale-gps summary text");
+        assertEqual(summary.summaryText, "Kontrol edilmeli: Konum sinyali güncel değil.", "stale-gps summary text");
         assertEqual(summary.requiresHumanApproval, true, "stale-gps human approval");
         assertEqual(summary.gps?.status, "REVIEW_NEEDED", "stale-gps gps status");
         assertEqual(summary.provider?.status, "READY", "stale-gps provider status");
-        assertEqual(summary.nextBestAction, "Onayınız gerekli: GPS güncel değil.", "stale-gps next best action");
+        assertEqual(summary.nextBestAction, "Onayınız gerekli: Konum sinyali güncel değil.", "stale-gps next best action");
       },
     },
     {
@@ -651,7 +651,7 @@ async function main() {
       }),
       check(summary) {
         assertEqual(summary.status, "RISKY", "multiple-risk-signals summary status");
-        assertEqual(summary.summaryText, "Risk sinyali: GPS çevrim dışı. Kontrol edilmeli.", "multiple-risk-signals summary text");
+        assertEqual(summary.summaryText, "Risk sinyali: Konum sinyali çevrim dışı. Kontrol edilmeli.", "multiple-risk-signals summary text");
         assertEqual(summary.requiresHumanApproval, true, "multiple-risk-signals human approval");
         assertEqual(summary.gps?.status, "RISKY", "multiple-risk-signals gps status");
         assertEqual(summary.speed?.status, "RISKY", "multiple-risk-signals speed status");
@@ -659,7 +659,7 @@ async function main() {
         assertEqual(summary.proof?.status, "REVIEW_NEEDED", "multiple-risk-signals proof status");
         assertEqual(summary.riskReasons.length, 3, "multiple-risk-signals risk reason count");
         assertEqual(summary.signals.length, 5, "multiple-risk-signals signal count");
-        assertEqual(summary.nextBestAction, "Onayınız gerekli: GPS çevrim dışı.", "multiple-risk-signals next best action");
+        assertEqual(summary.nextBestAction, "Onayınız gerekli: Konum sinyali çevrim dışı.", "multiple-risk-signals next best action");
       },
     },
     {
