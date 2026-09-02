@@ -5,10 +5,10 @@ Repo: `servis-platform`
 
 ## 1) Kısa Özet
 
-- Toplam package script entry: `475`
-- Toplam executable tracked file: `1359`
-- Combined registry row: `1834`
-- Root/backend/web/mobile package dağılımı: root `294`, backend `936`, web `100`, mobile `201`
+- Toplam package script entry: `477`
+- Toplam executable tracked file: `1362`
+- Combined registry row: `1839`
+- Root/backend/web/mobile package dağılımı: root `296`, backend `938`, web `101`, mobile `201`
 - Tools executable dağılımı: tools `303`
 - Docs indexed: `69`
 - Public lead milestones: `PUBLIC-LANDING-01 -> PUBLIC-LANDING-PLATFORM-FIRST-01 -> PUBLIC-LANDING-01 FINAL PROMISE CHECK -> LEAD-CAPTURE-01 -> ONBOARDING-REVIEW-01 -> ONBOARDING-REVIEW-01 FINAL AUDIT -> INVITE-BASED-MEMBERSHIP-01 -> VERIFIED-SUPPLIER-01 -> UX-MARKETPLACE-PANELS-01 -> PRODUCT-FLOW-BUTTON-AUDIT-01 -> ...`
@@ -395,7 +395,7 @@ Repo: `servis-platform`
 - REMOVE_CANDIDATE: `0`
 - REMOVED: `3`
 - ARCHIVED: `31`
-- NEEDS_REVIEW: `824`
+- NEEDS_REVIEW: `829`
 - Duplicate/overlap groups: `8`
 - Product coverage rows: `23`
 - SKIP gerekçesi olan entry: `61`
@@ -416,7 +416,7 @@ Repo: `servis-platform`
 | LEGACY_COMPAT | 21 |
 | MANUAL_RELEASE_TOOL | 14 |
 | MANUAL_SMOKE | 10 |
-| NEEDS_REVIEW | 824 |
+| NEEDS_REVIEW | 829 |
 | REQUIRES_AUTH_SESSION | 11 |
 | REQUIRES_DEVICE | 30 |
 | REQUIRES_ENV | 7 |
@@ -494,6 +494,8 @@ Repo: `servis-platform`
 | root:check:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
 | root:smoke:projectwideturkishterminology01 | package.json | root | node backend/scripts/project_wide_turkish_language_terminology_audit_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-PROJECTWIDETURKISHTERMINOLOGY-01 |  | Owner or chain unclear |  |
 | root:check:projectwideturkishterminology01 | package.json | root | node backend/scripts/project_wide_turkish_language_terminology_audit_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PROJECTWIDETURKISHTERMINOLOGY-01 |  | Owner or chain unclear |  |
+| root:check:seferabipremiumcharactercorrective01 | package.json | root | node backend/scripts/sefer_abi_premium_character_corrective_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-SEFERABIPREMIUMCHARACTERCORRECTIVE-01 |  | Owner or chain unclear |  |
+| root:smoke:seferabipremiumcharactercorrective01 | package.json | root | node backend/scripts/sefer_abi_premium_character_corrective_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-SEFERABIPREMIUMCHARACTERCORRECTIVE-01 |  | Owner or chain unclear |  |
 | root:check:projectdocumentationarchitectureandcodebaseindex01 | package.json | root | node backend/scripts/project_documentation_architecture_and_codebase_index_01_check.js | review | NEEDS_REVIEW |  | ROOT-CHECK-PROJECTDOCUMENTATIONARCHITECTUREANDCODEBASEINDEX-01 |  | Owner or chain unclear |  |
 | root:accept:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_acceptance.mjs | review | NEEDS_REVIEW |  | ROOT-ACCEPT-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
 | root:smoke:projectgapreadiness01 | package.json | root | node backend/scripts/project_wide_gap_and_release_readiness_audit_01_browser.mjs | review | NEEDS_REVIEW |  | ROOT-SMOKE-PROJECTGAPREADINESS-01 |  | Owner or chain unclear |  |
@@ -1265,6 +1267,8 @@ Repo: `servis-platform`
 | sefer_abi_cost_analysis_assistant_01_acceptance.mjs | backend/scripts/sefer_abi_cost_analysis_assistant_01_acceptance.mjs | backend | root:accept:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-ACCEPTANCE |  | Owner or chain unclear |  |
 | sefer_abi_cost_analysis_assistant_01_browser.mjs | backend/scripts/sefer_abi_cost_analysis_assistant_01_browser.mjs | backend | root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-BROWSER |  | Owner or chain unclear |  |
 | sefer_abi_cost_analysis_assistant_01_check.js | backend/scripts/sefer_abi_cost_analysis_assistant_01_check.js | backend | root:check:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-COST-ANALYSIS-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
+| sefer_abi_premium_character_corrective_01_browser.mjs | backend/scripts/sefer_abi_premium_character_corrective_01_browser.mjs | backend | root:smoke:seferabipremiumcharactercorrective01 | review | NEEDS_REVIEW |  | SEFER-ABI-PREMIUM-CHARACTER-CORRECTIVE-01-BROWSER |  | Owner or chain unclear |  |
+| sefer_abi_premium_character_corrective_01_check.js | backend/scripts/sefer_abi_premium_character_corrective_01_check.js | backend | root:check:seferabipremiumcharactercorrective01 | review | NEEDS_REVIEW |  | SEFER-ABI-PREMIUM-CHARACTER-CORRECTIVE-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_reasoning_assistant_01_check.js | backend/scripts/sefer_abi_reasoning_assistant_01_check.js | backend | root:check:seferabireasoningassistant01 | review | NEEDS_REVIEW |  | SEFER-ABI-REASONING-ASSISTANT-01-CHECK |  | Owner or chain unclear |  |
 | sefer_abi_room_fuel_province_coverage_01_acceptance.mjs | backend/scripts/sefer_abi_room_fuel_province_coverage_01_acceptance.mjs | backend |  | review | NEEDS_REVIEW |  | SEFER-ABI-ROOM-FUEL-PROVINCE-COVERAGE-01-ACCEPTANCE |  | Owner or chain unclear |  |
 | sefer_abi_terminal_humanize_01_check.js | backend/scripts/sefer_abi_terminal_humanize_01_check.js | backend | root:check:seferabiterminalhumanize01 | review | NEEDS_REVIEW |  | SEFER-ABI-TERMINAL-HUMANIZE-01-CHECK |  | Owner or chain unclear |  |
@@ -1689,6 +1693,7 @@ Repo: `servis-platform`
 | m98_e2c_personel_access_web_check.js | web/scripts/m98_e2c_personel_access_web_check.js | web | web:check:m98e2c | web-lint | ACTIVE_WEB_LINT |  | M-98-E-2-C-PERSONEL-ACCESS-WEB-CHECK |  | Owner or chain unclear | frontend/web script |
 | web_mobile_responsive_check.js | web/scripts/web_mobile_responsive_check.js | web | web:check:web-mobile | web-lint | ACTIVE_WEB_LINT |  | WEB-MOBILE-RESPONSIVE-CHECK |  | Owner or chain unclear | frontend/web script |
 | api.js | web/src/api.js | web | mobile:check:m95e2, mobile:check:m95e6, root:check:dbpoolandapiscaling01, root:check:etaosrm02 | review | NEEDS_REVIEW |  | API |  | Owner or chain unclear |  |
+| SeferAbiWidgetState.js | web/src/components/copilot/SeferAbiWidgetState.js | web |  | review | NEEDS_REVIEW |  | SEFER-ABI-WIDGET-STATE |  | Owner or chain unclear |  |
 | uiSurface.js | web/src/components/copilot/uiSurface.js | web |  | review | NEEDS_REVIEW |  | UI-SURFACE |  | Owner or chain unclear |  |
 | stopTimelineUtils.js | web/src/components/stopTimelineUtils.js | web |  | review | NEEDS_REVIEW |  | STOP-TIMELINE-UTILS |  | Owner or chain unclear |  |
 | brand.js | web/src/config/brand.js | web | root:check:brand, root:check:docsbrandcleanup01, root:check:uxbrandloginpremium01 | review | NEEDS_REVIEW |  | BRAND |  | Owner or chain unclear |  |
@@ -1697,7 +1702,7 @@ Repo: `servis-platform`
 | vehicleMarkerC.js | web/src/lib/markers/vehicleMarkerC.js | web |  | review | NEEDS_REVIEW |  | VEHICLE-MARKER-C |  | Owner or chain unclear |  |
 | bus.js | web/src/live/bus.js | web |  | review | NEEDS_REVIEW |  | BUS |  | Owner or chain unclear |  |
 | useAutoReload.js | web/src/live/useAutoReload.js | web |  | review | NEEDS_REVIEW |  | USE-AUTO-RELOAD |  | Owner or chain unclear |  |
-| ws.js | web/src/live/ws.js | web | root:smoke:accountingexportcontract01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:projectgapreadiness01, root:smoke:projectwideturkishterminology01, root:smoke:rolebasedsimplenavigationandtaskhome01, root:smoke:seferabicostanalysisassistant01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
+| ws.js | web/src/live/ws.js | web | root:smoke:accountingexportcontract01, root:smoke:costscenarioforecastandsavings01, root:smoke:hakedisinvoicereconciliationpreview01, root:smoke:projectgapreadiness01, root:smoke:projectwideturkishterminology01, root:smoke:rolebasedsimplenavigationandtaskhome01, root:smoke:seferabicostanalysisassistant01, root:smoke:seferabipremiumcharactercorrective01 | review | NEEDS_REVIEW |  | WS |  | Owner or chain unclear |  |
 | agreementWizardPacks.js | web/src/panels/company/agreementWizardPacks.js | web |  | review | NEEDS_REVIEW |  | AGREEMENT-WIZARD-PACKS |  | Owner or chain unclear |  |
 | companyAgreementsPanelHelpers.js | web/src/panels/company/companyAgreementsPanelHelpers.js | web |  | review | NEEDS_REVIEW |  | COMPANY-AGREEMENTS-PANEL-HELPERS |  | Owner or chain unclear |  |
 | companyShiftsPanelActions.js | web/src/panels/company/companyShiftsPanelActions.js | web |  | review | NEEDS_REVIEW |  | COMPANY-SHIFTS-PANEL-ACTIONS |  | Owner or chain unclear |  |
