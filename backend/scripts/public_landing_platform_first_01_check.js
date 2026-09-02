@@ -121,7 +121,7 @@ must(app, 'return { layout: false, node: <LoginCard /> };', "root login fallback
 
 must(landing, "Servis tedarikinden saha denetimine, sözleşmeden hakedişe tek kurumsal platform", "landing hero is platform-first");
 must(landing, "SeferPakt; servis taleplerini, tedarikçileri, sözleşmeleri, vardiyaları, canlı GPS takibini, kanıtları ve hakediş önizlemelerini tek yerde yönetir.", "landing explains core platform value");
-must(landing, "Sefer Abi ise isteğe bağlı operasyon yardımcınızdır; sinyalleri özetler, riskleri açıklar ve sonraki adımı önerir.", "landing positions Sefer Abi as optional assistant");
+must(landing, "Sefer Abi ise operasyonu anlamanıza ve riskleri erken görmenize yardımcı olan isteğe bağlı operasyon yardımcınızdır.", "landing positions Sefer Abi as optional assistant");
 must(landing, "Kurumsal servis operasyon platformu", "landing shows platform-first pill");
 must(landing, "Sefer Abi / operasyon yardımcısı", "landing shows assistant helper card");
 mustNot(landing, "Sefer Abi nasıl yardımcı olur?", "landing removes helper section heading");
