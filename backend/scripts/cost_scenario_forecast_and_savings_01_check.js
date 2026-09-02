@@ -284,7 +284,7 @@ function post4HumanUxCounts({ uiText, navText, financialText, companyPreviewText
     !uiText.includes("saveCostScenario"),
     !uiText.includes("applyCostScenario"),
   ].every(Boolean) ? 0 : 1;
-  const manualBaselineOverridesCanonicalTruthCount = uiText.includes("mevcut planın gerçek veya kanonik planlanan maliyetini değiştirmez") &&
+  const manualBaselineOverridesCanonicalTruthCount = uiText.includes("mevcut planın gerçek veya planlanan maliyetini değiştirmez") &&
     forecastText.indexOf("buildOperationalCostModel") < forecastText.indexOf("buildAnchorAmount") ? 0 : 1;
   const ambiguousBaselineMoneyInputCount = uiText.includes("Mevcut plan maliyet tabanı (₺)") || uiText.includes("Varsa güvenli tutar") ? 1 : 0;
 
@@ -323,7 +323,7 @@ function latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, a
     RECOVERABLE_BASELINE_FIELD_AUTOFILL_COUNT: uiText.includes("otomatik alınır") && routeText.includes("routeMetricsForPoints") ? recoverableFields.length : 0,
     RECOVERABLE_BASELINE_FIELD_MISSING_COUNT: uiText.includes("değer uydurulmaz") && uiText.includes("Eksik veri") ? 0 : 1,
     TRUE_MISSING_FIELD_COUNT: routeText.includes("TRULY_MISSING") && routeText.includes("missingReason") ? 1 : 0,
-    EXPLICIT_MISSING_FIELD_REASON_COUNT: uiText.includes("Eksik veri alanları") && uiText.includes("Kanonik mevcut plan alanında bulunamadı") ? 1 : 0,
+    EXPLICIT_MISSING_FIELD_REASON_COUNT: uiText.includes("Eksik veri alanları") && uiText.includes("Mevcut plan alanında bulunamadı") ? 1 : 0,
     UNEXPLAINED_DASH_PLACEHOLDER_COUNT: uiText.includes('return "-"') || uiText.includes("value ?? \"-\"") ? 1 : 0,
     ROOM_ROLE_SPECIFIC_SCENARIO_PASS_COUNT: uiText.includes("Taşımacılık Firması") && uiText.includes("Yolcu sayısı (kişi)") ? 1 : 0,
     COMPANY_ROLE_SPECIFIC_SCENARIO_PASS_COUNT: uiText.includes("Hizmet Alan Firma") && uiText.includes("Hizmet alım planında") ? 1 : 0,
@@ -339,14 +339,14 @@ function latestRoleAwareCounts({ uiText, routeText, forecastText, browserText, a
     ROLE_QUICK_SCENARIO_PASS_COUNT: uiText.includes("scenario-quick-passenger") && !uiText.includes("scenario-quick-vehicle") && !uiText.includes("scenario-quick-days") && browserText.includes("quick scenario preset") ? 1 : 0,
     ROLE_READONLY_EXAMPLE_PASS_COUNT: uiText.includes("ÖRNEK · Gerçek operasyon veriniz değildir") && browserText.includes("readonly synthetic example") ? 1 : 0,
     AB_COMPARISON_PASS_COUNT: uiText.includes("scenario-ab-compare") && browserText.includes("A/B transient comparison") ? 1 : 0,
-    SCENARIO_CONFIDENCE_PROPAGATION_PASS_COUNT: routeText.includes("baselineConfidence") && uiText.includes("Baseline güveni") && browserText.includes("baseline confidence visible") ? 1 : 0,
+    SCENARIO_CONFIDENCE_PROPAGATION_PASS_COUNT: routeText.includes("baselineConfidence") && uiText.includes("Mevcut plan güveni") && browserText.includes("baseline confidence visible") ? 1 : 0,
     CROSS_TENANT_BASELINE_LEAK_COUNT: routeText.includes("SCENARIO_TENANT_MISMATCH") ? 0 : 1,
     ROOM_ACTUAL_COST_LEAK_TO_COMPANY_COUNT: uiText.includes("actualInternalData") || uiText.includes("ROOM confidential") ? 1 : 0,
     SCHOOL_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT: uiText.includes("normal bütçe yaşam döngüsü bu bağlamda açılmaz") && browserText.includes("planning safety boundary") ? 0 : 1,
     ORGANIZATION_COMPANY_BUDGET_LIFECYCLE_OPEN_COUNT: uiText.includes("normal bütçe yaşam döngüsü bu bağlamda açılmaz") && browserText.includes("planning safety boundary") ? 0 : 1,
-    EXAMPLE_PRESENTED_AS_REAL_DATA_COUNT: uiText.includes("Gerçek operasyon veriniz değildir") && uiText.includes("gerçek piyasa/actual değeri gibi sunulmaz") ? 0 : 1,
+    EXAMPLE_PRESENTED_AS_REAL_DATA_COUNT: uiText.includes("Gerçek operasyon veriniz değildir") && uiText.includes("gerçek piyasa değeri gibi sunulmaz") ? 0 : 1,
     FABRICATED_BASELINE_VALUE_COUNT: routeText.includes("değer uydurulmadı") && !routeText.slice(routeText.indexOf("function planInputs"), routeText.indexOf("function planClassifications")).includes("vehicleCount: 1") ? 0 : 1,
-    MARKET_REFERENCE_USED_AS_FACTUAL_PLAN_VALUE_COUNT: uiText.includes("gerçek veya kanonik planlanan maliyetini değiştirmez") && forecastText.includes("usedForActualTruth: false") ? 0 : 1,
+    MARKET_REFERENCE_USED_AS_FACTUAL_PLAN_VALUE_COUNT: uiText.includes("gerçek veya planlanan maliyetini değiştirmez") && forecastText.includes("usedForActualTruth: false") ? 0 : 1,
     COMPANY_SEPARATE_SCENARIO_NAV_ITEM_COUNT: 0,
     ROOM_SEPARATE_SCENARIO_NAV_ITEM_COUNT: 0,
     UNEXPLAINED_DUPLICATE_SCENARIO_NAV_COUNT: 0,
@@ -482,11 +482,11 @@ function lowInputCounts({ uiText, browserText, forecastText, referenceText, refe
     VEHICLE_PLAN_REFERENCE_VERSION_PRESENT_COUNT: read("backend/src/finance/vehiclePlanReferences.js").includes(VEHICLE_PLAN_REFERENCE_VERSION) && read("backend/src/finance/vehiclePlanReferences.js").includes(VEHICLE_PLAN_REFERENCE_UNIT) ? 1 : 0,
     ROOM_CANONICAL_REGION_AUTOFILL_PASS_COUNT: canonicalRoomRegion.status === "RESOLVED" && canonicalRoomRegion.regionName === "Bursa" && canonicalRoomRegion.provinceCode === "16" ? 1 : 0,
     ROOM_PROVINCE_TO_2_REFERENCE_PASS_COUNT: regionalLayers.selected?.authority === "EXTERNAL_DYNAMIC_FUEL" && regionalLayers.selected?.regionCode === "16" && regionalLayers.selected?.providerKey === "EPDK_PETROL" ? 1 : 0,
-    PARTIAL_EXTERNAL_REFERENCE_VISIBLE_COUNT: externalText.includes("Piyasa referansı kısmen hazır") && externalText.includes("Reference completeness") && referenceLayersText.includes("EXTERNAL_DYNAMIC_FUEL") && browserText.includes("external-reference-completeness") ? 1 : 0,
+    PARTIAL_EXTERNAL_REFERENCE_VISIBLE_COUNT: externalText.includes("Piyasa referansı kısmen hazır") && externalText.includes("Kanıt kapsamı") && referenceLayersText.includes("EXTERNAL_DYNAMIC_FUEL") && browserText.includes("external-reference-completeness") ? 1 : 0,
     KNOWN_OPERATION_REGION_REENTRY_REQUIRED_COUNT: uiText.includes('label="İl"') || uiText.includes("provinceNameInput") || browserText.includes("manually entering province") ? 1 : 0,
     KNOWN_ROUTE_REGION_RESOLVED_AS_GENERIC_TURKEY_COUNT: canonicalRoomRegion.regionName && regionText.includes("CURRENT_ROUTE_SERVICE_AREA") && regionText.includes("CANONICAL_OPERATING_REGION") && !regionText.includes("Türkiye / kapsam belirtilmedi") ? 0 : 1,
     VALID_2_REGIONAL_REFERENCE_UNUSED_COUNT: regionalPreview.referenceResolution?.fuelPrice?.baseline?.sourceKind === "EXTERNAL_CURRENT_REFERENCE" && regionalPreview.baseline?.costMinor !== null && regionalPreview.costCoverage?.baseline?.status === "PARTIAL" ? 0 : 1,
-    EXTERNAL_REFERENCE_HIDDEN_BY_PLATFORM_SAMPLE_MISSING_COUNT: regionalLayers.layers.find((layer) => layer.layer === "EXTERNAL_MARKET_REFERENCE")?.available === true && referenceLayersText.includes("platformLayer.available") && externalText.includes("Fuel: {isAvailable ? \"AVAILABLE\" : \"MISSING\"}") ? 0 : 1,
+    EXTERNAL_REFERENCE_HIDDEN_BY_PLATFORM_SAMPLE_MISSING_COUNT: regionalLayers.layers.find((layer) => layer.layer === "EXTERNAL_MARKET_REFERENCE")?.available === true && referenceLayersText.includes("platformLayer.available") && externalText.includes("Yakıt verisi:") ? 0 : 1,
     SILENT_ISTANBUL_FALLBACK_COUNT: canonicalRoomRegion.usedSilentIstanbulFallback === false && regionText.includes("usedSilentIstanbulFallback: false") ? 0 : 1,
     FABRICATED_REGION_COUNT: resolveRegionScope({ provinceCode: "999" }).selection === "NO_GEOGRAPHY" && canonicalRoomRegion.fabricated === false ? 0 : 1,
   };
