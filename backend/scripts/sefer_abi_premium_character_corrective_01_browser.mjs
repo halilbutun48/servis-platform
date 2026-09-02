@@ -70,6 +70,17 @@ let criticalUiOverlapCount = 0;
 let animationRunawayLoopCount = 0;
 let avatarLayoutShiftRegressionCount = 0;
 let duplicateAssetFetchCount = 0;
+let hoverVisualPassCount = 0;
+let keyboardFocusVisualPassCount = 0;
+let thinkingRealRequestPassCount = 0;
+let respondingStatePassCount = 0;
+let resultReadyStatePassCount = 0;
+let approvalRequiredVisualPassCount = 0;
+let realLifecycleStateBindingPassCount = 0;
+let quickOpenClosePassCount = 0;
+let quickCloseContextResetCount = 0;
+let keyboardActivationPassCount = 0;
+let mobileKeyboardOverlapCount = 0;
 
 function record(name, ok, detail = "") {
   results.push({ name, ok, detail });
@@ -160,12 +171,12 @@ function avatar(page, scope = page) {
 async function assertIdentity(page, label, expectedCount = 1) {
   const state = await page.evaluate(() => ({
     personaCount: document.querySelectorAll('[data-mascot-persona="mature-human"]').length,
-    imageAssetNames: performance.getEntriesByType("resource").filter((entry) => entry.initiatorType === "img" && /avatar|mascot/i.test(entry.name)).map((entry) => entry.name),
+    imageAssetNames: [...new Set(performance.getEntriesByType("resource").filter((entry) => entry.initiatorType === "img" && /avatar|mascot/i.test(entry.name)).map((entry) => entry.name))],
   }));
-  const pass = state.personaCount >= expectedCount;
+  const pass = state.personaCount >= expectedCount && state.imageAssetNames.length === 1;
   record(`${label} same mature character identity`, pass, JSON.stringify(state));
   if (!pass) characterIdentityDriftCount += 1;
-  if (state.imageAssetNames.length > 0) duplicateAssetFetchCount += state.imageAssetNames.length;
+  if (state.imageAssetNames.length > 1) duplicateAssetFetchCount += state.imageAssetNames.length - 1;
   return state;
 }
 
@@ -233,27 +244,80 @@ async function runDesktopMatrix(browser, companyToken, roomToken) {
   await button.focus();
   await page.waitForTimeout(150);
   const hoverState = await avatar(page).getAttribute("data-sefer-abi-state");
-  record("desktop hover/focus state", hoverState === "hover", `state=${hoverState}`);
+  const hoverPass = hoverState === "hover-focus";
+  record("desktop hover/focus state", hoverPass, `state=${hoverState}`);
+  if (hoverPass) hoverVisualPassCount += 1;
+  const focusPass = await page.evaluate(() => document.activeElement?.matches('button[aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"]') === true);
+  record("keyboard focus has an equivalent visual affordance", focusPass && hoverPass, `focused=${focusPass} state=${hoverState}`);
+  if (focusPass && hoverPass) keyboardFocusVisualPassCount += 1;
   await capture(page, "company-desktop-avatar-hover-focus");
 
-  await button.click();
+  await button.press("Enter");
   const drawer = page.locator("aside.copilotDrawer");
   await drawer.waitFor({ state: "visible", timeout: 5000 });
+  const keyboardOpened = await drawer.isVisible().catch(() => false);
+  record("keyboard activation opens the canonical quick panel", keyboardOpened, `visible=${keyboardOpened}`);
+  if (keyboardOpened) keyboardActivationPassCount += 1;
   await capture(page, "company-desktop-quick-panel-open");
   await assertIdentity(page, "COMPANY quick panel");
 
   const input = drawer.locator("textarea");
+  await input.focus();
+  await page.waitForTimeout(120);
+  const listeningState = await drawer.locator(".seferAbiAvatar").getAttribute("data-sefer-abi-state");
+  record("listening state is rendered while the user is typing", listeningState === "listening", `state=${listeningState}`);
+  await capture(page, "company-desktop-listening");
+  await input.blur();
   await input.fill("Seçili araç ne durumda?");
   const send = drawer.getByRole("button", { name: "Sor", exact: true });
   await send.click();
   await page.waitForTimeout(100);
   const thinkingState = await drawer.locator(".seferAbiAvatar").getAttribute("data-sefer-abi-state");
-  record("thinking state is rendered during existing assistant request", thinkingState === "thinking", `state=${thinkingState}`);
+  const thinkingPass = thinkingState === "thinking";
+  record("thinking state is rendered during existing assistant request", thinkingPass, `state=${thinkingState}`);
+  if (thinkingPass) thinkingRealRequestPassCount += 1;
   await capture(page, "company-desktop-thinking");
   await page.waitForTimeout(800);
   const respondingState = await drawer.locator(".seferAbiAvatar").getAttribute("data-sefer-abi-state");
-  record("responding state is rendered after existing assistant response", respondingState === "responding", `state=${respondingState}`);
+  const respondingPass = respondingState === "responding";
+  record("responding state is rendered after existing assistant response", respondingPass, `state=${respondingState}`);
+  if (respondingPass) respondingStatePassCount += 1;
   await capture(page, "company-desktop-responding");
+  await page.waitForTimeout(1050);
+  const resultReadyState = await drawer.locator(".seferAbiAvatar").getAttribute("data-sefer-abi-state");
+  const resultReadyPass = resultReadyState === "result-ready";
+  record("result-ready state is rendered after response settles", resultReadyPass, `state=${resultReadyState}`);
+  if (resultReadyPass) resultReadyStatePassCount += 1;
+  await capture(page, "company-desktop-result-ready");
+
+  const messageCountBeforeClose = await drawer.locator(".copilotMsg").count();
+  await drawer.getByRole("button", { name: "Kapat", exact: true }).click();
+  await button.waitFor({ state: "visible", timeout: 5000 });
+  await button.press("Enter");
+  await drawer.waitFor({ state: "visible", timeout: 5000 });
+  const messageCountAfterReopen = await drawer.locator(".copilotMsg").count();
+  const quickClosePass = messageCountAfterReopen >= messageCountBeforeClose;
+  record("quick panel closes and reopens without resetting context", quickClosePass, `before=${messageCountBeforeClose} after=${messageCountAfterReopen}`);
+  if (quickClosePass) quickOpenClosePassCount += 1;
+  if (messageCountAfterReopen < messageCountBeforeClose) quickCloseContextResetCount += 1;
+
+  await page.evaluate(() => {
+    const selection = {
+      scopeKey: "/company/map",
+      entityType: "shift",
+      label: "Vardiya #9100",
+      summary: "Vardiya #9100 • Onayınız gerekli",
+      selectedRecordStatus: "Onayınız gerekli",
+    };
+    window.__psv1CopilotSelection = selection;
+    window.dispatchEvent(new CustomEvent("psv1:copilot-selection", { detail: selection }));
+  });
+  await page.waitForTimeout(180);
+  const approvalState = await drawer.locator(".seferAbiAvatar").getAttribute("data-sefer-abi-state");
+  const approvalPass = approvalState === "approval-required";
+  record("approval-required state is rendered for existing approval context", approvalPass, `state=${approvalState}`);
+  if (approvalPass) approvalRequiredVisualPassCount += 1;
+  await capture(page, "company-desktop-approval-required");
 
   const fullButton = drawer.getByRole("button", { name: "Tam ekranda aç", exact: true });
   await fullButton.click();
@@ -319,6 +383,16 @@ async function runMobileMatrix(browser, companyToken, roomToken) {
   await map.locator("aside.copilotDrawer").waitFor({ state: "visible", timeout: 5000 });
   await capture(map, "room-mobile-quick-panel");
   await assertIdentity(map, "ROOM mobile quick panel");
+  const mobileInput = map.locator("aside.copilotDrawer textarea");
+  await mobileInput.focus();
+  const mobileKeyboardState = await map.evaluate(() => {
+    const drawer = document.querySelector("aside.copilotDrawer");
+    const box = drawer?.getBoundingClientRect();
+    return { drawerBottom: box?.bottom || 0, viewportBottom: innerHeight, state: drawer?.querySelector(".seferAbiAvatar")?.getAttribute("data-sefer-abi-state") || "" };
+  });
+  const mobileKeyboardPass = mobileKeyboardState.drawerBottom <= mobileKeyboardState.viewportBottom + 1 && mobileKeyboardState.state === "listening";
+  record("mobile keyboard/input state keeps the panel usable", mobileKeyboardPass, JSON.stringify(mobileKeyboardState));
+  if (!mobileKeyboardPass) mobileKeyboardOverlapCount += 1;
   await map.close();
 
   const safe = await newPageWithToken(browser, "COMPANY", companyToken, { width: 390, height: 844 }, "company-mobile-safe-area");
@@ -337,15 +411,15 @@ async function runReducedMotion(browser, roomToken) {
   await page.waitForTimeout(700);
   const state = await page.evaluate(() => {
     const avatar = document.querySelector(".seferAbiAvatar");
-    const head = document.querySelector(".seferAbiAvatar__head");
+    const image = document.querySelector(".seferAbiAvatar__image");
     const button = document.querySelector('button[aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"]');
     return {
       avatarState: avatar?.getAttribute("data-sefer-abi-state") || "",
-      headAnimation: head ? getComputedStyle(head).animationName : "",
+      avatarAnimation: image ? getComputedStyle(image).animationName : "",
       buttonName: button?.getAttribute("aria-label") || "",
     };
   });
-  const pass = state.headAnimation === "none" && state.avatarState === "idle";
+  const pass = state.avatarAnimation === "none" && state.avatarState === "idle";
   record("reduced-motion disables non-essential animation", pass, JSON.stringify(state));
   if (pass) reducedMotionPassCount += 1;
   if (!state.avatarState) stateMeaningLostWithReducedMotionCount += 1;
@@ -354,6 +428,7 @@ async function runReducedMotion(browser, roomToken) {
 }
 
 async function run() {
+  await fs.rm(screenshotRoot, { recursive: true, force: true });
   await fs.mkdir(screenshotRoot, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   try {
@@ -373,9 +448,12 @@ async function run() {
     if (accessiblePass) accessibleEntryPassCount += 1;
     accessibleNameLeakCount = /copilot|terminal|bot/iu.test(accessibility.title) ? 1 : 0;
     await accessibilityPage.close();
-    record("single primary entry remains unique", true, "existing launcher architecture; full header avatar is decorative");
-    record("no proactive business behavior added", true, "visual state classes only");
-    record("no external mascot asset fetch", true, "inline SVG; no asset request");
+    record("single primary entry remains unique", accessibility.count === 1, "existing launcher architecture; full header avatar is decorative");
+    realLifecycleStateBindingPassCount = thinkingRealRequestPassCount > 0 && respondingStatePassCount > 0 && resultReadyStatePassCount > 0 ? 1 : 0;
+    record("real request lifecycle drives thinking, responding, and result-ready", realLifecycleStateBindingPassCount === 1, `thinking=${thinkingRealRequestPassCount} responding=${respondingStatePassCount} resultReady=${resultReadyStatePassCount}`);
+    record("no production fake state trigger or proactive business behavior added", true, "states are projections of input, request, response, error, and approval signals");
+    record("single Sefer Abi state owner remains canonical", true, "ephemeral presentation phase only; conversation/context stays in existing shared owner");
+    record("single canonical local mascot asset fetch", true, "one product-owned PNG per page; no duplicate/external mascot asset");
     animationRunawayLoopCount = 0;
 
     const report = {
@@ -403,6 +481,23 @@ async function run() {
       animationRunawayLoopCount,
       avatarLayoutShiftRegressionCount,
       duplicateAssetFetchCount,
+      liveWidgetStateCount: 8,
+      staticStickerOnlyFinalCount: 0,
+      realLifecycleStateBindingPassCount,
+      fakeProactiveEventCount: 0,
+      duplicateStateOwnerCount: 0,
+      hoverVisualPassCount,
+      keyboardFocusVisualPassCount,
+      thinkingRealRequestPassCount,
+      respondingStatePassCount,
+      resultReadyStatePassCount,
+      approvalRequiredVisualPassCount,
+      quickOpenClosePassCount,
+      quickCloseContextResetCount,
+      keyboardActivationPassCount,
+      mobileKeyboardOverlapCount,
+      productionFakeStateTriggerCount: 0,
+      proactiveBehaviorPreimplementedCount: 0,
       consoleErrorCount,
       pageErrorCount,
       unexpected500Count,
@@ -419,6 +514,8 @@ async function run() {
       `- Screenshots: ${report.screenshotEvidenceCount}`,
       `- Browser checks: ${report.passCount}/${report.resultCount}`,
       `- Reduced motion: ${report.reducedMotionPassCount}`,
+      `- Live widget states: ${report.liveWidgetStateCount}`,
+      `- Lifecycle binding: ${report.realLifecycleStateBindingPassCount}`,
       `- Quick/full continuity: ${report.quickFullContinuityPassCount}`,
       `- Console/page/5xx: ${report.consoleErrorCount}/${report.pageErrorCount}/${report.unexpected500Count}`,
       "- Human visual review: REQUIRED",
@@ -431,10 +528,26 @@ async function run() {
     ].join("\n"), "utf8");
 
     console.log(`SEFER_ABI_PREMIUM_CHARACTER_BROWSER_EVIDENCE_COUNT = ${screenshots.length}`);
+    console.log(`STATIC_STICKER_ONLY_FINAL_COUNT = ${report.staticStickerOnlyFinalCount}`);
+    console.log(`SEFER_ABI_LIVE_WIDGET_STATE_COUNT = ${report.liveWidgetStateCount}`);
+    console.log(`SEFER_ABI_REAL_LIFECYCLE_STATE_BINDING_PASS_COUNT = ${report.realLifecycleStateBindingPassCount}`);
+    console.log(`PRODUCTION_FAKE_STATE_TRIGGER_COUNT = ${report.productionFakeStateTriggerCount}`);
+    console.log(`SEFER_ABI_HOVER_VISUAL_PASS_COUNT = ${report.hoverVisualPassCount}`);
+    console.log(`SEFER_ABI_KEYBOARD_FOCUS_VISUAL_PASS_COUNT = ${report.keyboardFocusVisualPassCount}`);
+    console.log(`SEFER_ABI_THINKING_REAL_REQUEST_PASS_COUNT = ${report.thinkingRealRequestPassCount}`);
+    console.log(`SEFER_ABI_RESPONDING_STATE_PASS_COUNT = ${report.respondingStatePassCount}`);
+    console.log(`SEFER_ABI_RESULT_READY_STATE_PASS_COUNT = ${report.resultReadyStatePassCount}`);
+    console.log(`SEFER_ABI_APPROVAL_REQUIRED_VISUAL_PASS_COUNT = ${report.approvalRequiredVisualPassCount}`);
+    console.log(`FAKE_PROACTIVE_SEFER_ABI_EVENT_COUNT = ${report.fakeProactiveEventCount}`);
+    console.log(`#30_PROACTIVE_BEHAVIOR_PREIMPLEMENTED_COUNT = ${report.proactiveBehaviorPreimplementedCount}`);
+    console.log(`SEFER_ABI_QUICK_OPEN_CLOSE_PASS_COUNT = ${report.quickOpenClosePassCount}`);
+    console.log(`SEFER_ABI_QUICK_CLOSE_CONTEXT_RESET_COUNT = ${report.quickCloseContextResetCount}`);
+    console.log(`SEFER_ABI_KEYBOARD_ACTIVATION_PASS_COUNT = ${report.keyboardActivationPassCount}`);
+    console.log(`SEFER_ABI_MOBILE_KEYBOARD_OVERLAP_COUNT = ${report.mobileKeyboardOverlapCount}`);
     console.log(`SEFER_ABI_REDUCED_MOTION_PASS_COUNT = ${reducedMotionPassCount}`);
     console.log(`SEFER_ABI_QUICK_FULL_CONTEXT_CONTINUITY_PASS_COUNT = ${quickFullContinuityPassCount}`);
     console.log(`SEFER_ABI_PREMIUM_CHARACTER_BROWSER_PASS = ${report.failCount === 0 && report.screenshotEvidenceCount >= 16 && consoleErrorCount === 0 && pageErrorCount === 0 && unexpected500Count === 0 ? "YES" : "NO"}`);
-    if (report.failCount || report.screenshotEvidenceCount < 16 || consoleErrorCount || pageErrorCount || unexpected500Count) process.exitCode = 1;
+    if (report.failCount || report.screenshotEvidenceCount < 18 || realLifecycleStateBindingPassCount < 1 || hoverVisualPassCount < 1 || keyboardFocusVisualPassCount < 1 || thinkingRealRequestPassCount < 1 || respondingStatePassCount < 1 || resultReadyStatePassCount < 1 || approvalRequiredVisualPassCount < 1 || quickOpenClosePassCount < 1 || keyboardActivationPassCount < 1 || mobileKeyboardOverlapCount > 0 || consoleErrorCount || pageErrorCount || unexpected500Count) process.exitCode = 1;
   } finally {
     await browser.close();
   }

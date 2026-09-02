@@ -21,6 +21,7 @@ import ChatQualitySummary from "../../components/copilot/ChatQualitySummary";
 import CopilotAdvancedResultCard from "../../components/copilot/CopilotAdvancedResultCard";
 import SuggestedChips from "../../components/copilot/SuggestedChips";
 import SeferAbiAvatar from "../../components/copilot/SeferAbiAvatar";
+import { resolveSeferAbiWidgetState, SEFER_ABI_WIDGET_STATE_LABELS } from "../../components/copilot/SeferAbiWidgetState";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
@@ -166,13 +167,38 @@ export default function CopilotPanel() {
   const [chatSuggestedChips, setChatSuggestedChips] = useState([]);
   const [entryHint, setEntryHint] = useState(null);
   const [autoChatBusy, setAutoChatBusy] = useState(false);
+  // Presentation-only phase derived from the existing request lifecycle; shared context remains the sole state owner.
+  const [responsePhase, setResponsePhase] = useState("idle");
   const chatRequestInFlightRef = useRef(false);
   const lastAutoRunKeyRef = useRef("");
   const userChangedChatContextRef = useRef(false);
+  const responseTimerRef = useRef(null);
 
   const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
   const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
   const activeEntityType = panelMode === "GUIDE" ? selectedJob.entityType : selectedIntent.entityType;
+  const clearResponseTimer = useCallback(() => {
+    if (responseTimerRef.current && typeof window !== "undefined") window.clearTimeout(responseTimerRef.current);
+    responseTimerRef.current = null;
+  }, []);
+
+  const resetResponsePhase = useCallback(() => {
+    clearResponseTimer();
+    setResponsePhase("idle");
+  }, [clearResponseTimer]);
+
+  const markResponseReady = useCallback(() => {
+    clearResponseTimer();
+    setResponsePhase("responding");
+    if (typeof window !== "undefined") {
+      responseTimerRef.current = window.setTimeout(() => {
+        responseTimerRef.current = null;
+        setResponsePhase("result-ready");
+      }, 900);
+    }
+  }, [clearResponseTimer]);
+
+  useEffect(() => () => clearResponseTimer(), [clearResponseTimer]);
 
   useEffect(() => {
     setHistory(safeHistoryLoad());
@@ -293,6 +319,14 @@ export default function CopilotPanel() {
     const path = sharedContext?.screenPath || screenOptions.find((x) => String(x.id) === String(chatScreenId))?.path || "";
     return selectionApplies(current, path) ? current : null;
   });
+  const fullAvatarState = resolveSeferAbiWidgetState({
+    busy: busy || chatBusy || autoChatBusy,
+    error: Boolean(err || chatErr),
+    approvalRequired: /onay(?:ınız|ı|ı gerekiyor| bekliyor)|approval_required/i.test(String((chatSelection || sharedContext?.selection)?.selectedRecordStatus || "")),
+    responding: responsePhase === "responding",
+    resultReady: responsePhase === "result-ready",
+  });
+  const fullAvatarStateLabel = SEFER_ABI_WIDGET_STATE_LABELS[fullAvatarState] || "Hazır";
   const chatTargetOptions = useMemo(() => (chatEntityType === "vehicle" ? vehicles : chatEntityType === "shift" ? recentShifts : screenOptions), [chatEntityType, vehicles, recentShifts, screenOptions]);
   const selectedChatItem = useMemo(() => {
     if (chatEntityType === "screen") return selectedChatScreen;
@@ -347,6 +381,7 @@ export default function CopilotPanel() {
     chatRequestInFlightRef.current = true;
     if (isAuto) setAutoChatBusy(true);
     else setChatBusy(true);
+    resetResponsePhase();
     setChatErr("");
     try {
       if (String(messageText || "").trim()) {
@@ -448,14 +483,16 @@ export default function CopilotPanel() {
         diagnosticSignalsVisible: chatDiagnosticSignalsVisible,
         diagnosticSignalEmptyText: "Bu ekranda ek kanıt sinyali yok",
       }]);
+      markResponseReady();
     } catch (e2) {
       setChatErr(String(e2?.message || e2));
+      resetResponsePhase();
     } finally {
       if (isAuto) setAutoChatBusy(false);
       else setChatBusy(false);
       chatRequestInFlightRef.current = false;
     }
-  }, [token, selectedChatScreen, effectiveChatEntityId, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind]);
+  }, [token, selectedChatScreen, effectiveChatEntityId, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind, markResponseReady, resetResponsePhase]);
 
   const shouldAutoRunChat = panelMode === "CHAT" && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy && !autoChatBusy && Boolean(autoRunKey) && lastAutoRunKeyRef.current !== autoRunKey;
 
@@ -483,6 +520,7 @@ export default function CopilotPanel() {
 
   async function onRun(e) {
     e?.preventDefault?.();
+    resetResponsePhase();
     setBusy(true);
     setErr("");
     setCopyMsg("");
@@ -516,8 +554,10 @@ export default function CopilotPanel() {
         summary: payload?.summary || "",
         severity: payload?.severity || "",
       }));
+      markResponseReady();
     } catch (e2) {
       setErr(String(e2?.message || e2));
+      resetResponsePhase();
     } finally {
       setBusy(false);
     }
@@ -617,12 +657,13 @@ export default function CopilotPanel() {
     <div className="wrap wrap--fluid" style={{ display: "grid", gap: 10 }}>
       <div className="card">
         <div className="copilotWorkspaceIdentity">
-          <SeferAbiAvatar state={result ? "success" : "idle"} size={52} />
+          <SeferAbiAvatar state={fullAvatarState} size={52} />
           <div>
             <div className="title">{COPILOT_TERMINAL_TITLE}</div>
             <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
               {COPILOT_PERSONA.assistantDisplayName} · {COPILOT_PERSONA.assistantSubtitle}
             </div>
+            <div className={`copilotDrawerState copilotDrawerState--${fullAvatarState}`} aria-live="polite">{fullAvatarStateLabel}</div>
           </div>
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
@@ -662,7 +703,7 @@ export default function CopilotPanel() {
             <button
               key={x.value}
               type="button"
-              onClick={() => { setPanelMode(x.value); setResult(null); setErr(""); }}
+              onClick={() => { setPanelMode(x.value); setResult(null); setErr(""); resetResponsePhase(); }}
               style={panelMode === x.value ? { background: "#175cd3", color: "#fff" } : {}}
             >
               {x.label}

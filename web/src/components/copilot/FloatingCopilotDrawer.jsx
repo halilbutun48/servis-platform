@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { getPath, navigate } from "../../router";
 import { useSession } from "../../state/session";
@@ -10,6 +10,7 @@ import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCen
 import { copilotSharedStateEventName, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { captureCopilotUiSurface } from "./uiSurface";
 import SeferAbiAvatar from "./SeferAbiAvatar";
+import { resolveSeferAbiWidgetState, SEFER_ABI_WIDGET_STATE_LABELS } from "./SeferAbiWidgetState";
 import { humanizeUserFacingText } from "../../utils/terminology";
 
 const STORAGE_KEY = "psv1:copilot:drawer:v4";
@@ -235,9 +236,12 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const [readingIndex, setReadingIndex] = useState(-1);
   const [inputFocused, setInputFocused] = useState(false);
   const [launcherInteraction, setLauncherInteraction] = useState("idle");
+  // Presentation-only phase derived from the existing request lifecycle; shared context remains the sole state owner.
+  const [responsePhase, setResponsePhase] = useState("idle");
   const [selection, setSelection] = useState(() => selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
   const scrollRef = useRef(null);
   const mascotRef = useRef(null);
+  const responseTimerRef = useRef(null);
   const isMapSurface = /\/map$/.test(currentPath);
   const [mapSafePosition, setMapSafePosition] = useState(null);
   const lastPathRef = useRef(currentPath);
@@ -246,18 +250,37 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const isCopilotPage = /\/copilot$/.test(currentPath);
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;
   const [activeOverlayLayer, setActiveOverlayLayer] = useState(() => readPlanCenterOverlayLayer() || "guide");
-  const lastMessage = messages[messages.length - 1];
-  const drawerAvatarState = busy
-    ? "thinking"
-    : inputFocused
-      ? "listening"
-      : err
-        ? "attention"
-        : selectionNeedsApproval(selection)
-          ? "approval-required"
-        : lastMessage?.role === "assistant" && !lastMessage?.system
-          ? "responding"
-          : "idle";
+  const drawerAvatarState = resolveSeferAbiWidgetState({
+    busy,
+    listening: inputFocused,
+    error: Boolean(err),
+    approvalRequired: selectionNeedsApproval(selection),
+    responding: responsePhase === "responding",
+    resultReady: responsePhase === "result-ready",
+    interaction: launcherInteraction,
+  });
+  const drawerAvatarStateLabel = SEFER_ABI_WIDGET_STATE_LABELS[drawerAvatarState] || "Hazır";
+
+  const clearResponseTimer = useCallback(() => {
+    if (responseTimerRef.current && typeof window !== "undefined") window.clearTimeout(responseTimerRef.current);
+    responseTimerRef.current = null;
+  }, []);
+
+  const resetResponsePhase = useCallback(() => {
+    clearResponseTimer();
+    setResponsePhase("idle");
+  }, [clearResponseTimer]);
+
+  const markResponseReady = useCallback(() => {
+    clearResponseTimer();
+    setResponsePhase("responding");
+    if (typeof window !== "undefined") {
+      responseTimerRef.current = window.setTimeout(() => {
+        responseTimerRef.current = null;
+        setResponsePhase("result-ready");
+      }, 900);
+    }
+  }, [clearResponseTimer]);
 
   useEffect(() => { saveDrawerState({ open, mode, size }); }, [open, mode, size]);
   useEffect(() => {
@@ -289,7 +312,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     window.addEventListener(eventName, syncSharedState);
     return () => window.removeEventListener(eventName, syncSharedState);
   }, [messages]);
-  useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch { /* no-op: speech synthesis may be unavailable */ } }, []);
+  useEffect(() => () => {
+    clearResponseTimer();
+    try { window.speechSynthesis?.cancel(); } catch { /* no-op: speech synthesis may be unavailable */ }
+  }, [clearResponseTimer]);
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     function onLayerChange(event) {
@@ -379,15 +405,17 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     if (lastPathRef.current !== currentPath) {
       lastPathRef.current = currentPath;
       setErr("");
+      resetResponsePhase();
       setShowSuggestions(false);
       setMessages((prev) => [...prev, { role: "assistant", text: `Şimdi ${screenContext.label} ekranındasın. İstersen bu ekranı anlatayım veya seçili kayıt için yardımcı olayım.`, system: true }]);
     }
-  }, [currentPath, open, token, isCopilotPage, screenContext.label]);
+  }, [currentPath, open, token, isCopilotPage, screenContext.label, resetResponsePhase]);
 
   async function ask(rawText) {
     if (!token || !screenContext.screen) return;
     const question = String(rawText || "").trim();
     if (question) setMessages((prev) => [...prev, { role: "user", text: question }]);
+    resetResponsePhase();
     setBusy(true);
     setErr("");
     try {
@@ -453,8 +481,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         costReasoning: payload?.costReasoning || null,
         costAnalysisState: payload?.costAnalysisState || null,
       }]);
+      markResponseReady();
     } catch (e) {
       setErr(String(e?.message || e));
+      resetResponsePhase();
     } finally {
       setBusy(false);
     }
@@ -495,6 +525,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
 
   async function openGuideAction(guide) {
     if (!token || !screenContext.screen) return;
+    resetResponsePhase();
     setBusy(true);
     setErr("");
     try {
@@ -524,8 +555,10 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         quickActions: Array.isArray(payload?.quickActions) ? payload.quickActions : [],
         followUpPrompt: payload?.whatToDoNext ? "Peki sonra?" : "",
       }]);
+      markResponseReady();
     } catch (e) {
       setErr(String(e?.message || e));
+      resetResponsePhase();
     } finally {
       setBusy(false);
     }
@@ -591,14 +624,16 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         activateCopilotLayer();
         setOpen(true);
       }}
-      onMouseEnter={() => setLauncherInteraction("hover")}
+      onMouseEnter={() => setLauncherInteraction("hover-focus")}
       onMouseLeave={() => setLauncherInteraction("idle")}
-      onFocus={() => setLauncherInteraction("hover")}
+      onFocus={() => setLauncherInteraction("hover-focus")}
       onBlur={() => setLauncherInteraction("idle")}
       title="Sefer Abi’ye Sor — Operasyon yardımcısı"
       aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"
     >
-      <SeferAbiAvatar state={launcherInteraction} size={54} />
+      <span className="copilotMascotAvatar">
+        <SeferAbiAvatar state={launcherInteraction} size={54} />
+      </span>
       <span className="copilotMascotLabel">Sefer Abi’ye Sor</span>
     </button>
   ) : (
@@ -615,6 +650,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           <div>
           <div className="copilotDrawerTitle">{COPILOT_PERSONA.drawerTitle}</div>
           <div className="copilotDrawerContext">{`${COPILOT_PERSONA.assistantDisplayName} · ${COPILOT_PERSONA.assistantSubtitle}`}</div>
+          <div className={`copilotDrawerState copilotDrawerState--${drawerAvatarState}`} aria-live="polite">{drawerAvatarStateLabel}</div>
           <div className="copilotDrawerContext">Bulunduğun ekranda kısa destek verir.</div>
           <div className="copilotDrawerContext">Şu an: {screenContext.label}</div>
           {selection?.label ? <div className="copilotDrawerContext">Seçili kayıt: <b>{selection.label}</b>{selectionSummaryForDisplay(selection) ? ` • ${selectionSummaryForDisplay(selection)}` : ""}</div> : null}
