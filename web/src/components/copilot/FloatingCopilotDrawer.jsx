@@ -9,6 +9,7 @@ import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
 import { planCenterOverlayLayerEventName, readPlanCenterOverlayLayer, setPlanCenterOverlayLayer } from "../../utils/planCenterOverlayLayer";
 import { copilotSharedStateEventName, readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
 import { captureCopilotUiSurface } from "./uiSurface";
+import SeferAbiAvatar from "./SeferAbiAvatar";
 import { humanizeUserFacingText } from "../../utils/terminology";
 
 const STORAGE_KEY = "psv1:copilot:drawer:v4";
@@ -87,6 +88,10 @@ function selectionSummaryForDisplay(selection) {
   if (!summary || !label || summary === label) return summary;
   const prefix = `${label} • `;
   return summary.startsWith(prefix) ? summary.slice(prefix.length) : summary;
+}
+
+function selectionNeedsApproval(selection) {
+  return /onay(?:ınız|ı|ı gerekiyor| bekliyor)|approval_required/i.test(String(selection?.selectedRecordStatus || ""));
 }
 
 function actionText(action) {
@@ -228,6 +233,8 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [readingIndex, setReadingIndex] = useState(-1);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [launcherInteraction, setLauncherInteraction] = useState("idle");
   const [selection, setSelection] = useState(() => selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
   const scrollRef = useRef(null);
   const mascotRef = useRef(null);
@@ -239,6 +246,18 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const isCopilotPage = /\/copilot$/.test(currentPath);
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;
   const [activeOverlayLayer, setActiveOverlayLayer] = useState(() => readPlanCenterOverlayLayer() || "guide");
+  const lastMessage = messages[messages.length - 1];
+  const drawerAvatarState = busy
+    ? "thinking"
+    : inputFocused
+      ? "listening"
+      : err
+        ? "attention"
+        : selectionNeedsApproval(selection)
+          ? "approval-required"
+        : lastMessage?.role === "assistant" && !lastMessage?.system
+          ? "responding"
+          : "idle";
 
   useEffect(() => { saveDrawerState({ open, mode, size }); }, [open, mode, size]);
   useEffect(() => {
@@ -311,9 +330,21 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       const gap = 18;
       const candidates = [
         { name: "top-right", left: mapBox.right - buttonBox.width - gap, top: mapBox.top + gap },
+        { name: "top-left", left: mapBox.left + gap, top: mapBox.top + gap },
         { name: "bottom-right", left: mapBox.right - buttonBox.width - gap, top: mapBox.bottom - buttonBox.height - gap },
         { name: "bottom-left", left: mapBox.left + gap, top: mapBox.bottom - buttonBox.height - gap },
       ];
+      const usableWidth = Math.max(0, mapBox.width - buttonBox.width - gap * 2);
+      const usableHeight = Math.max(0, mapBox.height - buttonBox.height - gap * 2);
+      for (let row = 1; row <= 5; row += 1) {
+        for (let column = 1; column <= 5; column += 1) {
+          candidates.push({
+            name: `map-grid-${row}-${column}`,
+            left: mapBox.left + gap + (usableWidth * column) / 6,
+            top: mapBox.top + gap + (usableHeight * row) / 6,
+          });
+        }
+      }
       const obstacles = [...document.querySelectorAll(".leaflet-marker-icon, .leaflet-control, [data-primary-cta=\"true\"], [role=alert], [role=dialog], #shell-nav-dock")]
         .map((element) => element.getBoundingClientRect())
         .filter((box) => box.width > 0 && box.height > 0);
@@ -560,15 +591,14 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
         activateCopilotLayer();
         setOpen(true);
       }}
+      onMouseEnter={() => setLauncherInteraction("hover")}
+      onMouseLeave={() => setLauncherInteraction("idle")}
+      onFocus={() => setLauncherInteraction("hover")}
+      onBlur={() => setLauncherInteraction("idle")}
       title="Sefer Abi’ye Sor — Operasyon yardımcısı"
       aria-label="Sefer Abi’ye Sor, operasyon yardımcısını aç"
     >
-      <span className="copilotMascotAvatar" data-mascot-persona="mature-human" aria-hidden="true">
-        <span className="copilotMascotShoulders" />
-        <span className="copilotMascotHair" />
-        <span className="copilotMascotFace"><i className="copilotMascotEye" /><i className="copilotMascotEye" /><span className="copilotMascotMoustache" /></span>
-        <span className="copilotMascotCollar" />
-      </span>
+      <SeferAbiAvatar state={launcherInteraction} size={54} />
       <span className="copilotMascotLabel">Sefer Abi’ye Sor</span>
     </button>
   ) : (
@@ -580,12 +610,15 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       onFocusCapture={activateCopilotLayer}
     >
       <div className="copilotDrawerHeader">
-        <div>
+        <div className="copilotDrawerIdentity">
+          <SeferAbiAvatar state={drawerAvatarState} size={44} />
+          <div>
           <div className="copilotDrawerTitle">{COPILOT_PERSONA.drawerTitle}</div>
           <div className="copilotDrawerContext">{`${COPILOT_PERSONA.assistantDisplayName} · ${COPILOT_PERSONA.assistantSubtitle}`}</div>
           <div className="copilotDrawerContext">Bulunduğun ekranda kısa destek verir.</div>
           <div className="copilotDrawerContext">Şu an: {screenContext.label}</div>
           {selection?.label ? <div className="copilotDrawerContext">Seçili kayıt: <b>{selection.label}</b>{selectionSummaryForDisplay(selection) ? ` • ${selectionSummaryForDisplay(selection)}` : ""}</div> : null}
+          </div>
         </div>
         <div className="copilotDrawerTools">
           <button
@@ -666,7 +699,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       </div>
 
       <form className="copilotComposer" onSubmit={onSubmit}>
-        <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }} placeholder="Sorunu yaz. Örnek: burada neden devam edemiyorum, bu ekran ne işe yarar, seçili araç ne durumda, şimdi ne yapacağım" rows={4} />
+        <textarea value={text} onChange={(e) => setText(e.target.value)} onFocus={() => setInputFocused(true)} onBlur={() => setInputFocused(false)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }} placeholder="Sorunu yaz. Örnek: burada neden devam edemiyorum, bu ekran ne işe yarar, seçili araç ne durumda, şimdi ne yapacağım" rows={4} />
         <div className="copilotComposerRow">
           <div className="muted">Bağlam: <b>{screenContext.label}</b>{selection?.label ? ` • ${selection.label}` : ""}</div>
           <div className="copilotComposerButtons">

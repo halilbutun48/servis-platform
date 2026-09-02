@@ -20,6 +20,7 @@ import ChatInputBox from "../../components/copilot/ChatInputBox";
 import ChatQualitySummary from "../../components/copilot/ChatQualitySummary";
 import CopilotAdvancedResultCard from "../../components/copilot/CopilotAdvancedResultCard";
 import SuggestedChips from "../../components/copilot/SuggestedChips";
+import SeferAbiAvatar from "../../components/copilot/SeferAbiAvatar";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { readCopilotSharedState, writeCopilotSharedState } from "../../utils/copilotSharedState";
@@ -615,9 +616,14 @@ export default function CopilotPanel() {
   return (
     <div className="wrap wrap--fluid" style={{ display: "grid", gap: 10 }}>
       <div className="card">
-        <div className="title">{COPILOT_TERMINAL_TITLE}</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
-          {COPILOT_PERSONA.assistantDisplayName} · {COPILOT_PERSONA.assistantSubtitle}
+        <div className="copilotWorkspaceIdentity">
+          <SeferAbiAvatar state={result ? "success" : "idle"} size={52} />
+          <div>
+            <div className="title">{COPILOT_TERMINAL_TITLE}</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
+              {COPILOT_PERSONA.assistantDisplayName} · {COPILOT_PERSONA.assistantSubtitle}
+            </div>
+          </div>
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
           {COPILOT_TERMINAL.subtitle}

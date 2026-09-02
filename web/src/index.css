@@ -2989,7 +2989,7 @@ button, input, select, textarea, .btn, .secondary {
 .listSelectionBannerTitle { font-size: 14px; color: #f8fafc; }
 .listSelectionBannerMeta { font-size: 12px; color: #c8d6f6; margin-top: 4px; }
 
-/* #17 visual corrective: mature human Sefer Abi, compact and calm. */
+/* Sefer Abi premium character: one product-owned, scalable identity for launcher and assistant headers. */
 .copilotFab--mascot {
   width: 68px;
   height: 68px;
@@ -3008,29 +3008,60 @@ button, input, select, textarea, .btn, .secondary {
   transition: transform .16s ease, box-shadow .16s ease;
 }
 .copilotFab--mascot:hover, .copilotFab--mascot:focus-visible { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(2, 6, 23, .38), 0 0 0 5px rgba(227, 183, 91, .2); }
-.copilotMascotAvatar { width: 50px; height: 50px; display: block; position: relative; border-radius: 50%; background: linear-gradient(160deg, #23446f, #0b1930); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); }
-.copilotMascotShoulders { position:absolute; left:8px; right:8px; bottom:-8px; height:22px; border-radius:50% 50% 0 0; background:#162f55; border-top:2px solid #d6a94f; }
-.copilotMascotHair { position:absolute; z-index:2; top:7px; left:12px; width:27px; height:17px; border-radius:55% 55% 38% 38%; background:#3f4b59; box-shadow:inset 4px 2px 0 rgba(255,255,255,.08); }
-.copilotMascotFace { position:absolute; z-index:3; top:18px; left:12px; width:27px; height:26px; border-radius:46% 46% 48% 48%; background:#d79a72; box-shadow:inset -2px -2px 0 rgba(126,67,44,.15); }
-.copilotMascotFace::before { content:""; position:absolute; left:-3px; top:8px; width:33px; height:14px; border-bottom:2px solid rgba(92,48,36,.36); border-radius:0 0 48% 48%; }
-.copilotMascotEye { position:absolute; top:10px; width:3px; height:3px; border-radius:50%; background:#172236; }
-.copilotMascotEye:first-child { left:7px; }
-.copilotMascotEye:nth-child(2) { right:7px; }
-.copilotMascotMoustache { position:absolute; left:8px; top:15px; width:12px; height:5px; border-bottom:2px solid #4c352d; border-radius:0 0 50% 50%; }
-.copilotMascotCollar { position:absolute; z-index:4; left:18px; bottom:3px; width:15px; height:9px; background:#f0f2f5; clip-path:polygon(0 0, 50% 45%, 100% 0, 83% 100%, 17% 100%); }
 .copilotMascotLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .copilotFab--map-safe { position:fixed; }
 .copilotDrawer { bottom: max(96px, calc(env(safe-area-inset-bottom) + 78px)); max-width: calc(100vw - 24px); }
+.copilotDrawerIdentity, .copilotWorkspaceIdentity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.copilotDrawerIdentity > div:last-child, .copilotWorkspaceIdentity > div:last-child { min-width: 0; }
+.copilotWorkspaceIdentity { align-items: center; }
+
+.seferAbiAvatar {
+  display: inline-block;
+  flex: 0 0 auto;
+  line-height: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  filter: drop-shadow(0 4px 8px rgba(4, 12, 30, .24));
+  transform: translateZ(0);
+}
+.seferAbiAvatar svg { display: block; width: 100%; height: 100%; }
+.seferAbiAvatar__backdrop { transition: filter .2s ease; }
+.seferAbiAvatar__head, .seferAbiAvatar__body { transform-box: fill-box; transform-origin: center; }
+.seferAbiAvatar--idle .seferAbiAvatar__head { animation: seferAbiRest 9s ease-in-out infinite; }
+.seferAbiAvatar--hover { filter: drop-shadow(0 5px 10px rgba(227, 183, 91, .34)); }
+.seferAbiAvatar--hover .seferAbiAvatar__backdrop { filter: brightness(1.08); }
+.seferAbiAvatar--listening .seferAbiAvatar__head { transform: rotate(-2deg) translateY(-.4px); }
+.seferAbiAvatar--thinking .seferAbiAvatar__head { animation: seferAbiThinking 2.6s ease-in-out infinite; }
+.seferAbiAvatar--responding .seferAbiAvatar__head { animation: seferAbiResponding 3.2s ease-in-out infinite; }
+.seferAbiAvatar--attention .seferAbiAvatar__backdrop, .seferAbiAvatar--approval-required .seferAbiAvatar__backdrop { filter: brightness(1.1); }
+.seferAbiAvatar--attention .seferAbiAvatar__halo, .seferAbiAvatar--approval-required .seferAbiAvatar__halo { stroke-opacity: .88; }
+.seferAbiAvatar--success .seferAbiAvatar__body { animation: seferAbiSuccess 1.4s ease-out 1; }
+
+@keyframes seferAbiRest {
+  0%, 100% { transform: translateY(0); }
+  48% { transform: translateY(-.35px); }
+}
+@keyframes seferAbiThinking {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  45% { transform: rotate(-1.4deg) translateY(-.45px); }
+  72% { transform: rotate(1deg) translateY(0); }
+}
+@keyframes seferAbiResponding {
+  0%, 100% { transform: translateY(0); }
+  20% { transform: translateY(-.5px); }
+  36% { transform: translateY(0); }
+}
+@keyframes seferAbiSuccess {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seferAbiAvatar *, .seferAbiAvatar, .copilotFab--mascot { animation: none !important; transition: none !important; }
+}
 @media (max-width: 720px) {
   .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(90px, calc(env(safe-area-inset-bottom) + 74px)); width: 58px; height: 58px; min-width: 58px; min-height: 58px; }
-  .copilotMascotAvatar { width: 42px; height: 42px; }
-  .copilotMascotHair { top:6px; left:10px; width:23px; height:14px; }
-  .copilotMascotFace { top:15px; left:10px; width:23px; height:22px; }
-  .copilotMascotEye { top:8px; }
-  .copilotMascotEye:first-child { left:6px; }
-  .copilotMascotEye:nth-child(2) { right:6px; }
-  .copilotMascotMoustache { left:7px; top:13px; width:10px; }
-  .copilotMascotCollar { left:15px; bottom:3px; width:13px; height:8px; }
+  .copilotFab--mascot > .seferAbiAvatar { width: 44px !important; height: 44px !important; }
   .copilotDrawer { right: 12px; left: 12px; bottom: max(156px, calc(env(safe-area-inset-bottom) + 140px)); width: auto !important; max-width: none; }
 }
 

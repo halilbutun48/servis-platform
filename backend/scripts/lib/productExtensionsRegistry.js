@@ -124,6 +124,7 @@ export const productExtensionsCheckScripts = Object.freeze([
   "check:uxcopilotpersona01",
   "check:uxcopilotterminal01",
   "check:uxseferabilauncher01",
+  "check:seferabipremiumcharactercorrective01",
   "check:seferabiterminalhumanize01",
   "check:copliveaccept01",
   "check:boardingops01a",
