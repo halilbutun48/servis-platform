@@ -86,14 +86,14 @@ function inferLabels(pathname) {
   if (pathname === "/superadmin/users") return { menu: "Kullanıcılar", registry: "Kullanıcılar", catalog: "Kullanıcılar", title: "Kullanıcılar" };
   if (pathname === "/superadmin/regions") return { menu: "İller ve Bölgeler", registry: "İller ve Bölgeler", catalog: "İller ve Bölgeler", title: "İller ve Bölgeler" };
   if (pathname === "/superadmin/audit") return { menu: "İşlem Kayıtları", registry: "İşlem Kayıtları", catalog: "İşlem Kayıtları", title: "İşlem Kayıtları" };
-  if (pathname === "/superadmin/logexport") return { menu: "Log Dışa Aktarımı", registry: "Log Dışa Aktarımı", catalog: "Log Dışa Aktarımı", title: "Log Dışa Aktarımı" };
+  if (pathname === "/superadmin/logexport") return { menu: "İşlem kayıtlarını dışa aktar", registry: "İşlem kayıtlarını dışa aktar", catalog: "Log Dışa Aktarımı", title: "İşlem kayıtlarını dışa aktar" };
   if (pathname === "/superadmin/observability") return { menu: "Canlı İzleme", registry: "Canlı İzleme", catalog: "Canlı İzleme", title: "Canlı İzleme" };
   if (pathname === "/superadmin/operations") return { menu: "Denetim Paneli", registry: "Denetim Paneli", catalog: "Denetim Paneli", title: "Denetim Paneli" };
   if (pathname === "/superadmin/acceptance") return { menu: "Kabul Merkezi", registry: "Kabul Merkezi", catalog: "Kabul Merkezi", title: "Saha Kabul Merkezi" };
   if (pathname === "/superadmin/ssot-alignment") return { menu: "Sistem Standartları", registry: "Sistem Standartları", catalog: "Sistem Standartları", title: "Sistem Standartları" };
   if (pathname === "/superadmin/commercial-core") return { menu: "Ticari Akış", registry: "Ticari Akış", catalog: "Ticari Akış", title: "Ticari Akış Özeti" };
   if (pathname === "/superadmin/trust-quality") return { menu: "Güven ve Kalite", registry: "Güven ve Kalite", catalog: "Güven ve Kalite", title: "Güven ve Kalite Özeti" };
-  if (pathname === "/superadmin/natural-copilot") return { menu: "Doğal Copilot", registry: "Doğal Copilot", catalog: "Doğal Copilot", title: "Doğal Copilot Yol Haritası" };
+  if (pathname === "/superadmin/natural-copilot") return { menu: "Doğal Copilot", registry: "Doğal yardımcı", catalog: "Doğal Copilot", title: "Sefer Abi yol haritası" };
   if (pathname === "/superadmin/pilot-launch-gate") return { menu: "Sahaya Çıkış Kontrolü", registry: "Sahaya Çıkış Kontrolü", catalog: "Sahaya Çıkış Kontrolü", title: "Sahaya Çıkış Kontrolü" };
   if (pathname === "/superadmin/operation-verification") return { menu: "Operasyon Doğrulama", registry: "Operasyon Doğrulama", catalog: "Operasyon Doğrulama", title: "Operasyon Doğrulama" };
   if (pathname === "/superadmin/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
@@ -106,7 +106,7 @@ function inferLabels(pathname) {
   if (pathname === "/room/offers") return { menu: "Teklifler", registry: "Teklifler", catalog: "Teklifler", title: "Teklifler" };
   if (pathname === "/room/commercial-flow") return { menu: "Ticari Akışım", registry: "Ticari Akışım", catalog: "Ticari Akışım", title: "Ticari Akışım" };
   if (pathname === "/room/hub") return { menu: "Taşımacılık Firması Konumu", registry: "Taşımacılık Firması Konumu", catalog: "Taşımacılık Firması Konumu", title: "Taşımacılık Firması Konumu" };
-  if (pathname === "/room/checkin") return { menu: "Check-in", registry: "Check-in", catalog: "Check-in", title: "Check-in" };
+  if (pathname === "/room/checkin") return { menu: "Biniş kayıtları", registry: "Biniş kayıtları", catalog: "Check-in", title: "Biniş kayıtları" };
   if (pathname === "/room/operation-health") return { menu: "Operasyon Sağlığı", registry: "Operasyon Sağlığı", catalog: "Operasyon Sağlığı", title: "Oda Operasyon Paneli" };
   if (pathname === "/room/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
   if (pathname === "/room/reports") return { menu: "Raporlar", registry: "Raporlar", catalog: "Raporlar", title: "Raporlar" };
@@ -137,15 +137,15 @@ function inferLabels(pathname) {
     if (pathname.startsWith("/company/")) return { menu: "Şirket Konumu", registry: "Şirket Konumu", catalog: "Şirket Konumu", title: "Şirket Konumu" };
   }
   if (pathname.endsWith("/checkin")) {
-    if (pathname.startsWith("/school/")) return { menu: "Check-in", registry: "Check-in", catalog: "Check-in", title: "Öğrenci / Personel Check-in" };
-    if (pathname.startsWith("/company/")) return { menu: "Check-in", registry: "Check-in", catalog: "Check-in", title: "Personel Check-in" };
-    if (pathname.startsWith("/organization/")) return { menu: "Check-in", registry: "Check-in", catalog: "Check-in", title: "Personel Check-in" };
+    if (pathname.startsWith("/school/")) return { menu: "Biniş kayıtları", registry: "Biniş kayıtları", catalog: "Check-in", title: "Öğrenci / Personel biniş kayıtları" };
+    if (pathname.startsWith("/company/")) return { menu: "Biniş kayıtları", registry: "Biniş kayıtları", catalog: "Check-in", title: "Personel biniş kayıtları" };
+    if (pathname.startsWith("/organization/")) return { menu: "Biniş kayıtları", registry: "Biniş kayıtları", catalog: "Check-in", title: "Personel biniş kayıtları" };
   }
   if (pathname.endsWith("/personel-access")) return { menu: "Personel Erişimi", registry: "Personel Erişimi", catalog: "Personel Erişimi", title: "Personel Erişimi" };
   if (pathname === "/school/parents") return { menu: "Veli Erişimi", registry: "Veli Erişimi", catalog: "Veli Erişimi", title: "Veli Erişimi" };
   if (pathname.endsWith("/access-links")) {
-    if (pathname.startsWith("/school/")) return { menu: "Öğrenci Link", registry: "Öğrenci Link", catalog: "Öğrenci Link", title: "Öğrenci Link" };
-    return { menu: "Personel Link", registry: "Personel Link", catalog: "Personel Link", title: "Personel Link" };
+    if (pathname.startsWith("/school/")) return { menu: "Öğrenci bağlantıları", registry: "Öğrenci bağlantıları", catalog: "Öğrenci Link", title: "Öğrenci bağlantıları" };
+    return { menu: "Personel bağlantıları", registry: "Personel bağlantıları", catalog: "Personel Link", title: "Personel bağlantıları" };
   }
   if (pathname.endsWith("/service-evaluation")) return { menu: "Hizmet Değerlendirme", registry: "Hizmet Değerlendirme", catalog: "Hizmet Değerlendirme", title: "Hizmet Değerlendirme" };
   if (pathname.endsWith("/commercial-flow")) {
@@ -159,7 +159,7 @@ function inferLabels(pathname) {
   if (pathname === "/driver/today") return { menu: "Bugün", registry: "Bugün", catalog: "Bugün", title: "Bugün" };
   if (pathname === "/driver/map") return { menu: "Harita", registry: "Harita", catalog: "Harita", title: "Harita" };
   if (pathname === "/driver/route") return { menu: "Rota", registry: "Rota", catalog: "Rota", title: "Rota" };
-  if (pathname === "/driver/checkin") return { menu: "Check-in", registry: "Check-in", catalog: "Check-in", title: "Check-in" };
+  if (pathname === "/driver/checkin") return { menu: "Biniş kaydı", registry: "Biniş kaydı", catalog: "Check-in", title: "Biniş kaydı" };
   if (pathname === "/driver/change-pin") return { menu: "PIN Değiştir", registry: "PIN Değiştir", catalog: "PIN Değiştir", title: "PIN Değiştir" };
   if (pathname === "/driver/copilot") return { menu: "Sefer Abi Terminali", registry: "Sefer Abi’ye Sor", catalog: "Sefer Abi Terminali", title: "Sefer Abi" };
 
@@ -174,7 +174,7 @@ function inferLabels(pathname) {
   if (pathname === "/accept-parent-invite") return { menu: "Veli kodu + PIN ile giriş", registry: "Veli kodu + PIN ile giriş", catalog: "Veli kodu + PIN ile giriş", title: "Veli kodu + PIN ile giriş" };
 
   if (pathname === "/shared/notifications") return { menu: "Bildirimler", registry: "Bildirimler", catalog: "Bildirimler", title: "Bildirimler" };
-  if (pathname === "/shared/logs") return { menu: "Log Dışa Aktarımı", registry: "Log Dışa Aktarımı", catalog: "Log Dışa Aktarımı", title: "Log Dışa Aktarımı" };
+  if (pathname === "/shared/logs") return { menu: "İşlem kayıtlarını dışa aktar", registry: "İşlem kayıtlarını dışa aktar", catalog: "Log Dışa Aktarımı", title: "İşlem kayıtlarını dışa aktar" };
   if (pathname === "/shared/kvkk") return { menu: "KVKK", registry: "KVKK", catalog: "KVKK", title: "KVKK" };
   if (pathname === "/shared/feedback") return { menu: "Geri Bildirim", registry: "Geri Bildirim", catalog: "Geri Bildirim", title: "Geri Bildirim" };
 
@@ -243,7 +243,7 @@ const ROUTE_GROUPS = [
   { component: "web/src/panels/superadmin/LogExportPanel.jsx", paths: ["/superadmin/logexport"] },
   { component: "web/src/panels/superadmin/ObservabilityPanel.jsx", paths: ["/superadmin/observability"] },
   { component: "web/src/panels/superadmin/OperationsPanel.jsx", paths: ["/superadmin/operations"], tabCheck: { stateNeedle: 'const [activeTab, setActiveTab] = useState("summary")', tabLabels: ["Özet", "Yetki & Erişim", "Servis Kanıtı", "KVKK & Uyumluluk", "Audit / Log Kayıtları", "Riskler & Kararlar"], branchNeedles: ['activeTab === "summary"', 'activeTab === "access"', 'activeTab === "proof"', 'activeTab === "kvkk"', 'activeTab === "audit"', 'activeTab === "risk"'] } },
-  { component: "web/src/panels/superadmin/FieldAcceptanceCenter.jsx", paths: ["/superadmin/acceptance"], tabCheck: { stateNeedle: 'const [activeTab, setActiveTab] = useState("overview")', tabLabels: ["Özet", "Manifest", "Karar Kaydı", "Oturum Bilgisi", "Checklist Güncelleme", "Geçmiş / Log"], branchNeedles: ['activeTab === "overview"', 'activeTab === "manifest"', 'activeTab === "decision"', 'activeTab === "session"', 'activeTab === "checklist"', 'activeTab === "history"'] } },
+  { component: "web/src/panels/superadmin/FieldAcceptanceCenter.jsx", paths: ["/superadmin/acceptance"], tabCheck: { stateNeedle: 'const [activeTab, setActiveTab] = useState("overview")', tabLabels: ["Özet", "Varsayılanlar", "Karar Kaydı", "Oturum Bilgisi", "Kontrol listesi", "Geçmiş / kayıt"], branchNeedles: ['activeTab === "overview"', 'activeTab === "manifest"', 'activeTab === "decision"', 'activeTab === "session"', 'activeTab === "checklist"', 'activeTab === "history"'] } },
   { component: "web/src/panels/superadmin/SsotAlignmentPanel.jsx", paths: ["/superadmin/ssot-alignment"] },
   { component: "web/src/panels/superadmin/CommercialCorePanel.jsx", paths: ["/superadmin/commercial-core"], tabCheck: { stateNeedle: 'const [viewTab, setViewTab] = useState("summary")', tabLabels: ["Özet", "Hakediş", "Ödeme Hazırlık", "Komisyon", "Kalite / Kanıt", "Riskler", "Geçmiş"], branchNeedles: ['viewTab === "summary"', 'viewTab === "billing"', 'viewTab === "prep"', 'viewTab === "commission"', 'viewTab === "proof"', 'viewTab === "risk"', 'viewTab === "history"'] } },
   { component: "web/src/panels/superadmin/TrustQualityPanel.jsx", paths: ["/superadmin/trust-quality"], tabCheck: { stateNeedle: 'const [activeTab, setActiveTab] = useState("overview")', tabLabels: ["Özet", "Servis Kanıtı", "Taslak Skor", "İnceleme Kararı", "Kalite Geçmişi", "Yol Haritası / Riskler"], branchNeedles: ['activeTab === "overview"', 'activeTab === "proof"', 'activeTab === "draft"', 'activeTab === "decision"', 'activeTab === "history"', 'activeTab === "roadmap"'] } },

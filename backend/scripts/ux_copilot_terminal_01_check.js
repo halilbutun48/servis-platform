@@ -138,7 +138,7 @@ must(factsSource, "drawerSeparationNote: 'Bu sayfa, sağ alttaki Sefer Abi’ye 
 
 const { COPILOT_PERSONA, COPILOT_TERMINAL } = await import(pathToFileURL(path.join(root, 'web/src/utils/copilotFacts.js')).href);
 
-must(COPILOT_PERSONA.terminalLabel, 'Sefer Abi Terminali', 'persona constant terminal label value');
+must(COPILOT_PERSONA.terminalLabel, 'Sefer Abi', 'persona constant keeps single Sefer Abi entry label');
 must(COPILOT_PERSONA.drawerTitle, 'Sefer Abi’ye Sor', 'persona constant drawer title value');
 must(COPILOT_PERSONA.menuLabel, 'Sefer Abi', 'persona constant legacy menu label stays branded');
 must(COPILOT_TERMINAL.title, 'Sefer Abi', 'assistant workspace title value');

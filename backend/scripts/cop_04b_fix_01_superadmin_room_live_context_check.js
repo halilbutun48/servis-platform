@@ -193,7 +193,7 @@ mustAny(operationHealthPanel, ['Aktif Sürücü', 'Riskli Cihaz', 'Stale / Offli
 mustAny(operationHealthPanel, ['Canlılık', 'Önem'], 'room operation health panel keeps selected badges bridge');
 must(superAdminOperationsPanel, 'setCopilotSelection({', 'super admin operations panel keeps copilot selection push');
 must(superAdminOperationsPanel, 'buildOperationsCopilotFacts', 'super admin operations panel keeps dedicated facts helper');
-must(superAdminOperationsPanel, 'GPS görünürlüğü', 'super admin operations panel keeps gps visibility field');
+must(superAdminOperationsPanel, 'Konum görünürlüğü', 'super admin operations panel keeps location visibility field');
 must(superAdminOperationsPanel, 'Kanıt durumu', 'super admin operations panel keeps evidence field');
 
 const { buildMapFacts, buildOperationHealthCopilotFacts, buildOperationsCopilotFacts } = await import(pathToFileURL(path.join(root, 'web/src/utils/copilotFacts.js')).href);

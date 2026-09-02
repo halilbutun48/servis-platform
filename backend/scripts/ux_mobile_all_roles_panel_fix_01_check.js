@@ -125,7 +125,7 @@ function main() {
   mustContains(css, ".tbl { min-width: 0; width: 100%; }", "global css keeps mobile table width fix");
 
   ordered(superadminPanel, ["PanelSegmentTabs", "Hızlı erişim"], "superadmin panel tabs stay before quick access");
-  ordered(superadminOps, ["PanelSegmentTabs", "STEP_UP_REQUIRED · KVKK sınırı aktif"], "superadmin operations tabs stay before summary band");
+  ordered(superadminOps, ["PanelSegmentTabs", "Ek doğrulama · KVKK sınırı aktif"], "superadmin operations tabs stay before summary band");
   ordered(roomCommercialFlow, ["PanelSegmentTabs", "FlowSummaryStrip"], "room commercial flow tabs stay before summary strip");
   ordered(companyOps, ["PanelSegmentTabs", "MiniStat title=\"Personel\""], "company operations tabs stay before stats row");
   ordered(schoolOps, ["PanelSegmentTabs", "MiniStat title=\"Öğrenci servis atamaları\""], "school operations tabs stay before stats row");

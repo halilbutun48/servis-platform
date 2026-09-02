@@ -556,7 +556,7 @@ function main() {
   mustContains(agreementOpsBridge, "Detayları göster", "cleanup agreements bridge keeps visible detail wording");
   mustContains(roomVehiclesPanel, "erişim görünürlüğü", "cleanup room vehicles keeps access visibility wording");
   mustContains(roomVehiclesCards, "Yeni cihaz erişim kodu", "cleanup room vehicles keeps access code wording");
-  mustContains(roomVehiclesSections, "Erişim kodu yalnızca create/rotate anında bir kez gösterilir.", "cleanup room vehicles keeps one-time code boundary");
+  mustContains(roomVehiclesSections, "Erişim kodu yalnızca oluşturma/yenileme anında bir kez gösterilir.", "cleanup room vehicles keeps one-time code boundary");
   mustContains(roomDriversPanel, "Sürücü kaydı", "cleanup room drivers keeps safe driver wording");
   mustContains(roomDriversStatus, "Mevcut vardiya", "cleanup room drivers keeps current shift wording");
   mustContains(roomDriversShifts, "Sürücü kaydı", "cleanup room driver shifts keeps safe driver wording");

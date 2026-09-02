@@ -433,7 +433,7 @@ function main() {
   must(doc, "Bugün için aktif vardiya görünmüyor.", "parent/personel live error clarity doc keeps personel missing-shift wording");
   must(doc, "Servis saati, araç ataması veya konum izni kontrol edilmeli.", "parent/personel live error clarity doc keeps parent next-step wording");
   must(doc, "Servis saati veya vardiya ataması kontrol edilmeli.", "parent/personel live error clarity doc keeps personel next-step wording");
-  must(doc, "GPS güncel değilse ETA kesin gösterilmez.", "parent/personel live error clarity doc keeps cautious ETA wording");
+  must(doc, "Konum sinyali güncel değilse tahmini varış kesin gösterilmez.", "parent/personel live error clarity doc keeps cautious ETA wording");
   must(doc, "ETA henüz alınamadı", "parent/personel live error clarity doc keeps fallback ETA wording");
   must(doc, "Bu ekran bilgilendirme amaçlıdır; yeni servis veya rota oluşturmaz.", "parent/personel live error clarity doc keeps readonly boundary wording");
   must(doc, "Teknik/debug/raw/null/undefined görünmez.", "parent/personel live error clarity doc keeps visible-text hygiene wording");
@@ -451,7 +451,7 @@ function main() {
   must(liveCopy, "Bu cihaz konum paylaşımını desteklemiyor. Konum destekleyen bir cihazda tekrar deneyin.", "live tracking copy keeps device fallback wording");
   must(liveCopy, "Servis saati, araç ataması veya konum izni kontrol edilmeli.", "live tracking copy keeps parent risk wording");
   must(liveCopy, "Servis saati veya vardiya ataması kontrol edilmeli.", "live tracking copy keeps personel risk wording");
-  must(liveCopy, "GPS güncel değilse ETA kesin gösterilmez.", "live tracking copy keeps cautious ETA wording");
+  must(liveCopy, "Konum sinyali güncel değilse tahmini varış kesin gösterilmez.", "live tracking copy keeps cautious ETA wording");
   must(liveCopy, "ETA henüz alınamadı", "live tracking copy keeps ETA fallback wording");
   must(liveCopy, "Bu ekran bilgilendirme amaçlıdır; yeni servis veya rota oluşturmaz.", "live tracking copy keeps readonly wording");
   must(liveCopy, "getLiveTrackingStatusBandCopy", "live tracking copy exports status band helper");

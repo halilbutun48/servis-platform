@@ -23,7 +23,7 @@ Parent / Veli ve Personel canlı takip yüzeylerinde hata ve fallback metinlerin
 - Bugün için aktif vardiya görünmüyor.
 - Servis saati, araç ataması veya konum izni kontrol edilmeli.
 - Servis saati veya vardiya ataması kontrol edilmeli.
-- GPS güncel değilse ETA kesin gösterilmez.
+- Konum sinyali güncel değilse tahmini varış kesin gösterilmez.
 - ETA henüz alınamadı.
 - Bu cihaz konum paylaşımını desteklemiyor. Konum destekleyen bir cihazda tekrar deneyin.
 - Bu ekran bilgilendirme amaçlıdır; yeni servis veya rota oluşturmaz.
