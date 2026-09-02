@@ -150,11 +150,11 @@ must(finalPromiseDoc, "backend route/service/schema değiştirme", "final promis
 must(finalPromiseDoc, "Prisma/migration değiştirme", "final promise doc excludes prisma changes");
 must(finalPromiseDoc, "marketing sayfasını değiştirme", "final promise doc excludes marketing page change");
 
-must(landing, "Sefer Abi ise operasyonu anlamanıza ve riskleri erken görmenize yardımcı olan opsiyonel operasyon copilot'udur.", "landing keeps secondary copilot copy");
+must(landing, "Sefer Abi / operasyon yardımcısı", "landing keeps secondary assistant copy");
 must(landing, "Karar ve onay sizdedir.", "landing keeps human approval boundary");
 must(landing, "Public CTA'lar demo, canlı destek, servis ihtiyacı ve tedarikçi başvurusu toplar. Başvurular kontrollü lead formuna düşer; otomatik hesap, otomatik davet ve ödeme akışı açılmaz.", "landing keeps controlled lead boundary");
 must(landing, "Sefer Abi otomatik işlem yapar mı?", "landing keeps FAQ boundary");
-must(landing, "Sefer Abi opsiyonel operasyon copilot'udur; sinyalleri özetler, riskleri açıklar ve sonraki adımı önerir.", "landing keeps safe FAQ copy");
+must(landing, "Sefer Abi, isteğe bağlı operasyon yardımcınızdır; sinyalleri özetler, riskleri açıklar ve sonraki adımı önerir.", "landing keeps safe FAQ copy");
 must(landing, "Kritik işlemler kullanıcı onayı olmadan yapılmaz.", "landing keeps critical action boundary");
 must(landing, "Başvurular ekip tarafından incelenir", "landing keeps review boundary");
 must(landing, "Ödeme / fatura / tahsilat yok", "landing keeps payment boundary");
