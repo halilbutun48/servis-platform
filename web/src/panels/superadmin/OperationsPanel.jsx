@@ -10,6 +10,7 @@ import { countBy, filterNotificationDigest, fmtTR, normalizeNotificationDigest, 
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildOperationsCopilotFacts } from "../../utils/copilotFacts";
 import { cachedGet } from "../../utils/uiDataCache";
+import { humanizeUserFacingText, userFacingRoleLabel } from "../../utils/terminology";
 
 // Compatibility wording for historical static checks: "Audit / Log Kayıtları" is now rendered as "Denetim / İşlem Kayıtları".
 const LOGIN_AUDIT_RE = /(LOGIN|SIGNIN|SIGN-IN|AUTH|STEP_UP|TOTP|PIN)/i;
@@ -78,6 +79,88 @@ function formatPreviewText(value, fallback = "—") {
   return text || fallback;
 }
 
+const AUDIT_ACTION_LABELS = Object.freeze({
+  AUTH_LOGIN_OK: "Başarılı giriş",
+  AUTH_LOGIN_FAIL: "Başarısız giriş",
+  AUTH_LOGIN_DISABLED: "Giriş kapalı",
+  AUTH_LOGIN_DEVICE_REQUIRED: "Cihaz doğrulaması gerekli",
+  AUTH_LOGIN_DEVICE_MISMATCH: "Cihaz doğrulaması eşleşmedi",
+  AUTH_DRIVER_PIN_LOCKED: "Sürücü PIN'i kilitlendi",
+  AUTH_PASSWORD_CHANGED: "Şifre değiştirildi",
+  AUTH_TOTP_SETUP_ISSUED: "Ek doğrulama kurulumu oluşturuldu",
+  PARENT_ACCESS_LOGIN: "Veli bağlantısıyla giriş",
+  AI_COPILOT_QUERY: "Sefer Abi sorgusu",
+  EXTERNAL_REFERENCE_IMPORTED: "Dış referans içe aktarıldı",
+  EXTERNAL_REFERENCE_REFRESHED: "Dış referans yenilendi",
+  GPS_VENDOR_INGEST: "Sağlayıcı konum verisi alındı",
+  GPS_DEVICE_INGEST: "Cihaz konum verisi alındı",
+  AUTO_STOP_REACHED: "Durak tamamlanma sinyali",
+  AUTO_SHIFT_COMPLETE: "Vardiya tamamlanma sinyali",
+  BOARDING_CHANGE_APPLIED: "Biniş değişikliği uygulandı",
+  CREATE_SINGLE: "Kayıt oluşturuldu",
+  UPDATE_SINGLE: "Kayıt güncellendi",
+  DELETE_SINGLE: "Kayıt silindi",
+  NOTE_ONLY: "Not kaydedildi",
+  NOOP: "Değişiklik yapılmadı",
+});
+
+const AUDIT_ENTITY_LABELS = Object.freeze({
+  User: "Kullanıcı",
+  Shift: "Vardiya",
+  Vehicle: "Araç",
+  Driver: "Sürücü",
+  Personel: "Personel",
+  ParentInvite: "Veli daveti",
+  PickupRequest: "Biniş değişikliği talebi",
+  ExternalCostReference: "Dış maliyet referansı",
+  GpsDevice: "Konum cihazı",
+  ai: "Sefer Abi konuşması",
+});
+
+const AUDIT_META_KEY_LABELS = Object.freeze({
+  deviceId: "Cihaz kaydı",
+  driverId: "Sürücü kaydı",
+  passwordChangeRequired: "Şifre değişikliği gerekli",
+  reason: "Gerekçe",
+  requestReason: "Talep gerekçesi",
+  sourceType: "Kaynak türü",
+  sourceKey: "Kaynak kaydı",
+});
+
+function readableAuditAction(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "İşlem kaydı";
+  const key = raw.toUpperCase();
+  if (AUDIT_ACTION_LABELS[key]) return AUDIT_ACTION_LABELS[key];
+  if (/^(SAVE|CREATE|SUBMIT|APPROVE|ACTIVATE|ARCHIVE|APPLY)$/.test(key)) {
+    return { SAVE: "Kaydedildi", CREATE: "Oluşturuldu", SUBMIT: "Gönderildi", APPROVE: "Onaylandı", ACTIVATE: "Etkinleştirildi", ARCHIVE: "Arşivlendi", APPLY: "Uygulandı" }[key];
+  }
+  if (key.includes("LOGIN")) return "Giriş işlemi";
+  if (key.includes("EXPORT")) return "Dışa aktarım";
+  if (key.includes("REJECT")) return "Reddedildi";
+  if (key.includes("APPROVE")) return "Onaylandı";
+  return "İşlem kaydı";
+}
+
+function readableAuditEntity(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "İlgili kayıt";
+  if (AUDIT_ENTITY_LABELS[raw]) return AUDIT_ENTITY_LABELS[raw];
+  return humanizeUserFacingText(raw.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").toLowerCase(), "İlgili kayıt");
+}
+
+function readableAuditMetaKey(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "Ayrıntı";
+  if (AUDIT_META_KEY_LABELS[raw]) return AUDIT_META_KEY_LABELS[raw];
+  return humanizeUserFacingText(raw.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").toLowerCase(), "Ayrıntı");
+}
+
+function readableAuditMetaValue(value) {
+  if (typeof value === "boolean") return value ? "Evet" : "Hayır";
+  return value;
+}
+
 function summarizeAuditMeta(meta) {
   if (meta == null || meta === "") return "—";
   if (typeof meta === "string") {
@@ -97,7 +180,9 @@ function summarizeAuditMeta(meta) {
   for (const [key, value] of entries) {
     if (value == null || value === "") continue;
     const rendered = typeof value === "object" ? (Array.isArray(value) ? `${value.length} öğe` : "detay") : String(value);
-    parts.push(`${key}: ${rendered.length > 40 ? `${rendered.slice(0, 37)}…` : rendered}`);
+    const label = readableAuditMetaKey(key);
+    const displayValue = readableAuditMetaValue(rendered);
+    parts.push(`${label}: ${displayValue.length > 40 ? `${displayValue.slice(0, 37)}…` : displayValue}`);
     if (parts.length >= 3) break;
   }
   return parts.length ? parts.join(" • ") : "Sistem kanıtı hazır";
@@ -218,7 +303,7 @@ export default function SuperAdminOperationsPanel() {
   }, [auditLogs.length, facts, kvkkMatchCount, loginAuditCount, manifest, notifications.length, operationProofSummary, roleChecks, surface]);
 
   if (me?.role !== "SUPER_ADMIN") {
-    return <div className="card err">Bu panel yalnızca SUPER_ADMIN scope için görünür.</div>;
+    return <div className="card err">Bu panel yalnızca Süper Yönetici erişimi için görünür.</div>;
   }
 
   return (
@@ -456,7 +541,7 @@ export default function SuperAdminOperationsPanel() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span className="pill" data-status="COUNT">{metricValue(auditLogs.length)} denetim kaydı</span>
               <span className="pill" data-status="COUNT">{metricValue(loginAuditCount)} giriş denetimi</span>
-              <span className="pill" data-status="COUNT">{metricValue(actionCounts.size)} farklı action</span>
+              <span className="pill" data-status="COUNT">{metricValue(actionCounts.size)} farklı işlem</span>
               <span className="pill" data-status="COUNT">Tam dışa aktarım üst aksiyonda</span>
             </div>
           </SectionCard>
@@ -467,10 +552,10 @@ export default function SuperAdminOperationsPanel() {
                 <thead>
                   <tr>
                     <th>Zaman</th>
-                    <th>Actor</th>
-                    <th>Action</th>
-                    <th>Entity</th>
-                    <th>EntityId</th>
+                    <th>Kullanıcı</th>
+                    <th>İşlem</th>
+                    <th>Kayıt türü</th>
+                    <th>Kayıt no</th>
                     <th>Sistem kanıtı</th>
                   </tr>
                 </thead>
@@ -481,11 +566,11 @@ export default function SuperAdminOperationsPanel() {
                       <td>
                         <div>{row.actorEmail || "-"}</div>
                         <div className="panelMeta">
-                          {row.actorRole || "-"}{row.actorUserId ? ` #${row.actorUserId}` : ""}
+                          {row.actorRole ? userFacingRoleLabel(row.actorRole) : "-"}{row.actorUserId ? ` #${row.actorUserId}` : ""}
                         </div>
                       </td>
-                      <td>{row.action || "-"}</td>
-                      <td>{row.entity || "-"}</td>
+                      <td>{readableAuditAction(row.action)}</td>
+                      <td>{readableAuditEntity(row.entity)}</td>
                       <td>{row.entityId ?? "-"}</td>
                       <td className="panelMeta" style={{ whiteSpace: "normal" }}>{renderAuditMeta(row)}</td>
                     </tr>

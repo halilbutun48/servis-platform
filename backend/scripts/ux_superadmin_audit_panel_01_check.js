@@ -77,7 +77,7 @@ function main() {
   must(screenRegistry, '{ id: 6117, path: "/superadmin/operations", label: "Denetim Paneli" }', "copilot registry keeps Denetim Paneli label");
 
   must(panel, 'title="Denetim Paneli"', "panel title preserved");
-  must(panel, "STEP_UP_REQUIRED", "step-up band visible");
+  must(panel, "Ek doğrulama gerekli", "step-up band visible");
   must(panel, "KVKK sınırı aktif", "kvkk band visible");
   must(panel, "PanelSegmentTabs", "panel uses functional tabs");
   must(panel, 'const [activeTab, setActiveTab] = useState("summary")', "default summary tab");
@@ -91,20 +91,20 @@ function main() {
   must(panel, 'label: "Yetki & Erişim"', "access tab label present");
   must(panel, 'label: "Servis Kanıtı"', "proof tab label present");
   must(panel, 'label: "KVKK & Uyumluluk"', "kvkk tab label present");
-  must(panel, 'label: "Audit / Log Kayıtları"', "audit tab label present");
+  must(panel, 'label: "Denetim / İşlem Kayıtları"', "audit tab label present");
   must(panel, 'label: "Riskler & Kararlar"', "risk tab label present");
   must(panel, 'role="tabpanel" aria-label="Özet"', "summary tabpanel accessible");
   must(panel, 'role="tabpanel" aria-label="Yetki & Erişim"', "access tabpanel accessible");
   must(panel, 'role="tabpanel" aria-label="Servis Kanıtı"', "proof tabpanel accessible");
   must(panel, 'role="tabpanel" aria-label="KVKK & Uyumluluk"', "kvkk tabpanel accessible");
-  must(panel, 'role="tabpanel" aria-label="Audit / Log Kayıtları"', "audit tabpanel accessible");
+  must(panel, 'role="tabpanel" aria-label="Denetim / İşlem Kayıtları"', "audit tabpanel accessible");
   must(panel, 'role="tabpanel" aria-label="Riskler & Kararlar"', "risk tabpanel accessible");
   must(panel, "Yenile", "refresh action preserved");
   must(panel, "İşlem Kayıtları", "audit action preserved");
-  must(panel, "Log Dışa Aktarım", "log export action preserved");
+  must(panel, "İşlem kayıtlarını dışa aktar", "log export action preserved");
   must(panel, "Operasyon Doğrulama", "operation verification action preserved");
   must(panel, "Rol / yetki denetimi", "top metric role checks preserved");
-  must(panel, "Audit kayıtları", "top metric audit records preserved");
+  must(panel, "Denetim kayıtları", "top metric audit records preserved");
   must(panel, "Teknik işlem riski", "top metric technical risk preserved");
   must(panel, "Bildirim geçmişi", "top metric notification history preserved");
   must(panel, "Giriş denetimi / giriş kayıtları", "top metric login audit preserved");
@@ -112,7 +112,7 @@ function main() {
   must(panel, "KVKK eşleşmeleri", "top metric kvkk matches preserved");
   must(panel, "OperationProofMiniCard", "proof card kept in proof tab");
   must(panel, "PanelKvkkHint panelKey=\"auditLogs\"", "kvkk hint kept in kvkk tab");
-  must(panel, "Audit / log kayıtları", "audit log table kept in audit tab");
+  must(panel, "Denetim / işlem kayıtları", "audit log table kept in audit tab");
   must(panel, "Servis Kanıtı", "proof tab content kept");
   must(panel, "Kritik uyarı özeti", "summary critical warning card kept");
   must(panel, "Biniş değişikliği kayıtları", "summary boarding signal card kept");
@@ -128,7 +128,7 @@ function main() {
   mustNot(panel, "prisma", "panel avoids prisma wording");
   mustNot(panel, "migration", "panel avoids migration wording");
   ordered(panel, [
-    "STEP_UP_REQUIRED",
+    "PanelChrome",
     "PanelSegmentTabs",
     'activeTab === "summary"',
     'activeTab === "access"',
