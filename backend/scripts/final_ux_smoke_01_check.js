@@ -27,6 +27,15 @@ function isUntouchedByGit(rel) {
   return String(output || "").trim() === "";
 }
 
+function isTrackedByGit(rel) {
+  try {
+    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], { cwd: root, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function normalize(text) {
   return String(text || "")
     .normalize("NFKD")
@@ -518,12 +527,19 @@ function main() {
     "backend/artifacts/runtime-data/agreement-route-refresh-requests.json",
     "backend/artifacts/runtime-data/quality-review-decisions.json",
   ];
-  for (const file of forbiddenFiles) {
-    must(exists(file), `runtime-data file exists in smoke scope: ${file}`);
-    if (isUntouchedByGit(file)) {
-      ok(`runtime-data file untouched in smoke scope: ${file}`);
-    } else {
-      passDash(`runtime-data file already dirty in workspace scope: ${file}`);
+  const cleanCloneRuntimeData = process.env.CLEAN_CLONE_VERIFICATION === "1" && process.env.RUNTIME_DATA_DIR && !path.resolve(process.env.RUNTIME_DATA_DIR).toLowerCase().startsWith(path.join(root, "backend", "artifacts", "runtime-data").toLowerCase());
+  if (cleanCloneRuntimeData) {
+    for (const file of forbiddenFiles) {
+      must(isTrackedByGit(file) ? exists(file) : !exists(file), `clean-clone runtime-data policy: ${file}`);
+    }
+  } else {
+    for (const file of forbiddenFiles) {
+      must(exists(file), `runtime-data file exists in smoke scope: ${file}`);
+      if (isUntouchedByGit(file)) {
+        ok(`runtime-data file untouched in smoke scope: ${file}`);
+      } else {
+        passDash(`runtime-data file already dirty in workspace scope: ${file}`);
+      }
     }
   }
 

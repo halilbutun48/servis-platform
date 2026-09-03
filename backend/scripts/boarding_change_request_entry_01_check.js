@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { assertProductExtensionsIncludes, productExtensionsChecks } from "./lib/productExtensionsRegistry.js";
 
@@ -15,6 +16,15 @@ function read(rel) {
 
 function exists(rel) {
   return fs.existsSync(path.join(root, rel));
+}
+
+function isTracked(rel) {
+  try {
+    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], { cwd: root, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function normalize(text) {
@@ -446,8 +456,15 @@ function main() {
     "backend/artifacts/runtime-data/agreement-route-refresh-requests.json",
     "backend/artifacts/runtime-data/quality-review-decisions.json",
   ];
-  for (const rel of runtimeDataPaths) {
-    must(exists(rel), `runtime-data file present: ${rel}`);
+  const cleanCloneRuntimeData = process.env.CLEAN_CLONE_VERIFICATION === "1" && process.env.RUNTIME_DATA_DIR && !path.resolve(process.env.RUNTIME_DATA_DIR).toLowerCase().startsWith(path.join(root, "backend", "artifacts", "runtime-data").toLowerCase());
+  if (cleanCloneRuntimeData) {
+    for (const rel of runtimeDataPaths) {
+      must(isTracked(rel) ? exists(rel) : !exists(rel), `clean-clone runtime-data policy: ${rel}`);
+    }
+  } else {
+    for (const rel of runtimeDataPaths) {
+      must(exists(rel), `runtime-data file present: ${rel}`);
+    }
   }
 
   assertNotContainsAny(requestUi, [

@@ -266,7 +266,7 @@ function buildExpectedShaMap(entries) {
 const batch09ApprovedConcurrentWorktreeEntries = [
   { path: "backend/README.md", sha256: "0E5C4A471BB7CD0B361C7EC6FB33899CABD810D8CB3892913F66FE26BE8F8AE7" },
   { path: "backend/scripts/canonical_provenance_registry_01_check.js", sha256: "367A0ECC128DEE9B5B8BD9B969518CFF390DF0F16D1FFC30B3C1A5216F01644C" },
-  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "081C69CF9F47AAD274BD23A3D60AD9A5ABD1E4556F214398AAFD7CDC571FC831" },
+  { path: "backend/scripts/lib/canonicalProvenanceRegistry.js", sha256: "1C1BBD98F393540BA2A65DEC3675DA5A1A8BCF1E916A4DA8ACCF4D73D78ABF7D" },
   { path: "backend/scripts/ux_all_panels_reality_audit_01_check.js", sha256: "BEEAF0DC2D090B374F6E67AF157FCC9E461A575586CC955CF377182C194A0E6D" },
   { path: "backend/src/bootstrap/rateLimits.js", sha256: "92C93F276B04E5B4A3179E5F93D6396A37FA968000AA2FCEAE1E1F51752E0135" },
   { path: "backend/src/middleware/apiRequestLog.js", sha256: "5F27CA48608B10C6DDCD35F9D1C1E146D6AD432EAD63C90CF117F0EA3A051EE3" },

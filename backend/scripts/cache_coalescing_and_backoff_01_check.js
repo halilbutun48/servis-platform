@@ -12,6 +12,11 @@ import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
+const configuredRuntimeDataDir = process.env.RUNTIME_DATA_DIR ? path.resolve(process.env.RUNTIME_DATA_DIR) : "";
+const cleanCloneRuntimeData = Boolean(
+  configuredRuntimeDataDir &&
+  !configuredRuntimeDataDir.toLowerCase().startsWith(path.join(repoRoot, "backend", "artifacts", "runtime-data").toLowerCase())
+);
 
 const paths = {
   packageJson: path.join(repoRoot, "package.json"),
@@ -603,7 +608,11 @@ function main() {
   addCase(cases, "staged diff is empty", () => must(gitLines(["diff", "--cached", "--name-only"]).length === 0, "staged diff not empty"));
   addCase(cases, "working tree keeps runtime-data dirty", () => {
     const lines = gitLines(["status", "--short"]);
-    must(lines.some((line) => line.includes("backend/artifacts/runtime-data/")), "runtime-data entries missing from status");
+    if (cleanCloneRuntimeData) {
+      must(!lines.some((line) => line.includes("backend/artifacts/runtime-data/")), "clean-clone runtime-data unexpectedly appears in status");
+    } else {
+      must(lines.some((line) => line.includes("backend/artifacts/runtime-data/")), "runtime-data entries missing from status");
+    }
   });
   addCase(cases, "working tree does not stage browser-smoke", () => {
     const staged = gitLines(["diff", "--cached", "--name-only"]);

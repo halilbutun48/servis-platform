@@ -2962,8 +2962,9 @@ button, input, select, textarea, .btn, .secondary {
     max-width: none;
     min-width: 0;
     min-height: 0;
-    height: min(42vh, 360px) !important;
-    max-height: min(42vh, 360px);
+    height: min(40vh, 338px) !important;
+    max-height: min(40vh, 338px);
+    overflow-x: hidden;
   }
   .copilotFab {
     right: 12px;
@@ -2975,6 +2976,47 @@ button, input, select, textarea, .btn, .secondary {
   }
   .copilotFabSubtitle { display: none; }
   .copilotFabStatus { display: none; }
+  .copilotDrawerHeader {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+  }
+  .copilotDrawerIdentity { min-width: 0; align-items: flex-start; }
+  .copilotDrawerIdentity > div:last-child { min-width: 0; }
+  .copilotDrawerTitle { font-size: 16px; line-height: 1.2; white-space: nowrap; }
+  .copilotDrawerTools {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 0;
+    width: 100%;
+  }
+  .copilotDrawerTools .copilotToolBtn {
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+    min-height: 26px;
+    height: 26px;
+    padding: 3px 4px;
+    font-size: 11px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .copilotDrawerTools .copilotToolBtn--close { margin-left: 0; }
+  .copilotDrawerTools > :last-child { grid-column: span 2; }
+  .copilotDrawerModeRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    padding: 5px 10px;
+  }
+  .copilotDrawerModeRow .copilotToolBtn { min-width: 0; min-height: 24px; height: 24px; justify-content: center; font-size: 11px; white-space: nowrap; }
+  .copilotChatSurface { min-width: 0; overflow-x: hidden; padding: 10px; }
+  .copilotSuggestionWrap { min-width: 0; padding: 8px 10px; }
+  .copilotComposer { min-width: 0; padding: 8px 10px 10px; }
+  .copilotComposer textarea { box-sizing: border-box; max-width: 100%; min-height: 64px; }
+  .copilotComposerRow { margin-top: 6px; }
 }
 
 .copilotDrawer { resize: both; }
@@ -3011,6 +3053,51 @@ button, input, select, textarea, .btn, .secondary {
 .copilotMascotLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .copilotMascotAvatar { display: grid; place-items: center; width: 54px; height: 54px; }
 .copilotFab--map-safe { position:fixed; }
+.copilotFab--smart-safe { position:fixed; }
+.copilotLauncherStack {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+.copilotLauncherStack .copilotFab--mascot { position: relative; right: auto; bottom: auto; }
+.copilotAttentionBubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: min(240px, calc(100vw - 24px));
+  max-width: min(240px, calc(100vw - 24px));
+  box-sizing: border-box;
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 158, 11, .62);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(31, 43, 68, .98), rgba(15, 25, 47, .98));
+  color: #f8fafc;
+  box-shadow: 0 12px 26px rgba(2, 6, 23, .34), 0 0 0 3px rgba(245, 158, 11, .08);
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.35;
+  z-index: 0;
+}
+.copilotAttentionBubble::after {
+  content: "";
+  position: absolute;
+  right: 21px;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid rgba(245, 158, 11, .62);
+  border-bottom: 1px solid rgba(245, 158, 11, .62);
+  background: #172642;
+  transform: rotate(45deg);
+}
+.copilotAttentionBubble--below { top: calc(100% + 10px); bottom: auto; }
+.copilotAttentionBubble--below::after { top: -6px; bottom: auto; transform: rotate(225deg); }
+.copilotAttentionBubbleTitle { color: #fbbf24; font-weight: 900; }
 .copilotDrawer { bottom: max(96px, calc(env(safe-area-inset-bottom) + 78px)); max-width: calc(100vw - 24px); }
 .copilotDrawerIdentity, .copilotWorkspaceIdentity { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .copilotDrawerIdentity > div:last-child, .copilotWorkspaceIdentity > div:last-child { min-width: 0; }
@@ -3078,17 +3165,22 @@ button, input, select, textarea, .btn, .secondary {
 .seferAbiAvatar--idle .seferAbiAvatar__image { animation: seferAbiRest 9s ease-in-out infinite; }
 .seferAbiAvatar--hover-focus { filter: drop-shadow(0 5px 10px rgba(227, 183, 91, .34)); transform: translateZ(0) scale(1.03); }
 .seferAbiAvatar--hover-focus::before { background: linear-gradient(145deg, rgba(255,255,255,.18), transparent 46%, rgba(0,0,0,.16)); }
-.seferAbiAvatar--listening { border-color: rgba(45, 212, 191, .9); box-shadow: 0 0 0 3px rgba(45, 212, 191, .14), 0 4px 10px rgba(4, 12, 30, .24); }
+.seferAbiAvatar--listening { border-color: rgba(45, 212, 191, .9); box-shadow: 0 0 0 3px rgba(45, 212, 191, .14), 0 4px 10px rgba(4, 12, 30, .24); animation: seferAbiListeningHalo 1.8s ease-out infinite; }
 .seferAbiAvatar--listening .seferAbiAvatar__image { transform: translate(-.4px, .5px) rotate(-1.4deg) scale(1.06); }
 .seferAbiAvatar--thinking { border-color: rgba(227, 183, 91, .95); }
-.seferAbiAvatar--thinking::after { opacity: .95; border-color: rgba(227, 183, 91, .92); animation: seferAbiRingSweep 2.2s linear infinite; }
+.seferAbiAvatar--thinking::after { opacity: .95; border: 2px solid rgba(227, 183, 91, .92); border-left-color: transparent; border-bottom-color: rgba(227, 183, 91, .35); animation: seferAbiRingSweep 1.7s linear infinite; }
 .seferAbiAvatar--thinking .seferAbiAvatar__image { animation: seferAbiThinking 2.6s ease-in-out infinite; }
 .seferAbiAvatar--responding { border-color: rgba(96, 165, 250, .95); box-shadow: 0 0 0 3px rgba(96, 165, 250, .13), 0 4px 10px rgba(4, 12, 30, .24); }
-.seferAbiAvatar--responding .seferAbiAvatar__image { animation: seferAbiResponding 3.2s ease-in-out infinite; }
-.seferAbiAvatar--result-ready { border-color: rgba(74, 222, 128, .9); box-shadow: 0 0 0 3px rgba(74, 222, 128, .14), 0 4px 10px rgba(4, 12, 30, .24); }
+.seferAbiAvatar--responding::after { opacity: .9; border: 2px solid rgba(96, 165, 250, .9); border-right-color: transparent; animation: seferAbiResponseRing 1.25s ease-in-out infinite; }
+.seferAbiAvatar--responding .seferAbiAvatar__image { animation: seferAbiResponding 2.1s ease-in-out infinite; }
+.seferAbiAvatar--result-ready { border-color: rgba(74, 222, 128, .9); box-shadow: 0 0 0 3px rgba(74, 222, 128, .14), 0 4px 10px rgba(4, 12, 30, .24); animation: seferAbiResultAck 1.4s ease-out both; }
+.seferAbiAvatar--result-ready::after { opacity: .95; border: 2px solid rgba(74, 222, 128, .88); animation: seferAbiReadyRing 1.4s ease-out both; }
 .seferAbiAvatar--result-ready .seferAbiAvatar__stateMark { background: #4ade80; }
-.seferAbiAvatar--attention, .seferAbiAvatar--approval-required { border-color: rgba(245, 158, 11, .9); }
-.seferAbiAvatar--attention::after, .seferAbiAvatar--approval-required::after { opacity: .9; border-color: rgba(245, 158, 11, .8); }
+.seferAbiAvatar--attention { border-color: rgba(245, 158, 11, .9); animation: seferAbiAttentionHalo 2.2s ease-in-out 2; }
+.seferAbiAvatar--approval-required { border-color: rgba(245, 158, 11, .9); animation: seferAbiApprovalHalo 1.8s ease-in-out 2; }
+.seferAbiAvatar--attention::after, .seferAbiAvatar--approval-required::after { opacity: .9; border: 2px solid rgba(245, 158, 11, .8); border-left-color: transparent; }
+.seferAbiAvatar--attention::after { animation: seferAbiAttentionRing 2.2s ease-in-out 2; }
+.seferAbiAvatar--approval-required::after { border-right-color: transparent; animation: seferAbiApprovalRing 1.8s ease-in-out 2; }
 .seferAbiAvatar--attention .seferAbiAvatar__stateMark { background: #f59e0b; }
 .seferAbiAvatar--approval-required .seferAbiAvatar__stateMark { background: #fbbf24; }
 .seferAbiAvatar--listening .seferAbiAvatar__stateMark { background: #2dd4bf; }
@@ -3098,6 +3190,10 @@ button, input, select, textarea, .btn, .secondary {
 @keyframes seferAbiRest {
   0%, 100% { transform: translateY(0); }
   48% { transform: translateY(-.35px); }
+}
+@keyframes seferAbiListeningHalo {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(45, 212, 191, .14), 0 4px 10px rgba(4, 12, 30, .24); }
+  48% { box-shadow: 0 0 0 7px rgba(45, 212, 191, .08), 0 5px 14px rgba(4, 12, 30, .22); }
 }
 @keyframes seferAbiThinking {
   0%, 100% { transform: rotate(0) translateY(0); }
@@ -3111,8 +3207,39 @@ button, input, select, textarea, .btn, .secondary {
 }
 @keyframes seferAbiRingSweep {
   0% { transform: rotate(0deg); opacity: .35; }
-  55% { transform: rotate(180deg); opacity: .95; }
+  55% { transform: rotate(180deg); opacity: 1; }
   100% { transform: rotate(360deg); opacity: .35; }
+}
+@keyframes seferAbiResponseRing {
+  0%, 100% { transform: rotate(-35deg) scale(.96); opacity: .42; }
+  50% { transform: rotate(145deg) scale(1.03); opacity: 1; }
+}
+@keyframes seferAbiResultAck {
+  0% { box-shadow: 0 0 0 3px rgba(74, 222, 128, .14), 0 4px 10px rgba(4, 12, 30, .24); }
+  28% { box-shadow: 0 0 0 8px rgba(74, 222, 128, .22), 0 7px 20px rgba(74, 222, 128, .22); }
+  100% { box-shadow: 0 0 0 3px rgba(74, 222, 128, .14), 0 4px 10px rgba(4, 12, 30, .24); }
+}
+@keyframes seferAbiReadyRing {
+  0% { transform: scale(.88); opacity: .1; }
+  36% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: .28; }
+}
+@keyframes seferAbiAttentionHalo {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(245, 158, 11, .14), 0 4px 10px rgba(4, 12, 30, .24); }
+  48% { box-shadow: 0 0 0 8px rgba(245, 158, 11, .14), 0 7px 18px rgba(245, 158, 11, .18); }
+}
+@keyframes seferAbiAttentionRing {
+  0%, 100% { transform: scale(.94); opacity: .25; }
+  50% { transform: scale(1.08); opacity: .95; }
+}
+@keyframes seferAbiApprovalHalo {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(245, 158, 11, .14), 0 4px 10px rgba(4, 12, 30, .24); }
+  35%, 65% { box-shadow: 0 0 0 6px rgba(245, 158, 11, .12), 0 6px 16px rgba(245, 158, 11, .18); }
+}
+@keyframes seferAbiApprovalRing {
+  0%, 100% { transform: scale(.9); opacity: .25; }
+  30% { transform: scale(1.05); opacity: 1; }
+  58% { transform: scale(.96); opacity: .65; }
 }
 
 .copilotDrawerState { margin-top: 3px; color: #667085; font-size: 11px; font-weight: 800; line-height: 1.2; }
@@ -3124,13 +3251,20 @@ button, input, select, textarea, .btn, .secondary {
   .seferAbiAvatar *, .seferAbiAvatar, .copilotFab--mascot { animation: none !important; transition: none !important; }
 }
 @media (max-width: 720px) {
-  .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(90px, calc(env(safe-area-inset-bottom) + 74px)); width: 58px; height: 58px; min-width: 58px; min-height: 58px; }
+  .copilotLauncherStack { right: max(14px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)); }
+  .copilotFab--mascot { right: max(14px, env(safe-area-inset-right)); bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)); width: 58px; height: 58px; min-width: 58px; min-height: 58px; }
   .copilotFab--mascot .copilotMascotAvatar, .copilotFab--mascot .seferAbiAvatar { width: 44px !important; height: 44px !important; }
-  .copilotDrawer { right: 12px; left: 12px; bottom: max(156px, calc(env(safe-area-inset-bottom) + 140px)); width: auto !important; max-width: none; }
+  .copilotDrawer { top: auto; right: 12px; left: 12px; bottom: max(88px, calc(env(safe-area-inset-bottom) + 78px)); width: auto !important; max-width: none; }
+  .copilotDrawer--task-home-top { top: 12px; bottom: auto; }
+  .copilotDrawerHeader { flex: 0 0 auto; }
+  .copilotDrawerContext--secondary { display: none; }
+  .copilotDrawer .copilotComposer { flex: 0 0 auto; }
+  .copilotDrawer .copilotComposer textarea { height: 44px; min-height: 44px; }
+  .copilotAttentionBubble { width: min(224px, calc(100vw - 24px)); padding: 9px 10px; font-size: 11px; }
 }
 
 /* #17 role task-home: shared hierarchy, role-specific content. */
-.roleTaskHome { gap: 14px; }
+.roleTaskHome { gap: 14px; padding-right: 96px; padding-bottom: 88px; }
 .roleTaskHero {
   display: flex;
   align-items: flex-end;
@@ -3178,6 +3312,7 @@ button, input, select, textarea, .btn, .secondary {
   body.copilot-is-open .roleTaskHeroAction { margin-right: min(460px, 32vw); }
 }
 @media (max-width: 900px) {
+  .roleTaskHome { padding-right: 74px; padding-bottom: 92px; }
   .roleTaskHero { align-items: stretch; flex-direction: column; padding: 18px; }
   .roleTaskHeroAction { justify-items: stretch; min-width: 0; }
   .rolePrimaryCta { width: 100%; }

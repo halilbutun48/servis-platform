@@ -12,6 +12,11 @@ import { assertProductExtensionsIncludes } from './lib/productExtensionsRegistry
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '../..');
+const configuredRuntimeDataDir = process.env.RUNTIME_DATA_DIR ? path.resolve(process.env.RUNTIME_DATA_DIR) : '';
+const cleanCloneRuntimeData = Boolean(
+  configuredRuntimeDataDir &&
+  !configuredRuntimeDataDir.toLowerCase().startsWith(path.join(repoRoot, 'backend', 'artifacts', 'runtime-data').toLowerCase())
+);
 
 const paths = {
   packageJson: path.join(repoRoot, 'package.json'),
@@ -680,7 +685,11 @@ function main() {
     'backend/artifacts/runtime-data/',
   ];
   for (const needle of commitExternalNeedles) {
-    addContainsCase(cases, `status mentions ${needle}`, statusText, needle);
+    if (cleanCloneRuntimeData) {
+      addCase(cases, `clean-clone status omits ${needle}`, () => must(!statusText.includes(needle), `status unexpectedly mentions ${needle}`));
+    } else {
+      addContainsCase(cases, `status mentions ${needle}`, statusText, needle);
+    }
   }
   addCase(cases, 'browser-smoke artifacts remain gitignored', () => gitMustPass(['check-ignore', '-v', paths.browserSmokeReport], 'browser-smoke artifacts remain gitignored'));
   addCase(cases, 'load-test artifacts remain gitignored', () => gitMustPass(['check-ignore', '-v', paths.loadTestReport], 'load-test artifacts remain gitignored'));
@@ -689,7 +698,9 @@ function main() {
   addCase(cases, 'stage remains empty for generated artefacts', () => must(stagedNames.every((name) => !['backend/artifacts/browser-smoke/', 'backend/artifacts/load-test/', 'backend/artifacts/db-scaling/', 'backend/artifacts/observability/'].some((needle) => name.includes(needle))), `generated artefact staged: ${stagedNames.join(', ')}`));
 
   const commitExternalSummary = [
-    statusLines.some((line) => line.includes('backend/artifacts/runtime-data/')),
+    cleanCloneRuntimeData
+      ? !statusLines.some((line) => line.includes('backend/artifacts/runtime-data/'))
+      : statusLines.some((line) => line.includes('backend/artifacts/runtime-data/')),
     !stagedNames.some((line) => line.includes('backend/artifacts/browser-smoke/')),
     !stagedNames.some((line) => line.includes('backend/artifacts/load-test/')),
     !stagedNames.some((line) => line.includes('backend/artifacts/db-scaling/')),

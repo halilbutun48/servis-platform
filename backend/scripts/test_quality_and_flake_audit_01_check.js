@@ -266,6 +266,19 @@ async function main() {
   const roomAgreementsPanel = read("web/src/panels/room/AgreementsPanel.jsx");
   const routePreviewChecks = read("backend/scripts/_m91_route_preview_checks.js");
   const gitStatusShort = gitCapture(["status", "--short"]).stdout.trim();
+  const runtimeDataPaths = [
+    "backend/artifacts/runtime-data/password-change-requirements.json",
+    "backend/artifacts/runtime-data/username-directory.json",
+    "backend/artifacts/runtime-data/agreement-route-refresh-requests.json",
+    "backend/artifacts/runtime-data/public-leads.json",
+    "backend/artifacts/runtime-data/quality-review-decisions.json",
+    "backend/artifacts/runtime-data/region-failover-drill-state.json",
+  ];
+  const configuredRuntimeDataDir = process.env.RUNTIME_DATA_DIR ? path.resolve(process.env.RUNTIME_DATA_DIR) : "";
+  const cleanCloneRuntimeData = Boolean(
+    configuredRuntimeDataDir &&
+    !configuredRuntimeDataDir.toLowerCase().startsWith(path.join(root, "backend", "artifacts", "runtime-data").toLowerCase())
+  );
   const gitCachedNames = gitLines(["diff", "--cached", "--name-only"]);
   const gitRouteDiff = gitLines(["diff", "--name-only", "--", "backend/src/routes", "backend/src/services", "prisma", "backend/prisma"]);
   const diffCheck = mustDiffCheckClean("git diff --check", ["diff", "--check"]);
@@ -643,14 +656,13 @@ async function main() {
   });
 
   addGuard("commit-external", "runtime-data stays in the working tree and out of commit", () => {
-    mustAll(gitStatusShort, [
-      ["backend/artifacts/runtime-data/password-change-requirements.json", "password change runtime data"],
-      ["backend/artifacts/runtime-data/username-directory.json", "username directory runtime data"],
-      ["backend/artifacts/runtime-data/agreement-route-refresh-requests.json", "agreement refresh runtime data"],
-      ["backend/artifacts/runtime-data/public-leads.json", "public leads runtime data"],
-      ["backend/artifacts/runtime-data/quality-review-decisions.json", "quality review runtime data"],
-      ["backend/artifacts/runtime-data/region-failover-drill-state.json", "region failover runtime data"],
-    ], "runtime data status");
+    if (cleanCloneRuntimeData) {
+      for (const runtimePath of runtimeDataPaths) {
+        mustNotContains(gitStatusShort, runtimePath, `clean-clone runtime data remains external: ${runtimePath}`);
+      }
+    } else {
+      mustAll(gitStatusShort, runtimeDataPaths.map((runtimePath) => [runtimePath, runtimePath]), "runtime data status");
+    }
   });
 
   addGuard("commit-external", "debug.log stays absent", () => {

@@ -2,11 +2,21 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
+
+function isTrackedByGit(rel) {
+  try {
+    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], { cwd: repoRoot, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const scanRoots = [
   "web/src/panels/company",
@@ -414,8 +424,15 @@ function main() {
     "backend/artifacts/runtime-data/agreement-route-refresh-requests.json",
     "backend/artifacts/runtime-data/quality-review-decisions.json",
   ];
-  for (const relPath of runtimeDataPaths) {
-    must(exists(relPath), `${relPath} still exists outside this audit scope`);
+  const cleanCloneRuntimeData = process.env.CLEAN_CLONE_VERIFICATION === "1" && process.env.RUNTIME_DATA_DIR && !path.resolve(process.env.RUNTIME_DATA_DIR).toLowerCase().startsWith(path.join(repoRoot, "backend", "artifacts", "runtime-data").toLowerCase());
+  if (cleanCloneRuntimeData) {
+    for (const relPath of runtimeDataPaths) {
+      must(isTrackedByGit(relPath) ? exists(relPath) : !exists(relPath), `clean-clone runtime-data policy: ${relPath}`);
+    }
+  } else {
+    for (const relPath of runtimeDataPaths) {
+      must(exists(relPath), `${relPath} still exists outside this audit scope`);
+    }
   }
 
   console.log("=== UI ACTION WIRING AUDIT 01 CHECK PASS ===");

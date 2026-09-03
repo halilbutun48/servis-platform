@@ -12,6 +12,11 @@ import { assertProductExtensionsIncludes } from "./lib/productExtensionsRegistry
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
+const configuredRuntimeDataDir = process.env.RUNTIME_DATA_DIR ? path.resolve(process.env.RUNTIME_DATA_DIR) : "";
+const cleanCloneRuntimeData = Boolean(
+  configuredRuntimeDataDir &&
+  !configuredRuntimeDataDir.toLowerCase().startsWith(path.join(repoRoot, "backend", "artifacts", "runtime-data").toLowerCase())
+);
 
 const paths = {
   packageJson: path.join(repoRoot, "package.json"),
@@ -481,7 +486,11 @@ function main() {
   addCase(cases, "staged diff stays empty", () => must(gitLines(["diff", "--cached", "--name-only"]).length === 0, "staged diff not empty"));
   addCase(cases, "runtime-data stays commit external", () => {
     const statusLines = gitLines(["status", "--short"]);
-    must(statusLines.some((line) => line.includes("backend/artifacts/runtime-data/")), "runtime-data missing from status");
+    if (cleanCloneRuntimeData) {
+      must(!statusLines.some((line) => line.includes("backend/artifacts/runtime-data/")), "clean-clone runtime-data unexpectedly appears in status");
+    } else {
+      must(statusLines.some((line) => line.includes("backend/artifacts/runtime-data/")), "runtime-data missing from status");
+    }
   });
   addCase(cases, "browser-smoke stays commit external", () => {
     const staged = gitLines(["diff", "--cached", "--name-only"]);

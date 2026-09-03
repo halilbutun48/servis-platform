@@ -86,14 +86,20 @@ async function main() {
   ];
   const dirtyRuntimeData = dirtyRuntimeDataPaths(statusText);
   const dirtyRuntimeDataSet = new Set(dirtyRuntimeData);
-  for (const relPath of allowedRuntimeData) {
-    must(statusText, relPath, `git status keeps ${path.basename(relPath)} dirty`);
-  }
-  for (const relPath of dirtyRuntimeDataSet) {
-    if (!allowedRuntimeData.includes(relPath)) fail(`Unexpected runtime-data dirty file: ${relPath}`);
-  }
-  if (dirtyRuntimeData.length !== allowedRuntimeData.length) {
-    fail(`Runtime-data dirty file count must stay at ${allowedRuntimeData.length}, found ${dirtyRuntimeData.length}`);
+  const cleanCloneRuntimeData = process.env.CLEAN_CLONE_VERIFICATION === '1' && process.env.RUNTIME_DATA_DIR && !path.resolve(process.env.RUNTIME_DATA_DIR).toLowerCase().startsWith(path.join(repoRoot, 'backend', 'artifacts', 'runtime-data').toLowerCase());
+  if (cleanCloneRuntimeData) {
+    if (dirtyRuntimeData.length) fail(`Unexpected repo-owned runtime-data dirty file in clean-clone verification: ${dirtyRuntimeData.join(', ')}`);
+    ok('runtime-data is external for clean-clone verification');
+  } else {
+    for (const relPath of allowedRuntimeData) {
+      must(statusText, relPath, `git status keeps ${path.basename(relPath)} dirty`);
+    }
+    for (const relPath of dirtyRuntimeDataSet) {
+      if (!allowedRuntimeData.includes(relPath)) fail(`Unexpected runtime-data dirty file: ${relPath}`);
+    }
+    if (dirtyRuntimeData.length !== allowedRuntimeData.length) {
+      fail(`Runtime-data dirty file count must stay at ${allowedRuntimeData.length}, found ${dirtyRuntimeData.length}`);
+    }
   }
 
   const pkg = read('package.json');

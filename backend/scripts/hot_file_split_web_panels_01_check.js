@@ -242,7 +242,19 @@ async function main() {
   must(companyHelpers, "export function compactText", "company helpers export text compacting helper");
 
   const statusShort = gitLines(["status", "--short"]);
-  must(statusShort, "backend/artifacts/runtime-data/", "runtime-data artifacts remain in working tree");
+  const canonicalRuntimeDataPrefix = "backend/artifacts/runtime-data/";
+  const configuredRuntimeDataDir = process.env.RUNTIME_DATA_DIR ? path.resolve(process.env.RUNTIME_DATA_DIR) : "";
+  const cleanCloneRuntimeData = configuredRuntimeDataDir && !configuredRuntimeDataDir.toLowerCase().startsWith(path.join(root, "backend", "artifacts", "runtime-data").toLowerCase());
+  const repoRuntimeDataStatus = statusShort
+    .split(/\r?\n/)
+    .map((line) => line.slice(3).trim().replace(/\\/g, "/"))
+    .filter((entry) => entry.startsWith(canonicalRuntimeDataPrefix));
+  if (cleanCloneRuntimeData) {
+    if (repoRuntimeDataStatus.length) fail(`unexpected repo-owned runtime-data status in clean-clone verification: ${repoRuntimeDataStatus.join(", ")}`);
+    ok("runtime-data is external for clean-clone verification");
+  } else {
+    must(statusShort, canonicalRuntimeDataPrefix, "runtime-data artifacts remain in working tree");
+  }
   mustNot(statusShort, "debug.log", "debug.log absent from git status");
   assertCleanOutput(["diff", "--cached", "--name-only"], "stage remains empty");
   mustDiffEmptyOrExactlyWithIdentity(["backend/src/services", "prisma"], CURRENT_HEAD_APPROVED_CONCURRENT_SERVICE_DIFF, "service/prisma diff remains empty");
